@@ -10,6 +10,7 @@
             appname: { value: "" },
             guitype: { value: "" },
             parentslot: { value: "" },
+            implicitSetCommand: { value: true},
             props: { value: {} },
         },
         inputs: 1,
@@ -212,6 +213,12 @@
         <div class="form-row">
             <label for="node-input-guitype"><i class="fa fa-cubes"></i> Widget Type</label>
             <select id="node-input-guitype" style="width: 70%;"></select>
+        </div>
+        <div class="form-row">
+            <label for="node-input-implicitSetCommand"></label>
+            <label for="node-input-implicitSetCommand" style="width: 70%;">
+                <input type="checkbox" id="node-input-implicitSetCommand" style="display:inline-block; width:22px; vertical-align:top;" autocomplete="off"><span>use implicit Set command</span>
+            </label>
         </div>
     </div>
 </script>

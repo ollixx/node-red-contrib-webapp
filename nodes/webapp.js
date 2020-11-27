@@ -1,8 +1,6 @@
 module.exports = function (RED) {
     "use strict";
 
-    console.log("setup webapp")
-
     var ws = require("ws")
     var serveStatic = require('serve-static');
     var url = require('url');
@@ -38,7 +36,7 @@ module.exports = function (RED) {
     function handleIncomingMessage(node, ws, message) {
         // handle incoming ws message from app.
         let wsMessage = JSON.parse(message);
-        console.log("wss got message", wsMessage)
+        //console.log("wss got message", wsMessage)
         switch (wsMessage.command) {
             case "webapp.ready":
                 console.log("got webapp.ready", wsMessage.msg);
@@ -70,13 +68,13 @@ module.exports = function (RED) {
                 handleIncomingMessage(node, conn, message);
             });
             conn.on('close', function () {
-                console.log("closed ws");
+                //console.log("closed ws");
             });
             conn.on('error', (err) => console.log('error:', err));
             conn.myid = new Date()
         });
 
-        console.log("new wss created");
+        //console.log("new wss created");
         return wss;
     }
 
@@ -87,14 +85,14 @@ module.exports = function (RED) {
         let distPath = join(__dirname, "..", "dist")
         let path = join(rootPath)
         exApp.use(path, serveStatic(distPath));
-        console.log("static: ", path, distPath);
+        //console.log("static: ", path, distPath);
     }
 
     // define and register the node
     function WebApplicationNode(config) {
         try {
             RED.nodes.createNode(this, config);
-            console.log("create webapp node");
+            // console.log("create webapp node");
             var node = this;
 
             var status = function(color, msg) {
@@ -164,7 +162,7 @@ module.exports = function (RED) {
 
             node.wss = createWebsocketServer(node)
             webappWsServers[config.wsPath] = node.wss // add to the list of connected servers
-            console.log("added wss to list", Object.keys(webappWsServers))
+            //console.log("added wss to list", Object.keys(webappWsServers))
             node.http = createHttpServerHooks(config)
 
             node.on("input", (msg) => {
@@ -222,7 +220,7 @@ module.exports = function (RED) {
                     // RED.server.removeListener("connection", httpListener);
                     // console.log("wss clients: ", Object.keys(node.wss.clients).length);
                     node.wss.clients.forEach(function each(wsClient) {
-                        console.log("closing ws ", wsClient.uid);
+                        // console.log("closing ws ", wsClient.uid);
                         wsClient.terminate();
                     });
                     node.wss.close();

@@ -16,7 +16,21 @@
   <script src="js/vue-material.min.js"></script>
   <script src="js/reconnecting-websocket-cjs.js"></script>
   <script src="js/nodeRedService.js"></script>
+  <script src="js/mixin.js"></script>
   <script src="js/guicomponents.js"></script>
+  <script src="js/components/app.js"></script>
+  <script src="js/components/avatar.js"></script>
+  <script src="js/components/button.js"></script>
+  <script src="js/components/card.js"></script>
+  <script src="js/components/content.js"></script>
+  <script src="js/components/debug.js"></script>
+  <script src="js/components/html.js"></script>
+  <script src="js/components/icon.js"></script>
+  <script src="js/components/input.js"></script>
+  <script src="js/components/layout.js"></script>
+  <script src="js/components/list.js"></script>
+  <script src="js/components/root.js"></script>
+  <script src="js/components/toolbar.js"></script>
   <script>
     Vue.use(VueMaterial.default)
     // Vue.use(NodePlugin)
@@ -33,6 +47,7 @@
     Vue.use({
       install: (app, options) => {
         app.send = nrService.send;
+        app.model = model;
       }
     });
 
@@ -150,6 +165,12 @@
                   return a._pos - b._pos;
                 });
             break;
+          case "Set":
+            for (let key in msg) {
+              modelElement[key] = msg[key];
+            }
+            delete modelElement._msgid;
+            break;
           default:
         }
       });
@@ -164,9 +185,6 @@
         return {
           model
         };
-      },
-      send(msg) {
-        nrService.send(msg);
       }
     });
   </script>
