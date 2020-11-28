@@ -2,6 +2,87 @@
 
 <script type="text/javascript">
 
+    let setupWidgets = function (type, configProps, container) {
+        // setup form fields
+        type.props.forEach((prop) => {
+            let id = "node-input-" + type.name + '-' + prop.name;
+            let row = $('<div class="form-row type-widget"></div>').appendTo(container);
+
+            switch (prop.type) {
+                case "editor":
+                    row.append($('<label for="' + id + '"><i class="fa fa-' + prop.faIconName + '"></i> ' + prop.label + '</label>'));
+                    row.append($('<div class="node-text-editor" style="height:250px; min-height:150px; width:70%; resize:vertical; display: inline-block;" id="' + id + '"></div>'));
+                    let editorId = "editor-" + type.name + "-" + prop.name;
+                    this["editor-" + id] = RED.editor.createEditor({
+                        id: id,
+                        mode: 'ace/mode/text',
+                        value: configProps[prop.name]
+                    });
+                    break;
+                case "select":
+                    row.append($('<label for="' + id + '"><i class="fa fa-' + prop.faIconName + '"></i> ' + prop.label + '</label>'));
+                    row.append($('<select style="width: 70%;" id="' + id + '">'));
+                    Object.keys(prop.options).forEach(key => {
+                        let value = prop.options[key];
+                        $("#" + id).append($("<option></option>").val(key).text(value));
+                    });
+                    $("#" + id).val(configProps[prop.name]);
+                    break;
+                case "slider":
+                    row.append($('<label for="' + id + '"><i class="fa fa-' + prop.faIconName + '"></i> ' + prop.label + '</label>'));
+                    row.append($('<div style="width: 60%; display:inline-block;" id="' + id + '"></div><div id="' + id + '-val" style="margin-left: 20px; display:inline-block;">' + configProps[prop.name] + '</div>'));
+                    $("#" + id).slider({
+                        min: 0, max: 24, step: 1, slide: function (event, ui) {
+                            $("#" + id + "-val").text(ui.value > 0 ? ui.value : "default");
+                        }
+                    });
+                    $("#" + id).slider("value", configProps[prop.name]);
+                    break;
+                case "buttongroup":
+                    row.append($('<label for="' + id + '"><i class="fa fa-' + prop.faIconName + '"></i> ' + prop.label + '</label>'));
+                    row.append($('<span class="button-group" id="' + id + '"></span>'));
+                    prop.options.forEach(option => {
+                        let selected = option.value == configProps[prop.name] ? "selected" : "";
+                        let btn = $('<button type="button" class="red-ui-button toggle ' + selected + ' ' + id + '-button-group" value="' + option.value + '">' + option.label + '</button>');
+                        $("#" + id).append(btn);
+                        btn.on("click", function () {
+                            $("." + id + "-button-group").removeClass("selected");
+                            $(this).addClass("selected");
+                        });
+                    })
+                    break;
+                case "checkbox":
+                    row.append($('<label for="' + id + '"><i class="fa fa-' + prop.faIconName + '"></i> ' + (prop.label ? prop.label : "") + '</label>'));
+                    let cbInput = $('<label for="' + id + '" style="width:70%"></span>').appendTo(row);
+                    cbInput.append($('<input type="checkbox" id="' + id + '" style="display:inline-block; width:22px; vertical-align:top;" autocomplete="off"><span>' + prop.checkboxLabel + '</span>'))
+                    if (configProps[prop.name]) $("#" + id).prop('checked', true);
+                    break;
+                case "typedinput":
+                    row.append($('<label for="' + id + '"><i class="fa fa-' + prop.faIconName + '"></i> ' + (prop.label ? prop.label : "") + '</label>'));
+                    let tiInput = $('<input type="text" id="' + id + '" style="width:70%">').appendTo(row);
+                    let inputType = $('<input type="hidden" id="' + id + '-type">').appendTo(row);
+                    tiInput.typedInput({
+                        type: prop.typedInput.type,
+                        types: prop.typedInput.types,
+                        typeField: "#" + id + "-type"
+                    })
+                    console.log("typedinput 1", configProps[prop.name]);
+                    if (configProps[prop.name]) {
+                        if (typeof (configProps[prop.name]) != "object") {
+                            configProps[prop.name] = { value: configProps[prop.name], type: "str" };
+                        }
+                        tiInput.typedInput("value", configProps[prop.name].value);
+                        tiInput.typedInput("type", configProps[prop.name].type);
+                    }
+                    break;
+                default:
+                    row.append($('<label for="' + id + '"><i class="fa fa-' + prop.faIconName + '"></i> ' + prop.label + '</label>'));
+                    row.append($('<input type="text" style="width: 70%; resize: vertical;" id="' + id + '">'));
+                    $("#" + id).val(configProps[prop.name]);
+            }
+        });
+    }
+
     RED.nodes.registerType('guinode', {
         category: 'webapp',
         color: '#C8BFD8',
@@ -10,7 +91,7 @@
             appname: { value: "" },
             guitype: { value: "" },
             parentslot: { value: "" },
-            implicitSetCommand: { value: true},
+            implicitSetCommand: { value: true },
             props: { value: {} },
         },
         inputs: 1,
@@ -28,123 +109,51 @@
         label: function () { return this.name || this.guitype || "vue widget"; },
         labelStyle: function () { return this.name ? "node_label_italic" : ""; },
         oneditprepare: function () {
-            let config = this;
-            let props = config.props || {};
+            try {
+                let config = this;
+                let props = config.props || {};
 
-            // choose webapp instance (node)
-            RED.nodes.eachNode(function (node) {
-                if (node.type == "webapp") {
-                    $("#node-input-appname").append($("<option></option>").val(node.id).text(node.name));
-                }
-            });
-            $("#node-input-appname").val(this.appname);
-
-            let container = $("#container");
-
-            // choose Type of GUI node
-            types.forEach((type) => {
-                // entry to select
-                $("#node-input-guitype").append($('<option></option>').val(type.name).text(type.label));
-
-                // setup form fields
-                let typeContainer = $('<div id="type-container-' + type.name + '" style="display: none"></div>').appendTo(container);
-                type.props.forEach((prop) => {
-                    let id = "node-input-" + type.name + '-' + prop.name;
-                    let row = $('<div class="form-row"></div>').appendTo(typeContainer);
-                    if (props[prop.name] == undefined) {
-                        props[prop.name] = "";
-                    }
-
-                    switch (prop.type) {
-                        case "editor":
-                            row.append($('<label for="' + id + '"><i class="fa fa-' + prop.faIconName + '"></i> ' + prop.label + '</label>'));
-                            row.append($('<div class="node-text-editor" style="height:250px; min-height:150px; width:70%; resize:vertical; display: inline-block;" id="' + id + '"></div>'));
-                            let editorId = "editor-" + type.name + "-" + prop.name;
-                            this["editor-" + id] = RED.editor.createEditor({
-                                id: id,
-                                mode: 'ace/mode/text',
-                                value: props[prop.name]
-                            });
-                            break;
-                        case "select":
-                            row.append($('<label for="' + id + '"><i class="fa fa-' + prop.faIconName + '"></i> ' + prop.label + '</label>'));
-                            row.append($('<select style="width: 70%;" id="' + id + '">'));
-                            Object.keys(prop.options).forEach(key => {
-                                let value = prop.options[key];
-                                $("#" + id).append($("<option></option>").val(key).text(value));
-                            });
-                            $("#" + id).val(props[prop.name]);
-                            break;
-                        case "slider":
-                            row.append($('<label for="' + id + '"><i class="fa fa-' + prop.faIconName + '"></i> ' + prop.label + '</label>'));
-                            row.append($('<div style="width: 60%; display:inline-block;" id="' + id + '"></div><div id="' + id + '-val" style="margin-left: 20px; display:inline-block;">' + props[prop.name] + '</div>'));
-                            $("#" + id).slider({
-                                min: 0, max: 24, step: 1, slide: function (event, ui) {
-                                    $("#" + id + "-val").text(ui.value > 0 ? ui.value : "default");
-                                }
-                            });
-                            $("#" + id).slider("value", props[prop.name]);
-                            break;
-                        case "buttongroup":
-                            row.append($('<label for="' + id + '"><i class="fa fa-' + prop.faIconName + '"></i> ' + prop.label + '</label>'));
-                            row.append($('<span class="button-group" id="' + id + '"></span>'));
-                            prop.options.forEach(option => {
-                                let selected = option.value == props[prop.name] ? "selected" : "";
-                                let btn = $('<button type="button" class="red-ui-button toggle ' + selected + ' ' + id + '-button-group" value="' + option.value + '">' + option.label + '</button>');
-                                $("#" + id).append(btn);
-                                btn.on("click", function () {
-                                    $("." + id + "-button-group").removeClass("selected");
-                                    $(this).addClass("selected");
-                                });
-                            })
-                            break;
-                        case "checkbox":
-                            row.append($('<label for="' + id + '"><i class="fa fa-' + prop.faIconName + '"></i> ' + (prop.label ? prop.label : "") + '</label>'));
-                            let cbInput = $('<label for="' + id + '" style="width:70%"></span>').appendTo(row);
-                                cbInput.append($('<input type="checkbox" id="' + id + '" style="display:inline-block; width:22px; vertical-align:top;" autocomplete="off"><span>' + prop.checkboxLabel + '</span>'))
-                            if (props[prop.name]) $("#" + id).prop('checked', true);
-                            break;
-                        case "typedinput":
-                            row.append($('<label for="' + id + '"><i class="fa fa-' + prop.faIconName + '"></i> ' + (prop.label ? prop.label : "") + '</label>'));
-                            let tiInput = $('<input type="text" id="' + id + '" style="width:70%">').appendTo(row);
-                            let inputType = $('<input type="hidden" id="' + id + '-type">').appendTo(row);
-                            tiInput.typedInput({
-                                type: prop.typedInput.type,
-                                types: prop.typedInput.types,
-                                typeField: "#" + id + "-type"
-                            })
-                            tiInput.typedInput("value", props[prop.name]);
-                            tiInput.typedInput("type", props[prop.name + "-type"]);
-                            break;
-                        default:
-                            row.append($('<label for="' + id + '"><i class="fa fa-' + prop.faIconName + '"></i> ' + prop.label + '</label>'));
-                            row.append($('<input type="text" style="width: 70%; resize: vertical;" id="' + id + '">'));
-                            $("#" + id).val(props[prop.name]);
+                // choose webapp instance (node)
+                RED.nodes.eachNode(function (node) {
+                    if (node.type == "webapp") {
+                        $("#node-input-appname").append($("<option></option>").val(node.id).text(node.name));
                     }
                 });
-            });
-            // make selected type visible
-            var typeContainerId = "type-container-" + this.guitype;
-            $("#" + typeContainerId).css("display", "block");
+                $("#node-input-appname").val(this.appname);
 
-            $("#node-input-guitype").val(this.guitype);
-            $("#node-input-guitype").change(function () {
-                // hide property widgets
+                let container = $("#container");
+
+                // choose Type of GUI node
+                $("#node-input-guitype").change(function () {
+                    // remove widgets for old type
+                    $(".type-widget").remove();
+
+                    // setup widgets for current type:
+                    let typeName = $("#node-input-guitype option:selected").val()
+                    console.log("typename", typeName);
+                    let type = types.find(t => {
+                        return t.name == typeName;
+                    });
+                    setupWidgets(type, props, container);
+
+                });
                 types.forEach((type) => {
-                    let typeContainerId = "type-container-" + type.name;
-                    $("#" + typeContainerId).css("display", "none");
+                    // entry to select
+                    $("#node-input-guitype").append($('<option></option>').val(type.name).text(type.label));
                 });
-                // make selected type visible
-                typeContainerId = "type-container-" + $("#node-input-guitype option:selected").val();
-                $("#" + typeContainerId).css("display", "block");
-            });
+                $("#node-input-guitype").val(this.guitype);
+
+            } catch (err) {
+                console.log("err typedinput", err);
+                console.trace()
+            }
 
         },
         oneditsave: function () {
             this.appname = $("#node-input-appname").val();
             this.guitype = $("#node-input-guitype").val();
             let config = this;
-            if (!config.props) config.props = {};
+            if (!config.props) config.props = {};
             let props = config.props;
 
             types.forEach((type) => {
@@ -169,9 +178,16 @@
                                 console.log("checked?", prop.name, props[prop.name]);
                                 break;
                             case "typedinput":
-                                console.log("typedInput", $('#' + id));
-                                props[prop.name] = $('#' + id).typedInput('value')
-                                props[prop.name + "-type"] = $('#' + id).typedInput('type')
+                                if (props[prop.name]) {
+                                    if (typeof (props[prop.name]) != "object") {
+                                        props[prop.name] = { value: props[prop.name], type: "str" };
+                                    }
+                                } else {
+                                    props[prop.name] = {};
+                                }
+                                props[prop.name].value = $('#' + id).typedInput('value')
+                                props[prop.name].type = $('#' + id).typedInput('type')
+                                console.log("saving typedinput ", prop.name, $('#' + id).typedInput('value'), $('#' + id).typedInput('type'), props[prop.name]);
                                 break;
                             case "select":
                             default:

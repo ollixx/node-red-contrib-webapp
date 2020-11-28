@@ -3,7 +3,7 @@ const webapp = require("./webapp");
 const winston = require("winston");
 winston.remove(winston.transports.Console);
 const logger = winston.createLogger({
-    level: "debug",
+    level: "info",
     transports: [
       new winston.transports.Console(),
     ],
