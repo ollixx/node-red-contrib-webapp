@@ -68,11 +68,8 @@
                     })
                     console.log("typedinput 1", configProps[prop.name]);
                     if (configProps[prop.name]) {
-                        if (typeof (configProps[prop.name]) != "object") {
-                            configProps[prop.name] = { value: configProps[prop.name], type: "str" };
-                        }
-                        tiInput.typedInput("value", configProps[prop.name].value);
-                        tiInput.typedInput("type", configProps[prop.name].type);
+                        tiInput.typedInput("value", configProps[prop.name]);
+                        tiInput.typedInput("type", configProps["$" + prop.name]);
                     }
                     break;
                 default:
@@ -134,7 +131,13 @@
                     let type = types.find(t => {
                         return t.name == typeName;
                     });
-                    setupWidgets(type, props, container);
+                    if (type) {
+                        try {
+                            setupWidgets(type, props, container);
+                        } catch (err) {
+                            console.error("err in setupidgets", err);
+                        }
+                    }
 
                 });
                 types.forEach((type) => {
@@ -178,16 +181,8 @@
                                 console.log("checked?", prop.name, props[prop.name]);
                                 break;
                             case "typedinput":
-                                if (props[prop.name]) {
-                                    if (typeof (props[prop.name]) != "object") {
-                                        props[prop.name] = { value: props[prop.name], type: "str" };
-                                    }
-                                } else {
-                                    props[prop.name] = {};
-                                }
-                                props[prop.name].value = $('#' + id).typedInput('value')
-                                props[prop.name].type = $('#' + id).typedInput('type')
-                                console.log("saving typedinput ", prop.name, $('#' + id).typedInput('value'), $('#' + id).typedInput('type'), props[prop.name]);
+                                props[prop.name] = $('#' + id).typedInput('value')
+                                props["$" + prop.name] = $('#' + id).typedInput('type')
                                 break;
                             case "select":
                             default:

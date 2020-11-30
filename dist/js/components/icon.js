@@ -2,6 +2,6 @@ Vue.component('GuiIcon', {
   mixins: [GuiMixin],
   template:
     `
-<md-icon>{{ model.payload }}</md-icon>
+<md-icon :class="classes">{{ payload }}</md-icon>
 `
 });

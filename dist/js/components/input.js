@@ -12,7 +12,7 @@ Vue.component('GuiInput', {
   <label>{{model.inputLabel}}</label>
   <md-input v-if="model.inputType != 'textarea'"    
     :id="model.id" 
-    :model="model.value" 
+    v-model="model.value"
     :placeholder="model.placeholder" 
     :type="model.inputType"  
     :disabled="model.disabled"
@@ -21,7 +21,7 @@ Vue.component('GuiInput', {
     ></md-input>
   <md-textarea v-if="model.inputType == 'textarea'" 
     :id="model.id" 
-    :model="model.value" 
+    v-model="model.value" 
     :md-autogrow="model.autogrow" 
     :disabled="model.disabled"
     :md-counter="model.counter"

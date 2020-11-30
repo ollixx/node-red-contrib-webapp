@@ -26,13 +26,15 @@ module.exports = function (RED) {
             //console.log("create guinode", config);
             var node = this;
             // get the referenced webapp node
-            node.webapp = RED.nodes.getNode(config.appname);
-            node.webapp.registerListener(node.id, function (msg) {
-                // expose incoming message to second port
-                //console.log("gui-node got msg", msg);
-                node.send([null, msg]);
-            });
-            node.wss = node.webapp.wss;
+            if (config.appname) {
+                node.webapp = RED.nodes.getNode(config.appname);
+                node.webapp.registerListener(node.id, function (msg) {
+                    // expose incoming message to second port
+                    //console.log("gui-node got msg", msg);
+                    node.send([null, msg]);
+                });
+                node.wss = node.webapp.wss;
+            }
             node.guitype = config.guitype;
             node.initialized = false;
             node.implicitSetCommand = config.implicitSetCommand;
@@ -47,24 +49,29 @@ module.exports = function (RED) {
                 children: [],
                 _pos: (config.y + parseFloat("0." + config.x)), // sorting based on relative node position x,y (global for all tabs)
             }
-            // TODO: cleanup to use only once:
-            // add props for the current type
-            let type = types.find(t => {
-                return t.name == node.guitype;
-            })
-            if (type.props) {
-                type.props.forEach(prop => {
-                    if (prop.type == "typedinput") {
-                        node.model[prop.name] = RED.util.evaluateNodeProperty(config.props[prop.name], config.props[prop.name + "-type"], node, {}); 
-                        //console.log("typeinput:", config.props[prop.name], config.props[prop.name + "-type"], node.model[prop.name]);
-                    } else {
-                        node.model[prop.name] = config.props[prop.name];
-                    }
-                });
+            if (node.guitype) {
+                // add props for the current type
+                let type = types.find(t => {
+                    return t.name == node.guitype;
+                })
+                if (type.props) {
+                    type.props.forEach(prop => {
+                        if (prop.type == "typedinput") {
+                            let value = config.props[prop.name];
+                            let type = config.props["$" + prop.name];
+                            if (["mod", "par", "pay"].indexOf(type) == -1) {
+                                node.model[prop.name] = RED.util.evaluateNodeProperty(value, type, node, {}); 
+                            } else {
+                                node.model[prop.name] = value;
+                                node.model["$" + prop.name] = type;
+                            }
+                        } else {
+                            node.model[prop.name] = config.props[prop.name];
+                        }
+                    });
+                }
             }
             
-            //console.log("parent node of", node.id, " -> ", config.wires[0][0], RED.nodes.getNode(config.wires[0][0]));
-
             node.createInitMsg = function () {
                 let msg = RED.util.cloneMessage(node.model);
                 msg.command = "Init";

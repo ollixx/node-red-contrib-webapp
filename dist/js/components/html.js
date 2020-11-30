@@ -1,18 +1,12 @@
 Vue.component('GuiHtml', {
   mixins: [GuiMixin],
-  props: ["overload"],
   computed: {
-    payload: function() {
-      console.log("content", this.overload, this.model.payload)
-      if (this.overload) {
-        return this.overload
-      } else {
-        return this.model.payload;
-      }
+    tag: function() {
+      return this.model.tag || "div";
     }
   },
   template:
-    `
-<div v-html="payload" :id="model.nodeid" :class="classes"></div>
+`
+<component :is="tag" v-html="payload" :id="model.nodeid" :class="classes"></component>
 `
 });
