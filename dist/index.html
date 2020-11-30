@@ -15,6 +15,7 @@
   <script src="js/vue.min.js"></script>
   <script src="js/vue-material.min.js"></script>
   <script src="js/reconnecting-websocket-cjs.js"></script>
+  <script src="js/jsonata.min.js"></script>
   <script src="js/nodeRedService.js"></script>
   <script src="js/mixin.js"></script>
   <script src="js/guicomponents.js"></script>
@@ -55,11 +56,11 @@
     nrService.register((msg) => {
       // check history
       if (Object.keys(msgHistory).includes(msg._msgid)) {
-        console.log("message " + msg._msgid + " already processed. skipping", msg);
+        console.error("message " + msg._msgid + " already processed. skipping", msg);
       }
       if (!msg._msgid) msg._msgid = new Date();
       msgHistory[msg._msgid] = JSON.stringify(msg);
-      console.log("history", msgHistory);
+      // console.log("history", msgHistory);
       delete msg._msgid;
 
       // find all elements with a nodeid (can be multiple) and
@@ -83,7 +84,7 @@
       // they can be targeted through the generated ID, but send events to the
       // next parent with a "real" nodeid, or ultimately to the root node (webapp)
       let cleanUpNodeIds = function (modelElement) {
-        console.log("cleaning up", modelElement);
+        // console.log("cleaning up", modelElement);
         if (modelElement.children) {
           modelElement.children.forEach((element) => {
             if (!element.nodeid) {
@@ -109,7 +110,7 @@
         }
       };
 
-      console.log("handle", msg.command, msg);
+      // console.log("handle", msg.command, msg);
       if (!msg.hasOwnProperty("command")) {
         console.log("node red message has no command property. ingoring.");
         return;
@@ -129,7 +130,7 @@
         targets = [];
         retrieveById(targets, model, msg.nodeid);
       }
-      console.log("targets", targets);
+      // console.log("targets", targets);
       targets.forEach((modelElement) => {
         switch (command) {
           case "Init":

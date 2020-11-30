@@ -28,14 +28,16 @@
     },
     "scripts": {
         "test": "mocha test/*_spec.js",
-        "postinstall": "npm run pi:1 && npm run pi:2 && npm run pi:3 && npm run pi:4 && npm run pi:5",
+        "postinstall": "npm run pi:1 && npm run pi:2 && npm run pi:3 && npm run pi:4 && npm run pi:5 && npm run pi:6",
         "pi:1": "copyfiles -f node_modules/reconnecting-websocket/dist/reconnecting-websocket-cjs.js dist/js/",
         "pi:2": "copyfiles -f node_modules/vue/dist/vue.min.js dist/js/",
         "pi:3": "copyfiles -f node_modules/vue-material/dist/vue-material.min.js dist/js/",
         "pi:4": "copyfiles -f node_modules/vue-material/dist/vue-material.min.css dist/css/",
-        "pi:5": "copyfiles -f node_modules/vue-material/dist/theme/*.css dist/css/"
+        "pi:5": "copyfiles -f node_modules/vue-material/dist/theme/*.css dist/css/",
+        "pi:6": "copyfiles -f node_modules/jsonata/jsonata.min.js dist/js/"
     },
     "dependencies": {
+        "jsonata": "^1.8.3",
         "reconnecting-websocket": "^4.4.0",
         "vue": "2.6.12",
         "vue-material": "1.0.0-beta-15",

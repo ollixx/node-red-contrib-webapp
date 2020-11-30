@@ -39,10 +39,10 @@ Vue.component('GuiApp', {
           case "reveal":
           case "flexible":
           case "overlap":
-            console.log("mode", this.model.mode)
+            // console.log("mode", this.model.mode)
             return this.model.mode;
           default:
-            console.log("mode", this.model.mode)
+            // console.log("mode", this.model.mode)
             return "";
         }
       }

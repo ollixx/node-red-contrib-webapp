@@ -2,7 +2,7 @@ Vue.component('GuiAvatar', {
   mixins: [GuiMixin],
   mounted: function() {
     if (this.model.avatarIcon) this.addClass("md-avatar-icon");
-    console.log("avatar icon", this.model.avatarIcon);
+    // console.log("avatar icon", this.model.avatarIcon);
   },
   template:
     `
@@ -12,8 +12,9 @@ Vue.component('GuiAvatar', {
   :key="child.id"
   :is="child.type"
   :model="child"
+  :class="classes"
   ></component>
-  <span v-if="model.children.length == 0">{{model.payload}}</span>
+  {{model.children.length == 0 ? payload : ""}}
 </md-avatar>
 `
 });
