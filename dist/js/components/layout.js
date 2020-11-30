@@ -1,4 +1,4 @@
-Vue.component('GuiLayout', {
+Vue.component('GuiRow', {
   mixins: [GuiMixin],
   methods: {
     slot: function(name) {
@@ -13,10 +13,18 @@ Vue.component('GuiLayout', {
   },
   template:
 `
-<div class="md-layout" :id="model.nodeid">
-  <div :class="column.class" v-for="column in model.columns">
-    <component :key="child.id" :is="child.type" :model="child" v-for="child in slot(column.name)"></component>
-  </div>
+<div :id="model.nodeid" class="md-layout" :class="classes">
+  <component :is="child.type" :key="child.id" :model="child" v-for="child in model.children"></component>
+</div>
+`
+});
+
+Vue.component('GuiColumn', {
+  mixins: [GuiMixin],
+  template:
+`
+<div :id="model.nodeid" class="md-layout-item" :class="classes">
+  <component :key="child.id" :is="child.type" :model="child" v-for="child in model.children"></component>
 </div>
 `
 });
