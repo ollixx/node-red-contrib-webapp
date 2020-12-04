@@ -1,5 +1,14 @@
 Vue.component('GuiRoot', {
   mixins: [GuiMixin],
+  watch: {
+    model: {
+        immediate: true,
+        deep: true,
+        handler(model) {
+            document.title = model.name;
+        }
+    },
+  },
   template:
     `
     <div id="root">
@@ -8,6 +17,7 @@ Vue.component('GuiRoot', {
         :key="child.id"
         :is="child.type"
         :model="child"
+        :parentContext="{}"
       ></component>
     </div>
 `

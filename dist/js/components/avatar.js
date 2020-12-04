@@ -1,5 +1,10 @@
 Vue.component('GuiAvatar', {
   mixins: [GuiMixin],
+  computed: {
+    payload: function() {
+      return this.resolve("payload", this);
+    }
+  },
   mounted: function() {
     if (this.model.avatarIcon) this.addClass("md-avatar-icon");
     // console.log("avatar icon", this.model.avatarIcon);
@@ -13,6 +18,7 @@ Vue.component('GuiAvatar', {
   :is="child.type"
   :model="child"
   :class="classes"
+  :parentContext="parentContext"
   ></component>
   {{model.children.length == 0 ? payload : ""}}
 </md-avatar>

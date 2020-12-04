@@ -1,7 +1,6 @@
-
 // define a mixin object
 var GuiMixin = {
-  props: ['model', 'context', 'parentcontext', "extraClasses"],
+  props: ['model', 'context', 'parentContext', "extraClasses"],
   data: function () {
     return {
       clsStore: [],
@@ -54,27 +53,14 @@ var GuiMixin = {
       if (this.model.size) {
         clss.push("md-size-" + this.model.size);
       }
+      if (this.model.hide) {
+        clss.push("md-hide");
+      }
       if (this.model.gutter) {
         clss.push("md-gutter");
       }
       // console.log("classes", clss.join(" "));
       return clss.join(" ");
-    },
-    payload: function () {
-      if (this.model.$payload) {
-        switch (this.model.$payload) {
-          case "pay":
-            // console.log("pay", this.model.payload, this.context)
-            return jsonata(this.model.payload).evaluate(this.context);
-          case "par":
-            // console.log("par", this.model.payload, this.parentcontext)
-            return jsonata(this.model.payload).evaluate(this.parentcontext);
-          case "mod":
-            return jsonata(this.model.payload).evaluate(this.model);
-        }
-      } else {
-        return this.model.payload;
-      }
     },
   },
   methods: {
@@ -86,6 +72,42 @@ var GuiMixin = {
     },
     getModel: function () {
       return Vue.model;
+    },
+    resolve: function(typedPropName, component) {
+        let model = component.model;
+        if (model["$" + typedPropName]) {
+          switch (model["$" + typedPropName]) {
+            case "pay":
+              return jsonata(model[typedPropName]).evaluate(component.context);
+            case "par":
+              let val = jsonata(model[typedPropName]).evaluate(component.parentContext);
+              // console.log("par", this.model.payload, this.parentContext, val)
+              return val;
+            case "mod":
+              return jsonata(model[typedPropName]).evaluate(model);
+          }
+        } else {
+          return model[typedPropName];
+        }
+    },
+    resolveY: function(typedPropName, component) {
+      return function () {
+        let model = component.model;
+        if (model["$" + typedPropName]) {
+          switch (model["$" + typedPropName]) {
+            case "pay":
+              return jsonata(model[typedPropName]).evaluate(component.context);
+            case "par":
+              let val = jsonata(model[typedPropName]).evaluate(component.parentContext);
+              // console.log("par", this.model.payload, this.parentContext, val)
+              return val;
+            case "mod":
+              return jsonata(model[typedPropName]).evaluate(model);
+          }
+        } else {
+          return model[typedPropName];
+        }
+      }
     }
   }
 }

@@ -1,5 +1,23 @@
 Vue.component('GuiInput', {
   mixins: [GuiMixin],
+  mounted() {
+    console.log("parentContext", this.model.type, this.model.nodeid, this.parentContext);
+  },
+  computed: {
+    inputLabel: function() {
+      return this.resolve("inputLabel", this);
+    },
+    value: function() {
+      return this.resolve("value", this);
+    },
+    binding: function() {
+      return {
+        mod: this.model,
+        par: this.parentContext,
+        pay: this.payload
+      }
+    }
+  },
   template:
 `
 <md-field 
@@ -12,7 +30,7 @@ Vue.component('GuiInput', {
   <label>{{model.inputLabel}}</label>
   <md-input v-if="model.inputType != 'textarea'"    
     :id="model.id" 
-    v-model="model.value"
+    v-model="binding[model.$value][model.value]"
     :placeholder="model.placeholder" 
     :type="model.inputType"  
     :disabled="model.disabled"
@@ -20,7 +38,7 @@ Vue.component('GuiInput', {
     :maxLength="model.maxLength"
     ></md-input>
   <md-textarea v-if="model.inputType == 'textarea'" 
-    :id="model.id" 
+    :id="model.id"
     v-model="model.value" 
     :md-autogrow="model.autogrow" 
     :disabled="model.disabled"

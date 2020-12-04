@@ -61,6 +61,7 @@ Vue.component('GuiApp', {
             v-bind:is="child.type"
             :key="child.id"
             :model="child"
+            :parentContext="parentContext"
           ></component>
         </md-app-toolbar>
         <md-app-drawer :md-permanent="model.expand != 'expand' ? model.permanent : null" :md-active.sync="menuVisible">
@@ -69,6 +70,7 @@ Vue.component('GuiApp', {
             v-bind:is="child.type"
             :key="child.id"
             :model="child"
+            :parentContext="parentContext"
           ></component>
         </md-app-drawer>
         <md-app-content>
@@ -77,6 +79,7 @@ Vue.component('GuiApp', {
             v-bind:is="child.type"
             :key="child.id"
             :model="child"
+            :parentContext="parentContext"
           ></component>
           <div v-if="contentChildren.length == 0">nix</div>
         </md-app-content>

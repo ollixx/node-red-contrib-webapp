@@ -23,7 +23,7 @@ module.exports = function (RED) {
         //console.log("check upgrade connection ", pathname, Object.keys(webappWsServers));
         let wss = webappWsServers[pathname];
         if (wss) {
-            console.log("connecting for webapp path", pathname);
+            // console.log("connecting for webapp path", pathname);
             wss.handleUpgrade(request, socket, head, function done(ws) {
                 wss.emit('connection', ws, request);
             });
@@ -39,16 +39,22 @@ module.exports = function (RED) {
         //console.log("wss got message", wsMessage)
         switch (wsMessage.command) {
             case "webapp.ready":
-                console.log("got webapp.ready", wsMessage.msg);
+                // console.log("got webapp.ready", wsMessage.msg);
                 // send all nodes for page
                 let msg = RED.util.cloneMessage(node.pageModel);
                 msg.command = "Init";
                 ws.send(JSON.stringify(msg));
+
+                // send notification to nr
+                node.send({
+                    command: wsMessage.command,
+                    _socketid: ws.uid
+                });
                 break;
             default:
                 if (wsMessage.nodeid) {
                     // the message is for a defined node
-                    console.log("clients", node.wss.clients);
+                    // console.log("clients", node.wss.clients);
                     let targetHandler = node.listenerList[wsMessage.nodeid];
                     if (targetHandler) {
                         wsMessage._socketid = ws.uid
@@ -213,7 +219,7 @@ module.exports = function (RED) {
             });
 
             node.on('close', () => {
-                console.log("closing webapp");
+                // console.log("closing webapp");
                 try {
                     // DONT REMOVE LISTENERS! There is just one for all webapp nodes!
                     // RED.server.removeListener("upgrade", httpListener);

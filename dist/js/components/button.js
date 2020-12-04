@@ -3,9 +3,11 @@ Vue.component('GuiButton', {
   methods: {
     onClick() {
       console.log("clicking", this.model.nodeid);
+      let action = this.resolve("action", this);
       this.sendMessage({
         command: "Click",
         nodeid: this.model.nodeid,
+        payload: action
       });
     },
   },
@@ -17,7 +19,8 @@ Vue.component('GuiButton', {
     :key="child.id"
     :is="child.type"
     :model="child"
-  ></component>
+    :parentContext="parentContext"
+    ></component>
   {{ model.payload }}
 </md-button>
 `

@@ -25,7 +25,7 @@ let NodeRedService = function (url) {
         }
       });
       this.listeners.push(handler);
-      console.log("new listener. now got ", this.listeners.length);
+      // console.log("new listener. now got ", this.listeners.length);
     },
     send: function (msg) {
       if (typeof msg === "object") {

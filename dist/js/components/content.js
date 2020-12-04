@@ -3,12 +3,7 @@ Vue.component('GuiContent', {
   props: ["overload"],
   computed: {
     payload: function() {
-      console.log("content", this.overload, this.model.payload)
-      if (this.overload) {
-        return this.overload
-      } else {
-        return this.model.payload;
-      }
+      return this.resolve("payload", this);
     }
   },
   template:
