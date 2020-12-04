@@ -104,14 +104,12 @@ module.exports = function (RED) {
                 if (node.initialChildCue == false) {
                     node.initialChildCue = {};
                     RED.nodes.eachNode((child) => {
-                        if (child.wires) {
-                            child.wires.forEach((wires) => {
-                                wires.forEach((nodeid) => {
-                                    if (nodeid == node.id && child.type == "guinode") {
-                                        node.initialChildCue[child.id] = { node: child };
-                                    }
-                                })
-                            });
+                        if (child.wires && child.wires.length > 0) {
+                            child.wires[0].forEach((nodeid) => {
+                                if (nodeid == node.id && child.type == "guinode") {
+                                    node.initialChildCue[child.id] = { node: child };
+                                }
+                            })
                         }
                     });
                 }
@@ -243,7 +241,7 @@ module.exports = function (RED) {
 
             node.status({});
 
-            let initialize = function() {
+            let initialize = function () {
                 // are we ready to send? All children should have sent an Init Message
                 readWiredChildren();
 
@@ -266,7 +264,7 @@ module.exports = function (RED) {
                     // send Init Message to parent
                     node.send(node.createInitMsg())
                     node.initialized = true;
-    
+
                     // TODO: Here we may need to wait until the Init Process is completely done!!!
 
                     // send any cued messages to the client(s)
