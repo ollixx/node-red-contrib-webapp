@@ -24,6 +24,7 @@
   <script src="js/components/card.js"></script>
   <script src="js/components/content.js"></script>
   <script src="js/components/debug.js"></script>
+  <script src="js/components/dialog.js"></script>
   <script src="js/components/html.js"></script>
   <script src="js/components/icon.js"></script>
   <script src="js/components/input.js"></script>
@@ -68,7 +69,7 @@
       delete msg._msgid;
 
       // find all elements with a nodeid (can be multiple) and
-      // store thim in the result array.
+      // store them in the result array.
       let retrieveById = function (result, current, nodeid) {
         if (current.nodeid === nodeid) {
           console.log("found", current);

@@ -1,22 +1,9 @@
 Vue.component('GuiList', {
   mixins: [GuiMixin],
   computed: {
-    list: function () {
-      if (this.model.payload) {
-        if (Array.isArray(this.model.payload)) {
-          // console.log("list is array");
-          return this.model.payload;
-        } else if (typeof (this.model.payload) == "object") {
-          // console.log("list is object");
-          return this.model.payload;
-        } else {
-          // console.log("list is single");
-          return [this.model.payload];
-        }
-      } else {
-        return [];
-      }
-    },
+    list: function() {
+      return this.resolve("payload", this);
+    }
   },
   methods: {
     slotClass: function (child) {

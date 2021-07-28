@@ -9,12 +9,13 @@ Vue.component('GuiCard', {
         }
       }
       return children;
-    }
+    },
   },
   template:
 `
-<md-card :id="model.nodeid" :class="classes" :style="model.css">
-  <md-card-header>
+<div @mouseover="hover = true" @mouseout="hover = false">
+<md-card :id="model.nodeid" :class="classes" :style="model.css" >
+  <md-card-header v-if="slot('header').length > 0">
     <component 
       :key="child.id" 
       :is="child.type" 
@@ -23,7 +24,7 @@ Vue.component('GuiCard', {
       :parentContext="parentContext"
     ></component>
   </md-card-header>
-  <md-card-content>
+  <md-card-content v-if="slot('content').length > 0">
     <component 
       :key="child.id" 
       :is="child.type" 
@@ -32,7 +33,7 @@ Vue.component('GuiCard', {
       :parentContext="parentContext"
     ></component>
   </md-card-content>
-  <md-card-actions>
+  <md-card-actions v-if="slot('actions').length > 0">
     <component 
       :key="child.id" 
       :is="child.type" 
@@ -42,5 +43,6 @@ Vue.component('GuiCard', {
     ></component>
   </md-card-actions>
 </md-card>
+</div>
 `
 });

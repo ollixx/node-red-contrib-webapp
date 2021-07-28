@@ -38,7 +38,7 @@ module.exports = function (RED) {
             node.guitype = config.guitype;
             node.implicitSetCommand = config.implicitSetCommand;
 
-            // select the Init Messages from my children. I wait with my Init Message until all are collected
+            // Collect the Init Messages from my children. I wait with my Init Message until all are collected
             // key: nodeid, value: {node, InitCommand}
             node.initialChildCue = false;
             // cue incoming message at startup until I am initialized
@@ -46,7 +46,7 @@ module.exports = function (RED) {
             // When I have sent my Init Message, I am done and initialized=true 
             node.initialized = false;
 
-            // this nodes gui model
+            // this node's gui model
             node.model = {
                 type: node.guitype,
                 nodeid: node.id,
@@ -191,10 +191,10 @@ module.exports = function (RED) {
 
                         let childData = node.initialChildCue[msg.nodeid];
                         if (!childData) {
-                            throw "Go an Init Message from an unknown child. That should never happen"
+                            throw "Got an Init Message from an unknown child. That should never happen"
                         }
                         if (childData.initMessage) {
-                            throw "Go a second Init Message from a child. That should never happen"
+                            throw "Got a second Init Message from a child. That should never happen"
                         }
 
                         childData.initMessage = msg;
@@ -221,7 +221,7 @@ module.exports = function (RED) {
 
                     // here we have a non-init command
                     if (!node.initialized) {
-                        // we are not initialized, so we cue any messages, that come too early
+                        // we are not initialized, so we cue any message, that comes too early
                         node.initialMessageCue.push(msg);
                         return // stop processing and wait for initialization
                     }
