@@ -73,41 +73,42 @@ var GuiMixin = {
     getModel: function () {
       return Vue.model;
     },
-    resolve: function(typedPropName, component) {
-        let model = component.model;
-        if (model["$" + typedPropName]) {
-          switch (model["$" + typedPropName]) {
-            case "pay":
+    resolve: function (typedPropName, component) {
+      let model = component.model;
+      if (model["$" + typedPropName]) {
+        switch (model["$" + typedPropName]) {
+          case "pay":
+            try {
               return jsonata(model[typedPropName]).evaluate(component.context);
-            case "par":
-              let val = jsonata(model[typedPropName]).evaluate(component.parentContext);
-              // console.log("par", this.model.payload, this.parentContext, val)
-              return val;
-            case "mod":
+            } catch (err) {
+              console.log("jsonata error", err)
+              return null
+            }
+          case "par":
+            try {
+              return jsonata(model[typedPropName]).evaluate(component.parentContext);
+            } catch (err) {
+              console.log("jsonata error", err)
+              return null
+            }
+          case "mod":
+            try {
               return jsonata(model[typedPropName]).evaluate(model);
-          }
-        } else {
-          return model[typedPropName];
+            } catch (err) {
+              console.log("jsonata error", err)
+              return null
+            }
         }
-    },
-    resolveY: function(typedPropName, component) {
-      return function () {
-        let model = component.model;
-        if (model["$" + typedPropName]) {
-          switch (model["$" + typedPropName]) {
-            case "pay":
-              return jsonata(model[typedPropName]).evaluate(component.context);
-            case "par":
-              let val = jsonata(model[typedPropName]).evaluate(component.parentContext);
-              // console.log("par", this.model.payload, this.parentContext, val)
-              return val;
-            case "mod":
-              return jsonata(model[typedPropName]).evaluate(model);
-          }
-        } else {
-          return model[typedPropName];
-        }
+      } else {
+        return model[typedPropName];
       }
+    },
+    errorCaptured(err, vm, info) {
+      console.log(`cat EC: ${err.toString()}\ninfo: ${info}`);
+      return false;
+    },
+    renderError(h, err) {
+      return h('pre', { style: { color: 'red' } }, err.stack)
     }
   }
 }
