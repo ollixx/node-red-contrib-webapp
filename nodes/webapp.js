@@ -4,6 +4,7 @@ module.exports = function (RED) {
     var ws = require("ws")
     var serveStatic = require('serve-static');
     var url = require('url');
+    const commands = require("../lib/commands")(RED)
 
     // create one central handler for all webapp ws servers
     var webappWsServers = {}
@@ -34,36 +35,40 @@ module.exports = function (RED) {
     RED.server.on('upgrade', httpListener);
 
     function handleIncomingMessage(node, ws, message) {
-        // handle incoming ws message from app.
-        let wsMessage = JSON.parse(message);
-        //console.log("wss got message", wsMessage)
-        switch (wsMessage.command) {
-            case "webapp.ready":
-                // console.log("got webapp.ready", wsMessage.msg);
-                // send all nodes for page
-                let msg = RED.util.cloneMessage(node.pageModel);
-                msg.command = "Init";
-                ws.send(JSON.stringify(msg));
+        try {
+            // handle incoming ws message from app.
+            let wsMessage = JSON.parse(message);
+            //console.log("wss got message", wsMessage)
+            switch (wsMessage.command) {
+                case "webapp.ready":
+                    // console.log("got webapp.ready", wsMessage.msg);
+                    // send all nodes for page
+                    let msg = RED.util.cloneMessage(node.model);
+                    msg.command = "Init";
+                    ws.send(JSON.stringify(msg));
 
-                // send notification to nr
-                node.send({
-                    command: wsMessage.command,
-                    _socketid: ws.uid
-                });
-                break;
-            default:
-                if (wsMessage.nodeid) {
-                    // the message is for a defined node
-                    // console.log("clients", node.wss.clients);
-                    let targetHandler = node.listenerList[wsMessage.nodeid];
-                    if (targetHandler) {
-                        wsMessage._socketid = ws.uid
-                        // console.log("message ws connection", ws);
-                        targetHandler(wsMessage);
-                    } else {
-                        console.log("cannot pass msg to target node. Could not find a handler for nodeid", nodeid);
+                    // send notification to nr
+                    node.send({
+                        command: wsMessage.command,
+                        _socketid: ws.uid
+                    });
+                    break;
+                default:
+                    if (wsMessage.nodeid) {
+                        // the message is for a defined node
+                        // console.log("clients", node.wss.clients);
+                        let targetHandler = node.listenerList[wsMessage.nodeid];
+                        if (targetHandler) {
+                            wsMessage._socketid = ws.uid
+                            // console.log("message ws connection", ws);
+                            targetHandler(wsMessage);
+                        } else {
+                            console.log("cannot pass msg to target node. Could not find a handler for nodeid", nodeid);
+                        }
                     }
-                }
+            }
+        } catch (err) {
+            console.error("error in handleIncomingMessage()", err)
         }
     }
 
@@ -101,55 +106,67 @@ module.exports = function (RED) {
             // console.log("create webapp node");
             var node = this;
 
-            var status = function(color, msg) {
+            var status = function (color, msg) {
                 node.status({
-                     fill: color,
-                     shape: "dot",
-                     text:  msg
-                 });
-             };
-             var statusGreen = function(msg) {
+                    fill: color,
+                    shape: "dot",
+                    text: msg
+                });
+            };
+            var statusGreen = function (msg) {
                 status("green", msg);
-             };
-             var statusYellow = function(msg) {
+            };
+            var statusYellow = function (msg) {
                 status("yellow", msg);
-             };
-             var statusRed = function(msg) {
+            };
+            var statusRed = function (msg) {
                 status("red", msg);
-             };
-        
-             function sendWsMessage(msg) {
-                if (msg.hasOwnProperty("_socketid")) {
-                    // specific websocket, send only to it
-                    let wsClient = null;
-                    node.wss.clients.forEach((k, client) => {
-                        if (client.uid == msg._socketid) {
-                            wsClient = client;
-                        }
-                    });
-                    if (!wsClient) {
-                        statusRed("unknown socketid " + msg._socketid);
-                    } else {
-                        if (wsClient.readyState === ws.OPEN) {
-                            wsClient.send(JSON.stringify(msg));
-                            statusGreen("send " + msg.command + " command");
+            };
+
+            function sendWsMessage(msg) {
+                try {
+                    if (msg.hasOwnProperty("_socketid")) {
+                        // specific websocket, send only to it
+                        let wsClient = null;
+                        node.wss.clients.forEach((k, client) => {
+                            if (client.uid == msg._socketid) {
+                                wsClient = client;
+                            }
+                        });
+                        if (!wsClient) {
+                            statusRed("unknown socketid " + msg._socketid);
                         } else {
-                            statusYellow("could not find a client for socketid " + msg._socketid);
-        
+                            if (wsClient.readyState === ws.OPEN) {
+                                wsClient.send(JSON.stringify(msg));
+                                statusGreen("send " + msg.command + " command");
+                            } else {
+                                statusYellow("could not find a client for socketid " + msg._socketid);
+                            }
+                        }
+                    } else {
+                        // no socketid, broadcast to all
+                        let sent = false
+                        node.wss.clients.forEach(function each(wsClient) {
+                            if (wsClient.readyState === ws.OPEN) {
+                                wsClient.send(JSON.stringify(msg));
+                                sent = true
+                            } else {
+                                console.error("could send to client", wsClient.id)
+                            }
+                        });
+                        if (sent) {
+                            console.log("broadcast done", node.id, msg.command)
+                            statusGreen("broadcast " + msg.command + " command");
+                        } else {
+                            console.log("broadcast skipped", node.id)
                         }
                     }
-                } else {
-                    // no socketid, broadcast to all
-                    node.wss.clients.forEach(function each(wsClient) {
-                        // if (wsClient.readyState === ws.OPEN) {
-                        wsClient.send(JSON.stringify(msg));
-                        // }
-                    });
-                    statusGreen("broadcast " + msg.command + " command");
+                } catch (err) {
+                    console.error("err in sendMessage()", err)
                 }
             }
             node.sendWsMessage = sendWsMessage; // API for child nodes
-            
+
             /* 
             expecting config:
             {
@@ -158,13 +175,15 @@ module.exports = function (RED) {
             }
             */
             config.wsPath = "/" + config.path + "/__ws";
-            node.pageModel = {
+            node.model = {
                 nodeid: node.id,
                 type: "GuiRoot",
                 name: config.name,
                 children: [],
                 debug: true
             };
+            node.initialized = false
+            node.initialMessageCue = []
 
             node.wss = createWebsocketServer(node)
             webappWsServers[config.wsPath] = node.wss // add to the list of connected servers
@@ -172,50 +191,16 @@ module.exports = function (RED) {
             node.http = createHttpServerHooks(config)
 
             node.on("input", (msg) => {
-                // handle incoming commands
-                if (msg.hasOwnProperty("command")) {
-                    // only commands are send to webapp
-                    if (!msg.hasOwnProperty("nodeid")) {
-                        // no nodeid given, so this node is the target for this command
-                        msg.nodeid = node.id;
-                    }
 
-                    let send = true;
-
-                    if (msg.command == "Init") {
-                        // save Init message from gui nodes in the page model
-                        if (!msg.nodeid) {
-                            throw "Init command must come with a nodeid. Cannot compute."
-                        }
-                        // transform into pagemodel object
-                        let model = RED.util.cloneMessage(msg);
-                        delete model._msgid;
-                        delete model.command;
-                        // store in pagemodel
-                        node.pageModel.children = node.pageModel.children.filter((child) => {
-                            return child.nodeid != model.nodeid
-                        })
-                        node.pageModel.children.push(model);
-                        node.pageModel.children.sort((a, b) => {
-                            return a._pos - b._pos;
-                        });
-
-                        // console.log("children of webapp", node.pageModel.children);
-
-                        if (node.initialized) {
-                            // Init already sent. Send only this child to clients as "Set" command
-                            msg.command = "Set";
-                        } else {
-                            // Init was NOT send here.
-                            send = false; // dont send the message yet, as we wait for the first Init
-                        }
-                    }
-
-                    if (send) sendWsMessage(msg)
-
+                if (node.initialized) {
+                    //console.log("webapp: input handle", node.id, msg.type)
+                    commands.handle(node, msg, node)
                 } else {
-                    statusYellow("received message without a command");
+                    // I am not ready, so save the messages for later
+                    node.initialMessageCue.push(msg);
+                    //console.log("webapp: input collect", node.id, msg.type)
                 }
+
             });
 
             node.on('close', () => {
@@ -240,21 +225,28 @@ module.exports = function (RED) {
 
             node.listenerList = {};
             node.registerListener = function (nodeid, handlerFunc) {
-                if (typeof(nodeid) !== "string") throw "cannot register listener to webapp. first parameter nodeid must be string" 
-                if (typeof(handlerFunc) !== "function") throw "cannot register listener to webapp. second parameter handler must be function" 
+                if (typeof (nodeid) !== "string") throw "cannot register listener to webapp. first parameter nodeid must be string"
+                if (typeof (handlerFunc) !== "function") throw "cannot register listener to webapp. second parameter handler must be function"
                 node.listenerList[nodeid] = handlerFunc;
             };
 
-            setTimeout(function () {
-                sendWsMessage(node.pageModel)
-                node.initialized = true;
-                node.send(node.pageModel)
-                statusGreen("sent init msg");
-            }, 120)
+            node.register = function (registreeNode) {
+                node.registerListener(registreeNode.id, registreeNode.receiveWebappMessage)
+                registreeNode.register(node)
+            }
 
+            sendWsMessage(node.model)
+            // handle message cue
+            while (node.initialMessageCue.length > 0) {
+                let msg = node.initialMessageCue.pop();
+                commands.handle(node, msg, node);
+            };
+            node.initialized = true;
+            node.send(node.model)
+            statusGreen("initialized");
 
         } catch (err) {
-            console.err("error in create webapp node", err)
+            console.error("error in create webapp node", err)
         }
     }
     RED.nodes.registerType("webapp", WebApplicationNode);
@@ -271,7 +263,7 @@ module.exports = function (RED) {
     // As __webapp/types.js is loaded via <script> tag, it won't get
     // the auth header attached. So do not use RED.auth.needsPermission here.
     // see: https://github.com/node-red/node-red/blob/c7587960fbfe77a1609e7c3c29705bc1d5918dc3/packages/node_modules/%40node-red/nodes/core/core/58-debug.js#L174
-    RED.httpAdmin.get("/__webapp/*",function(req,res) {
+    RED.httpAdmin.get("/__webapp/*", function (req, res) {
         var options = {
             root: __dirname + "/../lib",
             dotfiles: 'deny'
