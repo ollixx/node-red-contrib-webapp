@@ -20,7 +20,7 @@ Vue.component('GuiAvatar', {
   :class="classes"
   :parentContext="parentContext"
   ></component>
-  {{model.children.length == 0 ? payload : ""}}
+  {{model.children && model.children.length > 0 ? "": payload}}
 </md-avatar>
 `
 });

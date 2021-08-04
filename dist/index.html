@@ -49,7 +49,7 @@
     // let url = "ws://localhost:1880/webapp2/__ws"
     let wsUrl = ((window.location.protocol === "https:") ? "wss://" : "ws://") + window.location.host + window.location.pathname + "__ws"
     let nrService = NodeRedService(wsUrl);
-    
+
     Vue.use({
       install: (app, options) => {
         app.send = nrService.send;
@@ -59,6 +59,8 @@
 
     let msgHistory = {};
     nrService.register((msg) => {
+      delete msg._socketid;
+
       // check history
       if (Object.keys(msgHistory).includes(msg._msgid)) {
         console.error("message " + msg._msgid + " already processed. skipping", msg);
@@ -127,6 +129,7 @@
       if (!msg.children) {
         msg.children = [];
       }
+      // console.log("incomming command", command, "target", msg.nodeid, msg)
 
       // target either the root or elements found by nodeid
       let targets = [model]; // default
@@ -139,43 +142,63 @@
       targets.forEach((modelElement) => {
         switch (command) {
           case "Init":
-            Object.keys(msg).forEach((key) => {
-              if (key !== "children") {
-                model[key] = msg[key];
-              } else {
-                modelElement.children.splice(0, modelElement.children.length); // clear array
-                msg.children.forEach((child) => {
-                  modelElement.children.push(child);
-                });
-                modelElement.children.sort((a, b) => {
-                  return a._pos - b._pos;
-                });
-              }
-            });
+            try {
+              Object.keys(msg).forEach((key) => {
+                if (key !== "children") {
+                  modelElement[key] = msg[key];
+                } else {
+                  modelElement.children.splice(0, modelElement.children.length); // clear array
+                  msg.children.forEach((child) => {
+                    modelElement.children.push(child);
+                  });
+                  modelElement.children.sort((a, b) => {
+                    return a._pos - b._pos;
+                  });
+                }
+              });
+            } catch (err) {
+              console.error("error in Set command", err)
+            }
             break;
           case "DeleteAll":
-            modelElement.children.splice(0, modelElement.children.length); // clear array
+            try {
+              modelElement.children.splice(0, modelElement.children.length); // clear array
+            } catch (err) {
+              console.error("error in Set command", err)
+            }
             break;
           case "Change":
-            const props = ["payload", "slot", "primary", "accent", "style"]
-            props.forEach((propName) => {
-              if (msg.hasOwnProperty(propName)) modelElement[propName] = msg[propName];
-            });
+            try {
+              const props = ["payload", "slot", "primary", "accent", "style"]
+              props.forEach((propName) => {
+                if (msg.hasOwnProperty(propName)) modelElement[propName] = msg[propName];
+              });
+            } catch (err) {
+              console.error("error in Set command", err)
+            }
             break;
           case "Add":
-            if (msg.nodeid === modelElement.nodeid) {
-              delete msg.nodeid; // remove and generate new in cleanuo
+            try {
+              if (msg.nodeid === modelElement.nodeid) {
+                delete msg.nodeid; // remove and generate new in cleanuo
+              }
+              modelElement.children.push(msg);
+              modelElement.children.sort((a, b) => {
+                return a._pos - b._pos;
+              });
+            } catch (err) {
+              console.error("error in Set command", err)
             }
-            modelElement.children.push(msg);
-            modelElement.children.sort((a, b) => {
-                  return a._pos - b._pos;
-                });
             break;
           case "Set":
-            for (let key in msg) {
-              modelElement[key] = msg[key];
+            try {
+              for (let key in msg) {
+                modelElement[key] = msg[key];
+              }
+              delete modelElement._msgid;
+            } catch (err) {
+              console.error("error in Set command", err)
             }
-            delete modelElement._msgid;
             break;
           default:
         }

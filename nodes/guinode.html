@@ -2,6 +2,47 @@
 
 <script type="text/javascript">
 
+	// find all RETURN component nodes, that are connected to me.
+	// traverses all connected nodes, including link nodes
+	const findNodes = function(nodeid, foundNodes, type = "webapp") {
+		function getNodeById(nodeid) {
+			return RED.nodes.originalFlow().find((node) => {
+				return node.id == nodeid;
+			});
+		}
+		function getNodeConfigById(nodeid) {
+			let found = null;
+			RED.nodes.eachNode((n) => {
+				if (n.id == nodeid) {
+					found = n;
+				}
+			});
+			return found;
+		}
+		// console.log(".", RED.nodes, RED.nodes.originalFlow())
+		let node = getNodeById(nodeid)
+		let config = getNodeConfigById(nodeid)
+		if (node.wires && node.wires.length > 0) {
+			node.wires.forEach((outPort) => {
+				outPort.forEach((childid) => {
+					let child = getNodeById(childid);
+					if (child.type == type) {
+						foundNodes[childid] = child;
+					} else if (child.type == "link out") {
+						// look for more nodes at the other side of the link
+						child.links.forEach((linkid) => {
+							let link = getNodeById(linkid);
+							findNodes(linkid, foundNodes)
+						})
+					} else {
+						// look for connected nodes
+						findNodes(childid, foundNodes)
+					}
+				})
+			});
+		}
+	}
+
     let setupWidgets = function (type, configProps, container) {
         // setup form fields
         type.props.forEach((prop) => {
@@ -85,7 +126,6 @@
         color: '#C8BFD8',
         defaults: {
             name: { value: "" },
-            appname: { value: "" },
             guitype: { value: "" },
             parentslot: { value: "" },
             implicitSetCommand: { value: true },
@@ -110,13 +150,16 @@
                 let config = this;
                 let props = config.props || {};
 
-                // choose webapp instance (node)
-                RED.nodes.eachNode(function (node) {
-                    if (node.type == "webapp") {
-                        $("#node-input-appname").append($("<option></option>").val(node.id).text(node.name));
-                    }
-                });
-                $("#node-input-appname").val(this.appname);
+                // show name of connected webapp
+                $("#node-appname").text(this._("guinode.not connected"));
+                let myNode = null
+                let found = {}
+                findNodes(config.id, found, "webapp")
+                if (Object.keys(found).length > 0) {
+                    let webappNode = Object.entries(found)[0][1]
+                    $("#node-appname-message").text(this._("guinode.connected"));
+                    $("#node-appname-message").append("  <b>" + webappNode.name + "</b>");
+                }
 
                 let container = $("#container");
 
@@ -153,7 +196,6 @@
 
         },
         oneditsave: function () {
-            this.appname = $("#node-input-appname").val();
             this.guitype = $("#node-input-guitype").val();
             let config = this;
             if (!config.props) config.props = {};
@@ -215,8 +257,8 @@
             <input type="text" id="node-input-name" placeholder="Name">
         </div>
         <div class="form-row">
-            <label for="node-input-appname"><i class="fa fa-tag"></i> Webapp</label>
-            <select id="node-input-appname" style="width: 70%;"></select>
+            <label for="node-appname"><i class="fa fa-tag"></i> Webapp</label>
+            <span id="node-appname-message"></span>
         </div>
         <div class="form-row">
             <label for="node-input-parentslot"><i class="inject.svg"></i> Parent Slot</label>
