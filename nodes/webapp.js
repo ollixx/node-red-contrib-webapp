@@ -4,6 +4,7 @@ module.exports = function (RED) {
     var ws = require("ws")
     var serveStatic = require('serve-static');
     var url = require('url');
+    var uuid = require("uuid").v4;
     const commands = require("../lib/commands")(RED)
 
     // create one central handler for all webapp ws servers
@@ -38,19 +39,23 @@ module.exports = function (RED) {
         try {
             // handle incoming ws message from app.
             let wsMessage = JSON.parse(message);
-            //console.log("wss got message", wsMessage)
+            // console.log("wss got message", wsMessage)
             switch (wsMessage.command) {
                 case "webapp.ready":
                     // console.log("got webapp.ready", wsMessage.msg);
                     // send all nodes for page
-                    let msg = RED.util.cloneMessage(node.model);
-                    msg.command = "Init";
-                    ws.send(JSON.stringify(msg));
+                    if (node.initialized) {
+                        // only, if model is fully initialized
+                        let msg = RED.util.cloneMessage(node.model);
+                        msg.command = "Root";
+                        msg._msgid = uuid()
+                        ws.send(JSON.stringify(msg));
+                    }
 
                     // send notification to nr
                     node.send({
                         command: wsMessage.command,
-                        _socketid: ws.uid
+                        _socketid: ws.uid 
                     });
                     break;
                 default:
@@ -81,8 +86,8 @@ module.exports = function (RED) {
             conn.on('close', function () {
                 //console.log("closed ws");
             });
-            conn.on('error', (err) => console.log('error:', err));
-            conn.myid = new Date()
+            conn.on('error', (err) => console.error('error:', err));
+            conn.uid = uuid()
         });
 
         //console.log("new wss created");
@@ -125,6 +130,7 @@ module.exports = function (RED) {
 
             function sendWsMessage(msg) {
                 try {
+                    msg._msgid = msg._msgid || RED.util.generateId()
                     if (msg.hasOwnProperty("_socketid")) {
                         // specific websocket, send only to it
                         let wsClient = null;
@@ -145,21 +151,17 @@ module.exports = function (RED) {
                         }
                     } else {
                         // no socketid, broadcast to all
-                        let sent = false
+                        let sent = 0
                         node.wss.clients.forEach(function each(wsClient) {
                             if (wsClient.readyState === ws.OPEN) {
                                 wsClient.send(JSON.stringify(msg));
-                                sent = true
+                                sent++
                             } else {
-                                console.error("could send to client", wsClient.id)
+                                console.error("could not send to client", wsClient.id)
                             }
                         });
-                        if (sent) {
-                            console.log("broadcast done", node.id, msg.command)
-                            statusGreen("broadcast " + msg.command + " command");
-                        } else {
-                            console.log("broadcast skipped", node.id)
-                        }
+                        // console.log("broadcast done", node.id, msg.command)
+                        statusGreen("broadcast " + msg.command + " (" + sent + ")");
                     }
                 } catch (err) {
                     console.error("err in sendMessage()", err)
@@ -235,7 +237,9 @@ module.exports = function (RED) {
                 registreeNode.register(node)
             }
 
-            sendWsMessage(node.model)
+            let msg = RED.util.cloneMessage(node.model)
+            msg.command = "Root"
+            sendWsMessage(msg)
             // handle message cue
             while (node.initialMessageCue.length > 0) {
                 let msg = node.initialMessageCue.pop();
