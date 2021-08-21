@@ -53,15 +53,18 @@ var GuiMixin = {
       if (this.model.size) {
         clss.push("md-size-" + this.model.size);
       }
-      if (this.model.hide) {
+      if (this.model.hide === true) {
         clss.push("md-hide");
       }
       if (this.model.gutter) {
         clss.push("md-gutter");
       }
-      // console.log("classes", clss.join(" "));
+      // console.log("classes", this.model.nodeid, this.model.type, clss.join(" "));
       return clss.join(" ");
     },
+    id: function () {
+      return (this.model.type + "-" + (this.model.name || this.model.nodeid)).toLowerCase().replaceAll(" ", "-")
+    }
   },
   methods: {
     addClass: function (cls) {
@@ -71,31 +74,38 @@ var GuiMixin = {
       Vue.send(msg);
     },
     getModel: function () {
-      return Vue.model;
+      // return the complete state of the app
+      return this.$store.state
     },
     resolve: function (typedPropName, component) {
       let model = component.model;
       if (model["$" + typedPropName]) {
+        // Properties prefixed with "$" have to be expanded, as they are a jsonata expression.
+        // Those properties relate to either the component's PARent, PAYload or MODel,
+        //  i.e. the component's inner state. 
         switch (model["$" + typedPropName]) {
           case "pay":
             try {
+              // console.log("resolve", model.nodeid, "PAY", typedPropName, "context", component.context, "model", model)
               return jsonata(model[typedPropName]).evaluate(component.context);
             } catch (err) {
-              console.log("jsonata error", err)
+              console.error("jsonata error", err)
               return null
             }
           case "par":
             try {
+              // console.log("resolve", model.nodeid, "PAR", typedPropName, "parentContext", component.parentContext, "model", model)
               return jsonata(model[typedPropName]).evaluate(component.parentContext);
             } catch (err) {
-              console.log("jsonata error", err)
+              console.error("jsonata error", err)
               return null
             }
           case "mod":
             try {
+              // console.log("resolve", model.nodeid, "MOD", typedPropName, model)
               return jsonata(model[typedPropName]).evaluate(model);
             } catch (err) {
-              console.log("jsonata error", err)
+              console.error("jsonata error", err)
               return null
             }
         }
