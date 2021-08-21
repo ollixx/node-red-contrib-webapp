@@ -7,6 +7,6 @@ Vue.component('GuiIcon', {
   },
   template:
     `
-<md-icon :class="classes">{{ payload }}</md-icon>
+<md-icon :id="id" :class="classes">{{ payload }}</md-icon>
 `
 });

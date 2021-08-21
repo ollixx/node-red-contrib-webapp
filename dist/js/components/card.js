@@ -14,7 +14,7 @@ Vue.component('GuiCard', {
   template:
 `
 <div @mouseover="hover = true" @mouseout="hover = false">
-<md-card :id="model.nodeid" :class="classes" :style="model.css" >
+<md-card :id="id" :class="classes" :style="model.css" >
   <md-card-header v-if="slot('header').length > 0">
     <component 
       :key="child.id" 

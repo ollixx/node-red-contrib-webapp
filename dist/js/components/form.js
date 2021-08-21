@@ -6,11 +6,11 @@ Vue.component('GuiForm', {
     }
   },
   mounted() {
-    console.log("parentContext", this.model.type, this.model.nodeid, this.parentContext);
+    // console.log("parentContext", this.model.type, this.model.nodeid, this.parentContext);
   },
   template:
 `
-<form novalidate class="md-layout" @submit.prevent="validateUser">
+<form :id="id" novalidate :class="classes" class="md-layout" @submit.prevent="validateUser">
   <component
     v-for="child in model.children"
     :key="child.id"

@@ -50,7 +50,7 @@ Vue.component('GuiApp', {
   },
   template:
     `
-    <div class="page-container" :id="model.nodeid">
+    <div class="page-container" :id="id">
       <md-app :md-mode="mode" :md-waterfall="model.waterfall" :md-scrollbar="model.scrollbar" style="max-height: 800px;" >
         <md-app-toolbar class="md-primary">
           <md-button v-if="model.expand == 'expand'" class="md-icon-button" @click="menuVisible = !menuVisible">

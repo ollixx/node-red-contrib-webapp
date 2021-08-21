@@ -11,7 +11,7 @@ Vue.component('GuiRoot', {
   },
   template:
     `
-    <div id="root">
+    <div :id="id">
       <component
         v-for="child in model.children"
         :key="child.id"

@@ -8,6 +8,6 @@ Vue.component('GuiContent', {
   },
   template:
 `
-<md-content :id="model.nodeid" :class="classes" :disabled="model.disabled" :md-ripple="model.ripple">{{ payload }}</md-content>
+<md-content :id="id" :class="classes" :disabled="model.disabled" :md-ripple="model.ripple">{{ payload }}</md-content>
 `
 });

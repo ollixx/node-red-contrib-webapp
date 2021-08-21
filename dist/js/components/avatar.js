@@ -11,7 +11,7 @@ Vue.component('GuiAvatar', {
   },
   template:
     `
-<md-avatar :class="classes" :id="model.nodeid">
+<md-avatar :id="id" :class="classes">
   <component
   v-for="child in model.children"
   :key="child.id"

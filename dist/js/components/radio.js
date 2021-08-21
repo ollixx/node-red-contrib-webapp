@@ -20,6 +20,6 @@ Vue.component('GuiRadio', {
   },
   template:
 `
-<md-radio v-model="binding[model.$payload][model.payload]" :value="value" :class="classes">{{label}}</md-radio>
+<md-radio :id="id" v-model="binding[model.$payload][model.payload]" :value="value" :class="classes">{{label}}</md-radio>
 `
 });
