@@ -22,7 +22,7 @@
 		// console.log(".", RED.nodes, RED.nodes.originalFlow())
 		let node = getNodeById(nodeid)
 		let config = getNodeConfigById(nodeid)
-		if (node.wires && node.wires.length > 0) {
+		if (node && node.wires && node.wires.length > 0) {
 			node.wires.forEach((outPort) => {
 				outPort.forEach((childid) => {
 					let child = getNodeById(childid);
