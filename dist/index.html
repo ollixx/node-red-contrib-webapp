@@ -13,10 +13,14 @@
   <div id="app"></div>
 
   <script src="js/vue.min.js"></script>
+  <script src="js/vuex.min.js"></script>
+  <script src="js/vue-router.min.js"></script>
   <script src="js/vue-material.min.js"></script>
   <script src="js/reconnecting-websocket-cjs.js"></script>
   <script src="js/jsonata.min.js"></script>
   <script src="js/nodeRedService.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/vJsonTree.umd.min.js"></script>
   <script src="js/mixin.js"></script>
   <script src="js/components/app.js"></script>
   <script src="js/components/avatar.js"></script>
@@ -33,189 +37,69 @@
   <script src="js/components/root.js"></script>
   <script src="js/components/toolbar.js"></script>
   <script src="js/components/form.js"></script>
+  <script src="js/components/page.js"></script>
   <script src="js/components/radio.js"></script>
   <script src="js/components/checkbox.js"></script>
   <script src="js/components/switch.js"></script>
   <script src="js/components/select.js"></script>
   <script>
+    Vue.use(Vuex)
     Vue.use(VueMaterial.default)
-    // Vue.use(NodePlugin)
+    Vue.component("v-json-tree", vJsonTree);
 
-    let model = {
-      children: [],
-      debug: true
-    };
+    // setup empty router (routes are injected dynamically)
+    var router = new VueRouter({
+      mode: 'hash',
+      routes: []
+    })
 
+    // setup NodeRedClient service
     // let url = "ws://localhost:1880/webapp2/__ws"
     let wsUrl = ((window.location.protocol === "https:") ? "wss://" : "ws://") + window.location.host + window.location.pathname + "__ws"
     let nrService = NodeRedService(wsUrl);
-
     Vue.use({
       install: (app, options) => {
         app.send = nrService.send;
-        app.model = model;
-      }
+      },
     });
 
-    let msgHistory = {};
+    const MESSAGE_HISTORY_MAX_ENTRIES = 1000;
+    let msgHistory = [];
     nrService.register((msg) => {
-      delete msg._socketid;
-
-      // check history
-      if (Object.keys(msgHistory).includes(msg._msgid)) {
-        console.error("message " + msg._msgid + " already processed. skipping", msg);
+      // check event history for duplicates
+      if (msgHistory.includes(msg._msgid)) {
+        console.error("message " + msg._msgid + " already processed. skip it.");
+      } else {
+        msgHistory.push(msg._msgid)
+        if (msgHistory.length > MESSAGE_HISTORY_MAX_ENTRIES) {
+          // reduce history to max length
+          msgHistory.splice(0, msgHistory.length - MESSAGE_HISTORY_MAX_ENTRIES)
+        }
       }
-      if (!msg._msgid) msg._msgid = new Date();
-      msgHistory[msg._msgid] = JSON.stringify(msg);
-      // console.log("history", msgHistory);
+
+      // handle incoming message from webapp
+      delete msg._socketid;
       delete msg._msgid;
-
-      // find all elements with a nodeid (can be multiple) and
-      // store them in the result array.
-      let retrieveById = function (result, current, nodeid) {
-        if (current.nodeid === nodeid) {
-          console.log("found", current);
-          result.push(current);
-        }
-        if (current.children) {
-          current.children.forEach((child) => {
-            retrieveById(result, child, nodeid);
-          });
-        }
-      };
-
-      // children can be added / inserted from nodes without a nodeid.
-      // in these cases, we need to generate an indexed suffix to the parent's
-      // id, so we can identify the (anonymous) child.
-      // note, that these children have no node-red node associated with them
-      // they can be targeted through the generated ID, but send events to the
-      // next parent with a "real" nodeid, or ultimately to the root node (webapp)
-      let cleanUpNodeIds = function (modelElement) {
-        // console.log("cleaning up", modelElement);
-        if (modelElement.children) {
-          modelElement.children.forEach((element) => {
-            if (!element.nodeid) {
-              // give the child a new nodeId. We always increment from the latest
-              let latestId = modelElement.children.reduce((acc, cur) => {
-                // we only look at "auto" iDs. if the child has a different ID, we ignore it
-                if (cur.nodeid && cur.nodeid.startsWith(modelElement.nodeid)) {
-                  // look for the highest index in these children, if any
-                  let idSuffix = parseInt(
-                    cur.nodeid.substring(cur.nodeid.lastIndexOf(".")),
-                    10
-                  );
-                  if (idSuffix > acc) acc = idSuffix;
-                }
-                return acc;
-              }, 0);
-              element.nodeid = modelElement.nodeid + "." + (latestId + 1);
-            }
-            cleanUpNodeIds(element);
-          });
-        } else {
-          modelElement.children = [];
-        }
-      };
 
       // console.log("handle", msg.command, msg);
       if (!msg.hasOwnProperty("command")) {
-        console.log("node red message has no command property. ingoring.");
-        return;
+        console.error("node red message has no command property. ingoring.");
+        return; // end handling the event
       }
       // we use the command msg as the new model element.
       // Thus we need to cleanup props
-      let command = msg.command;
+      let command = msg.command.toLowerCase();
       delete msg.command;
-      if (!msg.children) {
-        msg.children = [];
-      }
-      // console.log("incomming command", command, "target", msg.nodeid, msg)
-
-      // target either the root or elements found by nodeid
-      let targets = [model]; // default
-      if (msg.type !== "GuiRoot" && msg.nodeid) {
-        // we have a target nodeid, so apply to all elements with that ID.
-        targets = [];
-        retrieveById(targets, model, msg.nodeid);
-      }
-      // console.log("targets", targets);
-      targets.forEach((modelElement) => {
-        switch (command) {
-          case "Init":
-            try {
-              Object.keys(msg).forEach((key) => {
-                if (key !== "children") {
-                  modelElement[key] = msg[key];
-                } else {
-                  modelElement.children.splice(0, modelElement.children.length); // clear array
-                  msg.children.forEach((child) => {
-                    modelElement.children.push(child);
-                  });
-                  modelElement.children.sort((a, b) => {
-                    return a._pos - b._pos;
-                  });
-                }
-              });
-            } catch (err) {
-              console.error("error in Set command", err)
-            }
-            break;
-          case "DeleteAll":
-            try {
-              modelElement.children.splice(0, modelElement.children.length); // clear array
-            } catch (err) {
-              console.error("error in Set command", err)
-            }
-            break;
-          case "Change":
-            try {
-              const props = ["payload", "slot", "primary", "accent", "style"]
-              props.forEach((propName) => {
-                if (msg.hasOwnProperty(propName)) modelElement[propName] = msg[propName];
-              });
-            } catch (err) {
-              console.error("error in Set command", err)
-            }
-            break;
-          case "Add":
-            try {
-              if (msg.nodeid === modelElement.nodeid) {
-                delete msg.nodeid; // remove and generate new in cleanuo
-              }
-              modelElement.children.push(msg);
-              modelElement.children.sort((a, b) => {
-                return a._pos - b._pos;
-              });
-            } catch (err) {
-              console.error("error in Set command", err)
-            }
-            break;
-          case "Set":
-            try {
-              for (let key in msg) {
-                modelElement[key] = msg[key];
-              }
-              delete modelElement._msgid;
-            } catch (err) {
-              console.error("error in Set command", err)
-            }
-            break;
-          default:
-        }
-      });
-      cleanUpNodeIds(model);
-      console.log("model", model);
+      console.log("incomming command", command, "target", msg.nodeid, msg)
+      store.commit(command, msg) // todo: handle unknown commands
     });
 
     new Vue({
       el: "#app",
-      template: '<GuiRoot :model="model"/>',
-      data() {
-        return {
-          model
-        };
-      }
-    });
+      template: '<GuiRoot :model="$store.state.model"></GuiRoot>',
+      store,
+      router
+    })
 
   </script>
 </body>
