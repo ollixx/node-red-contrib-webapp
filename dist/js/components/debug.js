@@ -18,8 +18,8 @@ Vue.component('GuiDebug', {
 <div>
   <md-switch v-model="visible">Model</md-switch>
   <pre v-if="false && visible">{{getModel()}}</pre>
-
-  <component is="tree" :model="getModel()" v-if="visible"></component>
+  <v-json-tree v-if="visible" :json-data="getModel()"></v-json-tree>
+  <component is="tree" :model="getModel()" v-if="false && visible"></component>
 </div>
 `
 });
