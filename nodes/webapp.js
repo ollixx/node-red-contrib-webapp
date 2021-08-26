@@ -31,14 +31,11 @@ module.exports = function (RED) {
             });
             socket.handled = true;
         }
-
     };
     RED.server.on('upgrade', httpListener);
 
-    function handleIncomingMessage(node, ws, message) {
+    function handleIncomingMessage(node, ws, wsMessage) {
         try {
-            // handle incoming ws message from app.
-            let wsMessage = JSON.parse(message);
             // console.log("wss got message", wsMessage)
             switch (wsMessage.command) {
                 case "webapp.ready":
@@ -81,13 +78,17 @@ module.exports = function (RED) {
         let wss = new ws.Server({ noServer: true });
         wss.on('connection', function (conn) {
             conn.on('message', function (message) {
-                handleIncomingMessage(node, conn, message);
+                let wsMessage = JSON.parse(message);
+                wsMessage.session = node.context().global._guisessions[conn.uid]
+                handleIncomingMessage(node, conn, wsMessage);
             });
             conn.on('close', function () {
-                //console.log("closed ws");
+                node.context().global._guisessions[conn.uid] = undefined
             });
             conn.on('error', (err) => console.error('error:', err));
             conn.uid = uuid()
+            node.context().global._guisessions = node.context().global._guisessions || {}
+            node.context().global._guisessions[conn.uid] = {_sessid: conn.uid}
         });
 
         //console.log("new wss created");
@@ -101,7 +102,7 @@ module.exports = function (RED) {
         let distPath = join(__dirname, "..", "dist")
         let path = join(rootPath)
         exApp.use(path, serveStatic(distPath));
-        //console.log("static: ", path, distPath);
+        console.log("static: ", path, distPath);
     }
 
     // define and register the node
