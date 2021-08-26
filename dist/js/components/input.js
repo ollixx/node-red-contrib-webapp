@@ -1,7 +1,7 @@
 Vue.component('GuiInput', {
   mixins: [GuiMixin],
   mounted() {
-    console.log("parentContext", this.model.type, this.model.nodeid, this.parentContext);
+    //console.log("parentContext", this.model.type, this.model.nodeid, this.parentContext);
   },
   computed: {
     inputLabel: function() {
@@ -22,14 +22,14 @@ Vue.component('GuiInput', {
 `
 <md-field 
     :md-inline="model.inline" 
-    :id="model.nodeid" 
+    :id="id"
     :md-clearable="model.clearable" 
     :class="model.error ? 'md-invalid' : ''" 
     :md-toggle-password="model.togglePassword"
 >
   <label>{{model.inputLabel}}</label>
   <md-input v-if="model.inputType != 'textarea'"    
-    :id="model.id" 
+    :id="id" 
     v-model="binding[model.$value][model.value]"
     :placeholder="model.placeholder" 
     :type="model.inputType"  
@@ -38,7 +38,7 @@ Vue.component('GuiInput', {
     :maxLength="model.maxLength"
     ></md-input>
   <md-textarea v-if="model.inputType == 'textarea'" 
-    :id="model.id"
+    :id="id"
     v-model="binding[model.$value][model.value]"
     :md-autogrow="model.autogrow" 
     :disabled="model.disabled"

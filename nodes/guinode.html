@@ -22,7 +22,7 @@
 		// console.log(".", RED.nodes, RED.nodes.originalFlow())
 		let node = getNodeById(nodeid)
 		let config = getNodeConfigById(nodeid)
-		if (node.wires && node.wires.length > 0) {
+		if (node && node.wires && node.wires.length > 0) {
 			node.wires.forEach((outPort) => {
 				outPort.forEach((childid) => {
 					let child = getNodeById(childid);
@@ -143,7 +143,7 @@
             }
         },
         paletteLabel: "vue widget",
-        label: function () { return this.name || this.label || this.guitype; },
+        label: function () { return (this.guitype == "GuiPage" && this.props.defaultPage ? "* ": "") + (this.name || this.label || this.guitype); },
         labelStyle: function () { return this.name ? "node_label_italic" : ""; },
         oneditprepare: function () {
             try {

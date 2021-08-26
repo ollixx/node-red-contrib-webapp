@@ -2,7 +2,7 @@ Vue.component('GuiToolbar', {
   mixins: [GuiMixin],
   template:
     `
-<md-toolbar :class="classes" :id="model.nodeid">
+<md-toolbar :id="id" :class="classes">
   <span class="md-title">{{ model.payload }}</span>
 </md-toolbar>
 `

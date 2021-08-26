@@ -37,7 +37,7 @@ Vue.component('GuiList', {
   },
   template:
 `
-<md-list :id="model.nodeid" :class="classes">
+<md-list :id="id" :class="classes">
   <template v-for="entry, key, index in list">
   <md-list-item v-on="handlers(entry, key, index)">
     <component

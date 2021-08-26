@@ -20,6 +20,6 @@ Vue.component('GuiCheckbox', {
   },
   template:
 `
-<md-checkbox v-model="binding[model.$payload][model.payload]" :value="value" :class="classes">{{label}}</md-checkbox>
+<md-checkbox :id="id" v-model="binding[model.$payload][model.payload]" :value="value" :class="classes">{{label}}</md-checkbox>
 `
 });

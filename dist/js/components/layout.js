@@ -13,7 +13,7 @@ Vue.component('GuiRow', {
   },
   template:
 `
-<div :id="model.nodeid" class="md-layout" :class="classes" style="flex-direction: row;">
+<div :id="id" class="md-layout" :class="classes" style="flex-direction: row;">
   <component 
     :is="child.type" 
     :key="child.id" 

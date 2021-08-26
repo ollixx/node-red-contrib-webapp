@@ -20,6 +20,6 @@ Vue.component('GuiSwitch', {
   },
   template:
 `
-<md-switch v-model="binding[model.$payload][model.payload]" :value="value" :class="classes">{{label}}</md-switch>
+<md-switch :id="id" v-model="binding[model.$payload][model.payload]" :value="value" :class="classes">{{label}}</md-switch>
 `
 });

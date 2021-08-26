@@ -24,7 +24,7 @@ module.exports = function (RED) {
     function GuiNode(config) {
         try {
             RED.nodes.createNode(this, config);
-            //console.log("create guinode", config);
+            // console.log("create guinode", config.type);
             var node = this;
 
             // copy config properties to this node
@@ -72,6 +72,7 @@ module.exports = function (RED) {
             // this node's gui model
             node.model = {
                 type: node.guitype,
+                name: config.name,
                 nodeid: node.id,
                 slot: config.parentslot,
                 children: [],

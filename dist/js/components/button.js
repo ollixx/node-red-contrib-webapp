@@ -13,7 +13,7 @@ Vue.component('GuiButton', {
   },
   template:
 `
-<md-button v-on:click="onClick" :id="model.nodeid" :class="classes" :md-ripple="model.ripple">
+<md-button :id="id" v-on:click="onClick" :class="classes" :md-ripple="model.ripple">
   <component
     v-for="child in model.children"
     :key="child.id"

@@ -4,6 +4,7 @@ module.exports = function (RED) {
     var ws = require("ws")
     var serveStatic = require('serve-static');
     var url = require('url');
+    var uuid = require("uuid").v4;
     const commands = require("../lib/commands")(RED)
 
     // create one central handler for all webapp ws servers
@@ -30,27 +31,28 @@ module.exports = function (RED) {
             });
             socket.handled = true;
         }
-
     };
     RED.server.on('upgrade', httpListener);
 
-    function handleIncomingMessage(node, ws, message) {
+    function handleIncomingMessage(node, ws, wsMessage) {
         try {
-            // handle incoming ws message from app.
-            let wsMessage = JSON.parse(message);
-            //console.log("wss got message", wsMessage)
+            // console.log("wss got message", wsMessage)
             switch (wsMessage.command) {
                 case "webapp.ready":
                     // console.log("got webapp.ready", wsMessage.msg);
                     // send all nodes for page
-                    let msg = RED.util.cloneMessage(node.model);
-                    msg.command = "Init";
-                    ws.send(JSON.stringify(msg));
+                    if (node.initialized) {
+                        // only, if model is fully initialized
+                        let msg = RED.util.cloneMessage(node.model);
+                        msg.command = "Root";
+                        msg._msgid = uuid()
+                        ws.send(JSON.stringify(msg));
+                    }
 
                     // send notification to nr
                     node.send({
                         command: wsMessage.command,
-                        _socketid: ws.uid
+                        _socketid: ws.uid 
                     });
                     break;
                 default:
@@ -76,13 +78,17 @@ module.exports = function (RED) {
         let wss = new ws.Server({ noServer: true });
         wss.on('connection', function (conn) {
             conn.on('message', function (message) {
-                handleIncomingMessage(node, conn, message);
+                let wsMessage = JSON.parse(message);
+                wsMessage.session = node.context().global._guisessions[conn.uid]
+                handleIncomingMessage(node, conn, wsMessage);
             });
             conn.on('close', function () {
-                //console.log("closed ws");
+                node.context().global._guisessions[conn.uid] = undefined
             });
-            conn.on('error', (err) => console.log('error:', err));
-            conn.myid = new Date()
+            conn.on('error', (err) => console.error('error:', err));
+            conn.uid = uuid()
+            node.context().global._guisessions = node.context().global._guisessions || {}
+            node.context().global._guisessions[conn.uid] = {_sessid: conn.uid}
         });
 
         //console.log("new wss created");
@@ -96,7 +102,7 @@ module.exports = function (RED) {
         let distPath = join(__dirname, "..", "dist")
         let path = join(rootPath)
         exApp.use(path, serveStatic(distPath));
-        //console.log("static: ", path, distPath);
+        console.log("static: ", path, distPath);
     }
 
     // define and register the node
@@ -125,6 +131,7 @@ module.exports = function (RED) {
 
             function sendWsMessage(msg) {
                 try {
+                    msg._msgid = msg._msgid || RED.util.generateId()
                     if (msg.hasOwnProperty("_socketid")) {
                         // specific websocket, send only to it
                         let wsClient = null;
@@ -145,21 +152,17 @@ module.exports = function (RED) {
                         }
                     } else {
                         // no socketid, broadcast to all
-                        let sent = false
+                        let sent = 0
                         node.wss.clients.forEach(function each(wsClient) {
                             if (wsClient.readyState === ws.OPEN) {
                                 wsClient.send(JSON.stringify(msg));
-                                sent = true
+                                sent++
                             } else {
-                                console.error("could send to client", wsClient.id)
+                                console.error("could not send to client", wsClient.id)
                             }
                         });
-                        if (sent) {
-                            console.log("broadcast done", node.id, msg.command)
-                            statusGreen("broadcast " + msg.command + " command");
-                        } else {
-                            console.log("broadcast skipped", node.id)
-                        }
+                        // console.log("broadcast done", node.id, msg.command)
+                        statusGreen("broadcast " + msg.command + " (" + sent + ")");
                     }
                 } catch (err) {
                     console.error("err in sendMessage()", err)
@@ -235,7 +238,9 @@ module.exports = function (RED) {
                 registreeNode.register(node)
             }
 
-            sendWsMessage(node.model)
+            let msg = RED.util.cloneMessage(node.model)
+            msg.command = "Root"
+            sendWsMessage(msg)
             // handle message cue
             while (node.initialMessageCue.length > 0) {
                 let msg = node.initialMessageCue.pop();

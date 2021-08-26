@@ -9,10 +9,10 @@ Vue.component('GuiHtml', {
     }
   },
   mounted() {
-    console.log("parentContext", this.model.type, this.model.nodeid, this.parentContext);
+    //console.log("parentContext", this.model.type, this.model.nodeid, this.parentContext);
   },
   template:
 `
-<component :is="tag" v-html="payload" :id="model.nodeid" :class="classes"></component>
+<component :is="tag" v-html="payload" :id="id" :class="classes"></component>
 `
 });
