@@ -16,7 +16,7 @@ const nodeHelper = {
             Extract all pages from the model and add appropriate routes to the app
             To identify the correct path, we need to track the page hierarchy to reflect page nesting
             */
-            console.log("find pages", model.type, model.name || model.nodeid, parentPageModel ? "parent: " + parentPageModel.name : "")
+            // console.log("find pages", model.type, model.name || model.nodeid, parentPageModel ? "parent: " + parentPageModel.name : "")
             if (model.type == "GuiPage") {
                 let route = {
                     name: model.nodeid,

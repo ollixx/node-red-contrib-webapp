@@ -68,7 +68,7 @@
     nrService.register((msg) => {
       // check event history for duplicates
       if (msgHistory.includes(msg._msgid)) {
-        console.error("message " + msg._msgid + " already processed. skip it.");
+        // console.error("message " + msg._msgid + " already processed. skip it.");
       } else {
         msgHistory.push(msg._msgid)
         if (msgHistory.length > MESSAGE_HISTORY_MAX_ENTRIES) {
