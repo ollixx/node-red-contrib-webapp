@@ -1,8 +1,5 @@
 Vue.component('GuiApp', {
   mixins: [GuiMixin],
-  data: () => ({
-    menuVisible: false,
-  }),
   computed: {
     toolbarChildren: function () {
       let tbChildren = [];
@@ -33,9 +30,9 @@ Vue.component('GuiApp', {
     },
     mode: function () {
       if (this.model.mode) {
-        switch(this.model.mode) {
+        switch (this.model.mode) {
           case "fixed":
-          case "fixed-last": 
+          case "fixed-last":
           case "reveal":
           case "flexible":
           case "overlap":
@@ -47,13 +44,21 @@ Vue.component('GuiApp', {
         }
       }
     },
+    menuVisible: function () {
+      return this.model.menuVisible || false;
+    }
+  },
+  methods: {
+    toggleVisibility: function () {
+      store.commit("togglemenu", { nodeid: this.model.nodeid });
+    }
   },
   template:
     `
     <div class="page-container" :id="id">
       <md-app :md-mode="mode" :md-waterfall="model.waterfall" :md-scrollbar="model.scrollbar" style="max-height: 800px;" >
         <md-app-toolbar class="md-primary">
-          <md-button v-if="model.expand == 'expand'" class="md-icon-button" @click="menuVisible = !menuVisible">
+          <md-button v-if="model.expand == 'expand'" class="md-icon-button" @click="toggleVisibility()">
             <md-icon>menu</md-icon>
           </md-button>
           <component
