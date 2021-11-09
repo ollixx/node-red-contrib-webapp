@@ -74,7 +74,7 @@ const nodeHelper = {
         collectRoutes(state, routes, state.model) // update the complete model
         // reset router
         // -> work around top rest routes: kudos to https://github.com/vuejs/vue-router/issues/1234#issuecomment-357941465
-        router.matcher = new VueRouter({routes: []}).matcher 
+        router.matcher = new VueRouter({ routes: [] }).matcher
         Object.values(routes).forEach(route => {
             // console.log("add route", route)
             router.addRoute(route)
@@ -201,6 +201,15 @@ const store = new Vuex.Store({
             console.log("navigate to path", path)
             // router.push({ name: msg.nodeid })
             router.push(path)
+        },
+        togglemenu(state, msg) {
+            try {
+                let nodeid = msg.nodeid
+                let model = state.index[nodeid]
+                Vue.set(model, "menuVisible", !model.menuVisible);
+            } catch (err) {
+                console.error("error in unexpand command", err)
+            }
         }
     }
 })
