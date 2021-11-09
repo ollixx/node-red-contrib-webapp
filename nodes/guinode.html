@@ -2,46 +2,46 @@
 
 <script type="text/javascript">
 
-	// find all RETURN component nodes, that are connected to me.
-	// traverses all connected nodes, including link nodes
-	const findNodes = function(nodeid, foundNodes, type = "webapp") {
-		function getNodeById(nodeid) {
-			return RED.nodes.originalFlow().find((node) => {
-				return node.id == nodeid;
-			});
-		}
-		function getNodeConfigById(nodeid) {
-			let found = null;
-			RED.nodes.eachNode((n) => {
-				if (n.id == nodeid) {
-					found = n;
-				}
-			});
-			return found;
-		}
-		// console.log(".", RED.nodes, RED.nodes.originalFlow())
-		let node = getNodeById(nodeid)
-		let config = getNodeConfigById(nodeid)
-		if (node && node.wires && node.wires.length > 0) {
-			node.wires.forEach((outPort) => {
-				outPort.forEach((childid) => {
-					let child = getNodeById(childid);
-					if (child.type == type) {
-						foundNodes[childid] = child;
-					} else if (child.type == "link out") {
-						// look for more nodes at the other side of the link
-						child.links.forEach((linkid) => {
-							let link = getNodeById(linkid);
-							findNodes(linkid, foundNodes)
-						})
-					} else {
-						// look for connected nodes
-						findNodes(childid, foundNodes)
-					}
-				})
-			});
-		}
-	}
+    // find all RETURN component nodes, that are connected to me.
+    // traverses all connected nodes, including link nodes
+    const findNodes = function (nodeid, foundNodes, type = "webapp") {
+        function getNodeById(nodeid) {
+            return RED.nodes.originalFlow().find((node) => {
+                return node.id == nodeid;
+            });
+        }
+        function getNodeConfigById(nodeid) {
+            let found = null;
+            RED.nodes.eachNode((n) => {
+                if (n.id == nodeid) {
+                    found = n;
+                }
+            });
+            return found;
+        }
+        // console.log(".", RED.nodes, RED.nodes.originalFlow())
+        let node = getNodeById(nodeid)
+        let config = getNodeConfigById(nodeid)
+        if (node && node.wires && node.wires.length > 0) {
+            node.wires.forEach((outPort) => {
+                outPort.forEach((childid) => {
+                    let child = getNodeById(childid);
+                    if (child.type == type) {
+                        foundNodes[childid] = child;
+                    } else if (child.type == "link out") {
+                        // look for more nodes at the other side of the link
+                        child.links.forEach((linkid) => {
+                            let link = getNodeById(linkid);
+                            findNodes(linkid, foundNodes)
+                        })
+                    } else {
+                        // look for connected nodes
+                        findNodes(childid, foundNodes)
+                    }
+                })
+            });
+        }
+    }
 
     let setupWidgets = function (type, configProps, container) {
         // setup form fields
@@ -143,7 +143,7 @@
             }
         },
         paletteLabel: "vue widget",
-        label: function () { return (this.guitype == "GuiPage" && this.props.defaultPage ? "* ": "") + (this.name || this.label || this.guitype); },
+        label: function () { return (this.guitype == "GuiPage" && this.props.defaultPage ? "* " : "") + (this.name || this.label || this.guitype); },
         labelStyle: function () { return this.name ? "node_label_italic" : ""; },
         oneditprepare: function () {
             try {
@@ -158,7 +158,13 @@
                 if (Object.keys(found).length > 0) {
                     let webappNode = Object.entries(found)[0][1]
                     $("#node-appname-message").text(this._("guinode.connected"));
-                    $("#node-appname-message").append("  <b>" + webappNode.name + "</b>");
+                    $("#node-appname-message").append("  <a href='#'><b>" + webappNode.name + "</b></a>")
+                        .on("click", function () {
+                            // show webappNode in editor
+                            RED.view.reveal(webappNode.id);
+                            // close the editor tray
+                            $("#node-dialog-cancel").click();
+                        });
                 }
 
                 let container = $("#container");
@@ -267,12 +273,6 @@
         <div class="form-row">
             <label for="node-input-guitype"><i class="fa fa-cubes"></i> Widget Type</label>
             <select id="node-input-guitype" style="width: 70%;"></select>
-        </div>
-        <div class="form-row">
-            <label for="node-input-implicitSetCommand"></label>
-            <label for="node-input-implicitSetCommand" style="width: 70%;">
-                <input type="checkbox" id="node-input-implicitSetCommand" style="display:inline-block; width:22px; vertical-align:top;" autocomplete="off"><span>use implicit Set command</span>
-            </label>
         </div>
     </div>
 </script>
