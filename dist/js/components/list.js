@@ -1,7 +1,7 @@
 Vue.component('GuiList', {
   mixins: [GuiMixin],
   computed: {
-    list: function() {
+    list: function () {
       return this.resolve("payload", this);
     }
   },
@@ -36,8 +36,8 @@ Vue.component('GuiList', {
     }
   },
   template:
-`
-<md-list :id="id" :class="classes">
+    `
+<md-list :id="id" :class="classes" :md-dense="model.dense">
   <template v-for="entry, key, index in list">
   <md-list-item v-on="handlers(entry, key, index)">
     <component
@@ -47,10 +47,10 @@ Vue.component('GuiList', {
         :model="child"
         :context="entry"
         :parentcontext="list"
-        :class="slotClass(child)"
+        :class="slotClass(child) + (child.type == 'GuiButton' ? ' md-list-action' : '')"
       >
-      </component>
-    </md-list-item>
+    </component>
+  </md-list-item>
   </template>
 </md-list>
 `
