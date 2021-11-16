@@ -99,6 +99,7 @@ const store = new Vuex.Store({
         model: {
             name: "waiting for server..."
         }, // the GUI model, hierarchical
+        rerenderKey: Math.random(),
     },
     mutations: {
         root(state, node) {
@@ -108,8 +109,10 @@ const store = new Vuex.Store({
                 state.model = node
                 state.index = {} // reset index, since all old nodes are stale
                 nodeHelper.updateIndex(state, node)
-                console.log("routes pre", router.getRoutes())
+                // console.log("routes pre", router.getRoutes())
                 nodeHelper.updateRouting(state, node)
+                // rerender all pages
+                state.rerenderKey = Math.random();
             } catch (err) {
                 console.trace("error in Root command", err)
             }
@@ -196,7 +199,14 @@ const store = new Vuex.Store({
                 let route = router.getRoutes().find(route => {
                     return route.name == msg.nodeid
                 })
-                let path = route.path
+                const path = route.path
+                // avoid redundant pushes
+                const from = router.currentRoute.fullPath
+                const to = router.resolve(path).route.fullPath
+                console.trace("from / to / path", router.currentRoute.fullPath, to, path)
+                if (from === to) {
+                    return
+                }
                 router.push(path)
             } catch (err) {
                 console.error("error in payload command", err)
