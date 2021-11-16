@@ -36,7 +36,6 @@ module.exports = function (RED) {
 
     function handleIncomingMessage(node, ws, wsMessage) {
         try {
-            // console.log("wss got message", wsMessage)
             switch (wsMessage.command) {
                 case "webapp.ready":
                     // console.log("got webapp.ready", wsMessage.msg);
@@ -52,7 +51,7 @@ module.exports = function (RED) {
                     // send notification to nr
                     node.send({
                         command: wsMessage.command,
-                        _socketid: ws.uid 
+                        _socketid: ws.uid
                     });
                     break;
                 default:
@@ -74,24 +73,38 @@ module.exports = function (RED) {
         }
     }
 
+    const ONE_HOUR_MIILIS = 1000 * 60 * 60;
+
     function createWebsocketServer(node) {
         let wss = new ws.Server({ noServer: true });
         wss.on('connection', function (conn) {
             conn.on('message', function (message) {
                 let wsMessage = JSON.parse(message);
-                wsMessage.session = node.context().global._guisessions[conn.uid]
+                wsMessage.session = node.context().global.get("_guisessions")[conn.uid];
                 handleIncomingMessage(node, conn, wsMessage);
             });
             conn.on('close', function () {
-                node.context().global._guisessions[conn.uid] = undefined
+                sessions = node.context().global.get("_guisessions");
+                delete sessions[conn.uid];
+                node.context().global.set("_guisessions", sessions);
             });
             conn.on('error', (err) => console.error('error:', err));
             conn.uid = uuid()
-            node.context().global._guisessions = node.context().global._guisessions || {}
-            node.context().global._guisessions[conn.uid] = {_sessid: conn.uid}
+            let sessions = node.context().global.get("_guisessions");
+            if (sessions === undefined) {
+                sessions = {};
+            }
+            sessions[conn.uid] = { _sessid: conn.uid, _expires: new Date(new Date().getTime() + ONE_HOUR_MIILIS) };
+            node.context().global.set("_guisessions", sessions);
+            let sessions2 = {}
+            for (let id in sessions) {
+                if (new Date(sessions[id]._expires) > new Date()) {
+                    sessions2[id] = sessions[id];
+                }
+            }
+            node.context().global.set("_guisessions", sessions2);
         });
 
-        //console.log("new wss created");
         return wss;
     }
 
@@ -131,7 +144,7 @@ module.exports = function (RED) {
 
             function sendWsMessage(msg) {
                 try {
-                    msg._msgid = msg._msgid || RED.util.generateId()
+                    msg._msgid = msg._msgid || RED.util.generateId()
                     if (msg.hasOwnProperty("_socketid")) {
                         // specific websocket, send only to it
                         let wsClient = null;
