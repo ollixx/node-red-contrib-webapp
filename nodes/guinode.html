@@ -2,9 +2,13 @@
 
 <script type="text/javascript">
 
-    // find all RETURN component nodes, that are connected to me.
+    // find all component nodes of given type, that are connected to me.
     // traverses all connected nodes, including link nodes
-    const findNodes = function (nodeid, foundNodes, type = "webapp") {
+    // visited nodes prevent stack overflows for circular connections
+    const findNodes = function (nodeid, foundNodes, type = "webapp", visitedNodes) {
+        if (!visitedNodes) {
+            visitedNodes = [];
+        }
         function getNodeById(nodeid) {
             return RED.nodes.originalFlow().find((node) => {
                 return node.id == nodeid;
@@ -19,24 +23,28 @@
             });
             return found;
         }
-        // console.log(".", RED.nodes, RED.nodes.originalFlow())
         let node = getNodeById(nodeid)
         let config = getNodeConfigById(nodeid)
+        if (visitedNodes.includes(nodeid)) {
+            return
+        }
+        visitedNodes.push(nodeid);
         if (node && node.wires && node.wires.length > 0) {
             node.wires.forEach((outPort) => {
                 outPort.forEach((childid) => {
                     let child = getNodeById(childid);
                     if (child.type == type) {
                         foundNodes[childid] = child;
+                        return
                     } else if (child.type == "link out") {
                         // look for more nodes at the other side of the link
                         child.links.forEach((linkid) => {
                             let link = getNodeById(linkid);
-                            findNodes(linkid, foundNodes)
+                            findNodes(linkid, foundNodes, type, visitedNodes);
                         })
                     } else {
                         // look for connected nodes
-                        findNodes(childid, foundNodes)
+                        findNodes(childid, foundNodes, type, visitedNodes);
                     }
                 })
             });
@@ -107,7 +115,6 @@
                         types: prop.typedInput.types,
                         typeField: "#" + id + "-type"
                     })
-                    console.log("typedinput 1", configProps[prop.name]);
                     if (configProps[prop.name]) {
                         tiInput.typedInput("value", configProps[prop.name]);
                         tiInput.typedInput("type", configProps["$" + prop.name]);
@@ -176,7 +183,6 @@
 
                     // setup widgets for current type:
                     let typeName = $("#node-input-guitype option:selected").val()
-                    console.log("typename", typeName);
                     let type = types.find(t => {
                         return t.name == typeName;
                     });
@@ -211,7 +217,6 @@
                 if (type.name == config.guitype) {
                     this.label = type.label;
                     var typeContainerId = "type-container-" + config.guitype;
-                    console.log("edit save", typeContainerId);
                     type.props.forEach((prop) => {
                         let id = "node-input-" + type.name + '-' + prop.name;
                         switch (prop.type) {
@@ -227,7 +232,6 @@
                                 break;
                             case "checkbox":
                                 props[prop.name] = $('#' + id).is(":checked");
-                                console.log("checked?", prop.name, props[prop.name]);
                                 break;
                             case "typedinput":
                                 props[prop.name] = $('#' + id).typedInput('value')
@@ -240,7 +244,6 @@
                     });
                 }
             });
-            console.log("saved", config);
         },
         oneditcancel: function () {
             types.forEach((type) => {
