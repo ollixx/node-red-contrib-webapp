@@ -16,7 +16,6 @@ const nodeHelper = {
             Extract all pages from the model and add appropriate routes to the app
             To identify the correct path, we need to track the page hierarchy to reflect page nesting
             */
-            // console.log("find pages", model.type, model.name || model.nodeid, parentPageModel ? "parent: " + parentPageModel.name : "")
             if (model.type == "GuiPage") {
                 let route = {
                     name: model.nodeid,
@@ -44,14 +43,12 @@ const nodeHelper = {
                     if (model.defaultPage) {
                         route.alias = [""]
                     }
-                    //console.log("add nested route", route)
-                    collectedRoutes[parentRoute.name] = parentRoute
+                    collectedRoutes[route.name] = route
                 } else {
                     route.path = "/" + model.name
                     if (model.defaultPage) {
                         route.alias = ["/"]
                     }
-                    // console.log("add top level route", route)
                     collectedRoutes[route.name] = route
                 }
                 // console.log("new routes", collectRoutes)
@@ -192,15 +189,18 @@ const store = new Vuex.Store({
             }
         },
         navigate(state, msg) {
-            if (!msg.page) {
-                throw "cannot navigate without a page name"
+            try {
+                if (!msg.page) {
+                    throw "cannot navigate without a page name"
+                }
+                let route = router.getRoutes().find(route => {
+                    return route.name == msg.nodeid
+                })
+                let path = route.path
+                router.push(path)
+            } catch (err) {
+                console.error("error in payload command", err)
             }
-            let path = router.getRoutes().find(route => {
-                return route.name == msg.nodeid
-            }).path
-            console.log("navigate to path", path)
-            // router.push({ name: msg.nodeid })
-            router.push(path)
         },
         togglemenu(state, msg) {
             try {
