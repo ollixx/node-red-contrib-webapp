@@ -36,7 +36,7 @@ module.exports = function (RED) {
                 The webapp registers me as a listener and sends messages from the webpage
                 to me based on my ID. 
             */
-            node.receiveWebappMessage = function(msg) {
+            node.receiveWebappMessage = function (msg) {
                 // I basically just pass the webapp msg to the appropriate port
                 node.send([null, msg]);
             }
@@ -46,7 +46,7 @@ module.exports = function (RED) {
                 It then registers me as a listener and calls this method to set me
                 up.
             */
-            node.register = function(webapp) {
+            node.register = function (webapp) {
                 if (node.webapp) {
                     // sanity check
                     throw "Runtime error in guinode '" + node.ID + "': node is already registered at webapp '" + node.webapp.name + "'"
@@ -91,7 +91,7 @@ module.exports = function (RED) {
                     if (prop.type == "typedinput") {
                         let value = config.props[prop.name];
                         let type = config.props["$" + prop.name];
-                        if (["mod", "par", "pay"].indexOf(type) == -1) {
+                        if (["mod", "par", "pay", "ctx"].indexOf(type) == -1) {
                             node.model[prop.name] = RED.util.evaluateNodeProperty(value, type, node, {});
                         } else {
                             node.model[prop.name] = value;
