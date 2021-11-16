@@ -2,8 +2,8 @@ Vue.component('GuiButton', {
   mixins: [GuiMixin],
   methods: {
     onClick() {
-      console.log("clicking", this.model.nodeid);
       let action = this.resolve("action", this);
+      console.log("clicking", this.model.nodeid, "action", action, "this", this);
       this.sendMessage({
         command: "Click",
         nodeid: this.model.nodeid,
@@ -12,7 +12,7 @@ Vue.component('GuiButton', {
     },
   },
   template:
-`
+    `
 <md-button :id="id" v-on:click="onClick" :class="classes" :md-ripple="model.ripple">
   <component
     v-for="child in model.children"

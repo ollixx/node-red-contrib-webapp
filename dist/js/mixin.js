@@ -49,6 +49,7 @@ var GuiMixin = {
       }
       if (this.model.icon) {
         clss.push("md-avatar-icon");
+        clss.push("md-icon-button");
       }
       if (this.model.size) {
         clss.push("md-size-" + this.model.size);
@@ -63,7 +64,7 @@ var GuiMixin = {
       return clss.join(" ");
     },
     id: function () {
-      return (this.model.type + "-" + (this.model.name || this.model.nodeid)).toLowerCase().replaceAll(" ", "-")
+      return (this.model.type + "-" + (this.model.name || this.model.nodeid)).toLowerCase().replaceAll(" ", "-")
     }
   },
   methods: {
@@ -96,6 +97,14 @@ var GuiMixin = {
             try {
               // console.log("resolve", model.nodeid, "PAR", typedPropName, "parentContext", component.parentContext, "model", model)
               return jsonata(model[typedPropName]).evaluate(component.parentContext);
+            } catch (err) {
+              console.error("jsonata error", err)
+              return null
+            }
+          case "ctx":
+            try {
+              console.log("resolve", model.nodeid, "ctx", typedPropName, "context", component.context, "model", model)
+              return jsonata(model[typedPropName]).evaluate(component.context);
             } catch (err) {
               console.error("jsonata error", err)
               return null
