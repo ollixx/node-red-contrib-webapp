@@ -203,7 +203,6 @@ const store = new Vuex.Store({
                 // avoid redundant pushes
                 const from = router.currentRoute.fullPath
                 const to = router.resolve(path).route.fullPath
-                console.trace("from / to / path", router.currentRoute.fullPath, to, path)
                 if (from === to) {
                     return
                 }
