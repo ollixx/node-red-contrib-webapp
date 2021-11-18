@@ -95,6 +95,10 @@
       store.commit(command, msg) // todo: handle unknown commands
     });
 
+    Vue.config.errorHandler = function (err, vm, info) {
+      console.error("global catch", err, vm, info);
+    }
+
     new Vue({
       el: "#app",
       template: '<GuiRoot :model="$store.state.model"></GuiRoot>',
