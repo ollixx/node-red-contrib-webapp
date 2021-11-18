@@ -2,7 +2,7 @@ Vue.component('GuiList', {
   mixins: [GuiMixin],
   computed: {
     list: function () {
-      return this.resolve("payload", this);
+      return this.resolve("payload", this);;
     }
   },
   methods: {
@@ -27,14 +27,14 @@ Vue.component('GuiList', {
             nodeid: component.model.nodeid,
             type: component.model.type,
             payload: entry,
-            key,
-            index
+            listkey: this.listkey
           });
         }
       }
       return hndls;
     }
   },
+  props: ["key", "listkey"],
   template:
     `
 <md-list :id="id" :class="classes" :md-dense="model.dense">
@@ -46,8 +46,9 @@ Vue.component('GuiList', {
         :is="child.type"
         :model="child"
         :context="entry"
-        :parentcontext="list"
+        :parentContext="list"
         :class="slotClass(child) + (child.type == 'GuiButton' ? ' md-list-action' : '')"
+        :listKey="key"
       >
     </component>
   </md-list-item>
