@@ -4,13 +4,13 @@ Vue.component('GuiInput', {
     //console.log("parentContext", this.model.type, this.model.nodeid, this.parentContext);
   },
   computed: {
-    inputLabel: function() {
+    inputLabel: function () {
       return this.resolve("inputLabel", this);
     },
-    value: function() {
+    value: function () {
       return this.resolve("value", this);
     },
-    binding: function() {
+    binding: function () {
       return {
         mod: this.model,
         par: this.parentContext,
@@ -18,8 +18,20 @@ Vue.component('GuiInput', {
       }
     }
   },
+  methods: {
+    checkEnter(event) {
+      if (event.key == "Enter") {
+        console.log("on enter", this.model.nodeid, "value", this.value, "this", this);
+        this.sendMessage({
+          command: "Enter",
+          nodeid: this.model.nodeid,
+          payload: this.value
+        });
+      }
+    }
+  },
   template:
-`
+    `
 <md-field 
     :md-inline="model.inline" 
     :id="id"
@@ -36,6 +48,7 @@ Vue.component('GuiInput', {
     :disabled="model.disabled"
     :md-counter="model.counter"
     :maxLength="model.maxLength"
+    @keyup.enter.native="checkEnter"
     ></md-input>
   <md-textarea v-if="model.inputType == 'textarea'" 
     :id="id"
