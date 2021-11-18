@@ -1,6 +1,6 @@
 // define a mixin object
 var GuiMixin = {
-  props: ['model', 'context', 'parentContext', "extraClasses"],
+  props: ['model', 'context', 'parentContext', "extraClasses", "listKey"],
   data: function () {
     return {
       clsStore: [],
