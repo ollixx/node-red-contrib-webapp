@@ -1,0 +1,17 @@
+{
+    "files": [],
+    "references": [
+        {
+            "path": "./packages/schema"
+        },
+        {
+            "path": "./packages/runtime"
+        },
+        {
+            "path": "./packages/renderer"
+        },
+        {
+            "path": "./packages/editor"
+        }
+    ]
+}

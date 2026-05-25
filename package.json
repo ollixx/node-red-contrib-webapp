@@ -1,0 +1,46 @@
+{
+    "name": "node-red-contrib-webapp",
+    "version": "0.0.0",
+    "description": "Declarative web-app nodes for Node-RED.",
+    "license": "MIT",
+    "packageManager": "pnpm@10.17.1",
+    "main": "nodes/webapp.js",
+    "files": [
+        "nodes",
+        "packages/schema/dist",
+        "examples",
+        "README.md",
+        "LICENSE"
+    ],
+    "keywords": [
+        "node-red",
+        "node-red-contrib",
+        "webapp",
+        "low-code"
+    ],
+    "node-red": {
+        "version": ">=4.0.0",
+        "nodes": {
+            "webapp": "nodes/webapp.js"
+        }
+    },
+    "scripts": {
+        "build": "pnpm -r build",
+        "example:customers-crud": "vitest run packages/schema/test/schema.test.ts packages/runtime/test/customers-crud-example.test.ts packages/renderer/test/renderer.test.ts",
+        "lint": "pnpm -r lint",
+        "test:e2e": "playwright test",
+        "test": "pnpm -r test",
+        "validate": "pnpm lint && pnpm test && pnpm build"
+    },
+    "devDependencies": {
+        "@eslint/js": "^9.36.0",
+        "@playwright/test": "^1.58.2",
+        "eslint": "^9.36.0",
+        "typescript": "^5.9.3",
+        "typescript-eslint": "^8.44.1",
+        "vitest": "^3.2.4"
+    },
+    "dependencies": {
+        "zod": "^4.3.6"
+    }
+}

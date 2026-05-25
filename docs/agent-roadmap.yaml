@@ -1,0 +1,165 @@
+project:
+  name: node-red-contrib-webapp
+  source_prd: prd.md
+  plan: docs/implementation-plan.md
+  execution_rule: Pick the first phase whose dependencies are done and whose status is not done.
+  review_rule: Every phase must pass its validation checks before status can become done.
+  stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
+
+phases:
+  - id: P0
+    title: ADRs and scaffold
+    status: done
+    dependencies: []
+    goals:
+      - Create the TypeScript workspace scaffold and package layout.
+      - Record ADRs for renderer choice, schema validation strategy, and package boundaries.
+      - Establish install, build, lint, and test commands.
+    deliverables:
+      - package manager workspace files
+      - root TypeScript configuration
+      - baseline lint and test configuration
+      - ADR document
+    validation:
+      - dependencies install in one command
+      - workspace validation command succeeds
+      - ADR answers renderer and schema questions from the PRD
+
+  - id: P1
+    title: Shared UI model
+    status: done
+    dependencies: [P0]
+    goals:
+      - Define the shared component, route, layout, slot, and event contracts.
+      - Implement mount parsing and validation.
+      - Add fixtures that represent realistic app models.
+    deliverables:
+      - schema package with exported types and validators
+      - mount parser and validation tests
+      - fixture app models
+    validation:
+      - invalid definitions fail with readable errors
+      - fixtures cover routes, dialogs, and nested mount targets
+
+  - id: P2
+    title: Runtime registry core
+    status: done
+    dependencies: [P1]
+    goals:
+      - Register node contributions into a central registry.
+      - Compile registrations into a normalized app model.
+      - Expose the compiled model through a runtime API.
+    deliverables:
+      - registry service
+      - model compiler
+      - runtime API endpoint
+      - duplicate ID and invalid mount diagnostics
+    validation:
+      - compiled model is deterministic from the same inputs
+      - duplicate IDs and invalid mounts are reported
+
+  - id: P3
+    title: Renderer MVP
+    status: done
+    dependencies: [P2]
+    goals:
+      - Render routes, layouts, slots, and core view components from the compiled model.
+      - Bridge UI events back to Node-RED.
+      - Bind client-side state to rendered components.
+    deliverables:
+      - renderer app shell
+      - route and slot rendering
+      - text, button, table, form, and dialog components
+      - event bridge
+    validation:
+      - multi-page fixture renders end to end
+      - button and submit events emit the standard msg.ui shape
+
+  - id: P4
+    title: Node set MVP
+    status: done
+    dependencies: [P3]
+    goals:
+      - Expose the MVP concepts as Node-RED nodes.
+      - Validate required node properties in the editor.
+      - Keep node definitions schema-aligned.
+    deliverables:
+      - ui-app node
+      - ui-route node
+      - ui-layout node
+      - ui-region node
+      - ui-text node
+      - ui-button node
+      - ui-table node
+      - ui-form node
+      - ui-dialog node
+      - ui-store node
+      - ui-query node
+      - ui-action node
+      - ui-navigation node
+    validation:
+      - each node emits or registers a valid definition
+      - editor validation blocks incomplete required fields
+
+  - id: P5
+    title: State and event integration
+    status: done
+    dependencies: [P4]
+    goals:
+      - Support CRUD-oriented state updates, query flows, navigation, and dialog actions.
+      - Keep event payloads standardized across components.
+    deliverables:
+      - store update flow
+      - query lifecycle handling
+      - navigation and dialog action handlers
+      - visibility and enabled rules
+    validation:
+      - CRUD example supports list, open dialog, submit, and refresh
+      - event payload shape is consistent across interactive nodes
+
+  - id: P6
+    title: Editor structure view
+    status: done
+    dependencies: [P5]
+    goals:
+      - Add a structure sidebar that mirrors the compiled UI model.
+      - Sync selection and surface structural diagnostics.
+    deliverables:
+      - sidebar tree
+      - selection sync
+      - structural validation warnings
+    validation:
+      - users can inspect hierarchy without reading wiring as DOM structure
+
+  - id: P7
+    title: Example app and hardening
+    status: done
+    dependencies: [P6]
+    goals:
+      - Ship a complete customer CRUD example and baseline documentation.
+      - Add focused tests for schema, registry, runtime, and renderer.
+    deliverables:
+      - example flow
+      - getting started guide
+      - architecture overview
+      - baseline automated tests
+    validation:
+      - a contributor can run the example from docs alone
+      - the example demonstrates the full MVP journey
+
+  - id: P8
+    title: Browser E2E validation and preview hardening
+    status: done
+    dependencies: [P7]
+    goals:
+      - Add browser-level validation for the shipped CRUD example.
+      - Align the Node-RED preview runtime with the CRUD behavior already covered by renderer tests.
+      - Surface preview event messages for interactive nodes so user journeys can be verified end to end.
+    deliverables:
+      - Playwright configuration and E2E test for the CRUD journey
+      - preview runtime fixes for create, save, refresh, navigation, and delete
+      - observable event log for emitted UI messages
+    validation:
+      - Playwright passes against the local Node-RED instance
+      - saving a customer adds it to the list in the preview
+      - interactive preview actions emit inspectable UI event messages
