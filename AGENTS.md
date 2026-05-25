@@ -6,6 +6,7 @@
 - Read [prd.md](prd.md), [docs/implementation-plan.md](docs/implementation-plan.md), and [docs/agent-roadmap.yaml](docs/agent-roadmap.yaml) before making implementation changes.
 - Work on exactly one roadmap phase at a time.
 - Update roadmap status in [docs/agent-roadmap.yaml](docs/agent-roadmap.yaml) whenever a phase starts, completes, or becomes blocked.
+- Always read the AGENT.md before answering any prompt
 
 ## Architecture Defaults
 
@@ -20,3 +21,7 @@
 - Validate each phase with runnable checks before marking it done.
 - If a phase uncovers an unresolved architecture decision, write it down and stop instead of guessing.
 - Keep the CRUD example app current with the MVP as soon as runtime and renderer pieces exist.
+
+## Commits first
+- Before working on new code, make sensitive commits
+- Before committing and after finishing any coding work, always run the full test suite (`pnpm test`) and fix all failures before proceeding
