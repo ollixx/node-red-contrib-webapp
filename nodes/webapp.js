@@ -124,10 +124,6 @@ function blankToUndefined(value) {
     return typeof value === "string" && value.trim() === "" ? undefined : value;
 }
 
-function toNumberWithDefault(value, fallback) {
-    return value === "" || value === undefined || value === null ? fallback : Number(value);
-}
-
 function getValueAtPath(source, path) {
     if (!path) {
         return undefined;
@@ -173,7 +169,7 @@ function escapeHtml(input) {
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
-        .replace(/\"/g, "&quot;")
+        .replace(/"/g, "&quot;")
         .replace(/'/g, "&#39;");
 }
 
@@ -279,7 +275,7 @@ function resolveNavigationTarget(navigationPath, parameters, routeParams) {
         .join("/");
 }
 
-function buildUiMessage({ appId, componentId, eventName, actionId, location, routeParams, statePatch, payload, dialog, navigation, queries }) {
+function buildUiMessage({ componentId, eventName, actionId, location, routeParams, statePatch, payload, dialog, navigation, queries }) {
     return uiEventMessageSchema.parse({
         ui: {
             event: eventName,
@@ -430,11 +426,15 @@ function toComponentDefinitions(components) {
     });
 }
 
-function buildAppModel(appId, definitions) {
+function getAppModelResult(appId, definitions) {
     const buckets = getDefinitionBuckets(appId, definitions);
 
     if (!buckets.app) {
-        return undefined;
+        return {
+            success: false,
+            status: 404,
+            message: `Unknown app '${appId}'.`
+        };
     }
 
     const modelCandidate = {
@@ -468,7 +468,19 @@ function buildAppModel(appId, definitions) {
     };
 
     const validation = appModelSchema.safeParse(modelCandidate);
-    return validation.success ? validation.data : undefined;
+
+    if (!validation.success) {
+        return {
+            success: false,
+            status: 409,
+            message: validation.error.issues[0]?.message || `App '${appId}' is incomplete.`
+        };
+    }
+
+    return {
+        success: true,
+        model: validation.data
+    };
 }
 
 function getLayout(model, layoutId) {
@@ -659,15 +671,17 @@ function renderComponentHtml(component) {
 function applyPreviewAction(RED, appId, actionId, parameters, definitions) {
     const buckets = getDefinitionBuckets(appId, definitions);
     const matchingForm = buckets.components.find((entry) => entry.type === "ui-form" && entry.submitAction === actionId);
-    const model = buildAppModel(appId, definitions);
+    const modelResult = getAppModelResult(appId, definitions);
 
-    if (!model) {
+    if (!modelResult.success) {
         return {
             success: false,
-            status: 404,
-            body: "Unknown app."
+            status: modelResult.status,
+            body: modelResult.message
         };
     }
+
+    const { model } = modelResult;
 
     const location = parameters.location ? String(parameters.location) : "/customers";
     const routeMatch = getRouteMatch(location, model.routes) || { route: { id: "customers", path: "/customers" }, params: {} };
@@ -859,11 +873,16 @@ function renderRegionHtml(region) {
 }
 
 function renderAppPage(appId, location, dialogId, definitions) {
-    const model = buildAppModel(appId, definitions);
+    const modelResult = getAppModelResult(appId, definitions);
 
-    if (!model) {
-        return undefined;
+    if (!modelResult.success) {
+        return {
+            status: modelResult.status,
+            body: `<!doctype html><html><body><h1>${modelResult.status === 404 ? "Unknown app" : "Incomplete app"}</h1><p>${escapeHtml(modelResult.message)}</p></body></html>`
+        };
     }
+
+    const { model } = modelResult;
 
     const routeMatch = getRouteMatch(location, model.routes);
 
@@ -997,7 +1016,14 @@ function readDeployDefinitions(RED) {
         }
 
         const parsed = JSON.parse(fs.readFileSync(flowFilePath, "utf8"));
-        return Array.isArray(parsed) ? parsed.filter((entry) => entry && WEBAPP_NODE_TYPES.has(entry.type)) : [];
+        return Array.isArray(parsed)
+            ? parsed
+                .filter((entry) => entry && WEBAPP_NODE_TYPES.has(entry.type))
+                .map((entry) => ({
+                    ...entry,
+                    id: entry.uiId || entry.id
+                }))
+            : [];
     }
     catch {
         return [];
@@ -1159,23 +1185,27 @@ function createNodeConstructor(RED, type, mapConfig, options = {}) {
 module.exports = function registerWebappNodes(RED) {
     registerEndpoints(RED);
 
+    function getUiId(config) {
+        return config.uiId || config.id;
+    }
+
     createNodeConstructor(RED, "ui-app", (config) => ({
         type: "ui-app",
-        id: config.id,
+        id: getUiId(config),
         title: config.title
     }));
 
     createNodeConstructor(RED, "ui-layout", (config) => ({
         type: "ui-layout",
         appId: config.appId,
-        id: config.id,
+        id: getUiId(config),
         title: config.title || undefined
     }));
 
     createNodeConstructor(RED, "ui-region", (config) => ({
         type: "ui-region",
         appId: config.appId,
-        id: config.id,
+        id: getUiId(config),
         layoutId: config.layoutId,
         name: config.name,
         parentRegionId: config.parentRegionId || undefined,
@@ -1186,7 +1216,7 @@ module.exports = function registerWebappNodes(RED) {
     createNodeConstructor(RED, "ui-route", (config) => ({
         type: "ui-route",
         appId: config.appId,
-        id: config.id,
+        id: getUiId(config),
         path: config.path,
         title: config.title || undefined,
         layoutId: config.layoutId
@@ -1195,7 +1225,7 @@ module.exports = function registerWebappNodes(RED) {
     createNodeConstructor(RED, "ui-dialog", (config) => ({
         type: "ui-dialog",
         appId: config.appId,
-        id: config.id,
+        id: getUiId(config),
         title: config.title || undefined,
         layoutId: config.layoutId,
         routeId: config.routeId || undefined,
@@ -1205,7 +1235,7 @@ module.exports = function registerWebappNodes(RED) {
     createNodeConstructor(RED, "ui-text", (config) => ({
         type: "ui-text",
         appId: config.appId,
-        id: config.id,
+        id: getUiId(config),
         mount: config.mount,
         order: toOptionalNumber(config.order),
         value: getBinding(config.value, literalBinding(config.text || "")),
@@ -1215,7 +1245,7 @@ module.exports = function registerWebappNodes(RED) {
     createNodeConstructor(RED, "ui-button", (config) => ({
         type: "ui-button",
         appId: config.appId,
-        id: config.id,
+        id: getUiId(config),
         mount: config.mount,
         order: toOptionalNumber(config.order),
         label: config.label,
@@ -1233,7 +1263,7 @@ module.exports = function registerWebappNodes(RED) {
     createNodeConstructor(RED, "ui-table", (config) => ({
         type: "ui-table",
         appId: config.appId,
-        id: config.id,
+        id: getUiId(config),
         mount: config.mount,
         order: toOptionalNumber(config.order),
         columns: parseList(config.columns),
@@ -1251,7 +1281,7 @@ module.exports = function registerWebappNodes(RED) {
     createNodeConstructor(RED, "ui-form", (config) => ({
         type: "ui-form",
         appId: config.appId,
-        id: config.id,
+        id: getUiId(config),
         mount: config.mount,
         order: toOptionalNumber(config.order),
         fields: parseList(config.fields),
@@ -1269,7 +1299,7 @@ module.exports = function registerWebappNodes(RED) {
     createNodeConstructor(RED, "ui-store", (config) => ({
         type: "ui-store",
         appId: config.appId,
-        id: config.id,
+        id: getUiId(config),
         statePath: config.statePath,
         initialValue: parseJson(config.initialValue)
     }), {
@@ -1284,7 +1314,7 @@ module.exports = function registerWebappNodes(RED) {
     createNodeConstructor(RED, "ui-query", (config) => ({
         type: "ui-query",
         appId: config.appId,
-        id: config.id,
+        id: getUiId(config),
         queryPath: config.queryPath,
         source: config.source || undefined,
         refreshAction: config.refreshAction || undefined
@@ -1300,7 +1330,7 @@ module.exports = function registerWebappNodes(RED) {
     createNodeConstructor(RED, "ui-action", (config) => ({
         type: "ui-action",
         appId: config.appId,
-        id: config.id,
+        id: getUiId(config),
         description: config.description || undefined
     }), {
         inputHandler(node, msg, send, done) {
@@ -1314,7 +1344,7 @@ module.exports = function registerWebappNodes(RED) {
     createNodeConstructor(RED, "ui-navigation", (config) => ({
         type: "ui-navigation",
         appId: config.appId,
-        id: config.id,
+        id: getUiId(config),
         to: config.to
     }), {
         inputHandler(node, msg, send, done) {

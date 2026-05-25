@@ -5,6 +5,32 @@ import { appModelSchema, customersCrudAppModelFixture } from "@node-red-contrib-
 import { createRuntimeApi, createContributionsFromAppModel, createRuntimeRegistry } from "../src";
 
 describe("runtime registry", () => {
+    it("keeps multiple apps isolated even when their internal ids overlap", () => {
+        const registry = createRuntimeRegistry();
+        const customersOnlyRegistry = createRuntimeRegistry();
+        const ordersOnlyRegistry = createRuntimeRegistry();
+        const secondAppFixture = {
+            ...customersCrudAppModelFixture,
+            id: "ordersApp",
+            title: "Orders CRM"
+        };
+
+        registry.registerMany(createContributionsFromAppModel(customersCrudAppModelFixture, "customers-fixture"));
+        registry.registerMany(createContributionsFromAppModel(secondAppFixture, "orders-fixture"));
+        customersOnlyRegistry.registerMany(createContributionsFromAppModel(customersCrudAppModelFixture, "customers-fixture"));
+        ordersOnlyRegistry.registerMany(createContributionsFromAppModel(secondAppFixture, "orders-fixture"));
+
+        const customersResult = registry.compile("customersApp");
+        const ordersResult = registry.compile("ordersApp");
+        const customersBaseline = customersOnlyRegistry.compile("customersApp");
+        const ordersBaseline = ordersOnlyRegistry.compile("ordersApp");
+
+        expect(customersResult.diagnostics).toEqual([]);
+        expect(ordersResult.diagnostics).toEqual([]);
+        expect(customersResult).toEqual(customersBaseline);
+        expect(ordersResult).toEqual(ordersBaseline);
+    });
+
     it("compiles a deterministic normalized app model from registrations", () => {
         const contributions = createContributionsFromAppModel(customersCrudAppModelFixture, "fixture");
         const registryA = createRuntimeRegistry();
@@ -106,6 +132,42 @@ describe("runtime registry", () => {
 });
 
 describe("runtime api", () => {
+    it("serves multiple registered apps without cross-app leakage", () => {
+        const registry = createRuntimeRegistry();
+        const secondAppFixture = {
+            ...customersCrudAppModelFixture,
+            id: "ordersApp",
+            title: "Orders CRM"
+        };
+
+        registry.registerMany(createContributionsFromAppModel(customersCrudAppModelFixture, "customers-fixture"));
+        registry.registerMany(createContributionsFromAppModel(secondAppFixture, "orders-fixture"));
+
+        const api = createRuntimeApi(registry);
+        const customersResponse = api.handle({
+            method: "GET",
+            path: "/apps/customersApp/model"
+        });
+        const ordersResponse = api.handle({
+            method: "GET",
+            path: "/apps/ordersApp/model"
+        });
+
+        expect(customersResponse.status).toBe(200);
+        expect(ordersResponse.status).toBe(200);
+
+        if ("error" in customersResponse.body || "error" in ordersResponse.body) {
+            return;
+        }
+
+        expect(customersResponse.body.diagnostics).toEqual([]);
+        expect(ordersResponse.body.diagnostics).toEqual([]);
+        expect(customersResponse.body.model?.id).toBe("customersApp");
+        expect(ordersResponse.body.model?.id).toBe("ordersApp");
+        expect(customersResponse.body.model?.title).toBe("Customers CRM");
+        expect(ordersResponse.body.model?.title).toBe("Orders CRM");
+    });
+
     it("exposes compiled app models through the runtime API surface", () => {
         const registry = createRuntimeRegistry();
         registry.registerMany(createContributionsFromAppModel(customersCrudAppModelFixture, "fixture"));
