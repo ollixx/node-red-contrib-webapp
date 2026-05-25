@@ -13,6 +13,7 @@ Der dritte Schritt fuehrt die Customer-CRUD-Smoke-Checks fuer Schema, Runtime un
 ## Wichtigste Einstiege
 
 - Architekturueberblick: [docs/architecture-overview.md](docs/architecture-overview.md)
+- Knotenkatalog und Spezifikationsbasis: [docs/node-catalog.md](docs/node-catalog.md)
 - Referenzbeispiel: [examples/customers-crud/README.md](examples/customers-crud/README.md)
 - Importierbarer Beispiel-Flow: [examples/customers-crud/flow.json](examples/customers-crud/flow.json)
 - Produkt- und Phasenrahmen: [prd.md](prd.md) und [docs/implementation-plan.md](docs/implementation-plan.md)
