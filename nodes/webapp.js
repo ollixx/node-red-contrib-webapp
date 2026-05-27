@@ -322,11 +322,7 @@ function initializeState(stores, queries, appId) {
     return state;
 }
 
-function createDemoQueryData(appId) {
-    if (appId !== "customersApp") {
-        return {};
-    }
-
+function createDemoQueryData() {
     return {
         customers: {
             list: [
@@ -340,7 +336,7 @@ function createDemoQueryData(appId) {
 }
 
 function getPreviewQueries(appId) {
-    return clone(runtimeState.previewQueries.get(appId) || createDemoQueryData(appId));
+    return clone(runtimeState.previewQueries.get(appId) || createDemoQueryData());
 }
 
 function getPreviewMessages(appId) {
@@ -902,7 +898,7 @@ function applyPreviewAction(RED, appId, actionId, parameters, definitions) {
     const typedAction = findTypedAction(buckets.actions, actionId);
     const allowLegacyPreviewAction = typedAction
         && typedAction.targetMode === "out-port"
-        && ["openCustomerEditor", "closeCustomerEditor", "saveCustomer"].includes(actionId);
+        && ["openCustomerEditor", "closeCustomerEditor", "saveCustomer", "deleteCustomer"].includes(actionId);
     const modelResult = getAppModelResult(appId, definitions);
 
     if (!modelResult.success) {
@@ -1065,7 +1061,9 @@ function applyPreviewAction(RED, appId, actionId, parameters, definitions) {
     }
     else if (actionId === "deleteCustomer") {
         const navigation = buckets.navigations.find((entry) => entry.id === actionId);
-        const customerId = parameters.id ? String(parameters.id) : routeMatch.params.id;
+        const customerId = parameters.id
+            ? String(parameters.id)
+            : routeMatch.params.id || String(getValueAtPath(nextState, "draft.customerId") || nextQueries.customers?.current?.id || "");
         const remainingRows = Array.isArray(nextQueries.customers?.list)
             ? nextQueries.customers.list.filter((row) => String(row.id) !== customerId)
             : [];
@@ -1517,8 +1515,8 @@ const runtimeNodeRegistry = {
     "ui-app": {
         mapConfig: (config) => ({
             type: "ui-app",
-            id: getUiId(config),
-            title: config.title
+            id: config.root || getUiId(config) || "",
+            title: config.name || config.title || config.root || getUiId(config) || "App"
         })
     },
     "ui-layout": {

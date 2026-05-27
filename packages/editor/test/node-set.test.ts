@@ -74,8 +74,8 @@ describe("editor node set", () => {
     it("emits schema-valid definitions for every MVP node type", () => {
         const samples = [
             emitNodeDefinition("ui-app", {
-                id: "customersApp",
-                title: "Customers CRM"
+                root: "customersApp",
+                name: "Customers CRM"
             }),
             emitNodeDefinition("ui-layout", {
                 id: "customerShell",

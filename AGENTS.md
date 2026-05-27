@@ -23,5 +23,5 @@
 - Keep the CRUD example app current with the MVP as soon as runtime and renderer pieces exist.
 
 ## Commits first
-- Before working on new code, make sensitive commits
-- Before committing and after finishing any coding work, always run the full test suite (`pnpm test`) and fix all failures before proceeding
+- Before working on new code, make sensitive commits with a short, but meaningful comment.
+- Before committing and after finishing any coding work, always run the full test suite (`pnpm test`), all E2E-Tests and fix all failures before proceeding

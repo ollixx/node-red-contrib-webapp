@@ -7,19 +7,19 @@
             color: "#d9efe2",
             defaults: {
                 name: { value: "" },
-                uiId: { value: "", required: true },
-                title: { value: "", required: true }
+                root: { value: "", required: true }
             },
             inputs: 0,
             outputs: 0,
             icon: "font-awesome/fa-sitemap",
-            label: common.labelWithName("ui-app")
+            label: function () {
+                return this.name || this.root || "ui-app";
+            }
         });
     })();
 </script>
 <script type="text/html" data-template-name="ui-app">
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
-    <div class="form-row"><label for="node-input-uiId">App ID</label><input type="text" id="node-input-uiId"></div>
-    <div class="form-row"><label for="node-input-title">Titel</label><input type="text" id="node-input-title"></div>
+    <div class="form-row"><label for="node-input-root">Root</label><input type="text" id="node-input-root"></div>
 </script>
 <script type="text/html" data-help-name="ui-app"><p>Root-Knoten einer deklarativen Web-App fuer Node-RED.</p></script>

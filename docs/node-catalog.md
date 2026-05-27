@@ -20,7 +20,7 @@ Das Dokument ist damit kein reiner Benutzerleitfaden, sondern die Arbeitsgrundla
 ## Gemeinsame Modellregeln
 
 - Eine App wird heute fachlich ueber `uiId` bzw. im gemeinsamen Modell ueber `id` identifiziert. Dieser Wert muss eindeutig sein.
-- Die Node-RED-interne Knoten-ID reicht nicht als fachliche ID fuer das gemeinsame UI-Modell.
+- ~~Die Node-RED-interne Knoten-ID reicht nicht als fachliche ID fuer das gemeinsame UI-Modell~~. Doch, die IDs reichen aus, um Knoten zu referenzieren
 - View-Knoten werden ueber `mount` an Route-, Dialog- oder Layout-Slots gebunden.
 - Die Editor-Oberflaeche bietet fuer gaengige Referenzen wie `layoutId`, `routeId`, `mount`, `action` und `storeId` vorbelegte Auswahllisten aus den vorhandenen Webapp-Knoten.
 - Strukturgefuehrte Parent- oder Baum-Selektoren existieren weiterhin nicht; die Auswahl bleibt feldbasiert und arbeitet auf den fachlichen IDs bzw. Mount-Strings.
@@ -49,18 +49,24 @@ Definiert die Wurzel einer deklarativen Web-App.
 
 Deklarativer Vertrag:
 - Pflichtfelder:
-  - `id`: fachliche App-ID. Im Node-RED-Editor kommt sie aktuell aus `uiId`.
-  - `title`: sichtbarer Titel der App.
+  - `root`: der erste URL-Teil der app hinter /webapp, root für diese Anwendung
 - Optional:
-  - `name`: reines Node-RED-Anzeigefeld ohne Bedeutung fuer das gemeinsame Modell.
+  - `name`: reines Node-RED-Anzeigefeld. Wird bei der Darstellung des Knotens (auch bei der Auswahl als Parent) angezeigt. Wenn nicht gesetzt, wird die Knnoten ID angezeigt.
 
-Aktuelles MVP-Verhalten:
+Aktuelles Verhalten:
 - Es kann mehrere `ui-app` geben.
 - Dient als Einstieg fuer Runtime-API, Renderer und Editor-Strukturansicht.
-- Die App ist unter `/webapp/<appId>` erreichbar; eine getrennte `rootUrl`-Eigenschaft existiert heute nicht.
+- Die App ist unter `/webapp/<root>` erreichbar
 
 Offene Spezifikation:
-- Es ist offen, ob `id` langfristig zugleich URL-Segment bleibt oder ob dafuer spaeter ein eigenes Feld wie `rootUrl` eingefuehrt wird.
+- Eine App braucht kuenftig ein Basis-Layout. Dieses Basis-Layout soll nicht zwingend immer ueber einen frei modellierten `ui-layout`-Knoten entstehen.
+- Stattdessen soll es eine Liste von Standard-Layouts geben, die direkt als Preset ausgewaehlt werden koennen, zum Beispiel:
+  - `horizontal`
+  - `vertical`
+  - `app` mit den Slots `header`, `navbar`, `content`, `footer`
+  - weitere spaetere Standard-Layouts
+- Fuer die App-Konfiguration bedeutet das: entweder ein Layout-Preset waehlen oder explizit `custom` verwenden.
+- Bei `custom` wird das Basis-Layout ueber `ui-layout` und `ui-slot` frei modelliert.
 - Soll eine App kuenftig globale Metadaten wie Theme, Basisroute oder Berechtigungen tragen?
   - Später: Themeauswahl. Erfordert ein Theme-Konzept
   - Authorization ist ein offener Punkt, könnte aber eine Auswahl aus verfügbaren Lösungen sein (OAuth2, OICD, ...)
@@ -70,7 +76,7 @@ Offene Spezifikation:
 ### `ui-layout`
 
 Zweck:
-Definiert einen benannten Seiten- oder Dialog-Container mit Slots.
+Definiert einen benannten Seiten- oder Dialog-Container mit Slots. Langfristig ist `ui-layout` vor allem fuer frei modellierte Custom-Layouts gedacht.
 
 Deklarativer Vertrag:
 - Pflichtfelder:
@@ -84,6 +90,14 @@ Aktuelles MVP-Verhalten:
 - Layouts sind heute app-gescoped. Sie werden nicht direkt ueber ein generisches `parent`-Feld an Route oder Dialog gebunden.
 
 Offene Spezifikation:
+- `ui-layout` sollte nicht fuer jeden Standardfall noetig sein. Fuer haeufige Faelle soll es eine feste Liste von Layout-Presets geben.
+- Vorgesehene Presets sind mindestens:
+  - `horizontal`
+  - `vertical`
+  - `app` mit `header`, `navbar`, `content`, `footer`
+- `ui-layout` bleibt fuer den Fall `custom` bestehen. In diesem Fall werden Slots weiterhin explizit mit `ui-slot` modelliert.
+- Alle Knoten, die ein Layout benoetigen, sollen kuenftig zwischen einem Preset und `custom` waehlen koennen.
+- Nur wenn `custom` gewaehlt ist, soll der Editor zusaetzlich passende `ui-layout`-Knoten zur Auswahl anbieten.
 - Fehlen explizite Layout-Typen wie Shell, Dialog-Shell oder Tabs-Container. Weitere Ideen: `horizontal`, `vertical`, `stack`, `absolute`
 - Es gibt noch keine deklarativen Layout-Varianten fuer Responsiveness oder Breakpoints.
 
@@ -129,6 +143,8 @@ Aktuelles MVP-Verhalten:
 - Der Renderer ermittelt daraus die aktive Route und Route-Parameter.
 
 Offene Spezifikation:
+- Knoten, die ein Layout referenzieren, sollten kuenftig nicht nur `layoutId` kennen, sondern zwischen Layout-Preset und `custom` unterscheiden.
+- Wenn `custom` gewaehlt ist, wird wie heute auf ein explizites `ui-layout` verwiesen.
 - Route Guards, Loader, Titelauflosung und verschachtelte Routen fehlen.
 - Die Beziehung zwischen Route und Query-Lebenszyklus ist noch nicht explizit modelliert.
 
@@ -150,6 +166,8 @@ Aktuelles MVP-Verhalten:
 - View-Knoten koennen ueber `dialog:<dialogId>/...` in Dialog-Slots mounten.
 
 Offene Spezifikation:
+- Auch Dialoge sollten kuenftig ein Layout-Preset oder `custom` verwenden koennen.
+- Nur fuer `custom` ist dann ein expliziter Verweis auf einen `ui-layout`-Knoten noetig.
 - Das Oeffnen und Schliessen ist heute nicht generisch modelliert, sondern im Preview-Pfad teilhart codiert.
 - Es fehlt ein klares Dialogmodell fuer Fokus, Backdrop, Escape-Verhalten und Rueckgabewerte.
 
@@ -235,6 +253,8 @@ Aktuelles MVP-Verhalten:
 - Der Preview-Pfad nutzt Container mit Child-Layout, um Dialoginhalte inklusive Eingaben und Actions zu gruppieren.
 
 Offene Spezifikation:
+- Container sollten ebenfalls zwischen Standard-Layout-Presets und `custom` unterscheiden koennen.
+- Wird `custom` gewaehlt, referenziert der Container wie bisher ein Child-Layout ueber `ui-layout` und `ui-slot`.
 - Es ist noch offen, ob Container spaeter eigene Layout- oder Stylingvarianten tragen sollen.
 - Child-Layouts brauchen mittelfristig bessere Editor-Unterstuetzung fuer Parent-Auswahl und Visualisierung.
 
