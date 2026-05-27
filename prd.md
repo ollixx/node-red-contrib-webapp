@@ -137,10 +137,10 @@ Beispiele:
 * `ui-app`
 * `ui-route`
 * `ui-layout`
-* `ui-region`
+* `ui-slot`
 * `ui-tabs`
 * `ui-dialog`
-* `ui-form`
+* `ui-container`
 
 ### B. View-Knoten
 
@@ -484,11 +484,12 @@ Für ein erstes MVP:
 * `ui-app`
 * `ui-route`
 * `ui-layout`
-* `ui-region`
+* `ui-slot`
 * `ui-text`
 * `ui-button`
 * `ui-table`
-* `ui-form`
+* `ui-container`
+* `ui-input`
 * `ui-dialog`
 * `ui-store`
 * `ui-query`
@@ -502,7 +503,7 @@ MVP-Fähigkeit:
 * Daten laden
 * Tabelle anzeigen
 * Dialog öffnen
-* Formular absenden
+* zusammenhängende Eingaben über Container, Inputs und Actions bearbeiten
 * Daten aktualisieren
 * zwischen Seiten navigieren
 

@@ -16,9 +16,17 @@ describe("customers CRUD example flow", () => {
 
         expect(assembly.data.integration.actions.map((action) => action.id)).toEqual([
             "closeCustomerEditor",
+            "deleteCustomer",
+            "goToCustomers",
+            "openCustomerDetail",
             "openCustomerEditor",
             "refreshCustomers",
             "saveCustomer"
+        ]);
+        expect(assembly.data.integration.actions.filter((action) => action.actionType === "navigate").map((action) => action.id)).toEqual([
+            "deleteCustomer",
+            "goToCustomers",
+            "openCustomerDetail"
         ]);
         expect(assembly.data.integration.navigations.map((navigation) => navigation.id)).toEqual([
             "deleteCustomer",
@@ -37,21 +45,26 @@ describe("customers CRUD example flow", () => {
         expect(compiled.model?.components.map((component) => component.id)).toEqual(
             expect.arrayContaining([
                 "pageTitle",
+                "customersContentContainer",
                 "newCustomerButton",
                 "refreshCustomersButton",
                 "customersTable",
                 "editorStatus",
+                "detailContentContainer",
                 "backToCustomersButton",
                 "editCustomerButton",
                 "deleteCustomerButton",
                 "detailRouteTitle",
                 "detailCustomerId",
-                "customerForm",
+                "customerEditorContainer",
+                "customerNameInput",
+                "customerEmailInput",
+                "customerStatusInput",
                 "cancelCustomerButton",
                 "saveCustomerButton"
             ])
         );
-        expect(compiled.model?.components).toHaveLength(13);
+        expect(compiled.model?.components).toHaveLength(18);
     });
 
     it("serves the compiled example flow through the runtime API", () => {

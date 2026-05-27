@@ -7,6 +7,8 @@
     "main": "nodes/webapp.js",
     "files": [
         "nodes",
+        "lib",
+        "resources",
         "packages/schema/dist",
         "examples",
         "README.md",
@@ -21,7 +23,20 @@
     "node-red": {
         "version": ">=4.0.0",
         "nodes": {
-            "webapp": "nodes/webapp.js"
+            "ui-app": "nodes/structure/ui-app.js",
+            "ui-layout": "nodes/structure/ui-layout.js",
+            "ui-slot": "nodes/structure/ui-slot.js",
+            "ui-route": "nodes/structure/ui-route.js",
+            "ui-dialog": "nodes/structure/ui-dialog.js",
+            "ui-text": "nodes/view/ui-text.js",
+            "ui-button": "nodes/view/ui-button.js",
+            "ui-table": "nodes/view/ui-table.js",
+            "ui-container": "nodes/view/ui-container.js",
+            "ui-input": "nodes/view/ui-input.js",
+            "ui-store": "nodes/state/ui-store.js",
+            "ui-query": "nodes/state/ui-query.js",
+            "ui-action": "nodes/behavior/ui-action.js",
+            "ui-navigation": "nodes/behavior/ui-navigation.js"
         }
     },
     "scripts": {

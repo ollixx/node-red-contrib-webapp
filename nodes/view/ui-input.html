@@ -1,0 +1,41 @@
+<script type="text/javascript" src="resources/node-red-contrib-webapp/lib/editor-common.js"></script>
+<script type="text/javascript">
+    (function () {
+        const common = window.WebappEditorCommon;
+        common.registerNodeType("ui-input", {
+            category: "webapp view",
+            color: "#f4efcf",
+            defaults: {
+                name: { value: "" },
+                uiId: { value: "", required: true },
+                mount: { value: "", required: true },
+                label: { value: "", required: true },
+                valuePath: { value: "", required: true },
+                value: { value: null },
+                storeId: { value: "" },
+                path: { value: "" },
+                inputType: { value: "text", required: true },
+                order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } }
+            },
+            inputs: 0,
+            outputs: 1,
+            icon: "font-awesome/fa-i-cursor",
+            label: common.labelWithName("ui-input"),
+            oneditprepare: common.installReferenceSelectors({ mount: true, store: true })
+        });
+    })();
+</script>
+<script type="text/html" data-template-name="ui-input">
+    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-uiId">Node ID</label><input type="text" id="node-input-uiId"></div>
+    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-tips">Waehlt den Slot, in den dieses Eingabefeld gemountet wird.</div>
+    <div class="form-row"><label for="node-input-label">Label</label><input type="text" id="node-input-label"></div>
+    <div class="form-row"><label for="node-input-valuePath">Value Path</label><input type="text" id="node-input-valuePath"></div>
+    <div class="form-row"><label for="node-input-storeId">Store ID</label><select id="node-input-storeId"></select></div>
+    <div class="form-row"><label for="node-input-path">Store Path</label><input type="text" id="node-input-path"></div>
+    <div class="form-row"><label for="node-input-inputType">Input Type</label><select id="node-input-inputType"><option value="text">text</option><option value="email">email</option><option value="number">number</option></select></div>
+    <div class="form-row"><label for="node-input-order">Order</label><input type="number" id="node-input-order"></div>
+</script>
+<script type="text/html"
+    data-help-name="ui-input"><p>Mountet ein generisches Eingabefeld mit State- und optionalem Store-Binding.</p></script>

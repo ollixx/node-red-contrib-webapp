@@ -2,6 +2,8 @@ export const packageName = "@node-red-contrib-webapp/schema";
 
 export {
     actionDefinitionSchema,
+    actionTargetModeSchema,
+    actionTypeSchema,
     appModelSchema,
     bindingSchema,
     componentDefinitionSchema,
@@ -10,14 +12,18 @@ export {
     layoutDefinitionSchema,
     navigationDefinitionSchema,
     queryDefinitionSchema,
-    regionDefinitionSchema,
     runtimeIntegrationModelSchema,
+    slotDefinitionSchema,
     routeDefinitionSchema,
+    storeOperationSchema,
     storeDefinitionSchema,
-    uiEventMessageSchema
+    uiEventMessageSchema,
+    uiStoreMessageSchema
 } from "./contracts";
 export type {
     ActionDefinition,
+    ActionTargetMode,
+    ActionType,
     AppModel,
     BindingDefinition,
     ComponentDefinition,
@@ -26,25 +32,28 @@ export type {
     LayoutDefinition,
     NavigationDefinition,
     QueryDefinition,
-    RegionDefinition,
     RuntimeIntegrationModel,
     RouteDefinition,
+    SlotDefinition,
+    StoreOperation,
     StoreDefinition,
-    UiEventMessage
+    UiEventMessage,
+    UiStoreMessage
 } from "./contracts";
 
 export {
     uiActionNodeDefinitionSchema,
     uiAppNodeDefinitionSchema,
     uiButtonNodeDefinitionSchema,
+    uiContainerNodeDefinitionSchema,
     uiDialogNodeDefinitionSchema,
-    uiFormNodeDefinitionSchema,
+    uiInputNodeDefinitionSchema,
     uiLayoutNodeDefinitionSchema,
     uiNavigationNodeDefinitionSchema,
     uiNodeDefinitionSchema,
     uiQueryNodeDefinitionSchema,
-    uiRegionNodeDefinitionSchema,
     uiRouteNodeDefinitionSchema,
+    uiSlotNodeDefinitionSchema,
     uiStoreNodeDefinitionSchema,
     uiTableNodeDefinitionSchema,
     uiTextNodeDefinitionSchema,
@@ -54,14 +63,15 @@ export type {
     UiActionNodeDefinition,
     UiAppNodeDefinition,
     UiButtonNodeDefinition,
+    UiContainerNodeDefinition,
     UiDialogNodeDefinition,
-    UiFormNodeDefinition,
+    UiInputNodeDefinition,
     UiLayoutNodeDefinition,
     UiNavigationNodeDefinition,
     UiNodeDefinition,
     UiQueryNodeDefinition,
-    UiRegionNodeDefinition,
     UiRouteNodeDefinition,
+    UiSlotNodeDefinition,
     UiStoreNodeDefinition,
     UiTableNodeDefinition,
     UiTextNodeDefinition

@@ -1,0 +1,27 @@
+<script type="text/javascript" src="resources/node-red-contrib-webapp/lib/editor-common.js"></script>
+<script type="text/javascript">
+    (function () {
+        const common = window.WebappEditorCommon;
+        common.registerNodeType("ui-store", {
+            category: "webapp state",
+            color: "#d8e8f8",
+            defaults: {
+                name: { value: "" },
+                uiId: { value: "", required: true },
+                statePath: { value: "", required: true },
+                initialValue: { value: "" }
+            },
+            inputs: 1,
+            outputs: 1,
+            icon: "font-awesome/fa-database",
+            label: common.labelWithName("ui-store")
+        });
+    })();
+</script>
+<script type="text/html" data-template-name="ui-store">
+    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-uiId">Store ID</label><input type="text" id="node-input-uiId"></div>
+    <div class="form-row"><label for="node-input-statePath">State Path</label><input type="text" id="node-input-statePath"></div>
+    <div class="form-row"><label for="node-input-initialValue">Initial Value JSON</label><input type="text" id="node-input-initialValue"></div>
+</script>
+<script type="text/html" data-help-name="ui-store"><p>Beschreibt einen zentralen UI-Store.</p></script>

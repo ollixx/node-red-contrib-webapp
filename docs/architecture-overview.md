@@ -20,7 +20,7 @@ Das Projekt trennt deklarative UI-Struktur, Runtime-Orchestrierung und Editor-Er
 
 ### `packages/renderer`
 
-- rendert das kompilierte Modell als Snapshot fuer Route, Layout, Regionen und Dialoge
+- rendert das kompilierte Modell als Snapshot fuer Route, Layout, Slots, Child-Layouts und Dialoge
 - loest Bindings gegen State, Queries und Route-Parameter auf
 - standardisiert UI-Ereignisse im `msg.ui`-Format
 
@@ -31,7 +31,7 @@ Das Projekt trennt deklarative UI-Struktur, Runtime-Orchestrierung und Editor-Er
 
 ## Datenfluss des MVP
 
-1. Ein Flow liefert UI-Knoten wie `ui-route`, `ui-table` oder `ui-form`.
+1. Ein Flow liefert UI-Knoten wie `ui-route`, `ui-table`, `ui-container` oder `ui-input`.
 2. Die Runtime assembliert diese Knoten zu Contributons fuer App, Layouts, Routen, Dialoge und Komponenten.
 3. Die Registry kompiliert daraus ein validiertes `AppModel`.
 4. Der Renderer bildet daraus Route- und Dialog-Snapshots und erzeugt standardisierte `msg.ui`-Events.
@@ -45,4 +45,4 @@ Das Projekt trennt deklarative UI-Struktur, Runtime-Orchestrierung und Editor-Er
 
 ## P7-Referenzpfad
 
-Der Referenzfall liegt unter [examples/customers-crud/README.md](../examples/customers-crud/README.md). Er deckt Listenansicht, Detailroute, Dialogformular, Navigation, State-Bindings und Basis-Hardening ueber automatisierte Tests ab.
+Der Referenzfall liegt unter [examples/customers-crud/README.md](../examples/customers-crud/README.md). Er deckt Listenansicht, Detailroute, Dialog-Container mit Child-Layout, Navigation, State-Bindings und Basis-Hardening ueber automatisierte Tests ab.

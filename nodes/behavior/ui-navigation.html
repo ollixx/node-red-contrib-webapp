@@ -1,0 +1,26 @@
+<script type="text/javascript" src="resources/node-red-contrib-webapp/lib/editor-common.js"></script>
+<script type="text/javascript">
+    (function () {
+        const common = window.WebappEditorCommon;
+        common.registerNodeType("ui-navigation", {
+            category: "webapp behavior",
+            color: "#f8ddd0",
+            defaults: {
+                name: { value: "" },
+                uiId: { value: "", required: true },
+                to: { value: "", required: true }
+            },
+            inputs: 1,
+            outputs: 1,
+            icon: "font-awesome/fa-location-arrow",
+            label: common.labelWithName("ui-navigation")
+        });
+    })();
+</script>
+<script type="text/html" data-template-name="ui-navigation">
+    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-uiId">Navigation ID</label><input type="text" id="node-input-uiId"></div>
+    <div class="form-row"><label for="node-input-to">Zielpfad</label><input type="text" id="node-input-to"></div>
+</script>
+<script type="text/html"
+    data-help-name="ui-navigation"><p>Beschreibt eine deklarative Navigation zu einer Route. Deprecated: bevorzugt ui-action vom Typ navigate.</p></script>

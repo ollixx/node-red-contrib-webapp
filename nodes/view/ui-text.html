@@ -1,0 +1,70 @@
+<script type="text/javascript" src="resources/node-red-contrib-webapp/lib/editor-common.js"></script>
+<script type="text/javascript">
+    (function () {
+        const common = window.WebappEditorCommon;
+        common.registerNodeType("ui-text", {
+            category: "webapp view",
+            color: "#f4efcf",
+            defaults: {
+                name: { value: "" },
+                uiId: { value: "", required: true },
+                mount: { value: "", required: true },
+                text: { value: "", required: true },
+                value: { value: { kind: "literal", value: "" } },
+                variant: { value: "" },
+                order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } }
+            },
+            inputs: 0,
+            outputs: 0,
+            icon: "font-awesome/fa-font",
+            label: common.labelWithName("ui-text"),
+            oneditprepare: function () {
+                common.installReferenceSelectors({ mount: true }).call(this);
+                const binding = common.bindingValueForEditor(common.parseBindingValue(this.value), this.text || "");
+                const textInput = $("#node-input-text");
+
+                textInput.typedInput({
+                    default: binding.type,
+                    types: [
+                        { value: "literal", label: "Text", icon: "fa fa-font", hasValue: true },
+                        { value: "state", label: "State", icon: "fa fa-database", hasValue: true },
+                        { value: "query", label: "Query", icon: "fa fa-search", hasValue: true },
+                        { value: "routeParam", label: "Route Param", icon: "fa fa-map-signs", hasValue: true }
+                    ]
+                });
+                textInput.typedInput("type", binding.type);
+                textInput.typedInput("value", binding.value);
+            },
+            oneditsave: function () {
+                const textInput = $("#node-input-text");
+                const bindingType = textInput.typedInput("type");
+                const bindingValue = textInput.typedInput("value");
+
+                if (bindingType === "literal") {
+                    this.text = bindingValue;
+                    this.value = {
+                        kind: "literal",
+                        value: bindingValue
+                    };
+                    return;
+                }
+
+                this.text = "";
+                this.value = {
+                    kind: bindingType,
+                    path: bindingValue
+                };
+            }
+        });
+    })();
+</script>
+<script type="text/html" data-template-name="ui-text">
+    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-uiId">Node ID</label><input type="text" id="node-input-uiId"></div>
+    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-tips">Waehlt den Slot, in den dieser Text gemountet wird.</div>
+    <div class="form-row"><label for="node-input-text">Text</label><input type="text" id="node-input-text"></div>
+    <div class="form-row"><label for="node-input-variant">Variant</label><input type="text" id="node-input-variant"></div>
+    <div class="form-row"><label for="node-input-order">Order</label><input type="number" id="node-input-order"></div>
+</script>
+<script type="text/html" data-help-name="ui-text"><p>Mountet statischen Text an einen Zielpunkt.</p></script>

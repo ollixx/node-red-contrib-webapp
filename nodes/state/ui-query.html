@@ -1,0 +1,30 @@
+<script type="text/javascript" src="resources/node-red-contrib-webapp/lib/editor-common.js"></script>
+<script type="text/javascript">
+    (function () {
+        const common = window.WebappEditorCommon;
+        common.registerNodeType("ui-query", {
+            category: "webapp state",
+            color: "#d8e8f8",
+            defaults: {
+                name: { value: "" },
+                uiId: { value: "", required: true },
+                queryPath: { value: "", required: true },
+                source: { value: "" },
+                refreshAction: { value: "" }
+            },
+            inputs: 1,
+            outputs: 1,
+            icon: "font-awesome/fa-search",
+            label: common.labelWithName("ui-query"),
+            oneditprepare: common.installReferenceSelectors({ action: "#node-input-refreshAction" })
+        });
+    })();
+</script>
+<script type="text/html" data-template-name="ui-query">
+    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-uiId">Query ID</label><input type="text" id="node-input-uiId"></div>
+    <div class="form-row"><label for="node-input-queryPath">Query Path</label><input type="text" id="node-input-queryPath"></div>
+    <div class="form-row"><label for="node-input-source">Source</label><input type="text" id="node-input-source"></div>
+    <div class="form-row"><label for="node-input-refreshAction">Refresh Action</label><select id="node-input-refreshAction"></select></div>
+</script>
+<script type="text/html" data-help-name="ui-query"><p>Beschreibt eine UI-Query fuer geladene Daten.</p></script>

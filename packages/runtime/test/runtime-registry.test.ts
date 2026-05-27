@@ -47,18 +47,24 @@ describe("runtime registry", () => {
         expect(resultA.model).toEqual(resultB.model);
         expect(appModelSchema.safeParse(resultA.model).success).toBe(true);
         expect(resultA.model?.components.map((component) => component.id)).toEqual([
+            "detailRouteTitle",
             "pageTitle",
-            "cancelCustomerButton",
-            "saveCustomerButton",
-            "customerForm",
-            "detailSummary",
+            "customerEditorContainer",
+            "detailCustomerId",
             "backToCustomersButton",
             "editCustomerButton",
             "deleteCustomerButton",
             "customersTable",
             "newCustomerButton",
             "refreshCustomersButton",
-            "editorStatus"
+            "editorStatus",
+            "cancelCustomerButton",
+            "saveCustomerButton",
+            "customerNameInput",
+            "customerEmailInput",
+            "customerStatusInput",
+            "detailContentContainer",
+            "customersContentContainer"
         ]);
     });
 
@@ -85,7 +91,7 @@ describe("runtime registry", () => {
         const result = registry.compile(customersCrudAppModelFixture.id);
 
         expect(result.model?.components.find((component) => component.id === "newCustomerButton")?.mount).toBe(
-            "route:/customers/content/toolbar"
+            "layout:customersListLayout/toolbar"
         );
         expect(result.diagnostics).toEqual(
             expect.arrayContaining([

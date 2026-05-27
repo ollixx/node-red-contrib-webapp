@@ -8,13 +8,14 @@ describe("editor node set", () => {
             "ui-action",
             "ui-app",
             "ui-button",
+            "ui-container",
             "ui-dialog",
-            "ui-form",
+            "ui-input",
             "ui-layout",
             "ui-navigation",
             "ui-query",
-            "ui-region",
             "ui-route",
+            "ui-slot",
             "ui-store",
             "ui-table",
             "ui-text"
@@ -23,7 +24,6 @@ describe("editor node set", () => {
 
     it("blocks incomplete required fields before emit", () => {
         const issues = validateEditorNodeConfig("ui-button", {
-            appId: "customersApp",
             id: "newCustomerButton",
             mount: "route:/customers/content/toolbar",
             label: ""
@@ -41,6 +41,36 @@ describe("editor node set", () => {
         );
     });
 
+    it("blocks invalid typed ui-action combinations before emit", () => {
+        const issues = validateEditorNodeConfig("ui-action", {
+            id: "hideToolbar",
+            actionType: "hide",
+            targetMode: "path"
+        });
+
+        expect(issues).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    field: "target"
+                })
+            ])
+        );
+
+        const navigateIssues = validateEditorNodeConfig("ui-action", {
+            id: "goToCustomers",
+            actionType: "navigate",
+            targetMode: "out-port"
+        });
+
+        expect(navigateIssues).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    field: "to"
+                })
+            ])
+        );
+    });
+
     it("emits schema-valid definitions for every MVP node type", () => {
         const samples = [
             emitNodeDefinition("ui-app", {
@@ -48,75 +78,95 @@ describe("editor node set", () => {
                 title: "Customers CRM"
             }),
             emitNodeDefinition("ui-layout", {
-                appId: "customersApp",
                 id: "customerShell",
                 title: "Customer shell"
             }),
-            emitNodeDefinition("ui-region", {
-                appId: "customersApp",
+            emitNodeDefinition("ui-slot", {
                 id: "contentRegion",
                 layoutId: "customerShell",
                 name: "content",
                 order: 1
             }),
             emitNodeDefinition("ui-route", {
-                appId: "customersApp",
                 id: "customers",
                 path: "/customers",
                 layoutId: "customerShell"
             }),
             emitNodeDefinition("ui-text", {
-                appId: "customersApp",
                 id: "pageTitle",
                 mount: "route:/customers/content",
                 text: "Customers"
             }),
+            emitNodeDefinition("ui-text", {
+                id: "draftStatus",
+                mount: "layout:dialogFormLayout/fields",
+                value: {
+                    kind: "state",
+                    path: "draft.customer.status"
+                }
+            }),
             emitNodeDefinition("ui-button", {
-                appId: "customersApp",
                 id: "newCustomerButton",
                 mount: "route:/customers/content",
                 label: "New customer",
                 action: "openCustomerEditor"
             }),
             emitNodeDefinition("ui-table", {
-                appId: "customersApp",
                 id: "customersTable",
                 mount: "route:/customers/content",
                 columns: ["name", "email"],
                 rowsPath: "customers.list",
                 selectAction: "openCustomerDetail"
             }),
-            emitNodeDefinition("ui-form", {
-                appId: "customersApp",
-                id: "customerForm",
-                mount: "dialog:customerEditor/content/form/fields",
-                fields: ["name", "email"],
-                modelPath: "draft.customer",
-                submitAction: "saveCustomer"
+            emitNodeDefinition("ui-container", {
+                id: "customerEditorContainer",
+                mount: "dialog:customerEditor/content",
+                layoutId: "dialogFormLayout"
+            }),
+            emitNodeDefinition("ui-input", {
+                id: "customerNameInput",
+                mount: "layout:dialogFormLayout/fields",
+                label: "Name",
+                valuePath: "draft.customer.name",
+                storeId: "draftStore",
+                path: "name"
             }),
             emitNodeDefinition("ui-dialog", {
-                appId: "customersApp",
                 id: "customerEditor",
                 layoutId: "dialogShell",
                 routeId: "customers"
             }),
             emitNodeDefinition("ui-store", {
-                appId: "customersApp",
                 id: "draftStore",
                 statePath: "draft.customer"
             }),
             emitNodeDefinition("ui-query", {
-                appId: "customersApp",
                 id: "customersQuery",
                 queryPath: "customers.list",
                 source: "msg.payload"
             }),
             emitNodeDefinition("ui-action", {
-                appId: "customersApp",
                 id: "saveCustomer"
             }),
+            emitNodeDefinition("ui-action", {
+                id: "hideToolbar",
+                actionType: "hide",
+                targetMode: "path",
+                target: "route:/customers/content/toolbar"
+            }),
+            emitNodeDefinition("ui-action", {
+                id: "triggerRefresh",
+                actionType: "trigger",
+                targetMode: "out-port"
+            }),
+            emitNodeDefinition("ui-action", {
+                id: "goToCustomersAction",
+                actionType: "navigate",
+                targetMode: "path",
+                target: "app",
+                to: "/customers"
+            }),
             emitNodeDefinition("ui-navigation", {
-                appId: "customersApp",
                 id: "goToCustomers",
                 to: "/customers"
             })

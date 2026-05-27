@@ -1,0 +1,31 @@
+<script type="text/javascript" src="resources/node-red-contrib-webapp/lib/editor-common.js"></script>
+<script type="text/javascript">
+    (function () {
+        const common = window.WebappEditorCommon;
+        common.registerNodeType("ui-route", {
+            category: "webapp structure",
+            color: "#d9efe2",
+            defaults: {
+                name: { value: "" },
+                uiId: { value: "", required: true },
+                path: { value: "", required: true },
+                title: { value: "" },
+                layoutId: { value: "", required: true }
+            },
+            inputs: 0,
+            outputs: 0,
+            icon: "font-awesome/fa-map-signs",
+            label: common.labelWithName("ui-route"),
+            oneditprepare: common.installReferenceSelectors({ layout: true })
+        });
+    })();
+</script>
+<script type="text/html" data-template-name="ui-route">
+    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-uiId">Route ID</label><input type="text" id="node-input-uiId"></div>
+    <div class="form-row"><label for="node-input-path">Pfad</label><input type="text" id="node-input-path"></div>
+    <div class="form-row"><label for="node-input-title">Titel</label><input type="text" id="node-input-title"></div>
+    <div class="form-row"><label for="node-input-layoutId">Parent Layout</label><select id="node-input-layoutId"></select></div>
+    <div class="form-tips">Dieses Layout wird fuer die Seite gerendert.</div>
+</script>
+<script type="text/html" data-help-name="ui-route"><p>Definiert eine Route und bindet sie an ein Layout.</p></script>

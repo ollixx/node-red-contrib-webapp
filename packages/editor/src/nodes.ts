@@ -4,14 +4,15 @@ import {
     type UiActionNodeDefinition,
     type UiAppNodeDefinition,
     type UiButtonNodeDefinition,
+    type UiContainerNodeDefinition,
     type UiDialogNodeDefinition,
-    type UiFormNodeDefinition,
+    type UiInputNodeDefinition,
     type UiLayoutNodeDefinition,
     type UiNavigationNodeDefinition,
     type UiNodeDefinition,
     type UiQueryNodeDefinition,
-    type UiRegionNodeDefinition,
     type UiRouteNodeDefinition,
+    type UiSlotNodeDefinition,
     type UiStoreNodeDefinition,
     type UiTableNodeDefinition,
     type UiTextNodeDefinition
@@ -44,43 +45,47 @@ export interface UiAppEditorConfig {
 
 export type UiAppEditorNodeDefinition = BaseEditorNodeDefinition<UiAppEditorConfig, UiAppNodeDefinition>;
 
-export interface AppScopedEditorConfig {
-    appId?: string;
+export interface IdentifiedEditorConfig {
     id?: string;
 }
 
-export interface UiLayoutEditorConfig extends AppScopedEditorConfig {
+export interface UiLayoutEditorConfig extends IdentifiedEditorConfig {
     title?: string;
 }
 
-export interface UiRegionEditorConfig extends AppScopedEditorConfig {
+export interface UiSlotEditorConfig extends IdentifiedEditorConfig {
     layoutId?: string;
     name?: string;
-    parentRegionId?: string;
     title?: string;
     order?: number;
 }
 
-export interface UiRouteEditorConfig extends AppScopedEditorConfig {
+export interface UiContainerEditorConfig extends MountableEditorConfig {
+    layoutId?: string;
+    title?: string;
+}
+
+export interface UiRouteEditorConfig extends IdentifiedEditorConfig {
     path?: string;
     title?: string;
     layoutId?: string;
 }
 
-export interface UiDialogEditorConfig extends AppScopedEditorConfig {
+export interface UiDialogEditorConfig extends IdentifiedEditorConfig {
     title?: string;
     layoutId?: string;
     routeId?: string;
     modal?: boolean;
 }
 
-interface MountableEditorConfig extends AppScopedEditorConfig {
+interface MountableEditorConfig extends IdentifiedEditorConfig {
     mount?: string;
     order?: number;
 }
 
 export interface UiTextEditorConfig extends MountableEditorConfig {
     text?: string;
+    value?: BindingDefinition;
     variant?: string;
 }
 
@@ -96,41 +101,49 @@ export interface UiTableEditorConfig extends MountableEditorConfig {
     selectAction?: string;
 }
 
-export interface UiFormEditorConfig extends MountableEditorConfig {
-    fields?: string[];
-    modelPath?: string;
-    submitAction?: string;
+export interface UiInputEditorConfig extends MountableEditorConfig {
+    label?: string;
+    valuePath?: string;
+    storeId?: string;
+    path?: string;
+    inputType?: "text" | "email" | "number";
+    placeholder?: string;
 }
 
-export interface UiStoreEditorConfig extends AppScopedEditorConfig {
+export interface UiStoreEditorConfig extends IdentifiedEditorConfig {
     statePath?: string;
     initialValue?: unknown;
 }
 
-export interface UiQueryEditorConfig extends AppScopedEditorConfig {
+export interface UiQueryEditorConfig extends IdentifiedEditorConfig {
     queryPath?: string;
     source?: string;
     refreshAction?: string;
 }
 
-export interface UiActionEditorConfig extends AppScopedEditorConfig {
+export interface UiActionEditorConfig extends IdentifiedEditorConfig {
+    actionType?: "navigate" | "disable" | "enable" | "show" | "hide" | "trigger";
+    targetMode?: "out-port" | "path";
+    target?: string;
+    to?: string;
     description?: string;
 }
 
-export interface UiNavigationEditorConfig extends AppScopedEditorConfig {
+export interface UiNavigationEditorConfig extends IdentifiedEditorConfig {
     to?: string;
 }
 
 export type NodeEditorConfig =
     | UiAppEditorConfig
     | UiLayoutEditorConfig
-    | UiRegionEditorConfig
+    | UiSlotEditorConfig
     | UiRouteEditorConfig
     | UiDialogEditorConfig
     | UiTextEditorConfig
     | UiButtonEditorConfig
     | UiTableEditorConfig
-    | UiFormEditorConfig
+    | UiContainerEditorConfig
+    | UiInputEditorConfig
     | UiStoreEditorConfig
     | UiQueryEditorConfig
     | UiActionEditorConfig
@@ -139,13 +152,14 @@ export type NodeEditorConfig =
 export type NodeEditorDefinition =
     | UiAppEditorNodeDefinition
     | BaseEditorNodeDefinition<UiLayoutEditorConfig, UiLayoutNodeDefinition>
-    | BaseEditorNodeDefinition<UiRegionEditorConfig, UiRegionNodeDefinition>
+    | BaseEditorNodeDefinition<UiSlotEditorConfig, UiSlotNodeDefinition>
     | BaseEditorNodeDefinition<UiRouteEditorConfig, UiRouteNodeDefinition>
     | BaseEditorNodeDefinition<UiDialogEditorConfig, UiDialogNodeDefinition>
     | BaseEditorNodeDefinition<UiTextEditorConfig, UiTextNodeDefinition>
     | BaseEditorNodeDefinition<UiButtonEditorConfig, UiButtonNodeDefinition>
     | BaseEditorNodeDefinition<UiTableEditorConfig, UiTableNodeDefinition>
-    | BaseEditorNodeDefinition<UiFormEditorConfig, UiFormNodeDefinition>
+    | BaseEditorNodeDefinition<UiContainerEditorConfig, UiContainerNodeDefinition>
+    | BaseEditorNodeDefinition<UiInputEditorConfig, UiInputNodeDefinition>
     | BaseEditorNodeDefinition<UiStoreEditorConfig, UiStoreNodeDefinition>
     | BaseEditorNodeDefinition<UiQueryEditorConfig, UiQueryNodeDefinition>
     | BaseEditorNodeDefinition<UiActionEditorConfig, UiActionNodeDefinition>
@@ -179,6 +193,18 @@ function optionalInteger(message: string): EditorFieldDefinition {
             }
 
             return typeof value === "number" && Number.isInteger(value) ? undefined : message;
+        }
+    };
+}
+
+function optionalStringEnum(values: string[], message: string): EditorFieldDefinition {
+    return {
+        validate(value) {
+            if (value === undefined) {
+                return undefined;
+            }
+
+            return typeof value === "string" && values.includes(value) ? undefined : message;
         }
     };
 }
@@ -279,50 +305,41 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         title: config.title ?? ""
     })),
     "ui-layout": createDefinition("ui-layout", "structure", {
-        appId: requiredString("Layouts must reference an app."),
         id: requiredString("Layout IDs are required before deploy.")
     }, (config: UiLayoutEditorConfig) => ({
         type: "ui-layout",
-        appId: config.appId ?? "",
         id: config.id ?? "",
         title: config.title
     })),
-    "ui-region": createDefinition("ui-region", "structure", {
-        appId: requiredString("Regions must reference an app."),
-        id: requiredString("Region node IDs are required before deploy."),
-        layoutId: requiredString("Regions must reference a layout."),
-        name: requiredString("Regions must declare a region name."),
-        order: optionalInteger("Region order must be an integer.")
-    }, (config: UiRegionEditorConfig) => ({
-        type: "ui-region",
-        appId: config.appId ?? "",
+    "ui-slot": createDefinition("ui-slot", "structure", {
+        id: requiredString("Slot node IDs are required before deploy."),
+        layoutId: requiredString("Slots must reference a layout."),
+        name: requiredString("Slots must declare a slot name."),
+        order: optionalInteger("Slot order must be an integer.")
+    }, (config: UiSlotEditorConfig) => ({
+        type: "ui-slot",
         id: config.id ?? "",
         layoutId: config.layoutId ?? "",
         name: config.name ?? "",
-        parentRegionId: config.parentRegionId,
         title: config.title,
         order: config.order ?? 0
     })),
     "ui-route": createDefinition("ui-route", "structure", {
-        appId: requiredString("Routes must reference an app."),
         id: requiredString("Route IDs are required before deploy."),
         path: requiredString("Routes must declare a path."),
         layoutId: requiredString("Routes must reference a layout.")
     }, (config: UiRouteEditorConfig) => ({
         type: "ui-route",
-        appId: config.appId ?? "",
         id: config.id ?? "",
         path: config.path ?? "",
         title: config.title,
         layoutId: config.layoutId ?? ""
     })),
     "ui-dialog": createDefinition("ui-dialog", "structure", {
-        appId: requiredString("Dialogs must reference an app."),
         id: requiredString("Dialog IDs are required before deploy."),
         layoutId: requiredString("Dialogs must reference a layout.")
     }, (config: UiDialogEditorConfig) => ({
         type: "ui-dialog",
-        appId: config.appId ?? "",
         id: config.id ?? "",
         title: config.title,
         layoutId: config.layoutId ?? "",
@@ -330,22 +347,29 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         modal: config.modal ?? true
     })),
     "ui-text": createDefinition("ui-text", "view", {
-        appId: requiredString("Text nodes must reference an app."),
         id: requiredString("Text node IDs are required before deploy."),
         mount: requiredString("Text nodes must declare a mount target."),
-        text: requiredString("Text nodes must declare a value."),
+        text: {
+            validate(value, config) {
+                if (config.value && typeof config.value === "object") {
+                    return undefined;
+                }
+
+                return typeof value === "string" && value.trim().length > 0
+                    ? undefined
+                    : "Text nodes must declare a value.";
+            }
+        },
         order: optionalInteger("Text order must be an integer.")
     }, (config: UiTextEditorConfig) => ({
         type: "ui-text",
-        appId: config.appId ?? "",
         id: config.id ?? "",
         mount: config.mount ?? "",
         order: config.order,
-        value: literalBinding(config.text ?? ""),
+        value: config.value ?? literalBinding(config.text ?? ""),
         variant: config.variant
     })),
     "ui-button": createDefinition("ui-button", "view", {
-        appId: requiredString("Buttons must reference an app."),
         id: requiredString("Button IDs are required before deploy."),
         mount: requiredString("Buttons must declare a mount target."),
         label: requiredString("Buttons must declare a label."),
@@ -353,7 +377,6 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         order: optionalInteger("Button order must be an integer.")
     }, (config: UiButtonEditorConfig) => ({
         type: "ui-button",
-        appId: config.appId ?? "",
         id: config.id ?? "",
         mount: config.mount ?? "",
         order: config.order,
@@ -362,7 +385,6 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         disabled: config.disabledPath ? stateBinding(config.disabledPath) : undefined
     })),
     "ui-table": createDefinition("ui-table", "view", {
-        appId: requiredString("Tables must reference an app."),
         id: requiredString("Table IDs are required before deploy."),
         mount: requiredString("Tables must declare a mount target."),
         columns: requiredStringArray("Tables must declare at least one column."),
@@ -370,7 +392,6 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         order: optionalInteger("Table order must be an integer.")
     }, (config: UiTableEditorConfig) => ({
         type: "ui-table",
-        appId: config.appId ?? "",
         id: config.id ?? "",
         mount: config.mount ?? "",
         order: config.order,
@@ -378,63 +399,133 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         rows: queryBinding(config.rowsPath ?? ""),
         selectAction: config.selectAction
     })),
-    "ui-form": createDefinition("ui-form", "view", {
-        appId: requiredString("Forms must reference an app."),
-        id: requiredString("Form IDs are required before deploy."),
-        mount: requiredString("Forms must declare a mount target."),
-        fields: requiredStringArray("Forms must declare at least one field."),
-        modelPath: requiredString("Forms must bind to a state path."),
-        submitAction: requiredString("Forms must reference a submit action."),
-        order: optionalInteger("Form order must be an integer.")
-    }, (config: UiFormEditorConfig) => ({
-        type: "ui-form",
-        appId: config.appId ?? "",
+    "ui-container": createDefinition("ui-container", "view", {
+        id: requiredString("Container IDs are required before deploy."),
+        mount: requiredString("Containers must declare a mount target."),
+        layoutId: requiredString("Containers must reference a child layout."),
+        order: optionalInteger("Container order must be an integer.")
+    }, (config: UiContainerEditorConfig) => ({
+        type: "ui-container",
         id: config.id ?? "",
         mount: config.mount ?? "",
         order: config.order,
-        fields: config.fields ?? [],
-        model: stateBinding(config.modelPath ?? ""),
-        submitAction: config.submitAction ?? ""
+        layoutId: config.layoutId ?? "",
+        title: config.title
+    })),
+    "ui-input": createDefinition("ui-input", "view", {
+        id: requiredString("Input IDs are required before deploy."),
+        mount: requiredString("Inputs must declare a mount target."),
+        label: requiredString("Inputs must declare a label."),
+        valuePath: requiredString("Inputs must bind to a state path."),
+        order: optionalInteger("Input order must be an integer."),
+        inputType: optionalStringEnum(["text", "email", "number"], "Input type must be text, email, or number."),
+        storeId: {
+            validate(value, config) {
+                if (value === undefined && config.path === undefined) {
+                    return undefined;
+                }
+
+                return typeof value === "string" && value.trim().length > 0 ? undefined : "Inputs that write to a store must declare a store ID.";
+            }
+        },
+        path: {
+            validate(value, config) {
+                if (value === undefined && config.storeId === undefined) {
+                    return undefined;
+                }
+
+                return typeof value === "string" && value.trim().length > 0 ? undefined : "Inputs that write to a store must declare a relative path.";
+            }
+        }
+    }, (config: UiInputEditorConfig) => ({
+        type: "ui-input",
+        id: config.id ?? "",
+        mount: config.mount ?? "",
+        order: config.order,
+        label: config.label ?? "",
+        value: stateBinding(config.valuePath ?? ""),
+        storeId: config.storeId,
+        path: config.path,
+        inputType: config.inputType ?? "text",
+        placeholder: config.placeholder
     })),
     "ui-store": createDefinition("ui-store", "state", {
-        appId: requiredString("Stores must reference an app."),
         id: requiredString("Store IDs are required before deploy."),
         statePath: requiredString("Stores must declare a state path.")
     }, (config: UiStoreEditorConfig) => ({
         type: "ui-store",
-        appId: config.appId ?? "",
         id: config.id ?? "",
         statePath: config.statePath ?? "",
         initialValue: config.initialValue
     })),
     "ui-query": createDefinition("ui-query", "state", {
-        appId: requiredString("Queries must reference an app."),
         id: requiredString("Query IDs are required before deploy."),
         queryPath: requiredString("Queries must declare a query path.")
     }, (config: UiQueryEditorConfig) => ({
         type: "ui-query",
-        appId: config.appId ?? "",
         id: config.id ?? "",
         queryPath: config.queryPath ?? "",
         source: config.source,
         refreshAction: config.refreshAction
     })),
     "ui-action": createDefinition("ui-action", "behavior", {
-        appId: requiredString("Actions must reference an app."),
-        id: requiredString("Action IDs are required before deploy.")
+        id: requiredString("Action IDs are required before deploy."),
+        actionType: optionalStringEnum(["navigate", "disable", "enable", "show", "hide", "trigger"], "Actions must use a known action type."),
+        targetMode: {
+            validate(value, config) {
+                if (value === undefined) {
+                    return typeof config.actionType === "string" ? "Typed actions must declare a target mode." : undefined;
+                }
+
+                if (typeof value !== "string" || !["out-port", "path"].includes(value)) {
+                    return "Actions must use a known target mode.";
+                }
+
+                return typeof config.actionType === "string" ? undefined : "Target modes require an action type.";
+            }
+        },
+        target: {
+            validate(value, config) {
+                if (config.targetMode === "path") {
+                    return typeof value === "string" && value.trim().length > 0
+                        ? undefined
+                        : "Path-targeted actions must declare a target.";
+                }
+
+                if (config.targetMode === "out-port") {
+                    return value === undefined || value === ""
+                        ? undefined
+                        : "Out-port actions must not declare a direct target.";
+                }
+
+                return undefined;
+            }
+        },
+        to: {
+            validate(value, config) {
+                if (config.actionType === "navigate") {
+                    return typeof value === "string" && value.trim().length > 0
+                        ? undefined
+                        : "Navigate actions must declare a destination.";
+                }
+
+                return undefined;
+            }
+        }
     }, (config: UiActionEditorConfig) => ({
         type: "ui-action",
-        appId: config.appId ?? "",
         id: config.id ?? "",
+        actionType: config.actionType,
+        targetMode: config.targetMode,
+        target: config.target,
+        to: config.to,
         description: config.description
     })),
     "ui-navigation": createDefinition("ui-navigation", "behavior", {
-        appId: requiredString("Navigation nodes must reference an app."),
         id: requiredString("Navigation IDs are required before deploy."),
         to: requiredString("Navigation nodes must declare a destination path.")
     }, (config: UiNavigationEditorConfig) => ({
         type: "ui-navigation",
-        appId: config.appId ?? "",
         id: config.id ?? "",
         to: config.to ?? ""
     }))

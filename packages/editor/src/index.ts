@@ -8,21 +8,22 @@ export {
     selectFromStructure
 } from "./structure-view";
 export type {
-    AppScopedEditorConfig,
     EditorValidationIssue,
+    IdentifiedEditorConfig,
     NodeEditorConfig,
     NodeEditorDefinition,
     NodeEditorType,
     UiActionEditorConfig,
     UiAppEditorConfig,
     UiButtonEditorConfig,
+    UiContainerEditorConfig,
     UiDialogEditorConfig,
-    UiFormEditorConfig,
+    UiInputEditorConfig,
     UiLayoutEditorConfig,
     UiNavigationEditorConfig,
     UiQueryEditorConfig,
-    UiRegionEditorConfig,
     UiRouteEditorConfig,
+    UiSlotEditorConfig,
     UiStoreEditorConfig,
     UiTableEditorConfig,
     UiTextEditorConfig

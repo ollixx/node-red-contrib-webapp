@@ -1,0 +1,25 @@
+<script type="text/javascript" src="resources/node-red-contrib-webapp/lib/editor-common.js"></script>
+<script type="text/javascript">
+    (function () {
+        const common = window.WebappEditorCommon;
+        common.registerNodeType("ui-layout", {
+            category: "webapp structure",
+            color: "#d9efe2",
+            defaults: {
+                name: { value: "" },
+                uiId: { value: "", required: true },
+                title: { value: "" }
+            },
+            inputs: 0,
+            outputs: 0,
+            icon: "font-awesome/fa-columns",
+            label: common.labelWithName("ui-layout")
+        });
+    })();
+</script>
+<script type="text/html" data-template-name="ui-layout">
+    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-uiId">Layout ID</label><input type="text" id="node-input-uiId"></div>
+    <div class="form-row"><label for="node-input-title">Titel</label><input type="text" id="node-input-title"></div>
+</script>
+<script type="text/html" data-help-name="ui-layout"><p>Definiert ein Layout mit benannten Slots.</p></script>

@@ -3,20 +3,20 @@ import {
     type AppModel,
     type ComponentDefinition,
     type LayoutDefinition,
-    type RegionDefinition,
     type UiButtonNodeDefinition,
+    type UiContainerNodeDefinition,
     type UiDialogNodeDefinition,
-    type UiFormNodeDefinition,
+    type UiInputNodeDefinition,
     type UiLayoutNodeDefinition,
     type UiNodeDefinition,
-    type UiRegionNodeDefinition,
     type UiRouteNodeDefinition,
+    type UiSlotNodeDefinition,
     type UiTextNodeDefinition
 } from "@node-red-contrib-webapp/schema";
 
 type StructureScope = "route" | "dialog" | "layout";
 
-type StructureNodeKind = "app" | "route" | "dialog" | "layout" | "region" | "component";
+type StructureNodeKind = "app" | "route" | "dialog" | "layout" | "slot" | "component";
 
 type RuntimeDiagnosticLike = {
     code: string;
@@ -24,7 +24,12 @@ type RuntimeDiagnosticLike = {
     registrationIds?: string[];
 };
 
-export type MountableEditorSourceNode = UiTextNodeDefinition | UiButtonNodeDefinition | UiFormNodeDefinition | UiTableSourceNode;
+export type MountableEditorSourceNode =
+    | UiTextNodeDefinition
+    | UiButtonNodeDefinition
+    | UiContainerNodeDefinition
+    | UiInputNodeDefinition
+    | UiTableSourceNode;
 
 type UiTableSourceNode = Extract<UiNodeDefinition, { type: "ui-table" }>;
 
@@ -75,7 +80,7 @@ interface SourceNodeLookup {
     routes: Map<string, UiRouteNodeDefinition>;
     dialogs: Map<string, UiDialogNodeDefinition>;
     components: Map<string, MountableEditorSourceNode>;
-    regionsByLayoutId: Map<string, UiRegionNodeDefinition[]>;
+    slotsByLayoutId: Map<string, UiSlotNodeDefinition[]>;
 }
 
 interface StructureIndex {
@@ -84,7 +89,7 @@ interface StructureIndex {
 }
 
 function isMountableNode(node: UiNodeDefinition): node is MountableEditorSourceNode {
-    return node.type === "ui-text" || node.type === "ui-button" || node.type === "ui-form" || node.type === "ui-table";
+    return node.type === "ui-text" || node.type === "ui-button" || node.type === "ui-table" || node.type === "ui-container" || node.type === "ui-input";
 }
 
 function sortComponents(left: ComponentDefinition, right: ComponentDefinition): number {
@@ -99,14 +104,14 @@ function sortComponents(left: ComponentDefinition, right: ComponentDefinition): 
 }
 
 function createSourceNodeLookup(sourceNodes: readonly UiNodeDefinition[]): SourceNodeLookup {
-    const regionsByLayoutId = new Map<string, UiRegionNodeDefinition[]>();
+    const slotsByLayoutId = new Map<string, UiSlotNodeDefinition[]>();
     const lookup: SourceNodeLookup = {
         app: sourceNodes.find((node): node is Extract<UiNodeDefinition, { type: "ui-app" }> => node.type === "ui-app"),
         layouts: new Map(),
         routes: new Map(),
         dialogs: new Map(),
         components: new Map(),
-        regionsByLayoutId
+        slotsByLayoutId
     };
 
     for (const sourceNode of sourceNodes) {
@@ -125,13 +130,13 @@ function createSourceNodeLookup(sourceNodes: readonly UiNodeDefinition[]): Sourc
             continue;
         }
 
-        if (sourceNode.type === "ui-region") {
-            const layoutRegions = regionsByLayoutId.get(sourceNode.layoutId);
+        if (sourceNode.type === "ui-slot") {
+            const layoutSlots = slotsByLayoutId.get(sourceNode.layoutId);
 
-            if (layoutRegions) {
-                layoutRegions.push(sourceNode);
+            if (layoutSlots) {
+                layoutSlots.push(sourceNode);
             } else {
-                regionsByLayoutId.set(sourceNode.layoutId, [sourceNode]);
+                slotsByLayoutId.set(sourceNode.layoutId, [sourceNode]);
             }
 
             continue;
@@ -165,38 +170,12 @@ function findLayout(model: AppModel, layoutId: string): LayoutDefinition | undef
     return model.layouts.find((layout) => layout.id === layoutId);
 }
 
-function findRegionNodeId(lookup: SourceNodeLookup, layoutId: string, regionPath: string[]): string | undefined {
-    const regionNodes = lookup.regionsByLayoutId.get(layoutId) ?? [];
-    let parentRegionId: string | undefined;
-    let currentNode: UiRegionNodeDefinition | undefined;
-
-    for (const regionName of regionPath) {
-        currentNode = regionNodes.find((regionNode) => regionNode.parentRegionId === parentRegionId && regionNode.name === regionName);
-
-        if (!currentNode) {
-            return undefined;
-        }
-
-        parentRegionId = currentNode.id;
-    }
-
-    return currentNode?.id;
+function findSlotNodeId(lookup: SourceNodeLookup, layoutId: string, slotName: string): string | undefined {
+    return (lookup.slotsByLayoutId.get(layoutId) ?? []).find((slotNode) => slotNode.name === slotName)?.id;
 }
 
-function hasRegionPath(layout: LayoutDefinition, regionPath: string[]): boolean {
-    let regions = layout.regions;
-
-    for (const regionName of regionPath) {
-        const region = regions.find((candidate) => candidate.name === regionName);
-
-        if (!region) {
-            return false;
-        }
-
-        regions = region.regions ?? [];
-    }
-
-    return true;
+function hasSlotPath(layout: LayoutDefinition, regionPath: string[]): boolean {
+    return regionPath.length === 1 && layout.slots.some((slot) => slot.name === regionPath[0]);
 }
 
 function createResolvedComponentMap(model: AppModel): Map<string, ComponentDefinition[]> {
@@ -232,59 +211,58 @@ function createComponentItems(
     regionPath: string[],
     resolvedComponents: Map<string, ComponentDefinition[]>,
     lookup: SourceNodeLookup,
-    index: StructureIndex
+    index: StructureIndex,
+    model: AppModel
 ): EditorStructureItem[] {
     const components = targets.flatMap((target) => resolvedComponents.get(`${target.scope}:${target.targetId}:${regionPath.join("/")}`) ?? []);
     const dedupedComponents = [...new Map(components.map((component) => [component.id, component])).values()].sort(sortComponents);
 
-    return dedupedComponents.map((component) =>
-        registerItem(index, {
-            id: `${branchItemId}/component:${component.id}`,
+    return dedupedComponents.map((component) => {
+        const itemId = `${branchItemId}/component:${component.id}`;
+        const childLayoutId = component.kind === "container" && typeof component.props.layoutId === "string"
+            ? component.props.layoutId
+            : undefined;
+        const children = childLayoutId
+            ? [createLayoutBranch(itemId, "layout", childLayoutId, component.id, childLayoutId, model, resolvedComponents, lookup, index)]
+            : [];
+
+        return registerItem(index, {
+            id: itemId,
             kind: "component",
             label: component.id,
             canvasNodeId: lookup.components.get(component.id)?.id ?? component.id,
-            children: [],
+            children,
             meta: {
                 mount: component.mount
             }
-        })
-    );
+        });
+    });
 }
 
-function createRegionItems(
+function createSlotItems(
     branchItemId: string,
     layoutId: string,
-    regions: RegionDefinition[],
+    layout: LayoutDefinition,
     targets: Array<{ scope: StructureScope; targetId: string }>,
     resolvedComponents: Map<string, ComponentDefinition[]>,
     lookup: SourceNodeLookup,
     index: StructureIndex,
-    regionPath: string[] = []
+    model: AppModel
 ): EditorStructureItem[] {
-    return regions.map((region) => {
-        const nextRegionPath = [...regionPath, region.name];
-        const regionItemId = `${branchItemId}/region:${nextRegionPath.join("/")}`;
-        const regionChildren = createRegionItems(
-            branchItemId,
-            layoutId,
-            region.regions ?? [],
-            targets,
-            resolvedComponents,
-            lookup,
-            index,
-            nextRegionPath
-        );
-        const componentChildren = createComponentItems(branchItemId, targets, nextRegionPath, resolvedComponents, lookup, index);
+    return layout.slots.map((slot) => {
+        const slotPath = [slot.name];
+        const slotItemId = `${branchItemId}/slot:${slot.name}`;
+        const componentChildren = createComponentItems(slotItemId, targets, slotPath, resolvedComponents, lookup, index, model);
 
         return registerItem(index, {
-            id: regionItemId,
-            kind: "region",
-            label: region.title ?? region.name,
-            canvasNodeId: findRegionNodeId(lookup, layoutId, nextRegionPath),
-            children: [...regionChildren, ...componentChildren],
+            id: slotItemId,
+            kind: "slot",
+            label: slot.title ?? slot.name,
+            canvasNodeId: findSlotNodeId(lookup, layoutId, slot.name),
+            children: componentChildren,
             meta: {
                 layoutId,
-                path: nextRegionPath.join("/")
+                path: slot.name
             }
         });
     });
@@ -292,7 +270,7 @@ function createRegionItems(
 
 function createLayoutBranch(
     branchPrefix: string,
-    parentKind: "route" | "dialog",
+    parentKind: StructureScope,
     parentId: string,
     label: string,
     layoutId: string,
@@ -321,17 +299,18 @@ function createLayoutBranch(
         kind: "layout",
         label: layout.title ?? layout.id,
         canvasNodeId: lookup.layouts.get(layout.id)?.id ?? layout.id,
-        children: createRegionItems(
+        children: createSlotItems(
             `${branchPrefix}/layout:${layout.id}`,
             layout.id,
-            layout.regions,
+            layout,
             [
                 { scope: parentKind, targetId: parentId },
                 { scope: "layout", targetId: layout.id }
             ],
             resolvedComponents,
             lookup,
-            index
+            index,
+            model
         ),
         meta: {
             layoutId: layout.id,
@@ -398,7 +377,7 @@ function createMountDiagnostics(
 
             const layout = findLayout(model, mountResolution.data.layoutId);
 
-            if (!layout || !hasRegionPath(layout, mountResolution.data.regionPath)) {
+            if (!layout || !hasSlotPath(layout, mountResolution.data.regionPath)) {
                 return [
                     {
                         severity: "warning",

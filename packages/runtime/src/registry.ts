@@ -5,8 +5,8 @@ import {
     type ComponentDefinition,
     type DialogDefinition,
     type LayoutDefinition,
-    type RegionDefinition,
     type RouteDefinition,
+    type SlotDefinition,
     validateMountReference
 } from "@node-red-contrib-webapp/schema";
 
@@ -92,17 +92,10 @@ function toAppScopedContribution(contribution: RuntimeRegistryContribution): Sor
     return contribution;
 }
 
-function cloneRegion(region: RegionDefinition): RegionDefinition {
-    return {
-        ...region,
-        regions: (region.regions ?? []).map(cloneRegion)
-    };
-}
-
 function cloneLayout(layout: LayoutDefinition): LayoutDefinition {
     return {
         ...layout,
-        regions: layout.regions.map(cloneRegion)
+        slots: layout.slots.map((slot) => ({ ...slot }))
     };
 }
 
@@ -123,24 +116,12 @@ function cloneComponent(component: ComponentDefinition): ComponentDefinition {
     };
 }
 
-function findRegion(regions: RegionDefinition[], regionName: string): RegionDefinition | undefined {
-    return regions.find((region) => region.name === regionName);
+function findSlot(slots: SlotDefinition[], slotName: string): SlotDefinition | undefined {
+    return slots.find((slot) => slot.name === slotName);
 }
 
-function hasRegionPath(layout: LayoutDefinition, regionPath: string[]): boolean {
-    let currentRegions = layout.regions;
-
-    for (const regionName of regionPath) {
-        const region = findRegion(currentRegions, regionName);
-
-        if (!region) {
-            return false;
-        }
-
-        currentRegions = region.regions ?? [];
-    }
-
-    return true;
+function hasSlotPath(layout: LayoutDefinition, regionPath: string[]): boolean {
+    return regionPath.length === 1 && findSlot(layout.slots, regionPath[0]) !== undefined;
 }
 
 function dedupeByKey<T extends RuntimeRegistryContribution>(
@@ -434,11 +415,11 @@ export class RuntimeRegistry {
 
                 const layout = layoutById.get(resolvedMount.data.layoutId);
 
-                if (!layout || !hasRegionPath(layout, resolvedMount.data.regionPath)) {
+                if (!layout || !hasSlotPath(layout, resolvedMount.data.regionPath)) {
                     diagnostics.push({
                         severity: "error",
                         code: "invalid-mount",
-                        message: `Component '${contribution.definition.id}' mounts into missing region path '${resolvedMount.data.regionPath.join("/")}' on layout '${resolvedMount.data.layoutId}'.`,
+                        message: `Component '${contribution.definition.id}' mounts into missing slot path '${resolvedMount.data.regionPath.join("/")}' on layout '${resolvedMount.data.layoutId}'. Nested slot paths are not supported; use a ui-container with a child layout.`,
                         appId,
                         registrationIds: [contribution.registrationId]
                     });

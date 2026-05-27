@@ -8,36 +8,27 @@ export const customersCrudAppModelFixture: AppModel = {
         {
             id: "customerShell",
             title: "Customer shell",
-            regions: [
-                { name: "header" },
-                {
-                    name: "content",
-                    regions: [
-                        { name: "toolbar" },
-                        { name: "body" }
-                    ]
-                },
-                { name: "footer" }
-            ]
+            slots: [{ name: "header" }, { name: "content" }, { name: "footer" }]
+        },
+        {
+            id: "customersListLayout",
+            title: "Customers list content",
+            slots: [{ name: "toolbar" }, { name: "body" }]
+        },
+        {
+            id: "customerDetailLayout",
+            title: "Customer detail content",
+            slots: [{ name: "toolbar" }, { name: "body" }]
         },
         {
             id: "dialogShell",
             title: "Dialog shell",
-            regions: [
-                { name: "header" },
-                {
-                    name: "content",
-                    regions: [
-                        {
-                            name: "form",
-                            regions: [
-                                { name: "fields" },
-                                { name: "actions" }
-                            ]
-                        }
-                    ]
-                }
-            ]
+            slots: [{ name: "header" }, { name: "content" }]
+        },
+        {
+            id: "dialogFormLayout",
+            title: "Dialog form layout",
+            slots: [{ name: "fields" }, { name: "actions" }]
         }
     ],
     routes: [
@@ -68,7 +59,7 @@ export const customersCrudAppModelFixture: AppModel = {
             kind: "text",
             mount: "customers.header",
             bind: {
-                value: {
+                text: {
                     kind: "literal",
                     value: "Customers"
                 }
@@ -79,58 +70,58 @@ export const customersCrudAppModelFixture: AppModel = {
             events: []
         },
         {
+            id: "customersContentContainer",
+            kind: "container",
+            mount: "route:/customers/content",
+            bind: {},
+            props: {
+                layoutId: "customersListLayout"
+            },
+            events: []
+        },
+        {
             id: "newCustomerButton",
             kind: "button",
-            mount: "route:/customers/content/toolbar",
+            mount: "layout:customersListLayout/toolbar",
             order: 0,
-            props: {
-                label: "New customer"
-            },
-            events: [
-                {
-                    event: "click",
-                    action: "openCustomerEditor"
+            bind: {
+                label: {
+                    kind: "literal",
+                    value: "New customer"
                 }
-            ],
-            bind: {}
+            },
+            props: {},
+            events: [{ event: "click", action: "openCustomerEditor" }]
         },
         {
             id: "refreshCustomersButton",
             kind: "button",
-            mount: "route:/customers/content/toolbar",
+            mount: "layout:customersListLayout/toolbar",
             order: 1,
-            props: {
-                label: "Refresh"
-            },
             bind: {
+                label: {
+                    kind: "literal",
+                    value: "Refresh"
+                },
                 disabled: {
                     kind: "state",
                     path: "ui.queries.customersQuery.loading",
                     fallback: false
                 }
             },
-            events: [
-                {
-                    event: "click",
-                    action: "refreshCustomers"
-                }
-            ]
+            props: {},
+            events: [{ event: "click", action: "refreshCustomers" }]
         },
         {
             id: "editorStatus",
             kind: "text",
-            mount: "route:/customers/content/toolbar",
+            mount: "layout:customersListLayout/toolbar",
             order: 2,
             bind: {
-                value: {
+                text: {
                     kind: "literal",
                     value: "Editing customer"
                 }
-            },
-            visibleIf: {
-                kind: "state",
-                path: "ui.dialogs.customerEditor.open",
-                fallback: false
             },
             props: {},
             events: []
@@ -138,7 +129,7 @@ export const customersCrudAppModelFixture: AppModel = {
         {
             id: "customersTable",
             kind: "table",
-            mount: "route:/customers/content/body",
+            mount: "layout:customersListLayout/body",
             bind: {
                 rows: {
                     kind: "query",
@@ -148,140 +139,191 @@ export const customersCrudAppModelFixture: AppModel = {
             props: {
                 columns: ["name", "email", "status"]
             },
-            events: [
-                {
-                    event: "select",
-                    action: "openCustomerDetail"
-                }
-            ]
+            events: [{ event: "select", action: "openCustomerDetail" }]
         },
         {
-            id: "detailSummary",
-            kind: "card",
-            mount: "route:/customers/:id/content/body",
+            id: "detailRouteTitle",
+            kind: "text",
+            mount: "customerDetail.header",
             bind: {
-                customer: {
-                    kind: "query",
-                    path: "customers.current"
+                text: {
+                    kind: "literal",
+                    value: "Customer detail"
                 }
             },
             props: {
-                title: "Customer summary"
+                variant: "headline"
+            },
+            events: []
+        },
+        {
+            id: "detailContentContainer",
+            kind: "container",
+            mount: "route:/customers/:id/content",
+            bind: {},
+            props: {
+                layoutId: "customerDetailLayout"
             },
             events: []
         },
         {
             id: "backToCustomersButton",
             kind: "button",
-            mount: "route:/customers/:id/content/toolbar",
+            mount: "layout:customerDetailLayout/toolbar",
             order: 0,
-            props: {
-                label: "Back to customers"
-            },
-            bind: {},
-            events: [
-                {
-                    event: "click",
-                    action: "goToCustomers"
+            bind: {
+                label: {
+                    kind: "literal",
+                    value: "Back to customers"
                 }
-            ]
+            },
+            props: {},
+            events: [{ event: "click", action: "goToCustomers" }]
         },
         {
             id: "editCustomerButton",
             kind: "button",
-            mount: "route:/customers/:id/content/toolbar",
+            mount: "layout:customerDetailLayout/toolbar",
             order: 1,
-            props: {
-                label: "Edit customer"
-            },
-            bind: {},
-            events: [
-                {
-                    event: "click",
-                    action: "openCustomerEditor"
+            bind: {
+                label: {
+                    kind: "literal",
+                    value: "Edit customer"
                 }
-            ]
+            },
+            props: {},
+            events: [{ event: "click", action: "openCustomerEditor" }]
         },
         {
             id: "deleteCustomerButton",
             kind: "button",
-            mount: "route:/customers/:id/content/toolbar",
+            mount: "layout:customerDetailLayout/toolbar",
             order: 2,
-            props: {
-                label: "Delete customer"
-            },
             bind: {
+                label: {
+                    kind: "literal",
+                    value: "Delete customer"
+                },
                 disabled: {
                     kind: "state",
                     path: "draft.isDeleting",
                     fallback: false
                 }
             },
-            events: [
-                {
-                    event: "click",
-                    action: "deleteCustomer"
-                }
-            ]
+            props: {},
+            events: [{ event: "click", action: "deleteCustomer" }]
         },
         {
-            id: "customerForm",
-            kind: "form",
-            mount: "dialog:customerEditor/content/form/fields",
+            id: "detailCustomerId",
+            kind: "text",
+            mount: "layout:customerDetailLayout/body",
             order: 0,
             bind: {
-                model: {
+                text: {
+                    kind: "routeParam",
+                    path: "id"
+                }
+            },
+            props: {},
+            events: []
+        },
+        {
+            id: "customerEditorContainer",
+            kind: "container",
+            mount: "dialog:customerEditor/content",
+            bind: {},
+            props: {
+                layoutId: "dialogFormLayout"
+            },
+            events: []
+        },
+        {
+            id: "customerNameInput",
+            kind: "input",
+            mount: "layout:dialogFormLayout/fields",
+            order: 0,
+            bind: {
+                value: {
                     kind: "state",
-                    path: "draft.customer"
+                    path: "draft.customer.name"
                 }
             },
             props: {
-                fields: ["name", "email", "status"]
+                label: "Name",
+                storeId: "draftStore",
+                path: "name"
             },
-            events: [
-                {
-                    event: "submit",
-                    action: "saveCustomer"
+            events: [{ event: "change", action: "saveCustomer" }]
+        },
+        {
+            id: "customerEmailInput",
+            kind: "input",
+            mount: "layout:dialogFormLayout/fields",
+            order: 1,
+            bind: {
+                value: {
+                    kind: "state",
+                    path: "draft.customer.email"
                 }
-            ]
+            },
+            props: {
+                label: "Email",
+                storeId: "draftStore",
+                path: "email",
+                inputType: "email"
+            },
+            events: [{ event: "change", action: "saveCustomer" }]
+        },
+        {
+            id: "customerStatusInput",
+            kind: "input",
+            mount: "layout:dialogFormLayout/fields",
+            order: 2,
+            bind: {
+                value: {
+                    kind: "state",
+                    path: "draft.customer.status"
+                }
+            },
+            props: {
+                label: "Status",
+                storeId: "draftStore",
+                path: "status"
+            },
+            events: [{ event: "change", action: "saveCustomer" }]
         },
         {
             id: "cancelCustomerButton",
             kind: "button",
-            mount: "dialog:customerEditor/content/form/actions",
+            mount: "layout:dialogFormLayout/actions",
             order: 0,
-            props: {
-                label: "Cancel"
-            },
-            bind: {},
-            events: [
-                {
-                    event: "click",
-                    action: "closeCustomerEditor"
+            bind: {
+                label: {
+                    kind: "literal",
+                    value: "Cancel"
                 }
-            ]
+            },
+            props: {},
+            events: [{ event: "click", action: "closeCustomerEditor" }]
         },
         {
             id: "saveCustomerButton",
             kind: "button",
-            mount: "dialog:customerEditor/content/form/actions",
+            mount: "layout:dialogFormLayout/actions",
             order: 1,
-            props: {
-                label: "Save"
-            },
             bind: {
+                label: {
+                    kind: "literal",
+                    value: "Save"
+                },
                 disabled: {
                     kind: "state",
                     path: "draft.isSaving",
                     fallback: false
                 }
             },
-            events: [
-                {
-                    event: "click",
-                    action: "saveCustomer"
-                }
-            ]
+            props: {},
+            events: [{ event: "click", action: "saveCustomer" }]
         }
     ]
 };
@@ -293,32 +335,15 @@ export const operationsConsoleAppModelFixture: AppModel = {
         {
             id: "consoleShell",
             title: "Console shell",
-            regions: [
-                { name: "header" },
-                { name: "sidebar" },
-                {
-                    name: "content",
-                    regions: [
-                        { name: "toolbar" },
-                        {
-                            name: "body",
-                            regions: [
-                                { name: "summary" },
-                                { name: "details" }
-                            ]
-                        }
-                    ]
-                }
-            ]
+            slots: [{ name: "header" }, { name: "sidebar" }, { name: "content" }]
+        },
+        {
+            id: "alertsContentLayout",
+            title: "Alerts content",
+            slots: [{ name: "details" }]
         }
     ],
     routes: [
-        {
-            id: "overview",
-            path: "/overview",
-            title: "Overview",
-            layoutId: "consoleShell"
-        },
         {
             id: "alerts",
             path: "/alerts",
@@ -329,39 +354,54 @@ export const operationsConsoleAppModelFixture: AppModel = {
     dialogs: [],
     components: [
         {
-            id: "overviewHeadline",
+            id: "alertsHeader",
             kind: "text",
-            mount: "overview.header",
+            mount: "alerts.header",
+            bind: {
+                text: {
+                    kind: "literal",
+                    value: "Alerts"
+                }
+            },
             props: {
                 variant: "headline"
             },
-            bind: {
-                value: {
-                    kind: "literal",
-                    value: "System health"
-                }
+            events: []
+        },
+        {
+            id: "navCard",
+            kind: "card",
+            mount: "route:/alerts/sidebar",
+            bind: {},
+            props: {
+                title: "Navigation"
+            },
+            events: []
+        },
+        {
+            id: "alertsContentContainer",
+            kind: "container",
+            mount: "route:/alerts/content",
+            bind: {},
+            props: {
+                layoutId: "alertsContentLayout"
             },
             events: []
         },
         {
             id: "alertTable",
             kind: "table",
-            mount: "route:/alerts/content/body/details",
+            mount: "layout:alertsContentLayout/details",
             bind: {
                 rows: {
                     kind: "query",
-                    path: "alerts.items"
+                    path: "alerts.list"
                 }
             },
             props: {
-                columns: ["severity", "service", "message"]
+                columns: ["severity", "summary", "owner"]
             },
-            events: [
-                {
-                    event: "select",
-                    action: "focusAlert"
-                }
-            ]
+            events: []
         }
     ]
 };
@@ -394,19 +434,48 @@ export const customersCrudRuntimeIntegrationFixture: RuntimeIntegrationModel = {
     actions: [
         {
             id: "openCustomerEditor",
-            description: "Open the customer editor dialog."
+            actionType: "trigger",
+            targetMode: "out-port",
+            description: "Open the shared customer editor dialog."
         },
         {
             id: "closeCustomerEditor",
-            description: "Close the customer editor dialog."
+            actionType: "trigger",
+            targetMode: "out-port",
+            description: "Close the shared customer editor dialog."
         },
         {
             id: "saveCustomer",
-            description: "Submit the customer form."
+            actionType: "trigger",
+            targetMode: "out-port",
+            description: "Persist the current customer draft."
         },
         {
             id: "refreshCustomers",
+            actionType: "trigger",
+            targetMode: "out-port",
             description: "Refresh the customer list query."
+        },
+        {
+            id: "openCustomerDetail",
+            actionType: "navigate",
+            targetMode: "path",
+            target: "app",
+            to: "/customers/:id"
+        },
+        {
+            id: "goToCustomers",
+            actionType: "navigate",
+            targetMode: "path",
+            target: "app",
+            to: "/customers"
+        },
+        {
+            id: "deleteCustomer",
+            actionType: "navigate",
+            targetMode: "path",
+            target: "app",
+            to: "/customers"
         }
     ],
     navigations: [
@@ -433,47 +502,25 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
     },
     {
         type: "ui-layout",
-        appId: "customersApp",
         id: "customerShell",
         title: "Customer shell"
     },
     {
-        type: "ui-region",
-        appId: "customersApp",
+        type: "ui-slot",
         id: "customerHeader",
         layoutId: "customerShell",
         name: "header",
         order: 0
     },
     {
-        type: "ui-region",
-        appId: "customersApp",
+        type: "ui-slot",
         id: "customerContent",
         layoutId: "customerShell",
         name: "content",
         order: 1
     },
     {
-        type: "ui-region",
-        appId: "customersApp",
-        id: "customerToolbar",
-        layoutId: "customerShell",
-        name: "toolbar",
-        parentRegionId: "customerContent",
-        order: 0
-    },
-    {
-        type: "ui-region",
-        appId: "customersApp",
-        id: "customerBody",
-        layoutId: "customerShell",
-        name: "body",
-        parentRegionId: "customerContent",
-        order: 1
-    },
-    {
-        type: "ui-region",
-        appId: "customersApp",
+        type: "ui-slot",
         id: "customerFooter",
         layoutId: "customerShell",
         name: "footer",
@@ -481,56 +528,82 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
     },
     {
         type: "ui-layout",
-        appId: "customersApp",
+        id: "customersListLayout",
+        title: "Customers list content"
+    },
+    {
+        type: "ui-slot",
+        id: "customerToolbar",
+        layoutId: "customersListLayout",
+        name: "toolbar",
+        order: 0
+    },
+    {
+        type: "ui-slot",
+        id: "customerBody",
+        layoutId: "customersListLayout",
+        name: "body",
+        order: 1
+    },
+    {
+        type: "ui-layout",
+        id: "customerDetailLayout",
+        title: "Customer detail content"
+    },
+    {
+        type: "ui-slot",
+        id: "detailToolbar",
+        layoutId: "customerDetailLayout",
+        name: "toolbar",
+        order: 0
+    },
+    {
+        type: "ui-slot",
+        id: "detailBody",
+        layoutId: "customerDetailLayout",
+        name: "body",
+        order: 1
+    },
+    {
+        type: "ui-layout",
         id: "dialogShell",
         title: "Dialog shell"
     },
     {
-        type: "ui-region",
-        appId: "customersApp",
+        type: "ui-slot",
         id: "dialogHeader",
         layoutId: "dialogShell",
         name: "header",
         order: 0
     },
     {
-        type: "ui-region",
-        appId: "customersApp",
+        type: "ui-slot",
         id: "dialogContent",
         layoutId: "dialogShell",
         name: "content",
         order: 1
     },
     {
-        type: "ui-region",
-        appId: "customersApp",
-        id: "dialogForm",
-        layoutId: "dialogShell",
-        name: "form",
-        parentRegionId: "dialogContent",
-        order: 0
+        type: "ui-layout",
+        id: "dialogFormLayout",
+        title: "Dialog form layout"
     },
     {
-        type: "ui-region",
-        appId: "customersApp",
+        type: "ui-slot",
         id: "dialogFields",
-        layoutId: "dialogShell",
+        layoutId: "dialogFormLayout",
         name: "fields",
-        parentRegionId: "dialogForm",
         order: 0
     },
     {
-        type: "ui-region",
-        appId: "customersApp",
+        type: "ui-slot",
         id: "dialogActions",
-        layoutId: "dialogShell",
+        layoutId: "dialogFormLayout",
         name: "actions",
-        parentRegionId: "dialogForm",
         order: 1
     },
     {
         type: "ui-route",
-        appId: "customersApp",
         id: "customers",
         path: "/customers",
         title: "Customers",
@@ -538,7 +611,6 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
     },
     {
         type: "ui-route",
-        appId: "customersApp",
         id: "customerDetail",
         path: "/customers/:id",
         title: "Customer detail",
@@ -546,7 +618,6 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
     },
     {
         type: "ui-dialog",
-        appId: "customersApp",
         id: "customerEditor",
         title: "Edit customer",
         layoutId: "dialogShell",
@@ -554,7 +625,6 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
     },
     {
         type: "ui-text",
-        appId: "customersApp",
         id: "pageTitle",
         mount: "customers.header",
         value: {
@@ -564,19 +634,23 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
         variant: "headline"
     },
     {
+        type: "ui-container",
+        id: "customersContentContainer",
+        mount: "route:/customers/content",
+        layoutId: "customersListLayout"
+    },
+    {
         type: "ui-button",
-        appId: "customersApp",
         id: "newCustomerButton",
-        mount: "route:/customers/content/toolbar",
+        mount: "layout:customersListLayout/toolbar",
         order: 0,
         label: "New customer",
         action: "openCustomerEditor"
     },
     {
         type: "ui-button",
-        appId: "customersApp",
         id: "refreshCustomersButton",
-        mount: "route:/customers/content/toolbar",
+        mount: "layout:customersListLayout/toolbar",
         order: 1,
         label: "Refresh",
         action: "refreshCustomers",
@@ -587,10 +661,19 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
         }
     },
     {
+        type: "ui-text",
+        id: "editorStatus",
+        mount: "layout:customersListLayout/toolbar",
+        order: 2,
+        value: {
+            kind: "literal",
+            value: "Editing customer"
+        }
+    },
+    {
         type: "ui-table",
-        appId: "customersApp",
         id: "customersTable",
-        mount: "route:/customers/content/body",
+        mount: "layout:customersListLayout/body",
         columns: ["name", "email", "status"],
         rows: {
             kind: "query",
@@ -600,50 +683,6 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
     },
     {
         type: "ui-text",
-        appId: "customersApp",
-        id: "editorStatus",
-        mount: "route:/customers/content/toolbar",
-        order: 2,
-        value: {
-            kind: "literal",
-            value: "Editing customer"
-        }
-    },
-    {
-        type: "ui-button",
-        appId: "customersApp",
-        id: "backToCustomersButton",
-        mount: "route:/customers/:id/content/toolbar",
-        order: 0,
-        label: "Back to customers",
-        action: "goToCustomers"
-    },
-    {
-        type: "ui-button",
-        appId: "customersApp",
-        id: "editCustomerButton",
-        mount: "route:/customers/:id/content/toolbar",
-        order: 1,
-        label: "Edit customer",
-        action: "openCustomerEditor"
-    },
-    {
-        type: "ui-button",
-        appId: "customersApp",
-        id: "deleteCustomerButton",
-        mount: "route:/customers/:id/content/toolbar",
-        order: 2,
-        label: "Delete customer",
-        action: "deleteCustomer",
-        disabled: {
-            kind: "state",
-            path: "draft.isDeleting",
-            fallback: false
-        }
-    },
-    {
-        type: "ui-text",
-        appId: "customersApp",
         id: "detailRouteTitle",
         mount: "customerDetail.header",
         value: {
@@ -653,399 +692,31 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
         variant: "headline"
     },
     {
-        type: "ui-text",
-        appId: "customersApp",
-        id: "detailCustomerId",
-        mount: "route:/customers/:id/content/body",
-        order: 0,
-        value: {
-            kind: "routeParam",
-            path: "id"
-        }
-    },
-    {
-        type: "ui-form",
-        appId: "customersApp",
-        id: "customerForm",
-        mount: "dialog:customerEditor/content/form/fields",
-        order: 0,
-        fields: ["name", "email", "status"],
-        model: {
-            kind: "state",
-            path: "draft.customer"
-        },
-        submitAction: "saveCustomer"
+        type: "ui-container",
+        id: "detailContentContainer",
+        mount: "route:/customers/:id/content",
+        layoutId: "customerDetailLayout"
     },
     {
         type: "ui-button",
-        appId: "customersApp",
-        id: "cancelCustomerButton",
-        mount: "dialog:customerEditor/content/form/actions",
-        order: 0,
-        label: "Cancel",
-        action: "closeCustomerEditor"
-    },
-    {
-        type: "ui-button",
-        appId: "customersApp",
-        id: "saveCustomerButton",
-        mount: "dialog:customerEditor/content/form/actions",
-        order: 1,
-        label: "Save",
-        action: "saveCustomer",
-        disabled: {
-            kind: "state",
-            path: "draft.isSaving",
-            fallback: false
-        }
-    },
-    {
-        type: "ui-store",
-        appId: "customersApp",
-        id: "draftStore",
-        statePath: "draft.customer",
-        initialValue: {
-            name: "",
-            email: "",
-            status: "draft"
-        }
-    },
-    {
-        type: "ui-query",
-        appId: "customersApp",
-        id: "customersQuery",
-        queryPath: "customers.list",
-        source: "customers.list",
-        refreshAction: "refreshCustomers"
-    },
-    {
-        type: "ui-query",
-        appId: "customersApp",
-        id: "customerDetailQuery",
-        queryPath: "customers.current",
-        source: "customers.current"
-    },
-    {
-        type: "ui-action",
-        appId: "customersApp",
-        id: "openCustomerEditor",
-        description: "Open the shared customer editor dialog."
-    },
-    {
-        type: "ui-action",
-        appId: "customersApp",
-        id: "closeCustomerEditor",
-        description: "Close the shared customer editor dialog."
-    },
-    {
-        type: "ui-action",
-        appId: "customersApp",
-        id: "saveCustomer",
-        description: "Persist the current customer draft."
-    },
-    {
-        type: "ui-action",
-        appId: "customersApp",
-        id: "refreshCustomers",
-        description: "Refresh the customer list query."
-    },
-    {
-        type: "ui-navigation",
-        appId: "customersApp",
-        id: "openCustomerDetail",
-        to: "/customers/:id"
-    },
-    {
-        type: "ui-navigation",
-        appId: "customersApp",
-        id: "goToCustomers",
-        to: "/customers"
-    },
-    {
-        type: "ui-navigation",
-        appId: "customersApp",
-        id: "deleteCustomer",
-        to: "/customers"
-    }
-];
-
-export const customersCrudExampleFlowFixture: unknown[] = [
-    {
-        id: "customersApp",
-        type: "ui-app",
-        name: "Customers CRM",
-        title: "Customers CRM",
-        x: 160,
-        y: 60,
-        wires: [[]]
-    },
-    {
-        id: "customerShell",
-        type: "ui-layout",
-        appId: "customersApp",
-        title: "Customer shell",
-        x: 360,
-        y: 40,
-        wires: [[]]
-    },
-    {
-        id: "customerHeader",
-        type: "ui-region",
-        appId: "customersApp",
-        layoutId: "customerShell",
-        name: "header",
-        order: 0,
-        x: 560,
-        y: 20,
-        wires: [[]]
-    },
-    {
-        id: "customerContent",
-        type: "ui-region",
-        appId: "customersApp",
-        layoutId: "customerShell",
-        name: "content",
-        order: 1,
-        x: 560,
-        y: 60,
-        wires: [[]]
-    },
-    {
-        id: "customerToolbar",
-        type: "ui-region",
-        appId: "customersApp",
-        layoutId: "customerShell",
-        name: "toolbar",
-        parentRegionId: "customerContent",
-        order: 0,
-        x: 760,
-        y: 40,
-        wires: [[]]
-    },
-    {
-        id: "customerBody",
-        type: "ui-region",
-        appId: "customersApp",
-        layoutId: "customerShell",
-        name: "body",
-        parentRegionId: "customerContent",
-        order: 1,
-        x: 760,
-        y: 80,
-        wires: [[]]
-    },
-    {
-        id: "customerFooter",
-        type: "ui-region",
-        appId: "customersApp",
-        layoutId: "customerShell",
-        name: "footer",
-        order: 2,
-        x: 560,
-        y: 100,
-        wires: [[]]
-    },
-    {
-        id: "dialogShell",
-        type: "ui-layout",
-        appId: "customersApp",
-        title: "Dialog shell",
-        x: 360,
-        y: 160,
-        wires: [[]]
-    },
-    {
-        id: "dialogHeader",
-        type: "ui-region",
-        appId: "customersApp",
-        layoutId: "dialogShell",
-        name: "header",
-        order: 0,
-        x: 560,
-        y: 140,
-        wires: [[]]
-    },
-    {
-        id: "dialogContent",
-        type: "ui-region",
-        appId: "customersApp",
-        layoutId: "dialogShell",
-        name: "content",
-        order: 1,
-        x: 560,
-        y: 180,
-        wires: [[]]
-    },
-    {
-        id: "dialogForm",
-        type: "ui-region",
-        appId: "customersApp",
-        layoutId: "dialogShell",
-        name: "form",
-        parentRegionId: "dialogContent",
-        order: 0,
-        x: 760,
-        y: 160,
-        wires: [[]]
-    },
-    {
-        id: "dialogFields",
-        type: "ui-region",
-        appId: "customersApp",
-        layoutId: "dialogShell",
-        name: "fields",
-        parentRegionId: "dialogForm",
-        order: 0,
-        x: 960,
-        y: 140,
-        wires: [[]]
-    },
-    {
-        id: "dialogActions",
-        type: "ui-region",
-        appId: "customersApp",
-        layoutId: "dialogShell",
-        name: "actions",
-        parentRegionId: "dialogForm",
-        order: 1,
-        x: 960,
-        y: 180,
-        wires: [[]]
-    },
-    {
-        id: "customers",
-        type: "ui-route",
-        appId: "customersApp",
-        path: "/customers",
-        title: "Customers",
-        layoutId: "customerShell",
-        x: 360,
-        y: 260,
-        wires: [[]]
-    },
-    {
-        id: "customerDetail",
-        type: "ui-route",
-        appId: "customersApp",
-        path: "/customers/:id",
-        title: "Customer detail",
-        layoutId: "customerShell",
-        x: 360,
-        y: 300,
-        wires: [[]]
-    },
-    {
-        id: "customerEditor",
-        type: "ui-dialog",
-        appId: "customersApp",
-        title: "Edit customer",
-        layoutId: "dialogShell",
-        modal: true,
-        x: 360,
-        y: 340,
-        wires: [[]]
-    },
-    {
-        id: "pageTitle",
-        type: "ui-text",
-        appId: "customersApp",
-        mount: "customers.header",
-        value: {
-            kind: "literal",
-            value: "Customers"
-        },
-        variant: "headline",
-        x: 1160,
-        y: 20,
-        wires: [[]]
-    },
-    {
-        id: "newCustomerButton",
-        type: "ui-button",
-        appId: "customersApp",
-        mount: "route:/customers/content/toolbar",
-        order: 0,
-        label: "New customer",
-        action: "openCustomerEditor",
-        x: 1160,
-        y: 60,
-        wires: [["openCustomerEditor"]]
-    },
-    {
-        id: "refreshCustomersButton",
-        type: "ui-button",
-        appId: "customersApp",
-        mount: "route:/customers/content/toolbar",
-        order: 1,
-        label: "Refresh",
-        action: "refreshCustomers",
-        disabled: {
-            kind: "state",
-            path: "ui.queries.customersQuery.loading",
-            fallback: false
-        },
-        x: 1160,
-        y: 100,
-        wires: [["refreshCustomers"]]
-    },
-    {
-        id: "customersTable",
-        type: "ui-table",
-        appId: "customersApp",
-        mount: "route:/customers/content/body",
-        columns: ["name", "email", "status"],
-        rows: {
-            kind: "query",
-            path: "customers.list"
-        },
-        selectAction: "openCustomerDetail",
-        x: 1160,
-        y: 140,
-        wires: [["openCustomerDetail"]]
-    },
-    {
-        id: "editorStatus",
-        type: "ui-text",
-        appId: "customersApp",
-        mount: "route:/customers/content/toolbar",
-        order: 2,
-        value: {
-            kind: "literal",
-            value: "Editing customer"
-        },
-        x: 1160,
-        y: 180,
-        wires: [[]]
-    },
-    {
         id: "backToCustomersButton",
-        type: "ui-button",
-        appId: "customersApp",
-        mount: "route:/customers/:id/content/toolbar",
+        mount: "layout:customerDetailLayout/toolbar",
         order: 0,
         label: "Back to customers",
-        action: "goToCustomers",
-        x: 1160,
-        y: 220,
-        wires: [["goToCustomers"]]
+        action: "goToCustomers"
     },
     {
-        id: "editCustomerButton",
         type: "ui-button",
-        appId: "customersApp",
-        mount: "route:/customers/:id/content/toolbar",
+        id: "editCustomerButton",
+        mount: "layout:customerDetailLayout/toolbar",
         order: 1,
         label: "Edit customer",
-        action: "openCustomerEditor",
-        x: 1160,
-        y: 260,
-        wires: [["openCustomerEditor"]]
+        action: "openCustomerEditor"
     },
     {
-        id: "deleteCustomerButton",
         type: "ui-button",
-        appId: "customersApp",
-        mount: "route:/customers/:id/content/toolbar",
+        id: "deleteCustomerButton",
+        mount: "layout:customerDetailLayout/toolbar",
         order: 2,
         label: "Delete customer",
         action: "deleteCustomer",
@@ -1053,44 +724,78 @@ export const customersCrudExampleFlowFixture: unknown[] = [
             kind: "state",
             path: "draft.isDeleting",
             fallback: false
-        },
-        x: 1160,
-        y: 300,
-        wires: [["deleteCustomer"]]
+        }
     },
     {
-        id: "customerForm",
-        type: "ui-form",
-        appId: "customersApp",
-        mount: "dialog:customerEditor/content/form/fields",
+        type: "ui-text",
+        id: "detailCustomerId",
+        mount: "layout:customerDetailLayout/body",
         order: 0,
-        fields: ["name", "email", "status"],
-        model: {
-            kind: "state",
-            path: "draft.customer"
-        },
-        submitAction: "saveCustomer",
-        x: 1160,
-        y: 340,
-        wires: [["saveCustomer"]]
+        value: {
+            kind: "routeParam",
+            path: "id"
+        }
     },
     {
-        id: "cancelCustomerButton",
+        type: "ui-container",
+        id: "customerEditorContainer",
+        mount: "dialog:customerEditor/content",
+        layoutId: "dialogFormLayout"
+    },
+    {
+        type: "ui-input",
+        id: "customerNameInput",
+        mount: "layout:dialogFormLayout/fields",
+        order: 0,
+        label: "Name",
+        value: {
+            kind: "state",
+            path: "draft.customer.name"
+        },
+        storeId: "draftStore",
+        path: "name",
+        inputType: "text"
+    },
+    {
+        type: "ui-input",
+        id: "customerEmailInput",
+        mount: "layout:dialogFormLayout/fields",
+        order: 1,
+        label: "Email",
+        value: {
+            kind: "state",
+            path: "draft.customer.email"
+        },
+        storeId: "draftStore",
+        path: "email",
+        inputType: "email"
+    },
+    {
+        type: "ui-input",
+        id: "customerStatusInput",
+        mount: "layout:dialogFormLayout/fields",
+        order: 2,
+        label: "Status",
+        value: {
+            kind: "state",
+            path: "draft.customer.status"
+        },
+        storeId: "draftStore",
+        path: "status",
+        inputType: "text"
+    },
+    {
         type: "ui-button",
-        appId: "customersApp",
-        mount: "dialog:customerEditor/content/form/actions",
+        id: "cancelCustomerButton",
+        mount: "layout:dialogFormLayout/actions",
         order: 0,
         label: "Cancel",
-        action: "closeCustomerEditor",
-        x: 1160,
-        y: 380,
-        wires: [["closeCustomerEditor"]]
+        action: "closeCustomerEditor"
     },
     {
-        id: "saveCustomerButton",
         type: "ui-button",
-        appId: "customersApp",
-        mount: "dialog:customerEditor/content/form/actions",
+        id: "saveCustomerButton",
+        mount: "layout:dialogFormLayout/actions",
         order: 1,
         label: "Save",
         action: "saveCustomer",
@@ -1098,137 +803,90 @@ export const customersCrudExampleFlowFixture: unknown[] = [
             kind: "state",
             path: "draft.isSaving",
             fallback: false
-        },
-        x: 1160,
-        y: 420,
-        wires: [["saveCustomer"]]
+        }
     },
     {
-        id: "detailRouteTitle",
-        type: "ui-text",
-        appId: "customersApp",
-        mount: "customerDetail.header",
-        value: {
-            kind: "literal",
-            value: "Customer detail"
-        },
-        variant: "headline",
-        x: 1160,
-        y: 460,
-        wires: [[]]
-    },
-    {
-        id: "detailCustomerId",
-        type: "ui-text",
-        appId: "customersApp",
-        mount: "route:/customers/:id/content/body",
-        order: 0,
-        value: {
-            kind: "routeParam",
-            path: "id"
-        },
-        x: 1160,
-        y: 500,
-        wires: [[]]
-    },
-    {
-        id: "draftStore",
         type: "ui-store",
-        appId: "customersApp",
+        id: "draftStore",
         statePath: "draft.customer",
         initialValue: {
             name: "",
             email: "",
             status: "draft"
-        },
-        x: 1360,
-        y: 80,
-        wires: [[]]
+        }
     },
     {
-        id: "customersQuery",
         type: "ui-query",
-        appId: "customersApp",
+        id: "customersQuery",
         queryPath: "customers.list",
         source: "customers.list",
-        refreshAction: "refreshCustomers",
-        x: 1360,
-        y: 120,
-        wires: [[]]
+        refreshAction: "refreshCustomers"
     },
     {
-        id: "customerDetailQuery",
         type: "ui-query",
-        appId: "customersApp",
+        id: "customerDetailQuery",
         queryPath: "customers.current",
-        source: "customers.current",
-        x: 1360,
-        y: 160,
-        wires: [[]]
+        source: "customers.current"
     },
     {
+        type: "ui-action",
         id: "openCustomerEditor",
-        type: "ui-action",
-        appId: "customersApp",
-        description: "Open the shared customer editor dialog.",
-        x: 1360,
-        y: 220,
-        wires: [[]]
+        actionType: "trigger",
+        targetMode: "out-port",
+        description: "Open the shared customer editor dialog."
     },
     {
+        type: "ui-action",
         id: "closeCustomerEditor",
-        type: "ui-action",
-        appId: "customersApp",
-        description: "Close the shared customer editor dialog.",
-        x: 1360,
-        y: 260,
-        wires: [[]]
+        actionType: "trigger",
+        targetMode: "out-port",
+        description: "Close the shared customer editor dialog."
     },
     {
+        type: "ui-action",
         id: "saveCustomer",
-        type: "ui-action",
-        appId: "customersApp",
-        description: "Persist the current customer draft.",
-        x: 1360,
-        y: 300,
-        wires: [[]]
+        actionType: "trigger",
+        targetMode: "out-port",
+        description: "Persist the current customer draft."
     },
     {
+        type: "ui-action",
         id: "refreshCustomers",
+        actionType: "trigger",
+        targetMode: "out-port",
+        description: "Refresh the customer list query."
+    },
+    {
         type: "ui-action",
-        appId: "customersApp",
-        description: "Refresh the customer list query.",
-        x: 1360,
-        y: 340,
-        wires: [["customersQuery"]]
-    },
-    {
         id: "openCustomerDetail",
-        type: "ui-navigation",
-        appId: "customersApp",
-        to: "/customers/:id",
-        x: 1360,
-        y: 380,
-        wires: [[]]
+        actionType: "navigate",
+        targetMode: "path",
+        target: "app",
+        to: "/customers/:id"
     },
     {
+        type: "ui-action",
         id: "goToCustomers",
-        type: "ui-navigation",
-        appId: "customersApp",
-        to: "/customers",
-        x: 1360,
-        y: 420,
-        wires: [[]]
+        actionType: "navigate",
+        targetMode: "path",
+        target: "app",
+        to: "/customers"
     },
     {
+        type: "ui-action",
         id: "deleteCustomer",
-        type: "ui-navigation",
-        appId: "customersApp",
-        to: "/customers",
-        x: 1360,
-        y: 460,
-        wires: [[]]
+        actionType: "navigate",
+        targetMode: "path",
+        target: "app",
+        to: "/customers"
     }
 ];
+
+export const customersCrudExampleFlowFixture: unknown[] = customersCrudNodeSetFixture.map((node, index) => ({
+    ...node,
+    x: 160 + (index % 6) * 220,
+    y: 40 + Math.floor(index / 6) * 40,
+    wires: [[]]
+}));
 
 export const fixtureAppModels: AppModel[] = [customersCrudAppModelFixture, operationsConsoleAppModelFixture];

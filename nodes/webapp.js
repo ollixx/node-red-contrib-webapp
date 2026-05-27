@@ -15,13 +15,14 @@ const runtimeState = {
 const WEBAPP_NODE_TYPES = new Set([
     "ui-app",
     "ui-layout",
-    "ui-region",
+    "ui-slot",
     "ui-route",
     "ui-dialog",
     "ui-text",
     "ui-button",
     "ui-table",
-    "ui-form",
+    "ui-container",
+    "ui-input",
     "ui-store",
     "ui-query",
     "ui-action",
@@ -164,6 +165,115 @@ function setValueAtPath(source, path, value) {
     return cloneRoot;
 }
 
+function deleteValueAtPath(source, path) {
+    const segments = String(path).split(".").filter(Boolean);
+
+    if (segments.length === 0) {
+        return source;
+    }
+
+    const cloneRoot = { ...source };
+    let currentTarget = cloneRoot;
+
+    for (let index = 0; index < segments.length - 1; index += 1) {
+        const segment = segments[index];
+
+        if (typeof currentTarget[segment] !== "object" || currentTarget[segment] === null || Array.isArray(currentTarget[segment])) {
+            return cloneRoot;
+        }
+
+        currentTarget[segment] = { ...currentTarget[segment] };
+        currentTarget = currentTarget[segment];
+    }
+
+    delete currentTarget[segments[segments.length - 1]];
+
+    return cloneRoot;
+}
+
+function joinStatePath(rootPath, relativePath) {
+    const normalizedRoot = blankToUndefined(rootPath);
+    const normalizedRelative = blankToUndefined(relativePath);
+
+    if (!normalizedRoot) {
+        return normalizedRelative || "";
+    }
+
+    if (!normalizedRelative) {
+        return normalizedRoot;
+    }
+
+    return `${normalizedRoot}.${normalizedRelative}`;
+}
+
+function normalizeStoreOperationMessage(msg, storeDefinition) {
+    const candidate = msg && msg.ui && msg.ui.store && typeof msg.ui.store === "object"
+        ? msg.ui.store
+        : undefined;
+
+    if (!candidate || candidate.id !== storeDefinition.id || typeof candidate.op !== "string") {
+        return undefined;
+    }
+
+    return {
+        id: candidate.id,
+        op: candidate.op,
+        path: blankToUndefined(candidate.path),
+        value: candidate.value
+    };
+}
+
+function applyStoreOperation(currentState, storeDefinition, operation) {
+    const storeRootPath = storeDefinition.statePath;
+    const fullPath = joinStatePath(storeRootPath, operation.path);
+    const previousValue = clone(getValueAtPath(currentState, fullPath || storeRootPath));
+    let nextState = currentState;
+    let nextValue;
+
+    if (operation.op === "reset") {
+        nextState = setValueAtPath(currentState, storeRootPath, clone(storeDefinition.initialValue));
+        nextValue = clone(storeDefinition.initialValue);
+    }
+    else if (operation.op === "replace") {
+        nextState = setValueAtPath(currentState, storeRootPath, clone(operation.value));
+        nextValue = clone(operation.value);
+    }
+    else if (operation.op === "set") {
+        nextState = setValueAtPath(currentState, fullPath, clone(operation.value));
+        nextValue = clone(operation.value);
+    }
+    else if (operation.op === "patch") {
+        const currentValue = getValueAtPath(currentState, fullPath);
+        nextValue = mergeDeep(isPlainObject(currentValue) ? currentValue : {}, operation.value);
+        nextState = setValueAtPath(currentState, fullPath, nextValue);
+    }
+    else if (operation.op === "delete") {
+        nextState = deleteValueAtPath(currentState, fullPath);
+        nextValue = undefined;
+    }
+    else {
+        throw new Error(`Unknown store operation '${operation.op}'.`);
+    }
+
+    return {
+        nextState,
+        notification: {
+            ui: {
+                store: {
+                    id: storeDefinition.id,
+                    event: "changed",
+                    op: operation.op,
+                    path: operation.path,
+                    fullPath: fullPath || storeRootPath,
+                    value: nextValue,
+                    previousValue,
+                    origin: "node-red"
+                }
+            }
+        }
+    };
+}
+
 function escapeHtml(input) {
     return String(input)
         .replace(/&/g, "&amp;")
@@ -275,6 +385,27 @@ function resolveNavigationTarget(navigationPath, parameters, routeParams) {
         .join("/");
 }
 
+function findTypedAction(actions, actionId) {
+    return actions.find((entry) => entry.id === actionId && entry.actionType);
+}
+
+function parsePreviewTarget(target) {
+    if (typeof target !== "string" || target.trim().length === 0) {
+        return undefined;
+    }
+
+    const [scope, ...pathSegments] = target.split(":");
+
+    if (scope === "dialog" && pathSegments.length === 1 && pathSegments[0]) {
+        return {
+            scope,
+            id: pathSegments[0]
+        };
+    }
+
+    return undefined;
+}
+
 function buildUiMessage({ componentId, eventName, actionId, location, routeParams, statePatch, payload, dialog, navigation, queries }) {
     return uiEventMessageSchema.parse({
         ui: {
@@ -341,33 +472,19 @@ function getRouteMatch(location, routes) {
     return matches[0];
 }
 
-function buildRegionTree(regionDefinitions, layoutId) {
-    const regions = regionDefinitions.filter((region) => region.layoutId === layoutId);
-    const byParent = new Map();
-
-    regions.forEach((region) => {
-        const parentKey = region.parentRegionId || "__root__";
-        const siblings = byParent.get(parentKey) || [];
-        siblings.push(region);
-        byParent.set(parentKey, siblings);
-    });
-
-    function build(parentId) {
-        return (byParent.get(parentId || "__root__") || [])
-            .slice()
-            .sort((left, right) => {
-                const leftOrder = left.order || 0;
-                const rightOrder = right.order || 0;
-                return leftOrder - rightOrder || left.name.localeCompare(right.name);
-            })
-            .map((region) => ({
-                name: region.name,
-                title: region.title,
-                regions: build(region.id)
-            }));
-    }
-
-    return build(undefined);
+function buildSlots(slotDefinitions, layoutId) {
+    return slotDefinitions
+        .filter((slot) => slot.layoutId === layoutId)
+        .slice()
+        .sort((left, right) => {
+            const leftOrder = left.order || 0;
+            const rightOrder = right.order || 0;
+            return leftOrder - rightOrder || left.name.localeCompare(right.name);
+        })
+        .map((slot) => ({
+            name: slot.name,
+            title: slot.title
+        }));
 }
 
 function toComponentDefinitions(components) {
@@ -412,16 +529,47 @@ function toComponentDefinitions(components) {
             };
         }
 
+        if (component.type === "ui-container") {
+            return {
+                id: component.id,
+                kind: "container",
+                mount: component.mount,
+                order: toOptionalNumber(component.order),
+                bind: {},
+                props: { layoutId: component.layoutId },
+                events: []
+            };
+        }
+
+        if (component.type === "ui-input") {
+            return {
+                id: component.id,
+                kind: "input",
+                mount: component.mount,
+                order: toOptionalNumber(component.order),
+                bind: {
+                    value: getBinding(component.value, stateBinding(joinStatePath(component.storeId ? undefined : "", component.path || "")))
+                },
+                props: {
+                    label: component.label,
+                    storeId: component.storeId,
+                    path: component.path,
+                    inputType: component.inputType
+                },
+                events: []
+            };
+        }
+
         return {
             id: component.id,
-            kind: "form",
+            kind: "text",
             mount: component.mount,
             order: toOptionalNumber(component.order),
             bind: {
-                model: getBinding(component.model, stateBinding(component.modelPath || ""))
+                value: literalBinding(component.id)
             },
-            props: { fields: parseList(component.fields) },
-            events: [{ event: "submit", action: component.submitAction }]
+            props: {},
+            events: []
         };
     });
 }
@@ -444,7 +592,7 @@ function getAppModelResult(appId, definitions) {
             .map((layout) => ({
                 id: layout.id,
                 title: blankToUndefined(layout.title),
-                regions: buildRegionTree(buckets.regions, layout.id)
+                slots: buildSlots(buckets.slots, layout.id)
             }))
             .sort((left, right) => left.id.localeCompare(right.id)),
         routes: buckets.routes
@@ -541,50 +689,91 @@ function mountMatches(component, regionPath, model, routeId, layoutId, dialogId)
     return (target === routeId || target === layoutId || target === dialogId) && targetRegion === regionPath[0] && regionPath.length === 1;
 }
 
-function renderRegionTree(regions, model, context, routeId, layoutId, dialogId) {
-    return regions.map((region) => {
-        const regionPath = [...context.path, region.name];
+function layoutHasInputs(model, layoutId, visited = new Set()) {
+    if (visited.has(layoutId)) {
+        return false;
+    }
+
+    visited.add(layoutId);
+
+    return model.components.some((component) => {
+        if (!String(component.mount || "").startsWith(`layout:${layoutId}/`)) {
+            return false;
+        }
+
+        if (component.kind === "input") {
+            return true;
+        }
+
+        if (component.kind === "container") {
+            return layoutHasInputs(model, String(component.props.layoutId || ""), visited);
+        }
+
+        return false;
+    });
+}
+
+function buildActionHref(appId, action, location, componentId, eventName, params = {}) {
+    const query = new URLSearchParams({
+        location: location || "/customers",
+        sourceId: componentId,
+        event: eventName,
+        ...Object.entries(params).reduce((result, [key, value]) => {
+            if (value !== undefined && value !== null && value !== "") {
+                result[key] = String(value);
+            }
+            return result;
+        }, {})
+    });
+
+    return `/webapp/${encodeURIComponent(appId)}/action/${encodeURIComponent(action)}?${query.toString()}`;
+}
+
+function renderSlotTree(slots, model, context, routeId, layoutId, dialogId) {
+    return slots.map((slot) => {
+        const slotPath = [...context.path, slot.name];
         const components = model.components
-            .filter((component) => mountMatches(component, regionPath, model, routeId, layoutId, dialogId))
+            .filter((component) => mountMatches(component, slotPath, model, routeId, layoutId, dialogId))
             .sort((left, right) => (left.order || 0) - (right.order || 0) || left.id.localeCompare(right.id))
-            .map((component) => renderComponent(component, context.sources, model, routeId, context.location));
+            .map((component) => renderComponent(component, context.sources, model, {
+                routeId,
+                layoutId,
+                dialogId,
+                location: context.location,
+                formId: context.formId
+            }));
 
         return {
-            name: region.name,
-            title: region.title,
-            components,
-            regions: renderRegionTree(region.regions || [], model, { path: regionPath, sources: context.sources, location: context.location }, routeId, layoutId, dialogId)
+            name: slot.name,
+            title: slot.title,
+            components
         };
     });
 }
 
-function renderComponent(component, sources, model, routeId, location) {
+function renderComponent(component, sources, model, context) {
     const disabled = Boolean(resolveBinding(component.bind && component.bind.disabled, sources));
     const action = component.events && component.events[0] ? component.events[0].action : undefined;
-    const navigation = action ? sources.navigations.find((entry) => entry.id === action) : undefined;
-    const submitForm = action ? model.components.find((candidate) => candidate.kind === "form" && candidate.events && candidate.events.some((event) => event.action === action)) : undefined;
 
     if (component.kind === "text") {
         return {
             kind: "text",
             id: component.id,
-            text: String(resolveBinding(component.bind.value, sources) || "")
+            text: String(resolveBinding(component.bind.text || component.bind.value, sources) || "")
         };
     }
 
     if (component.kind === "button") {
         const href = action
-            ? `/webapp/${encodeURIComponent(model.id)}/action/${encodeURIComponent(action)}?location=${encodeURIComponent(location || "/customers")}&sourceId=${encodeURIComponent(component.id)}&event=click${sources.params.id ? `&id=${encodeURIComponent(sources.params.id)}` : ""}`
-            : navigation
-                ? `/webapp/${encodeURIComponent(model.id)}${navigation.to.replace(/:id/g, encodeURIComponent(sources.params.id || "c-100"))}`
-                : undefined;
+            ? buildActionHref(model.id, action, context.location, component.id, context.formId ? "submit" : "click", sources.params)
+            : undefined;
 
         return {
             kind: "button",
             id: component.id,
             label: String(component.props.label || component.id),
             href,
-            submitFormId: submitForm ? `webapp-form-${submitForm.id}` : undefined,
+            submitFormId: context.formId,
             disabled
         };
     }
@@ -597,19 +786,54 @@ function renderComponent(component, sources, model, routeId, location) {
             rows: Array.isArray(resolveBinding(component.bind.rows, sources)) ? resolveBinding(component.bind.rows, sources) : [],
             selectAction: action,
             appId: model.id,
-            location
+            location: context.location
+        };
+    }
+
+    if (component.kind === "input") {
+        return {
+            kind: "input",
+            id: component.id,
+            label: String(component.props.label || component.id),
+            name: String(component.props.path || component.id),
+            value: String(resolveBinding(component.bind.value, sources) || ""),
+            inputType: String(component.props.inputType || "text")
+        };
+    }
+
+    if (component.kind === "container") {
+        const childLayout = getLayout(model, String(component.props.layoutId || ""));
+
+        if (!childLayout) {
+            return {
+                kind: "container",
+                id: component.id,
+                formId: undefined,
+                slots: []
+            };
+        }
+
+        const formId = layoutHasInputs(model, childLayout.id) ? `webapp-form-${component.id}` : undefined;
+
+        return {
+            kind: "container",
+            id: component.id,
+            formId,
+            slots: renderSlotTree(childLayout.slots, model, { path: [], sources, location: context.location, formId }, context.routeId, childLayout.id, context.dialogId)
         };
     }
 
     return {
-        kind: "form",
+        kind: "text",
         id: component.id,
-        fields: Array.isArray(component.props.fields) ? component.props.fields : [],
-        model: resolveBinding(component.bind.model, sources) || {},
-        action,
-        appId: model.id,
-        location
+        text: component.id
     };
+}
+
+function renderSlotHtml(slot) {
+    const title = slot.title ? `<h3>${escapeHtml(slot.title)}</h3>` : "";
+    const components = slot.components.map(renderComponentHtml).join("");
+    return `<section class="webapp-slot"><header><h2>${escapeHtml(slot.name)}</h2>${title}</header><div class="webapp-slot-body">${components}</div></section>`;
 }
 
 function renderComponentHtml(component) {
@@ -624,8 +848,8 @@ function renderComponentHtml(component) {
             return `<button class="webapp-button" disabled>${label}</button>`;
         }
 
-        if (component.submitFormId) {
-            return `<button class="webapp-button" type="submit" form="${escapeAttribute(component.submitFormId)}">${label}</button>`;
+        if (component.submitFormId && component.href) {
+            return `<button class="webapp-button" type="submit" form="${escapeAttribute(component.submitFormId)}" formaction="${escapeAttribute(component.href)}">${label}</button>`;
         }
 
         if (component.href) {
@@ -658,19 +882,27 @@ function renderComponentHtml(component) {
         return `<table class="webapp-table"><thead><tr>${header}</tr></thead><tbody>${rows}</tbody></table>`;
     }
 
-    const formId = `webapp-form-${component.id}`;
-    const actionUrl = component.action
-        ? `/webapp/${encodeURIComponent(component.appId)}/action/${encodeURIComponent(component.action)}?location=${encodeURIComponent(component.location || "/customers")}&sourceId=${encodeURIComponent(component.id)}&event=submit`
-        : undefined;
-    const inputs = component.fields.map((field) => `<label>${escapeHtml(field)}<input type="text" name="${escapeAttribute(field)}" value="${escapeAttribute(component.model[field] ?? "")}"></label>`).join("");
-    return actionUrl
-        ? `<form class="webapp-form" id="${escapeAttribute(formId)}" method="get" action="${escapeAttribute(actionUrl)}">${inputs}</form>`
-        : `<form class="webapp-form" id="${escapeAttribute(formId)}">${inputs}</form>`;
+    if (component.kind === "input") {
+        return `<label class="webapp-field">${escapeHtml(component.label)}<input type="${escapeAttribute(component.inputType)}" name="${escapeAttribute(component.name)}" value="${escapeAttribute(component.value)}"></label>`;
+    }
+
+    if (component.kind === "container") {
+        const content = component.slots.map(renderSlotHtml).join("");
+        return component.formId
+            ? `<form class="webapp-form" id="${escapeAttribute(component.formId)}" method="get">${content}</form>`
+            : `<div class="webapp-container">${content}</div>`;
+    }
+
+    return "";
 }
 
 function applyPreviewAction(RED, appId, actionId, parameters, definitions) {
     const buckets = getDefinitionBuckets(appId, definitions);
-    const matchingForm = buckets.components.find((entry) => entry.type === "ui-form" && entry.submitAction === actionId);
+    const matchingInputs = buckets.components.filter((entry) => entry.type === "ui-input" && entry.path && parameters[entry.path] !== undefined);
+    const typedAction = findTypedAction(buckets.actions, actionId);
+    const allowLegacyPreviewAction = typedAction
+        && typedAction.targetMode === "out-port"
+        && ["openCustomerEditor", "closeCustomerEditor", "saveCustomer"].includes(actionId);
     const modelResult = getAppModelResult(appId, definitions);
 
     if (!modelResult.success) {
@@ -693,12 +925,60 @@ function applyPreviewAction(RED, appId, actionId, parameters, definitions) {
     let dialogMessage;
     let navigationMessage;
     let queryMessages = [];
+    const matchingRefreshQueries = buckets.queries
+        .filter((query) => query.refreshAction === actionId)
+        .map((query) => ({
+            id: query.id,
+            queryPath: query.queryPath,
+            mode: Array.isArray(getValueAtPath(nextQueries, query.queryPath)) ? "refresh" : "load"
+        }));
     const componentId = parameters.sourceId ? String(parameters.sourceId) : actionId;
-    const eventName = parameters.event ? String(parameters.event) : matchingForm ? "submit" : "click";
+    const eventName = parameters.event ? String(parameters.event) : matchingInputs.length > 0 ? "submit" : "click";
     const payload = {};
     const statePatch = {};
 
-    if (actionId === "openCustomerEditor") {
+    if (typedAction && !allowLegacyPreviewAction) {
+        if (typedAction.targetMode === "out-port") {
+            // Out-port actions only emit their UI message in the first typed-action version.
+        }
+        else if (typedAction.actionType === "navigate") {
+            if (typedAction.targetMode === "path") {
+                redirectLocation = resolveNavigationTarget(typedAction.to, parameters, routeMatch.params);
+                navigationMessage = {
+                    id: typedAction.id,
+                    to: redirectLocation
+                };
+            }
+        }
+        else if (typedAction.targetMode === "path" && ["show", "hide"].includes(typedAction.actionType)) {
+            const previewTarget = parsePreviewTarget(typedAction.target);
+
+            if (!previewTarget || previewTarget.scope !== "dialog") {
+                return {
+                    success: false,
+                    status: 422,
+                    body: `Typed action '${typedAction.id}' uses an unsupported preview target.`
+                };
+            }
+
+            const isOpen = typedAction.actionType === "show";
+            nextState = setValueAtPath(nextState, `ui.dialogs.${previewTarget.id}.open`, isOpen);
+            statePatch[`ui.dialogs.${previewTarget.id}.open`] = isOpen;
+            dialogMessage = {
+                id: previewTarget.id,
+                open: isOpen
+            };
+            dialogId = isOpen ? previewTarget.id : undefined;
+        }
+        else {
+            return {
+                success: false,
+                status: 422,
+                body: `Typed action '${typedAction.actionType}' is not implemented in the preview yet.`
+            };
+        }
+    }
+    else if (actionId === "openCustomerEditor") {
         const customerId = parameters.id ? String(parameters.id) : routeMatch.params.id;
         const selectedCustomer = nextQueries.customers && Array.isArray(nextQueries.customers.list)
             ? nextQueries.customers.list.find((row) => String(row.id) === customerId)
@@ -718,19 +998,21 @@ function applyPreviewAction(RED, appId, actionId, parameters, definitions) {
         statePatch["ui.dialogs.customerEditor.open"] = false;
         dialogMessage = { id: "customerEditor", open: false };
     }
-    else if (matchingForm) {
-        const fieldValues = (matchingForm.fields || []).reduce((result, field) => {
-            if (parameters[field] !== undefined) {
-                result[field] = String(parameters[field]);
-            }
-
+    else if (actionId === "saveCustomer" || matchingInputs.length > 0) {
+        const fieldValues = matchingInputs.reduce((result, input) => {
+            result[input.path] = String(parameters[input.path]);
             return result;
         }, {});
+        const storeId = matchingInputs[0] ? matchingInputs[0].storeId : undefined;
+        const storeDefinition = storeId ? buckets.stores.find((entry) => entry.id === storeId) : undefined;
+        const draftPath = storeDefinition ? storeDefinition.statePath : "draft.customer";
+        const currentDraft = getValueAtPath(nextState, draftPath);
+        const nextDraft = isPlainObject(currentDraft) ? { ...currentDraft, ...fieldValues } : fieldValues;
         const existingCustomerId = String(getValueAtPath(nextState, "draft.customerId") || "");
         const customerId = existingCustomerId || nextCustomerId(nextQueries.customers?.list || []);
         const persistedCustomer = {
             id: customerId,
-            ...fieldValues
+            ...nextDraft
         };
         const existingRows = Array.isArray(nextQueries.customers?.list) ? nextQueries.customers.list : [];
         const existingIndex = existingRows.findIndex((row) => String(row.id) === customerId);
@@ -746,28 +1028,15 @@ function applyPreviewAction(RED, appId, actionId, parameters, definitions) {
                 current: persistedCustomer
             }
         };
-        nextState = setValueAtPath(nextState, matchingForm.modelPath, fieldValues);
+        nextState = setValueAtPath(nextState, draftPath, nextDraft);
         nextState = setValueAtPath(nextState, "draft.customerId", customerId);
         nextState = setValueAtPath(nextState, "ui.dialogs.customerEditor.open", false);
-        statePatch[matchingForm.modelPath] = fieldValues;
+        statePatch[draftPath] = nextDraft;
         statePatch["draft.customerId"] = customerId;
         statePatch["ui.dialogs.customerEditor.open"] = false;
         redirectLocation = "/customers";
         dialogMessage = { id: "customerEditor", open: false };
         payload.values = fieldValues;
-    }
-    else if (actionId === "refreshCustomers") {
-        queryMessages = buckets.queries
-            .filter((query) => query.refreshAction === actionId)
-            .map((query) => ({
-                id: query.id,
-                queryPath: query.queryPath,
-                mode: Array.isArray(nextQueries.customers?.list) ? "refresh" : "load"
-            }));
-        statePatch["ui.queries.customersQuery.loading"] = false;
-        statePatch["ui.queries.customersQuery.status"] = "success";
-        nextState = setValueAtPath(nextState, "ui.queries.customersQuery.loading", false);
-        nextState = setValueAtPath(nextState, "ui.queries.customersQuery.status", "success");
     }
     else if (actionId === "openCustomerDetail") {
         const navigation = buckets.navigations.find((entry) => entry.id === actionId);
@@ -837,6 +1106,17 @@ function applyPreviewAction(RED, appId, actionId, parameters, definitions) {
         };
     }
 
+    if (matchingRefreshQueries.length > 0) {
+        queryMessages = matchingRefreshQueries;
+
+        matchingRefreshQueries.forEach((query) => {
+            statePatch[`ui.queries.${query.id}.loading`] = false;
+            statePatch[`ui.queries.${query.id}.status`] = "success";
+            nextState = setValueAtPath(nextState, `ui.queries.${query.id}.loading`, false);
+            nextState = setValueAtPath(nextState, `ui.queries.${query.id}.status`, "success");
+        });
+    }
+
     runtimeState.previewState.set(appId, nextState);
     runtimeState.previewQueries.set(appId, nextQueries);
 
@@ -863,13 +1143,6 @@ function applyPreviewAction(RED, appId, actionId, parameters, definitions) {
         dialogId,
         message
     };
-}
-
-function renderRegionHtml(region) {
-    const title = region.title ? `<h3>${escapeHtml(region.title)}</h3>` : "";
-    const components = region.components.map(renderComponentHtml).join("");
-    const children = region.regions.map(renderRegionHtml).join("");
-    return `<section class="webapp-region"><header><h2>${escapeHtml(region.name)}</h2>${title}</header><div class="webapp-region-body">${components}${children}</div></section>`;
 }
 
 function renderAppPage(appId, location, dialogId, definitions) {
@@ -920,7 +1193,7 @@ function renderAppPage(appId, location, dialogId, definitions) {
         params: routeMatch.params,
         navigations: integration.navigations
     };
-    const regions = renderRegionTree(layout.regions, model, { path: [], sources, location }, routeMatch.route.id, layout.id, undefined);
+    const slots = renderSlotTree(layout.slots, model, { path: [], sources, location, formId: undefined }, routeMatch.route.id, layout.id, undefined);
     const dialogs = model.dialogs
         .filter((dialog) => dialog.id === dialogId)
         .map((dialog) => {
@@ -928,14 +1201,14 @@ function renderAppPage(appId, location, dialogId, definitions) {
             return dialogLayout
                 ? {
                     title: dialog.title || dialog.id,
-                    regions: renderRegionTree(dialogLayout.regions, model, { path: [], sources, location }, routeMatch.route.id, dialogLayout.id, dialog.id)
+                    slots: renderSlotTree(dialogLayout.slots, model, { path: [], sources, location, formId: undefined }, routeMatch.route.id, dialogLayout.id, dialog.id)
                 }
                 : undefined;
         })
         .filter(Boolean);
 
-    const dialogHtml = dialogs.map((dialog) => `<div class="webapp-dialog"><div class="webapp-dialog-card"><div class="webapp-dialog-head"><h2>${escapeHtml(dialog.title)}</h2><a href="/webapp/${encodeURIComponent(appId)}/action/closeCustomerEditor?location=${encodeURIComponent(location)}&sourceId=cancelCustomerButton&event=click" class="webapp-link">Close</a></div>${dialog.regions.map(renderRegionHtml).join("")}</div></div>`).join("");
-    const pageBody = regions.map(renderRegionHtml).join("");
+    const dialogHtml = dialogs.map((dialog) => `<div class="webapp-dialog"><div class="webapp-dialog-card"><div class="webapp-dialog-head"><h2>${escapeHtml(dialog.title)}</h2><a href="/webapp/${encodeURIComponent(appId)}/action/closeCustomerEditor?location=${encodeURIComponent(location)}&sourceId=cancelCustomerButton&event=click" class="webapp-link">Close</a></div>${dialog.slots.map(renderSlotHtml).join("")}</div></div>`).join("");
+    const pageBody = slots.map(renderSlotHtml).join("");
     const messageFeed = getPreviewMessages(appId)
         .slice()
         .reverse()
@@ -960,18 +1233,19 @@ function renderAppPage(appId, location, dialogId, definitions) {
     .webapp-topbar h1 { margin:0; font-size:clamp(2rem, 4vw, 3.4rem); }
     .webapp-sub { color:var(--muted); font-family: ui-monospace, SFMono-Regular, monospace; font-size:13px; }
     .webapp-grid { display:grid; gap:16px; }
-    .webapp-region { border:1px solid var(--line); background:rgba(255,255,255,0.78); backdrop-filter: blur(6px); border-radius:18px; padding:16px; box-shadow:0 12px 30px rgba(79,70,50,0.08); }
-    .webapp-region > header { margin-bottom:12px; }
-    .webapp-region > header h2 { margin:0; font-size:1rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); }
-    .webapp-region-body { display:grid; gap:12px; }
+    .webapp-slot { border:1px solid var(--line); background:rgba(255,255,255,0.78); backdrop-filter: blur(6px); border-radius:18px; padding:16px; box-shadow:0 12px 30px rgba(79,70,50,0.08); }
+    .webapp-slot > header { margin-bottom:12px; }
+    .webapp-slot > header h2 { margin:0; font-size:1rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); }
+    .webapp-slot-body { display:grid; gap:12px; }
     .webapp-text { font-size:1.05rem; }
     .webapp-button { display:inline-flex; align-items:center; justify-content:center; padding:10px 14px; border-radius:999px; border:1px solid rgba(0,0,0,0.08); background:linear-gradient(135deg, var(--accent), #155e75); color:white; font-weight:600; }
     button.webapp-button[disabled] { background:#cbd5e1; color:#475569; }
     .webapp-table { width:100%; border-collapse:collapse; background:var(--panel); border-radius:12px; overflow:hidden; }
     .webapp-table th, .webapp-table td { padding:10px 12px; border-bottom:1px solid var(--line); text-align:left; }
     .webapp-form { display:grid; gap:10px; }
-    .webapp-form label { display:grid; gap:6px; color:var(--muted); font-size:0.95rem; }
+    .webapp-field { display:grid; gap:6px; color:var(--muted); font-size:0.95rem; }
     .webapp-form input { padding:10px 12px; border-radius:10px; border:1px solid var(--line); background:white; }
+    .webapp-container { display:grid; gap:12px; }
     .webapp-dialog { position:fixed; inset:0; background:rgba(20, 26, 31, 0.38); display:flex; align-items:center; justify-content:center; padding:24px; }
     .webapp-dialog-card { width:min(720px, 100%); background:var(--panel); border-radius:22px; padding:20px; box-shadow:0 25px 70px rgba(0,0,0,0.18); }
     .webapp-dialog-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
@@ -1031,15 +1305,32 @@ function readDeployDefinitions(RED) {
 }
 
 function getDefinitionBuckets(appId, definitions) {
-    const matchingDefinitions = definitions.filter((entry) => entry.appId === appId || entry.type === "ui-app" && entry.id === appId);
+    const matchingApp = definitions.find((entry) => entry.type === "ui-app" && entry.id === appId);
+
+    if (!matchingApp) {
+        return {
+            app: undefined,
+            layouts: [],
+            slots: [],
+            routes: [],
+            dialogs: [],
+            components: [],
+            stores: [],
+            queries: [],
+            actions: [],
+            navigations: []
+        };
+    }
+
+    const matchingDefinitions = definitions.filter((entry) => entry.type !== "ui-app");
 
     return {
-        app: matchingDefinitions.find((entry) => entry.type === "ui-app"),
+        app: matchingApp,
         layouts: matchingDefinitions.filter((entry) => entry.type === "ui-layout"),
-        regions: matchingDefinitions.filter((entry) => entry.type === "ui-region"),
+        slots: matchingDefinitions.filter((entry) => entry.type === "ui-slot"),
         routes: matchingDefinitions.filter((entry) => entry.type === "ui-route"),
         dialogs: matchingDefinitions.filter((entry) => entry.type === "ui-dialog"),
-        components: matchingDefinitions.filter((entry) => ["ui-text", "ui-button", "ui-table", "ui-form"].includes(entry.type)),
+        components: matchingDefinitions.filter((entry) => ["ui-text", "ui-button", "ui-table", "ui-container", "ui-input"].includes(entry.type)),
         stores: matchingDefinitions.filter((entry) => entry.type === "ui-store"),
         queries: matchingDefinitions.filter((entry) => entry.type === "ui-query"),
         actions: matchingDefinitions.filter((entry) => entry.type === "ui-action"),
@@ -1047,10 +1338,38 @@ function getDefinitionBuckets(appId, definitions) {
     };
 }
 
+function getActiveRuntimeAppId() {
+    for (const registration of runtimeState.definitions.values()) {
+        if (registration.definition.type === "ui-app") {
+            return registration.definition.id;
+        }
+    }
+
+    return undefined;
+}
+
 function registerEndpoints(RED) {
     if (runtimeState.endpointsRegistered) {
         return;
     }
+
+    RED.httpAdmin.get("/resources/node-red-contrib-webapp/lib/editor-common.js", (req, res) => {
+        const candidates = [
+            path.join(__dirname, "lib", "editor-common.js"),
+            path.join(__dirname, "..", "resources", "lib", "editor-common.js"),
+            path.join(__dirname, "..", "lib", "editor-common.js")
+        ];
+        const filePath = candidates.find((candidate) => fs.existsSync(candidate));
+
+        if (!filePath) {
+            res.status(404).send("editor-common.js not found");
+            return;
+        }
+
+        res.set("Cache-Control", "no-store");
+        res.type("application/javascript");
+        res.send(fs.readFileSync(filePath, "utf8"));
+    });
 
     RED.httpAdmin.get("/webapp/apps", (req, res) => {
         const apps = readDeployDefinitions(RED)
@@ -1160,9 +1479,10 @@ function createNodeConstructor(RED, type, mapConfig, options = {}) {
         }
 
         const validDefinition = validation.data;
+        node.webappDefinition = validDefinition;
         runtimeState.definitions.set(node.id, {
             nodeId: node.id,
-            appId: validDefinition.type === "ui-app" ? validDefinition.id : validDefinition.appId,
+            appId: validDefinition.type === "ui-app" ? validDefinition.id : undefined,
             definition: validDefinition
         });
 
@@ -1182,176 +1502,236 @@ function createNodeConstructor(RED, type, mapConfig, options = {}) {
     RED.nodes.registerType(type, WebappNode);
 }
 
-module.exports = function registerWebappNodes(RED) {
-    registerEndpoints(RED);
+function getUiId(config) {
+    return config.uiId || config.id;
+}
 
-    function getUiId(config) {
-        return config.uiId || config.id;
+function passThroughInputHandler(node, msg, send, done) {
+    send(msg);
+    if (done) {
+        done();
+    }
+}
+
+const runtimeNodeRegistry = {
+    "ui-app": {
+        mapConfig: (config) => ({
+            type: "ui-app",
+            id: getUiId(config),
+            title: config.title
+        })
+    },
+    "ui-layout": {
+        mapConfig: (config) => ({
+            type: "ui-layout",
+            id: getUiId(config),
+            title: config.title || undefined
+        })
+    },
+    "ui-slot": {
+        mapConfig: (config) => ({
+            type: "ui-slot",
+            id: getUiId(config),
+            layoutId: config.layoutId,
+            name: config.name,
+            title: config.title || undefined,
+            order: config.order === "" || config.order === undefined ? 0 : Number(config.order)
+        })
+    },
+    "ui-route": {
+        mapConfig: (config) => ({
+            type: "ui-route",
+            id: getUiId(config),
+            path: config.path,
+            title: config.title || undefined,
+            layoutId: config.layoutId
+        })
+    },
+    "ui-dialog": {
+        mapConfig: (config) => ({
+            type: "ui-dialog",
+            id: getUiId(config),
+            title: config.title || undefined,
+            layoutId: config.layoutId,
+            routeId: config.routeId || undefined,
+            modal: config.modal !== false && config.modal !== "false"
+        })
+    },
+    "ui-text": {
+        mapConfig: (config) => ({
+            type: "ui-text",
+            id: getUiId(config),
+            mount: config.mount,
+            order: toOptionalNumber(config.order),
+            value: getBinding(config.value, literalBinding(config.text || "")),
+            variant: config.variant || undefined
+        })
+    },
+    "ui-button": {
+        mapConfig: (config) => ({
+            type: "ui-button",
+            id: getUiId(config),
+            mount: config.mount,
+            order: toOptionalNumber(config.order),
+            label: config.label,
+            action: config.action,
+            disabled: getBinding(config.disabled, config.disabledPath ? stateBinding(config.disabledPath) : undefined)
+        }),
+        options: {
+            inputHandler: passThroughInputHandler
+        }
+    },
+    "ui-table": {
+        mapConfig: (config) => ({
+            type: "ui-table",
+            id: getUiId(config),
+            mount: config.mount,
+            order: toOptionalNumber(config.order),
+            columns: parseList(config.columns),
+            rows: getBinding(config.rows, queryBinding(config.rowsPath || "")),
+            selectAction: config.selectAction || undefined
+        }),
+        options: {
+            inputHandler: passThroughInputHandler
+        }
+    },
+    "ui-container": {
+        mapConfig: (config) => ({
+            type: "ui-container",
+            id: getUiId(config),
+            mount: config.mount,
+            order: toOptionalNumber(config.order),
+            layoutId: config.layoutId
+        }),
+        options: {
+            inputHandler: passThroughInputHandler
+        }
+    },
+    "ui-input": {
+        mapConfig: (config) => ({
+            type: "ui-input",
+            id: getUiId(config),
+            mount: config.mount,
+            order: toOptionalNumber(config.order),
+            label: config.label,
+            value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
+            storeId: config.storeId || undefined,
+            path: config.path || undefined,
+            inputType: config.inputType || undefined
+        }),
+        options: {
+            inputHandler: passThroughInputHandler
+        }
+    },
+    "ui-store": {
+        mapConfig: (config) => ({
+            type: "ui-store",
+            id: getUiId(config),
+            statePath: config.statePath,
+            initialValue: parseJson(config.initialValue)
+        }),
+        options: {
+            inputHandler(node, msg, send, done) {
+                const storeDefinition = node.webappDefinition;
+                const activeAppId = getActiveRuntimeAppId();
+                const operation = normalizeStoreOperationMessage(msg, storeDefinition);
+
+                if (!operation) {
+                    send(msg);
+                    if (done) {
+                        done();
+                    }
+                    return;
+                }
+
+                if (!activeAppId) {
+                    if (done) {
+                        done(new Error("No active ui-app is registered for ui-store updates."));
+                    }
+                    return;
+                }
+
+                const currentState = clone(runtimeState.previewState.get(activeAppId) || initializeState([storeDefinition], [], activeAppId));
+                const applied = applyStoreOperation(currentState, storeDefinition, operation);
+
+                runtimeState.previewState.set(activeAppId, applied.nextState);
+                send({
+                    ...msg,
+                    ui: {
+                        ...(msg.ui && typeof msg.ui === "object" ? msg.ui : {}),
+                        store: applied.notification.ui.store
+                    }
+                });
+                if (done) {
+                    done();
+                }
+            }
+        }
+    },
+    "ui-query": {
+        mapConfig: (config) => ({
+            type: "ui-query",
+            id: getUiId(config),
+            queryPath: config.queryPath,
+            source: config.source || undefined,
+            refreshAction: config.refreshAction || undefined
+        }),
+        options: {
+            inputHandler: passThroughInputHandler
+        }
+    },
+    "ui-action": {
+        mapConfig: (config) => ({
+            type: "ui-action",
+            id: getUiId(config),
+            actionType: blankToUndefined(config.actionType),
+            targetMode: blankToUndefined(config.targetMode),
+            target: blankToUndefined(config.target),
+            to: blankToUndefined(config.to),
+            description: config.description || undefined
+        }),
+        options: {
+            inputHandler: passThroughInputHandler
+        }
+    },
+    "ui-navigation": {
+        mapConfig: (config) => ({
+            type: "ui-navigation",
+            id: getUiId(config),
+            to: config.to
+        }),
+        options: {
+            inputHandler: passThroughInputHandler
+        }
+    }
+};
+
+function registerNodeType(RED, type) {
+    registerEndpoints(RED);
+    const registration = runtimeNodeRegistry[type];
+
+    if (!registration) {
+        throw new Error(`Unknown webapp node type '${type}'.`);
     }
 
-    createNodeConstructor(RED, "ui-app", (config) => ({
-        type: "ui-app",
-        id: getUiId(config),
-        title: config.title
-    }));
+    createNodeConstructor(RED, type, registration.mapConfig, registration.options);
+}
 
-    createNodeConstructor(RED, "ui-layout", (config) => ({
-        type: "ui-layout",
-        appId: config.appId,
-        id: getUiId(config),
-        title: config.title || undefined
-    }));
-
-    createNodeConstructor(RED, "ui-region", (config) => ({
-        type: "ui-region",
-        appId: config.appId,
-        id: getUiId(config),
-        layoutId: config.layoutId,
-        name: config.name,
-        parentRegionId: config.parentRegionId || undefined,
-        title: config.title || undefined,
-        order: config.order === "" || config.order === undefined ? 0 : Number(config.order)
-    }));
-
-    createNodeConstructor(RED, "ui-route", (config) => ({
-        type: "ui-route",
-        appId: config.appId,
-        id: getUiId(config),
-        path: config.path,
-        title: config.title || undefined,
-        layoutId: config.layoutId
-    }));
-
-    createNodeConstructor(RED, "ui-dialog", (config) => ({
-        type: "ui-dialog",
-        appId: config.appId,
-        id: getUiId(config),
-        title: config.title || undefined,
-        layoutId: config.layoutId,
-        routeId: config.routeId || undefined,
-        modal: config.modal !== false && config.modal !== "false"
-    }));
-
-    createNodeConstructor(RED, "ui-text", (config) => ({
-        type: "ui-text",
-        appId: config.appId,
-        id: getUiId(config),
-        mount: config.mount,
-        order: toOptionalNumber(config.order),
-        value: getBinding(config.value, literalBinding(config.text || "")),
-        variant: config.variant || undefined
-    }));
-
-    createNodeConstructor(RED, "ui-button", (config) => ({
-        type: "ui-button",
-        appId: config.appId,
-        id: getUiId(config),
-        mount: config.mount,
-        order: toOptionalNumber(config.order),
-        label: config.label,
-        action: config.action,
-        disabled: getBinding(config.disabled, config.disabledPath ? stateBinding(config.disabledPath) : undefined)
-    }), {
-        inputHandler(node, msg, send, done) {
-            send(msg);
-            if (done) {
-                done();
-            }
-        }
+function registerWebappNodes(RED) {
+    Object.keys(runtimeNodeRegistry).forEach((type) => {
+        registerNodeType(RED, type);
     });
+}
 
-    createNodeConstructor(RED, "ui-table", (config) => ({
-        type: "ui-table",
-        appId: config.appId,
-        id: getUiId(config),
-        mount: config.mount,
-        order: toOptionalNumber(config.order),
-        columns: parseList(config.columns),
-        rows: getBinding(config.rows, queryBinding(config.rowsPath || "")),
-        selectAction: config.selectAction || undefined
-    }), {
-        inputHandler(node, msg, send, done) {
-            send(msg);
-            if (done) {
-                done();
-            }
-        }
-    });
-
-    createNodeConstructor(RED, "ui-form", (config) => ({
-        type: "ui-form",
-        appId: config.appId,
-        id: getUiId(config),
-        mount: config.mount,
-        order: toOptionalNumber(config.order),
-        fields: parseList(config.fields),
-        model: getBinding(config.model, stateBinding(config.modelPath || "")),
-        submitAction: config.submitAction
-    }), {
-        inputHandler(node, msg, send, done) {
-            send(msg);
-            if (done) {
-                done();
-            }
-        }
-    });
-
-    createNodeConstructor(RED, "ui-store", (config) => ({
-        type: "ui-store",
-        appId: config.appId,
-        id: getUiId(config),
-        statePath: config.statePath,
-        initialValue: parseJson(config.initialValue)
-    }), {
-        inputHandler(node, msg, send, done) {
-            send(msg);
-            if (done) {
-                done();
-            }
-        }
-    });
-
-    createNodeConstructor(RED, "ui-query", (config) => ({
-        type: "ui-query",
-        appId: config.appId,
-        id: getUiId(config),
-        queryPath: config.queryPath,
-        source: config.source || undefined,
-        refreshAction: config.refreshAction || undefined
-    }), {
-        inputHandler(node, msg, send, done) {
-            send(msg);
-            if (done) {
-                done();
-            }
-        }
-    });
-
-    createNodeConstructor(RED, "ui-action", (config) => ({
-        type: "ui-action",
-        appId: config.appId,
-        id: getUiId(config),
-        description: config.description || undefined
-    }), {
-        inputHandler(node, msg, send, done) {
-            send(msg);
-            if (done) {
-                done();
-            }
-        }
-    });
-
-    createNodeConstructor(RED, "ui-navigation", (config) => ({
-        type: "ui-navigation",
-        appId: config.appId,
-        id: getUiId(config),
-        to: config.to
-    }), {
-        inputHandler(node, msg, send, done) {
-            send(msg);
-            if (done) {
-                done();
-            }
-        }
-    });
+registerWebappNodes.__test__ = {
+    applyPreviewAction,
+    applyStoreOperation,
+    getPreviewMessages,
+    getAppModelResult,
+    renderAppPage,
+    resetPreview
 };
+
+registerWebappNodes.registerNodeType = registerNodeType;
+
+module.exports = registerWebappNodes;

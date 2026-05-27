@@ -14,104 +14,108 @@ const sourceNodes: UiNodeDefinition[] = [
     },
     {
         type: "ui-layout",
-        appId: "customersApp",
         id: "customerShell",
         title: "Customer shell"
     },
     {
         type: "ui-layout",
-        appId: "customersApp",
         id: "dialogShell",
         title: "Dialog shell"
     },
     {
-        type: "ui-region",
-        appId: "customersApp",
+        type: "ui-layout",
+        id: "customersListLayout",
+        title: "Customers list content"
+    },
+    {
+        type: "ui-layout",
+        id: "customerDetailLayout",
+        title: "Customer detail content"
+    },
+    {
+        type: "ui-layout",
+        id: "dialogFormLayout",
+        title: "Dialog form layout"
+    },
+    {
+        type: "ui-slot",
         id: "headerRegion",
         layoutId: "customerShell",
         name: "header",
         order: 0
     },
     {
-        type: "ui-region",
-        appId: "customersApp",
+        type: "ui-slot",
         id: "contentRegion",
         layoutId: "customerShell",
         name: "content",
         order: 1
     },
     {
-        type: "ui-region",
-        appId: "customersApp",
-        id: "toolbarRegion",
-        layoutId: "customerShell",
-        name: "toolbar",
-        parentRegionId: "contentRegion",
-        order: 0
-    },
-    {
-        type: "ui-region",
-        appId: "customersApp",
-        id: "bodyRegion",
-        layoutId: "customerShell",
-        name: "body",
-        parentRegionId: "contentRegion",
-        order: 1
-    },
-    {
-        type: "ui-region",
-        appId: "customersApp",
+        type: "ui-slot",
         id: "footerRegion",
         layoutId: "customerShell",
         name: "footer",
         order: 2
     },
     {
-        type: "ui-region",
-        appId: "customersApp",
+        type: "ui-slot",
         id: "dialogHeaderRegion",
         layoutId: "dialogShell",
         name: "header",
         order: 0
     },
     {
-        type: "ui-region",
-        appId: "customersApp",
+        type: "ui-slot",
         id: "dialogContentRegion",
         layoutId: "dialogShell",
         name: "content",
         order: 1
     },
     {
-        type: "ui-region",
-        appId: "customersApp",
-        id: "dialogFormRegion",
-        layoutId: "dialogShell",
-        name: "form",
-        parentRegionId: "dialogContentRegion",
+        type: "ui-slot",
+        id: "listToolbarRegion",
+        layoutId: "customersListLayout",
+        name: "toolbar",
         order: 0
     },
     {
-        type: "ui-region",
-        appId: "customersApp",
+        type: "ui-slot",
+        id: "listBodyRegion",
+        layoutId: "customersListLayout",
+        name: "body",
+        order: 0
+    },
+    {
+        type: "ui-slot",
+        id: "detailToolbarRegion",
+        layoutId: "customerDetailLayout",
+        name: "toolbar",
+        order: 0
+    },
+    {
+        type: "ui-slot",
+        id: "detailBodyRegion",
+        layoutId: "customerDetailLayout",
+        name: "body",
+        order: 1
+    },
+    {
+        type: "ui-slot",
         id: "dialogFieldsRegion",
-        layoutId: "dialogShell",
+        layoutId: "dialogFormLayout",
         name: "fields",
-        parentRegionId: "dialogFormRegion",
         order: 0
     },
     {
-        type: "ui-region",
-        appId: "customersApp",
+        type: "ui-slot",
         id: "dialogActionsRegion",
-        layoutId: "dialogShell",
+        layoutId: "dialogFormLayout",
         name: "actions",
-        parentRegionId: "dialogFormRegion",
         order: 1
     },
     {
         type: "ui-route",
-        appId: "customersApp",
         id: "customers",
         path: "/customers",
         title: "Customers",
@@ -119,7 +123,6 @@ const sourceNodes: UiNodeDefinition[] = [
     },
     {
         type: "ui-route",
-        appId: "customersApp",
         id: "customerDetail",
         path: "/customers/:id",
         title: "Customer detail",
@@ -127,7 +130,6 @@ const sourceNodes: UiNodeDefinition[] = [
     },
     {
         type: "ui-dialog",
-        appId: "customersApp",
         id: "customerEditor",
         title: "Edit customer",
         layoutId: "dialogShell",
@@ -135,7 +137,6 @@ const sourceNodes: UiNodeDefinition[] = [
     },
     {
         type: "ui-text",
-        appId: "customersApp",
         id: "pageTitle",
         mount: "customers.header",
         value: {
@@ -144,26 +145,29 @@ const sourceNodes: UiNodeDefinition[] = [
         }
     },
     {
+        type: "ui-container",
+        id: "customersContentContainer",
+        mount: "route:/customers/content",
+        layoutId: "customersListLayout"
+    },
+    {
         type: "ui-button",
-        appId: "customersApp",
         id: "newCustomerButton",
-        mount: "route:/customers/content/toolbar",
+        mount: "layout:customersListLayout/toolbar",
         label: "New customer",
         action: "openCustomerEditor"
     },
     {
         type: "ui-button",
-        appId: "customersApp",
         id: "refreshCustomersButton",
-        mount: "route:/customers/content/toolbar",
+        mount: "layout:customersListLayout/toolbar",
         label: "Refresh",
         action: "refreshCustomers"
     },
     {
         type: "ui-text",
-        appId: "customersApp",
         id: "editorStatus",
-        mount: "route:/customers/content/toolbar",
+        mount: "layout:customersListLayout/toolbar",
         value: {
             kind: "literal",
             value: "Editing customer"
@@ -171,9 +175,8 @@ const sourceNodes: UiNodeDefinition[] = [
     },
     {
         type: "ui-table",
-        appId: "customersApp",
         id: "customersTable",
-        mount: "route:/customers/content/body",
+        mount: "layout:customersListLayout/body",
         columns: ["name", "email", "status"],
         rows: {
             kind: "query",
@@ -182,38 +185,59 @@ const sourceNodes: UiNodeDefinition[] = [
         selectAction: "openCustomerDetail"
     },
     {
-        type: "ui-form",
-        appId: "customersApp",
-        id: "customerForm",
-        mount: "dialog:customerEditor/content/form/fields",
-        fields: ["name", "email", "status"],
-        model: {
+        type: "ui-container",
+        id: "customerEditorContainer",
+        mount: "dialog:customerEditor/content",
+        layoutId: "dialogFormLayout"
+    },
+    {
+        type: "ui-input",
+        id: "customerNameInput",
+        mount: "layout:dialogFormLayout/fields",
+        label: "Name",
+        value: {
             kind: "state",
-            path: "draft.customer"
+            path: "draft.customer.name"
         },
-        submitAction: "saveCustomer"
+        storeId: "draftStore",
+        path: "name"
+    },
+    {
+        type: "ui-input",
+        id: "customerEmailInput",
+        mount: "layout:dialogFormLayout/fields",
+        label: "Email",
+        value: {
+            kind: "state",
+            path: "draft.customer.email"
+        },
+        storeId: "draftStore",
+        path: "email"
     },
     {
         type: "ui-button",
-        appId: "customersApp",
         id: "cancelCustomerButton",
-        mount: "dialog:customerEditor/content/form/actions",
+        mount: "layout:dialogFormLayout/actions",
         label: "Cancel",
         action: "closeCustomerEditor"
     },
     {
         type: "ui-button",
-        appId: "customersApp",
         id: "saveCustomerButton",
-        mount: "dialog:customerEditor/content/form/actions",
+        mount: "layout:dialogFormLayout/actions",
         label: "Save",
         action: "saveCustomer"
     },
     {
+        type: "ui-container",
+        id: "detailContentContainer",
+        mount: "route:/customers/:id/content",
+        layoutId: "customerDetailLayout"
+    },
+    {
         type: "ui-text",
-        appId: "customersApp",
         id: "detailSummary",
-        mount: "route:/customers/:id/content/body",
+        mount: "layout:customerDetailLayout/body",
         value: {
             kind: "literal",
             value: "ignored"
@@ -230,11 +254,12 @@ describe("editor structure view", () => {
         const view = buildEditorStructureView(result, sourceNodes);
         const customersRoute = findStructureItem(view, "app:customersApp/route:customers");
         const customersLayout = findStructureItem(view, "app:customersApp/route:customers/layout:customerShell");
-        const toolbarRegion = findStructureItem(view, "app:customersApp/route:customers/layout:customerShell/region:content/toolbar");
+        const contentSlot = findStructureItem(view, "app:customersApp/route:customers/layout:customerShell/slot:content");
+        const toolbarSlot = findStructureItem(view, "app:customersApp/route:customers/layout:customerShell/slot:content/component:customersContentContainer/layout:customersListLayout/slot:toolbar");
         const customerDialog = findStructureItem(view, "app:customersApp/dialog:customerEditor");
         const dialogActions = findStructureItem(
             view,
-            "app:customersApp/dialog:customerEditor/layout:dialogShell/region:content/form/actions"
+            "app:customersApp/dialog:customerEditor/layout:dialogShell/slot:content/component:customerEditorContainer/layout:dialogFormLayout/slot:actions"
         );
 
         expect(result.diagnostics).toEqual([]);
@@ -246,8 +271,9 @@ describe("editor structure view", () => {
         ]);
         expect(customersRoute?.meta?.routePath).toBe("/customers");
         expect(customersLayout?.canvasNodeId).toBe("customerShell");
-        expect(toolbarRegion?.canvasNodeId).toBe("toolbarRegion");
-        expect(toolbarRegion?.children.map((item) => item.label)).toEqual(["newCustomerButton", "refreshCustomersButton", "editorStatus"]);
+        expect(contentSlot?.canvasNodeId).toBe("contentRegion");
+        expect(toolbarSlot?.canvasNodeId).toBe("listToolbarRegion");
+        expect(toolbarSlot?.children.map((item) => item.label)).toEqual(["newCustomerButton", "refreshCustomersButton", "editorStatus"]);
         expect(customerDialog?.children.map((item) => item.id)).toEqual([
             "app:customersApp/dialog:customerEditor/layout:dialogShell"
         ]);
@@ -260,12 +286,12 @@ describe("editor structure view", () => {
 
         const view = buildEditorStructureView(registry.compile("customersApp"), sourceNodes);
         const regionSelection = selectFromCanvas(view, "contentRegion");
-        const structureSelection = selectFromStructure(view, "app:customersApp/route:customers/layout:customerShell/region:content");
+        const structureSelection = selectFromStructure(view, "app:customersApp/route:customers/layout:customerShell/slot:content");
 
-        expect(regionSelection.activeStructureItemId).toBe("app:customersApp/route:customers/layout:customerShell/region:content");
+        expect(regionSelection.activeStructureItemId).toBe("app:customersApp/route:customers/layout:customerShell/slot:content");
         expect(regionSelection.matchedStructureItemIds).toEqual([
-            "app:customersApp/route:customers/layout:customerShell/region:content",
-            "app:customersApp/route:customerDetail/layout:customerShell/region:content"
+            "app:customersApp/route:customers/layout:customerShell/slot:content",
+            "app:customersApp/route:customerDetail/layout:customerShell/slot:content"
         ]);
         expect(structureSelection.activeCanvasNodeIds).toEqual(["contentRegion"]);
     });
@@ -278,9 +304,8 @@ describe("editor structure view", () => {
             ...sourceNodes,
             {
                 type: "ui-text",
-                appId: "customersApp",
                 id: "orphanText",
-                mount: "dialog:missingDialog/content/actions",
+                mount: "dialog:missingDialog/content",
                 value: {
                     kind: "literal",
                     value: "Orphan"
@@ -288,7 +313,6 @@ describe("editor structure view", () => {
             },
             {
                 type: "ui-text",
-                appId: "customersApp",
                 id: "sidebarText",
                 mount: "customers.sidebar",
                 value: {

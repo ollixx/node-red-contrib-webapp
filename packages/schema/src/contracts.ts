@@ -46,61 +46,38 @@ export const bindingSchema = z
 
 export type BindingDefinition = z.infer<typeof bindingSchema>;
 
-export interface RegionDefinition {
-    name: string;
-    title?: string;
-    regions?: RegionDefinition[];
-}
+export const slotDefinitionSchema = z.object({
+    name: regionNameSchema,
+    title: z.string().min(1, "Slot titles must not be empty.").optional()
+});
 
-export const regionDefinitionSchema: z.ZodType<RegionDefinition> = z.lazy(() =>
-    z
-        .object({
-            name: regionNameSchema,
-            title: z.string().min(1, "Region titles must not be empty.").optional(),
-            regions: z.array(regionDefinitionSchema).default([])
-        })
-        .superRefine((region, context) => {
-            const seenNames = new Set<string>();
-
-            region.regions.forEach((childRegion, index) => {
-                if (seenNames.has(childRegion.name)) {
-                    context.addIssue({
-                        code: z.ZodIssueCode.custom,
-                        message: `Region '${childRegion.name}' is declared more than once in '${region.name}'.`,
-                        path: ["regions", index, "name"]
-                    });
-                }
-
-                seenNames.add(childRegion.name);
-            });
-        })
-);
+export type SlotDefinition = z.infer<typeof slotDefinitionSchema>;
 
 export interface LayoutDefinition {
     id: string;
     title?: string;
-    regions: RegionDefinition[];
+    slots: SlotDefinition[];
 }
 
 export const layoutDefinitionSchema: z.ZodType<LayoutDefinition> = z
     .object({
         id: identifierSchema,
         title: z.string().min(1, "Layout titles must not be empty.").optional(),
-        regions: z.array(regionDefinitionSchema).min(1, "Layouts must declare at least one region.")
+        slots: z.array(slotDefinitionSchema).min(1, "Layouts must declare at least one slot.")
     })
     .superRefine((layout, context) => {
         const seenNames = new Set<string>();
 
-        layout.regions.forEach((region, index) => {
-            if (seenNames.has(region.name)) {
+        layout.slots.forEach((slot, index) => {
+            if (seenNames.has(slot.name)) {
                 context.addIssue({
                     code: z.ZodIssueCode.custom,
-                    message: `Layout '${layout.id}' declares region '${region.name}' more than once.`,
-                    path: ["regions", index, "name"]
+                    message: `Layout '${layout.id}' declares slot '${slot.name}' more than once.`,
+                    path: ["slots", index, "name"]
                 });
             }
 
-            seenNames.add(region.name);
+            seenNames.add(slot.name);
         });
     });
 
@@ -131,6 +108,48 @@ export const storeDefinitionSchema = z.object({
 
 export type StoreDefinition = z.infer<typeof storeDefinitionSchema>;
 
+export const storeOperationSchema = z.object({
+    id: identifierSchema,
+    op: z.enum(["set", "patch", "delete", "replace", "reset"]),
+    path: z.string().min(1, "Store operation paths must not be empty.").optional(),
+    value: z.unknown().optional()
+}).superRefine((operation, context) => {
+    if (["set", "patch", "delete"].includes(operation.op) && !operation.path) {
+        context.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Store operation '${operation.op}' requires a path.`,
+            path: ["path"]
+        });
+    }
+
+    if (["set", "patch", "replace"].includes(operation.op) && operation.value === undefined) {
+        context.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Store operation '${operation.op}' requires a value.`,
+            path: ["value"]
+        });
+    }
+});
+
+export type StoreOperation = z.infer<typeof storeOperationSchema>;
+
+export const uiStoreMessageSchema = z.object({
+    ui: z.object({
+        store: z.object({
+            id: identifierSchema,
+            event: z.literal("changed"),
+            op: z.enum(["set", "patch", "delete", "replace", "reset"]),
+            path: z.string().optional(),
+            fullPath: z.string().min(1, "Store notifications must include a full path."),
+            value: z.unknown().optional(),
+            previousValue: z.unknown().optional(),
+            origin: z.enum(["node-red", "client"]).default("node-red")
+        })
+    })
+});
+
+export type UiStoreMessage = z.infer<typeof uiStoreMessageSchema>;
+
 export const queryDefinitionSchema = z.object({
     id: identifierSchema,
     queryPath: z.string().min(1, "Queries must declare a query path."),
@@ -140,9 +159,61 @@ export const queryDefinitionSchema = z.object({
 
 export type QueryDefinition = z.infer<typeof queryDefinitionSchema>;
 
+export const actionTypeSchema = z.enum(["navigate", "disable", "enable", "show", "hide", "trigger"]);
+
+export type ActionType = z.infer<typeof actionTypeSchema>;
+
+export const actionTargetModeSchema = z.enum(["out-port", "path"]);
+
+export type ActionTargetMode = z.infer<typeof actionTargetModeSchema>;
+
 export const actionDefinitionSchema = z.object({
     id: identifierSchema,
+    actionType: actionTypeSchema.optional(),
+    targetMode: actionTargetModeSchema.optional(),
+    target: z.string().min(1, "Action targets must not be empty.").optional(),
+    to: z.string().min(1, "Navigate actions must declare a destination.").optional(),
     description: z.string().min(1, "Action descriptions must not be empty.").optional()
+}).superRefine((action, context) => {
+    if (action.actionType && !action.targetMode) {
+        context.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Typed actions must declare a target mode.",
+            path: ["targetMode"]
+        });
+    }
+
+    if (!action.actionType && action.targetMode) {
+        context.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Target modes require an action type.",
+            path: ["actionType"]
+        });
+    }
+
+    if (action.targetMode === "path" && !action.target) {
+        context.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Path-targeted actions must declare a target.",
+            path: ["target"]
+        });
+    }
+
+    if (action.targetMode === "out-port" && action.target) {
+        context.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Out-port actions must not declare a direct target.",
+            path: ["target"]
+        });
+    }
+
+    if (action.actionType === "navigate" && !action.to) {
+        context.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Navigate actions must declare a destination.",
+            path: ["to"]
+        });
+    }
 });
 
 export type ActionDefinition = z.infer<typeof actionDefinitionSchema>;
@@ -163,7 +234,7 @@ export const runtimeIntegrationModelSchema = z.object({
 
 export type RuntimeIntegrationModel = z.infer<typeof runtimeIntegrationModelSchema>;
 
-export const componentKindSchema = z.enum(["text", "button", "table", "form", "input", "card"]);
+export const componentKindSchema = z.enum(["text", "button", "table", "input", "card", "container"]);
 
 export const uiEventNameSchema = z.enum(["click", "submit", "change", "select", "open", "close", "navigate", "load"]);
 

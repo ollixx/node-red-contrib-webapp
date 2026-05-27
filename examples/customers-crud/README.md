@@ -7,7 +7,7 @@ Dieses Beispiel ist der Referenzfall fuer das MVP aus Phase P7. Es zeigt einen d
 - Listenroute `/customers` mit Tabellenansicht
 - Detailroute `/customers/:id`
 - gemeinsamer Dialog `customerEditor` fuer Anlegen und Bearbeiten
-- Formular mit State-Binding auf `draft.customer`
+- Eingabegruppe aus `ui-container`, `ui-input` und Actions mit State-Binding auf `draft.customer`
 - Navigation von Tabelle zu Detail und von Detail zurueck zur Liste
 - Delete-Aktion als Navigationspfad zurueck zur Liste
 

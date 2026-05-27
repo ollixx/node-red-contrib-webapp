@@ -2,7 +2,7 @@
 
 ## Outcome
 
-Build a Node-RED contribution that lets users model web apps declaratively instead of encoding UI hierarchy in flow wiring. The first release should prove the model with a CRUD example that uses routes, layouts, slots, state, events, dialogs, and forms.
+Build a Node-RED contribution that lets users model web apps declaratively instead of encoding UI hierarchy in flow wiring. The first release should prove the model with a CRUD example that uses routes, layouts, slots, state, events, dialogs, containers, and inputs.
 
 ## Recommended Technical Shape
 
@@ -13,7 +13,7 @@ Use a TypeScript workspace with four main modules:
 2. `packages/runtime`
    Node-RED runtime integration, registry assembly, HTTP APIs, and state/event plumbing.
 3. `packages/renderer`
-   Browser renderer for routes, layouts, slots, forms, dialogs, and state-bound view components.
+   Browser renderer for routes, layouts, slots, containers, dialogs, and state-bound view components.
 4. `packages/editor`
    Node-RED editor node definitions, property panels, validation helpers, and the structure sidebar.
 
@@ -61,7 +61,7 @@ Deliverables:
 
 - component definition schema
 - mount syntax parser and validator
-- route, layout, region, binding, and event contract types
+- route, layout, slot, binding, and event contract types
 - sample app model fixtures
 
 Definition of done:
@@ -93,13 +93,13 @@ Deliverables:
 
 - route and layout rendering
 - slot-based mounting
-- view rendering for text, button, table, form, and dialog
+- view rendering for text, button, table, container, input, and dialog
 - client state bindings and event dispatch bridge
 
 Definition of done:
 
 - a minimal multi-page app renders from the compiled model
-- button clicks and form submits emit the standard `msg.ui` event shape
+- button clicks and input-driven submits emit the standard `msg.ui` event shape
 
 ### Phase 4: Node-RED Node Set MVP
 
@@ -110,11 +110,12 @@ Deliverables:
 - `ui-app`
 - `ui-route`
 - `ui-layout`
-- `ui-region`
+- `ui-slot`
 - `ui-text`
 - `ui-button`
 - `ui-table`
-- `ui-form`
+- `ui-container`
+- `ui-input`
 - `ui-dialog`
 - `ui-store`
 - `ui-query`
@@ -149,7 +150,7 @@ Purpose: make complex UIs understandable inside the Node-RED editor.
 
 Deliverables:
 
-- sidebar tree for app, routes, regions, and mounted components
+- sidebar tree for app, routes, slots, child layouts, and mounted components
 - selection sync between canvas and structure view
 - validation warnings for orphaned mounts and unresolved slots
 
@@ -172,7 +173,7 @@ Deliverables:
 Definition of done:
 
 - a new contributor can run the example locally from documented steps
-- the example demonstrates routes, table, dialog, form, navigation, and state updates
+- the example demonstrates routes, table, dialog, container/input composition, navigation, and state updates
 
 ## Suggested Execution Order On GitHub
 

@@ -12,86 +12,81 @@ describe("runtime node set assembly", () => {
             },
             {
                 type: "ui-layout",
-                appId: "customersApp",
                 id: "customerShell",
                 title: "Customer shell"
             },
             {
-                type: "ui-region",
-                appId: "customersApp",
+                type: "ui-slot",
                 id: "headerRegion",
                 layoutId: "customerShell",
                 name: "header",
                 order: 0
             },
             {
-                type: "ui-region",
-                appId: "customersApp",
+                type: "ui-slot",
                 id: "contentRegion",
                 layoutId: "customerShell",
                 name: "content",
                 order: 1
             },
             {
-                type: "ui-region",
-                appId: "customersApp",
-                id: "toolbarRegion",
-                layoutId: "customerShell",
+                type: "ui-layout",
+                id: "customersContentLayout",
+                title: "Customers content"
+            },
+            {
+                type: "ui-slot",
+                id: "toolbarSlot",
+                layoutId: "customersContentLayout",
                 name: "toolbar",
-                parentRegionId: "contentRegion",
                 order: 0
             },
             {
-                type: "ui-region",
-                appId: "customersApp",
-                id: "bodyRegion",
-                layoutId: "customerShell",
+                type: "ui-slot",
+                id: "bodySlot",
+                layoutId: "customersContentLayout",
                 name: "body",
-                parentRegionId: "contentRegion",
                 order: 1
             },
             {
                 type: "ui-layout",
-                appId: "customersApp",
                 id: "dialogShell",
                 title: "Dialog shell"
             },
             {
-                type: "ui-region",
-                appId: "customersApp",
+                type: "ui-slot",
                 id: "dialogContent",
                 layoutId: "dialogShell",
                 name: "content",
                 order: 0
             },
             {
-                type: "ui-region",
-                appId: "customersApp",
-                id: "dialogForm",
-                layoutId: "dialogShell",
-                name: "form",
-                parentRegionId: "dialogContent",
+                type: "ui-layout",
+                id: "dialogFormLayout",
+                title: "Dialog form"
+            },
+            {
+                type: "ui-slot",
+                id: "dialogFields",
+                layoutId: "dialogFormLayout",
+                name: "fields",
                 order: 0
             },
             {
-                type: "ui-region",
-                appId: "customersApp",
-                id: "dialogFields",
-                layoutId: "dialogShell",
-                name: "fields",
-                parentRegionId: "dialogForm",
-                order: 0
+                type: "ui-slot",
+                id: "dialogActions",
+                layoutId: "dialogFormLayout",
+                name: "actions",
+                order: 1
             },
             {
                 type: "ui-route",
-                appId: "customersApp",
                 id: "customers",
                 path: "/customers",
                 layoutId: "customerShell"
             },
             {
                 type: "ui-dialog",
-                appId: "customersApp",
                 id: "customerEditor",
                 layoutId: "dialogShell",
                 routeId: "customers",
@@ -99,7 +94,6 @@ describe("runtime node set assembly", () => {
             },
             {
                 type: "ui-text",
-                appId: "customersApp",
                 id: "pageTitle",
                 mount: "route:/customers/header",
                 value: {
@@ -108,18 +102,22 @@ describe("runtime node set assembly", () => {
                 }
             },
             {
+                type: "ui-container",
+                id: "customersContentContainer",
+                mount: "route:/customers/content",
+                layoutId: "customersContentLayout"
+            },
+            {
                 type: "ui-button",
-                appId: "customersApp",
                 id: "newCustomerButton",
-                mount: "route:/customers/content/toolbar",
+                mount: "layout:customersContentLayout/toolbar",
                 label: "New customer",
                 action: "openCustomerEditor"
             },
             {
                 type: "ui-table",
-                appId: "customersApp",
                 id: "customersTable",
-                mount: "route:/customers/content/body",
+                mount: "layout:customersContentLayout/body",
                 columns: ["name", "email"],
                 rows: {
                     kind: "query",
@@ -128,37 +126,51 @@ describe("runtime node set assembly", () => {
                 selectAction: "openCustomerDetail"
             },
             {
-                type: "ui-form",
-                appId: "customersApp",
-                id: "customerForm",
-                mount: "dialog:customerEditor/content/form/fields",
-                fields: ["name", "email"],
-                model: {
+                type: "ui-container",
+                id: "customerEditorContainer",
+                mount: "dialog:customerEditor/content",
+                layoutId: "dialogFormLayout"
+            },
+            {
+                type: "ui-input",
+                id: "customerNameInput",
+                mount: "layout:dialogFormLayout/fields",
+                label: "Name",
+                value: {
                     kind: "state",
-                    path: "draft.customer"
+                    path: "draft.customer.name"
                 },
-                submitAction: "saveCustomer"
+                storeId: "draftStore",
+                path: "name"
+            },
+            {
+                type: "ui-input",
+                id: "customerEmailInput",
+                mount: "layout:dialogFormLayout/fields",
+                label: "Email",
+                value: {
+                    kind: "state",
+                    path: "draft.customer.email"
+                },
+                storeId: "draftStore",
+                path: "email"
             },
             {
                 type: "ui-store",
-                appId: "customersApp",
                 id: "draftStore",
                 statePath: "draft.customer"
             },
             {
                 type: "ui-query",
-                appId: "customersApp",
                 id: "customersQuery",
                 queryPath: "customers.list"
             },
             {
                 type: "ui-action",
-                appId: "customersApp",
                 id: "saveCustomer"
             },
             {
                 type: "ui-navigation",
-                appId: "customersApp",
                 id: "goToCustomers",
                 to: "/customers"
             }
@@ -194,7 +206,19 @@ describe("runtime node set assembly", () => {
             ],
             actions: [
                 {
+                    actionType: "navigate",
+                    description: undefined,
+                    id: "goToCustomers",
+                    target: undefined,
+                    targetMode: "out-port",
+                    to: "/customers"
+                },
+                {
+                    actionType: undefined,
                     id: "saveCustomer",
+                    target: undefined,
+                    targetMode: undefined,
+                    to: undefined,
                     description: undefined
                 }
             ],
@@ -212,16 +236,98 @@ describe("runtime node set assembly", () => {
         const result = registry.compile("customersApp");
 
         expect(result.diagnostics).toEqual([]);
-        expect(result.model?.layouts.map((layout) => layout.id)).toEqual(["customerShell", "dialogShell"]);
+        expect(result.model?.layouts.map((layout) => layout.id)).toEqual(["customersContentLayout", "customerShell", "dialogFormLayout", "dialogShell"]);
         expect(result.model?.components.map((component) => component.id)).toEqual([
-            "customerForm",
+            "customerEditorContainer",
             "customersTable",
             "newCustomerButton",
+            "customerEmailInput",
+            "customerNameInput",
+            "customersContentContainer",
             "pageTitle"
         ]);
     });
 
-    it("fails assembly when a region references a missing parent", () => {
+    it("mirrors ui-navigation nodes into typed navigate actions while keeping navigation integration", () => {
+        const assembly = assembleNodeSet([
+            {
+                type: "ui-app",
+                id: "customersApp",
+                title: "Customers CRM"
+            },
+            {
+                type: "ui-navigation",
+                id: "goToCustomers",
+                to: "/customers"
+            }
+        ]);
+
+        expect(assembly.success).toBe(true);
+
+        if (!assembly.success) {
+            return;
+        }
+
+        expect(assembly.data.integration.actions).toEqual([
+            {
+                id: "goToCustomers",
+                actionType: "navigate",
+                targetMode: "out-port",
+                target: undefined,
+                to: "/customers",
+                description: undefined
+            }
+        ]);
+        expect(assembly.data.integration.navigations).toEqual([
+            {
+                id: "goToCustomers",
+                to: "/customers"
+            }
+        ]);
+    });
+
+    it("keeps typed navigate ui-actions in legacy navigation integration for compatibility", () => {
+        const assembly = assembleNodeSet([
+            {
+                type: "ui-app",
+                id: "customersApp",
+                title: "Customers CRM"
+            },
+            {
+                type: "ui-action",
+                id: "goToCustomers",
+                actionType: "navigate",
+                targetMode: "path",
+                target: "app",
+                to: "/customers"
+            }
+        ]);
+
+        expect(assembly.success).toBe(true);
+
+        if (!assembly.success) {
+            return;
+        }
+
+        expect(assembly.data.integration.actions).toEqual([
+            {
+                id: "goToCustomers",
+                actionType: "navigate",
+                targetMode: "path",
+                target: "app",
+                to: "/customers",
+                description: undefined
+            }
+        ]);
+        expect(assembly.data.integration.navigations).toEqual([
+            {
+                id: "goToCustomers",
+                to: "/customers"
+            }
+        ]);
+    });
+
+    it("fails assembly when a component targets a nested slot path", () => {
         const assembly = assembleNodeSet([
             {
                 type: "ui-app",
@@ -230,25 +336,34 @@ describe("runtime node set assembly", () => {
             },
             {
                 type: "ui-layout",
-                appId: "customersApp",
                 id: "customerShell"
             },
             {
-                type: "ui-region",
-                appId: "customersApp",
+                type: "ui-slot",
                 id: "contentRegion",
                 layoutId: "customerShell",
-                name: "content",
-                parentRegionId: "missingRegion"
+                name: "content"
+            },
+            {
+                type: "ui-button",
+                id: "invalidButton",
+                mount: "layout:customerShell/content/toolbar",
+                label: "Invalid",
+                action: "go"
             }
         ]);
 
-        expect(assembly.success).toBe(false);
+        expect(assembly.success).toBe(true);
 
-        if (assembly.success) {
+        if (!assembly.success) {
             return;
         }
 
-        expect(assembly.error).toContain("missing parent region");
+        const registry = createRuntimeRegistry();
+        registry.registerMany(assembly.data.contributions);
+
+        const result = registry.compile("customersApp");
+
+        expect(result.diagnostics[0]?.message).toContain("Nested slot paths are not supported");
     });
 });

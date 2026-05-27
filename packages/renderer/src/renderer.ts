@@ -7,9 +7,9 @@ import {
     type LayoutDefinition,
     type NavigationDefinition,
     type QueryDefinition,
-    type RegionDefinition,
     type RouteDefinition,
     type RuntimeIntegrationModel,
+    type SlotDefinition,
     type UiEventMessage
 } from "@node-red-contrib-webapp/schema";
 
@@ -52,21 +52,17 @@ export interface RenderedTableComponent extends RenderedComponentBase {
     rows: Record<string, unknown>[];
 }
 
-export interface RenderedFormField {
-    name: string;
-    value: unknown;
-}
-
-export interface RenderedFormComponent extends RenderedComponentBase {
-    kind: "form";
-    fields: RenderedFormField[];
-    model: Record<string, unknown>;
-}
-
 export interface RenderedCardComponent extends RenderedComponentBase {
     kind: "card";
     title?: string;
     data: unknown;
+}
+
+export interface RenderedContainerComponent extends RenderedComponentBase {
+    kind: "container";
+    layoutId: string;
+    title?: string;
+    regions: RenderedRegion[];
 }
 
 export interface RenderedInputComponent extends RenderedComponentBase {
@@ -77,7 +73,7 @@ export interface RenderedInputComponent extends RenderedComponentBase {
 export type RenderedComponent =
     | RenderedButtonComponent
     | RenderedCardComponent
-    | RenderedFormComponent
+    | RenderedContainerComponent
     | RenderedInputComponent
     | RenderedTableComponent
     | RenderedTextComponent;
@@ -397,7 +393,7 @@ function resolveNavigationTarget(
         .join("/");
 }
 
-function toRenderedComponent(component: ComponentDefinition, context: ComponentRenderContext): RenderedComponent | undefined {
+function toRenderedComponent(component: ComponentDefinition, context: ComponentRenderContext, appModel: AppModel): RenderedComponent | undefined {
     const visible = matchesCondition(component.visibleIf, context.sources, true);
 
     if (!visible) {
@@ -441,20 +437,6 @@ function toRenderedComponent(component: ComponentDefinition, context: ComponentR
                 columns: asStringArray(resolvedProps.columns),
                 rows: asRecordArray(resolvedProps.rows)
             };
-        case "form": {
-            const fields = asStringArray(resolvedProps.fields);
-            const model = getObjectRecord(resolvedProps.model);
-
-            return {
-                ...baseComponent,
-                kind: "form",
-                model,
-                fields: fields.map((fieldName) => ({
-                    name: fieldName,
-                    value: model[fieldName]
-                }))
-            };
-        }
         case "card":
             return {
                 ...baseComponent,
@@ -462,6 +444,28 @@ function toRenderedComponent(component: ComponentDefinition, context: ComponentR
                 title: typeof resolvedProps.title === "string" ? resolvedProps.title : undefined,
                 data: resolvedProps.customer ?? resolvedProps.data
             };
+        case "container": {
+            const layoutId = typeof resolvedProps.layoutId === "string" ? resolvedProps.layoutId : undefined;
+
+            if (!layoutId) {
+                return undefined;
+            }
+
+            const layout = findLayout(appModel, layoutId);
+
+            return {
+                ...baseComponent,
+                kind: "container",
+                layoutId,
+                title: typeof resolvedProps.title === "string" ? resolvedProps.title : undefined,
+                regions: renderRegions(
+                    layout.slots,
+                    createMountMatcher(appModel, [{ scope: "layout", targetId: layoutId }]),
+                    appModel,
+                    context
+                )
+            };
+        }
         case "input":
             return {
                 ...baseComponent,
@@ -483,26 +487,25 @@ function componentSort(left: ComponentDefinition, right: ComponentDefinition): n
 }
 
 function renderRegions(
-    regionDefinitions: RegionDefinition[],
+    slotDefinitions: SlotDefinition[],
     shouldIncludeMount: (component: ComponentDefinition, regionPath: string[]) => boolean,
     appModel: AppModel,
-    context: ComponentRenderContext,
-    prefix: string[] = []
+    context: ComponentRenderContext
 ): RenderedRegion[] {
-    return regionDefinitions.map((regionDefinition) => {
-        const regionPath = [...prefix, regionDefinition.name];
+    return slotDefinitions.map((slotDefinition) => {
+        const regionPath = [slotDefinition.name];
         const mountedComponents = appModel.components
             .filter((component) => shouldIncludeMount(component, regionPath))
             .sort(componentSort)
-            .map((component) => toRenderedComponent(component, context))
+            .map((component) => toRenderedComponent(component, context, appModel))
             .filter((component): component is RenderedComponent => component !== undefined);
 
         return {
             kind: "region",
-            name: regionDefinition.name,
-            title: regionDefinition.title,
+            name: slotDefinition.name,
+            title: slotDefinition.title,
             components: mountedComponents,
-            regions: renderRegions(regionDefinition.regions ?? [], shouldIncludeMount, appModel, context, regionPath)
+            regions: []
         };
     });
 }
@@ -533,7 +536,13 @@ function createMountMatcher(
 }
 
 function flattenRegions(regions: RenderedRegion[]): RenderedComponent[] {
-    return regions.flatMap((region) => [...region.components, ...flattenRegions(region.regions)]);
+    return regions.flatMap((region) => region.components.flatMap((component) => {
+        if (component.kind === "container") {
+            return [component, ...flattenRegions(component.regions)];
+        }
+
+        return [component];
+    }));
 }
 
 function inferDialogTransition(action: string | undefined, appModel: AppModel): { dialogId: string; open: boolean } | undefined {
@@ -596,7 +605,7 @@ export function createRendererApp(appModel: AppModel, options: RendererAppOption
                 open: true,
                 layoutId: dialog.layoutId,
                 regions: renderRegions(
-                    findLayout(appModel, dialog.layoutId).regions,
+                    findLayout(appModel, dialog.layoutId).slots,
                     createMountMatcher(appModel, [
                         { scope: "dialog", targetId: dialog.id },
                         { scope: "layout", targetId: dialog.layoutId }
@@ -614,7 +623,7 @@ export function createRendererApp(appModel: AppModel, options: RendererAppOption
             params: routeMatch.params,
             layout,
             regions: renderRegions(
-                layout.regions,
+                layout.slots,
                 createMountMatcher(appModel, [
                     { scope: "route", targetId: routeMatch.route.id },
                     { scope: "layout", targetId: layout.id }
@@ -669,13 +678,13 @@ export function createRendererApp(appModel: AppModel, options: RendererAppOption
         }
 
         if (
-            sourceComponent?.kind === "form" &&
-            (event === "submit" || event === "change") &&
-            sourceComponent.bind.model?.kind === "state" &&
-            sourceComponent.bind.model.path &&
-            payload.values !== undefined
+            sourceComponent?.kind === "input" &&
+            event === "change" &&
+            sourceComponent.bind.value?.kind === "state" &&
+            sourceComponent.bind.value.path &&
+            payload.value !== undefined
         ) {
-            statePatch[sourceComponent.bind.model.path] = payload.values;
+            statePatch[sourceComponent.bind.value.path] = payload.value;
         }
 
         const dialogTransition = inferDialogTransition(action, appModel);

@@ -4,7 +4,7 @@ import {
     appModelSchema,
     type AppModel,
     type LayoutDefinition,
-    type RegionDefinition,
+    type SlotDefinition,
     type RouteDefinition
 } from "./contracts";
 
@@ -161,24 +161,12 @@ function findLayout(layouts: LayoutDefinition[], layoutId: string): LayoutDefini
     return layouts.find((layout) => layout.id === layoutId);
 }
 
-function findRegion(regionDefinitions: RegionDefinition[], regionName: string): RegionDefinition | undefined {
-    return regionDefinitions.find((region) => region.name === regionName);
+function findSlot(slotDefinitions: SlotDefinition[], slotName: string): SlotDefinition | undefined {
+    return slotDefinitions.find((slot) => slot.name === slotName);
 }
 
-function hasRegionPath(layout: LayoutDefinition, regionPath: string[]): boolean {
-    let currentRegions = layout.regions;
-
-    for (const regionSegment of regionPath) {
-        const match = findRegion(currentRegions, regionSegment);
-
-        if (!match) {
-            return false;
-        }
-
-        currentRegions = match.regions ?? [];
-    }
-
-    return true;
+function hasSlotPath(layout: LayoutDefinition, regionPath: string[]): boolean {
+    return regionPath.length === 1 && findSlot(layout.slots, regionPath[0]) !== undefined;
 }
 
 function resolveRouteMount(parsedMount: ParsedRouteMountReference, routes: RouteDefinition[]): Result<{ route: RouteDefinition; regionPath: string[] }> {
@@ -451,10 +439,10 @@ function collectAppModelIssues(appModel: AppModel): ZodIssue[] {
             return;
         }
 
-        if (!hasRegionPath(targetLayout, resolvedMount.data.regionPath)) {
+        if (!hasSlotPath(targetLayout, resolvedMount.data.regionPath)) {
             issues.push({
                 code: "custom",
-                message: `Mount '${component.mount}' resolves to missing region path '${resolvedMount.data.regionPath.join("/")}' in layout '${targetLayout.id}'.`,
+                message: `Mount '${component.mount}' resolves to missing slot path '${resolvedMount.data.regionPath.join("/")}' in layout '${targetLayout.id}'. Nested slot paths are not supported; use a ui-container with a child layout.`,
                 path: ["components", index, "mount"]
             });
         }

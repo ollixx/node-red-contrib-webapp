@@ -69,7 +69,7 @@ phases:
     deliverables:
       - renderer app shell
       - route and slot rendering
-      - text, button, table, form, and dialog components
+      - text, button, table, container, input, and dialog components
       - event bridge
     validation:
       - multi-page fixture renders end to end
@@ -87,11 +87,12 @@ phases:
       - ui-app node
       - ui-route node
       - ui-layout node
-      - ui-region node
+      - ui-slot node
       - ui-text node
       - ui-button node
       - ui-table node
-      - ui-form node
+      - ui-container node
+      - ui-input node
       - ui-dialog node
       - ui-store node
       - ui-query node

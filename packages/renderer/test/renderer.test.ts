@@ -58,7 +58,9 @@ describe("renderer MVP", () => {
         const openDialogDispatch = app.dispatchEvent("newCustomerButton", "click", {
             source: "toolbar"
         });
-        const customerForm = findComponentInSnapshot(openDialogDispatch.snapshot, "customerForm");
+        const customerNameInput = findComponentInSnapshot(openDialogDispatch.snapshot, "customerNameInput");
+        const customerEmailInput = findComponentInSnapshot(openDialogDispatch.snapshot, "customerEmailInput");
+        const customerStatusInput = findComponentInSnapshot(openDialogDispatch.snapshot, "customerStatusInput");
         const editorStatus = findComponentInSnapshot(openDialogDispatch.snapshot, "editorStatus");
         const cancelCustomerButton = findComponentInSnapshot(openDialogDispatch.snapshot, "cancelCustomerButton");
         const saveCustomerButton = findComponentInSnapshot(openDialogDispatch.snapshot, "saveCustomerButton");
@@ -75,39 +77,48 @@ describe("renderer MVP", () => {
         expect(openDialogDispatch.snapshot.dialogs.map((dialog) => dialog.id)).toEqual(["customerEditor"]);
         expect(editorStatus?.kind).toBe("text");
         expect(editorStatus && "text" in editorStatus ? editorStatus.text : undefined).toBe("Editing customer");
-        expect(customerForm?.kind).toBe("form");
-        expect(customerForm && "fields" in customerForm ? customerForm.fields : []).toEqual([
-            { name: "name", value: "Ada Lovelace" },
-            { name: "email", value: "ada@example.com" },
-            { name: "status", value: "active" }
-        ]);
+        expect(customerNameInput?.kind).toBe("input");
+        expect(customerNameInput && "value" in customerNameInput ? customerNameInput.value : undefined).toBe("Ada Lovelace");
+        expect(customerEmailInput?.kind).toBe("input");
+        expect(customerEmailInput && "value" in customerEmailInput ? customerEmailInput.value : undefined).toBe("ada@example.com");
+        expect(customerStatusInput?.kind).toBe("input");
+        expect(customerStatusInput && "value" in customerStatusInput ? customerStatusInput.value : undefined).toBe("active");
         expect(cancelCustomerButton?.kind).toBe("button");
         expect(saveCustomerButton?.kind).toBe("button");
         expect(saveCustomerButton?.disabled).toBe(false);
 
-        const submitDispatch = app.dispatchEvent("customerForm", "submit", {
-            values: {
-                name: "Grace Hopper",
-                email: "grace@example.com",
-                status: "invited"
-            }
+        const nameChangeDispatch = app.dispatchEvent("customerNameInput", "change", {
+            value: "Grace Hopper"
         });
-        const updatedForm = findComponentInSnapshot(submitDispatch.snapshot, "customerForm");
+        const emailChangeDispatch = app.dispatchEvent("customerEmailInput", "change", {
+            value: "grace@example.com"
+        });
+        const statusChangeDispatch = app.dispatchEvent("customerStatusInput", "change", {
+            value: "invited"
+        });
+        const updatedNameInput = findComponentInSnapshot(statusChangeDispatch.snapshot, "customerNameInput");
+        const updatedEmailInput = findComponentInSnapshot(statusChangeDispatch.snapshot, "customerEmailInput");
+        const updatedStatusInput = findComponentInSnapshot(statusChangeDispatch.snapshot, "customerStatusInput");
+        const saveDispatch = app.dispatchEvent("saveCustomerButton", "click");
 
-        expect(uiEventMessageSchema.safeParse(submitDispatch.message).success).toBe(true);
-        expect(submitDispatch.message.ui.action).toBe("saveCustomer");
-        expect(submitDispatch.message.ui.statePatch).toEqual({
-            "draft.customer": {
-                name: "Grace Hopper",
-                email: "grace@example.com",
-                status: "invited"
-            }
+        expect(uiEventMessageSchema.safeParse(nameChangeDispatch.message).success).toBe(true);
+        expect(nameChangeDispatch.message.ui.statePatch).toEqual({
+            "draft.customer.name": "Grace Hopper"
         });
-        expect(updatedForm && "fields" in updatedForm ? updatedForm.fields : []).toEqual([
-            { name: "name", value: "Grace Hopper" },
-            { name: "email", value: "grace@example.com" },
-            { name: "status", value: "invited" }
-        ]);
+        expect(uiEventMessageSchema.safeParse(emailChangeDispatch.message).success).toBe(true);
+        expect(emailChangeDispatch.message.ui.statePatch).toEqual({
+            "draft.customer.email": "grace@example.com"
+        });
+        expect(uiEventMessageSchema.safeParse(statusChangeDispatch.message).success).toBe(true);
+        expect(statusChangeDispatch.message.ui.statePatch).toEqual({
+            "draft.customer.status": "invited"
+        });
+        expect(updatedNameInput && "value" in updatedNameInput ? updatedNameInput.value : undefined).toBe("Grace Hopper");
+        expect(updatedEmailInput && "value" in updatedEmailInput ? updatedEmailInput.value : undefined).toBe("grace@example.com");
+        expect(updatedStatusInput && "value" in updatedStatusInput ? updatedStatusInput.value : undefined).toBe("invited");
+        expect(uiEventMessageSchema.safeParse(saveDispatch.message).success).toBe(true);
+        expect(saveDispatch.message.ui.action).toBe("saveCustomer");
+        expect(saveDispatch.message.ui.statePatch).toEqual({});
 
         const refreshDispatch = app.dispatchEvent("refreshCustomersButton", "click");
 
@@ -161,7 +172,7 @@ describe("renderer MVP", () => {
             open: false
         });
         expect(closeDialogDispatch.snapshot.dialogs).toEqual([]);
-        expect(findComponentInSnapshot(closeDialogDispatch.snapshot, "editorStatus")).toBeUndefined();
+        expect(findComponentInSnapshot(closeDialogDispatch.snapshot, "editorStatus")?.kind).toBe("text");
 
         const detailDispatch = app.dispatchEvent("customersTable", "select", {
             row: {
@@ -172,7 +183,7 @@ describe("renderer MVP", () => {
         const detailBackButton = findComponentInSnapshot(detailDispatch.snapshot, "backToCustomersButton");
         const detailEditButton = findComponentInSnapshot(detailDispatch.snapshot, "editCustomerButton");
         const detailDeleteButton = findComponentInSnapshot(detailDispatch.snapshot, "deleteCustomerButton");
-        const detailSummaryAfterSelect = findComponentInSnapshot(detailDispatch.snapshot, "detailSummary");
+        const detailCustomerId = findComponentInSnapshot(detailDispatch.snapshot, "detailCustomerId");
 
         expect(uiEventMessageSchema.safeParse(detailDispatch.message).success).toBe(true);
         expect(detailDispatch.message.ui.navigation).toEqual({
@@ -186,13 +197,8 @@ describe("renderer MVP", () => {
         expect(detailBackButton?.kind).toBe("button");
         expect(detailEditButton?.kind).toBe("button");
         expect(detailDeleteButton?.kind).toBe("button");
-        expect(detailSummaryAfterSelect?.kind).toBe("card");
-        expect(detailSummaryAfterSelect && "data" in detailSummaryAfterSelect ? detailSummaryAfterSelect.data : undefined).toEqual({
-            id: "cust-1",
-            name: "Ada Lovelace",
-            email: "ada@example.com",
-            status: "active"
-        });
+        expect(detailCustomerId?.kind).toBe("text");
+        expect(detailCustomerId && "text" in detailCustomerId ? detailCustomerId.text : undefined).toBe("cust-1");
 
         const backDispatch = app.dispatchEvent("backToCustomersButton", "click");
 
@@ -233,19 +239,14 @@ describe("renderer MVP", () => {
         expect(deleteDispatch.snapshot.route.id).toBe("customers");
 
         const detailSnapshot = app.navigate("/customers/cust-1");
-        const detailSummaryAfterNavigate = findComponentInSnapshot(detailSnapshot, "detailSummary");
+        const detailCustomerIdAfterNavigate = findComponentInSnapshot(detailSnapshot, "detailCustomerId");
 
         expect(detailSnapshot.route.id).toBe("customerDetail");
         expect(detailSnapshot.params).toEqual({
             id: "cust-1"
         });
-        expect(detailSummaryAfterNavigate?.kind).toBe("card");
-        expect(detailSummaryAfterNavigate && "data" in detailSummaryAfterNavigate ? detailSummaryAfterNavigate.data : undefined).toEqual({
-            id: "cust-1",
-            name: "Ada Lovelace",
-            email: "ada@example.com",
-            status: "active"
-        });
+        expect(detailCustomerIdAfterNavigate?.kind).toBe("text");
+        expect(detailCustomerIdAfterNavigate && "text" in detailCustomerIdAfterNavigate ? detailCustomerIdAfterNavigate.text : undefined).toBe("cust-1");
     });
 
     it("matches parameterized routes deterministically", () => {

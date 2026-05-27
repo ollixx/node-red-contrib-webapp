@@ -2,10 +2,9 @@
     {
         "id": "customersApp",
         "type": "ui-app",
-        "name": "Customers CRM",
         "title": "Customers CRM",
         "x": 160,
-        "y": 60,
+        "y": 40,
         "wires": [
             []
         ]
@@ -13,9 +12,8 @@
     {
         "id": "customerShell",
         "type": "ui-layout",
-        "appId": "customersApp",
         "title": "Customer shell",
-        "x": 360,
+        "x": 380,
         "y": 40,
         "wires": [
             []
@@ -23,53 +21,23 @@
     },
     {
         "id": "customerHeader",
-        "type": "ui-region",
-        "appId": "customersApp",
+        "type": "ui-slot",
         "layoutId": "customerShell",
         "name": "header",
         "order": 0,
-        "x": 560,
-        "y": 20,
-        "wires": [
-            []
-        ]
-    },
-    {
-        "id": "customerContent",
-        "type": "ui-region",
-        "appId": "customersApp",
-        "layoutId": "customerShell",
-        "name": "content",
-        "order": 1,
-        "x": 560,
-        "y": 60,
-        "wires": [
-            []
-        ]
-    },
-    {
-        "id": "customerToolbar",
-        "type": "ui-region",
-        "appId": "customersApp",
-        "layoutId": "customerShell",
-        "name": "toolbar",
-        "parentRegionId": "customerContent",
-        "order": 0,
-        "x": 760,
+        "x": 600,
         "y": 40,
         "wires": [
             []
         ]
     },
     {
-        "id": "customerBody",
-        "type": "ui-region",
-        "appId": "customersApp",
+        "id": "customerContent",
+        "type": "ui-slot",
         "layoutId": "customerShell",
-        "name": "body",
-        "parentRegionId": "customerContent",
+        "name": "content",
         "order": 1,
-        "x": 760,
+        "x": 600,
         "y": 80,
         "wires": [
             []
@@ -77,13 +45,80 @@
     },
     {
         "id": "customerFooter",
-        "type": "ui-region",
-        "appId": "customersApp",
+        "type": "ui-slot",
         "layoutId": "customerShell",
         "name": "footer",
         "order": 2,
-        "x": 560,
-        "y": 100,
+        "x": 600,
+        "y": 120,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "customersListLayout",
+        "type": "ui-layout",
+        "title": "Customers list content",
+        "x": 380,
+        "y": 120,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "customerToolbar",
+        "type": "ui-slot",
+        "layoutId": "customersListLayout",
+        "name": "toolbar",
+        "order": 0,
+        "x": 600,
+        "y": 160,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "customerBody",
+        "type": "ui-slot",
+        "layoutId": "customersListLayout",
+        "name": "body",
+        "order": 1,
+        "x": 600,
+        "y": 200,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "customerDetailLayout",
+        "type": "ui-layout",
+        "title": "Customer detail content",
+        "x": 380,
+        "y": 200,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "detailToolbar",
+        "type": "ui-slot",
+        "layoutId": "customerDetailLayout",
+        "name": "toolbar",
+        "order": 0,
+        "x": 600,
+        "y": 240,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "detailBody",
+        "type": "ui-slot",
+        "layoutId": "customerDetailLayout",
+        "name": "body",
+        "order": 1,
+        "x": 600,
+        "y": 280,
         "wires": [
             []
         ]
@@ -91,78 +126,67 @@
     {
         "id": "dialogShell",
         "type": "ui-layout",
-        "appId": "customersApp",
         "title": "Dialog shell",
-        "x": 360,
-        "y": 160,
+        "x": 380,
+        "y": 280,
         "wires": [
             []
         ]
     },
     {
         "id": "dialogHeader",
-        "type": "ui-region",
-        "appId": "customersApp",
+        "type": "ui-slot",
         "layoutId": "dialogShell",
         "name": "header",
         "order": 0,
-        "x": 560,
-        "y": 140,
+        "x": 600,
+        "y": 320,
         "wires": [
             []
         ]
     },
     {
         "id": "dialogContent",
-        "type": "ui-region",
-        "appId": "customersApp",
+        "type": "ui-slot",
         "layoutId": "dialogShell",
         "name": "content",
         "order": 1,
-        "x": 560,
-        "y": 180,
+        "x": 600,
+        "y": 360,
         "wires": [
             []
         ]
     },
     {
-        "id": "dialogForm",
-        "type": "ui-region",
-        "appId": "customersApp",
-        "layoutId": "dialogShell",
-        "name": "form",
-        "parentRegionId": "dialogContent",
-        "order": 0,
-        "x": 760,
-        "y": 160,
+        "id": "dialogFormLayout",
+        "type": "ui-layout",
+        "title": "Dialog form layout",
+        "x": 380,
+        "y": 360,
         "wires": [
             []
         ]
     },
     {
         "id": "dialogFields",
-        "type": "ui-region",
-        "appId": "customersApp",
-        "layoutId": "dialogShell",
+        "type": "ui-slot",
+        "layoutId": "dialogFormLayout",
         "name": "fields",
-        "parentRegionId": "dialogForm",
         "order": 0,
-        "x": 960,
-        "y": 140,
+        "x": 600,
+        "y": 400,
         "wires": [
             []
         ]
     },
     {
         "id": "dialogActions",
-        "type": "ui-region",
-        "appId": "customersApp",
-        "layoutId": "dialogShell",
+        "type": "ui-slot",
+        "layoutId": "dialogFormLayout",
         "name": "actions",
-        "parentRegionId": "dialogForm",
         "order": 1,
-        "x": 960,
-        "y": 180,
+        "x": 600,
+        "y": 440,
         "wires": [
             []
         ]
@@ -170,12 +194,11 @@
     {
         "id": "customers",
         "type": "ui-route",
-        "appId": "customersApp",
         "path": "/customers",
         "title": "Customers",
         "layoutId": "customerShell",
-        "x": 360,
-        "y": 260,
+        "x": 820,
+        "y": 40,
         "wires": [
             []
         ]
@@ -183,12 +206,11 @@
     {
         "id": "customerDetail",
         "type": "ui-route",
-        "appId": "customersApp",
         "path": "/customers/:id",
         "title": "Customer detail",
         "layoutId": "customerShell",
-        "x": 360,
-        "y": 300,
+        "x": 820,
+        "y": 80,
         "wires": [
             []
         ]
@@ -196,12 +218,11 @@
     {
         "id": "customerEditor",
         "type": "ui-dialog",
-        "appId": "customersApp",
         "title": "Edit customer",
         "layoutId": "dialogShell",
         "modal": true,
-        "x": 360,
-        "y": 340,
+        "x": 820,
+        "y": 120,
         "wires": [
             []
         ]
@@ -209,12 +230,25 @@
     {
         "id": "pageTitle",
         "type": "ui-text",
-        "appId": "customersApp",
         "mount": "customers.header",
-        "text": "Customers",
+        "value": {
+            "kind": "literal",
+            "value": "Customers"
+        },
         "variant": "headline",
-        "x": 1160,
-        "y": 20,
+        "x": 1040,
+        "y": 40,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "customersContentContainer",
+        "type": "ui-container",
+        "mount": "route:/customers/content",
+        "layoutId": "customersListLayout",
+        "x": 1040,
+        "y": 80,
         "wires": [
             []
         ]
@@ -222,13 +256,12 @@
     {
         "id": "newCustomerButton",
         "type": "ui-button",
-        "appId": "customersApp",
-        "mount": "route:/customers/content/toolbar",
+        "mount": "layout:customersListLayout/toolbar",
         "order": 0,
         "label": "New customer",
         "action": "openCustomerEditor",
-        "x": 1160,
-        "y": 60,
+        "x": 1260,
+        "y": 40,
         "wires": [
             [
                 "openCustomerEditor"
@@ -238,14 +271,17 @@
     {
         "id": "refreshCustomersButton",
         "type": "ui-button",
-        "appId": "customersApp",
-        "mount": "route:/customers/content/toolbar",
+        "mount": "layout:customersListLayout/toolbar",
         "order": 1,
         "label": "Refresh",
         "action": "refreshCustomers",
-        "disabledPath": "ui.queries.customersQuery.loading",
-        "x": 1160,
-        "y": 100,
+        "disabled": {
+            "kind": "state",
+            "path": "ui.queries.customersQuery.loading",
+            "fallback": false
+        },
+        "x": 1260,
+        "y": 80,
         "wires": [
             [
                 "refreshCustomers"
@@ -253,19 +289,36 @@
         ]
     },
     {
+        "id": "editorStatus",
+        "type": "ui-text",
+        "mount": "layout:customersListLayout/toolbar",
+        "order": 2,
+        "value": {
+            "kind": "literal",
+            "value": "Editing customer"
+        },
+        "x": 1260,
+        "y": 120,
+        "wires": [
+            []
+        ]
+    },
+    {
         "id": "customersTable",
         "type": "ui-table",
-        "appId": "customersApp",
-        "mount": "route:/customers/content/body",
+        "mount": "layout:customersListLayout/body",
         "columns": [
             "name",
             "email",
             "status"
         ],
-        "rowsPath": "customers.list",
+        "rows": {
+            "kind": "query",
+            "path": "customers.list"
+        },
         "selectAction": "openCustomerDetail",
-        "x": 1160,
-        "y": 140,
+        "x": 1260,
+        "y": 160,
         "wires": [
             [
                 "openCustomerDetail"
@@ -273,14 +326,27 @@
         ]
     },
     {
-        "id": "editorStatus",
+        "id": "detailRouteTitle",
         "type": "ui-text",
-        "appId": "customersApp",
-        "mount": "route:/customers/content/toolbar",
-        "order": 2,
-        "text": "Editing customer",
-        "x": 1160,
-        "y": 180,
+        "mount": "customerDetail.header",
+        "value": {
+            "kind": "literal",
+            "value": "Customer detail"
+        },
+        "variant": "headline",
+        "x": 1040,
+        "y": 160,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "detailContentContainer",
+        "type": "ui-container",
+        "mount": "route:/customers/:id/content",
+        "layoutId": "customerDetailLayout",
+        "x": 1040,
+        "y": 200,
         "wires": [
             []
         ]
@@ -288,13 +354,12 @@
     {
         "id": "backToCustomersButton",
         "type": "ui-button",
-        "appId": "customersApp",
-        "mount": "route:/customers/:id/content/toolbar",
+        "mount": "layout:customerDetailLayout/toolbar",
         "order": 0,
         "label": "Back to customers",
         "action": "goToCustomers",
-        "x": 1160,
-        "y": 220,
+        "x": 1260,
+        "y": 200,
         "wires": [
             [
                 "goToCustomers"
@@ -304,13 +369,12 @@
     {
         "id": "editCustomerButton",
         "type": "ui-button",
-        "appId": "customersApp",
-        "mount": "route:/customers/:id/content/toolbar",
+        "mount": "layout:customerDetailLayout/toolbar",
         "order": 1,
         "label": "Edit customer",
         "action": "openCustomerEditor",
-        "x": 1160,
-        "y": 260,
+        "x": 1260,
+        "y": 240,
         "wires": [
             [
                 "openCustomerEditor"
@@ -320,14 +384,17 @@
     {
         "id": "deleteCustomerButton",
         "type": "ui-button",
-        "appId": "customersApp",
-        "mount": "route:/customers/:id/content/toolbar",
+        "mount": "layout:customerDetailLayout/toolbar",
         "order": 2,
         "label": "Delete customer",
         "action": "deleteCustomer",
-        "disabledPath": "draft.isDeleting",
-        "x": 1160,
-        "y": 300,
+        "disabled": {
+            "kind": "state",
+            "path": "draft.isDeleting",
+            "fallback": false
+        },
+        "x": 1260,
+        "y": 280,
         "wires": [
             [
                 "deleteCustomer"
@@ -335,36 +402,95 @@
         ]
     },
     {
-        "id": "customerForm",
-        "type": "ui-form",
-        "appId": "customersApp",
-        "mount": "dialog:customerEditor/content/form/fields",
+        "id": "detailCustomerId",
+        "type": "ui-text",
+        "mount": "layout:customerDetailLayout/body",
         "order": 0,
-        "fields": [
-            "name",
-            "email",
-            "status"
-        ],
-        "modelPath": "draft.customer",
-        "submitAction": "saveCustomer",
-        "x": 1160,
-        "y": 340,
+        "value": {
+            "kind": "routeParam",
+            "path": "id"
+        },
+        "x": 1260,
+        "y": 320,
         "wires": [
-            [
-                "saveCustomer"
-            ]
+            []
+        ]
+    },
+    {
+        "id": "customerEditorContainer",
+        "type": "ui-container",
+        "mount": "dialog:customerEditor/content",
+        "layoutId": "dialogFormLayout",
+        "x": 1040,
+        "y": 240,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "customerNameInput",
+        "type": "ui-input",
+        "mount": "layout:dialogFormLayout/fields",
+        "order": 0,
+        "label": "Name",
+        "value": {
+            "kind": "state",
+            "path": "draft.customer.name"
+        },
+        "storeId": "draftStore",
+        "path": "name",
+        "x": 1260,
+        "y": 360,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "customerEmailInput",
+        "type": "ui-input",
+        "mount": "layout:dialogFormLayout/fields",
+        "order": 1,
+        "label": "Email",
+        "value": {
+            "kind": "state",
+            "path": "draft.customer.email"
+        },
+        "storeId": "draftStore",
+        "path": "email",
+        "inputType": "email",
+        "x": 1260,
+        "y": 400,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "customerStatusInput",
+        "type": "ui-input",
+        "mount": "layout:dialogFormLayout/fields",
+        "order": 2,
+        "label": "Status",
+        "value": {
+            "kind": "state",
+            "path": "draft.customer.status"
+        },
+        "storeId": "draftStore",
+        "path": "status",
+        "x": 1260,
+        "y": 440,
+        "wires": [
+            []
         ]
     },
     {
         "id": "cancelCustomerButton",
         "type": "ui-button",
-        "appId": "customersApp",
-        "mount": "dialog:customerEditor/content/form/actions",
+        "mount": "layout:dialogFormLayout/actions",
         "order": 0,
         "label": "Cancel",
         "action": "closeCustomerEditor",
-        "x": 1160,
-        "y": 380,
+        "x": 1260,
+        "y": 480,
         "wires": [
             [
                 "closeCustomerEditor"
@@ -374,14 +500,17 @@
     {
         "id": "saveCustomerButton",
         "type": "ui-button",
-        "appId": "customersApp",
-        "mount": "dialog:customerEditor/content/form/actions",
+        "mount": "layout:dialogFormLayout/actions",
         "order": 1,
         "label": "Save",
         "action": "saveCustomer",
-        "disabledPath": "draft.isSaving",
-        "x": 1160,
-        "y": 420,
+        "disabled": {
+            "kind": "state",
+            "path": "draft.isSaving",
+            "fallback": false
+        },
+        "x": 1260,
+        "y": 520,
         "wires": [
             [
                 "saveCustomer"
@@ -389,47 +518,16 @@
         ]
     },
     {
-        "id": "detailRouteTitle",
-        "type": "ui-text",
-        "appId": "customersApp",
-        "mount": "customerDetail.header",
-        "text": "Customer detail",
-        "variant": "headline",
-        "x": 1160,
-        "y": 460,
-        "wires": [
-            []
-        ]
-    },
-    {
-        "id": "detailCustomerId",
-        "type": "ui-text",
-        "appId": "customersApp",
-        "mount": "route:/customers/:id/content/body",
-        "order": 0,
-        "value": {
-            "kind": "routeParam",
-            "path": "id"
-        },
-        "text": "",
-        "x": 1160,
-        "y": 500,
-        "wires": [
-            []
-        ]
-    },
-    {
         "id": "draftStore",
         "type": "ui-store",
-        "appId": "customersApp",
         "statePath": "draft.customer",
         "initialValue": {
             "name": "",
             "email": "",
             "status": "draft"
         },
-        "x": 1360,
-        "y": 80,
+        "x": 1480,
+        "y": 40,
         "wires": [
             []
         ]
@@ -437,12 +535,11 @@
     {
         "id": "customersQuery",
         "type": "ui-query",
-        "appId": "customersApp",
         "queryPath": "customers.list",
         "source": "customers.list",
         "refreshAction": "refreshCustomers",
-        "x": 1360,
-        "y": 120,
+        "x": 1480,
+        "y": 80,
         "wires": [
             []
         ]
@@ -450,11 +547,10 @@
     {
         "id": "customerDetailQuery",
         "type": "ui-query",
-        "appId": "customersApp",
         "queryPath": "customers.current",
         "source": "customers.current",
-        "x": 1360,
-        "y": 160,
+        "x": 1480,
+        "y": 120,
         "wires": [
             []
         ]
@@ -462,10 +558,11 @@
     {
         "id": "openCustomerEditor",
         "type": "ui-action",
-        "appId": "customersApp",
+        "actionType": "trigger",
+        "targetMode": "out-port",
         "description": "Open the shared customer editor dialog.",
-        "x": 1360,
-        "y": 220,
+        "x": 1480,
+        "y": 160,
         "wires": [
             []
         ]
@@ -473,10 +570,11 @@
     {
         "id": "closeCustomerEditor",
         "type": "ui-action",
-        "appId": "customersApp",
+        "actionType": "trigger",
+        "targetMode": "out-port",
         "description": "Close the shared customer editor dialog.",
-        "x": 1360,
-        "y": 260,
+        "x": 1480,
+        "y": 200,
         "wires": [
             []
         ]
@@ -484,10 +582,11 @@
     {
         "id": "saveCustomer",
         "type": "ui-action",
-        "appId": "customersApp",
+        "actionType": "trigger",
+        "targetMode": "out-port",
         "description": "Persist the current customer draft.",
-        "x": 1360,
-        "y": 300,
+        "x": 1480,
+        "y": 240,
         "wires": [
             []
         ]
@@ -495,10 +594,11 @@
     {
         "id": "refreshCustomers",
         "type": "ui-action",
-        "appId": "customersApp",
+        "actionType": "trigger",
+        "targetMode": "out-port",
         "description": "Refresh the customer list query.",
-        "x": 1360,
-        "y": 340,
+        "x": 1480,
+        "y": 280,
         "wires": [
             [
                 "customersQuery"
@@ -507,33 +607,39 @@
     },
     {
         "id": "openCustomerDetail",
-        "type": "ui-navigation",
-        "appId": "customersApp",
+        "type": "ui-action",
+        "actionType": "navigate",
+        "targetMode": "path",
+        "target": "app",
         "to": "/customers/:id",
-        "x": 1360,
-        "y": 380,
+        "x": 1480,
+        "y": 320,
         "wires": [
             []
         ]
     },
     {
         "id": "goToCustomers",
-        "type": "ui-navigation",
-        "appId": "customersApp",
+        "type": "ui-action",
+        "actionType": "navigate",
+        "targetMode": "path",
+        "target": "app",
         "to": "/customers",
-        "x": 1360,
-        "y": 420,
+        "x": 1480,
+        "y": 360,
         "wires": [
             []
         ]
     },
     {
         "id": "deleteCustomer",
-        "type": "ui-navigation",
-        "appId": "customersApp",
+        "type": "ui-action",
+        "actionType": "navigate",
+        "targetMode": "path",
+        "target": "app",
         "to": "/customers",
-        "x": 1360,
-        "y": 460,
+        "x": 1480,
+        "y": 400,
         "wires": [
             []
         ]
