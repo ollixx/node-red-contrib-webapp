@@ -288,4 +288,42 @@ describe("renderer MVP", () => {
         expect(footerText?.kind).toBe("text");
         expect(footerText && "text" in footerText ? footerText.text : undefined).toBe("Shared footer");
     });
+
+    it("renders route-param bindings and container child layouts on detail routes", () => {
+        const app = createRendererApp(customersCrudAppModelFixture, {
+            integration: customersCrudRuntimeIntegrationFixture,
+            location: "/customers/cust-42",
+            queries: {
+                customers: {
+                    list: [],
+                    current: {
+                        id: "cust-42",
+                        name: "Ada Lovelace",
+                        email: "ada@example.com",
+                        status: "active"
+                    }
+                }
+            }
+        });
+
+        const snapshot = app.render();
+        const detailCustomerId = findComponentInSnapshot(snapshot, "detailCustomerId");
+        const detailContainer = findComponentInSnapshot(snapshot, "detailContentContainer");
+
+        expect(snapshot.route.id).toBe("customerDetail");
+        expect(snapshot.params).toEqual({
+            id: "cust-42"
+        });
+        expect(detailCustomerId?.kind).toBe("text");
+        expect(detailCustomerId && "text" in detailCustomerId ? detailCustomerId.text : undefined).toBe("cust-42");
+        expect(detailContainer?.kind).toBe("container");
+
+        if (!detailContainer || detailContainer.kind !== "container") {
+            return;
+        }
+
+        expect(detailContainer.layoutId).toBe("customerDetailLayout");
+        expect(detailContainer.regions.some((region) => region.name === "toolbar")).toBe(true);
+        expect(detailContainer.regions.some((region) => region.name === "body")).toBe(true);
+    });
 });

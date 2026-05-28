@@ -40,7 +40,7 @@ describe("customers CRUD example flow", () => {
         const compiled = registry.compile("customersApp");
 
         expect(compiled.diagnostics).toEqual([]);
-        expect(compiled.model?.routes.map((route) => route.id)).toEqual(["customers", "customerDetail"]);
+        expect(compiled.model?.routes.map((route) => route.id)).toEqual(["customersApp", "customers", "customerDetail"]);
         expect(compiled.model?.dialogs.map((dialog) => dialog.id)).toEqual(["customerEditor"]);
         expect(compiled.model?.components.map((component) => component.id)).toEqual(
             expect.arrayContaining([

@@ -41,6 +41,8 @@
     },
     "scripts": {
         "build": "pnpm -r build",
+        "dev:start": "lsof -ti tcp:1881 | xargs kill -9 2>/dev/null || true && node-red --userDir .node-red-dev --port 1881",
+        "e2e:server:start": "rm -rf .node-red-e2e && mkdir -p .node-red-e2e/node_modules && cp .node-red-dev/settings.js .node-red-e2e/settings.js && cp examples/customers-crud/flow.json .node-red-e2e/flows.json && ln -sfn ../.. .node-red-e2e/node_modules/node-red-contrib-webapp && node-red --userDir .node-red-e2e --port 1882",
         "example:customers-crud": "vitest run packages/schema/test/schema.test.ts packages/runtime/test/customers-crud-example.test.ts packages/renderer/test/renderer.test.ts",
         "lint": "pnpm -r lint",
         "test:e2e": "playwright test",

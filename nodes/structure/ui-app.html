@@ -2,12 +2,14 @@
 <script type="text/javascript">
     (function () {
         const common = window.WebappEditorCommon;
+
         common.registerNodeType("ui-app", {
             category: "webapp",
             color: "#d9efe2",
             defaults: {
                 name: { value: "" },
-                root: { value: "", required: true }
+                root: { value: "", required: true },
+                layout: { value: "vertical", required: true }
             },
             inputs: 0,
             outputs: 0,
@@ -16,6 +18,17 @@
                 const rootInput = $("#node-input-root");
                 const link = $("#node-ui-app-url");
                 const emptyHint = $("#node-ui-app-url-empty");
+
+                common.installLayoutSelector({
+                    valueSelector: "#node-input-layout",
+                    presetSelector: "#node-input-layout-preset",
+                    customSelector: "#node-input-layout-custom",
+                    customRowSelector: "#node-ui-app-custom-layout-row",
+                    getValue: function () {
+                        return this.layout;
+                    },
+                    customPlaceholder: "Basis-Layout auswaehlen"
+                }).call(this);
 
                 function updateAppUrl() {
                     const root = String(rootInput.val() || "").trim();
@@ -47,6 +60,9 @@
 <script type="text/html" data-template-name="ui-app">
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <div class="form-row"><label for="node-input-root">Root</label><input type="text" id="node-input-root"></div>
+    <input type="hidden" id="node-input-layout">
+    <div class="form-row"><label for="node-input-layout-preset">Layout</label><select id="node-input-layout-preset"></select></div>
+    <div class="form-row" id="node-ui-app-custom-layout-row" style="display: none;"><label for="node-input-layout-custom">Custom Layout</label><select id="node-input-layout-custom"></select></div>
     <div class="form-row">
         <label>App URL</label>
         <div style="padding-top: 6px;">

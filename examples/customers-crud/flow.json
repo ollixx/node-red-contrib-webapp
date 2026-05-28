@@ -1,13 +1,24 @@
 [
     {
+        "id": "flow1",
+        "type": "tab",
+        "label": "Flow 1",
+        "disabled": false,
+        "info": ""
+    },
+    {
         "id": "customersApp",
         "type": "ui-app",
+        "name": "Customers CRM",
         "title": "Customers CRM",
+        "root": "customersApp",
+        "layout": "vertical",
         "x": 160,
         "y": 40,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "customerShell",
@@ -17,7 +28,8 @@
         "y": 40,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "customerHeader",
@@ -29,7 +41,8 @@
         "y": 40,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "customerContent",
@@ -41,7 +54,8 @@
         "y": 80,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "customerFooter",
@@ -53,7 +67,8 @@
         "y": 120,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "customersListLayout",
@@ -63,7 +78,8 @@
         "y": 120,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "customerToolbar",
@@ -75,7 +91,8 @@
         "y": 160,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "customerBody",
@@ -87,7 +104,8 @@
         "y": 200,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "customerDetailLayout",
@@ -97,7 +115,8 @@
         "y": 200,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "detailToolbar",
@@ -109,7 +128,8 @@
         "y": 240,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "detailBody",
@@ -121,7 +141,8 @@
         "y": 280,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "dialogShell",
@@ -131,7 +152,8 @@
         "y": 280,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "dialogHeader",
@@ -143,7 +165,8 @@
         "y": 320,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "dialogContent",
@@ -155,7 +178,8 @@
         "y": 360,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "dialogFormLayout",
@@ -165,7 +189,8 @@
         "y": 360,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "dialogFields",
@@ -177,7 +202,8 @@
         "y": 400,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "dialogActions",
@@ -189,7 +215,8 @@
         "y": 440,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "customers",
@@ -201,7 +228,8 @@
         "y": 40,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "customerDetail",
@@ -213,7 +241,8 @@
         "y": 80,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "customerEditor",
@@ -225,7 +254,8 @@
         "y": 120,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "pageTitle",
@@ -240,7 +270,8 @@
         "y": 40,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "customersContentContainer",
@@ -251,7 +282,8 @@
         "y": 80,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "newCustomerButton",
@@ -266,7 +298,8 @@
             [
                 "openCustomerEditor"
             ]
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "refreshCustomersButton",
@@ -286,7 +319,8 @@
             [
                 "refreshCustomers"
             ]
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "editorStatus",
@@ -301,7 +335,8 @@
         "y": 120,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "customersTable",
@@ -323,7 +358,8 @@
             [
                 "openCustomerDetail"
             ]
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "detailRouteTitle",
@@ -338,7 +374,8 @@
         "y": 160,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "detailContentContainer",
@@ -349,7 +386,8 @@
         "y": 200,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "backToCustomersButton",
@@ -364,7 +402,8 @@
             [
                 "goToCustomers"
             ]
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "editCustomerButton",
@@ -379,7 +418,8 @@
             [
                 "openCustomerEditor"
             ]
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "deleteCustomerButton",
@@ -399,7 +439,8 @@
             [
                 "deleteCustomer"
             ]
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "detailCustomerId",
@@ -414,7 +455,8 @@
         "y": 320,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "customerEditorContainer",
@@ -425,7 +467,8 @@
         "y": 240,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "customerNameInput",
@@ -443,7 +486,8 @@
         "y": 360,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "customerEmailInput",
@@ -462,7 +506,8 @@
         "y": 400,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "customerStatusInput",
@@ -480,7 +525,8 @@
         "y": 440,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "cancelCustomerButton",
@@ -495,7 +541,8 @@
             [
                 "closeCustomerEditor"
             ]
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "saveCustomerButton",
@@ -515,7 +562,8 @@
             [
                 "saveCustomer"
             ]
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "draftStore",
@@ -530,7 +578,8 @@
         "y": 40,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "customersQuery",
@@ -542,7 +591,8 @@
         "y": 80,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "customerDetailQuery",
@@ -553,7 +603,8 @@
         "y": 120,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "openCustomerEditor",
@@ -565,7 +616,8 @@
         "y": 160,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "closeCustomerEditor",
@@ -577,7 +629,8 @@
         "y": 200,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "saveCustomer",
@@ -589,7 +642,8 @@
         "y": 240,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "refreshCustomers",
@@ -603,7 +657,8 @@
             [
                 "customersQuery"
             ]
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "openCustomerDetail",
@@ -616,7 +671,8 @@
         "y": 320,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "goToCustomers",
@@ -629,7 +685,8 @@
         "y": 360,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     },
     {
         "id": "deleteCustomer",
@@ -642,6 +699,7 @@
         "y": 400,
         "wires": [
             []
-        ]
+        ],
+        "z": "flow1"
     }
 ]

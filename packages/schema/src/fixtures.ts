@@ -498,7 +498,8 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
     {
         type: "ui-app",
         id: "customersApp",
-        title: "Customers CRM"
+        title: "Customers CRM",
+        layout: "vertical"
     },
     {
         type: "ui-layout",

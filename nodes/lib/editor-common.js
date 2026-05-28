@@ -1,6 +1,12 @@
 (function (global) {
     "use strict";
 
+    const standardLayoutPresetOptions = [
+        { value: "vertical", label: "Vertical" },
+        { value: "horizontal", label: "Horizontal" },
+        { value: "app", label: "App" }
+    ];
+
     function labelWithName(fallback) {
         return function () {
             return this.name || this.uiId || this.id || fallback;
@@ -159,6 +165,31 @@
         return [...options].sort(function (left, right) {
             return left.label.localeCompare(right.label, undefined, { sensitivity: "base" });
         });
+    }
+
+    function isStandardLayoutPreset(value) {
+        return standardLayoutPresetOptions.some(function (option) {
+            return option.value === value;
+        });
+    }
+
+    function getStandardLayoutPresetOptions() {
+        return standardLayoutPresetOptions.map(function (option) {
+            return { ...option };
+        });
+    }
+
+    function getCustomLayoutOptions(references) {
+        return references.layouts
+            .filter(function (layout) {
+                return !isStandardLayoutPreset(layout.id);
+            })
+            .map(function (layout) {
+                return {
+                    value: layout.id,
+                    label: `${layout.id} - ${layout.title}`
+                };
+            });
     }
 
     function setSelectOptions(selector, options, currentValue, placeholder) {
@@ -333,13 +364,71 @@
         };
     }
 
+    function installLayoutSelector(config) {
+        return function () {
+            const presetSelector = $(config.presetSelector);
+            const customSelector = $(config.customSelector);
+            const customRow = $(config.customRowSelector);
+            const valueInput = $(config.valueSelector);
+            const currentValue = String(valueInput.val() || config.getValue.call(this) || "").trim();
+            const presetValues = new Set(standardLayoutPresetOptions.map(function (option) {
+                return option.value;
+            }));
+            const initialPreset = presetValues.has(currentValue) ? currentValue : "custom";
+
+            setSelectOptions(
+                presetSelector,
+                [...getStandardLayoutPresetOptions(), { value: "custom", label: "Custom" }],
+                initialPreset,
+                config.presetPlaceholder || "Layout auswaehlen"
+            );
+
+            function refreshCustomLayouts(selectedValue) {
+                setSelectOptions(
+                    customSelector,
+                    getCustomLayoutOptions(collectReferenceNodes()),
+                    selectedValue,
+                    config.customPlaceholder || "Custom-Layout auswaehlen"
+                );
+            }
+
+            function syncLayoutValue() {
+                const presetValue = String(presetSelector.val() || standardLayoutPresetOptions[0].value);
+
+                if (presetValue === "custom") {
+                    customRow.show();
+                    valueInput.val(String(customSelector.val() || ""));
+                    return;
+                }
+
+                customRow.hide();
+                valueInput.val(presetValue);
+            }
+
+            refreshCustomLayouts(initialPreset === "custom" ? currentValue : "");
+            syncLayoutValue();
+
+            presetSelector.on("change", function () {
+                if (String(presetSelector.val() || "") === "custom") {
+                    refreshCustomLayouts(String(valueInput.val() || customSelector.val() || ""));
+                }
+
+                syncLayoutValue();
+            });
+            customSelector.on("change", syncLayoutValue);
+        };
+    }
+
     function registerNodeType(type, definition) {
         RED.nodes.registerType(type, withUiIdMigration(definition));
     }
 
     global.WebappEditorCommon = {
         bindingValueForEditor,
+        getStandardLayoutPresetOptions,
+        installLayoutSelector,
         installReferenceSelectors,
+        isStandardLayoutPreset,
         labelWithName,
         parseBindingValue,
         registerNodeType,

@@ -8,7 +8,8 @@ describe("runtime node set assembly", () => {
             {
                 type: "ui-app",
                 id: "customersApp",
-                title: "Customers CRM"
+                title: "Customers CRM",
+                layout: "vertical"
             },
             {
                 type: "ui-layout",
@@ -236,7 +237,21 @@ describe("runtime node set assembly", () => {
         const result = registry.compile("customersApp");
 
         expect(result.diagnostics).toEqual([]);
-        expect(result.model?.layouts.map((layout) => layout.id)).toEqual(["customersContentLayout", "customerShell", "dialogFormLayout", "dialogShell"]);
+        expect(result.model?.layouts.map((layout) => layout.id)).toEqual(["customersContentLayout", "customerShell", "dialogFormLayout", "dialogShell", "vertical"]);
+        expect(result.model?.routes).toEqual([
+            {
+                id: "customersApp",
+                path: "/",
+                title: "Customers CRM",
+                layoutId: "vertical"
+            },
+            {
+                id: "customers",
+                path: "/customers",
+                title: undefined,
+                layoutId: "customerShell"
+            }
+        ]);
         expect(result.model?.components.map((component) => component.id)).toEqual([
             "customerEditorContainer",
             "customersTable",
@@ -253,7 +268,8 @@ describe("runtime node set assembly", () => {
             {
                 type: "ui-app",
                 id: "customersApp",
-                title: "Customers CRM"
+                title: "Customers CRM",
+                layout: "vertical"
             },
             {
                 type: "ui-navigation",
@@ -291,7 +307,8 @@ describe("runtime node set assembly", () => {
             {
                 type: "ui-app",
                 id: "customersApp",
-                title: "Customers CRM"
+                title: "Customers CRM",
+                layout: "vertical"
             },
             {
                 type: "ui-action",
@@ -332,7 +349,8 @@ describe("runtime node set assembly", () => {
             {
                 type: "ui-app",
                 id: "customersApp",
-                title: "Customers CRM"
+                title: "Customers CRM",
+                layout: "vertical"
             },
             {
                 type: "ui-layout",
@@ -365,5 +383,179 @@ describe("runtime node set assembly", () => {
         const result = registry.compile("customersApp");
 
         expect(result.diagnostics[0]?.message).toContain("Nested slot paths are not supported");
+    });
+
+    it("keeps ui-route metadata and ui-container props in the compiled model", () => {
+        const assembly = assembleNodeSet([
+            {
+                type: "ui-app",
+                id: "customersApp",
+                title: "Customers CRM",
+                layout: "vertical"
+            },
+            {
+                type: "ui-layout",
+                id: "customerShell",
+                title: "Customer shell"
+            },
+            {
+                type: "ui-slot",
+                id: "contentRegion",
+                layoutId: "customerShell",
+                name: "content"
+            },
+            {
+                type: "ui-layout",
+                id: "customersContentLayout",
+                title: "Customers content"
+            },
+            {
+                type: "ui-slot",
+                id: "bodySlot",
+                layoutId: "customersContentLayout",
+                name: "body"
+            },
+            {
+                type: "ui-route",
+                id: "customerDetail",
+                path: "/customers/:id",
+                title: "Customer detail",
+                layoutId: "customerShell"
+            },
+            {
+                type: "ui-container",
+                id: "detailContainer",
+                mount: "route:/customers/:id/content",
+                layoutId: "customersContentLayout",
+                title: "Detail content",
+                order: 3
+            }
+        ]);
+
+        expect(assembly.success).toBe(true);
+
+        if (!assembly.success) {
+            return;
+        }
+
+        const registry = createRuntimeRegistry();
+        registry.registerMany(assembly.data.contributions);
+
+        const result = registry.compile("customersApp");
+
+        expect(result.diagnostics).toEqual([]);
+        expect(result.model?.routes).toEqual([
+            {
+                id: "customersApp",
+                path: "/",
+                title: "Customers CRM",
+                layoutId: "vertical"
+            },
+            {
+                id: "customerDetail",
+                path: "/customers/:id",
+                title: "Customer detail",
+                layoutId: "customerShell"
+            }
+        ]);
+        expect(result.model?.components).toEqual([
+            {
+                id: "detailContainer",
+                kind: "container",
+                mount: "route:/customers/:id/content",
+                order: 3,
+                bind: {},
+                props: {
+                    layoutId: "customersContentLayout",
+                    title: "Detail content"
+                },
+                events: []
+            }
+        ]);
+    });
+
+    it("materializes referenced standard layouts for routes and containers without custom ui-layout nodes", () => {
+        const assembly = assembleNodeSet([
+            {
+                type: "ui-app",
+                id: "ordersApp",
+                title: "Orders",
+                layout: "app"
+            },
+            {
+                type: "ui-route",
+                id: "orders",
+                path: "/orders",
+                layoutId: "vertical"
+            },
+            {
+                type: "ui-container",
+                id: "ordersShell",
+                mount: "route:/orders/content",
+                layoutId: "horizontal"
+            },
+            {
+                type: "ui-text",
+                id: "rootHeader",
+                mount: "ordersApp.header",
+                value: {
+                    kind: "literal",
+                    value: "Orders home"
+                }
+            },
+            {
+                type: "ui-text",
+                id: "ordersBody",
+                mount: "layout:horizontal/content",
+                value: {
+                    kind: "literal",
+                    value: "Orders list"
+                }
+            }
+        ]);
+
+        expect(assembly.success).toBe(true);
+
+        if (!assembly.success) {
+            return;
+        }
+
+        const registry = createRuntimeRegistry();
+        registry.registerMany(assembly.data.contributions);
+
+        const result = registry.compile("ordersApp");
+
+        expect(result.diagnostics).toEqual([]);
+        expect(result.model?.layouts).toEqual([
+            {
+                id: "app",
+                title: "App",
+                slots: [{ name: "header" }, { name: "navbar" }, { name: "content" }, { name: "footer" }]
+            },
+            {
+                id: "horizontal",
+                title: "Horizontal",
+                slots: [{ name: "content" }]
+            },
+            {
+                id: "vertical",
+                title: "Vertical",
+                slots: [{ name: "content" }]
+            }
+        ]);
+        expect(result.model?.routes).toEqual([
+            {
+                id: "ordersApp",
+                path: "/",
+                title: "Orders",
+                layoutId: "app"
+            },
+            {
+                id: "orders",
+                path: "/orders",
+                title: undefined,
+                layoutId: "vertical"
+            }
+        ]);
     });
 });

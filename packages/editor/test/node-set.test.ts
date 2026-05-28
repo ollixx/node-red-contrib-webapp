@@ -75,7 +75,8 @@ describe("editor node set", () => {
         const samples = [
             emitNodeDefinition("ui-app", {
                 root: "customersApp",
-                name: "Customers CRM"
+                name: "Customers CRM",
+                layout: "vertical"
             }),
             emitNodeDefinition("ui-layout", {
                 id: "customerShell",
@@ -175,5 +176,112 @@ describe("editor node set", () => {
         for (const sample of samples) {
             expect(sample.success).toBe(true);
         }
+    });
+
+    it("validates and emits ui-app definitions with root-to-id mapping", () => {
+        const issues = validateEditorNodeConfig("ui-app", {
+            root: "customersApp"
+        });
+
+        expect(issues).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    field: "layout"
+                })
+            ])
+        );
+
+        const emitted = emitNodeDefinition("ui-app", {
+            root: "customersApp",
+            name: "Customers CRM",
+            layout: "vertical"
+        });
+
+        expect(emitted.success).toBe(true);
+
+        if (!emitted.success) {
+            return;
+        }
+
+        expect(emitted.data).toEqual({
+            type: "ui-app",
+            id: "customersApp",
+            title: "Customers CRM",
+            layout: "vertical"
+        });
+    });
+
+    it("validates and emits ui-route definitions with optional title", () => {
+        const issues = validateEditorNodeConfig("ui-route", {
+            id: "customers",
+            path: "/customers"
+        });
+
+        expect(issues).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    field: "layoutId"
+                })
+            ])
+        );
+
+        const emitted = emitNodeDefinition("ui-route", {
+            id: "customers",
+            path: "/customers/:id",
+            title: "Customer detail",
+            layoutId: "customerShell"
+        });
+
+        expect(emitted.success).toBe(true);
+
+        if (!emitted.success) {
+            return;
+        }
+
+        expect(emitted.data).toEqual({
+            type: "ui-route",
+            id: "customers",
+            path: "/customers/:id",
+            title: "Customer detail",
+            layoutId: "customerShell"
+        });
+    });
+
+    it("validates and emits ui-container definitions with optional metadata", () => {
+        const issues = validateEditorNodeConfig("ui-container", {
+            id: "customersContent",
+            mount: "route:/customers/content"
+        });
+
+        expect(issues).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    field: "layoutId"
+                })
+            ])
+        );
+
+        const emitted = emitNodeDefinition("ui-container", {
+            id: "customersContent",
+            mount: "route:/customers/content",
+            layoutId: "customersContentLayout",
+            title: "Customers content",
+            order: 2
+        });
+
+        expect(emitted.success).toBe(true);
+
+        if (!emitted.success) {
+            return;
+        }
+
+        expect(emitted.data).toEqual({
+            type: "ui-container",
+            id: "customersContent",
+            mount: "route:/customers/content",
+            layoutId: "customersContentLayout",
+            title: "Customers content",
+            order: 2
+        });
     });
 });

@@ -165,6 +165,100 @@ describe("app validation", () => {
         }).success).toBe(true);
     });
 
+    it("requires layout on ui-app definitions", () => {
+        const missingLayout = validateUiNodeDefinition({
+            type: "ui-app",
+            id: "customersApp",
+            title: "Customers"
+        });
+
+        expect(missingLayout.success).toBe(false);
+
+        expect(validateUiNodeDefinition({
+            type: "ui-app",
+            id: "customersApp",
+            title: "Customers",
+            layout: "vertical"
+        }).success).toBe(true);
+    });
+
+    it("rejects ui-app definitions with invalid layout identifiers", () => {
+        const invalidLayout = validateUiNodeDefinition({
+            type: "ui-app",
+            id: "customersApp",
+            title: "Customers",
+            layout: "vertical layout"
+        });
+
+        expect(invalidLayout.success).toBe(false);
+
+        if (invalidLayout.success) {
+            return;
+        }
+
+        expect(invalidLayout.error).toContain("IDs must start with a letter");
+    });
+
+    it("validates ui-route required fields and path format", () => {
+        expect(validateUiNodeDefinition({
+            type: "ui-route",
+            id: "customerDetail",
+            path: "/customers/:id",
+            layoutId: "customerShell",
+            title: "Customer detail"
+        }).success).toBe(true);
+
+        const missingLayout = validateUiNodeDefinition({
+            type: "ui-route",
+            id: "customers",
+            path: "/customers"
+        });
+
+        expect(missingLayout.success).toBe(false);
+
+        const invalidPath = validateUiNodeDefinition({
+            type: "ui-route",
+            id: "customers",
+            path: "customers",
+            layoutId: "customerShell"
+        });
+
+        expect(invalidPath.success).toBe(false);
+
+        if (invalidPath.success) {
+            return;
+        }
+
+        expect(invalidPath.error).toContain("start with '/'");
+    });
+
+    it("validates ui-container required fields and optional metadata", () => {
+        expect(validateUiNodeDefinition({
+            type: "ui-container",
+            id: "customersContentContainer",
+            mount: "route:/customers/content",
+            layoutId: "customersContentLayout",
+            title: "Customers content",
+            order: 2
+        }).success).toBe(true);
+
+        const missingMount = validateUiNodeDefinition({
+            type: "ui-container",
+            id: "customersContentContainer",
+            layoutId: "customersContentLayout"
+        });
+
+        expect(missingMount.success).toBe(false);
+
+        const missingLayout = validateUiNodeDefinition({
+            type: "ui-container",
+            id: "customersContentContainer",
+            mount: "route:/customers/content"
+        });
+
+        expect(missingLayout.success).toBe(false);
+    });
+
     it("accepts typed ui-actions for path and out-port targets", () => {
         expect(validateUiNodeDefinition({
             type: "ui-action",

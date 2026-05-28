@@ -41,6 +41,7 @@ interface BaseEditorNodeDefinition<TConfig extends object, TDefinition extends U
 export interface UiAppEditorConfig {
     root?: string;
     name?: string;
+    layout?: string;
 }
 
 export type UiAppEditorNodeDefinition = BaseEditorNodeDefinition<UiAppEditorConfig, UiAppNodeDefinition>;
@@ -297,11 +298,13 @@ function createDefinition<TConfig extends object, TDefinition extends UiNodeDefi
 
 export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
     "ui-app": createDefinition("ui-app", "structure", {
-        root: requiredString("App roots are required before deploy.")
+        root: requiredString("App roots are required before deploy."),
+        layout: requiredString("Apps must declare a base layout.")
     }, (config: UiAppEditorConfig) => ({
         type: "ui-app",
         id: config.root ?? "",
-        title: config.name ?? config.root ?? ""
+        title: config.name ?? config.root ?? "",
+        layout: config.layout ?? "vertical"
     })),
     "ui-layout": createDefinition("ui-layout", "structure", {
         id: requiredString("Layout IDs are required before deploy.")

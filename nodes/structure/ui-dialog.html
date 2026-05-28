@@ -17,7 +17,19 @@
             outputs: 0,
             icon: "font-awesome/fa-window-maximize",
             label: common.labelWithName("ui-dialog"),
-            oneditprepare: common.installReferenceSelectors({ layout: true, route: true })
+            oneditprepare: function () {
+                common.installLayoutSelector({
+                    valueSelector: "#node-input-layoutId",
+                    presetSelector: "#node-input-layout-preset",
+                    customSelector: "#node-input-layout-custom",
+                    customRowSelector: "#node-ui-dialog-custom-layout-row",
+                    getValue: function () {
+                        return this.layoutId;
+                    },
+                    customPlaceholder: "Parent-Layout auswaehlen"
+                }).call(this);
+                common.installReferenceSelectors({ route: true }).call(this);
+            }
         });
     })();
 </script>
@@ -25,7 +37,9 @@
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <div class="form-row"><label for="node-input-uiId">Dialog ID</label><input type="text" id="node-input-uiId"></div>
     <div class="form-row"><label for="node-input-title">Titel</label><input type="text" id="node-input-title"></div>
-    <div class="form-row"><label for="node-input-layoutId">Parent Layout</label><select id="node-input-layoutId"></select></div>
+    <input type="hidden" id="node-input-layoutId">
+    <div class="form-row"><label for="node-input-layout-preset">Parent Layout</label><select id="node-input-layout-preset"></select></div>
+    <div class="form-row" id="node-ui-dialog-custom-layout-row" style="display: none;"><label for="node-input-layout-custom">Custom Layout</label><select id="node-input-layout-custom"></select></div>
     <div class="form-tips">Dieses Layout bildet den Inhalt des Dialogs.</div>
     <div class="form-row"><label for="node-input-routeId">Parent Route</label><select id="node-input-routeId"></select></div>
     <div class="form-tips">Optional: Route-Kontext, in dem der Dialog fachlich verankert ist.</div>

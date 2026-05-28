@@ -164,3 +164,21 @@ phases:
       - Playwright passes against the local Node-RED instance
       - saving a customer adds it to the list in the preview
       - interactive preview actions emit inspectable UI event messages
+
+  - id: P9
+    title: Structured node contract alignment (ui-app, ui-route, ui-container)
+    status: done
+    dependencies: [P8]
+    goals:
+      - Align documented required fields for ui-app, ui-route, and ui-container across editor, schema, and runtime mapping.
+      - Consolidate shared layout-related contract handling without introducing speculative future features.
+      - Keep backward compatibility for existing flows while enforcing the updated required fields for new definitions.
+    deliverables:
+      - updated node definition schemas for the three nodes
+      - updated Node-RED editor fields and defaults
+      - updated runtime mapConfig handling
+      - focused regression tests for the updated contracts
+    validation:
+      - schema validation accepts updated ui-app/ui-route/ui-container definitions
+      - editor dialogs expose the documented required fields
+      - runtime mapConfig produces schema-valid definitions from deployed flow nodes

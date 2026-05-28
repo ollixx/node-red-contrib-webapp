@@ -16,7 +16,19 @@
             outputs: 1,
             icon: "font-awesome/fa-folder-open-o",
             label: common.labelWithName("ui-container"),
-            oneditprepare: common.installReferenceSelectors({ mount: true, layout: true })
+            oneditprepare: function () {
+                common.installReferenceSelectors({ mount: true }).call(this);
+                common.installLayoutSelector({
+                    valueSelector: "#node-input-layoutId",
+                    presetSelector: "#node-input-layout-preset",
+                    customSelector: "#node-input-layout-custom",
+                    customRowSelector: "#node-ui-container-custom-layout-row",
+                    getValue: function () {
+                        return this.layoutId;
+                    },
+                    customPlaceholder: "Child-Layout auswaehlen"
+                }).call(this);
+            }
         });
     })();
 </script>
@@ -25,7 +37,9 @@
     <div class="form-row"><label for="node-input-uiId">Node ID</label><input type="text" id="node-input-uiId"></div>
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <div class="form-tips">Waehlt den Slot, in den dieser Container gemountet wird.</div>
-    <div class="form-row"><label for="node-input-layoutId">Child Layout</label><select id="node-input-layoutId"></select></div>
+    <input type="hidden" id="node-input-layoutId">
+    <div class="form-row"><label for="node-input-layout-preset">Child Layout</label><select id="node-input-layout-preset"></select></div>
+    <div class="form-row" id="node-ui-container-custom-layout-row" style="display: none;"><label for="node-input-layout-custom">Custom Layout</label><select id="node-input-layout-custom"></select></div>
     <div class="form-tips">Dieses Child-Layout wird innerhalb des Containers gerendert.</div>
     <div class="form-row"><label for="node-input-order">Order</label><input type="number" id="node-input-order"></div>
 </script>

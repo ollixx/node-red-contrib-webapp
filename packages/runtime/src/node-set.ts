@@ -1,4 +1,6 @@
 import {
+    collectMissingStandardLayouts,
+    createAppRootRoute,
     actionDefinitionSchema,
     layoutDefinitionSchema,
     navigationDefinitionSchema,
@@ -201,6 +203,36 @@ function assembleRouteContribution(appId: string, routeNode: UiRouteNodeDefiniti
             kind: "route",
             appId,
             registrationId: makeRegistrationId(routeNode.type, appId, routeNode.id),
+            definition: validation.data
+        }
+    };
+}
+
+function assembleRouteDefinitionContribution(
+    appId: string,
+    routeDefinition: Pick<UiRouteNodeDefinition, "id" | "path" | "title" | "layoutId">
+): Result<RouteContribution> {
+    const definition = {
+        id: routeDefinition.id,
+        path: routeDefinition.path,
+        title: routeDefinition.title,
+        layoutId: routeDefinition.layoutId
+    };
+    const validation = routeDefinitionSchema.safeParse(definition);
+
+    if (!validation.success) {
+        return {
+            success: false,
+            error: validation.error.issues.map((issue) => issue.message).join(" ")
+        };
+    }
+
+    return {
+        success: true,
+        data: {
+            kind: "route",
+            appId,
+            registrationId: makeRegistrationId("ui-route", appId, definition.id),
             definition: validation.data
         }
     };
@@ -425,10 +457,32 @@ export function assembleNodeSet(input: unknown[]): Result<AssembledNodeSet> {
                 definition.type === "ui-input"
         )
     );
+    const containerNodes = componentNodes.filter((definition): definition is UiContainerNodeDefinition => definition.type === "ui-container");
     const integration = assembleRuntimeIntegration(passiveDefinitions);
 
     if (!integration.success) {
         return integration;
+    }
+
+    const referencedLayoutIds = new Set<string>([
+        appNode.layout,
+        ...routeNodes.map((routeNode) => routeNode.layoutId),
+        ...dialogNodes.map((dialogNode) => dialogNode.layoutId),
+        ...containerNodes.map((containerNode) => containerNode.layoutId)
+    ]);
+
+    const standardLayouts = collectMissingStandardLayouts(
+        referencedLayoutIds,
+        layoutNodes.map((layoutNode) => layoutNode.id)
+    );
+
+    for (const layoutDefinition of standardLayouts) {
+        contributions.push({
+            kind: "layout",
+            appId,
+            registrationId: makeRegistrationId("ui-layout", appId, layoutDefinition.id),
+            definition: layoutDefinition
+        });
     }
 
     for (const layoutNode of layoutNodes) {
@@ -450,6 +504,16 @@ export function assembleNodeSet(input: unknown[]): Result<AssembledNodeSet> {
         }
 
         contributions.push(routeContribution.data);
+    }
+
+    if (!routeNodes.some((routeNode) => routeNode.path === "/") && !routeNodes.some((routeNode) => routeNode.id === appId)) {
+        const rootRouteContribution = assembleRouteDefinitionContribution(appId, createAppRootRoute(appId, appNode.title, appNode.layout));
+
+        if (!rootRouteContribution.success) {
+            return rootRouteContribution;
+        }
+
+        contributions.push(rootRouteContribution.data);
     }
 
     for (const dialogNode of dialogNodes) {

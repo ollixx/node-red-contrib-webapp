@@ -2,7 +2,13 @@
 
 const fs = require("fs");
 const path = require("path");
-const { appModelSchema, uiEventMessageSchema, validateUiNodeDefinition } = require("../packages/schema/dist/index.js");
+const {
+    appModelSchema,
+    collectMissingStandardLayouts,
+    createAppRootRoute,
+    uiEventMessageSchema,
+    validateUiNodeDefinition
+} = require("../packages/schema/dist/index.js");
 
 const runtimeState = {
     definitions: new Map(),
@@ -581,17 +587,33 @@ function getAppModelResult(appId, definitions) {
         };
     }
 
+    const referencedLayoutIds = new Set([
+        buckets.app.layout,
+        ...buckets.routes.map((route) => route.layoutId),
+        ...buckets.dialogs.map((dialog) => dialog.layoutId),
+        ...buckets.components.filter((component) => component.type === "ui-container").map((component) => component.layoutId)
+    ]);
+    const standardLayouts = collectMissingStandardLayouts(
+        referencedLayoutIds,
+        buckets.layouts.map((layout) => layout.id)
+    );
+    const routes = buckets.routes.slice();
+
+    if (!routes.some((route) => route.path === "/") && !routes.some((route) => route.id === buckets.app.id)) {
+        routes.push(createAppRootRoute(buckets.app.id, blankToUndefined(buckets.app.title), buckets.app.layout));
+    }
+
     const modelCandidate = {
         id: buckets.app.id,
         title: buckets.app.title,
-        layouts: buckets.layouts
+        layouts: [...standardLayouts, ...buckets.layouts]
             .map((layout) => ({
                 id: layout.id,
                 title: blankToUndefined(layout.title),
-                slots: buildSlots(buckets.slots, layout.id)
+                slots: layout.type === "ui-layout" ? buildSlots(buckets.slots, layout.id) : layout.slots
             }))
             .sort((left, right) => left.id.localeCompare(right.id)),
-        routes: buckets.routes
+        routes: routes
             .map((route) => ({
                 id: route.id,
                 path: route.path,
@@ -740,11 +762,28 @@ function renderSlotTree(slots, model, context, routeId, layoutId, dialogId) {
             }));
 
         return {
+            layoutId,
             name: slot.name,
             title: slot.title,
             components
         };
     });
+}
+
+function sanitizeClassSuffix(value) {
+    return String(value || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9_-]+/g, "-")
+        .replace(/^-+|-+$/g, "") || "default";
+}
+
+function getLayoutVariant(layoutId) {
+    return ["horizontal", "vertical", "app"].includes(layoutId) ? layoutId : "custom";
+}
+
+function renderLayoutHtml(layoutId, slots) {
+    const variant = getLayoutVariant(layoutId);
+    return `<div class="webapp-layout webapp-layout--${escapeAttribute(variant)}">${slots.map(renderSlotHtml).join("")}</div>`;
 }
 
 function renderComponent(component, sources, model, context) {
@@ -814,6 +853,7 @@ function renderComponent(component, sources, model, context) {
         return {
             kind: "container",
             id: component.id,
+            layoutId: childLayout.id,
             formId,
             slots: renderSlotTree(childLayout.slots, model, { path: [], sources, location: context.location, formId }, context.routeId, childLayout.id, context.dialogId)
         };
@@ -829,7 +869,9 @@ function renderComponent(component, sources, model, context) {
 function renderSlotHtml(slot) {
     const title = slot.title ? `<h3>${escapeHtml(slot.title)}</h3>` : "";
     const components = slot.components.map(renderComponentHtml).join("");
-    return `<section class="webapp-slot"><header><h2>${escapeHtml(slot.name)}</h2>${title}</header><div class="webapp-slot-body">${components}</div></section>`;
+    const layoutVariant = getLayoutVariant(slot.layoutId);
+    const slotClass = sanitizeClassSuffix(slot.name);
+    return `<section class="webapp-slot webapp-slot--${escapeAttribute(slotClass)}"><header><h2>${escapeHtml(slot.name)}</h2>${title}</header><div class="webapp-slot-body webapp-slot-body--${escapeAttribute(layoutVariant)}">${components}</div></section>`;
 }
 
 function renderComponentHtml(component) {
@@ -883,7 +925,7 @@ function renderComponentHtml(component) {
     }
 
     if (component.kind === "container") {
-        const content = component.slots.map(renderSlotHtml).join("");
+        const content = renderLayoutHtml(component.layoutId, component.slots);
         return component.formId
             ? `<form class="webapp-form" id="${escapeAttribute(component.formId)}" method="get">${content}</form>`
             : `<div class="webapp-container">${content}</div>`;
@@ -911,7 +953,7 @@ function applyPreviewAction(RED, appId, actionId, parameters, definitions) {
 
     const { model } = modelResult;
 
-    const location = parameters.location ? String(parameters.location) : "/customers";
+    const location = parameters.location ? String(parameters.location) : "/";
     const routeMatch = getRouteMatch(location, model.routes) || { route: { id: "customers", path: "/customers" }, params: {} };
     const currentState = clone(runtimeState.previewState.get(appId) || {});
     let nextState = currentState;
@@ -1199,14 +1241,15 @@ function renderAppPage(appId, location, dialogId, definitions) {
             return dialogLayout
                 ? {
                     title: dialog.title || dialog.id,
+                    layoutId: dialogLayout.id,
                     slots: renderSlotTree(dialogLayout.slots, model, { path: [], sources, location, formId: undefined }, routeMatch.route.id, dialogLayout.id, dialog.id)
                 }
                 : undefined;
         })
         .filter(Boolean);
 
-    const dialogHtml = dialogs.map((dialog) => `<div class="webapp-dialog"><div class="webapp-dialog-card"><div class="webapp-dialog-head"><h2>${escapeHtml(dialog.title)}</h2><a href="/webapp/${encodeURIComponent(appId)}/action/closeCustomerEditor?location=${encodeURIComponent(location)}&sourceId=cancelCustomerButton&event=click" class="webapp-link">Close</a></div>${dialog.slots.map(renderSlotHtml).join("")}</div></div>`).join("");
-    const pageBody = slots.map(renderSlotHtml).join("");
+    const dialogHtml = dialogs.map((dialog) => `<div class="webapp-dialog"><div class="webapp-dialog-card"><div class="webapp-dialog-head"><h2>${escapeHtml(dialog.title)}</h2><a href="/webapp/${encodeURIComponent(appId)}/action/closeCustomerEditor?location=${encodeURIComponent(location)}&sourceId=cancelCustomerButton&event=click" class="webapp-link">Close</a></div>${renderLayoutHtml(dialog.layoutId, dialog.slots)}</div></div>`).join("");
+    const pageBody = renderLayoutHtml(layout.id, slots);
     const messageFeed = getPreviewMessages(appId)
         .slice()
         .reverse()
@@ -1231,10 +1274,19 @@ function renderAppPage(appId, location, dialogId, definitions) {
     .webapp-topbar h1 { margin:0; font-size:clamp(2rem, 4vw, 3.4rem); }
     .webapp-sub { color:var(--muted); font-family: ui-monospace, SFMono-Regular, monospace; font-size:13px; }
     .webapp-grid { display:grid; gap:16px; }
+    .webapp-layout { display:grid; gap:16px; }
+    .webapp-layout--app { grid-template-areas:"header" "navbar" "content" "footer"; }
     .webapp-slot { border:1px solid var(--line); background:rgba(255,255,255,0.78); backdrop-filter: blur(6px); border-radius:18px; padding:16px; box-shadow:0 12px 30px rgba(79,70,50,0.08); }
+    .webapp-slot--header { grid-area:header; }
+    .webapp-slot--navbar { grid-area:navbar; }
+    .webapp-slot--content { grid-area:content; }
+    .webapp-slot--footer { grid-area:footer; }
     .webapp-slot > header { margin-bottom:12px; }
     .webapp-slot > header h2 { margin:0; font-size:1rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); }
-    .webapp-slot-body { display:grid; gap:12px; }
+    .webapp-slot-body { gap:12px; }
+    .webapp-slot-body--vertical, .webapp-slot-body--app, .webapp-slot-body--custom { display:flex; flex-direction:column; }
+    .webapp-slot-body--horizontal { display:flex; flex-direction:row; align-items:flex-start; flex-wrap:wrap; }
+    .webapp-slot-body--horizontal > * { flex:1 1 220px; min-width:0; }
     .webapp-text { font-size:1.05rem; }
     .webapp-button { display:inline-flex; align-items:center; justify-content:center; padding:10px 14px; border-radius:999px; border:1px solid rgba(0,0,0,0.08); background:linear-gradient(135deg, var(--accent), #155e75); color:white; font-weight:600; }
     button.webapp-button[disabled] { background:#cbd5e1; color:#475569; }
@@ -1251,6 +1303,9 @@ function renderAppPage(appId, location, dialogId, definitions) {
     .webapp-events { margin-top:24px; padding:16px; border-radius:16px; background:rgba(255,255,255,0.9); border:1px solid var(--line); }
     .webapp-events ul { margin:12px 0 0; padding-left:18px; display:grid; gap:8px; }
     .webapp-debug { margin-top:24px; padding:16px; border-radius:16px; background:#1f2933; color:#e6edf3; overflow:auto; font-family: ui-monospace, SFMono-Regular, monospace; font-size:12px; }
+        @media (min-width: 900px) {
+            .webapp-layout--app { grid-template-columns:minmax(220px, 280px) minmax(0, 1fr); grid-template-areas:"header header" "navbar content" "footer footer"; align-items:start; }
+        }
   </style>
 </head>
 <body>
@@ -1407,7 +1462,7 @@ function registerEndpoints(RED) {
     });
 
     RED.httpNode.get("/webapp/:appId", (req, res) => {
-        const location = req.query.location ? String(req.query.location) : "/customers";
+        const location = req.query.location ? String(req.query.location) : "/";
         const dialogId = req.query.dialog ? String(req.query.dialog) : undefined;
         const page = renderAppPage(req.params.appId, location, dialogId, readDeployDefinitions(RED));
 
@@ -1526,7 +1581,8 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-app",
             id: config.root || getUiId(config) || "",
-            title: config.name || config.title || config.root || getUiId(config) || "App"
+            title: config.name || config.title || config.root || getUiId(config) || "App",
+            layout: config.layout || "vertical"
         })
     },
     "ui-layout": {

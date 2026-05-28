@@ -118,6 +118,101 @@ describe("ui-action preview runtime", () => {
         registerWebappNodes.__test__.resetPreview("customersApp");
     });
 
+    it("renders the app root page from the app base layout preset", () => {
+        registerWebappNodes.__test__.resetPreview("ordersApp");
+
+        const page = registerWebappNodes.__test__.renderAppPage("ordersApp", "/", undefined, [
+            {
+                type: "ui-app",
+                id: "ordersApp",
+                title: "Orders",
+                layout: "app"
+            },
+            {
+                type: "ui-text",
+                id: "ordersHeader",
+                mount: "ordersApp.header",
+                value: {
+                    kind: "literal",
+                    value: "Orders home"
+                }
+            },
+            {
+                type: "ui-text",
+                id: "ordersBody",
+                mount: "ordersApp.content",
+                value: {
+                    kind: "literal",
+                    value: "Start here"
+                }
+            }
+        ]);
+
+        expect(page.status).toBe(200);
+        expect(page.body).toContain("Orders home");
+        expect(page.body).toContain("Start here");
+        expect(page.body).toContain("webapp-layout webapp-layout--app");
+        expect(page.body).toContain("webapp-slot webapp-slot--header");
+        expect(page.body).toContain("webapp-slot webapp-slot--content");
+    });
+
+    it("renders horizontal and vertical preset bodies with different orientations", () => {
+        registerWebappNodes.__test__.resetPreview("layoutApp");
+
+        const definitions = [
+            {
+                type: "ui-app",
+                id: "layoutApp",
+                title: "Layout demo",
+                layout: "vertical"
+            },
+            {
+                type: "ui-text",
+                id: "verticalText",
+                mount: "layoutApp.content",
+                value: {
+                    kind: "literal",
+                    value: "Top text"
+                }
+            },
+            {
+                type: "ui-route",
+                id: "horizontalRoute",
+                path: "/horizontal",
+                layoutId: "horizontal"
+            },
+            {
+                type: "ui-text",
+                id: "leftText",
+                mount: "route:/horizontal/content",
+                value: {
+                    kind: "literal",
+                    value: "Left"
+                }
+            },
+            {
+                type: "ui-text",
+                id: "rightText",
+                mount: "route:/horizontal/content",
+                value: {
+                    kind: "literal",
+                    value: "Right"
+                }
+            }
+        ];
+
+        const verticalPage = registerWebappNodes.__test__.renderAppPage("layoutApp", "/", undefined, definitions);
+        const horizontalPage = registerWebappNodes.__test__.renderAppPage("layoutApp", "/horizontal", undefined, definitions);
+
+        expect(verticalPage.status).toBe(200);
+        expect(verticalPage.body).toContain("webapp-slot-body webapp-slot-body--vertical");
+        expect(verticalPage.body).toContain("Top text");
+        expect(horizontalPage.status).toBe(200);
+        expect(horizontalPage.body).toContain("webapp-slot-body webapp-slot-body--horizontal");
+        expect(horizontalPage.body).toContain("Left");
+        expect(horizontalPage.body).toContain("Right");
+    });
+
     it("opens the customer editor dialog for the legacy open action and records the UI message", () => {
         const { RED, nodes } = createPreviewRedStub(["openCustomerEditor"]);
 

@@ -22,7 +22,8 @@ const mountableNodeSchema = identifiedNodeSchema.extend({
 export const uiAppNodeDefinitionSchema = z.object({
     type: z.literal("ui-app"),
     id: identifierSchema,
-    title: z.string().min(1, "App titles must not be empty.")
+    title: z.string().min(1, "App titles must not be empty."),
+    layout: identifierSchema
 });
 
 export type UiAppNodeDefinition = z.infer<typeof uiAppNodeDefinitionSchema>;
