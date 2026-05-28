@@ -1,0 +1,196 @@
+[
+    {
+        "id": "flowLayoutDemos",
+        "type": "tab",
+        "label": "Layout demos",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "layoutVerticalApp",
+        "type": "ui-app",
+        "name": "Vertical Layout Demo",
+        "title": "Vertical Layout Demo",
+        "root": "layoutVerticalApp",
+        "layout": "vertical",
+        "x": 160,
+        "y": 40,
+        "wires": [
+            []
+        ],
+        "z": "flowLayoutDemos"
+    },
+    {
+        "id": "layoutVerticalTextOne",
+        "type": "ui-text",
+        "mount": "layoutVerticalApp.content",
+        "order": 0,
+        "value": {
+            "kind": "literal",
+            "value": "Vertical item 1"
+        },
+        "x": 420,
+        "y": 40,
+        "wires": [
+            []
+        ],
+        "z": "flowLayoutDemos"
+    },
+    {
+        "id": "layoutVerticalTextTwo",
+        "type": "ui-text",
+        "mount": "layoutVerticalApp.content",
+        "order": 1,
+        "value": {
+            "kind": "literal",
+            "value": "Vertical item 2"
+        },
+        "x": 420,
+        "y": 80,
+        "wires": [
+            []
+        ],
+        "z": "flowLayoutDemos"
+    },
+    {
+        "id": "layoutVerticalTextThree",
+        "type": "ui-text",
+        "mount": "layoutVerticalApp.content",
+        "order": 2,
+        "value": {
+            "kind": "literal",
+            "value": "Vertical item 3"
+        },
+        "x": 420,
+        "y": 120,
+        "wires": [
+            []
+        ],
+        "z": "flowLayoutDemos"
+    },
+    {
+        "id": "layoutHorizontalApp",
+        "type": "ui-app",
+        "name": "Horizontal Layout Demo",
+        "title": "Horizontal Layout Demo",
+        "root": "layoutHorizontalApp",
+        "layout": "horizontal",
+        "x": 160,
+        "y": 220,
+        "wires": [
+            []
+        ],
+        "z": "flowLayoutDemos"
+    },
+    {
+        "id": "layoutHorizontalTextOne",
+        "type": "ui-text",
+        "mount": "layoutHorizontalApp.content",
+        "order": 0,
+        "value": {
+            "kind": "literal",
+            "value": "Horizontal item 1"
+        },
+        "x": 420,
+        "y": 220,
+        "wires": [
+            []
+        ],
+        "z": "flowLayoutDemos"
+    },
+    {
+        "id": "layoutHorizontalTextTwo",
+        "type": "ui-text",
+        "mount": "layoutHorizontalApp.content",
+        "order": 1,
+        "value": {
+            "kind": "literal",
+            "value": "Horizontal item 2"
+        },
+        "x": 420,
+        "y": 260,
+        "wires": [
+            []
+        ],
+        "z": "flowLayoutDemos"
+    },
+    {
+        "id": "layoutHorizontalTextThree",
+        "type": "ui-text",
+        "mount": "layoutHorizontalApp.content",
+        "order": 2,
+        "value": {
+            "kind": "literal",
+            "value": "Horizontal item 3"
+        },
+        "x": 420,
+        "y": 300,
+        "wires": [
+            []
+        ],
+        "z": "flowLayoutDemos"
+    },
+    {
+        "id": "layoutAppShellDemo",
+        "type": "ui-app",
+        "name": "App Layout Demo",
+        "title": "App Layout Demo",
+        "root": "layoutAppShellDemo",
+        "layout": "app",
+        "x": 160,
+        "y": 400,
+        "wires": [
+            []
+        ],
+        "z": "flowLayoutDemos"
+    },
+    {
+        "id": "layoutAppHeaderText",
+        "type": "ui-text",
+        "mount": "layoutAppShellDemo.header",
+        "order": 0,
+        "value": {
+            "kind": "literal",
+            "value": "App header"
+        },
+        "variant": "headline",
+        "x": 420,
+        "y": 400,
+        "wires": [
+            []
+        ],
+        "z": "flowLayoutDemos"
+    },
+    {
+        "id": "layoutAppNavbarText",
+        "type": "ui-text",
+        "mount": "layoutAppShellDemo.navbar",
+        "order": 1,
+        "value": {
+            "kind": "literal",
+            "value": "App navigation"
+        },
+        "x": 420,
+        "y": 440,
+        "wires": [
+            []
+        ],
+        "z": "flowLayoutDemos"
+    },
+    {
+        "id": "layoutAppContentText",
+        "type": "ui-text",
+        "mount": "layoutAppShellDemo.content",
+        "order": 2,
+        "value": {
+            "kind": "literal",
+            "value": "App content"
+        },
+        "x": 420,
+        "y": 480,
+        "wires": [
+            []
+        ],
+        "z": "flowLayoutDemos"
+    }
+]
