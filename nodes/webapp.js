@@ -1288,14 +1288,24 @@ function readDeployDefinitions(RED) {
         }
 
         const parsed = JSON.parse(fs.readFileSync(flowFilePath, "utf8"));
-        return Array.isArray(parsed)
-            ? parsed
-                .filter((entry) => entry && WEBAPP_NODE_TYPES.has(entry.type))
-                .map((entry) => ({
-                    ...entry,
-                    id: entry.uiId || entry.id
-                }))
-            : [];
+        if (!Array.isArray(parsed)) {
+            return [];
+        }
+
+        return parsed
+            .filter((entry) => entry && WEBAPP_NODE_TYPES.has(entry.type))
+            .map((entry) => {
+                const registration = runtimeNodeRegistry[entry.type];
+
+                if (!registration || typeof registration.mapConfig !== "function") {
+                    return {
+                        ...entry,
+                        id: entry.uiId || entry.id
+                    };
+                }
+
+                return registration.mapConfig(entry);
+            });
     }
     catch {
         return [];

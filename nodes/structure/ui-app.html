@@ -12,6 +12,32 @@
             inputs: 0,
             outputs: 0,
             icon: "font-awesome/fa-sitemap",
+            oneditprepare: function () {
+                const rootInput = $("#node-input-root");
+                const link = $("#node-ui-app-url");
+                const emptyHint = $("#node-ui-app-url-empty");
+
+                function updateAppUrl() {
+                    const root = String(rootInput.val() || "").trim();
+
+                    if (!root) {
+                        link.attr("href", "#");
+                        link.text("");
+                        link.hide();
+                        emptyHint.show();
+                        return;
+                    }
+
+                    const appUrl = `${window.location.origin}/webapp/${encodeURIComponent(root)}`;
+                    link.attr("href", appUrl);
+                    link.text(appUrl);
+                    link.show();
+                    emptyHint.hide();
+                }
+
+                rootInput.on("input change", updateAppUrl);
+                updateAppUrl();
+            },
             label: function () {
                 return this.name || this.root || "ui-app";
             }
@@ -21,5 +47,12 @@
 <script type="text/html" data-template-name="ui-app">
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <div class="form-row"><label for="node-input-root">Root</label><input type="text" id="node-input-root"></div>
+    <div class="form-row">
+        <label>App URL</label>
+        <div style="padding-top: 6px;">
+            <a id="node-ui-app-url" href="#" target="_blank" rel="noopener" style="display: none;"></a>
+            <span id="node-ui-app-url-empty" style="color: #777;">Bitte zuerst Root setzen</span>
+        </div>
+    </div>
 </script>
 <script type="text/html" data-help-name="ui-app"><p>Root-Knoten einer deklarativen Web-App fuer Node-RED.</p></script>
