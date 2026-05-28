@@ -191,17 +191,23 @@ test.describe("layout preset rendering", () => {
         await expect(page.locator("text=Vertical item 1")).toBeVisible();
         await expect(page.locator("text=Vertical item 2")).toBeVisible();
         await expect(page.locator("text=Vertical item 3")).toBeVisible();
+        await expect(page.getByText("Node messages")).toHaveCount(0);
+        await expect(page.getByText("Snapshot")).toHaveCount(0);
 
         await page.goto("/webapp/layoutHorizontalApp");
         await expect(page.locator(".webapp-slot-body.webapp-slot-body--horizontal")).toHaveCount(1);
         await expect(page.locator("text=Horizontal item 1")).toBeVisible();
         await expect(page.locator("text=Horizontal item 2")).toBeVisible();
         await expect(page.locator("text=Horizontal item 3")).toBeVisible();
+        await expect(page.getByText("Node messages")).toHaveCount(0);
+        await expect(page.getByText("Snapshot")).toHaveCount(0);
 
         await page.goto("/webapp/layoutAppShellDemo");
         await expect(page.locator(".webapp-layout.webapp-layout--app")).toHaveCount(1);
         await expect(page.locator(".webapp-slot--header .webapp-text")).toHaveText("App header");
         await expect(page.locator(".webapp-slot--navbar .webapp-text")).toHaveText("App navigation");
         await expect(page.locator(".webapp-slot--content .webapp-text")).toHaveText("App content");
+        await expect(page.getByText("Node messages")).toHaveCount(0);
+        await expect(page.getByText("Snapshot")).toHaveCount(0);
     });
 });

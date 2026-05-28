@@ -1,0 +1,167 @@
+[
+    {
+        "id": "flowEditorMountOptions",
+        "type": "tab",
+        "label": "Editor mount options",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "mountVerticalApp",
+        "type": "ui-app",
+        "name": "Vertical Layout Demo",
+        "title": "Vertical Layout Demo",
+        "root": "mountVerticalApp",
+        "layout": "vertical",
+        "x": 160,
+        "y": 40,
+        "wires": [
+            []
+        ],
+        "z": "flowEditorMountOptions"
+    },
+    {
+        "id": "mountHorizontalApp",
+        "type": "ui-app",
+        "name": "Horizontal Layout Demo",
+        "title": "Horizontal Layout Demo",
+        "root": "mountHorizontalApp",
+        "layout": "horizontal",
+        "x": 160,
+        "y": 120,
+        "wires": [
+            []
+        ],
+        "z": "flowEditorMountOptions"
+    },
+    {
+        "id": "mountAppShellDemo",
+        "type": "ui-app",
+        "name": "App Layout Demo",
+        "title": "App Layout Demo",
+        "root": "mountAppShellDemo",
+        "layout": "app",
+        "x": 160,
+        "y": 200,
+        "wires": [
+            []
+        ],
+        "z": "flowEditorMountOptions"
+    },
+    {
+        "id": "mountAction",
+        "type": "ui-action",
+        "name": "Demo Action",
+        "actionType": "trigger",
+        "targetMode": "out-port",
+        "description": "Editor mount options action",
+        "x": 160,
+        "y": 280,
+        "wires": [
+            []
+        ],
+        "z": "flowEditorMountOptions"
+    },
+    {
+        "id": "mountStore",
+        "type": "ui-store",
+        "name": "Demo Store",
+        "statePath": "draft.demo",
+        "initialValue": {
+            "name": ""
+        },
+        "x": 160,
+        "y": 360,
+        "wires": [
+            []
+        ],
+        "z": "flowEditorMountOptions"
+    },
+    {
+        "id": "mountNestedLayout",
+        "type": "ui-layout",
+        "title": "Nested layout",
+        "x": 160,
+        "y": 440,
+        "wires": [
+            []
+        ],
+        "z": "flowEditorMountOptions"
+    },
+    {
+        "id": "mountNestedSlot",
+        "type": "ui-slot",
+        "layoutId": "mountNestedLayout",
+        "name": "content",
+        "order": 0,
+        "x": 400,
+        "y": 440,
+        "wires": [
+            []
+        ],
+        "z": "flowEditorMountOptions"
+    },
+    {
+        "id": "mountTextNode",
+        "type": "ui-text",
+        "uiId": "mountTextNode",
+        "mount": "mountVerticalApp.content",
+        "text": "Demo text",
+        "value": {
+            "kind": "literal",
+            "value": "Demo text"
+        },
+        "x": 400,
+        "y": 40,
+        "wires": [
+            []
+        ],
+        "z": "flowEditorMountOptions"
+    },
+    {
+        "id": "mountButtonNode",
+        "type": "ui-button",
+        "uiId": "mountButtonNode",
+        "mount": "mountVerticalApp.content",
+        "label": "Demo button",
+        "action": "mountAction",
+        "x": 400,
+        "y": 120,
+        "wires": [
+            [
+                "mountAction"
+            ]
+        ],
+        "z": "flowEditorMountOptions"
+    },
+    {
+        "id": "mountInputNode",
+        "type": "ui-input",
+        "uiId": "mountInputNode",
+        "mount": "mountVerticalApp.content",
+        "label": "Demo input",
+        "valuePath": "draft.demo.name",
+        "storeId": "mountStore",
+        "path": "name",
+        "inputType": "text",
+        "x": 400,
+        "y": 200,
+        "wires": [
+            []
+        ],
+        "z": "flowEditorMountOptions"
+    },
+    {
+        "id": "mountContainerNode",
+        "type": "ui-container",
+        "uiId": "mountContainerNode",
+        "mount": "mountVerticalApp.content",
+        "layoutId": "mountNestedLayout",
+        "x": 400,
+        "y": 280,
+        "wires": [
+            []
+        ],
+        "z": "flowEditorMountOptions"
+    }
+]

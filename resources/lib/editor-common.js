@@ -6,6 +6,11 @@
         { value: "horizontal", label: "Horizontal" },
         { value: "app", label: "App" }
     ];
+    const standardLayoutPresetSlots = {
+        vertical: ["content"],
+        horizontal: ["content"],
+        app: ["header", "navbar", "content", "footer"]
+    };
 
     function labelWithName(fallback) {
         return function () {
@@ -98,6 +103,7 @@
             if (node.type === "ui-app") {
                 references.apps.push({
                     id,
+                    layoutId: node.layout || "",
                     title: node.title || node.name || id
                 });
                 return;
@@ -192,6 +198,22 @@
             });
     }
 
+    function getSlotNamesForLayout(layoutId, slotsByLayoutId) {
+        const explicitSlots = slotsByLayoutId.get(layoutId) || [];
+
+        if (explicitSlots.length > 0) {
+            return explicitSlots.map(function (slot) {
+                return slot.name;
+            }).filter(Boolean);
+        }
+
+        if (isStandardLayoutPreset(layoutId)) {
+            return [...standardLayoutPresetSlots[layoutId]];
+        }
+
+        return [];
+    }
+
     function setSelectOptions(selector, options, currentValue, placeholder) {
         const input = $(selector);
 
@@ -233,6 +255,7 @@
     }
 
     function buildMountOptions(references) {
+        const apps = references.apps;
         const layouts = references.layouts;
         const routes = references.routes;
         const dialogs = references.dialogs;
@@ -250,35 +273,46 @@
 
         const options = [];
 
-        for (const route of routes) {
-            const slots = slotsByLayoutId.get(route.layoutId) || [];
+        for (const app of apps) {
+            const slotNames = getSlotNamesForLayout(app.layoutId, slotsByLayoutId);
 
-            for (const slot of slots) {
+            for (const slotName of slotNames) {
                 options.push({
-                    value: `route:${route.path}/${slot.name}`,
-                    label: `Route ${route.path} -> ${slot.name}`
+                    value: `${app.id}.${slotName}`,
+                    label: `App ${app.id} -> ${slotName}`
+                });
+            }
+        }
+
+        for (const route of routes) {
+            const slotNames = getSlotNamesForLayout(route.layoutId, slotsByLayoutId);
+
+            for (const slotName of slotNames) {
+                options.push({
+                    value: `route:${route.path}/${slotName}`,
+                    label: `Route ${route.path} -> ${slotName}`
                 });
             }
         }
 
         for (const dialog of dialogs) {
-            const slots = slotsByLayoutId.get(dialog.layoutId) || [];
+            const slotNames = getSlotNamesForLayout(dialog.layoutId, slotsByLayoutId);
 
-            for (const slot of slots) {
+            for (const slotName of slotNames) {
                 options.push({
-                    value: `dialog:${dialog.id}/${slot.name}`,
-                    label: `Dialog ${dialog.id} -> ${slot.name}`
+                    value: `dialog:${dialog.id}/${slotName}`,
+                    label: `Dialog ${dialog.id} -> ${slotName}`
                 });
             }
         }
 
         for (const layout of layouts) {
-            const slots = slotsByLayoutId.get(layout.id) || [];
+            const slotNames = getSlotNamesForLayout(layout.id, slotsByLayoutId);
 
-            for (const slot of slots) {
+            for (const slotName of slotNames) {
                 options.push({
-                    value: `layout:${layout.id}/${slot.name}`,
-                    label: `Layout ${layout.id} -> ${slot.name}`
+                    value: `layout:${layout.id}/${slotName}`,
+                    label: `Layout ${layout.id} -> ${slotName}`
                 });
             }
         }

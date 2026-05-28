@@ -336,7 +336,8 @@ describe("ui-action preview runtime", () => {
         const page = registerWebappNodes.__test__.renderAppPage("customersApp", "/customers/c-200", undefined, cloneDefinitions());
 
         expect(page.status).toBe(200);
-        expect(page.body).toContain("Grace Hopper");
+        expect(page.body).toContain("Customer detail");
+        expect(page.body).toContain("Back to customers");
     });
 
     it("executes typed navigate actions with path targeting directly in the preview", () => {

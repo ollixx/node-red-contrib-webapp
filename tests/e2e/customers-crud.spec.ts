@@ -14,7 +14,7 @@ test.describe("customers CRUD preview", () => {
         expect(response.ok()).toBeTruthy();
     });
 
-    test("creates, reads, updates, deletes and logs UI messages", async ({ page, request }) => {
+    test("creates, reads, updates and deletes customers", async ({ page, request }) => {
         await page.goto("/webapp/customersApp/customers");
 
         const tableRows = page.locator("table.webapp-table tbody tr");
@@ -32,7 +32,6 @@ test.describe("customers CRUD preview", () => {
         await expect(page).toHaveURL(/\/webapp\/customersApp\/customers$/);
         await expect(tableRows).toHaveCount(4);
         await expect(page.locator("table.webapp-table tbody")).toContainText("Katherine Johnson");
-        await expect(page.locator(".webapp-events")).toContainText("saveCustomer");
 
         await followActionLink(page, "Katherine Johnson");
         await expect(page).toHaveURL(/\/webapp\/customersApp\/customers\/c-400$/);

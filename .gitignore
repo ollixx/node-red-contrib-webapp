@@ -3,4 +3,5 @@ dist/
 coverage/
 *.tsbuildinfo
 .node-red-dev/
+.node-red-e2e/
 

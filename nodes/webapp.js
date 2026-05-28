@@ -1300,9 +1300,6 @@ function renderAppPage(appId, location, dialogId, definitions) {
     .webapp-dialog-card { width:min(720px, 100%); background:var(--panel); border-radius:22px; padding:20px; box-shadow:0 25px 70px rgba(0,0,0,0.18); }
     .webapp-dialog-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
     .webapp-link { color:var(--accent-2); font-weight:700; }
-    .webapp-events { margin-top:24px; padding:16px; border-radius:16px; background:rgba(255,255,255,0.9); border:1px solid var(--line); }
-    .webapp-events ul { margin:12px 0 0; padding-left:18px; display:grid; gap:8px; }
-    .webapp-debug { margin-top:24px; padding:16px; border-radius:16px; background:#1f2933; color:#e6edf3; overflow:auto; font-family: ui-monospace, SFMono-Regular, monospace; font-size:12px; }
         @media (min-width: 900px) {
             .webapp-layout--app { grid-template-columns:minmax(220px, 280px) minmax(0, 1fr); grid-template-areas:"header header" "navbar content" "footer footer"; align-items:start; }
         }
@@ -1319,8 +1316,6 @@ function renderAppPage(appId, location, dialogId, definitions) {
     </div>
     <div class="webapp-grid">${pageBody}</div>
     ${dialogHtml}
-        <section class="webapp-events"><h2>Node messages</h2><ul>${messageFeed || "<li>No messages yet.</li>"}</ul></section>
-    <details class="webapp-debug"><summary>Snapshot</summary><pre>${escapeHtml(escapeJson({ appId, location, route: routeMatch.route, params: routeMatch.params, state: effectiveState, queries }))}</pre></details>
   </div>
 </body>
 </html>`
