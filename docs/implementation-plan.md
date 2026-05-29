@@ -190,6 +190,86 @@ Run agent work in this order:
 3. reviewer checks the result against the phase definition of done
 4. orchestrator marks the phase complete and moves to the next one
 
+### Phase 11: Parent Field Alignment
+
+Purpose: replace free-text IDs and mount strings with structured parent selectors in all node editors.
+
+Deliverables:
+
+- `parent` SelectBox/Dialog in ui-route, ui-dialog, ui-store, ui-action, ui-query, ui-navigation (selects a ui-app)
+- `parent` slot selector in ui-button, ui-input, ui-text, ui-table, ui-container (selects app/route/dialog/container + slot)
+- `name` default logic ("Button N", "Store N" etc.) on node creation
+- runtime `mapConfig` derives app scoping from `parent` field
+
+Definition of done:
+
+- parent selectors are populated live from existing nodes in the flow
+- compiled model correctly scopes all nodes to their app
+- name defaults appear on node creation without user input
+
+### Phase 12: Configurable Event System
+
+Purpose: let nodes declare which events they emit, with dynamic out-ports per event.
+
+Deliverables:
+
+- checkbox-based event selection on ui-app, ui-route, ui-dialog, ui-container, ui-table
+- dynamic out-port per active event
+- component state message handler (show/hide/enable/disable/focus/reset) for all view nodes
+- ui-dialog open/close via direct message
+
+Definition of done:
+
+- clientConnected fires when a browser opens the app
+- show/hide message changes visibility in preview
+- dialog opens via message and via store state
+
+### Phase 13: ui-table Enhancements
+
+Purpose: make ui-table production-ready for common tabular UI patterns.
+
+Deliverables:
+
+- structured column definition (key, label, type, sortable, filterable, width) — backward-compatible
+- footer slot
+- row events replacing selectAction (rowSelect, rowAction, checkboxChange, cellSelect)
+
+Definition of done:
+
+- plain string columns still work
+- footer slot accepts arbitrary view nodes
+- rowSelect emits rowId and rowData
+
+### Phase 14: ui-query Enhancements
+
+Purpose: make query data flow efficient and reactive.
+
+Deliverables:
+
+- `source` field removed
+- ETag-based caching (no push on unchanged data)
+- `params` binding from ui-store for reactive filtering/sorting/paging
+
+Definition of done:
+
+- unchanged ETag suppresses client push
+- store param change triggers query refresh
+
+### Phase 15: Multi-User and Client Persistence
+
+Purpose: support multiple simultaneous users with isolated and persistent client state.
+
+Deliverables:
+
+- clientId routing in store and query handlers
+- `persist` flag on ui-store with localStorage sync
+- reconnect sync (server wins on conflict)
+
+Definition of done:
+
+- store update with clientId only reaches that client
+- persisted store survives page reload
+
 ## Stop Conditions
 
 The agent pipeline should stop and request human input if one of these happens:

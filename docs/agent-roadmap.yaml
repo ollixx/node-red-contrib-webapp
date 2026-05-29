@@ -199,3 +199,105 @@ phases:
       - schema and editor tests accept the extended mountable node contracts
       - Playwright verifies layout-specific child fields for direct mounts
       - runtime and preview render grid and absolute layouts as modeled
+
+  - id: P11
+    title: Parent field alignment across all editors
+    status: pending
+    dependencies: [P10]
+    goals:
+      - Replace free-text uiId and mount fields with structured parent selectors in all node editors.
+      - View nodes get a hierarchical slot selector (app/route/dialog/container + slot).
+      - Behavior and state nodes get an app selector.
+      - name field defaults implemented per node type ("Button N" etc.).
+      - Runtime mapConfig updated to derive app scoping from parent field instead of uiId.
+    deliverables:
+      - parent selector in ui-route, ui-dialog, ui-store, ui-action, ui-query, ui-navigation editors
+      - slot selector (parent) in ui-button, ui-input, ui-text, ui-table, ui-container editors
+      - name default logic ("Type N") in all node editors
+      - runtime mapConfig reads parent field for app scoping
+      - schema updated: parent as required field where applicable
+      - regression tests for parent-based model compilation
+    validation:
+      - all node editors show parent SelectBox populated from live nodes
+      - compiled model routes messages to correct app based on parent field
+      - name defaults appear correctly on node creation
+
+  - id: P12
+    title: Configurable event system
+    status: pending
+    dependencies: [P11]
+    goals:
+      - Add checkbox-based event selection to ui-app, ui-route, ui-dialog, ui-container, ui-table.
+      - Each active event produces a dynamic out-port on the node.
+      - Implement component state message handling (show/hide/enable/disable/focus/reset) for all view nodes.
+      - Implement ui-dialog open/close via direct message in addition to store state.
+    deliverables:
+      - configurable events on ui-app (clientConnected, clientDisconnected)
+      - configurable events on ui-route (onEnter, onLeave)
+      - configurable events on ui-dialog (onOpen, onClose) plus message-based open/close
+      - configurable events on ui-container (onShow, onHide)
+      - component state message handler in runtime for show/hide/enable/disable/focus/reset
+      - dynamic out-port generation in node editors
+      - msg format aligned with messages.md
+    validation:
+      - clientConnected event fires when a browser opens the app
+      - onEnter fires with correct params on route navigation
+      - show/hide message changes component visibility in preview
+      - dialog opens via direct message and via store state
+
+  - id: P13
+    title: ui-table enhancements
+    status: pending
+    dependencies: [P12]
+    goals:
+      - Replace string-only columns with structured column definitions.
+      - Add optional footer slot.
+      - Replace selectAction with configurable row events (rowSelect, rowAction, checkboxChange, cellSelect).
+    deliverables:
+      - structured column definition schema (key, label, type, sortable, filterable, width)
+      - backward-compatible column parsing (plain string still valid)
+      - footer slot activated by footer flag
+      - events field with multi-select in editor replacing selectAction
+      - dynamic out-ports per active event
+      - selectAction marked deprecated, still functional
+    validation:
+      - plain string columns still render correctly
+      - structured column definition renders label separately from key
+      - footer slot accepts mounted view nodes
+      - rowSelect event emits rowId and rowData on out-port
+
+  - id: P14
+    title: ui-query enhancements
+    status: pending
+    dependencies: [P11]
+    goals:
+      - Remove unused source field.
+      - Add ETag-based caching to avoid redundant pushes to the client.
+      - Add params binding from ui-store for reactive filtering, sorting, and paging.
+    deliverables:
+      - source field removed from schema, editor, runtime, and fixtures
+      - etag field in query input message; runtime skips push when etag matches
+      - params field on ui-query node referencing a ui-store
+      - runtime re-triggers query when referenced store changes
+    validation:
+      - query with unchanged etag does not push to client
+      - changing store-bound params triggers query refresh
+      - source removal causes no runtime errors on existing flows
+
+  - id: P15
+    title: Multi-user and client persistence
+    status: pending
+    dependencies: [P12]
+    goals:
+      - Route store and query updates to specific clients via clientId.
+      - Add persist flag to ui-store for localStorage-backed state.
+      - Implement reconnect sync (server state wins on conflict).
+    deliverables:
+      - clientId routing in store update and query push handlers
+      - persist flag on ui-store node
+      - client sends local state snapshot on reconnect
+      - server compares timestamps and pushes winner to client
+    validation:
+      - store update with clientId only reaches that client
+      - persisted store survives page reload
+      - server state overwrites stale client state on reconnect
