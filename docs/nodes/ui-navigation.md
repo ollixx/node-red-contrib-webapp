@@ -13,7 +13,7 @@ Aktuelles MVP-Verhalten:
 ## Abhängigkeiten
 
 **Parent-Knoten:**
-- Keiner.
+- `ui-app`: Pflicht. Die App ist der Routing-Kontext für Navigation-Events.
 
 **Gemeinsam genutzte Services und Komponenten:**
 - Spezialfall von `ui-action` vom Typ `navigate`
@@ -21,16 +21,25 @@ Aktuelles MVP-Verhalten:
 ## Editor
 
 **Pflichtfelder:**
-- `id`
+- `parent`: Auswahl einer `ui-app`. Wird als SelectBox angezeigt; bei mehr als 20 Einträgen als filterbarer Dialog.
 - `to`
+
+**Optionale Felder:**
+- `name`: Node-RED-Anzeigefeld. Wird bei der Darstellung des Knotens und in Auswahlfeldern angezeigt.
+  - Default: `"Navigation N"` (fortlaufende Nummer aller ui-navigation-Knoten, startend bei 1)
 
 ## Input
 
-Ausgelöst durch UI-Interaktionen.
+Wird von der Runtime ausgelöst wenn ein Client-Event diese Navigation referenziert. Format identisch mit `ui-action` Input.
 
 ## Output
 
-Emittiert ein `msg.ui`-Ereignis mit Navigationsmetadaten.
+```
+msg.ui.event       = "navigate"
+msg.ui.navigate.to = "/customers/42"
+msg.ui.params      = { id: "42" }
+msg.ui.clientId    = <auslösender Client>
+```
 
 ## Besonderheiten
 

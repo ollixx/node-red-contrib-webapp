@@ -14,7 +14,7 @@ Aktuelles MVP-Verhalten:
 - `ui-app`
 
 **Gemeinsam genutzte Services und Komponenten:**
-- Referenziert `ui-layout` über `layoutId`
+- Referenziert ein Layout-Preset über `layoutId`
 - Route-Parameter werden im Binding-Modell als `routeParam`-Bindings verfügbar gemacht
 
 ## Editor
@@ -23,37 +23,40 @@ Aktuelles MVP-Verhalten:
 - `parent`: Auswahl gültiger Parents, d.h. hier einer App (ui-app). Wenn es mehr als X (20?) mögliche Einträge gibt, wird stattdessen ein kleiner Dialog angezeigt, der eine scrollbare Liste von Apps zeigt und gefiltert werden kann.
 - `path`: Das URL-Element, das die Route definiert (Beispiel: /webapp/appName/<path>)
   - Validierung: innerhalb einer App (selbes Parent) muss der path eindeutig sein
-- `layout`: Referenz auf ein bekanntes Layout
-  - Default: `vertical` (kinder werden untereinander dargestellt)
+- `layout`: Layout-Preset
+  - Default: `vertical` (Kinder werden untereinander dargestellt)
+  - Presets: `vertical`, `horizontal`, `app`, `grid`, `absolute`
 
 
 **Optionale Felder:**
-- `name`: node-red Standard zur lesbaren Identifikation des Knotens.
-  - default ist "", Für die Anzeige wird als erstes auf den path zurückgegriffen
+- `name`: Node-RED-Anzeigefeld. Wird bei der Darstellung des Knotens und in Auswahlfeldern angezeigt.
+  - Default: `"Route N"` (fortlaufende Nummer aller ui-route-Knoten, startend bei 1)
+  - Fallback wenn leer: `path`-Feld
 
 ## Input
-```
-noch nicht definiert. 
-Ideen:
-- ui-action (navigateTo)
-- message zum dynamischen Erzeugen/Ändern/Löschen eines Kind-Elementes (wie bei ui-container)
-```
+
+Navigation-Messages werden von der Runtime intern zugestellt — keine explizite Flow-Verdrahtung nötig. `ui-action` mit `actionType: navigate` erzeugt diese Messages. Format siehe [messages.md](messages.md).
+
+Zusätzlich akzeptiert `ui-route` Component-State-Messages für seine Kind-Elemente (show/hide etc.) — ebenfalls über die Runtime geroutet.
 
 ## Output
-```
-noch nicht definiert. 
-Ideen:
-- ui-events (onLoad, ...) durchreichen, evtl. auch events der Kinder?
-- event-message nach dem dynamischen Erzeugen/Ändern/Löschen eines Kind-Elementes (wie bei ui-container). Frage: Sind das auch ui-events (DOM wurde verändert)?
-```
+
+Konfigurierbare Events — im Editor per Checkbox aktivierbar. Pro aktivem Event ein Out-Port:
+
+| Event | Beschreibung | `msg.ui`-Felder |
+|---|---|---|
+| `onEnter` | Route wurde betreten | `event: "onEnter"`, `path`, `params`, `clientId` |
+| `onLeave` | Route wurde verlassen | `event: "onLeave"`, `path`, `params`, `clientId` |
+
+`params` enthält aufgelöste Routenparameter, z.B. `{ id: "42" }` für `/customers/:id`.
 
 ## Besonderheiten
 
-- Die App braucht kein ui-route Knoten für den root, den ui-app selbst darstellt. Kinder können direkt in die Slots von ui-app gehängt werden. In dieser Hinsicht sollte ui-app auch alles supporten, was ui-route bietet (ui-action, ui-events etc.). Hier sollte ggf. gemeinsamer code genutzt werden
+- `ui-app` ist gleichzeitig die implizite Route `"/"`. View-Knoten können direkt in die Slots der App gehängt werden — `ui-route` ist nur nötig wenn es mehr als eine Seite gibt. `ui-app` sollte deshalb alles unterstützen, was `ui-route` bietet. Hier sollte gemeinsamer Code genutzt werden.
 
 Siehe für das mehrfach genutzte Layout-Konzept auch [layout.md](layout.md).
 
-- Knoten, die ein Layout referenzieren, sollten künftig nicht nur `layoutId` kennen, sondern zwischen Layout-Preset und `custom` unterscheiden.
-- Wenn `custom` gewählt ist, wird wie heute auf ein explizites `ui-layout` verwiesen.
+- Knoten, die ein Layout referenzieren, verwenden eines der vorhandenen Presets.
+- Direkte Kinder der Route-Slots erhalten je nach Preset zusätzliche Layout-Felder im Editor. Details dazu stehen in [layout.md](layout.md).
 - Route Guards, Loader, Titelauflösung und verschachtelte Routen fehlen.
 - Die Beziehung zwischen Route und Query-Lebenszyklus ist noch nicht explizit modelliert.

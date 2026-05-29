@@ -12,43 +12,40 @@ Aktuelles MVP-Verhalten:
 ## Abhängigkeiten
 
 **Parent-Knoten:**
-- Mount-Ziel (Route-, Dialog- oder Layout-Slot)
+- `ui-app`, `ui-route`, `ui-dialog` oder `ui-container`: Pflicht. Der Knoten wird in einen Slot des gewählten Parent-Knotens eingehängt. `ui-app` fungiert dabei als implizite Route `"/"` und kann direkt als Parent verwendet werden.
 
 **Gemeinsam genutzte Services und Komponenten:**
-- Referenziert `ui-layout` über `layoutId` als Child-Layout
+- Referenziert ein Layout-Preset über `layoutId` als Child-Layout
 
 ## Editor
 
 **Pflichtfelder:**
-- `parent`: Auswahl gültiger Parents, d.h. Slots in bestehenden Containern. Wenn es mehr als X (20?) mögliche Einträge gibt, wird stattdessen ein kleiner Dialog angezeigt, der eine scrollbare Liste von Slots (hierarchisch) zeigt und gefiltert werden kann.
-- `layout`: Referenz auf ein bekanntes Layout
+- `parent`: Auswahl eines Slots aus allen `ui-app`-, `ui-route`-, `ui-dialog`- und `ui-container`-Knoten. Die Einträge werden hierarchisch (App → Route/Dialog → Container) aufgelistet. Wird als SelectBox angezeigt; bei mehr als 20 Einträgen als filterbarer Dialog.
+- `layout`: Referenz auf ein bekanntes Layout-Preset
   - Default: `vertical` (kinder werden untereinander dargestellt)
 
 **Optionale Felder:**
-- `name`: node-red Standard zur lesbaren Identifikation des Knotens.
-  - default ist "Container X", wobei X die fortlaufende Nummer aller ui-container Knoten ist, startend bei 1
+- `name`: Node-RED-Anzeigefeld. Wird bei der Darstellung des Knotens und in Auswahlfeldern angezeigt.
+  - Default: `"Container N"` (fortlaufende Nummer aller ui-container-Knoten, startend bei 1)
 
 ## Input
-```
-noch nicht definiert. 
-Ideen:
-- ui-action (show / hide etc.)
-- message zum dynamischen Erzeugen/Ändern/Löschen eines Kind-Elementes 
-```
+
+Akzeptiert Component-State-Messages (`show`, `hide`). Format siehe [messages.md](messages.md).
 
 ## Output
-```
-noch nicht definiert. 
-Ideen:
-- ui-event (onShow / onHide etc.)
-- ui-event als antwort auf create / update / delete eines Kindelements 
-```
+
+Konfigurierbare Events — im Editor per Checkbox aktivierbar. Pro aktivem Event ein Out-Port:
+
+| Event | Beschreibung | `msg.ui`-Felder |
+|---|---|---|
+| `onShow` | Container wurde eingeblendet | `event: "onShow"`, `clientId` |
+| `onHide` | Container wurde ausgeblendet | `event: "onHide"`, `clientId` |
 
 ## Besonderheiten
 
 Siehe für das mehrfach genutzte Layout-Konzept auch [layout.md](layout.md).
 
-- Container sollten ebenfalls zwischen Standard-Layout-Presets und `custom` unterscheiden können.
-- Wird `custom` gewählt, referenziert der Container wie bisher ein Child-Layout über `ui-layout` und `ui-slot`.
+- Container verwenden ebenfalls Standard-Layout-Presets als Child-Layout.
+- Wird ein Container direkt in ein Preset-Layout gemountet, erscheinen die passenden Layout-Child-Props im Editor (`order` bzw. Grid-/Absolute-Felder).
 - ~~Es ist noch offen, ob Container später eigene Layout- oder Stylingvarianten tragen sollen.~~
 - Child-Layouts brauchen mittelfristig bessere Editor-Unterstützung für Parent-Auswahl und Visualisierung.

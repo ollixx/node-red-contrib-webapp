@@ -12,7 +12,7 @@ Aktuelles MVP-Verhalten:
 ## Abhängigkeiten
 
 **Parent-Knoten:**
-- Keiner. `ui-action` ist ein unabhängiger Verhaltensknoten.
+- `ui-app`: Pflicht. Die App ist der Routing-Kontext — sie bestimmt, an welchen Client Action-Events weitergeleitet werden.
 
 **Gemeinsam genutzte Services und Komponenten:**
 - Wird von `ui-button` über `action` referenziert
@@ -23,9 +23,11 @@ Aktuelles MVP-Verhalten:
 ## Editor
 
 **Pflichtfelder:**
-- `id`
+- `parent`: Auswahl einer `ui-app`. Wird als SelectBox angezeigt; bei mehr als 20 Einträgen als filterbarer Dialog.
 
 **Optionale Felder:**
+- `name`: Node-RED-Anzeigefeld. Wird bei der Darstellung des Knotens und in Auswahlfeldern angezeigt.
+  - Default: `"Action N"` (fortlaufende Nummer aller ui-action-Knoten, startend bei 1)
 - `actionType`: `navigate | disable | enable | show | hide | trigger`
 - `targetMode`: `out-port | path`
 - `target`: Pflicht für `targetMode: path`, verboten für `targetMode: out-port`
@@ -34,11 +36,21 @@ Aktuelles MVP-Verhalten:
 
 ## Input
 
-Ausgelöst durch Client-Events, zum Beispiel Button-Klick oder Tabellenselektion.
+Wird von der Runtime ausgelöst wenn ein Client-Event die Action referenziert (z.B. Button-Klick, Tabellenselektion). Die eingehende Message enthält:
+
+```
+msg.ui.event      = "click" | "select" | ...
+msg.ui.actionId   = <id dieser Action>
+msg.ui.clientId   = <auslösender Client>
+msg.ui.sourceId   = <id des auslösenden Knotens>
+msg.ui.params     = { ... }   ← z.B. rowId bei Tabellenselektion
+```
 
 ## Output
 
-Die Runtime emittiert Messages an den Action-Node und andere beteiligte Nodes.
+Bei `targetMode: out-port` emittiert der Knoten eine Component-State-Message auf seinem Out-Port. Der App-Autor verdrahtet diesen Port mit dem Ziel-Knoten. Format siehe [messages.md](messages.md).
+
+Bei `targetMode: path` übernimmt die Runtime das Routing intern — kein Out-Port-Signal.
 
 ## Besonderheiten
 

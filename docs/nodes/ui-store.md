@@ -17,7 +17,7 @@ Beschlossene MVP-Spezifikation:
 ## Abhängigkeiten
 
 **Parent-Knoten:**
-- Keiner. `ui-store` ist ein unabhängiger State-Knoten.
+- `ui-app`: Pflicht. Die App ist der Routing-Kontext — sie bestimmt, an welchen Client Store-Notifications gesendet werden und welche eingehenden Messages überhaupt für diesen Store bestimmt sind. Ohne Parent-App ist der Knoten nicht funktionsfähig.
 
 **Gemeinsam genutzte Services und Komponenten:**
 - Client-State: hält einen benannten State-Slice
@@ -26,11 +26,17 @@ Beschlossene MVP-Spezifikation:
 ## Editor
 
 **Pflichtfelder:**
-- `id`
-- `statePath`: Der Wurzelpfad des Stores im Client-State. Dieser Pfad bezeichnet einen Store-Slice, nicht nur einen einzelnen Wert. Beispiel: `draft` oder `draft.customer`
+- `parent`: Auswahl einer `ui-app`. Bestimmt den Routing-Kontext für alle Store-Messages.
+- `statePath`: Der Name des Store-Slice im Client-State. Muss ein einzelner Bezeichner ohne Punkte oder Slashes sein — kein Pfad, sondern ein Slice-Name. Beispiel: `draft`, `customers`, `session`
+  - Validierung: nur alphanumerische Zeichen und `_`, keine Punkte oder Slashes
+  - Validierung: innerhalb einer App muss `statePath` eindeutig sein
 
 **Optionale Felder:**
+- `name`: Node-RED-Anzeigefeld. Wird bei der Darstellung des Knotens und in Auswahlfeldern angezeigt.
+  - Default: `"Store N"` (fortlaufende Nummer aller ui-store-Knoten, startend bei 1)
 - `initialValue`
+- `persist`: Ob der Store-Slice im `localStorage` des Clients persistiert wird. Ermöglicht Offline-Resilienz und automatische Synchronisation bei Wiederverbindung. Details in [multi-user.md](multi-user.md).
+  - Default: `false`
 
 ## Input
 
@@ -39,6 +45,7 @@ Bevorzugtes Nachrichtenformat:
 - `msg.ui.store.op`: `set | patch | delete | replace | reset`
 - `msg.ui.store.path`: relativer Pfad innerhalb des Stores, optional für Root-Operationen
 - `msg.ui.store.value`: neuer Wert, wo für die Operation nötig
+- `msg.ui.clientId` _(optional)_: Wenn gesetzt, wird das Update nur im State des angegebenen Clients angewendet und die Notification nur an diesen Client gesendet. Ohne `clientId` wird der Update an alle verbundenen Clients der App gebroadcastet.
 
 Bedeutung der Operationen:
 - `set`: setzt einen Wert an einem relativen Pfad

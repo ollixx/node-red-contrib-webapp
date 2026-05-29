@@ -12,7 +12,7 @@ Aktuelles MVP-Verhalten:
 ## Abhängigkeiten
 
 **Parent-Knoten:**
-- Mount-Ziel (Route-, Dialog- oder Layout-Slot)
+- `ui-app`, `ui-route`, `ui-dialog` oder `ui-container`: Pflicht. Der Knoten wird in einen Slot des gewählten Parent-Knotens eingehängt. `ui-app` fungiert dabei als implizite Route `"/"` und kann direkt als Parent verwendet werden.
 
 **Gemeinsam genutzte Services und Komponenten:**
 - Binding-Modell: Literal-, State-, Query- und RouteParam-Bindings
@@ -20,19 +20,26 @@ Aktuelles MVP-Verhalten:
 ## Editor
 
 **Pflichtfelder:**
-- `id`
-- `mount`
+- `parent`: Auswahl eines Slots aus allen `ui-app`-, `ui-route`-, `ui-dialog`- und `ui-container`-Knoten. Die Einträge werden hierarchisch (App → Route/Dialog → Container) aufgelistet. Wird als SelectBox angezeigt; bei mehr als 20 Einträgen als filterbarer Dialog.
 - `value`: Binding-Ausdruck
 
 **Optionale Felder:**
+- `name`: Node-RED-Anzeigefeld. Wird bei der Darstellung des Knotens und in Auswahlfeldern angezeigt.
+  - Default: `"Text N"` (fortlaufende Nummer aller ui-text-Knoten, startend bei 1)
 - `variant`
 - `order`
+- layoutabhängige Child-Props: sichtbar abhängig vom Layout-Preset des gewählten Parent — `row`, `col`, `colSize`, `rowSize` (grid) bzw. `layoutX`, `layoutY` (absolute). Details in [layout.md](layout.md).
 
 ## Input
 
+Akzeptiert Component-State-Messages (`show`, `hide`). Format siehe [messages.md](messages.md).
+
 ## Output
+
+Kein Output.
 
 ## Besonderheiten
 
 - Es ist unklar, ob `ui-text` nur Plaintext oder auch formatierte Inhalte unterstützen soll.
 - Varianten sind heute frei benannt, aber noch nicht als Design-Tokens festgelegt.
+- Welche Layout-Child-Props sichtbar sind, hängt vom gewählten Mount ab. Details dazu stehen in [layout.md](layout.md).
