@@ -9,116 +9,42 @@ describe("runtime node set assembly", () => {
                 type: "ui-app",
                 id: "customersApp",
                 title: "Customers CRM",
-                layout: "vertical"
-            },
-            {
-                type: "ui-layout",
-                id: "customerShell",
-                title: "Customer shell"
-            },
-            {
-                type: "ui-slot",
-                id: "headerRegion",
-                layoutId: "customerShell",
-                name: "header",
-                order: 0
-            },
-            {
-                type: "ui-slot",
-                id: "contentRegion",
-                layoutId: "customerShell",
-                name: "content",
-                order: 1
-            },
-            {
-                type: "ui-layout",
-                id: "customersContentLayout",
-                title: "Customers content"
-            },
-            {
-                type: "ui-slot",
-                id: "toolbarSlot",
-                layoutId: "customersContentLayout",
-                name: "toolbar",
-                order: 0
-            },
-            {
-                type: "ui-slot",
-                id: "bodySlot",
-                layoutId: "customersContentLayout",
-                name: "body",
-                order: 1
-            },
-            {
-                type: "ui-layout",
-                id: "dialogShell",
-                title: "Dialog shell"
-            },
-            {
-                type: "ui-slot",
-                id: "dialogContent",
-                layoutId: "dialogShell",
-                name: "content",
-                order: 0
-            },
-            {
-                type: "ui-layout",
-                id: "dialogFormLayout",
-                title: "Dialog form"
-            },
-            {
-                type: "ui-slot",
-                id: "dialogFields",
-                layoutId: "dialogFormLayout",
-                name: "fields",
-                order: 0
-            },
-            {
-                type: "ui-slot",
-                id: "dialogActions",
-                layoutId: "dialogFormLayout",
-                name: "actions",
-                order: 1
+                layout: "app"
             },
             {
                 type: "ui-route",
                 id: "customers",
                 path: "/customers",
-                layoutId: "customerShell"
+                layoutId: "vertical"
             },
             {
                 type: "ui-dialog",
                 id: "customerEditor",
-                layoutId: "dialogShell",
+                layoutId: "vertical",
                 routeId: "customers",
                 modal: true
             },
             {
                 type: "ui-text",
                 id: "pageTitle",
-                mount: "route:/customers/header",
+                mount: "customersApp.header",
                 value: {
                     kind: "literal",
                     value: "Customers"
                 }
             },
             {
-                type: "ui-container",
-                id: "customersContentContainer",
-                mount: "route:/customers/content",
-                layoutId: "customersContentLayout"
-            },
-            {
                 type: "ui-button",
                 id: "newCustomerButton",
-                mount: "layout:customersContentLayout/toolbar",
+                mount: "route:/customers/content",
                 label: "New customer",
                 action: "openCustomerEditor"
             },
             {
                 type: "ui-table",
                 id: "customersTable",
-                mount: "layout:customersContentLayout/body",
+                mount: "route:/customers/content",
+                order: 1,
                 columns: ["name", "email"],
                 rows: {
                     kind: "query",
@@ -130,31 +56,37 @@ describe("runtime node set assembly", () => {
                 type: "ui-container",
                 id: "customerEditorContainer",
                 mount: "dialog:customerEditor/content",
-                layoutId: "dialogFormLayout"
+                layoutId: "grid"
             },
             {
                 type: "ui-input",
                 id: "customerNameInput",
-                mount: "layout:dialogFormLayout/fields",
+                mount: "layout:grid/content",
                 label: "Name",
                 value: {
                     kind: "state",
                     path: "draft.customer.name"
                 },
                 storeId: "draftStore",
-                path: "name"
+                path: "name",
+                row: 1,
+                col: 1,
+                colSize: 12
             },
             {
                 type: "ui-input",
                 id: "customerEmailInput",
-                mount: "layout:dialogFormLayout/fields",
+                mount: "layout:grid/content",
                 label: "Email",
                 value: {
                     kind: "state",
                     path: "draft.customer.email"
                 },
                 storeId: "draftStore",
-                path: "email"
+                path: "email",
+                row: 2,
+                col: 1,
+                colSize: 12
             },
             {
                 type: "ui-store",
@@ -237,29 +169,28 @@ describe("runtime node set assembly", () => {
         const result = registry.compile("customersApp");
 
         expect(result.diagnostics).toEqual([]);
-        expect(result.model?.layouts.map((layout) => layout.id)).toEqual(["customersContentLayout", "customerShell", "dialogFormLayout", "dialogShell", "vertical"]);
+        expect(result.model?.layouts.map((layout) => layout.id)).toEqual(["app", "grid", "vertical"]);
         expect(result.model?.routes).toEqual([
             {
                 id: "customersApp",
                 path: "/",
                 title: "Customers CRM",
-                layoutId: "vertical"
+                layoutId: "app"
             },
             {
                 id: "customers",
                 path: "/customers",
                 title: undefined,
-                layoutId: "customerShell"
+                layoutId: "vertical"
             }
         ]);
         expect(result.model?.components.map((component) => component.id)).toEqual([
+            "pageTitle",
             "customerEditorContainer",
-            "customersTable",
-            "newCustomerButton",
             "customerEmailInput",
             "customerNameInput",
-            "customersContentContainer",
-            "pageTitle"
+            "customersTable",
+            "newCustomerButton"
         ]);
     });
 
@@ -353,19 +284,9 @@ describe("runtime node set assembly", () => {
                 layout: "vertical"
             },
             {
-                type: "ui-layout",
-                id: "customerShell"
-            },
-            {
-                type: "ui-slot",
-                id: "contentRegion",
-                layoutId: "customerShell",
-                name: "content"
-            },
-            {
                 type: "ui-button",
                 id: "invalidButton",
-                mount: "layout:customerShell/content/toolbar",
+                mount: "layout:vertical/content/toolbar",
                 label: "Invalid",
                 action: "go"
             }
@@ -394,39 +315,17 @@ describe("runtime node set assembly", () => {
                 layout: "vertical"
             },
             {
-                type: "ui-layout",
-                id: "customerShell",
-                title: "Customer shell"
-            },
-            {
-                type: "ui-slot",
-                id: "contentRegion",
-                layoutId: "customerShell",
-                name: "content"
-            },
-            {
-                type: "ui-layout",
-                id: "customersContentLayout",
-                title: "Customers content"
-            },
-            {
-                type: "ui-slot",
-                id: "bodySlot",
-                layoutId: "customersContentLayout",
-                name: "body"
-            },
-            {
                 type: "ui-route",
                 id: "customerDetail",
                 path: "/customers/:id",
                 title: "Customer detail",
-                layoutId: "customerShell"
+                layoutId: "vertical"
             },
             {
                 type: "ui-container",
                 id: "detailContainer",
                 mount: "route:/customers/:id/content",
-                layoutId: "customersContentLayout",
+                layoutId: "horizontal",
                 title: "Detail content",
                 order: 3
             }
@@ -455,7 +354,7 @@ describe("runtime node set assembly", () => {
                 id: "customerDetail",
                 path: "/customers/:id",
                 title: "Customer detail",
-                layoutId: "customerShell"
+                layoutId: "vertical"
             }
         ]);
         expect(result.model?.components).toEqual([
@@ -466,7 +365,7 @@ describe("runtime node set assembly", () => {
                 order: 3,
                 bind: {},
                 props: {
-                    layoutId: "customersContentLayout",
+                    layoutId: "horizontal",
                     title: "Detail content"
                 },
                 events: []

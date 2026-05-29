@@ -11,11 +11,9 @@ describe("editor node set", () => {
             "ui-container",
             "ui-dialog",
             "ui-input",
-            "ui-layout",
             "ui-navigation",
             "ui-query",
             "ui-route",
-            "ui-slot",
             "ui-store",
             "ui-table",
             "ui-text"
@@ -78,20 +76,10 @@ describe("editor node set", () => {
                 name: "Customers CRM",
                 layout: "vertical"
             }),
-            emitNodeDefinition("ui-layout", {
-                id: "customerShell",
-                title: "Customer shell"
-            }),
-            emitNodeDefinition("ui-slot", {
-                id: "contentRegion",
-                layoutId: "customerShell",
-                name: "content",
-                order: 1
-            }),
             emitNodeDefinition("ui-route", {
                 id: "customers",
                 path: "/customers",
-                layoutId: "customerShell"
+                layoutId: "vertical"
             }),
             emitNodeDefinition("ui-text", {
                 id: "pageTitle",
@@ -100,7 +88,7 @@ describe("editor node set", () => {
             }),
             emitNodeDefinition("ui-text", {
                 id: "draftStatus",
-                mount: "layout:dialogFormLayout/fields",
+                mount: "layout:grid/content",
                 value: {
                     kind: "state",
                     path: "draft.customer.status"
@@ -122,11 +110,11 @@ describe("editor node set", () => {
             emitNodeDefinition("ui-container", {
                 id: "customerEditorContainer",
                 mount: "dialog:customerEditor/content",
-                layoutId: "dialogFormLayout"
+                layoutId: "grid"
             }),
             emitNodeDefinition("ui-input", {
                 id: "customerNameInput",
-                mount: "layout:dialogFormLayout/fields",
+                mount: "layout:grid/content",
                 label: "Name",
                 valuePath: "draft.customer.name",
                 storeId: "draftStore",
@@ -134,7 +122,7 @@ describe("editor node set", () => {
             }),
             emitNodeDefinition("ui-dialog", {
                 id: "customerEditor",
-                layoutId: "dialogShell",
+                layoutId: "vertical",
                 routeId: "customers"
             }),
             emitNodeDefinition("ui-store", {
@@ -229,7 +217,7 @@ describe("editor node set", () => {
             id: "customers",
             path: "/customers/:id",
             title: "Customer detail",
-            layoutId: "customerShell"
+            layoutId: "vertical"
         });
 
         expect(emitted.success).toBe(true);
@@ -243,7 +231,7 @@ describe("editor node set", () => {
             id: "customers",
             path: "/customers/:id",
             title: "Customer detail",
-            layoutId: "customerShell"
+            layoutId: "vertical"
         });
     });
 
@@ -264,7 +252,7 @@ describe("editor node set", () => {
         const emitted = emitNodeDefinition("ui-container", {
             id: "customersContent",
             mount: "route:/customers/content",
-            layoutId: "customersContentLayout",
+            layoutId: "grid",
             title: "Customers content",
             order: 2
         });
@@ -279,7 +267,7 @@ describe("editor node set", () => {
             type: "ui-container",
             id: "customersContent",
             mount: "route:/customers/content",
-            layoutId: "customersContentLayout",
+            layoutId: "grid",
             title: "Customers content",
             order: 2
         });

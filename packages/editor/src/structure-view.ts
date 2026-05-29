@@ -7,10 +7,8 @@ import {
     type UiContainerNodeDefinition,
     type UiDialogNodeDefinition,
     type UiInputNodeDefinition,
-    type UiLayoutNodeDefinition,
     type UiNodeDefinition,
     type UiRouteNodeDefinition,
-    type UiSlotNodeDefinition,
     type UiTextNodeDefinition
 } from "@node-red-contrib-webapp/schema";
 
@@ -76,11 +74,9 @@ export interface EditorStructureView {
 
 interface SourceNodeLookup {
     app?: Extract<UiNodeDefinition, { type: "ui-app" }>;
-    layouts: Map<string, UiLayoutNodeDefinition>;
     routes: Map<string, UiRouteNodeDefinition>;
     dialogs: Map<string, UiDialogNodeDefinition>;
     components: Map<string, MountableEditorSourceNode>;
-    slotsByLayoutId: Map<string, UiSlotNodeDefinition[]>;
 }
 
 interface StructureIndex {
@@ -104,22 +100,14 @@ function sortComponents(left: ComponentDefinition, right: ComponentDefinition): 
 }
 
 function createSourceNodeLookup(sourceNodes: readonly UiNodeDefinition[]): SourceNodeLookup {
-    const slotsByLayoutId = new Map<string, UiSlotNodeDefinition[]>();
     const lookup: SourceNodeLookup = {
         app: sourceNodes.find((node): node is Extract<UiNodeDefinition, { type: "ui-app" }> => node.type === "ui-app"),
-        layouts: new Map(),
         routes: new Map(),
         dialogs: new Map(),
-        components: new Map(),
-        slotsByLayoutId
+        components: new Map()
     };
 
     for (const sourceNode of sourceNodes) {
-        if (sourceNode.type === "ui-layout") {
-            lookup.layouts.set(sourceNode.id, sourceNode);
-            continue;
-        }
-
         if (sourceNode.type === "ui-route") {
             lookup.routes.set(sourceNode.id, sourceNode);
             continue;
@@ -127,18 +115,6 @@ function createSourceNodeLookup(sourceNodes: readonly UiNodeDefinition[]): Sourc
 
         if (sourceNode.type === "ui-dialog") {
             lookup.dialogs.set(sourceNode.id, sourceNode);
-            continue;
-        }
-
-        if (sourceNode.type === "ui-slot") {
-            const layoutSlots = slotsByLayoutId.get(sourceNode.layoutId);
-
-            if (layoutSlots) {
-                layoutSlots.push(sourceNode);
-            } else {
-                slotsByLayoutId.set(sourceNode.layoutId, [sourceNode]);
-            }
-
             continue;
         }
 
@@ -168,10 +144,6 @@ function registerItem(index: StructureIndex, item: EditorStructureItem): EditorS
 
 function findLayout(model: AppModel, layoutId: string): LayoutDefinition | undefined {
     return model.layouts.find((layout) => layout.id === layoutId);
-}
-
-function findSlotNodeId(lookup: SourceNodeLookup, layoutId: string, slotName: string): string | undefined {
-    return (lookup.slotsByLayoutId.get(layoutId) ?? []).find((slotNode) => slotNode.name === slotName)?.id;
 }
 
 function hasSlotPath(layout: LayoutDefinition, regionPath: string[]): boolean {
@@ -258,7 +230,6 @@ function createSlotItems(
             id: slotItemId,
             kind: "slot",
             label: slot.title ?? slot.name,
-            canvasNodeId: findSlotNodeId(lookup, layoutId, slot.name),
             children: componentChildren,
             meta: {
                 layoutId,
@@ -286,7 +257,6 @@ function createLayoutBranch(
             id: `${branchPrefix}/layout:${layoutId}`,
             kind: "layout",
             label: layoutId,
-            canvasNodeId: lookup.layouts.get(layoutId)?.id,
             children: [],
             meta: {
                 layoutId
@@ -298,7 +268,6 @@ function createLayoutBranch(
         id: `${branchPrefix}/layout:${layout.id}`,
         kind: "layout",
         label: layout.title ?? layout.id,
-        canvasNodeId: lookup.layouts.get(layout.id)?.id ?? layout.id,
         children: createSlotItems(
             `${branchPrefix}/layout:${layout.id}`,
             layout.id,

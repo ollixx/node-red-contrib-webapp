@@ -10,6 +10,7 @@ import {
     storeDefinitionSchema,
     dialogDefinitionSchema,
     validateUiNodeDefinition,
+    type StandardLayoutPresetId,
     type ComponentDefinition,
     type RuntimeIntegrationModel,
     type UiAppNodeDefinition,
@@ -17,11 +18,9 @@ import {
     type UiContainerNodeDefinition,
     type UiDialogNodeDefinition,
     type UiInputNodeDefinition,
-    type UiLayoutNodeDefinition,
     type UiNodeDefinition,
     type UiQueryNodeDefinition,
     type UiRouteNodeDefinition,
-    type UiSlotNodeDefinition,
     type UiStoreNodeDefinition,
     type UiTableNodeDefinition,
     type UiTextNodeDefinition,
@@ -54,7 +53,7 @@ function sortById<T extends { id: string }>(items: T[]): T[] {
     return [...items].sort((left, right) => left.id.localeCompare(right.id));
 }
 
-function makeRegistrationId(type: UiNodeDefinition["type"], appId: string, id: string): string {
+function makeRegistrationId(type: string, appId: string, id: string): string {
     return `${appId}:${type}:${id}`;
 }
 
@@ -146,38 +145,6 @@ function toInputComponent(node: UiInputNodeDefinition): ComponentDefinition {
             path: node.path
         },
         events: []
-    };
-}
-
-function assembleLayoutContribution(appId: string, layoutNode: UiLayoutNodeDefinition, slotNodes: UiSlotNodeDefinition[]): Result<LayoutContribution> {
-    const layoutDefinition = {
-        id: layoutNode.id,
-        title: layoutNode.title,
-        slots: slotNodes
-            .slice()
-            .sort((left, right) => left.order - right.order || left.name.localeCompare(right.name))
-            .map((slotNode) => ({
-                name: slotNode.name,
-                title: slotNode.title
-            }))
-    };
-    const validation = layoutDefinitionSchema.safeParse(layoutDefinition);
-
-    if (!validation.success) {
-        return {
-            success: false,
-            error: validation.error.issues.map((issue) => issue.message).join(" ")
-        };
-    }
-
-    return {
-        success: true,
-        data: {
-            kind: "layout",
-            appId,
-            registrationId: makeRegistrationId(layoutNode.type, appId, layoutNode.id),
-            definition: validation.data
-        }
     };
 }
 
@@ -426,10 +393,6 @@ export function assembleNodeSet(input: unknown[]): Result<AssembledNodeSet> {
         } satisfies AppContribution
     ];
 
-    const layoutNodes = sortById(
-        emittedDefinitions.filter((definition): definition is UiLayoutNodeDefinition => definition.type === "ui-layout")
-    );
-    const slotNodes = emittedDefinitions.filter((definition): definition is UiSlotNodeDefinition => definition.type === "ui-slot");
     const routeNodes = sortById(
         emittedDefinitions.filter((definition): definition is UiRouteNodeDefinition => definition.type === "ui-route")
     );
@@ -473,27 +436,16 @@ export function assembleNodeSet(input: unknown[]): Result<AssembledNodeSet> {
 
     const standardLayouts = collectMissingStandardLayouts(
         referencedLayoutIds,
-        layoutNodes.map((layoutNode) => layoutNode.id)
+        []
     );
 
     for (const layoutDefinition of standardLayouts) {
         contributions.push({
             kind: "layout",
             appId,
-            registrationId: makeRegistrationId("ui-layout", appId, layoutDefinition.id),
+            registrationId: makeRegistrationId("layout", appId, layoutDefinition.id),
             definition: layoutDefinition
         });
-    }
-
-    for (const layoutNode of layoutNodes) {
-        const layoutSlotNodes = slotNodes.filter((slotNode) => slotNode.layoutId === layoutNode.id);
-        const layoutContribution = assembleLayoutContribution(appId, layoutNode, layoutSlotNodes);
-
-        if (!layoutContribution.success) {
-            return layoutContribution;
-        }
-
-        contributions.push(layoutContribution.data);
     }
 
     for (const routeNode of routeNodes) {
@@ -507,7 +459,15 @@ export function assembleNodeSet(input: unknown[]): Result<AssembledNodeSet> {
     }
 
     if (!routeNodes.some((routeNode) => routeNode.path === "/") && !routeNodes.some((routeNode) => routeNode.id === appId)) {
-        const rootRouteContribution = assembleRouteDefinitionContribution(appId, createAppRootRoute(appId, appNode.title, appNode.layout));
+        const rootRouteContribution = assembleRouteDefinitionContribution(
+            appId,
+            {
+                id: appId,
+                path: "/",
+                title: appNode.title,
+                layoutId: appNode.layout as StandardLayoutPresetId
+            }
+        );
 
         if (!rootRouteContribution.success) {
             return rootRouteContribution;

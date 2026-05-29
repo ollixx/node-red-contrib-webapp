@@ -19,11 +19,9 @@ export type {
     UiContainerEditorConfig,
     UiDialogEditorConfig,
     UiInputEditorConfig,
-    UiLayoutEditorConfig,
     UiNavigationEditorConfig,
     UiQueryEditorConfig,
     UiRouteEditorConfig,
-    UiSlotEditorConfig,
     UiStoreEditorConfig,
     UiTableEditorConfig,
     UiTextEditorConfig

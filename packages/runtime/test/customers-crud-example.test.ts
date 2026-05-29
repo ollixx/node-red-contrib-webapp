@@ -45,12 +45,10 @@ describe("customers CRUD example flow", () => {
         expect(compiled.model?.components.map((component) => component.id)).toEqual(
             expect.arrayContaining([
                 "pageTitle",
-                "customersContentContainer",
                 "newCustomerButton",
                 "refreshCustomersButton",
                 "customersTable",
                 "editorStatus",
-                "detailContentContainer",
                 "backToCustomersButton",
                 "editCustomerButton",
                 "deleteCustomerButton",
@@ -64,7 +62,7 @@ describe("customers CRUD example flow", () => {
                 "saveCustomerButton"
             ])
         );
-        expect(compiled.model?.components).toHaveLength(18);
+        expect(compiled.model?.components).toHaveLength(16);
     });
 
     it("serves the compiled example flow through the runtime API", () => {

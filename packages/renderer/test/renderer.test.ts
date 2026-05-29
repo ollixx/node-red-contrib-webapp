@@ -8,7 +8,7 @@ describe("renderer MVP", () => {
     it("renders the customers fixture across routes, slots, and dialogs", () => {
         const app = createRendererApp(customersCrudAppModelFixture, {
             integration: customersCrudRuntimeIntegrationFixture,
-            location: "/customers",
+            location: "/",
             state: {
                 draft: {
                     customer: {
@@ -39,15 +39,19 @@ describe("renderer MVP", () => {
             }
         });
 
-        const listSnapshot = app.render();
-        const pageTitle = findComponentInSnapshot(listSnapshot, "pageTitle");
+        const homeSnapshot = app.render();
+        const pageTitle = findComponentInSnapshot(homeSnapshot, "pageTitle");
+
+        expect(homeSnapshot.route.id).toBe("customersApp");
+        expect(pageTitle?.kind).toBe("text");
+        expect(pageTitle && "text" in pageTitle ? pageTitle.text : undefined).toBe("Customers");
+
+        const listSnapshot = app.navigate("/customers");
         const newCustomerButton = findComponentInSnapshot(listSnapshot, "newCustomerButton");
         const refreshCustomersButton = findComponentInSnapshot(listSnapshot, "refreshCustomersButton");
         const customersTable = findComponentInSnapshot(listSnapshot, "customersTable");
 
         expect(listSnapshot.route.id).toBe("customers");
-        expect(pageTitle?.kind).toBe("text");
-        expect(pageTitle && "text" in pageTitle ? pageTitle.text : undefined).toBe("Customers");
         expect(newCustomerButton?.kind).toBe("button");
         expect(newCustomerButton && "label" in newCustomerButton ? newCustomerButton.label : undefined).toBe("New customer");
         expect(refreshCustomersButton?.kind).toBe("button");
@@ -266,7 +270,7 @@ describe("renderer MVP", () => {
                 {
                     id: "globalFooterText",
                     kind: "text",
-                    mount: "layout:customerShell/footer",
+                    mount: "layout:app/footer",
                     bind: {
                         value: {
                             kind: "literal",
@@ -279,7 +283,7 @@ describe("renderer MVP", () => {
             ]
         }, {
             integration: customersCrudRuntimeIntegrationFixture,
-            location: "/customers"
+            location: "/"
         });
 
         const snapshot = app.render();
@@ -289,7 +293,7 @@ describe("renderer MVP", () => {
         expect(footerText && "text" in footerText ? footerText.text : undefined).toBe("Shared footer");
     });
 
-    it("renders route-param bindings and container child layouts on detail routes", () => {
+    it("renders route-param bindings and dialog child layouts on detail routes", () => {
         const app = createRendererApp(customersCrudAppModelFixture, {
             integration: customersCrudRuntimeIntegrationFixture,
             location: "/customers/cust-42",
@@ -308,7 +312,6 @@ describe("renderer MVP", () => {
 
         const snapshot = app.render();
         const detailCustomerId = findComponentInSnapshot(snapshot, "detailCustomerId");
-        const detailContainer = findComponentInSnapshot(snapshot, "detailContentContainer");
 
         expect(snapshot.route.id).toBe("customerDetail");
         expect(snapshot.params).toEqual({
@@ -316,14 +319,19 @@ describe("renderer MVP", () => {
         });
         expect(detailCustomerId?.kind).toBe("text");
         expect(detailCustomerId && "text" in detailCustomerId ? detailCustomerId.text : undefined).toBe("cust-42");
-        expect(detailContainer?.kind).toBe("container");
 
-        if (!detailContainer || detailContainer.kind !== "container") {
+        const openDialogDispatch = app.dispatchEvent("editCustomerButton", "click");
+        const detailDialogContainer = findComponentInSnapshot(openDialogDispatch.snapshot, "customerEditorContainer");
+        const detailDialogNameInput = findComponentInSnapshot(openDialogDispatch.snapshot, "customerNameInput");
+
+        expect(detailDialogContainer?.kind).toBe("container");
+
+        if (!detailDialogContainer || detailDialogContainer.kind !== "container") {
             return;
         }
 
-        expect(detailContainer.layoutId).toBe("customerDetailLayout");
-        expect(detailContainer.regions.some((region) => region.name === "toolbar")).toBe(true);
-        expect(detailContainer.regions.some((region) => region.name === "body")).toBe(true);
+        expect(detailDialogContainer.layoutId).toBe("grid");
+        expect(detailDialogContainer.regions.some((region) => region.name === "content")).toBe(true);
+        expect(detailDialogNameInput?.kind).toBe("input");
     });
 });
