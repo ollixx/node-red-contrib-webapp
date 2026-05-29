@@ -8,23 +8,28 @@ Sie fasst die bestehenden Aussagen aus den Knoten-Dokumenten zusammen.
 ## Grundidee
 
 - Das Layout bestimmt die strukturelle Anordnung von Bereichen in App, Route, Dialog oder Container.
-- Knoten, die ein Layout brauchen, sollen zwischen einem Preset und `custom` unterscheiden können.
-- Bei `custom` erfolgt die freie Modellierung über `ui-layout` und `ui-slot`.
+- Knoten, die ein Layout brauchen, referenzieren eines der vorhandenen Standard-Presets.
 
 ## Presets
 
-Vorgesehene Presets sind mindestens:
+Aktuell verfügbare Presets sind:
 - `horizontal`
 - `vertical`
 - `app` mit den Slots `header`, `navbar`, `content`, `footer`
+- `grid` mit dem Slot `content`
+- `absolute` mit dem Slot `content`
 
-Weitere spätere Standard-Layouts sind vorgesehen.
+Weitere spätere Standard-Layouts sind weiterhin möglich.
 
-## Custom-Layout
+## Layout-injizierte Child-Props
 
-- `ui-layout` bleibt für den Fall `custom` bestehen.
-- Slots werden weiterhin explizit über `ui-slot` modelliert.
-- Nur wenn `custom` gewählt ist, soll der Editor passende `ui-layout`-Knoten zur Auswahl anbieten.
+Direkte Kinder eines Preset-Layouts erhalten im Editor layoutabhängige Zusatzfelder. Diese Felder werden über das Mount-Ziel sichtbar gemacht und auf dem gemounteten View-Knoten gespeichert.
+
+- `horizontal`: `order`
+- `vertical`: `order`
+- `grid`: `row`, `col`, `colSize`, `rowSize`
+- `absolute`: `layoutX`, `layoutY`
+- `app`: keine zusätzlichen Child-Props
 
 ## Referenzierende Knoten
 
@@ -32,13 +37,12 @@ Weitere spätere Standard-Layouts sind vorgesehen.
 - `ui-route`: Layout der Seite
 - `ui-dialog`: Layout des Dialogs
 - `ui-container`: Child-Layout innerhalb eines Mount-Ziels
-- `ui-layout` und `ui-slot`: Bausteine für frei modellierte Layouts
 
 ## Aktueller Stand im MVP
 
-- Layouts sind heute app-gescoped.
-- Routen und Dialoge verweisen über `layoutId` auf ein Layout.
-- Slots werden flach pro Layout aufgebaut und validiert.
+- Layouts bestehen aus den fest eingebauten Standard-Presets.
+- Routen, Dialoge und Container verweisen über `layoutId` auf eines dieser Presets.
+- Slots werden aus den Preset-Definitionen abgeleitet und validiert.
 
 ## Offene Spezifikation
 

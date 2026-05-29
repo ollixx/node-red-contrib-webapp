@@ -18,7 +18,15 @@ async function deployFlow(request: Parameters<typeof test>[0]["request"], flow: 
     expect(response.ok()).toBeTruthy();
 }
 
+async function waitForEditorNode(page: Parameters<typeof test>[0]["page"], nodeId: string) {
+    await page.waitForFunction((id) => {
+        const nodeApi = (window as typeof window & { RED?: { nodes?: { node: (nodeId: string) => unknown } } }).RED?.nodes;
+        return typeof nodeApi?.node === "function" && nodeApi.node(id) !== undefined;
+    }, nodeId);
+}
+
 async function readMountOptions(page: Parameters<typeof test>[0]["page"], nodeId: string) {
+    await waitForEditorNode(page, nodeId);
     await page.evaluate((id) => {
         const node = RED.nodes.node(id);
         RED.editor.edit(node);
@@ -29,6 +37,21 @@ async function readMountOptions(page: Parameters<typeof test>[0]["page"], nodeId
         const select = document.querySelector<HTMLSelectElement>("#node-input-mount");
         return select ? Array.from(select.options).map((option) => option.text) : [];
     });
+}
+
+async function openEditor(page: Parameters<typeof test>[0]["page"], nodeId: string) {
+    await waitForEditorNode(page, nodeId);
+    await page.evaluate((id) => {
+        const node = RED.nodes.node(id);
+        RED.editor.edit(node);
+    }, nodeId);
+    await page.waitForTimeout(300);
+}
+
+async function readVisibleLayoutChildRows(page: Parameters<typeof test>[0]["page"]) {
+    return page.evaluate(() => Array.from(document.querySelectorAll<HTMLElement>("[data-layout-child-prop-row]"))
+        .filter((element) => window.getComputedStyle(element).display !== "none")
+        .map((element) => element.getAttribute("data-layout-child-prop-row")));
 }
 
 test.describe("editor mount option coverage", () => {
@@ -50,10 +73,12 @@ test.describe("editor mount option coverage", () => {
 
     test("shows all valid app slots for mount-based nodes", async ({ page }) => {
         const expectedOptions = [
+            "App mountAbsoluteApp -> content",
             "App mountAppShellDemo -> content",
             "App mountAppShellDemo -> footer",
             "App mountAppShellDemo -> header",
             "App mountAppShellDemo -> navbar",
+            "App mountGridApp -> content",
             "App mountHorizontalApp -> content",
             "App mountVerticalApp -> content"
         ];
@@ -65,5 +90,29 @@ test.describe("editor mount option coverage", () => {
             const options = await readMountOptions(page, nodeId);
             expect(options).toEqual(expect.arrayContaining(expectedOptions));
         }
+    });
+
+    test("shows layout-specific child fields for direct mounts", async ({ page }) => {
+        await page.goto("/");
+        await page.waitForLoadState("networkidle");
+        await openEditor(page, "mountTextNode");
+
+        expect(await readVisibleLayoutChildRows(page)).toEqual(["order"]);
+
+        await page.selectOption("#node-input-mount", "mountHorizontalApp.content");
+        await page.waitForTimeout(100);
+        expect(await readVisibleLayoutChildRows(page)).toEqual(["order"]);
+
+        await page.selectOption("#node-input-mount", "mountGridApp.content");
+        await page.waitForTimeout(100);
+        expect(await readVisibleLayoutChildRows(page)).toEqual(["row", "col", "colSize", "rowSize"]);
+
+        await page.selectOption("#node-input-mount", "mountAbsoluteApp.content");
+        await page.waitForTimeout(100);
+        expect(await readVisibleLayoutChildRows(page)).toEqual(["layoutX", "layoutY"]);
+
+        await page.selectOption("#node-input-mount", "mountAppShellDemo.content");
+        await page.waitForTimeout(100);
+        expect(await readVisibleLayoutChildRows(page)).toEqual([]);
     });
 });

@@ -10,8 +10,6 @@ Die Einzeldokumente pro Knoten sowie übergreifende Konzepte sind unter [docs/no
 ## Strukturknoten
 
 - [ui-app](nodes/ui-app.md)
-- [ui-layout](nodes/ui-layout.md)
-- [ui-slot](nodes/ui-slot.md)
 - [ui-route](nodes/ui-route.md)
 - [ui-dialog](nodes/ui-dialog.md)
 

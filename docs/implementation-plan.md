@@ -109,8 +109,6 @@ Deliverables:
 
 - `ui-app`
 - `ui-route`
-- `ui-layout`
-- `ui-slot`
 - `ui-text`
 - `ui-button`
 - `ui-table`
@@ -150,7 +148,7 @@ Purpose: make complex UIs understandable inside the Node-RED editor.
 
 Deliverables:
 
-- sidebar tree for app, routes, slots, child layouts, and mounted components
+- sidebar tree for app, routes, preset slots, child layouts, and mounted components
 - selection sync between canvas and structure view
 - validation warnings for orphaned mounts and unresolved slots
 

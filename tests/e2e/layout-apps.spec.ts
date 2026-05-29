@@ -35,7 +35,7 @@ test.describe("layout rendering", () => {
         await deployFlow(request, baselineFlow);
     });
 
-    test("renders vertical, horizontal, app and custom layouts as modeled", async ({ page }) => {
+    test("renders vertical, horizontal, app, grid and absolute layouts as modeled", async ({ page }) => {
         await page.goto("/webapp/layoutVerticalApp");
         await expect(page.locator(".webapp-slot-body.webapp-slot-body--vertical")).toHaveCount(1);
         await expect(page.locator("text=Vertical item 1")).toBeVisible();
@@ -60,11 +60,19 @@ test.describe("layout rendering", () => {
         await expect(page.getByText("Node messages")).toHaveCount(0);
         await expect(page.getByText("Snapshot")).toHaveCount(0);
 
-        await page.goto("/webapp/layoutCustomApp");
-        await expect(page.locator(".webapp-layout.webapp-layout--custom")).toHaveCount(1);
-        await expect(page.locator(".webapp-slot--sidebar .webapp-text")).toHaveText("Custom sidebar");
-        await expect(page.locator(".webapp-slot--main .webapp-text")).toHaveText("Custom main");
-        await expect(page.locator(".webapp-slot--footer .webapp-text")).toHaveText("Custom footer");
+        await page.goto("/webapp/layoutGridApp");
+        await expect(page.locator(".webapp-slot-body--grid")).toHaveCount(1);
+        await expect(page.locator(".webapp-item--grid").first()).toHaveAttribute("style", /grid-column:1 \/ span 4/);
+        await expect(page.locator("text=Grid A")).toBeVisible();
+        await expect(page.locator("text=Grid B")).toBeVisible();
+        await expect(page.getByText("Node messages")).toHaveCount(0);
+        await expect(page.getByText("Snapshot")).toHaveCount(0);
+
+        await page.goto("/webapp/layoutAbsoluteApp");
+        await expect(page.locator(".webapp-slot-body--absolute")).toHaveCount(1);
+        await expect(page.locator(".webapp-item--absolute").first()).toHaveAttribute("style", /left:24px/);
+        await expect(page.locator("text=Absolute A")).toBeVisible();
+        await expect(page.locator("text=Absolute B")).toBeVisible();
         await expect(page.getByText("Node messages")).toHaveCount(0);
         await expect(page.getByText("Snapshot")).toHaveCount(0);
     });

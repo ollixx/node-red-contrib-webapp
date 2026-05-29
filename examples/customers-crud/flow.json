@@ -12,207 +12,9 @@
         "name": "Customers CRM",
         "title": "Customers CRM",
         "root": "customersApp",
-        "layout": "vertical",
+        "layout": "app",
         "x": 160,
         "y": 40,
-        "wires": [
-            []
-        ],
-        "z": "flow1"
-    },
-    {
-        "id": "customerShell",
-        "type": "ui-layout",
-        "title": "Customer shell",
-        "x": 380,
-        "y": 40,
-        "wires": [
-            []
-        ],
-        "z": "flow1"
-    },
-    {
-        "id": "customerHeader",
-        "type": "ui-slot",
-        "layoutId": "customerShell",
-        "name": "header",
-        "order": 0,
-        "x": 600,
-        "y": 40,
-        "wires": [
-            []
-        ],
-        "z": "flow1"
-    },
-    {
-        "id": "customerContent",
-        "type": "ui-slot",
-        "layoutId": "customerShell",
-        "name": "content",
-        "order": 1,
-        "x": 600,
-        "y": 80,
-        "wires": [
-            []
-        ],
-        "z": "flow1"
-    },
-    {
-        "id": "customerFooter",
-        "type": "ui-slot",
-        "layoutId": "customerShell",
-        "name": "footer",
-        "order": 2,
-        "x": 600,
-        "y": 120,
-        "wires": [
-            []
-        ],
-        "z": "flow1"
-    },
-    {
-        "id": "customersListLayout",
-        "type": "ui-layout",
-        "title": "Customers list content",
-        "x": 380,
-        "y": 120,
-        "wires": [
-            []
-        ],
-        "z": "flow1"
-    },
-    {
-        "id": "customerToolbar",
-        "type": "ui-slot",
-        "layoutId": "customersListLayout",
-        "name": "toolbar",
-        "order": 0,
-        "x": 600,
-        "y": 160,
-        "wires": [
-            []
-        ],
-        "z": "flow1"
-    },
-    {
-        "id": "customerBody",
-        "type": "ui-slot",
-        "layoutId": "customersListLayout",
-        "name": "body",
-        "order": 1,
-        "x": 600,
-        "y": 200,
-        "wires": [
-            []
-        ],
-        "z": "flow1"
-    },
-    {
-        "id": "customerDetailLayout",
-        "type": "ui-layout",
-        "title": "Customer detail content",
-        "x": 380,
-        "y": 200,
-        "wires": [
-            []
-        ],
-        "z": "flow1"
-    },
-    {
-        "id": "detailToolbar",
-        "type": "ui-slot",
-        "layoutId": "customerDetailLayout",
-        "name": "toolbar",
-        "order": 0,
-        "x": 600,
-        "y": 240,
-        "wires": [
-            []
-        ],
-        "z": "flow1"
-    },
-    {
-        "id": "detailBody",
-        "type": "ui-slot",
-        "layoutId": "customerDetailLayout",
-        "name": "body",
-        "order": 1,
-        "x": 600,
-        "y": 280,
-        "wires": [
-            []
-        ],
-        "z": "flow1"
-    },
-    {
-        "id": "dialogShell",
-        "type": "ui-layout",
-        "title": "Dialog shell",
-        "x": 380,
-        "y": 280,
-        "wires": [
-            []
-        ],
-        "z": "flow1"
-    },
-    {
-        "id": "dialogHeader",
-        "type": "ui-slot",
-        "layoutId": "dialogShell",
-        "name": "header",
-        "order": 0,
-        "x": 600,
-        "y": 320,
-        "wires": [
-            []
-        ],
-        "z": "flow1"
-    },
-    {
-        "id": "dialogContent",
-        "type": "ui-slot",
-        "layoutId": "dialogShell",
-        "name": "content",
-        "order": 1,
-        "x": 600,
-        "y": 360,
-        "wires": [
-            []
-        ],
-        "z": "flow1"
-    },
-    {
-        "id": "dialogFormLayout",
-        "type": "ui-layout",
-        "title": "Dialog form layout",
-        "x": 380,
-        "y": 360,
-        "wires": [
-            []
-        ],
-        "z": "flow1"
-    },
-    {
-        "id": "dialogFields",
-        "type": "ui-slot",
-        "layoutId": "dialogFormLayout",
-        "name": "fields",
-        "order": 0,
-        "x": 600,
-        "y": 400,
-        "wires": [
-            []
-        ],
-        "z": "flow1"
-    },
-    {
-        "id": "dialogActions",
-        "type": "ui-slot",
-        "layoutId": "dialogFormLayout",
-        "name": "actions",
-        "order": 1,
-        "x": 600,
-        "y": 440,
         "wires": [
             []
         ],
@@ -223,7 +25,7 @@
         "type": "ui-route",
         "path": "/customers",
         "title": "Customers",
-        "layoutId": "customerShell",
+        "layoutId": "vertical",
         "x": 820,
         "y": 40,
         "wires": [
@@ -236,7 +38,7 @@
         "type": "ui-route",
         "path": "/customers/:id",
         "title": "Customer detail",
-        "layoutId": "customerShell",
+        "layoutId": "vertical",
         "x": 820,
         "y": 80,
         "wires": [
@@ -248,7 +50,7 @@
         "id": "customerEditor",
         "type": "ui-dialog",
         "title": "Edit customer",
-        "layoutId": "dialogShell",
+        "layoutId": "vertical",
         "modal": true,
         "x": 820,
         "y": 120,
@@ -260,7 +62,7 @@
     {
         "id": "pageTitle",
         "type": "ui-text",
-        "mount": "customers.header",
+        "mount": "customersApp.header",
         "value": {
             "kind": "literal",
             "value": "Customers"
@@ -274,21 +76,9 @@
         "z": "flow1"
     },
     {
-        "id": "customersContentContainer",
-        "type": "ui-container",
-        "mount": "route:/customers/content",
-        "layoutId": "customersListLayout",
-        "x": 1040,
-        "y": 80,
-        "wires": [
-            []
-        ],
-        "z": "flow1"
-    },
-    {
         "id": "newCustomerButton",
         "type": "ui-button",
-        "mount": "layout:customersListLayout/toolbar",
+        "mount": "route:/customers/content",
         "order": 0,
         "label": "New customer",
         "action": "openCustomerEditor",
@@ -304,7 +94,7 @@
     {
         "id": "refreshCustomersButton",
         "type": "ui-button",
-        "mount": "layout:customersListLayout/toolbar",
+        "mount": "route:/customers/content",
         "order": 1,
         "label": "Refresh",
         "action": "refreshCustomers",
@@ -325,7 +115,7 @@
     {
         "id": "editorStatus",
         "type": "ui-text",
-        "mount": "layout:customersListLayout/toolbar",
+        "mount": "route:/customers/content",
         "order": 2,
         "value": {
             "kind": "literal",
@@ -341,7 +131,7 @@
     {
         "id": "customersTable",
         "type": "ui-table",
-        "mount": "layout:customersListLayout/body",
+        "mount": "route:/customers/content",
         "columns": [
             "name",
             "email",
@@ -364,7 +154,7 @@
     {
         "id": "detailRouteTitle",
         "type": "ui-text",
-        "mount": "customerDetail.header",
+        "mount": "route:/customers/:id/content",
         "value": {
             "kind": "literal",
             "value": "Customer detail"
@@ -378,22 +168,10 @@
         "z": "flow1"
     },
     {
-        "id": "detailContentContainer",
-        "type": "ui-container",
-        "mount": "route:/customers/:id/content",
-        "layoutId": "customerDetailLayout",
-        "x": 1040,
-        "y": 200,
-        "wires": [
-            []
-        ],
-        "z": "flow1"
-    },
-    {
         "id": "backToCustomersButton",
         "type": "ui-button",
-        "mount": "layout:customerDetailLayout/toolbar",
-        "order": 0,
+        "mount": "route:/customers/:id/content",
+        "order": 1,
         "label": "Back to customers",
         "action": "goToCustomers",
         "x": 1260,
@@ -408,8 +186,8 @@
     {
         "id": "editCustomerButton",
         "type": "ui-button",
-        "mount": "layout:customerDetailLayout/toolbar",
-        "order": 1,
+        "mount": "route:/customers/:id/content",
+        "order": 2,
         "label": "Edit customer",
         "action": "openCustomerEditor",
         "x": 1260,
@@ -424,8 +202,8 @@
     {
         "id": "deleteCustomerButton",
         "type": "ui-button",
-        "mount": "layout:customerDetailLayout/toolbar",
-        "order": 2,
+        "mount": "route:/customers/:id/content",
+        "order": 3,
         "label": "Delete customer",
         "action": "deleteCustomer",
         "disabled": {
@@ -445,8 +223,8 @@
     {
         "id": "detailCustomerId",
         "type": "ui-text",
-        "mount": "layout:customerDetailLayout/body",
-        "order": 0,
+        "mount": "route:/customers/:id/content",
+        "order": 4,
         "value": {
             "kind": "routeParam",
             "path": "id"
@@ -462,7 +240,7 @@
         "id": "customerEditorContainer",
         "type": "ui-container",
         "mount": "dialog:customerEditor/content",
-        "layoutId": "dialogFormLayout",
+        "layoutId": "grid",
         "x": 1040,
         "y": 240,
         "wires": [
@@ -473,7 +251,7 @@
     {
         "id": "customerNameInput",
         "type": "ui-input",
-        "mount": "layout:dialogFormLayout/fields",
+        "mount": "layout:grid/content",
         "order": 0,
         "label": "Name",
         "value": {
@@ -482,6 +260,10 @@
         },
         "storeId": "draftStore",
         "path": "name",
+        "row": 1,
+        "col": 1,
+        "colSize": 12,
+        "inputType": "text",
         "x": 1260,
         "y": 360,
         "wires": [
@@ -492,7 +274,7 @@
     {
         "id": "customerEmailInput",
         "type": "ui-input",
-        "mount": "layout:dialogFormLayout/fields",
+        "mount": "layout:grid/content",
         "order": 1,
         "label": "Email",
         "value": {
@@ -501,6 +283,9 @@
         },
         "storeId": "draftStore",
         "path": "email",
+        "row": 2,
+        "col": 1,
+        "colSize": 12,
         "inputType": "email",
         "x": 1260,
         "y": 400,
@@ -512,7 +297,7 @@
     {
         "id": "customerStatusInput",
         "type": "ui-input",
-        "mount": "layout:dialogFormLayout/fields",
+        "mount": "layout:grid/content",
         "order": 2,
         "label": "Status",
         "value": {
@@ -521,6 +306,10 @@
         },
         "storeId": "draftStore",
         "path": "status",
+        "row": 3,
+        "col": 1,
+        "colSize": 12,
+        "inputType": "text",
         "x": 1260,
         "y": 440,
         "wires": [
@@ -531,10 +320,13 @@
     {
         "id": "cancelCustomerButton",
         "type": "ui-button",
-        "mount": "layout:dialogFormLayout/actions",
+        "mount": "layout:grid/content",
         "order": 0,
         "label": "Cancel",
         "action": "closeCustomerEditor",
+        "row": 4,
+        "col": 1,
+        "colSize": 6,
         "x": 1260,
         "y": 480,
         "wires": [
@@ -547,7 +339,7 @@
     {
         "id": "saveCustomerButton",
         "type": "ui-button",
-        "mount": "layout:dialogFormLayout/actions",
+        "mount": "layout:grid/content",
         "order": 1,
         "label": "Save",
         "action": "saveCustomer",
@@ -556,6 +348,9 @@
             "path": "draft.isSaving",
             "fallback": false
         },
+        "row": 4,
+        "col": 7,
+        "colSize": 6,
         "x": 1260,
         "y": 520,
         "wires": [

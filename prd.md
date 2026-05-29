@@ -371,24 +371,25 @@ Dieses Produkt soll zunächst nicht:
 
 ## 10.1 Zwei Ebenen
 
-### Ebene 1: Declarative UI Graph
+### Ebene 1: Declarative UI Graph (AppModel)
 
-Beschreibt die statische bzw. halb-statische UI-Struktur:
+Beschreibt die statische bzw. halb-statische UI-Struktur. Wird serverseitig aus der Registry kompiliert und ist während der Laufzeit eines Deployments unveränderlich:
 
 * Routen
 * Layouts
 * Slots
 * Komponenten
 * Bindings
+* Action-Definitionen
 
 ### Ebene 2: Runtime Event Graph
 
-Beschreibt die dynamische Ausführung:
+Beschreibt die dynamische Ausführung. Läuft primär auf dem Server, bestimmte Teile werden im Client ausgeführt:
 
-* Klicks
+* Klicks und UI-Events
 * Submit-Events
-* API-Requests
-* State-Updates
+* API-Requests und Queries
+* State-Updates und Patches
 * Navigation
 * Dialogsteuerung
 
@@ -396,28 +397,217 @@ Diese Trennung nutzt Node-RED dort, wo es stark ist: in der Ereignis- und Dateno
 
 ---
 
-## 10.2 Registry statt Parent-Sammellogik
+## 10.2 Server-seitige Registry
 
-Interne Kernidee:
+Die Registry ist die zentrale Datenhaltung auf dem Server.
 
-* jeder UI-Knoten registriert sich in einer zentralen UI-Registry
-* Renderer erzeugt daraus die Web-App
-* Verdrahtung dient nur der Laufzeitlogik
+Kernprinzipien:
+
+* jeder UI-Knoten registriert sich beim Deploy in der zentralen UI-Registry
+* die Registry kompiliert daraus ein typsicheres AppModel
+* das AppModel ist während der Laufzeit unveränderlich (read-only)
+* bei Re-Deploy wird das AppModel neu kompiliert und alle verbundenen Clients werden benachrichtigt
+* die Registry ist nicht user-spezifisch — sie beschreibt die Struktur der App, nicht ihren Zustand
 
 ---
 
-## 10.3 Standardisierte Definitionsstruktur
+## 10.3 Client-seitige Runtime (SPA)
 
-Beispielhaft soll jede UI-Komponente intern Eigenschaften haben wie:
+Die Browser-Runtime ist eine vollständige Single Page Application, die auf Basis des AppModels und des laufenden States rendert.
 
-* `id`
-* `type`
-* `mount`
-* `props`
-* `bindings`
-* `events`
-* `visibleIf`
-* `enabledIf`
+Technologie-Stack:
+
+* **React + Vite** als SPA-Framework — professionell, komponentenbasiert, großes Ökosystem
+* Reaktiver State-Store im Browser (z. B. Zustand oder Jotai) für sofortige UI-Updates ohne Server-Round-Trip
+* Clientseitiges Routing (React Router oder TanStack Router) für Navigation ohne Seitenreload
+* Das AppModel wird einmalig beim Verbindungsaufbau geladen und gecacht
+
+Die Runtime ist verantwortlich für:
+
+* Empfang und Anwendung von State-Patches vom Server
+* Rendering des Komponenten-Baums auf Basis von AppModel + State
+* Auslösen von Events und Actions über den Kommunikationskanal
+* Ausführung von client-seitiger Logik (siehe 10.6)
+
+---
+
+## 10.4 Kommunikationsprotokoll
+
+Das System verwendet einen Hybridansatz:
+
+### HTTP (Bootstrap)
+
+* Ausliefern der SPA-Shell (HTML + JS-Bundle)
+* Laden des initialen AppModels (`GET /webapp/:appId/model`)
+* Optionale REST-Endpunkte für einfache, zustandslose Operationen
+
+### WebSocket (Laufzeit)
+
+WebSocket ist der primäre Kanal für alle Laufzeit-Kommunikation zwischen Client und Server.
+
+Client → Server (Messages):
+
+```json
+{ "type": "event", "actionId": "...", "componentId": "...", "payload": { ... } }
+{ "type": "query:refresh", "queryId": "..." }
+{ "type": "session:init", "appId": "..." }
+```
+
+Server → Client (Messages):
+
+```json
+{ "type": "state:patch", "patch": { ... } }
+{ "type": "query:result", "queryId": "...", "data": [ ... ] }
+{ "type": "navigate", "to": "/customers/42" }
+{ "type": "model:updated" }
+```
+
+Eigenschaften des WS-Kanals:
+
+* eine Verbindung pro Browser-Tab
+* automatisches Reconnect mit Backoff
+* Heartbeat/Ping für Verbindungsüberwachung
+* alle Messages sind JSON mit typisiertem `type`-Feld
+
+---
+
+## 10.5 Multi-User-Modell
+
+Das System ist von Grund auf für mehrere gleichzeitige Nutzer ausgelegt.
+
+Sessionkonzept:
+
+* jeder verbundene Client erhält eine eindeutige `sessionId`
+* der Server verwaltet State und Query-Ergebnisse pro Session
+* State-Patches werden gezielt nur an die jeweilige Session gesendet
+
+State-Scoping:
+
+* **Session-State (Default):** jeder User hat seinen eigenen isolierten State — Änderungen eines Users sind für andere nicht sichtbar. Dies ist der Standard für alle `ui-store`-Knoten.
+* **Shared State (opt-in):** ein `ui-store`-Knoten kann explizit als `scope: "shared"` markiert werden — Änderungen werden an alle verbundenen Clients desselben `appId` gebroadcastet. Geeignet für kollaborative Szenarien oder globale App-Zustände (z. B. Benachrichtigungen).
+
+AppModel ist shared:
+
+* das kompilierte AppModel ist für alle Sessions identisch
+* bei Re-Deploy werden alle Clients über `{ "type": "model:updated" }` informiert und laden das Modell neu
+
+---
+
+## 10.6 Client/Server-Logikgrenze
+
+Logik läuft primär auf dem Server (Node-RED Flows). Bestimmte Operationen werden jedoch client-seitig ausgeführt, um sofortige UI-Reaktionen ohne Netzwerk-Latenz zu ermöglichen.
+
+| Action-Typ | Ausführung | Begründung |
+|---|---|---|
+| `navigate` | Client | Sofortiges Routing ohne Server-Round-Trip |
+| `show` / `hide` | Client | Lokaler State-Toggle |
+| `enable` / `disable` | Client | Lokaler State-Toggle |
+| `trigger` | Server | Löst Node-RED Flow aus |
+| `submit` (Formular) | Server | Daten-Mutation über Flow |
+| Query laden / refreshen | Server | Datenquelle liegt auf Server |
+| State-Patch anwenden | Client | Empfang und Anwendung von Server-Patches |
+
+Grundprinzip: der Server ist die einzige Source of Truth für persistente Daten und Business-Logik. Der Client darf lokalen UI-State optimistisch anpassen, muss aber auf Server-Patches reagieren.
+
+---
+
+## 10.7 Standardisierte Komponentendefinition
+
+Jede UI-Komponente im AppModel hat folgende Struktur:
+
+* `id` — eindeutige Komponenten-ID
+* `type` — Knotentyp (z. B. `ui-button`)
+* `mount` — Ziel-Slot
+* `props` — statische Eigenschaften
+* `bindings` — dynamische Bindings auf State oder Query-Pfade
+* `events` — gemappte Event → Action Zuordnungen
+* `visibleIf` — optionaler State-Pfad für bedingte Sichtbarkeit
+* `enabledIf` — optionaler State-Pfad für bedingte Aktivierung
+* `clientActions` — Liste von Actions, die client-seitig ausgeführt werden
+
+---
+
+## 10.8 Datengetriebene / repeating Komponenten
+
+Die Registry beschreibt **Templates**, nicht Instanzen. Ein repeating Element ist ein einzelner Registry-Eintrag — die Runtime entscheidet zur Laufzeit, wie viele Instanzen gerendert werden.
+
+### Grundprinzip
+
+```
+AppModel (statisch, 1 Eintrag):
+  ui-list
+    bind: queries.customers.data   ← Datenquelle (Array)
+    itemTemplate:                  ← wird N-mal gerendert
+      ui-text  bind: item.name
+      ui-button action: selectRow
+
+Runtime (dynamisch):
+  → 42 Einträge in der Query
+  → rendert itemTemplate 42× mit eigenem item-Kontext
+```
+
+Jede Template-Instanz erhält einen **Item-Kontext** mit:
+
+* `item` — der aktuelle Datensatz
+* `index` — die Position im Array (0-basiert)
+* `isFirst`, `isLast` — Hilfswerte für Styling
+
+Bindings innerhalb eines Templates referenzieren diesen Kontext: `bind: item.name`, `bind: item.status`.
+
+### Drei Abstraktionsstufen
+
+**Stufe 1 — `ui-table`**
+
+Spalten werden statisch als Props definiert, Rows kommen aus einer Query oder einem State-Pfad. Kein explizites Item-Template nötig — built-in Rendering.
+
+Geeignet für: tabellarische Daten mit einheitlichem Schema.
+
+**Stufe 2 — `ui-list`**
+
+Ein Container mit einem expliziten `item`-Slot. Der Inhalt des Slots ist das Template und wird pro Datensatz gerendert. Komponenten im Slot können beliebige View-Knoten sein.
+
+Geeignet für: Card-Listen, Suchergebnisse, Feed-Ansichten.
+
+**Stufe 3 — `ui-repeat`**
+
+Wie `ui-list`, aber ohne eigene Wrapper-Struktur — das Template wird direkt in den Parent-Slot eingebettet. Ermöglicht verschachtelte Repeats (z. B. Gruppen mit Untereinträgen).
+
+Geeignet für: hierarchische Listen, gruppierte Ansichten.
+
+### Item-Kontext in Bindings
+
+Innerhalb eines Templates sind neben dem globalen State und Query-Ergebnissen zusätzlich Item-Pfade verfügbar:
+
+```json
+{ "kind": "item", "path": "name" }       // → item.name
+{ "kind": "item", "path": "status" }     // → item.status
+{ "kind": "index" }                      // → aktueller Index
+```
+
+### Interaktion aus repeating Elementen
+
+Actions aus einem Item-Template müssen das ausgewählte Item identifizieren können. Dafür wird beim Auslösen einer Action automatisch ein `itemPayload` mitgegeben:
+
+```json
+{
+  "type": "event",
+  "actionId": "selectRow",
+  "componentId": "selectButton",
+  "itemPayload": { "id": "cust-42", "name": "Acme GmbH" }
+}
+```
+
+Der Server-Flow empfängt dieses Payload und kann damit den richtigen Datensatz identifizieren — ohne dass die Registry wissen muss, wie viele Items es gibt.
+
+### Abgrenzung zur Registry
+
+Die Registry bleibt zu jeder Zeit statisch:
+
+* sie kennt den `ui-list`-Knoten und sein Template — aber nie die Anzahl der Items
+* neue Items in einer Query erzeugen keine neuen Registry-Einträge
+* das AppModel wächst nicht mit den Daten
+
+Die Runtime ist alleinig verantwortlich für das Auffalten des Templates zur Laufzeit.
 
 ---
 
@@ -429,19 +619,27 @@ Beispielhaft soll jede UI-Komponente intern Eigenschaften haben wie:
 * Routen und Layouts
 * sichtbare Komponenten als Knoten
 * Eventfluss über Node-RED
-* State-/Store-Konzept
+* State-/Store-Konzept mit Session-Scope (Default)
 * UI-Registry zur Zusammenführung aller Definitionen
 * Strukturansicht im Editor
 * Dialoge und Formulare
 * Wiederverwendbarkeit über Subflows/Komponenten
+* React-SPA als Browser-Runtime (Vite-Build)
+* WebSocket-Kanal für Laufzeit-Kommunikation (State-Patches, Events, Query-Ergebnisse)
+* HTTP-Endpunkt für AppModel-Bootstrap
+* Session-Management für Multi-User-Betrieb
+* Client-seitige Ausführung für `navigate`, `show/hide`, `enable/disable`
+* Server-seitige Ausführung für `trigger`, `submit`, Queries
 
 ### Sollte
 
 * Tabs und verschachtelte Regionen
-* Sichtbarkeitsregeln
+* Sichtbarkeitsregeln über State-Pfade
 * Computed Values
-* Navigation als eigener Knotentyp
+* Shared State (opt-in per `ui-store`)
 * Standard-Pattern für CRUD-Anwendungen
+* Automatisches Client-Reconnect bei Verbindungsabbruch
+* `model:updated`-Benachrichtigung bei Re-Deploy
 
 ### Kann
 
@@ -449,7 +647,8 @@ Beispielhaft soll jede UI-Komponente intern Eigenschaften haben wie:
 * Rollen-/Rechteintegration
 * responsive Layout-Vorlagen
 * Komponentenbibliothek
-* Hot-Reload/Live-Preview
+* Hot-Reload/Live-Preview im Editor
+* Optimistische UI-Updates (Client wendet Action sofort an, wartet auf Server-Bestätigung)
 
 ---
 
@@ -472,8 +671,11 @@ Das Produkt ist erfolgreich, wenn:
 * Wie flexibel soll das Layout-/Slot-System sein?
 * Soll Styling rein konfigurationsbasiert oder komponentenbasiert erfolgen?
 * Wie tief soll die State-Logik in Node-RED selbst integriert werden?
-* Soll die Laufzeit ein eigenes Frontend-Framework nutzen oder ein abstrahiertes Renderer-Modell?
 * Wie werden Subflows als UI-Komponenten am besten parametrisiert?
+* Authentifizierung: Soll die SPA eine eigene Auth-Schicht haben oder setzt sie auf Node-RED-Middleware auf?
+* WS-Skalierung: Soll Horizontal Scaling (mehrere Node-RED-Instanzen) unterstützt werden — und wenn ja, über welchen Broker (Redis Pub/Sub)?
+* Soll es einen Entwicklungs-Modus geben, der State-Patches im Editor-Panel visualisiert (DevTools)?
+* Wie wird mit optimistischen Client-Updates umgegangen, wenn der Server den State abbricht (Rollback-Strategie)?
 
 ---
 
@@ -512,4 +714,13 @@ MVP-Fähigkeit:
 ## 15. Zusammenfassung
 
 Das geplante Produkt ist ein deklaratives, knotenbasiertes UI-System für Node-RED zur Entwicklung echter Web-Apps.
-Der Kernansatz besteht darin, UI-Struktur nicht aus der Verkabelung abzuleiten, sondern über Routen, Slots, Mountpoints und Bindings zu definieren. Die Node-RED-Flows bleiben für Daten- und Eventlogik zuständig. Dadurch entsteht ein deutlich intuitiveres und skalierbareres Modell als bei einem rückwärts gedachten Parent/Child-Ansatz.
+
+Der Kernansatz besteht darin, UI-Struktur nicht aus der Verkabelung abzuleiten, sondern über Routen, Slots, Mountpoints und Bindings zu definieren. Die Node-RED-Flows bleiben für Daten- und Eventlogik zuständig.
+
+Die technische Architektur basiert auf drei klar getrennten Schichten:
+
+* **Registry (Server):** Kompiliert Node-RED-Knoten-Definitionen in ein unveränderliches AppModel
+* **Runtime (Client):** React-SPA, die das AppModel empfängt, State verwaltet und die Web-App rendert
+* **Kommunikation:** HTTP für Bootstrap, WebSocket für alle Laufzeit-Interaktion (State-Patches, Events, Queries)
+
+Das System ist für Multi-User-Betrieb ausgelegt: State ist per Session isoliert (Default) oder kann explizit als Shared State konfiguriert werden. Logik läuft primär auf dem Server — einfache UI-Operationen wie Navigation und Show/Hide werden client-seitig ausgeführt, um sofortige Reaktion ohne Netzwerk-Latenz zu gewährleisten.

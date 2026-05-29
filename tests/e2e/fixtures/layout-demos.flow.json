@@ -194,112 +194,96 @@
         "z": "flowLayoutDemos"
     },
     {
-        "id": "layoutCustomShell",
-        "type": "ui-layout",
-        "title": "Custom layout demo",
-        "x": 160,
-        "y": 580,
-        "wires": [
-            []
-        ],
-        "z": "flowLayoutDemos"
-    },
-    {
-        "id": "layoutCustomSidebar",
-        "type": "ui-slot",
-        "layoutId": "layoutCustomShell",
-        "name": "sidebar",
-        "order": 0,
-        "x": 420,
-        "y": 560,
-        "wires": [
-            []
-        ],
-        "z": "flowLayoutDemos"
-    },
-    {
-        "id": "layoutCustomMain",
-        "type": "ui-slot",
-        "layoutId": "layoutCustomShell",
-        "name": "main",
-        "order": 1,
-        "x": 420,
-        "y": 600,
-        "wires": [
-            []
-        ],
-        "z": "flowLayoutDemos"
-    },
-    {
-        "id": "layoutCustomFooter",
-        "type": "ui-slot",
-        "layoutId": "layoutCustomShell",
-        "name": "footer",
-        "order": 2,
-        "x": 420,
-        "y": 640,
-        "wires": [
-            []
-        ],
-        "z": "flowLayoutDemos"
-    },
-    {
-        "id": "layoutCustomApp",
+        "id": "layoutGridApp",
         "type": "ui-app",
-        "name": "Custom Layout Demo",
-        "title": "Custom Layout Demo",
-        "root": "layoutCustomApp",
-        "layout": "layoutCustomShell",
+        "name": "Grid Layout Demo",
+        "title": "Grid Layout Demo",
+        "root": "layoutGridApp",
+        "layout": "grid",
         "x": 160,
-        "y": 700,
+        "y": 860,
         "wires": [
             []
         ],
         "z": "flowLayoutDemos"
     },
     {
-        "id": "layoutCustomSidebarText",
+        "id": "layoutGridTextOne",
         "type": "ui-text",
-        "mount": "layoutCustomApp.sidebar",
-        "order": 0,
+        "mount": "layoutGridApp.content",
+        "row": 1,
+        "col": 1,
+        "col_size": 4,
+        "row_size": 1,
         "value": {
             "kind": "literal",
-            "value": "Custom sidebar"
+            "value": "Grid A"
         },
         "x": 420,
-        "y": 700,
+        "y": 860,
         "wires": [
             []
         ],
         "z": "flowLayoutDemos"
     },
     {
-        "id": "layoutCustomMainText",
+        "id": "layoutGridTextTwo",
         "type": "ui-text",
-        "mount": "layoutCustomApp.main",
-        "order": 1,
+        "mount": "layoutGridApp.content",
+        "row": 1,
+        "col": 5,
+        "col_size": 8,
+        "row_size": 1,
         "value": {
             "kind": "literal",
-            "value": "Custom main"
+            "value": "Grid B"
         },
         "x": 420,
-        "y": 740,
+        "y": 900,
         "wires": [
             []
         ],
         "z": "flowLayoutDemos"
     },
     {
-        "id": "layoutCustomFooterText",
+        "id": "layoutAbsoluteApp",
+        "type": "ui-app",
+        "name": "Absolute Layout Demo",
+        "title": "Absolute Layout Demo",
+        "root": "layoutAbsoluteApp",
+        "layout": "absolute",
+        "x": 160,
+        "y": 980,
+        "wires": [
+            []
+        ],
+        "z": "flowLayoutDemos"
+    },
+    {
+        "id": "layoutAbsoluteTextOne",
         "type": "ui-text",
-        "mount": "layoutCustomApp.footer",
-        "order": 2,
+        "mount": "layoutAbsoluteApp.content",
+        "layoutX": 24,
+        "layoutY": 16,
         "value": {
             "kind": "literal",
-            "value": "Custom footer"
+            "value": "Absolute A"
         },
-        "x": 420,
-        "y": 780,
+        "wires": [
+            []
+        ],
+        "z": "flowLayoutDemos"
+    },
+    {
+        "id": "layoutAbsoluteTextTwo",
+        "type": "ui-text",
+        "mount": "layoutAbsoluteApp.content",
+        "layoutX": 180,
+        "layoutY": 72,
+        "value": {
+            "kind": "literal",
+            "value": "Absolute B"
+        },
         "wires": [
             []
         ],

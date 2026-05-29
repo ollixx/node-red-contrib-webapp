@@ -14,7 +14,7 @@ Das mehrfach genutzte Layout-Feature ist zusätzlich zentral in [layout.md](layo
 
 ## Kategorien
 
-- Struktur: [`ui-app`](ui-app.md), [`ui-layout`](ui-layout.md), [`ui-slot`](ui-slot.md), [`ui-route`](ui-route.md), [`ui-dialog`](ui-dialog.md)
+- Struktur: [`ui-app`](ui-app.md), [`ui-route`](ui-route.md), [`ui-dialog`](ui-dialog.md)
 - View: [`ui-text`](ui-text.md), [`ui-button`](ui-button.md), [`ui-table`](ui-table.md), [`ui-container`](ui-container.md), [`ui-input`](ui-input.md)
 - State: [`ui-store`](ui-store.md), [`ui-query`](ui-query.md)
 - Verhalten: [`ui-action`](ui-action.md), [`ui-navigation`](ui-navigation.md)
@@ -23,7 +23,7 @@ Das mehrfach genutzte Layout-Feature ist zusätzlich zentral in [layout.md](layo
 
 - Eine App wird heute fachlich über `uiId` bzw. im gemeinsamen Modell über `id` identifiziert. Dieser Wert muss eindeutig sein.
 - ~~Die Node-RED-interne Knoten-ID reicht nicht als fachliche ID für das gemeinsame UI-Modell~~. Doch, die IDs reichen aus, um Knoten zu referenzieren
-- View-Knoten werden über `mount` an Route-, Dialog- oder Layout-Slots gebunden.
+- View-Knoten werden über `mount` an Route-, Dialog- oder Preset-Layout-Slots gebunden.
 - Die Editor-Oberfläche bietet für gängige Referenzen wie `layoutId`, `routeId`, `mount`, `action` und `storeId` vorbelegte Auswahllisten aus den vorhandenen Webapp-Knoten.
 - Strukturgeführte Parent- oder Baum-Selektoren existieren weiterhin nicht; die Auswahl bleibt feldbasiert und arbeitet auf den fachlichen IDs bzw. Mount-Strings.
 - Das gemeinsame Schema validiert heute vor allem Feldpräsenz und Grundform, nicht die vollständige fachliche Semantik.

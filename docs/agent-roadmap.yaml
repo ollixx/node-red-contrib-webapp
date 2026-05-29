@@ -86,8 +86,6 @@ phases:
     deliverables:
       - ui-app node
       - ui-route node
-      - ui-layout node
-      - ui-slot node
       - ui-text node
       - ui-button node
       - ui-table node
@@ -182,3 +180,22 @@ phases:
       - schema validation accepts updated ui-app/ui-route/ui-container definitions
       - editor dialogs expose the documented required fields
       - runtime mapConfig produces schema-valid definitions from deployed flow nodes
+
+  - id: P10
+    title: Layout preset expansion and child prop injection
+    status: done
+    dependencies: [P9]
+    goals:
+      - Extend the standard layout presets with grid and absolute variants.
+      - Inject layout-specific child properties into direct mounts inside the editor.
+      - Keep schema, editor, runtime, tests, and docs aligned for the new layout behavior.
+    deliverables:
+      - updated layout preset definitions
+      - schema and editor support for order, grid, and absolute child props
+      - editor helpers and dialogs that show layout-specific fields based on mount
+      - focused browser coverage for mount options and injected child props
+      - updated layout and node documentation
+    validation:
+      - schema and editor tests accept the extended mountable node contracts
+      - Playwright verifies layout-specific child fields for direct mounts
+      - runtime and preview render grid and absolute layouts as modeled
