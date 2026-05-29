@@ -20,12 +20,9 @@
                 common.installLayoutSelector({
                     valueSelector: "#node-input-layoutId",
                     presetSelector: "#node-input-layout-preset",
-                    customSelector: "#node-input-layout-custom",
-                    customRowSelector: "#node-ui-route-custom-layout-row",
                     getValue: function () {
                         return this.layoutId;
-                    },
-                    customPlaceholder: "Parent-Layout auswaehlen"
+                    }
                 }).call(this);
             }
         });
@@ -38,7 +35,6 @@
     <div class="form-row"><label for="node-input-title">Titel</label><input type="text" id="node-input-title"></div>
     <input type="hidden" id="node-input-layoutId">
     <div class="form-row"><label for="node-input-layout-preset">Parent Layout</label><select id="node-input-layout-preset"></select></div>
-    <div class="form-row" id="node-ui-route-custom-layout-row" style="display: none;"><label for="node-input-layout-custom">Custom Layout</label><select id="node-input-layout-custom"></select></div>
     <div class="form-tips">Dieses Layout wird fuer die Seite gerendert.</div>
 </script>
 <script type="text/html" data-help-name="ui-route"><p>Definiert eine Route und bindet sie an ein Layout.</p></script>

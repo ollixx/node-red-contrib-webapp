@@ -4,12 +4,22 @@
     const standardLayoutPresetOptions = [
         { value: "vertical", label: "Vertical" },
         { value: "horizontal", label: "Horizontal" },
-        { value: "app", label: "App" }
+        { value: "app", label: "App" },
+        { value: "grid", label: "Grid" },
+        { value: "absolute", label: "Absolute" }
     ];
     const standardLayoutPresetSlots = {
         vertical: ["content"],
         horizontal: ["content"],
-        app: ["header", "navbar", "content", "footer"]
+        app: ["header", "navbar", "content", "footer"],
+        grid: ["content"],
+        absolute: ["content"]
+    };
+    const layoutChildFieldsByVariant = {
+        horizontal: ["order"],
+        vertical: ["order"],
+        grid: ["row", "col", "colSize", "rowSize"],
+        absolute: ["layoutX", "layoutY"]
     };
 
     function labelWithName(fallback) {
@@ -85,10 +95,9 @@
     function collectReferenceNodes() {
         const references = {
             apps: [],
-            layouts: [],
             routes: [],
             dialogs: [],
-            slots: [],
+            containers: [],
             actions: [],
             stores: []
         };
@@ -104,14 +113,6 @@
                 references.apps.push({
                     id,
                     layoutId: node.layout || "",
-                    title: node.title || node.name || id
-                });
-                return;
-            }
-
-            if (node.type === "ui-layout") {
-                references.layouts.push({
-                    id,
                     title: node.title || node.name || id
                 });
                 return;
@@ -136,11 +137,10 @@
                 return;
             }
 
-            if (node.type === "ui-slot") {
-                references.slots.push({
+            if (node.type === "ui-container") {
+                references.containers.push({
                     id,
                     layoutId: node.layoutId || "",
-                    name: node.name || "",
                     title: node.title || node.name || id
                 });
                 return;
@@ -185,28 +185,7 @@
         });
     }
 
-    function getCustomLayoutOptions(references) {
-        return references.layouts
-            .filter(function (layout) {
-                return !isStandardLayoutPreset(layout.id);
-            })
-            .map(function (layout) {
-                return {
-                    value: layout.id,
-                    label: `${layout.id} - ${layout.title}`
-                };
-            });
-    }
-
-    function getSlotNamesForLayout(layoutId, slotsByLayoutId) {
-        const explicitSlots = slotsByLayoutId.get(layoutId) || [];
-
-        if (explicitSlots.length > 0) {
-            return explicitSlots.map(function (slot) {
-                return slot.name;
-            }).filter(Boolean);
-        }
-
+    function getSlotNamesForLayout(layoutId) {
         if (isStandardLayoutPreset(layoutId)) {
             return [...standardLayoutPresetSlots[layoutId]];
         }
@@ -256,25 +235,14 @@
 
     function buildMountOptions(references) {
         const apps = references.apps;
-        const layouts = references.layouts;
         const routes = references.routes;
         const dialogs = references.dialogs;
-        const slotsByLayoutId = new Map();
-
-        for (const slot of references.slots) {
-            if (!slot.layoutId || slot.name === "") {
-                continue;
-            }
-
-            const currentSlots = slotsByLayoutId.get(slot.layoutId) || [];
-            currentSlots.push(slot);
-            slotsByLayoutId.set(slot.layoutId, currentSlots);
-        }
+        const containers = references.containers;
 
         const options = [];
 
         for (const app of apps) {
-            const slotNames = getSlotNamesForLayout(app.layoutId, slotsByLayoutId);
+            const slotNames = getSlotNamesForLayout(app.layoutId);
 
             for (const slotName of slotNames) {
                 options.push({
@@ -285,7 +253,7 @@
         }
 
         for (const route of routes) {
-            const slotNames = getSlotNamesForLayout(route.layoutId, slotsByLayoutId);
+            const slotNames = getSlotNamesForLayout(route.layoutId);
 
             for (const slotName of slotNames) {
                 options.push({
@@ -296,7 +264,7 @@
         }
 
         for (const dialog of dialogs) {
-            const slotNames = getSlotNamesForLayout(dialog.layoutId, slotsByLayoutId);
+            const slotNames = getSlotNamesForLayout(dialog.layoutId);
 
             for (const slotName of slotNames) {
                 options.push({
@@ -306,18 +274,75 @@
             }
         }
 
-        for (const layout of layouts) {
-            const slotNames = getSlotNamesForLayout(layout.id, slotsByLayoutId);
+        for (const container of containers) {
+            const slotNames = getSlotNamesForLayout(container.layoutId);
 
             for (const slotName of slotNames) {
                 options.push({
-                    value: `layout:${layout.id}/${slotName}`,
-                    label: `Layout ${layout.id} -> ${slotName}`
+                    value: `layout:${container.layoutId}/${slotName}`,
+                    label: `Layout ${container.layoutId} -> ${slotName}`
                 });
             }
         }
 
         return options;
+    }
+
+    function getMountLayoutId(mountValue, references) {
+        if (!mountValue) {
+            return "";
+        }
+
+        if (mountValue.startsWith("route:")) {
+            const separatorIndex = mountValue.lastIndexOf("/");
+            const routePath = separatorIndex >= 0 ? mountValue.slice("route:".length, separatorIndex) : "";
+            const route = references.routes.find(function (entry) {
+                return entry.path === routePath;
+            });
+            return route ? route.layoutId || "" : "";
+        }
+
+        if (mountValue.startsWith("dialog:")) {
+            const separatorIndex = mountValue.lastIndexOf("/");
+            const dialogId = separatorIndex >= 0 ? mountValue.slice("dialog:".length, separatorIndex) : "";
+            const dialog = references.dialogs.find(function (entry) {
+                return entry.id === dialogId;
+            });
+            return dialog ? dialog.layoutId || "" : "";
+        }
+
+        if (mountValue.startsWith("layout:")) {
+            const separatorIndex = mountValue.lastIndexOf("/");
+            return separatorIndex >= 0 ? mountValue.slice("layout:".length, separatorIndex) : "";
+        }
+
+        const separatorIndex = mountValue.indexOf(".");
+        const appId = separatorIndex >= 0 ? mountValue.slice(0, separatorIndex) : mountValue;
+        const app = references.apps.find(function (entry) {
+            return entry.id === appId;
+        });
+        return app ? app.layoutId || "" : "";
+    }
+
+    function installLayoutChildPropRows() {
+        return function () {
+            const mountInput = $("#node-input-mount");
+
+            function refreshRows() {
+                const references = collectReferenceNodes();
+                const layoutId = getMountLayoutId(String(mountInput.val() || ""), references);
+                const activeFields = new Set(layoutChildFieldsByVariant[layoutId] || []);
+
+                $("[data-layout-child-prop-row]").each(function () {
+                    const row = $(this);
+                    const field = String(row.attr("data-layout-child-prop-row") || "");
+                    row.toggle(activeFields.has(field));
+                });
+            }
+
+            refreshRows();
+            mountInput.on("change", refreshRows);
+        };
     }
 
     function installReferenceSelectors(config) {
@@ -401,55 +426,23 @@
     function installLayoutSelector(config) {
         return function () {
             const presetSelector = $(config.presetSelector);
-            const customSelector = $(config.customSelector);
-            const customRow = $(config.customRowSelector);
             const valueInput = $(config.valueSelector);
             const currentValue = String(valueInput.val() || config.getValue.call(this) || "").trim();
-            const presetValues = new Set(standardLayoutPresetOptions.map(function (option) {
-                return option.value;
-            }));
-            const initialPreset = presetValues.has(currentValue) ? currentValue : "custom";
 
             setSelectOptions(
                 presetSelector,
-                [...getStandardLayoutPresetOptions(), { value: "custom", label: "Custom" }],
-                initialPreset,
+                getStandardLayoutPresetOptions(),
+                isStandardLayoutPreset(currentValue) ? currentValue : standardLayoutPresetOptions[0].value,
                 config.presetPlaceholder || "Layout auswaehlen"
             );
 
-            function refreshCustomLayouts(selectedValue) {
-                setSelectOptions(
-                    customSelector,
-                    getCustomLayoutOptions(collectReferenceNodes()),
-                    selectedValue,
-                    config.customPlaceholder || "Custom-Layout auswaehlen"
-                );
-            }
-
             function syncLayoutValue() {
                 const presetValue = String(presetSelector.val() || standardLayoutPresetOptions[0].value);
-
-                if (presetValue === "custom") {
-                    customRow.show();
-                    valueInput.val(String(customSelector.val() || ""));
-                    return;
-                }
-
-                customRow.hide();
                 valueInput.val(presetValue);
             }
 
-            refreshCustomLayouts(initialPreset === "custom" ? currentValue : "");
             syncLayoutValue();
-
-            presetSelector.on("change", function () {
-                if (String(presetSelector.val() || "") === "custom") {
-                    refreshCustomLayouts(String(valueInput.val() || customSelector.val() || ""));
-                }
-
-                syncLayoutValue();
-            });
-            customSelector.on("change", syncLayoutValue);
+            presetSelector.on("change", syncLayoutValue);
         };
     }
 
@@ -460,6 +453,7 @@
     global.WebappEditorCommon = {
         bindingValueForEditor,
         getStandardLayoutPresetOptions,
+        installLayoutChildPropRows,
         installLayoutSelector,
         installReferenceSelectors,
         isStandardLayoutPreset,

@@ -15,13 +15,22 @@
                 storeId: { value: "" },
                 path: { value: "" },
                 inputType: { value: "text", required: true },
-                order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } }
+                order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
+                row: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
+                col: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
+                colSize: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
+                rowSize: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
+                layoutX: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
+                layoutY: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } }
             },
             inputs: 0,
             outputs: 1,
             icon: "font-awesome/fa-i-cursor",
             label: common.labelWithName("ui-input"),
-            oneditprepare: common.installReferenceSelectors({ mount: true, store: true })
+            oneditprepare: function () {
+                common.installReferenceSelectors({ mount: true, store: true }).call(this);
+                common.installLayoutChildPropRows().call(this);
+            }
         });
     })();
 </script>
@@ -35,7 +44,13 @@
     <div class="form-row"><label for="node-input-storeId">Store ID</label><select id="node-input-storeId"></select></div>
     <div class="form-row"><label for="node-input-path">Store Path</label><input type="text" id="node-input-path"></div>
     <div class="form-row"><label for="node-input-inputType">Input Type</label><select id="node-input-inputType"><option value="text">text</option><option value="email">email</option><option value="number">number</option></select></div>
-    <div class="form-row"><label for="node-input-order">Order</label><input type="number" id="node-input-order"></div>
+    <div class="form-row" data-layout-child-prop-row="order" style="display: none;"><label for="node-input-order">Order</label><input type="number" id="node-input-order"></div>
+    <div class="form-row" data-layout-child-prop-row="row" style="display: none;"><label for="node-input-row">Row</label><input type="number" id="node-input-row"></div>
+    <div class="form-row" data-layout-child-prop-row="col" style="display: none;"><label for="node-input-col">Col</label><input type="number" id="node-input-col"></div>
+    <div class="form-row" data-layout-child-prop-row="colSize" style="display: none;"><label for="node-input-colSize">Col Size</label><input type="number" id="node-input-colSize"></div>
+    <div class="form-row" data-layout-child-prop-row="rowSize" style="display: none;"><label for="node-input-rowSize">Row Size</label><input type="number" id="node-input-rowSize"></div>
+    <div class="form-row" data-layout-child-prop-row="layoutX" style="display: none;"><label for="node-input-layoutX">X</label><input type="number" id="node-input-layoutX"></div>
+    <div class="form-row" data-layout-child-prop-row="layoutY" style="display: none;"><label for="node-input-layoutY">Y</label><input type="number" id="node-input-layoutY"></div>
 </script>
 <script type="text/html"
     data-help-name="ui-input"><p>Mountet ein generisches Eingabefeld mit State- und optionalem Store-Binding.</p></script>

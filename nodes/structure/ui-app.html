@@ -22,12 +22,9 @@
                 common.installLayoutSelector({
                     valueSelector: "#node-input-layout",
                     presetSelector: "#node-input-layout-preset",
-                    customSelector: "#node-input-layout-custom",
-                    customRowSelector: "#node-ui-app-custom-layout-row",
                     getValue: function () {
                         return this.layout;
-                    },
-                    customPlaceholder: "Basis-Layout auswaehlen"
+                    }
                 }).call(this);
 
                 function updateAppUrl() {
@@ -62,7 +59,6 @@
     <div class="form-row"><label for="node-input-root">Root</label><input type="text" id="node-input-root"></div>
     <input type="hidden" id="node-input-layout">
     <div class="form-row"><label for="node-input-layout-preset">Layout</label><select id="node-input-layout-preset"></select></div>
-    <div class="form-row" id="node-ui-app-custom-layout-row" style="display: none;"><label for="node-input-layout-custom">Custom Layout</label><select id="node-input-layout-custom"></select></div>
     <div class="form-row">
         <label>App URL</label>
         <div style="padding-top: 6px;">

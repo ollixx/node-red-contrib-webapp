@@ -20,8 +20,6 @@ const runtimeState = {
 
 const WEBAPP_NODE_TYPES = new Set([
     "ui-app",
-    "ui-layout",
-    "ui-slot",
     "ui-route",
     "ui-dialog",
     "ui-text",
@@ -121,6 +119,42 @@ function mergeDeep(base, override) {
 
 function toOptionalNumber(value) {
     return value === "" || value === undefined || value === null ? undefined : Number(value);
+}
+
+function collectNodeConfigLayoutProps(source) {
+    const row = toOptionalNumber(source.row);
+    const col = toOptionalNumber(source.col);
+    const colSize = toOptionalNumber(source.colSize !== undefined ? source.colSize : source.col_size);
+    const rowSize = toOptionalNumber(source.rowSize !== undefined ? source.rowSize : source.row_size);
+    const x = toOptionalNumber(source.layoutX !== undefined ? source.layoutX : source.layout_x);
+    const y = toOptionalNumber(source.layoutY !== undefined ? source.layoutY : source.layout_y);
+
+    return {
+        ...(row !== undefined ? { row } : {}),
+        ...(col !== undefined ? { col } : {}),
+        ...(colSize !== undefined ? { colSize } : {}),
+        ...(rowSize !== undefined ? { rowSize } : {}),
+        ...(x !== undefined ? { x } : {}),
+        ...(y !== undefined ? { y } : {})
+    };
+}
+
+function collectNormalizedLayoutProps(source) {
+    const row = toOptionalNumber(source.row);
+    const col = toOptionalNumber(source.col);
+    const colSize = toOptionalNumber(source.colSize);
+    const rowSize = toOptionalNumber(source.rowSize);
+    const x = toOptionalNumber(source.x);
+    const y = toOptionalNumber(source.y);
+
+    return {
+        ...(row !== undefined ? { row } : {}),
+        ...(col !== undefined ? { col } : {}),
+        ...(colSize !== undefined ? { colSize } : {}),
+        ...(rowSize !== undefined ? { rowSize } : {}),
+        ...(x !== undefined ? { x } : {}),
+        ...(y !== undefined ? { y } : {})
+    };
 }
 
 function blankToUndefined(value) {
@@ -474,24 +508,10 @@ function getRouteMatch(location, routes) {
     return matches[0];
 }
 
-function buildSlots(slotDefinitions, layoutId) {
-    return slotDefinitions
-        .filter((slot) => slot.layoutId === layoutId)
-        .slice()
-        .sort((left, right) => {
-            const leftOrder = left.order || 0;
-            const rightOrder = right.order || 0;
-            return leftOrder - rightOrder || left.name.localeCompare(right.name);
-        })
-        .map((slot) => ({
-            name: slot.name,
-            title: slot.title
-        }));
-}
-
 function toComponentDefinitions(components) {
     return components.map((component) => {
         if (component.type === "ui-text") {
+            const layoutProps = collectNormalizedLayoutProps(component);
             return {
                 id: component.id,
                 kind: "text",
@@ -500,24 +520,32 @@ function toComponentDefinitions(components) {
                 bind: {
                     value: getBinding(component.value, literalBinding(component.text || ""))
                 },
-                props: blankToUndefined(component.variant) ? { variant: component.variant } : {},
+                props: {
+                    ...(blankToUndefined(component.variant) ? { variant: component.variant } : {}),
+                    ...(Object.keys(layoutProps).length > 0 ? { layout: layoutProps } : {})
+                },
                 events: []
             };
         }
 
         if (component.type === "ui-button") {
+            const layoutProps = collectNormalizedLayoutProps(component);
             return {
                 id: component.id,
                 kind: "button",
                 mount: component.mount,
                 order: toOptionalNumber(component.order),
                 bind: component.disabled || component.disabledPath ? { disabled: getBinding(component.disabled, stateBinding(component.disabledPath || "")) } : {},
-                props: { label: component.label },
+                props: {
+                    label: component.label,
+                    ...(Object.keys(layoutProps).length > 0 ? { layout: layoutProps } : {})
+                },
                 events: [{ event: "click", action: component.action }]
             };
         }
 
         if (component.type === "ui-table") {
+            const layoutProps = collectNormalizedLayoutProps(component);
             return {
                 id: component.id,
                 kind: "table",
@@ -526,24 +554,32 @@ function toComponentDefinitions(components) {
                 bind: {
                     rows: getBinding(component.rows, queryBinding(component.rowsPath || ""))
                 },
-                props: { columns: parseList(component.columns) },
+                props: {
+                    columns: parseList(component.columns),
+                    ...(Object.keys(layoutProps).length > 0 ? { layout: layoutProps } : {})
+                },
                 events: component.selectAction ? [{ event: "select", action: component.selectAction }] : []
             };
         }
 
         if (component.type === "ui-container") {
+            const layoutProps = collectNormalizedLayoutProps(component);
             return {
                 id: component.id,
                 kind: "container",
                 mount: component.mount,
                 order: toOptionalNumber(component.order),
                 bind: {},
-                props: { layoutId: component.layoutId },
+                props: {
+                    layoutId: component.layoutId,
+                    ...(Object.keys(layoutProps).length > 0 ? { layout: layoutProps } : {})
+                },
                 events: []
             };
         }
 
         if (component.type === "ui-input") {
+            const layoutProps = collectNormalizedLayoutProps(component);
             return {
                 id: component.id,
                 kind: "input",
@@ -556,7 +592,8 @@ function toComponentDefinitions(components) {
                     label: component.label,
                     storeId: component.storeId,
                     path: component.path,
-                    inputType: component.inputType
+                    inputType: component.inputType,
+                    ...(Object.keys(layoutProps).length > 0 ? { layout: layoutProps } : {})
                 },
                 events: []
             };
@@ -595,7 +632,7 @@ function getAppModelResult(appId, definitions) {
     ]);
     const standardLayouts = collectMissingStandardLayouts(
         referencedLayoutIds,
-        buckets.layouts.map((layout) => layout.id)
+        []
     );
     const routes = buckets.routes.slice();
 
@@ -606,11 +643,11 @@ function getAppModelResult(appId, definitions) {
     const modelCandidate = {
         id: buckets.app.id,
         title: buckets.app.title,
-        layouts: [...standardLayouts, ...buckets.layouts]
+        layouts: [...standardLayouts]
             .map((layout) => ({
                 id: layout.id,
                 title: blankToUndefined(layout.title),
-                slots: layout.type === "ui-layout" ? buildSlots(buckets.slots, layout.id) : layout.slots
+                slots: layout.slots
             }))
             .sort((left, right) => left.id.localeCompare(right.id)),
         routes: routes
@@ -676,10 +713,13 @@ function resolveBinding(binding, sources) {
     return resolved === undefined ? binding.fallback : resolved;
 }
 
-function mountMatches(component, regionPath, model, routeId, layoutId, dialogId) {
+function mountMatches(component, regionPath, model, routeId, layoutId, dialogId, allowedScopes = { route: true, layout: true, dialog: true }) {
     const mount = String(component.mount || "");
 
     if (mount.startsWith("route:/")) {
+        if (!allowedScopes.route) {
+            return false;
+        }
         const route = model.routes
             .filter((candidate) => mount.startsWith(`route:${candidate.path}/`) || mount === `route:${candidate.path}`)
             .sort((left, right) => right.path.length - left.path.length)[0];
@@ -691,6 +731,9 @@ function mountMatches(component, regionPath, model, routeId, layoutId, dialogId)
     }
 
     if (mount.startsWith("dialog:")) {
+        if (!allowedScopes.dialog) {
+            return false;
+        }
         if (!dialogId) {
             return false;
         }
@@ -699,12 +742,17 @@ function mountMatches(component, regionPath, model, routeId, layoutId, dialogId)
     }
 
     if (mount.startsWith("layout:")) {
+        if (!allowedScopes.layout) {
+            return false;
+        }
         const [layoutTarget, ...mountPath] = mount.slice("layout:".length).split("/").filter(Boolean);
         return layoutTarget === layoutId && mountPath.join("/") === regionPath.join("/");
     }
 
     const [target, targetRegion] = mount.split(".");
-    return (target === routeId || target === layoutId || target === dialogId) && targetRegion === regionPath[0] && regionPath.length === 1;
+    return ((allowedScopes.route && target === routeId) || (allowedScopes.layout && target === layoutId) || (allowedScopes.dialog && target === dialogId))
+        && targetRegion === regionPath[0]
+        && regionPath.length === 1;
 }
 
 function layoutHasInputs(model, layoutId, visited = new Set()) {
@@ -747,11 +795,11 @@ function buildActionHref(appId, action, location, componentId, eventName, params
     return `/webapp/${encodeURIComponent(appId)}/action/${encodeURIComponent(action)}?${query.toString()}`;
 }
 
-function renderSlotTree(slots, model, context, routeId, layoutId, dialogId) {
+function renderSlotTree(slots, model, context, routeId, layoutId, dialogId, allowedScopes = { route: true, layout: true, dialog: true }) {
     return slots.map((slot) => {
         const slotPath = [...context.path, slot.name];
         const components = model.components
-            .filter((component) => mountMatches(component, slotPath, model, routeId, layoutId, dialogId))
+            .filter((component) => mountMatches(component, slotPath, model, routeId, layoutId, dialogId, allowedScopes))
             .sort((left, right) => (left.order || 0) - (right.order || 0) || left.id.localeCompare(right.id))
             .map((component) => renderComponent(component, context.sources, model, {
                 routeId,
@@ -778,7 +826,7 @@ function sanitizeClassSuffix(value) {
 }
 
 function getLayoutVariant(layoutId) {
-    return ["horizontal", "vertical", "app"].includes(layoutId) ? layoutId : "custom";
+    return ["horizontal", "vertical", "app", "grid", "absolute"].includes(layoutId) ? layoutId : "custom";
 }
 
 function renderLayoutHtml(layoutId, slots) {
@@ -794,7 +842,9 @@ function renderComponent(component, sources, model, context) {
         return {
             kind: "text",
             id: component.id,
-            text: String(resolveBinding(component.bind.text || component.bind.value, sources) || "")
+            text: String(resolveBinding(component.bind.text || component.bind.value, sources) || ""),
+            layoutId: context.layoutId,
+            layoutProps: component.props.layout || {}
         };
     }
 
@@ -809,7 +859,9 @@ function renderComponent(component, sources, model, context) {
             label: String(component.props.label || component.id),
             href,
             submitFormId: context.formId,
-            disabled
+            disabled,
+            layoutId: context.layoutId,
+            layoutProps: component.props.layout || {}
         };
     }
 
@@ -821,7 +873,9 @@ function renderComponent(component, sources, model, context) {
             rows: Array.isArray(resolveBinding(component.bind.rows, sources)) ? resolveBinding(component.bind.rows, sources) : [],
             selectAction: action,
             appId: model.id,
-            location: context.location
+            location: context.location,
+            layoutId: context.layoutId,
+            layoutProps: component.props.layout || {}
         };
     }
 
@@ -832,7 +886,9 @@ function renderComponent(component, sources, model, context) {
             label: String(component.props.label || component.id),
             name: String(component.props.path || component.id),
             value: String(resolveBinding(component.bind.value, sources) || ""),
-            inputType: String(component.props.inputType || "text")
+            inputType: String(component.props.inputType || "text"),
+            layoutId: context.layoutId,
+            layoutProps: component.props.layout || {}
         };
     }
 
@@ -844,7 +900,9 @@ function renderComponent(component, sources, model, context) {
                 kind: "container",
                 id: component.id,
                 formId: undefined,
-                slots: []
+                slots: [],
+                layoutId: context.layoutId,
+                layoutProps: component.props.layout || {}
             };
         }
 
@@ -855,7 +913,16 @@ function renderComponent(component, sources, model, context) {
             id: component.id,
             layoutId: childLayout.id,
             formId,
-            slots: renderSlotTree(childLayout.slots, model, { path: [], sources, location: context.location, formId }, context.routeId, childLayout.id, context.dialogId)
+            slots: renderSlotTree(
+                childLayout.slots,
+                model,
+                { path: [], sources, location: context.location, formId },
+                context.routeId,
+                childLayout.id,
+                context.dialogId,
+                { route: false, layout: true, dialog: false }
+            ),
+            layoutProps: component.props.layout || {}
         };
     }
 
@@ -874,27 +941,56 @@ function renderSlotHtml(slot) {
     return `<section class="webapp-slot webapp-slot--${escapeAttribute(slotClass)}"><header><h2>${escapeHtml(slot.name)}</h2>${title}</header><div class="webapp-slot-body webapp-slot-body--${escapeAttribute(layoutVariant)}">${components}</div></section>`;
 }
 
+function wrapRenderedComponentHtml(component, innerHtml) {
+    const layoutVariant = getLayoutVariant(component.layoutId || "");
+    const layoutProps = component.layoutProps || {};
+    const styles = [];
+
+    if (layoutVariant === "grid") {
+        if (layoutProps.col !== undefined) {
+            styles.push(`grid-column:${layoutProps.col}${layoutProps.colSize !== undefined ? ` / span ${layoutProps.colSize}` : ""}`);
+        }
+
+        if (layoutProps.row !== undefined) {
+            styles.push(`grid-row:${layoutProps.row}${layoutProps.rowSize !== undefined ? ` / span ${layoutProps.rowSize}` : ""}`);
+        }
+    }
+
+    if (layoutVariant === "absolute") {
+        if (layoutProps.x !== undefined) {
+            styles.push(`left:${layoutProps.x}px`);
+        }
+
+        if (layoutProps.y !== undefined) {
+            styles.push(`top:${layoutProps.y}px`);
+        }
+    }
+
+    const styleAttribute = styles.length > 0 ? ` style="${escapeAttribute(styles.join(";"))}"` : "";
+    return `<div class="webapp-item webapp-item--${escapeAttribute(layoutVariant)}"${styleAttribute}>${innerHtml}</div>`;
+}
+
 function renderComponentHtml(component) {
     if (component.kind === "text") {
-        return `<div class="webapp-text">${escapeHtml(component.text)}</div>`;
+        return wrapRenderedComponentHtml(component, `<div class="webapp-text">${escapeHtml(component.text)}</div>`);
     }
 
     if (component.kind === "button") {
         const label = escapeHtml(component.label);
 
         if (component.disabled) {
-            return `<button class="webapp-button" disabled>${label}</button>`;
+            return wrapRenderedComponentHtml(component, `<button class="webapp-button" disabled>${label}</button>`);
         }
 
         if (component.submitFormId && component.href) {
-            return `<button class="webapp-button" type="submit" form="${escapeAttribute(component.submitFormId)}" formaction="${escapeAttribute(component.href)}">${label}</button>`;
+            return wrapRenderedComponentHtml(component, `<button class="webapp-button" type="submit" form="${escapeAttribute(component.submitFormId)}" formaction="${escapeAttribute(component.href)}">${label}</button>`);
         }
 
         if (component.href) {
-            return `<a class="webapp-button" href="${escapeAttribute(component.href)}">${label}</a>`;
+            return wrapRenderedComponentHtml(component, `<a class="webapp-button" href="${escapeAttribute(component.href)}">${label}</a>`);
         }
 
-        return `<button class="webapp-button" disabled>${label}</button>`;
+        return wrapRenderedComponentHtml(component, `<button class="webapp-button" disabled>${label}</button>`);
     }
 
     if (component.kind === "table") {
@@ -917,18 +1013,19 @@ function renderComponentHtml(component) {
                 }).join("");
                 return `<tr>${cells}</tr>`;
             }).join("");
-        return `<table class="webapp-table"><thead><tr>${header}</tr></thead><tbody>${rows}</tbody></table>`;
+        return wrapRenderedComponentHtml(component, `<table class="webapp-table"><thead><tr>${header}</tr></thead><tbody>${rows}</tbody></table>`);
     }
 
     if (component.kind === "input") {
-        return `<label class="webapp-field">${escapeHtml(component.label)}<input type="${escapeAttribute(component.inputType)}" name="${escapeAttribute(component.name)}" value="${escapeAttribute(component.value)}"></label>`;
+        return wrapRenderedComponentHtml(component, `<label class="webapp-field">${escapeHtml(component.label)}<input type="${escapeAttribute(component.inputType)}" name="${escapeAttribute(component.name)}" value="${escapeAttribute(component.value)}"></label>`);
     }
 
     if (component.kind === "container") {
         const content = renderLayoutHtml(component.layoutId, component.slots);
-        return component.formId
+        const inner = component.formId
             ? `<form class="webapp-form" id="${escapeAttribute(component.formId)}" method="get">${content}</form>`
             : `<div class="webapp-container">${content}</div>`;
+        return wrapRenderedComponentHtml(component, inner);
     }
 
     return "";
@@ -1287,6 +1384,9 @@ function renderAppPage(appId, location, dialogId, definitions) {
     .webapp-slot-body--vertical, .webapp-slot-body--app, .webapp-slot-body--custom { display:flex; flex-direction:column; }
     .webapp-slot-body--horizontal { display:flex; flex-direction:row; align-items:flex-start; flex-wrap:wrap; }
     .webapp-slot-body--horizontal > * { flex:1 1 220px; min-width:0; }
+    .webapp-slot-body--grid { display:grid; grid-template-columns:repeat(12, minmax(0, 1fr)); gap:12px; }
+    .webapp-slot-body--absolute { position:relative; min-height:320px; }
+    .webapp-item--absolute { position:absolute; }
     .webapp-text { font-size:1.05rem; }
     .webapp-button { display:inline-flex; align-items:center; justify-content:center; padding:10px 14px; border-radius:999px; border:1px solid rgba(0,0,0,0.08); background:linear-gradient(135deg, var(--accent), #155e75); color:white; font-weight:600; }
     button.webapp-button[disabled] { background:#cbd5e1; color:#475569; }
@@ -1354,7 +1454,10 @@ function readDeployDefinitions(RED) {
                     };
                 }
 
-                return registration.mapConfig(entry);
+                return {
+                    ...registration.mapConfig(entry),
+                    z: entry.z
+                };
             });
     }
     catch {
@@ -1368,8 +1471,6 @@ function getDefinitionBuckets(appId, definitions) {
     if (!matchingApp) {
         return {
             app: undefined,
-            layouts: [],
-            slots: [],
             routes: [],
             dialogs: [],
             components: [],
@@ -1380,12 +1481,13 @@ function getDefinitionBuckets(appId, definitions) {
         };
     }
 
-    const matchingDefinitions = definitions.filter((entry) => entry.type !== "ui-app");
+    const appFlowId = matchingApp.z;
+    const matchingDefinitions = definitions.filter(
+        (entry) => entry.type !== "ui-app" && (appFlowId === undefined || entry.z === appFlowId || entry.z === undefined)
+    );
 
     return {
         app: matchingApp,
-        layouts: matchingDefinitions.filter((entry) => entry.type === "ui-layout"),
-        slots: matchingDefinitions.filter((entry) => entry.type === "ui-slot"),
         routes: matchingDefinitions.filter((entry) => entry.type === "ui-route"),
         dialogs: matchingDefinitions.filter((entry) => entry.type === "ui-dialog"),
         components: matchingDefinitions.filter((entry) => ["ui-text", "ui-button", "ui-table", "ui-container", "ui-input"].includes(entry.type)),
@@ -1580,23 +1682,6 @@ const runtimeNodeRegistry = {
             layout: config.layout || "vertical"
         })
     },
-    "ui-layout": {
-        mapConfig: (config) => ({
-            type: "ui-layout",
-            id: getUiId(config),
-            title: config.title || undefined
-        })
-    },
-    "ui-slot": {
-        mapConfig: (config) => ({
-            type: "ui-slot",
-            id: getUiId(config),
-            layoutId: config.layoutId,
-            name: config.name,
-            title: config.title || undefined,
-            order: config.order === "" || config.order === undefined ? 0 : Number(config.order)
-        })
-    },
     "ui-route": {
         mapConfig: (config) => ({
             type: "ui-route",
@@ -1623,7 +1708,8 @@ const runtimeNodeRegistry = {
             mount: config.mount,
             order: toOptionalNumber(config.order),
             value: getBinding(config.value, literalBinding(config.text || "")),
-            variant: config.variant || undefined
+            variant: config.variant || undefined,
+            ...collectNodeConfigLayoutProps(config)
         })
     },
     "ui-button": {
@@ -1634,7 +1720,8 @@ const runtimeNodeRegistry = {
             order: toOptionalNumber(config.order),
             label: config.label,
             action: config.action,
-            disabled: getBinding(config.disabled, config.disabledPath ? stateBinding(config.disabledPath) : undefined)
+            disabled: getBinding(config.disabled, config.disabledPath ? stateBinding(config.disabledPath) : undefined),
+            ...collectNodeConfigLayoutProps(config)
         }),
         options: {
             inputHandler: passThroughInputHandler
@@ -1648,7 +1735,8 @@ const runtimeNodeRegistry = {
             order: toOptionalNumber(config.order),
             columns: parseList(config.columns),
             rows: getBinding(config.rows, queryBinding(config.rowsPath || "")),
-            selectAction: config.selectAction || undefined
+            selectAction: config.selectAction || undefined,
+            ...collectNodeConfigLayoutProps(config)
         }),
         options: {
             inputHandler: passThroughInputHandler
@@ -1660,7 +1748,8 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             mount: config.mount,
             order: toOptionalNumber(config.order),
-            layoutId: config.layoutId
+            layoutId: config.layoutId,
+            ...collectNodeConfigLayoutProps(config)
         }),
         options: {
             inputHandler: passThroughInputHandler
@@ -1676,7 +1765,8 @@ const runtimeNodeRegistry = {
             value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
             storeId: config.storeId || undefined,
             path: config.path || undefined,
-            inputType: config.inputType || undefined
+            inputType: config.inputType || undefined,
+            ...collectNodeConfigLayoutProps(config)
         }),
         options: {
             inputHandler: passThroughInputHandler
