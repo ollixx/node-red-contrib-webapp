@@ -8,7 +8,10 @@ import {
     regionNameSchema,
     routePathSchema
 } from "./contracts";
+import { standardLayoutPresetIds } from "./layout-presets";
 import { formatValidationIssues } from "./validation";
+
+const standardLayoutPresetSchema = z.enum(standardLayoutPresetIds);
 
 const identifiedNodeSchema = z.object({
     id: identifierSchema
@@ -16,38 +19,27 @@ const identifiedNodeSchema = z.object({
 
 const mountableNodeSchema = identifiedNodeSchema.extend({
     mount: z.string().min(1, "Component mounts must not be empty."),
-    order: z.number().int("Component order must be an integer.").optional()
+    order: z.number().int("Component order must be an integer.").optional(),
+    row: z.number().int("Component rows must be integers.").optional(),
+    col: z.number().int("Component columns must be integers.").optional(),
+    colSize: z.number().int("Component column spans must be integers.").optional(),
+    rowSize: z.number().int("Component row spans must be integers.").optional(),
+    layoutX: z.number().int("Component x coordinates must be integers.").optional(),
+    layoutY: z.number().int("Component y coordinates must be integers.").optional()
 });
 
 export const uiAppNodeDefinitionSchema = z.object({
     type: z.literal("ui-app"),
     id: identifierSchema,
     title: z.string().min(1, "App titles must not be empty."),
-    layout: identifierSchema
+    layout: standardLayoutPresetSchema
 });
 
 export type UiAppNodeDefinition = z.infer<typeof uiAppNodeDefinitionSchema>;
 
-export const uiLayoutNodeDefinitionSchema = identifiedNodeSchema.extend({
-    type: z.literal("ui-layout"),
-    title: z.string().min(1, "Layout titles must not be empty.").optional()
-});
-
-export type UiLayoutNodeDefinition = z.infer<typeof uiLayoutNodeDefinitionSchema>;
-
-export const uiSlotNodeDefinitionSchema = identifiedNodeSchema.extend({
-    type: z.literal("ui-slot"),
-    layoutId: identifierSchema,
-    name: regionNameSchema,
-    title: z.string().min(1, "Region titles must not be empty.").optional(),
-    order: z.number().int("Region order must be an integer.").default(0)
-});
-
-export type UiSlotNodeDefinition = z.infer<typeof uiSlotNodeDefinitionSchema>;
-
 export const uiContainerNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-container"),
-    layoutId: identifierSchema,
+    layoutId: standardLayoutPresetSchema,
     title: z.string().min(1, "Container titles must not be empty.").optional()
 });
 
@@ -57,7 +49,7 @@ export const uiRouteNodeDefinitionSchema = identifiedNodeSchema.extend({
     type: z.literal("ui-route"),
     path: routePathSchema,
     title: z.string().min(1, "Route titles must not be empty.").optional(),
-    layoutId: identifierSchema
+    layoutId: standardLayoutPresetSchema
 });
 
 export type UiRouteNodeDefinition = z.infer<typeof uiRouteNodeDefinitionSchema>;
@@ -65,7 +57,7 @@ export type UiRouteNodeDefinition = z.infer<typeof uiRouteNodeDefinitionSchema>;
 export const uiDialogNodeDefinitionSchema = identifiedNodeSchema.extend({
     type: z.literal("ui-dialog"),
     title: z.string().min(1, "Dialog titles must not be empty.").optional(),
-    layoutId: identifierSchema,
+    layoutId: standardLayoutPresetSchema,
     routeId: identifierSchema.optional(),
     modal: z.boolean().default(true)
 });
@@ -196,8 +188,6 @@ export type UiNavigationNodeDefinition = z.infer<typeof uiNavigationNodeDefiniti
 export const uiNodeDefinitionSchema = z.union([
     uiAppNodeDefinitionSchema,
     uiRouteNodeDefinitionSchema,
-    uiLayoutNodeDefinitionSchema,
-    uiSlotNodeDefinitionSchema,
     uiContainerNodeDefinitionSchema,
     uiTextNodeDefinitionSchema,
     uiButtonNodeDefinitionSchema,

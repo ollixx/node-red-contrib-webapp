@@ -78,7 +78,7 @@ describe("app validation", () => {
     it("resolves route, dialog, and child-layout mounts from the realistic fixture", () => {
         const routeMountResult = resolveMountReference("route:/customers/:id/content", customersCrudAppModelFixture);
         const dialogMountResult = resolveMountReference("dialog:customerEditor/content", customersCrudAppModelFixture);
-        const layoutMountResult = resolveMountReference("layout:dialogFormLayout/actions", customersCrudAppModelFixture);
+        const layoutMountResult = resolveMountReference("layout:grid/content", customersCrudAppModelFixture);
 
         expect(routeMountResult.success).toBe(true);
         expect(dialogMountResult.success).toBe(true);
@@ -95,8 +95,8 @@ describe("app validation", () => {
         }
 
         if (layoutMountResult.success) {
-            expect(layoutMountResult.data.targetId).toBe("dialogFormLayout");
-            expect(layoutMountResult.data.regionPath).toEqual(["actions"]);
+            expect(layoutMountResult.data.targetId).toBe("grid");
+            expect(layoutMountResult.data.regionPath).toEqual(["content"]);
         }
     });
 
@@ -196,7 +196,7 @@ describe("app validation", () => {
             return;
         }
 
-        expect(invalidLayout.error).toContain("IDs must start with a letter");
+        expect(invalidLayout.error).toContain("Invalid input");
     });
 
     it("validates ui-route required fields and path format", () => {
@@ -204,7 +204,7 @@ describe("app validation", () => {
             type: "ui-route",
             id: "customerDetail",
             path: "/customers/:id",
-            layoutId: "customerShell",
+            layoutId: "vertical",
             title: "Customer detail"
         }).success).toBe(true);
 
@@ -220,7 +220,7 @@ describe("app validation", () => {
             type: "ui-route",
             id: "customers",
             path: "customers",
-            layoutId: "customerShell"
+            layoutId: "vertical"
         });
 
         expect(invalidPath.success).toBe(false);
@@ -237,7 +237,7 @@ describe("app validation", () => {
             type: "ui-container",
             id: "customersContentContainer",
             mount: "route:/customers/content",
-            layoutId: "customersContentLayout",
+            layoutId: "grid",
             title: "Customers content",
             order: 2
         }).success).toBe(true);
@@ -245,7 +245,7 @@ describe("app validation", () => {
         const missingMount = validateUiNodeDefinition({
             type: "ui-container",
             id: "customersContentContainer",
-            layoutId: "customersContentLayout"
+            layoutId: "grid"
         });
 
         expect(missingMount.success).toBe(false);

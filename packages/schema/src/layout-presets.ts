@@ -1,6 +1,6 @@
 import type { LayoutDefinition, RouteDefinition } from "./contracts";
 
-export const standardLayoutPresetIds = ["horizontal", "vertical", "app"] as const;
+export const standardLayoutPresetIds = ["horizontal", "vertical", "app", "grid", "absolute"] as const;
 
 export type StandardLayoutPresetId = (typeof standardLayoutPresetIds)[number];
 
@@ -19,6 +19,16 @@ const standardLayoutPresets: Record<StandardLayoutPresetId, LayoutDefinition> = 
         id: "app",
         title: "App",
         slots: [{ name: "header" }, { name: "navbar" }, { name: "content" }, { name: "footer" }]
+    },
+    grid: {
+        id: "grid",
+        title: "Grid",
+        slots: [{ name: "content" }]
+    },
+    absolute: {
+        id: "absolute",
+        title: "Absolute",
+        slots: [{ name: "content" }]
     }
 };
 
@@ -56,7 +66,7 @@ export function collectMissingStandardLayouts(layoutIds: Iterable<string>, exist
         .filter((layout): layout is LayoutDefinition => layout !== undefined);
 }
 
-export function createAppRootRoute(appId: string, appTitle: string | undefined, layoutId: string): RouteDefinition {
+export function createAppRootRoute(appId: string, appTitle: string | undefined, layoutId: StandardLayoutPresetId): RouteDefinition {
     return {
         id: appId,
         path: "/",

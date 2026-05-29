@@ -6,50 +6,46 @@ export const customersCrudAppModelFixture: AppModel = {
     title: "Customers CRM",
     layouts: [
         {
-            id: "customerShell",
-            title: "Customer shell",
-            slots: [{ name: "header" }, { name: "content" }, { name: "footer" }]
+            id: "app",
+            title: "App",
+            slots: [{ name: "header" }, { name: "navbar" }, { name: "content" }, { name: "footer" }]
         },
         {
-            id: "customersListLayout",
-            title: "Customers list content",
-            slots: [{ name: "toolbar" }, { name: "body" }]
+            id: "vertical",
+            title: "Vertical",
+            slots: [{ name: "content" }]
         },
         {
-            id: "customerDetailLayout",
-            title: "Customer detail content",
-            slots: [{ name: "toolbar" }, { name: "body" }]
-        },
-        {
-            id: "dialogShell",
-            title: "Dialog shell",
-            slots: [{ name: "header" }, { name: "content" }]
-        },
-        {
-            id: "dialogFormLayout",
-            title: "Dialog form layout",
-            slots: [{ name: "fields" }, { name: "actions" }]
+            id: "grid",
+            title: "Grid",
+            slots: [{ name: "content" }]
         }
     ],
     routes: [
         {
+            id: "customersApp",
+            path: "/",
+            title: "Customers CRM",
+            layoutId: "app"
+        },
+        {
             id: "customers",
             path: "/customers",
             title: "Customers",
-            layoutId: "customerShell"
+            layoutId: "vertical"
         },
         {
             id: "customerDetail",
             path: "/customers/:id",
             title: "Customer detail",
-            layoutId: "customerShell"
+            layoutId: "vertical"
         }
     ],
     dialogs: [
         {
             id: "customerEditor",
             title: "Edit customer",
-            layoutId: "dialogShell",
+            layoutId: "vertical",
             modal: true
         }
     ],
@@ -57,7 +53,7 @@ export const customersCrudAppModelFixture: AppModel = {
         {
             id: "pageTitle",
             kind: "text",
-            mount: "customers.header",
+            mount: "customersApp.header",
             bind: {
                 text: {
                     kind: "literal",
@@ -70,19 +66,9 @@ export const customersCrudAppModelFixture: AppModel = {
             events: []
         },
         {
-            id: "customersContentContainer",
-            kind: "container",
-            mount: "route:/customers/content",
-            bind: {},
-            props: {
-                layoutId: "customersListLayout"
-            },
-            events: []
-        },
-        {
             id: "newCustomerButton",
             kind: "button",
-            mount: "layout:customersListLayout/toolbar",
+            mount: "route:/customers/content",
             order: 0,
             bind: {
                 label: {
@@ -96,7 +82,7 @@ export const customersCrudAppModelFixture: AppModel = {
         {
             id: "refreshCustomersButton",
             kind: "button",
-            mount: "layout:customersListLayout/toolbar",
+            mount: "route:/customers/content",
             order: 1,
             bind: {
                 label: {
@@ -115,7 +101,7 @@ export const customersCrudAppModelFixture: AppModel = {
         {
             id: "editorStatus",
             kind: "text",
-            mount: "layout:customersListLayout/toolbar",
+            mount: "route:/customers/content",
             order: 2,
             bind: {
                 text: {
@@ -129,7 +115,8 @@ export const customersCrudAppModelFixture: AppModel = {
         {
             id: "customersTable",
             kind: "table",
-            mount: "layout:customersListLayout/body",
+            mount: "route:/customers/content",
+            order: 3,
             bind: {
                 rows: {
                     kind: "query",
@@ -144,7 +131,8 @@ export const customersCrudAppModelFixture: AppModel = {
         {
             id: "detailRouteTitle",
             kind: "text",
-            mount: "customerDetail.header",
+            mount: "route:/customers/:id/content",
+            order: 0,
             bind: {
                 text: {
                     kind: "literal",
@@ -157,20 +145,10 @@ export const customersCrudAppModelFixture: AppModel = {
             events: []
         },
         {
-            id: "detailContentContainer",
-            kind: "container",
-            mount: "route:/customers/:id/content",
-            bind: {},
-            props: {
-                layoutId: "customerDetailLayout"
-            },
-            events: []
-        },
-        {
             id: "backToCustomersButton",
             kind: "button",
-            mount: "layout:customerDetailLayout/toolbar",
-            order: 0,
+            mount: "route:/customers/:id/content",
+            order: 1,
             bind: {
                 label: {
                     kind: "literal",
@@ -183,8 +161,8 @@ export const customersCrudAppModelFixture: AppModel = {
         {
             id: "editCustomerButton",
             kind: "button",
-            mount: "layout:customerDetailLayout/toolbar",
-            order: 1,
+            mount: "route:/customers/:id/content",
+            order: 2,
             bind: {
                 label: {
                     kind: "literal",
@@ -197,8 +175,8 @@ export const customersCrudAppModelFixture: AppModel = {
         {
             id: "deleteCustomerButton",
             kind: "button",
-            mount: "layout:customerDetailLayout/toolbar",
-            order: 2,
+            mount: "route:/customers/:id/content",
+            order: 3,
             bind: {
                 label: {
                     kind: "literal",
@@ -216,8 +194,8 @@ export const customersCrudAppModelFixture: AppModel = {
         {
             id: "detailCustomerId",
             kind: "text",
-            mount: "layout:customerDetailLayout/body",
-            order: 0,
+            mount: "route:/customers/:id/content",
+            order: 4,
             bind: {
                 text: {
                     kind: "routeParam",
@@ -233,15 +211,14 @@ export const customersCrudAppModelFixture: AppModel = {
             mount: "dialog:customerEditor/content",
             bind: {},
             props: {
-                layoutId: "dialogFormLayout"
+                layoutId: "grid"
             },
             events: []
         },
         {
             id: "customerNameInput",
             kind: "input",
-            mount: "layout:dialogFormLayout/fields",
-            order: 0,
+            mount: "layout:grid/content",
             bind: {
                 value: {
                     kind: "state",
@@ -251,15 +228,17 @@ export const customersCrudAppModelFixture: AppModel = {
             props: {
                 label: "Name",
                 storeId: "draftStore",
-                path: "name"
+                path: "name",
+                row: 1,
+                col: 1,
+                colSize: 12
             },
             events: [{ event: "change", action: "saveCustomer" }]
         },
         {
             id: "customerEmailInput",
             kind: "input",
-            mount: "layout:dialogFormLayout/fields",
-            order: 1,
+            mount: "layout:grid/content",
             bind: {
                 value: {
                     kind: "state",
@@ -270,15 +249,17 @@ export const customersCrudAppModelFixture: AppModel = {
                 label: "Email",
                 storeId: "draftStore",
                 path: "email",
-                inputType: "email"
+                inputType: "email",
+                row: 2,
+                col: 1,
+                colSize: 12
             },
             events: [{ event: "change", action: "saveCustomer" }]
         },
         {
             id: "customerStatusInput",
             kind: "input",
-            mount: "layout:dialogFormLayout/fields",
-            order: 2,
+            mount: "layout:grid/content",
             bind: {
                 value: {
                     kind: "state",
@@ -288,29 +269,34 @@ export const customersCrudAppModelFixture: AppModel = {
             props: {
                 label: "Status",
                 storeId: "draftStore",
-                path: "status"
+                path: "status",
+                row: 3,
+                col: 1,
+                colSize: 12
             },
             events: [{ event: "change", action: "saveCustomer" }]
         },
         {
             id: "cancelCustomerButton",
             kind: "button",
-            mount: "layout:dialogFormLayout/actions",
-            order: 0,
+            mount: "layout:grid/content",
             bind: {
                 label: {
                     kind: "literal",
                     value: "Cancel"
                 }
             },
-            props: {},
+            props: {
+                row: 4,
+                col: 1,
+                colSize: 6
+            },
             events: [{ event: "click", action: "closeCustomerEditor" }]
         },
         {
             id: "saveCustomerButton",
             kind: "button",
-            mount: "layout:dialogFormLayout/actions",
-            order: 1,
+            mount: "layout:grid/content",
             bind: {
                 label: {
                     kind: "literal",
@@ -322,7 +308,11 @@ export const customersCrudAppModelFixture: AppModel = {
                     fallback: false
                 }
             },
-            props: {},
+            props: {
+                row: 4,
+                col: 7,
+                colSize: 6
+            },
             events: [{ event: "click", action: "saveCustomer" }]
         }
     ]
@@ -499,135 +489,33 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
         type: "ui-app",
         id: "customersApp",
         title: "Customers CRM",
-        layout: "vertical"
-    },
-    {
-        type: "ui-layout",
-        id: "customerShell",
-        title: "Customer shell"
-    },
-    {
-        type: "ui-slot",
-        id: "customerHeader",
-        layoutId: "customerShell",
-        name: "header",
-        order: 0
-    },
-    {
-        type: "ui-slot",
-        id: "customerContent",
-        layoutId: "customerShell",
-        name: "content",
-        order: 1
-    },
-    {
-        type: "ui-slot",
-        id: "customerFooter",
-        layoutId: "customerShell",
-        name: "footer",
-        order: 2
-    },
-    {
-        type: "ui-layout",
-        id: "customersListLayout",
-        title: "Customers list content"
-    },
-    {
-        type: "ui-slot",
-        id: "customerToolbar",
-        layoutId: "customersListLayout",
-        name: "toolbar",
-        order: 0
-    },
-    {
-        type: "ui-slot",
-        id: "customerBody",
-        layoutId: "customersListLayout",
-        name: "body",
-        order: 1
-    },
-    {
-        type: "ui-layout",
-        id: "customerDetailLayout",
-        title: "Customer detail content"
-    },
-    {
-        type: "ui-slot",
-        id: "detailToolbar",
-        layoutId: "customerDetailLayout",
-        name: "toolbar",
-        order: 0
-    },
-    {
-        type: "ui-slot",
-        id: "detailBody",
-        layoutId: "customerDetailLayout",
-        name: "body",
-        order: 1
-    },
-    {
-        type: "ui-layout",
-        id: "dialogShell",
-        title: "Dialog shell"
-    },
-    {
-        type: "ui-slot",
-        id: "dialogHeader",
-        layoutId: "dialogShell",
-        name: "header",
-        order: 0
-    },
-    {
-        type: "ui-slot",
-        id: "dialogContent",
-        layoutId: "dialogShell",
-        name: "content",
-        order: 1
-    },
-    {
-        type: "ui-layout",
-        id: "dialogFormLayout",
-        title: "Dialog form layout"
-    },
-    {
-        type: "ui-slot",
-        id: "dialogFields",
-        layoutId: "dialogFormLayout",
-        name: "fields",
-        order: 0
-    },
-    {
-        type: "ui-slot",
-        id: "dialogActions",
-        layoutId: "dialogFormLayout",
-        name: "actions",
-        order: 1
+        layout: "app"
     },
     {
         type: "ui-route",
         id: "customers",
         path: "/customers",
         title: "Customers",
-        layoutId: "customerShell"
+        layoutId: "vertical"
     },
     {
         type: "ui-route",
         id: "customerDetail",
         path: "/customers/:id",
         title: "Customer detail",
-        layoutId: "customerShell"
+        layoutId: "vertical"
     },
     {
         type: "ui-dialog",
         id: "customerEditor",
         title: "Edit customer",
-        layoutId: "dialogShell",
+        layoutId: "vertical",
         modal: true
     },
     {
         type: "ui-text",
         id: "pageTitle",
-        mount: "customers.header",
+        mount: "customersApp.header",
         value: {
             kind: "literal",
             value: "Customers"
@@ -635,15 +523,9 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
         variant: "headline"
     },
     {
-        type: "ui-container",
-        id: "customersContentContainer",
-        mount: "route:/customers/content",
-        layoutId: "customersListLayout"
-    },
-    {
         type: "ui-button",
         id: "newCustomerButton",
-        mount: "layout:customersListLayout/toolbar",
+        mount: "route:/customers/content",
         order: 0,
         label: "New customer",
         action: "openCustomerEditor"
@@ -651,7 +533,7 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
     {
         type: "ui-button",
         id: "refreshCustomersButton",
-        mount: "layout:customersListLayout/toolbar",
+        mount: "route:/customers/content",
         order: 1,
         label: "Refresh",
         action: "refreshCustomers",
@@ -664,7 +546,7 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
     {
         type: "ui-text",
         id: "editorStatus",
-        mount: "layout:customersListLayout/toolbar",
+        mount: "route:/customers/content",
         order: 2,
         value: {
             kind: "literal",
@@ -674,7 +556,8 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
     {
         type: "ui-table",
         id: "customersTable",
-        mount: "layout:customersListLayout/body",
+        mount: "route:/customers/content",
+        order: 3,
         columns: ["name", "email", "status"],
         rows: {
             kind: "query",
@@ -685,7 +568,8 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
     {
         type: "ui-text",
         id: "detailRouteTitle",
-        mount: "customerDetail.header",
+        mount: "route:/customers/:id/content",
+        order: 0,
         value: {
             kind: "literal",
             value: "Customer detail"
@@ -693,32 +577,26 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
         variant: "headline"
     },
     {
-        type: "ui-container",
-        id: "detailContentContainer",
-        mount: "route:/customers/:id/content",
-        layoutId: "customerDetailLayout"
-    },
-    {
         type: "ui-button",
         id: "backToCustomersButton",
-        mount: "layout:customerDetailLayout/toolbar",
-        order: 0,
+        mount: "route:/customers/:id/content",
+        order: 1,
         label: "Back to customers",
         action: "goToCustomers"
     },
     {
         type: "ui-button",
         id: "editCustomerButton",
-        mount: "layout:customerDetailLayout/toolbar",
-        order: 1,
+        mount: "route:/customers/:id/content",
+        order: 2,
         label: "Edit customer",
         action: "openCustomerEditor"
     },
     {
         type: "ui-button",
         id: "deleteCustomerButton",
-        mount: "layout:customerDetailLayout/toolbar",
-        order: 2,
+        mount: "route:/customers/:id/content",
+        order: 3,
         label: "Delete customer",
         action: "deleteCustomer",
         disabled: {
@@ -730,8 +608,8 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
     {
         type: "ui-text",
         id: "detailCustomerId",
-        mount: "layout:customerDetailLayout/body",
-        order: 0,
+        mount: "route:/customers/:id/content",
+        order: 4,
         value: {
             kind: "routeParam",
             path: "id"
@@ -741,13 +619,12 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
         type: "ui-container",
         id: "customerEditorContainer",
         mount: "dialog:customerEditor/content",
-        layoutId: "dialogFormLayout"
+        layoutId: "grid"
     },
     {
         type: "ui-input",
         id: "customerNameInput",
-        mount: "layout:dialogFormLayout/fields",
-        order: 0,
+        mount: "layout:grid/content",
         label: "Name",
         value: {
             kind: "state",
@@ -755,13 +632,15 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
         },
         storeId: "draftStore",
         path: "name",
+        row: 1,
+        col: 1,
+        colSize: 12,
         inputType: "text"
     },
     {
         type: "ui-input",
         id: "customerEmailInput",
-        mount: "layout:dialogFormLayout/fields",
-        order: 1,
+        mount: "layout:grid/content",
         label: "Email",
         value: {
             kind: "state",
@@ -769,13 +648,15 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
         },
         storeId: "draftStore",
         path: "email",
+        row: 2,
+        col: 1,
+        colSize: 12,
         inputType: "email"
     },
     {
         type: "ui-input",
         id: "customerStatusInput",
-        mount: "layout:dialogFormLayout/fields",
-        order: 2,
+        mount: "layout:grid/content",
         label: "Status",
         value: {
             kind: "state",
@@ -783,23 +664,30 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
         },
         storeId: "draftStore",
         path: "status",
+        row: 3,
+        col: 1,
+        colSize: 12,
         inputType: "text"
     },
     {
         type: "ui-button",
         id: "cancelCustomerButton",
-        mount: "layout:dialogFormLayout/actions",
-        order: 0,
+        mount: "layout:grid/content",
         label: "Cancel",
-        action: "closeCustomerEditor"
+        action: "closeCustomerEditor",
+        row: 4,
+        col: 1,
+        colSize: 6
     },
     {
         type: "ui-button",
         id: "saveCustomerButton",
-        mount: "layout:dialogFormLayout/actions",
-        order: 1,
+        mount: "layout:grid/content",
         label: "Save",
         action: "saveCustomer",
+        row: 4,
+        col: 7,
+        colSize: 6,
         disabled: {
             kind: "state",
             path: "draft.isSaving",
