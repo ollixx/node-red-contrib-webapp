@@ -218,9 +218,13 @@ phases:
       - schema updated: parent as required field where applicable
       - regression tests for parent-based model compilation
     validation:
-      - all node editors show parent SelectBox populated from live nodes
-      - compiled model routes messages to correct app based on parent field
-      - name defaults appear correctly on node creation
+      - pnpm test passes with no failures
+      - unit test: compiling a node-set where ui-button has parent=<appId>/<routeId>/content produces a valid AppModel with button mounted in the correct slot
+      - unit test: compiling a node-set where ui-store has parent=<appId> scopes the store to that app
+      - unit test: node with missing parent field fails compilation with a readable diagnostic
+      - Playwright: opening a ui-button editor shows a populated parent SelectBox with at least one entry matching an existing ui-route
+      - Playwright: creating a new ui-button node shows name default "Button 1" (or next N) pre-filled
+      - docs check: every node file in docs/nodes/ that lists a parent field matches the implementation — read each doc and verify the corresponding editor HTML contains a parent input
 
   - id: P12
     title: Configurable event system
@@ -240,10 +244,14 @@ phases:
       - dynamic out-port generation in node editors
       - msg format aligned with messages.md
     validation:
-      - clientConnected event fires when a browser opens the app
-      - onEnter fires with correct params on route navigation
-      - show/hide message changes component visibility in preview
-      - dialog opens via direct message and via store state
+      - pnpm test passes with no failures
+      - unit test: ui-app node with events=[clientConnected] produces outputs:1 in the compiled definition
+      - unit test: ui-route node with events=[onEnter, onLeave] produces outputs:2
+      - unit test: runtime dispatches msg.ui.component.op=hide to correct node and marks it hidden in state
+      - unit test: msg.ui.dialog.op=open triggers dialog open state without a store update
+      - Playwright: opening a ui-app editor shows event checkboxes for clientConnected and clientDisconnected
+      - Playwright: enabling onEnter on a ui-route node adds a visible out-port on the canvas
+      - docs check: messages.md op table matches the set of ops handled in runtime — verify each op in the table has a corresponding handler in webapp.js
 
   - id: P13
     title: ui-table enhancements
@@ -261,10 +269,14 @@ phases:
       - dynamic out-ports per active event
       - selectAction marked deprecated, still functional
     validation:
-      - plain string columns still render correctly
-      - structured column definition renders label separately from key
-      - footer slot accepts mounted view nodes
-      - rowSelect event emits rowId and rowData on out-port
+      - pnpm test passes with no failures
+      - unit test: table with columns=["name","email"] (plain strings) renders header cells "name" and "email"
+      - unit test: table with columns=[{key:"firstName",label:"Vorname"}] renders header cell "Vorname" and reads row.firstName
+      - unit test: table with footer=true exposes a footer slot in the compiled component
+      - unit test: table with events=[rowSelect] produces outputs:1; with events=[rowSelect,rowAction] produces outputs:2
+      - unit test: existing flow with selectAction still compiles without error (deprecated but functional)
+      - Playwright: ui-table editor shows events multi-select and footer checkbox
+      - docs check: ui-table.md column type list matches the type values accepted by the schema
 
   - id: P14
     title: ui-query enhancements
@@ -280,9 +292,12 @@ phases:
       - params field on ui-query node referencing a ui-store
       - runtime re-triggers query when referenced store changes
     validation:
-      - query with unchanged etag does not push to client
-      - changing store-bound params triggers query refresh
-      - source removal causes no runtime errors on existing flows
+      - pnpm test passes with no failures
+      - unit test: flow with a ui-query node that has source field set still compiles without error (graceful ignore)
+      - unit test: sending msg.ui.query with etag="v1" twice only pushes to client once
+      - unit test: sending msg.ui.query with etag="v1" then etag="v2" pushes to client twice
+      - unit test: updating the store referenced by ui-query.params emits a query refresh message
+      - docs check: ui-query.md queryPath description matches the client-state path structure in runtime
 
   - id: P15
     title: Multi-user and client persistence
@@ -298,6 +313,11 @@ phases:
       - client sends local state snapshot on reconnect
       - server compares timestamps and pushes winner to client
     validation:
-      - store update with clientId only reaches that client
-      - persisted store survives page reload
-      - server state overwrites stale client state on reconnect
+      - pnpm test passes with no failures
+      - unit test: store update with msg.ui.clientId="c1" only emits notification to client c1, not c2
+      - unit test: store update without clientId emits notification to all connected clients
+      - unit test: reconnect with client timestamp older than server timestamp results in server state being sent to client
+      - unit test: reconnect with client timestamp newer than server timestamp results in client state being accepted
+      - Playwright: ui-store editor shows persist checkbox
+      - Playwright: page reload with persist=true shows last known store value immediately (before server responds)
+      - docs check: multi-user.md sync strategy description matches the reconnect handler in runtime
