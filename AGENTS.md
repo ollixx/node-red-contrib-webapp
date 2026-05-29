@@ -8,6 +8,16 @@
 - Update roadmap status in [docs/agent-roadmap.yaml](docs/agent-roadmap.yaml) whenever a phase starts, completes, or becomes blocked.
 - Always read the AGENT.md before answering any prompt
 
+## Context discipline — read only what you need
+
+Token cost is real. Do not read files speculatively. Follow this order:
+
+1. Read `AGENTS.md` (this file) and the current phase entry in `docs/agent-roadmap.yaml` only.
+2. For each deliverable, identify the minimum set of files to read: the relevant `docs/nodes/<node>.md`, the corresponding editor HTML, schema type, and runtime handler. Read those. Do not read unrelated nodes.
+3. When writing tests, read the existing test file for the package first to match conventions — do not read all test files.
+4. Do not read files you have already read in this session unless you need to re-check a specific line.
+5. Use `grep` to locate symbols before reading whole files. A targeted grep is cheaper than reading 300 lines to find one function.
+
 ## Architecture Defaults
 
 - Build the project as a TypeScript workspace.

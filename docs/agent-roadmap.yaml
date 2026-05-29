@@ -200,29 +200,38 @@ phases:
       - Playwright verifies layout-specific child fields for direct mounts
       - runtime and preview render grid and absolute layouts as modeled
 
-  - id: P11
-    title: Parent field alignment across all editors
+  - id: P11a
+    title: Parent field — schema and runtime
     status: pending
     dependencies: [P10]
     goals:
-      - Replace free-text uiId and mount fields with structured parent selectors in all node editors.
-      - View nodes get a hierarchical slot selector (app/route/dialog/container + slot).
-      - Behavior and state nodes get an app selector.
-      - name field defaults implemented per node type ("Button N" etc.).
-      - Runtime mapConfig updated to derive app scoping from parent field instead of uiId.
+      - Add parent field to schema for all nodes that require app or slot scoping.
+      - Update runtime mapConfig to derive app scoping from parent instead of uiId.
     deliverables:
-      - parent selector in ui-route, ui-dialog, ui-store, ui-action, ui-query, ui-navigation editors
-      - slot selector (parent) in ui-button, ui-input, ui-text, ui-table, ui-container editors
-      - name default logic ("Type N") in all node editors
-      - runtime mapConfig reads parent field for app scoping
-      - schema updated: parent as required field where applicable
-      - regression tests for parent-based model compilation
-      - E2E tests for parent SelectBox population and name default behavior in editor
+      - parent field added to node definition schemas for ui-route, ui-dialog, ui-store, ui-action, ui-query, ui-navigation (app-scoped) and ui-button, ui-input, ui-text, ui-table, ui-container (slot-scoped)
+      - runtime mapConfig reads parent field; uiId kept as fallback for existing flows
+      - unit tests for parent-based compilation for each node type
     validation:
       - pnpm test passes with no failures
       - unit test: compiling a node-set where ui-button has parent=<appId>/<routeId>/content produces a valid AppModel with button mounted in the correct slot
       - unit test: compiling a node-set where ui-store has parent=<appId> scopes the store to that app
       - unit test: node with missing parent field fails compilation with a readable diagnostic
+      - unit test: node with uiId but no parent still compiles (backward compatibility)
+
+  - id: P11b
+    title: Parent field — node editors and name defaults
+    status: pending
+    dependencies: [P11a]
+    goals:
+      - Replace free-text uiId and mount fields with structured parent SelectBox in all node editors.
+      - Implement name defaults ("Button N" etc.) on node creation.
+    deliverables:
+      - parent SelectBox in ui-route, ui-dialog, ui-store, ui-action, ui-query, ui-navigation editors (shows ui-app nodes)
+      - parent slot selector in ui-button, ui-input, ui-text, ui-table, ui-container editors (hierarchical: app → route/dialog → container)
+      - name default logic in editor-common.js for all node types
+      - E2E tests for SelectBox population and name defaults
+    validation:
+      - pnpm test passes with no failures
       - Playwright: opening a ui-button editor shows a populated parent SelectBox with at least one entry matching an existing ui-route
       - Playwright: creating a new ui-button node shows name default "Button 1" (or next N) pre-filled
       - docs check: every node file in docs/nodes/ that lists a parent field matches the implementation — read each doc and verify the corresponding editor HTML contains a parent input
@@ -230,7 +239,7 @@ phases:
   - id: P12
     title: Configurable event system
     status: pending
-    dependencies: [P11]
+    dependencies: [P11b]
     goals:
       - Add checkbox-based event selection to ui-app, ui-route, ui-dialog, ui-container, ui-table.
       - Each active event produces a dynamic out-port on the node.
@@ -286,7 +295,7 @@ phases:
   - id: P14
     title: ui-query enhancements
     status: pending
-    dependencies: [P11]
+    dependencies: [P11b]
     goals:
       - Remove unused source field.
       - Add ETag-based caching to avoid redundant pushes to the client.
