@@ -217,6 +217,7 @@ phases:
       - runtime mapConfig reads parent field for app scoping
       - schema updated: parent as required field where applicable
       - regression tests for parent-based model compilation
+      - E2E tests for parent SelectBox population and name default behavior in editor
     validation:
       - pnpm test passes with no failures
       - unit test: compiling a node-set where ui-button has parent=<appId>/<routeId>/content produces a valid AppModel with button mounted in the correct slot
@@ -243,6 +244,8 @@ phases:
       - component state message handler in runtime for show/hide/enable/disable/focus/reset
       - dynamic out-port generation in node editors
       - msg format aligned with messages.md
+      - unit tests for all new runtime handlers
+      - E2E tests for event checkbox UI and dynamic out-port rendering
     validation:
       - pnpm test passes with no failures
       - unit test: ui-app node with events=[clientConnected] produces outputs:1 in the compiled definition
@@ -268,6 +271,8 @@ phases:
       - events field with multi-select in editor replacing selectAction
       - dynamic out-ports per active event
       - selectAction marked deprecated, still functional
+      - unit tests for structured column parsing and footer slot compilation
+      - E2E tests for column editor UI and row event out-ports
     validation:
       - pnpm test passes with no failures
       - unit test: table with columns=["name","email"] (plain strings) renders header cells "name" and "email"
@@ -291,6 +296,7 @@ phases:
       - etag field in query input message; runtime skips push when etag matches
       - params field on ui-query node referencing a ui-store
       - runtime re-triggers query when referenced store changes
+      - unit tests for ETag caching logic and store-param reactivity
     validation:
       - pnpm test passes with no failures
       - unit test: flow with a ui-query node that has source field set still compiles without error (graceful ignore)
@@ -312,6 +318,8 @@ phases:
       - persist flag on ui-store node
       - client sends local state snapshot on reconnect
       - server compares timestamps and pushes winner to client
+      - unit tests for clientId routing and reconnect sync logic
+      - E2E tests for persist flag behavior across page reload
     validation:
       - pnpm test passes with no failures
       - unit test: store update with msg.ui.clientId="c1" only emits notification to client c1, not c2

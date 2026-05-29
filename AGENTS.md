@@ -39,13 +39,13 @@ pnpm test
 pnpm exec playwright test
 ```
 
-### Step 2: Verify each roadmap validation criterion explicitly
+### Step 2: Write and verify tests for every validation criterion
 
-Open `docs/agent-roadmap.yaml` and find the `validation` list for the current phase. For each criterion:
+Open `docs/agent-roadmap.yaml` and find the `validation` list for the current phase. For each criterion, **write the test first if it does not exist**, then verify it passes:
 
-- If it says **unit test**: confirm that test exists and passes. If it does not exist yet, write it.
-- If it says **Playwright**: run the specific E2E scenario and confirm the expected behavior. If no test covers it, write one.
-- If it says **docs check**: read the referenced doc file and the referenced source file side by side. Confirm they match. If they diverge, fix the implementation or the doc — whichever is wrong.
+- If it says **unit test**: write the test in the appropriate `test/` directory, then run it. The test must assert the exact behavior described in the criterion — not a weaker proxy.
+- If it says **Playwright**: write an E2E test in `tests/e2e/` that exercises the described scenario end to end in a real browser against a running Node-RED instance, then run it.
+- If it says **docs check**: read the referenced doc file and the referenced source file side by side. Confirm they match. If they diverge, fix the implementation or the doc — whichever is wrong. No test needed, but the check must be explicit and documented in the commit message.
 
 Do not skip a criterion. Do not mark it done by assumption. Every criterion must be explicitly verified.
 
