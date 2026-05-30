@@ -116,7 +116,7 @@ phases:
 
   - id: P14
     title: ui-query enhancements
-    status: pending
+    status: in_progress
     dependencies: [P11b]
     goals:
       - Remove unused source field.
