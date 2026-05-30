@@ -15,6 +15,7 @@ const runtimeState = {
     previewState: new Map(),
     previewQueries: new Map(),
     previewMessages: new Map(),
+    queryEtags: new Map(),
     endpointsRegistered: false
 };
 
@@ -1701,6 +1702,41 @@ function passThroughInputHandler(node, msg, send, done) {
     }
 }
 
+function triggerParamQueryRefresh(storeId) {
+    const RED = runtimeState.RED;
+    if (!RED) {
+        return;
+    }
+    for (const registration of runtimeState.definitions.values()) {
+        const def = registration.definition;
+        if (def.type === "ui-query" && def.params === storeId) {
+            const queryNode = RED.nodes.getNode(registration.nodeId);
+            if (queryNode && typeof queryNode.send === "function") {
+                queryNode.send({ ui: { query: { queryPath: def.queryPath, refresh: true } } });
+            }
+        }
+    }
+}
+
+function queryInputHandler(node, msg, send, done) {
+    const queryMsg = msg && msg.ui && typeof msg.ui === "object" ? msg.ui.query : undefined;
+    if (queryMsg && typeof queryMsg === "object" && typeof queryMsg.etag === "string") {
+        const cacheKey = `${node.id}::${queryMsg.queryPath || ""}`;
+        const lastEtag = runtimeState.queryEtags.get(cacheKey);
+        if (lastEtag === queryMsg.etag) {
+            if (done) {
+                done();
+            }
+            return;
+        }
+        runtimeState.queryEtags.set(cacheKey, queryMsg.etag);
+    }
+    send(msg);
+    if (done) {
+        done();
+    }
+}
+
 function componentStateInputHandler(node, msg, send, done) {
     const componentMsg = msg && msg.ui && typeof msg.ui === "object" ? msg.ui.component : undefined;
 
@@ -1926,6 +1962,7 @@ const runtimeNodeRegistry = {
                         store: applied.notification.ui.store
                     }
                 });
+                triggerParamQueryRefresh(storeDefinition.id);
                 if (done) {
                     done();
                 }
@@ -1938,11 +1975,11 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: config.parent || undefined,
             queryPath: config.queryPath,
-            source: config.source || undefined,
+            params: config.params || undefined,
             refreshAction: config.refreshAction || undefined
         }),
         options: {
-            inputHandler: passThroughInputHandler
+            inputHandler: queryInputHandler
         }
     },
     "ui-action": {
@@ -1985,6 +2022,7 @@ function registerNodeType(RED, type) {
 }
 
 function registerWebappNodes(RED) {
+    runtimeState.RED = RED;
     Object.keys(runtimeNodeRegistry).forEach((type) => {
         registerNodeType(RED, type);
     });
@@ -1999,7 +2037,10 @@ registerWebappNodes.__test__ = {
     resetPreview,
     componentStateInputHandler,
     dialogInputHandler,
-    runtimeNodeRegistry
+    queryInputHandler,
+    triggerParamQueryRefresh,
+    runtimeNodeRegistry,
+    runtimeState
 };
 
 registerWebappNodes.registerNodeType = registerNodeType;

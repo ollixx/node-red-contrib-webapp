@@ -280,7 +280,7 @@ function assembleRuntimeIntegration(
         .map((definition) => ({
             id: definition.id,
             queryPath: definition.queryPath,
-            source: definition.source,
+            params: definition.params,
             refreshAction: definition.refreshAction
         }))
         .sort((left, right) => left.id.localeCompare(right.id));

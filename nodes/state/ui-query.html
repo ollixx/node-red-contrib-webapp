@@ -10,7 +10,7 @@
                 uiId: { value: "", required: true },
                 parent: { value: "" },
                 queryPath: { value: "", required: true },
-                source: { value: "" },
+                params: { value: "" },
                 refreshAction: { value: "" }
             },
             inputs: 1,
@@ -24,7 +24,7 @@
             },
             oneditprepare: function () {
                 common.installParentAppSelector().call(this);
-                common.installReferenceSelectors({ action: "#node-input-refreshAction" }).call(this);
+                common.installReferenceSelectors({ action: "#node-input-refreshAction", store: "#node-input-params" }).call(this);
             }
         });
     })();
@@ -34,7 +34,7 @@
     <div class="form-row"><label for="node-input-uiId">Query ID</label><input type="text" id="node-input-uiId"></div>
     <div class="form-row"><label for="node-input-parent">App</label><select id="node-input-parent"></select></div>
     <div class="form-row"><label for="node-input-queryPath">Query Path</label><input type="text" id="node-input-queryPath"></div>
-    <div class="form-row"><label for="node-input-source">Source</label><input type="text" id="node-input-source"></div>
+    <div class="form-row"><label for="node-input-params">Params Store</label><select id="node-input-params"></select></div>
     <div class="form-row"><label for="node-input-refreshAction">Refresh Action</label><select id="node-input-refreshAction"></select></div>
 </script>
 <script type="text/html" data-help-name="ui-query"><p>Beschreibt eine UI-Query fuer geladene Daten.</p></script>

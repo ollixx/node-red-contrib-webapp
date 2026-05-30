@@ -154,7 +154,7 @@ export const uiQueryNodeDefinitionSchema = identifiedNodeSchema.extend({
     type: z.literal("ui-query"),
     parent: identifierSchema.optional(),
     queryPath: z.string().min(1, "Queries must declare a query path."),
-    source: z.string().min(1, "Query sources must not be empty.").optional(),
+    params: z.string().min(1, "Params store reference must not be empty.").optional(),
     refreshAction: z.string().min(1, "Refresh actions must not be empty.").optional()
 });
 

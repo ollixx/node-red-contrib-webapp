@@ -133,7 +133,7 @@ describe("runtime node set assembly", () => {
                 {
                     id: "customersQuery",
                     queryPath: "customers.list",
-                    source: undefined,
+                    params: undefined,
                     refreshAction: undefined
                 }
             ],
