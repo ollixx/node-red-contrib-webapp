@@ -32,7 +32,10 @@ Different tasks use different entry prompts. Start from the right one:
 
 | Task | Entry prompt |
 |---|---|
-| Implement the next roadmap phase | `.ai/prompts/run-next-phase.prompt.md` |
-| Run phases autonomously until blocked | `.ai/prompts/run-roadmap-until-blocked.prompt.md` |
+| Implement a single phase (one fresh session) | `.ai/prompts/run-next-phase.prompt.md` |
+| Run many phases — context-efficient (recommended) | `.ai/prompts/run-roadmap-orchestrated.prompt.md` |
+| Run many phases — single session (legacy, context-heavy) | `.ai/prompts/run-roadmap-until-blocked.prompt.md` |
 | Only validate a completed phase | `.ai/prompts/validate-phase.prompt.md` |
 | Only write missing tests for a phase | `.ai/prompts/write-tests.prompt.md` |
+
+For running multiple phases, prefer the **orchestrated** mode: it spawns one fresh sub-agent per phase so implementation detail never accumulates in the driving session. The single-session mode is kept only for cases where sub-agents are unavailable.
