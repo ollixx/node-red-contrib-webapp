@@ -269,7 +269,7 @@ phases:
 
   - id: P13
     title: ui-table enhancements
-    status: pending
+    status: in_progress
     dependencies: [P12]
     goals:
       - Replace string-only columns with structured column definitions.
