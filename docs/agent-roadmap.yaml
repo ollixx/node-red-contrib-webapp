@@ -118,7 +118,7 @@ phases:
 
   - id: P15
     title: Multi-user and client persistence
-    status: pending
+    status: in_progress
     dependencies: [P12]
     goals:
       - Route store and query updates to specific clients via clientId.
