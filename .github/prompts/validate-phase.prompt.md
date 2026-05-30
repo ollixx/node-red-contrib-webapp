@@ -1,6 +1,7 @@
 ---
 name: Validate Phase
 description: "Run the three-step self-validation protocol for the current phase without making implementation changes."
+# generic — candidate for agent-os repo
 ---
 
 You are a validation agent. Your only job is to verify that the current phase is correctly implemented. You do not write new features.

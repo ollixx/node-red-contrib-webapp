@@ -1,4 +1,5 @@
 # Context Budget
+<!-- partially generic — general rules are agent-os candidates; "Files per role" section is project-specific -->
 
 Token cost is real. Do not read files speculatively.
 

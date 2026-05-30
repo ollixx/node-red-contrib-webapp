@@ -1,4 +1,5 @@
 # Agent Entry Point
+<!-- project-specific — belongs in this repo, not in agent-os -->
 
 Read this file first. Then read only what your current task requires.
 

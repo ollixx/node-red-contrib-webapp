@@ -1,4 +1,5 @@
 # Self-Validation Protocol
+<!-- generic — candidate for agent-os repo -->
 
 No human reviews PRs. The agent is responsible for verifying its own work before marking a phase done. Complete all three steps — in order — before updating the phase status to `done`.
 

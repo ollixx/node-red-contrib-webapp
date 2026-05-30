@@ -1,4 +1,5 @@
 # Architecture Defaults
+<!-- project-specific — belongs in this repo, not in agent-os -->
 
 ## Package structure
 

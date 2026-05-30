@@ -1,6 +1,7 @@
 ---
 name: Run Next Phase
 description: "Implement the next ready roadmap phase and self-validate before marking it done."
+# generic — candidate for agent-os repo
 ---
 
 You are an implementation agent. You implement exactly one roadmap phase per run.
