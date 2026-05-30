@@ -20,7 +20,11 @@ Repeat until a stop condition is met:
 2. Load its context budget from `.ai/agents/context-budget.md`.
 3. Implement all deliverables. One commit per logical change.
 4. Run the full validation protocol from `.ai/agents/validation.md`.
-5. If validation passes: mark `done`, commit, continue to next phase.
+5. If validation passes:
+   - Write summary to `docs/agent-roadmap-archive.yaml` (format in `run-next-phase.prompt.md`)
+   - Replace full entry in `docs/agent-roadmap.yaml` with slim archive reference
+   - Update `current_phase`
+   - Commit, continue to next phase.
 6. If a stop condition is hit: mark `blocked`, add `blocker` field, commit, stop.
 
 ## Stop conditions (from `.ai/agents/architecture.md`)

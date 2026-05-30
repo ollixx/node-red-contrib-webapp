@@ -23,6 +23,7 @@ Do not read `prd.md` or `docs/implementation-plan.md` unless explicitly instruct
 5. Flow files (`.node-red-dev/flows.json`, `examples/customers-crud/flow.json`) — change only exactly what is asked. See `.ai/instructions/flow-files.instructions.md`.
 6. Before any new code: commit existing uncommitted changes with a meaningful message.
 7. Before marking a phase done: run `pnpm test` and `pnpm exec playwright test`. Both must pass.
+8. When marking a phase done: write a `summary` to `docs/agent-roadmap-archive.yaml` and replace the full entry in `docs/agent-roadmap.yaml` with a slim archive reference. Format see `.ai/prompts/run-next-phase.prompt.md`.
 8. If a phase uncovers an unresolved architecture decision: write it down in `docs/agent-roadmap.yaml` under the phase as a `blocker` and stop.
 
 ## Roles

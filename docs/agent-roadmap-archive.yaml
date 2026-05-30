@@ -1,0 +1,236 @@
+# Roadmap Archive
+#
+# Abgeschlossene Phasen mit vollständigen Details und Agent-Summaries.
+# Die Haupt-Roadmap (agent-roadmap.yaml) referenziert diese Datei für erledigte Phasen.
+#
+# Format Agent-Summary:
+#   summary:
+#     delivered: "Kurzbeschreibung was konkret gebaut wurde"
+#     stats: "X Dateien, Y Tests, Z Knoten etc."
+#     notes: "Besonderheiten, Entscheidungen, Abweichungen vom Plan"
+
+phases:
+
+  - id: P0
+    title: ADRs and scaffold
+    status: done
+    dependencies: []
+    summary:
+      delivered: "Workspace-Scaffold mit pnpm, TypeScript-Konfiguration, Lint- und Test-Setup, ADR für Renderer und Schema-Strategie"
+      stats: "4 Packages angelegt, 1 ADR geschrieben"
+      notes: "Zod für Schema-Validierung gewählt, pnpm Workspaces als Monorepo-Basis"
+    goals:
+      - Create the TypeScript workspace scaffold and package layout.
+      - Record ADRs for renderer choice, schema validation strategy, and package boundaries.
+      - Establish install, build, lint, and test commands.
+    deliverables:
+      - package manager workspace files
+      - root TypeScript configuration
+      - baseline lint and test configuration
+      - ADR document
+    validation:
+      - dependencies install in one command
+      - workspace validation command succeeds
+      - ADR answers renderer and schema questions from the PRD
+
+  - id: P1
+    title: Shared UI model
+    status: done
+    dependencies: [P0]
+    summary:
+      delivered: "Schema-Package mit Zod-Typen für alle Knoten, Mount-Parser, Fixtures für CRUD-App"
+      stats: "1 Package, ~15 Schema-Typen, ~10 Tests, 2 Fixture-App-Modelle"
+      notes: "Mount-Pfad-Syntax als zentrales Konzept etabliert"
+    goals:
+      - Define the shared component, route, layout, slot, and event contracts.
+      - Implement mount parsing and validation.
+      - Add fixtures that represent realistic app models.
+    deliverables:
+      - schema package with exported types and validators
+      - mount parser and validation tests
+      - fixture app models
+    validation:
+      - invalid definitions fail with readable errors
+      - fixtures cover routes, dialogs, and nested mount targets
+
+  - id: P2
+    title: Runtime registry core
+    status: done
+    dependencies: [P1]
+    summary:
+      delivered: "Registry-Service, Model-Compiler, Runtime-API-Endpoint, Duplikat- und Mount-Diagnosen"
+      stats: "3 neue Module, ~15 Tests"
+      notes: "Zentrales Registry-Modell als Grundlage für alle weiteren Phasen"
+    goals:
+      - Register node contributions into a central registry.
+      - Compile registrations into a normalized app model.
+      - Expose the compiled model through a runtime API.
+    deliverables:
+      - registry service
+      - model compiler
+      - runtime API endpoint
+      - duplicate ID and invalid mount diagnostics
+    validation:
+      - compiled model is deterministic from the same inputs
+      - duplicate IDs and invalid mounts are reported
+
+  - id: P3
+    title: Renderer MVP
+    status: done
+    dependencies: [P2]
+    summary:
+      delivered: "Browser-Renderer für Routen, Layouts, Slots, alle View-Komponenten, Event-Bridge"
+      stats: "~800 LOC Renderer, 6 Komponenten, ~20 Tests"
+      notes: "Server-Side-HTML ohne Frontend-Framework — bewusste Entscheidung für Einfachheit im MVP"
+    goals:
+      - Render routes, layouts, slots, and core view components from the compiled model.
+      - Bridge UI events back to Node-RED.
+      - Bind client-side state to rendered components.
+    deliverables:
+      - renderer app shell
+      - route and slot rendering
+      - text, button, table, container, input, and dialog components
+      - event bridge
+    validation:
+      - multi-page fixture renders end to end
+      - button and submit events emit the standard msg.ui shape
+
+  - id: P4
+    title: Node set MVP
+    status: done
+    dependencies: [P3]
+    summary:
+      delivered: "12 Node-RED-Knoten als HTML+JS-Paare: ui-app, ui-route, ui-dialog, ui-text, ui-button, ui-table, ui-container, ui-input, ui-store, ui-query, ui-action, ui-navigation"
+      stats: "12 Knoten, 24 Dateien (je .html + .js)"
+      notes: "Knoten-Kategorien: structure, view, state, behavior"
+    goals:
+      - Expose the MVP concepts as Node-RED nodes.
+      - Validate required node properties in the editor.
+      - Keep node definitions schema-aligned.
+    deliverables:
+      - ui-app, ui-route, ui-text, ui-button, ui-table, ui-container, ui-input,
+        ui-dialog, ui-store, ui-query, ui-action, ui-navigation nodes
+    validation:
+      - each node emits or registers a valid definition
+      - editor validation blocks incomplete required fields
+
+  - id: P5
+    title: State and event integration
+    status: done
+    dependencies: [P4]
+    summary:
+      delivered: "Store-Update-Flow, Query-Lifecycle, Navigation, Dialog-Aktionen, Visibility-/Enabled-Rules"
+      stats: "CRUD-Beispiel vollständig funktionsfähig"
+      notes: "Preview-Runtime enthält noch teils hardcodierte CRUD-Beispiel-Logik — als MVP-Schulden dokumentiert"
+    goals:
+      - Support CRUD-oriented state updates, query flows, navigation, and dialog actions.
+      - Keep event payloads standardized across components.
+    deliverables:
+      - store update flow
+      - query lifecycle handling
+      - navigation and dialog action handlers
+      - visibility and enabled rules
+    validation:
+      - CRUD example supports list, open dialog, submit, and refresh
+      - event payload shape is consistent across interactive nodes
+
+  - id: P6
+    title: Editor structure view
+    status: done
+    dependencies: [P5]
+    summary:
+      delivered: "Sidebar-Tree der UI-Hierarchie, Selection-Sync zwischen Canvas und Sidebar, Validierungswarnungen"
+      stats: "1 neues Editor-Package, ~300 LOC, ~10 Tests"
+      notes: "Strukturansicht liest aus dem kompilierten Registry-Modell, nicht aus den Flow-Wires"
+    goals:
+      - Add a structure sidebar that mirrors the compiled UI model.
+      - Sync selection and surface structural diagnostics.
+    deliverables:
+      - sidebar tree
+      - selection sync
+      - structural validation warnings
+    validation:
+      - users can inspect hierarchy without reading wiring as DOM structure
+
+  - id: P7
+    title: Example app and hardening
+    status: done
+    dependencies: [P6]
+    summary:
+      delivered: "Vollständiges CRUD-Beispiel (customers), Setup-Guide, Architecture-Overview, Baseline-Tests"
+      stats: "1 Beispiel-Flow, 3 Docs, ~30 Tests"
+      notes: "Beispiel deckt Routen, Tabelle, Dialog, Container/Input, Navigation und State-Updates ab"
+    goals:
+      - Ship a complete customer CRUD example and baseline documentation.
+      - Add focused tests for schema, registry, runtime, and renderer.
+    deliverables:
+      - example flow
+      - getting started guide
+      - architecture overview
+      - baseline automated tests
+    validation:
+      - a contributor can run the example from docs alone
+      - the example demonstrates the full MVP journey
+
+  - id: P8
+    title: Browser E2E validation and preview hardening
+    status: done
+    dependencies: [P7]
+    summary:
+      delivered: "Playwright-Konfiguration und E2E-Tests für CRUD-Journey, Preview-Runtime-Fixes, Event-Log"
+      stats: "Playwright-Setup, ~5 E2E-Tests, ~10 Preview-Fixes"
+      notes: "Preview-Runtime deckt jetzt create, save, refresh, navigation, delete ab"
+    goals:
+      - Add browser-level validation for the shipped CRUD example.
+      - Align the Node-RED preview runtime with the CRUD behavior.
+      - Surface preview event messages for interactive nodes.
+    deliverables:
+      - Playwright configuration and E2E test for the CRUD journey
+      - preview runtime fixes for create, save, refresh, navigation, and delete
+      - observable event log for emitted UI messages
+    validation:
+      - Playwright passes against the local Node-RED instance
+      - saving a customer adds it to the list in the preview
+      - interactive preview actions emit inspectable UI event messages
+
+  - id: P9
+    title: Structured node contract alignment (ui-app, ui-route, ui-container)
+    status: done
+    dependencies: [P8]
+    summary:
+      delivered: "Schema- und Editor-Felder für ui-app, ui-route, ui-container aligned, runtime mapConfig aktualisiert"
+      stats: "3 Knoten überarbeitet, ~10 Tests"
+      notes: "Rückwärtskompatibilität für bestehende Flows beibehalten"
+    goals:
+      - Align documented required fields for ui-app, ui-route, and ui-container.
+      - Keep backward compatibility for existing flows.
+    deliverables:
+      - updated node definition schemas
+      - updated Node-RED editor fields and defaults
+      - updated runtime mapConfig handling
+      - focused regression tests
+    validation:
+      - schema validation accepts updated definitions
+      - editor dialogs expose the documented required fields
+      - runtime mapConfig produces schema-valid definitions
+
+  - id: P10
+    title: Layout preset expansion and child prop injection
+    status: done
+    dependencies: [P9]
+    summary:
+      delivered: "Grid- und Absolute-Presets, layout-abhängige Child-Props (row/col/colSize/rowSize/layoutX/layoutY) im Editor, ui-layout/ui-slot Knoten entfernt"
+      stats: "2 neue Presets, 6 neue Child-Props, ~15 Tests, 4 E2E-Tests"
+      notes: "ui-layout und ui-slot als Konzept aufgegeben — nur noch Standard-Presets, kein Custom-Layout"
+    goals:
+      - Extend the standard layout presets with grid and absolute variants.
+      - Inject layout-specific child properties into direct mounts inside the editor.
+    deliverables:
+      - updated layout preset definitions
+      - schema and editor support for order, grid, and absolute child props
+      - editor helpers that show layout-specific fields based on mount
+      - focused browser coverage for mount options
+    validation:
+      - schema and editor tests accept the extended mountable node contracts
+      - Playwright verifies layout-specific child fields for direct mounts
+      - runtime and preview render grid and absolute layouts as modeled
