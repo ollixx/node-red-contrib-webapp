@@ -18,7 +18,8 @@ const identifiedNodeSchema = z.object({
 });
 
 const mountableNodeSchema = identifiedNodeSchema.extend({
-    mount: z.string().min(1, "Component mounts must not be empty."),
+    parent: z.string().min(1, "Component parent paths must not be empty.").optional(),
+    mount: z.string().min(1, "Component mounts must not be empty.").optional(),
     order: z.number().int("Component order must be an integer.").optional(),
     row: z.number().int("Component rows must be integers.").optional(),
     col: z.number().int("Component columns must be integers.").optional(),
@@ -26,6 +27,14 @@ const mountableNodeSchema = identifiedNodeSchema.extend({
     rowSize: z.number().int("Component row spans must be integers.").optional(),
     layoutX: z.number().int("Component x coordinates must be integers.").optional(),
     layoutY: z.number().int("Component y coordinates must be integers.").optional()
+}).superRefine((node, context) => {
+    if (!node.mount && !node.parent) {
+        context.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Component nodes must declare either a mount or a parent path.",
+            path: ["mount"]
+        });
+    }
 });
 
 export const uiAppNodeDefinitionSchema = z.object({
@@ -47,6 +56,7 @@ export type UiContainerNodeDefinition = z.infer<typeof uiContainerNodeDefinition
 
 export const uiRouteNodeDefinitionSchema = identifiedNodeSchema.extend({
     type: z.literal("ui-route"),
+    parent: identifierSchema.optional(),
     path: routePathSchema,
     title: z.string().min(1, "Route titles must not be empty.").optional(),
     layoutId: standardLayoutPresetSchema
@@ -56,6 +66,7 @@ export type UiRouteNodeDefinition = z.infer<typeof uiRouteNodeDefinitionSchema>;
 
 export const uiDialogNodeDefinitionSchema = identifiedNodeSchema.extend({
     type: z.literal("ui-dialog"),
+    parent: identifierSchema.optional(),
     title: z.string().min(1, "Dialog titles must not be empty.").optional(),
     layoutId: standardLayoutPresetSchema,
     routeId: identifierSchema.optional(),
@@ -112,6 +123,7 @@ export type UiInputNodeDefinition = z.infer<typeof uiInputNodeDefinitionSchema>;
 
 export const uiStoreNodeDefinitionSchema = identifiedNodeSchema.extend({
     type: z.literal("ui-store"),
+    parent: identifierSchema.optional(),
     statePath: z.string().min(1, "Stores must declare a state path."),
     initialValue: z.unknown().optional()
 });
@@ -120,6 +132,7 @@ export type UiStoreNodeDefinition = z.infer<typeof uiStoreNodeDefinitionSchema>;
 
 export const uiQueryNodeDefinitionSchema = identifiedNodeSchema.extend({
     type: z.literal("ui-query"),
+    parent: identifierSchema.optional(),
     queryPath: z.string().min(1, "Queries must declare a query path."),
     source: z.string().min(1, "Query sources must not be empty.").optional(),
     refreshAction: z.string().min(1, "Refresh actions must not be empty.").optional()
@@ -129,6 +142,7 @@ export type UiQueryNodeDefinition = z.infer<typeof uiQueryNodeDefinitionSchema>;
 
 export const uiActionNodeDefinitionSchema = identifiedNodeSchema.extend({
     type: z.literal("ui-action"),
+    parent: identifierSchema.optional(),
     actionType: actionTypeSchema.optional(),
     targetMode: actionTargetModeSchema.optional(),
     target: z.string().min(1, "Action targets must not be empty.").optional(),
@@ -180,6 +194,7 @@ export type UiActionNodeDefinition = z.infer<typeof uiActionNodeDefinitionSchema
 
 export const uiNavigationNodeDefinitionSchema = identifiedNodeSchema.extend({
     type: z.literal("ui-navigation"),
+    parent: identifierSchema.optional(),
     to: routePathSchema
 });
 

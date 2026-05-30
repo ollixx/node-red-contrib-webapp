@@ -57,11 +57,15 @@ function makeRegistrationId(type: string, appId: string, id: string): string {
     return `${appId}:${type}:${id}`;
 }
 
+function resolveMount(node: { mount?: string; parent?: string }): string {
+    return (node.mount || node.parent) ?? "";
+}
+
 function toTextComponent(node: UiTextNodeDefinition): ComponentDefinition {
     return {
         id: node.id,
         kind: "text",
-        mount: node.mount,
+        mount: resolveMount(node),
         order: node.order,
         bind: {
             value: node.value
@@ -75,7 +79,7 @@ function toButtonComponent(node: UiButtonNodeDefinition): ComponentDefinition {
     return {
         id: node.id,
         kind: "button",
-        mount: node.mount,
+        mount: resolveMount(node),
         order: node.order,
         bind: node.disabled ? { disabled: node.disabled } : {},
         props: {
@@ -94,7 +98,7 @@ function toTableComponent(node: UiTableNodeDefinition): ComponentDefinition {
     return {
         id: node.id,
         kind: "table",
-        mount: node.mount,
+        mount: resolveMount(node),
         order: node.order,
         bind: {
             rows: node.rows
@@ -117,7 +121,7 @@ function toContainerComponent(node: UiContainerNodeDefinition): ComponentDefinit
     return {
         id: node.id,
         kind: "container",
-        mount: node.mount,
+        mount: resolveMount(node),
         order: node.order,
         bind: {},
         props: {
@@ -132,7 +136,7 @@ function toInputComponent(node: UiInputNodeDefinition): ComponentDefinition {
     return {
         id: node.id,
         kind: "input",
-        mount: node.mount,
+        mount: resolveMount(node),
         order: node.order,
         bind: {
             value: node.value

@@ -458,3 +458,110 @@ describe("runtime node set assembly", () => {
         ]);
     });
 });
+
+describe("P11a: parent field compilation", () => {
+    it("compiles a ui-button with parent used as mount into the correct slot", () => {
+        const assembly = assembleNodeSet([
+            { type: "ui-app", id: "testApp", title: "Test", layout: "app" },
+            { type: "ui-route", id: "home", path: "/", layoutId: "vertical" },
+            {
+                type: "ui-button",
+                id: "btn1",
+                parent: "route://content",
+                label: "Click me",
+                action: "doSomething"
+            }
+        ]);
+
+        expect(assembly.success).toBe(true);
+
+        if (!assembly.success) {
+            return;
+        }
+
+        const component = assembly.data.contributions.find(
+            (c) => c.kind === "component" && c.definition.id === "btn1"
+        );
+
+        expect(component).toBeDefined();
+
+        if (component?.kind === "component") {
+            expect(component.definition.mount).toBe("route://content");
+        }
+    });
+
+    it("compiles a ui-button with mount field (no parent) — backward compatibility", () => {
+        const assembly = assembleNodeSet([
+            { type: "ui-app", id: "testApp", title: "Test", layout: "app" },
+            { type: "ui-route", id: "home", path: "/", layoutId: "vertical" },
+            {
+                type: "ui-button",
+                id: "btn2",
+                mount: "route://content",
+                label: "Old style",
+                action: "doSomething"
+            }
+        ]);
+
+        expect(assembly.success).toBe(true);
+    });
+
+    it("compiles a ui-store with parent scoped to an app", () => {
+        const assembly = assembleNodeSet([
+            { type: "ui-app", id: "myApp", title: "My App", layout: "vertical" },
+            { type: "ui-route", id: "home", path: "/", layoutId: "vertical" },
+            {
+                type: "ui-store",
+                id: "myStore",
+                parent: "myApp",
+                statePath: "myData"
+            }
+        ]);
+
+        expect(assembly.success).toBe(true);
+
+        if (!assembly.success) {
+            return;
+        }
+
+        const store = assembly.data.integration.stores.find((s) => s.id === "myStore");
+
+        expect(store).toBeDefined();
+        expect(store?.statePath).toBe("myData");
+    });
+
+    it("rejects a slot-scoped node with neither mount nor parent", () => {
+        const assembly = assembleNodeSet([
+            { type: "ui-app", id: "testApp", title: "Test", layout: "app" },
+            { type: "ui-route", id: "home", path: "/", layoutId: "vertical" },
+            {
+                type: "ui-button",
+                id: "brokenBtn",
+                label: "No mount",
+                action: "doSomething"
+            }
+        ]);
+
+        expect(assembly.success).toBe(false);
+
+        if (!assembly.success) {
+            expect(assembly.error).toMatch(/mount.*parent|parent.*mount/i);
+        }
+    });
+
+    it("compiles a node with uiId but no parent (backward compatibility)", () => {
+        const assembly = assembleNodeSet([
+            { type: "ui-app", id: "testApp", title: "Test", layout: "app" },
+            { type: "ui-route", id: "home", path: "/", layoutId: "vertical" },
+            {
+                type: "ui-button",
+                id: "legacyBtn",
+                mount: "route://content",
+                label: "Legacy",
+                action: "doSomething"
+            }
+        ]);
+
+        expect(assembly.success).toBe(true);
+    });
+});

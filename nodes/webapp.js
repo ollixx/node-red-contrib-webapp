@@ -1686,6 +1686,7 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-route",
             id: getUiId(config),
+            parent: config.parent || undefined,
             path: config.path,
             title: config.title || undefined,
             layoutId: config.layoutId
@@ -1695,6 +1696,7 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-dialog",
             id: getUiId(config),
+            parent: config.parent || undefined,
             title: config.title || undefined,
             layoutId: config.layoutId,
             routeId: config.routeId || undefined,
@@ -1705,7 +1707,8 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-text",
             id: getUiId(config),
-            mount: config.mount,
+            parent: config.parent || undefined,
+            mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
             value: getBinding(config.value, literalBinding(config.text || "")),
             variant: config.variant || undefined,
@@ -1716,7 +1719,8 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-button",
             id: getUiId(config),
-            mount: config.mount,
+            parent: config.parent || undefined,
+            mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
             label: config.label,
             action: config.action,
@@ -1731,7 +1735,8 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-table",
             id: getUiId(config),
-            mount: config.mount,
+            parent: config.parent || undefined,
+            mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
             columns: parseList(config.columns),
             rows: getBinding(config.rows, queryBinding(config.rowsPath || "")),
@@ -1746,7 +1751,8 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-container",
             id: getUiId(config),
-            mount: config.mount,
+            parent: config.parent || undefined,
+            mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
             layoutId: config.layoutId,
             ...collectNodeConfigLayoutProps(config)
@@ -1759,7 +1765,8 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-input",
             id: getUiId(config),
-            mount: config.mount,
+            parent: config.parent || undefined,
+            mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
             label: config.label,
             value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
@@ -1776,6 +1783,7 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-store",
             id: getUiId(config),
+            parent: config.parent || undefined,
             statePath: config.statePath,
             initialValue: parseJson(config.initialValue)
         }),
@@ -1821,6 +1829,7 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-query",
             id: getUiId(config),
+            parent: config.parent || undefined,
             queryPath: config.queryPath,
             source: config.source || undefined,
             refreshAction: config.refreshAction || undefined
@@ -1833,6 +1842,7 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-action",
             id: getUiId(config),
+            parent: config.parent || undefined,
             actionType: blankToUndefined(config.actionType),
             targetMode: blankToUndefined(config.targetMode),
             target: blankToUndefined(config.target),
@@ -1847,6 +1857,7 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-navigation",
             id: getUiId(config),
+            parent: config.parent || undefined,
             to: config.to
         }),
         options: {
