@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P17
+  current_phase: P18
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -126,29 +126,7 @@ phases:
 
   - { id: P16d, title: "Core node expansion — display", status: done, dependencies: [P12], archive: "docs/agent-roadmap-archive.yaml#P16d" }
 
-  - id: P17
-    title: Theming system
-    status: in_progress
-    dependencies: [P16a, P16b, P16c, P16d]
-    goals:
-      - Implement Design-Token system on ui-app node.
-      - Implement component variants across all core nodes.
-      - Ship webapp-default renderer backend consuming tokens.
-      - Define backend extension interface for community backends.
-    deliverables:
-      - design token fields on ui-app (colors, typography, spacing, radii)
-      - CSS Custom Properties injected from tokens at runtime
-      - variant field on all view nodes with validated enum per node type
-      - webapp-default backend implementing all core nodes against tokens
-      - backend interface spec documented in theming.md
-      - unit tests for token injection and variant rendering
-    validation:
-      - pnpm test passes with no failures
-      - unit test: ui-app with custom primary color injects correct CSS custom property
-      - unit test: ui-button with variant=danger renders with danger token class
-      - unit test: ui-button with unknown variant fails schema validation
-      - Playwright: changing primary color token in ui-app editor updates preview
-      - docs check: theming.md token list matches the fields accepted by ui-app schema
+  - { id: P17, title: "Theming system", status: done, dependencies: [P16a, P16b, P16c, P16d], archive: "docs/agent-roadmap-archive.yaml#P17" }
 
   - id: P18
     title: Example flow generator
