@@ -572,7 +572,7 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         id: config.id ?? "",
         path: config.path ?? "",
         title: config.title,
-        layoutId: config.layoutId ?? "vertical"
+        layout: config.layoutId ?? "vertical"
     })),
     "ui-dialog": createDefinition("ui-dialog", "structure", {
         id: requiredString("Dialog IDs are required before deploy."),
@@ -581,7 +581,7 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         type: "ui-dialog",
         id: config.id ?? "",
         title: config.title,
-        layoutId: config.layoutId ?? "vertical",
+        layout: config.layoutId ?? "vertical",
         routeId: config.routeId,
         modal: config.modal ?? true
     })),
@@ -671,8 +671,7 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         type: "ui-container",
         id: config.id ?? "",
         mount: config.mount ?? "",
-        layoutId: config.layoutId ?? "vertical",
-        title: config.title,
+        layout: config.layoutId ?? "vertical",
         ...collectLayoutChildConfig(config)
     })),
     "ui-input": createDefinition("ui-input", "view", {
@@ -1058,7 +1057,7 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         type: "ui-accordion",
         id: config.id ?? "",
         mount: config.mount ?? "",
-        items: JSON.parse(config.items ?? "[]"),
+        sections: JSON.parse(config.items ?? "[]"),
         multiple: config.multiple,
         ...collectLayoutChildConfig(config)
     })),
@@ -1083,7 +1082,7 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         mount: config.mount ?? "",
         variant: config.variant,
         items: stateBinding(config.itemsPath ?? ""),
-        activeRoute: config.activeRoutePath ? stateBinding(config.activeRoutePath) : undefined,
+        activeItem: config.activeRoutePath ? stateBinding(config.activeRoutePath) : undefined,
         ...collectLayoutChildConfig(config)
     })),
     "ui-pagination": createDefinition("ui-pagination", "view", {
@@ -1094,9 +1093,9 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         type: "ui-pagination",
         id: config.id ?? "",
         mount: config.mount ?? "",
-        total: stateBinding(config.totalPath ?? ""),
-        pageSize: config.pageSize,
-        currentPage: config.currentPagePath ? stateBinding(config.currentPagePath) : undefined,
+        page: stateBinding(config.totalPath ?? ""),
+        totalPages: stateBinding(config.totalPath ?? ""),
+        pageSize: config.pageSize ? stateBinding(config.pageSize.toString()) : undefined,
         ...collectLayoutChildConfig(config)
     })),
     "ui-stepper": createDefinition("ui-stepper", "view", {
@@ -1108,8 +1107,8 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         id: config.id ?? "",
         mount: config.mount ?? "",
         steps: JSON.parse(config.steps ?? "[]"),
-        activeStep: config.activeStepPath ? stateBinding(config.activeStepPath) : undefined,
-        orientation: config.orientation,
+        activeStep: stateBinding(config.activeStepPath ?? ""),
+        variant: config.orientation,
         ...collectLayoutChildConfig(config)
     })),
     "ui-image": createDefinition("ui-image", "view", {
@@ -1119,9 +1118,9 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         type: "ui-image",
         id: config.id ?? "",
         mount: config.mount ?? "",
-        src: config.srcPath ? stateBinding(config.srcPath) : undefined,
+        src: stateBinding(config.srcPath ?? ""),
         alt: config.alt || undefined,
-        fallback: config.fallback || undefined,
+        fallbackSrc: config.fallback || undefined,
         width: config.width || undefined,
         height: config.height || undefined,
         ...collectLayoutChildConfig(config)
@@ -1135,7 +1134,7 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         id: config.id ?? "",
         mount: config.mount ?? "",
         icon: config.icon ?? "",
-        size: config.size || undefined,
+        size: config.size as "xs" | "sm" | "md" | "lg" | "xl" | undefined,
         color: config.color || undefined,
         ...collectLayoutChildConfig(config)
     })),
@@ -1147,7 +1146,7 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         id: config.id ?? "",
         mount: config.mount ?? "",
         items: config.itemsPath ? stateBinding(config.itemsPath) : [],
-        variant: config.variant,
+        variant: config.variant as "default" | "divided" | "compact" | undefined,
         ...collectLayoutChildConfig(config)
     })),
     "ui-avatar": createDefinition("ui-avatar", "view", {
@@ -1158,9 +1157,9 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         id: config.id ?? "",
         mount: config.mount ?? "",
         src: config.srcPath ? stateBinding(config.srcPath) : undefined,
-        initials: config.initials || undefined,
+        initials: config.initials ? { kind: "literal" as const, value: config.initials } : undefined,
         alt: config.alt || undefined,
-        size: config.size,
+        size: config.size as "xs" | "sm" | "md" | "lg" | "xl" | undefined,
         shape: config.shape,
         ...collectLayoutChildConfig(config)
     })),

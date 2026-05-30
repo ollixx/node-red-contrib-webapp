@@ -670,7 +670,7 @@ function toComponentDefinitions(components) {
                 order: toOptionalNumber(component.order),
                 bind: {},
                 props: {
-                    layoutId: component.layoutId,
+                    layoutId: component.layout || component.layoutId,
                     ...(Object.keys(layoutProps).length > 0 ? { layout: layoutProps } : {})
                 },
                 events: []
@@ -725,9 +725,9 @@ function getAppModelResult(appId, definitions) {
 
     const referencedLayoutIds = new Set([
         buckets.app.layout,
-        ...buckets.routes.map((route) => route.layoutId),
-        ...buckets.dialogs.map((dialog) => dialog.layoutId),
-        ...buckets.components.filter((component) => component.type === "ui-container").map((component) => component.layoutId)
+        ...buckets.routes.map((route) => route.layout || route.layoutId),
+        ...buckets.dialogs.map((dialog) => dialog.layout || dialog.layoutId),
+        ...buckets.components.filter((component) => component.type === "ui-container").map((component) => component.layout || component.layoutId)
     ]);
     const standardLayouts = collectMissingStandardLayouts(
         referencedLayoutIds,
@@ -754,14 +754,14 @@ function getAppModelResult(appId, definitions) {
                 id: route.id,
                 path: route.path,
                 title: blankToUndefined(route.title),
-                layoutId: route.layoutId
+                layoutId: route.layout || route.layoutId
             }))
             .sort((left, right) => left.path.localeCompare(right.path)),
         dialogs: buckets.dialogs
             .map((dialog) => ({
                 id: dialog.id,
                 title: blankToUndefined(dialog.title),
-                layoutId: dialog.layoutId,
+                layoutId: dialog.layout || dialog.layoutId,
                 routeId: blankToUndefined(dialog.routeId),
                 modal: dialog.modal !== false
             }))
@@ -1892,7 +1892,7 @@ const runtimeNodeRegistry = {
             parent: config.parent || undefined,
             path: config.path,
             title: config.title || undefined,
-            layoutId: config.layoutId,
+            layout: config.layoutId,
             events: parseList(config.events).length > 0 ? parseList(config.events) : undefined
         }),
         options: {
@@ -1905,7 +1905,7 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: config.parent || undefined,
             title: config.title || undefined,
-            layoutId: config.layoutId,
+            layout: config.layoutId,
             routeId: config.routeId || undefined,
             modal: config.modal !== false && config.modal !== "false",
             events: parseList(config.events).length > 0 ? parseList(config.events) : undefined
@@ -1970,7 +1970,7 @@ const runtimeNodeRegistry = {
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
-            layoutId: config.layoutId,
+            layout: config.layoutId,
             events: parseList(config.events).length > 0 ? parseList(config.events) : undefined,
             ...collectNodeConfigLayoutProps(config)
         }),
@@ -2400,7 +2400,7 @@ const runtimeNodeRegistry = {
             order: toOptionalNumber(config.order),
             variant: config.variant || undefined,
             items: getBinding(config.items, config.itemsPath ? stateBinding(config.itemsPath) : undefined) || parseList(config.items),
-            activeRoute: getBinding(config.activeRoute, config.activeRoutePath ? stateBinding(config.activeRoutePath) : undefined),
+            activeItem: getBinding(config.activeRoute, config.activeRoutePath ? stateBinding(config.activeRoutePath) : undefined),
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
@@ -2414,9 +2414,9 @@ const runtimeNodeRegistry = {
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
-            total: getBinding(config.total, config.totalPath ? stateBinding(config.totalPath) : undefined),
-            pageSize: toOptionalNumber(config.pageSize),
-            currentPage: getBinding(config.currentPage, config.currentPagePath ? stateBinding(config.currentPagePath) : undefined),
+            page: getBinding(config.page, config.pagePath ? stateBinding(config.pagePath) : undefined),
+            pageSize: config.pageSize ? stateBinding(config.pageSize) : undefined,
+            totalPages: getBinding(config.totalPages, config.totalPath ? stateBinding(config.totalPath) : undefined),
             events: parseList(config.events),
             ...collectNodeConfigLayoutProps(config)
         }),
@@ -2438,7 +2438,7 @@ const runtimeNodeRegistry = {
                 return t;
             }).filter(Boolean),
             activeStep: getBinding(config.activeStep, config.activeStepPath ? stateBinding(config.activeStepPath) : undefined),
-            orientation: config.orientation || undefined,
+            variant: config.orientation || undefined,
             events: parseList(config.events),
             ...collectNodeConfigLayoutProps(config)
         }),
@@ -2455,7 +2455,7 @@ const runtimeNodeRegistry = {
             order: toOptionalNumber(config.order),
             src: getBinding(config.src, config.srcPath ? stateBinding(config.srcPath) : undefined),
             alt: config.alt || undefined,
-            fallback: config.fallback || undefined,
+            fallbackSrc: config.fallback || undefined,
             width: config.width || undefined,
             height: config.height || undefined,
             ...collectNodeConfigLayoutProps(config)

@@ -125,8 +125,7 @@ function toContainerComponent(node: UiContainerNodeDefinition): ComponentDefinit
         order: node.order,
         bind: {},
         props: {
-            layoutId: node.layoutId,
-            title: node.title
+            layoutId: node.layout
         },
         events: []
     };
@@ -157,7 +156,7 @@ function assembleRouteContribution(appId: string, routeNode: UiRouteNodeDefiniti
         id: routeNode.id,
         path: routeNode.path,
         title: routeNode.title,
-        layoutId: routeNode.layoutId
+        layoutId: routeNode.layout
     };
     const validation = routeDefinitionSchema.safeParse(definition);
 
@@ -181,13 +180,13 @@ function assembleRouteContribution(appId: string, routeNode: UiRouteNodeDefiniti
 
 function assembleRouteDefinitionContribution(
     appId: string,
-    routeDefinition: Pick<UiRouteNodeDefinition, "id" | "path" | "title" | "layoutId">
+    routeDefinition: Pick<UiRouteNodeDefinition, "id" | "path" | "title" | "layout">
 ): Result<RouteContribution> {
     const definition = {
         id: routeDefinition.id,
         path: routeDefinition.path,
         title: routeDefinition.title,
-        layoutId: routeDefinition.layoutId
+        layoutId: routeDefinition.layout
     };
     const validation = routeDefinitionSchema.safeParse(definition);
 
@@ -213,7 +212,7 @@ function assembleDialogContribution(appId: string, dialogNode: UiDialogNodeDefin
     const definition = {
         id: dialogNode.id,
         title: dialogNode.title,
-        layoutId: dialogNode.layoutId,
+        layoutId: dialogNode.layout,
         routeId: dialogNode.routeId,
         modal: dialogNode.modal
     };
@@ -433,9 +432,9 @@ export function assembleNodeSet(input: unknown[]): Result<AssembledNodeSet> {
 
     const referencedLayoutIds = new Set<string>([
         appNode.layout,
-        ...routeNodes.map((routeNode) => routeNode.layoutId),
-        ...dialogNodes.map((dialogNode) => dialogNode.layoutId),
-        ...containerNodes.map((containerNode) => containerNode.layoutId)
+        ...routeNodes.map((routeNode) => routeNode.layout),
+        ...dialogNodes.map((dialogNode) => dialogNode.layout),
+        ...containerNodes.map((containerNode) => containerNode.layout)
     ]);
 
     const standardLayouts = collectMissingStandardLayouts(
@@ -469,7 +468,7 @@ export function assembleNodeSet(input: unknown[]): Result<AssembledNodeSet> {
                 id: appId,
                 path: "/",
                 title: appNode.title,
-                layoutId: appNode.layout as StandardLayoutPresetId
+                layout: appNode.layout as StandardLayoutPresetId
             }
         );
 

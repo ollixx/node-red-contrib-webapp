@@ -140,10 +140,8 @@ export type UiAppNodeDefinition = z.infer<typeof uiAppNodeDefinitionSchema>;
 
 export const uiContainerNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-container"),
-    layoutId: standardLayoutPresetSchema,
-    title: z.string().min(1, "Container titles must not be empty.").optional(),
-    events: z.array(z.enum(["onShow", "onHide"])).optional(),
-    variant: z.enum(["default", "card", "panel", "flat"]).optional()
+    layout: standardLayoutPresetSchema,
+    events: z.array(z.enum(["onShow", "onHide"])).optional()
 });
 
 export type UiContainerNodeDefinition = z.infer<typeof uiContainerNodeDefinitionSchema>;
@@ -153,7 +151,7 @@ export const uiRouteNodeDefinitionSchema = identifiedNodeSchema.extend({
     parent: identifierSchema.optional(),
     path: routePathSchema,
     title: z.string().min(1, "Route titles must not be empty.").optional(),
-    layoutId: standardLayoutPresetSchema,
+    layout: standardLayoutPresetSchema,
     events: z.array(z.enum(["onEnter", "onLeave"])).optional()
 });
 
@@ -163,7 +161,7 @@ export const uiDialogNodeDefinitionSchema = identifiedNodeSchema.extend({
     type: z.literal("ui-dialog"),
     parent: identifierSchema.optional(),
     title: z.string().min(1, "Dialog titles must not be empty.").optional(),
-    layoutId: standardLayoutPresetSchema,
+    layout: standardLayoutPresetSchema,
     routeId: identifierSchema.optional(),
     modal: z.boolean().default(true),
     events: z.array(z.enum(["onOpen", "onClose"])).optional()
@@ -183,8 +181,7 @@ export const uiButtonNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-button"),
     label: z.string().min(1, "Button labels must not be empty."),
     action: z.string().min(1, "Buttons must reference an action."),
-    disabled: bindingSchema.optional(),
-    variant: z.enum(["primary", "secondary", "danger", "ghost", "link"]).optional()
+    disabled: bindingSchema.optional()
 });
 
 export type UiButtonNodeDefinition = z.infer<typeof uiButtonNodeDefinitionSchema>;
@@ -209,8 +206,7 @@ export const uiTableNodeDefinitionSchema = mountableNodeSchema.extend({
     rows: bindingSchema,
     footer: z.boolean().optional(),
     events: z.array(z.enum(["rowSelect", "rowAction", "checkboxChange", "cellSelect"])).optional(),
-    selectAction: z.string().min(1, "Table select actions must not be empty.").optional(),
-    variant: z.enum(["default", "striped", "bordered", "compact"]).optional()
+    selectAction: z.string().min(1, "Table select actions must not be empty.").optional()
 });
 
 export type UiTableNodeDefinition = z.infer<typeof uiTableNodeDefinitionSchema>;
@@ -222,8 +218,7 @@ export const uiInputNodeDefinitionSchema = mountableNodeSchema.extend({
     storeId: identifierSchema.optional(),
     path: z.string().min(1, "Input store paths must not be empty.").optional(),
     inputType: z.enum(["text", "email", "number"]).default("text"),
-    placeholder: z.string().min(1, "Input placeholders must not be empty.").optional(),
-    variant: z.enum(["default", "filled", "outlined"]).optional()
+    placeholder: z.string().min(1, "Input placeholders must not be empty.").optional()
 }).superRefine((input, context) => {
     if ((input.storeId && !input.path) || (!input.storeId && input.path)) {
         context.addIssue({
@@ -240,7 +235,8 @@ export const uiStoreNodeDefinitionSchema = identifiedNodeSchema.extend({
     type: z.literal("ui-store"),
     parent: identifierSchema.optional(),
     statePath: z.string().min(1, "Stores must declare a state path."),
-    initialValue: z.unknown().optional()
+    initialValue: z.unknown().optional(),
+    persist: z.boolean().optional()
 });
 
 export type UiStoreNodeDefinition = z.infer<typeof uiStoreNodeDefinitionSchema>;
@@ -330,8 +326,7 @@ export const uiSelectNodeDefinitionSchema = mountableNodeSchema.extend({
     placeholder: z.string().optional(),
     multiple: z.boolean().optional(),
     searchable: z.boolean().optional(),
-    disabled: bindingSchema.optional(),
-    variant: z.enum(["default", "filled", "outlined"]).optional()
+    disabled: bindingSchema.optional()
 });
 
 export type UiSelectNodeDefinition = z.infer<typeof uiSelectNodeDefinitionSchema>;
@@ -340,8 +335,7 @@ export const uiCheckboxNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-checkbox"),
     label: z.string().min(1, "Checkbox labels must not be empty."),
     value: bindingSchema,
-    disabled: bindingSchema.optional(),
-    variant: z.enum(["default", "toggle"]).optional()
+    disabled: bindingSchema.optional()
 });
 
 export type UiCheckboxNodeDefinition = z.infer<typeof uiCheckboxNodeDefinitionSchema>;
@@ -352,8 +346,7 @@ export const uiRadioNodeDefinitionSchema = mountableNodeSchema.extend({
     value: bindingSchema,
     options: z.union([z.array(selectOptionSchema), bindingSchema]),
     orientation: z.enum(["horizontal", "vertical"]).optional(),
-    disabled: bindingSchema.optional(),
-    variant: z.enum(["default", "button"]).optional()
+    disabled: bindingSchema.optional()
 });
 
 export type UiRadioNodeDefinition = z.infer<typeof uiRadioNodeDefinitionSchema>;
@@ -364,8 +357,7 @@ export const uiSwitchNodeDefinitionSchema = mountableNodeSchema.extend({
     label: z.string().optional(),
     labelOn: z.string().optional(),
     labelOff: z.string().optional(),
-    disabled: bindingSchema.optional(),
-    variant: z.enum(["default", "slim"]).optional()
+    disabled: bindingSchema.optional()
 });
 
 export type UiSwitchNodeDefinition = z.infer<typeof uiSwitchNodeDefinitionSchema>;
@@ -377,8 +369,7 @@ export const uiTextareaNodeDefinitionSchema = mountableNodeSchema.extend({
     placeholder: z.string().optional(),
     rows: z.number().int().positive().optional(),
     maxLength: z.number().int().positive().optional(),
-    disabled: bindingSchema.optional(),
-    variant: z.enum(["default", "filled", "outlined"]).optional()
+    disabled: bindingSchema.optional()
 });
 
 export type UiTextareaNodeDefinition = z.infer<typeof uiTextareaNodeDefinitionSchema>;
@@ -391,8 +382,7 @@ export const uiDatepickerNodeDefinitionSchema = mountableNodeSchema.extend({
     min: z.string().optional(),
     max: z.string().optional(),
     placeholder: z.string().optional(),
-    disabled: bindingSchema.optional(),
-    variant: z.enum(["default", "inline"]).optional()
+    disabled: bindingSchema.optional()
 });
 
 export type UiDatepickerNodeDefinition = z.infer<typeof uiDatepickerNodeDefinitionSchema>;
@@ -405,8 +395,7 @@ export const uiSliderNodeDefinitionSchema = mountableNodeSchema.extend({
     max: z.number().optional(),
     step: z.number().positive().optional(),
     showValue: z.boolean().optional(),
-    disabled: bindingSchema.optional(),
-    variant: z.enum(["default", "range"]).optional()
+    disabled: bindingSchema.optional()
 });
 
 export type UiSliderNodeDefinition = z.infer<typeof uiSliderNodeDefinitionSchema>;
@@ -486,21 +475,23 @@ export const uiTabsNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-tabs"),
     tabs: z.array(tabItemSchema).min(1, "Tabs must declare at least one tab."),
     activeTab: bindingSchema.optional(),
+    variant: z.enum(["line", "contained", "pills"]).optional(),
     events: z.array(z.enum(["tabChange"])).optional()
 });
 
 export type UiTabsNodeDefinition = z.infer<typeof uiTabsNodeDefinitionSchema>;
 
-const accordionItemSchema = z.object({
+const accordionSectionSchema = z.object({
     id: z.string().min(1),
     label: z.string().min(1)
 });
 
 export const uiAccordionNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-accordion"),
-    items: z.array(accordionItemSchema).min(1, "Accordion must declare at least one item."),
+    sections: z.array(accordionSectionSchema).min(1, "Accordion must declare at least one section."),
     multiple: z.boolean().optional(),
-    events: z.array(z.enum(["itemToggle"])).optional()
+    defaultOpen: z.union([identifierSchema, z.array(identifierSchema)]).optional(),
+    events: z.array(z.enum(["sectionOpen", "sectionClose"])).optional()
 });
 
 export type UiAccordionNodeDefinition = z.infer<typeof uiAccordionNodeDefinitionSchema>;
@@ -508,30 +499,39 @@ export type UiAccordionNodeDefinition = z.infer<typeof uiAccordionNodeDefinition
 export const uiBreadcrumbNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-breadcrumb"),
     items: z.union([
-        z.array(z.object({ label: z.string().min(1), route: z.string().optional() })),
+        z.array(z.object({ label: z.string().min(1), path: z.string().optional() })),
         bindingSchema
-    ])
+    ]),
+    separator: z.string().optional()
 });
 
 export type UiBreadcrumbNodeDefinition = z.infer<typeof uiBreadcrumbNodeDefinitionSchema>;
 
+const menuItemSchema: z.ZodType<{ label: string; path?: string; icon?: string; children?: Array<{ label: string; path?: string; icon?: string }> }> = z.object({
+    label: z.string().min(1),
+    path: z.string().optional(),
+    icon: z.string().optional(),
+    children: z.array(z.object({ label: z.string().min(1), path: z.string().optional(), icon: z.string().optional() })).optional()
+});
+
 export const uiMenuNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-menu"),
-    variant: z.enum(["sidebar", "topbar"]).optional(),
-    items: z.union([
-        z.array(z.object({ label: z.string().min(1), route: z.string().optional(), icon: z.string().optional() })),
-        bindingSchema
-    ]),
-    activeRoute: bindingSchema.optional()
+    variant: z.enum(["sidebar", "topbar", "dropdown"]).optional(),
+    items: z.union([z.array(menuItemSchema), bindingSchema]),
+    activeItem: bindingSchema.optional(),
+    collapsed: bindingSchema.optional()
 });
 
 export type UiMenuNodeDefinition = z.infer<typeof uiMenuNodeDefinitionSchema>;
 
 export const uiPaginationNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-pagination"),
-    total: bindingSchema,
-    pageSize: z.number().int().positive().optional(),
-    currentPage: bindingSchema.optional(),
+    page: bindingSchema,
+    totalPages: bindingSchema,
+    pageSize: bindingSchema.optional(),
+    totalItems: bindingSchema.optional(),
+    showInfo: z.boolean().optional(),
+    variant: z.enum(["numbered", "simple"]).optional(),
     events: z.array(z.enum(["pageChange"])).optional()
 });
 
@@ -540,9 +540,10 @@ export type UiPaginationNodeDefinition = z.infer<typeof uiPaginationNodeDefiniti
 export const uiStepperNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-stepper"),
     steps: z.array(z.object({ id: z.string().min(1), label: z.string().min(1) })).min(2, "Stepper must declare at least two steps."),
-    activeStep: bindingSchema.optional(),
-    orientation: z.enum(["horizontal", "vertical"]).optional(),
-    events: z.array(z.enum(["stepChange"])).optional()
+    activeStep: bindingSchema,
+    variant: z.enum(["horizontal", "vertical"]).optional(),
+    linear: z.boolean().optional(),
+    events: z.array(z.enum(["stepChange", "complete"])).optional()
 });
 
 export type UiStepperNodeDefinition = z.infer<typeof uiStepperNodeDefinitionSchema>;
@@ -551,11 +552,12 @@ export type UiStepperNodeDefinition = z.infer<typeof uiStepperNodeDefinitionSche
 
 export const uiImageNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-image"),
-    src: bindingSchema.optional(),
+    src: bindingSchema,
     alt: z.string().optional(),
-    fallback: z.string().optional(),
+    fallbackSrc: z.string().optional(),
     width: z.union([z.number().int().positive(), z.string()]).optional(),
-    height: z.union([z.number().int().positive(), z.string()]).optional()
+    height: z.union([z.number().int().positive(), z.string()]).optional(),
+    fit: z.enum(["contain", "cover", "fill", "none"]).optional()
 });
 
 export type UiImageNodeDefinition = z.infer<typeof uiImageNodeDefinitionSchema>;
@@ -563,7 +565,7 @@ export type UiImageNodeDefinition = z.infer<typeof uiImageNodeDefinitionSchema>;
 export const uiIconNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-icon"),
     icon: z.string().min(1, "Icon names must not be empty."),
-    size: z.union([z.number().int().positive(), z.string()]).optional(),
+    size: z.enum(["xs", "sm", "md", "lg", "xl"]).optional(),
     color: z.string().optional()
 });
 
@@ -578,8 +580,8 @@ const listItemSchema = z.object({
 export const uiListNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-list"),
     items: z.union([z.array(listItemSchema), bindingSchema]),
-    variant: z.enum(["unordered", "ordered", "description"]).optional(),
-    events: z.array(z.enum(["itemSelect"])).optional()
+    variant: z.enum(["default", "divided", "compact"]).optional(),
+    events: z.array(z.enum(["itemClick", "itemSelect"])).optional()
 });
 
 export type UiListNodeDefinition = z.infer<typeof uiListNodeDefinitionSchema>;
@@ -587,9 +589,9 @@ export type UiListNodeDefinition = z.infer<typeof uiListNodeDefinitionSchema>;
 export const uiAvatarNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-avatar"),
     src: bindingSchema.optional(),
-    initials: z.string().optional(),
+    initials: bindingSchema.optional(),
     alt: z.string().optional(),
-    size: z.enum(["sm", "md", "lg"]).optional(),
+    size: z.enum(["xs", "sm", "md", "lg", "xl"]).optional(),
     shape: z.enum(["circle", "square"]).optional()
 });
 

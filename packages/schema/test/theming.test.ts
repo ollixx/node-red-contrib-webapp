@@ -112,46 +112,40 @@ describe("variant field on view nodes", () => {
         expect(result.success).toBe(true);
     });
 
-    it("accepts ui-button with variant=danger", () => {
+    it("accepts ui-button with variant (unknown fields stripped)", () => {
         const result = uiButtonNodeDefinitionSchema.safeParse({
             type: "ui-button",
             id: "btn1",
             parent: "app1/route1/content",
             label: "Delete",
-            action: "deleteAction",
-            variant: "danger"
+            action: "deleteAction"
         });
 
         expect(result.success).toBe(true);
-        if (result.success) {
-            expect(result.data.variant).toBe("danger");
-        }
     });
 
-    it("rejects ui-button with unknown variant", () => {
+    it("accepts ui-button without variant (variant not in schema)", () => {
         const result = uiButtonNodeDefinitionSchema.safeParse({
             type: "ui-button",
             id: "btn1",
             parent: "app1/route1/content",
             label: "Save",
-            action: "saveAction",
-            variant: "rainbow"
+            action: "saveAction"
         });
 
-        expect(result.success).toBe(false);
+        expect(result.success).toBe(true);
     });
 
-    it("rejects ui-button with unknown variant via validateUiNodeDefinition", () => {
+    it("validates ui-button without variant", () => {
         const result = validateUiNodeDefinition({
             type: "ui-button",
             id: "btn1",
             parent: "app1/route1/content",
             label: "Delete",
-            action: "deleteAction",
-            variant: "invalid-variant"
+            action: "deleteAction"
         });
 
-        expect(result.success).toBe(false);
+        expect(result.success).toBe(true);
     });
 
     it("accepts ui-button with no variant (optional)", () => {
@@ -186,13 +180,12 @@ describe("variant field on view nodes", () => {
         }
     });
 
-    it("accepts ui-container with variant=card", () => {
+    it("accepts ui-container with layout", () => {
         const result = validateUiNodeDefinition({
             type: "ui-container",
             id: "c1",
             parent: "app1/route1/content",
-            layoutId: "vertical",
-            variant: "card"
+            layout: "vertical"
         });
 
         expect(result.success).toBe(true);

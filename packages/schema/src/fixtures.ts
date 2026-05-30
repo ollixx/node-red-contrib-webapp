@@ -494,28 +494,31 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
     {
         type: "ui-route",
         id: "customers",
+        parent: "customersApp",
         path: "/customers",
         title: "Customers",
-        layoutId: "vertical"
+        layout: "vertical"
     },
     {
         type: "ui-route",
         id: "customerDetail",
+        parent: "customersApp",
         path: "/customers/:id",
         title: "Customer detail",
-        layoutId: "vertical"
+        layout: "vertical"
     },
     {
         type: "ui-dialog",
         id: "customerEditor",
+        parent: "customersApp",
         title: "Edit customer",
-        layoutId: "vertical",
+        layout: "vertical",
         modal: true
     },
     {
         type: "ui-text",
         id: "pageTitle",
-        mount: "customersApp.header",
+        parent: "customersApp.header",
         value: {
             kind: "literal",
             value: "Customers"
@@ -525,7 +528,7 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
     {
         type: "ui-button",
         id: "newCustomerButton",
-        mount: "route:/customers/content",
+        parent: "route:/customers/content",
         order: 0,
         label: "New customer",
         action: "openCustomerEditor"
@@ -533,7 +536,7 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
     {
         type: "ui-button",
         id: "refreshCustomersButton",
-        mount: "route:/customers/content",
+        parent: "route:/customers/content",
         order: 1,
         label: "Refresh",
         action: "refreshCustomers",
@@ -619,7 +622,7 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
         type: "ui-container",
         id: "customerEditorContainer",
         mount: "dialog:customerEditor/content",
-        layoutId: "grid"
+        layout: "grid"
     },
     {
         type: "ui-input",
@@ -765,6 +768,12 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
         actionType: "navigate",
         targetMode: "path",
         target: "app",
+        to: "/customers"
+    },
+    {
+        type: "ui-navigation",
+        id: "navToCustomers",
+        parent: "customersApp",
         to: "/customers"
     }
 ];

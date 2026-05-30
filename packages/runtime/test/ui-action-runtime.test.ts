@@ -179,7 +179,7 @@ describe("ui-action preview runtime", () => {
                 type: "ui-route",
                 id: "horizontalRoute",
                 path: "/horizontal",
-                layoutId: "horizontal"
+                layout: "horizontal"
             },
             {
                 type: "ui-text",

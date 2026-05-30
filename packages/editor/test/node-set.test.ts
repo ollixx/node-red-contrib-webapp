@@ -254,7 +254,7 @@ describe("editor node set", () => {
             id: "customers",
             path: "/customers/:id",
             title: "Customer detail",
-            layoutId: "vertical"
+            layout: "vertical"
         });
     });
 
@@ -276,7 +276,6 @@ describe("editor node set", () => {
             id: "customersContent",
             mount: "route:/customers/content",
             layoutId: "grid",
-            title: "Customers content",
             order: 2
         });
 
@@ -290,8 +289,7 @@ describe("editor node set", () => {
             type: "ui-container",
             id: "customersContent",
             mount: "route:/customers/content",
-            layoutId: "grid",
-            title: "Customers content",
+            layout: "grid",
             order: 2
         });
     });

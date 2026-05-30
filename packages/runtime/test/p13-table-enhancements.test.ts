@@ -101,7 +101,7 @@ describe("P13: ui-table — footer slot", () => {
     it("assembleNodeSet: table with footer=true exposes footer in compiled component props", () => {
         const assembly = assembleNodeSet([
             { type: "ui-app", id: "app1", title: "Test App", layout: "app" },
-            { type: "ui-route", id: "route1", path: "/test", layoutId: "vertical" },
+            { type: "ui-route", id: "route1", path: "/test", layout: "vertical" },
             {
                 type: "ui-table",
                 id: "table1",
@@ -161,7 +161,7 @@ describe("P13: ui-table — selectAction backward compatibility", () => {
     it("existing flow with selectAction still compiles without error", () => {
         const assembly = assembleNodeSet([
             { type: "ui-app", id: "app1", title: "Test App", layout: "app" },
-            { type: "ui-route", id: "route1", path: "/test", layoutId: "vertical" },
+            { type: "ui-route", id: "route1", path: "/test", layout: "vertical" },
             {
                 type: "ui-table",
                 id: "legacyTable",

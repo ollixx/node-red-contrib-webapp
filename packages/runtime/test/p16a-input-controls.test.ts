@@ -21,7 +21,7 @@ describe("P16a: ui-select — schema compilation", () => {
     it("compiles to a valid schema definition with label and value", () => {
         const assembly = assembleNodeSet([
             { type: "ui-app", id: "app1", title: "App", layout: "app" },
-            { type: "ui-route", id: "route1", path: "/test", layoutId: "vertical" },
+            { type: "ui-route", id: "route1", path: "/test", layout: "vertical" },
             {
                 type: "ui-select",
                 id: "sel1",
@@ -90,7 +90,7 @@ describe("P16a: ui-checkbox — schema compilation", () => {
     it("compiles to a valid schema definition", () => {
         const assembly = assembleNodeSet([
             { type: "ui-app", id: "app1", title: "App", layout: "app" },
-            { type: "ui-route", id: "route1", path: "/test", layoutId: "vertical" },
+            { type: "ui-route", id: "route1", path: "/test", layout: "vertical" },
             {
                 type: "ui-checkbox",
                 id: "chk1",
@@ -122,7 +122,7 @@ describe("P16a: ui-radio — schema compilation", () => {
     it("compiles to a valid schema definition", () => {
         const assembly = assembleNodeSet([
             { type: "ui-app", id: "app1", title: "App", layout: "app" },
-            { type: "ui-route", id: "route1", path: "/test", layoutId: "vertical" },
+            { type: "ui-route", id: "route1", path: "/test", layout: "vertical" },
             {
                 type: "ui-radio",
                 id: "rad1",
@@ -169,7 +169,7 @@ describe("P16a: ui-switch — schema compilation", () => {
     it("compiles to a valid schema definition", () => {
         const assembly = assembleNodeSet([
             { type: "ui-app", id: "app1", title: "App", layout: "app" },
-            { type: "ui-route", id: "route1", path: "/test", layoutId: "vertical" },
+            { type: "ui-route", id: "route1", path: "/test", layout: "vertical" },
             {
                 type: "ui-switch",
                 id: "sw1",
@@ -204,7 +204,7 @@ describe("P16a: ui-textarea — schema compilation", () => {
     it("compiles to a valid schema definition", () => {
         const assembly = assembleNodeSet([
             { type: "ui-app", id: "app1", title: "App", layout: "app" },
-            { type: "ui-route", id: "route1", path: "/test", layoutId: "vertical" },
+            { type: "ui-route", id: "route1", path: "/test", layout: "vertical" },
             {
                 type: "ui-textarea",
                 id: "ta1",
@@ -239,7 +239,7 @@ describe("P16a: ui-datepicker — schema compilation", () => {
     it("compiles to a valid schema definition", () => {
         const assembly = assembleNodeSet([
             { type: "ui-app", id: "app1", title: "App", layout: "app" },
-            { type: "ui-route", id: "route1", path: "/test", layoutId: "vertical" },
+            { type: "ui-route", id: "route1", path: "/test", layout: "vertical" },
             {
                 type: "ui-datepicker",
                 id: "dp1",
@@ -276,7 +276,7 @@ describe("P16a: ui-slider — schema compilation", () => {
     it("compiles to a valid schema definition", () => {
         const assembly = assembleNodeSet([
             { type: "ui-app", id: "app1", title: "App", layout: "app" },
-            { type: "ui-route", id: "route1", path: "/test", layoutId: "vertical" },
+            { type: "ui-route", id: "route1", path: "/test", layout: "vertical" },
             {
                 type: "ui-slider",
                 id: "sl1",

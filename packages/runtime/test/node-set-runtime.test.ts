@@ -15,12 +15,12 @@ describe("runtime node set assembly", () => {
                 type: "ui-route",
                 id: "customers",
                 path: "/customers",
-                layoutId: "vertical"
+                layout: "vertical"
             },
             {
                 type: "ui-dialog",
                 id: "customerEditor",
-                layoutId: "vertical",
+                layout: "vertical",
                 routeId: "customers",
                 modal: true
             },
@@ -56,7 +56,7 @@ describe("runtime node set assembly", () => {
                 type: "ui-container",
                 id: "customerEditorContainer",
                 mount: "dialog:customerEditor/content",
-                layoutId: "grid"
+                layout: "grid"
             },
             {
                 type: "ui-input",
@@ -319,14 +319,13 @@ describe("runtime node set assembly", () => {
                 id: "customerDetail",
                 path: "/customers/:id",
                 title: "Customer detail",
-                layoutId: "vertical"
+                layout: "vertical"
             },
             {
                 type: "ui-container",
                 id: "detailContainer",
                 mount: "route:/customers/:id/content",
-                layoutId: "horizontal",
-                title: "Detail content",
+                layout: "horizontal",
                 order: 3
             }
         ]);
@@ -365,8 +364,7 @@ describe("runtime node set assembly", () => {
                 order: 3,
                 bind: {},
                 props: {
-                    layoutId: "horizontal",
-                    title: "Detail content"
+                    layoutId: "horizontal"
                 },
                 events: []
             }
@@ -385,13 +383,13 @@ describe("runtime node set assembly", () => {
                 type: "ui-route",
                 id: "orders",
                 path: "/orders",
-                layoutId: "vertical"
+                layout: "vertical"
             },
             {
                 type: "ui-container",
                 id: "ordersShell",
                 mount: "route:/orders/content",
-                layoutId: "horizontal"
+                layout: "horizontal"
             },
             {
                 type: "ui-text",
@@ -463,7 +461,7 @@ describe("P11a: parent field compilation", () => {
     it("compiles a ui-button with parent used as mount into the correct slot", () => {
         const assembly = assembleNodeSet([
             { type: "ui-app", id: "testApp", title: "Test", layout: "app" },
-            { type: "ui-route", id: "home", path: "/", layoutId: "vertical" },
+            { type: "ui-route", id: "home", path: "/", layout: "vertical" },
             {
                 type: "ui-button",
                 id: "btn1",
@@ -493,7 +491,7 @@ describe("P11a: parent field compilation", () => {
     it("compiles a ui-button with mount field (no parent) — backward compatibility", () => {
         const assembly = assembleNodeSet([
             { type: "ui-app", id: "testApp", title: "Test", layout: "app" },
-            { type: "ui-route", id: "home", path: "/", layoutId: "vertical" },
+            { type: "ui-route", id: "home", path: "/", layout: "vertical" },
             {
                 type: "ui-button",
                 id: "btn2",
@@ -509,7 +507,7 @@ describe("P11a: parent field compilation", () => {
     it("compiles a ui-store with parent scoped to an app", () => {
         const assembly = assembleNodeSet([
             { type: "ui-app", id: "myApp", title: "My App", layout: "vertical" },
-            { type: "ui-route", id: "home", path: "/", layoutId: "vertical" },
+            { type: "ui-route", id: "home", path: "/", layout: "vertical" },
             {
                 type: "ui-store",
                 id: "myStore",
@@ -533,7 +531,7 @@ describe("P11a: parent field compilation", () => {
     it("rejects a slot-scoped node with neither mount nor parent", () => {
         const assembly = assembleNodeSet([
             { type: "ui-app", id: "testApp", title: "Test", layout: "app" },
-            { type: "ui-route", id: "home", path: "/", layoutId: "vertical" },
+            { type: "ui-route", id: "home", path: "/", layout: "vertical" },
             {
                 type: "ui-button",
                 id: "brokenBtn",
@@ -552,7 +550,7 @@ describe("P11a: parent field compilation", () => {
     it("compiles a node with uiId but no parent (backward compatibility)", () => {
         const assembly = assembleNodeSet([
             { type: "ui-app", id: "testApp", title: "Test", layout: "app" },
-            { type: "ui-route", id: "home", path: "/", layoutId: "vertical" },
+            { type: "ui-route", id: "home", path: "/", layout: "vertical" },
             {
                 type: "ui-button",
                 id: "legacyBtn",
