@@ -13,9 +13,12 @@ export const routePathSchema = z
     .min(1, "Route paths must not be empty.")
     .startsWith("/", "Route paths must start with '/'.");
 
+/** Binding kinds that require a path (i.e. they are not literal). */
+export const DYNAMIC_BINDING_KINDS = ["state", "query", "routeParam", "msg", "flow", "global", "jsonata", "env"] as const;
+
 export const bindingSchema = z
     .object({
-        kind: z.enum(["state", "query", "routeParam", "literal"]),
+        kind: z.enum(["state", "query", "routeParam", "literal", "msg", "flow", "global", "jsonata", "env"]),
         path: z.string().min(1, "Binding paths must not be empty.").optional(),
         value: z.unknown().optional(),
         fallback: z.unknown().optional()

@@ -5,8 +5,7 @@
 Rendert einen Textwert an einem Mount-Ziel.
 
 Aktuelles MVP-Verhalten:
-- Unterstützt Literal-, State-, Query- und Route-Param-Bindings über das gemeinsame Binding-Modell.
-  - Das Binding muss genauer beschrieben werden. Ideal wäre es, nur Elemente aus einem Store zu verwenden, um Responsiveness zu gewährleisten. Alternativ statische Werte. Hier könnten auch eingehende Messages mit dynamischen Werten - wie in node-red üblich - eingesetzt werden, die dann per Event im Store (client seitig) verändert werden.
+- Unterstützt Literal-, State-, Query-, Route-Param-, msg-, flow-, global-, jsonata- und env-Bindings über das gemeinsame Binding-Modell.
 - Dient für Überschriften, Labels und Statusanzeigen.
 
 ## Abhängigkeiten
@@ -15,7 +14,7 @@ Aktuelles MVP-Verhalten:
 - `ui-app`, `ui-route`, `ui-dialog` oder `ui-container`: Pflicht. Der Knoten wird in einen Slot des gewählten Parent-Knotens eingehängt. `ui-app` fungiert dabei als implizite Route `"/"` und kann direkt als Parent verwendet werden.
 
 **Gemeinsam genutzte Services und Komponenten:**
-- Binding-Modell: Literal-, State-, Query- und RouteParam-Bindings
+- Binding-Modell: Literal-, State-, Query-, RouteParam-, msg-, flow-, global-, jsonata- und env-Bindings
 
 ## Editor
 
@@ -37,6 +36,22 @@ Akzeptiert Component-State-Messages (`show`, `hide`). Format siehe [messages.md]
 ## Output
 
 Kein Output.
+
+## Query path syntax
+
+Query paths use dot-bracket notation to address nested data within a query result:
+
+- **Dot access**: `user.address.city`
+- **Array index**: `items[2].name`
+- **Combined**: `results[0].customer.firstName`
+
+Rules:
+- The path must start with a letter, underscore (`_`), or dollar sign (`$`).
+- Subsequent segments are separated by `.` (property access) or `[n]` (zero-based integer index).
+- Examples of valid paths: `items[0].label`, `data.users[3].email`, `$response.count`
+- Examples of invalid paths: `[0].name` (no leading identifier), `items.2.name` (numeric segment without brackets), `items[-1]` (negative index)
+
+The editor validates query paths and highlights invalid entries before deploy.
 
 ## Besonderheiten
 

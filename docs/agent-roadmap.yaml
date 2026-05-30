@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P20b
+  current_phase: null  # P20b is the last phase; no next phase defined yet
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -134,22 +134,4 @@ phases:
 
   - { id: P20a, title: "ui-action rework", status: done, dependencies: [P19], archive: "docs/agent-roadmap-archive.yaml#P20a" }
 
-  - id: P20b
-    title: ui-text binding enhancements
-    status: pending
-    dependencies: [P20a]
-    goals:
-      - Add standard Node-RED typed-input types (msg, flow, global, jsonata, env) to the ui-text "Text" field so the value can be set via incoming message.
-      - Define a path syntax for the "query" binding type to address nested data (e.g. items[2].name) using JSONPath or dot-bracket notation.
-      - Add editor-side validation for query paths and document the syntax in the help panel.
-    deliverables:
-      - ui-text typedInput types extended with msg, flow, global, jsonata, env in ui-text.html oneditprepare
-      - oneditsave in ui-text.html serialises all new types correctly into this.value binding
-      - Query path syntax decision documented in docs/nodes/view/ui-text.md (JSONPath subset or dot-bracket)
-      - Editor-side validate function for the query path field (rejects syntactically invalid paths)
-      - Help panel text in ui-text.html updated with query path syntax examples
-    validation:
-      - pnpm test passes
-      - ui-text editor shows msg/flow/global/jsonata/env type options in the Text typed input
-      - Entering an invalid query path shows a validation error in the editor
-      - docs/nodes/view/ui-text.md contains a "Query path syntax" section
+  - { id: P20b, title: "ui-text binding enhancements", status: done, dependencies: [P20a], archive: "docs/agent-roadmap-archive.yaml#P20b" }

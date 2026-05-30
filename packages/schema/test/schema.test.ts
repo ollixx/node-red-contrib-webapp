@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+    bindingSchema,
     customersCrudAppModelFixture,
     customersCrudExampleFlowFixture,
     customersCrudNodeSetFixture,
@@ -841,5 +842,48 @@ describe("generated example flow (gen:example)", () => {
         for (const t of fixtureTypes) {
             expect(generatedTypes.has(t), `generated flow must include node type '${t}'`).toBe(true);
         }
+    });
+});
+
+// P20b: ui-text binding enhancements
+describe("P20b: bindingSchema extended kinds", () => {
+    it("accepts msg binding with a path", () => {
+        const result = bindingSchema.safeParse({ kind: "msg", path: "payload" });
+        expect(result.success).toBe(true);
+    });
+
+    it("accepts flow binding with a path", () => {
+        const result = bindingSchema.safeParse({ kind: "flow", path: "myVar" });
+        expect(result.success).toBe(true);
+    });
+
+    it("accepts global binding with a path", () => {
+        const result = bindingSchema.safeParse({ kind: "global", path: "settings.title" });
+        expect(result.success).toBe(true);
+    });
+
+    it("accepts jsonata binding with a path", () => {
+        const result = bindingSchema.safeParse({ kind: "jsonata", path: "payload.items[0].name" });
+        expect(result.success).toBe(true);
+    });
+
+    it("accepts env binding with a path", () => {
+        const result = bindingSchema.safeParse({ kind: "env", path: "APP_TITLE" });
+        expect(result.success).toBe(true);
+    });
+
+    it("rejects msg binding without a path", () => {
+        const result = bindingSchema.safeParse({ kind: "msg" });
+        expect(result.success).toBe(false);
+    });
+
+    it("rejects env binding without a path", () => {
+        const result = bindingSchema.safeParse({ kind: "env" });
+        expect(result.success).toBe(false);
+    });
+
+    it("accepts msg binding nested path", () => {
+        const result = bindingSchema.safeParse({ kind: "msg", path: "payload.user.name" });
+        expect(result.success).toBe(true);
     });
 });

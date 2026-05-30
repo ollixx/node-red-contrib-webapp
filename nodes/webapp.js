@@ -813,6 +813,22 @@ function resolveBinding(binding, sources) {
     else if (binding.kind === "routeParam") {
         resolved = sources.params[binding.path];
     }
+    else if (binding.kind === "msg") {
+        resolved = getValueAtPath(sources.msg, binding.path);
+    }
+    else if (binding.kind === "flow") {
+        resolved = sources.flowContext ? sources.flowContext.get(binding.path) : undefined;
+    }
+    else if (binding.kind === "global") {
+        resolved = sources.globalContext ? sources.globalContext.get(binding.path) : undefined;
+    }
+    else if (binding.kind === "env") {
+        resolved = sources.env ? sources.env[binding.path] : undefined;
+    }
+    else if (binding.kind === "jsonata") {
+        // JSONata expressions are evaluated at render time when a JSONata evaluator is provided.
+        resolved = sources.jsonata ? sources.jsonata(binding.path, sources) : undefined;
+    }
 
     return resolved === undefined ? binding.fallback : resolved;
 }

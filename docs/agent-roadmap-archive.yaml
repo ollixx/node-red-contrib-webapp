@@ -505,3 +505,30 @@ phases:
     - ui-button in flow emits a msg on its output port when clicked
     - ui-action wired to ui-dialog opens the dialog on the client when triggered
     - ui-action with msg.ui.action.targetId overrides wired target
+
+- id: P20b
+  title: "ui-text binding enhancements"
+  status: done
+  dependencies: [P20a]
+  summary:
+    delivered: "Extended bindingSchema with msg/flow/global/jsonata/env kinds; ui-text editor adds all five as typed-input options with query path validation (dot-bracket regex); resolveBinding handles all new kinds; editor-common.js updated; docs/nodes/display/ui-text.md updated with Query path syntax section and new binding types"
+    stats: "6 files changed, 8 new schema unit tests, 208 total tests passing"
+    notes: "doc path is docs/nodes/display/ui-text.md (not view/ as in roadmap — display/ is the actual category). Pre-existing E2E failures (P11b/P12/P13/P15/P16d) are unrelated to P20b changes."
+  goals:
+    - Add standard Node-RED typed-input types (msg, flow, global, jsonata, env) to the ui-text "Text" field so the value can be set via incoming message.
+    - Define a path syntax for the "query" binding type to address nested data (e.g. items[2].name) using JSONPath or dot-bracket notation.
+    - Add editor-side validation for query paths and document the syntax in the help panel.
+  deliverables:
+    - bindingSchema in contracts.ts extended with msg, flow, global, jsonata, env kinds
+    - resolveBinding in webapp.js handles all five new kinds via sources.msg, flowContext, globalContext, env, jsonata
+    - editor-common.js bindingValueForEditor recognises all new binding kinds
+    - ui-text typedInput types extended with msg, flow, global, jsonata, env in ui-text.html oneditprepare
+    - oneditsave in ui-text.html serialises all new types correctly as { kind, path }
+    - Query path validate function rejects syntactically invalid dot-bracket paths
+    - Help panel text in ui-text.html updated with query path syntax examples
+    - docs/nodes/display/ui-text.md updated with Query path syntax section
+  validation:
+    - pnpm test passes (208 tests)
+    - bindingSchema accepts msg/flow/global/jsonata/env with a path
+    - bindingSchema rejects msg/env without a path
+    - docs/nodes/display/ui-text.md contains a Query path syntax section
