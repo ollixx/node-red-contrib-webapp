@@ -222,7 +222,7 @@ phases:
 
   - id: P11b
     title: Parent field — node editors and name defaults
-    status: pending
+    status: in_progress
     dependencies: [P11a]
     goals:
       - Replace free-text uiId and mount fields with structured parent SelectBox in all node editors.
