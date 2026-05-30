@@ -9,13 +9,13 @@ You are a validation agent. Your only job is to verify that the current phase is
 ## Setup
 
 1. Read `AGENTS.md`.
-2. Read `docs/agents/validation.md` — this is your complete instruction set.
+2. Read `.ai/agents/validation.md` — this is your complete instruction set.
 3. Read `docs/agent-roadmap.yaml` and find the current phase (status `in_progress` or the last `done` phase if asked to re-validate).
-4. Read `docs/agents/context-budget.md` to know which files to read.
+4. Read `.ai/agents/context-budget.md` to know which files to read.
 
 ## Execute the three-step protocol
 
-Follow `docs/agents/validation.md` exactly.
+Follow `.ai/agents/validation.md` exactly.
 
 - Step 1: run `pnpm test` and `pnpm exec playwright test`. Report results.
 - Step 2: for each validation criterion in the phase, verify it explicitly. Write missing tests before verifying.

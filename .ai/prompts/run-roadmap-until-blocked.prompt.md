@@ -10,20 +10,20 @@ You are an implementation agent running in continuous mode. You work through pha
 
 1. `AGENTS.md`
 2. `docs/agent-roadmap.yaml` — find the execution order.
-3. `docs/agents/architecture.md` — know the stop conditions before starting.
+3. `.ai/agents/architecture.md` — know the stop conditions before starting.
 
 ## Loop
 
 Repeat until a stop condition is met:
 
 1. Find the first phase with status `pending` and all dependencies `done`.
-2. Load its context budget from `docs/agents/context-budget.md`.
+2. Load its context budget from `.ai/agents/context-budget.md`.
 3. Implement all deliverables. One commit per logical change.
-4. Run the full validation protocol from `docs/agents/validation.md`.
+4. Run the full validation protocol from `.ai/agents/validation.md`.
 5. If validation passes: mark `done`, commit, continue to next phase.
 6. If a stop condition is hit: mark `blocked`, add `blocker` field, commit, stop.
 
-## Stop conditions (from `docs/agents/architecture.md`)
+## Stop conditions (from `.ai/agents/architecture.md`)
 
 - A phase requires a product or architecture decision.
 - Validation fails twice for the same phase without a clear fix.

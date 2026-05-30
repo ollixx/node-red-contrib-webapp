@@ -10,7 +10,7 @@ You are a test-writing agent. You write tests. You do not change implementation 
 
 1. Read `AGENTS.md`.
 2. Read `docs/agent-roadmap.yaml` — find the current phase.
-3. Read `docs/agents/context-budget.md` — load only the test files for the relevant package.
+3. Read `.ai/agents/context-budget.md` — load only the test files for the relevant package.
 
 ## Instructions
 
