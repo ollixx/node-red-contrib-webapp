@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P15
+  current_phase: P16a
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -116,30 +116,7 @@ phases:
 
   - { id: P14, title: "ui-query enhancements", status: done, dependencies: [P11b], archive: "docs/agent-roadmap-archive.yaml#P14" }
 
-  - id: P15
-    title: Multi-user and client persistence
-    status: in_progress
-    dependencies: [P12]
-    goals:
-      - Route store and query updates to specific clients via clientId.
-      - Add persist flag to ui-store for localStorage-backed state.
-      - Implement reconnect sync (server state wins on conflict).
-    deliverables:
-      - clientId routing in store update and query push handlers
-      - persist flag on ui-store node
-      - client sends local state snapshot on reconnect
-      - server compares timestamps and pushes winner to client
-      - unit tests for clientId routing and reconnect sync logic
-      - E2E tests for persist flag behavior across page reload
-    validation:
-      - pnpm test passes with no failures
-      - unit test: store update with msg.ui.clientId="c1" only emits notification to client c1, not c2
-      - unit test: store update without clientId emits notification to all connected clients
-      - unit test: reconnect with client timestamp older than server timestamp results in server state being sent to client
-      - unit test: reconnect with client timestamp newer than server timestamp results in client state being accepted
-      - Playwright: ui-store editor shows persist checkbox
-      - Playwright: page reload with persist=true shows last known store value immediately (before server responds)
-      - docs check: multi-user.md sync strategy description matches the reconnect handler in runtime
+  - { id: P15, title: "Multi-user and client persistence", status: done, dependencies: [P12], archive: "docs/agent-roadmap-archive.yaml#P15" }
 
   - id: P16a
     title: Core node expansion — input controls

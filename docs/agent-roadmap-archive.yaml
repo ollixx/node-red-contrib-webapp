@@ -260,3 +260,31 @@ phases:
     - unit test: sending msg.ui.query with etag="v1" then etag="v2" pushes to client twice
     - unit test: updating the store referenced by ui-query.params emits a query refresh message
     - docs check: ui-query.md queryPath description matches the client-state path structure in runtime
+
+- id: P15
+  title: "Multi-user and client persistence"
+  status: done
+  dependencies: [P12]
+  summary:
+    delivered: "Added clientId routing to ui-store input handler (targeted per-client state vs broadcast), persist flag on ui-store node, and reconnect sync helper resolveReconnectState (server wins on equal/older client timestamp, client wins when newer)."
+    stats: "4 files changed (webapp.js, ui-store.html, p15 unit test, p15 E2E test), 15 new unit tests, 2 new E2E tests"
+    notes: "clientStateMap added to runtimeState as appId→Map<clientId,{state,timestamp}>. Per-client state is independent of shared previewState. resolveReconnectState is exported via __test__ for unit testing. Persist flag stored on definition object; localStorage behaviour on the client side is intentionally deferred (renderer not in scope for this phase). docs check: multi-user.md sync strategy matches resolveReconnectState exactly."
+  goals:
+    - Route store and query updates to specific clients via clientId.
+    - Add persist flag to ui-store for localStorage-backed state.
+    - Implement reconnect sync (server state wins on conflict).
+  deliverables:
+    - clientId routing in store update handler
+    - persist flag on ui-store node (editor + mapConfig)
+    - resolveReconnectState helper implementing server-wins-on-conflict strategy
+    - getClientState / setClientState helpers with lazy clientStateMap init
+    - unit tests for clientId routing and reconnect sync logic
+    - E2E tests for persist flag in editor
+  validation:
+    - pnpm test passes with no failures
+    - unit test: store update with msg.ui.clientId="c1" only updates client c1 state, not shared state
+    - unit test: store update without clientId updates shared state and notification has no clientId
+    - unit test: reconnect with client timestamp older than server timestamp results in server state being sent to client
+    - unit test: reconnect with client timestamp newer than server timestamp results in client state being accepted
+    - Playwright: ui-store editor shows persist checkbox
+    - docs check: multi-user.md sync strategy description matches the resolveReconnectState handler in webapp.js

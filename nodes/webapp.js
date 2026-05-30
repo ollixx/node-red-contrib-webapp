@@ -16,6 +16,8 @@ const runtimeState = {
     previewQueries: new Map(),
     previewMessages: new Map(),
     queryEtags: new Map(),
+    // clientStateMap: appId → Map<clientId, { state, timestamp }>
+    clientStateMap: new Map(),
     endpointsRegistered: false
 };
 
@@ -333,6 +335,54 @@ function applyStoreOperation(currentState, storeDefinition, operation) {
             }
         }
     };
+}
+
+// ---------------------------------------------------------------------------
+// P15: clientId routing and reconnect sync helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns the per-client state for a given appId and clientId.
+ * Creates the client sub-map lazily if needed.
+ */
+function getClientState(appId, clientId) {
+    let appClients = runtimeState.clientStateMap.get(appId);
+    if (!appClients) {
+        appClients = new Map();
+        runtimeState.clientStateMap.set(appId, appClients);
+    }
+    return appClients.get(clientId) || null;
+}
+
+/**
+ * Sets the per-client state for a given appId and clientId.
+ */
+function setClientState(appId, clientId, state, timestamp) {
+    let appClients = runtimeState.clientStateMap.get(appId);
+    if (!appClients) {
+        appClients = new Map();
+        runtimeState.clientStateMap.set(appId, appClients);
+    }
+    appClients.set(clientId, { state: clone(state), timestamp });
+}
+
+/**
+ * Resolves which state wins after a reconnect.
+ * Returns { winner: "server"|"client", state, timestamp }.
+ *
+ * Rules:
+ *   - If client timestamp is newer than server timestamp → client wins.
+ *   - Otherwise (server newer or equal, or missing timestamp) → server wins.
+ */
+function resolveReconnectState(serverEntry, clientSnapshot) {
+    if (!serverEntry) {
+        // No server state recorded yet — accept client state.
+        return { winner: "client", state: clientSnapshot.state, timestamp: clientSnapshot.timestamp };
+    }
+    if (clientSnapshot.timestamp > serverEntry.timestamp) {
+        return { winner: "client", state: clientSnapshot.state, timestamp: clientSnapshot.timestamp };
+    }
+    return { winner: "server", state: serverEntry.state, timestamp: serverEntry.timestamp };
 }
 
 function escapeHtml(input) {
@@ -1928,7 +1978,8 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: config.parent || undefined,
             statePath: config.statePath,
-            initialValue: parseJson(config.initialValue)
+            initialValue: parseJson(config.initialValue),
+            persist: config.persist === true || config.persist === "true"
         }),
         options: {
             inputHandler(node, msg, send, done) {
@@ -1951,17 +2002,38 @@ const runtimeNodeRegistry = {
                     return;
                 }
 
-                const currentState = clone(runtimeState.previewState.get(activeAppId) || initializeState([storeDefinition], [], activeAppId));
-                const applied = applyStoreOperation(currentState, storeDefinition, operation);
+                // P15: clientId routing — per-client state when clientId is present
+                const clientId = msg && msg.ui && msg.ui.clientId ? String(msg.ui.clientId) : undefined;
 
-                runtimeState.previewState.set(activeAppId, applied.nextState);
-                send({
+                const baseState = clientId
+                    ? (getClientState(activeAppId, clientId)?.state || clone(runtimeState.previewState.get(activeAppId) || initializeState([storeDefinition], [], activeAppId)))
+                    : clone(runtimeState.previewState.get(activeAppId) || initializeState([storeDefinition], [], activeAppId));
+
+                const applied = applyStoreOperation(baseState, storeDefinition, operation);
+                const now = Date.now();
+
+                if (clientId) {
+                    // Update only the per-client state, not the shared broadcast state.
+                    setClientState(activeAppId, clientId, applied.nextState, now);
+                }
+                else {
+                    // Broadcast: update shared state.
+                    runtimeState.previewState.set(activeAppId, applied.nextState);
+                }
+
+                const notificationMsg = {
                     ...msg,
                     ui: {
                         ...(msg.ui && typeof msg.ui === "object" ? msg.ui : {}),
-                        store: applied.notification.ui.store
+                        store: {
+                            ...applied.notification.ui.store,
+                            // Preserve clientId in the outgoing notification so downstream
+                            // nodes know which client the update targets (or undefined = broadcast).
+                            clientId: clientId || undefined
+                        }
                     }
-                });
+                };
+                send(notificationMsg);
                 triggerParamQueryRefresh(storeDefinition.id);
                 if (done) {
                     done();
@@ -2040,7 +2112,11 @@ registerWebappNodes.__test__ = {
     queryInputHandler,
     triggerParamQueryRefresh,
     runtimeNodeRegistry,
-    runtimeState
+    runtimeState,
+    // P15
+    getClientState,
+    setClientState,
+    resolveReconnectState
 };
 
 registerWebappNodes.registerNodeType = registerNodeType;
