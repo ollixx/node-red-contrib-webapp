@@ -204,7 +204,7 @@ phases:
 
   - id: P11a
     title: Parent field — schema and runtime
-    status: pending
+    status: in_progress
     dependencies: [P10]
     goals:
       - Add parent field to schema for all nodes that require app or slot scoping.
