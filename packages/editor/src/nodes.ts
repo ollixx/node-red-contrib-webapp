@@ -28,7 +28,13 @@ import {
     type UiTableNodeDefinition,
     type UiTextareaNodeDefinition,
     type UiTextNodeDefinition,
-    type UiToastNodeDefinition
+    type UiToastNodeDefinition,
+    type UiTabsNodeDefinition,
+    type UiAccordionNodeDefinition,
+    type UiBreadcrumbNodeDefinition,
+    type UiMenuNodeDefinition,
+    type UiPaginationNodeDefinition,
+    type UiStepperNodeDefinition
 } from "@node-red-contrib-webapp/schema";
 
 export type NodeEditorType = UiNodeDefinition["type"];
@@ -241,6 +247,43 @@ export interface UiEmptyStateEditorConfig extends MountableEditorConfig {
     actionLabel?: string;
 }
 
+// P16c: navigation and structure node editor configs
+export interface UiTabsEditorConfig extends MountableEditorConfig {
+    tabs?: string;
+    activeTabPath?: string;
+    events?: string;
+}
+
+export interface UiAccordionEditorConfig extends MountableEditorConfig {
+    items?: string;
+    multiple?: boolean;
+    events?: string;
+}
+
+export interface UiBreadcrumbEditorConfig extends MountableEditorConfig {
+    itemsPath?: string;
+}
+
+export interface UiMenuEditorConfig extends MountableEditorConfig {
+    variant?: "sidebar" | "topbar";
+    itemsPath?: string;
+    activeRoutePath?: string;
+}
+
+export interface UiPaginationEditorConfig extends MountableEditorConfig {
+    totalPath?: string;
+    pageSize?: number;
+    currentPagePath?: string;
+    events?: string;
+}
+
+export interface UiStepperEditorConfig extends MountableEditorConfig {
+    steps?: string;
+    activeStepPath?: string;
+    orientation?: "horizontal" | "vertical";
+    events?: string;
+}
+
 export type NodeEditorConfig =
     | UiAppEditorConfig
     | UiRouteEditorConfig
@@ -266,7 +309,13 @@ export type NodeEditorConfig =
     | UiProgressEditorConfig
     | UiSkeletonEditorConfig
     | UiBadgeEditorConfig
-    | UiEmptyStateEditorConfig;
+    | UiEmptyStateEditorConfig
+    | UiTabsEditorConfig
+    | UiAccordionEditorConfig
+    | UiBreadcrumbEditorConfig
+    | UiMenuEditorConfig
+    | UiPaginationEditorConfig
+    | UiStepperEditorConfig;
 
 export type NodeEditorDefinition =
     | UiAppEditorNodeDefinition
@@ -293,7 +342,13 @@ export type NodeEditorDefinition =
     | BaseEditorNodeDefinition<UiProgressEditorConfig, UiProgressNodeDefinition>
     | BaseEditorNodeDefinition<UiSkeletonEditorConfig, UiSkeletonNodeDefinition>
     | BaseEditorNodeDefinition<UiBadgeEditorConfig, UiBadgeNodeDefinition>
-    | BaseEditorNodeDefinition<UiEmptyStateEditorConfig, UiEmptyStateNodeDefinition>;
+    | BaseEditorNodeDefinition<UiEmptyStateEditorConfig, UiEmptyStateNodeDefinition>
+    | BaseEditorNodeDefinition<UiTabsEditorConfig, UiTabsNodeDefinition>
+    | BaseEditorNodeDefinition<UiAccordionEditorConfig, UiAccordionNodeDefinition>
+    | BaseEditorNodeDefinition<UiBreadcrumbEditorConfig, UiBreadcrumbNodeDefinition>
+    | BaseEditorNodeDefinition<UiMenuEditorConfig, UiMenuNodeDefinition>
+    | BaseEditorNodeDefinition<UiPaginationEditorConfig, UiPaginationNodeDefinition>
+    | BaseEditorNodeDefinition<UiStepperEditorConfig, UiStepperNodeDefinition>;
 
 function requiredString(message: string): EditorFieldDefinition {
     return {
@@ -933,6 +988,80 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         message: config.message,
         action: config.action,
         actionLabel: config.actionLabel,
+        ...collectLayoutChildConfig(config)
+    })),
+    "ui-tabs": createDefinition("ui-tabs", "view", {
+        id: requiredString("Tabs IDs are required before deploy."),
+        mount: requiredString("Tabs must declare a parent slot."),
+        tabs: requiredString("Tabs must declare at least one tab.")
+    }, (config: UiTabsEditorConfig): UiTabsNodeDefinition => ({
+        type: "ui-tabs",
+        id: config.id ?? "",
+        mount: config.mount ?? "",
+        tabs: JSON.parse(config.tabs ?? "[]"),
+        activeTab: config.activeTabPath ? stateBinding(config.activeTabPath) : undefined,
+        ...collectLayoutChildConfig(config)
+    })),
+    "ui-accordion": createDefinition("ui-accordion", "view", {
+        id: requiredString("Accordion IDs are required before deploy."),
+        mount: requiredString("Accordion must declare a parent slot."),
+        items: requiredString("Accordion must declare at least one item.")
+    }, (config: UiAccordionEditorConfig): UiAccordionNodeDefinition => ({
+        type: "ui-accordion",
+        id: config.id ?? "",
+        mount: config.mount ?? "",
+        items: JSON.parse(config.items ?? "[]"),
+        multiple: config.multiple,
+        ...collectLayoutChildConfig(config)
+    })),
+    "ui-breadcrumb": createDefinition("ui-breadcrumb", "view", {
+        id: requiredString("Breadcrumb IDs are required before deploy."),
+        mount: requiredString("Breadcrumb must declare a parent slot."),
+        itemsPath: requiredString("Breadcrumb must declare an items state path.")
+    }, (config: UiBreadcrumbEditorConfig): UiBreadcrumbNodeDefinition => ({
+        type: "ui-breadcrumb",
+        id: config.id ?? "",
+        mount: config.mount ?? "",
+        items: stateBinding(config.itemsPath ?? ""),
+        ...collectLayoutChildConfig(config)
+    })),
+    "ui-menu": createDefinition("ui-menu", "view", {
+        id: requiredString("Menu IDs are required before deploy."),
+        mount: requiredString("Menu must declare a parent slot."),
+        itemsPath: requiredString("Menu must declare an items state path.")
+    }, (config: UiMenuEditorConfig): UiMenuNodeDefinition => ({
+        type: "ui-menu",
+        id: config.id ?? "",
+        mount: config.mount ?? "",
+        variant: config.variant,
+        items: stateBinding(config.itemsPath ?? ""),
+        activeRoute: config.activeRoutePath ? stateBinding(config.activeRoutePath) : undefined,
+        ...collectLayoutChildConfig(config)
+    })),
+    "ui-pagination": createDefinition("ui-pagination", "view", {
+        id: requiredString("Pagination IDs are required before deploy."),
+        mount: requiredString("Pagination must declare a parent slot."),
+        totalPath: requiredString("Pagination must declare a total state path.")
+    }, (config: UiPaginationEditorConfig): UiPaginationNodeDefinition => ({
+        type: "ui-pagination",
+        id: config.id ?? "",
+        mount: config.mount ?? "",
+        total: stateBinding(config.totalPath ?? ""),
+        pageSize: config.pageSize,
+        currentPage: config.currentPagePath ? stateBinding(config.currentPagePath) : undefined,
+        ...collectLayoutChildConfig(config)
+    })),
+    "ui-stepper": createDefinition("ui-stepper", "view", {
+        id: requiredString("Stepper IDs are required before deploy."),
+        mount: requiredString("Stepper must declare a parent slot."),
+        steps: requiredString("Stepper must declare at least two steps.")
+    }, (config: UiStepperEditorConfig): UiStepperNodeDefinition => ({
+        type: "ui-stepper",
+        id: config.id ?? "",
+        mount: config.mount ?? "",
+        steps: JSON.parse(config.steps ?? "[]"),
+        activeStep: config.activeStepPath ? stateBinding(config.activeStepPath) : undefined,
+        orientation: config.orientation,
         ...collectLayoutChildConfig(config)
     }))
 };

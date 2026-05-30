@@ -372,6 +372,78 @@ export const uiEmptyStateNodeDefinitionSchema = mountableNodeSchema.extend({
 
 export type UiEmptyStateNodeDefinition = z.infer<typeof uiEmptyStateNodeDefinitionSchema>;
 
+// ── P16c: navigation and structure nodes ────────────────────────────────────
+
+const tabItemSchema = z.object({
+    id: z.string().min(1),
+    label: z.string().min(1)
+});
+
+export const uiTabsNodeDefinitionSchema = mountableNodeSchema.extend({
+    type: z.literal("ui-tabs"),
+    tabs: z.array(tabItemSchema).min(1, "Tabs must declare at least one tab."),
+    activeTab: bindingSchema.optional(),
+    events: z.array(z.enum(["tabChange"])).optional()
+});
+
+export type UiTabsNodeDefinition = z.infer<typeof uiTabsNodeDefinitionSchema>;
+
+const accordionItemSchema = z.object({
+    id: z.string().min(1),
+    label: z.string().min(1)
+});
+
+export const uiAccordionNodeDefinitionSchema = mountableNodeSchema.extend({
+    type: z.literal("ui-accordion"),
+    items: z.array(accordionItemSchema).min(1, "Accordion must declare at least one item."),
+    multiple: z.boolean().optional(),
+    events: z.array(z.enum(["itemToggle"])).optional()
+});
+
+export type UiAccordionNodeDefinition = z.infer<typeof uiAccordionNodeDefinitionSchema>;
+
+export const uiBreadcrumbNodeDefinitionSchema = mountableNodeSchema.extend({
+    type: z.literal("ui-breadcrumb"),
+    items: z.union([
+        z.array(z.object({ label: z.string().min(1), route: z.string().optional() })),
+        bindingSchema
+    ])
+});
+
+export type UiBreadcrumbNodeDefinition = z.infer<typeof uiBreadcrumbNodeDefinitionSchema>;
+
+export const uiMenuNodeDefinitionSchema = mountableNodeSchema.extend({
+    type: z.literal("ui-menu"),
+    variant: z.enum(["sidebar", "topbar"]).optional(),
+    items: z.union([
+        z.array(z.object({ label: z.string().min(1), route: z.string().optional(), icon: z.string().optional() })),
+        bindingSchema
+    ]),
+    activeRoute: bindingSchema.optional()
+});
+
+export type UiMenuNodeDefinition = z.infer<typeof uiMenuNodeDefinitionSchema>;
+
+export const uiPaginationNodeDefinitionSchema = mountableNodeSchema.extend({
+    type: z.literal("ui-pagination"),
+    total: bindingSchema,
+    pageSize: z.number().int().positive().optional(),
+    currentPage: bindingSchema.optional(),
+    events: z.array(z.enum(["pageChange"])).optional()
+});
+
+export type UiPaginationNodeDefinition = z.infer<typeof uiPaginationNodeDefinitionSchema>;
+
+export const uiStepperNodeDefinitionSchema = mountableNodeSchema.extend({
+    type: z.literal("ui-stepper"),
+    steps: z.array(z.object({ id: z.string().min(1), label: z.string().min(1) })).min(2, "Stepper must declare at least two steps."),
+    activeStep: bindingSchema.optional(),
+    orientation: z.enum(["horizontal", "vertical"]).optional(),
+    events: z.array(z.enum(["stepChange"])).optional()
+});
+
+export type UiStepperNodeDefinition = z.infer<typeof uiStepperNodeDefinitionSchema>;
+
 export const uiNodeDefinitionSchema = z.union([
     uiAppNodeDefinitionSchema,
     uiRouteNodeDefinitionSchema,
@@ -397,7 +469,13 @@ export const uiNodeDefinitionSchema = z.union([
     uiProgressNodeDefinitionSchema,
     uiSkeletonNodeDefinitionSchema,
     uiBadgeNodeDefinitionSchema,
-    uiEmptyStateNodeDefinitionSchema
+    uiEmptyStateNodeDefinitionSchema,
+    uiTabsNodeDefinitionSchema,
+    uiAccordionNodeDefinitionSchema,
+    uiBreadcrumbNodeDefinitionSchema,
+    uiMenuNodeDefinitionSchema,
+    uiPaginationNodeDefinitionSchema,
+    uiStepperNodeDefinitionSchema
 ]);
 
 export type UiNodeDefinition = z.infer<typeof uiNodeDefinitionSchema>;

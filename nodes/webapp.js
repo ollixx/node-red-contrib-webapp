@@ -46,7 +46,13 @@ const WEBAPP_NODE_TYPES = new Set([
     "ui-progress",
     "ui-skeleton",
     "ui-badge",
-    "ui-empty-state"
+    "ui-empty-state",
+    "ui-tabs",
+    "ui-accordion",
+    "ui-breadcrumb",
+    "ui-menu",
+    "ui-pagination",
+    "ui-stepper"
 ]);
 
 function parseList(value) {
@@ -1582,7 +1588,7 @@ function getDefinitionBuckets(appId, definitions) {
         app: matchingApp,
         routes: matchingDefinitions.filter((entry) => entry.type === "ui-route"),
         dialogs: matchingDefinitions.filter((entry) => entry.type === "ui-dialog"),
-        components: matchingDefinitions.filter((entry) => ["ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select", "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider", "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state"].includes(entry.type)),
+        components: matchingDefinitions.filter((entry) => ["ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select", "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider", "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state", "ui-tabs", "ui-accordion", "ui-breadcrumb", "ui-menu", "ui-pagination", "ui-stepper"].includes(entry.type)),
         stores: matchingDefinitions.filter((entry) => entry.type === "ui-store"),
         queries: matchingDefinitions.filter((entry) => entry.type === "ui-query"),
         actions: matchingDefinitions.filter((entry) => entry.type === "ui-action"),
@@ -2318,6 +2324,117 @@ const runtimeNodeRegistry = {
             message: config.message || undefined,
             action: config.action || undefined,
             actionLabel: config.actionLabel || undefined,
+            ...collectNodeConfigLayoutProps(config)
+        }),
+        options: {
+            inputHandler: componentStateInputHandler
+        }
+    },
+    "ui-tabs": {
+        mapConfig: (config) => ({
+            type: "ui-tabs",
+            id: getUiId(config),
+            parent: config.parent || undefined,
+            mount: config.mount || config.parent,
+            order: toOptionalNumber(config.order),
+            tabs: parseList(config.tabs).map((t) => {
+                if (typeof t === "string") {
+                    try { return JSON.parse(t); } catch { return { id: t, label: t }; }
+                }
+                return t;
+            }).filter(Boolean),
+            activeTab: getBinding(config.activeTab, config.activeTabPath ? stateBinding(config.activeTabPath) : undefined),
+            events: parseList(config.events),
+            ...collectNodeConfigLayoutProps(config)
+        }),
+        options: {
+            inputHandler: componentStateInputHandler
+        }
+    },
+    "ui-accordion": {
+        mapConfig: (config) => ({
+            type: "ui-accordion",
+            id: getUiId(config),
+            parent: config.parent || undefined,
+            mount: config.mount || config.parent,
+            order: toOptionalNumber(config.order),
+            items: parseList(config.items).map((t) => {
+                if (typeof t === "string") {
+                    try { return JSON.parse(t); } catch { return { id: t, label: t }; }
+                }
+                return t;
+            }).filter(Boolean),
+            multiple: config.multiple === true || config.multiple === "true" || undefined,
+            events: parseList(config.events),
+            ...collectNodeConfigLayoutProps(config)
+        }),
+        options: {
+            inputHandler: componentStateInputHandler
+        }
+    },
+    "ui-breadcrumb": {
+        mapConfig: (config) => ({
+            type: "ui-breadcrumb",
+            id: getUiId(config),
+            parent: config.parent || undefined,
+            mount: config.mount || config.parent,
+            order: toOptionalNumber(config.order),
+            items: getBinding(config.items, config.itemsPath ? stateBinding(config.itemsPath) : undefined) || parseList(config.items),
+            ...collectNodeConfigLayoutProps(config)
+        }),
+        options: {
+            inputHandler: componentStateInputHandler
+        }
+    },
+    "ui-menu": {
+        mapConfig: (config) => ({
+            type: "ui-menu",
+            id: getUiId(config),
+            parent: config.parent || undefined,
+            mount: config.mount || config.parent,
+            order: toOptionalNumber(config.order),
+            variant: config.variant || undefined,
+            items: getBinding(config.items, config.itemsPath ? stateBinding(config.itemsPath) : undefined) || parseList(config.items),
+            activeRoute: getBinding(config.activeRoute, config.activeRoutePath ? stateBinding(config.activeRoutePath) : undefined),
+            ...collectNodeConfigLayoutProps(config)
+        }),
+        options: {
+            inputHandler: componentStateInputHandler
+        }
+    },
+    "ui-pagination": {
+        mapConfig: (config) => ({
+            type: "ui-pagination",
+            id: getUiId(config),
+            parent: config.parent || undefined,
+            mount: config.mount || config.parent,
+            order: toOptionalNumber(config.order),
+            total: getBinding(config.total, config.totalPath ? stateBinding(config.totalPath) : undefined),
+            pageSize: toOptionalNumber(config.pageSize),
+            currentPage: getBinding(config.currentPage, config.currentPagePath ? stateBinding(config.currentPagePath) : undefined),
+            events: parseList(config.events),
+            ...collectNodeConfigLayoutProps(config)
+        }),
+        options: {
+            inputHandler: componentStateInputHandler
+        }
+    },
+    "ui-stepper": {
+        mapConfig: (config) => ({
+            type: "ui-stepper",
+            id: getUiId(config),
+            parent: config.parent || undefined,
+            mount: config.mount || config.parent,
+            order: toOptionalNumber(config.order),
+            steps: parseList(config.steps).map((t) => {
+                if (typeof t === "string") {
+                    try { return JSON.parse(t); } catch { return { id: t, label: t }; }
+                }
+                return t;
+            }).filter(Boolean),
+            activeStep: getBinding(config.activeStep, config.activeStepPath ? stateBinding(config.activeStepPath) : undefined),
+            orientation: config.orientation || undefined,
+            events: parseList(config.events),
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {

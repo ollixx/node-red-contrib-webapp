@@ -5,10 +5,12 @@ import { emitNodeDefinition, nodeSet, validateEditorNodeConfig } from "../src";
 describe("editor node set", () => {
     it("covers the full P4 MVP node catalog", () => {
         expect(Object.keys(nodeSet).sort()).toEqual([
+            "ui-accordion",
             "ui-action",
             "ui-alert",
             "ui-app",
             "ui-badge",
+            "ui-breadcrumb",
             "ui-button",
             "ui-checkbox",
             "ui-container",
@@ -16,7 +18,9 @@ describe("editor node set", () => {
             "ui-dialog",
             "ui-empty-state",
             "ui-input",
+            "ui-menu",
             "ui-navigation",
+            "ui-pagination",
             "ui-progress",
             "ui-query",
             "ui-radio",
@@ -24,9 +28,11 @@ describe("editor node set", () => {
             "ui-select",
             "ui-skeleton",
             "ui-slider",
+            "ui-stepper",
             "ui-store",
             "ui-switch",
             "ui-table",
+            "ui-tabs",
             "ui-text",
             "ui-textarea",
             "ui-toast"

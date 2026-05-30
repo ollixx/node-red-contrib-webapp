@@ -76,6 +76,12 @@ export {
     uiTextareaNodeDefinitionSchema,
     uiTextNodeDefinitionSchema,
     uiToastNodeDefinitionSchema,
+    uiTabsNodeDefinitionSchema,
+    uiAccordionNodeDefinitionSchema,
+    uiBreadcrumbNodeDefinitionSchema,
+    uiMenuNodeDefinitionSchema,
+    uiPaginationNodeDefinitionSchema,
+    uiStepperNodeDefinitionSchema,
     validateUiNodeDefinition
 } from "./node-definitions";
 export type {
@@ -104,7 +110,13 @@ export type {
     UiTableNodeDefinition,
     UiTextareaNodeDefinition,
     UiTextNodeDefinition,
-    UiToastNodeDefinition
+    UiToastNodeDefinition,
+    UiTabsNodeDefinition,
+    UiAccordionNodeDefinition,
+    UiBreadcrumbNodeDefinition,
+    UiMenuNodeDefinition,
+    UiPaginationNodeDefinition,
+    UiStepperNodeDefinition
 } from "./node-definitions";
 
 export {
