@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P16c
+  current_phase: P16d
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -122,27 +122,7 @@ phases:
 
   - { id: P16b, title: "Core node expansion — feedback and status", status: done, dependencies: [P12], archive: "docs/agent-roadmap-archive.yaml#P16b" }
 
-  - id: P16c
-    title: Core node expansion — navigation and structure
-    status: in_progress
-    dependencies: [P12]
-    goals:
-      - Add navigation and structural nodes for multi-step and hierarchical UIs.
-    deliverables:
-      - ui-tabs: tab bar with slot per tab
-      - ui-accordion: collapsible sections
-      - ui-breadcrumb: path display with route bindings
-      - ui-menu: navigation menu (sidebar or topbar variant)
-      - ui-pagination: page controls connected to ui-query params
-      - ui-stepper: multi-step process indicator
-      - unit and E2E tests per node
-    validation:
-      - pnpm test passes with no failures
-      - unit test: each node compiles to a valid schema definition
-      - unit test: ui-tabs with 3 tabs exposes 3 slots in compiled model
-      - unit test: ui-pagination emits page-change event with correct page number
-      - Playwright: each node editor shows parent selector and name default
-      - docs check: each node doc's Pflichtfelder match the schema and editor HTML
+  - { id: P16c, title: "Core node expansion — navigation and structure", status: done, dependencies: [P12], archive: "docs/agent-roadmap-archive.yaml#P16c" }
 
   - id: P16d
     title: Core node expansion — display

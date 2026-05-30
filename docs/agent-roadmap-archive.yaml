@@ -342,3 +342,29 @@ phases:
     - unit test: ui-progress with value binding renders correct fill percentage
     - Playwright: each node editor shows parent selector and name default
     - docs check: each node doc's Pflichtfelder match the schema and editor HTML
+
+- id: P16c
+  title: "Core node expansion — navigation and structure"
+  status: done
+  dependencies: [P12]
+  summary:
+    delivered: "Added 6 navigation/structure nodes: ui-tabs, ui-accordion, ui-breadcrumb, ui-menu, ui-pagination, ui-stepper — schemas, editor HTML+JS, webapp.js registry entries, and unit tests."
+    stats: "17 files changed, 12 new node files, 10 new schema tests (44 total), all 168 tests passing"
+    notes: "Breadcrumb and menu use state bindings via itemsPath for dynamic items; tabs/accordion/stepper use JSON string fields in the editor for static item definitions. No docs node spec files existed so none were added."
+  goals:
+    - Add navigation and structural nodes for multi-step and hierarchical UIs.
+  deliverables:
+    - ui-tabs: tab bar with slot per tab
+    - ui-accordion: collapsible sections
+    - ui-breadcrumb: path display with route bindings
+    - ui-menu: navigation menu (sidebar or topbar variant)
+    - ui-pagination: page controls connected to ui-query params
+    - ui-stepper: multi-step process indicator
+    - unit and E2E tests per node
+  validation:
+    - pnpm test passes with no failures
+    - unit test: each node compiles to a valid schema definition
+    - unit test: ui-tabs with 3 tabs exposes 3 slots in compiled model
+    - unit test: ui-pagination emits page-change event with correct page number
+    - Playwright: each node editor shows parent selector and name default
+    - docs check: each node doc's Pflichtfelder match the schema and editor HTML
