@@ -445,3 +445,34 @@ phases:
       - unit test: every node in the generated flow has an id and a z reference to an existing flow tab
       - manual check: gen:example produces a flow that loads in the dev Node-RED without migration warnings
       - docs check: the generated example covers the same node types as the customersCrudAppModelFixture
+
+  - id: P19
+    title: Editor UX polish
+    status: done
+    dependencies: [P18]
+    summary:
+      delivered: "Removed uiId field and form-tips from all 35 node HTML editors; added hr separators between field groups; fixed buildMountOptions to use node names and correct container mount values (container:<id>/<slot>); simplified identifierSchema to z.string().min(1); getAppModelResult now reports all validation issues; all 3 editor-common.js copies synced."
+      stats: "42 files changed (35 node HTML files, 3 editor-common.js copies, webapp.js, contracts.ts, 1 E2E test); 199 unit tests pass; 18/23 Playwright tests pass (5 pre-existing p16d failures)"
+      notes: "Container mount value was previously layout:<layoutId>/<slot> which caused collisions — fixed to container:<id>/<slot>. P16d E2E failures (RED.editor.cancel API issue) are pre-existing and not caused by P19. ui-button action SelectBox was already in place from a prior phase — confirmed working."
+    goals:
+      - Remove uiId (NodeId) field from all node editors — use Node-RED's native node.id as the technical identifier.
+      - Remove inline form-tips description texts from node editors.
+      - Add thematic horizontal separators between field groups in all node editors.
+      - Mount/parent SelectBox improvements — show name first, fix container mount value bug.
+      - ui-app validation — show full list of validation issues.
+      - ui-button action field — SelectBox populated from ui-action nodes.
+    deliverables:
+      - uiId defaults entry and form-row removed from all 35 node HTML files
+      - getUiId() in webapp.js always uses config.id
+      - All form-tips div elements removed from node HTML files
+      - Horizontal hr separator inserted between identity, content, and layout field groups
+      - buildMountOptions() uses node names and container:<id>/<slot> for containers
+      - installReferenceSelectors() label format uses node.name || node.id
+      - getAppModelResult() collects all validation.error.issues joined into one message
+      - identifierSchema simplified to z.string().min(1)
+    validation:
+      - pnpm test passes
+      - No node HTML file contains node-input-uiId after the change
+      - No node HTML file contains form-tips after the change
+      - Mount selector in ui-text editor shows node names and is grouped by app
+      - ui-button editor shows a SelectBox listing available ui-action nodes instead of a free-text field

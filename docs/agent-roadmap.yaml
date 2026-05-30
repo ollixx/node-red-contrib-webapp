@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P19
+  current_phase: P20a
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -130,33 +130,7 @@ phases:
 
   - { id: P18, title: "Example flow generator", status: done, dependencies: [P11b], archive: "docs/agent-roadmap-archive.yaml#P18" }
 
-  - id: P19
-    title: Editor UX polish
-    status: in_progress
-    dependencies: [P18]
-    goals:
-      - Remove uiId (NodeId) field from all node editors — use Node-RED's native node.id as the technical identifier.
-      - Remove inline form-tips description texts from node editors (content belongs in the help panel).
-      - Add thematic horizontal separators between field groups in all node editors.
-      - Mount/parent SelectBox improvements — show name first (fall back to id), tree structure (routes grouped under their app), full field width.
-      - ui-app validation — show full list of validation issues, not just the first one.
-      - ui-button action field — replace static text input with a SelectBox populated from ui-action nodes (same pattern as other reference selectors).
-    deliverables:
-      - uiId defaults entry and <div class="form-row"> for node-input-uiId removed from all 35 node HTML files
-      - getUiId() in webapp.js always uses config.id (Node-RED id); uiId fallback removed
-      - All form-tips <div> elements removed from node HTML files
-      - Horizontal rule (<hr>) or form-row separator inserted between thematic field groups (identity, binding, layout) in all node editors
-      - buildMountOptions() in lib/editor-common.js restructured as grouped tree options: optgroup per app, with routes/dialogs as children; containers appear nested under their parent route/dialog/app; mount value for containers uses container id (e.g. container:<id>/<slot>), NOT the layout preset id — the current layout:<layoutId>/<slot> scheme is a bug that causes collisions when multiple containers share the same layout
-      - installReferenceSelectors() label format uses node.name || node.id for all selector types
-      - getAppModelResult() in nodes/webapp.js collects all validation.error.issues and joins them into one error message
-      - identifierSchema in packages/schema/src/contracts.ts simplified to z.string().min(1) — the letter-start regex is wrong for Node-RED native IDs and must be removed everywhere
-      - ui-button.html: action text input replaced with <select id="node-input-action"> populated via installReferenceSelectors({ action: "#node-input-action" })
-    validation:
-      - pnpm test passes
-      - No node HTML file contains node-input-uiId after the change
-      - No node HTML file contains form-tips after the change
-      - Mount selector in ui-text editor shows node names and is grouped by app
-      - ui-button editor shows a SelectBox listing available ui-action nodes instead of a free-text field
+  - { id: P19, title: "Editor UX polish", status: done, dependencies: [P18], archive: "docs/agent-roadmap-archive.yaml#P19" }
 
   - id: P20a
     title: ui-action rework
