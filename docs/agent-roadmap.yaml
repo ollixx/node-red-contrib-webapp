@@ -134,7 +134,7 @@ phases:
 
   - id: P20a
     title: ui-action rework
-    status: pending
+    status: in_progress
     dependencies: [P19]
     goals:
       - Align ui-action with the architecture defined in docs/nodes/concepts/actions.md.
