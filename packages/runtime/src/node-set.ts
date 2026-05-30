@@ -107,7 +107,7 @@ function toTableComponent(node: UiTableNodeDefinition): ComponentDefinition {
             columns: node.columns,
             footer: node.footer === true,
             events: node.events ?? [],
-            selectAction: node.selectAction ?? null
+            selectAction: node.selectAction ?? undefined
         },
         events: node.selectAction
             ? [

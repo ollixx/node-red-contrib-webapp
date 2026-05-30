@@ -578,10 +578,11 @@ function toComponentDefinitions(components) {
                 },
                 props: {
                     columns: parseColumns(component.columns),
+                    events: tableEvents.length > 0 ? tableEvents : (component.selectAction ? ["rowSelect"] : []),
+                    selectAction: component.selectAction || null,
                     ...(Object.keys(layoutProps).length > 0 ? { layout: layoutProps } : {})
                 },
-                events: tableEvents.length > 0 ? tableEvents : (component.selectAction ? ["rowSelect"] : []),
-                selectAction: component.selectAction || undefined
+                events: component.selectAction ? [{ event: "select", action: component.selectAction }] : []
             };
         }
 
@@ -889,14 +890,15 @@ function renderComponent(component, sources, model, context) {
     }
 
     if (component.kind === "table") {
+        const action = component.events.find((e) => e.event === "select")?.action;
         return {
             kind: "table",
             id: component.id,
             columns: Array.isArray(component.props.columns) ? component.props.columns : [],
             rows: Array.isArray(resolveBinding(component.bind.rows, sources)) ? resolveBinding(component.bind.rows, sources) : [],
             footer: component.footer === true,
-            events: Array.isArray(component.events) ? component.events : [],
-            selectAction: component.selectAction || undefined,
+            events: Array.isArray(component.props.events) ? component.props.events : [],
+            selectAction: component.props.selectAction || action || undefined,
             appId: model.id,
             location: context.location,
             layoutId: context.layoutId,

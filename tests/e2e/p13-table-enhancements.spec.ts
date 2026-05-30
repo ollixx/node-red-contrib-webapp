@@ -97,16 +97,17 @@ test.describe("P13: ui-table enhancements — editor", () => {
             return typeof nodeApi?.node === "function";
         });
 
-        // Inject a ui-table node directly and verify the template contains expected elements
+        // Verify the template script content contains expected markup
         const result = await page.evaluate(() => {
             const template = document.querySelector('[data-template-name="ui-table"]');
-            if (!template) return { found: false, hasEventsContainer: false, hasFooter: false };
+            if (!template) return { found: false, hasEventsContainer: false, hasFooter: false, hasEventsHidden: false };
+            const html = template.innerHTML || template.textContent || "";
 
             return {
                 found: true,
-                hasEventsContainer: template.querySelector("#node-input-events-container") !== null,
-                hasFooter: template.querySelector("#node-input-footer") !== null,
-                hasEventsHidden: template.querySelector("#node-input-events") !== null
+                hasEventsContainer: html.includes("node-input-events-container"),
+                hasFooter: html.includes("node-input-footer"),
+                hasEventsHidden: html.includes("node-input-events")
             };
         });
 
