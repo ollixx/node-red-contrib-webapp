@@ -1673,14 +1673,79 @@ function passThroughInputHandler(node, msg, send, done) {
     }
 }
 
+function componentStateInputHandler(node, msg, send, done) {
+    const componentMsg = msg && msg.ui && typeof msg.ui === "object" ? msg.ui.component : undefined;
+
+    if (componentMsg && typeof componentMsg === "object" && typeof componentMsg.op === "string") {
+        const op = componentMsg.op;
+        const validOps = ["show", "hide", "enable", "disable", "focus", "reset"];
+
+        if (!validOps.includes(op)) {
+            if (done) {
+                done();
+            }
+            return;
+        }
+
+        if (!componentMsg.id) {
+            if (done) {
+                done();
+            }
+            return;
+        }
+
+        send(msg);
+        if (done) {
+            done();
+        }
+        return;
+    }
+
+    send(msg);
+    if (done) {
+        done();
+    }
+}
+
+function dialogInputHandler(node, msg, send, done) {
+    const dialogMsg = msg && msg.ui && typeof msg.ui === "object" ? msg.ui.dialog : undefined;
+
+    if (dialogMsg && typeof dialogMsg === "object" && typeof dialogMsg.op === "string") {
+        const op = dialogMsg.op;
+        const validOps = ["open", "close", "toggle"];
+
+        if (!validOps.includes(op)) {
+            if (done) {
+                done();
+            }
+            return;
+        }
+
+        send(msg);
+        if (done) {
+            done();
+        }
+        return;
+    }
+
+    send(msg);
+    if (done) {
+        done();
+    }
+}
+
 const runtimeNodeRegistry = {
     "ui-app": {
         mapConfig: (config) => ({
             type: "ui-app",
             id: config.root || getUiId(config) || "",
             title: config.name || config.title || config.root || getUiId(config) || "App",
-            layout: config.layout || "vertical"
-        })
+            layout: config.layout || "vertical",
+            events: parseList(config.events).length > 0 ? parseList(config.events) : undefined
+        }),
+        options: {
+            inputHandler: passThroughInputHandler
+        }
     },
     "ui-route": {
         mapConfig: (config) => ({
@@ -1689,8 +1754,12 @@ const runtimeNodeRegistry = {
             parent: config.parent || undefined,
             path: config.path,
             title: config.title || undefined,
-            layoutId: config.layoutId
-        })
+            layoutId: config.layoutId,
+            events: parseList(config.events).length > 0 ? parseList(config.events) : undefined
+        }),
+        options: {
+            inputHandler: passThroughInputHandler
+        }
     },
     "ui-dialog": {
         mapConfig: (config) => ({
@@ -1700,8 +1769,12 @@ const runtimeNodeRegistry = {
             title: config.title || undefined,
             layoutId: config.layoutId,
             routeId: config.routeId || undefined,
-            modal: config.modal !== false && config.modal !== "false"
-        })
+            modal: config.modal !== false && config.modal !== "false",
+            events: parseList(config.events).length > 0 ? parseList(config.events) : undefined
+        }),
+        options: {
+            inputHandler: dialogInputHandler
+        }
     },
     "ui-text": {
         mapConfig: (config) => ({
@@ -1713,7 +1786,10 @@ const runtimeNodeRegistry = {
             value: getBinding(config.value, literalBinding(config.text || "")),
             variant: config.variant || undefined,
             ...collectNodeConfigLayoutProps(config)
-        })
+        }),
+        options: {
+            inputHandler: componentStateInputHandler
+        }
     },
     "ui-button": {
         mapConfig: (config) => ({
@@ -1728,7 +1804,7 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: passThroughInputHandler
+            inputHandler: componentStateInputHandler
         }
     },
     "ui-table": {
@@ -1744,7 +1820,7 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: passThroughInputHandler
+            inputHandler: componentStateInputHandler
         }
     },
     "ui-container": {
@@ -1755,10 +1831,11 @@ const runtimeNodeRegistry = {
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
             layoutId: config.layoutId,
+            events: parseList(config.events).length > 0 ? parseList(config.events) : undefined,
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: passThroughInputHandler
+            inputHandler: componentStateInputHandler
         }
     },
     "ui-input": {
@@ -1776,7 +1853,7 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: passThroughInputHandler
+            inputHandler: componentStateInputHandler
         }
     },
     "ui-store": {

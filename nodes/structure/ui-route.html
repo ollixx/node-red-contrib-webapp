@@ -2,7 +2,7 @@
 <script type="text/javascript">
     (function () {
         const common = window.WebappEditorCommon;
-        common.registerNodeType("ui-route", {
+        common.registerNodeTypeWithEvents("ui-route", {
             category: "webapp structure",
             color: "#d9efe2",
             defaults: {
@@ -11,10 +11,21 @@
                 parent: { value: "" },
                 path: { value: "", required: true },
                 title: { value: "" },
-                layoutId: { value: "", required: true }
+                layoutId: { value: "", required: true },
+                events: { value: "[]" },
+                outputs: { value: 0 }
             },
             inputs: 0,
             outputs: 0,
+            outputLabels: function (index) {
+                try {
+                    const events = JSON.parse(this.events || "[]");
+                    return events[index] || "";
+                }
+                catch (_e) {
+                    return "";
+                }
+            },
             icon: "font-awesome/fa-map-signs",
             label: common.labelWithName("ui-route"),
             onadd: function () {
@@ -32,7 +43,7 @@
                     }
                 }).call(this);
             }
-        });
+        }, ["onEnter", "onLeave"]);
     })();
 </script>
 <script type="text/html" data-template-name="ui-route">
@@ -44,5 +55,9 @@
     <input type="hidden" id="node-input-layoutId">
     <div class="form-row"><label for="node-input-layout-preset">Parent Layout</label><select id="node-input-layout-preset"></select></div>
     <div class="form-tips">Dieses Layout wird fuer die Seite gerendert.</div>
+    <input type="hidden" id="node-input-events">
+    <input type="hidden" id="node-input-outputs">
+    <div class="form-row"><label>Events</label></div>
+    <div id="node-input-events-container"></div>
 </script>
 <script type="text/html" data-help-name="ui-route"><p>Definiert eine Route und bindet sie an ein Layout.</p></script>

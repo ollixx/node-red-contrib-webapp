@@ -41,7 +41,8 @@ export const uiAppNodeDefinitionSchema = z.object({
     type: z.literal("ui-app"),
     id: identifierSchema,
     title: z.string().min(1, "App titles must not be empty."),
-    layout: standardLayoutPresetSchema
+    layout: standardLayoutPresetSchema,
+    events: z.array(z.enum(["clientConnected", "clientDisconnected"])).optional()
 });
 
 export type UiAppNodeDefinition = z.infer<typeof uiAppNodeDefinitionSchema>;
@@ -49,7 +50,8 @@ export type UiAppNodeDefinition = z.infer<typeof uiAppNodeDefinitionSchema>;
 export const uiContainerNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-container"),
     layoutId: standardLayoutPresetSchema,
-    title: z.string().min(1, "Container titles must not be empty.").optional()
+    title: z.string().min(1, "Container titles must not be empty.").optional(),
+    events: z.array(z.enum(["onShow", "onHide"])).optional()
 });
 
 export type UiContainerNodeDefinition = z.infer<typeof uiContainerNodeDefinitionSchema>;
@@ -59,7 +61,8 @@ export const uiRouteNodeDefinitionSchema = identifiedNodeSchema.extend({
     parent: identifierSchema.optional(),
     path: routePathSchema,
     title: z.string().min(1, "Route titles must not be empty.").optional(),
-    layoutId: standardLayoutPresetSchema
+    layoutId: standardLayoutPresetSchema,
+    events: z.array(z.enum(["onEnter", "onLeave"])).optional()
 });
 
 export type UiRouteNodeDefinition = z.infer<typeof uiRouteNodeDefinitionSchema>;
@@ -70,7 +73,8 @@ export const uiDialogNodeDefinitionSchema = identifiedNodeSchema.extend({
     title: z.string().min(1, "Dialog titles must not be empty.").optional(),
     layoutId: standardLayoutPresetSchema,
     routeId: identifierSchema.optional(),
-    modal: z.boolean().default(true)
+    modal: z.boolean().default(true),
+    events: z.array(z.enum(["onOpen", "onClose"])).optional()
 });
 
 export type UiDialogNodeDefinition = z.infer<typeof uiDialogNodeDefinitionSchema>;
