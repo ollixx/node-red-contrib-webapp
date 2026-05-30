@@ -130,7 +130,7 @@ phases:
 
   - id: P18
     title: Example flow generator
-    status: pending
+    status: in_progress
     dependencies: [P11b]
     goals:
       - Generate examples/customers-crud/flow.json from the typed schema fixture instead of maintaining it by hand.
