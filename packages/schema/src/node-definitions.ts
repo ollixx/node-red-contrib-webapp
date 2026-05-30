@@ -180,7 +180,9 @@ export type UiTextNodeDefinition = z.infer<typeof uiTextNodeDefinitionSchema>;
 export const uiButtonNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-button"),
     label: z.string().min(1, "Button labels must not be empty."),
-    action: z.string().min(1, "Buttons must reference an action."),
+    // action is deprecated — click events are now emitted on the output port.
+    // Kept for backward compatibility with existing flows.
+    action: z.string().min(1, "Buttons must reference an action.").optional(),
     disabled: bindingSchema.optional()
 });
 
@@ -255,50 +257,12 @@ export const uiActionNodeDefinitionSchema = identifiedNodeSchema.extend({
     type: z.literal("ui-action"),
     parent: identifierSchema.optional(),
     actionType: actionTypeSchema.optional(),
+    // targetMode and target are kept for backward compatibility but deprecated.
+    // The preferred model is wiring the output port to the target node.
     targetMode: actionTargetModeSchema.optional(),
     target: z.string().min(1, "Action targets must not be empty.").optional(),
     to: z.string().min(1, "Navigate actions must declare a destination.").optional(),
     description: z.string().min(1, "Action descriptions must not be empty.").optional()
-}).superRefine((action, context) => {
-    if (action.actionType && !action.targetMode) {
-        context.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Typed actions must declare a target mode.",
-            path: ["targetMode"]
-        });
-    }
-
-    if (!action.actionType && action.targetMode) {
-        context.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Target modes require an action type.",
-            path: ["actionType"]
-        });
-    }
-
-    if (action.targetMode === "path" && !action.target) {
-        context.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Path-targeted actions must declare a target.",
-            path: ["target"]
-        });
-    }
-
-    if (action.targetMode === "out-port" && action.target) {
-        context.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Out-port actions must not declare a direct target.",
-            path: ["target"]
-        });
-    }
-
-    if (action.actionType === "navigate" && !action.to) {
-        context.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Navigate actions must declare a destination.",
-            path: ["to"]
-        });
-    }
 });
 
 export type UiActionNodeDefinition = z.infer<typeof uiActionNodeDefinitionSchema>;

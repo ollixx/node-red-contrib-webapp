@@ -24,7 +24,9 @@ export interface RendererAppOptions {
 
 export interface RenderedEventBinding {
     event: UiEventName;
-    action: string;
+    // action is optional since P20a — click events on buttons are routed via wiring,
+    // not by a string action reference.
+    action?: string;
 }
 
 interface RenderedComponentBase {

@@ -625,6 +625,10 @@ function toComponentDefinitions(components) {
 
         if (component.type === "ui-button") {
             const layoutProps = collectNormalizedLayoutProps(component);
+            // P20a: click events are emitted on the button's own output port.
+            // Use the button node's id as the action target so the preview endpoint
+            // routes the click to the button node (which then sends to its wired output).
+            const clickAction = component.action || component.id;
             return {
                 id: component.id,
                 kind: "button",
@@ -635,7 +639,7 @@ function toComponentDefinitions(components) {
                     label: component.label,
                     ...(Object.keys(layoutProps).length > 0 ? { layout: layoutProps } : {})
                 },
-                events: [{ event: "click", action: component.action }]
+                events: [{ event: "click", action: clickAction }]
             };
         }
 
@@ -1177,8 +1181,13 @@ function applyPreviewAction(RED, appId, actionId, parameters, definitions) {
     const statePatch = {};
 
     if (typedAction && !allowLegacyPreviewAction) {
-        if (typedAction.targetMode === "out-port") {
-            // Out-port actions only emit their UI message in the first typed-action version.
+        // P20a: New wiring model — no targetMode means the output port is wired directly.
+        // The action node will forward the message to its wired target via actionInputHandler.
+        if (!typedAction.targetMode) {
+            // Just emit the message to the action node — wiring handles the rest.
+        }
+        else if (typedAction.targetMode === "out-port") {
+            // Legacy out-port: emit UI message, wired target handles it.
         }
         else if (typedAction.actionType === "navigate") {
             if (typedAction.targetMode === "path") {
@@ -1873,6 +1882,60 @@ function dialogInputHandler(node, msg, send, done) {
     }
 }
 
+// P20a: ui-button emits click events on its output port.
+// Incoming component-state messages (show/hide/enable/disable etc.) are still handled.
+// Click events arrive as msg.ui.event = "click" from the preview action endpoint.
+function buttonInputHandler(node, msg, send, done) {
+    const uiMsg = msg && msg.ui && typeof msg.ui === "object" ? msg.ui : undefined;
+
+    // If this is a component-state op, delegate to componentStateInputHandler behaviour
+    if (uiMsg && uiMsg.component && typeof uiMsg.component.op === "string") {
+        return componentStateInputHandler(node, msg, send, done);
+    }
+
+    // Emit click event on the output port
+    const clickMsg = {
+        ui: {
+            event: "click",
+            sourceId: node.id,
+            clientId: uiMsg && uiMsg.clientId ? uiMsg.clientId : undefined
+        }
+    };
+    send(clickMsg);
+    if (done) {
+        done();
+    }
+}
+
+// P20a: ui-action reads the wired target node from the flow topology and
+// forwards the action to it. If msg.ui.action.targetId is set, it overrides
+// the wired target.
+function actionInputHandler(node, msg, send, done) {
+    const RED = runtimeState.RED;
+    const uiMsg = msg && msg.ui && typeof msg.ui === "object" ? msg.ui : undefined;
+    const overrideTargetId = uiMsg && uiMsg.action && typeof uiMsg.action.targetId === "string"
+        ? uiMsg.action.targetId
+        : undefined;
+
+    if (overrideTargetId) {
+        // Dynamic target — send directly to the overridden node
+        const targetNode = RED ? RED.nodes.getNode(overrideTargetId) : null;
+        if (targetNode && typeof targetNode.send === "function") {
+            targetNode.send(clone(msg));
+        }
+        if (done) {
+            done();
+        }
+        return;
+    }
+
+    // Static wiring — pass the message through to the wired output port
+    send(msg);
+    if (done) {
+        done();
+    }
+}
+
 const runtimeNodeRegistry = {
     "ui-app": {
         mapConfig: (config) => ({
@@ -1938,12 +2001,11 @@ const runtimeNodeRegistry = {
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
             label: config.label,
-            action: config.action,
             disabled: getBinding(config.disabled, config.disabledPath ? stateBinding(config.disabledPath) : undefined),
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: componentStateInputHandler
+            inputHandler: buttonInputHandler
         }
     },
     "ui-table": {
@@ -2216,13 +2278,11 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: config.parent || undefined,
             actionType: blankToUndefined(config.actionType),
-            targetMode: blankToUndefined(config.targetMode),
-            target: blankToUndefined(config.target),
             to: blankToUndefined(config.to),
             description: config.description || undefined
         }),
         options: {
-            inputHandler: passThroughInputHandler
+            inputHandler: actionInputHandler
         }
     },
     "ui-navigation": {
@@ -2561,6 +2621,9 @@ registerWebappNodes.__test__ = {
     dialogInputHandler,
     queryInputHandler,
     triggerParamQueryRefresh,
+    // P20a
+    buttonInputHandler,
+    actionInputHandler,
     runtimeNodeRegistry,
     runtimeState,
     // P15

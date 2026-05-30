@@ -3,6 +3,12 @@ import { createRequire } from "node:module";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const require = createRequire(import.meta.url);
+
+interface NodeStub {
+    id: string;
+    send: ReturnType<typeof vi.fn>;
+}
+
 const registerWebappNodes = require("../../../nodes/webapp.js") as {
     __test__: {
         applyPreviewAction: (RED: PreviewRedStub, appId: string, actionId: string, parameters: Record<string, string>, definitions: PreviewDefinition[]) => PreviewActionResult;
@@ -10,6 +16,9 @@ const registerWebappNodes = require("../../../nodes/webapp.js") as {
         getPreviewMessages: (appId: string) => Array<{ at: string; message: { ui: Record<string, unknown> } }>;
         renderAppPage: (appId: string, location: string, dialogId: string | undefined, definitions: PreviewDefinition[]) => { status: number; body: string };
         resetPreview: (appId: string) => void;
+        buttonInputHandler: (node: NodeStub, msg: unknown, send: ReturnType<typeof vi.fn>, done: ReturnType<typeof vi.fn>) => void;
+        actionInputHandler: (node: NodeStub, msg: unknown, send: ReturnType<typeof vi.fn>, done: ReturnType<typeof vi.fn>) => void;
+        runtimeState: { RED: unknown };
     };
 };
 const customersCrudDefinitions = require("../../../examples/customers-crud/flow.json") as PreviewDefinition[];
@@ -547,6 +556,106 @@ describe("ui-action preview runtime", () => {
             open: false
         });
         expect(nodes.get("typedCloseCustomerEditor")?.send).toHaveBeenCalledTimes(2);
+    });
+});
+
+describe("P20a: ui-button click and ui-action wiring", () => {
+    it("ui-button emits a click event on its output port when triggered", () => {
+        const node: NodeStub = { id: "saveBtn", send: vi.fn() };
+        const send = vi.fn();
+        const done = vi.fn();
+
+        registerWebappNodes.__test__.buttonInputHandler(node, { ui: { clientId: "client-1" } }, send, done);
+
+        expect(send).toHaveBeenCalledTimes(1);
+        const emitted = send.mock.calls[0][0] as { ui: { event: string; sourceId: string; clientId: string } };
+        expect(emitted.ui.event).toBe("click");
+        expect(emitted.ui.sourceId).toBe("saveBtn");
+        expect(emitted.ui.clientId).toBe("client-1");
+        expect(done).toHaveBeenCalledTimes(1);
+    });
+
+    it("ui-button emits a click event without clientId when none is present in msg", () => {
+        const node: NodeStub = { id: "myButton", send: vi.fn() };
+        const send = vi.fn();
+        const done = vi.fn();
+
+        registerWebappNodes.__test__.buttonInputHandler(node, {}, send, done);
+
+        expect(send).toHaveBeenCalledTimes(1);
+        const emitted = send.mock.calls[0][0] as { ui: { event: string; sourceId: string; clientId: unknown } };
+        expect(emitted.ui.event).toBe("click");
+        expect(emitted.ui.sourceId).toBe("myButton");
+        expect(emitted.ui.clientId).toBeUndefined();
+    });
+
+    it("ui-action forwards msg to wired output port when no targetId override", () => {
+        const node: NodeStub = { id: "openDialogAction", send: vi.fn() };
+        const send = vi.fn();
+        const done = vi.fn();
+        const msg = { ui: { action: { type: "trigger" } } };
+
+        registerWebappNodes.__test__.actionInputHandler(node, msg, send, done);
+
+        expect(send).toHaveBeenCalledTimes(1);
+        expect(send.mock.calls[0][0]).toBe(msg);
+        expect(done).toHaveBeenCalledTimes(1);
+    });
+
+    it("ui-action with msg.ui.action.targetId overrides wired target and sends directly to target node", () => {
+        const node: NodeStub = { id: "openDialogAction", send: vi.fn() };
+        const targetNode: NodeStub = { id: "customerDialog", send: vi.fn() };
+        const send = vi.fn();
+        const done = vi.fn();
+
+        // Temporarily inject a minimal RED stub
+        const savedRED = registerWebappNodes.__test__.runtimeState.RED;
+        registerWebappNodes.__test__.runtimeState.RED = {
+            nodes: {
+                getNode: (id: string) => id === "customerDialog" ? targetNode : undefined
+            }
+        };
+
+        const msg = { ui: { action: { type: "open", targetId: "customerDialog" } } };
+
+        registerWebappNodes.__test__.actionInputHandler(node, msg, send, done);
+
+        // Should NOT use the wired output (send not called)
+        expect(send).not.toHaveBeenCalled();
+        // Should send directly to the target node
+        expect(targetNode.send).toHaveBeenCalledTimes(1);
+        expect(done).toHaveBeenCalledTimes(1);
+
+        registerWebappNodes.__test__.runtimeState.RED = savedRED;
+    });
+
+    it("ui-action wiring model: preview action with no targetMode emits message and succeeds", () => {
+        const { RED, nodes } = createPreviewRedStub(["openDialogAction"]);
+        const definitions = cloneDefinitions();
+
+        // New-style action: no targetMode, wired output handles routing
+        definitions.push({
+            type: "ui-action",
+            id: "openDialogAction",
+            actionType: "trigger"
+        });
+
+        const applied = registerWebappNodes.__test__.applyPreviewAction(
+            RED,
+            "customersApp",
+            "openDialogAction",
+            {
+                location: "/customers",
+                sourceId: "newCustomerButton",
+                event: "click"
+            },
+            definitions
+        );
+
+        expect(applied.success).toBe(true);
+        expect(applied.message?.ui.action).toBe("openDialogAction");
+        // The action node receives the message (for wired output routing)
+        expect(nodes.get("openDialogAction")?.send).toHaveBeenCalledTimes(1);
     });
 });
 

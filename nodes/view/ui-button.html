@@ -10,7 +10,6 @@
                 parent: { value: "" },
                 mount: { value: "", required: true },
                 label: { value: "", required: true },
-                action: { value: "", required: true },
                 disabledPath: { value: "" },
                 disabled: { value: null },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
@@ -31,7 +30,7 @@
                 }
             },
             oneditprepare: function () {
-                common.installReferenceSelectors({ mount: true, action: "#node-input-action" }).call(this);
+                common.installReferenceSelectors({ mount: true }).call(this);
                 common.installLayoutChildPropRows().call(this);
             }
         });
@@ -42,7 +41,6 @@
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <div class="form-row"><label for="node-input-label">Label</label><input type="text" id="node-input-label"></div>
-    <div class="form-row"><label for="node-input-action">Action</label><select id="node-input-action"></select></div>
     <div class="form-row"><label for="node-input-disabledPath">Disabled Path</label><input type="text" id="node-input-disabledPath"></div>
     <hr style="margin: 8px 0;">
     <div class="form-row" data-layout-child-prop-row="order" style="display: none;"><label for="node-input-order">Order</label><input type="number" id="node-input-order"></div>

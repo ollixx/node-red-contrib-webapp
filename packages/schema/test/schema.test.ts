@@ -260,7 +260,30 @@ describe("app validation", () => {
         expect(missingLayout.success).toBe(false);
     });
 
-    it("accepts typed ui-actions for path and out-port targets", () => {
+    // P20a: wiring model — targetMode/target are deprecated but still accepted for backward compat.
+    it("accepts ui-action with wiring model (no targetMode/target)", () => {
+        // Primary new model: actionType only, target is the wired output port
+        expect(validateUiNodeDefinition({
+            type: "ui-action",
+            id: "hideToolbar",
+            actionType: "hide"
+        }).success).toBe(true);
+
+        expect(validateUiNodeDefinition({
+            type: "ui-action",
+            id: "openDialog",
+            actionType: "trigger"
+        }).success).toBe(true);
+
+        expect(validateUiNodeDefinition({
+            type: "ui-action",
+            id: "goToCustomers",
+            actionType: "navigate",
+            to: "/customers"
+        }).success).toBe(true);
+    });
+
+    it("accepts ui-action with deprecated targetMode/target fields (backward compat)", () => {
         expect(validateUiNodeDefinition({
             type: "ui-action",
             id: "hideToolbar",
@@ -283,91 +306,6 @@ describe("app validation", () => {
             targetMode: "out-port",
             to: "/customers"
         }).success).toBe(true);
-    });
-
-    it("rejects typed ui-actions without a target mode", () => {
-        const validation = validateUiNodeDefinition({
-            type: "ui-action",
-            id: "hideToolbar",
-            actionType: "hide"
-        });
-
-        expect(validation.success).toBe(false);
-
-        if (validation.success) {
-            return;
-        }
-
-        expect(validation.error).toContain("target mode");
-    });
-
-    it("rejects path-targeted ui-actions without a target", () => {
-        const validation = validateUiNodeDefinition({
-            type: "ui-action",
-            id: "hideToolbar",
-            actionType: "hide",
-            targetMode: "path"
-        });
-
-        expect(validation.success).toBe(false);
-
-        if (validation.success) {
-            return;
-        }
-
-        expect(validation.error).toContain("must declare a target");
-    });
-
-    it("rejects out-port ui-actions with direct targets", () => {
-        const validation = validateUiNodeDefinition({
-            type: "ui-action",
-            id: "triggerRefresh",
-            actionType: "trigger",
-            targetMode: "out-port",
-            target: "route:/customers/content/toolbar"
-        });
-
-        expect(validation.success).toBe(false);
-
-        if (validation.success) {
-            return;
-        }
-
-        expect(validation.error).toContain("must not declare a direct target");
-    });
-
-    it("rejects target modes without typed actions", () => {
-        const validation = validateUiNodeDefinition({
-            type: "ui-action",
-            id: "orphanTargetMode",
-            targetMode: "path",
-            target: "route:/customers/content/toolbar"
-        });
-
-        expect(validation.success).toBe(false);
-
-        if (validation.success) {
-            return;
-        }
-
-        expect(validation.error).toContain("require an action type");
-    });
-
-    it("rejects navigate ui-actions without a destination", () => {
-        const validation = validateUiNodeDefinition({
-            type: "ui-action",
-            id: "goToCustomers",
-            actionType: "navigate",
-            targetMode: "out-port"
-        });
-
-        expect(validation.success).toBe(false);
-
-        if (validation.success) {
-            return;
-        }
-
-        expect(validation.error).toContain("must declare a destination");
     });
 
     it("accepts generic ui-store operations for set, patch, delete, replace and reset", () => {

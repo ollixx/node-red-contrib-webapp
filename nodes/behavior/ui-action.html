@@ -9,8 +9,6 @@
                 name: { value: "" },
                 parent: { value: "" },
                 actionType: { value: "" },
-                targetMode: { value: "" },
-                target: { value: "" },
                 to: { value: "" },
                 description: { value: "" }
             },
@@ -31,11 +29,9 @@
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-parent">App</label><select id="node-input-parent"></select></div>
-    <div class="form-row"><label for="node-input-actionType">Action-Typ</label><select id="node-input-actionType"><option value="">Legacy/unspezifiziert</option><option value="navigate">navigate</option><option value="show">show</option><option value="hide">hide</option><option value="enable">enable</option><option value="disable">disable</option><option value="trigger">trigger</option></select></div>
-    <div class="form-row"><label for="node-input-targetMode">Zielmodus</label><select id="node-input-targetMode"><option value="">unspezifiziert</option><option value="out-port">out-port</option><option value="path">path</option></select></div>
-    <div class="form-row"><label for="node-input-target">Ziel</label><input type="text" id="node-input-target" placeholder="z.B. app oder dialog:customerEditor"></div>
+    <div class="form-row"><label for="node-input-actionType">Action-Typ</label><select id="node-input-actionType"><option value="">unspezifiziert</option><option value="navigate">navigate</option><option value="show">show</option><option value="hide">hide</option><option value="enable">enable</option><option value="disable">disable</option><option value="trigger">trigger</option></select></div>
     <div class="form-row"><label for="node-input-to">Navigation zu</label><input type="text" id="node-input-to" placeholder="z.B. /customers/:id"></div>
     <div class="form-row"><label for="node-input-description">Beschreibung</label><input type="text" id="node-input-description"></div>
 </script>
 <script type="text/html"
-    data-help-name="ui-action"><p>Beschreibt eine wiederverwendbare UI-Aktion. Typed Actions koennen Verhalten wie Navigation oder Dialog-Sichtbarkeit modellieren.</p></script>
+    data-help-name="ui-action"><p>Sendet eine UI-Aktion an den Client. Der Output-Port wird mit dem Zielknoten verdrahtet (z.B. ui-dialog, ui-button). Der Zielknoten kann durch msg.ui.action.targetId dynamisch ueberschrieben werden.</p></script>

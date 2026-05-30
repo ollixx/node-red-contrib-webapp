@@ -2,12 +2,7 @@
 
 ## Zusammenfassung
 
-Rendert einen klickbaren Button, der eine Action referenziert.
-
-Aktuelles MVP-Verhalten:
-- Rendert einen Link bzw. Trigger auf `/webapp/:appId/action/:actionId`.
-- Emittiert standardisierte `msg.ui`-Ereignisse.
-- Kann einen deaktivierten Zustand aus einem Binding beziehen.
+Rendert einen klickbaren Button. Ab P20a emittiert der Button Klick-Events direkt auf seinem Output-Port — die Weiterleitung an `ui-action` oder andere Knoten erfolgt durch Wiring im Flow.
 
 ## Abhängigkeiten
 
@@ -15,7 +10,6 @@ Aktuelles MVP-Verhalten:
 - `ui-app`, `ui-route`, `ui-dialog` oder `ui-container`: Pflicht. Der Knoten wird in einen Slot des gewählten Parent-Knotens eingehängt. `ui-app` fungiert dabei als implizite Route `"/"` und kann direkt als Parent verwendet werden.
 
 **Gemeinsam genutzte Services und Komponenten:**
-- Referenziert `ui-action` über `action`
 - Binding-Modell: `disabled`-Zustand über State-Binding
 
 ## Editor
@@ -23,7 +17,6 @@ Aktuelles MVP-Verhalten:
 **Pflichtfelder:**
 - `parent`: Auswahl eines Slots aus allen `ui-app`-, `ui-route`-, `ui-dialog`- und `ui-container`-Knoten. Die Einträge werden hierarchisch (App → Route/Dialog → Container) aufgelistet. Wird als SelectBox angezeigt; bei mehr als 20 Einträgen als filterbarer Dialog.
 - `label`: aktuell ein einfacher String, kein Binding-Ausdruck
-- `action`: Action-ID
 
 **Optionale Felder:**
 - `name`: Node-RED-Anzeigefeld. Wird bei der Darstellung des Knotens und in Auswahlfeldern angezeigt.
@@ -40,10 +33,11 @@ Akzeptiert Component-State-Messages (`show`, `hide`, `enable`, `disable`). Forma
 
 | Event | `msg.ui`-Felder |
 |---|---|
-| `click` | `event: "click"`, `actionId`, `clientId` |
+| `click` | `event: "click"`, `sourceId`, `clientId` |
+
+Der Output-Port wird typischerweise mit einem `ui-action`-Knoten verdrahtet, der die gewünschte UI-Aktion ausführt.
 
 ## Besonderheiten
 
-- Der Knoten kennt nur die Action-ID, aber keine deklarative Aussage über Variant, Intent, Busy-Zustand oder Bestätigungslogik.
-- Für produktive Nutzung braucht es wahrscheinlich ein reichhaltigeres Action- oder Command-Modell.
+- Vor P20a referenzierte der Button eine Action-ID über das `action`-Feld. Dieses Feld ist deprecated, wird aber noch für bestehende Flows akzeptiert.
 - Welche Layout-Child-Props sichtbar sind, hängt vom gewählten Mount ab. Details dazu stehen in [layout.md](../concepts/layout.md).
