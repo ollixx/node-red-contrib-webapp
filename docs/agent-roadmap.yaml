@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P16b
+  current_phase: P16c
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -120,27 +120,7 @@ phases:
 
   - { id: P16a, title: "Core node expansion — input controls", status: done, dependencies: [P12], archive: "docs/agent-roadmap-archive.yaml#P16a" }
 
-  - id: P16b
-    title: Core node expansion — feedback and status
-    status: in_progress
-    dependencies: [P12]
-    goals:
-      - Add feedback and status nodes for loading states, notifications, and empty states.
-    deliverables:
-      - ui-alert: info/warn/error/success message band
-      - ui-toast: temporary notification (auto-dismiss)
-      - ui-progress: progress bar and spinner variants
-      - ui-skeleton: loading placeholder matching component shape
-      - ui-badge: count or status indicator attached to another element
-      - ui-empty-state: structured placeholder for empty lists or views
-      - unit and E2E tests per node
-    validation:
-      - pnpm test passes with no failures
-      - unit test: each node compiles to a valid schema definition
-      - unit test: ui-toast with duration fires dismiss event after timeout
-      - unit test: ui-progress with value binding renders correct fill percentage
-      - Playwright: each node editor shows parent selector and name default
-      - docs check: each node doc's Pflichtfelder match the schema and editor HTML
+  - { id: P16b, title: "Core node expansion — feedback and status", status: done, dependencies: [P12], archive: "docs/agent-roadmap-archive.yaml#P16b" }
 
   - id: P16c
     title: Core node expansion — navigation and structure

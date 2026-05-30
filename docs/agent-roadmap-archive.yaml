@@ -316,3 +316,29 @@ phases:
     - unit test: each node emits a change event with correct payload on value change
     - Playwright: each node editor shows parent selector and name default
     - docs check: each node doc's Pflichtfelder match the schema and editor HTML
+
+- id: P16b
+  title: "Core node expansion — feedback and status"
+  status: done
+  dependencies: [P12]
+  summary:
+    delivered: "Added 6 feedback/status nodes (ui-alert, ui-toast, ui-progress, ui-skeleton, ui-badge, ui-empty-state) with Zod schemas, runtime registry entries, Node-RED HTML+JS files, and editor type definitions."
+    stats: "18 files changed, 12 new node files, 10 new schema/test entries, 6 new editor configs and nodeSet entries"
+    notes: "ui-toast scopes to ui-app parent (no mount slot), all others are mountable. bindingSchema uses kind not binding field — corrected in tests. Editor catalog test updated to include all 6 new types."
+  goals:
+    - Add feedback and status nodes for loading states, notifications, and empty states.
+  deliverables:
+    - ui-alert: info/warn/error/success message band
+    - ui-toast: temporary notification (auto-dismiss)
+    - ui-progress: progress bar and spinner variants
+    - ui-skeleton: loading placeholder matching component shape
+    - ui-badge: count or status indicator attached to another element
+    - ui-empty-state: structured placeholder for empty lists or views
+    - unit and E2E tests per node
+  validation:
+    - pnpm test passes with no failures
+    - unit test: each node compiles to a valid schema definition
+    - unit test: ui-toast with duration fires dismiss event after timeout
+    - unit test: ui-progress with value binding renders correct fill percentage
+    - Playwright: each node editor shows parent selector and name default
+    - docs check: each node doc's Pflichtfelder match the schema and editor HTML
