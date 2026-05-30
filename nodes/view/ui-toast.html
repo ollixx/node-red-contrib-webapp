@@ -1,0 +1,53 @@
+<script type="text/javascript" src="resources/node-red-contrib-webapp/lib/editor-common.js"></script>
+<script type="text/javascript">
+    (function () {
+        const common = window.WebappEditorCommon;
+        common.registerNodeType("ui-toast", {
+            category: "webapp view",
+            color: "#f4efcf",
+            defaults: {
+                name: { value: "" },
+                uiId: { value: "", required: true },
+                parent: { value: "" },
+                severity: { value: "info" },
+                duration: { value: 4000, validate: function (value) { return value === "" || RED.validators.number()(value); } },
+                position: { value: "bottom-right" }
+            },
+            inputs: 1,
+            outputs: 1,
+            icon: "font-awesome/fa-bell",
+            label: common.labelWithName("ui-toast"),
+            onadd: function () {
+                if (!this.name) {
+                    this.name = common.getNextNameDefault("ui-toast", "Toast");
+                }
+            },
+            oneditprepare: function () {
+                common.installReferenceSelectors({ parent: "ui-app" }).call(this);
+            }
+        });
+    })();
+</script>
+<script type="text/html" data-template-name="ui-toast">
+    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-uiId">Node ID</label><input type="text" id="node-input-uiId"></div>
+    <div class="form-row"><label for="node-input-parent">App</label><select id="node-input-parent"></select></div>
+    <div class="form-row"><label for="node-input-severity">Severity</label>
+        <select id="node-input-severity">
+            <option value="info">Info</option>
+            <option value="warning">Warning</option>
+            <option value="error">Error</option>
+            <option value="success">Success</option>
+        </select>
+    </div>
+    <div class="form-row"><label for="node-input-duration">Duration (ms)</label><input type="number" id="node-input-duration" min="0"></div>
+    <div class="form-row"><label for="node-input-position">Position</label>
+        <select id="node-input-position">
+            <option value="top-right">Top Right</option>
+            <option value="top-center">Top Center</option>
+            <option value="bottom-right">Bottom Right</option>
+            <option value="bottom-center">Bottom Center</option>
+        </select>
+    </div>
+</script>
+<script type="text/html" data-help-name="ui-toast"><p>Temporäre Benachrichtigung die sich nach einer konfigurierbaren Zeit automatisch schließt.</p></script>

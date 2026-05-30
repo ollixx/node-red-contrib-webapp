@@ -6,24 +6,30 @@ describe("editor node set", () => {
     it("covers the full P4 MVP node catalog", () => {
         expect(Object.keys(nodeSet).sort()).toEqual([
             "ui-action",
+            "ui-alert",
             "ui-app",
+            "ui-badge",
             "ui-button",
             "ui-checkbox",
             "ui-container",
             "ui-datepicker",
             "ui-dialog",
+            "ui-empty-state",
             "ui-input",
             "ui-navigation",
+            "ui-progress",
             "ui-query",
             "ui-radio",
             "ui-route",
             "ui-select",
+            "ui-skeleton",
             "ui-slider",
             "ui-store",
             "ui-switch",
             "ui-table",
             "ui-text",
-            "ui-textarea"
+            "ui-textarea",
+            "ui-toast"
         ]);
     });
 

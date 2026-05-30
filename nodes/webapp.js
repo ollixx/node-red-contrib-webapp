@@ -40,7 +40,13 @@ const WEBAPP_NODE_TYPES = new Set([
     "ui-store",
     "ui-query",
     "ui-action",
-    "ui-navigation"
+    "ui-navigation",
+    "ui-alert",
+    "ui-toast",
+    "ui-progress",
+    "ui-skeleton",
+    "ui-badge",
+    "ui-empty-state"
 ]);
 
 function parseList(value) {
@@ -1576,7 +1582,7 @@ function getDefinitionBuckets(appId, definitions) {
         app: matchingApp,
         routes: matchingDefinitions.filter((entry) => entry.type === "ui-route"),
         dialogs: matchingDefinitions.filter((entry) => entry.type === "ui-dialog"),
-        components: matchingDefinitions.filter((entry) => ["ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select", "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider"].includes(entry.type)),
+        components: matchingDefinitions.filter((entry) => ["ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select", "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider", "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state"].includes(entry.type)),
         stores: matchingDefinitions.filter((entry) => entry.type === "ui-store"),
         queries: matchingDefinitions.filter((entry) => entry.type === "ui-query"),
         actions: matchingDefinitions.filter((entry) => entry.type === "ui-action"),
@@ -2216,6 +2222,106 @@ const runtimeNodeRegistry = {
         }),
         options: {
             inputHandler: passThroughInputHandler
+        }
+    },
+    "ui-alert": {
+        mapConfig: (config) => ({
+            type: "ui-alert",
+            id: getUiId(config),
+            parent: config.parent || undefined,
+            mount: config.mount || config.parent,
+            order: toOptionalNumber(config.order),
+            message: getBinding(config.message, config.messagePath ? stateBinding(config.messagePath) : undefined),
+            severity: config.severity || undefined,
+            title: config.title || undefined,
+            dismissible: config.dismissible === true || config.dismissible === "true" || undefined,
+            visible: getBinding(config.visible, undefined),
+            ...collectNodeConfigLayoutProps(config)
+        }),
+        options: {
+            inputHandler: componentStateInputHandler
+        }
+    },
+    "ui-toast": {
+        mapConfig: (config) => ({
+            type: "ui-toast",
+            id: getUiId(config),
+            parent: config.parent || undefined,
+            severity: config.severity || undefined,
+            duration: toOptionalNumber(config.duration),
+            position: config.position || undefined
+        }),
+        options: {
+            inputHandler: passThroughInputHandler
+        }
+    },
+    "ui-progress": {
+        mapConfig: (config) => ({
+            type: "ui-progress",
+            id: getUiId(config),
+            parent: config.parent || undefined,
+            mount: config.mount || config.parent,
+            order: toOptionalNumber(config.order),
+            variant: config.variant || undefined,
+            value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
+            label: config.label || undefined,
+            showValue: config.showValue === true || config.showValue === "true" || undefined,
+            ...collectNodeConfigLayoutProps(config)
+        }),
+        options: {
+            inputHandler: componentStateInputHandler
+        }
+    },
+    "ui-skeleton": {
+        mapConfig: (config) => ({
+            type: "ui-skeleton",
+            id: getUiId(config),
+            parent: config.parent || undefined,
+            mount: config.mount || config.parent,
+            order: toOptionalNumber(config.order),
+            visible: getBinding(config.visible, config.visiblePath ? stateBinding(config.visiblePath) : undefined),
+            variant: config.variant || undefined,
+            lines: toOptionalNumber(config.lines),
+            ...collectNodeConfigLayoutProps(config)
+        }),
+        options: {
+            inputHandler: componentStateInputHandler
+        }
+    },
+    "ui-badge": {
+        mapConfig: (config) => ({
+            type: "ui-badge",
+            id: getUiId(config),
+            parent: config.parent || undefined,
+            mount: config.mount || config.parent,
+            order: toOptionalNumber(config.order),
+            value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
+            variant: config.variant || undefined,
+            severity: config.severity || undefined,
+            max: toOptionalNumber(config.max),
+            ...collectNodeConfigLayoutProps(config)
+        }),
+        options: {
+            inputHandler: componentStateInputHandler
+        }
+    },
+    "ui-empty-state": {
+        mapConfig: (config) => ({
+            type: "ui-empty-state",
+            id: getUiId(config),
+            parent: config.parent || undefined,
+            mount: config.mount || config.parent,
+            order: toOptionalNumber(config.order),
+            visible: getBinding(config.visible, config.visiblePath ? stateBinding(config.visiblePath) : undefined),
+            icon: config.icon || undefined,
+            title: config.title || undefined,
+            message: config.message || undefined,
+            action: config.action || undefined,
+            actionLabel: config.actionLabel || undefined,
+            ...collectNodeConfigLayoutProps(config)
+        }),
+        options: {
+            inputHandler: componentStateInputHandler
         }
     }
 };

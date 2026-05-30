@@ -308,6 +308,70 @@ export const uiSliderNodeDefinitionSchema = mountableNodeSchema.extend({
 
 export type UiSliderNodeDefinition = z.infer<typeof uiSliderNodeDefinitionSchema>;
 
+// ── P16b: feedback and status nodes ─────────────────────────────────────────
+
+export const uiAlertNodeDefinitionSchema = mountableNodeSchema.extend({
+    type: z.literal("ui-alert"),
+    message: bindingSchema,
+    severity: z.enum(["info", "warning", "error", "success"]).optional(),
+    title: z.string().optional(),
+    dismissible: z.boolean().optional(),
+    visible: bindingSchema.optional()
+});
+
+export type UiAlertNodeDefinition = z.infer<typeof uiAlertNodeDefinitionSchema>;
+
+export const uiToastNodeDefinitionSchema = identifiedNodeSchema.extend({
+    type: z.literal("ui-toast"),
+    parent: identifierSchema.optional(),
+    severity: z.enum(["info", "warning", "error", "success"]).optional(),
+    duration: z.number().int().min(0).optional(),
+    position: z.enum(["top-right", "top-center", "bottom-right", "bottom-center"]).optional()
+});
+
+export type UiToastNodeDefinition = z.infer<typeof uiToastNodeDefinitionSchema>;
+
+export const uiProgressNodeDefinitionSchema = mountableNodeSchema.extend({
+    type: z.literal("ui-progress"),
+    variant: z.enum(["bar", "spinner", "circular"]).optional(),
+    value: bindingSchema.optional(),
+    label: z.string().optional(),
+    showValue: z.boolean().optional()
+});
+
+export type UiProgressNodeDefinition = z.infer<typeof uiProgressNodeDefinitionSchema>;
+
+export const uiSkeletonNodeDefinitionSchema = mountableNodeSchema.extend({
+    type: z.literal("ui-skeleton"),
+    visible: bindingSchema,
+    variant: z.enum(["text", "avatar", "card", "table"]).optional(),
+    lines: z.number().int().positive().optional()
+});
+
+export type UiSkeletonNodeDefinition = z.infer<typeof uiSkeletonNodeDefinitionSchema>;
+
+export const uiBadgeNodeDefinitionSchema = mountableNodeSchema.extend({
+    type: z.literal("ui-badge"),
+    value: bindingSchema,
+    variant: z.enum(["count", "dot", "status"]).optional(),
+    severity: z.enum(["default", "info", "warning", "error", "success"]).optional(),
+    max: z.number().int().positive().optional()
+});
+
+export type UiBadgeNodeDefinition = z.infer<typeof uiBadgeNodeDefinitionSchema>;
+
+export const uiEmptyStateNodeDefinitionSchema = mountableNodeSchema.extend({
+    type: z.literal("ui-empty-state"),
+    visible: bindingSchema,
+    icon: z.string().optional(),
+    title: z.string().optional(),
+    message: z.string().optional(),
+    action: identifierSchema.optional(),
+    actionLabel: z.string().optional()
+});
+
+export type UiEmptyStateNodeDefinition = z.infer<typeof uiEmptyStateNodeDefinitionSchema>;
+
 export const uiNodeDefinitionSchema = z.union([
     uiAppNodeDefinitionSchema,
     uiRouteNodeDefinitionSchema,
@@ -327,7 +391,13 @@ export const uiNodeDefinitionSchema = z.union([
     uiStoreNodeDefinitionSchema,
     uiQueryNodeDefinitionSchema,
     uiActionNodeDefinitionSchema,
-    uiNavigationNodeDefinitionSchema
+    uiNavigationNodeDefinitionSchema,
+    uiAlertNodeDefinitionSchema,
+    uiToastNodeDefinitionSchema,
+    uiProgressNodeDefinitionSchema,
+    uiSkeletonNodeDefinitionSchema,
+    uiBadgeNodeDefinitionSchema,
+    uiEmptyStateNodeDefinitionSchema
 ]);
 
 export type UiNodeDefinition = z.infer<typeof uiNodeDefinitionSchema>;

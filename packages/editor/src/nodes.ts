@@ -4,25 +4,31 @@ import {
     type BindingDefinition,
     type StandardLayoutPresetId,
     type UiActionNodeDefinition,
+    type UiAlertNodeDefinition,
     type UiAppNodeDefinition,
+    type UiBadgeNodeDefinition,
     type UiButtonNodeDefinition,
     type UiCheckboxNodeDefinition,
     type UiContainerNodeDefinition,
     type UiDatepickerNodeDefinition,
     type UiDialogNodeDefinition,
+    type UiEmptyStateNodeDefinition,
     type UiInputNodeDefinition,
     type UiNavigationNodeDefinition,
     type UiNodeDefinition,
+    type UiProgressNodeDefinition,
     type UiQueryNodeDefinition,
     type UiRadioNodeDefinition,
     type UiRouteNodeDefinition,
     type UiSelectNodeDefinition,
+    type UiSkeletonNodeDefinition,
     type UiSliderNodeDefinition,
     type UiStoreNodeDefinition,
     type UiSwitchNodeDefinition,
     type UiTableNodeDefinition,
     type UiTextareaNodeDefinition,
-    type UiTextNodeDefinition
+    type UiTextNodeDefinition,
+    type UiToastNodeDefinition
 } from "@node-red-contrib-webapp/schema";
 
 export type NodeEditorType = UiNodeDefinition["type"];
@@ -191,6 +197,50 @@ export interface UiNavigationEditorConfig extends IdentifiedEditorConfig {
     to?: string;
 }
 
+// P16b: feedback and status node editor configs
+export interface UiAlertEditorConfig extends MountableEditorConfig {
+    messagePath?: string;
+    severity?: "info" | "warning" | "error" | "success";
+    title?: string;
+    dismissible?: boolean;
+}
+
+export interface UiToastEditorConfig extends IdentifiedEditorConfig {
+    parent?: string;
+    severity?: "info" | "warning" | "error" | "success";
+    duration?: number;
+    position?: "top-right" | "top-center" | "bottom-right" | "bottom-center";
+}
+
+export interface UiProgressEditorConfig extends MountableEditorConfig {
+    variant?: "bar" | "spinner" | "circular";
+    valuePath?: string;
+    label?: string;
+    showValue?: boolean;
+}
+
+export interface UiSkeletonEditorConfig extends MountableEditorConfig {
+    visiblePath?: string;
+    variant?: "text" | "avatar" | "card" | "table";
+    lines?: number;
+}
+
+export interface UiBadgeEditorConfig extends MountableEditorConfig {
+    valuePath?: string;
+    variant?: "count" | "dot" | "status";
+    severity?: "default" | "info" | "warning" | "error" | "success";
+    max?: number;
+}
+
+export interface UiEmptyStateEditorConfig extends MountableEditorConfig {
+    visiblePath?: string;
+    icon?: string;
+    title?: string;
+    message?: string;
+    action?: string;
+    actionLabel?: string;
+}
+
 export type NodeEditorConfig =
     | UiAppEditorConfig
     | UiRouteEditorConfig
@@ -210,7 +260,13 @@ export type NodeEditorConfig =
     | UiStoreEditorConfig
     | UiQueryEditorConfig
     | UiActionEditorConfig
-    | UiNavigationEditorConfig;
+    | UiNavigationEditorConfig
+    | UiAlertEditorConfig
+    | UiToastEditorConfig
+    | UiProgressEditorConfig
+    | UiSkeletonEditorConfig
+    | UiBadgeEditorConfig
+    | UiEmptyStateEditorConfig;
 
 export type NodeEditorDefinition =
     | UiAppEditorNodeDefinition
@@ -231,7 +287,13 @@ export type NodeEditorDefinition =
     | BaseEditorNodeDefinition<UiStoreEditorConfig, UiStoreNodeDefinition>
     | BaseEditorNodeDefinition<UiQueryEditorConfig, UiQueryNodeDefinition>
     | BaseEditorNodeDefinition<UiActionEditorConfig, UiActionNodeDefinition>
-    | BaseEditorNodeDefinition<UiNavigationEditorConfig, UiNavigationNodeDefinition>;
+    | BaseEditorNodeDefinition<UiNavigationEditorConfig, UiNavigationNodeDefinition>
+    | BaseEditorNodeDefinition<UiAlertEditorConfig, UiAlertNodeDefinition>
+    | BaseEditorNodeDefinition<UiToastEditorConfig, UiToastNodeDefinition>
+    | BaseEditorNodeDefinition<UiProgressEditorConfig, UiProgressNodeDefinition>
+    | BaseEditorNodeDefinition<UiSkeletonEditorConfig, UiSkeletonNodeDefinition>
+    | BaseEditorNodeDefinition<UiBadgeEditorConfig, UiBadgeNodeDefinition>
+    | BaseEditorNodeDefinition<UiEmptyStateEditorConfig, UiEmptyStateNodeDefinition>;
 
 function requiredString(message: string): EditorFieldDefinition {
     return {
@@ -792,6 +854,86 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         type: "ui-navigation",
         id: config.id ?? "",
         to: config.to ?? ""
+    })),
+    "ui-alert": createDefinition("ui-alert", "view", {
+        id: requiredString("Alert IDs are required before deploy."),
+        mount: requiredString("Alerts must declare a parent slot."),
+        messagePath: requiredString("Alerts must declare a message path.")
+    }, (config: UiAlertEditorConfig): UiAlertNodeDefinition => ({
+        type: "ui-alert",
+        id: config.id ?? "",
+        mount: config.mount ?? "",
+        message: stateBinding(config.messagePath ?? ""),
+        severity: config.severity,
+        title: config.title,
+        dismissible: config.dismissible,
+        ...collectLayoutChildConfig(config)
+    })),
+    "ui-toast": createDefinition("ui-toast", "view", {
+        id: requiredString("Toast IDs are required before deploy.")
+    }, (config: UiToastEditorConfig): UiToastNodeDefinition => ({
+        type: "ui-toast",
+        id: config.id ?? "",
+        parent: config.parent,
+        severity: config.severity,
+        duration: config.duration,
+        position: config.position
+    })),
+    "ui-progress": createDefinition("ui-progress", "view", {
+        id: requiredString("Progress IDs are required before deploy."),
+        mount: requiredString("Progress nodes must declare a parent slot.")
+    }, (config: UiProgressEditorConfig): UiProgressNodeDefinition => ({
+        type: "ui-progress",
+        id: config.id ?? "",
+        mount: config.mount ?? "",
+        variant: config.variant,
+        value: config.valuePath ? stateBinding(config.valuePath) : undefined,
+        label: config.label,
+        showValue: config.showValue,
+        ...collectLayoutChildConfig(config)
+    })),
+    "ui-skeleton": createDefinition("ui-skeleton", "view", {
+        id: requiredString("Skeleton IDs are required before deploy."),
+        mount: requiredString("Skeletons must declare a parent slot."),
+        visiblePath: requiredString("Skeletons must declare a visible path.")
+    }, (config: UiSkeletonEditorConfig): UiSkeletonNodeDefinition => ({
+        type: "ui-skeleton",
+        id: config.id ?? "",
+        mount: config.mount ?? "",
+        visible: stateBinding(config.visiblePath ?? ""),
+        variant: config.variant,
+        lines: config.lines,
+        ...collectLayoutChildConfig(config)
+    })),
+    "ui-badge": createDefinition("ui-badge", "view", {
+        id: requiredString("Badge IDs are required before deploy."),
+        mount: requiredString("Badges must declare a parent slot."),
+        valuePath: requiredString("Badges must declare a value path.")
+    }, (config: UiBadgeEditorConfig): UiBadgeNodeDefinition => ({
+        type: "ui-badge",
+        id: config.id ?? "",
+        mount: config.mount ?? "",
+        value: stateBinding(config.valuePath ?? ""),
+        variant: config.variant,
+        severity: config.severity,
+        max: config.max,
+        ...collectLayoutChildConfig(config)
+    })),
+    "ui-empty-state": createDefinition("ui-empty-state", "view", {
+        id: requiredString("Empty state IDs are required before deploy."),
+        mount: requiredString("Empty states must declare a parent slot."),
+        visiblePath: requiredString("Empty states must declare a visible path.")
+    }, (config: UiEmptyStateEditorConfig): UiEmptyStateNodeDefinition => ({
+        type: "ui-empty-state",
+        id: config.id ?? "",
+        mount: config.mount ?? "",
+        visible: stateBinding(config.visiblePath ?? ""),
+        icon: config.icon,
+        title: config.title,
+        message: config.message,
+        action: config.action,
+        actionLabel: config.actionLabel,
+        ...collectLayoutChildConfig(config)
     }))
 };
 

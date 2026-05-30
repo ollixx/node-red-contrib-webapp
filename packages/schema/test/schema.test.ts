@@ -421,3 +421,141 @@ describe("app validation", () => {
         }).success).toBe(false);
     });
 });
+
+// ── P16b: feedback and status nodes ─────────────────────────────────────────
+
+describe("P16b feedback and status nodes", () => {
+    it("compiles ui-alert to a valid definition", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-alert",
+            id: "alert1",
+            mount: "route:/dashboard/content",
+            message: { kind: "state", path:"alerts.current" },
+            severity: "warning",
+            title: "Achtung",
+            dismissible: true
+        });
+
+        expect(result.success).toBe(true);
+    });
+
+    it("rejects ui-alert without mount or parent", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-alert",
+            id: "alert1",
+            message: { kind: "state", path:"alerts.current" }
+        });
+
+        expect(result.success).toBe(false);
+    });
+
+    it("compiles ui-toast to a valid definition", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-toast",
+            id: "toast1",
+            severity: "success",
+            duration: 3000,
+            position: "top-right"
+        });
+
+        expect(result.success).toBe(true);
+    });
+
+    it("rejects ui-toast with negative duration", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-toast",
+            id: "toast1",
+            duration: -1
+        });
+
+        expect(result.success).toBe(false);
+    });
+
+    it("compiles ui-progress with value binding", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-progress",
+            id: "progress1",
+            mount: "route:/dashboard/content",
+            variant: "bar",
+            value: { kind: "state", path:"upload.percent" },
+            showValue: true
+        });
+
+        expect(result.success).toBe(true);
+        if (result.success && result.data.type === "ui-progress") {
+            expect(result.data.value).toEqual({ kind: "state", path:"upload.percent" });
+        }
+    });
+
+    it("compiles ui-progress without value (indeterminate)", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-progress",
+            id: "progress1",
+            mount: "route:/dashboard/content",
+            variant: "spinner"
+        });
+
+        expect(result.success).toBe(true);
+    });
+
+    it("compiles ui-skeleton to a valid definition", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-skeleton",
+            id: "skel1",
+            mount: "route:/customers/content",
+            visible: { kind: "state", path:"customers.loading" },
+            variant: "table",
+            lines: 5
+        });
+
+        expect(result.success).toBe(true);
+    });
+
+    it("rejects ui-skeleton without visible binding", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-skeleton",
+            id: "skel1",
+            mount: "route:/customers/content"
+        });
+
+        expect(result.success).toBe(false);
+    });
+
+    it("compiles ui-badge to a valid definition", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-badge",
+            id: "badge1",
+            mount: "route:/customers/content",
+            value: { kind: "state", path:"notifications.count" },
+            variant: "count",
+            severity: "error",
+            max: 99
+        });
+
+        expect(result.success).toBe(true);
+    });
+
+    it("compiles ui-empty-state to a valid definition", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-empty-state",
+            id: "empty1",
+            mount: "route:/customers/content",
+            visible: { kind: "state", path:"customers.isEmpty" },
+            title: "Keine Einträge",
+            message: "Noch keine Kunden angelegt.",
+            icon: "inbox"
+        });
+
+        expect(result.success).toBe(true);
+    });
+
+    it("rejects ui-empty-state without visible binding", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-empty-state",
+            id: "empty1",
+            mount: "route:/customers/content"
+        });
+
+        expect(result.success).toBe(false);
+    });
+});
