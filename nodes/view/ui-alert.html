@@ -7,7 +7,6 @@
             color: "#f4efcf",
             defaults: {
                 name: { value: "" },
-                uiId: { value: "", required: true },
                 parent: { value: "" },
                 mount: { value: "", required: true },
                 messagePath: { value: "" },
@@ -42,7 +41,7 @@
 </script>
 <script type="text/html" data-template-name="ui-alert">
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
-    <div class="form-row"><label for="node-input-uiId">Node ID</label><input type="text" id="node-input-uiId"></div>
+    <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <div class="form-row"><label for="node-input-messagePath">Message Path</label><input type="text" id="node-input-messagePath"></div>
     <div class="form-row"><label for="node-input-severity">Severity</label>
@@ -55,6 +54,7 @@
     </div>
     <div class="form-row"><label for="node-input-title">Title</label><input type="text" id="node-input-title"></div>
     <div class="form-row"><label for="node-input-dismissible">Dismissible</label><input type="checkbox" id="node-input-dismissible" style="width:auto"></div>
+    <hr style="margin: 8px 0;">
     <div class="form-row" data-layout-child-prop-row="order" style="display: none;"><label for="node-input-order">Order</label><input type="number" id="node-input-order"></div>
     <div class="form-row" data-layout-child-prop-row="row" style="display: none;"><label for="node-input-row">Row</label><input type="number" id="node-input-row"></div>
     <div class="form-row" data-layout-child-prop-row="col" style="display: none;"><label for="node-input-col">Col</label><input type="number" id="node-input-col"></div>

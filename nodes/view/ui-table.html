@@ -7,7 +7,6 @@
             color: "#f4efcf",
             defaults: {
                 name: { value: "" },
-                uiId: { value: "", required: true },
                 parent: { value: "" },
                 mount: { value: "", required: true },
                 columns: { value: "", validate: common.required },
@@ -52,9 +51,8 @@
 </script>
 <script type="text/html" data-template-name="ui-table">
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
-    <div class="form-row"><label for="node-input-uiId">Node ID</label><input type="text" id="node-input-uiId"></div>
+    <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
-    <div class="form-tips">Waehlt den Slot, in den diese Tabelle gemountet wird.</div>
     <div class="form-row"><label for="node-input-columns">Columns</label><input type="text" id="node-input-columns" placeholder="name,email,status"></div>
     <div class="form-row"><label for="node-input-rowsPath">Rows Path</label><input type="text" id="node-input-rowsPath"></div>
     <div class="form-row">
@@ -65,6 +63,7 @@
     <input type="hidden" id="node-input-outputs">
     <div class="form-row"><label>Events</label></div>
     <div id="node-input-events-container"></div>
+    <hr style="margin: 8px 0;">
     <div class="form-row" data-layout-child-prop-row="order" style="display: none;"><label for="node-input-order">Order</label><input type="number" id="node-input-order"></div>
     <div class="form-row" data-layout-child-prop-row="row" style="display: none;"><label for="node-input-row">Row</label><input type="number" id="node-input-row"></div>
     <div class="form-row" data-layout-child-prop-row="col" style="display: none;"><label for="node-input-col">Col</label><input type="number" id="node-input-col"></div>

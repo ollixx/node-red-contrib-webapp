@@ -73,14 +73,14 @@ test.describe("editor mount option coverage", () => {
 
     test("shows all valid app slots for mount-based nodes", async ({ page }) => {
         const expectedOptions = [
-            "App mountAbsoluteApp -> content",
-            "App mountAppShellDemo -> content",
-            "App mountAppShellDemo -> footer",
-            "App mountAppShellDemo -> header",
-            "App mountAppShellDemo -> navbar",
-            "App mountGridApp -> content",
-            "App mountHorizontalApp -> content",
-            "App mountVerticalApp -> content"
+            "Absolute Layout Demo -> content",
+            "App Layout Demo -> content",
+            "App Layout Demo -> footer",
+            "App Layout Demo -> header",
+            "App Layout Demo -> navbar",
+            "Grid Layout Demo -> content",
+            "Horizontal Layout Demo -> content",
+            "Vertical Layout Demo -> content"
         ];
 
         await page.goto("/");

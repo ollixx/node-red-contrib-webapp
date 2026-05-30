@@ -1,16 +1,12 @@
 import { z } from "zod";
 
-const identifierPattern = /^[a-zA-Z][a-zA-Z0-9_-]*$/;
-
 export const identifierSchema = z
     .string()
-    .min(1, "IDs must not be empty.")
-    .regex(identifierPattern, "IDs must start with a letter and only contain letters, numbers, underscores, or hyphens.");
+    .min(1, "IDs must not be empty.");
 
 export const regionNameSchema = z
     .string()
-    .min(1, "Region names must not be empty.")
-    .regex(identifierPattern, "Region names must start with a letter and only contain letters, numbers, underscores, or hyphens.");
+    .min(1, "Region names must not be empty.");
 
 export const routePathSchema = z
     .string()

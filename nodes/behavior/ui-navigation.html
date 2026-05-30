@@ -7,7 +7,6 @@
             color: "#f8ddd0",
             defaults: {
                 name: { value: "" },
-                uiId: { value: "", required: true },
                 parent: { value: "" },
                 to: { value: "", required: true }
             },
@@ -26,7 +25,7 @@
 </script>
 <script type="text/html" data-template-name="ui-navigation">
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
-    <div class="form-row"><label for="node-input-uiId">Navigation ID</label><input type="text" id="node-input-uiId"></div>
+    <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-parent">App</label><select id="node-input-parent"></select></div>
     <div class="form-row"><label for="node-input-to">Zielpfad</label><input type="text" id="node-input-to"></div>
 </script>

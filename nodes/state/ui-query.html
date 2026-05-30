@@ -7,7 +7,6 @@
             color: "#d8e8f8",
             defaults: {
                 name: { value: "" },
-                uiId: { value: "", required: true },
                 parent: { value: "" },
                 queryPath: { value: "", required: true },
                 params: { value: "" },
@@ -31,7 +30,7 @@
 </script>
 <script type="text/html" data-template-name="ui-query">
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
-    <div class="form-row"><label for="node-input-uiId">Query ID</label><input type="text" id="node-input-uiId"></div>
+    <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-parent">App</label><select id="node-input-parent"></select></div>
     <div class="form-row"><label for="node-input-queryPath">Query Path</label><input type="text" id="node-input-queryPath"></div>
     <div class="form-row"><label for="node-input-params">Params Store</label><select id="node-input-params"></select></div>

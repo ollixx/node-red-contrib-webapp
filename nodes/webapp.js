@@ -772,10 +772,11 @@ function getAppModelResult(appId, definitions) {
     const validation = appModelSchema.safeParse(modelCandidate);
 
     if (!validation.success) {
+        const messages = validation.error.issues.map((issue) => issue.message).join("; ");
         return {
             success: false,
             status: 409,
-            message: validation.error.issues[0]?.message || `App '${appId}' is incomplete.`
+            message: messages || `App '${appId}' is incomplete.`
         };
     }
 
@@ -1766,7 +1767,7 @@ function createNodeConstructor(RED, type, mapConfig, options = {}) {
 }
 
 function getUiId(config) {
-    return config.uiId || config.id;
+    return config.id;
 }
 
 function passThroughInputHandler(node, msg, send, done) {

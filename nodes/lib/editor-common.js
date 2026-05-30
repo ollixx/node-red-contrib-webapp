@@ -24,25 +24,12 @@
 
     function labelWithName(fallback) {
         return function () {
-            return this.name || this.uiId || this.id || fallback;
+            return this.name || this.id || fallback;
         };
     }
 
     function withUiIdMigration(definition) {
-        return {
-            ...definition,
-            oneditprepare: function () {
-                const input = document.getElementById("node-input-uiId");
-
-                if (input && !input.value) {
-                    input.value = this.uiId || this.id || "";
-                }
-
-                if (definition.oneditprepare) {
-                    definition.oneditprepare.call(this);
-                }
-            }
-        };
+        return { ...definition };
     }
 
     function required(value) {
@@ -88,10 +75,6 @@
         };
     }
 
-    function readUiModelId(node) {
-        return node.uiId || node.id || "";
-    }
-
     function collectReferenceNodes() {
         const references = {
             apps: [],
@@ -103,7 +86,7 @@
         };
 
         RED.nodes.eachNode(function (node) {
-            const id = readUiModelId(node);
+            const id = node.id || "";
 
             if (!id) {
                 return;
@@ -243,44 +226,48 @@
 
         for (const app of apps) {
             const slotNames = getSlotNamesForLayout(app.layoutId);
+            const appLabel = app.title || app.id;
 
             for (const slotName of slotNames) {
                 options.push({
                     value: `${app.id}.${slotName}`,
-                    label: `App ${app.id} -> ${slotName}`
+                    label: `${appLabel} -> ${slotName}`
                 });
             }
         }
 
         for (const route of routes) {
             const slotNames = getSlotNamesForLayout(route.layoutId);
+            const routeLabel = route.title || route.path || route.id;
 
             for (const slotName of slotNames) {
                 options.push({
                     value: `route:${route.path}/${slotName}`,
-                    label: `Route ${route.path} -> ${slotName}`
+                    label: `${routeLabel} -> ${slotName}`
                 });
             }
         }
 
         for (const dialog of dialogs) {
             const slotNames = getSlotNamesForLayout(dialog.layoutId);
+            const dialogLabel = dialog.title || dialog.id;
 
             for (const slotName of slotNames) {
                 options.push({
                     value: `dialog:${dialog.id}/${slotName}`,
-                    label: `Dialog ${dialog.id} -> ${slotName}`
+                    label: `${dialogLabel} -> ${slotName}`
                 });
             }
         }
 
         for (const container of containers) {
             const slotNames = getSlotNamesForLayout(container.layoutId);
+            const containerLabel = container.title || container.id;
 
             for (const slotName of slotNames) {
                 options.push({
-                    value: `layout:${container.layoutId}/${slotName}`,
-                    label: `Layout ${container.layoutId} -> ${slotName}`
+                    value: `container:${container.id}/${slotName}`,
+                    label: `${containerLabel} -> ${slotName}`
                 });
             }
         }
@@ -309,6 +296,15 @@
                 return entry.id === dialogId;
             });
             return dialog ? dialog.layoutId || "" : "";
+        }
+
+        if (mountValue.startsWith("container:")) {
+            const separatorIndex = mountValue.lastIndexOf("/");
+            const containerId = separatorIndex >= 0 ? mountValue.slice("container:".length, separatorIndex) : "";
+            const container = references.containers.find(function (entry) {
+                return entry.id === containerId;
+            });
+            return container ? container.layoutId || "" : "";
         }
 
         if (mountValue.startsWith("layout:")) {
@@ -364,7 +360,7 @@
                 references.apps.map(function (app) {
                     return { value: app.id, label: app.title || app.id };
                 }),
-                self.parent,
+                self.parent || self.id,
                 "App auswaehlen"
             );
         };
@@ -383,7 +379,7 @@
                         references.layouts.map(function (layout) {
                             return {
                                 value: layout.id,
-                                label: `${layout.id} - ${layout.title}`
+                                label: layout.title || layout.id
                             };
                         }),
                         self.layoutId,
@@ -397,7 +393,7 @@
                         references.routes.map(function (route) {
                             return {
                                 value: route.id,
-                                label: `${route.id} - ${route.path}`
+                                label: route.title || route.path || route.id
                             };
                         }),
                         self.routeId,
@@ -421,7 +417,7 @@
                             const suffix = action.type === "ui-navigation" && action.to ? ` -> ${action.to}` : "";
                             return {
                                 value: action.id,
-                                label: `${action.id} - ${action.label}${suffix}`
+                                label: `${action.label || action.id}${suffix}`
                             };
                         }),
                         $(config.action).val() || self.action || self.selectAction || self.refreshAction,
@@ -430,15 +426,19 @@
                 }
 
                 if (config.store) {
+                    const storeSelector = typeof config.store === "string" && config.store.startsWith("#")
+                        ? config.store
+                        : "#node-input-storeId";
+                    const currentStoreVal = $(storeSelector).val() || self.storeId || self.params;
                     setSelectOptions(
-                        "#node-input-storeId",
+                        storeSelector,
                         references.stores.map(function (store) {
                             return {
                                 value: store.id,
-                                label: `${store.id}${store.statePath ? ` - ${store.statePath}` : ""}`
+                                label: store.id
                             };
                         }),
-                        self.storeId,
+                        currentStoreVal,
                         "Optional: Store auswaehlen"
                     );
                 }
@@ -471,14 +471,96 @@
         };
     }
 
+    function installEventCheckboxes(availableEvents) {
+        return function () {
+            const self = this;
+            let activeEvents;
+
+            try {
+                activeEvents = Array.isArray(self.events) ? self.events : JSON.parse(self.events || "[]");
+            }
+            catch (_e) {
+                activeEvents = [];
+            }
+
+            const container = $("#node-input-events-container");
+
+            if (!container.length) {
+                return;
+            }
+
+            container.empty();
+
+            availableEvents.forEach(function (eventName) {
+                const checked = activeEvents.includes(eventName) ? "checked" : "";
+                const id = `node-event-checkbox-${eventName}`;
+                const row = $(`
+                    <div class="form-row" style="display:flex;align-items:center;gap:8px;">
+                        <input type="checkbox" id="${id}" data-event="${eventName}" ${checked} style="width:auto;margin:0;">
+                        <label for="${id}" style="width:auto;margin:0;">${eventName}</label>
+                    </div>
+                `);
+
+                container.append(row);
+            });
+        };
+    }
+
+    function collectEventCheckboxValues() {
+        const checked = [];
+
+        $("#node-input-events-container input[type=checkbox]").each(function () {
+            if ($(this).is(":checked")) {
+                checked.push($(this).data("event"));
+            }
+        });
+
+        return checked;
+    }
+
+    function withEventOutputs(definition, availableEvents) {
+        const base = withUiIdMigration(definition);
+        const originalPrepare = base.oneditprepare;
+        const originalSave = base.oneditsave;
+
+        return {
+            ...base,
+            oneditprepare: function () {
+                if (originalPrepare) {
+                    originalPrepare.call(this);
+                }
+
+                installEventCheckboxes(availableEvents).call(this);
+            },
+            oneditsave: function () {
+                const events = collectEventCheckboxValues();
+                const eventsJson = JSON.stringify(events);
+                $("#node-input-events").val(eventsJson);
+                $("#node-input-outputs").val(events.length);
+                this.events = eventsJson;
+                this.outputs = events.length;
+
+                if (originalSave) {
+                    originalSave.call(this);
+                }
+            }
+        };
+    }
+
     function registerNodeType(type, definition) {
         RED.nodes.registerType(type, withUiIdMigration(definition));
     }
 
+    function registerNodeTypeWithEvents(type, definition, availableEvents) {
+        RED.nodes.registerType(type, withEventOutputs(definition, availableEvents));
+    }
+
     global.WebappEditorCommon = {
         bindingValueForEditor,
+        collectEventCheckboxValues,
         getNextNameDefault,
         getStandardLayoutPresetOptions,
+        installEventCheckboxes,
         installLayoutChildPropRows,
         installLayoutSelector,
         installParentAppSelector,
@@ -487,6 +569,7 @@
         labelWithName,
         parseBindingValue,
         registerNodeType,
+        registerNodeTypeWithEvents,
         required
     };
 })(window);

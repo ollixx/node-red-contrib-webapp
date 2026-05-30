@@ -7,7 +7,6 @@
             color: "#d9efe2",
             defaults: {
                 name: { value: "" },
-                uiId: { value: "", required: true },
                 parent: { value: "" },
                 path: { value: "", required: true },
                 title: { value: "" },
@@ -48,13 +47,12 @@
 </script>
 <script type="text/html" data-template-name="ui-route">
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
-    <div class="form-row"><label for="node-input-uiId">Route ID</label><input type="text" id="node-input-uiId"></div>
+    <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-parent">App</label><select id="node-input-parent"></select></div>
     <div class="form-row"><label for="node-input-path">Pfad</label><input type="text" id="node-input-path"></div>
     <div class="form-row"><label for="node-input-title">Titel</label><input type="text" id="node-input-title"></div>
     <input type="hidden" id="node-input-layoutId">
     <div class="form-row"><label for="node-input-layout-preset">Parent Layout</label><select id="node-input-layout-preset"></select></div>
-    <div class="form-tips">Dieses Layout wird fuer die Seite gerendert.</div>
     <input type="hidden" id="node-input-events">
     <input type="hidden" id="node-input-outputs">
     <div class="form-row"><label>Events</label></div>

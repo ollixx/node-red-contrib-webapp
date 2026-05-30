@@ -7,7 +7,6 @@
             color: "#f4efcf",
             defaults: {
                 name: { value: "" },
-                uiId: { value: "", required: true },
                 parent: { value: "" },
                 mount: { value: "", required: true },
                 visiblePath: { value: "", required: true },
@@ -40,7 +39,7 @@
 </script>
 <script type="text/html" data-template-name="ui-skeleton">
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
-    <div class="form-row"><label for="node-input-uiId">Node ID</label><input type="text" id="node-input-uiId"></div>
+    <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <div class="form-row"><label for="node-input-visiblePath">Visible Path</label><input type="text" id="node-input-visiblePath"></div>
     <div class="form-row"><label for="node-input-variant">Variant</label>
@@ -52,6 +51,7 @@
         </select>
     </div>
     <div class="form-row"><label for="node-input-lines">Lines</label><input type="number" id="node-input-lines" min="1"></div>
+    <hr style="margin: 8px 0;">
     <div class="form-row" data-layout-child-prop-row="order" style="display: none;"><label for="node-input-order">Order</label><input type="number" id="node-input-order"></div>
     <div class="form-row" data-layout-child-prop-row="row" style="display: none;"><label for="node-input-row">Row</label><input type="number" id="node-input-row"></div>
     <div class="form-row" data-layout-child-prop-row="col" style="display: none;"><label for="node-input-col">Col</label><input type="number" id="node-input-col"></div>
