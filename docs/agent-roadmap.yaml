@@ -128,7 +128,7 @@ phases:
 
   - id: P17
     title: Theming system
-    status: pending
+    status: in_progress
     dependencies: [P16a, P16b, P16c, P16d]
     goals:
       - Implement Design-Token system on ui-app node.
