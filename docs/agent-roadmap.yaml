@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P12
+  current_phase: P13
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -240,7 +240,7 @@ phases:
 
   - id: P12
     title: Configurable event system
-    status: in_progress
+    status: done
     dependencies: [P11b]
     goals:
       - Add checkbox-based event selection to ui-app, ui-route, ui-dialog, ui-container, ui-table.
