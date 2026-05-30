@@ -126,7 +126,7 @@ phases:
 
   - id: P16d
     title: Core node expansion — display
-    status: pending
+    status: in_progress
     dependencies: [P12]
     goals:
       - Add display nodes for images, icons, lists, and avatars.
