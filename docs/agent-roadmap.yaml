@@ -122,7 +122,7 @@ phases:
 
   - id: P16b
     title: Core node expansion — feedback and status
-    status: pending
+    status: in_progress
     dependencies: [P12]
     goals:
       - Add feedback and status nodes for loading states, notifications, and empty states.
