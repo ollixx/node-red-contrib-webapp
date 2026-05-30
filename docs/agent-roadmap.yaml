@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P11a
+  current_phase: P11b
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -204,7 +204,7 @@ phases:
 
   - id: P11a
     title: Parent field — schema and runtime
-    status: in_progress
+    status: done
     dependencies: [P10]
     goals:
       - Add parent field to schema for all nodes that require app or slot scoping.
@@ -340,3 +340,115 @@ phases:
       - Playwright: ui-store editor shows persist checkbox
       - Playwright: page reload with persist=true shows last known store value immediately (before server responds)
       - docs check: multi-user.md sync strategy description matches the reconnect handler in runtime
+
+  - id: P16a
+    title: Core node expansion — input controls
+    status: pending
+    dependencies: [P12]
+    goals:
+      - Add the missing input control nodes to the core lib.
+      - All nodes follow the established parent/name/events pattern.
+      - Schema, runtime, editor, and renderer aligned for each node.
+    deliverables:
+      - ui-select: dropdown / combobox with options binding
+      - ui-checkbox: single checkbox with value binding
+      - ui-radio: radio group with options binding
+      - ui-switch: toggle/boolean input
+      - ui-textarea: multi-line text input
+      - ui-datepicker: date and datetime input
+      - ui-slider: numeric range input
+      - unit and E2E tests per node
+    validation:
+      - pnpm test passes with no failures
+      - unit test: each node compiles to a valid schema definition
+      - unit test: each node emits a change event with correct payload on value change
+      - Playwright: each node editor shows parent selector and name default
+      - docs check: each node doc's Pflichtfelder match the schema and editor HTML
+
+  - id: P16b
+    title: Core node expansion — feedback and status
+    status: pending
+    dependencies: [P12]
+    goals:
+      - Add feedback and status nodes for loading states, notifications, and empty states.
+    deliverables:
+      - ui-alert: info/warn/error/success message band
+      - ui-toast: temporary notification (auto-dismiss)
+      - ui-progress: progress bar and spinner variants
+      - ui-skeleton: loading placeholder matching component shape
+      - ui-badge: count or status indicator attached to another element
+      - ui-empty-state: structured placeholder for empty lists or views
+      - unit and E2E tests per node
+    validation:
+      - pnpm test passes with no failures
+      - unit test: each node compiles to a valid schema definition
+      - unit test: ui-toast with duration fires dismiss event after timeout
+      - unit test: ui-progress with value binding renders correct fill percentage
+      - Playwright: each node editor shows parent selector and name default
+      - docs check: each node doc's Pflichtfelder match the schema and editor HTML
+
+  - id: P16c
+    title: Core node expansion — navigation and structure
+    status: pending
+    dependencies: [P12]
+    goals:
+      - Add navigation and structural nodes for multi-step and hierarchical UIs.
+    deliverables:
+      - ui-tabs: tab bar with slot per tab
+      - ui-accordion: collapsible sections
+      - ui-breadcrumb: path display with route bindings
+      - ui-menu: navigation menu (sidebar or topbar variant)
+      - ui-pagination: page controls connected to ui-query params
+      - ui-stepper: multi-step process indicator
+      - unit and E2E tests per node
+    validation:
+      - pnpm test passes with no failures
+      - unit test: each node compiles to a valid schema definition
+      - unit test: ui-tabs with 3 tabs exposes 3 slots in compiled model
+      - unit test: ui-pagination emits page-change event with correct page number
+      - Playwright: each node editor shows parent selector and name default
+      - docs check: each node doc's Pflichtfelder match the schema and editor HTML
+
+  - id: P16d
+    title: Core node expansion — display
+    status: pending
+    dependencies: [P12]
+    goals:
+      - Add display nodes for images, icons, lists, and avatars.
+    deliverables:
+      - ui-image: image with src binding, alt text, fallback
+      - ui-icon: icon by name, icon-set-agnostic (name maps to SVG or font icon)
+      - ui-list: structured list with item slot
+      - ui-avatar: user image or initials with fallback
+      - ui-divider: visual separator (horizontal/vertical)
+      - unit and E2E tests per node
+    validation:
+      - pnpm test passes with no failures
+      - unit test: each node compiles to a valid schema definition
+      - unit test: ui-image with missing src renders fallback slot
+      - Playwright: each node editor shows parent selector and name default
+      - docs check: each node doc's Pflichtfelder match the schema and editor HTML
+
+  - id: P17
+    title: Theming system
+    status: pending
+    dependencies: [P16a, P16b, P16c, P16d]
+    goals:
+      - Implement Design-Token system on ui-app node.
+      - Implement component variants across all core nodes.
+      - Ship webapp-default renderer backend consuming tokens.
+      - Define backend extension interface for community backends.
+    deliverables:
+      - design token fields on ui-app (colors, typography, spacing, radii)
+      - CSS Custom Properties injected from tokens at runtime
+      - variant field on all view nodes with validated enum per node type
+      - webapp-default backend implementing all core nodes against tokens
+      - backend interface spec documented in theming.md
+      - unit tests for token injection and variant rendering
+    validation:
+      - pnpm test passes with no failures
+      - unit test: ui-app with custom primary color injects correct CSS custom property
+      - unit test: ui-button with variant=danger renders with danger token class
+      - unit test: ui-button with unknown variant fails schema validation
+      - Playwright: changing primary color token in ui-app editor updates preview
+      - docs check: theming.md token list matches the fields accepted by ui-app schema
