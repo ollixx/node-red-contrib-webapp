@@ -240,7 +240,7 @@ phases:
 
   - id: P12
     title: Configurable event system
-    status: pending
+    status: in_progress
     dependencies: [P11b]
     goals:
       - Add checkbox-based event selection to ui-app, ui-route, ui-dialog, ui-container, ui-table.
