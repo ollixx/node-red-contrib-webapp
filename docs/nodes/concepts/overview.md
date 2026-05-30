@@ -14,10 +14,10 @@ Das mehrfach genutzte Layout-Feature ist zusätzlich zentral in [layout.md](layo
 
 ## Kategorien
 
-- Struktur: [`ui-app`](ui-app.md), [`ui-route`](ui-route.md), [`ui-dialog`](ui-dialog.md)
-- View: [`ui-text`](ui-text.md), [`ui-button`](ui-button.md), [`ui-table`](../display/ui-table.md), [`ui-container`](ui-container.md), [`ui-input`](ui-input.md)
-- State: [`ui-store`](../state/ui-store.md), [`ui-query`](ui-query.md)
-- Verhalten: [`ui-action`](ui-action.md), [`ui-navigation`](ui-navigation.md)
+- Struktur: [`ui-app`](../structure/ui-app.md), [`ui-route`](../structure/ui-route.md), [`ui-dialog`](../structure/ui-dialog.md)
+- View: [`ui-text`](../display/ui-text.md), [`ui-button`](../display/ui-button.md), [`ui-table`](../display/ui-table.md), [`ui-container`](../display/ui-container.md), [`ui-input`](../input/ui-input.md)
+- State: [`ui-store`](../state/ui-store.md), [`ui-query`](../state/ui-query.md)
+- Verhalten: [`ui-action`](../behavior/ui-action.md), [`ui-navigation`](../behavior/ui-navigation.md)
 
 ## Gemeinsame Modellregeln
 
