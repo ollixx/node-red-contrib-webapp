@@ -1966,7 +1966,10 @@ registerWebappNodes.__test__ = {
     getPreviewMessages,
     getAppModelResult,
     renderAppPage,
-    resetPreview
+    resetPreview,
+    componentStateInputHandler,
+    dialogInputHandler,
+    runtimeNodeRegistry
 };
 
 registerWebappNodes.registerNodeType = registerNodeType;
