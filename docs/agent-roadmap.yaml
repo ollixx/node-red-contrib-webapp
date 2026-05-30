@@ -132,7 +132,7 @@ phases:
 
   - id: P19
     title: Editor UX polish
-    status: pending
+    status: in_progress
     dependencies: [P18]
     goals:
       - Remove uiId (NodeId) field from all node editors — use Node-RED's native node.id as the technical identifier.
