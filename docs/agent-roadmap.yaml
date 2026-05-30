@@ -120,7 +120,7 @@ phases:
 
   - id: P16a
     title: Core node expansion — input controls
-    status: pending
+    status: in_progress
     dependencies: [P12]
     goals:
       - Add the missing input control nodes to the core lib.
