@@ -8,6 +8,7 @@
             defaults: {
                 name: { value: "" },
                 uiId: { value: "", required: true },
+                parent: { value: "" },
                 queryPath: { value: "", required: true },
                 source: { value: "" },
                 refreshAction: { value: "" }
@@ -16,13 +17,22 @@
             outputs: 1,
             icon: "font-awesome/fa-search",
             label: common.labelWithName("ui-query"),
-            oneditprepare: common.installReferenceSelectors({ action: "#node-input-refreshAction" })
+            onadd: function () {
+                if (!this.name) {
+                    this.name = common.getNextNameDefault("ui-query", "Query");
+                }
+            },
+            oneditprepare: function () {
+                common.installParentAppSelector().call(this);
+                common.installReferenceSelectors({ action: "#node-input-refreshAction" }).call(this);
+            }
         });
     })();
 </script>
 <script type="text/html" data-template-name="ui-query">
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <div class="form-row"><label for="node-input-uiId">Query ID</label><input type="text" id="node-input-uiId"></div>
+    <div class="form-row"><label for="node-input-parent">App</label><select id="node-input-parent"></select></div>
     <div class="form-row"><label for="node-input-queryPath">Query Path</label><input type="text" id="node-input-queryPath"></div>
     <div class="form-row"><label for="node-input-source">Source</label><input type="text" id="node-input-source"></div>
     <div class="form-row"><label for="node-input-refreshAction">Refresh Action</label><select id="node-input-refreshAction"></select></div>

@@ -8,6 +8,7 @@
             defaults: {
                 name: { value: "" },
                 uiId: { value: "", required: true },
+                parent: { value: "" },
                 mount: { value: "", required: true },
                 layoutId: { value: "", required: true },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
@@ -22,6 +23,11 @@
             outputs: 1,
             icon: "font-awesome/fa-folder-open-o",
             label: common.labelWithName("ui-container"),
+            onadd: function () {
+                if (!this.name) {
+                    this.name = common.getNextNameDefault("ui-container", "Container");
+                }
+            },
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
                 common.installLayoutChildPropRows().call(this);

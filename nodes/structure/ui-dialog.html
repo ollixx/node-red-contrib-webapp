@@ -8,6 +8,7 @@
             defaults: {
                 name: { value: "" },
                 uiId: { value: "", required: true },
+                parent: { value: "" },
                 title: { value: "" },
                 layoutId: { value: "", required: true },
                 routeId: { value: "" },
@@ -17,7 +18,13 @@
             outputs: 0,
             icon: "font-awesome/fa-window-maximize",
             label: common.labelWithName("ui-dialog"),
+            onadd: function () {
+                if (!this.name) {
+                    this.name = common.getNextNameDefault("ui-dialog", "Dialog");
+                }
+            },
             oneditprepare: function () {
+                common.installParentAppSelector().call(this);
                 common.installLayoutSelector({
                     valueSelector: "#node-input-layoutId",
                     presetSelector: "#node-input-layout-preset",
@@ -33,6 +40,7 @@
 <script type="text/html" data-template-name="ui-dialog">
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <div class="form-row"><label for="node-input-uiId">Dialog ID</label><input type="text" id="node-input-uiId"></div>
+    <div class="form-row"><label for="node-input-parent">App</label><select id="node-input-parent"></select></div>
     <div class="form-row"><label for="node-input-title">Titel</label><input type="text" id="node-input-title"></div>
     <input type="hidden" id="node-input-layoutId">
     <div class="form-row"><label for="node-input-layout-preset">Parent Layout</label><select id="node-input-layout-preset"></select></div>

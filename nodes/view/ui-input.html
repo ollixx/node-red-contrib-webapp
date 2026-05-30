@@ -8,6 +8,7 @@
             defaults: {
                 name: { value: "" },
                 uiId: { value: "", required: true },
+                parent: { value: "" },
                 mount: { value: "", required: true },
                 label: { value: "", required: true },
                 valuePath: { value: "", required: true },
@@ -27,6 +28,11 @@
             outputs: 1,
             icon: "font-awesome/fa-i-cursor",
             label: common.labelWithName("ui-input"),
+            onadd: function () {
+                if (!this.name) {
+                    this.name = common.getNextNameDefault("ui-input", "Input");
+                }
+            },
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true, store: true }).call(this);
                 common.installLayoutChildPropRows().call(this);

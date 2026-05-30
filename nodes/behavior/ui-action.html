@@ -8,6 +8,7 @@
             defaults: {
                 name: { value: "" },
                 uiId: { value: "", required: true },
+                parent: { value: "" },
                 actionType: { value: "" },
                 targetMode: { value: "" },
                 target: { value: "" },
@@ -17,13 +18,20 @@
             inputs: 1,
             outputs: 1,
             icon: "font-awesome/fa-bolt",
-            label: common.labelWithName("ui-action")
+            label: common.labelWithName("ui-action"),
+            onadd: function () {
+                if (!this.name) {
+                    this.name = common.getNextNameDefault("ui-action", "Action");
+                }
+            },
+            oneditprepare: common.installParentAppSelector()
         });
     })();
 </script>
 <script type="text/html" data-template-name="ui-action">
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <div class="form-row"><label for="node-input-uiId">Action ID</label><input type="text" id="node-input-uiId"></div>
+    <div class="form-row"><label for="node-input-parent">App</label><select id="node-input-parent"></select></div>
     <div class="form-row"><label for="node-input-actionType">Action-Typ</label><select id="node-input-actionType"><option value="">Legacy/unspezifiziert</option><option value="navigate">navigate</option><option value="show">show</option><option value="hide">hide</option><option value="enable">enable</option><option value="disable">disable</option><option value="trigger">trigger</option></select></div>
     <div class="form-row"><label for="node-input-targetMode">Zielmodus</label><select id="node-input-targetMode"><option value="">unspezifiziert</option><option value="out-port">out-port</option><option value="path">path</option></select></div>
     <div class="form-row"><label for="node-input-target">Ziel</label><input type="text" id="node-input-target" placeholder="z.B. app oder dialog:customerEditor"></div>

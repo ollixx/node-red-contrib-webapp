@@ -8,18 +8,26 @@
             defaults: {
                 name: { value: "" },
                 uiId: { value: "", required: true },
+                parent: { value: "" },
                 to: { value: "", required: true }
             },
             inputs: 1,
             outputs: 1,
             icon: "font-awesome/fa-location-arrow",
-            label: common.labelWithName("ui-navigation")
+            label: common.labelWithName("ui-navigation"),
+            onadd: function () {
+                if (!this.name) {
+                    this.name = common.getNextNameDefault("ui-navigation", "Navigation");
+                }
+            },
+            oneditprepare: common.installParentAppSelector()
         });
     })();
 </script>
 <script type="text/html" data-template-name="ui-navigation">
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <div class="form-row"><label for="node-input-uiId">Navigation ID</label><input type="text" id="node-input-uiId"></div>
+    <div class="form-row"><label for="node-input-parent">App</label><select id="node-input-parent"></select></div>
     <div class="form-row"><label for="node-input-to">Zielpfad</label><input type="text" id="node-input-to"></div>
 </script>
 <script type="text/html"

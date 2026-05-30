@@ -8,6 +8,7 @@
             defaults: {
                 name: { value: "" },
                 uiId: { value: "", required: true },
+                parent: { value: "" },
                 mount: { value: "", required: true },
                 text: { value: "", required: true },
                 value: { value: { kind: "literal", value: "" } },
@@ -24,6 +25,11 @@
             outputs: 0,
             icon: "font-awesome/fa-font",
             label: common.labelWithName("ui-text"),
+            onadd: function () {
+                if (!this.name) {
+                    this.name = common.getNextNameDefault("ui-text", "Text");
+                }
+            },
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
                 common.installLayoutChildPropRows().call(this);
