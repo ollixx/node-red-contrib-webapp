@@ -36,12 +36,104 @@ const mountableNodeSchema = identifiedNodeSchema.extend({
     }
 });
 
+// ── P17: Design token schema ─────────────────────────────────────────────────
+
+export const designTokensSchema = z.object({
+    // Colors
+    colorPrimary: z.string().optional(),
+    colorPrimaryFg: z.string().optional(),
+    colorDanger: z.string().optional(),
+    colorDangerFg: z.string().optional(),
+    colorSuccess: z.string().optional(),
+    colorSuccessFg: z.string().optional(),
+    colorWarning: z.string().optional(),
+    colorWarningFg: z.string().optional(),
+    colorNeutral: z.string().optional(),
+    colorNeutralFg: z.string().optional(),
+    colorBackground: z.string().optional(),
+    colorSurface: z.string().optional(),
+    colorBorder: z.string().optional(),
+    colorText: z.string().optional(),
+    colorTextMuted: z.string().optional(),
+    // Typography
+    fontFamily: z.string().optional(),
+    fontSizeBase: z.string().optional(),
+    fontWeightNormal: z.string().optional(),
+    fontWeightBold: z.string().optional(),
+    lineHeightBase: z.string().optional(),
+    // Spacing
+    spacingUnit: z.string().optional(),
+    // Radii
+    radiusSm: z.string().optional(),
+    radiusMd: z.string().optional(),
+    radiusLg: z.string().optional(),
+    radiusFull: z.string().optional()
+}).optional();
+
+export type DesignTokens = z.infer<typeof designTokensSchema>;
+
+/** Map design token field names to CSS custom property names. */
+export const DESIGN_TOKEN_CSS_VARS: Record<string, string> = {
+    colorPrimary:    "--wa-color-primary",
+    colorPrimaryFg:  "--wa-color-primary-fg",
+    colorDanger:     "--wa-color-danger",
+    colorDangerFg:   "--wa-color-danger-fg",
+    colorSuccess:    "--wa-color-success",
+    colorSuccessFg:  "--wa-color-success-fg",
+    colorWarning:    "--wa-color-warning",
+    colorWarningFg:  "--wa-color-warning-fg",
+    colorNeutral:    "--wa-color-neutral",
+    colorNeutralFg:  "--wa-color-neutral-fg",
+    colorBackground: "--wa-color-background",
+    colorSurface:    "--wa-color-surface",
+    colorBorder:     "--wa-color-border",
+    colorText:       "--wa-color-text",
+    colorTextMuted:  "--wa-color-text-muted",
+    fontFamily:      "--wa-font-family",
+    fontSizeBase:    "--wa-font-size-base",
+    fontWeightNormal:"--wa-font-weight-normal",
+    fontWeightBold:  "--wa-font-weight-bold",
+    lineHeightBase:  "--wa-line-height-base",
+    spacingUnit:     "--wa-spacing-unit",
+    radiusSm:        "--wa-radius-sm",
+    radiusMd:        "--wa-radius-md",
+    radiusLg:        "--wa-radius-lg",
+    radiusFull:      "--wa-radius-full"
+};
+
+/**
+ * Build a CSS :root { } block from a design tokens object.
+ * Returns an empty string if tokens is undefined or has no values.
+ */
+export function buildDesignTokenCss(tokens: DesignTokens): string {
+    if (!tokens) {
+        return "";
+    }
+
+    const declarations: string[] = [];
+
+    for (const [field, cssVar] of Object.entries(DESIGN_TOKEN_CSS_VARS)) {
+        const value = (tokens as Record<string, string | undefined>)[field];
+
+        if (value !== undefined && value !== null && value !== "") {
+            declarations.push(`  ${cssVar}: ${value};`);
+        }
+    }
+
+    if (declarations.length === 0) {
+        return "";
+    }
+
+    return `:root {\n${declarations.join("\n")}\n}`;
+}
+
 export const uiAppNodeDefinitionSchema = z.object({
     type: z.literal("ui-app"),
     id: identifierSchema,
     title: z.string().min(1, "App titles must not be empty."),
     layout: standardLayoutPresetSchema,
-    events: z.array(z.enum(["clientConnected", "clientDisconnected"])).optional()
+    events: z.array(z.enum(["clientConnected", "clientDisconnected"])).optional(),
+    tokens: designTokensSchema
 });
 
 export type UiAppNodeDefinition = z.infer<typeof uiAppNodeDefinitionSchema>;
@@ -50,7 +142,8 @@ export const uiContainerNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-container"),
     layoutId: standardLayoutPresetSchema,
     title: z.string().min(1, "Container titles must not be empty.").optional(),
-    events: z.array(z.enum(["onShow", "onHide"])).optional()
+    events: z.array(z.enum(["onShow", "onHide"])).optional(),
+    variant: z.enum(["default", "card", "panel", "flat"]).optional()
 });
 
 export type UiContainerNodeDefinition = z.infer<typeof uiContainerNodeDefinitionSchema>;
@@ -90,7 +183,8 @@ export const uiButtonNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-button"),
     label: z.string().min(1, "Button labels must not be empty."),
     action: z.string().min(1, "Buttons must reference an action."),
-    disabled: bindingSchema.optional()
+    disabled: bindingSchema.optional(),
+    variant: z.enum(["primary", "secondary", "danger", "ghost", "link"]).optional()
 });
 
 export type UiButtonNodeDefinition = z.infer<typeof uiButtonNodeDefinitionSchema>;
@@ -115,7 +209,8 @@ export const uiTableNodeDefinitionSchema = mountableNodeSchema.extend({
     rows: bindingSchema,
     footer: z.boolean().optional(),
     events: z.array(z.enum(["rowSelect", "rowAction", "checkboxChange", "cellSelect"])).optional(),
-    selectAction: z.string().min(1, "Table select actions must not be empty.").optional()
+    selectAction: z.string().min(1, "Table select actions must not be empty.").optional(),
+    variant: z.enum(["default", "striped", "bordered", "compact"]).optional()
 });
 
 export type UiTableNodeDefinition = z.infer<typeof uiTableNodeDefinitionSchema>;
@@ -127,7 +222,8 @@ export const uiInputNodeDefinitionSchema = mountableNodeSchema.extend({
     storeId: identifierSchema.optional(),
     path: z.string().min(1, "Input store paths must not be empty.").optional(),
     inputType: z.enum(["text", "email", "number"]).default("text"),
-    placeholder: z.string().min(1, "Input placeholders must not be empty.").optional()
+    placeholder: z.string().min(1, "Input placeholders must not be empty.").optional(),
+    variant: z.enum(["default", "filled", "outlined"]).optional()
 }).superRefine((input, context) => {
     if ((input.storeId && !input.path) || (!input.storeId && input.path)) {
         context.addIssue({
@@ -234,7 +330,8 @@ export const uiSelectNodeDefinitionSchema = mountableNodeSchema.extend({
     placeholder: z.string().optional(),
     multiple: z.boolean().optional(),
     searchable: z.boolean().optional(),
-    disabled: bindingSchema.optional()
+    disabled: bindingSchema.optional(),
+    variant: z.enum(["default", "filled", "outlined"]).optional()
 });
 
 export type UiSelectNodeDefinition = z.infer<typeof uiSelectNodeDefinitionSchema>;
@@ -243,7 +340,8 @@ export const uiCheckboxNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-checkbox"),
     label: z.string().min(1, "Checkbox labels must not be empty."),
     value: bindingSchema,
-    disabled: bindingSchema.optional()
+    disabled: bindingSchema.optional(),
+    variant: z.enum(["default", "toggle"]).optional()
 });
 
 export type UiCheckboxNodeDefinition = z.infer<typeof uiCheckboxNodeDefinitionSchema>;
@@ -254,7 +352,8 @@ export const uiRadioNodeDefinitionSchema = mountableNodeSchema.extend({
     value: bindingSchema,
     options: z.union([z.array(selectOptionSchema), bindingSchema]),
     orientation: z.enum(["horizontal", "vertical"]).optional(),
-    disabled: bindingSchema.optional()
+    disabled: bindingSchema.optional(),
+    variant: z.enum(["default", "button"]).optional()
 });
 
 export type UiRadioNodeDefinition = z.infer<typeof uiRadioNodeDefinitionSchema>;
@@ -265,7 +364,8 @@ export const uiSwitchNodeDefinitionSchema = mountableNodeSchema.extend({
     label: z.string().optional(),
     labelOn: z.string().optional(),
     labelOff: z.string().optional(),
-    disabled: bindingSchema.optional()
+    disabled: bindingSchema.optional(),
+    variant: z.enum(["default", "slim"]).optional()
 });
 
 export type UiSwitchNodeDefinition = z.infer<typeof uiSwitchNodeDefinitionSchema>;
@@ -277,7 +377,8 @@ export const uiTextareaNodeDefinitionSchema = mountableNodeSchema.extend({
     placeholder: z.string().optional(),
     rows: z.number().int().positive().optional(),
     maxLength: z.number().int().positive().optional(),
-    disabled: bindingSchema.optional()
+    disabled: bindingSchema.optional(),
+    variant: z.enum(["default", "filled", "outlined"]).optional()
 });
 
 export type UiTextareaNodeDefinition = z.infer<typeof uiTextareaNodeDefinitionSchema>;
@@ -290,7 +391,8 @@ export const uiDatepickerNodeDefinitionSchema = mountableNodeSchema.extend({
     min: z.string().optional(),
     max: z.string().optional(),
     placeholder: z.string().optional(),
-    disabled: bindingSchema.optional()
+    disabled: bindingSchema.optional(),
+    variant: z.enum(["default", "inline"]).optional()
 });
 
 export type UiDatepickerNodeDefinition = z.infer<typeof uiDatepickerNodeDefinitionSchema>;
@@ -303,7 +405,8 @@ export const uiSliderNodeDefinitionSchema = mountableNodeSchema.extend({
     max: z.number().optional(),
     step: z.number().positive().optional(),
     showValue: z.boolean().optional(),
-    disabled: bindingSchema.optional()
+    disabled: bindingSchema.optional(),
+    variant: z.enum(["default", "range"]).optional()
 });
 
 export type UiSliderNodeDefinition = z.infer<typeof uiSliderNodeDefinitionSchema>;
