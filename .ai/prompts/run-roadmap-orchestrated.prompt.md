@@ -24,7 +24,7 @@ Repeat until a stop condition is met:
 1. Determine the next phase: first with status `pending` whose dependencies are all `done`.
 2. Spawn a sub-agent (Agent tool, subagent_type `general-purpose`, model `sonnet`) with this exact task:
 
-   > Implement roadmap phase `<PHASE_ID>` for node-red-contrib-webapp. Follow `.ai/prompts/run-next-phase.prompt.md` exactly: read AGENTS.md, the phase entry in docs/agent-roadmap.yaml, architecture.md, and context-budget.md; implement only this phase's deliverables; run the full validation protocol in .ai/agents/validation.md; on success write the summary to the archive, slim the main roadmap entry, update current_phase, and commit. If you hit a stop condition, set status `blocked`, add a `blocker` field, commit, and stop.
+   > Implement roadmap phase `<PHASE_ID>` for node-red-contrib-webapp. Follow `.ai/prompts/run-next-phase.prompt.md` exactly: read AGENTS.md, the phase entry in docs/agent-roadmap.yaml, architecture.md, and context-budget.md. If this phase adds new node types, invoke the `/node-red-node` skill before reading source files. Implement only this phase's deliverables; run the full validation protocol in .ai/agents/validation.md; on success write the summary to the archive, slim the main roadmap entry, update current_phase, and commit. If you hit a stop condition, set status `blocked`, add a `blocker` field, commit, and stop.
    >
    > Return ONLY a 3-line result: (1) phase id + done|blocked, (2) one-line summary of what was built or why blocked, (3) the next pending phase id. Do not return implementation detail.
 

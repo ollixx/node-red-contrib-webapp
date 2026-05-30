@@ -13,11 +13,19 @@ Token cost is real. Do not read files speculatively.
 
 ## Files per role
 
+### New node implementation (P16x-style)
+Use the `/node-red-node` skill — it contains the complete four-file pattern, code templates, checklist, and common mistakes. **Do not read existing node files to derive the pattern; the skill already has it.**
+
+Minimum additional reads:
+- `docs/nodes/<category>/<node>.md` for the node being implemented
+- `packages/schema/src/node-definitions.ts` (grep for the base schema to extend)
+- `nodes/webapp.js` lines ~24 (WEBAPP_NODE_TYPES) and ~1860 (runtimeNodeRegistry) — use grep
+
 ### Schema work (P11a-style)
 - `packages/schema/src/node-definitions.ts`
 - `packages/schema/src/contracts.ts`
 - One existing test: `packages/schema/test/schema.test.ts`
-- The relevant `docs/nodes/<category>/<node>.md` (categories: concepts, structure, input, display, feedback, navigation, state, behavior) for each touched node
+- The relevant `docs/nodes/<category>/<node>.md` for each touched node
 
 ### Runtime work
 - `nodes/webapp.js` (grep first — it is large)

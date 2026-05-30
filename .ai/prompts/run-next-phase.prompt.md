@@ -13,6 +13,8 @@ You are an implementation agent. You implement exactly one roadmap phase per run
 3. `.ai/agents/architecture.md` — know the boundaries before touching code.
 4. `.ai/agents/context-budget.md` — load only the files relevant to your phase's deliverables.
 
+If the phase adds new node types (P16a, P16b, P16c, P16d or similar): invoke the `/node-red-node` skill before reading any source files. It contains the complete four-file pattern and checklist — do not derive the pattern from existing nodes, that wastes context.
+
 ## Execute
 
 1. Set the phase status to `in_progress` in `docs/agent-roadmap.yaml`. Commit.

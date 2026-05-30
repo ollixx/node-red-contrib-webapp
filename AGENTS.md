@@ -39,3 +39,5 @@ Different tasks use different entry prompts. Start from the right one:
 | Only write missing tests for a phase | `.ai/prompts/write-tests.prompt.md` |
 
 For running multiple phases, prefer the **orchestrated** mode: it spawns one fresh sub-agent per phase so implementation detail never accumulates in the driving session. The single-session mode is kept only for cases where sub-agents are unavailable.
+
+When implementing phases that add new node types (P16a-d or similar), invoke the `/node-red-node` skill first — it contains the complete four-file pattern, code templates, and checklist so the agent does not need to read existing node files to derive the pattern.
