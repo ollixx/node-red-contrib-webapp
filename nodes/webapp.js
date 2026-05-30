@@ -48,6 +48,26 @@ function parseList(value) {
         .filter(Boolean);
 }
 
+function parseColumns(value) {
+    const raw = Array.isArray(value) ? value : parseList(value);
+    return raw.map((entry) => {
+        if (typeof entry === "string") {
+            return { key: entry, label: entry };
+        }
+        if (entry && typeof entry === "object" && entry.key) {
+            return {
+                key: String(entry.key),
+                label: entry.label !== undefined ? String(entry.label) : String(entry.key),
+                type: entry.type || undefined,
+                sortable: entry.sortable !== undefined ? Boolean(entry.sortable) : undefined,
+                filterable: entry.filterable !== undefined ? Boolean(entry.filterable) : undefined,
+                width: entry.width !== undefined ? Number(entry.width) : undefined
+            };
+        }
+        return null;
+    }).filter(Boolean);
+}
+
 function parseJson(value) {
     if (value === undefined || value === null || value === "") {
         return undefined;
@@ -546,19 +566,22 @@ function toComponentDefinitions(components) {
 
         if (component.type === "ui-table") {
             const layoutProps = collectNormalizedLayoutProps(component);
+            const tableEvents = Array.isArray(component.events) ? component.events : parseList(component.events);
             return {
                 id: component.id,
                 kind: "table",
                 mount: component.mount,
                 order: toOptionalNumber(component.order),
+                footer: component.footer === true || component.footer === "true",
                 bind: {
                     rows: getBinding(component.rows, queryBinding(component.rowsPath || ""))
                 },
                 props: {
-                    columns: parseList(component.columns),
+                    columns: parseColumns(component.columns),
                     ...(Object.keys(layoutProps).length > 0 ? { layout: layoutProps } : {})
                 },
-                events: component.selectAction ? [{ event: "select", action: component.selectAction }] : []
+                events: tableEvents.length > 0 ? tableEvents : (component.selectAction ? ["rowSelect"] : []),
+                selectAction: component.selectAction || undefined
             };
         }
 
@@ -871,7 +894,9 @@ function renderComponent(component, sources, model, context) {
             id: component.id,
             columns: Array.isArray(component.props.columns) ? component.props.columns : [],
             rows: Array.isArray(resolveBinding(component.bind.rows, sources)) ? resolveBinding(component.bind.rows, sources) : [],
-            selectAction: action,
+            footer: component.footer === true,
+            events: Array.isArray(component.events) ? component.events : [],
+            selectAction: component.selectAction || undefined,
             appId: model.id,
             location: context.location,
             layoutId: context.layoutId,
@@ -994,7 +1019,7 @@ function renderComponentHtml(component) {
     }
 
     if (component.kind === "table") {
-        const header = component.columns.map((column) => `<th>${escapeHtml(column)}</th>`).join("");
+        const header = component.columns.map((col) => `<th>${escapeHtml(col.label || col.key || col)}</th>`).join("");
         const rows = component.rows.length === 0
             ? `<tr><td colspan="${Math.max(component.columns.length, 1)}">No rows loaded.</td></tr>`
             : component.rows.map((row) => {
@@ -1002,8 +1027,9 @@ function renderComponentHtml(component) {
                 const actionPrefix = component.selectAction
                     ? `/webapp/${encodeURIComponent(component.appId)}/action/${encodeURIComponent(component.selectAction)}?location=${encodeURIComponent(component.location || "/customers")}&sourceId=${encodeURIComponent(component.id)}&event=select&rowId=${encodeURIComponent(rowId)}`
                     : undefined;
-                const cells = component.columns.map((column, index) => {
-                    const value = escapeHtml(row[column] ?? "");
+                const cells = component.columns.map((col, index) => {
+                    const key = col.key || col;
+                    const value = escapeHtml(row[key] ?? "");
 
                     if (index === 0 && actionPrefix && rowId) {
                         return `<td><a class="webapp-link" href="${escapeAttribute(actionPrefix)}">${value}</a></td>`;
@@ -1814,8 +1840,10 @@ const runtimeNodeRegistry = {
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
-            columns: parseList(config.columns),
+            columns: parseColumns(config.columns),
             rows: getBinding(config.rows, queryBinding(config.rowsPath || "")),
+            footer: config.footer === true || config.footer === "true",
+            events: parseList(config.events).length > 0 ? parseList(config.events) : undefined,
             selectAction: config.selectAction || undefined,
             ...collectNodeConfigLayoutProps(config)
         }),

@@ -96,10 +96,26 @@ export const uiButtonNodeDefinitionSchema = mountableNodeSchema.extend({
 
 export type UiButtonNodeDefinition = z.infer<typeof uiButtonNodeDefinitionSchema>;
 
+export const tableColumnDefinitionSchema = z.union([
+    z.string().min(1, "Table column keys must not be empty."),
+    z.object({
+        key: z.string().min(1, "Table column keys must not be empty."),
+        label: z.string().optional(),
+        type: z.enum(["text", "checkbox", "number", "date", "actions"]).optional(),
+        sortable: z.boolean().optional(),
+        filterable: z.boolean().optional(),
+        width: z.number().int().positive().optional()
+    })
+]);
+
+export type TableColumnDefinition = z.infer<typeof tableColumnDefinitionSchema>;
+
 export const uiTableNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-table"),
-    columns: z.array(z.string().min(1, "Table columns must not be empty.")).min(1, "Tables must declare at least one column."),
+    columns: z.array(tableColumnDefinitionSchema).min(1, "Tables must declare at least one column."),
     rows: bindingSchema,
+    footer: z.boolean().optional(),
+    events: z.array(z.enum(["rowSelect", "rowAction", "checkboxChange", "cellSelect"])).optional(),
     selectAction: z.string().min(1, "Table select actions must not be empty.").optional()
 });
 

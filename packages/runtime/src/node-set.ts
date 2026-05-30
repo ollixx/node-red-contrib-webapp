@@ -104,7 +104,10 @@ function toTableComponent(node: UiTableNodeDefinition): ComponentDefinition {
             rows: node.rows
         },
         props: {
-            columns: node.columns
+            columns: node.columns,
+            footer: node.footer === true,
+            events: node.events ?? [],
+            selectAction: node.selectAction ?? null
         },
         events: node.selectAction
             ? [
