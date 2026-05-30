@@ -476,3 +476,32 @@ phases:
       - No node HTML file contains form-tips after the change
       - Mount selector in ui-text editor shows node names and is grouped by app
       - ui-button editor shows a SelectBox listing available ui-action nodes instead of a free-text field
+
+- id: P20a
+  title: "ui-action rework"
+  status: done
+  dependencies: [P19]
+  summary:
+    delivered: "Replaced string-based targetMode/target action routing with output-port wiring model; ui-button emits click events on output port via buttonInputHandler; actionInputHandler forwards to wired target or msg.ui.action.targetId override"
+    stats: "10 files changed, 252 insertions, 238 deletions, 5 new unit tests, 115 total passing"
+    notes: "targetMode/target kept as deprecated optional fields in schema for backward compat with existing flows; componentEventHandlerSchema.action made optional; E2E failures are pre-existing (unrelated to P20a)"
+  goals:
+    - Align ui-action with the architecture defined in docs/nodes/concepts/actions.md.
+    - ui-action gets an output port wired to its target node — the wiring replaces the current string-based targetMode/target fields.
+    - ui-button loses its action field — click events are emitted on the output port and wired in the flow like any other Node-RED node.
+    - targetId from msg remains supported as a runtime override for dynamic targets.
+    - The current out-port/path targetMode distinction is replaced by the wiring model.
+  deliverables:
+    - ui-action schema: targetMode/target deprecated (optional), output port kept at outputs=1
+    - ui-action runtime: actionInputHandler — wired output or msg.ui.action.targetId override
+    - ui-button schema: action field made optional (deprecated)
+    - ui-button HTML: action SelectBox removed; outputs=1 already present
+    - ui-button runtime: buttonInputHandler emits click event with sourceId and clientId
+    - componentEventHandlerSchema.action made optional
+    - docs/nodes/behavior/ui-action.md updated to reflect new architecture
+    - docs/nodes/display/ui-button.md updated to remove action Pflichtfeld
+  validation:
+    - pnpm test passes
+    - ui-button in flow emits a msg on its output port when clicked
+    - ui-action wired to ui-dialog opens the dialog on the client when triggered
+    - ui-action with msg.ui.action.targetId overrides wired target
