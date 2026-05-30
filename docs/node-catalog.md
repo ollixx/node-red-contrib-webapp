@@ -6,6 +6,9 @@ Die Einzeldokumente pro Knoten sowie übergreifende Konzepte sind unter [docs/no
 
 → [Übersicht, gemeinsame Modellregeln, Ereignis- und Zustandsmodell, Designlücken](nodes/overview.md)
 → [Layout-Feature (mehrfach genutztes Konzept)](nodes/layout.md)
+→ [Theming: Design-Tokens, Variants, Renderer-Backends](nodes/theming.md)
+→ [Message-Formate](nodes/messages.md)
+→ [Multi-User und Client-Persistenz](nodes/multi-user.md)
 
 ## Strukturknoten
 
