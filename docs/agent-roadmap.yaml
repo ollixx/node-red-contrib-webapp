@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P18
+  current_phase: P19
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -128,29 +128,4 @@ phases:
 
   - { id: P17, title: "Theming system", status: done, dependencies: [P16a, P16b, P16c, P16d], archive: "docs/agent-roadmap-archive.yaml#P17" }
 
-  - id: P18
-    title: Example flow generator
-    status: in_progress
-    dependencies: [P11b]
-    goals:
-      - Generate examples/customers-crud/flow.json from the typed schema fixture instead of maintaining it by hand.
-      - Eliminate manual flow migration after every schema change.
-      - Provide a one-command way to refresh the human-inspectable dev project.
-    deliverables:
-      - generator script that converts an AppModel fixture into a Node-RED flows.json (node configs, ids, z/flow refs, wiring)
-      - pnpm script "gen:example" that writes examples/customers-crud/flow.json and copies it to .node-red-dev/flows.json
-      - the generator derives node field names from the current schema so a renamed field breaks the TypeScript build, not the runtime
-      - generator covers all node types present in the fixture
-      - unit test asserting generated flow.json validates against the current schema
-      - documentation in AGENTS.md / architecture.md: run gen:example after any schema change
-    validation:
-      - pnpm test passes with no failures
-      - unit test: generated flow.json parses and every node maps to a valid schema definition
-      - unit test: every node in the generated flow has an id and a z reference to an existing flow tab
-      - manual check: gen:example produces a flow that loads in the dev Node-RED without migration warnings
-      - docs check: the generated example covers the same node types as the customersCrudAppModelFixture
-    notes: >
-      Re-run gen:example as the final step of any phase that renames or adds node fields
-      (P12, P13, P14, P16x, P17). This keeps the human-inspectable example current without
-      hand migration. Backward-compat fallbacks in the runtime are only for deployed user
-      flows, never for the dev example.
+  - { id: P18, title: "Example flow generator", status: done, dependencies: [P11b], archive: "docs/agent-roadmap-archive.yaml#P18" }

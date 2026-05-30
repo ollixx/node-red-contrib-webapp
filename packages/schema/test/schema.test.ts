@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -846,5 +848,56 @@ describe("P16c navigation and structure nodes", () => {
         });
 
         expect(result.success).toBe(true);
+    });
+});
+
+describe("generated example flow (gen:example)", () => {
+    // Load the generated flow.json from disk — this is the artefact produced by
+    // `pnpm gen:example` and committed to the repo.
+    const flowPath = resolve(__dirname, "../../../examples/customers-crud/flow.json");
+    const rawFlow: unknown[] = JSON.parse(readFileSync(flowPath, "utf8"));
+
+    it("flow.json is parseable and contains at least one tab node", () => {
+        expect(Array.isArray(rawFlow)).toBe(true);
+        const tabs = rawFlow.filter((n) => (n as Record<string, unknown>).type === "tab");
+        expect(tabs.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it("every non-tab node has an id and a z reference to an existing flow tab", () => {
+        const tabIds = new Set(
+            rawFlow
+                .filter((n) => (n as Record<string, unknown>).type === "tab")
+                .map((n) => (n as Record<string, unknown>).id as string)
+        );
+
+        const nonTabNodes = rawFlow.filter((n) => (n as Record<string, unknown>).type !== "tab");
+        for (const node of nonTabNodes) {
+            const n = node as Record<string, unknown>;
+            expect(n.id, "node must have an id").toBeTruthy();
+            expect(n.z, `node ${n.id} must have a z field`).toBeTruthy();
+            expect(tabIds.has(n.z as string), `node ${n.id} z='${n.z}' must reference an existing tab`).toBe(true);
+        }
+    });
+
+    it("every non-tab node validates against the current schema", () => {
+        const nonTabNodes = rawFlow.filter((n) => (n as Record<string, unknown>).type !== "tab");
+        for (const node of nonTabNodes) {
+            const result = validateUiNodeDefinition(node);
+            const n = node as Record<string, unknown>;
+            expect(result.success, `node ${n.id} (type=${n.type}) should validate: ${result.success ? "" : JSON.stringify(result)}`).toBe(true);
+        }
+    });
+
+    it("generated flow covers the same node types as customersCrudNodeSetFixture", () => {
+        const fixtureTypes = new Set(customersCrudNodeSetFixture.map((n) => n.type));
+        const generatedTypes = new Set(
+            rawFlow
+                .filter((n) => (n as Record<string, unknown>).type !== "tab")
+                .map((n) => (n as Record<string, unknown>).type as string)
+        );
+
+        for (const t of fixtureTypes) {
+            expect(generatedTypes.has(t), `generated flow must include node type '${t}'`).toBe(true);
+        }
     });
 });

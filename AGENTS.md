@@ -20,7 +20,7 @@ Do not read `prd.md` or `docs/implementation-plan.md` unless explicitly instruct
 2. Update `docs/agent-roadmap.yaml` status when a phase starts (`in_progress`), completes (`done`), or is blocked (`blocked`).
 3. Never overwrite user changes unless explicitly asked.
 4. Minimal-invasive patches only — no unrequested reformatting or restructuring.
-5. Flow files (`.node-red-dev/flows.json`, `examples/customers-crud/flow.json`) — change only exactly what is asked. See `.ai/instructions/flow-files.instructions.md`.
+5. Flow files — `examples/customers-crud/flow.json` and `.node-red-dev/flows.json` are **generated** by `pnpm gen:example`. Do not hand-edit them. After any phase that renames or adds node fields, run `pnpm gen:example` as the final step. See `.ai/instructions/flow-files.instructions.md`.
 6. Before any new code: commit existing uncommitted changes with a meaningful message.
 7. Before marking a phase done: run `pnpm test` and `pnpm exec playwright test`. Both must pass.
 8. When marking a phase done: write a `summary` to `docs/agent-roadmap-archive.yaml` and replace the full entry in `docs/agent-roadmap.yaml` with a slim archive reference. Format see `.ai/prompts/run-next-phase.prompt.md`.

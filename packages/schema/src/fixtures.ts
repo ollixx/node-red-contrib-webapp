@@ -769,10 +769,14 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
     }
 ];
 
+/** Flow tab id used in both the in-memory fixture and the generated flow.json. */
+const EXAMPLE_FLOW_TAB_ID = "flow1";
+
 export const customersCrudExampleFlowFixture: unknown[] = customersCrudNodeSetFixture.map((node, index) => ({
     ...node,
+    z: EXAMPLE_FLOW_TAB_ID,
     x: 160 + (index % 6) * 220,
-    y: 40 + Math.floor(index / 6) * 40,
+    y: 40 + Math.floor(index / 6) * 60,
     wires: [[]]
 }));
 

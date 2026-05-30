@@ -45,6 +45,7 @@
         "lint": "pnpm -r lint",
         "test:e2e": "playwright test",
         "test": "pnpm -r test",
+        "gen:example": "node scripts/gen-example.js",
         "validate": "pnpm lint && pnpm test && pnpm build"
     },
     "devDependencies": {

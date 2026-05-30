@@ -419,3 +419,29 @@ phases:
     - unit test: ui-button with variant=danger renders with danger token class
     - unit test: ui-button with unknown variant fails schema validation
     - docs check: theming.md token list matches the fields accepted by ui-app schema
+
+  - id: P18
+    title: Example flow generator
+    status: done
+    dependencies: [P11b]
+    summary:
+      delivered: "Generator script scripts/gen-example.js converts customersCrudNodeSetFixture into examples/customers-crud/flow.json; pnpm gen:example script added; 4 unit tests assert generated flow validates against schema."
+      stats: "1 generator script, 1 package.json script, 4 new tests in schema.test.ts, AGENTS.md updated"
+      notes: "Generator uses CJS require() to import from built schema dist — no tsx needed. customersCrudExampleFlowFixture in fixtures.ts updated to include z field and consistent ROW_STEP=60. Architecture.md already had the gen:example note (added by P18 spec); AGENTS.md rule 5 updated to make flow files generated-only."
+    goals:
+      - Generate examples/customers-crud/flow.json from the typed schema fixture instead of maintaining it by hand.
+      - Eliminate manual flow migration after every schema change.
+      - Provide a one-command way to refresh the human-inspectable dev project.
+    deliverables:
+      - generator script that converts an AppModel fixture into a Node-RED flows.json (node configs, ids, z/flow refs, wiring)
+      - pnpm script "gen:example" that writes examples/customers-crud/flow.json and copies it to .node-red-dev/flows.json
+      - the generator derives node field names from the current schema so a renamed field breaks the TypeScript build, not the runtime
+      - generator covers all node types present in the fixture
+      - unit test asserting generated flow.json validates against the current schema
+      - documentation in AGENTS.md / architecture.md: run gen:example after any schema change
+    validation:
+      - pnpm test passes with no failures
+      - unit test: generated flow.json parses and every node maps to a valid schema definition
+      - unit test: every node in the generated flow has an id and a z reference to an existing flow tab
+      - manual check: gen:example produces a flow that loads in the dev Node-RED without migration warnings
+      - docs check: the generated example covers the same node types as the customersCrudAppModelFixture

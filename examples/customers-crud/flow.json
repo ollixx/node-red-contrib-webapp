@@ -2,98 +2,94 @@
     {
         "id": "flow1",
         "type": "tab",
-        "label": "Flow 1",
+        "label": "Customers CRUD",
         "disabled": false,
         "info": ""
     },
     {
-        "id": "customersApp",
         "type": "ui-app",
-        "name": "Customers CRM",
+        "id": "customersApp",
         "title": "Customers CRM",
-        "root": "customersApp",
         "layout": "app",
+        "z": "flow1",
         "x": 160,
         "y": 40,
         "wires": [
             []
-        ],
-        "z": "flow1"
+        ]
     },
     {
-        "id": "customers",
         "type": "ui-route",
+        "id": "customers",
         "path": "/customers",
         "title": "Customers",
         "layoutId": "vertical",
+        "z": "flow1",
+        "x": 380,
+        "y": 40,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "type": "ui-route",
+        "id": "customerDetail",
+        "path": "/customers/:id",
+        "title": "Customer detail",
+        "layoutId": "vertical",
+        "z": "flow1",
+        "x": 600,
+        "y": 40,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "type": "ui-dialog",
+        "id": "customerEditor",
+        "title": "Edit customer",
+        "layoutId": "vertical",
+        "modal": true,
+        "z": "flow1",
         "x": 820,
         "y": 40,
         "wires": [
             []
-        ],
-        "z": "flow1"
+        ]
     },
     {
-        "id": "customerDetail",
-        "type": "ui-route",
-        "path": "/customers/:id",
-        "title": "Customer detail",
-        "layoutId": "vertical",
-        "x": 820,
-        "y": 80,
-        "wires": [
-            []
-        ],
-        "z": "flow1"
-    },
-    {
-        "id": "customerEditor",
-        "type": "ui-dialog",
-        "title": "Edit customer",
-        "layoutId": "vertical",
-        "modal": true,
-        "x": 820,
-        "y": 120,
-        "wires": [
-            []
-        ],
-        "z": "flow1"
-    },
-    {
-        "id": "pageTitle",
         "type": "ui-text",
+        "id": "pageTitle",
         "mount": "customersApp.header",
         "value": {
             "kind": "literal",
             "value": "Customers"
         },
         "variant": "headline",
+        "z": "flow1",
         "x": 1040,
         "y": 40,
         "wires": [
             []
-        ],
-        "z": "flow1"
+        ]
     },
     {
-        "id": "newCustomerButton",
         "type": "ui-button",
+        "id": "newCustomerButton",
         "mount": "route:/customers/content",
         "order": 0,
         "label": "New customer",
         "action": "openCustomerEditor",
+        "z": "flow1",
         "x": 1260,
         "y": 40,
         "wires": [
-            [
-                "openCustomerEditor"
-            ]
-        ],
-        "z": "flow1"
+            []
+        ]
     },
     {
-        "id": "refreshCustomersButton",
         "type": "ui-button",
+        "id": "refreshCustomersButton",
         "mount": "route:/customers/content",
         "order": 1,
         "label": "Refresh",
@@ -103,35 +99,34 @@
             "path": "ui.queries.customersQuery.loading",
             "fallback": false
         },
-        "x": 1260,
-        "y": 80,
+        "z": "flow1",
+        "x": 160,
+        "y": 100,
         "wires": [
-            [
-                "refreshCustomers"
-            ]
-        ],
-        "z": "flow1"
+            []
+        ]
     },
     {
-        "id": "editorStatus",
         "type": "ui-text",
+        "id": "editorStatus",
         "mount": "route:/customers/content",
         "order": 2,
         "value": {
             "kind": "literal",
             "value": "Editing customer"
         },
-        "x": 1260,
-        "y": 120,
+        "z": "flow1",
+        "x": 380,
+        "y": 100,
         "wires": [
             []
-        ],
-        "z": "flow1"
+        ]
     },
     {
-        "id": "customersTable",
         "type": "ui-table",
+        "id": "customersTable",
         "mount": "route:/customers/content",
+        "order": 3,
         "columns": [
             "name",
             "email",
@@ -142,66 +137,61 @@
             "path": "customers.list"
         },
         "selectAction": "openCustomerDetail",
-        "x": 1260,
-        "y": 160,
+        "z": "flow1",
+        "x": 600,
+        "y": 100,
         "wires": [
-            [
-                "openCustomerDetail"
-            ]
-        ],
-        "z": "flow1"
+            []
+        ]
     },
     {
-        "id": "detailRouteTitle",
         "type": "ui-text",
+        "id": "detailRouteTitle",
         "mount": "route:/customers/:id/content",
+        "order": 0,
         "value": {
             "kind": "literal",
             "value": "Customer detail"
         },
         "variant": "headline",
-        "x": 1040,
-        "y": 160,
+        "z": "flow1",
+        "x": 820,
+        "y": 100,
         "wires": [
             []
-        ],
-        "z": "flow1"
+        ]
     },
     {
-        "id": "backToCustomersButton",
         "type": "ui-button",
+        "id": "backToCustomersButton",
         "mount": "route:/customers/:id/content",
         "order": 1,
         "label": "Back to customers",
         "action": "goToCustomers",
-        "x": 1260,
-        "y": 200,
+        "z": "flow1",
+        "x": 1040,
+        "y": 100,
         "wires": [
-            [
-                "goToCustomers"
-            ]
-        ],
-        "z": "flow1"
+            []
+        ]
     },
     {
-        "id": "editCustomerButton",
         "type": "ui-button",
+        "id": "editCustomerButton",
         "mount": "route:/customers/:id/content",
         "order": 2,
         "label": "Edit customer",
         "action": "openCustomerEditor",
+        "z": "flow1",
         "x": 1260,
-        "y": 240,
+        "y": 100,
         "wires": [
-            [
-                "openCustomerEditor"
-            ]
-        ],
-        "z": "flow1"
+            []
+        ]
     },
     {
-        "id": "deleteCustomerButton",
         "type": "ui-button",
+        "id": "deleteCustomerButton",
         "mount": "route:/customers/:id/content",
         "order": 3,
         "label": "Delete customer",
@@ -211,48 +201,45 @@
             "path": "draft.isDeleting",
             "fallback": false
         },
-        "x": 1260,
-        "y": 280,
+        "z": "flow1",
+        "x": 160,
+        "y": 160,
         "wires": [
-            [
-                "deleteCustomer"
-            ]
-        ],
-        "z": "flow1"
+            []
+        ]
     },
     {
-        "id": "detailCustomerId",
         "type": "ui-text",
+        "id": "detailCustomerId",
         "mount": "route:/customers/:id/content",
         "order": 4,
         "value": {
             "kind": "routeParam",
             "path": "id"
         },
-        "x": 1260,
-        "y": 320,
+        "z": "flow1",
+        "x": 380,
+        "y": 160,
         "wires": [
             []
-        ],
-        "z": "flow1"
+        ]
     },
     {
-        "id": "customerEditorContainer",
         "type": "ui-container",
+        "id": "customerEditorContainer",
         "mount": "dialog:customerEditor/content",
         "layoutId": "grid",
-        "x": 1040,
-        "y": 240,
+        "z": "flow1",
+        "x": 600,
+        "y": 160,
         "wires": [
             []
-        ],
-        "z": "flow1"
+        ]
     },
     {
-        "id": "customerNameInput",
         "type": "ui-input",
+        "id": "customerNameInput",
         "mount": "layout:grid/content",
-        "order": 0,
         "label": "Name",
         "value": {
             "kind": "state",
@@ -264,18 +251,17 @@
         "col": 1,
         "colSize": 12,
         "inputType": "text",
-        "x": 1260,
-        "y": 360,
+        "z": "flow1",
+        "x": 820,
+        "y": 160,
         "wires": [
             []
-        ],
-        "z": "flow1"
+        ]
     },
     {
-        "id": "customerEmailInput",
         "type": "ui-input",
+        "id": "customerEmailInput",
         "mount": "layout:grid/content",
-        "order": 1,
         "label": "Email",
         "value": {
             "kind": "state",
@@ -287,18 +273,17 @@
         "col": 1,
         "colSize": 12,
         "inputType": "email",
-        "x": 1260,
-        "y": 400,
+        "z": "flow1",
+        "x": 1040,
+        "y": 160,
         "wires": [
             []
-        ],
-        "z": "flow1"
+        ]
     },
     {
-        "id": "customerStatusInput",
         "type": "ui-input",
+        "id": "customerStatusInput",
         "mount": "layout:grid/content",
-        "order": 2,
         "label": "Status",
         "value": {
             "kind": "state",
@@ -310,191 +295,181 @@
         "col": 1,
         "colSize": 12,
         "inputType": "text",
+        "z": "flow1",
         "x": 1260,
-        "y": 440,
+        "y": 160,
         "wires": [
             []
-        ],
-        "z": "flow1"
+        ]
     },
     {
-        "id": "cancelCustomerButton",
         "type": "ui-button",
+        "id": "cancelCustomerButton",
         "mount": "layout:grid/content",
-        "order": 0,
         "label": "Cancel",
         "action": "closeCustomerEditor",
         "row": 4,
         "col": 1,
         "colSize": 6,
-        "x": 1260,
-        "y": 480,
+        "z": "flow1",
+        "x": 160,
+        "y": 220,
         "wires": [
-            [
-                "closeCustomerEditor"
-            ]
-        ],
-        "z": "flow1"
+            []
+        ]
     },
     {
-        "id": "saveCustomerButton",
         "type": "ui-button",
+        "id": "saveCustomerButton",
         "mount": "layout:grid/content",
-        "order": 1,
         "label": "Save",
         "action": "saveCustomer",
+        "row": 4,
+        "col": 7,
+        "colSize": 6,
         "disabled": {
             "kind": "state",
             "path": "draft.isSaving",
             "fallback": false
         },
-        "row": 4,
-        "col": 7,
-        "colSize": 6,
-        "x": 1260,
-        "y": 520,
+        "z": "flow1",
+        "x": 380,
+        "y": 220,
         "wires": [
-            [
-                "saveCustomer"
-            ]
-        ],
-        "z": "flow1"
+            []
+        ]
     },
     {
-        "id": "draftStore",
         "type": "ui-store",
+        "id": "draftStore",
         "statePath": "draft.customer",
         "initialValue": {
             "name": "",
             "email": "",
             "status": "draft"
         },
-        "x": 1480,
-        "y": 40,
+        "z": "flow1",
+        "x": 600,
+        "y": 220,
         "wires": [
             []
-        ],
-        "z": "flow1"
+        ]
     },
     {
+        "type": "ui-query",
         "id": "customersQuery",
-        "type": "ui-query",
         "queryPath": "customers.list",
-        "source": "customers.list",
         "refreshAction": "refreshCustomers",
-        "x": 1480,
-        "y": 80,
+        "z": "flow1",
+        "x": 820,
+        "y": 220,
         "wires": [
             []
-        ],
-        "z": "flow1"
+        ]
     },
     {
-        "id": "customerDetailQuery",
         "type": "ui-query",
+        "id": "customerDetailQuery",
         "queryPath": "customers.current",
-        "source": "customers.current",
-        "x": 1480,
-        "y": 120,
+        "z": "flow1",
+        "x": 1040,
+        "y": 220,
         "wires": [
             []
-        ],
-        "z": "flow1"
+        ]
     },
     {
-        "id": "openCustomerEditor",
         "type": "ui-action",
+        "id": "openCustomerEditor",
         "actionType": "trigger",
         "targetMode": "out-port",
         "description": "Open the shared customer editor dialog.",
-        "x": 1480,
-        "y": 160,
+        "z": "flow1",
+        "x": 1260,
+        "y": 220,
         "wires": [
             []
-        ],
-        "z": "flow1"
+        ]
     },
     {
-        "id": "closeCustomerEditor",
         "type": "ui-action",
+        "id": "closeCustomerEditor",
         "actionType": "trigger",
         "targetMode": "out-port",
         "description": "Close the shared customer editor dialog.",
-        "x": 1480,
-        "y": 200,
+        "z": "flow1",
+        "x": 160,
+        "y": 280,
         "wires": [
             []
-        ],
-        "z": "flow1"
+        ]
     },
     {
-        "id": "saveCustomer",
         "type": "ui-action",
+        "id": "saveCustomer",
         "actionType": "trigger",
         "targetMode": "out-port",
         "description": "Persist the current customer draft.",
-        "x": 1480,
-        "y": 240,
+        "z": "flow1",
+        "x": 380,
+        "y": 280,
         "wires": [
             []
-        ],
-        "z": "flow1"
+        ]
     },
     {
-        "id": "refreshCustomers",
         "type": "ui-action",
+        "id": "refreshCustomers",
         "actionType": "trigger",
         "targetMode": "out-port",
         "description": "Refresh the customer list query.",
-        "x": 1480,
+        "z": "flow1",
+        "x": 600,
         "y": 280,
         "wires": [
-            [
-                "customersQuery"
-            ]
-        ],
-        "z": "flow1"
+            []
+        ]
     },
     {
-        "id": "openCustomerDetail",
         "type": "ui-action",
+        "id": "openCustomerDetail",
         "actionType": "navigate",
         "targetMode": "path",
         "target": "app",
         "to": "/customers/:id",
-        "x": 1480,
-        "y": 320,
+        "z": "flow1",
+        "x": 820,
+        "y": 280,
         "wires": [
             []
-        ],
-        "z": "flow1"
+        ]
     },
     {
+        "type": "ui-action",
         "id": "goToCustomers",
-        "type": "ui-action",
         "actionType": "navigate",
         "targetMode": "path",
         "target": "app",
         "to": "/customers",
-        "x": 1480,
-        "y": 360,
+        "z": "flow1",
+        "x": 1040,
+        "y": 280,
         "wires": [
             []
-        ],
-        "z": "flow1"
+        ]
     },
     {
-        "id": "deleteCustomer",
         "type": "ui-action",
+        "id": "deleteCustomer",
         "actionType": "navigate",
         "targetMode": "path",
         "target": "app",
         "to": "/customers",
-        "x": 1480,
-        "y": 400,
+        "z": "flow1",
+        "x": 1260,
+        "y": 280,
         "wires": [
             []
-        ],
-        "z": "flow1"
+        ]
     }
 ]
