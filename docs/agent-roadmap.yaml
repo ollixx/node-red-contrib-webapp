@@ -124,7 +124,7 @@ phases:
 
   - id: P16c
     title: Core node expansion — navigation and structure
-    status: pending
+    status: in_progress
     dependencies: [P12]
     goals:
       - Add navigation and structural nodes for multi-step and hierarchical UIs.
