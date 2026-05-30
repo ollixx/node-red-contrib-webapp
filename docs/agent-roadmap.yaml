@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P16d
+  current_phase: P17
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -124,25 +124,7 @@ phases:
 
   - { id: P16c, title: "Core node expansion — navigation and structure", status: done, dependencies: [P12], archive: "docs/agent-roadmap-archive.yaml#P16c" }
 
-  - id: P16d
-    title: Core node expansion — display
-    status: in_progress
-    dependencies: [P12]
-    goals:
-      - Add display nodes for images, icons, lists, and avatars.
-    deliverables:
-      - ui-image: image with src binding, alt text, fallback
-      - ui-icon: icon by name, icon-set-agnostic (name maps to SVG or font icon)
-      - ui-list: structured list with item slot
-      - ui-avatar: user image or initials with fallback
-      - ui-divider: visual separator (horizontal/vertical)
-      - unit and E2E tests per node
-    validation:
-      - pnpm test passes with no failures
-      - unit test: each node compiles to a valid schema definition
-      - unit test: ui-image with missing src renders fallback slot
-      - Playwright: each node editor shows parent selector and name default
-      - docs check: each node doc's Pflichtfelder match the schema and editor HTML
+  - { id: P16d, title: "Core node expansion — display", status: done, dependencies: [P12], archive: "docs/agent-roadmap-archive.yaml#P16d" }
 
   - id: P17
     title: Theming system

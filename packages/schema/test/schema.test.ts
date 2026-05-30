@@ -559,3 +559,292 @@ describe("P16b feedback and status nodes", () => {
         expect(result.success).toBe(false);
     });
 });
+
+// ── P16c: navigation and structure nodes ────────────────────────────────────
+
+describe("P16c navigation and structure nodes", () => {
+    it("compiles ui-tabs with 3 tabs to a valid definition", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-tabs",
+            id: "tabs1",
+            mount: "route:/dashboard/content",
+            tabs: [
+                { id: "tab1", label: "Overview" },
+                { id: "tab2", label: "Details" },
+                { id: "tab3", label: "Settings" }
+            ]
+        });
+
+        expect(result.success).toBe(true);
+        if (result.success && result.data.type === "ui-tabs") {
+            expect(result.data.tabs).toHaveLength(3);
+        }
+    });
+
+    it("rejects ui-tabs with empty tabs array", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-tabs",
+            id: "tabs1",
+            mount: "route:/dashboard/content",
+            tabs: []
+        });
+
+        expect(result.success).toBe(false);
+    });
+
+    it("rejects ui-tabs without mount or parent", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-tabs",
+            id: "tabs1",
+            tabs: [{ id: "tab1", label: "Tab 1" }]
+        });
+
+        expect(result.success).toBe(false);
+    });
+
+    it("compiles ui-accordion to a valid definition", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-accordion",
+            id: "acc1",
+            mount: "route:/dashboard/content",
+            items: [
+                { id: "s1", label: "Section 1" },
+                { id: "s2", label: "Section 2" }
+            ],
+            multiple: true
+        });
+
+        expect(result.success).toBe(true);
+    });
+
+    it("rejects ui-accordion without mount or parent", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-accordion",
+            id: "acc1",
+            items: [{ id: "s1", label: "Section 1" }]
+        });
+
+        expect(result.success).toBe(false);
+    });
+
+    it("compiles ui-breadcrumb with static items", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-breadcrumb",
+            id: "bc1",
+            mount: "route:/customers/header",
+            items: [
+                { label: "Home", route: "/" },
+                { label: "Customers", route: "/customers" }
+            ]
+        });
+
+        expect(result.success).toBe(true);
+    });
+
+    it("compiles ui-breadcrumb with binding", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-breadcrumb",
+            id: "bc1",
+            mount: "route:/customers/header",
+            items: { kind: "state", path: "nav.breadcrumb" }
+        });
+
+        expect(result.success).toBe(true);
+    });
+
+    it("compiles ui-menu to a valid definition", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-menu",
+            id: "menu1",
+            mount: "app:myapp/sidebar",
+            variant: "sidebar",
+            items: [
+                { label: "Dashboard", route: "/dashboard" },
+                { label: "Customers", route: "/customers" }
+            ]
+        });
+
+        expect(result.success).toBe(true);
+    });
+
+    it("compiles ui-pagination and checks total binding", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-pagination",
+            id: "pag1",
+            mount: "route:/customers/footer",
+            total: { kind: "state", path: "customers.total" },
+            pageSize: 10,
+            events: ["pageChange"]
+        });
+
+        expect(result.success).toBe(true);
+        if (result.success && result.data.type === "ui-pagination") {
+            expect(result.data.total).toEqual({ kind: "state", path: "customers.total" });
+            expect(result.data.pageSize).toBe(10);
+        }
+    });
+
+    it("rejects ui-pagination without total binding", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-pagination",
+            id: "pag1",
+            mount: "route:/customers/footer"
+        });
+
+        expect(result.success).toBe(false);
+    });
+
+    it("compiles ui-stepper with 3 steps", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-stepper",
+            id: "step1",
+            mount: "route:/wizard/content",
+            steps: [
+                { id: "s1", label: "Step 1" },
+                { id: "s2", label: "Step 2" },
+                { id: "s3", label: "Step 3" }
+            ],
+            orientation: "horizontal",
+            events: ["stepChange"]
+        });
+
+        expect(result.success).toBe(true);
+    });
+
+    it("rejects ui-stepper with fewer than 2 steps", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-stepper",
+            id: "step1",
+            mount: "route:/wizard/content",
+            steps: [{ id: "s1", label: "Step 1" }]
+        });
+
+        expect(result.success).toBe(false);
+    });
+
+    // ── P16d: display nodes ──────────────────────────────────────────────────
+
+    it("compiles ui-image with src binding", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-image",
+            id: "img1",
+            mount: "route:/customers/content",
+            src: { kind: "state", path: "customer.avatarUrl" },
+            alt: "Customer photo",
+            fallback: "https://example.com/placeholder.png"
+        });
+
+        expect(result.success).toBe(true);
+    });
+
+    it("compiles ui-image without src (fallback only)", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-image",
+            id: "img2",
+            mount: "route:/customers/content",
+            fallback: "https://example.com/placeholder.png"
+        });
+
+        expect(result.success).toBe(true);
+        if (result.success && result.data.type === "ui-image") {
+            expect(result.data.src).toBeUndefined();
+            expect(result.data.fallback).toBe("https://example.com/placeholder.png");
+        }
+    });
+
+    it("compiles ui-icon with name", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-icon",
+            id: "icon1",
+            mount: "route:/customers/content",
+            icon: "home",
+            size: 24,
+            color: "#333"
+        });
+
+        expect(result.success).toBe(true);
+    });
+
+    it("rejects ui-icon without icon name", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-icon",
+            id: "icon2",
+            mount: "route:/customers/content",
+            icon: ""
+        });
+
+        expect(result.success).toBe(false);
+    });
+
+    it("compiles ui-list with static items", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-list",
+            id: "list1",
+            mount: "route:/customers/content",
+            items: [{ label: "Item A" }, { label: "Item B", value: "b" }],
+            variant: "unordered"
+        });
+
+        expect(result.success).toBe(true);
+    });
+
+    it("compiles ui-list with binding", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-list",
+            id: "list2",
+            mount: "route:/customers/content",
+            items: { kind: "state", path: "menu.items" },
+            variant: "description"
+        });
+
+        expect(result.success).toBe(true);
+    });
+
+    it("compiles ui-avatar with src binding and initials fallback", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-avatar",
+            id: "avatar1",
+            mount: "route:/customers/content",
+            src: { kind: "state", path: "user.avatarUrl" },
+            initials: "JD",
+            size: "md",
+            shape: "circle"
+        });
+
+        expect(result.success).toBe(true);
+    });
+
+    it("compiles ui-avatar without src (initials only)", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-avatar",
+            id: "avatar2",
+            mount: "route:/customers/content",
+            initials: "AB"
+        });
+
+        expect(result.success).toBe(true);
+    });
+
+    it("compiles ui-divider horizontal", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-divider",
+            id: "div1",
+            mount: "route:/customers/content",
+            orientation: "horizontal"
+        });
+
+        expect(result.success).toBe(true);
+    });
+
+    it("compiles ui-divider vertical with label", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-divider",
+            id: "div2",
+            mount: "route:/customers/content",
+            orientation: "vertical",
+            label: "Or"
+        });
+
+        expect(result.success).toBe(true);
+    });
+});

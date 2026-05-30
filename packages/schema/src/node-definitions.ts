@@ -444,6 +444,62 @@ export const uiStepperNodeDefinitionSchema = mountableNodeSchema.extend({
 
 export type UiStepperNodeDefinition = z.infer<typeof uiStepperNodeDefinitionSchema>;
 
+// ── P16d: display nodes ──────────────────────────────────────────────────────
+
+export const uiImageNodeDefinitionSchema = mountableNodeSchema.extend({
+    type: z.literal("ui-image"),
+    src: bindingSchema.optional(),
+    alt: z.string().optional(),
+    fallback: z.string().optional(),
+    width: z.union([z.number().int().positive(), z.string()]).optional(),
+    height: z.union([z.number().int().positive(), z.string()]).optional()
+});
+
+export type UiImageNodeDefinition = z.infer<typeof uiImageNodeDefinitionSchema>;
+
+export const uiIconNodeDefinitionSchema = mountableNodeSchema.extend({
+    type: z.literal("ui-icon"),
+    icon: z.string().min(1, "Icon names must not be empty."),
+    size: z.union([z.number().int().positive(), z.string()]).optional(),
+    color: z.string().optional()
+});
+
+export type UiIconNodeDefinition = z.infer<typeof uiIconNodeDefinitionSchema>;
+
+const listItemSchema = z.object({
+    label: z.string().min(1),
+    value: z.string().optional(),
+    icon: z.string().optional()
+});
+
+export const uiListNodeDefinitionSchema = mountableNodeSchema.extend({
+    type: z.literal("ui-list"),
+    items: z.union([z.array(listItemSchema), bindingSchema]),
+    variant: z.enum(["unordered", "ordered", "description"]).optional(),
+    events: z.array(z.enum(["itemSelect"])).optional()
+});
+
+export type UiListNodeDefinition = z.infer<typeof uiListNodeDefinitionSchema>;
+
+export const uiAvatarNodeDefinitionSchema = mountableNodeSchema.extend({
+    type: z.literal("ui-avatar"),
+    src: bindingSchema.optional(),
+    initials: z.string().optional(),
+    alt: z.string().optional(),
+    size: z.enum(["sm", "md", "lg"]).optional(),
+    shape: z.enum(["circle", "square"]).optional()
+});
+
+export type UiAvatarNodeDefinition = z.infer<typeof uiAvatarNodeDefinitionSchema>;
+
+export const uiDividerNodeDefinitionSchema = mountableNodeSchema.extend({
+    type: z.literal("ui-divider"),
+    orientation: z.enum(["horizontal", "vertical"]).optional(),
+    label: z.string().optional()
+});
+
+export type UiDividerNodeDefinition = z.infer<typeof uiDividerNodeDefinitionSchema>;
+
 export const uiNodeDefinitionSchema = z.union([
     uiAppNodeDefinitionSchema,
     uiRouteNodeDefinitionSchema,
@@ -475,7 +531,12 @@ export const uiNodeDefinitionSchema = z.union([
     uiBreadcrumbNodeDefinitionSchema,
     uiMenuNodeDefinitionSchema,
     uiPaginationNodeDefinitionSchema,
-    uiStepperNodeDefinitionSchema
+    uiStepperNodeDefinitionSchema,
+    uiImageNodeDefinitionSchema,
+    uiIconNodeDefinitionSchema,
+    uiListNodeDefinitionSchema,
+    uiAvatarNodeDefinitionSchema,
+    uiDividerNodeDefinitionSchema
 ]);
 
 export type UiNodeDefinition = z.infer<typeof uiNodeDefinitionSchema>;

@@ -34,7 +34,12 @@ import {
     type UiBreadcrumbNodeDefinition,
     type UiMenuNodeDefinition,
     type UiPaginationNodeDefinition,
-    type UiStepperNodeDefinition
+    type UiStepperNodeDefinition,
+    type UiImageNodeDefinition,
+    type UiIconNodeDefinition,
+    type UiListNodeDefinition,
+    type UiAvatarNodeDefinition,
+    type UiDividerNodeDefinition
 } from "@node-red-contrib-webapp/schema";
 
 export type NodeEditorType = UiNodeDefinition["type"];
@@ -284,6 +289,39 @@ export interface UiStepperEditorConfig extends MountableEditorConfig {
     events?: string;
 }
 
+export interface UiImageEditorConfig extends MountableEditorConfig {
+    srcPath?: string;
+    alt?: string;
+    fallback?: string;
+    width?: string;
+    height?: string;
+}
+
+export interface UiIconEditorConfig extends MountableEditorConfig {
+    icon?: string;
+    size?: string;
+    color?: string;
+}
+
+export interface UiListEditorConfig extends MountableEditorConfig {
+    itemsPath?: string;
+    variant?: "unordered" | "ordered" | "description";
+    events?: string;
+}
+
+export interface UiAvatarEditorConfig extends MountableEditorConfig {
+    srcPath?: string;
+    initials?: string;
+    alt?: string;
+    size?: "sm" | "md" | "lg";
+    shape?: "circle" | "square";
+}
+
+export interface UiDividerEditorConfig extends MountableEditorConfig {
+    orientation?: "horizontal" | "vertical";
+    label?: string;
+}
+
 export type NodeEditorConfig =
     | UiAppEditorConfig
     | UiRouteEditorConfig
@@ -315,7 +353,12 @@ export type NodeEditorConfig =
     | UiBreadcrumbEditorConfig
     | UiMenuEditorConfig
     | UiPaginationEditorConfig
-    | UiStepperEditorConfig;
+    | UiStepperEditorConfig
+    | UiImageEditorConfig
+    | UiIconEditorConfig
+    | UiListEditorConfig
+    | UiAvatarEditorConfig
+    | UiDividerEditorConfig;
 
 export type NodeEditorDefinition =
     | UiAppEditorNodeDefinition
@@ -348,7 +391,12 @@ export type NodeEditorDefinition =
     | BaseEditorNodeDefinition<UiBreadcrumbEditorConfig, UiBreadcrumbNodeDefinition>
     | BaseEditorNodeDefinition<UiMenuEditorConfig, UiMenuNodeDefinition>
     | BaseEditorNodeDefinition<UiPaginationEditorConfig, UiPaginationNodeDefinition>
-    | BaseEditorNodeDefinition<UiStepperEditorConfig, UiStepperNodeDefinition>;
+    | BaseEditorNodeDefinition<UiStepperEditorConfig, UiStepperNodeDefinition>
+    | BaseEditorNodeDefinition<UiImageEditorConfig, UiImageNodeDefinition>
+    | BaseEditorNodeDefinition<UiIconEditorConfig, UiIconNodeDefinition>
+    | BaseEditorNodeDefinition<UiListEditorConfig, UiListNodeDefinition>
+    | BaseEditorNodeDefinition<UiAvatarEditorConfig, UiAvatarNodeDefinition>
+    | BaseEditorNodeDefinition<UiDividerEditorConfig, UiDividerNodeDefinition>;
 
 function requiredString(message: string): EditorFieldDefinition {
     return {
@@ -1062,6 +1110,69 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         steps: JSON.parse(config.steps ?? "[]"),
         activeStep: config.activeStepPath ? stateBinding(config.activeStepPath) : undefined,
         orientation: config.orientation,
+        ...collectLayoutChildConfig(config)
+    })),
+    "ui-image": createDefinition("ui-image", "view", {
+        id: requiredString("Image IDs are required before deploy."),
+        mount: requiredString("Image must declare a parent slot.")
+    }, (config: UiImageEditorConfig): UiImageNodeDefinition => ({
+        type: "ui-image",
+        id: config.id ?? "",
+        mount: config.mount ?? "",
+        src: config.srcPath ? stateBinding(config.srcPath) : undefined,
+        alt: config.alt || undefined,
+        fallback: config.fallback || undefined,
+        width: config.width || undefined,
+        height: config.height || undefined,
+        ...collectLayoutChildConfig(config)
+    })),
+    "ui-icon": createDefinition("ui-icon", "view", {
+        id: requiredString("Icon IDs are required before deploy."),
+        mount: requiredString("Icon must declare a parent slot."),
+        icon: requiredString("Icon name is required.")
+    }, (config: UiIconEditorConfig): UiIconNodeDefinition => ({
+        type: "ui-icon",
+        id: config.id ?? "",
+        mount: config.mount ?? "",
+        icon: config.icon ?? "",
+        size: config.size || undefined,
+        color: config.color || undefined,
+        ...collectLayoutChildConfig(config)
+    })),
+    "ui-list": createDefinition("ui-list", "view", {
+        id: requiredString("List IDs are required before deploy."),
+        mount: requiredString("List must declare a parent slot.")
+    }, (config: UiListEditorConfig): UiListNodeDefinition => ({
+        type: "ui-list",
+        id: config.id ?? "",
+        mount: config.mount ?? "",
+        items: config.itemsPath ? stateBinding(config.itemsPath) : [],
+        variant: config.variant,
+        ...collectLayoutChildConfig(config)
+    })),
+    "ui-avatar": createDefinition("ui-avatar", "view", {
+        id: requiredString("Avatar IDs are required before deploy."),
+        mount: requiredString("Avatar must declare a parent slot.")
+    }, (config: UiAvatarEditorConfig): UiAvatarNodeDefinition => ({
+        type: "ui-avatar",
+        id: config.id ?? "",
+        mount: config.mount ?? "",
+        src: config.srcPath ? stateBinding(config.srcPath) : undefined,
+        initials: config.initials || undefined,
+        alt: config.alt || undefined,
+        size: config.size,
+        shape: config.shape,
+        ...collectLayoutChildConfig(config)
+    })),
+    "ui-divider": createDefinition("ui-divider", "view", {
+        id: requiredString("Divider IDs are required before deploy."),
+        mount: requiredString("Divider must declare a parent slot.")
+    }, (config: UiDividerEditorConfig): UiDividerNodeDefinition => ({
+        type: "ui-divider",
+        id: config.id ?? "",
+        mount: config.mount ?? "",
+        orientation: config.orientation,
+        label: config.label || undefined,
         ...collectLayoutChildConfig(config)
     }))
 };

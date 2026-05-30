@@ -1,0 +1,75 @@
+[
+  {
+    "id": "flowP16d",
+    "type": "tab",
+    "label": "P16d display nodes",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "p16dApp",
+    "type": "ui-app",
+    "z": "flowP16d",
+    "name": "P16d App",
+    "root": "p16dApp",
+    "layout": "vertical"
+  },
+  {
+    "id": "p16dRoute",
+    "type": "ui-route",
+    "z": "flowP16d",
+    "name": "P16d Route",
+    "uiId": "p16dRoute",
+    "parent": "p16dApp",
+    "path": "/p16d",
+    "layoutId": "vertical"
+  },
+  {
+    "id": "p16dImage",
+    "type": "ui-image",
+    "z": "flowP16d",
+    "name": "Image 1",
+    "uiId": "p16dImage",
+    "mount": "route:/p16d/content",
+    "alt": "Test image",
+    "fallback": "https://example.com/fallback.png"
+  },
+  {
+    "id": "p16dIcon",
+    "type": "ui-icon",
+    "z": "flowP16d",
+    "name": "Icon 1",
+    "uiId": "p16dIcon",
+    "mount": "route:/p16d/content",
+    "icon": "home"
+  },
+  {
+    "id": "p16dList",
+    "type": "ui-list",
+    "z": "flowP16d",
+    "name": "List 1",
+    "uiId": "p16dList",
+    "mount": "route:/p16d/content",
+    "variant": "unordered"
+  },
+  {
+    "id": "p16dAvatar",
+    "type": "ui-avatar",
+    "z": "flowP16d",
+    "name": "Avatar 1",
+    "uiId": "p16dAvatar",
+    "mount": "route:/p16d/content",
+    "initials": "JD",
+    "size": "md",
+    "shape": "circle"
+  },
+  {
+    "id": "p16dDivider",
+    "type": "ui-divider",
+    "z": "flowP16d",
+    "name": "Divider 1",
+    "uiId": "p16dDivider",
+    "mount": "route:/p16d/content",
+    "orientation": "horizontal"
+  }
+]

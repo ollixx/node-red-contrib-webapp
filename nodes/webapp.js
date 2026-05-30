@@ -52,7 +52,12 @@ const WEBAPP_NODE_TYPES = new Set([
     "ui-breadcrumb",
     "ui-menu",
     "ui-pagination",
-    "ui-stepper"
+    "ui-stepper",
+    "ui-image",
+    "ui-icon",
+    "ui-list",
+    "ui-avatar",
+    "ui-divider"
 ]);
 
 function parseList(value) {
@@ -2435,6 +2440,89 @@ const runtimeNodeRegistry = {
             activeStep: getBinding(config.activeStep, config.activeStepPath ? stateBinding(config.activeStepPath) : undefined),
             orientation: config.orientation || undefined,
             events: parseList(config.events),
+            ...collectNodeConfigLayoutProps(config)
+        }),
+        options: {
+            inputHandler: componentStateInputHandler
+        }
+    },
+    "ui-image": {
+        mapConfig: (config) => ({
+            type: "ui-image",
+            id: getUiId(config),
+            parent: config.parent || undefined,
+            mount: config.mount || config.parent,
+            order: toOptionalNumber(config.order),
+            src: getBinding(config.src, config.srcPath ? stateBinding(config.srcPath) : undefined),
+            alt: config.alt || undefined,
+            fallback: config.fallback || undefined,
+            width: config.width || undefined,
+            height: config.height || undefined,
+            ...collectNodeConfigLayoutProps(config)
+        }),
+        options: {
+            inputHandler: componentStateInputHandler
+        }
+    },
+    "ui-icon": {
+        mapConfig: (config) => ({
+            type: "ui-icon",
+            id: getUiId(config),
+            parent: config.parent || undefined,
+            mount: config.mount || config.parent,
+            order: toOptionalNumber(config.order),
+            icon: config.icon || "",
+            size: config.size || undefined,
+            color: config.color || undefined,
+            ...collectNodeConfigLayoutProps(config)
+        }),
+        options: {
+            inputHandler: componentStateInputHandler
+        }
+    },
+    "ui-list": {
+        mapConfig: (config) => ({
+            type: "ui-list",
+            id: getUiId(config),
+            parent: config.parent || undefined,
+            mount: config.mount || config.parent,
+            order: toOptionalNumber(config.order),
+            items: getBinding(config.items, config.itemsPath ? stateBinding(config.itemsPath) : undefined) || parseList(config.items),
+            variant: config.variant || undefined,
+            events: parseList(config.events).length > 0 ? parseList(config.events) : undefined,
+            ...collectNodeConfigLayoutProps(config)
+        }),
+        options: {
+            inputHandler: componentStateInputHandler
+        }
+    },
+    "ui-avatar": {
+        mapConfig: (config) => ({
+            type: "ui-avatar",
+            id: getUiId(config),
+            parent: config.parent || undefined,
+            mount: config.mount || config.parent,
+            order: toOptionalNumber(config.order),
+            src: getBinding(config.src, config.srcPath ? stateBinding(config.srcPath) : undefined),
+            initials: config.initials || undefined,
+            alt: config.alt || undefined,
+            size: config.size || undefined,
+            shape: config.shape || undefined,
+            ...collectNodeConfigLayoutProps(config)
+        }),
+        options: {
+            inputHandler: componentStateInputHandler
+        }
+    },
+    "ui-divider": {
+        mapConfig: (config) => ({
+            type: "ui-divider",
+            id: getUiId(config),
+            parent: config.parent || undefined,
+            mount: config.mount || config.parent,
+            order: toOptionalNumber(config.order),
+            orientation: config.orientation || undefined,
+            label: config.label || undefined,
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {

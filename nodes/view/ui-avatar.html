@@ -1,0 +1,71 @@
+<script type="text/javascript" src="resources/node-red-contrib-webapp/lib/editor-common.js"></script>
+<script type="text/javascript">
+    (function () {
+        const common = window.WebappEditorCommon;
+        common.registerNodeType("ui-avatar", {
+            category: "webapp view",
+            color: "#f4efcf",
+            defaults: {
+                name: { value: "" },
+                uiId: { value: "", required: true },
+                parent: { value: "" },
+                mount: { value: "", required: true },
+                srcPath: { value: "" },
+                src: { value: null },
+                initials: { value: "" },
+                alt: { value: "" },
+                size: { value: "md" },
+                shape: { value: "circle" },
+                order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
+                row: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
+                col: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
+                colSize: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
+                rowSize: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
+                layoutX: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
+                layoutY: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } }
+            },
+            inputs: 1,
+            outputs: 0,
+            icon: "font-awesome/fa-user-circle",
+            label: common.labelWithName("ui-avatar"),
+            onadd: function () {
+                if (!this.name) {
+                    this.name = common.getNextNameDefault("ui-avatar", "Avatar");
+                }
+            },
+            oneditprepare: function () {
+                common.installReferenceSelectors({ mount: true }).call(this);
+                common.installLayoutChildPropRows().call(this);
+            }
+        });
+    })();
+</script>
+<script type="text/html" data-template-name="ui-avatar">
+    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-uiId">Node ID</label><input type="text" id="node-input-uiId"></div>
+    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-row"><label for="node-input-srcPath">Src Path</label><input type="text" id="node-input-srcPath" placeholder="state.path.to.avatarUrl"></div>
+    <div class="form-row"><label for="node-input-initials">Fallback Initials</label><input type="text" id="node-input-initials" placeholder="e.g. JD"></div>
+    <div class="form-row"><label for="node-input-alt">Alt Text</label><input type="text" id="node-input-alt"></div>
+    <div class="form-row"><label for="node-input-size">Size</label>
+        <select id="node-input-size">
+            <option value="sm">Small</option>
+            <option value="md">Medium</option>
+            <option value="lg">Large</option>
+        </select>
+    </div>
+    <div class="form-row"><label for="node-input-shape">Shape</label>
+        <select id="node-input-shape">
+            <option value="circle">Circle</option>
+            <option value="square">Square</option>
+        </select>
+    </div>
+    <div class="form-row" data-layout-child-prop-row="order" style="display: none;"><label for="node-input-order">Order</label><input type="number" id="node-input-order"></div>
+    <div class="form-row" data-layout-child-prop-row="row" style="display: none;"><label for="node-input-row">Row</label><input type="number" id="node-input-row"></div>
+    <div class="form-row" data-layout-child-prop-row="col" style="display: none;"><label for="node-input-col">Col</label><input type="number" id="node-input-col"></div>
+    <div class="form-row" data-layout-child-prop-row="colSize" style="display: none;"><label for="node-input-colSize">Col Size</label><input type="number" id="node-input-colSize"></div>
+    <div class="form-row" data-layout-child-prop-row="rowSize" style="display: none;"><label for="node-input-rowSize">Row Size</label><input type="number" id="node-input-rowSize"></div>
+    <div class="form-row" data-layout-child-prop-row="layoutX" style="display: none;"><label for="node-input-layoutX">X</label><input type="number" id="node-input-layoutX"></div>
+    <div class="form-row" data-layout-child-prop-row="layoutY" style="display: none;"><label for="node-input-layoutY">Y</label><input type="number" id="node-input-layoutY"></div>
+</script>
+<script type="text/html" data-help-name="ui-avatar"><p>Zeigt ein Benutzer-Bild oder Initialen mit Fallback.</p></script>

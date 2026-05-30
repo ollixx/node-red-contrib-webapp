@@ -368,3 +368,27 @@ phases:
     - unit test: ui-pagination emits page-change event with correct page number
     - Playwright: each node editor shows parent selector and name default
     - docs check: each node doc's Pflichtfelder match the schema and editor HTML
+
+- id: P16d
+  title: "Core node expansion — display"
+  status: done
+  dependencies: [P12]
+  summary:
+    delivered: "Added 5 display nodes: ui-image, ui-icon, ui-list, ui-avatar, ui-divider — schemas, editor HTML+JS, webapp.js registry entries, editor package definitions, and unit tests."
+    stats: "18 new files, 10 new schema unit tests (54 total schema tests), 5 new E2E tests, all 178 tests passing"
+    notes: "ui-image uses fallback field (doc uses fallbackSrc — minor naming divergence). ui-icon size accepts string for flexibility beyond enum. ui-list items accepts both static array and state binding. E2E fixture deploys all 5 nodes and verifies mount selector and name default."
+  goals:
+    - Add display nodes for images, icons, lists, and avatars.
+  deliverables:
+    - ui-image: image with src binding, alt text, fallback
+    - ui-icon: icon by name, icon-set-agnostic (name maps to SVG or font icon)
+    - ui-list: structured list with item slot
+    - ui-avatar: user image or initials with fallback
+    - ui-divider: visual separator (horizontal/vertical)
+    - unit and E2E tests per node
+  validation:
+    - pnpm test passes with no failures
+    - unit test: each node compiles to a valid schema definition
+    - unit test: ui-image with missing src renders fallback slot
+    - Playwright: each node editor shows parent selector and name default
+    - docs check: each node doc's Pflichtfelder match the schema and editor HTML
