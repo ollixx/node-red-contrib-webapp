@@ -234,3 +234,29 @@ phases:
       - schema and editor tests accept the extended mountable node contracts
       - Playwright verifies layout-specific child fields for direct mounts
       - runtime and preview render grid and absolute layouts as modeled
+
+- id: P14
+  title: "ui-query enhancements"
+  status: done
+  dependencies: [P11b]
+  summary:
+    delivered: "Removed unused source field from ui-query schema/editor/runtime; added ETag-based caching that skips push when etag unchanged; added params field binding ui-query to a ui-store for reactive refresh on store change."
+    stats: "7 files changed, 11 new unit tests, 0 new E2E tests (no editor UI behavior change warranting E2E beyond existing coverage)"
+    notes: "triggerParamQueryRefresh reads RED from runtimeState (stored on module init in registerWebappNodes). ETag cache keyed by node.id + queryPath. Store-change re-trigger sends {ui:{query:{queryPath,refresh:true}}} to dependent query nodes. Docs note ui.queries.<queryPath> as conceptual — runtime uses query.id; left as-is since doc section is explicitly marked future/concept."
+  goals:
+    - Remove unused source field.
+    - Add ETag-based caching to avoid redundant pushes to the client.
+    - Add params binding from ui-store for reactive filtering, sorting, and paging.
+  deliverables:
+    - source field removed from schema, editor, runtime, and fixtures
+    - etag field in query input message; runtime skips push when etag matches
+    - params field on ui-query node referencing a ui-store
+    - runtime re-triggers query when referenced store changes
+    - unit tests for ETag caching logic and store-param reactivity
+  validation:
+    - pnpm test passes with no failures
+    - unit test: flow with a ui-query node that has source field set still compiles without error (graceful ignore)
+    - unit test: sending msg.ui.query with etag="v1" twice only pushes to client once
+    - unit test: sending msg.ui.query with etag="v1" then etag="v2" pushes to client twice
+    - unit test: updating the store referenced by ui-query.params emits a query refresh message
+    - docs check: ui-query.md queryPath description matches the client-state path structure in runtime

@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P14
+  current_phase: P15
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -114,27 +114,7 @@ phases:
       - Playwright: ui-table editor shows events multi-select and footer checkbox
       - docs check: ui-table.md column type list matches the type values accepted by the schema
 
-  - id: P14
-    title: ui-query enhancements
-    status: in_progress
-    dependencies: [P11b]
-    goals:
-      - Remove unused source field.
-      - Add ETag-based caching to avoid redundant pushes to the client.
-      - Add params binding from ui-store for reactive filtering, sorting, and paging.
-    deliverables:
-      - source field removed from schema, editor, runtime, and fixtures
-      - etag field in query input message; runtime skips push when etag matches
-      - params field on ui-query node referencing a ui-store
-      - runtime re-triggers query when referenced store changes
-      - unit tests for ETag caching logic and store-param reactivity
-    validation:
-      - pnpm test passes with no failures
-      - unit test: flow with a ui-query node that has source field set still compiles without error (graceful ignore)
-      - unit test: sending msg.ui.query with etag="v1" twice only pushes to client once
-      - unit test: sending msg.ui.query with etag="v1" then etag="v2" pushes to client twice
-      - unit test: updating the store referenced by ui-query.params emits a query refresh message
-      - docs check: ui-query.md queryPath description matches the client-state path structure in runtime
+  - { id: P14, title: "ui-query enhancements", status: done, dependencies: [P11b], archive: "docs/agent-roadmap-archive.yaml#P14" }
 
   - id: P15
     title: Multi-user and client persistence
