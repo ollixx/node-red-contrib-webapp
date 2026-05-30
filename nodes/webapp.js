@@ -610,7 +610,7 @@ function toComponentDefinitions(components) {
             return {
                 id: component.id,
                 kind: "text",
-                mount: component.mount,
+                mount: component.mount || component.parent,
                 order: toOptionalNumber(component.order),
                 bind: {
                     value: getBinding(component.value, literalBinding(component.text || ""))
@@ -628,7 +628,7 @@ function toComponentDefinitions(components) {
             return {
                 id: component.id,
                 kind: "button",
-                mount: component.mount,
+                mount: component.mount || component.parent,
                 order: toOptionalNumber(component.order),
                 bind: component.disabled || component.disabledPath ? { disabled: getBinding(component.disabled, stateBinding(component.disabledPath || "")) } : {},
                 props: {
@@ -645,7 +645,7 @@ function toComponentDefinitions(components) {
             return {
                 id: component.id,
                 kind: "table",
-                mount: component.mount,
+                mount: component.mount || component.parent,
                 order: toOptionalNumber(component.order),
                 footer: component.footer === true || component.footer === "true",
                 bind: {
@@ -666,7 +666,7 @@ function toComponentDefinitions(components) {
             return {
                 id: component.id,
                 kind: "container",
-                mount: component.mount,
+                mount: component.mount || component.parent,
                 order: toOptionalNumber(component.order),
                 bind: {},
                 props: {
@@ -682,7 +682,7 @@ function toComponentDefinitions(components) {
             return {
                 id: component.id,
                 kind: "input",
-                mount: component.mount,
+                mount: component.mount || component.parent,
                 order: toOptionalNumber(component.order),
                 bind: {
                     value: getBinding(component.value, stateBinding(joinStatePath(component.storeId ? undefined : "", component.path || "")))
@@ -701,7 +701,7 @@ function toComponentDefinitions(components) {
         return {
             id: component.id,
             kind: "text",
-            mount: component.mount,
+            mount: component.mount || component.parent,
             order: toOptionalNumber(component.order),
             bind: {
                 value: literalBinding(component.id)
