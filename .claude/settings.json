@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm test)",
+      "Bash(pnpm test *)",
+      "Bash(pnpm exec playwright test)",
+      "Bash(pnpm exec playwright test *)",
+      "Bash(grep -n *)",
+      "Bash(grep -rn *)",
+      "Bash(grep -l *)",
+      "Bash(grep -r *)",
+      "Bash(sed -n *)",
+      "Bash(find . *)",
+      "Bash(find .ai *)",
+      "Bash(find ./nodes *)"
+    ],
+    "deny": []
+  }
+}
