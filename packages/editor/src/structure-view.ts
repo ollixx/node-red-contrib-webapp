@@ -4,11 +4,18 @@ import {
     type ComponentDefinition,
     type LayoutDefinition,
     type UiButtonNodeDefinition,
+    type UiCheckboxNodeDefinition,
     type UiContainerNodeDefinition,
+    type UiDatepickerNodeDefinition,
     type UiDialogNodeDefinition,
     type UiInputNodeDefinition,
     type UiNodeDefinition,
+    type UiRadioNodeDefinition,
     type UiRouteNodeDefinition,
+    type UiSelectNodeDefinition,
+    type UiSliderNodeDefinition,
+    type UiSwitchNodeDefinition,
+    type UiTextareaNodeDefinition,
     type UiTextNodeDefinition
 } from "@node-red-contrib-webapp/schema";
 
@@ -27,7 +34,14 @@ export type MountableEditorSourceNode =
     | UiButtonNodeDefinition
     | UiContainerNodeDefinition
     | UiInputNodeDefinition
-    | UiTableSourceNode;
+    | UiTableSourceNode
+    | UiSelectNodeDefinition
+    | UiCheckboxNodeDefinition
+    | UiRadioNodeDefinition
+    | UiSwitchNodeDefinition
+    | UiTextareaNodeDefinition
+    | UiDatepickerNodeDefinition
+    | UiSliderNodeDefinition;
 
 type UiTableSourceNode = Extract<UiNodeDefinition, { type: "ui-table" }>;
 
@@ -85,7 +99,9 @@ interface StructureIndex {
 }
 
 function isMountableNode(node: UiNodeDefinition): node is MountableEditorSourceNode {
-    return node.type === "ui-text" || node.type === "ui-button" || node.type === "ui-table" || node.type === "ui-container" || node.type === "ui-input";
+    return node.type === "ui-text" || node.type === "ui-button" || node.type === "ui-table" || node.type === "ui-container" || node.type === "ui-input"
+        || node.type === "ui-select" || node.type === "ui-checkbox" || node.type === "ui-radio" || node.type === "ui-switch"
+        || node.type === "ui-textarea" || node.type === "ui-datepicker" || node.type === "ui-slider";
 }
 
 function sortComponents(left: ComponentDefinition, right: ComponentDefinition): number {
@@ -330,14 +346,15 @@ function createMountDiagnostics(
         .filter(isMountableNode)
         .filter((sourceNode) => !compiledComponentIds.has(sourceNode.id))
         .flatMap<EditorStructureDiagnostic>((sourceNode) => {
-            const mountResolution = resolveMountReference(sourceNode.mount, model);
+            const mount = sourceNode.mount ?? "";
+            const mountResolution = resolveMountReference(mount, model);
 
             if (!mountResolution.success) {
                 return [
                     {
                         severity: "warning",
                         code: "orphaned-mount",
-                        message: `Component '${sourceNode.id}' cannot resolve mount '${sourceNode.mount}': ${mountResolution.error}`,
+                        message: `Component '${sourceNode.id}' cannot resolve mount '${mount}': ${mountResolution.error}`,
                         canvasNodeIds: [sourceNode.id],
                         structureItemIds: structureIndex.structureItemIdsByCanvasNodeId.get(sourceNode.id) ?? []
                     }
@@ -351,7 +368,7 @@ function createMountDiagnostics(
                     {
                         severity: "warning",
                         code: "unresolved-slot",
-                        message: `Component '${sourceNode.id}' targets unresolved slot '${sourceNode.mount}'.`,
+                        message: `Component '${sourceNode.id}' targets unresolved slot '${mount}'.`,
                         canvasNodeIds: [sourceNode.id],
                         structureItemIds: structureIndex.structureItemIdsByCanvasNodeId.get(sourceNode.id) ?? []
                     }

@@ -708,14 +708,12 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
         type: "ui-query",
         id: "customersQuery",
         queryPath: "customers.list",
-        source: "customers.list",
         refreshAction: "refreshCustomers"
     },
     {
         type: "ui-query",
         id: "customerDetailQuery",
-        queryPath: "customers.current",
-        source: "customers.current"
+        queryPath: "customers.current"
     },
     {
         type: "ui-action",

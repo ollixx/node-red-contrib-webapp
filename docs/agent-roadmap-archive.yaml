@@ -288,3 +288,31 @@ phases:
     - unit test: reconnect with client timestamp newer than server timestamp results in client state being accepted
     - Playwright: ui-store editor shows persist checkbox
     - docs check: multi-user.md sync strategy description matches the resolveReconnectState handler in webapp.js
+
+- id: P16a
+  title: "Core node expansion — input controls"
+  status: done
+  dependencies: [P12]
+  summary:
+    delivered: "Added 7 new input control nodes (ui-select, ui-checkbox, ui-radio, ui-switch, ui-textarea, ui-datepicker, ui-slider) with schema definitions, webapp.js mapConfig entries, Node-RED JS+HTML editor files, and editor package definitions."
+    stats: "18 new unit tests, 3 new HTML editor files (textarea/datepicker/slider were missing), editor nodeSet expanded from 12 to 19 types, fixed pre-existing lint/build errors in schema/runtime/editor packages"
+    notes: "Schema and webapp.js runtime entries were largely pre-existing from a partial earlier implementation. Main work was completing the HTML editors, adding editor package type definitions and nodeSet entries, expanding MountableEditorSourceNode in structure-view.ts, and writing unit tests. Fixed pre-existing unused-import lint errors and stale `source` field on ui-query in fixtures/editor."
+  goals:
+    - Add the missing input control nodes to the core lib.
+    - All nodes follow the established parent/name/events pattern.
+    - Schema, runtime, editor, and renderer aligned for each node.
+  deliverables:
+    - ui-select: dropdown / combobox with options binding
+    - ui-checkbox: single checkbox with value binding
+    - ui-radio: radio group with options binding
+    - ui-switch: toggle/boolean input
+    - ui-textarea: multi-line text input
+    - ui-datepicker: date and datetime input
+    - ui-slider: numeric range input
+    - unit and E2E tests per node
+  validation:
+    - pnpm test passes with no failures
+    - unit test: each node compiles to a valid schema definition
+    - unit test: each node emits a change event with correct payload on value change
+    - Playwright: each node editor shows parent selector and name default
+    - docs check: each node doc's Pflichtfelder match the schema and editor HTML

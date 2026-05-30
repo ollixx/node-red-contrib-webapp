@@ -5,7 +5,6 @@ import {
     actionTypeSchema,
     bindingSchema,
     identifierSchema,
-    regionNameSchema,
     routePathSchema
 } from "./contracts";
 import { standardLayoutPresetIds } from "./layout-presets";
@@ -220,6 +219,95 @@ export const uiNavigationNodeDefinitionSchema = identifiedNodeSchema.extend({
 
 export type UiNavigationNodeDefinition = z.infer<typeof uiNavigationNodeDefinitionSchema>;
 
+// ── P16a: input control nodes ────────────────────────────────────────────────
+
+const selectOptionSchema = z.object({
+    label: z.string(),
+    value: z.unknown()
+});
+
+export const uiSelectNodeDefinitionSchema = mountableNodeSchema.extend({
+    type: z.literal("ui-select"),
+    label: z.string().min(1, "Select labels must not be empty."),
+    value: bindingSchema,
+    options: z.union([z.array(selectOptionSchema), bindingSchema]).optional(),
+    placeholder: z.string().optional(),
+    multiple: z.boolean().optional(),
+    searchable: z.boolean().optional(),
+    disabled: bindingSchema.optional()
+});
+
+export type UiSelectNodeDefinition = z.infer<typeof uiSelectNodeDefinitionSchema>;
+
+export const uiCheckboxNodeDefinitionSchema = mountableNodeSchema.extend({
+    type: z.literal("ui-checkbox"),
+    label: z.string().min(1, "Checkbox labels must not be empty."),
+    value: bindingSchema,
+    disabled: bindingSchema.optional()
+});
+
+export type UiCheckboxNodeDefinition = z.infer<typeof uiCheckboxNodeDefinitionSchema>;
+
+export const uiRadioNodeDefinitionSchema = mountableNodeSchema.extend({
+    type: z.literal("ui-radio"),
+    label: z.string().min(1, "Radio labels must not be empty."),
+    value: bindingSchema,
+    options: z.union([z.array(selectOptionSchema), bindingSchema]),
+    orientation: z.enum(["horizontal", "vertical"]).optional(),
+    disabled: bindingSchema.optional()
+});
+
+export type UiRadioNodeDefinition = z.infer<typeof uiRadioNodeDefinitionSchema>;
+
+export const uiSwitchNodeDefinitionSchema = mountableNodeSchema.extend({
+    type: z.literal("ui-switch"),
+    value: bindingSchema,
+    label: z.string().optional(),
+    labelOn: z.string().optional(),
+    labelOff: z.string().optional(),
+    disabled: bindingSchema.optional()
+});
+
+export type UiSwitchNodeDefinition = z.infer<typeof uiSwitchNodeDefinitionSchema>;
+
+export const uiTextareaNodeDefinitionSchema = mountableNodeSchema.extend({
+    type: z.literal("ui-textarea"),
+    label: z.string().min(1, "Textarea labels must not be empty."),
+    value: bindingSchema,
+    placeholder: z.string().optional(),
+    rows: z.number().int().positive().optional(),
+    maxLength: z.number().int().positive().optional(),
+    disabled: bindingSchema.optional()
+});
+
+export type UiTextareaNodeDefinition = z.infer<typeof uiTextareaNodeDefinitionSchema>;
+
+export const uiDatepickerNodeDefinitionSchema = mountableNodeSchema.extend({
+    type: z.literal("ui-datepicker"),
+    label: z.string().min(1, "Datepicker labels must not be empty."),
+    value: bindingSchema,
+    mode: z.enum(["date", "datetime", "time"]).optional(),
+    min: z.string().optional(),
+    max: z.string().optional(),
+    placeholder: z.string().optional(),
+    disabled: bindingSchema.optional()
+});
+
+export type UiDatepickerNodeDefinition = z.infer<typeof uiDatepickerNodeDefinitionSchema>;
+
+export const uiSliderNodeDefinitionSchema = mountableNodeSchema.extend({
+    type: z.literal("ui-slider"),
+    value: bindingSchema,
+    label: z.string().optional(),
+    min: z.number().optional(),
+    max: z.number().optional(),
+    step: z.number().positive().optional(),
+    showValue: z.boolean().optional(),
+    disabled: bindingSchema.optional()
+});
+
+export type UiSliderNodeDefinition = z.infer<typeof uiSliderNodeDefinitionSchema>;
+
 export const uiNodeDefinitionSchema = z.union([
     uiAppNodeDefinitionSchema,
     uiRouteNodeDefinitionSchema,
@@ -228,6 +316,13 @@ export const uiNodeDefinitionSchema = z.union([
     uiButtonNodeDefinitionSchema,
     uiTableNodeDefinitionSchema,
     uiInputNodeDefinitionSchema,
+    uiSelectNodeDefinitionSchema,
+    uiCheckboxNodeDefinitionSchema,
+    uiRadioNodeDefinitionSchema,
+    uiSwitchNodeDefinitionSchema,
+    uiTextareaNodeDefinitionSchema,
+    uiDatepickerNodeDefinitionSchema,
+    uiSliderNodeDefinitionSchema,
     uiDialogNodeDefinitionSchema,
     uiStoreNodeDefinitionSchema,
     uiQueryNodeDefinitionSchema,

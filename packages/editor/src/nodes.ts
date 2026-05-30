@@ -6,15 +6,22 @@ import {
     type UiActionNodeDefinition,
     type UiAppNodeDefinition,
     type UiButtonNodeDefinition,
+    type UiCheckboxNodeDefinition,
     type UiContainerNodeDefinition,
+    type UiDatepickerNodeDefinition,
     type UiDialogNodeDefinition,
     type UiInputNodeDefinition,
     type UiNavigationNodeDefinition,
     type UiNodeDefinition,
     type UiQueryNodeDefinition,
+    type UiRadioNodeDefinition,
     type UiRouteNodeDefinition,
+    type UiSelectNodeDefinition,
+    type UiSliderNodeDefinition,
     type UiStoreNodeDefinition,
+    type UiSwitchNodeDefinition,
     type UiTableNodeDefinition,
+    type UiTextareaNodeDefinition,
     type UiTextNodeDefinition
 } from "@node-red-contrib-webapp/schema";
 
@@ -113,8 +120,63 @@ export interface UiStoreEditorConfig extends IdentifiedEditorConfig {
 
 export interface UiQueryEditorConfig extends IdentifiedEditorConfig {
     queryPath?: string;
-    source?: string;
     refreshAction?: string;
+}
+
+export interface UiSelectEditorConfig extends MountableEditorConfig {
+    label?: string;
+    valuePath?: string;
+    optionsJson?: string;
+    optionsBinding?: string;
+    placeholder?: string;
+    multiple?: boolean;
+    searchable?: boolean;
+}
+
+export interface UiCheckboxEditorConfig extends MountableEditorConfig {
+    label?: string;
+    valuePath?: string;
+}
+
+export interface UiRadioEditorConfig extends MountableEditorConfig {
+    label?: string;
+    valuePath?: string;
+    optionsJson?: string;
+    optionsBinding?: string;
+    orientation?: "horizontal" | "vertical";
+}
+
+export interface UiSwitchEditorConfig extends MountableEditorConfig {
+    valuePath?: string;
+    label?: string;
+    labelOn?: string;
+    labelOff?: string;
+}
+
+export interface UiTextareaEditorConfig extends MountableEditorConfig {
+    label?: string;
+    valuePath?: string;
+    placeholder?: string;
+    rows?: number;
+    maxLength?: number;
+}
+
+export interface UiDatepickerEditorConfig extends MountableEditorConfig {
+    label?: string;
+    valuePath?: string;
+    mode?: "date" | "datetime" | "time";
+    min?: string;
+    max?: string;
+    placeholder?: string;
+}
+
+export interface UiSliderEditorConfig extends MountableEditorConfig {
+    valuePath?: string;
+    label?: string;
+    min?: number;
+    max?: number;
+    step?: number;
+    showValue?: boolean;
 }
 
 export interface UiActionEditorConfig extends IdentifiedEditorConfig {
@@ -138,6 +200,13 @@ export type NodeEditorConfig =
     | UiTableEditorConfig
     | UiContainerEditorConfig
     | UiInputEditorConfig
+    | UiSelectEditorConfig
+    | UiCheckboxEditorConfig
+    | UiRadioEditorConfig
+    | UiSwitchEditorConfig
+    | UiTextareaEditorConfig
+    | UiDatepickerEditorConfig
+    | UiSliderEditorConfig
     | UiStoreEditorConfig
     | UiQueryEditorConfig
     | UiActionEditorConfig
@@ -152,6 +221,13 @@ export type NodeEditorDefinition =
     | BaseEditorNodeDefinition<UiTableEditorConfig, UiTableNodeDefinition>
     | BaseEditorNodeDefinition<UiContainerEditorConfig, UiContainerNodeDefinition>
     | BaseEditorNodeDefinition<UiInputEditorConfig, UiInputNodeDefinition>
+    | BaseEditorNodeDefinition<UiSelectEditorConfig, UiSelectNodeDefinition>
+    | BaseEditorNodeDefinition<UiCheckboxEditorConfig, UiCheckboxNodeDefinition>
+    | BaseEditorNodeDefinition<UiRadioEditorConfig, UiRadioNodeDefinition>
+    | BaseEditorNodeDefinition<UiSwitchEditorConfig, UiSwitchNodeDefinition>
+    | BaseEditorNodeDefinition<UiTextareaEditorConfig, UiTextareaNodeDefinition>
+    | BaseEditorNodeDefinition<UiDatepickerEditorConfig, UiDatepickerNodeDefinition>
+    | BaseEditorNodeDefinition<UiSliderEditorConfig, UiSliderNodeDefinition>
     | BaseEditorNodeDefinition<UiStoreEditorConfig, UiStoreNodeDefinition>
     | BaseEditorNodeDefinition<UiQueryEditorConfig, UiQueryNodeDefinition>
     | BaseEditorNodeDefinition<UiActionEditorConfig, UiActionNodeDefinition>
@@ -477,6 +553,167 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         placeholder: config.placeholder,
         ...collectLayoutChildConfig(config)
     })),
+    "ui-select": createDefinition("ui-select", "view", {
+        id: requiredString("Select IDs are required before deploy."),
+        mount: requiredString("Select nodes must declare a mount target."),
+        label: requiredString("Select nodes must declare a label."),
+        valuePath: requiredString("Select nodes must bind a value path."),
+        order: optionalInteger("Select order must be an integer."),
+        row: optionalInteger("Select grid rows must be integers."),
+        col: optionalInteger("Select grid columns must be integers."),
+        colSize: optionalInteger("Select grid column spans must be integers."),
+        rowSize: optionalInteger("Select grid row spans must be integers."),
+        layoutX: optionalInteger("Select absolute x coordinates must be integers."),
+        layoutY: optionalInteger("Select absolute y coordinates must be integers.")
+    }, (config: UiSelectEditorConfig): UiSelectNodeDefinition => ({
+        type: "ui-select",
+        id: config.id ?? "",
+        mount: config.mount ?? "",
+        label: config.label ?? "",
+        value: stateBinding(config.valuePath ?? ""),
+        options: config.optionsJson ? JSON.parse(config.optionsJson) : (config.optionsBinding ? stateBinding(config.optionsBinding) : undefined),
+        placeholder: config.placeholder,
+        multiple: config.multiple,
+        searchable: config.searchable,
+        ...collectLayoutChildConfig(config)
+    })),
+    "ui-checkbox": createDefinition("ui-checkbox", "view", {
+        id: requiredString("Checkbox IDs are required before deploy."),
+        mount: requiredString("Checkboxes must declare a mount target."),
+        label: requiredString("Checkboxes must declare a label."),
+        valuePath: requiredString("Checkboxes must bind a value path."),
+        order: optionalInteger("Checkbox order must be an integer."),
+        row: optionalInteger("Checkbox grid rows must be integers."),
+        col: optionalInteger("Checkbox grid columns must be integers."),
+        colSize: optionalInteger("Checkbox grid column spans must be integers."),
+        rowSize: optionalInteger("Checkbox grid row spans must be integers."),
+        layoutX: optionalInteger("Checkbox absolute x coordinates must be integers."),
+        layoutY: optionalInteger("Checkbox absolute y coordinates must be integers.")
+    }, (config: UiCheckboxEditorConfig): UiCheckboxNodeDefinition => ({
+        type: "ui-checkbox",
+        id: config.id ?? "",
+        mount: config.mount ?? "",
+        label: config.label ?? "",
+        value: stateBinding(config.valuePath ?? ""),
+        ...collectLayoutChildConfig(config)
+    })),
+    "ui-radio": createDefinition("ui-radio", "view", {
+        id: requiredString("Radio IDs are required before deploy."),
+        mount: requiredString("Radio nodes must declare a mount target."),
+        label: requiredString("Radio nodes must declare a label."),
+        valuePath: requiredString("Radio nodes must bind a value path."),
+        order: optionalInteger("Radio order must be an integer."),
+        row: optionalInteger("Radio grid rows must be integers."),
+        col: optionalInteger("Radio grid columns must be integers."),
+        colSize: optionalInteger("Radio grid column spans must be integers."),
+        rowSize: optionalInteger("Radio grid row spans must be integers."),
+        layoutX: optionalInteger("Radio absolute x coordinates must be integers."),
+        layoutY: optionalInteger("Radio absolute y coordinates must be integers."),
+        orientation: optionalStringEnum(["horizontal", "vertical"], "Radio orientation must be horizontal or vertical.")
+    }, (config: UiRadioEditorConfig): UiRadioNodeDefinition => ({
+        type: "ui-radio",
+        id: config.id ?? "",
+        mount: config.mount ?? "",
+        label: config.label ?? "",
+        value: stateBinding(config.valuePath ?? ""),
+        options: config.optionsJson ? JSON.parse(config.optionsJson) : (config.optionsBinding ? stateBinding(config.optionsBinding) : []),
+        orientation: config.orientation,
+        ...collectLayoutChildConfig(config)
+    })),
+    "ui-switch": createDefinition("ui-switch", "view", {
+        id: requiredString("Switch IDs are required before deploy."),
+        mount: requiredString("Switches must declare a mount target."),
+        valuePath: requiredString("Switches must bind a value path."),
+        order: optionalInteger("Switch order must be an integer."),
+        row: optionalInteger("Switch grid rows must be integers."),
+        col: optionalInteger("Switch grid columns must be integers."),
+        colSize: optionalInteger("Switch grid column spans must be integers."),
+        rowSize: optionalInteger("Switch grid row spans must be integers."),
+        layoutX: optionalInteger("Switch absolute x coordinates must be integers."),
+        layoutY: optionalInteger("Switch absolute y coordinates must be integers.")
+    }, (config: UiSwitchEditorConfig): UiSwitchNodeDefinition => ({
+        type: "ui-switch",
+        id: config.id ?? "",
+        mount: config.mount ?? "",
+        value: stateBinding(config.valuePath ?? ""),
+        label: config.label,
+        labelOn: config.labelOn,
+        labelOff: config.labelOff,
+        ...collectLayoutChildConfig(config)
+    })),
+    "ui-textarea": createDefinition("ui-textarea", "view", {
+        id: requiredString("Textarea IDs are required before deploy."),
+        mount: requiredString("Textareas must declare a mount target."),
+        label: requiredString("Textareas must declare a label."),
+        valuePath: requiredString("Textareas must bind a value path."),
+        order: optionalInteger("Textarea order must be an integer."),
+        row: optionalInteger("Textarea grid rows must be integers."),
+        col: optionalInteger("Textarea grid columns must be integers."),
+        colSize: optionalInteger("Textarea grid column spans must be integers."),
+        rowSize: optionalInteger("Textarea grid row spans must be integers."),
+        layoutX: optionalInteger("Textarea absolute x coordinates must be integers."),
+        layoutY: optionalInteger("Textarea absolute y coordinates must be integers."),
+        rows: optionalInteger("Textarea rows must be a positive integer."),
+        maxLength: optionalInteger("Textarea max length must be a positive integer.")
+    }, (config: UiTextareaEditorConfig): UiTextareaNodeDefinition => ({
+        type: "ui-textarea",
+        id: config.id ?? "",
+        mount: config.mount ?? "",
+        label: config.label ?? "",
+        value: stateBinding(config.valuePath ?? ""),
+        placeholder: config.placeholder,
+        rows: config.rows,
+        maxLength: config.maxLength,
+        ...collectLayoutChildConfig(config)
+    })),
+    "ui-datepicker": createDefinition("ui-datepicker", "view", {
+        id: requiredString("Datepicker IDs are required before deploy."),
+        mount: requiredString("Datepickers must declare a mount target."),
+        label: requiredString("Datepickers must declare a label."),
+        valuePath: requiredString("Datepickers must bind a value path."),
+        order: optionalInteger("Datepicker order must be an integer."),
+        row: optionalInteger("Datepicker grid rows must be integers."),
+        col: optionalInteger("Datepicker grid columns must be integers."),
+        colSize: optionalInteger("Datepicker grid column spans must be integers."),
+        rowSize: optionalInteger("Datepicker grid row spans must be integers."),
+        layoutX: optionalInteger("Datepicker absolute x coordinates must be integers."),
+        layoutY: optionalInteger("Datepicker absolute y coordinates must be integers."),
+        mode: optionalStringEnum(["date", "datetime", "time"], "Datepicker mode must be date, datetime, or time.")
+    }, (config: UiDatepickerEditorConfig): UiDatepickerNodeDefinition => ({
+        type: "ui-datepicker",
+        id: config.id ?? "",
+        mount: config.mount ?? "",
+        label: config.label ?? "",
+        value: stateBinding(config.valuePath ?? ""),
+        mode: config.mode,
+        min: config.min,
+        max: config.max,
+        placeholder: config.placeholder,
+        ...collectLayoutChildConfig(config)
+    })),
+    "ui-slider": createDefinition("ui-slider", "view", {
+        id: requiredString("Slider IDs are required before deploy."),
+        mount: requiredString("Sliders must declare a mount target."),
+        valuePath: requiredString("Sliders must bind a value path."),
+        order: optionalInteger("Slider order must be an integer."),
+        row: optionalInteger("Slider grid rows must be integers."),
+        col: optionalInteger("Slider grid columns must be integers."),
+        colSize: optionalInteger("Slider grid column spans must be integers."),
+        rowSize: optionalInteger("Slider grid row spans must be integers."),
+        layoutX: optionalInteger("Slider absolute x coordinates must be integers."),
+        layoutY: optionalInteger("Slider absolute y coordinates must be integers.")
+    }, (config: UiSliderEditorConfig): UiSliderNodeDefinition => ({
+        type: "ui-slider",
+        id: config.id ?? "",
+        mount: config.mount ?? "",
+        value: stateBinding(config.valuePath ?? ""),
+        label: config.label,
+        min: config.min,
+        max: config.max,
+        step: config.step,
+        showValue: config.showValue,
+        ...collectLayoutChildConfig(config)
+    })),
     "ui-store": createDefinition("ui-store", "state", {
         id: requiredString("Store IDs are required before deploy."),
         statePath: requiredString("Stores must declare a state path.")
@@ -493,7 +730,6 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         type: "ui-query",
         id: config.id ?? "",
         queryPath: config.queryPath ?? "",
-        source: config.source,
         refreshAction: config.refreshAction
     })),
     "ui-action": createDefinition("ui-action", "behavior", {

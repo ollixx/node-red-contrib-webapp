@@ -30,6 +30,13 @@ const WEBAPP_NODE_TYPES = new Set([
     "ui-table",
     "ui-container",
     "ui-input",
+    "ui-select",
+    "ui-checkbox",
+    "ui-radio",
+    "ui-switch",
+    "ui-textarea",
+    "ui-datepicker",
+    "ui-slider",
     "ui-store",
     "ui-query",
     "ui-action",
@@ -1569,7 +1576,7 @@ function getDefinitionBuckets(appId, definitions) {
         app: matchingApp,
         routes: matchingDefinitions.filter((entry) => entry.type === "ui-route"),
         dialogs: matchingDefinitions.filter((entry) => entry.type === "ui-dialog"),
-        components: matchingDefinitions.filter((entry) => ["ui-text", "ui-button", "ui-table", "ui-container", "ui-input"].includes(entry.type)),
+        components: matchingDefinitions.filter((entry) => ["ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select", "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider"].includes(entry.type)),
         stores: matchingDefinitions.filter((entry) => entry.type === "ui-store"),
         queries: matchingDefinitions.filter((entry) => entry.type === "ui-query"),
         actions: matchingDefinitions.filter((entry) => entry.type === "ui-action"),
@@ -1966,6 +1973,137 @@ const runtimeNodeRegistry = {
             storeId: config.storeId || undefined,
             path: config.path || undefined,
             inputType: config.inputType || undefined,
+            ...collectNodeConfigLayoutProps(config)
+        }),
+        options: {
+            inputHandler: componentStateInputHandler
+        }
+    },
+    "ui-select": {
+        mapConfig: (config) => ({
+            type: "ui-select",
+            id: getUiId(config),
+            parent: config.parent || undefined,
+            mount: config.mount || config.parent,
+            order: toOptionalNumber(config.order),
+            label: config.label,
+            value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
+            options: config.optionsJson ? JSON.parse(config.optionsJson) : (config.optionsBinding ? stateBinding(config.optionsBinding) : undefined),
+            placeholder: config.placeholder || undefined,
+            multiple: config.multiple === true || config.multiple === "true" || undefined,
+            searchable: config.searchable === true || config.searchable === "true" || undefined,
+            disabled: getBinding(config.disabled, undefined),
+            ...collectNodeConfigLayoutProps(config)
+        }),
+        options: {
+            inputHandler: componentStateInputHandler
+        }
+    },
+    "ui-checkbox": {
+        mapConfig: (config) => ({
+            type: "ui-checkbox",
+            id: getUiId(config),
+            parent: config.parent || undefined,
+            mount: config.mount || config.parent,
+            order: toOptionalNumber(config.order),
+            label: config.label,
+            value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
+            disabled: getBinding(config.disabled, undefined),
+            ...collectNodeConfigLayoutProps(config)
+        }),
+        options: {
+            inputHandler: componentStateInputHandler
+        }
+    },
+    "ui-radio": {
+        mapConfig: (config) => ({
+            type: "ui-radio",
+            id: getUiId(config),
+            parent: config.parent || undefined,
+            mount: config.mount || config.parent,
+            order: toOptionalNumber(config.order),
+            label: config.label,
+            value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
+            options: config.optionsJson ? JSON.parse(config.optionsJson) : (config.optionsBinding ? stateBinding(config.optionsBinding) : []),
+            orientation: config.orientation || undefined,
+            disabled: getBinding(config.disabled, undefined),
+            ...collectNodeConfigLayoutProps(config)
+        }),
+        options: {
+            inputHandler: componentStateInputHandler
+        }
+    },
+    "ui-switch": {
+        mapConfig: (config) => ({
+            type: "ui-switch",
+            id: getUiId(config),
+            parent: config.parent || undefined,
+            mount: config.mount || config.parent,
+            order: toOptionalNumber(config.order),
+            value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
+            label: config.label || undefined,
+            labelOn: config.labelOn || undefined,
+            labelOff: config.labelOff || undefined,
+            disabled: getBinding(config.disabled, undefined),
+            ...collectNodeConfigLayoutProps(config)
+        }),
+        options: {
+            inputHandler: componentStateInputHandler
+        }
+    },
+    "ui-textarea": {
+        mapConfig: (config) => ({
+            type: "ui-textarea",
+            id: getUiId(config),
+            parent: config.parent || undefined,
+            mount: config.mount || config.parent,
+            order: toOptionalNumber(config.order),
+            label: config.label,
+            value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
+            placeholder: config.placeholder || undefined,
+            rows: toOptionalNumber(config.rows),
+            maxLength: toOptionalNumber(config.maxLength),
+            disabled: getBinding(config.disabled, undefined),
+            ...collectNodeConfigLayoutProps(config)
+        }),
+        options: {
+            inputHandler: componentStateInputHandler
+        }
+    },
+    "ui-datepicker": {
+        mapConfig: (config) => ({
+            type: "ui-datepicker",
+            id: getUiId(config),
+            parent: config.parent || undefined,
+            mount: config.mount || config.parent,
+            order: toOptionalNumber(config.order),
+            label: config.label,
+            value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
+            mode: config.mode || undefined,
+            min: config.min || undefined,
+            max: config.max || undefined,
+            placeholder: config.placeholder || undefined,
+            disabled: getBinding(config.disabled, undefined),
+            ...collectNodeConfigLayoutProps(config)
+        }),
+        options: {
+            inputHandler: componentStateInputHandler
+        }
+    },
+    "ui-slider": {
+        mapConfig: (config) => ({
+            type: "ui-slider",
+            id: getUiId(config),
+            parent: config.parent || undefined,
+            mount: config.mount || config.parent,
+            order: toOptionalNumber(config.order),
+            value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
+            label: config.label || undefined,
+            min: toOptionalNumber(config.min),
+            max: toOptionalNumber(config.max),
+            step: toOptionalNumber(config.step),
+            showValue: config.showValue === true || config.showValue === "true" || undefined,
+            disabled: getBinding(config.disabled, undefined),
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {

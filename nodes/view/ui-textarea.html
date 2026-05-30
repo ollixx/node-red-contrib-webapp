@@ -1,0 +1,61 @@
+<script type="text/javascript" src="resources/node-red-contrib-webapp/lib/editor-common.js"></script>
+<script type="text/javascript">
+    (function () {
+        const common = window.WebappEditorCommon;
+        common.registerNodeType("ui-textarea", {
+            category: "webapp view",
+            color: "#f4efcf",
+            defaults: {
+                name: { value: "" },
+                uiId: { value: "", required: true },
+                parent: { value: "" },
+                mount: { value: "", required: true },
+                label: { value: "", required: true },
+                valuePath: { value: "", required: true },
+                value: { value: null },
+                placeholder: { value: "" },
+                rows: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
+                maxLength: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
+                order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
+                row: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
+                col: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
+                colSize: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
+                rowSize: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
+                layoutX: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
+                layoutY: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } }
+            },
+            inputs: 0,
+            outputs: 1,
+            icon: "font-awesome/fa-align-left",
+            label: common.labelWithName("ui-textarea"),
+            onadd: function () {
+                if (!this.name) {
+                    this.name = common.getNextNameDefault("ui-textarea", "Textarea");
+                }
+            },
+            oneditprepare: function () {
+                common.installReferenceSelectors({ mount: true }).call(this);
+                common.installLayoutChildPropRows().call(this);
+            }
+        });
+    })();
+</script>
+<script type="text/html" data-template-name="ui-textarea">
+    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-uiId">Node ID</label><input type="text" id="node-input-uiId"></div>
+    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-row"><label for="node-input-label">Label</label><input type="text" id="node-input-label"></div>
+    <div class="form-row"><label for="node-input-valuePath">Value Path</label><input type="text" id="node-input-valuePath"></div>
+    <div class="form-row"><label for="node-input-placeholder">Placeholder</label><input type="text" id="node-input-placeholder"></div>
+    <div class="form-row"><label for="node-input-rows">Rows</label><input type="number" id="node-input-rows" min="1"></div>
+    <div class="form-row"><label for="node-input-maxLength">Max Length</label><input type="number" id="node-input-maxLength" min="1"></div>
+    <div class="form-row" data-layout-child-prop-row="order" style="display: none;"><label for="node-input-order">Order</label><input type="number" id="node-input-order"></div>
+    <div class="form-row" data-layout-child-prop-row="row" style="display: none;"><label for="node-input-row">Row</label><input type="number" id="node-input-row"></div>
+    <div class="form-row" data-layout-child-prop-row="col" style="display: none;"><label for="node-input-col">Col</label><input type="number" id="node-input-col"></div>
+    <div class="form-row" data-layout-child-prop-row="colSize" style="display: none;"><label for="node-input-colSize">Col Size</label><input type="number" id="node-input-colSize"></div>
+    <div class="form-row" data-layout-child-prop-row="rowSize" style="display: none;"><label for="node-input-rowSize">Row Size</label><input type="number" id="node-input-rowSize"></div>
+    <div class="form-row" data-layout-child-prop-row="layoutX" style="display: none;"><label for="node-input-layoutX">X</label><input type="number" id="node-input-layoutX"></div>
+    <div class="form-row" data-layout-child-prop-row="layoutY" style="display: none;"><label for="node-input-layoutY">Y</label><input type="number" id="node-input-layoutY"></div>
+</script>
+<script type="text/html"
+    data-help-name="ui-textarea"><p>Mehrzeiliges Texteingabefeld mit optionalem Zähler und maximaler Länge.</p></script>

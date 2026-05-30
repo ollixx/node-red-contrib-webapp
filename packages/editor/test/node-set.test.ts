@@ -8,15 +8,22 @@ describe("editor node set", () => {
             "ui-action",
             "ui-app",
             "ui-button",
+            "ui-checkbox",
             "ui-container",
+            "ui-datepicker",
             "ui-dialog",
             "ui-input",
             "ui-navigation",
             "ui-query",
+            "ui-radio",
             "ui-route",
+            "ui-select",
+            "ui-slider",
             "ui-store",
+            "ui-switch",
             "ui-table",
-            "ui-text"
+            "ui-text",
+            "ui-textarea"
         ]);
     });
 
@@ -131,8 +138,7 @@ describe("editor node set", () => {
             }),
             emitNodeDefinition("ui-query", {
                 id: "customersQuery",
-                queryPath: "customers.list",
-                source: "msg.payload"
+                queryPath: "customers.list"
             }),
             emitNodeDefinition("ui-action", {
                 id: "saveCustomer"
