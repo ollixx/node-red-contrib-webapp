@@ -32,6 +32,29 @@ phases:
       - "unit test: a ui-table row select emits {event:'rowSelect', params:{rowId,row}} on the output port"
       - "integration test: with no downstream wiring, a client event produces an output message and nothing else (the flow is the only place that could react)"
 
+  - id: P31
+    title: Live Server→Client transport — push store/action updates to clients
+    status: done
+    dependencies: [P30]
+    summary:
+      delivered: "A one-directional Server-Sent Events channel (GET /webapp/:appId/stream) pushes flow-driven ui-store snapshot updates and ui-action interaction commands to connected browsers in real time, honouring msg.ui.clientId targeting and the P15 per-client state model. The served page renders from real node state via the P26 serializer and re-renders on pushes via the keyed morph — no client poll. The browser subscribes with a native EventSource (auto-reconnect; the server re-pushes the snapshot on every (re)connect, subsuming P15 reconnect-sync)."
+      stats: "1 SSE endpoint + push apparatus in nodes/webapp.js, EventSource client in webapp-client.js, ADR 0003 transport decision, 8 runtime integration tests + 3 active e2e specs, 1 wired fixture flow"
+      notes: "Transport decision (ADR 0003 #5): SSE chosen over Node-RED's RED.comms (rides the editor/admin websocket — only reaches authenticated editor sessions, not anonymous deployed-app pages, and has no per-recipient addressing for clientId targeting) and over a dedicated raw ws channel (new dependency + bidirectional plumbing we do not need — client→server is already POST /event from P30). Two bugs found during manual verification: (1) runtimeState.RED was only set by the legacy registerWebappNodes factory, but nodes self-register via registerNodeType, so RED was undefined when the ui-store handler ran and the push silently no-opped — RED is now captured in registerNodeType; (2) the thin client still applied the /event response snapshot, which raced and clobbered the live push with stale pre-reaction state — the event POST is now fire-and-report only, the SSE stream is the single source of re-renders. previewState remains the live shared state mutated by flow messages — removing it as an independent simulation is P32. A navigate command updates the subscriber's stored stream location so later snapshot pushes render the right page. Pre-existing unrelated E2E failures (p12/p13/p15/p16d/parent-selector/editor-mount-options editor-registration timing, p21/p23 detail-route content) persist from the P30 baseline and are out of this phase's scope (confirmed by checking out the P30 runtime and re-running)."
+    goals:
+      - Replace the request/response preview with a real live channel so that when the wired flow feeds ui-store/ui-query (data) or ui-action (interaction), connected browsers update in real time. State lives in the real node runtime (fed by flow messages), not in a runtime-owned preview simulation.
+      - "DECISION REQUIRED in this phase: pick the push transport (Node-RED's built-in RED.comms websocket vs. a dedicated ws/SSE channel) and record it in ADR 0003 — recorded as SSE (decision 5)."
+    deliverables:
+      - "a Server→Client push channel: ui-store/ui-query state updates (from flow input handlers) and ui-action interaction commands are serialised and pushed to the relevant client(s), honouring msg.ui.clientId targeting and the multi-user/per-client state model (P15)"
+      - "the served page renders from the real current node state (ui-store/ui-query) using the P26 shared serializer, and re-renders on pushed updates via the existing keyed morph"
+      - "app state source of truth = the runtime node state mutated only by flow messages — no previewState/previewQueries as an independent simulation"
+    validation:
+      - pnpm test passes with no failures
+      - "integration test: a msg sent into a ui-store input handler results in a push to a subscribed client and a re-render reflecting the new data (no client POST involved)"
+      - "integration test: a ui-action (navigate/openDialog) triggered from the flow pushes the interaction command and the client applies it"
+      - "integration test: clientId targeting — an action addressed to one client does not affect another connected client"
+      - "manual: two browser tabs; a flow-driven store update appears live in both (or the targeted one) without reload"
+    archived_at: "2026-05-31"
+
   - id: P0
     title: ADRs and scaffold
     status: done
