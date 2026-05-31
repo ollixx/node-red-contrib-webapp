@@ -235,190 +235,298 @@ phases:
       - Playwright verifies layout-specific child fields for direct mounts
       - runtime and preview render grid and absolute layouts as modeled
 
-- id: P14
-  title: "ui-query enhancements"
-  status: done
-  dependencies: [P11b]
-  summary:
-    delivered: "Removed unused source field from ui-query schema/editor/runtime; added ETag-based caching that skips push when etag unchanged; added params field binding ui-query to a ui-store for reactive refresh on store change."
-    stats: "7 files changed, 11 new unit tests, 0 new E2E tests (no editor UI behavior change warranting E2E beyond existing coverage)"
-    notes: "triggerParamQueryRefresh reads RED from runtimeState (stored on module init in registerWebappNodes). ETag cache keyed by node.id + queryPath. Store-change re-trigger sends {ui:{query:{queryPath,refresh:true}}} to dependent query nodes. Docs note ui.queries.<queryPath> as conceptual — runtime uses query.id; left as-is since doc section is explicitly marked future/concept."
-  goals:
-    - Remove unused source field.
-    - Add ETag-based caching to avoid redundant pushes to the client.
-    - Add params binding from ui-store for reactive filtering, sorting, and paging.
-  deliverables:
-    - source field removed from schema, editor, runtime, and fixtures
-    - etag field in query input message; runtime skips push when etag matches
-    - params field on ui-query node referencing a ui-store
-    - runtime re-triggers query when referenced store changes
-    - unit tests for ETag caching logic and store-param reactivity
-  validation:
-    - pnpm test passes with no failures
-    - unit test: flow with a ui-query node that has source field set still compiles without error (graceful ignore)
-    - unit test: sending msg.ui.query with etag="v1" twice only pushes to client once
-    - unit test: sending msg.ui.query with etag="v1" then etag="v2" pushes to client twice
-    - unit test: updating the store referenced by ui-query.params emits a query refresh message
-    - docs check: ui-query.md queryPath description matches the client-state path structure in runtime
+  - id: P11a
+    title: Parent field — schema and runtime
+    status: done
+    dependencies: [P10]
+    summary:
+      delivered: "parent field added to node schemas for app- and slot-scoped nodes; runtime mapConfig derives app/slot scoping from parent, with uiId kept as a backward-compatible fallback"
+      stats: "~11 node schemas touched, unit tests for parent-based compilation per node type"
+      notes: "Summary reconstructed at archival time — this phase predates the archive convention. uiId fallback retained so pre-existing flows still compile."
+    goals:
+      - Add parent field to schema for all nodes that require app or slot scoping.
+      - Update runtime mapConfig to derive app scoping from parent instead of uiId.
+    deliverables:
+      - parent field added to node definition schemas for ui-route, ui-dialog, ui-store, ui-action, ui-query, ui-navigation (app-scoped) and ui-button, ui-input, ui-text, ui-table, ui-container (slot-scoped)
+      - runtime mapConfig reads parent field; uiId kept as fallback for existing flows
+      - unit tests for parent-based compilation for each node type
+    validation:
+      - pnpm test passes with no failures
+      - unit test: compiling a node-set where ui-button has parent=<appId>/<routeId>/content produces a valid AppModel with button mounted in the correct slot
+      - unit test: compiling a node-set where ui-store has parent=<appId> scopes the store to that app
+      - unit test: node with missing parent field fails compilation with a readable diagnostic
+      - unit test: node with uiId but no parent still compiles (backward compatibility)
 
-- id: P15
-  title: "Multi-user and client persistence"
-  status: done
-  dependencies: [P12]
-  summary:
-    delivered: "Added clientId routing to ui-store input handler (targeted per-client state vs broadcast), persist flag on ui-store node, and reconnect sync helper resolveReconnectState (server wins on equal/older client timestamp, client wins when newer)."
-    stats: "4 files changed (webapp.js, ui-store.html, p15 unit test, p15 E2E test), 15 new unit tests, 2 new E2E tests"
-    notes: "clientStateMap added to runtimeState as appId→Map<clientId,{state,timestamp}>. Per-client state is independent of shared previewState. resolveReconnectState is exported via __test__ for unit testing. Persist flag stored on definition object; localStorage behaviour on the client side is intentionally deferred (renderer not in scope for this phase). docs check: multi-user.md sync strategy matches resolveReconnectState exactly."
-  goals:
-    - Route store and query updates to specific clients via clientId.
-    - Add persist flag to ui-store for localStorage-backed state.
-    - Implement reconnect sync (server state wins on conflict).
-  deliverables:
-    - clientId routing in store update handler
-    - persist flag on ui-store node (editor + mapConfig)
-    - resolveReconnectState helper implementing server-wins-on-conflict strategy
-    - getClientState / setClientState helpers with lazy clientStateMap init
-    - unit tests for clientId routing and reconnect sync logic
-    - E2E tests for persist flag in editor
-  validation:
-    - pnpm test passes with no failures
-    - unit test: store update with msg.ui.clientId="c1" only updates client c1 state, not shared state
-    - unit test: store update without clientId updates shared state and notification has no clientId
-    - unit test: reconnect with client timestamp older than server timestamp results in server state being sent to client
-    - unit test: reconnect with client timestamp newer than server timestamp results in client state being accepted
-    - Playwright: ui-store editor shows persist checkbox
-    - docs check: multi-user.md sync strategy description matches the resolveReconnectState handler in webapp.js
+  - id: P11b
+    title: Parent field — node editors and name defaults
+    status: done
+    dependencies: [P11a]
+    summary:
+      delivered: "structured parent SelectBox replacing free-text uiId/mount in all node editors, hierarchical slot selector (app -> route/dialog -> container), and per-node-type name defaults on creation"
+      stats: "all node editor HTML + editor-common.js, E2E tests for SelectBox population and name defaults"
+      notes: "Summary reconstructed at archival time — predates the archive convention."
+    goals:
+      - Replace free-text uiId and mount fields with structured parent SelectBox in all node editors.
+      - Implement name defaults ("Button N" etc.) on node creation.
+    deliverables:
+      - parent SelectBox in ui-route, ui-dialog, ui-store, ui-action, ui-query, ui-navigation editors (shows ui-app nodes)
+      - parent slot selector in ui-button, ui-input, ui-text, ui-table, ui-container editors (hierarchical: app -> route/dialog -> container)
+      - name default logic in editor-common.js for all node types
+      - E2E tests for SelectBox population and name defaults
+    validation:
+      - pnpm test passes with no failures
+      - Playwright: opening a ui-button editor shows a populated parent SelectBox with at least one entry matching an existing ui-route
+      - Playwright: creating a new ui-button node shows name default "Button 1" (or next N) pre-filled
+      - docs check: every node file in docs/nodes/ that lists a parent field matches the implementation — read each doc and verify the corresponding editor HTML contains a parent input
 
-- id: P16a
-  title: "Core node expansion — input controls"
-  status: done
-  dependencies: [P12]
-  summary:
-    delivered: "Added 7 new input control nodes (ui-select, ui-checkbox, ui-radio, ui-switch, ui-textarea, ui-datepicker, ui-slider) with schema definitions, webapp.js mapConfig entries, Node-RED JS+HTML editor files, and editor package definitions."
-    stats: "18 new unit tests, 3 new HTML editor files (textarea/datepicker/slider were missing), editor nodeSet expanded from 12 to 19 types, fixed pre-existing lint/build errors in schema/runtime/editor packages"
-    notes: "Schema and webapp.js runtime entries were largely pre-existing from a partial earlier implementation. Main work was completing the HTML editors, adding editor package type definitions and nodeSet entries, expanding MountableEditorSourceNode in structure-view.ts, and writing unit tests. Fixed pre-existing unused-import lint errors and stale `source` field on ui-query in fixtures/editor."
-  goals:
-    - Add the missing input control nodes to the core lib.
-    - All nodes follow the established parent/name/events pattern.
-    - Schema, runtime, editor, and renderer aligned for each node.
-  deliverables:
-    - ui-select: dropdown / combobox with options binding
-    - ui-checkbox: single checkbox with value binding
-    - ui-radio: radio group with options binding
-    - ui-switch: toggle/boolean input
-    - ui-textarea: multi-line text input
-    - ui-datepicker: date and datetime input
-    - ui-slider: numeric range input
-    - unit and E2E tests per node
-  validation:
-    - pnpm test passes with no failures
-    - unit test: each node compiles to a valid schema definition
-    - unit test: each node emits a change event with correct payload on value change
-    - Playwright: each node editor shows parent selector and name default
-    - docs check: each node doc's Pflichtfelder match the schema and editor HTML
+  - id: P12
+    title: Configurable event system
+    status: done
+    dependencies: [P11b]
+    summary:
+      delivered: "checkbox-based configurable events on ui-app/route/dialog/container/table with a dynamic out-port per active event, a component-state op handler (show/hide/enable/disable/focus/reset) in the runtime, and message-based ui-dialog open/close in addition to store state"
+      stats: "runtime handlers + editor event UI across 5 node types, unit + E2E tests"
+      notes: "Summary reconstructed at archival time — predates the archive convention. msg format aligned with messages.md."
+    goals:
+      - Add checkbox-based event selection to ui-app, ui-route, ui-dialog, ui-container, ui-table.
+      - Each active event produces a dynamic out-port on the node.
+      - Implement component state message handling (show/hide/enable/disable/focus/reset) for all view nodes.
+      - Implement ui-dialog open/close via direct message in addition to store state.
+    deliverables:
+      - configurable events on ui-app (clientConnected, clientDisconnected)
+      - configurable events on ui-route (onEnter, onLeave)
+      - configurable events on ui-dialog (onOpen, onClose) plus message-based open/close
+      - configurable events on ui-container (onShow, onHide)
+      - component state message handler in runtime for show/hide/enable/disable/focus/reset
+      - dynamic out-port generation in node editors
+      - msg format aligned with messages.md
+      - unit tests for all new runtime handlers
+      - E2E tests for event checkbox UI and dynamic out-port rendering
+    validation:
+      - pnpm test passes with no failures
+      - unit test: ui-app node with events=[clientConnected] produces outputs:1 in the compiled definition
+      - unit test: ui-route node with events=[onEnter, onLeave] produces outputs:2
+      - unit test: runtime dispatches msg.ui.component.op=hide to correct node and marks it hidden in state
+      - unit test: msg.ui.dialog.op=open triggers dialog open state without a store update
+      - Playwright: opening a ui-app editor shows event checkboxes for clientConnected and clientDisconnected
+      - Playwright: enabling onEnter on a ui-route node adds a visible out-port on the canvas
+      - docs check: messages.md op table matches the set of ops handled in runtime — verify each op in the table has a corresponding handler in webapp.js
 
-- id: P16b
-  title: "Core node expansion — feedback and status"
-  status: done
-  dependencies: [P12]
-  summary:
-    delivered: "Added 6 feedback/status nodes (ui-alert, ui-toast, ui-progress, ui-skeleton, ui-badge, ui-empty-state) with Zod schemas, runtime registry entries, Node-RED HTML+JS files, and editor type definitions."
-    stats: "18 files changed, 12 new node files, 10 new schema/test entries, 6 new editor configs and nodeSet entries"
-    notes: "ui-toast scopes to ui-app parent (no mount slot), all others are mountable. bindingSchema uses kind not binding field — corrected in tests. Editor catalog test updated to include all 6 new types."
-  goals:
-    - Add feedback and status nodes for loading states, notifications, and empty states.
-  deliverables:
-    - ui-alert: info/warn/error/success message band
-    - ui-toast: temporary notification (auto-dismiss)
-    - ui-progress: progress bar and spinner variants
-    - ui-skeleton: loading placeholder matching component shape
-    - ui-badge: count or status indicator attached to another element
-    - ui-empty-state: structured placeholder for empty lists or views
-    - unit and E2E tests per node
-  validation:
-    - pnpm test passes with no failures
-    - unit test: each node compiles to a valid schema definition
-    - unit test: ui-toast with duration fires dismiss event after timeout
-    - unit test: ui-progress with value binding renders correct fill percentage
-    - Playwright: each node editor shows parent selector and name default
-    - docs check: each node doc's Pflichtfelder match the schema and editor HTML
+  - id: P13
+    title: ui-table enhancements
+    status: done
+    dependencies: [P12]
+    summary:
+      delivered: "structured column definitions (backward-compatible with plain string columns), an optional footer slot, and configurable row events (rowSelect/rowAction/checkboxChange/cellSelect) replacing selectAction, which stays functional but deprecated"
+      stats: "schema + editor + runtime, unit + E2E tests"
+      notes: "Summary reconstructed at archival time — predates the archive convention. selectAction kept working for existing flows."
+    goals:
+      - Replace string-only columns with structured column definitions.
+      - Add optional footer slot.
+      - Replace selectAction with configurable row events (rowSelect, rowAction, checkboxChange, cellSelect).
+    deliverables:
+      - structured column definition schema (key, label, type, sortable, filterable, width)
+      - backward-compatible column parsing (plain string still valid)
+      - footer slot activated by footer flag
+      - events field with multi-select in editor replacing selectAction
+      - dynamic out-ports per active event
+      - selectAction marked deprecated, still functional
+      - unit tests for structured column parsing and footer slot compilation
+      - E2E tests for column editor UI and row event out-ports
+    validation:
+      - pnpm test passes with no failures
+      - unit test: table with columns=["name","email"] (plain strings) renders header cells "name" and "email"
+      - unit test: table with columns=[{key:"firstName",label:"Vorname"}] renders header cell "Vorname" and reads row.firstName
+      - unit test: table with footer=true exposes a footer slot in the compiled component
+      - unit test: table with events=[rowSelect] produces outputs:1; with events=[rowSelect,rowAction] produces outputs:2
+      - unit test: existing flow with selectAction still compiles without error (deprecated but functional)
+      - Playwright: ui-table editor shows events multi-select and footer checkbox
+      - docs check: ui-table.md column type list matches the type values accepted by the schema
 
-- id: P16c
-  title: "Core node expansion — navigation and structure"
-  status: done
-  dependencies: [P12]
-  summary:
-    delivered: "Added 6 navigation/structure nodes: ui-tabs, ui-accordion, ui-breadcrumb, ui-menu, ui-pagination, ui-stepper — schemas, editor HTML+JS, webapp.js registry entries, and unit tests."
-    stats: "17 files changed, 12 new node files, 10 new schema tests (44 total), all 168 tests passing"
-    notes: "Breadcrumb and menu use state bindings via itemsPath for dynamic items; tabs/accordion/stepper use JSON string fields in the editor for static item definitions. No docs node spec files existed so none were added."
-  goals:
-    - Add navigation and structural nodes for multi-step and hierarchical UIs.
-  deliverables:
-    - ui-tabs: tab bar with slot per tab
-    - ui-accordion: collapsible sections
-    - ui-breadcrumb: path display with route bindings
-    - ui-menu: navigation menu (sidebar or topbar variant)
-    - ui-pagination: page controls connected to ui-query params
-    - ui-stepper: multi-step process indicator
-    - unit and E2E tests per node
-  validation:
-    - pnpm test passes with no failures
-    - unit test: each node compiles to a valid schema definition
-    - unit test: ui-tabs with 3 tabs exposes 3 slots in compiled model
-    - unit test: ui-pagination emits page-change event with correct page number
-    - Playwright: each node editor shows parent selector and name default
-    - docs check: each node doc's Pflichtfelder match the schema and editor HTML
+  - id: P14
+    title: "ui-query enhancements"
+    status: done
+    dependencies: [P11b]
+    summary:
+      delivered: "Removed unused source field from ui-query schema/editor/runtime; added ETag-based caching that skips push when etag unchanged; added params field binding ui-query to a ui-store for reactive refresh on store change."
+      stats: "7 files changed, 11 new unit tests, 0 new E2E tests (no editor UI behavior change warranting E2E beyond existing coverage)"
+      notes: "triggerParamQueryRefresh reads RED from runtimeState (stored on module init in registerWebappNodes). ETag cache keyed by node.id + queryPath. Store-change re-trigger sends {ui:{query:{queryPath,refresh:true}}} to dependent query nodes. Docs note ui.queries.<queryPath> as conceptual — runtime uses query.id; left as-is since doc section is explicitly marked future/concept."
+    goals:
+      - Remove unused source field.
+      - Add ETag-based caching to avoid redundant pushes to the client.
+      - Add params binding from ui-store for reactive filtering, sorting, and paging.
+    deliverables:
+      - source field removed from schema, editor, runtime, and fixtures
+      - etag field in query input message; runtime skips push when etag matches
+      - params field on ui-query node referencing a ui-store
+      - runtime re-triggers query when referenced store changes
+      - unit tests for ETag caching logic and store-param reactivity
+    validation:
+      - pnpm test passes with no failures
+      - unit test: flow with a ui-query node that has source field set still compiles without error (graceful ignore)
+      - unit test: sending msg.ui.query with etag="v1" twice only pushes to client once
+      - unit test: sending msg.ui.query with etag="v1" then etag="v2" pushes to client twice
+      - unit test: updating the store referenced by ui-query.params emits a query refresh message
+      - docs check: ui-query.md queryPath description matches the client-state path structure in runtime
 
-- id: P16d
-  title: "Core node expansion — display"
-  status: done
-  dependencies: [P12]
-  summary:
-    delivered: "Added 5 display nodes: ui-image, ui-icon, ui-list, ui-avatar, ui-divider — schemas, editor HTML+JS, webapp.js registry entries, editor package definitions, and unit tests."
-    stats: "18 new files, 10 new schema unit tests (54 total schema tests), 5 new E2E tests, all 178 tests passing"
-    notes: "ui-image uses fallback field (doc uses fallbackSrc — minor naming divergence). ui-icon size accepts string for flexibility beyond enum. ui-list items accepts both static array and state binding. E2E fixture deploys all 5 nodes and verifies mount selector and name default."
-  goals:
-    - Add display nodes for images, icons, lists, and avatars.
-  deliverables:
-    - ui-image: image with src binding, alt text, fallback
-    - ui-icon: icon by name, icon-set-agnostic (name maps to SVG or font icon)
-    - ui-list: structured list with item slot
-    - ui-avatar: user image or initials with fallback
-    - ui-divider: visual separator (horizontal/vertical)
-    - unit and E2E tests per node
-  validation:
-    - pnpm test passes with no failures
-    - unit test: each node compiles to a valid schema definition
-    - unit test: ui-image with missing src renders fallback slot
-    - Playwright: each node editor shows parent selector and name default
-    - docs check: each node doc's Pflichtfelder match the schema and editor HTML
+  - id: P15
+    title: "Multi-user and client persistence"
+    status: done
+    dependencies: [P12]
+    summary:
+      delivered: "Added clientId routing to ui-store input handler (targeted per-client state vs broadcast), persist flag on ui-store node, and reconnect sync helper resolveReconnectState (server wins on equal/older client timestamp, client wins when newer)."
+      stats: "4 files changed (webapp.js, ui-store.html, p15 unit test, p15 E2E test), 15 new unit tests, 2 new E2E tests"
+      notes: "clientStateMap added to runtimeState as appId→Map<clientId,{state,timestamp}>. Per-client state is independent of shared previewState. resolveReconnectState is exported via __test__ for unit testing. Persist flag stored on definition object; localStorage behaviour on the client side is intentionally deferred (renderer not in scope for this phase). docs check: multi-user.md sync strategy matches resolveReconnectState exactly."
+    goals:
+      - Route store and query updates to specific clients via clientId.
+      - Add persist flag to ui-store for localStorage-backed state.
+      - Implement reconnect sync (server state wins on conflict).
+    deliverables:
+      - clientId routing in store update handler
+      - persist flag on ui-store node (editor + mapConfig)
+      - resolveReconnectState helper implementing server-wins-on-conflict strategy
+      - getClientState / setClientState helpers with lazy clientStateMap init
+      - unit tests for clientId routing and reconnect sync logic
+      - E2E tests for persist flag in editor
+    validation:
+      - pnpm test passes with no failures
+      - unit test: store update with msg.ui.clientId="c1" only updates client c1 state, not shared state
+      - unit test: store update without clientId updates shared state and notification has no clientId
+      - unit test: reconnect with client timestamp older than server timestamp results in server state being sent to client
+      - unit test: reconnect with client timestamp newer than server timestamp results in client state being accepted
+      - Playwright: ui-store editor shows persist checkbox
+      - docs check: multi-user.md sync strategy description matches the resolveReconnectState handler in webapp.js
 
-- id: P17
-  title: "Theming system"
-  status: done
-  dependencies: [P16a, P16b, P16c, P16d]
-  summary:
-    delivered: "Added designTokensSchema to ui-app with 26 token fields mapping to --wa-* CSS custom properties; added buildDesignTokenCss() helper; added variant field (enum-validated) to all 11 view node types; created docs/theming.md with full token table, variant class contract, webapp-default backend spec, and community backend extension interface."
-    stats: "4 files changed, 510 insertions; 17 new tests in theming.test.ts; all 71 schema tests + 110 runtime + 10 editor + 4 renderer tests passing"
-    notes: "ui-text already had a string variant (open-ended); P16b/c/d nodes already had variant fields where appropriate — those were left intact. buildDesignTokenCss is exported from packages/schema for use by the runtime/renderer. Playwright validation skipped per task instructions (only pnpm test + pnpm validate required)."
-  goals:
-    - Implement Design-Token system on ui-app node.
-    - Implement component variants across all core nodes.
-    - Ship webapp-default renderer backend consuming tokens.
-    - Define backend extension interface for community backends.
-  deliverables:
-    - design token fields on ui-app (colors, typography, spacing, radii)
-    - CSS Custom Properties injected from tokens at runtime via buildDesignTokenCss()
-    - variant field on all view nodes with validated enum per node type
-    - webapp-default backend CSS spec documented in theming.md
-    - backend interface spec documented in theming.md
-    - unit tests for token injection and variant rendering
-  validation:
-    - pnpm test passes with no failures
-    - unit test: ui-app with custom primary color injects correct CSS custom property
-    - unit test: ui-button with variant=danger renders with danger token class
-    - unit test: ui-button with unknown variant fails schema validation
-    - docs check: theming.md token list matches the fields accepted by ui-app schema
+  - id: P16a
+    title: "Core node expansion — input controls"
+    status: done
+    dependencies: [P12]
+    summary:
+      delivered: "Added 7 new input control nodes (ui-select, ui-checkbox, ui-radio, ui-switch, ui-textarea, ui-datepicker, ui-slider) with schema definitions, webapp.js mapConfig entries, Node-RED JS+HTML editor files, and editor package definitions."
+      stats: "18 new unit tests, 3 new HTML editor files (textarea/datepicker/slider were missing), editor nodeSet expanded from 12 to 19 types, fixed pre-existing lint/build errors in schema/runtime/editor packages"
+      notes: "Schema and webapp.js runtime entries were largely pre-existing from a partial earlier implementation. Main work was completing the HTML editors, adding editor package type definitions and nodeSet entries, expanding MountableEditorSourceNode in structure-view.ts, and writing unit tests. Fixed pre-existing unused-import lint errors and stale `source` field on ui-query in fixtures/editor."
+    goals:
+      - Add the missing input control nodes to the core lib.
+      - All nodes follow the established parent/name/events pattern.
+      - Schema, runtime, editor, and renderer aligned for each node.
+    deliverables:
+      - ui-select: dropdown / combobox with options binding
+      - ui-checkbox: single checkbox with value binding
+      - ui-radio: radio group with options binding
+      - ui-switch: toggle/boolean input
+      - ui-textarea: multi-line text input
+      - ui-datepicker: date and datetime input
+      - ui-slider: numeric range input
+      - unit and E2E tests per node
+    validation:
+      - pnpm test passes with no failures
+      - unit test: each node compiles to a valid schema definition
+      - unit test: each node emits a change event with correct payload on value change
+      - Playwright: each node editor shows parent selector and name default
+      - docs check: each node doc's Pflichtfelder match the schema and editor HTML
+
+  - id: P16b
+    title: "Core node expansion — feedback and status"
+    status: done
+    dependencies: [P12]
+    summary:
+      delivered: "Added 6 feedback/status nodes (ui-alert, ui-toast, ui-progress, ui-skeleton, ui-badge, ui-empty-state) with Zod schemas, runtime registry entries, Node-RED HTML+JS files, and editor type definitions."
+      stats: "18 files changed, 12 new node files, 10 new schema/test entries, 6 new editor configs and nodeSet entries"
+      notes: "ui-toast scopes to ui-app parent (no mount slot), all others are mountable. bindingSchema uses kind not binding field — corrected in tests. Editor catalog test updated to include all 6 new types."
+    goals:
+      - Add feedback and status nodes for loading states, notifications, and empty states.
+    deliverables:
+      - ui-alert: info/warn/error/success message band
+      - ui-toast: temporary notification (auto-dismiss)
+      - ui-progress: progress bar and spinner variants
+      - ui-skeleton: loading placeholder matching component shape
+      - ui-badge: count or status indicator attached to another element
+      - ui-empty-state: structured placeholder for empty lists or views
+      - unit and E2E tests per node
+    validation:
+      - pnpm test passes with no failures
+      - unit test: each node compiles to a valid schema definition
+      - unit test: ui-toast with duration fires dismiss event after timeout
+      - unit test: ui-progress with value binding renders correct fill percentage
+      - Playwright: each node editor shows parent selector and name default
+      - docs check: each node doc's Pflichtfelder match the schema and editor HTML
+
+  - id: P16c
+    title: "Core node expansion — navigation and structure"
+    status: done
+    dependencies: [P12]
+    summary:
+      delivered: "Added 6 navigation/structure nodes: ui-tabs, ui-accordion, ui-breadcrumb, ui-menu, ui-pagination, ui-stepper — schemas, editor HTML+JS, webapp.js registry entries, and unit tests."
+      stats: "17 files changed, 12 new node files, 10 new schema tests (44 total), all 168 tests passing"
+      notes: "Breadcrumb and menu use state bindings via itemsPath for dynamic items; tabs/accordion/stepper use JSON string fields in the editor for static item definitions. No docs node spec files existed so none were added."
+    goals:
+      - Add navigation and structural nodes for multi-step and hierarchical UIs.
+    deliverables:
+      - ui-tabs: tab bar with slot per tab
+      - ui-accordion: collapsible sections
+      - ui-breadcrumb: path display with route bindings
+      - ui-menu: navigation menu (sidebar or topbar variant)
+      - ui-pagination: page controls connected to ui-query params
+      - ui-stepper: multi-step process indicator
+      - unit and E2E tests per node
+    validation:
+      - pnpm test passes with no failures
+      - unit test: each node compiles to a valid schema definition
+      - unit test: ui-tabs with 3 tabs exposes 3 slots in compiled model
+      - unit test: ui-pagination emits page-change event with correct page number
+      - Playwright: each node editor shows parent selector and name default
+      - docs check: each node doc's Pflichtfelder match the schema and editor HTML
+
+  - id: P16d
+    title: "Core node expansion — display"
+    status: done
+    dependencies: [P12]
+    summary:
+      delivered: "Added 5 display nodes: ui-image, ui-icon, ui-list, ui-avatar, ui-divider — schemas, editor HTML+JS, webapp.js registry entries, editor package definitions, and unit tests."
+      stats: "18 new files, 10 new schema unit tests (54 total schema tests), 5 new E2E tests, all 178 tests passing"
+      notes: "ui-image uses fallback field (doc uses fallbackSrc — minor naming divergence). ui-icon size accepts string for flexibility beyond enum. ui-list items accepts both static array and state binding. E2E fixture deploys all 5 nodes and verifies mount selector and name default."
+    goals:
+      - Add display nodes for images, icons, lists, and avatars.
+    deliverables:
+      - ui-image: image with src binding, alt text, fallback
+      - ui-icon: icon by name, icon-set-agnostic (name maps to SVG or font icon)
+      - ui-list: structured list with item slot
+      - ui-avatar: user image or initials with fallback
+      - ui-divider: visual separator (horizontal/vertical)
+      - unit and E2E tests per node
+    validation:
+      - pnpm test passes with no failures
+      - unit test: each node compiles to a valid schema definition
+      - unit test: ui-image with missing src renders fallback slot
+      - Playwright: each node editor shows parent selector and name default
+      - docs check: each node doc's Pflichtfelder match the schema and editor HTML
+
+  - id: P17
+    title: "Theming system"
+    status: done
+    dependencies: [P16a, P16b, P16c, P16d]
+    summary:
+      delivered: "Added designTokensSchema to ui-app with 26 token fields mapping to --wa-* CSS custom properties; added buildDesignTokenCss() helper; added variant field (enum-validated) to all 11 view node types; created docs/theming.md with full token table, variant class contract, webapp-default backend spec, and community backend extension interface."
+      stats: "4 files changed, 510 insertions; 17 new tests in theming.test.ts; all 71 schema tests + 110 runtime + 10 editor + 4 renderer tests passing"
+      notes: "ui-text already had a string variant (open-ended); P16b/c/d nodes already had variant fields where appropriate — those were left intact. buildDesignTokenCss is exported from packages/schema for use by the runtime/renderer. Playwright validation skipped per task instructions (only pnpm test + pnpm validate required)."
+    goals:
+      - Implement Design-Token system on ui-app node.
+      - Implement component variants across all core nodes.
+      - Ship webapp-default renderer backend consuming tokens.
+      - Define backend extension interface for community backends.
+    deliverables:
+      - design token fields on ui-app (colors, typography, spacing, radii)
+      - CSS Custom Properties injected from tokens at runtime via buildDesignTokenCss()
+      - variant field on all view nodes with validated enum per node type
+      - webapp-default backend CSS spec documented in theming.md
+      - backend interface spec documented in theming.md
+      - unit tests for token injection and variant rendering
+    validation:
+      - pnpm test passes with no failures
+      - unit test: ui-app with custom primary color injects correct CSS custom property
+      - unit test: ui-button with variant=danger renders with danger token class
+      - unit test: ui-button with unknown variant fails schema validation
+      - docs check: theming.md token list matches the fields accepted by ui-app schema
 
   - id: P18
     title: Example flow generator
@@ -477,132 +585,132 @@ phases:
       - Mount selector in ui-text editor shows node names and is grouped by app
       - ui-button editor shows a SelectBox listing available ui-action nodes instead of a free-text field
 
-- id: P20a
-  title: "ui-action rework"
-  status: done
-  dependencies: [P19]
-  summary:
-    delivered: "Replaced string-based targetMode/target action routing with output-port wiring model; ui-button emits click events on output port via buttonInputHandler; actionInputHandler forwards to wired target or msg.ui.action.targetId override"
-    stats: "10 files changed, 252 insertions, 238 deletions, 5 new unit tests, 115 total passing"
-    notes: "targetMode/target kept as deprecated optional fields in schema for backward compat with existing flows; componentEventHandlerSchema.action made optional; E2E failures are pre-existing (unrelated to P20a)"
-  goals:
-    - Align ui-action with the architecture defined in docs/nodes/concepts/actions.md.
-    - ui-action gets an output port wired to its target node — the wiring replaces the current string-based targetMode/target fields.
-    - ui-button loses its action field — click events are emitted on the output port and wired in the flow like any other Node-RED node.
-    - targetId from msg remains supported as a runtime override for dynamic targets.
-    - The current out-port/path targetMode distinction is replaced by the wiring model.
-  deliverables:
-    - ui-action schema: targetMode/target deprecated (optional), output port kept at outputs=1
-    - ui-action runtime: actionInputHandler — wired output or msg.ui.action.targetId override
-    - ui-button schema: action field made optional (deprecated)
-    - ui-button HTML: action SelectBox removed; outputs=1 already present
-    - ui-button runtime: buttonInputHandler emits click event with sourceId and clientId
-    - componentEventHandlerSchema.action made optional
-    - docs/nodes/behavior/ui-action.md updated to reflect new architecture
-    - docs/nodes/display/ui-button.md updated to remove action Pflichtfeld
-  validation:
-    - pnpm test passes
-    - ui-button in flow emits a msg on its output port when clicked
-    - ui-action wired to ui-dialog opens the dialog on the client when triggered
-    - ui-action with msg.ui.action.targetId overrides wired target
+  - id: P20a
+    title: "ui-action rework"
+    status: done
+    dependencies: [P19]
+    summary:
+      delivered: "Replaced string-based targetMode/target action routing with output-port wiring model; ui-button emits click events on output port via buttonInputHandler; actionInputHandler forwards to wired target or msg.ui.action.targetId override"
+      stats: "10 files changed, 252 insertions, 238 deletions, 5 new unit tests, 115 total passing"
+      notes: "targetMode/target kept as deprecated optional fields in schema for backward compat with existing flows; componentEventHandlerSchema.action made optional; E2E failures are pre-existing (unrelated to P20a)"
+    goals:
+      - Align ui-action with the architecture defined in docs/nodes/concepts/actions.md.
+      - ui-action gets an output port wired to its target node — the wiring replaces the current string-based targetMode/target fields.
+      - ui-button loses its action field — click events are emitted on the output port and wired in the flow like any other Node-RED node.
+      - targetId from msg remains supported as a runtime override for dynamic targets.
+      - The current out-port/path targetMode distinction is replaced by the wiring model.
+    deliverables:
+      - ui-action schema: targetMode/target deprecated (optional), output port kept at outputs=1
+      - ui-action runtime: actionInputHandler — wired output or msg.ui.action.targetId override
+      - ui-button schema: action field made optional (deprecated)
+      - ui-button HTML: action SelectBox removed; outputs=1 already present
+      - ui-button runtime: buttonInputHandler emits click event with sourceId and clientId
+      - componentEventHandlerSchema.action made optional
+      - docs/nodes/behavior/ui-action.md updated to reflect new architecture
+      - docs/nodes/display/ui-button.md updated to remove action Pflichtfeld
+    validation:
+      - pnpm test passes
+      - ui-button in flow emits a msg on its output port when clicked
+      - ui-action wired to ui-dialog opens the dialog on the client when triggered
+      - ui-action with msg.ui.action.targetId overrides wired target
 
-- id: P20b
-  title: "ui-text binding enhancements"
-  status: done
-  dependencies: [P20a]
-  summary:
-    delivered: "Extended bindingSchema with msg/flow/global/jsonata/env kinds; ui-text editor adds all five as typed-input options with query path validation (dot-bracket regex); resolveBinding handles all new kinds; editor-common.js updated; docs/nodes/display/ui-text.md updated with Query path syntax section and new binding types"
-    stats: "6 files changed, 8 new schema unit tests, 208 total tests passing"
-    notes: "doc path is docs/nodes/display/ui-text.md (not view/ as in roadmap — display/ is the actual category). Pre-existing E2E failures (P11b/P12/P13/P15/P16d) are unrelated to P20b changes."
-  goals:
-    - Add standard Node-RED typed-input types (msg, flow, global, jsonata, env) to the ui-text "Text" field so the value can be set via incoming message.
-    - Define a path syntax for the "query" binding type to address nested data (e.g. items[2].name) using JSONPath or dot-bracket notation.
-    - Add editor-side validation for query paths and document the syntax in the help panel.
-  deliverables:
-    - bindingSchema in contracts.ts extended with msg, flow, global, jsonata, env kinds
-    - resolveBinding in webapp.js handles all five new kinds via sources.msg, flowContext, globalContext, env, jsonata
-    - editor-common.js bindingValueForEditor recognises all new binding kinds
-    - ui-text typedInput types extended with msg, flow, global, jsonata, env in ui-text.html oneditprepare
-    - oneditsave in ui-text.html serialises all new types correctly as { kind, path }
-    - Query path validate function rejects syntactically invalid dot-bracket paths
-    - Help panel text in ui-text.html updated with query path syntax examples
-    - docs/nodes/display/ui-text.md updated with Query path syntax section
-  validation:
-    - pnpm test passes (208 tests)
-    - bindingSchema accepts msg/flow/global/jsonata/env with a path
-    - bindingSchema rejects msg/env without a path
-    - docs/nodes/display/ui-text.md contains a Query path syntax section
+  - id: P20b
+    title: "ui-text binding enhancements"
+    status: done
+    dependencies: [P20a]
+    summary:
+      delivered: "Extended bindingSchema with msg/flow/global/jsonata/env kinds; ui-text editor adds all five as typed-input options with query path validation (dot-bracket regex); resolveBinding handles all new kinds; editor-common.js updated; docs/nodes/display/ui-text.md updated with Query path syntax section and new binding types"
+      stats: "6 files changed, 8 new schema unit tests, 208 total tests passing"
+      notes: "doc path is docs/nodes/display/ui-text.md (not view/ as in roadmap — display/ is the actual category). Pre-existing E2E failures (P11b/P12/P13/P15/P16d) are unrelated to P20b changes."
+    goals:
+      - Add standard Node-RED typed-input types (msg, flow, global, jsonata, env) to the ui-text "Text" field so the value can be set via incoming message.
+      - Define a path syntax for the "query" binding type to address nested data (e.g. items[2].name) using JSONPath or dot-bracket notation.
+      - Add editor-side validation for query paths and document the syntax in the help panel.
+    deliverables:
+      - bindingSchema in contracts.ts extended with msg, flow, global, jsonata, env kinds
+      - resolveBinding in webapp.js handles all five new kinds via sources.msg, flowContext, globalContext, env, jsonata
+      - editor-common.js bindingValueForEditor recognises all new binding kinds
+      - ui-text typedInput types extended with msg, flow, global, jsonata, env in ui-text.html oneditprepare
+      - oneditsave in ui-text.html serialises all new types correctly as { kind, path }
+      - Query path validate function rejects syntactically invalid dot-bracket paths
+      - Help panel text in ui-text.html updated with query path syntax examples
+      - docs/nodes/display/ui-text.md updated with Query path syntax section
+    validation:
+      - pnpm test passes (208 tests)
+      - bindingSchema accepts msg/flow/global/jsonata/env with a path
+      - bindingSchema rejects msg/env without a path
+      - docs/nodes/display/ui-text.md contains a Query path syntax section
 
-- id: P21
-  title: "Renderer consolidation — webapp.js consumes RenderSnapshot"
-  status: done
-  dependencies: [P20b]
-  summary:
-    delivered: "nodes/webapp.js now renders the preview exclusively from the RenderSnapshot produced by createRendererApp (packages/renderer). The parallel render path (mountMatches, renderSlotTree, renderComponent, layoutHasInputs) was deleted; renderAppPage builds the AppModel, calls the renderer, then serializes the snapshot's regions/dialogs to HTML. Container-id mount resolution (container:<id>/slot, the form the editor emits) was added inside the renderer so all mount scopes resolve in one place."
-    stats: "2 source files changed (nodes/webapp.js, packages/renderer/src/renderer.ts), 2 new test files (1 unit + 1 E2E), 214 unit tests + 4 new P21 E2E specs passing"
-    notes: "Stop-condition #1 (mount-path parsing) was avoided: the schema mount parser was left untouched; container-id matching was added in the renderer's container matcher (createContainerMountMatcher), which also still accepts the layout:<layoutId>/slot form the typed fixture uses. The P21 deliverable wording implied the renderer already resolved container: mounts, but parseMountReference only supports route/dialog/layout — logged in friction-log. 8 pre-existing E2E failures (customers-crud action flow + 7 editor specs) were confirmed red on the untouched baseline (stash+rebuild), are unrelated to P21's rendering work, and were spun off as a separate bug-fix task. P21's own rendering criteria are covered by tests/e2e/p21-snapshot-render.spec.ts (routes, dialog, table rows, no slot-name headings)."
-  goals:
-    - Remove the parallel rendering implementation in nodes/webapp.js.
-    - Make the Node-RED runtime render exclusively via the RenderSnapshot produced by packages/renderer.
-  deliverables:
-    - nodes/webapp.js imports createRendererApp from packages/renderer and renders from its RenderSnapshot instead of re-walking the AppModel
-    - removal of the duplicate render functions in webapp.js (renderAppPage's own slot/mount logic, renderSlotTree, mountMatches, renderComponentHtml, renderSlotHtml) — replaced by an HTML serializer that walks the snapshot
-    - container:id/slot, route:, dialog:, layout: and app.slot mount resolution all handled once, inside packages/renderer (verified against the existing rendering-bugs tests)
-    - the verbose webapp-slot/webapp-item preview markup is replaced by snapshot-driven output; slot names are not emitted as visible headings
-    - existing E2E preview tests still pass against the snapshot-driven output
-  validation:
-    - pnpm test passes with no failures
-    - "unit test: a ui-text mounted via container:<id>/content renders inside the container (regression guard, packages/runtime/test/rendering-bugs.test.ts)"
-    - "unit test: no internal slot name (header, navbar, content, footer) appears as an <h2> heading in rendered output"
-    - "unit test: webapp.js produces output for the example whose component set matches the RenderSnapshot region/component tree (packages/runtime/test/p21-snapshot-render.test.ts)"
-    - "grep check: nodes/webapp.js no longer defines mountMatches or a second slot-tree walker — mount resolution lives only in packages/renderer"
-    - "Playwright: the customers-crud example still renders all routes, the dialog, and table rows (tests/e2e/p21-snapshot-render.spec.ts)"
+  - id: P21
+    title: "Renderer consolidation — webapp.js consumes RenderSnapshot"
+    status: done
+    dependencies: [P20b]
+    summary:
+      delivered: "nodes/webapp.js now renders the preview exclusively from the RenderSnapshot produced by createRendererApp (packages/renderer). The parallel render path (mountMatches, renderSlotTree, renderComponent, layoutHasInputs) was deleted; renderAppPage builds the AppModel, calls the renderer, then serializes the snapshot's regions/dialogs to HTML. Container-id mount resolution (container:<id>/slot, the form the editor emits) was added inside the renderer so all mount scopes resolve in one place."
+      stats: "2 source files changed (nodes/webapp.js, packages/renderer/src/renderer.ts), 2 new test files (1 unit + 1 E2E), 214 unit tests + 4 new P21 E2E specs passing"
+      notes: "Stop-condition #1 (mount-path parsing) was avoided: the schema mount parser was left untouched; container-id matching was added in the renderer's container matcher (createContainerMountMatcher), which also still accepts the layout:<layoutId>/slot form the typed fixture uses. The P21 deliverable wording implied the renderer already resolved container: mounts, but parseMountReference only supports route/dialog/layout — logged in friction-log. 8 pre-existing E2E failures (customers-crud action flow + 7 editor specs) were confirmed red on the untouched baseline (stash+rebuild), are unrelated to P21's rendering work, and were spun off as a separate bug-fix task. P21's own rendering criteria are covered by tests/e2e/p21-snapshot-render.spec.ts (routes, dialog, table rows, no slot-name headings)."
+    goals:
+      - Remove the parallel rendering implementation in nodes/webapp.js.
+      - Make the Node-RED runtime render exclusively via the RenderSnapshot produced by packages/renderer.
+    deliverables:
+      - nodes/webapp.js imports createRendererApp from packages/renderer and renders from its RenderSnapshot instead of re-walking the AppModel
+      - removal of the duplicate render functions in webapp.js (renderAppPage's own slot/mount logic, renderSlotTree, mountMatches, renderComponentHtml, renderSlotHtml) — replaced by an HTML serializer that walks the snapshot
+      - container:id/slot, route:, dialog:, layout: and app.slot mount resolution all handled once, inside packages/renderer (verified against the existing rendering-bugs tests)
+      - the verbose webapp-slot/webapp-item preview markup is replaced by snapshot-driven output; slot names are not emitted as visible headings
+      - existing E2E preview tests still pass against the snapshot-driven output
+    validation:
+      - pnpm test passes with no failures
+      - "unit test: a ui-text mounted via container:<id>/content renders inside the container (regression guard, packages/runtime/test/rendering-bugs.test.ts)"
+      - "unit test: no internal slot name (header, navbar, content, footer) appears as an <h2> heading in rendered output"
+      - "unit test: webapp.js produces output for the example whose component set matches the RenderSnapshot region/component tree (packages/runtime/test/p21-snapshot-render.test.ts)"
+      - "grep check: nodes/webapp.js no longer defines mountMatches or a second slot-tree walker — mount resolution lives only in packages/renderer"
+      - "Playwright: the customers-crud example still renders all routes, the dialog, and table rows (tests/e2e/p21-snapshot-render.spec.ts)"
 
-- id: P22
-  title: "Snapshot transport — JSON endpoint and thin client runtime"
-  status: done
-  dependencies: [P21]
-  summary:
-    delivered: "Added a JSON snapshot endpoint (GET /webapp/:appId/snapshot) that returns the same RenderSnapshot the HTML route serializes, and an event endpoint (POST /webapp/:appId/event) that dispatches a msg.ui-shaped event via applyPreviewAction and returns the updated snapshot. A new thin vanilla-JS client runtime (resources/lib/webapp-client.js) hydrates from the snapshot endpoint, renders into #webapp-client-root, intercepts button clicks and form submits, POSTs events, and re-renders via a keyed morph so focus/scroll survive list/state updates — no full page navigation. The client<->runtime contract is documented in docs/nodes/concepts/messages.md referencing the msg.ui format."
-    stats: "3 source files (nodes/webapp.js, resources/lib/webapp-client.js, messages.md), 1 new unit test file (2 tests), 1 new E2E spec (3 tests) + fixture flow; 123 runtime unit tests passing; P22 E2E all green."
-    notes: "renderAppPage was refactored to extract a shared buildAppSnapshot helper so the HTML route and the JSON endpoint cannot drift. The event endpoint uses a self-contained readJsonBody middleware (no dependency on Node-RED's optional httpNode body-parser). The client runtime is served at /resources/node-red-contrib-webapp/lib/webapp-client.js (Node-RED static resources, same origin as httpNode by default) and loaded via a <script defer> tag added to the preview page; the server-rendered HTML remains the no-JS fallback. P22 used a dedicated E2E fixture flow (tests/e2e/fixtures/p22-snapshot-transport.flow.json) with button ids equal to handled preview action names because the customers-crud preview action wiring is non-functional post-P20a (typed actions emit only, no statePatch) — that is the pre-existing bug spun off in P21, NOT a P22 regression. The deprecated targetMode/target fields (dropped by mapConfig since P20a) were re-attached in the unit test's dialog action definition to exercise a real state-changing dispatch. Full E2E baseline has 10 pre-existing failures (customers-crud action flow + editor specs incl. p16d, parent-selector, layout-apps, mount-options, p21 customer-detail); confirmed identical with and without the P22 spec, so P22 introduced zero new failures. No node types or node fields added, so gen:example was not required."
-  goals:
-    - Expose the RenderSnapshot to the browser as JSON.
-    - Provide a minimal client runtime that renders a snapshot and round-trips events without a full page reload.
-  deliverables:
-    - HTTP endpoint serving the compiled RenderSnapshot for an app/route/state as JSON (alongside the existing HTML route)
-    - thin vanilla-JS client runtime (no framework) — served as a static resource — that holds the current snapshot, renders it, and on a UI event POSTs to the existing Node-RED action/event endpoints and re-renders from the returned snapshot
-    - efficient DOM update on re-render (keyed morph) so list/state changes do not reset focus or scroll
-    - documented client-runtime <-> runtime contract (event payload shape in, snapshot shape out) referencing the existing msg.ui event format
-  validation:
-    - pnpm test passes with no failures
-    - "unit test: the JSON snapshot endpoint returns the same region/component tree the HTML adapter renders for a given app + route + state (packages/runtime/test/p22-snapshot-transport.test.ts)"
-    - "unit test: dispatching an event through the client-runtime contract returns an updated snapshot reflecting the state change (dialog open via applyPreviewAction)"
-    - "Playwright: clicking a button updates bound content without a full page navigation (tests/e2e/p22-snapshot-transport.spec.ts)"
-    - "Playwright: a query-backed table re-renders new rows after a save/refresh action without losing scroll position"
+  - id: P22
+    title: "Snapshot transport — JSON endpoint and thin client runtime"
+    status: done
+    dependencies: [P21]
+    summary:
+      delivered: "Added a JSON snapshot endpoint (GET /webapp/:appId/snapshot) that returns the same RenderSnapshot the HTML route serializes, and an event endpoint (POST /webapp/:appId/event) that dispatches a msg.ui-shaped event via applyPreviewAction and returns the updated snapshot. A new thin vanilla-JS client runtime (resources/lib/webapp-client.js) hydrates from the snapshot endpoint, renders into #webapp-client-root, intercepts button clicks and form submits, POSTs events, and re-renders via a keyed morph so focus/scroll survive list/state updates — no full page navigation. The client<->runtime contract is documented in docs/nodes/concepts/messages.md referencing the msg.ui format."
+      stats: "3 source files (nodes/webapp.js, resources/lib/webapp-client.js, messages.md), 1 new unit test file (2 tests), 1 new E2E spec (3 tests) + fixture flow; 123 runtime unit tests passing; P22 E2E all green."
+      notes: "renderAppPage was refactored to extract a shared buildAppSnapshot helper so the HTML route and the JSON endpoint cannot drift. The event endpoint uses a self-contained readJsonBody middleware (no dependency on Node-RED's optional httpNode body-parser). The client runtime is served at /resources/node-red-contrib-webapp/lib/webapp-client.js (Node-RED static resources, same origin as httpNode by default) and loaded via a <script defer> tag added to the preview page; the server-rendered HTML remains the no-JS fallback. P22 used a dedicated E2E fixture flow (tests/e2e/fixtures/p22-snapshot-transport.flow.json) with button ids equal to handled preview action names because the customers-crud preview action wiring is non-functional post-P20a (typed actions emit only, no statePatch) — that is the pre-existing bug spun off in P21, NOT a P22 regression. The deprecated targetMode/target fields (dropped by mapConfig since P20a) were re-attached in the unit test's dialog action definition to exercise a real state-changing dispatch. Full E2E baseline has 10 pre-existing failures (customers-crud action flow + editor specs incl. p16d, parent-selector, layout-apps, mount-options, p21 customer-detail); confirmed identical with and without the P22 spec, so P22 introduced zero new failures. No node types or node fields added, so gen:example was not required."
+    goals:
+      - Expose the RenderSnapshot to the browser as JSON.
+      - Provide a minimal client runtime that renders a snapshot and round-trips events without a full page reload.
+    deliverables:
+      - HTTP endpoint serving the compiled RenderSnapshot for an app/route/state as JSON (alongside the existing HTML route)
+      - thin vanilla-JS client runtime (no framework) — served as a static resource — that holds the current snapshot, renders it, and on a UI event POSTs to the existing Node-RED action/event endpoints and re-renders from the returned snapshot
+      - efficient DOM update on re-render (keyed morph) so list/state changes do not reset focus or scroll
+      - documented client-runtime <-> runtime contract (event payload shape in, snapshot shape out) referencing the existing msg.ui event format
+    validation:
+      - pnpm test passes with no failures
+      - "unit test: the JSON snapshot endpoint returns the same region/component tree the HTML adapter renders for a given app + route + state (packages/runtime/test/p22-snapshot-transport.test.ts)"
+      - "unit test: dispatching an event through the client-runtime contract returns an updated snapshot reflecting the state change (dialog open via applyPreviewAction)"
+      - "Playwright: clicking a button updates bound content without a full page navigation (tests/e2e/p22-snapshot-transport.spec.ts)"
+      - "Playwright: a query-backed table re-renders new rows after a save/refresh action without losing scroll position"
 
-- id: P23
-  title: "Web Component default adapter — Shoelace"
-  status: done
-  dependencies: [P22]
-  summary:
-    delivered: "Added the default Web Component adapter (packages/renderer/src/shoelace-adapter.ts): a pure, framework-neutral mapping of each semantic component kind to a Shoelace (MIT) custom element with semantic prop->attribute mapping (button variant primary/secondary/danger/ghost/link -> Shoelace variant; the five semantic sizes collapsed onto Shoelace's three), graceful <div data-wa-fallback> rendering for kinds without a 1:1 element (e.g. stepper), and a --wa-* -> --sl-* token bridge (buildShoelaceTokenBridgeCss) so DesignTokens reach the components natively with no per-token translation. nodes/webapp.js now renders containers and the dialog as <sl-card>, injects buildDesignTokenCss(app.tokens) + the bridge + webapp-default token fallbacks into the page head, and loads Shoelace via a CDN ES-module autoloader (no bundler). The thin client (resources/lib/webapp-client.js) mirrors the same sl-card markup so a hydration re-render does not swap element kinds. ui-app tokens now flow through mapConfig (parseTokens); the customers-crud fixture carries a primary token."
-    stats: "Renderer: 1 new source file + index export, 1 new unit test file (6 tests; renderer now 10). webapp.js + webapp-client.js + gen-example.js + flow.json + theming.md touched. 1 new E2E spec (3 tests, order-independent). All unit suites green (schema 79, runtime 123, editor 10, renderer 10); lint clean."
-    notes: "Scope decision: leaf interactive controls (button/input/table/links) stay native HTML so accessibility and the role-based E2E selectors keep working and the no-JS fallback survives; the WC adapter is applied to the container/card shell + dialog, which is where the customers example has a container. Shoelace is loaded from jsDelivr CDN as an ES module autoloader — matches ADR 0002's 'ES modules / static resource, no bundler' and is reachable in the sandbox; a future fully-offline run may want a vendored copy. PRE-EXISTING red E2E baseline persists (layout-apps, editor-mount-options, p16d x5, parent-selector, p15, p21 customer-detail, customers-crud): root-caused as a shared-Node-RED-instance test-isolation defect — layout-apps deploys a demo app over the shared customersApp flow and its afterEach restore does not reliably persist, so alphabetically-later specs see 'Unknown app'. Confirmed identical failure set with and without P23 (full baseline run pre-change). P23's own spec re-deploys examples/customers-crud/flow.json in beforeEach so it passes deterministically regardless of order; fixing the suite isolation is out of phase scope (logged in friction-log + spun off). gen:example was re-run because the ui-app gained a tokens field."
-  goals:
-    - Render the snapshot with a Web Component library as the default theme adapter.
-    - Wire DesignTokens to the library's CSS custom properties with no per-token translation.
-  deliverables:
-    - a default adapter that maps each semantic component kind to a Shoelace (MIT) custom element with semantic prop -> attribute mapping (variant, size, etc.)
-    - graceful fallback rendering for any kind without a native Shoelace equivalent
-    - DesignTokens (buildDesignTokenCss output) applied as CSS custom properties consumed natively by the components; no framework-token leakage into schemas
-    - Shoelace loaded via ES modules / static resource (no bundler added to the build)
-    - the default app shell (layout regions header/navbar/content/footer) rendered with the Web Component adapter
-  validation:
-    - pnpm test passes with no failures
-    - "unit test: kind=button maps to the Shoelace button element with the semantic variant/size mapped to the correct attributes (packages/renderer/test/shoelace-adapter.test.ts)"
-    - "unit test: kind=stepper produces a defined fallback rendering, not an empty node"
-    - "unit test: a ui-app token set appears as the corresponding CSS custom property (Shoelace bridge :root block)"
-    - "unit test: the adapter's accepted variant vocabulary stays semantic — no framework token as input (audit guard)"
-    - "Playwright: the customers-crud example renders with Shoelace (sl-card) and the configured primary color is visibly applied (tests/e2e/p23-shoelace-adapter.spec.ts)"
-    - "docs check: docs/theming.md describes theme = tokens + adapter choice + adapter impl and that a theme injects no node types (per ADR 0002)"
+  - id: P23
+    title: "Web Component default adapter — Shoelace"
+    status: done
+    dependencies: [P22]
+    summary:
+      delivered: "Added the default Web Component adapter (packages/renderer/src/shoelace-adapter.ts): a pure, framework-neutral mapping of each semantic component kind to a Shoelace (MIT) custom element with semantic prop->attribute mapping (button variant primary/secondary/danger/ghost/link -> Shoelace variant; the five semantic sizes collapsed onto Shoelace's three), graceful <div data-wa-fallback> rendering for kinds without a 1:1 element (e.g. stepper), and a --wa-* -> --sl-* token bridge (buildShoelaceTokenBridgeCss) so DesignTokens reach the components natively with no per-token translation. nodes/webapp.js now renders containers and the dialog as <sl-card>, injects buildDesignTokenCss(app.tokens) + the bridge + webapp-default token fallbacks into the page head, and loads Shoelace via a CDN ES-module autoloader (no bundler). The thin client (resources/lib/webapp-client.js) mirrors the same sl-card markup so a hydration re-render does not swap element kinds. ui-app tokens now flow through mapConfig (parseTokens); the customers-crud fixture carries a primary token."
+      stats: "Renderer: 1 new source file + index export, 1 new unit test file (6 tests; renderer now 10). webapp.js + webapp-client.js + gen-example.js + flow.json + theming.md touched. 1 new E2E spec (3 tests, order-independent). All unit suites green (schema 79, runtime 123, editor 10, renderer 10); lint clean."
+      notes: "Scope decision: leaf interactive controls (button/input/table/links) stay native HTML so accessibility and the role-based E2E selectors keep working and the no-JS fallback survives; the WC adapter is applied to the container/card shell + dialog, which is where the customers example has a container. Shoelace is loaded from jsDelivr CDN as an ES module autoloader — matches ADR 0002's 'ES modules / static resource, no bundler' and is reachable in the sandbox; a future fully-offline run may want a vendored copy. PRE-EXISTING red E2E baseline persists (layout-apps, editor-mount-options, p16d x5, parent-selector, p15, p21 customer-detail, customers-crud): root-caused as a shared-Node-RED-instance test-isolation defect — layout-apps deploys a demo app over the shared customersApp flow and its afterEach restore does not reliably persist, so alphabetically-later specs see 'Unknown app'. Confirmed identical failure set with and without P23 (full baseline run pre-change). P23's own spec re-deploys examples/customers-crud/flow.json in beforeEach so it passes deterministically regardless of order; fixing the suite isolation is out of phase scope (logged in friction-log + spun off). gen:example was re-run because the ui-app gained a tokens field."
+    goals:
+      - Render the snapshot with a Web Component library as the default theme adapter.
+      - Wire DesignTokens to the library's CSS custom properties with no per-token translation.
+    deliverables:
+      - a default adapter that maps each semantic component kind to a Shoelace (MIT) custom element with semantic prop -> attribute mapping (variant, size, etc.)
+      - graceful fallback rendering for any kind without a native Shoelace equivalent
+      - DesignTokens (buildDesignTokenCss output) applied as CSS custom properties consumed natively by the components; no framework-token leakage into schemas
+      - Shoelace loaded via ES modules / static resource (no bundler added to the build)
+      - the default app shell (layout regions header/navbar/content/footer) rendered with the Web Component adapter
+    validation:
+      - pnpm test passes with no failures
+      - "unit test: kind=button maps to the Shoelace button element with the semantic variant/size mapped to the correct attributes (packages/renderer/test/shoelace-adapter.test.ts)"
+      - "unit test: kind=stepper produces a defined fallback rendering, not an empty node"
+      - "unit test: a ui-app token set appears as the corresponding CSS custom property (Shoelace bridge :root block)"
+      - "unit test: the adapter's accepted variant vocabulary stays semantic — no framework token as input (audit guard)"
+      - "Playwright: the customers-crud example renders with Shoelace (sl-card) and the configured primary color is visibly applied (tests/e2e/p23-shoelace-adapter.spec.ts)"
+      - "docs check: docs/theming.md describes theme = tokens + adapter choice + adapter impl and that a theme injects no node types (per ADR 0002)"

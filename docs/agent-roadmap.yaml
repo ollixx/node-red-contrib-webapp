@@ -22,97 +22,13 @@ phases:
   - { id: P9,  title: "Structured node contract alignment",                   status: done, dependencies: [P8],  archive: "docs/agent-roadmap-archive.yaml#P9"  }
   - { id: P10, title: "Layout preset expansion and child prop injection",      status: done, dependencies: [P9],  archive: "docs/agent-roadmap-archive.yaml#P10" }
 
-  - id: P11a
-    title: Parent field — schema and runtime
-    status: done
-    dependencies: [P10]
-    goals:
-      - Add parent field to schema for all nodes that require app or slot scoping.
-      - Update runtime mapConfig to derive app scoping from parent instead of uiId.
-    deliverables:
-      - parent field added to node definition schemas for ui-route, ui-dialog, ui-store, ui-action, ui-query, ui-navigation (app-scoped) and ui-button, ui-input, ui-text, ui-table, ui-container (slot-scoped)
-      - runtime mapConfig reads parent field; uiId kept as fallback for existing flows
-      - unit tests for parent-based compilation for each node type
-    validation:
-      - pnpm test passes with no failures
-      - unit test: compiling a node-set where ui-button has parent=<appId>/<routeId>/content produces a valid AppModel with button mounted in the correct slot
-      - unit test: compiling a node-set where ui-store has parent=<appId> scopes the store to that app
-      - unit test: node with missing parent field fails compilation with a readable diagnostic
-      - unit test: node with uiId but no parent still compiles (backward compatibility)
+  - { id: P11a, title: "Parent field — schema and runtime", status: done, dependencies: [P10], archive: "docs/agent-roadmap-archive.yaml#P11a" }
 
-  - id: P11b
-    title: Parent field — node editors and name defaults
-    status: done
-    dependencies: [P11a]
-    goals:
-      - Replace free-text uiId and mount fields with structured parent SelectBox in all node editors.
-      - Implement name defaults ("Button N" etc.) on node creation.
-    deliverables:
-      - parent SelectBox in ui-route, ui-dialog, ui-store, ui-action, ui-query, ui-navigation editors (shows ui-app nodes)
-      - parent slot selector in ui-button, ui-input, ui-text, ui-table, ui-container editors (hierarchical: app → route/dialog → container)
-      - name default logic in editor-common.js for all node types
-      - E2E tests for SelectBox population and name defaults
-    validation:
-      - pnpm test passes with no failures
-      - Playwright: opening a ui-button editor shows a populated parent SelectBox with at least one entry matching an existing ui-route
-      - Playwright: creating a new ui-button node shows name default "Button 1" (or next N) pre-filled
-      - docs check: every node file in docs/nodes/ that lists a parent field matches the implementation — read each doc and verify the corresponding editor HTML contains a parent input
+  - { id: P11b, title: "Parent field — node editors and name defaults", status: done, dependencies: [P11a], archive: "docs/agent-roadmap-archive.yaml#P11b" }
 
-  - id: P12
-    title: Configurable event system
-    status: done
-    dependencies: [P11b]
-    goals:
-      - Add checkbox-based event selection to ui-app, ui-route, ui-dialog, ui-container, ui-table.
-      - Each active event produces a dynamic out-port on the node.
-      - Implement component state message handling (show/hide/enable/disable/focus/reset) for all view nodes.
-      - Implement ui-dialog open/close via direct message in addition to store state.
-    deliverables:
-      - configurable events on ui-app (clientConnected, clientDisconnected)
-      - configurable events on ui-route (onEnter, onLeave)
-      - configurable events on ui-dialog (onOpen, onClose) plus message-based open/close
-      - configurable events on ui-container (onShow, onHide)
-      - component state message handler in runtime for show/hide/enable/disable/focus/reset
-      - dynamic out-port generation in node editors
-      - msg format aligned with messages.md
-      - unit tests for all new runtime handlers
-      - E2E tests for event checkbox UI and dynamic out-port rendering
-    validation:
-      - pnpm test passes with no failures
-      - unit test: ui-app node with events=[clientConnected] produces outputs:1 in the compiled definition
-      - unit test: ui-route node with events=[onEnter, onLeave] produces outputs:2
-      - unit test: runtime dispatches msg.ui.component.op=hide to correct node and marks it hidden in state
-      - unit test: msg.ui.dialog.op=open triggers dialog open state without a store update
-      - Playwright: opening a ui-app editor shows event checkboxes for clientConnected and clientDisconnected
-      - Playwright: enabling onEnter on a ui-route node adds a visible out-port on the canvas
-      - docs check: messages.md op table matches the set of ops handled in runtime — verify each op in the table has a corresponding handler in webapp.js
+  - { id: P12, title: "Configurable event system", status: done, dependencies: [P11b], archive: "docs/agent-roadmap-archive.yaml#P12" }
 
-  - id: P13
-    title: ui-table enhancements
-    status: done
-    dependencies: [P12]
-    goals:
-      - Replace string-only columns with structured column definitions.
-      - Add optional footer slot.
-      - Replace selectAction with configurable row events (rowSelect, rowAction, checkboxChange, cellSelect).
-    deliverables:
-      - structured column definition schema (key, label, type, sortable, filterable, width)
-      - backward-compatible column parsing (plain string still valid)
-      - footer slot activated by footer flag
-      - events field with multi-select in editor replacing selectAction
-      - dynamic out-ports per active event
-      - selectAction marked deprecated, still functional
-      - unit tests for structured column parsing and footer slot compilation
-      - E2E tests for column editor UI and row event out-ports
-    validation:
-      - pnpm test passes with no failures
-      - unit test: table with columns=["name","email"] (plain strings) renders header cells "name" and "email"
-      - unit test: table with columns=[{key:"firstName",label:"Vorname"}] renders header cell "Vorname" and reads row.firstName
-      - unit test: table with footer=true exposes a footer slot in the compiled component
-      - unit test: table with events=[rowSelect] produces outputs:1; with events=[rowSelect,rowAction] produces outputs:2
-      - unit test: existing flow with selectAction still compiles without error (deprecated but functional)
-      - Playwright: ui-table editor shows events multi-select and footer checkbox
-      - docs check: ui-table.md column type list matches the type values accepted by the schema
+  - { id: P13, title: "ui-table enhancements", status: done, dependencies: [P12], archive: "docs/agent-roadmap-archive.yaml#P13" }
 
   - { id: P14, title: "ui-query enhancements", status: done, dependencies: [P11b], archive: "docs/agent-roadmap-archive.yaml#P14" }
 
