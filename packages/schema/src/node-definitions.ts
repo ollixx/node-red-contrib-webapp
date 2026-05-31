@@ -608,15 +608,70 @@ export const uiNodeDefinitionSchema = z.union([
     uiDividerNodeDefinitionSchema
 ]);
 
+const uiNodeSchemaByType: Record<string, z.ZodTypeAny> = {
+    "ui-app": uiAppNodeDefinitionSchema,
+    "ui-route": uiRouteNodeDefinitionSchema,
+    "ui-container": uiContainerNodeDefinitionSchema,
+    "ui-text": uiTextNodeDefinitionSchema,
+    "ui-button": uiButtonNodeDefinitionSchema,
+    "ui-table": uiTableNodeDefinitionSchema,
+    "ui-input": uiInputNodeDefinitionSchema,
+    "ui-select": uiSelectNodeDefinitionSchema,
+    "ui-checkbox": uiCheckboxNodeDefinitionSchema,
+    "ui-radio": uiRadioNodeDefinitionSchema,
+    "ui-switch": uiSwitchNodeDefinitionSchema,
+    "ui-textarea": uiTextareaNodeDefinitionSchema,
+    "ui-datepicker": uiDatepickerNodeDefinitionSchema,
+    "ui-slider": uiSliderNodeDefinitionSchema,
+    "ui-dialog": uiDialogNodeDefinitionSchema,
+    "ui-store": uiStoreNodeDefinitionSchema,
+    "ui-query": uiQueryNodeDefinitionSchema,
+    "ui-action": uiActionNodeDefinitionSchema,
+    "ui-navigation": uiNavigationNodeDefinitionSchema,
+    "ui-alert": uiAlertNodeDefinitionSchema,
+    "ui-toast": uiToastNodeDefinitionSchema,
+    "ui-progress": uiProgressNodeDefinitionSchema,
+    "ui-skeleton": uiSkeletonNodeDefinitionSchema,
+    "ui-badge": uiBadgeNodeDefinitionSchema,
+    "ui-empty-state": uiEmptyStateNodeDefinitionSchema,
+    "ui-tabs": uiTabsNodeDefinitionSchema,
+    "ui-accordion": uiAccordionNodeDefinitionSchema,
+    "ui-breadcrumb": uiBreadcrumbNodeDefinitionSchema,
+    "ui-menu": uiMenuNodeDefinitionSchema,
+    "ui-pagination": uiPaginationNodeDefinitionSchema,
+    "ui-stepper": uiStepperNodeDefinitionSchema,
+    "ui-image": uiImageNodeDefinitionSchema,
+    "ui-icon": uiIconNodeDefinitionSchema,
+    "ui-list": uiListNodeDefinitionSchema,
+    "ui-avatar": uiAvatarNodeDefinitionSchema,
+    "ui-divider": uiDividerNodeDefinitionSchema
+};
+
 export type UiNodeDefinition = z.infer<typeof uiNodeDefinitionSchema>;
 
 export function validateUiNodeDefinition(input: unknown): { success: true; data: UiNodeDefinition } | { success: false; error: string } {
+    const nodeType = input != null && typeof input === "object" && "type" in input
+        ? String((input as Record<string, unknown>).type)
+        : undefined;
+
+    const specificSchema = nodeType ? uiNodeSchemaByType[nodeType] : undefined;
+
+    if (specificSchema) {
+        const result = specificSchema.safeParse(input);
+        if (!result.success) {
+            return { success: false, error: formatValidationIssues(result.error.issues) };
+        }
+        return { success: true, data: result.data as UiNodeDefinition };
+    }
+
     const result = uiNodeDefinitionSchema.safeParse(input);
 
     if (!result.success) {
         return {
             success: false,
-            error: formatValidationIssues(result.error.issues)
+            error: nodeType
+                ? `Unknown node type: ${nodeType}`
+                : formatValidationIssues(result.error.issues)
         };
     }
 

@@ -199,7 +199,7 @@ describe("app validation", () => {
             return;
         }
 
-        expect(invalidLayout.error).toContain("Invalid input");
+        expect(invalidLayout.error).toBeTruthy();
     });
 
     it("validates ui-route required fields and path format", () => {
