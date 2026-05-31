@@ -32,7 +32,7 @@
         "parent": "customersApp",
         "path": "/",
         "title": "Home",
-        "layoutId": "app",
+        "layoutId": "vertical",
         "z": "flow1",
         "x": 360,
         "y": 60,
@@ -275,16 +275,94 @@
         "name": "Page title",
         "uiId": "pageTitle",
         "parent": "customersApp",
-        "mount": "customersApp.header",
-        "text": "Customers",
+        "mount": "routeHome.content",
+        "order": -1,
+        "text": "Customers CRM",
         "value": {
             "kind": "literal",
-            "value": "Customers"
+            "value": "Customers CRM"
         },
         "variant": "headline",
         "z": "flow1",
         "x": 120,
-        "y": 360,
+        "y": 460,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "type": "ui-text",
+        "id": "homeWelcomeHeading",
+        "name": "Welcome heading",
+        "uiId": "homeWelcomeHeading",
+        "parent": "customersApp",
+        "mount": "routeHome.content",
+        "order": 0,
+        "text": "Welcome to Customers CRM",
+        "value": {
+            "kind": "literal",
+            "value": "Welcome to Customers CRM"
+        },
+        "variant": "headline",
+        "z": "flow1",
+        "x": 120,
+        "y": 460,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "type": "ui-text",
+        "id": "homeWelcomeBody",
+        "name": "Welcome body",
+        "uiId": "homeWelcomeBody",
+        "parent": "customersApp",
+        "mount": "routeHome.content",
+        "order": 1,
+        "text": "Manage your customer relationships in one place.",
+        "value": {
+            "kind": "literal",
+            "value": "Manage your customer relationships in one place."
+        },
+        "z": "flow1",
+        "x": 360,
+        "y": 460,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "type": "ui-button",
+        "id": "homeGoToCustomersButton",
+        "name": "Go to customers",
+        "uiId": "homeGoToCustomersButton",
+        "parent": "customersApp",
+        "mount": "routeHome.content",
+        "order": 2,
+        "label": "Go to customers",
+        "action": "goToCustomers",
+        "z": "flow1",
+        "x": 600,
+        "y": 460,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "type": "ui-alert",
+        "id": "homeTipAlert",
+        "name": "Home tip",
+        "uiId": "homeTipAlert",
+        "parent": "customersApp",
+        "mount": "routeHome.content",
+        "order": 3,
+        "message": "Use the Customers section to create, view and edit customer records.",
+        "messagePath": "",
+        "severity": "info",
+        "title": "Tip",
+        "z": "flow1",
+        "x": 840,
+        "y": 460,
         "wires": [
             []
         ]
@@ -301,7 +379,7 @@
         "action": "openCustomerEditor",
         "z": "flow1",
         "x": 120,
-        "y": 460,
+        "y": 560,
         "wires": [
             []
         ]
@@ -324,7 +402,7 @@
         },
         "z": "flow1",
         "x": 360,
-        "y": 460,
+        "y": 560,
         "wires": [
             []
         ]
@@ -344,7 +422,7 @@
         },
         "z": "flow1",
         "x": 600,
-        "y": 460,
+        "y": 560,
         "wires": [
             []
         ]
@@ -366,7 +444,7 @@
         "selectAction": "openCustomerDetail",
         "z": "flow1",
         "x": 840,
-        "y": 460,
+        "y": 560,
         "wires": [
             []
         ]
@@ -387,7 +465,7 @@
         "variant": "headline",
         "z": "flow1",
         "x": 120,
-        "y": 560,
+        "y": 660,
         "wires": [
             []
         ]
@@ -404,7 +482,7 @@
         "action": "goToCustomers",
         "z": "flow1",
         "x": 360,
-        "y": 560,
+        "y": 660,
         "wires": [
             []
         ]
@@ -421,7 +499,7 @@
         "action": "openCustomerEditor",
         "z": "flow1",
         "x": 600,
-        "y": 560,
+        "y": 660,
         "wires": [
             []
         ]
@@ -444,7 +522,7 @@
         },
         "z": "flow1",
         "x": 840,
-        "y": 560,
+        "y": 660,
         "wires": [
             []
         ]
@@ -464,7 +542,29 @@
         },
         "z": "flow1",
         "x": 1080,
-        "y": 560,
+        "y": 660,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "type": "ui-badge",
+        "id": "customerStatusBadge",
+        "name": "Status badge",
+        "uiId": "customerStatusBadge",
+        "parent": "customersApp",
+        "mount": "route:/customers/:id/content",
+        "order": 5,
+        "valuePath": "customers.current.status",
+        "value": {
+            "kind": "query",
+            "path": "customers.current.status"
+        },
+        "variant": "status",
+        "severity": "info",
+        "z": "flow1",
+        "x": 1320,
+        "y": 660,
         "wires": [
             []
         ]
@@ -479,7 +579,7 @@
         "layoutId": "grid",
         "z": "flow1",
         "x": 120,
-        "y": 660,
+        "y": 760,
         "wires": [
             []
         ]
@@ -505,7 +605,7 @@
         "colSize": 12,
         "z": "flow1",
         "x": 360,
-        "y": 660,
+        "y": 760,
         "wires": [
             []
         ]
@@ -531,7 +631,7 @@
         "colSize": 12,
         "z": "flow1",
         "x": 600,
-        "y": 660,
+        "y": 760,
         "wires": [
             []
         ]
@@ -557,7 +657,7 @@
         "colSize": 12,
         "z": "flow1",
         "x": 840,
-        "y": 660,
+        "y": 760,
         "wires": [
             []
         ]
@@ -576,7 +676,7 @@
         "colSize": 6,
         "z": "flow1",
         "x": 1080,
-        "y": 660,
+        "y": 760,
         "wires": [
             []
         ]
@@ -601,7 +701,7 @@
         "colSize": 6,
         "z": "flow1",
         "x": 1320,
-        "y": 660,
+        "y": 760,
         "wires": [
             []
         ]

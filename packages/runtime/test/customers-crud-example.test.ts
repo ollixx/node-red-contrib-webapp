@@ -41,11 +41,15 @@ describe("customers CRUD example flow", () => {
         const compiled = registry.compile("customersApp");
 
         expect(compiled.diagnostics).toEqual([]);
-        expect(compiled.model?.routes.map((route) => route.id)).toEqual(["customersApp", "customers", "customerDetail"]);
+        expect(compiled.model?.routes.map((route) => route.id)).toEqual(["routeHome", "customers", "customerDetail"]);
         expect(compiled.model?.dialogs.map((dialog) => dialog.id)).toEqual(["customerEditor"]);
         expect(compiled.model?.components.map((component) => component.id)).toEqual(
             expect.arrayContaining([
                 "pageTitle",
+                "homeWelcomeHeading",
+                "homeWelcomeBody",
+                "homeGoToCustomersButton",
+                "homeTipAlert",
                 "newCustomerButton",
                 "refreshCustomersButton",
                 "customersTable",
@@ -55,6 +59,7 @@ describe("customers CRUD example flow", () => {
                 "deleteCustomerButton",
                 "detailRouteTitle",
                 "detailCustomerId",
+                "customerStatusBadge",
                 "customerEditorContainer",
                 "customerNameInput",
                 "customerEmailInput",
@@ -63,7 +68,27 @@ describe("customers CRUD example flow", () => {
                 "saveCustomerButton"
             ])
         );
-        expect(compiled.model?.components).toHaveLength(16);
+        expect(compiled.model?.components).toHaveLength(21);
+    });
+
+    it("home route (/) renders non-empty content — all regions are not empty", () => {
+        const assembly = assembleNodeSet(customersCrudExampleFlowFixture);
+        expect(assembly.success).toBe(true);
+        if (!assembly.success) return;
+
+        const registry = createRuntimeRegistry();
+        registry.registerMany(assembly.data.contributions);
+        const compiled = registry.compile("customersApp");
+        expect(compiled.diagnostics).toEqual([]);
+
+        const homeRoute = compiled.model?.routes.find((r) => r.id === "routeHome");
+        expect(homeRoute).toBeDefined();
+        // The home route must have at least one component mounted under it.
+        // Components on home route use named mount "routeHome.content".
+        const homeComponents = compiled.model?.components.filter(
+            (c) => String(c.mount ?? "").startsWith("routeHome.")
+        );
+        expect(homeComponents?.length).toBeGreaterThan(0);
     });
 
     it("serves the compiled example flow through the runtime API", () => {

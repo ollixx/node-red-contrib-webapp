@@ -23,7 +23,9 @@ import {
     type UiTableNodeDefinition,
     type UiTextNodeDefinition,
     type UiActionNodeDefinition,
-    type UiNavigationNodeDefinition
+    type UiNavigationNodeDefinition,
+    type UiAlertNodeDefinition,
+    type UiBadgeNodeDefinition
 } from "@node-red-contrib-webapp/schema";
 
 import type {
@@ -151,6 +153,38 @@ function toInputComponent(node: UiInputNodeDefinition): ComponentDefinition {
     };
 }
 
+function toAlertComponent(node: UiAlertNodeDefinition): ComponentDefinition {
+    return {
+        id: node.id,
+        kind: "alert",
+        mount: resolveMount(node),
+        order: node.order,
+        bind: node.message ? { message: node.message } : {},
+        props: {
+            severity: node.severity,
+            title: node.title,
+            dismissible: node.dismissible
+        },
+        events: []
+    };
+}
+
+function toBadgeComponent(node: UiBadgeNodeDefinition): ComponentDefinition {
+    return {
+        id: node.id,
+        kind: "badge",
+        mount: resolveMount(node),
+        order: node.order,
+        bind: { value: node.value },
+        props: {
+            variant: node.variant,
+            severity: node.severity,
+            max: node.max
+        },
+        events: []
+    };
+}
+
 function assembleRouteContribution(appId: string, routeNode: UiRouteNodeDefinition): Result<RouteContribution> {
     const definition = {
         id: routeNode.id,
@@ -238,7 +272,7 @@ function assembleDialogContribution(appId: string, dialogNode: UiDialogNodeDefin
 
 function assembleComponentContribution(
     appId: string,
-    node: UiTextNodeDefinition | UiButtonNodeDefinition | UiTableNodeDefinition | UiContainerNodeDefinition | UiInputNodeDefinition
+    node: UiTextNodeDefinition | UiButtonNodeDefinition | UiTableNodeDefinition | UiContainerNodeDefinition | UiInputNodeDefinition | UiAlertNodeDefinition | UiBadgeNodeDefinition
 ): ComponentContribution {
     const definition =
         node.type === "ui-text"
@@ -249,7 +283,11 @@ function assembleComponentContribution(
                     ? toTableComponent(node)
                     : node.type === "ui-container"
                         ? toContainerComponent(node)
-                        : toInputComponent(node);
+                        : node.type === "ui-alert"
+                            ? toAlertComponent(node)
+                            : node.type === "ui-badge"
+                                ? toBadgeComponent(node)
+                                : toInputComponent(node);
 
     return {
         kind: "component",
@@ -420,12 +458,14 @@ export function assembleNodeSet(input: unknown[]): Result<AssembledNodeSet> {
         emittedDefinitions.filter(
             (
                 definition
-            ): definition is UiTextNodeDefinition | UiButtonNodeDefinition | UiTableNodeDefinition | UiContainerNodeDefinition | UiInputNodeDefinition =>
+            ): definition is UiTextNodeDefinition | UiButtonNodeDefinition | UiTableNodeDefinition | UiContainerNodeDefinition | UiInputNodeDefinition | UiAlertNodeDefinition | UiBadgeNodeDefinition =>
                 definition.type === "ui-text" ||
                 definition.type === "ui-button" ||
                 definition.type === "ui-table" ||
                 definition.type === "ui-container" ||
-                definition.type === "ui-input"
+                definition.type === "ui-input" ||
+                definition.type === "ui-alert" ||
+                definition.type === "ui-badge"
         )
     );
     const containerNodes = componentNodes.filter((definition): definition is UiContainerNodeDefinition => definition.type === "ui-container");

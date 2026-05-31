@@ -493,6 +493,14 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
     },
     {
         type: "ui-route",
+        id: "routeHome",
+        parent: "customersApp",
+        path: "/",
+        title: "Home",
+        layout: "vertical"
+    },
+    {
+        type: "ui-route",
         id: "customers",
         parent: "customersApp",
         path: "/customers",
@@ -518,12 +526,54 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
     {
         type: "ui-text",
         id: "pageTitle",
-        parent: "customersApp.header",
+        mount: "routeHome.content", order: -1,
         value: {
             kind: "literal",
             value: "Customers"
         },
         variant: "headline"
+    },
+    // ── Home route content ────────────────────────────────────────────────────
+    {
+        type: "ui-text",
+        id: "homeWelcomeHeading",
+        mount: "routeHome.content",
+        order: 0,
+        value: {
+            kind: "literal",
+            value: "Welcome to Customers CRM"
+        },
+        variant: "headline"
+    },
+    {
+        type: "ui-text",
+        id: "homeWelcomeBody",
+        mount: "routeHome.content",
+        order: 1,
+        value: {
+            kind: "literal",
+            value: "Manage your customer relationships in one place."
+        }
+    },
+    {
+        type: "ui-button",
+        id: "homeGoToCustomersButton",
+        mount: "routeHome.content",
+        order: 2,
+        label: "Go to customers",
+        action: "goToCustomers"
+    },
+    {
+        type: "ui-alert",
+        id: "homeTipAlert",
+        mount: "routeHome.content",
+        order: 3,
+        message: {
+            kind: "literal",
+            value: "Use the Customers section to create, view and edit customer records."
+        },
+        severity: "info",
+        title: "Tip"
     },
     {
         type: "ui-button",
@@ -617,6 +667,18 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
             kind: "routeParam",
             path: "id"
         }
+    },
+    {
+        type: "ui-badge",
+        id: "customerStatusBadge",
+        mount: "route:/customers/:id/content",
+        order: 5,
+        value: {
+            kind: "query",
+            path: "customers.current.status"
+        },
+        variant: "status",
+        severity: "info"
     },
     {
         type: "ui-container",

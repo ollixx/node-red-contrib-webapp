@@ -36,9 +36,10 @@ const rows = {
     state:       1,
     actions:     2,
     viewApp:     3,
-    viewCustomers: 4,
-    viewDetail:  5,
-    viewDialog:  6
+    viewHome:    4,
+    viewCustomers: 5,
+    viewDetail:  6,
+    viewDialog:  7
 };
 
 function pos(row, col) {
@@ -72,12 +73,12 @@ const flowNodes = [
         }
     }),
     node("ui-route", "routeHome", "structure", 1, {
-        name:    "Home",
-        uiId:    "routeHome",      // required: semantic ID
-        parent:  APP,
-        path:    "/",
-        title:   "Home",
-        layoutId: "app"
+        name:     "Home",
+        uiId:     "routeHome",      // required: semantic ID
+        parent:   APP,
+        path:     "/",
+        title:    "Home",
+        layoutId: "vertical"
     }),
     node("ui-route", "customers", "structure", 2, {
         name:    "Customers",
@@ -209,15 +210,55 @@ const flowNodes = [
         to:     "/customers"       // required
     }),
 
-    // ── View – App level ─────────────────────────────────────────────────────
-    node("ui-text", "pageTitle", "viewApp", 0, {
+    // ── View – / (home) ──────────────────────────────────────────────────────
+    node("ui-text", "pageTitle", "viewHome", 0, {
         name:    "Page title",
-        uiId:    "pageTitle",          // required
+        uiId:    "pageTitle",              // required
         parent:  APP,
-        mount:   "customersApp.header", // required
-        text:    "Customers",           // required (editor field for literal text)
-        value:   { kind: "literal", value: "Customers" },
+        mount:   "routeHome.content",      // home route heading
+        order:   -1,
+        text:    "Customers CRM",          // required (editor field for literal text)
+        value:   { kind: "literal", value: "Customers CRM" },
         variant: "headline"
+    }),
+    node("ui-text", "homeWelcomeHeading", "viewHome", 0, {
+        name:    "Welcome heading",
+        uiId:    "homeWelcomeHeading",
+        parent:  APP,
+        mount:   "routeHome.content",
+        order:   0,
+        text:    "Welcome to Customers CRM",
+        value:   { kind: "literal", value: "Welcome to Customers CRM" },
+        variant: "headline"
+    }),
+    node("ui-text", "homeWelcomeBody", "viewHome", 1, {
+        name:    "Welcome body",
+        uiId:    "homeWelcomeBody",
+        parent:  APP,
+        mount:   "routeHome.content",
+        order:   1,
+        text:    "Manage your customer relationships in one place.",
+        value:   { kind: "literal", value: "Manage your customer relationships in one place." }
+    }),
+    node("ui-button", "homeGoToCustomersButton", "viewHome", 2, {
+        name:   "Go to customers",
+        uiId:   "homeGoToCustomersButton",
+        parent: APP,
+        mount:   "routeHome.content",
+        order:  2,
+        label:  "Go to customers",
+        action: "goToCustomers"
+    }),
+    node("ui-alert", "homeTipAlert", "viewHome", 3, {
+        name:        "Home tip",
+        uiId:        "homeTipAlert",
+        parent:      APP,
+        mount:   "routeHome.content",
+        order:       3,
+        message:     "Use the Customers section to create, view and edit customer records.",
+        messagePath: "",
+        severity:    "info",
+        title:       "Tip"
     }),
 
     // ── View – /customers ────────────────────────────────────────────────────
@@ -312,6 +353,17 @@ const flowNodes = [
         // value overrides it at runtime with the actual route param
         text:   ":id",
         value:  { kind: "routeParam", path: "id" }
+    }),
+    node("ui-badge", "customerStatusBadge", "viewDetail", 5, {
+        name:      "Status badge",
+        uiId:      "customerStatusBadge",
+        parent:    APP,
+        mount:     "route:/customers/:id/content",
+        order:     5,
+        valuePath: "customers.current.status",
+        value:     { kind: "query", path: "customers.current.status" },
+        variant:   "status",
+        severity:  "info"
     }),
 
     // ── View – dialog ────────────────────────────────────────────────────────
