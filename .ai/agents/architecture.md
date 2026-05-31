@@ -10,7 +10,9 @@
 | `packages/renderer` | Browser renderer, state bindings, event dispatch |
 | `packages/editor` | Editor node definitions, structure sidebar, validation helpers |
 | `nodes/` | Node-RED node registrations (HTML + JS per node) |
-| `lib/editor-common.js` | Shared editor utilities (SelectBox, reference selectors, layout helpers) |
+| `resources/lib/editor-common.js` | Shared editor utilities (SelectBox, reference selectors, layout helpers) — **single canonical copy** |
+
+**Editor asset serving — do not duplicate.** Node-RED serves the `resources/` directory of a plugin statically. The editor utilities therefore live in exactly one file: `resources/lib/editor-common.js`. Do **not** create `lib/editor-common.js` or `nodes/lib/editor-common.js` — earlier copies in those paths were dead duplicates that drifted out of sync and caused silent stale-code bugs. The node HTML files load it via `resources/node-red-contrib-webapp/lib/editor-common.js`.
 
 ## Key invariants
 

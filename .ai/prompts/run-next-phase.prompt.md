@@ -18,14 +18,15 @@ If the phase adds new node types (P16a, P16b, P16c, P16d or similar): invoke the
 ## Execute
 
 1. Set the phase status to `in_progress` in `docs/agent-roadmap.yaml`. Commit.
-2. Implement each deliverable listed in the phase. One commit per logical change.
-3. When implementation is complete, follow the full validation protocol in `.ai/agents/validation.md`.
-4. If all three validation steps pass:
+2. Confirm the suite is green *before* you start (`pnpm test`). Know your baseline — if something is already red, you need to know it is not your change.
+3. Implement each deliverable **test-first**: for the deliverable's matching `validation` criterion, write the failing unit/E2E test first, watch it fail, then implement until it passes. This is not bureaucracy — it is what keeps you from the fix→revert→fix thrash of changing code you do not yet understand. One commit per logical change. If a change makes a previously-green test red, revert and re-approach rather than pile on.
+4. When all deliverables are implemented, follow the full validation protocol in `.ai/agents/validation.md` to confirm every criterion is covered (it back-stops anything you did not already test-drive).
+5. If all three validation steps pass:
    a. Write a `summary` for the phase in `docs/agent-roadmap-archive.yaml` (see format below).
    b. Replace the full phase entry in `docs/agent-roadmap.yaml` with a slim archive reference (see format below).
    c. Update `current_phase` to the next pending phase.
    d. Commit everything, then report the next ready phase.
-5. If a stop condition from `.ai/agents/architecture.md` is hit: set status to `blocked`, add a `blocker` field explaining the decision needed, commit, and stop.
+6. If a stop condition from `.ai/agents/architecture.md` is hit: set status to `blocked`, add a `blocker` field explaining the decision needed, commit, and stop.
 
 ## Archive format
 

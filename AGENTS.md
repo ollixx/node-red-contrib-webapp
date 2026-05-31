@@ -24,7 +24,7 @@ Do not read `prd.md` or `docs/implementation-plan.md` unless explicitly instruct
 6. Before any new code: commit existing uncommitted changes with a meaningful message.
 7. Before marking a phase done: run `pnpm test` and `pnpm exec playwright test`. Both must pass.
 8. When marking a phase done: write a `summary` to `docs/agent-roadmap-archive.yaml` and replace the full entry in `docs/agent-roadmap.yaml` with a slim archive reference. Format see `.ai/prompts/run-next-phase.prompt.md`.
-8. If a phase uncovers an unresolved architecture decision: write it down in `docs/agent-roadmap.yaml` under the phase as a `blocker` and stop.
+9. If a phase uncovers an unresolved architecture decision: write it down in `docs/agent-roadmap.yaml` under the phase as a `blocker` and stop. Resolving it is a separate task — see the roadmap-evolution role below.
 
 ## Roles
 
@@ -37,7 +37,11 @@ Different tasks use different entry prompts. Start from the right one:
 | Run many phases — single session (legacy, context-heavy) | `.ai/prompts/run-roadmap-until-blocked.prompt.md` |
 | Only validate a completed phase | `.ai/prompts/validate-phase.prompt.md` |
 | Only write missing tests for a phase | `.ai/prompts/write-tests.prompt.md` |
+| Fix a bug / regression that is not a phase | `.ai/prompts/fix-bug.prompt.md` |
+| Turn a decision into an ADR + new phases | `.ai/prompts/evolve-roadmap.prompt.md` |
 
 For running multiple phases, prefer the **orchestrated** mode: it spawns one fresh sub-agent per phase so implementation detail never accumulates in the driving session. The single-session mode is kept only for cases where sub-agents are unavailable.
+
+**Phase work vs. maintenance work.** The numbered rules above (one phase at a time, status updates, archive on done) govern *roadmap-phase* work. Bug fixes and roadmap evolution are not phases: they skip the phase-status bookkeeping but still obey the universal rules — test-first, commit hygiene, minimal-invasive patches, never overwrite user changes. Use the dedicated prompts above. If a bug fix reveals that the roadmap itself is wrong, hand off from `fix-bug` to `evolve-roadmap`.
 
 When implementing phases that add new node types (P16a-d or similar), invoke the `/node-red-node` skill first — it contains the complete four-file pattern, code templates, and checklist so the agent does not need to read existing node files to derive the pattern.

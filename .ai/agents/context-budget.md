@@ -33,7 +33,7 @@ Minimum additional reads:
 - One existing test: `packages/runtime/test/node-set-runtime.test.ts`
 
 ### Editor work (P11b-style)
-- `lib/editor-common.js`
+- `resources/lib/editor-common.js` — the single canonical shared-editor file (Node-RED serves `resources/` statically). Do not create or read `lib/` or `nodes/lib/` copies; they must not exist.
 - The specific `nodes/<category>/<node>.html` files for the phase
 - One existing E2E test: `tests/e2e/editor-mount-options.spec.ts`
 

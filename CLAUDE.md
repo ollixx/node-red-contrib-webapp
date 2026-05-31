@@ -54,7 +54,7 @@ This is a pnpm workspace of TypeScript packages that add declarative UI nodes to
 | `packages/editor` | Validates node configurations before deploy. Builds a structural sidebar view from the compiled registry — not from canvas wires. |
 | `nodes/` | Node-RED node registrations (one `.js` + `.html` pair per node). At runtime these map node configs to schema definitions and handle message routing. |
 | `nodes/webapp.js` | The single Node-RED runtime entry point. All 12 node types are registered here; it holds the `runtimeState` map and registers HTTP endpoints. |
-| `lib/editor-common.js` / `nodes/lib/editor-common.js` | Shared editor UI helpers: SelectBox, reference selectors, layout helpers used by all node HTML files. |
+| `resources/lib/editor-common.js` | Shared editor UI helpers: SelectBox, reference selectors, layout helpers used by all node HTML files. **Single canonical copy** — Node-RED serves `resources/` statically; node HTML loads it via `resources/node-red-contrib-webapp/lib/editor-common.js`. Do not recreate `lib/` or `nodes/lib/` copies. |
 
 ### Data flow
 
@@ -86,7 +86,7 @@ Each category also has a matching `docs/nodes/<category>/` directory with per-no
 
 ### Dev and E2E environments
 
-- `.node-red-dev/` — persistent dev Node-RED user directory (port 1881). Used for manual testing; `flows.json` here is the hand-maintained development flow.
+- `.node-red-dev/` — persistent dev Node-RED user directory (port 1881). Used for manual testing. `flows.json` here is **generated** by `pnpm gen:example` (it overwrites this file when the directory exists) — do not hand-edit it; regenerate instead.
 - `.node-red-e2e/` — ephemeral E2E user directory (port 1882). Rebuilt from scratch before every Playwright run using `examples/customers-crud/flow.json`.
 
 ## Agent workflow
