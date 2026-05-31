@@ -146,7 +146,7 @@ phases:
 
   - id: P22
     title: Snapshot transport — JSON endpoint and thin client runtime
-    status: pending
+    status: in_progress
     dependencies: [P21]
     goals:
       - Expose the RenderSnapshot to the browser as JSON.
