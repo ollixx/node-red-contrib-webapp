@@ -30,27 +30,35 @@ If the phase adds new node types (P16a, P16b, P16c, P16d or similar): invoke the
 
 ## Archive format
 
-When marking a phase done, add it to `docs/agent-roadmap-archive.yaml` with a summary:
+When marking a phase done, add it to `docs/agent-roadmap-archive.yaml`. Entries live **under the top-level `phases:` key**, so the `- id:` bullet is indented **two spaces**, and every field below it indents from there. Match the indentation of the entries already in the file exactly — appending at column 0 produces a file that does not parse, which has happened before and went unnoticed.
 
 ```yaml
-- id: PXX
-  title: "..."
-  status: done
-  dependencies: [...]
-  summary:
-    delivered: "One sentence: what was concretely built"
-    stats: "X files, Y tests, Z nodes etc."
-    notes: "Decisions made, deviations from plan, tech debt introduced"
-  goals: [...]
-  deliverables: [...]
-  validation: [...]
+  - id: PXX
+    title: "..."
+    status: done
+    dependencies: [...]
+    summary:
+      delivered: "One sentence: what was concretely built"
+      stats: "X files, Y tests, Z nodes etc."
+      notes: "Decisions made, deviations from plan, tech debt introduced"
+    goals: [...]
+    deliverables: [...]
+    validation: [...]
 ```
 
-Then replace the full entry in `docs/agent-roadmap.yaml` with:
+Then replace the full entry in `docs/agent-roadmap.yaml` with (the slim entries there sit at the same two-space indent):
 
 ```yaml
-- { id: PXX, title: "...", status: done, dependencies: [...], archive: "docs/agent-roadmap-archive.yaml#PXX" }
+  - { id: PXX, title: "...", status: done, dependencies: [...], archive: "docs/agent-roadmap-archive.yaml#PXX" }
 ```
+
+**After editing either roadmap file, run the roadmap check before you commit** — a broken append is silent otherwise:
+
+```
+pnpm check:roadmap
+```
+
+It confirms both files parse and that every done phase has an archive entry (and vice versa) with a summary. It is also part of `pnpm validate`, so the phase-done validation catches a broken roadmap automatically.
 
 ## Constraints
 
