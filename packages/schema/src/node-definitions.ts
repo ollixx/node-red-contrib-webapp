@@ -264,11 +264,6 @@ export const uiActionNodeDefinitionSchema = identifiedNodeSchema.extend({
     targetMode: actionTargetModeSchema.optional(),
     target: z.string().min(1, "Action targets must not be empty.").optional(),
     to: z.string().min(1, "Navigate actions must declare a destination.").optional(),
-    // Generic data-action config (actionType: submit | remove) — see contracts.ts.
-    collection: z.string().min(1, "Action collections must not be empty.").optional(),
-    keyField: z.string().min(1, "Action key fields must not be empty.").optional(),
-    draftPath: z.string().min(1, "Action draft paths must not be empty.").optional(),
-    dialog: identifierSchema.optional(),
     description: z.string().min(1, "Action descriptions must not be empty.").optional()
 });
 

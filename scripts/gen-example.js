@@ -144,7 +144,6 @@ const flowNodes = [
         actionType:  "show",
         targetMode:  "path",
         target:      "dialog:customerEditor",
-        dialog:      "customerEditor",
         description: "Open the customer editor dialog."
     }),
     node("ui-action", "closeCustomerEditor", "actions", 1, {
@@ -154,19 +153,16 @@ const flowNodes = [
         actionType:  "hide",
         targetMode:  "path",
         target:      "dialog:customerEditor",
-        dialog:      "customerEditor",
         description: "Close the customer editor dialog."
     }),
     node("ui-action", "saveCustomer", "actions", 2, {
         name:        "Save customer",
         uiId:        "saveCustomer",
         parent:      APP,
-        actionType:  "submit",
-        collection:  "customers.list",
-        draftPath:   "draft.customer",
-        keyField:    "id",
-        dialog:      "customerEditor",
-        description: "Persist the current customer draft into the collection."
+        actionType:  "hide",
+        targetMode:  "path",
+        target:      "dialog:customerEditor",
+        description: "Close the editor dialog after the wired flow has persisted the customer."
     }),
     node("ui-action", "refreshCustomers", "actions", 3, {
         name:        "Refresh customers",
@@ -198,9 +194,9 @@ const flowNodes = [
         name:       "Delete customer",
         uiId:       "deleteCustomer",
         parent:     APP,
-        actionType: "remove",
-        collection: "customers.list",
-        keyField:   "id",
+        actionType: "navigate",
+        targetMode: "path",
+        target:     "app",
         to:         "/customers"
     }),
     node("ui-navigation", "navToCustomers", "actions", 7, {

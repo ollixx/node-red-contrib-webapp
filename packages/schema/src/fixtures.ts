@@ -794,7 +794,6 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
         actionType: "show",
         targetMode: "path",
         target: "dialog:customerEditor",
-        dialog: "customerEditor",
         description: "Open the shared customer editor dialog."
     },
     {
@@ -803,18 +802,15 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
         actionType: "hide",
         targetMode: "path",
         target: "dialog:customerEditor",
-        dialog: "customerEditor",
         description: "Close the shared customer editor dialog."
     },
     {
         type: "ui-action",
         id: "saveCustomer",
-        actionType: "submit",
-        collection: "customers.list",
-        draftPath: "draft.customer",
-        keyField: "id",
-        dialog: "customerEditor",
-        description: "Persist the current customer draft into the collection."
+        actionType: "hide",
+        targetMode: "path",
+        target: "dialog:customerEditor",
+        description: "Close the editor dialog after the wired flow has persisted the customer."
     },
     {
         type: "ui-action",
@@ -842,9 +838,9 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
     {
         type: "ui-action",
         id: "deleteCustomer",
-        actionType: "remove",
-        collection: "customers.list",
-        keyField: "id",
+        actionType: "navigate",
+        targetMode: "path",
+        target: "app",
         to: "/customers"
     },
     {

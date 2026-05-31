@@ -161,10 +161,11 @@ export const queryDefinitionSchema = z.object({
 
 export type QueryDefinition = z.infer<typeof queryDefinitionSchema>;
 
-// "submit" and "remove" are generic data actions: they upsert/remove a record in
-// a query collection from the action config, so CRUD behaviour is node-driven
-// rather than hard-coded in the runtime entry point.
-export const actionTypeSchema = z.enum(["navigate", "disable", "enable", "show", "hide", "trigger", "submit", "remove"]);
+// Actions change only the UI's INTERACTION state (navigation, visibility,
+// enabled state, focus, reset) — never business data. See
+// docs/nodes/concepts/actions.md. CRUD belongs in the wired flow, not here;
+// the former "submit"/"remove" data actions were removed in P29 (ADR 0003).
+export const actionTypeSchema = z.enum(["navigate", "disable", "enable", "show", "hide", "trigger"]);
 
 export type ActionType = z.infer<typeof actionTypeSchema>;
 
@@ -179,15 +180,6 @@ export const actionDefinitionSchema = z.object({
     targetMode: actionTargetModeSchema.optional(),
     target: z.string().min(1, "Action targets must not be empty.").optional(),
     to: z.string().min(1, "Navigate actions must declare a destination.").optional(),
-    // Generic data-action config (actionType: submit | remove):
-    //   collection — the query path of the row collection to upsert/remove in.
-    //   keyField   — the record's identity field (default "id").
-    //   draftPath  — state path holding the in-progress record for submit.
-    //   dialog     — a dialog id to close after the write (submit).
-    collection: z.string().min(1, "Action collections must not be empty.").optional(),
-    keyField: z.string().min(1, "Action key fields must not be empty.").optional(),
-    draftPath: z.string().min(1, "Action draft paths must not be empty.").optional(),
-    dialog: identifierSchema.optional(),
     description: z.string().min(1, "Action descriptions must not be empty.").optional()
 });
 

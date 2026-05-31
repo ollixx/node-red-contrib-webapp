@@ -575,34 +575,6 @@ function rememberPreviewMessage(appId, message) {
     runtimeState.previewMessages.set(appId, nextMessages);
 }
 
-// Generic record id for a new row appended to a collection. Reuses an existing
-// numeric `<prefix>-<n>` scheme when the rows share one; otherwise falls back to
-// a timestamp-based id. No example-specific knowledge.
-function nextRecordId(rows, keyField) {
-    let prefix;
-    let maxNumber = 0;
-    let sawScheme = false;
-
-    for (const row of rows) {
-        const match = /^(.*?)(\d+)$/.exec(String((row && row[keyField]) || ""));
-        if (match) {
-            sawScheme = true;
-            if (prefix === undefined) {
-                prefix = match[1];
-            }
-            if (match[1] === prefix) {
-                maxNumber = Math.max(maxNumber, Number(match[2]));
-            }
-        }
-    }
-
-    if (sawScheme && prefix !== undefined) {
-        return `${prefix}${maxNumber + 1}`;
-    }
-
-    return `r-${Date.now()}`;
-}
-
 function resolveNavigationTarget(navigationPath, parameters, routeParams) {
     return navigationPath
         .split("/")
@@ -1048,51 +1020,6 @@ function renderComponentHtml(component, layoutId, serializerContext) {
     return sharedSerializer.renderComponentHtml(component, layoutId, serializerContext);
 }
 
-// Generic submit: upsert a record built from the matching input values (plus any
-// in-progress draft) into the collection named by the action config. No example
-// knowledge — the collection path, key field and draft path all come from config.
-function applySubmitAction(typedAction, buckets, nextState, nextQueries, parameters, matchingInputs) {
-    const fieldValues = matchingInputs.reduce((result, input) => {
-        result[input.path] = String(parameters[input.path]);
-        return result;
-    }, {});
-    const storeId = matchingInputs[0] ? matchingInputs[0].storeId : undefined;
-    const storeDefinition = storeId ? buckets.stores.find((entry) => entry.id === storeId) : undefined;
-    const draftPath = typedAction.draftPath || (storeDefinition ? storeDefinition.statePath : undefined);
-    const currentDraft = draftPath ? getValueAtPath(nextState, draftPath) : undefined;
-    const nextDraft = isPlainObject(currentDraft) ? { ...currentDraft, ...fieldValues } : { ...fieldValues };
-    const keyField = typedAction.keyField || "id";
-    const collectionPath = typedAction.collection;
-    const existingRows = Array.isArray(getValueAtPath(nextQueries, collectionPath)) ? getValueAtPath(nextQueries, collectionPath) : [];
-    const draftKey = parameters[keyField] !== undefined ? String(parameters[keyField]) : String((nextDraft && nextDraft[keyField]) || "");
-    const recordKey = draftKey || nextRecordId(existingRows, keyField);
-    const persistedRecord = { [keyField]: recordKey, ...nextDraft };
-    delete persistedRecord.__draftKey;
-    const existingIndex = existingRows.findIndex((row) => String(row[keyField]) === recordKey);
-    const nextRows = existingIndex >= 0
-        ? existingRows.map((row, index) => index === existingIndex ? persistedRecord : row)
-        : [...existingRows, persistedRecord];
-
-    let updatedState = draftPath ? setValueAtPath(nextState, draftPath, nextDraft) : nextState;
-    const updatedQueries = setValueAtPath(nextQueries, collectionPath, nextRows);
-
-    return { nextState: updatedState, nextQueries: updatedQueries, fieldValues, draftPath, nextDraft };
-}
-
-// Generic remove: drop the row whose key matches the action parameter from the
-// collection named by the action config.
-function applyRemoveAction(typedAction, nextQueries, parameters, routeParams) {
-    const keyField = typedAction.keyField || "id";
-    const collectionPath = typedAction.collection;
-    const recordKey = parameters[keyField] !== undefined
-        ? String(parameters[keyField])
-        : String(routeParams[keyField] || routeParams.id || "");
-    const existingRows = Array.isArray(getValueAtPath(nextQueries, collectionPath)) ? getValueAtPath(nextQueries, collectionPath) : [];
-    const nextRows = existingRows.filter((row) => String(row[keyField]) !== recordKey);
-
-    return setValueAtPath(nextQueries, collectionPath, nextRows);
-}
-
 function defaultRouteLocation(model) {
     const firstRoute = model.routes.find((route) => route.path && route.path !== "*");
     return firstRoute ? firstRoute.path : "/";
@@ -1158,8 +1085,7 @@ function applyPreviewAction(RED, appId, actionId, parameters, definitions) {
         }
     }
     else if (actionType === "show" || actionType === "hide") {
-        const previewTarget = parsePreviewTarget(typedAction.target)
-            || (typedAction.dialog ? { scope: "dialog", id: typedAction.dialog } : undefined);
+        const previewTarget = parsePreviewTarget(typedAction.target);
 
         if (!previewTarget || previewTarget.scope !== "dialog") {
             return {
@@ -1175,50 +1101,11 @@ function applyPreviewAction(RED, appId, actionId, parameters, definitions) {
         dialogMessage = { id: previewTarget.id, open: isOpen };
         dialogId = isOpen ? previewTarget.id : undefined;
     }
-    else if (actionType === "submit") {
-        if (!typedAction.collection) {
-            return {
-                success: false,
-                status: 422,
-                body: `Submit action '${typedAction.id}' must declare a collection.`
-            };
-        }
-
-        const result = applySubmitAction(typedAction, buckets, nextState, nextQueries, parameters, matchingInputs);
-        nextState = result.nextState;
-        nextQueries = result.nextQueries;
-        payload.values = result.fieldValues;
-
-        if (result.draftPath) {
-            statePatch[result.draftPath] = result.nextDraft;
-        }
-
-        // Close the owning dialog if the action declares one.
-        if (typedAction.dialog) {
-            nextState = setValueAtPath(nextState, `ui.dialogs.${typedAction.dialog}.open`, false);
-            statePatch[`ui.dialogs.${typedAction.dialog}.open`] = false;
-            dialogMessage = { id: typedAction.dialog, open: false };
-        }
-    }
-    else if (actionType === "remove") {
-        if (!typedAction.collection) {
-            return {
-                success: false,
-                status: 422,
-                body: `Remove action '${typedAction.id}' must declare a collection.`
-            };
-        }
-
-        nextQueries = applyRemoveAction(typedAction, nextQueries, parameters, routeMatch.params);
-
-        if (typedAction.to) {
-            redirectLocation = resolveNavigationTarget(typedAction.to, parameters, routeMatch.params);
-            navigationMessage = { id: typedAction.id, to: redirectLocation };
-        }
-    }
     else {
         // trigger / disable / enable and output-port-wired actions: emit the UI
-        // message and let the wired target node handle the rest.
+        // message and let the wired target node handle the rest. Business data
+        // (create/update/delete of records) is never touched here — that logic
+        // lives in the wired Node-RED flow. See docs/adr/0003.
     }
 
     if (matchingRefreshQueries.length > 0) {
@@ -2260,10 +2147,6 @@ const runtimeNodeRegistry = {
             actionType: blankToUndefined(config.actionType),
             to: blankToUndefined(config.to),
             target: blankToUndefined(config.target),
-            collection: blankToUndefined(config.collection),
-            keyField: blankToUndefined(config.keyField),
-            draftPath: blankToUndefined(config.draftPath),
-            dialog: blankToUndefined(config.dialog),
             description: config.description || undefined
         }),
         options: {

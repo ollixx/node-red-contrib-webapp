@@ -1,8 +1,9 @@
 # ADR 0002: Web Component rendering target and theming boundaries
 
-- Status: accepted
+- Status: accepted (transport slice superseded by [ADR 0003](0003-live-node-red-app-no-preview.md))
 - Date: 2026-05-31
 - Supersedes: the renderer-framework decision in [ADR 0001](0001-initial-architecture.md) (React + React Router)
+- Superseded-by: [ADR 0003](0003-live-node-red-app-no-preview.md) supersedes **only** the transport/preview slice (snapshot transport, thin-client preview, runtime-executed actions). The rendering and theming decisions here (RenderSnapshot, Shoelace Web Component adapter, design tokens, shared serializer) remain in force.
 
 ## Context
 

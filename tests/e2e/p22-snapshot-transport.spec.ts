@@ -67,31 +67,29 @@ test.describe("P22: snapshot transport thin client", () => {
         expect(survived).toBe(true);
     });
 
-    test("a query-backed table re-renders new rows after a save action without losing scroll position", async ({ page }) => {
+    // P29: the save action is interaction-only (closes the editor dialog). The
+    // runtime performs no CRUD — persisting a record is the wired flow's job — so
+    // the query-backed table must NOT gain a row from a save click.
+    test("a save action closes the dialog without mutating the query-backed table", async ({ page }) => {
         await page.goto("/webapp/p22App/customers");
         await expect(page.locator("table.webapp-table")).toBeVisible();
 
         const rowsBefore = await page.locator("table.webapp-table tbody tr").count();
 
-        // Open the editor, fill the name, and save — this adds a row to the query data.
+        // Open the editor, fill the name, and save.
         await page.getByRole("button", { name: "New customer" }).click();
         await expect(page.locator(".webapp-dialog-card")).toBeVisible();
         await page.locator('.webapp-dialog-card input[name="name"]').fill("Katherine Johnson");
 
-        // Scroll the page down before the refresh to verify scroll survives the morph.
-        await page.evaluate(() => window.scrollTo(0, 200));
-        const scrollBefore = await page.evaluate(() => window.scrollY);
-
         await page.getByRole("button", { name: "Save" }).click();
 
-        // The table re-rendered with one more row, driven by the new snapshot.
+        // The dialog closes (interaction state changed) ...
+        await expect(page.locator(".webapp-dialog-card")).toHaveCount(0);
+        // ... but no business data was written: the row count is unchanged and the
+        // typed value never became a row.
         await expect
             .poll(async () => page.locator("table.webapp-table tbody tr").count())
-            .toBe(rowsBefore + 1);
-        await expect(page.locator("table.webapp-table")).toContainText("Katherine Johnson");
-
-        // Scroll position was preserved (no full reload, keyed morph kept the layout).
-        const scrollAfter = await page.evaluate(() => window.scrollY);
-        expect(scrollAfter).toBe(scrollBefore);
+            .toBe(rowsBefore);
+        await expect(page.locator("table.webapp-table")).not.toContainText("Katherine Johnson");
     });
 });

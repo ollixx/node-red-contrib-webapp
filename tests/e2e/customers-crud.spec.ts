@@ -1,57 +1,40 @@
 import { expect, test } from "@playwright/test";
 
-async function followActionLink(page: Parameters<typeof test>[0]["page"], name: string): Promise<void> {
-    const link = page.getByRole("link", { name }).first();
-    const href = await link.getAttribute("href");
-
-    expect(href).toBeTruthy();
-    await page.goto(String(href));
-}
-
-test.describe("customers CRUD preview", () => {
+/**
+ * P29: the customers-crud example is interaction-only until P33 rebuilds it as a
+ * real wired flow. The runtime performs NO CRUD — actions only change interaction
+ * state (open/close the editor dialog). This spec asserts exactly that: the seeded
+ * list renders, the editor opens, the save action closes the dialog WITHOUT adding
+ * a row (persistence is the wired flow's job), and the interaction-only action
+ * events are emitted.
+ */
+test.describe("customers CRUD example (interaction-only until P33)", () => {
     test.beforeEach(async ({ request }) => {
         const response = await request.get("/webapp/customersApp/reset");
         expect(response.ok()).toBeTruthy();
     });
 
-    test("creates, reads, updates and deletes customers", async ({ page, request }) => {
+    test("renders the seeded list and drives dialog interaction state without runtime CRUD", async ({ page, request }) => {
         await page.goto("/webapp/customersApp/customers");
 
         const tableRows = page.locator("table.webapp-table tbody tr");
         await expect(tableRows).toHaveCount(3);
 
-        await followActionLink(page, "New customer");
+        // Open the editor (a show action) and fill it in.
+        await page.getByRole("button", { name: "New customer" }).click();
         await expect(page.getByRole("heading", { name: "Edit customer" })).toBeVisible();
         const dialog = page.locator(".webapp-dialog-card");
 
         await dialog.getByRole("textbox", { name: "Name" }).fill("Katherine Johnson");
         await dialog.getByRole("textbox", { name: "Email" }).fill("katherine@example.com");
         await dialog.getByRole("textbox", { name: "Status" }).fill("active");
+
+        // Save is now an interaction-only hide action: the dialog closes and the
+        // list is unchanged — persistence is the wired flow's responsibility.
         await page.getByRole("button", { name: "Save" }).click();
-
-        await expect(page).toHaveURL(/\/webapp\/customersApp\/customers$/);
-        await expect(tableRows).toHaveCount(4);
-        await expect(page.locator("table.webapp-table tbody")).toContainText("Katherine Johnson");
-
-        await followActionLink(page, "Katherine Johnson");
-        await expect(page).toHaveURL(/\/webapp\/customersApp\/customers\/c-400$/);
-        await expect(page.getByRole("link", { name: "Back to customers" })).toBeVisible();
-        await expect(page.getByRole("link", { name: "Edit customer" })).toBeVisible();
-        await expect(page.getByRole("link", { name: "Delete customer" })).toBeVisible();
-        await expect(page.locator(".webapp-grid")).toContainText("c-400");
-
-        await followActionLink(page, "Edit customer");
-        await expect(page.getByRole("heading", { name: "Edit customer" })).toBeVisible();
-        await expect(dialog.getByRole("textbox", { name: "Name" })).toHaveValue("Katherine Johnson");
-        await dialog.getByRole("textbox", { name: "Status" }).fill("vip");
-        await page.getByRole("button", { name: "Save" }).click();
-
-        await expect(page).toHaveURL(/\/webapp\/customersApp\/customers$/);
-        await expect(page.locator("table.webapp-table tbody")).toContainText("vip");
-
-        await followActionLink(page, "Katherine Johnson");
-        await followActionLink(page, "Delete customer");
-        await expect(page).toHaveURL(/\/webapp\/customersApp\/customers$/);
+        await expect(page.locator(".webapp-dialog-card")).toHaveCount(0);
+        await expect(tableRows).toHaveCount(3);
+        await expect(page.locator("table.webapp-table tbody")).not.toContainText("Katherine Johnson");
 
         const eventsResponse = await request.get("/webapp/customersApp/events");
         expect(eventsResponse.ok()).toBeTruthy();
@@ -60,9 +43,7 @@ test.describe("customers CRUD preview", () => {
 
         expect(actions).toEqual(expect.arrayContaining([
             "openCustomerEditor",
-            "saveCustomer",
-            "openCustomerDetail",
-            "deleteCustomer"
+            "saveCustomer"
         ]));
     });
 });

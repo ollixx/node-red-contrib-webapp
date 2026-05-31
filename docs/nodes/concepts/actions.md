@@ -71,6 +71,15 @@ Für dynamisch erzeugte Elemente (z.B. Zeilen in einer Tabelle, Items in einer L
 
 Eine Action ist ein typisiertes Kommando. Der Typ bestimmt, was der Client tut.
 
+> **Implementierter Typsatz (Schema):** `navigate`, `show`, `hide`, `enable`,
+> `disable`, `trigger`. `openDialog` / `closeDialog` werden über `show` / `hide`
+> auf ein Dialog-Ziel ausgedrückt. `focus` und `reset` sind hier spezifiziert,
+> aber noch nicht im Schema umgesetzt (spätere Phase). Alle Typen ändern
+> ausschließlich den Interaktionszustand — niemals fachliche Daten. Die früheren
+> Datenaktionen `submit` / `remove` wurden in P29 entfernt (siehe
+> [ADR 0003](../../adr/0003-live-node-red-app-no-preview.md)); CRUD gehört in den
+> verdrahteten Flow.
+
 ### `navigate`
 
 Navigiert den Client zu einer Route.

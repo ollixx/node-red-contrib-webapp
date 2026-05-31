@@ -257,7 +257,10 @@ describe("ui-action preview runtime", () => {
         expect(page.body).toContain("Edit customer");
     });
 
-    it("persists form values through the generic submit action and closes the dialog", () => {
+    // P29: saveCustomer is now an interaction-only "hide" action. It closes the
+    // editor dialog and emits a UI message for the wired flow — it MUST NOT
+    // persist any business data in the runtime (CRUD lives in the flow).
+    it("closes the editor dialog via the save action without persisting any record data", () => {
         const { RED, nodes } = createPreviewRedStub(["saveCustomer"]);
 
         registerWebappNodes.__test__.applyPreviewAction(
@@ -290,13 +293,9 @@ describe("ui-action preview runtime", () => {
         );
 
         expect(applied.success).toBe(true);
-        expect(applied.dialogId).toBeUndefined();
         expect(applied.message?.ui.action).toBe("saveCustomer");
-        expect(applied.message?.ui.payload?.values).toEqual({
-            name: "Grace Hopper",
-            email: "grace+updated@example.com",
-            status: "active"
-        });
+        // No data action ran, so no upserted values are reported.
+        expect(applied.message?.ui.payload?.values).toBeUndefined();
         expect(applied.message?.ui.dialog).toEqual({
             id: "customerEditor",
             open: false
@@ -305,12 +304,12 @@ describe("ui-action preview runtime", () => {
             "ui.dialogs.customerEditor.open": false
         }));
         expect(nodes.get("saveCustomer")?.send).toHaveBeenCalledTimes(1);
-        expect(registerWebappNodes.__test__.getPreviewMessages("customersApp")).toHaveLength(2);
 
+        // The runtime persisted nothing: the new email is absent from the page.
         const page = registerWebappNodes.__test__.renderAppPage("customersApp", "/customers", undefined, cloneDefinitions());
 
         expect(page.status).toBe(200);
-        expect(page.body).toContain("grace+updated@example.com");
+        expect(page.body).not.toContain("grace+updated@example.com");
     });
 
     it("resolves the legacy detail navigation action against the selected row", () => {

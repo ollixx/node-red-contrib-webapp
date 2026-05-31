@@ -56,9 +56,10 @@ function flattenSnapshotComponents(regions: RenderedRegion[]): RenderedComponent
     );
 }
 
-// A fully generic CRUD app described entirely by nodes. The seed data lives on
-// the ui-query node (previewData), and the actions declare their generic
-// behaviour: show/hide a dialog, submit a record into a collection, remove one.
+// A fully generic app described entirely by nodes. The seed data lives on the
+// ui-query node (previewData), and the actions declare their interaction-only
+// behaviour: show/hide a dialog. P29 removed the former submit/remove data
+// actions — record CRUD belongs in the wired flow, never in the runtime.
 const rawNodes = [
     { type: "ui-app", id: "itemsApp", name: "Items App", root: "itemsApp", layout: "app", z: "p27" },
     { type: "ui-route", id: "list", name: "List", parent: "itemsApp", path: "/list", title: "List", layoutId: "app", z: "p27" },
@@ -70,11 +71,9 @@ const rawNodes = [
     { type: "ui-dialog", id: "editor", name: "Editor", parent: "itemsApp", title: "Editor", layoutId: "vertical", z: "p27" },
     { type: "ui-table", id: "itemsTable", name: "Items", mount: "route:/list/content", rows: { kind: "query", path: "items.list" }, columns: [{ key: "name", label: "Name" }], z: "p27" },
     { type: "ui-input", id: "nameInput", name: "Name", mount: "dialog:editor/content", path: "name", storeId: "draft", value: { kind: "state", path: "draft.item.name" }, z: "p27" },
-    // Generic typed actions — no hard-coded handler in the runtime.
+    // Interaction-only typed actions — no hard-coded handler in the runtime.
     { type: "ui-action", id: "openEditor", name: "Open", parent: "itemsApp", actionType: "show", targetMode: "path", target: "dialog:editor", z: "p27" },
-    { type: "ui-action", id: "closeEditor", name: "Close", parent: "itemsApp", actionType: "hide", targetMode: "path", target: "dialog:editor", z: "p27" },
-    { type: "ui-action", id: "saveItem", name: "Save", parent: "itemsApp", actionType: "submit", collection: "items.list", draftPath: "draft.item", dialog: "editor", z: "p27" },
-    { type: "ui-action", id: "deleteItem", name: "Delete", parent: "itemsApp", actionType: "remove", collection: "items.list", z: "p27" }
+    { type: "ui-action", id: "closeEditor", name: "Close", parent: "itemsApp", actionType: "hide", targetMode: "path", target: "dialog:editor", z: "p27" }
 ];
 
 const definitions = buildDefinitions(rawNodes).map((definition) =>
@@ -128,41 +127,23 @@ describe("P27: de-hardcoded, node-driven runtime", () => {
         resetPreview("itemsApp");
     });
 
-    it("saves a new record into the collection via a generic submit action and closes its dialog", () => {
+    // P29: an interaction-only action (show/hide a dialog) changes ONLY the
+    // interaction state — it must never mutate the business data behind a query.
+    it("a show/hide action leaves the query's business data unchanged", () => {
         resetPreview("itemsApp");
-        // open editor first
+        const before = buildAppSnapshot("itemsApp", "/list", undefined, definitions);
+        const rowsBefore = (flattenSnapshotComponents((before.snapshot as RenderSnapshot).regions)
+            .find((c) => c.id === "itemsTable") as RenderedComponent & { rows?: unknown[] }).rows ?? [];
+
         applyPreviewAction(stubRED, "itemsApp", "openEditor", { location: "/list", sourceId: "openEditor", event: "click" }, definitions);
+        applyPreviewAction(stubRED, "itemsApp", "closeEditor", { location: "/list", sourceId: "closeEditor", event: "click" }, definitions);
 
-        const saved = applyPreviewAction(stubRED, "itemsApp", "saveItem", { location: "/list", sourceId: "saveItem", event: "submit", name: "Gamma" }, definitions);
-        expect(saved.success).toBe(true);
+        const after = buildAppSnapshot("itemsApp", "/list", undefined, definitions);
+        const rowsAfter = (flattenSnapshotComponents((after.snapshot as RenderSnapshot).regions)
+            .find((c) => c.id === "itemsTable") as RenderedComponent & { rows?: unknown[] }).rows ?? [];
 
-        const snapshot = buildAppSnapshot("itemsApp", "/list", saved.dialogId, definitions);
-        const table = flattenSnapshotComponents((snapshot.snapshot as RenderSnapshot).regions).find((c) => c.id === "itemsTable") as RenderedComponent & { rows?: unknown[] };
-        expect((table.rows ?? []).map((r) => (r as { name: string }).name)).toContain("Gamma");
-        // the editor dialog closed after save
-        expect((snapshot.snapshot as RenderSnapshot).dialogs).toHaveLength(0);
-        resetPreview("itemsApp");
-    });
-
-    it("updates an existing record when the draft carries its key", () => {
-        resetPreview("itemsApp");
-        const saved = applyPreviewAction(stubRED, "itemsApp", "saveItem", { location: "/list", sourceId: "saveItem", event: "submit", id: "a", name: "Alpha-2" }, definitions);
-        expect(saved.success).toBe(true);
-        const snapshot = buildAppSnapshot("itemsApp", "/list", undefined, definitions);
-        const table = flattenSnapshotComponents((snapshot.snapshot as RenderSnapshot).regions).find((c) => c.id === "itemsTable") as RenderedComponent & { rows?: unknown[] };
-        const names = (table.rows ?? []).map((r) => (r as { id: string; name: string }));
-        expect(names.find((r) => r.id === "a")?.name).toBe("Alpha-2");
-        expect(names.filter((r) => r.id === "a")).toHaveLength(1);
-        resetPreview("itemsApp");
-    });
-
-    it("removes a record from the collection via a generic remove action", () => {
-        resetPreview("itemsApp");
-        const removed = applyPreviewAction(stubRED, "itemsApp", "deleteItem", { location: "/list", sourceId: "deleteItem", event: "click", id: "a" }, definitions);
-        expect(removed.success).toBe(true);
-        const snapshot = buildAppSnapshot("itemsApp", "/list", undefined, definitions);
-        const table = flattenSnapshotComponents((snapshot.snapshot as RenderSnapshot).regions).find((c) => c.id === "itemsTable") as RenderedComponent & { rows?: unknown[] };
-        expect((table.rows ?? []).map((r) => (r as { id: string }).id)).toEqual(["b"]);
+        expect(rowsAfter.map((r) => (r as { id: string }).id)).toEqual((rowsBefore as { id: string }[]).map((r) => r.id));
+        expect(rowsAfter.map((r) => (r as { name: string }).name)).toEqual(["Alpha", "Beta"]);
         resetPreview("itemsApp");
     });
 });
