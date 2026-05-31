@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P29  # COURSE CORRECTION — remove the preview, restore the live Node-RED app model (see reversal note below P28)
+  current_phase: P30  # COURSE CORRECTION — remove the preview, restore the live Node-RED app model (see reversal note below P28)
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -145,22 +145,7 @@ phases:
   #   P20a (partial: submit/remove), P22, P27, P28.
   # ════════════════════════════════════════════════════════════════════════
 
-  - id: P29
-    title: ADR 0003 + revert in-runtime business logic (kill submit/remove CRUD)
-    status: in_progress
-    dependencies: [P28]
-    goals:
-      - Record the reversal in an ADR and remove the invented, domain-bearing action types so the action vocabulary is back to interaction-only, exactly as docs/nodes/concepts/actions.md specifies. This is the safe, foundational teardown step before the transport rebuild.
-    deliverables:
-      - "write docs/adr/0003-live-node-red-app-no-preview.md — supersedes ONLY the transport/preview slice of ADR 0002 (snapshot transport, thin-client preview, runtime-executed actions); keeps 0002's rendering/theming (Shoelace adapter, tokens, shared serializer). States the principle: zero business logic in nodes/runtime; the flow is the only place for logic; the app is its wiring."
-      - "remove the `submit` and `remove` action types and the `collection` / draft-related action fields from packages/schema (action contract) and from the ui-action node config + editor HTML"
-      - "delete applySubmitAction and applyRemoveAction from nodes/webapp.js and every code path that mutates query/collection/record data in the runtime — the runtime must contain no create/update/delete-record logic"
-      - "the action vocabulary that remains is exactly the documented interaction set: navigate, openDialog/closeDialog (or show/hide for dialogs), show/hide, enable/disable, focus, reset — none of which touch business data"
-    validation:
-      - pnpm test passes with no failures (tests asserting CRUD-via-action are removed or rewritten, not left red)
-      - "grep check: nodes/webapp.js contains no applySubmitAction/applyRemoveAction and no record insert/update/delete logic; schema exposes no submit/remove action type"
-      - "unit test: every supported action type changes only interaction state (dialog open flag, navigation target, visibility/enabled/focus) — a representative action leaves all store/query data unchanged"
-      - "doc check: ADR 0003 exists, is referenced from ADR 0002's status header, and the action-type list in actions.md matches the schema"
+  - { id: P29, title: "ADR 0003 + revert in-runtime business logic (kill submit/remove CRUD)", status: done, dependencies: [P28], archive: "docs/agent-roadmap-archive.yaml#P29" }
 
   - id: P30
     title: Real Client→Server events — UI nodes emit msg out their output port
