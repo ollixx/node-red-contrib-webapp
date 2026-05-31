@@ -144,7 +144,7 @@ phases:
 
   - id: P21
     title: Renderer consolidation — webapp.js consumes RenderSnapshot
-    status: pending
+    status: in_progress
     dependencies: [P20b]
     goals:
       - Remove the parallel rendering implementation in nodes/webapp.js.
