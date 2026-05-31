@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: none  # P23 done; no pending phases remain. Next work is the deferred items below (open only on concrete need) or a new ADR-driven phase.
+  current_phase: P24  # Completing the Web Component look — page shell/theme (see ADR 0002)
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -63,6 +63,50 @@ phases:
   - { id: P22, title: "Snapshot transport — JSON endpoint and thin client runtime", status: done, dependencies: [P21], archive: "docs/agent-roadmap-archive.yaml#P22" }
 
   - { id: P23, title: "Web Component default adapter — Shoelace", status: done, dependencies: [P22], archive: "docs/agent-roadmap-archive.yaml#P23" }
+
+  # ────────────────────────────────────────────────────────────────────────
+  # Completing the Web Component look — see docs/adr/0002-web-component-rendering-and-theming.md
+  # P23 wired Shoelace (CDN, token bridge, adapter) and a follow-up routed
+  # button/input through it, but the PAGE itself still renders through the old
+  # bespoke <style> block + .webapp-shell/.webapp-slot scaffold in nodes/webapp.js
+  # (beige/serif "Runtime Preview" theme). The app therefore still looks like the
+  # old design. These phases finish the migration at the page and component level.
+  # ────────────────────────────────────────────────────────────────────────
+
+  - id: P24
+    title: Page shell and theme — Shoelace + design tokens
+    status: pending
+    dependencies: [P23]
+    goals:
+      - Replace the bespoke hand-rolled page shell and theme in nodes/webapp.js with a Shoelace- and design-token-driven shell, so the whole page adopts the Web Component look instead of just individual widgets.
+    deliverables:
+      - remove the large bespoke <style> block (beige/serif theme — --bg:#f4f1e8, Georgia, .webapp-shell, .webapp-slot card chrome, .webapp-topbar "Runtime Preview" header) and the topbar scaffold from the served HTML
+      - drive page typography, colour and surfaces from Shoelace's theme (themes/light.css, already loaded) aliased to the --wa-* design tokens via the existing buildShoelaceTokenBridgeCss bridge
+      - keep the layout-region structure (header/navbar/content/footer slots, grid/vertical/horizontal/absolute variants) but style it with tokens, not the bespoke CSS
+      - a configured ui-app token (e.g. colorPrimary, fontFamily, radiusMd) visibly drives the rendered page
+    validation:
+      - pnpm test passes with no failures
+      - "unit test: served HTML for a token-bearing ui-app no longer contains the old theme markers (Georgia, --bg:#f4f1e8, Runtime Preview, webapp-shell)"
+      - "unit test: a ui-app with tokens.colorPrimary set emits that value on the --wa-color-primary custom property in the served document"
+      - "unit test: the layout regions (header/navbar/content/footer) still render and still place their mounted components"
+      - "manual: the human confirms in the browser that the dev app visibly adopts the Shoelace look (subjective — design quality is not unit-testable)"
+
+  - id: P25
+    title: Adapter coverage — remaining component kinds + map corrections
+    status: pending
+    dependencies: [P24]
+    goals:
+      - Route every component kind that has a real Shoelace element through the adapter in the served HTML, and correct the adapter's misleading mappings.
+    deliverables:
+      - served HTML renders the remaining interactive kinds via Shoelace where a real element exists (select, checkbox, radio, switch, textarea, slider, alert, badge, progress, breadcrumb, tabs, accordion, menu, avatar, datepicker), preserving each node's interactivity (form submission, events, navigation)
+      - "correct KIND_TO_SHOELACE in packages/renderer/src/shoelace-adapter.ts: text and table have no appropriate Shoelace 2.x element — map them to the documented fallback (semantic HTML) rather than the non-existent sl-format-text / sl-table"
+      - a coverage assertion that uses collectSnapshotKinds to confirm every kind in a representative app either maps to a real sl-* element or renders a defined fallback — never an empty node or an undefined custom element
+    validation:
+      - pnpm test passes with no failures
+      - "unit test: each newly-routed kind appears as its Shoelace element in the served HTML of a fixture app that mounts one of each"
+      - "unit test: text renders as semantic HTML and table renders as a real <table> (not sl-format-text/sl-table)"
+      - "unit test: collectSnapshotKinds coverage check — no kind in the fixture resolves to an undefined custom element"
+      - "docs check: docs/theming.md component-mapping section matches KIND_TO_SHOELACE after the corrections"
 
   # Deferred — only when a concrete need appears (see ADR 0002):
   #   - ui-custom escape-hatch node for framework-specific components (opt-in, non-portable)
