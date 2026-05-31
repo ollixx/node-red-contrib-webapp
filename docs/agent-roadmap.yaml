@@ -99,7 +99,7 @@ phases:
 
   - id: P27
     title: De-hardcode the runtime — node-driven demo behaviour and data
-    status: pending
+    status: in_progress
     dependencies: [P26]
     goals:
       - Remove the Customers-specific demo "backend" baked into nodes/webapp.js so the runtime entry point is example-agnostic, and the example's behaviour is genuinely driven by its ui-action / ui-store / ui-query nodes (via the generic P20a typed-action path) rather than hard-coded if/else branches.
