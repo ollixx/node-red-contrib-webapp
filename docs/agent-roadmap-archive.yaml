@@ -580,3 +580,29 @@ phases:
     - "unit test: dispatching an event through the client-runtime contract returns an updated snapshot reflecting the state change (dialog open via applyPreviewAction)"
     - "Playwright: clicking a button updates bound content without a full page navigation (tests/e2e/p22-snapshot-transport.spec.ts)"
     - "Playwright: a query-backed table re-renders new rows after a save/refresh action without losing scroll position"
+
+- id: P23
+  title: "Web Component default adapter — Shoelace"
+  status: done
+  dependencies: [P22]
+  summary:
+    delivered: "Added the default Web Component adapter (packages/renderer/src/shoelace-adapter.ts): a pure, framework-neutral mapping of each semantic component kind to a Shoelace (MIT) custom element with semantic prop->attribute mapping (button variant primary/secondary/danger/ghost/link -> Shoelace variant; the five semantic sizes collapsed onto Shoelace's three), graceful <div data-wa-fallback> rendering for kinds without a 1:1 element (e.g. stepper), and a --wa-* -> --sl-* token bridge (buildShoelaceTokenBridgeCss) so DesignTokens reach the components natively with no per-token translation. nodes/webapp.js now renders containers and the dialog as <sl-card>, injects buildDesignTokenCss(app.tokens) + the bridge + webapp-default token fallbacks into the page head, and loads Shoelace via a CDN ES-module autoloader (no bundler). The thin client (resources/lib/webapp-client.js) mirrors the same sl-card markup so a hydration re-render does not swap element kinds. ui-app tokens now flow through mapConfig (parseTokens); the customers-crud fixture carries a primary token."
+    stats: "Renderer: 1 new source file + index export, 1 new unit test file (6 tests; renderer now 10). webapp.js + webapp-client.js + gen-example.js + flow.json + theming.md touched. 1 new E2E spec (3 tests, order-independent). All unit suites green (schema 79, runtime 123, editor 10, renderer 10); lint clean."
+    notes: "Scope decision: leaf interactive controls (button/input/table/links) stay native HTML so accessibility and the role-based E2E selectors keep working and the no-JS fallback survives; the WC adapter is applied to the container/card shell + dialog, which is where the customers example has a container. Shoelace is loaded from jsDelivr CDN as an ES module autoloader — matches ADR 0002's 'ES modules / static resource, no bundler' and is reachable in the sandbox; a future fully-offline run may want a vendored copy. PRE-EXISTING red E2E baseline persists (layout-apps, editor-mount-options, p16d x5, parent-selector, p15, p21 customer-detail, customers-crud): root-caused as a shared-Node-RED-instance test-isolation defect — layout-apps deploys a demo app over the shared customersApp flow and its afterEach restore does not reliably persist, so alphabetically-later specs see 'Unknown app'. Confirmed identical failure set with and without P23 (full baseline run pre-change). P23's own spec re-deploys examples/customers-crud/flow.json in beforeEach so it passes deterministically regardless of order; fixing the suite isolation is out of phase scope (logged in friction-log + spun off). gen:example was re-run because the ui-app gained a tokens field."
+  goals:
+    - Render the snapshot with a Web Component library as the default theme adapter.
+    - Wire DesignTokens to the library's CSS custom properties with no per-token translation.
+  deliverables:
+    - a default adapter that maps each semantic component kind to a Shoelace (MIT) custom element with semantic prop -> attribute mapping (variant, size, etc.)
+    - graceful fallback rendering for any kind without a native Shoelace equivalent
+    - DesignTokens (buildDesignTokenCss output) applied as CSS custom properties consumed natively by the components; no framework-token leakage into schemas
+    - Shoelace loaded via ES modules / static resource (no bundler added to the build)
+    - the default app shell (layout regions header/navbar/content/footer) rendered with the Web Component adapter
+  validation:
+    - pnpm test passes with no failures
+    - "unit test: kind=button maps to the Shoelace button element with the semantic variant/size mapped to the correct attributes (packages/renderer/test/shoelace-adapter.test.ts)"
+    - "unit test: kind=stepper produces a defined fallback rendering, not an empty node"
+    - "unit test: a ui-app token set appears as the corresponding CSS custom property (Shoelace bridge :root block)"
+    - "unit test: the adapter's accepted variant vocabulary stays semantic — no framework token as input (audit guard)"
+    - "Playwright: the customers-crud example renders with Shoelace (sl-card) and the configured primary color is visibly applied (tests/e2e/p23-shoelace-adapter.spec.ts)"
+    - "docs check: docs/theming.md describes theme = tokens + adapter choice + adapter impl and that a theme injects no node types (per ADR 0002)"

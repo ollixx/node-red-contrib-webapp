@@ -13,6 +13,10 @@
         "title": "Customers CRM",
         "root": "customersApp",
         "layout": "app",
+        "tokens": {
+            "colorPrimary": "rgb(124, 58, 237)",
+            "colorPrimaryFg": "rgb(255, 255, 255)"
+        },
         "z": "flow1",
         "x": 120,
         "y": 60,

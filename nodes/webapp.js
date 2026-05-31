@@ -9,11 +9,22 @@ const {
     uiEventMessageSchema,
     validateUiNodeDefinition
 } = require("../packages/schema/dist/index.js");
-const { createRendererApp } = require("../packages/renderer/dist/index.js");
+const { createRendererApp, mapComponentToShoelace, buildShoelaceTokenBridgeCss } = require("../packages/renderer/dist/index.js");
+const { buildDesignTokenCss } = require("../packages/schema/dist/index.js");
 
 // P22: the thin client runtime is served statically from resources/. Node-RED
 // exposes a plugin's resources/ dir under resources/<module-name>/.
 const CLIENT_RUNTIME_PATH = "/resources/node-red-contrib-webapp/lib/webapp-client.js";
+
+// P23: the default rendering target is Web Components (Shoelace, MIT) — see
+// ADR 0002. Shoelace is loaded as an ES module / static resource (no bundler);
+// the autoloader registers each custom element on first use. Components are
+// themed natively through CSS custom properties, so the design tokens plug in
+// without per-token translation.
+const SHOELACE_VERSION = "2.20.1";
+const SHOELACE_CDN_BASE = `https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@${SHOELACE_VERSION}/cdn`;
+const SHOELACE_THEME_HREF = `${SHOELACE_CDN_BASE}/themes/light.css`;
+const SHOELACE_AUTOLOADER_SRC = `${SHOELACE_CDN_BASE}/shoelace-autoloader.js`;
 
 const runtimeState = {
     definitions: new Map(),
@@ -95,6 +106,26 @@ function parseJsonList(value) {
     }
     catch (_e) {
         return parseList(value);
+    }
+}
+
+// P23: design tokens may arrive as an object (typed fixture / gen-example) or a
+// JSON string (editor field). Returns a plain object or undefined.
+function parseTokens(value) {
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+        return value;
+    }
+
+    if (typeof value !== "string" || value.trim().length === 0) {
+        return undefined;
+    }
+
+    try {
+        const parsed = JSON.parse(value);
+        return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : undefined;
+    }
+    catch (_e) {
+        return undefined;
     }
 }
 
@@ -1022,9 +1053,16 @@ function renderComponentHtml(component, layoutId, serializerContext) {
         const formId = hasInputs ? `webapp-form-${component.id}` : undefined;
         const childContext = { ...serializerContext, formId };
         const content = renderLayoutHtml(childLayoutId, component.regions, childContext);
-        const inner = formId
+        const body = formId
             ? `<form class="webapp-form" id="${escapeAttribute(formId)}" method="get">${content}</form>`
-            : `<div class="webapp-container">${content}</div>`;
+            : content;
+        // P23: containers render through the Web Component adapter (sl-card).
+        // The card projects its children via the default slot, so every nested
+        // interaction (forms, inputs, buttons, table links) is preserved while
+        // the page gains a genuine Web Component shell. Falls back to a plain
+        // div tag if the adapter has no native element for the kind.
+        const descriptor = mapComponentToShoelace(component.kind, component.props || {});
+        const inner = `<${descriptor.tag} class="webapp-container">${body}</${descriptor.tag}>`;
         return wrapRenderedComponentHtml(component, layoutId, inner);
     }
 
@@ -1337,6 +1375,7 @@ function buildAppSnapshot(appId, location, dialogId, definitions) {
         model,
         routeMatch,
         layout,
+        tokens: parseTokens(buckets.app && buckets.app.tokens),
         snapshot: rendererApp.render()
     };
 }
@@ -1352,7 +1391,12 @@ function renderAppPage(appId, location, dialogId, definitions) {
         };
     }
 
-    const { model, routeMatch, snapshot } = built;
+    const { model, routeMatch, snapshot, tokens } = built;
+    // P23: design tokens → CSS custom properties (consumed natively by the Web
+    // Components) plus the --wa-* → --sl-* bridge so Shoelace is themed without
+    // per-token translation. Unset tokens fall back to the defaults below.
+    const tokenCss = buildDesignTokenCss(tokens);
+    const shoelaceBridgeCss = buildShoelaceTokenBridgeCss();
     const serializerContext = {
         appId: model.id,
         location: snapshot.location,
@@ -1361,7 +1405,7 @@ function renderAppPage(appId, location, dialogId, definitions) {
     };
 
     const dialogHtml = snapshot.dialogs
-        .map((dialog) => `<div class="webapp-dialog"><div class="webapp-dialog-card"><div class="webapp-dialog-head"><h2>${escapeHtml(dialog.title || dialog.id)}</h2><a href="/webapp/${encodeURIComponent(appId)}/action/closeCustomerEditor?location=${encodeURIComponent(location)}&sourceId=cancelCustomerButton&event=click" class="webapp-link">Close</a></div>${renderLayoutHtml(dialog.layoutId, dialog.regions, serializerContext)}</div></div>`)
+        .map((dialog) => `<div class="webapp-dialog"><sl-card class="webapp-dialog-card"><div class="webapp-dialog-head"><h2>${escapeHtml(dialog.title || dialog.id)}</h2><a href="/webapp/${encodeURIComponent(appId)}/action/closeCustomerEditor?location=${encodeURIComponent(location)}&sourceId=cancelCustomerButton&event=click" class="webapp-link">Close</a></div>${renderLayoutHtml(dialog.layoutId, dialog.regions, serializerContext)}</sl-card></div>`)
         .join("");
     const pageBody = renderLayoutHtml(snapshot.layout.id, snapshot.regions, serializerContext);
     const messageFeed = getPreviewMessages(appId)
@@ -1378,8 +1422,26 @@ function renderAppPage(appId, location, dialogId, definitions) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtml(model.title)} - ${escapeHtml(routeMatch.route.title || routeMatch.route.id)}</title>
+  <link rel="stylesheet" href="${SHOELACE_THEME_HREF}">
+  <script type="module" src="${SHOELACE_AUTOLOADER_SRC}"></script>
   <style>
-    :root { color-scheme: light; --bg:#f4f1e8; --panel:#fffdf7; --ink:#1f2933; --muted:#5b6470; --line:#d9d2c3; --accent:#0f766e; --accent-2:#9a3412; }
+    /* P23: webapp-default design tokens. User tokens on ui-app (below) override
+       these; the Web Components consume them natively as CSS custom properties. */
+    :root {
+      --wa-color-primary:#3b82f6; --wa-color-primary-fg:#ffffff;
+      --wa-color-danger:#ef4444; --wa-color-danger-fg:#ffffff;
+      --wa-color-success:#22c55e; --wa-color-warning:#f59e0b;
+      --wa-color-neutral:#6b7280; --wa-color-background:#ffffff;
+      --wa-color-surface:#f9fafb; --wa-color-border:#e5e7eb;
+      --wa-color-text:#111827; --wa-color-text-muted:#6b7280;
+      --wa-font-family:system-ui, sans-serif; --wa-font-size-base:16px;
+      --wa-radius-md:6px;
+    }
+    /* P23: --wa-* → --sl-* bridge (Shoelace themed via the same tokens). */
+${shoelaceBridgeCss.split("\n").map((line) => `    ${line}`).join("\n")}
+    /* P23: user-defined ui-app tokens (highest precedence). */
+${tokenCss ? tokenCss.split("\n").map((line) => `    ${line}`).join("\n") : "    /* (no app tokens set) */"}
+    :root { color-scheme: light; --bg:#f4f1e8; --panel:#fffdf7; --ink:#1f2933; --muted:#5b6470; --line:#d9d2c3; --accent:var(--wa-color-primary); --accent-2:#9a3412; }
     * { box-sizing:border-box; }
     body { margin:0; font-family: Georgia, "Iowan Old Style", serif; color:var(--ink); background:radial-gradient(circle at top left, #fff8ec, var(--bg)); }
     a { color:inherit; text-decoration:none; }
@@ -1405,7 +1467,7 @@ function renderAppPage(appId, location, dialogId, definitions) {
     .webapp-slot-body--absolute { position:relative; min-height:320px; }
     .webapp-item--absolute { position:absolute; }
     .webapp-text { font-size:1.05rem; }
-    .webapp-button { display:inline-flex; align-items:center; justify-content:center; padding:10px 14px; border-radius:999px; border:1px solid rgba(0,0,0,0.08); background:linear-gradient(135deg, var(--accent), #155e75); color:white; font-weight:600; }
+    .webapp-button { display:inline-flex; align-items:center; justify-content:center; padding:10px 14px; border-radius:999px; border:1px solid rgba(0,0,0,0.08); background:var(--wa-color-primary); color:var(--wa-color-primary-fg, #fff); font-weight:600; }
     button.webapp-button[disabled] { background:#cbd5e1; color:#475569; }
     .webapp-table { width:100%; border-collapse:collapse; background:var(--panel); border-radius:12px; overflow:hidden; }
     .webapp-table th, .webapp-table td { padding:10px 12px; border-bottom:1px solid var(--line); text-align:left; }
@@ -1923,7 +1985,10 @@ const runtimeNodeRegistry = {
             root: config.root || "",
             title: config.name || config.title || config.root || getUiId(config) || "App",
             layout: config.layout || "vertical",
-            events: parseJsonList(config.events).length > 0 ? parseJsonList(config.events) : undefined
+            events: parseJsonList(config.events).length > 0 ? parseJsonList(config.events) : undefined,
+            // P23: design tokens drive the Web Component theme via CSS custom
+            // properties. Carried through unchanged so the page can inject them.
+            tokens: parseTokens(config.tokens)
         }),
         options: {
             inputHandler: passThroughInputHandler

@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P23  # Web Component rendering migration (see ADR 0002)
+  current_phase: none  # P23 done; no pending phases remain. Next work is the deferred items below (open only on concrete need) or a new ADR-driven phase.
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -146,27 +146,7 @@ phases:
 
   - { id: P22, title: "Snapshot transport — JSON endpoint and thin client runtime", status: done, dependencies: [P21], archive: "docs/agent-roadmap-archive.yaml#P22" }
 
-  - id: P23
-    title: Web Component default adapter — Shoelace
-    status: in_progress
-    dependencies: [P22]
-    goals:
-      - Render the snapshot with a Web Component library as the default theme adapter.
-      - Wire DesignTokens to the library's CSS custom properties with no per-token translation.
-    deliverables:
-      - a default adapter that maps each semantic component kind to a Shoelace (MIT) custom element with semantic prop → attribute mapping (variant, size, etc.)
-      - graceful fallback rendering for any kind without a native Shoelace equivalent
-      - DesignTokens (buildDesignTokenCss output) applied as CSS custom properties consumed natively by the components; no framework-token leakage into schemas
-      - Shoelace loaded via ES modules / static resource (no bundler added to the build)
-      - the default app shell (layout regions header/navbar/content/footer) rendered with the Web Component adapter
-    validation:
-      - pnpm test passes with no failures
-      - unit test: kind=button maps to the Shoelace button element with the semantic variant/size mapped to the correct attributes
-      - unit test: kind=stepper (and other nodes without a 1:1 native element) produces a defined fallback rendering, not an empty node
-      - unit test: a ui-app token set (e.g. colorPrimary) appears as the corresponding CSS custom property in the rendered document
-      - unit test: no component prop schema contains framework-specific token values (audit guard — props stay semantic)
-      - Playwright: the customers-crud example renders with Shoelace components and the configured primary color is visibly applied
-      - docs check: docs/theming.md describes theme = tokens + adapter choice + adapter impl, and states that a theme injects no node types (per ADR 0002)
+  - { id: P23, title: "Web Component default adapter — Shoelace", status: done, dependencies: [P22], archive: "docs/agent-roadmap-archive.yaml#P23" }
 
   # Deferred — only when a concrete need appears (see ADR 0002):
   #   - ui-custom escape-hatch node for framework-specific components (opt-in, non-portable)

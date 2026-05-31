@@ -63,7 +63,13 @@ const flowNodes = [
         name:   "Customers CRM",
         title:  "Customers CRM",   // schema field used directly when bypassing mapConfig
         root:   APP,               // required: app ID used in /webapp/:appId routes
-        layout: "app"
+        layout: "app",
+        // P23: design tokens drive the Web Component theme via CSS custom
+        // properties. A distinct primary color so the theme is visibly applied.
+        tokens: {
+            colorPrimary: "rgb(124, 58, 237)",
+            colorPrimaryFg: "rgb(255, 255, 255)"
+        }
     }),
     node("ui-route", "routeHome", "structure", 1, {
         name:    "Home",

@@ -2,6 +2,22 @@
 
 This document describes the design token system, the webapp-default backend, and the interface for community renderer backends.
 
+## What a theme is (ADR 0002)
+
+Per [ADR 0002](adr/0002-web-component-rendering-and-theming.md), a **theme is a triple** — it is purely presentational and **injects no node types**:
+
+1. **A token set** — declarative values (colors, spacing, radii, fonts) on the `ui-app` `tokens` field.
+2. **An adapter choice** — which generator renders the framework-agnostic `RenderSnapshot`.
+3. **An adapter implementation** — the semantic-kind → framework-element mapping plus graceful fallbacks, living in the relevant generator package (below the snapshot seam).
+
+Switching themes means swapping tokens + adapter; the flow and its node vocabulary are unchanged and portable. The node vocabulary stays semantic and framework-neutral (`variant: primary`, `size: md`), never framework tokens. A framework that lacks a native equivalent for a node degrades gracefully to a fallback rendering — it never adds a node type.
+
+### Default adapter: Shoelace Web Components (P23)
+
+The default rendering target is **Web Components** via **Shoelace 2.x (MIT)**, loaded as an ES module / static resource (no bundler). The adapter (`packages/renderer/src/shoelace-adapter.ts`) maps each semantic component kind to a Shoelace custom element (e.g. `button` → `sl-button`, `container`/`card` → `sl-card`) and maps semantic props to attributes (`variant`, `size`). Kinds without a 1:1 Shoelace element fall back to a defined element, never an empty node.
+
+Because Shoelace is themed natively through CSS custom properties, the `DesignTokens` (via `buildDesignTokenCss`) plug in directly: the `--wa-*` token properties are aliased to the corresponding `--sl-*` properties (`buildShoelaceTokenBridgeCss`) with no per-token translation.
+
 ## Design Tokens
 
 Design tokens are declared on the `ui-app` node under the `tokens` field. They drive CSS Custom Properties injected into the page at runtime.

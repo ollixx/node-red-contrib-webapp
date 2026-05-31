@@ -146,9 +146,12 @@
             const formId = hasInputs ? "webapp-form-" + component.id : undefined;
             const childCtx = { formId: formId, params: ctx.params };
             const content = renderLayout(childLayoutId, component.regions, childCtx);
-            const inner = formId
+            const body = formId
                 ? '<form class="webapp-form" id="' + escapeHtml(formId) + '" data-webapp-form-id="' + escapeHtml(formId) + '">' + content + "</form>"
-                : '<div class="webapp-container">' + content + "</div>";
+                : content;
+            // P23: containers render through the Web Component adapter (sl-card),
+            // matching the server so a re-render does not swap the element kind.
+            const inner = "<sl-card class=\"webapp-container\">" + body + "</sl-card>";
             return wrap(component, inner);
         }
 
@@ -187,10 +190,10 @@
     function renderSnapshot(snapshot) {
         const grid = renderLayout(snapshot.layout.id, snapshot.regions, { formId: undefined, params: snapshot.params });
         const dialogs = (snapshot.dialogs || []).map(function (dialog) {
-            return '<div class="webapp-dialog"><div class="webapp-dialog-card"><div class="webapp-dialog-head"><h2>'
+            return '<div class="webapp-dialog"><sl-card class="webapp-dialog-card"><div class="webapp-dialog-head"><h2>'
                 + escapeHtml(dialog.title || dialog.id) + "</h2></div>"
                 + renderLayout(dialog.layoutId, dialog.regions, { formId: undefined, params: snapshot.params })
-                + "</div></div>";
+                + "</sl-card></div>";
         }).join("");
         return { grid: grid, dialogs: dialogs };
     }

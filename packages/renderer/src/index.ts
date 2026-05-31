@@ -1,6 +1,14 @@
 export const packageName = "@node-red-contrib-webapp/renderer";
 
 export { createRendererApp, findComponentInSnapshot, matchRouteLocation } from "./renderer";
+export {
+    buildShoelaceTokenBridgeCss,
+    collectSnapshotKinds,
+    mapButtonVariant,
+    mapComponentToShoelace,
+    mapSize
+} from "./shoelace-adapter";
+export type { AdapterElementDescriptor } from "./shoelace-adapter";
 export type {
     DispatchResult,
     RenderedButtonComponent,
