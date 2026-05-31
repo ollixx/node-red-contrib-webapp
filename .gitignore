@@ -4,4 +4,7 @@ coverage/
 *.tsbuildinfo
 .node-red-dev/
 .node-red-e2e/
+.node-red-example/
+test-results/
+playwright-report/
 
