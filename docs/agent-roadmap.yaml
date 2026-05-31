@@ -149,7 +149,7 @@ phases:
 
   - id: P30
     title: Real Client→Server events — UI nodes emit msg out their output port
-    status: pending
+    status: in_progress
     dependencies: [P29]
     goals:
       - Make user interaction emit a real Node-RED event message out of the originating UI node's output port into the flow, per docs/nodes/concepts/events.md — the browser reports WHAT HAPPENED; it never names or runs an action. There is no automatic event→action link; the flow decides.
