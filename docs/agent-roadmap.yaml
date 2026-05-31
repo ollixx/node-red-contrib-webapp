@@ -101,7 +101,7 @@ phases:
 
   - id: P28
     title: Rebuild the Customers CRUD example from scratch — fully declarative
-    status: pending
+    status: in_progress
     dependencies: [P27]
     goals:
       - Regenerate the Customers CRUD example so EVERY surface is built from nodes under the new Shoelace + node-driven-content model — no empty routes, no reliance on hard-coded HTML or a runtime-baked backend. This is the showcase that the declarative model is complete end-to-end.
