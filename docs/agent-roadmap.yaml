@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P29  # Next phase TBD
+  current_phase: P29  # COURSE CORRECTION — remove the preview, restore the live Node-RED app model (see reversal note below P28)
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -100,6 +100,137 @@ phases:
   - { id: P27, title: "De-hardcode the runtime — node-driven demo behaviour and data", status: done, dependencies: [P26], archive: "docs/agent-roadmap-archive.yaml#P27" }
 
   - { id: P28, title: "Rebuild the Customers CRUD example — fully declarative", status: done, dependencies: [P27], archive: "docs/agent-roadmap-archive.yaml#P28" }
+
+  # ════════════════════════════════════════════════════════════════════════
+  # COURSE CORRECTION (2026-05-31) — kill the preview, restore the live model.
+  #
+  # The owner's verdict after seeing the running app: the whole "render a
+  # preview backend inside the runtime" idea was a mistake and must be removed
+  # entirely. The core product principle, already written down before any of
+  # this drift, is non-negotiable:
+  #
+  #   • docs/nodes/concepts/events.md:96 — "Der Flow ist der einzige Ort für
+  #     Logik." (The flow is the ONLY place for logic.)
+  #   • docs/nodes/concepts/actions.md:11,238 — actions change INTERACTION
+  #     state only (navigate / openDialog / show / enable / focus / reset),
+  #     NEVER business data. A ui-action never writes a store/collection.
+  #
+  # Nodes must be 100% domain-agnostic. ZERO business logic in any node or in
+  # the runtime. You assemble ANY app (not just a customer CRM) out of generic
+  # nodes; all domain logic lives in the wired Node-RED flow (function/db/http
+  # nodes). The app IS its wiring.
+  #
+  # What drifted (to be reverted):
+  #   • P20a invented action types `submit` / `remove` with a `collection`
+  #     field — these ARE CRUD. applySubmitAction / applyRemoveAction in
+  #     nodes/webapp.js insert/update/delete records (business data) inside the
+  #     runtime. Forbidden by actions.md.
+  #   • P22 "snapshot transport / thin client" + the preview endpoints turned
+  #     the runtime into a fake backend: the browser POSTs an actionId and the
+  #     runtime executes it (incl. CRUD) against in-memory previewState /
+  #     previewQueries, with NO flow and NO wiring involved. This contradicts
+  #     events.md (no auto event→action link; the flow decides).
+  #   • P27 "de-hardcoded" by GENERALISING the CRUD into the runtime instead of
+  #     REMOVING it. A generic CRUD engine is still business logic in the
+  #     framework. Wrong target.
+  #   • P28 produced an example with ZERO wires — only possible because the CRUD
+  #     was faked in the runtime. A real app in this model is DEFINED by wires.
+  #
+  # Reusable / kept: the renderer, the Shoelace adapter + design tokens, and
+  # the P26 shared serializer (rendering is fine — only the STATE SOURCE and
+  # the transport are wrong). P29 writes ADR 0003 to supersede the transport
+  # slice of ADR 0002; the rendering/theming slice of 0002 stays valid.
+  #
+  # Superseded phases (kept as historical 'done', corrected by P29–P33):
+  #   P20a (partial: submit/remove), P22, P27, P28.
+  # ════════════════════════════════════════════════════════════════════════
+
+  - id: P29
+    title: ADR 0003 + revert in-runtime business logic (kill submit/remove CRUD)
+    status: pending
+    dependencies: [P28]
+    goals:
+      - Record the reversal in an ADR and remove the invented, domain-bearing action types so the action vocabulary is back to interaction-only, exactly as docs/nodes/concepts/actions.md specifies. This is the safe, foundational teardown step before the transport rebuild.
+    deliverables:
+      - "write docs/adr/0003-live-node-red-app-no-preview.md — supersedes ONLY the transport/preview slice of ADR 0002 (snapshot transport, thin-client preview, runtime-executed actions); keeps 0002's rendering/theming (Shoelace adapter, tokens, shared serializer). States the principle: zero business logic in nodes/runtime; the flow is the only place for logic; the app is its wiring."
+      - "remove the `submit` and `remove` action types and the `collection` / draft-related action fields from packages/schema (action contract) and from the ui-action node config + editor HTML"
+      - "delete applySubmitAction and applyRemoveAction from nodes/webapp.js and every code path that mutates query/collection/record data in the runtime — the runtime must contain no create/update/delete-record logic"
+      - "the action vocabulary that remains is exactly the documented interaction set: navigate, openDialog/closeDialog (or show/hide for dialogs), show/hide, enable/disable, focus, reset — none of which touch business data"
+    validation:
+      - pnpm test passes with no failures (tests asserting CRUD-via-action are removed or rewritten, not left red)
+      - "grep check: nodes/webapp.js contains no applySubmitAction/applyRemoveAction and no record insert/update/delete logic; schema exposes no submit/remove action type"
+      - "unit test: every supported action type changes only interaction state (dialog open flag, navigation target, visibility/enabled/focus) — a representative action leaves all store/query data unchanged"
+      - "doc check: ADR 0003 exists, is referenced from ADR 0002's status header, and the action-type list in actions.md matches the schema"
+
+  - id: P30
+    title: Real Client→Server events — UI nodes emit msg out their output port
+    status: pending
+    dependencies: [P29]
+    goals:
+      - Make user interaction emit a real Node-RED event message out of the originating UI node's output port into the flow, per docs/nodes/concepts/events.md — the browser reports WHAT HAPPENED; it never names or runs an action. There is no automatic event→action link; the flow decides.
+    deliverables:
+      - "the browser transport sends a raw event {appId, clientId, event, sourceId, params} (events.md message format) — NOT an actionId to execute"
+      - "the runtime routes that event to the originating node and emits msg.ui on that node's output port into the wired flow (reuse the existing input-handler plumbing in reverse); the runtime takes no domain action itself"
+      - "ui-button, ui-input, ui-table (rowSelect/rowAction), ui-select/checkbox/radio/slider/switch (change), ui-dialog (onOpen/onClose) and ui-route (onEnter/onLeave) emit their documented event types with the documented params"
+      - "the /event endpoint is repurposed (or replaced) to mean 'ingest a client event', with the action-dispatch semantics fully gone"
+    validation:
+      - pnpm test passes with no failures
+      - "unit test: a click on a wired ui-button emits msg.ui {event:'click', sourceId, clientId, appId} on its output port and triggers NO state change in the runtime"
+      - "unit test: a ui-table row select emits {event:'rowSelect', params:{rowId,row}} on the output port"
+      - "integration test: with no downstream wiring, a client event produces an output message and nothing else (the flow is the only place that could react)"
+
+  - id: P31
+    title: Live Server→Client transport — push store/action updates to clients
+    status: pending
+    dependencies: [P30]
+    goals:
+      - Replace the request/response preview with a real live channel so that when the wired flow feeds ui-store/ui-query (data) or ui-action (interaction), connected browsers update in real time. State lives in the real node runtime (fed by flow messages), not in a runtime-owned preview simulation.
+      - "DECISION REQUIRED in this phase: pick the push transport (e.g. Node-RED's built-in RED.comms websocket vs. a dedicated ws/SSE channel) and record it in ADR 0003. Note for the planner: do not start coding the channel until this is chosen."
+    deliverables:
+      - "a Server→Client push channel: ui-store/ui-query state updates (from flow input handlers) and ui-action interaction commands are serialised and pushed to the relevant client(s), honouring msg.ui.clientId targeting and the multi-user/per-client state model (P15)"
+      - "the served page renders from the real current node state (ui-store/ui-query) using the P26 shared serializer, and re-renders on pushed updates via the existing keyed morph"
+      - "app state source of truth = the runtime node state mutated only by flow messages — no previewState/previewQueries as an independent simulation"
+    validation:
+      - pnpm test passes with no failures
+      - "integration test: a msg sent into a ui-store input handler results in a push to a subscribed client and a re-render reflecting the new data (no client POST involved)"
+      - "integration test: a ui-action (navigate/openDialog) triggered from the flow pushes the interaction command and the client applies it"
+      - "integration test: clientId targeting — an action addressed to one client does not affect another connected client"
+      - "manual: two browser tabs; a flow-driven store update appears live in both (or the targeted one) without reload"
+
+  - id: P32
+    title: Remove the preview rendering apparatus entirely
+    status: pending
+    dependencies: [P31]
+    goals:
+      - Delete the preview simulation now that the live path (P30 events out, P31 live push) exists. The runtime must no longer simulate a backend or hold a parallel preview state.
+    deliverables:
+      - "delete applyPreviewAction, the previewState/previewQueries simulation, the preview message feed, and the related helpers from nodes/webapp.js"
+      - "remove the preview HTTP endpoints that are now obsolete: GET /snapshot, the action-dispatch /event behaviour, GET /reset, GET /events, GET /action/:actionId (keep only what the live transport and initial page load require)"
+      - "remove preview-only fields/fixtures from packages/schema and the renderer (e.g. ui-query previewData as a runtime backend source) — demo/seed data, if any remains, is clearly marked editor-preview-only and never drives the served app"
+      - "remove preview-specific docs and update concepts/messages.md to describe the live event/action/transport model only"
+    validation:
+      - pnpm test passes with no failures
+      - "grep check: no 'preview' simulation remains in nodes/webapp.js (no applyPreviewAction, previewState, previewQueries)"
+      - "the dev app still loads and renders the current node state via the live transport (no /snapshot dependency)"
+      - "doc check: messages.md no longer documents the snapshot/preview transport"
+
+  - id: P33
+    title: Rebuild Customers CRUD as a REAL wired Node-RED flow (zero framework logic)
+    status: pending
+    dependencies: [P32]
+    goals:
+      - Prove the whole thesis: build a working Customers CRUD app purely by wiring generic UI nodes to stock Node-RED nodes — events out, function/storage nodes do the domain logic, ui-store/ui-query + ui-action feed results back. No business logic anywhere in our nodes or runtime, and the example flow has real wires.
+    deliverables:
+      - "rewrite scripts/gen-example.js so examples/customers-crud/flow.json contains the WIRING: ui-button(click)/ui-table(rowSelect) outputs → function node(s) doing create/update/delete against Node-RED context (flow/global) or a store → ui-store/ui-query updates + ui-action (close dialog / navigate) back to the client"
+      - "all domain logic (the CRUD) lives in plain Node-RED function nodes in the example flow, NOT in any ui-* node or in nodes/webapp.js"
+      - "regenerate examples/customers-crud/flow.json AND .node-red-dev/flows.json via pnpm gen:example"
+      - "every route has node-built content (home not empty); the example showcases the Shoelace component set where natural (ui-badge for status, ui-alert for feedback)"
+    validation:
+      - pnpm test passes with no failures
+      - "pnpm exec playwright test passes — list/detail/create/edit/delete all work end-to-end, driven by the wired flow (the runtime performs no CRUD)"
+      - "structural check: examples/customers-crud/flow.json has non-empty wires connecting UI node outputs to function/store/action nodes"
+      - "grep check: nodes/webapp.js contains no 'customer'/'/customers' identifiers (already true after P27, re-asserted here)"
+      - "manual: the owner confirms in the browser that create/edit/delete work AND that the behaviour is produced solely by the flow's wiring (deleting the function nodes breaks CRUD, proving the logic lives in the flow)"
 
   # Deferred — only when a concrete need appears (see ADR 0002):
   #   - ui-custom escape-hatch node for framework-specific components (opt-in, non-portable)

@@ -57,6 +57,8 @@ Wenn das Ziel erst zur Laufzeit bekannt ist — z.B. weil es aus den Daten des a
 
 `targetId` überschreibt das statische Wiring. Typischer Anwendungsfall: Das Event enthält eine `sourceId`, die als Ziel der Reaktion genutzt wird.
 
+In diesem Fall schickt der Knoten die Message direkt an die App.
+
 ### 3. Pfad-Selektor (zukünftig — dynamische Elemente)
 
 Für dynamisch erzeugte Elemente (z.B. Zeilen in einer Tabelle, Items in einer Liste) gibt es keine feste Node-ID. Hier wird ein Adressierungsschema auf dem App-State oder DOM benötigt — z.B. JSONPath auf den Store-Zustand.
