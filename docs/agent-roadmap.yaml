@@ -148,7 +148,7 @@ phases:
 
   - id: P23
     title: Web Component default adapter — Shoelace
-    status: pending
+    status: in_progress
     dependencies: [P22]
     goals:
       - Render the snapshot with a Web Component library as the default theme adapter.
