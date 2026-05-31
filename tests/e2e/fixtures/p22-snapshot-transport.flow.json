@@ -1,0 +1,154 @@
+[
+  {
+    "type": "tab",
+    "id": "p22flow",
+    "label": "P22"
+  },
+  {
+    "type": "ui-app",
+    "id": "p22App",
+    "name": "P22 App",
+    "root": "p22App",
+    "layout": "app",
+    "title": "P22",
+    "z": "p22flow",
+    "wires": [],
+    "x": 200,
+    "y": 140
+  },
+  {
+    "type": "ui-route",
+    "id": "r-customers",
+    "name": "Customers",
+    "parent": "p22App",
+    "path": "/customers",
+    "title": "Customers",
+    "layoutId": "vertical",
+    "z": "p22flow",
+    "wires": [],
+    "x": 200,
+    "y": 200
+  },
+  {
+    "type": "ui-dialog",
+    "id": "customerEditor",
+    "name": "Edit customer",
+    "parent": "p22App",
+    "title": "Edit customer",
+    "layoutId": "vertical",
+    "z": "p22flow",
+    "wires": [],
+    "x": 200,
+    "y": 260
+  },
+  {
+    "type": "ui-query",
+    "id": "customersQuery",
+    "name": "Customers query",
+    "parent": "p22App",
+    "queryPath": "customers.list",
+    "refreshAction": "refreshCustomers",
+    "z": "p22flow",
+    "wires": [],
+    "x": 200,
+    "y": 320
+  },
+  {
+    "type": "ui-table",
+    "id": "customersTable",
+    "name": "Customers table",
+    "parent": "p22App",
+    "mount": "route:/customers/content",
+    "order": 3,
+    "columns": "name,email",
+    "rows": {
+      "kind": "query",
+      "path": "customers.list"
+    },
+    "z": "p22flow",
+    "wires": [],
+    "x": 200,
+    "y": 380
+  },
+  {
+    "type": "ui-button",
+    "id": "openCustomerEditor",
+    "name": "New customer",
+    "parent": "p22App",
+    "mount": "route:/customers/content",
+    "order": 0,
+    "label": "New customer",
+    "z": "p22flow",
+    "wires": [],
+    "x": 200,
+    "y": 440
+  },
+  {
+    "type": "ui-button",
+    "id": "refreshCustomers",
+    "name": "Refresh",
+    "parent": "p22App",
+    "mount": "route:/customers/content",
+    "order": 1,
+    "label": "Refresh",
+    "z": "p22flow",
+    "wires": [],
+    "x": 200,
+    "y": 500
+  },
+  {
+    "type": "ui-container",
+    "id": "editorContainer",
+    "name": "Editor container",
+    "parent": "p22App",
+    "mount": "dialog:customerEditor/content",
+    "layoutId": "vertical",
+    "z": "p22flow",
+    "wires": [],
+    "x": 200,
+    "y": 560
+  },
+  {
+    "type": "ui-input",
+    "id": "nameInput",
+    "name": "Name",
+    "parent": "p22App",
+    "mount": "container:editorContainer/content",
+    "label": "Name",
+    "storeId": "draftStore",
+    "path": "name",
+    "inputType": "text",
+    "value": {
+      "kind": "state",
+      "path": "draft.customer.name"
+    },
+    "z": "p22flow",
+    "wires": [],
+    "x": 200,
+    "y": 620
+  },
+  {
+    "type": "ui-store",
+    "id": "draftStore",
+    "name": "Draft",
+    "parent": "p22App",
+    "statePath": "draft.customer",
+    "initialValue": "{\"name\":\"\"}",
+    "z": "p22flow",
+    "wires": [],
+    "x": 200,
+    "y": 680
+  },
+  {
+    "type": "ui-button",
+    "id": "saveCustomer",
+    "name": "Save",
+    "parent": "p22App",
+    "mount": "container:editorContainer/content",
+    "label": "Save",
+    "z": "p22flow",
+    "wires": [],
+    "x": 200,
+    "y": 740
+  }
+]

@@ -82,3 +82,53 @@ msg.ui.query.refresh     = true             ← Refresh ohne neue Daten (optiona
 ## Store-Messages
 
 Siehe [ui-store.md](../state/ui-store.md) für das vollständige Format.
+
+---
+
+## Snapshot-Transport (P22)
+
+Die gerenderte Oberfläche wird als framework-neutraler `RenderSnapshot` (siehe
+[ADR 0002](../../adr/0002-web-component-rendering-and-theming.md)) an den Browser
+ausgeliefert. Ein schlanker Vanilla-JS-Client
+(`resources/lib/webapp-client.js`) hält den aktuellen Snapshot, rendert ihn und
+schickt bei einem UI-Event den Snapshot-Zyklus erneut an — ohne vollständigen
+Seiten-Reload.
+
+### Endpunkte
+
+```
+GET  /webapp/:appId/snapshot?location=<route>&dialog=<dialogId?>
+       → { snapshot: RenderSnapshot }     (derselbe Baum, den die HTML-Route serialisiert)
+
+POST /webapp/:appId/event   (Content-Type: application/json)
+       → { message, location, dialog, snapshot }
+```
+
+### Event-Payload (Browser → Runtime)
+
+Der Client schickt genau die Felder, die die `msg.ui`-Event-Message speisen:
+
+```
+{
+  actionId : <id der ausgelösten Aktion>          ← Pflicht
+  sourceId : <componentId der auslösenden Komponente>  → msg.ui.componentId
+  event    : "click" | "submit" | "select" | "change"  → msg.ui.event
+  location : <aktuelle Route>                      → msg.ui.route
+  params   : { ... }                               ← z.B. Formularwerte, rowId
+}
+```
+
+### Antwort (Runtime → Browser)
+
+```
+{
+  message  : <die emittierte msg.ui-Event-Message, Format siehe oben>
+  location : <resultierende Route nach Navigation>
+  dialog   : <id eines offenen Dialogs | undefined>
+  snapshot : <neuer RenderSnapshot zum Rendern>
+}
+```
+
+Der Client führt beim Re-Render einen **keyed Morph** durch: nur geänderte
+Knoten werden ersetzt, sodass Fokus und Scroll-Position bei Listen-/State-Updates
+erhalten bleiben.

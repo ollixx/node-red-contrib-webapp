@@ -11,6 +11,10 @@ const {
 } = require("../packages/schema/dist/index.js");
 const { createRendererApp } = require("../packages/renderer/dist/index.js");
 
+// P22: the thin client runtime is served statically from resources/. Node-RED
+// exposes a plugin's resources/ dir under resources/<module-name>/.
+const CLIENT_RUNTIME_PATH = "/resources/node-red-contrib-webapp/lib/webapp-client.js";
+
 const runtimeState = {
     definitions: new Map(),
     previewState: new Map(),
@@ -1283,34 +1287,26 @@ function applyPreviewAction(RED, appId, actionId, parameters, definitions) {
     };
 }
 
-function renderAppPage(appId, location, dialogId, definitions) {
+// P22: a single helper builds the RenderSnapshot for an app + location + open dialog.
+// Both the HTML route and the JSON snapshot endpoint consume this so they cannot drift.
+function buildAppSnapshot(appId, location, dialogId, definitions) {
     const modelResult = getAppModelResult(appId, definitions);
 
     if (!modelResult.success) {
-        return {
-            status: modelResult.status,
-            body: `<!doctype html><html><body><h1>${modelResult.status === 404 ? "Unknown app" : "Incomplete app"}</h1><p>${escapeHtml(modelResult.message)}</p></body></html>`
-        };
+        return { success: false, status: modelResult.status, message: modelResult.message };
     }
 
     const { model } = modelResult;
-
     const routeMatch = getRouteMatch(location, model.routes);
 
     if (!routeMatch) {
-        return {
-            status: 404,
-            body: `<!doctype html><html><body><h1>Unknown route</h1><p>No route matched '${escapeHtml(location)}'.</p></body></html>`
-        };
+        return { success: false, status: 404, message: `No route matched '${location}'.` };
     }
 
     const layout = getLayout(model, routeMatch.route.layoutId);
 
     if (!layout) {
-        return {
-            status: 500,
-            body: `<!doctype html><html><body><h1>Missing layout</h1></body></html>`
-        };
+        return { success: false, status: 500, message: "Missing layout." };
     }
 
     const buckets = getDefinitionBuckets(appId, definitions);
@@ -1334,7 +1330,29 @@ function renderAppPage(appId, location, dialogId, definitions) {
         state: effectiveState,
         queries
     });
-    const snapshot = rendererApp.render();
+
+    return {
+        success: true,
+        status: 200,
+        model,
+        routeMatch,
+        layout,
+        snapshot: rendererApp.render()
+    };
+}
+
+function renderAppPage(appId, location, dialogId, definitions) {
+    const built = buildAppSnapshot(appId, location, dialogId, definitions);
+
+    if (!built.success) {
+        const heading = built.status === 404 ? "Unknown route" : built.status === 500 ? "Missing layout" : "Incomplete app";
+        return {
+            status: built.status,
+            body: `<!doctype html><html><body><h1>${heading}</h1><p>${escapeHtml(built.message)}</p></body></html>`
+        };
+    }
+
+    const { model, routeMatch, snapshot } = built;
     const serializerContext = {
         appId: model.id,
         location: snapshot.location,
@@ -1405,7 +1423,9 @@ function renderAppPage(appId, location, dialogId, definitions) {
   </style>
 </head>
 <body>
-  <div class="webapp-shell">
+  <div class="webapp-shell" id="webapp-client-root"
+       data-webapp-app-id="${escapeAttribute(model.id)}"
+       data-webapp-location="${escapeAttribute(snapshot.location)}"${dialogId ? ` data-webapp-dialog="${escapeAttribute(dialogId)}"` : ""}>
     <div class="webapp-topbar">
       <div>
         <div class="webapp-sub">Node-RED Webapp Runtime Preview</div>
@@ -1416,6 +1436,7 @@ function renderAppPage(appId, location, dialogId, definitions) {
     <div class="webapp-grid">${pageBody}</div>
     ${dialogHtml}
   </div>
+  <script src="${CLIENT_RUNTIME_PATH}" defer></script>
 </body>
 </html>`
     };
@@ -1507,6 +1528,38 @@ function getActiveRuntimeAppId() {
     return undefined;
 }
 
+// P22: a self-contained JSON body reader so the event endpoint does not depend on
+// Node-RED's optional httpNode body-parser configuration. If a body parser already
+// ran (req.body present), it is reused.
+function readJsonBody(req, res, next) {
+    if (req.body && typeof req.body === "object") {
+        next();
+        return;
+    }
+
+    let raw = "";
+    req.setEncoding("utf8");
+    req.on("data", (chunk) => {
+        raw += chunk;
+        if (raw.length > 1_000_000) {
+            req.destroy();
+        }
+    });
+    req.on("end", () => {
+        try {
+            req.body = raw ? JSON.parse(raw) : {};
+        }
+        catch {
+            req.body = {};
+        }
+        next();
+    });
+    req.on("error", () => {
+        req.body = {};
+        next();
+    });
+}
+
 function registerEndpoints(RED) {
     if (runtimeState.endpointsRegistered) {
         return;
@@ -1550,6 +1603,64 @@ function registerEndpoints(RED) {
         }
 
         res.status(page.status).type("html").send(page.body);
+    });
+
+    // P22: JSON snapshot transport. Returns the exact RenderSnapshot the HTML
+    // route serializes, so a thin client can render and re-render from data alone.
+    RED.httpNode.get("/webapp/:appId/snapshot", (req, res) => {
+        const location = req.query.location ? String(req.query.location) : "/";
+        const dialogId = req.query.dialog ? String(req.query.dialog) : undefined;
+        const built = buildAppSnapshot(req.params.appId, location, dialogId, readDeployDefinitions(RED));
+
+        if (!built.success) {
+            res.status(built.status).json({ error: built.message });
+            return;
+        }
+
+        res.json({ snapshot: built.snapshot });
+    });
+
+    // P22: client-runtime event endpoint. Accepts a UI event payload (the same
+    // shape the action GET endpoint used: actionId + sourceId + event + params),
+    // applies it via applyPreviewAction (which emits the msg.ui message and
+    // updates preview state), then returns the resulting snapshot as JSON.
+    RED.httpNode.post("/webapp/:appId/event", readJsonBody, (req, res) => {
+        const { appId } = req.params;
+        const body = req.body && typeof req.body === "object" ? req.body : {};
+        const actionId = body.actionId ? String(body.actionId) : undefined;
+
+        if (!actionId) {
+            res.status(400).json({ error: "Missing actionId." });
+            return;
+        }
+
+        const definitions = readDeployDefinitions(RED);
+        const parameters = {
+            ...(body.params && typeof body.params === "object" ? body.params : {}),
+            location: body.location ? String(body.location) : "/",
+            sourceId: body.sourceId ? String(body.sourceId) : actionId,
+            event: body.event ? String(body.event) : "click"
+        };
+        const applied = applyPreviewAction(RED, appId, actionId, parameters, definitions);
+
+        if (!applied.success) {
+            res.status(applied.status).json({ error: applied.body });
+            return;
+        }
+
+        const built = buildAppSnapshot(appId, applied.redirectLocation, applied.dialogId, definitions);
+
+        if (!built.success) {
+            res.status(built.status).json({ error: built.message });
+            return;
+        }
+
+        res.json({
+            message: applied.message,
+            location: applied.redirectLocation,
+            dialog: applied.dialogId,
+            snapshot: built.snapshot
+        });
     });
 
     RED.httpNode.get("/webapp/:appId/events", (req, res) => {
@@ -2485,6 +2596,7 @@ registerWebappNodes.__test__ = {
     getPreviewMessages,
     getAppModelResult,
     renderAppPage,
+    buildAppSnapshot,
     resetPreview,
     componentStateInputHandler,
     dialogInputHandler,
