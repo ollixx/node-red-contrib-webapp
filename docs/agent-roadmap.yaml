@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P27  # De-hardcode the runtime — node-driven demo behaviour and data
+  current_phase: P28  # Rebuild the Customers CRUD example from scratch — fully declarative
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -97,23 +97,7 @@ phases:
 
   - { id: P26, title: "Render parity — shared serializer for server and thin client", status: done, dependencies: [P25], archive: "docs/agent-roadmap-archive.yaml#P26" }
 
-  - id: P27
-    title: De-hardcode the runtime — node-driven demo behaviour and data
-    status: in_progress
-    dependencies: [P26]
-    goals:
-      - Remove the Customers-specific demo "backend" baked into nodes/webapp.js so the runtime entry point is example-agnostic, and the example's behaviour is genuinely driven by its ui-action / ui-store / ui-query nodes (via the generic P20a typed-action path) rather than hard-coded if/else branches.
-    deliverables:
-      - "remove the hard-coded CRUD handlers from applyPreviewAction (openCustomerEditor, closeCustomerEditor, saveCustomer, deleteCustomer, openCustomerDetail, goToCustomers) and the allowLegacyPreviewAction allow-list — dialog open/close, state mutation, query refresh and navigation must all flow through the generic typed-action / store / query mechanism"
-      - "remove the hard-coded demo query data and helpers (the customers seed at nodes/webapp.js:516, customerDraftFromRecord, nextCustomerId) — demo data must come from node config (ui-query/ui-store seed/preview data), not from the runtime file"
-      - "remove the example-specific markup from the served HTML: the dialog 'Close' link wired to closeCustomerEditor/cancelCustomerButton (nodes/webapp.js:1640) and the '/customers' location fallbacks (e.g. nodes/webapp.js:956, :1101, :1324) — replace with config-driven dialog close (a real ui-action/ui-navigation) and a model-derived default route"
-      - any generic capability the example needs but the nodes cannot yet express (e.g. a declarative way to seed query/store preview data, or a generic state-write action) is added to the schema/runtime as a first-class node feature, documented in the relevant docs/nodes spec
-    validation:
-      - pnpm test passes with no failures
-      - "grep check: nodes/webapp.js contains no 'customer'/'Customer' identifiers and no '/customers' string literal (the runtime file is example-agnostic)"
-      - "unit test: open/close dialog, save and delete behave identically before and after de-hardcoding, driven purely by typed actions + store/query state (no legacy branch)"
-      - "unit test: demo data is sourced from node config — an app with different ui-query seed data renders that data, proving it is not hard-coded in the runtime"
-      - "manual: the dev app's CRUD flow (open editor, save, delete, navigate) still works end-to-end through node-driven actions"
+  - { id: P27, title: "De-hardcode the runtime — node-driven demo behaviour and data", status: done, dependencies: [P26], archive: "docs/agent-roadmap-archive.yaml#P27" }
 
   - id: P28
     title: Rebuild the Customers CRUD example from scratch — fully declarative

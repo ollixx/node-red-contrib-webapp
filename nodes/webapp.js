@@ -198,13 +198,21 @@ function clone(value) {
     return value === undefined ? undefined : JSON.parse(JSON.stringify(value));
 }
 
-function customerDraftFromRecord(record) {
-    const source = record && typeof record === "object" ? record : {};
-    return {
-        name: String(source.name || ""),
-        email: String(source.email || ""),
-        status: String(source.status || "draft")
-    };
+function parsePreviewData(value) {
+    if (value === undefined || value === null || value === "") {
+        return undefined;
+    }
+
+    if (typeof value === "string") {
+        try {
+            return JSON.parse(value);
+        }
+        catch (error) {
+            return undefined;
+        }
+    }
+
+    return value;
 }
 
 function isPlainObject(value) {
@@ -518,21 +526,34 @@ function initializeState(stores, queries, appId) {
     return state;
 }
 
-function createDemoQueryData() {
-    return {
-        customers: {
-            list: [
-                { id: "c-100", name: "Ada Lovelace", email: "ada@example.com", status: "active" },
-                { id: "c-200", name: "Grace Hopper", email: "grace@example.com", status: "inactive" },
-                { id: "c-300", name: "Radia Perlman", email: "radia@example.com", status: "trial" }
-            ],
-            current: { id: "c-100", name: "Ada Lovelace", email: "ada@example.com", status: "active" }
+// Seed data is declared on the ui-query nodes (previewData), so the runtime
+// entry point carries no example-specific demo data. Each query mounts its
+// previewData under its queryPath's first segment (the collection root).
+function seedQueryDataFromConfig(queries) {
+    let seed = {};
+
+    for (const query of queries) {
+        const previewData = parsePreviewData(query.previewData);
+
+        if (previewData === undefined) {
+            continue;
         }
-    };
+
+        const rootSegment = String(query.queryPath || "").split(".")[0];
+
+        if (!rootSegment) {
+            continue;
+        }
+
+        seed = setValueAtPath(seed, rootSegment, clone(previewData));
+    }
+
+    return seed;
 }
 
-function getPreviewQueries(appId) {
-    return clone(runtimeState.previewQueries.get(appId) || createDemoQueryData());
+function getPreviewQueries(appId, queries = []) {
+    const stored = runtimeState.previewQueries.get(appId);
+    return clone(stored || seedQueryDataFromConfig(queries));
 }
 
 function getPreviewMessages(appId) {
@@ -554,12 +575,32 @@ function rememberPreviewMessage(appId, message) {
     runtimeState.previewMessages.set(appId, nextMessages);
 }
 
-function nextCustomerId(rows) {
-    const maxNumericId = rows.reduce((currentMax, row) => {
-        const match = /^c-(\d+)$/.exec(String(row.id || ""));
-        return match ? Math.max(currentMax, Number(match[1])) : currentMax;
-    }, 0);
-    return `c-${String(maxNumericId + 100 || 100).padStart(3, "0")}`;
+// Generic record id for a new row appended to a collection. Reuses an existing
+// numeric `<prefix>-<n>` scheme when the rows share one; otherwise falls back to
+// a timestamp-based id. No example-specific knowledge.
+function nextRecordId(rows, keyField) {
+    let prefix;
+    let maxNumber = 0;
+    let sawScheme = false;
+
+    for (const row of rows) {
+        const match = /^(.*?)(\d+)$/.exec(String((row && row[keyField]) || ""));
+        if (match) {
+            sawScheme = true;
+            if (prefix === undefined) {
+                prefix = match[1];
+            }
+            if (match[1] === prefix) {
+                maxNumber = Math.max(maxNumber, Number(match[2]));
+            }
+        }
+    }
+
+    if (sawScheme && prefix !== undefined) {
+        return `${prefix}${maxNumber + 1}`;
+    }
+
+    return `r-${Date.now()}`;
 }
 
 function resolveNavigationTarget(navigationPath, parameters, routeParams) {
@@ -579,6 +620,19 @@ function resolveNavigationTarget(navigationPath, parameters, routeParams) {
 
 function findTypedAction(actions, actionId) {
     return actions.find((entry) => entry.id === actionId && entry.actionType);
+}
+
+// The dialog's Close affordance is the `hide` action targeting that dialog
+// (target "dialog:<id>" or an explicit `dialog` field) — derived from config.
+function findDialogCloseAction(actions, dialogId) {
+    return actions.find((entry) => {
+        if (entry.actionType !== "hide") {
+            return false;
+        }
+
+        const parsed = parsePreviewTarget(entry.target);
+        return (parsed && parsed.scope === "dialog" && parsed.id === dialogId) || entry.dialog === dialogId;
+    });
 }
 
 function parsePreviewTarget(target) {
@@ -960,7 +1014,7 @@ function resolveBinding(binding, sources) {
 
 function buildActionHref(appId, action, location, componentId, eventName, params = {}) {
     const query = new URLSearchParams({
-        location: location || "/customers",
+        location: location || "/",
         sourceId: componentId,
         event: eventName,
         ...Object.entries(params).reduce((result, [key, value]) => {
@@ -994,13 +1048,60 @@ function renderComponentHtml(component, layoutId, serializerContext) {
     return sharedSerializer.renderComponentHtml(component, layoutId, serializerContext);
 }
 
+// Generic submit: upsert a record built from the matching input values (plus any
+// in-progress draft) into the collection named by the action config. No example
+// knowledge — the collection path, key field and draft path all come from config.
+function applySubmitAction(typedAction, buckets, nextState, nextQueries, parameters, matchingInputs) {
+    const fieldValues = matchingInputs.reduce((result, input) => {
+        result[input.path] = String(parameters[input.path]);
+        return result;
+    }, {});
+    const storeId = matchingInputs[0] ? matchingInputs[0].storeId : undefined;
+    const storeDefinition = storeId ? buckets.stores.find((entry) => entry.id === storeId) : undefined;
+    const draftPath = typedAction.draftPath || (storeDefinition ? storeDefinition.statePath : undefined);
+    const currentDraft = draftPath ? getValueAtPath(nextState, draftPath) : undefined;
+    const nextDraft = isPlainObject(currentDraft) ? { ...currentDraft, ...fieldValues } : { ...fieldValues };
+    const keyField = typedAction.keyField || "id";
+    const collectionPath = typedAction.collection;
+    const existingRows = Array.isArray(getValueAtPath(nextQueries, collectionPath)) ? getValueAtPath(nextQueries, collectionPath) : [];
+    const draftKey = parameters[keyField] !== undefined ? String(parameters[keyField]) : String((nextDraft && nextDraft[keyField]) || "");
+    const recordKey = draftKey || nextRecordId(existingRows, keyField);
+    const persistedRecord = { [keyField]: recordKey, ...nextDraft };
+    delete persistedRecord.__draftKey;
+    const existingIndex = existingRows.findIndex((row) => String(row[keyField]) === recordKey);
+    const nextRows = existingIndex >= 0
+        ? existingRows.map((row, index) => index === existingIndex ? persistedRecord : row)
+        : [...existingRows, persistedRecord];
+
+    let updatedState = draftPath ? setValueAtPath(nextState, draftPath, nextDraft) : nextState;
+    const updatedQueries = setValueAtPath(nextQueries, collectionPath, nextRows);
+
+    return { nextState: updatedState, nextQueries: updatedQueries, fieldValues, draftPath, nextDraft };
+}
+
+// Generic remove: drop the row whose key matches the action parameter from the
+// collection named by the action config.
+function applyRemoveAction(typedAction, nextQueries, parameters, routeParams) {
+    const keyField = typedAction.keyField || "id";
+    const collectionPath = typedAction.collection;
+    const recordKey = parameters[keyField] !== undefined
+        ? String(parameters[keyField])
+        : String(routeParams[keyField] || routeParams.id || "");
+    const existingRows = Array.isArray(getValueAtPath(nextQueries, collectionPath)) ? getValueAtPath(nextQueries, collectionPath) : [];
+    const nextRows = existingRows.filter((row) => String(row[keyField]) !== recordKey);
+
+    return setValueAtPath(nextQueries, collectionPath, nextRows);
+}
+
+function defaultRouteLocation(model) {
+    const firstRoute = model.routes.find((route) => route.path && route.path !== "*");
+    return firstRoute ? firstRoute.path : "/";
+}
+
 function applyPreviewAction(RED, appId, actionId, parameters, definitions) {
     const buckets = getDefinitionBuckets(appId, definitions);
     const matchingInputs = buckets.components.filter((entry) => entry.type === "ui-input" && entry.path && parameters[entry.path] !== undefined);
     const typedAction = findTypedAction(buckets.actions, actionId);
-    const allowLegacyPreviewAction = typedAction
-        && typedAction.targetMode === "out-port"
-        && ["openCustomerEditor", "closeCustomerEditor", "saveCustomer", "deleteCustomer"].includes(actionId);
     const modelResult = getAppModelResult(appId, definitions);
 
     if (!modelResult.success) {
@@ -1014,10 +1115,10 @@ function applyPreviewAction(RED, appId, actionId, parameters, definitions) {
     const { model } = modelResult;
 
     const location = parameters.location ? String(parameters.location) : "/";
-    const routeMatch = getRouteMatch(location, model.routes) || { route: { id: "customers", path: "/customers" }, params: {} };
+    const routeMatch = getRouteMatch(location, model.routes) || { route: { id: "default", path: defaultRouteLocation(model) }, params: {} };
     const currentState = clone(runtimeState.previewState.get(appId) || {});
     let nextState = currentState;
-    let nextQueries = getPreviewQueries(appId);
+    let nextQueries = getPreviewQueries(appId, buckets.queries);
     let redirectLocation = location;
     let dialogId;
     let dialogMessage;
@@ -1035,180 +1136,89 @@ function applyPreviewAction(RED, appId, actionId, parameters, definitions) {
     const payload = {};
     const statePatch = {};
 
-    if (typedAction && !allowLegacyPreviewAction) {
-        // P20a: New wiring model — no targetMode means the output port is wired directly.
-        // The action node will forward the message to its wired target via actionInputHandler.
-        if (!typedAction.targetMode) {
-            // Just emit the message to the action node — wiring handles the rest.
-        }
-        else if (typedAction.targetMode === "out-port") {
-            // Legacy out-port: emit UI message, wired target handles it.
-        }
-        else if (typedAction.actionType === "navigate") {
-            if (typedAction.targetMode === "path") {
-                redirectLocation = resolveNavigationTarget(typedAction.to, parameters, routeMatch.params);
-                navigationMessage = {
-                    id: typedAction.id,
-                    to: redirectLocation
-                };
-            }
-        }
-        else if (typedAction.targetMode === "path" && ["show", "hide"].includes(typedAction.actionType)) {
-            const previewTarget = parsePreviewTarget(typedAction.target);
-
-            if (!previewTarget || previewTarget.scope !== "dialog") {
-                return {
-                    success: false,
-                    status: 422,
-                    body: `Typed action '${typedAction.id}' uses an unsupported preview target.`
-                };
-            }
-
-            const isOpen = typedAction.actionType === "show";
-            nextState = setValueAtPath(nextState, `ui.dialogs.${previewTarget.id}.open`, isOpen);
-            statePatch[`ui.dialogs.${previewTarget.id}.open`] = isOpen;
-            dialogMessage = {
-                id: previewTarget.id,
-                open: isOpen
-            };
-            dialogId = isOpen ? previewTarget.id : undefined;
-        }
-        else {
-            return {
-                success: false,
-                status: 422,
-                body: `Typed action '${typedAction.actionType}' is not implemented in the preview yet.`
-            };
-        }
-    }
-    else if (actionId === "openCustomerEditor") {
-        const customerId = parameters.id ? String(parameters.id) : routeMatch.params.id;
-        const selectedCustomer = nextQueries.customers && Array.isArray(nextQueries.customers.list)
-            ? nextQueries.customers.list.find((row) => String(row.id) === customerId)
-            : undefined;
-        const draft = customerId && selectedCustomer ? customerDraftFromRecord(selectedCustomer) : customerDraftFromRecord({});
-        nextState = setValueAtPath(nextState, "draft.customer", draft);
-        nextState = setValueAtPath(nextState, "draft.customerId", customerId || "");
-        nextState = setValueAtPath(nextState, "ui.dialogs.customerEditor.open", true);
-        statePatch["draft.customer"] = draft;
-        statePatch["draft.customerId"] = customerId || "";
-        statePatch["ui.dialogs.customerEditor.open"] = true;
-        dialogId = "customerEditor";
-        dialogMessage = { id: "customerEditor", open: true };
-    }
-    else if (actionId === "closeCustomerEditor") {
-        nextState = setValueAtPath(nextState, "ui.dialogs.customerEditor.open", false);
-        statePatch["ui.dialogs.customerEditor.open"] = false;
-        dialogMessage = { id: "customerEditor", open: false };
-    }
-    else if (actionId === "saveCustomer" || matchingInputs.length > 0) {
-        const fieldValues = matchingInputs.reduce((result, input) => {
-            result[input.path] = String(parameters[input.path]);
-            return result;
-        }, {});
-        const storeId = matchingInputs[0] ? matchingInputs[0].storeId : undefined;
-        const storeDefinition = storeId ? buckets.stores.find((entry) => entry.id === storeId) : undefined;
-        const draftPath = storeDefinition ? storeDefinition.statePath : "draft.customer";
-        const currentDraft = getValueAtPath(nextState, draftPath);
-        const nextDraft = isPlainObject(currentDraft) ? { ...currentDraft, ...fieldValues } : fieldValues;
-        const existingCustomerId = String(getValueAtPath(nextState, "draft.customerId") || "");
-        const customerId = existingCustomerId || nextCustomerId(nextQueries.customers?.list || []);
-        const persistedCustomer = {
-            id: customerId,
-            ...nextDraft
-        };
-        const existingRows = Array.isArray(nextQueries.customers?.list) ? nextQueries.customers.list : [];
-        const existingIndex = existingRows.findIndex((row) => String(row.id) === customerId);
-        const nextRows = existingIndex >= 0
-            ? existingRows.map((row, index) => index === existingIndex ? persistedCustomer : row)
-            : [...existingRows, persistedCustomer];
-
-        nextQueries = {
-            ...nextQueries,
-            customers: {
-                ...(nextQueries.customers || {}),
-                list: nextRows,
-                current: persistedCustomer
-            }
-        };
-        nextState = setValueAtPath(nextState, draftPath, nextDraft);
-        nextState = setValueAtPath(nextState, "draft.customerId", customerId);
-        nextState = setValueAtPath(nextState, "ui.dialogs.customerEditor.open", false);
-        statePatch[draftPath] = nextDraft;
-        statePatch["draft.customerId"] = customerId;
-        statePatch["ui.dialogs.customerEditor.open"] = false;
-        redirectLocation = "/customers";
-        dialogMessage = { id: "customerEditor", open: false };
-        payload.values = fieldValues;
-    }
-    else if (actionId === "openCustomerDetail") {
-        const navigation = buckets.navigations.find((entry) => entry.id === actionId);
-        const rowId = parameters.rowId ? String(parameters.rowId) : routeMatch.params.id;
-        const selectedCustomer = nextQueries.customers && Array.isArray(nextQueries.customers.list)
-            ? nextQueries.customers.list.find((row) => String(row.id) === rowId)
-            : undefined;
-
-        if (selectedCustomer) {
-            nextQueries = {
-                ...nextQueries,
-                customers: {
-                    ...(nextQueries.customers || {}),
-                    current: selectedCustomer
-                }
-            };
-        }
-
-        if (navigation) {
-            redirectLocation = resolveNavigationTarget(navigation.to, { rowId, id: rowId }, routeMatch.params);
-            navigationMessage = {
-                id: navigation.id,
-                to: redirectLocation
-            };
-        }
-    }
-    else if (actionId === "deleteCustomer") {
-        const navigation = buckets.navigations.find((entry) => entry.id === actionId);
-        const customerId = parameters.id
-            ? String(parameters.id)
-            : routeMatch.params.id || String(getValueAtPath(nextState, "draft.customerId") || nextQueries.customers?.current?.id || "");
-        const remainingRows = Array.isArray(nextQueries.customers?.list)
-            ? nextQueries.customers.list.filter((row) => String(row.id) !== customerId)
-            : [];
-
-        nextQueries = {
-            ...nextQueries,
-            customers: {
-                ...(nextQueries.customers || {}),
-                list: remainingRows,
-                current: remainingRows[0] || null
-            }
-        };
-
-        if (navigation) {
-            redirectLocation = resolveNavigationTarget(navigation.to, { id: customerId }, routeMatch.params);
-            navigationMessage = {
-                id: navigation.id,
-                to: redirectLocation
-            };
-        }
-    }
-    else if (actionId === "goToCustomers") {
-        const navigation = buckets.navigations.find((entry) => entry.id === actionId);
-
-        if (navigation) {
-            redirectLocation = resolveNavigationTarget(navigation.to, {}, routeMatch.params);
-            navigationMessage = {
-                id: navigation.id,
-                to: redirectLocation
-            };
-        }
-    }
-    else {
+    if (!typedAction) {
         return {
             success: false,
             status: 404,
             body: "Unknown action."
         };
+    }
+
+    const actionType = typedAction.actionType;
+
+    if (actionType === "navigate") {
+        // Path navigation resolves the destination; output-port navigations leave the
+        // location untouched and let the wired target handle it.
+        if (typedAction.to && typedAction.targetMode !== "out-port") {
+            redirectLocation = resolveNavigationTarget(typedAction.to, parameters, routeMatch.params);
+            navigationMessage = {
+                id: typedAction.id,
+                to: redirectLocation
+            };
+        }
+    }
+    else if (actionType === "show" || actionType === "hide") {
+        const previewTarget = parsePreviewTarget(typedAction.target)
+            || (typedAction.dialog ? { scope: "dialog", id: typedAction.dialog } : undefined);
+
+        if (!previewTarget || previewTarget.scope !== "dialog") {
+            return {
+                success: false,
+                status: 422,
+                body: `Typed action '${typedAction.id}' uses an unsupported preview target.`
+            };
+        }
+
+        const isOpen = actionType === "show";
+        nextState = setValueAtPath(nextState, `ui.dialogs.${previewTarget.id}.open`, isOpen);
+        statePatch[`ui.dialogs.${previewTarget.id}.open`] = isOpen;
+        dialogMessage = { id: previewTarget.id, open: isOpen };
+        dialogId = isOpen ? previewTarget.id : undefined;
+    }
+    else if (actionType === "submit") {
+        if (!typedAction.collection) {
+            return {
+                success: false,
+                status: 422,
+                body: `Submit action '${typedAction.id}' must declare a collection.`
+            };
+        }
+
+        const result = applySubmitAction(typedAction, buckets, nextState, nextQueries, parameters, matchingInputs);
+        nextState = result.nextState;
+        nextQueries = result.nextQueries;
+        payload.values = result.fieldValues;
+
+        if (result.draftPath) {
+            statePatch[result.draftPath] = result.nextDraft;
+        }
+
+        // Close the owning dialog if the action declares one.
+        if (typedAction.dialog) {
+            nextState = setValueAtPath(nextState, `ui.dialogs.${typedAction.dialog}.open`, false);
+            statePatch[`ui.dialogs.${typedAction.dialog}.open`] = false;
+            dialogMessage = { id: typedAction.dialog, open: false };
+        }
+    }
+    else if (actionType === "remove") {
+        if (!typedAction.collection) {
+            return {
+                success: false,
+                status: 422,
+                body: `Remove action '${typedAction.id}' must declare a collection.`
+            };
+        }
+
+        nextQueries = applyRemoveAction(typedAction, nextQueries, parameters, routeMatch.params);
+
+        if (typedAction.to) {
+            redirectLocation = resolveNavigationTarget(typedAction.to, parameters, routeMatch.params);
+            navigationMessage = { id: typedAction.id, to: redirectLocation };
+        }
+    }
+    else {
+        // trigger / disable / enable and output-port-wired actions: emit the UI
+        // message and let the wired target node handle the rest.
     }
 
     if (matchingRefreshQueries.length > 0) {
@@ -1279,7 +1289,7 @@ function buildAppSnapshot(appId, location, dialogId, definitions) {
         actions: buckets.actions,
         stores: buckets.stores
     };
-    const queries = getPreviewQueries(appId);
+    const queries = getPreviewQueries(appId, buckets.queries);
     const state = initializeState(integration.stores, integration.queries, appId);
     const previewState = runtimeState.previewState.get(appId);
     const hydratedState = previewState ? mergeDeep(state, previewState) : state;
@@ -1329,11 +1339,18 @@ function renderAppPage(appId, location, dialogId, definitions) {
         formId: undefined
     };
 
-    // P26: dialogs are serialized through the shared module so the server and the
-    // thin client emit identical dialog markup. The Close affordance is expressed
-    // as a generic closeAction on the dialog (de-hardcoding the wiring is P27).
+    // P26/P27: dialogs are serialized through the shared module so the server and
+    // the thin client emit identical markup. The Close affordance is config-driven:
+    // it is the `hide` action that targets this dialog (no hard-coded wiring).
+    const dialogBuckets = getDefinitionBuckets(appId, definitions);
     const dialogHtml = snapshot.dialogs
-        .map((dialog) => sharedSerializer.renderDialogHtml({ ...dialog, closeAction: "closeCustomerEditor", closeSource: "cancelCustomerButton" }, serializerContext))
+        .map((dialog) => {
+            const closeAction = findDialogCloseAction(dialogBuckets.actions, dialog.id);
+            return sharedSerializer.renderDialogHtml(
+                closeAction ? { ...dialog, closeAction: closeAction.id, closeSource: closeAction.id } : dialog,
+                serializerContext
+            );
+        })
         .join("");
     const pageBody = renderLayoutHtml(snapshot.layout.id, snapshot.regions, serializerContext);
     const messageFeed = getPreviewMessages(appId)
@@ -1962,6 +1979,7 @@ const runtimeNodeRegistry = {
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
             label: config.label,
+            action: blankToUndefined(config.action),
             disabled: getBinding(config.disabled, config.disabledPath ? stateBinding(config.disabledPath) : undefined),
             ...collectNodeConfigLayoutProps(config)
         }),
@@ -2227,7 +2245,8 @@ const runtimeNodeRegistry = {
             parent: config.parent || undefined,
             queryPath: config.queryPath,
             params: config.params || undefined,
-            refreshAction: config.refreshAction || undefined
+            refreshAction: config.refreshAction || undefined,
+            previewData: parsePreviewData(config.previewData)
         }),
         options: {
             inputHandler: queryInputHandler
@@ -2240,6 +2259,11 @@ const runtimeNodeRegistry = {
             parent: config.parent || undefined,
             actionType: blankToUndefined(config.actionType),
             to: blankToUndefined(config.to),
+            target: blankToUndefined(config.target),
+            collection: blankToUndefined(config.collection),
+            keyField: blankToUndefined(config.keyField),
+            draftPath: blankToUndefined(config.draftPath),
+            dialog: blankToUndefined(config.dialog),
             description: config.description || undefined
         }),
         options: {

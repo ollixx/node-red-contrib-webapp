@@ -117,7 +117,16 @@ const flowNodes = [
         uiId:          "customersQuery", // required
         parent:        APP,
         queryPath:     "customers.list", // required
-        refreshAction: "refreshCustomers"
+        refreshAction: "refreshCustomers",
+        // Declarative seed data — the runtime no longer hard-codes demo data.
+        previewData:   JSON.stringify({
+            list: [
+                { id: "c-100", name: "Ada Lovelace", email: "ada@example.com", status: "active" },
+                { id: "c-200", name: "Grace Hopper", email: "grace@example.com", status: "inactive" },
+                { id: "c-300", name: "Radia Perlman", email: "radia@example.com", status: "trial" }
+            ],
+            current: { id: "c-100", name: "Ada Lovelace", email: "ada@example.com", status: "active" }
+        })
     }),
     node("ui-query", "customerDetailQuery", "state", 2, {
         name:      "Customer detail query",
@@ -131,25 +140,32 @@ const flowNodes = [
         name:        "Open editor",
         uiId:        "openCustomerEditor", // required
         parent:      APP,
-        actionType:  "trigger",
-        targetMode:  "out-port",
+        actionType:  "show",
+        targetMode:  "path",
+        target:      "dialog:customerEditor",
+        dialog:      "customerEditor",
         description: "Open the customer editor dialog."
     }),
     node("ui-action", "closeCustomerEditor", "actions", 1, {
         name:        "Close editor",
         uiId:        "closeCustomerEditor",
         parent:      APP,
-        actionType:  "trigger",
-        targetMode:  "out-port",
+        actionType:  "hide",
+        targetMode:  "path",
+        target:      "dialog:customerEditor",
+        dialog:      "customerEditor",
         description: "Close the customer editor dialog."
     }),
     node("ui-action", "saveCustomer", "actions", 2, {
         name:        "Save customer",
         uiId:        "saveCustomer",
         parent:      APP,
-        actionType:  "trigger",
-        targetMode:  "out-port",
-        description: "Persist the current customer draft."
+        actionType:  "submit",
+        collection:  "customers.list",
+        draftPath:   "draft.customer",
+        keyField:    "id",
+        dialog:      "customerEditor",
+        description: "Persist the current customer draft into the collection."
     }),
     node("ui-action", "refreshCustomers", "actions", 3, {
         name:        "Refresh customers",
@@ -181,9 +197,9 @@ const flowNodes = [
         name:       "Delete customer",
         uiId:       "deleteCustomer",
         parent:     APP,
-        actionType: "navigate",
-        targetMode: "path",
-        target:     "app",
+        actionType: "remove",
+        collection: "customers.list",
+        keyField:   "id",
         to:         "/customers"
     }),
     node("ui-navigation", "navToCustomers", "actions", 7, {

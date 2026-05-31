@@ -29,6 +29,7 @@ Aktuelles MVP-Verhalten:
 - `name`: Node-RED-Anzeigefeld. Wird bei der Darstellung des Knotens und in Auswahlfeldern angezeigt.
   - Default: `"Query N"` (fortlaufende Nummer aller ui-query-Knoten, startend bei 1)
 - `refreshAction`: Auswahl eines `ui-action`-Knotens derselben App. Wird als SelectBox angezeigt; bei mehr als 20 Einträgen als filterbarer Dialog.
+- `previewData` (P27): Deklarative Seed-Daten (JSON) für Preview/Runtime. Werden unter dem ersten Segment von `queryPath` (dem Sammlungs-Root) eingehängt. Damit kommen Demo-Daten aus der Knoten-Konfiguration statt aus dem Runtime-Einstiegspunkt.
 
 ## Input
 

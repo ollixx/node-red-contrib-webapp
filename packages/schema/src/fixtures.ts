@@ -711,7 +711,15 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
         type: "ui-query",
         id: "customersQuery",
         queryPath: "customers.list",
-        refreshAction: "refreshCustomers"
+        refreshAction: "refreshCustomers",
+        previewData: {
+            list: [
+                { id: "c-100", name: "Ada Lovelace", email: "ada@example.com", status: "active" },
+                { id: "c-200", name: "Grace Hopper", email: "grace@example.com", status: "inactive" },
+                { id: "c-300", name: "Radia Perlman", email: "radia@example.com", status: "trial" }
+            ],
+            current: { id: "c-100", name: "Ada Lovelace", email: "ada@example.com", status: "active" }
+        }
     },
     {
         type: "ui-query",
@@ -721,23 +729,30 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
     {
         type: "ui-action",
         id: "openCustomerEditor",
-        actionType: "trigger",
-        targetMode: "out-port",
+        actionType: "show",
+        targetMode: "path",
+        target: "dialog:customerEditor",
+        dialog: "customerEditor",
         description: "Open the shared customer editor dialog."
     },
     {
         type: "ui-action",
         id: "closeCustomerEditor",
-        actionType: "trigger",
-        targetMode: "out-port",
+        actionType: "hide",
+        targetMode: "path",
+        target: "dialog:customerEditor",
+        dialog: "customerEditor",
         description: "Close the shared customer editor dialog."
     },
     {
         type: "ui-action",
         id: "saveCustomer",
-        actionType: "trigger",
-        targetMode: "out-port",
-        description: "Persist the current customer draft."
+        actionType: "submit",
+        collection: "customers.list",
+        draftPath: "draft.customer",
+        keyField: "id",
+        dialog: "customerEditor",
+        description: "Persist the current customer draft into the collection."
     },
     {
         type: "ui-action",
@@ -765,9 +780,9 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
     {
         type: "ui-action",
         id: "deleteCustomer",
-        actionType: "navigate",
-        targetMode: "path",
-        target: "app",
+        actionType: "remove",
+        collection: "customers.list",
+        keyField: "id",
         to: "/customers"
     },
     {

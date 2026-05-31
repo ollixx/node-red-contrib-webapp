@@ -25,13 +25,11 @@ describe("customers CRUD example flow", () => {
             "saveCustomer"
         ]);
         expect(assembly.data.integration.actions.filter((action) => action.actionType === "navigate").map((action) => action.id)).toEqual([
-            "deleteCustomer",
             "goToCustomers",
             "navToCustomers",
             "openCustomerDetail"
         ]);
         expect(assembly.data.integration.navigations.map((navigation) => navigation.id)).toEqual([
-            "deleteCustomer",
             "goToCustomers",
             "navToCustomers",
             "openCustomerDetail"

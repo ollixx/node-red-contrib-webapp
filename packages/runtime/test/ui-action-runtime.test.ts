@@ -222,7 +222,7 @@ describe("ui-action preview runtime", () => {
         expect(horizontalPage.body).toContain("Right");
     });
 
-    it("opens the customer editor dialog for the legacy open action and records the UI message", () => {
+    it("opens the customer editor dialog through the generic show action", () => {
         const { RED, nodes } = createPreviewRedStub(["openCustomerEditor"]);
 
         const applied = registerWebappNodes.__test__.applyPreviewAction(
@@ -238,7 +238,6 @@ describe("ui-action preview runtime", () => {
         );
 
         expect(applied.success).toBe(true);
-        expect(applied.redirectLocation).toBe("/customers");
         expect(applied.dialogId).toBe("customerEditor");
         expect(applied.message?.ui.action).toBe("openCustomerEditor");
         expect(applied.message?.ui.componentId).toBe("newCustomerButton");
@@ -247,8 +246,7 @@ describe("ui-action preview runtime", () => {
             open: true
         });
         expect(applied.message?.ui.statePatch).toEqual(expect.objectContaining({
-            "ui.dialogs.customerEditor.open": true,
-            "draft.customerId": ""
+            "ui.dialogs.customerEditor.open": true
         }));
         expect(nodes.get("openCustomerEditor")?.send).toHaveBeenCalledTimes(1);
         expect(registerWebappNodes.__test__.getPreviewMessages("customersApp")).toHaveLength(1);
@@ -259,7 +257,7 @@ describe("ui-action preview runtime", () => {
         expect(page.body).toContain("Edit customer");
     });
 
-    it("persists form values through the legacy save action and closes the dialog", () => {
+    it("persists form values through the generic submit action and closes the dialog", () => {
         const { RED, nodes } = createPreviewRedStub(["saveCustomer"]);
 
         registerWebappNodes.__test__.applyPreviewAction(
@@ -283,6 +281,7 @@ describe("ui-action preview runtime", () => {
                 location: "/customers/c-200",
                 sourceId: "customerForm",
                 event: "submit",
+                id: "c-200",
                 name: "Grace Hopper",
                 email: "grace+updated@example.com",
                 status: "active"
@@ -291,7 +290,6 @@ describe("ui-action preview runtime", () => {
         );
 
         expect(applied.success).toBe(true);
-        expect(applied.redirectLocation).toBe("/customers");
         expect(applied.dialogId).toBeUndefined();
         expect(applied.message?.ui.action).toBe("saveCustomer");
         expect(applied.message?.ui.payload?.values).toEqual({
@@ -304,7 +302,6 @@ describe("ui-action preview runtime", () => {
             open: false
         });
         expect(applied.message?.ui.statePatch).toEqual(expect.objectContaining({
-            "draft.customerId": "c-200",
             "ui.dialogs.customerEditor.open": false
         }));
         expect(nodes.get("saveCustomer")?.send).toHaveBeenCalledTimes(1);

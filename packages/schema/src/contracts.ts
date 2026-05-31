@@ -153,12 +153,18 @@ export const queryDefinitionSchema = z.object({
     id: identifierSchema,
     queryPath: z.string().min(1, "Queries must declare a query path."),
     source: z.string().min(1, "Query sources must not be empty.").optional(),
-    refreshAction: z.string().min(1, "Refresh actions must not be empty.").optional()
+    refreshAction: z.string().min(1, "Refresh actions must not be empty.").optional(),
+    // Seed data for the preview/runtime, declared on the node instead of being
+    // hard-coded in the runtime entry point. Mounted under `queryPath`.
+    previewData: z.unknown().optional()
 });
 
 export type QueryDefinition = z.infer<typeof queryDefinitionSchema>;
 
-export const actionTypeSchema = z.enum(["navigate", "disable", "enable", "show", "hide", "trigger"]);
+// "submit" and "remove" are generic data actions: they upsert/remove a record in
+// a query collection from the action config, so CRUD behaviour is node-driven
+// rather than hard-coded in the runtime entry point.
+export const actionTypeSchema = z.enum(["navigate", "disable", "enable", "show", "hide", "trigger", "submit", "remove"]);
 
 export type ActionType = z.infer<typeof actionTypeSchema>;
 
@@ -173,6 +179,15 @@ export const actionDefinitionSchema = z.object({
     targetMode: actionTargetModeSchema.optional(),
     target: z.string().min(1, "Action targets must not be empty.").optional(),
     to: z.string().min(1, "Navigate actions must declare a destination.").optional(),
+    // Generic data-action config (actionType: submit | remove):
+    //   collection — the query path of the row collection to upsert/remove in.
+    //   keyField   — the record's identity field (default "id").
+    //   draftPath  — state path holding the in-progress record for submit.
+    //   dialog     — a dialog id to close after the write (submit).
+    collection: z.string().min(1, "Action collections must not be empty.").optional(),
+    keyField: z.string().min(1, "Action key fields must not be empty.").optional(),
+    draftPath: z.string().min(1, "Action draft paths must not be empty.").optional(),
+    dialog: identifierSchema.optional(),
     description: z.string().min(1, "Action descriptions must not be empty.").optional()
 });
 

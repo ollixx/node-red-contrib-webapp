@@ -17,10 +17,25 @@ Sendet eine UI-Aktion vom Node-RED Flow an den Client. `ui-action` ist der einzi
 **Optionale Felder:**
 - `name`: Node-RED-Anzeigefeld.
   - Default: `"Action N"` (fortlaufende Nummer aller ui-action-Knoten, startend bei 1)
-- `actionType`: `navigate | disable | enable | show | hide | trigger`
+- `actionType`: `navigate | disable | enable | show | hide | trigger | submit | remove`
   - Gibt der Action einen vordefinierten Typ. Kann durch `msg.ui.action.type` überschrieben werden.
-- `to`: Zielpfad für `actionType: navigate`
+- `to`: Zielpfad für `actionType: navigate` (auch von `remove` als Redirect nach dem Löschen genutzt).
 - `description`
+
+### Generische Daten-Actions (P27)
+
+`submit` und `remove` sind generische, konfigurationsgetriebene Daten-Actions. Damit
+wird CRUD-Verhalten von den Knoten beschrieben statt im Runtime-Einstiegspunkt
+hartkodiert.
+
+- `collection`: Query-Pfad der Datensatz-Sammlung, in der ein Datensatz angelegt/aktualisiert (`submit`) bzw. gelöscht (`remove`) wird. Pflicht für `submit`/`remove`.
+- `keyField`: Identitätsfeld des Datensatzes (Default `id`).
+- `draftPath` (`submit`): State-Pfad mit dem in Arbeit befindlichen Datensatz, der mit den Eingabewerten zusammengeführt wird.
+- `dialog` (`show` / `hide` / `submit`): Dialog-ID, die geöffnet (`show`), geschlossen (`hide`) bzw. nach dem Speichern geschlossen (`submit`) wird.
+
+`submit` legt einen Datensatz an oder aktualisiert ihn (per `keyField`); fehlt ein
+Schlüssel, wird eine neue ID generiert. `remove` entfernt den über den
+Action-Parameter identifizierten Datensatz aus der Sammlung.
 
 ## Zieladressierung
 

@@ -277,7 +277,8 @@ function assembleRuntimeIntegration(
             id: definition.id,
             queryPath: definition.queryPath,
             params: definition.params,
-            refreshAction: definition.refreshAction
+            refreshAction: definition.refreshAction,
+            previewData: definition.previewData
         }))
         .sort((left, right) => left.id.localeCompare(right.id));
 
@@ -289,6 +290,10 @@ function assembleRuntimeIntegration(
             targetMode: definition.type === "ui-navigation" ? "out-port" : definition.targetMode,
             target: definition.type === "ui-navigation" ? undefined : definition.target,
             to: definition.type === "ui-navigation" ? definition.to : definition.to,
+            collection: definition.type === "ui-navigation" ? undefined : definition.collection,
+            keyField: definition.type === "ui-navigation" ? undefined : definition.keyField,
+            draftPath: definition.type === "ui-navigation" ? undefined : definition.draftPath,
+            dialog: definition.type === "ui-navigation" ? undefined : definition.dialog,
             description: definition.type === "ui-navigation" ? undefined : definition.description
         }))
         .sort((left, right) => left.id.localeCompare(right.id));

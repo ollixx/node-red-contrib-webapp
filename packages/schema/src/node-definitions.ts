@@ -248,7 +248,9 @@ export const uiQueryNodeDefinitionSchema = identifiedNodeSchema.extend({
     parent: identifierSchema.optional(),
     queryPath: z.string().min(1, "Queries must declare a query path."),
     params: z.string().min(1, "Params store reference must not be empty.").optional(),
-    refreshAction: z.string().min(1, "Refresh actions must not be empty.").optional()
+    refreshAction: z.string().min(1, "Refresh actions must not be empty.").optional(),
+    // Declarative seed data for the preview/runtime, mounted under `queryPath`.
+    previewData: z.unknown().optional()
 });
 
 export type UiQueryNodeDefinition = z.infer<typeof uiQueryNodeDefinitionSchema>;
@@ -262,6 +264,11 @@ export const uiActionNodeDefinitionSchema = identifiedNodeSchema.extend({
     targetMode: actionTargetModeSchema.optional(),
     target: z.string().min(1, "Action targets must not be empty.").optional(),
     to: z.string().min(1, "Navigate actions must declare a destination.").optional(),
+    // Generic data-action config (actionType: submit | remove) — see contracts.ts.
+    collection: z.string().min(1, "Action collections must not be empty.").optional(),
+    keyField: z.string().min(1, "Action key fields must not be empty.").optional(),
+    draftPath: z.string().min(1, "Action draft paths must not be empty.").optional(),
+    dialog: identifierSchema.optional(),
     description: z.string().min(1, "Action descriptions must not be empty.").optional()
 });
 
