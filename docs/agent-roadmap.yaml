@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P26  # (next pending phase — none currently defined)
+  current_phase: P26  # Render parity — thin client must emit the same Shoelace markup as the server
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -76,6 +76,79 @@ phases:
   - { id: P24, title: "Page shell and theme — Shoelace + design tokens", status: done, dependencies: [P23], archive: "docs/agent-roadmap-archive.yaml#P24" }
 
   - { id: P25, title: "Adapter coverage — remaining component kinds + map corrections", status: done, dependencies: [P24], archive: "docs/agent-roadmap-archive.yaml#P25" }
+
+  # ────────────────────────────────────────────────────────────────────────
+  # Closing the runtime gap exposed by the P24/P25 review (2026-05-31).
+  # P23–P25 made the SERVER emit Shoelace, but the browser barely shows it:
+  #   1. The thin client (resources/lib/webapp-client.js) is still on the P22
+  #      plain-HTML markup. On hydrate() it morphs the grid and OVERWRITES the
+  #      server's sl-* markup — buttons/inputs become native unstyled elements,
+  #      only containers keep an sl-card. All P23–P25 adapter work is invisible
+  #      at runtime (it flashes for one frame, then is wiped). → P26.
+  #   2. nodes/webapp.js still hard-codes the Customers demo "backend": demo
+  #      query data, customerDraftFromRecord/nextCustomerId, the open/close/
+  #      save/deleteCustomer handlers (legacy-preview-action branch) and a
+  #      hard-coded dialog "Close" link + "/customers" fallbacks. The example's
+  #      behaviour is NOT driven by its nodes. → P27.
+  #   3. The example flow predates the Shoelace + node-driven-content model:
+  #      routeHome renders empty, and content used to lean on hard-coded HTML.
+  #      It needs a clean, fully declarative rebuild. → P28.
+  # ────────────────────────────────────────────────────────────────────────
+
+  - id: P26
+    title: Render parity — shared serializer for server and thin client
+    status: in_progress
+    dependencies: [P25]
+    goals:
+      - Make the browser actually show the Shoelace look that P23–P25 built. The thin client must emit the SAME markup as the server so hydration no longer downgrades the page to native unstyled HTML.
+      - Eliminate the divergence at the source by extracting ONE shared serializer used by both the server (renderLayoutHtml in nodes/webapp.js) and the client (resources/lib/webapp-client.js), so the two renderers cannot drift apart again.
+    deliverables:
+      - a single shared render/serialize module that turns a RenderSnapshot (region/component tree) into the canonical Shoelace markup (sl-button, sl-input, sl-select, sl-checkbox, sl-radio-group, sl-switch, sl-textarea, sl-range, sl-alert, sl-badge, sl-progress-bar, sl-breadcrumb, sl-tab-group, sl-details, sl-menu, sl-avatar, sl-card for containers) plus the documented semantic fallbacks (text → div.webapp-text, table → real <table>)
+      - nodes/webapp.js server render and resources/lib/webapp-client.js client render both consume that shared module instead of two hand-maintained copies (account for the resources/ static-serving constraint in CLAUDE.md — the shared code must be loadable both in Node and in the browser)
+      - the keyed morph compares like-for-like markup so a hydrate / re-render no longer swaps element kinds (no sl-button → button downgrade) and input focus / scroll survive updates
+      - remove the dead branch in regionContainsInput (resources/lib/webapp-client.js:69, `return region.regions ? false : false`)
+    validation:
+      - pnpm test passes with no failures
+      - "unit test: for a fixture snapshot mounting one of each interactive kind, the shared serializer output is byte-identical whether invoked on the server or via the client code path"
+      - "unit/jsdom test: after hydrate() runs against a fixture, the live DOM contains the sl-* elements (e.g. querySelector('sl-button') is non-null) — NOT native <button>/<input>"
+      - "regression test: a button rendered by the server and then re-rendered by the client keeps tag sl-button across the morph (no element-kind swap)"
+      - "manual: the human confirms in the browser (dev app on :1881) that /customers shows real Shoelace buttons/inputs after the page settles, matching the pre-hydration frame"
+
+  - id: P27
+    title: De-hardcode the runtime — node-driven demo behaviour and data
+    status: pending
+    dependencies: [P26]
+    goals:
+      - Remove the Customers-specific demo "backend" baked into nodes/webapp.js so the runtime entry point is example-agnostic, and the example's behaviour is genuinely driven by its ui-action / ui-store / ui-query nodes (via the generic P20a typed-action path) rather than hard-coded if/else branches.
+    deliverables:
+      - "remove the hard-coded CRUD handlers from applyPreviewAction (openCustomerEditor, closeCustomerEditor, saveCustomer, deleteCustomer, openCustomerDetail, goToCustomers) and the allowLegacyPreviewAction allow-list — dialog open/close, state mutation, query refresh and navigation must all flow through the generic typed-action / store / query mechanism"
+      - "remove the hard-coded demo query data and helpers (the customers seed at nodes/webapp.js:516, customerDraftFromRecord, nextCustomerId) — demo data must come from node config (ui-query/ui-store seed/preview data), not from the runtime file"
+      - "remove the example-specific markup from the served HTML: the dialog 'Close' link wired to closeCustomerEditor/cancelCustomerButton (nodes/webapp.js:1640) and the '/customers' location fallbacks (e.g. nodes/webapp.js:956, :1101, :1324) — replace with config-driven dialog close (a real ui-action/ui-navigation) and a model-derived default route"
+      - any generic capability the example needs but the nodes cannot yet express (e.g. a declarative way to seed query/store preview data, or a generic state-write action) is added to the schema/runtime as a first-class node feature, documented in the relevant docs/nodes spec
+    validation:
+      - pnpm test passes with no failures
+      - "grep check: nodes/webapp.js contains no 'customer'/'Customer' identifiers and no '/customers' string literal (the runtime file is example-agnostic)"
+      - "unit test: open/close dialog, save and delete behave identically before and after de-hardcoding, driven purely by typed actions + store/query state (no legacy branch)"
+      - "unit test: demo data is sourced from node config — an app with different ui-query seed data renders that data, proving it is not hard-coded in the runtime"
+      - "manual: the dev app's CRUD flow (open editor, save, delete, navigate) still works end-to-end through node-driven actions"
+
+  - id: P28
+    title: Rebuild the Customers CRUD example from scratch — fully declarative
+    status: pending
+    dependencies: [P27]
+    goals:
+      - Regenerate the Customers CRUD example so EVERY surface is built from nodes under the new Shoelace + node-driven-content model — no empty routes, no reliance on hard-coded HTML or a runtime-baked backend. This is the showcase that the declarative model is complete end-to-end.
+    deliverables:
+      - "rewrite scripts/gen-example.js so the generated examples/customers-crud/flow.json builds all content as nodes: a populated home route (routeHome currently renders empty — give it real content or a declarative redirect to /customers), the customers list, the customer detail route, and the editor dialog — every region's content comes from mounted nodes"
+      - "the example exercises the P23–P25 component coverage where it makes sense (e.g. status as ui-badge, feedback as ui-alert) so the example doubles as a visual catalogue of the Shoelace adapter"
+      - "regenerate examples/customers-crud/flow.json AND .node-red-dev/flows.json via pnpm gen:example (per CLAUDE.md these are generated, not hand-edited)"
+      - "update docs/nodes / example docs to describe the rebuilt flow if node usage changed"
+    validation:
+      - pnpm test passes with no failures
+      - "pnpm exec playwright test (customers-crud e2e on :1882) passes — list, detail, create, edit, delete flows green against the regenerated flow"
+      - "unit test: the home route (location '/') renders non-empty content (regions are not all empty)"
+      - "manual: screenshots of /, /customers and the editor dialog on the dev app (:1881) show a complete, styled, node-built app — the human confirms 'the app is clearly visible and looks right'"
+      - "consistency check: examples/customers-crud/flow.json and .node-red-dev/flows.json match the gen-example output (no hand edits)"
 
   # Deferred — only when a concrete need appears (see ADR 0002):
   #   - ui-custom escape-hatch node for framework-specific components (opt-in, non-portable)
