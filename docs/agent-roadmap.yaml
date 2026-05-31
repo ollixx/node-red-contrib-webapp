@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P21  # Web Component rendering migration (see ADR 0002)
+  current_phase: P22  # Web Component rendering migration (see ADR 0002)
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -142,26 +142,7 @@ phases:
   # default adapter, and lock the theme = tokens + adapter (no node injection) model.
   # ────────────────────────────────────────────────────────────────────────
 
-  - id: P21
-    title: Renderer consolidation — webapp.js consumes RenderSnapshot
-    status: in_progress
-    dependencies: [P20b]
-    goals:
-      - Remove the parallel rendering implementation in nodes/webapp.js.
-      - Make the Node-RED runtime render exclusively via the RenderSnapshot produced by packages/renderer.
-    deliverables:
-      - nodes/webapp.js imports createRendererApp from packages/renderer and renders from its RenderSnapshot instead of re-walking the AppModel
-      - removal of the duplicate render functions in webapp.js (renderAppPage's own slot/mount logic, renderSlotTree, mountMatches, renderComponentHtml, renderSlotHtml) — replaced by an HTML serializer that walks the snapshot
-      - container:id/slot, route:, dialog:, layout: and app.slot mount resolution all handled once, inside packages/renderer (verified against the existing rendering-bugs tests)
-      - the verbose webapp-slot/webapp-item preview markup is replaced by snapshot-driven output; slot names are not emitted as visible headings
-      - existing E2E preview tests still pass against the snapshot-driven output
-    validation:
-      - pnpm test passes with no failures
-      - unit test: a ui-text mounted via container:<id>/content renders inside the container (regression guard, packages/runtime/test/rendering-bugs.test.ts)
-      - unit test: no internal slot name (header, navbar, content, footer) appears as an <h2> heading in rendered output
-      - unit test: webapp.js produces output for the customers-crud example whose component set matches the RenderSnapshot region/component tree (no component dropped, none duplicated)
-      - grep check: nodes/webapp.js no longer defines mountMatches or a second slot-tree walker — mount resolution lives only in packages/renderer
-      - Playwright: the customers-crud example still renders all routes, the dialog, and table rows
+  - { id: P21, title: "Renderer consolidation — webapp.js consumes RenderSnapshot", status: done, dependencies: [P20b], archive: "docs/agent-roadmap-archive.yaml#P21" }
 
   - id: P22
     title: Snapshot transport — JSON endpoint and thin client runtime

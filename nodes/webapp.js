@@ -9,6 +9,7 @@ const {
     uiEventMessageSchema,
     validateUiNodeDefinition
 } = require("../packages/schema/dist/index.js");
+const { createRendererApp } = require("../packages/renderer/dist/index.js");
 
 const runtimeState = {
     definitions: new Map(),
@@ -851,82 +852,6 @@ function resolveBinding(binding, sources) {
     return resolved === undefined ? binding.fallback : resolved;
 }
 
-function mountMatches(component, regionPath, model, routeId, layoutId, dialogId, allowedScopes = { route: true, layout: true, dialog: true }, containerId = undefined) {
-    const mount = String(component.mount || "");
-
-    if (mount.startsWith("container:")) {
-        if (!allowedScopes.layout || !containerId) {
-            return false;
-        }
-        const separatorIndex = mount.lastIndexOf("/");
-        const containerTarget = separatorIndex >= 0 ? mount.slice("container:".length, separatorIndex) : "";
-        const slotName = separatorIndex >= 0 ? mount.slice(separatorIndex + 1) : "";
-        return containerTarget === containerId && slotName === regionPath.join("/");
-    }
-
-    if (mount.startsWith("route:/")) {
-        if (!allowedScopes.route) {
-            return false;
-        }
-        const route = model.routes
-            .filter((candidate) => mount.startsWith(`route:${candidate.path}/`) || mount === `route:${candidate.path}`)
-            .sort((left, right) => right.path.length - left.path.length)[0];
-        if (!route || route.id !== routeId) {
-            return false;
-        }
-        const expectedPath = mount.slice(`route:${route.path}/`.length).split("/").filter(Boolean).join("/");
-        return expectedPath === regionPath.join("/");
-    }
-
-    if (mount.startsWith("dialog:")) {
-        if (!allowedScopes.dialog) {
-            return false;
-        }
-        if (!dialogId) {
-            return false;
-        }
-        const [dialogTarget, ...mountPath] = mount.slice("dialog:".length).split("/").filter(Boolean);
-        return dialogTarget === dialogId && mountPath.join("/") === regionPath.join("/");
-    }
-
-    if (mount.startsWith("layout:")) {
-        if (!allowedScopes.layout) {
-            return false;
-        }
-        const [layoutTarget, ...mountPath] = mount.slice("layout:".length).split("/").filter(Boolean);
-        return layoutTarget === layoutId && mountPath.join("/") === regionPath.join("/");
-    }
-
-    const [target, targetRegion] = mount.split(".");
-    return ((allowedScopes.route && target === routeId) || (allowedScopes.layout && target === layoutId) || (allowedScopes.dialog && target === dialogId))
-        && targetRegion === regionPath[0]
-        && regionPath.length === 1;
-}
-
-function layoutHasInputs(model, layoutId, visited = new Set()) {
-    if (visited.has(layoutId)) {
-        return false;
-    }
-
-    visited.add(layoutId);
-
-    return model.components.some((component) => {
-        if (!String(component.mount || "").startsWith(`layout:${layoutId}/`)) {
-            return false;
-        }
-
-        if (component.kind === "input") {
-            return true;
-        }
-
-        if (component.kind === "container") {
-            return layoutHasInputs(model, String(component.props.layoutId || ""), visited);
-        }
-
-        return false;
-    });
-}
-
 function buildActionHref(appId, action, location, componentId, eventName, params = {}) {
     const query = new URLSearchParams({
         location: location || "/customers",
@@ -943,29 +868,6 @@ function buildActionHref(appId, action, location, componentId, eventName, params
     return `/webapp/${encodeURIComponent(appId)}/action/${encodeURIComponent(action)}?${query.toString()}`;
 }
 
-function renderSlotTree(slots, model, context, routeId, layoutId, dialogId, allowedScopes = { route: true, layout: true, dialog: true }, containerId = undefined) {
-    return slots.map((slot) => {
-        const slotPath = [...context.path, slot.name];
-        const components = model.components
-            .filter((component) => mountMatches(component, slotPath, model, routeId, layoutId, dialogId, allowedScopes, containerId))
-            .sort((left, right) => (left.order || 0) - (right.order || 0) || left.id.localeCompare(right.id))
-            .map((component) => renderComponent(component, context.sources, model, {
-                routeId,
-                layoutId,
-                dialogId,
-                location: context.location,
-                formId: context.formId
-            }));
-
-        return {
-            layoutId,
-            name: slot.name,
-            title: slot.title,
-            components
-        };
-    });
-}
-
 function sanitizeClassSuffix(value) {
     return String(value || "")
         .toLowerCase()
@@ -977,125 +879,40 @@ function getLayoutVariant(layoutId) {
     return ["horizontal", "vertical", "app", "grid", "absolute"].includes(layoutId) ? layoutId : "custom";
 }
 
-function renderLayoutHtml(layoutId, slots) {
+function renderLayoutHtml(layoutId, regions, serializerContext) {
     const variant = getLayoutVariant(layoutId);
-    return `<div class="webapp-layout webapp-layout--${escapeAttribute(variant)}">${slots.map(renderSlotHtml).join("")}</div>`;
+    return `<div class="webapp-layout webapp-layout--${escapeAttribute(variant)}">${regions.map((region) => renderRegionHtml(region, layoutId, serializerContext)).join("")}</div>`;
 }
 
-function renderComponent(component, sources, model, context) {
-    const disabled = Boolean(resolveBinding(component.bind && component.bind.disabled, sources));
-    const action = component.events && component.events[0] ? component.events[0].action : undefined;
+// --- Snapshot serializers (P21) ---------------------------------------------
+//
+// All mount resolution, binding resolution, region nesting and dialog gating
+// now live in packages/renderer (createRendererApp → RenderSnapshot). webapp.js
+// only serializes that snapshot into the preview HTML; it no longer re-walks the
+// AppModel or owns a second slot-tree/mount matcher.
 
-    if (component.kind === "text") {
-        return {
-            kind: "text",
-            id: component.id,
-            text: String(resolveBinding(component.bind.text || component.bind.value, sources) || ""),
-            layoutId: context.layoutId,
-            layoutProps: component.props.layout || {}
-        };
-    }
-
-    if (component.kind === "button") {
-        const href = action
-            ? buildActionHref(model.id, action, context.location, component.id, context.formId ? "submit" : "click", sources.params)
-            : undefined;
-
-        return {
-            kind: "button",
-            id: component.id,
-            label: String(component.props.label || component.id),
-            href,
-            submitFormId: context.formId,
-            disabled,
-            layoutId: context.layoutId,
-            layoutProps: component.props.layout || {}
-        };
-    }
-
-    if (component.kind === "table") {
-        const action = component.events.find((e) => e.event === "select")?.action;
-        return {
-            kind: "table",
-            id: component.id,
-            columns: Array.isArray(component.props.columns) ? component.props.columns : [],
-            rows: Array.isArray(resolveBinding(component.bind.rows, sources)) ? resolveBinding(component.bind.rows, sources) : [],
-            footer: component.footer === true,
-            events: Array.isArray(component.props.events) ? component.props.events : [],
-            selectAction: component.props.selectAction || action || undefined,
-            appId: model.id,
-            location: context.location,
-            layoutId: context.layoutId,
-            layoutProps: component.props.layout || {}
-        };
-    }
-
-    if (component.kind === "input") {
-        return {
-            kind: "input",
-            id: component.id,
-            label: String(component.props.label || component.id),
-            name: String(component.props.path || component.id),
-            value: String(resolveBinding(component.bind.value, sources) || ""),
-            inputType: String(component.props.inputType || "text"),
-            layoutId: context.layoutId,
-            layoutProps: component.props.layout || {}
-        };
-    }
-
-    if (component.kind === "container") {
-        const childLayout = getLayout(model, String(component.props.layoutId || ""));
-
-        if (!childLayout) {
-            return {
-                kind: "container",
-                id: component.id,
-                formId: undefined,
-                slots: [],
-                layoutId: context.layoutId,
-                layoutProps: component.props.layout || {}
-            };
+function regionContainsInput(region) {
+    return region.components.some((component) => {
+        if (component.kind === "input") {
+            return true;
         }
 
-        const formId = layoutHasInputs(model, childLayout.id) ? `webapp-form-${component.id}` : undefined;
+        if (component.kind === "container") {
+            return component.regions.some((child) => regionContainsInput(child));
+        }
 
-        return {
-            kind: "container",
-            id: component.id,
-            layoutId: childLayout.id,
-            formId,
-            slots: renderSlotTree(
-                childLayout.slots,
-                model,
-                { path: [], sources, location: context.location, formId },
-                context.routeId,
-                childLayout.id,
-                context.dialogId,
-                { route: false, layout: true, dialog: false },
-                component.id
-            ),
-            layoutProps: component.props.layout || {}
-        };
-    }
-
-    return {
-        kind: "text",
-        id: component.id,
-        text: component.id
-    };
+        return false;
+    });
 }
 
-function renderSlotHtml(slot) {
-    const title = slot.title ? `<h3>${escapeHtml(slot.title)}</h3>` : "";
-    const components = slot.components.map(renderComponentHtml).join("");
-    const layoutVariant = getLayoutVariant(slot.layoutId);
-    const slotClass = sanitizeClassSuffix(slot.name);
-    return `<section class="webapp-slot webapp-slot--${escapeAttribute(slotClass)}">${title}<div class="webapp-slot-body webapp-slot-body--${escapeAttribute(layoutVariant)}">${components}</div></section>`;
+function getComponentLayoutProps(component) {
+    const layout = component.props && component.props.layout;
+    return layout && typeof layout === "object" ? layout : {};
 }
 
-function wrapRenderedComponentHtml(component, innerHtml) {
-    const layoutVariant = getLayoutVariant(component.layoutId || "");
-    const layoutProps = component.layoutProps || {};
+function wrapRenderedComponentHtml(component, layoutId, innerHtml) {
+    const layoutVariant = getLayoutVariant(layoutId || "");
+    const layoutProps = getComponentLayoutProps(component);
     const styles = [];
 
     if (layoutVariant === "grid") {
@@ -1122,39 +939,57 @@ function wrapRenderedComponentHtml(component, innerHtml) {
     return `<div class="webapp-item webapp-item--${escapeAttribute(layoutVariant)}"${styleAttribute}>${innerHtml}</div>`;
 }
 
-function renderComponentHtml(component) {
+function renderRegionHtml(region, layoutId, serializerContext) {
+    const title = region.title ? `<h3>${escapeHtml(region.title)}</h3>` : "";
+    const components = region.components
+        .map((component) => renderComponentHtml(component, layoutId, serializerContext))
+        .join("");
+    const layoutVariant = getLayoutVariant(layoutId);
+    const slotClass = sanitizeClassSuffix(region.name);
+    return `<section class="webapp-slot webapp-slot--${escapeAttribute(slotClass)}">${title}<div class="webapp-slot-body webapp-slot-body--${escapeAttribute(layoutVariant)}">${components}</div></section>`;
+}
+
+function renderComponentHtml(component, layoutId, serializerContext) {
+    const { appId, location } = serializerContext;
+
     if (component.kind === "text") {
-        return wrapRenderedComponentHtml(component, `<div class="webapp-text">${escapeHtml(component.text)}</div>`);
+        return wrapRenderedComponentHtml(component, layoutId, `<div class="webapp-text">${escapeHtml(component.text)}</div>`);
     }
 
     if (component.kind === "button") {
         const label = escapeHtml(component.label);
+        const action = component.events && component.events[0] ? component.events[0].action : undefined;
+        const inForm = Boolean(serializerContext.formId);
+        const href = action
+            ? buildActionHref(appId, action, location, component.id, inForm ? "submit" : "click", serializerContext.params)
+            : undefined;
 
-        if (component.disabled) {
-            return wrapRenderedComponentHtml(component, `<button class="webapp-button" disabled>${label}</button>`);
+        if (component.disabled || !href) {
+            return wrapRenderedComponentHtml(component, layoutId, `<button class="webapp-button" disabled>${label}</button>`);
         }
 
-        if (component.submitFormId && component.href) {
-            return wrapRenderedComponentHtml(component, `<button class="webapp-button" type="submit" form="${escapeAttribute(component.submitFormId)}" formaction="${escapeAttribute(component.href)}">${label}</button>`);
+        if (inForm) {
+            return wrapRenderedComponentHtml(component, layoutId, `<button class="webapp-button" type="submit" form="${escapeAttribute(serializerContext.formId)}" formaction="${escapeAttribute(href)}">${label}</button>`);
         }
 
-        if (component.href) {
-            return wrapRenderedComponentHtml(component, `<a class="webapp-button" href="${escapeAttribute(component.href)}">${label}</a>`);
-        }
-
-        return wrapRenderedComponentHtml(component, `<button class="webapp-button" disabled>${label}</button>`);
+        return wrapRenderedComponentHtml(component, layoutId, `<a class="webapp-button" href="${escapeAttribute(href)}">${label}</a>`);
     }
 
     if (component.kind === "table") {
-        const header = component.columns.map((col) => `<th>${escapeHtml(col.label || col.key || col)}</th>`).join("");
-        const rows = component.rows.length === 0
-            ? `<tr><td colspan="${Math.max(component.columns.length, 1)}">No rows loaded.</td></tr>`
-            : component.rows.map((row) => {
+        const columns = Array.isArray(component.props.columns) ? component.props.columns : [];
+        const rows = Array.isArray(component.rows) ? component.rows : [];
+        const selectAction = component.props.selectAction
+            || (component.events.find((event) => event.event === "select") || {}).action
+            || undefined;
+        const header = columns.map((col) => `<th>${escapeHtml(col.label || col.key || col)}</th>`).join("");
+        const body = rows.length === 0
+            ? `<tr><td colspan="${Math.max(columns.length, 1)}">No rows loaded.</td></tr>`
+            : rows.map((row) => {
                 const rowId = row.id !== undefined ? String(row.id) : "";
-                const actionPrefix = component.selectAction
-                    ? `/webapp/${encodeURIComponent(component.appId)}/action/${encodeURIComponent(component.selectAction)}?location=${encodeURIComponent(component.location || "/customers")}&sourceId=${encodeURIComponent(component.id)}&event=select&rowId=${encodeURIComponent(rowId)}`
+                const actionPrefix = selectAction
+                    ? `/webapp/${encodeURIComponent(appId)}/action/${encodeURIComponent(selectAction)}?location=${encodeURIComponent(location || "/customers")}&sourceId=${encodeURIComponent(component.id)}&event=select&rowId=${encodeURIComponent(rowId)}`
                     : undefined;
-                const cells = component.columns.map((col, index) => {
+                const cells = columns.map((col, index) => {
                     const key = col.key || col;
                     const value = escapeHtml(row[key] ?? "");
 
@@ -1166,19 +1001,27 @@ function renderComponentHtml(component) {
                 }).join("");
                 return `<tr>${cells}</tr>`;
             }).join("");
-        return wrapRenderedComponentHtml(component, `<table class="webapp-table"><thead><tr>${header}</tr></thead><tbody>${rows}</tbody></table>`);
+        return wrapRenderedComponentHtml(component, layoutId, `<table class="webapp-table"><thead><tr>${header}</tr></thead><tbody>${body}</tbody></table>`);
     }
 
     if (component.kind === "input") {
-        return wrapRenderedComponentHtml(component, `<label class="webapp-field">${escapeHtml(component.label)}<input type="${escapeAttribute(component.inputType)}" name="${escapeAttribute(component.name)}" value="${escapeAttribute(component.value)}"></label>`);
+        const label = String(component.props.label || component.id);
+        const name = String(component.props.path || component.id);
+        const inputType = String(component.props.inputType || "text");
+        const value = component.value === undefined || component.value === null ? "" : String(component.value);
+        return wrapRenderedComponentHtml(component, layoutId, `<label class="webapp-field">${escapeHtml(label)}<input type="${escapeAttribute(inputType)}" name="${escapeAttribute(name)}" value="${escapeAttribute(value)}"></label>`);
     }
 
     if (component.kind === "container") {
-        const content = renderLayoutHtml(component.layoutId, component.slots);
-        const inner = component.formId
-            ? `<form class="webapp-form" id="${escapeAttribute(component.formId)}" method="get">${content}</form>`
+        const childLayoutId = component.layoutId;
+        const hasInputs = component.regions.some((region) => regionContainsInput(region));
+        const formId = hasInputs ? `webapp-form-${component.id}` : undefined;
+        const childContext = { ...serializerContext, formId };
+        const content = renderLayoutHtml(childLayoutId, component.regions, childContext);
+        const inner = formId
+            ? `<form class="webapp-form" id="${escapeAttribute(formId)}" method="get">${content}</form>`
             : `<div class="webapp-container">${content}</div>`;
-        return wrapRenderedComponentHtml(component, inner);
+        return wrapRenderedComponentHtml(component, layoutId, inner);
     }
 
     return "";
@@ -1482,29 +1325,27 @@ function renderAppPage(appId, location, dialogId, definitions) {
     const previewState = runtimeState.previewState.get(appId);
     const hydratedState = previewState ? mergeDeep(state, previewState) : state;
     const effectiveState = dialogId ? setValueAtPath(hydratedState, `ui.dialogs.${dialogId}.open`, true) : hydratedState;
-    const sources = {
-        state: effectiveState,
-        queries,
-        params: routeMatch.params,
-        navigations: integration.navigations
-    };
-    const slots = renderSlotTree(layout.slots, model, { path: [], sources, location, formId: undefined }, routeMatch.route.id, layout.id, undefined);
-    const dialogs = model.dialogs
-        .filter((dialog) => dialog.id === dialogId)
-        .map((dialog) => {
-            const dialogLayout = getLayout(model, dialog.layoutId);
-            return dialogLayout
-                ? {
-                    title: dialog.title || dialog.id,
-                    layoutId: dialogLayout.id,
-                    slots: renderSlotTree(dialogLayout.slots, model, { path: [], sources, location, formId: undefined }, routeMatch.route.id, dialogLayout.id, dialog.id)
-                }
-                : undefined;
-        })
-        .filter(Boolean);
 
-    const dialogHtml = dialogs.map((dialog) => `<div class="webapp-dialog"><div class="webapp-dialog-card"><div class="webapp-dialog-head"><h2>${escapeHtml(dialog.title)}</h2><a href="/webapp/${encodeURIComponent(appId)}/action/closeCustomerEditor?location=${encodeURIComponent(location)}&sourceId=cancelCustomerButton&event=click" class="webapp-link">Close</a></div>${renderLayoutHtml(dialog.layoutId, dialog.slots)}</div></div>`).join("");
-    const pageBody = renderLayoutHtml(layout.id, slots);
+    // P21: a single RenderSnapshot from packages/renderer is the source of truth.
+    // webapp.js no longer re-walks the AppModel — it only serializes this snapshot.
+    const rendererApp = createRendererApp(model, {
+        integration,
+        location,
+        state: effectiveState,
+        queries
+    });
+    const snapshot = rendererApp.render();
+    const serializerContext = {
+        appId: model.id,
+        location: snapshot.location,
+        params: snapshot.params,
+        formId: undefined
+    };
+
+    const dialogHtml = snapshot.dialogs
+        .map((dialog) => `<div class="webapp-dialog"><div class="webapp-dialog-card"><div class="webapp-dialog-head"><h2>${escapeHtml(dialog.title || dialog.id)}</h2><a href="/webapp/${encodeURIComponent(appId)}/action/closeCustomerEditor?location=${encodeURIComponent(location)}&sourceId=cancelCustomerButton&event=click" class="webapp-link">Close</a></div>${renderLayoutHtml(dialog.layoutId, dialog.regions, serializerContext)}</div></div>`)
+        .join("");
+    const pageBody = renderLayoutHtml(snapshot.layout.id, snapshot.regions, serializerContext);
     const messageFeed = getPreviewMessages(appId)
         .slice()
         .reverse()

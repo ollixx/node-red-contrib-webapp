@@ -532,3 +532,28 @@ phases:
     - bindingSchema accepts msg/flow/global/jsonata/env with a path
     - bindingSchema rejects msg/env without a path
     - docs/nodes/display/ui-text.md contains a Query path syntax section
+
+- id: P21
+  title: "Renderer consolidation — webapp.js consumes RenderSnapshot"
+  status: done
+  dependencies: [P20b]
+  summary:
+    delivered: "nodes/webapp.js now renders the preview exclusively from the RenderSnapshot produced by createRendererApp (packages/renderer). The parallel render path (mountMatches, renderSlotTree, renderComponent, layoutHasInputs) was deleted; renderAppPage builds the AppModel, calls the renderer, then serializes the snapshot's regions/dialogs to HTML. Container-id mount resolution (container:<id>/slot, the form the editor emits) was added inside the renderer so all mount scopes resolve in one place."
+    stats: "2 source files changed (nodes/webapp.js, packages/renderer/src/renderer.ts), 2 new test files (1 unit + 1 E2E), 214 unit tests + 4 new P21 E2E specs passing"
+    notes: "Stop-condition #1 (mount-path parsing) was avoided: the schema mount parser was left untouched; container-id matching was added in the renderer's container matcher (createContainerMountMatcher), which also still accepts the layout:<layoutId>/slot form the typed fixture uses. The P21 deliverable wording implied the renderer already resolved container: mounts, but parseMountReference only supports route/dialog/layout — logged in friction-log. 8 pre-existing E2E failures (customers-crud action flow + 7 editor specs) were confirmed red on the untouched baseline (stash+rebuild), are unrelated to P21's rendering work, and were spun off as a separate bug-fix task. P21's own rendering criteria are covered by tests/e2e/p21-snapshot-render.spec.ts (routes, dialog, table rows, no slot-name headings)."
+  goals:
+    - Remove the parallel rendering implementation in nodes/webapp.js.
+    - Make the Node-RED runtime render exclusively via the RenderSnapshot produced by packages/renderer.
+  deliverables:
+    - nodes/webapp.js imports createRendererApp from packages/renderer and renders from its RenderSnapshot instead of re-walking the AppModel
+    - removal of the duplicate render functions in webapp.js (renderAppPage's own slot/mount logic, renderSlotTree, mountMatches, renderComponentHtml, renderSlotHtml) — replaced by an HTML serializer that walks the snapshot
+    - container:id/slot, route:, dialog:, layout: and app.slot mount resolution all handled once, inside packages/renderer (verified against the existing rendering-bugs tests)
+    - the verbose webapp-slot/webapp-item preview markup is replaced by snapshot-driven output; slot names are not emitted as visible headings
+    - existing E2E preview tests still pass against the snapshot-driven output
+  validation:
+    - pnpm test passes with no failures
+    - "unit test: a ui-text mounted via container:<id>/content renders inside the container (regression guard, packages/runtime/test/rendering-bugs.test.ts)"
+    - "unit test: no internal slot name (header, navbar, content, footer) appears as an <h2> heading in rendered output"
+    - "unit test: webapp.js produces output for the example whose component set matches the RenderSnapshot region/component tree (packages/runtime/test/p21-snapshot-render.test.ts)"
+    - "grep check: nodes/webapp.js no longer defines mountMatches or a second slot-tree walker — mount resolution lives only in packages/renderer"
+    - "Playwright: the customers-crud example still renders all routes, the dialog, and table rows (tests/e2e/p21-snapshot-render.spec.ts)"

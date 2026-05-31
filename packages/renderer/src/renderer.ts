@@ -462,7 +462,7 @@ function toRenderedComponent(component: ComponentDefinition, context: ComponentR
                 title: typeof resolvedProps.title === "string" ? resolvedProps.title : undefined,
                 regions: renderRegions(
                     layout.slots,
-                    createMountMatcher(appModel, [{ scope: "layout", targetId: layoutId }]),
+                    createContainerMountMatcher(appModel, component.id, layoutId),
                     appModel,
                     context
                 )
@@ -534,6 +534,37 @@ function createMountMatcher(
                 resolvedMount.data.targetId === target.targetId &&
                 resolvedMount.data.regionPath.join("/") === regionKey
         );
+    };
+}
+
+// Container children are addressed either by the container's own id
+// (`container:<id>/<region>`, the form the editor emits) or by the container's
+// layout id (`layout:<layoutId>/<region>`, the form the typed fixture uses).
+// Both resolve to the same rendered region; mount resolution lives only here.
+function createContainerMountMatcher(
+    appModel: AppModel,
+    containerId: string,
+    layoutId: string
+): (component: ComponentDefinition, regionPath: string[]) => boolean {
+    const layoutMatcher = createMountMatcher(appModel, [{ scope: "layout", targetId: layoutId }]);
+
+    return (component, regionPath) => {
+        const rawMount = component.mount.trim();
+
+        if (rawMount.startsWith("container:")) {
+            const separatorIndex = rawMount.indexOf("/");
+
+            if (separatorIndex < 0) {
+                return false;
+            }
+
+            const targetContainerId = rawMount.slice("container:".length, separatorIndex);
+            const regionKey = rawMount.slice(separatorIndex + 1);
+
+            return targetContainerId === containerId && regionKey === regionPath.join("/");
+        }
+
+        return layoutMatcher(component, regionPath);
     };
 }
 
