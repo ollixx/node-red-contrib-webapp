@@ -62,7 +62,7 @@
             };
         }
 
-        if (binding && ["state", "query", "routeParam"].includes(binding.kind)) {
+        if (binding && ["state", "query", "routeParam", "msg", "flow", "global", "jsonata", "env"].includes(binding.kind)) {
             return {
                 type: binding.kind,
                 value: binding.path || ""
@@ -106,7 +106,8 @@
                     id,
                     path: node.path || "",
                     layoutId: node.layoutId || "",
-                    title: node.title || node.name || id
+                    title: node.title || node.name || id,
+                    parent: node.parent || ""
                 });
                 return;
             }
@@ -115,7 +116,8 @@
                 references.dialogs.push({
                     id,
                     layoutId: node.layoutId || "",
-                    title: node.title || node.name || id
+                    title: node.title || node.name || id,
+                    parent: node.parent || ""
                 });
                 return;
             }
@@ -124,7 +126,8 @@
                 references.containers.push({
                     id,
                     layoutId: node.layoutId || "",
-                    title: node.title || node.name || id
+                    title: node.title || node.name || id,
+                    mount: node.mount || ""
                 });
                 return;
             }
@@ -203,6 +206,151 @@
 
         for (const option of sortedOptions) {
             input.append($("<option></option>").attr("value", option.value).text(option.label));
+        }
+
+        if (normalizedCurrentValue && !seenValues.has(normalizedCurrentValue)) {
+            input.append(
+                $("<option></option>")
+                    .attr("value", normalizedCurrentValue)
+                    .text(`${normalizedCurrentValue} (bestehend)`)
+            );
+        }
+
+        input.val(normalizedCurrentValue);
+    }
+
+    function buildMountOptionsTree(references) {
+        const apps = references.apps;
+        const routes = references.routes;
+        const dialogs = references.dialogs;
+        const containers = references.containers;
+        const visitedContainers = new Set();
+
+        function slotOptions(mountValue, breadcrumb) {
+            const options = [{ value: mountValue, label: breadcrumb }];
+
+            for (const child of containers.filter(function (c) {
+                return c.mount === mountValue && !visitedContainers.has(c.id);
+            })) {
+                visitedContainers.add(child.id);
+                const childSlots = getSlotNamesForLayout(child.layoutId);
+                const childName = child.title || child.id;
+
+                for (const slot of childSlots) {
+                    const childLabel = childSlots.length > 1
+                        ? `${breadcrumb} > ${childName} > ${slot}`
+                        : `${breadcrumb} > ${childName}`;
+                    options.push.apply(options, slotOptions(`container:${child.id}/${slot}`, childLabel));
+                }
+            }
+
+            return options;
+        }
+
+        const groups = [];
+
+        for (const app of apps) {
+            const appLabel = app.title || app.id;
+            const groupOptions = [];
+            const appSlots = getSlotNamesForLayout(app.layoutId);
+            const appRoutes = routes.filter(function (r) { return r.parent === app.id; });
+            const appDialogs = dialogs.filter(function (d) { return d.parent === app.id; });
+
+            if (appSlots.length > 0) {
+                groupOptions.push({ disabled: true, label: "Slots" });
+                for (const slot of appSlots) {
+                    groupOptions.push.apply(groupOptions, slotOptions(`${app.id}.${slot}`, slot));
+                }
+            }
+
+            if (appRoutes.length > 0) {
+                groupOptions.push({ disabled: true, label: "Routes" });
+                for (const route of appRoutes) {
+                    const routeSlots = getSlotNamesForLayout(route.layoutId);
+                    if (routeSlots.length === 0) continue;
+                    groupOptions.push({ disabled: true, label: route.title || route.path || route.id });
+                    for (const slot of routeSlots) {
+                        groupOptions.push.apply(groupOptions, slotOptions(`route:${route.path}/${slot}`, slot));
+                    }
+                }
+            }
+
+            if (appDialogs.length > 0) {
+                groupOptions.push({ disabled: true, label: "Dialoge" });
+                for (const dialog of appDialogs) {
+                    const dialogSlots = getSlotNamesForLayout(dialog.layoutId);
+                    if (dialogSlots.length === 0) continue;
+                    groupOptions.push({ disabled: true, label: dialog.title || dialog.id });
+                    for (const slot of dialogSlots) {
+                        groupOptions.push.apply(groupOptions, slotOptions(`dialog:${dialog.id}/${slot}`, slot));
+                    }
+                }
+            }
+
+            if (groupOptions.length > 0) {
+                groups.push({ label: appLabel, options: groupOptions });
+            }
+        }
+
+        // Orphaned routes/dialogs (no known parent app)
+        const orphanOptions = [];
+
+        for (const route of routes) {
+            if (route.parent && apps.some(function (a) { return a.id === route.parent; })) continue;
+            for (const slot of getSlotNamesForLayout(route.layoutId)) {
+                orphanOptions.push.apply(orphanOptions, slotOptions(
+                    `route:${route.path}/${slot}`,
+                    `${route.title || route.path} > ${slot}`
+                ));
+            }
+        }
+
+        for (const dialog of dialogs) {
+            if (dialog.parent && apps.some(function (a) { return a.id === dialog.parent; })) continue;
+            for (const slot of getSlotNamesForLayout(dialog.layoutId)) {
+                orphanOptions.push.apply(orphanOptions, slotOptions(
+                    `dialog:${dialog.id}/${slot}`,
+                    `${dialog.title || dialog.id} > ${slot}`
+                ));
+            }
+        }
+
+        if (orphanOptions.length > 0) {
+            groups.push({ label: "Weitere", options: orphanOptions });
+        }
+
+        return groups;
+    }
+
+    function setSelectOptionsTree(selector, groups, currentValue) {
+        const input = $(selector);
+
+        if (!input.length) return;
+
+        const normalizedCurrentValue = currentValue ? String(currentValue) : "";
+        const seenValues = new Set();
+
+        input.empty();
+        input.append($("<option></option>").attr("value", "").text("Parent-Slot auswaehlen"));
+
+        for (const group of groups) {
+            const optgroup = $("<optgroup></optgroup>").attr("label", group.label);
+
+            for (const option of group.options) {
+                if (option.disabled) {
+                    optgroup.append(
+                        $("<option></option>").attr("disabled", true).text(option.label)
+                    );
+                } else {
+                    if (seenValues.has(option.value)) continue;
+                    seenValues.add(option.value);
+                    optgroup.append(
+                        $("<option></option>").attr("value", option.value).text(option.label)
+                    );
+                }
+            }
+
+            input.append(optgroup);
         }
 
         if (normalizedCurrentValue && !seenValues.has(normalizedCurrentValue)) {
@@ -402,11 +550,10 @@
                 }
 
                 if (config.mount) {
-                    setSelectOptions(
+                    setSelectOptionsTree(
                         "#node-input-mount",
-                        buildMountOptions(references),
-                        self.mount,
-                        "Parent-Slot auswaehlen"
+                        buildMountOptionsTree(references),
+                        self.mount
                     );
                 }
 
@@ -557,6 +704,7 @@
 
     global.WebappEditorCommon = {
         bindingValueForEditor,
+        buildMountOptionsTree,
         collectEventCheckboxValues,
         getNextNameDefault,
         getStandardLayoutPresetOptions,
@@ -570,6 +718,7 @@
         parseBindingValue,
         registerNodeType,
         registerNodeTypeWithEvents,
-        required
+        required,
+        setSelectOptionsTree
     };
 })(window);

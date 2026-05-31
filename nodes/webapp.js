@@ -75,6 +75,24 @@ function parseList(value) {
         .filter(Boolean);
 }
 
+function parseJsonList(value) {
+    if (Array.isArray(value)) {
+        return value;
+    }
+
+    if (typeof value !== "string" || value.trim().length === 0) {
+        return [];
+    }
+
+    try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed : [];
+    }
+    catch (_e) {
+        return parseList(value);
+    }
+}
+
 function parseColumns(value) {
     const raw = Array.isArray(value) ? value : parseList(value);
     return raw.map((entry) => {
@@ -645,7 +663,7 @@ function toComponentDefinitions(components) {
 
         if (component.type === "ui-table") {
             const layoutProps = collectNormalizedLayoutProps(component);
-            const tableEvents = Array.isArray(component.events) ? component.events : parseList(component.events);
+            const tableEvents = parseJsonList(component.events);
             return {
                 id: component.id,
                 kind: "table",
@@ -833,8 +851,18 @@ function resolveBinding(binding, sources) {
     return resolved === undefined ? binding.fallback : resolved;
 }
 
-function mountMatches(component, regionPath, model, routeId, layoutId, dialogId, allowedScopes = { route: true, layout: true, dialog: true }) {
+function mountMatches(component, regionPath, model, routeId, layoutId, dialogId, allowedScopes = { route: true, layout: true, dialog: true }, containerId = undefined) {
     const mount = String(component.mount || "");
+
+    if (mount.startsWith("container:")) {
+        if (!allowedScopes.layout || !containerId) {
+            return false;
+        }
+        const separatorIndex = mount.lastIndexOf("/");
+        const containerTarget = separatorIndex >= 0 ? mount.slice("container:".length, separatorIndex) : "";
+        const slotName = separatorIndex >= 0 ? mount.slice(separatorIndex + 1) : "";
+        return containerTarget === containerId && slotName === regionPath.join("/");
+    }
 
     if (mount.startsWith("route:/")) {
         if (!allowedScopes.route) {
@@ -915,11 +943,11 @@ function buildActionHref(appId, action, location, componentId, eventName, params
     return `/webapp/${encodeURIComponent(appId)}/action/${encodeURIComponent(action)}?${query.toString()}`;
 }
 
-function renderSlotTree(slots, model, context, routeId, layoutId, dialogId, allowedScopes = { route: true, layout: true, dialog: true }) {
+function renderSlotTree(slots, model, context, routeId, layoutId, dialogId, allowedScopes = { route: true, layout: true, dialog: true }, containerId = undefined) {
     return slots.map((slot) => {
         const slotPath = [...context.path, slot.name];
         const components = model.components
-            .filter((component) => mountMatches(component, slotPath, model, routeId, layoutId, dialogId, allowedScopes))
+            .filter((component) => mountMatches(component, slotPath, model, routeId, layoutId, dialogId, allowedScopes, containerId))
             .sort((left, right) => (left.order || 0) - (right.order || 0) || left.id.localeCompare(right.id))
             .map((component) => renderComponent(component, context.sources, model, {
                 routeId,
@@ -1043,7 +1071,8 @@ function renderComponent(component, sources, model, context) {
                 context.routeId,
                 childLayout.id,
                 context.dialogId,
-                { route: false, layout: true, dialog: false }
+                { route: false, layout: true, dialog: false },
+                component.id
             ),
             layoutProps: component.props.layout || {}
         };
@@ -1061,7 +1090,7 @@ function renderSlotHtml(slot) {
     const components = slot.components.map(renderComponentHtml).join("");
     const layoutVariant = getLayoutVariant(slot.layoutId);
     const slotClass = sanitizeClassSuffix(slot.name);
-    return `<section class="webapp-slot webapp-slot--${escapeAttribute(slotClass)}"><header><h2>${escapeHtml(slot.name)}</h2>${title}</header><div class="webapp-slot-body webapp-slot-body--${escapeAttribute(layoutVariant)}">${components}</div></section>`;
+    return `<section class="webapp-slot webapp-slot--${escapeAttribute(slotClass)}">${title}<div class="webapp-slot-body webapp-slot-body--${escapeAttribute(layoutVariant)}">${components}</div></section>`;
 }
 
 function wrapRenderedComponentHtml(component, innerHtml) {
@@ -1595,7 +1624,7 @@ function readDeployDefinitions(RED) {
 }
 
 function getDefinitionBuckets(appId, definitions) {
-    const matchingApp = definitions.find((entry) => entry.type === "ui-app" && entry.id === appId);
+    const matchingApp = definitions.find((entry) => entry.type === "ui-app" && (entry.id === appId || entry.root === appId));
 
     if (!matchingApp) {
         return {
@@ -1641,24 +1670,6 @@ function registerEndpoints(RED) {
     if (runtimeState.endpointsRegistered) {
         return;
     }
-
-    RED.httpAdmin.get("/resources/node-red-contrib-webapp/lib/editor-common.js", (req, res) => {
-        const candidates = [
-            path.join(__dirname, "lib", "editor-common.js"),
-            path.join(__dirname, "..", "resources", "lib", "editor-common.js"),
-            path.join(__dirname, "..", "lib", "editor-common.js")
-        ];
-        const filePath = candidates.find((candidate) => fs.existsSync(candidate));
-
-        if (!filePath) {
-            res.status(404).send("editor-common.js not found");
-            return;
-        }
-
-        res.set("Cache-Control", "no-store");
-        res.type("application/javascript");
-        res.send(fs.readFileSync(filePath, "utf8"));
-    });
 
     RED.httpAdmin.get("/webapp/apps", (req, res) => {
         const apps = readDeployDefinitions(RED)
@@ -1762,7 +1773,7 @@ function createNodeConstructor(RED, type, mapConfig, options = {}) {
         const validation = validateUiNodeDefinition(definition);
 
         if (!validation.success) {
-            node.status({ fill: "red", shape: "ring", text: "invalid" });
+            node.status({ fill: "red", shape: "ring", text: validation.error });
             node.error(validation.error);
             return;
         }
@@ -1956,10 +1967,11 @@ const runtimeNodeRegistry = {
     "ui-app": {
         mapConfig: (config) => ({
             type: "ui-app",
-            id: config.root || getUiId(config) || "",
+            id: getUiId(config) || "",
+            root: config.root || "",
             title: config.name || config.title || config.root || getUiId(config) || "App",
             layout: config.layout || "vertical",
-            events: parseList(config.events).length > 0 ? parseList(config.events) : undefined
+            events: parseJsonList(config.events).length > 0 ? parseJsonList(config.events) : undefined
         }),
         options: {
             inputHandler: passThroughInputHandler
@@ -1973,7 +1985,7 @@ const runtimeNodeRegistry = {
             path: config.path,
             title: config.title || undefined,
             layout: config.layoutId,
-            events: parseList(config.events).length > 0 ? parseList(config.events) : undefined
+            events: parseJsonList(config.events).length > 0 ? parseJsonList(config.events) : undefined
         }),
         options: {
             inputHandler: passThroughInputHandler
@@ -1988,7 +2000,7 @@ const runtimeNodeRegistry = {
             layout: config.layoutId,
             routeId: config.routeId || undefined,
             modal: config.modal !== false && config.modal !== "false",
-            events: parseList(config.events).length > 0 ? parseList(config.events) : undefined
+            events: parseJsonList(config.events).length > 0 ? parseJsonList(config.events) : undefined
         }),
         options: {
             inputHandler: dialogInputHandler
@@ -2034,7 +2046,7 @@ const runtimeNodeRegistry = {
             columns: parseColumns(config.columns),
             rows: getBinding(config.rows, queryBinding(config.rowsPath || "")),
             footer: config.footer === true || config.footer === "true",
-            events: parseList(config.events).length > 0 ? parseList(config.events) : undefined,
+            events: parseJsonList(config.events).length > 0 ? parseJsonList(config.events) : undefined,
             selectAction: config.selectAction || undefined,
             ...collectNodeConfigLayoutProps(config)
         }),
@@ -2050,7 +2062,7 @@ const runtimeNodeRegistry = {
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
             layout: config.layoutId,
-            events: parseList(config.events).length > 0 ? parseList(config.events) : undefined,
+            events: parseJsonList(config.events).length > 0 ? parseJsonList(config.events) : undefined,
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
@@ -2426,7 +2438,7 @@ const runtimeNodeRegistry = {
                 return t;
             }).filter(Boolean),
             activeTab: getBinding(config.activeTab, config.activeTabPath ? stateBinding(config.activeTabPath) : undefined),
-            events: parseList(config.events),
+            events: parseJsonList(config.events),
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
@@ -2447,7 +2459,7 @@ const runtimeNodeRegistry = {
                 return t;
             }).filter(Boolean),
             multiple: config.multiple === true || config.multiple === "true" || undefined,
-            events: parseList(config.events),
+            events: parseJsonList(config.events),
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
@@ -2494,7 +2506,7 @@ const runtimeNodeRegistry = {
             page: getBinding(config.page, config.pagePath ? stateBinding(config.pagePath) : undefined),
             pageSize: config.pageSize ? stateBinding(config.pageSize) : undefined,
             totalPages: getBinding(config.totalPages, config.totalPath ? stateBinding(config.totalPath) : undefined),
-            events: parseList(config.events),
+            events: parseJsonList(config.events),
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
@@ -2516,7 +2528,7 @@ const runtimeNodeRegistry = {
             }).filter(Boolean),
             activeStep: getBinding(config.activeStep, config.activeStepPath ? stateBinding(config.activeStepPath) : undefined),
             variant: config.orientation || undefined,
-            events: parseList(config.events),
+            events: parseJsonList(config.events),
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
@@ -2566,7 +2578,7 @@ const runtimeNodeRegistry = {
             order: toOptionalNumber(config.order),
             items: getBinding(config.items, config.itemsPath ? stateBinding(config.itemsPath) : undefined) || parseList(config.items),
             variant: config.variant || undefined,
-            events: parseList(config.events).length > 0 ? parseList(config.events) : undefined,
+            events: parseJsonList(config.events).length > 0 ? parseJsonList(config.events) : undefined,
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
