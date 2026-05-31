@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P28  # Rebuild the Customers CRUD example from scratch — fully declarative
+  current_phase: P29  # Next phase TBD
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -99,23 +99,7 @@ phases:
 
   - { id: P27, title: "De-hardcode the runtime — node-driven demo behaviour and data", status: done, dependencies: [P26], archive: "docs/agent-roadmap-archive.yaml#P27" }
 
-  - id: P28
-    title: Rebuild the Customers CRUD example from scratch — fully declarative
-    status: in_progress
-    dependencies: [P27]
-    goals:
-      - Regenerate the Customers CRUD example so EVERY surface is built from nodes under the new Shoelace + node-driven-content model — no empty routes, no reliance on hard-coded HTML or a runtime-baked backend. This is the showcase that the declarative model is complete end-to-end.
-    deliverables:
-      - "rewrite scripts/gen-example.js so the generated examples/customers-crud/flow.json builds all content as nodes: a populated home route (routeHome currently renders empty — give it real content or a declarative redirect to /customers), the customers list, the customer detail route, and the editor dialog — every region's content comes from mounted nodes"
-      - "the example exercises the P23–P25 component coverage where it makes sense (e.g. status as ui-badge, feedback as ui-alert) so the example doubles as a visual catalogue of the Shoelace adapter"
-      - "regenerate examples/customers-crud/flow.json AND .node-red-dev/flows.json via pnpm gen:example (per CLAUDE.md these are generated, not hand-edited)"
-      - "update docs/nodes / example docs to describe the rebuilt flow if node usage changed"
-    validation:
-      - pnpm test passes with no failures
-      - "pnpm exec playwright test (customers-crud e2e on :1882) passes — list, detail, create, edit, delete flows green against the regenerated flow"
-      - "unit test: the home route (location '/') renders non-empty content (regions are not all empty)"
-      - "manual: screenshots of /, /customers and the editor dialog on the dev app (:1881) show a complete, styled, node-built app — the human confirms 'the app is clearly visible and looks right'"
-      - "consistency check: examples/customers-crud/flow.json and .node-red-dev/flows.json match the gen-example output (no hand edits)"
+  - { id: P28, title: "Rebuild the Customers CRUD example — fully declarative", status: done, dependencies: [P27], archive: "docs/agent-roadmap-archive.yaml#P28" }
 
   # Deferred — only when a concrete need appears (see ADR 0002):
   #   - ui-custom escape-hatch node for framework-specific components (opt-in, non-portable)

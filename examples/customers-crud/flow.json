@@ -356,8 +356,10 @@
         "parent": "customersApp",
         "mount": "routeHome.content",
         "order": 3,
-        "message": "Use the Customers section to create, view and edit customer records.",
-        "messagePath": "",
+        "message": {
+            "kind": "literal",
+            "value": "Use the Customers section to create, view and edit customer records."
+        },
         "severity": "info",
         "title": "Tip",
         "z": "flow1",

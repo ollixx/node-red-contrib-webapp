@@ -250,15 +250,15 @@ const flowNodes = [
         action: "goToCustomers"
     }),
     node("ui-alert", "homeTipAlert", "viewHome", 3, {
-        name:        "Home tip",
-        uiId:        "homeTipAlert",
-        parent:      APP,
-        mount:   "routeHome.content",
-        order:       3,
-        message:     "Use the Customers section to create, view and edit customer records.",
-        messagePath: "",
-        severity:    "info",
-        title:       "Tip"
+        name:     "Home tip",
+        uiId:     "homeTipAlert",
+        parent:   APP,
+        mount:    "routeHome.content",
+        order:    3,
+        // Pass message as a binding object so mapConfig's getBinding resolves it correctly
+        message:  { kind: "literal", value: "Use the Customers section to create, view and edit customer records." },
+        severity: "info",
+        title:    "Tip"
     }),
 
     // ── View – /customers ────────────────────────────────────────────────────
