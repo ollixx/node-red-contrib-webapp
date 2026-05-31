@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P30  # COURSE CORRECTION — remove the preview, restore the live Node-RED app model (see reversal note below P28)
+  current_phase: P31  # COURSE CORRECTION — remove the preview, restore the live Node-RED app model (see reversal note below P28)
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -147,22 +147,7 @@ phases:
 
   - { id: P29, title: "ADR 0003 + revert in-runtime business logic (kill submit/remove CRUD)", status: done, dependencies: [P28], archive: "docs/agent-roadmap-archive.yaml#P29" }
 
-  - id: P30
-    title: Real Client→Server events — UI nodes emit msg out their output port
-    status: in_progress
-    dependencies: [P29]
-    goals:
-      - Make user interaction emit a real Node-RED event message out of the originating UI node's output port into the flow, per docs/nodes/concepts/events.md — the browser reports WHAT HAPPENED; it never names or runs an action. There is no automatic event→action link; the flow decides.
-    deliverables:
-      - "the browser transport sends a raw event {appId, clientId, event, sourceId, params} (events.md message format) — NOT an actionId to execute"
-      - "the runtime routes that event to the originating node and emits msg.ui on that node's output port into the wired flow (reuse the existing input-handler plumbing in reverse); the runtime takes no domain action itself"
-      - "ui-button, ui-input, ui-table (rowSelect/rowAction), ui-select/checkbox/radio/slider/switch (change), ui-dialog (onOpen/onClose) and ui-route (onEnter/onLeave) emit their documented event types with the documented params"
-      - "the /event endpoint is repurposed (or replaced) to mean 'ingest a client event', with the action-dispatch semantics fully gone"
-    validation:
-      - pnpm test passes with no failures
-      - "unit test: a click on a wired ui-button emits msg.ui {event:'click', sourceId, clientId, appId} on its output port and triggers NO state change in the runtime"
-      - "unit test: a ui-table row select emits {event:'rowSelect', params:{rowId,row}} on the output port"
-      - "integration test: with no downstream wiring, a client event produces an output message and nothing else (the flow is the only place that could react)"
+  - { id: P30, title: "Real Client→Server events — UI nodes emit msg out their output port", status: done, dependencies: [P29], archive: "docs/agent-roadmap-archive.yaml#P30" }
 
   - id: P31
     title: Live Server→Client transport — push store/action updates to clients
