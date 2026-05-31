@@ -48,9 +48,16 @@ test.describe("live Server→Client transport (P31)", () => {
     });
 
     test("a flow-driven store update pushes live to the browser without a reload", async ({ page }) => {
+        // Wait for the EventSource subscription request so the server has registered
+        // this client before we trigger the flow — otherwise the push has no
+        // subscriber yet (a connect race).
+        const streamRequested = page.waitForRequest((req) => req.url().includes("/webapp/p31App/stream"));
         await page.goto("/webapp/p31App/");
         const root = page.locator("#webapp-client-root");
         await expect(root).toContainText("initial");
+        await streamRequested;
+        // Small settle so the SSE handshake completes server-side.
+        await page.waitForTimeout(500);
 
         // Detect a full navigation: mark the window; a reload discards the marker.
         await page.evaluate(() => {
@@ -76,6 +83,8 @@ test.describe("live Server→Client transport (P31)", () => {
         const pageA = await contextA.newPage();
         const pageB = await contextB.newPage();
 
+        const streamA = pageA.waitForRequest((req) => req.url().includes("/webapp/p31App/stream"));
+        const streamB = pageB.waitForRequest((req) => req.url().includes("/webapp/p31App/stream"));
         await pageA.goto("/webapp/p31App/");
         await pageB.goto("/webapp/p31App/");
 
@@ -83,6 +92,11 @@ test.describe("live Server→Client transport (P31)", () => {
         const rootB = pageB.locator("#webapp-client-root");
         await expect(rootA).toBeVisible();
         await expect(rootB).toBeVisible();
+
+        // Ensure both tabs are subscribed server-side before triggering the flow.
+        await streamA;
+        await streamB;
+        await pageA.waitForTimeout(500);
 
         // Trigger the update from tab A; the store update carries no clientId, so it
         // broadcasts to both subscribed tabs over their live streams.

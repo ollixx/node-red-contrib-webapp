@@ -181,7 +181,14 @@
 
         // P30: report WHAT HAPPENED. We send the originating node id (sourceId)
         // and the event type — never an actionId to execute.
-        const response = await fetch(base() + "/event", {
+        //
+        // P31: we deliberately IGNORE the /event response snapshot. Re-renders now
+        // arrive over the live SSE channel as the flow reacts (a ui-store update or
+        // a ui-action command). Applying the response snapshot here would clobber
+        // that live push with the stale pre-reaction state (a race), so the event
+        // POST is now fire-and-report only — the stream is the single source of
+        // re-renders.
+        await fetch(base() + "/event", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -191,17 +198,10 @@
                 location: location,
                 params: params
             })
+        }).catch(function () {
+            // The event report failed; nothing to apply. The next user action or
+            // stream push will reconcile the view.
         });
-
-        if (!response.ok) {
-            return;
-        }
-
-        const result = await response.json();
-
-        if (result && result.snapshot) {
-            applySnapshot(result.snapshot);
-        }
     }
 
     // Click/submit/rowSelect/rowAction triggers (buttons, table row links).
