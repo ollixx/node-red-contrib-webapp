@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P31  # COURSE CORRECTION — remove the preview, restore the live Node-RED app model (see reversal note below P28)
+  current_phase: P32  # COURSE CORRECTION — remove the preview, restore the live Node-RED app model (see reversal note below P28)
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -149,23 +149,7 @@ phases:
 
   - { id: P30, title: "Real Client→Server events — UI nodes emit msg out their output port", status: done, dependencies: [P29], archive: "docs/agent-roadmap-archive.yaml#P30" }
 
-  - id: P31
-    title: Live Server→Client transport — push store/action updates to clients
-    status: in_progress
-    dependencies: [P30]
-    goals:
-      - Replace the request/response preview with a real live channel so that when the wired flow feeds ui-store/ui-query (data) or ui-action (interaction), connected browsers update in real time. State lives in the real node runtime (fed by flow messages), not in a runtime-owned preview simulation.
-      - "DECISION REQUIRED in this phase: pick the push transport (e.g. Node-RED's built-in RED.comms websocket vs. a dedicated ws/SSE channel) and record it in ADR 0003. Note for the planner: do not start coding the channel until this is chosen."
-    deliverables:
-      - "a Server→Client push channel: ui-store/ui-query state updates (from flow input handlers) and ui-action interaction commands are serialised and pushed to the relevant client(s), honouring msg.ui.clientId targeting and the multi-user/per-client state model (P15)"
-      - "the served page renders from the real current node state (ui-store/ui-query) using the P26 shared serializer, and re-renders on pushed updates via the existing keyed morph"
-      - "app state source of truth = the runtime node state mutated only by flow messages — no previewState/previewQueries as an independent simulation"
-    validation:
-      - pnpm test passes with no failures
-      - "integration test: a msg sent into a ui-store input handler results in a push to a subscribed client and a re-render reflecting the new data (no client POST involved)"
-      - "integration test: a ui-action (navigate/openDialog) triggered from the flow pushes the interaction command and the client applies it"
-      - "integration test: clientId targeting — an action addressed to one client does not affect another connected client"
-      - "manual: two browser tabs; a flow-driven store update appears live in both (or the targeted one) without reload"
+  - { id: P31, title: "Live Server→Client transport — push store/action updates to clients", status: done, dependencies: [P30], archive: "docs/agent-roadmap-archive.yaml#P31" }
 
   - id: P32
     title: Remove the preview rendering apparatus entirely
