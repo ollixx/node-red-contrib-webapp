@@ -54,15 +54,48 @@ All of this contradicts principles that were written down before the drift:
    source of truth and is pushed to connected clients. (Transport choice and
    implementation in P31; the preview simulation is deleted in P32.)
 
+5. **The Server → Client push transport is Server-Sent Events (SSE) on a dedicated
+   `httpNode` endpoint** — `GET /webapp/:appId/stream?clientId=…&location=…`. Chosen
+   in P31 over the two candidates the roadmap named:
+
+   - **Rejected — Node-RED's built-in `RED.comms` websocket.** `RED.comms.publish`
+     rides the Node-RED *editor/admin* websocket (`/comms`, under `httpAdmin`). It
+     only reaches browsers that have the Node-RED editor open and are authenticated
+     as admin — not the deployed end-user app pages, which are anonymous `httpNode`
+     routes. It also has no per-recipient addressing (publish is a topic broadcast to
+     all editor sockets), so it cannot honour the P15 `msg.ui.clientId` targeting that
+     this phase requires. Coupling the public app's live channel to the editor session
+     is wrong on both reach and security.
+   - **Rejected — a dedicated raw `ws` channel.** A second WebSocket server would mean
+     a new runtime dependency, its own upgrade/handshake handling bolted onto the
+     Node-RED HTTP server, and bidirectional plumbing we do not need: client → server
+     is already the `POST /webapp/:appId/event` path from P30. The only missing
+     direction is server → client, which is strictly one-way.
+   - **Chosen — SSE over the existing `httpNode` router.** It is one-directional
+     (exactly the missing direction), needs **zero new dependencies** (plain
+     `text/event-stream` on the Express `res` already provided by `httpNode`), shares
+     the app's origin/auth surface with the other `/webapp/:appId/*` routes, and
+     auto-reconnects in the browser via the native `EventSource`. Per-client
+     addressing is natural: each `EventSource` registers under its `appId` + `clientId`,
+     so a flow message carrying `msg.ui.clientId` is delivered only to that client and a
+     broadcast (no `clientId`) fans out to every subscriber of the app. On
+     (re)connect the server immediately pushes the current snapshot, which subsumes the
+     P15 reconnect-sync requirement.
+
 This ADR (P29) records the reversal and removes the domain-bearing action types
 and their runtime handlers. The transport rebuild (P30–P31) and the deletion of the
-preview apparatus (P32) follow as their own phases; the live push transport choice
-will be recorded here when P31 makes it.
+preview apparatus (P32) follow as their own phases; the live push transport choice is
+recorded above (decision 5, P31).
 
 ## Consequences
 
 - The renderer, the Shoelace adapter + design tokens, and the shared serializer are
   kept unchanged — only the **state source** and the **transport** were wrong.
+- The live channel (P31) is an SSE stream at `GET /webapp/:appId/stream`. A ui-store
+  update or a ui-action interaction command pushed from the flow is serialised to the
+  affected client(s) and the browser re-renders through the same shared serializer and
+  keyed morph. `previewState` is now only the runtime's live shared state mutated by
+  flow messages — there is no independent simulation; it is removed entirely in P32.
 - `applySubmitAction` / `applyRemoveAction` and all record insert/update/delete
   logic are gone from the runtime; a `ui-action` can no longer mutate query or
   collection data.
