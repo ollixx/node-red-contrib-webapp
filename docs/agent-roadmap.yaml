@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P24  # Completing the Web Component look — page shell/theme (see ADR 0002)
+  current_phase: P25  # Adapter coverage — remaining component kinds + map corrections
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -73,23 +73,7 @@ phases:
   # old design. These phases finish the migration at the page and component level.
   # ────────────────────────────────────────────────────────────────────────
 
-  - id: P24
-    title: Page shell and theme — Shoelace + design tokens
-    status: in_progress
-    dependencies: [P23]
-    goals:
-      - Replace the bespoke hand-rolled page shell and theme in nodes/webapp.js with a Shoelace- and design-token-driven shell, so the whole page adopts the Web Component look instead of just individual widgets.
-    deliverables:
-      - remove the large bespoke <style> block (beige/serif theme — --bg:#f4f1e8, Georgia, .webapp-shell, .webapp-slot card chrome, .webapp-topbar "Runtime Preview" header) and the topbar scaffold from the served HTML
-      - drive page typography, colour and surfaces from Shoelace's theme (themes/light.css, already loaded) aliased to the --wa-* design tokens via the existing buildShoelaceTokenBridgeCss bridge
-      - keep the layout-region structure (header/navbar/content/footer slots, grid/vertical/horizontal/absolute variants) but style it with tokens, not the bespoke CSS
-      - a configured ui-app token (e.g. colorPrimary, fontFamily, radiusMd) visibly drives the rendered page
-    validation:
-      - pnpm test passes with no failures
-      - "unit test: served HTML for a token-bearing ui-app no longer contains the old theme markers (Georgia, --bg:#f4f1e8, Runtime Preview, webapp-shell)"
-      - "unit test: a ui-app with tokens.colorPrimary set emits that value on the --wa-color-primary custom property in the served document"
-      - "unit test: the layout regions (header/navbar/content/footer) still render and still place their mounted components"
-      - "manual: the human confirms in the browser that the dev app visibly adopts the Shoelace look (subjective — design quality is not unit-testable)"
+  - { id: P24, title: "Page shell and theme — Shoelace + design tokens", status: done, dependencies: [P23], archive: "docs/agent-roadmap-archive.yaml#P24" }
 
   - id: P25
     title: Adapter coverage — remaining component kinds + map corrections

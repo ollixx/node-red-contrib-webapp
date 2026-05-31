@@ -1441,9 +1441,10 @@ function renderAppPage(appId, location, dialogId, definitions) {
   <link rel="stylesheet" href="${SHOELACE_THEME_HREF}">
   <script type="module" src="${SHOELACE_AUTOLOADER_SRC}"></script>
   <style>
-    /* P23: webapp-default design tokens. User tokens on ui-app (below) override
+    /* P24: webapp-default design tokens. User tokens on ui-app (below) override
        these; the Web Components consume them natively as CSS custom properties. */
     :root {
+      color-scheme: light;
       --wa-color-primary:#3b82f6; --wa-color-primary-fg:#ffffff;
       --wa-color-danger:#ef4444; --wa-color-danger-fg:#ffffff;
       --wa-color-success:#22c55e; --wa-color-warning:#f59e0b;
@@ -1455,26 +1456,22 @@ function renderAppPage(appId, location, dialogId, definitions) {
     }
     /* P23: --wa-* → --sl-* bridge (Shoelace themed via the same tokens). */
 ${shoelaceBridgeCss.split("\n").map((line) => `    ${line}`).join("\n")}
-    /* P23: user-defined ui-app tokens (highest precedence). */
+    /* P24: user-defined ui-app tokens (highest precedence). */
 ${tokenCss ? tokenCss.split("\n").map((line) => `    ${line}`).join("\n") : "    /* (no app tokens set) */"}
-    :root { color-scheme: light; --bg:#f4f1e8; --panel:#fffdf7; --ink:#1f2933; --muted:#5b6470; --line:#d9d2c3; --accent:var(--wa-color-primary); --accent-2:#9a3412; }
     * { box-sizing:border-box; }
-    body { margin:0; font-family: Georgia, "Iowan Old Style", serif; color:var(--ink); background:radial-gradient(circle at top left, #fff8ec, var(--bg)); }
+    body { margin:0; font-family:var(--wa-font-family); font-size:var(--wa-font-size-base); color:var(--wa-color-text); background:var(--wa-color-background); }
     a { color:inherit; text-decoration:none; }
-    .webapp-shell { max-width:1100px; margin:0 auto; padding:32px 20px 60px; }
-    .webapp-topbar { display:flex; justify-content:space-between; gap:16px; align-items:flex-end; margin-bottom:24px; }
-    .webapp-topbar h1 { margin:0; font-size:clamp(2rem, 4vw, 3.4rem); }
-    .webapp-sub { color:var(--muted); font-family: ui-monospace, SFMono-Regular, monospace; font-size:13px; }
+    #webapp-client-root { max-width:1100px; margin:0 auto; padding:24px 20px 60px; }
     .webapp-grid { display:grid; gap:16px; }
     .webapp-layout { display:grid; gap:16px; }
     .webapp-layout--app { grid-template-areas:"header" "navbar" "content" "footer"; }
-    .webapp-slot { border:1px solid var(--line); background:rgba(255,255,255,0.78); backdrop-filter: blur(6px); border-radius:18px; padding:16px; box-shadow:0 12px 30px rgba(79,70,50,0.08); }
+    .webapp-slot { border:1px solid var(--wa-color-border); background:var(--wa-color-surface); border-radius:var(--wa-radius-md); padding:16px; }
     .webapp-slot--header { grid-area:header; }
     .webapp-slot--navbar { grid-area:navbar; }
     .webapp-slot--content { grid-area:content; }
     .webapp-slot--footer { grid-area:footer; }
     .webapp-slot > header { margin-bottom:12px; }
-    .webapp-slot > header h2 { margin:0; font-size:1rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); }
+    .webapp-slot > header h2 { margin:0; font-size:1rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--wa-color-text-muted); }
     .webapp-slot-body { gap:12px; }
     .webapp-slot-body--vertical, .webapp-slot-body--app, .webapp-slot-body--custom { display:flex; flex-direction:column; }
     .webapp-slot-body--horizontal { display:flex; flex-direction:row; align-items:flex-start; flex-wrap:wrap; }
@@ -1483,34 +1480,24 @@ ${tokenCss ? tokenCss.split("\n").map((line) => `    ${line}`).join("\n") : "   
     .webapp-slot-body--absolute { position:relative; min-height:320px; }
     .webapp-item--absolute { position:absolute; }
     .webapp-text { font-size:1.05rem; }
-    .webapp-button { display:inline-flex; align-items:center; justify-content:center; padding:10px 14px; border-radius:999px; border:1px solid rgba(0,0,0,0.08); background:var(--wa-color-primary); color:var(--wa-color-primary-fg, #fff); font-weight:600; }
-    button.webapp-button[disabled] { background:#cbd5e1; color:#475569; }
-    .webapp-table { width:100%; border-collapse:collapse; background:var(--panel); border-radius:12px; overflow:hidden; }
-    .webapp-table th, .webapp-table td { padding:10px 12px; border-bottom:1px solid var(--line); text-align:left; }
+    .webapp-table { width:100%; border-collapse:collapse; background:var(--wa-color-surface); border-radius:var(--wa-radius-md); overflow:hidden; }
+    .webapp-table th, .webapp-table td { padding:10px 12px; border-bottom:1px solid var(--wa-color-border); text-align:left; }
     .webapp-form { display:grid; gap:10px; }
-    .webapp-field { display:grid; gap:6px; color:var(--muted); font-size:0.95rem; }
-    .webapp-form input { padding:10px 12px; border-radius:10px; border:1px solid var(--line); background:white; }
+    .webapp-field { display:grid; gap:6px; color:var(--wa-color-text-muted); font-size:0.95rem; }
     .webapp-container { display:grid; gap:12px; }
-    .webapp-dialog { position:fixed; inset:0; background:rgba(20, 26, 31, 0.38); display:flex; align-items:center; justify-content:center; padding:24px; }
-    .webapp-dialog-card { width:min(720px, 100%); background:var(--panel); border-radius:22px; padding:20px; box-shadow:0 25px 70px rgba(0,0,0,0.18); }
+    .webapp-dialog { position:fixed; inset:0; background:rgba(20,26,31,0.38); display:flex; align-items:center; justify-content:center; padding:24px; }
+    .webapp-dialog-card { width:min(720px, 100%); background:var(--wa-color-surface); border-radius:var(--wa-radius-md); padding:20px; box-shadow:0 25px 70px rgba(0,0,0,0.18); }
     .webapp-dialog-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
-    .webapp-link { color:var(--accent-2); font-weight:700; }
-        @media (min-width: 900px) {
-            .webapp-layout--app { grid-template-columns:minmax(220px, 280px) minmax(0, 1fr); grid-template-areas:"header header" "navbar content" "footer footer"; align-items:start; }
-        }
+    .webapp-link { color:var(--wa-color-primary); font-weight:700; }
+    @media (min-width:900px) {
+      .webapp-layout--app { grid-template-columns:minmax(220px,280px) minmax(0,1fr); grid-template-areas:"header header" "navbar content" "footer footer"; align-items:start; }
+    }
   </style>
 </head>
 <body>
-  <div class="webapp-shell" id="webapp-client-root"
+  <div id="webapp-client-root"
        data-webapp-app-id="${escapeAttribute(model.id)}"
        data-webapp-location="${escapeAttribute(snapshot.location)}"${dialogId ? ` data-webapp-dialog="${escapeAttribute(dialogId)}"` : ""}>
-    <div class="webapp-topbar">
-      <div>
-        <div class="webapp-sub">Node-RED Webapp Runtime Preview</div>
-        <h1>${escapeHtml(model.title)}</h1>
-      </div>
-      <div class="webapp-sub">Route: ${escapeHtml(routeMatch.route.path)}</div>
-    </div>
     <div class="webapp-grid">${pageBody}</div>
     ${dialogHtml}
   </div>

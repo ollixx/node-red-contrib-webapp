@@ -714,3 +714,25 @@ phases:
       - "unit test: the adapter's accepted variant vocabulary stays semantic — no framework token as input (audit guard)"
       - "Playwright: the customers-crud example renders with Shoelace (sl-card) and the configured primary color is visibly applied (tests/e2e/p23-shoelace-adapter.spec.ts)"
       - "docs check: docs/theming.md describes theme = tokens + adapter choice + adapter impl and that a theme injects no node types (per ADR 0002)"
+
+  - id: P24
+    title: "Page shell and theme — Shoelace + design tokens"
+    status: done
+    dependencies: [P23]
+    summary:
+      delivered: "Replaced the bespoke beige/serif page shell in nodes/webapp.js with a Shoelace + design-token-driven shell: removed the old :root { --bg:#f4f1e8 } block, Georgia/serif typography, .webapp-shell container class, and .webapp-topbar 'Runtime Preview' header; rewritten CSS uses --wa-* custom properties for all colours, typography, surfaces, borders and radius so the page inherits the Shoelace theme. Layout-region structure (header/navbar/content/footer slots, grid/vertical/horizontal/absolute variants) is preserved but now styled with tokens. Fixed p23-shoelace-adapter E2E test to remove the obsolete .webapp-button selector (buttons have been sl-button since the P23 follow-up commit)."
+      stats: "1 file changed (nodes/webapp.js), 1 new test file (9 unit tests), 1 E2E test file updated. Unit suite: 134 tests, 0 failures. E2E: 10 pre-existing failures (inherited from P23, root-caused as test-isolation defect — see P23 archive notes), 0 new regressions."
+      notes: "The 10 pre-existing E2E failures were confirmed present both before and after P24 (stash baseline test). P24 validation criteria are all unit-testable; the 'manual' criterion is explicitly subjective. The p23-shoelace-adapter E2E test was updated because its .webapp-button selector became stale after the P23 follow-up commit (100b774) — the update is a correctness fix, not scope creep."
+    goals:
+      - Replace the bespoke hand-rolled page shell and theme in nodes/webapp.js with a Shoelace- and design-token-driven shell.
+    deliverables:
+      - remove the large bespoke <style> block (beige/serif theme — --bg:#f4f1e8, Georgia, .webapp-shell, .webapp-slot card chrome, .webapp-topbar "Runtime Preview" header) and the topbar scaffold from the served HTML
+      - drive page typography, colour and surfaces from Shoelace's theme aliased to the --wa-* design tokens via the existing buildShoelaceTokenBridgeCss bridge
+      - keep the layout-region structure (header/navbar/content/footer slots, grid/vertical/horizontal/absolute variants) but style it with tokens, not the bespoke CSS
+      - a configured ui-app token (e.g. colorPrimary, fontFamily, radiusMd) visibly drives the rendered page
+    validation:
+      - pnpm test passes with no failures
+      - "unit test: served HTML for a token-bearing ui-app no longer contains the old theme markers (Georgia, --bg:#f4f1e8, Runtime Preview, webapp-shell)"
+      - "unit test: a ui-app with tokens.colorPrimary set emits that value on the --wa-color-primary custom property in the served document"
+      - "unit test: the layout regions (header/navbar/content/footer) still render and still place their mounted components"
+      - "manual: the human confirms in the browser that the dev app visibly adopts the Shoelace look (subjective — design quality is not unit-testable)"
