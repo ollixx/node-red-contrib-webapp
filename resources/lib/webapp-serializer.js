@@ -1,0 +1,508 @@
+/**
+ * Shared snapshot serializer (P26).
+ *
+ * SINGLE source of truth for turning a RenderSnapshot (region/component tree)
+ * into the canonical Shoelace markup. Consumed by BOTH:
+ *   - the server  (nodes/webapp.js, renderAppPage / the /event + /snapshot routes)
+ *   - the browser (resources/lib/webapp-client.js thin client)
+ *
+ * Before P26 the two renderers were hand-maintained copies that had drifted:
+ * the server emitted <sl-button>/<sl-input>/all P16x kinds, the client emitted
+ * native <button>/<input> and only a handful of kinds. On hydrate() the client
+ * overwrote the server markup and downgraded the page to unstyled HTML. With
+ * this module they cannot diverge — the same function produces both outputs and
+ * a unit test asserts byte-identical results.
+ *
+ * Interactivity is expressed with `data-webapp-*` attributes (action/source/
+ * event/form/rowid). The thin client dispatches them via POST /event; the server
+ * emits the IDENTICAL attributes so the morph compares like-for-like markup and
+ * never swaps element kinds.
+ *
+ * Loadable both in Node (CommonJS) and in the browser (global
+ * `window.WebappSerializer`) — the resources/ dir is served statically by
+ * Node-RED, so this file must not depend on a bundler or any import.
+ */
+(function (root, factory) {
+    "use strict";
+
+    const api = factory();
+
+    if (typeof module === "object" && module.exports) {
+        module.exports = api;
+    }
+
+    if (root) {
+        root.WebappSerializer = api;
+    }
+}(typeof globalThis !== "undefined" ? globalThis : this, function () {
+    "use strict";
+
+    function escapeHtml(input) {
+        return String(input === undefined || input === null ? "" : input)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    function escapeAttribute(input) {
+        return escapeHtml(input);
+    }
+
+    // --- Shoelace adapter mapping (mirrors packages/renderer shoelace-adapter) --
+    // Kept inline so this module is browser-loadable without a bundler. A unit
+    // test (p26-render-parity) asserts this mapping stays in sync with the
+    // canonical mapComponentToShoelace exported from the renderer package.
+
+    const KIND_TO_SHOELACE = {
+        button: "sl-button",
+        card: "sl-card",
+        container: "sl-card",
+        input: "sl-input",
+        select: "sl-select",
+        checkbox: "sl-checkbox",
+        radio: "sl-radio-group",
+        switch: "sl-switch",
+        textarea: "sl-textarea",
+        datepicker: "sl-input",
+        slider: "sl-range",
+        alert: "sl-alert",
+        badge: "sl-badge",
+        progress: "sl-progress-bar",
+        breadcrumb: "sl-breadcrumb",
+        tabs: "sl-tab-group",
+        accordion: "sl-details",
+        menu: "sl-menu",
+        avatar: "sl-avatar",
+        toast: "sl-alert",
+        pagination: "sl-button-group"
+    };
+
+    const BUTTON_VARIANT_TO_SHOELACE = {
+        primary: "primary",
+        secondary: "neutral",
+        danger: "danger",
+        ghost: "default",
+        link: "text"
+    };
+
+    const SIZE_TO_SHOELACE = { xs: "small", sm: "small", md: "medium", lg: "large", xl: "large" };
+
+    function mapButtonVariant(variant) {
+        if (!variant) {
+            return "default";
+        }
+        return BUTTON_VARIANT_TO_SHOELACE[variant] || "default";
+    }
+
+    function mapSize(size) {
+        if (!size) {
+            return undefined;
+        }
+        return SIZE_TO_SHOELACE[size];
+    }
+
+    function mapComponentToShoelace(kind, props) {
+        props = props || {};
+        const tag = KIND_TO_SHOELACE[kind];
+        const attributes = {};
+
+        if (kind === "button") {
+            attributes.variant = mapButtonVariant(typeof props.variant === "string" ? props.variant : undefined);
+            const size = mapSize(typeof props.size === "string" ? props.size : undefined);
+            if (size) {
+                attributes.size = size;
+            }
+        }
+        else if (typeof props.size === "string") {
+            const size = mapSize(props.size);
+            if (size) {
+                attributes.size = size;
+            }
+        }
+
+        if (!tag) {
+            return {
+                tag: "div",
+                attributes: Object.assign({}, attributes, { "data-wa-kind": kind, "data-wa-fallback": "true" }),
+                fallback: true
+            };
+        }
+
+        return { tag: tag, attributes: attributes, fallback: false };
+    }
+
+    function shoelaceAttrs(attributes) {
+        return Object.keys(attributes || {})
+            .map(function (key) { return " " + key + "=\"" + escapeAttribute(String(attributes[key])) + "\""; })
+            .join("");
+    }
+
+    // --- layout / region helpers ------------------------------------------------
+
+    function sanitizeClassSuffix(value) {
+        return String(value === undefined || value === null ? "" : value)
+            .toLowerCase()
+            .replace(/[^a-z0-9_-]+/g, "-")
+            .replace(/^-+|-+$/g, "") || "default";
+    }
+
+    function getLayoutVariant(layoutId) {
+        return ["horizontal", "vertical", "app", "grid", "absolute"].indexOf(layoutId) !== -1 ? layoutId : "custom";
+    }
+
+    function getComponentLayoutProps(component) {
+        const layout = component.props && component.props.layout;
+        return layout && typeof layout === "object" ? layout : {};
+    }
+
+    function regionContainsInput(region) {
+        return region.components.some(function (component) {
+            if (component.kind === "input") {
+                return true;
+            }
+            if (component.kind === "container") {
+                return component.regions.some(regionContainsInput);
+            }
+            return false;
+        });
+    }
+
+    function wrapRenderedComponentHtml(component, layoutId, innerHtml) {
+        const layoutVariant = getLayoutVariant(layoutId || "");
+        const layoutProps = getComponentLayoutProps(component);
+        const styles = [];
+
+        if (layoutVariant === "grid") {
+            if (layoutProps.col !== undefined) {
+                styles.push("grid-column:" + layoutProps.col + (layoutProps.colSize !== undefined ? " / span " + layoutProps.colSize : ""));
+            }
+            if (layoutProps.row !== undefined) {
+                styles.push("grid-row:" + layoutProps.row + (layoutProps.rowSize !== undefined ? " / span " + layoutProps.rowSize : ""));
+            }
+        }
+
+        if (layoutVariant === "absolute") {
+            if (layoutProps.x !== undefined) {
+                styles.push("left:" + layoutProps.x + "px");
+            }
+            if (layoutProps.y !== undefined) {
+                styles.push("top:" + layoutProps.y + "px");
+            }
+        }
+
+        const styleAttribute = styles.length > 0 ? " style=\"" + escapeAttribute(styles.join(";")) + "\"" : "";
+        return "<div class=\"webapp-item webapp-item--" + escapeAttribute(layoutVariant) + "\"" + styleAttribute + ">" + innerHtml + "</div>";
+    }
+
+    function renderRegionHtml(region, layoutId, ctx) {
+        const title = region.title ? "<h3>" + escapeHtml(region.title) + "</h3>" : "";
+        const components = region.components
+            .map(function (component) { return renderComponentHtml(component, layoutId, ctx); })
+            .join("");
+        const layoutVariant = getLayoutVariant(layoutId);
+        const slotClass = sanitizeClassSuffix(region.name);
+        return "<section class=\"webapp-slot webapp-slot--" + escapeAttribute(slotClass) + "\">" + title
+            + "<div class=\"webapp-slot-body webapp-slot-body--" + escapeAttribute(layoutVariant) + "\">" + components + "</div></section>";
+    }
+
+    function renderLayoutHtml(layoutId, regions, ctx) {
+        const variant = getLayoutVariant(layoutId);
+        return "<div class=\"webapp-layout webapp-layout--" + escapeAttribute(variant) + "\">"
+            + regions.map(function (region) { return renderRegionHtml(region, layoutId, ctx); }).join("")
+            + "</div>";
+    }
+
+    // --- per-component serialization -------------------------------------------
+
+    function renderComponentHtml(component, layoutId, ctx) {
+        ctx = ctx || {};
+
+        if (component.kind === "text") {
+            return wrapRenderedComponentHtml(component, layoutId, "<div class=\"webapp-text\">" + escapeHtml(component.text) + "</div>");
+        }
+
+        if (component.kind === "button") {
+            const label = escapeHtml(component.label);
+            const action = component.events && component.events[0] ? component.events[0].action : undefined;
+            const inForm = Boolean(ctx.formId);
+            const attrs = shoelaceAttrs(mapComponentToShoelace("button", component.props || {}).attributes);
+
+            if (component.disabled || !action) {
+                return wrapRenderedComponentHtml(component, layoutId, "<sl-button" + attrs + " disabled>" + label + "</sl-button>");
+            }
+
+            // Interactivity is expressed with data-webapp-* attributes (role stays
+            // "button"); the thin client intercepts the click, POSTs /event and
+            // morphs in the new snapshot — no full-page navigation. The no-JS
+            // fallback (/action GET) is also reachable via these attributes. The
+            // href attribute is deliberately NOT set so a button stays a button.
+            const dataAttrs = [
+                " data-webapp-action=\"" + escapeAttribute(action) + "\"",
+                " data-webapp-source=\"" + escapeAttribute(component.id) + "\"",
+                " data-webapp-event=\"" + (inForm ? "submit" : "click") + "\""
+            ];
+
+            if (inForm) {
+                dataAttrs.push(" data-webapp-form=\"" + escapeAttribute(ctx.formId) + "\"");
+            }
+
+            return wrapRenderedComponentHtml(component, layoutId, "<sl-button" + attrs + dataAttrs.join("") + ">" + label + "</sl-button>");
+        }
+
+        if (component.kind === "table") {
+            const columns = Array.isArray(component.props.columns) ? component.props.columns : [];
+            const rows = Array.isArray(component.rows) ? component.rows : [];
+            const selectEvent = (component.events || []).find(function (event) { return event.event === "select"; });
+            const selectAction = component.props.selectAction || (selectEvent && selectEvent.action) || undefined;
+            const header = columns.map(function (col) {
+                return "<th>" + escapeHtml(col.label || col.key || col) + "</th>";
+            }).join("");
+            const body = rows.length === 0
+                ? "<tr><td colspan=\"" + Math.max(columns.length, 1) + "\">No rows loaded.</td></tr>"
+                : rows.map(function (row) {
+                    const rowId = row.id !== undefined ? String(row.id) : "";
+                    const cells = columns.map(function (col, index) {
+                        const key = col.key || col;
+                        const value = escapeHtml(row[key] === undefined || row[key] === null ? "" : row[key]);
+
+                        if (index === 0 && selectAction && rowId) {
+                            return "<td><a class=\"webapp-link\" href=\"#\""
+                                + " data-webapp-action=\"" + escapeAttribute(selectAction) + "\""
+                                + " data-webapp-source=\"" + escapeAttribute(component.id) + "\""
+                                + " data-webapp-event=\"select\""
+                                + " data-webapp-rowid=\"" + escapeAttribute(rowId) + "\">" + value + "</a></td>";
+                        }
+
+                        return "<td>" + value + "</td>";
+                    }).join("");
+                    return "<tr data-webapp-row=\"" + escapeAttribute(rowId) + "\">" + cells + "</tr>";
+                }).join("");
+            return wrapRenderedComponentHtml(component, layoutId, "<table class=\"webapp-table\"><thead><tr>" + header + "</tr></thead><tbody>" + body + "</tbody></table>");
+        }
+
+        if (component.kind === "input") {
+            const label = String(component.props.label || component.id);
+            const name = String(component.props.path || component.id);
+            const inputType = String(component.props.inputType || "text");
+            const value = component.value === undefined || component.value === null ? "" : String(component.value);
+            const attrs = shoelaceAttrs(mapComponentToShoelace("input", component.props || {}).attributes);
+            return wrapRenderedComponentHtml(component, layoutId, "<sl-input" + attrs + " label=\"" + escapeAttribute(label)
+                + "\" type=\"" + escapeAttribute(inputType) + "\" name=\"" + escapeAttribute(name) + "\" value=\"" + escapeAttribute(value) + "\"></sl-input>");
+        }
+
+        if (component.kind === "container") {
+            const childLayoutId = component.layoutId;
+            const hasInputs = component.regions.some(regionContainsInput);
+            const formId = hasInputs ? "webapp-form-" + component.id : undefined;
+            const childCtx = Object.assign({}, ctx, { formId: formId });
+            const content = renderLayoutHtml(childLayoutId, component.regions, childCtx);
+            const body = formId
+                ? "<form class=\"webapp-form\" id=\"" + escapeAttribute(formId) + "\" data-webapp-form-id=\"" + escapeAttribute(formId) + "\">" + content + "</form>"
+                : content;
+            const descriptor = mapComponentToShoelace(component.kind, component.props || {});
+            const inner = "<" + descriptor.tag + " class=\"webapp-container\">" + body + "</" + descriptor.tag + ">";
+            return wrapRenderedComponentHtml(component, layoutId, inner);
+        }
+
+        if (component.kind === "select") {
+            const label = String(component.props.label || component.id);
+            const name = String(component.props.path || component.id);
+            const value = component.value === undefined || component.value === null ? "" : String(component.value);
+            const attrs = shoelaceAttrs(mapComponentToShoelace("select", component.props || {}).attributes);
+            const options = Array.isArray(component.props.options) ? component.props.options : [];
+            const optionHtml = options.map(function (opt) {
+                const val = escapeAttribute(String(opt.value !== undefined ? opt.value : opt));
+                const lbl = escapeHtml(String(opt.label !== undefined ? opt.label : (opt.value !== undefined ? opt.value : opt)));
+                const selected = val === escapeAttribute(value) ? " selected" : "";
+                return "<sl-option value=\"" + val + "\"" + selected + ">" + lbl + "</sl-option>";
+            }).join("");
+            return wrapRenderedComponentHtml(component, layoutId, "<sl-select" + attrs + " label=\"" + escapeAttribute(label)
+                + "\" name=\"" + escapeAttribute(name) + "\" value=\"" + escapeAttribute(value) + "\">" + optionHtml + "</sl-select>");
+        }
+
+        if (component.kind === "checkbox") {
+            const label = String(component.props.label || component.id);
+            const name = String(component.props.path || component.id);
+            const checked = component.value ? " checked" : "";
+            const disabled = component.disabled ? " disabled" : "";
+            const attrs = shoelaceAttrs(mapComponentToShoelace("checkbox", component.props || {}).attributes);
+            return wrapRenderedComponentHtml(component, layoutId, "<sl-checkbox" + attrs + " name=\"" + escapeAttribute(name) + "\"" + checked + disabled + ">" + escapeHtml(label) + "</sl-checkbox>");
+        }
+
+        if (component.kind === "radio") {
+            const label = String(component.props.label || component.id);
+            const name = String(component.props.path || component.id);
+            const value = component.value === undefined || component.value === null ? "" : String(component.value);
+            const options = Array.isArray(component.props.options) ? component.props.options : [];
+            const radioHtml = options.map(function (opt) {
+                const val = escapeAttribute(String(opt.value !== undefined ? opt.value : opt));
+                const lbl = escapeHtml(String(opt.label !== undefined ? opt.label : (opt.value !== undefined ? opt.value : opt)));
+                return "<sl-radio value=\"" + val + "\">" + lbl + "</sl-radio>";
+            }).join("");
+            const attrs = shoelaceAttrs(mapComponentToShoelace("radio", component.props || {}).attributes);
+            return wrapRenderedComponentHtml(component, layoutId, "<sl-radio-group" + attrs + " label=\"" + escapeAttribute(label)
+                + "\" name=\"" + escapeAttribute(name) + "\" value=\"" + escapeAttribute(value) + "\">" + radioHtml + "</sl-radio-group>");
+        }
+
+        if (component.kind === "switch") {
+            const label = String(component.props.label || component.id);
+            const name = String(component.props.path || component.id);
+            const checked = component.value ? " checked" : "";
+            const disabled = component.disabled ? " disabled" : "";
+            const attrs = shoelaceAttrs(mapComponentToShoelace("switch", component.props || {}).attributes);
+            return wrapRenderedComponentHtml(component, layoutId, "<sl-switch" + attrs + " name=\"" + escapeAttribute(name) + "\"" + checked + disabled + ">" + escapeHtml(label) + "</sl-switch>");
+        }
+
+        if (component.kind === "textarea") {
+            const label = String(component.props.label || component.id);
+            const name = String(component.props.path || component.id);
+            const value = component.value === undefined || component.value === null ? "" : String(component.value);
+            const rows = component.props.rows ? " rows=\"" + escapeAttribute(String(component.props.rows)) + "\"" : "";
+            const attrs = shoelaceAttrs(mapComponentToShoelace("textarea", component.props || {}).attributes);
+            return wrapRenderedComponentHtml(component, layoutId, "<sl-textarea" + attrs + " label=\"" + escapeAttribute(label)
+                + "\" name=\"" + escapeAttribute(name) + "\"" + rows + " value=\"" + escapeAttribute(value) + "\"></sl-textarea>");
+        }
+
+        if (component.kind === "datepicker") {
+            const label = String(component.props.label || component.id);
+            const name = String(component.props.path || component.id);
+            const value = component.value === undefined || component.value === null ? "" : String(component.value);
+            const attrs = shoelaceAttrs(mapComponentToShoelace("datepicker", component.props || {}).attributes);
+            return wrapRenderedComponentHtml(component, layoutId, "<sl-input" + attrs + " type=\"date\" label=\"" + escapeAttribute(label)
+                + "\" name=\"" + escapeAttribute(name) + "\" value=\"" + escapeAttribute(value) + "\"></sl-input>");
+        }
+
+        if (component.kind === "slider") {
+            const label = String(component.props.label || "");
+            const name = String(component.props.path || component.id);
+            const value = component.value === undefined || component.value === null ? "" : String(component.value);
+            const min = component.props.min !== undefined ? " min=\"" + escapeAttribute(String(component.props.min)) + "\"" : "";
+            const max = component.props.max !== undefined ? " max=\"" + escapeAttribute(String(component.props.max)) + "\"" : "";
+            const step = component.props.step !== undefined ? " step=\"" + escapeAttribute(String(component.props.step)) + "\"" : "";
+            const attrs = shoelaceAttrs(mapComponentToShoelace("slider", component.props || {}).attributes);
+            return wrapRenderedComponentHtml(component, layoutId, "<sl-range" + attrs + " label=\"" + escapeAttribute(label)
+                + "\" name=\"" + escapeAttribute(name) + "\"" + min + max + step + " value=\"" + escapeAttribute(value) + "\"></sl-range>");
+        }
+
+        if (component.kind === "alert") {
+            const message = String(component.props.message || component.value || "");
+            const severity = String(component.props.severity || "primary");
+            const shoelaceVariant = ({ info: "primary", warning: "warning", error: "danger", success: "success" })[severity] || severity;
+            const dismissible = component.props.dismissible ? " closable" : "";
+            const title = component.props.title ? "<strong>" + escapeHtml(String(component.props.title)) + "</strong><br>" : "";
+            const attrs = shoelaceAttrs(mapComponentToShoelace("alert", component.props || {}).attributes);
+            return wrapRenderedComponentHtml(component, layoutId, "<sl-alert" + attrs + " variant=\"" + escapeAttribute(shoelaceVariant) + "\" open" + dismissible + ">" + title + escapeHtml(message) + "</sl-alert>");
+        }
+
+        if (component.kind === "badge") {
+            const value = component.value === undefined || component.value === null ? "" : String(component.value);
+            const severity = String(component.props.severity || component.props.variant || "neutral");
+            const shoelaceVariant = ({ success: "success", warning: "warning", error: "danger", info: "primary" })[severity] || severity;
+            const attrs = shoelaceAttrs(mapComponentToShoelace("badge", component.props || {}).attributes);
+            return wrapRenderedComponentHtml(component, layoutId, "<sl-badge" + attrs + " variant=\"" + escapeAttribute(shoelaceVariant) + "\">" + escapeHtml(value) + "</sl-badge>");
+        }
+
+        if (component.kind === "progress") {
+            const value = component.value === undefined || component.value === null ? 0 : Number(component.value);
+            const label = component.props.label ? " label=\"" + escapeAttribute(String(component.props.label)) + "\"" : "";
+            const attrs = shoelaceAttrs(mapComponentToShoelace("progress", component.props || {}).attributes);
+            return wrapRenderedComponentHtml(component, layoutId, "<sl-progress-bar" + attrs + " value=\"" + escapeAttribute(String(value)) + "\"" + label + "></sl-progress-bar>");
+        }
+
+        if (component.kind === "breadcrumb") {
+            const items = Array.isArray(component.props.items) ? component.props.items : (Array.isArray(component.value) ? component.value : []);
+            const itemHtml = items.map(function (item) {
+                const label = escapeHtml(String(item.label !== undefined ? item.label : item));
+                const href = item.href ? " href=\"" + escapeAttribute(item.href) + "\"" : "";
+                return "<sl-breadcrumb-item" + href + ">" + label + "</sl-breadcrumb-item>";
+            }).join("");
+            return wrapRenderedComponentHtml(component, layoutId, "<sl-breadcrumb>" + itemHtml + "</sl-breadcrumb>");
+        }
+
+        if (component.kind === "tabs") {
+            const tabs = Array.isArray(component.props.tabs) ? component.props.tabs : [];
+            const tabHtml = tabs.map(function (tab) {
+                return "<sl-tab slot=\"nav\" panel=\"" + escapeAttribute(String(tab.id !== undefined ? tab.id : tab)) + "\">" + escapeHtml(String(tab.label !== undefined ? tab.label : (tab.id !== undefined ? tab.id : tab))) + "</sl-tab>";
+            }).join("");
+            const panelHtml = tabs.map(function (tab) {
+                return "<sl-tab-panel name=\"" + escapeAttribute(String(tab.id !== undefined ? tab.id : tab)) + "\"></sl-tab-panel>";
+            }).join("");
+            return wrapRenderedComponentHtml(component, layoutId, "<sl-tab-group>" + tabHtml + panelHtml + "</sl-tab-group>");
+        }
+
+        if (component.kind === "accordion") {
+            const items = Array.isArray(component.props.items) ? component.props.items : [];
+            const detailsHtml = items.map(function (item) {
+                return "<sl-details summary=\"" + escapeAttribute(String(item.label !== undefined ? item.label : (item.id !== undefined ? item.id : item))) + "\"></sl-details>";
+            }).join("");
+            return wrapRenderedComponentHtml(component, layoutId, "<div class=\"webapp-accordion\">" + detailsHtml + "</div>");
+        }
+
+        if (component.kind === "menu") {
+            const appId = ctx.appId;
+            const items = Array.isArray(component.props.items) ? component.props.items : (Array.isArray(component.value) ? component.value : []);
+            const itemHtml = items.map(function (item) {
+                const label = escapeHtml(String(item.label !== undefined ? item.label : item));
+                const href = item.href
+                    ? " href=\"" + escapeAttribute(item.href) + "\""
+                    : item.route
+                        ? " href=\"/webapp/" + encodeURIComponent(appId) + item.route + "\""
+                        : "";
+                return "<sl-menu-item" + href + ">" + label + "</sl-menu-item>";
+            }).join("");
+            return wrapRenderedComponentHtml(component, layoutId, "<sl-menu>" + itemHtml + "</sl-menu>");
+        }
+
+        if (component.kind === "avatar") {
+            const src = component.props.src || component.value;
+            const label = String(component.props.label || component.id);
+            const initials = String(component.props.initials || "");
+            const srcAttr = src ? " image=\"" + escapeAttribute(String(src)) + "\"" : "";
+            const initialsAttr = !src && initials ? " initials=\"" + escapeAttribute(initials) + "\"" : "";
+            const attrs = shoelaceAttrs(mapComponentToShoelace("avatar", component.props || {}).attributes);
+            return wrapRenderedComponentHtml(component, layoutId, "<sl-avatar" + attrs + srcAttr + initialsAttr + " label=\"" + escapeAttribute(label) + "\"></sl-avatar>");
+        }
+
+        return "";
+    }
+
+    function renderDialogHtml(dialog, ctx) {
+        const closeAction = dialog.closeAction;
+        const closeSource = dialog.closeSource || dialog.id;
+        const closeLink = closeAction
+            ? "<a href=\"#\" class=\"webapp-link\" data-webapp-action=\"" + escapeAttribute(closeAction)
+                + "\" data-webapp-source=\"" + escapeAttribute(closeSource) + "\" data-webapp-event=\"click\">Close</a>"
+            : "";
+        return "<div class=\"webapp-dialog\"><sl-card class=\"webapp-dialog-card\"><div class=\"webapp-dialog-head\"><h2>"
+            + escapeHtml(dialog.title || dialog.id) + "</h2>" + closeLink + "</div>"
+            + renderLayoutHtml(dialog.layoutId, dialog.regions, ctx) + "</sl-card></div>";
+    }
+
+    // Serialize a whole snapshot into { grid, dialogs }. `ctx` carries appId and
+    // params; both server and client pass the same shape so the output matches.
+    function serializeSnapshot(snapshot, ctx) {
+        ctx = ctx || {};
+        const baseCtx = { appId: ctx.appId, params: snapshot.params, formId: undefined };
+        const grid = renderLayoutHtml(snapshot.layout.id, snapshot.regions, baseCtx);
+        const dialogs = (snapshot.dialogs || []).map(function (dialog) {
+            return renderDialogHtml(dialog, baseCtx);
+        }).join("");
+        return { grid: grid, dialogs: dialogs };
+    }
+
+    return {
+        escapeHtml: escapeHtml,
+        escapeAttribute: escapeAttribute,
+        mapComponentToShoelace: mapComponentToShoelace,
+        sanitizeClassSuffix: sanitizeClassSuffix,
+        getLayoutVariant: getLayoutVariant,
+        regionContainsInput: regionContainsInput,
+        renderComponentHtml: renderComponentHtml,
+        renderRegionHtml: renderRegionHtml,
+        renderLayoutHtml: renderLayoutHtml,
+        renderDialogHtml: renderDialogHtml,
+        serializeSnapshot: serializeSnapshot
+    };
+}));

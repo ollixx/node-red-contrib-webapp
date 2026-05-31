@@ -91,7 +91,7 @@ describe("P21: webapp HTML output matches the RenderSnapshot tree", () => {
         expect(occurrences("Customers")).toBe(1); // heading text
         expect(occurrences(">New<")).toBe(1); // button label
         expect(occurrences("<table class=\"webapp-table\">")).toBe(1); // table
-        expect(occurrences("webapp-form-formContainer")).toBe(1); // container form id
+        expect(occurrences("<form class=\"webapp-form\"")).toBe(1); // exactly one container <form>
         expect(occurrences("Nested text")).toBe(1); // nested text inside container
         expect(occurrences("name=\"draft.name\"")).toBe(1); // input inside container
 

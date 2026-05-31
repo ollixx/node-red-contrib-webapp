@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P26  # Render parity — thin client must emit the same Shoelace markup as the server
+  current_phase: P27  # De-hardcode the runtime — node-driven demo behaviour and data
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -95,24 +95,7 @@ phases:
   #      It needs a clean, fully declarative rebuild. → P28.
   # ────────────────────────────────────────────────────────────────────────
 
-  - id: P26
-    title: Render parity — shared serializer for server and thin client
-    status: in_progress
-    dependencies: [P25]
-    goals:
-      - Make the browser actually show the Shoelace look that P23–P25 built. The thin client must emit the SAME markup as the server so hydration no longer downgrades the page to native unstyled HTML.
-      - Eliminate the divergence at the source by extracting ONE shared serializer used by both the server (renderLayoutHtml in nodes/webapp.js) and the client (resources/lib/webapp-client.js), so the two renderers cannot drift apart again.
-    deliverables:
-      - a single shared render/serialize module that turns a RenderSnapshot (region/component tree) into the canonical Shoelace markup (sl-button, sl-input, sl-select, sl-checkbox, sl-radio-group, sl-switch, sl-textarea, sl-range, sl-alert, sl-badge, sl-progress-bar, sl-breadcrumb, sl-tab-group, sl-details, sl-menu, sl-avatar, sl-card for containers) plus the documented semantic fallbacks (text → div.webapp-text, table → real <table>)
-      - nodes/webapp.js server render and resources/lib/webapp-client.js client render both consume that shared module instead of two hand-maintained copies (account for the resources/ static-serving constraint in CLAUDE.md — the shared code must be loadable both in Node and in the browser)
-      - the keyed morph compares like-for-like markup so a hydrate / re-render no longer swaps element kinds (no sl-button → button downgrade) and input focus / scroll survive updates
-      - remove the dead branch in regionContainsInput (resources/lib/webapp-client.js:69, `return region.regions ? false : false`)
-    validation:
-      - pnpm test passes with no failures
-      - "unit test: for a fixture snapshot mounting one of each interactive kind, the shared serializer output is byte-identical whether invoked on the server or via the client code path"
-      - "unit/jsdom test: after hydrate() runs against a fixture, the live DOM contains the sl-* elements (e.g. querySelector('sl-button') is non-null) — NOT native <button>/<input>"
-      - "regression test: a button rendered by the server and then re-rendered by the client keeps tag sl-button across the morph (no element-kind swap)"
-      - "manual: the human confirms in the browser (dev app on :1881) that /customers shows real Shoelace buttons/inputs after the page settles, matching the pre-hydration frame"
+  - { id: P26, title: "Render parity — shared serializer for server and thin client", status: done, dependencies: [P25], archive: "docs/agent-roadmap-archive.yaml#P26" }
 
   - id: P27
     title: De-hardcode the runtime — node-driven demo behaviour and data

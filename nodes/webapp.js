@@ -11,10 +11,17 @@ const {
 } = require("../packages/schema/dist/index.js");
 const { createRendererApp, mapComponentToShoelace, buildShoelaceTokenBridgeCss } = require("../packages/renderer/dist/index.js");
 const { buildDesignTokenCss } = require("../packages/schema/dist/index.js");
+// P26: the snapshot → Shoelace markup serializer is shared with the thin client
+// (resources/lib/webapp-serializer.js) so server and browser cannot drift apart.
+const sharedSerializer = require("../resources/lib/webapp-serializer.js");
 
 // P22: the thin client runtime is served statically from resources/. Node-RED
 // exposes a plugin's resources/ dir under resources/<module-name>/.
 const CLIENT_RUNTIME_PATH = "/resources/node-red-contrib-webapp/lib/webapp-client.js";
+// P26: shared snapshot serializer, served statically and consumed by the thin
+// client (window.WebappSerializer) so the browser emits the same markup as the
+// server. Loaded before the client runtime.
+const CLIENT_SERIALIZER_PATH = "/resources/node-red-contrib-webapp/lib/webapp-serializer.js";
 
 // P23: the default rendering target is Web Components (Shoelace, MIT) — see
 // ADR 0002. Shoelace is loaded as an ES module / static resource (no bundler);
@@ -967,338 +974,24 @@ function buildActionHref(appId, action, location, componentId, eventName, params
     return `/webapp/${encodeURIComponent(appId)}/action/${encodeURIComponent(action)}?${query.toString()}`;
 }
 
-function sanitizeClassSuffix(value) {
-    return String(value || "")
-        .toLowerCase()
-        .replace(/[^a-z0-9_-]+/g, "-")
-        .replace(/^-+|-+$/g, "") || "default";
-}
-
-function getLayoutVariant(layoutId) {
-    return ["horizontal", "vertical", "app", "grid", "absolute"].includes(layoutId) ? layoutId : "custom";
-}
+// P26: snapshot → Shoelace markup serialization is delegated to the shared
+// module (resources/lib/webapp-serializer.js) so the server and the thin client
+// emit byte-identical markup. The local wrappers preserve the existing call
+// sites / __test__ exports while the single source of truth lives in one file.
+const sanitizeClassSuffix = sharedSerializer.sanitizeClassSuffix;
+const getLayoutVariant = sharedSerializer.getLayoutVariant;
+const regionContainsInput = sharedSerializer.regionContainsInput;
 
 function renderLayoutHtml(layoutId, regions, serializerContext) {
-    const variant = getLayoutVariant(layoutId);
-    return `<div class="webapp-layout webapp-layout--${escapeAttribute(variant)}">${regions.map((region) => renderRegionHtml(region, layoutId, serializerContext)).join("")}</div>`;
-}
-
-// --- Snapshot serializers (P21) ---------------------------------------------
-//
-// All mount resolution, binding resolution, region nesting and dialog gating
-// now live in packages/renderer (createRendererApp → RenderSnapshot). webapp.js
-// only serializes that snapshot into the preview HTML; it no longer re-walks the
-// AppModel or owns a second slot-tree/mount matcher.
-
-function regionContainsInput(region) {
-    return region.components.some((component) => {
-        if (component.kind === "input") {
-            return true;
-        }
-
-        if (component.kind === "container") {
-            return component.regions.some((child) => regionContainsInput(child));
-        }
-
-        return false;
-    });
-}
-
-function getComponentLayoutProps(component) {
-    const layout = component.props && component.props.layout;
-    return layout && typeof layout === "object" ? layout : {};
-}
-
-function wrapRenderedComponentHtml(component, layoutId, innerHtml) {
-    const layoutVariant = getLayoutVariant(layoutId || "");
-    const layoutProps = getComponentLayoutProps(component);
-    const styles = [];
-
-    if (layoutVariant === "grid") {
-        if (layoutProps.col !== undefined) {
-            styles.push(`grid-column:${layoutProps.col}${layoutProps.colSize !== undefined ? ` / span ${layoutProps.colSize}` : ""}`);
-        }
-
-        if (layoutProps.row !== undefined) {
-            styles.push(`grid-row:${layoutProps.row}${layoutProps.rowSize !== undefined ? ` / span ${layoutProps.rowSize}` : ""}`);
-        }
-    }
-
-    if (layoutVariant === "absolute") {
-        if (layoutProps.x !== undefined) {
-            styles.push(`left:${layoutProps.x}px`);
-        }
-
-        if (layoutProps.y !== undefined) {
-            styles.push(`top:${layoutProps.y}px`);
-        }
-    }
-
-    const styleAttribute = styles.length > 0 ? ` style="${escapeAttribute(styles.join(";"))}"` : "";
-    return `<div class="webapp-item webapp-item--${escapeAttribute(layoutVariant)}"${styleAttribute}>${innerHtml}</div>`;
+    return sharedSerializer.renderLayoutHtml(layoutId, regions, serializerContext);
 }
 
 function renderRegionHtml(region, layoutId, serializerContext) {
-    const title = region.title ? `<h3>${escapeHtml(region.title)}</h3>` : "";
-    const components = region.components
-        .map((component) => renderComponentHtml(component, layoutId, serializerContext))
-        .join("");
-    const layoutVariant = getLayoutVariant(layoutId);
-    const slotClass = sanitizeClassSuffix(region.name);
-    return `<section class="webapp-slot webapp-slot--${escapeAttribute(slotClass)}">${title}<div class="webapp-slot-body webapp-slot-body--${escapeAttribute(layoutVariant)}">${components}</div></section>`;
-}
-
-function shoelaceAttrs(attributes) {
-    return Object.entries(attributes || {})
-        .map(([key, value]) => ` ${key}="${escapeAttribute(String(value))}"`)
-        .join("");
+    return sharedSerializer.renderRegionHtml(region, layoutId, serializerContext);
 }
 
 function renderComponentHtml(component, layoutId, serializerContext) {
-    const { appId, location } = serializerContext;
-
-    if (component.kind === "text") {
-        // Shoelace 2.x has no general-purpose text element, so text stays
-        // semantic HTML styled by the design tokens.
-        return wrapRenderedComponentHtml(component, layoutId, `<div class="webapp-text">${escapeHtml(component.text)}</div>`);
-    }
-
-    if (component.kind === "button") {
-        const label = escapeHtml(component.label);
-        const action = component.events && component.events[0] ? component.events[0].action : undefined;
-        const inForm = Boolean(serializerContext.formId);
-        const href = action
-            ? buildActionHref(appId, action, location, component.id, inForm ? "submit" : "click", serializerContext.params)
-            : undefined;
-        // P23 follow-up: buttons render as <sl-button> via the adapter (variant/
-        // size from semantic props). href -> link, in-form -> submit+formaction,
-        // disabled/no-action -> disabled button. Interactivity is preserved.
-        const attrs = shoelaceAttrs(mapComponentToShoelace("button", component.props || {}).attributes);
-
-        if (component.disabled || !href) {
-            return wrapRenderedComponentHtml(component, layoutId, `<sl-button${attrs} disabled>${label}</sl-button>`);
-        }
-
-        if (inForm) {
-            return wrapRenderedComponentHtml(component, layoutId, `<sl-button${attrs} type="submit" form="${escapeAttribute(serializerContext.formId)}" formaction="${escapeAttribute(href)}">${label}</sl-button>`);
-        }
-
-        return wrapRenderedComponentHtml(component, layoutId, `<sl-button${attrs} href="${escapeAttribute(href)}">${label}</sl-button>`);
-    }
-
-    if (component.kind === "table") {
-        const columns = Array.isArray(component.props.columns) ? component.props.columns : [];
-        const rows = Array.isArray(component.rows) ? component.rows : [];
-        const selectAction = component.props.selectAction
-            || (component.events.find((event) => event.event === "select") || {}).action
-            || undefined;
-        const header = columns.map((col) => `<th>${escapeHtml(col.label || col.key || col)}</th>`).join("");
-        const body = rows.length === 0
-            ? `<tr><td colspan="${Math.max(columns.length, 1)}">No rows loaded.</td></tr>`
-            : rows.map((row) => {
-                const rowId = row.id !== undefined ? String(row.id) : "";
-                const actionPrefix = selectAction
-                    ? `/webapp/${encodeURIComponent(appId)}/action/${encodeURIComponent(selectAction)}?location=${encodeURIComponent(location || "/customers")}&sourceId=${encodeURIComponent(component.id)}&event=select&rowId=${encodeURIComponent(rowId)}`
-                    : undefined;
-                const cells = columns.map((col, index) => {
-                    const key = col.key || col;
-                    const value = escapeHtml(row[key] ?? "");
-
-                    if (index === 0 && actionPrefix && rowId) {
-                        return `<td><a class="webapp-link" href="${escapeAttribute(actionPrefix)}">${value}</a></td>`;
-                    }
-
-                    return `<td>${value}</td>`;
-                }).join("");
-                return `<tr>${cells}</tr>`;
-            }).join("");
-        return wrapRenderedComponentHtml(component, layoutId, `<table class="webapp-table"><thead><tr>${header}</tr></thead><tbody>${body}</tbody></table>`);
-    }
-
-    if (component.kind === "input") {
-        const label = String(component.props.label || component.id);
-        const name = String(component.props.path || component.id);
-        const inputType = String(component.props.inputType || "text");
-        const value = component.value === undefined || component.value === null ? "" : String(component.value);
-        // P23 follow-up: inputs render as <sl-input> (its own label attribute
-        // replaces the wrapping <label>); name/value/type preserved so form
-        // submission still works.
-        const attrs = shoelaceAttrs(mapComponentToShoelace("input", component.props || {}).attributes);
-        return wrapRenderedComponentHtml(component, layoutId, `<sl-input${attrs} label="${escapeAttribute(label)}" type="${escapeAttribute(inputType)}" name="${escapeAttribute(name)}" value="${escapeAttribute(value)}"></sl-input>`);
-    }
-
-    if (component.kind === "container") {
-        const childLayoutId = component.layoutId;
-        const hasInputs = component.regions.some((region) => regionContainsInput(region));
-        const formId = hasInputs ? `webapp-form-${component.id}` : undefined;
-        const childContext = { ...serializerContext, formId };
-        const content = renderLayoutHtml(childLayoutId, component.regions, childContext);
-        const body = formId
-            ? `<form class="webapp-form" id="${escapeAttribute(formId)}" method="get">${content}</form>`
-            : content;
-        // P23: containers render through the Web Component adapter (sl-card).
-        // The card projects its children via the default slot, so every nested
-        // interaction (forms, inputs, buttons, table links) is preserved while
-        // the page gains a genuine Web Component shell. Falls back to a plain
-        // div tag if the adapter has no native element for the kind.
-        const descriptor = mapComponentToShoelace(component.kind, component.props || {});
-        const inner = `<${descriptor.tag} class="webapp-container">${body}</${descriptor.tag}>`;
-        return wrapRenderedComponentHtml(component, layoutId, inner);
-    }
-
-    // P25: P16x interactive kinds — render via the Shoelace adapter where a real
-    // element exists. Each handler maps semantic props to Shoelace attributes and
-    // preserves form submission / event interactivity.
-
-    if (component.kind === "select") {
-        const label = String(component.props.label || component.id);
-        const name = String(component.props.path || component.id);
-        const value = component.value === undefined || component.value === null ? "" : String(component.value);
-        const attrs = shoelaceAttrs(mapComponentToShoelace("select", component.props || {}).attributes);
-        const options = Array.isArray(component.props.options) ? component.props.options : [];
-        const optionHtml = options.map((opt) => {
-            const val = escapeAttribute(String(opt.value ?? opt));
-            const lbl = escapeHtml(String(opt.label ?? opt.value ?? opt));
-            const selected = val === escapeAttribute(value) ? " selected" : "";
-            return `<sl-option value="${val}"${selected}>${lbl}</sl-option>`;
-        }).join("");
-        return wrapRenderedComponentHtml(component, layoutId, `<sl-select${attrs} label="${escapeAttribute(label)}" name="${escapeAttribute(name)}" value="${escapeAttribute(value)}">${optionHtml}</sl-select>`);
-    }
-
-    if (component.kind === "checkbox") {
-        const label = String(component.props.label || component.id);
-        const name = String(component.props.path || component.id);
-        const checked = component.value ? " checked" : "";
-        const disabled = component.disabled ? " disabled" : "";
-        const attrs = shoelaceAttrs(mapComponentToShoelace("checkbox", component.props || {}).attributes);
-        return wrapRenderedComponentHtml(component, layoutId, `<sl-checkbox${attrs} name="${escapeAttribute(name)}"${checked}${disabled}>${escapeHtml(label)}</sl-checkbox>`);
-    }
-
-    if (component.kind === "radio") {
-        const label = String(component.props.label || component.id);
-        const name = String(component.props.path || component.id);
-        const value = component.value === undefined || component.value === null ? "" : String(component.value);
-        const options = Array.isArray(component.props.options) ? component.props.options : [];
-        const radioHtml = options.map((opt) => {
-            const val = escapeAttribute(String(opt.value ?? opt));
-            const lbl = escapeHtml(String(opt.label ?? opt.value ?? opt));
-            return `<sl-radio value="${val}">${lbl}</sl-radio>`;
-        }).join("");
-        const attrs = shoelaceAttrs(mapComponentToShoelace("radio", component.props || {}).attributes);
-        return wrapRenderedComponentHtml(component, layoutId, `<sl-radio-group${attrs} label="${escapeAttribute(label)}" name="${escapeAttribute(name)}" value="${escapeAttribute(value)}">${radioHtml}</sl-radio-group>`);
-    }
-
-    if (component.kind === "switch") {
-        const label = String(component.props.label || component.id);
-        const name = String(component.props.path || component.id);
-        const checked = component.value ? " checked" : "";
-        const disabled = component.disabled ? " disabled" : "";
-        const attrs = shoelaceAttrs(mapComponentToShoelace("switch", component.props || {}).attributes);
-        return wrapRenderedComponentHtml(component, layoutId, `<sl-switch${attrs} name="${escapeAttribute(name)}"${checked}${disabled}>${escapeHtml(label)}</sl-switch>`);
-    }
-
-    if (component.kind === "textarea") {
-        const label = String(component.props.label || component.id);
-        const name = String(component.props.path || component.id);
-        const value = component.value === undefined || component.value === null ? "" : String(component.value);
-        const rows = component.props.rows ? ` rows="${escapeAttribute(String(component.props.rows))}"` : "";
-        const attrs = shoelaceAttrs(mapComponentToShoelace("textarea", component.props || {}).attributes);
-        return wrapRenderedComponentHtml(component, layoutId, `<sl-textarea${attrs} label="${escapeAttribute(label)}" name="${escapeAttribute(name)}"${rows} value="${escapeAttribute(value)}"></sl-textarea>`);
-    }
-
-    if (component.kind === "datepicker") {
-        const label = String(component.props.label || component.id);
-        const name = String(component.props.path || component.id);
-        const value = component.value === undefined || component.value === null ? "" : String(component.value);
-        const attrs = shoelaceAttrs(mapComponentToShoelace("datepicker", component.props || {}).attributes);
-        return wrapRenderedComponentHtml(component, layoutId, `<sl-input${attrs} type="date" label="${escapeAttribute(label)}" name="${escapeAttribute(name)}" value="${escapeAttribute(value)}"></sl-input>`);
-    }
-
-    if (component.kind === "slider") {
-        const label = String(component.props.label || "");
-        const name = String(component.props.path || component.id);
-        const value = component.value === undefined || component.value === null ? "" : String(component.value);
-        const min = component.props.min !== undefined ? ` min="${escapeAttribute(String(component.props.min))}"` : "";
-        const max = component.props.max !== undefined ? ` max="${escapeAttribute(String(component.props.max))}"` : "";
-        const step = component.props.step !== undefined ? ` step="${escapeAttribute(String(component.props.step))}"` : "";
-        const attrs = shoelaceAttrs(mapComponentToShoelace("slider", component.props || {}).attributes);
-        return wrapRenderedComponentHtml(component, layoutId, `<sl-range${attrs} label="${escapeAttribute(label)}" name="${escapeAttribute(name)}"${min}${max}${step} value="${escapeAttribute(value)}"></sl-range>`);
-    }
-
-    if (component.kind === "alert") {
-        const message = String(component.props.message || component.value || "");
-        const severity = String(component.props.severity || "primary");
-        const shoelaceVariant = { info: "primary", warning: "warning", error: "danger", success: "success" }[severity] || severity;
-        const dismissible = component.props.dismissible ? " closable" : "";
-        const title = component.props.title ? `<strong>${escapeHtml(String(component.props.title))}</strong><br>` : "";
-        const attrs = shoelaceAttrs(mapComponentToShoelace("alert", component.props || {}).attributes);
-        return wrapRenderedComponentHtml(component, layoutId, `<sl-alert${attrs} variant="${escapeAttribute(shoelaceVariant)}" open${dismissible}>${title}${escapeHtml(message)}</sl-alert>`);
-    }
-
-    if (component.kind === "badge") {
-        const value = component.value === undefined || component.value === null ? "" : String(component.value);
-        const severity = String(component.props.severity || component.props.variant || "neutral");
-        const shoelaceVariant = { success: "success", warning: "warning", error: "danger", info: "primary" }[severity] || severity;
-        const attrs = shoelaceAttrs(mapComponentToShoelace("badge", component.props || {}).attributes);
-        return wrapRenderedComponentHtml(component, layoutId, `<sl-badge${attrs} variant="${escapeAttribute(shoelaceVariant)}">${escapeHtml(value)}</sl-badge>`);
-    }
-
-    if (component.kind === "progress") {
-        const value = component.value === undefined || component.value === null ? 0 : Number(component.value);
-        const label = component.props.label ? ` label="${escapeAttribute(String(component.props.label))}"` : "";
-        const attrs = shoelaceAttrs(mapComponentToShoelace("progress", component.props || {}).attributes);
-        return wrapRenderedComponentHtml(component, layoutId, `<sl-progress-bar${attrs} value="${escapeAttribute(String(value))}"${label}></sl-progress-bar>`);
-    }
-
-    if (component.kind === "breadcrumb") {
-        const items = Array.isArray(component.props.items) ? component.props.items : (Array.isArray(component.value) ? component.value : []);
-        const itemHtml = items.map((item) => {
-            const label = escapeHtml(String(item.label ?? item));
-            const href = item.href ? ` href="${escapeAttribute(item.href)}"` : "";
-            return `<sl-breadcrumb-item${href}>${label}</sl-breadcrumb-item>`;
-        }).join("");
-        return wrapRenderedComponentHtml(component, layoutId, `<sl-breadcrumb>${itemHtml}</sl-breadcrumb>`);
-    }
-
-    if (component.kind === "tabs") {
-        const tabs = Array.isArray(component.props.tabs) ? component.props.tabs : [];
-        const tabHtml = tabs.map((tab) => `<sl-tab slot="nav" panel="${escapeAttribute(String(tab.id ?? tab))}">${escapeHtml(String(tab.label ?? tab.id ?? tab))}</sl-tab>`).join("");
-        const panelHtml = tabs.map((tab) => `<sl-tab-panel name="${escapeAttribute(String(tab.id ?? tab))}"></sl-tab-panel>`).join("");
-        return wrapRenderedComponentHtml(component, layoutId, `<sl-tab-group>${tabHtml}${panelHtml}</sl-tab-group>`);
-    }
-
-    if (component.kind === "accordion") {
-        const items = Array.isArray(component.props.items) ? component.props.items : [];
-        const detailsHtml = items.map((item) => `<sl-details summary="${escapeAttribute(String(item.label ?? item.id ?? item))}"></sl-details>`).join("");
-        return wrapRenderedComponentHtml(component, layoutId, `<div class="webapp-accordion">${detailsHtml}</div>`);
-    }
-
-    if (component.kind === "menu") {
-        const { appId, location } = serializerContext;
-        const items = Array.isArray(component.props.items) ? component.props.items : (Array.isArray(component.value) ? component.value : []);
-        const itemHtml = items.map((item) => {
-            const label = escapeHtml(String(item.label ?? item));
-            const href = item.href
-                ? ` href="${escapeAttribute(item.href)}"`
-                : item.route
-                    ? ` href="/webapp/${encodeURIComponent(appId)}${item.route}"`
-                    : "";
-            return `<sl-menu-item${href}>${label}</sl-menu-item>`;
-        }).join("");
-        return wrapRenderedComponentHtml(component, layoutId, `<sl-menu>${itemHtml}</sl-menu>`);
-    }
-
-    if (component.kind === "avatar") {
-        const src = component.props.src || component.value;
-        const label = String(component.props.label || component.id);
-        const initials = String(component.props.initials || "");
-        const srcAttr = src ? ` image="${escapeAttribute(String(src))}"` : "";
-        const initialsAttr = !src && initials ? ` initials="${escapeAttribute(initials)}"` : "";
-        const attrs = shoelaceAttrs(mapComponentToShoelace("avatar", component.props || {}).attributes);
-        return wrapRenderedComponentHtml(component, layoutId, `<sl-avatar${attrs}${srcAttr}${initialsAttr} label="${escapeAttribute(label)}"></sl-avatar>`);
-    }
-
-    return "";
+    return sharedSerializer.renderComponentHtml(component, layoutId, serializerContext);
 }
 
 function applyPreviewAction(RED, appId, actionId, parameters, definitions) {
@@ -1636,8 +1329,11 @@ function renderAppPage(appId, location, dialogId, definitions) {
         formId: undefined
     };
 
+    // P26: dialogs are serialized through the shared module so the server and the
+    // thin client emit identical dialog markup. The Close affordance is expressed
+    // as a generic closeAction on the dialog (de-hardcoding the wiring is P27).
     const dialogHtml = snapshot.dialogs
-        .map((dialog) => `<div class="webapp-dialog"><sl-card class="webapp-dialog-card"><div class="webapp-dialog-head"><h2>${escapeHtml(dialog.title || dialog.id)}</h2><a href="/webapp/${encodeURIComponent(appId)}/action/closeCustomerEditor?location=${encodeURIComponent(location)}&sourceId=cancelCustomerButton&event=click" class="webapp-link">Close</a></div>${renderLayoutHtml(dialog.layoutId, dialog.regions, serializerContext)}</sl-card></div>`)
+        .map((dialog) => sharedSerializer.renderDialogHtml({ ...dialog, closeAction: "closeCustomerEditor", closeSource: "cancelCustomerButton" }, serializerContext))
         .join("");
     const pageBody = renderLayoutHtml(snapshot.layout.id, snapshot.regions, serializerContext);
     const messageFeed = getPreviewMessages(appId)
@@ -1717,6 +1413,7 @@ ${tokenCss ? tokenCss.split("\n").map((line) => `    ${line}`).join("\n") : "   
     <div class="webapp-grid">${pageBody}</div>
     ${dialogHtml}
   </div>
+  <script src="${CLIENT_SERIALIZER_PATH}" defer></script>
   <script src="${CLIENT_RUNTIME_PATH}" defer></script>
 </body>
 </html>`
@@ -2881,6 +2578,8 @@ registerWebappNodes.__test__ = {
     getAppModelResult,
     renderAppPage,
     buildAppSnapshot,
+    renderLayoutHtml,
+    renderComponentHtml,
     resetPreview,
     componentStateInputHandler,
     dialogInputHandler,

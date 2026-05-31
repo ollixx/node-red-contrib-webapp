@@ -18,10 +18,13 @@
  *     - dialog   : id of an open dialog, or undefined
  *     - snapshot : the new RenderSnapshot to render
  *
- * The client holds the current snapshot, renders it as Custom-Element-free HTML
- * (matching the server fallback markup), and on a UI event POSTs and re-renders.
- * Re-render is a keyed morph: only changed nodes are replaced so input focus and
- * scroll position survive list/state updates.
+ * The client holds the current snapshot and renders it through the SHARED
+ * serializer (resources/lib/webapp-serializer.js, window.WebappSerializer) — the
+ * exact same module the server uses — so the markup is byte-identical Shoelace
+ * (sl-button/sl-input/…) and a hydrate / re-render never downgrades it to native
+ * HTML (the P26 fix). On a UI event it POSTs to /event and re-renders. Re-render
+ * is a keyed morph: only changed nodes are replaced so input focus and scroll
+ * position survive list/state updates.
  */
 (function () {
     "use strict";
@@ -37,163 +40,25 @@
     let dialogId = root.getAttribute("data-webapp-dialog") || undefined;
     let currentSnapshot = null;
 
+    // P26: render through the shared serializer (window.WebappSerializer) so the
+    // markup the client morphs in is byte-identical to what the server emitted.
+    // No local renderer remains — that divergence is what previously downgraded
+    // the page from sl-* elements to native HTML on hydrate().
+    const serializer = root.ownerDocument.defaultView.WebappSerializer
+        || (typeof window !== "undefined" ? window.WebappSerializer : undefined);
+
     function base() {
         return "/webapp/" + encodeURIComponent(appId);
     }
 
-    function escapeHtml(input) {
-        return String(input === undefined || input === null ? "" : input)
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#39;");
-    }
-
-    function sanitizeClassSuffix(value) {
-        return String(value || "custom").replace(/[^a-z0-9_-]/gi, "-").toLowerCase();
-    }
-
-    function layoutVariant(layoutId) {
-        if (layoutId === "app") return "app";
-        if (layoutId === "horizontal") return "horizontal";
-        if (layoutId === "grid") return "grid";
-        if (layoutId === "absolute") return "absolute";
-        if (layoutId === "vertical") return "vertical";
-        return "custom";
-    }
-
-    function regionContainsInput(region) {
-        return region.components.some(function (component) {
-            if (component.kind === "input") return true;
-            if (component.kind === "container") return region.regions ? false : false;
-            return false;
-        }) || region.components.some(function (component) {
-            return component.kind === "container" && component.regions.some(regionContainsInput);
-        });
-    }
-
-    function renderComponent(component, layoutId, ctx) {
-        if (component.kind === "text") {
-            return wrap(component, '<div class="webapp-text">' + escapeHtml(component.text) + "</div>");
-        }
-
-        if (component.kind === "button") {
-            const label = escapeHtml(component.label);
-            const action = component.events && component.events[0] ? component.events[0].action : undefined;
-            const inForm = Boolean(ctx.formId);
-
-            if (component.disabled || !action) {
-                return wrap(component, '<button class="webapp-button" disabled>' + label + "</button>");
-            }
-
-            const attrs = [
-                'class="webapp-button"',
-                'type="button"',
-                'data-webapp-action="' + escapeHtml(action) + '"',
-                'data-webapp-source="' + escapeHtml(component.id) + '"',
-                'data-webapp-event="' + (inForm ? "submit" : "click") + '"'
-            ];
-
-            if (inForm) {
-                attrs.push('data-webapp-form="' + escapeHtml(ctx.formId) + '"');
-            }
-
-            return wrap(component, "<button " + attrs.join(" ") + ">" + label + "</button>");
-        }
-
-        if (component.kind === "table") {
-            const columns = Array.isArray(component.props.columns) ? component.props.columns : [];
-            const rows = Array.isArray(component.rows) ? component.rows : [];
-            const selectEvent = (component.events || []).find(function (event) { return event.event === "select"; });
-            const selectAction = component.props.selectAction || (selectEvent && selectEvent.action) || undefined;
-            const header = columns.map(function (col) {
-                return "<th>" + escapeHtml(col.label || col.key || col) + "</th>";
-            }).join("");
-            const body = rows.length === 0
-                ? '<tr><td colspan="' + Math.max(columns.length, 1) + '">No rows loaded.</td></tr>'
-                : rows.map(function (row) {
-                    const rowId = row.id !== undefined ? String(row.id) : "";
-                    const cells = columns.map(function (col, index) {
-                        const key = col.key || col;
-                        const value = escapeHtml(row[key] === undefined || row[key] === null ? "" : row[key]);
-
-                        if (index === 0 && selectAction && rowId) {
-                            return '<td><a class="webapp-link" href="#" data-webapp-action="' + escapeHtml(selectAction)
-                                + '" data-webapp-source="' + escapeHtml(component.id)
-                                + '" data-webapp-event="select" data-webapp-rowid="' + escapeHtml(rowId) + '">' + value + "</a></td>";
-                        }
-
-                        return "<td>" + value + "</td>";
-                    }).join("");
-                    return '<tr data-webapp-row="' + escapeHtml(rowId) + '">' + cells + "</tr>";
-                }).join("");
-            return wrap(component, '<table class="webapp-table"><thead><tr>' + header + "</tr></thead><tbody>" + body + "</tbody></table>");
-        }
-
-        if (component.kind === "input") {
-            const label = escapeHtml(component.props.label || component.id);
-            const name = escapeHtml(component.props.path || component.id);
-            const inputType = escapeHtml(component.props.inputType || "text");
-            const value = component.value === undefined || component.value === null ? "" : escapeHtml(component.value);
-            return wrap(component, '<label class="webapp-field">' + label + '<input type="' + inputType
-                + '" name="' + name + '" value="' + value + '"></label>');
-        }
-
-        if (component.kind === "container") {
-            const childLayoutId = component.layoutId;
-            const hasInputs = component.regions.some(regionContainsInput);
-            const formId = hasInputs ? "webapp-form-" + component.id : undefined;
-            const childCtx = { formId: formId, params: ctx.params };
-            const content = renderLayout(childLayoutId, component.regions, childCtx);
-            const body = formId
-                ? '<form class="webapp-form" id="' + escapeHtml(formId) + '" data-webapp-form-id="' + escapeHtml(formId) + '">' + content + "</form>"
-                : content;
-            // P23: containers render through the Web Component adapter (sl-card),
-            // matching the server so a re-render does not swap the element kind.
-            const inner = "<sl-card class=\"webapp-container\">" + body + "</sl-card>";
-            return wrap(component, inner);
-        }
-
-        return "";
-    }
-
-    function wrap(component, inner) {
-        return '<div class="webapp-item" data-webapp-component="' + escapeHtml(component.id)
-            + '" data-webapp-kind="' + escapeHtml(component.kind) + '">' + inner + "</div>";
-    }
-
-    function renderRegion(region, layoutId) {
-        const slotClass = sanitizeClassSuffix(region.name);
-        const ctx = { formId: undefined, params: currentSnapshot ? currentSnapshot.params : {} };
-        const components = region.components.map(function (component) {
-            return renderComponent(component, layoutId, ctx);
-        }).join("");
-        const title = region.title ? "<header><h2>" + escapeHtml(region.title) + "</h2></header>" : "";
-        return '<section class="webapp-slot webapp-slot--' + slotClass + '">' + title
-            + '<div class="webapp-slot-body webapp-slot-body--' + layoutVariant(layoutId) + '">' + components + "</div></section>";
-    }
-
-    function renderLayout(layoutId, regions, ctx) {
-        const ctxParams = ctx && ctx.params ? ctx.params : (currentSnapshot ? currentSnapshot.params : {});
-        return regions.map(function (region) {
-            const slotClass = sanitizeClassSuffix(region.name);
-            const inner = region.components.map(function (component) {
-                return renderComponent(component, layoutId, { formId: ctx ? ctx.formId : undefined, params: ctxParams });
-            }).join("");
-            const title = region.title ? "<header><h2>" + escapeHtml(region.title) + "</h2></header>" : "";
-            return '<section class="webapp-slot webapp-slot--' + slotClass + '">' + title
-                + '<div class="webapp-slot-body webapp-slot-body--' + layoutVariant(layoutId) + '">' + inner + "</div></section>";
-        }).join("");
-    }
-
     function renderSnapshot(snapshot) {
-        const grid = renderLayout(snapshot.layout.id, snapshot.regions, { formId: undefined, params: snapshot.params });
+        const ctx = { appId: appId, location: snapshot.location || location, params: snapshot.params, formId: undefined };
+        const grid = serializer.renderLayoutHtml(snapshot.layout.id, snapshot.regions, ctx);
+        // Match the server's dialog markup exactly (incl. the Close affordance);
+        // de-hardcoding the closeAction is P27.
         const dialogs = (snapshot.dialogs || []).map(function (dialog) {
-            return '<div class="webapp-dialog"><sl-card class="webapp-dialog-card"><div class="webapp-dialog-head"><h2>'
-                + escapeHtml(dialog.title || dialog.id) + "</h2></div>"
-                + renderLayout(dialog.layoutId, dialog.regions, { formId: undefined, params: snapshot.params })
-                + "</sl-card></div>";
+            const withClose = Object.assign({}, dialog, { closeAction: "closeCustomerEditor", closeSource: "cancelCustomerButton" });
+            return serializer.renderDialogHtml(withClose, ctx);
         }).join("");
         return { grid: grid, dialogs: dialogs };
     }
@@ -263,9 +128,23 @@
             return values;
         }
 
-        form.querySelectorAll("input, textarea, select").forEach(function (input) {
-            if (input.name) {
-                values[input.name] = input.value;
+        // Read both native controls and Shoelace custom elements (sl-input et al.
+        // expose `name`/`value`/`checked` on the host). Server and client emit the
+        // same sl-* markup now (P26), so the values live on the custom elements.
+        const selector = "input, textarea, select, sl-input, sl-textarea, sl-select, sl-checkbox, sl-switch, sl-radio-group, sl-range";
+
+        form.querySelectorAll(selector).forEach(function (field) {
+            if (!field.name) {
+                return;
+            }
+
+            const tag = field.tagName.toLowerCase();
+
+            if (tag === "sl-checkbox" || tag === "sl-switch" || (tag === "input" && field.type === "checkbox")) {
+                values[field.name] = field.checked;
+            }
+            else {
+                values[field.name] = field.value;
             }
         });
 
@@ -346,6 +225,13 @@
         catch (error) {
             // Leave the server-rendered fallback in place on any failure.
         }
+    }
+
+    // Test hook (P26): expose applySnapshot so a jsdom test can drive a
+    // re-render / morph and assert no element-kind swap. No-op in production
+    // unless a test sets window.__webappClientTestHooks beforehand.
+    if (root.ownerDocument.defaultView && root.ownerDocument.defaultView.__webappClientTestHooks) {
+        root.ownerDocument.defaultView.__webappClientTestHooks.applySnapshot = applySnapshot;
     }
 
     hydrate();
