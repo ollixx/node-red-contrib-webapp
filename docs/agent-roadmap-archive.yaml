@@ -557,3 +557,26 @@ phases:
     - "unit test: webapp.js produces output for the example whose component set matches the RenderSnapshot region/component tree (packages/runtime/test/p21-snapshot-render.test.ts)"
     - "grep check: nodes/webapp.js no longer defines mountMatches or a second slot-tree walker — mount resolution lives only in packages/renderer"
     - "Playwright: the customers-crud example still renders all routes, the dialog, and table rows (tests/e2e/p21-snapshot-render.spec.ts)"
+
+- id: P22
+  title: "Snapshot transport — JSON endpoint and thin client runtime"
+  status: done
+  dependencies: [P21]
+  summary:
+    delivered: "Added a JSON snapshot endpoint (GET /webapp/:appId/snapshot) that returns the same RenderSnapshot the HTML route serializes, and an event endpoint (POST /webapp/:appId/event) that dispatches a msg.ui-shaped event via applyPreviewAction and returns the updated snapshot. A new thin vanilla-JS client runtime (resources/lib/webapp-client.js) hydrates from the snapshot endpoint, renders into #webapp-client-root, intercepts button clicks and form submits, POSTs events, and re-renders via a keyed morph so focus/scroll survive list/state updates — no full page navigation. The client<->runtime contract is documented in docs/nodes/concepts/messages.md referencing the msg.ui format."
+    stats: "3 source files (nodes/webapp.js, resources/lib/webapp-client.js, messages.md), 1 new unit test file (2 tests), 1 new E2E spec (3 tests) + fixture flow; 123 runtime unit tests passing; P22 E2E all green."
+    notes: "renderAppPage was refactored to extract a shared buildAppSnapshot helper so the HTML route and the JSON endpoint cannot drift. The event endpoint uses a self-contained readJsonBody middleware (no dependency on Node-RED's optional httpNode body-parser). The client runtime is served at /resources/node-red-contrib-webapp/lib/webapp-client.js (Node-RED static resources, same origin as httpNode by default) and loaded via a <script defer> tag added to the preview page; the server-rendered HTML remains the no-JS fallback. P22 used a dedicated E2E fixture flow (tests/e2e/fixtures/p22-snapshot-transport.flow.json) with button ids equal to handled preview action names because the customers-crud preview action wiring is non-functional post-P20a (typed actions emit only, no statePatch) — that is the pre-existing bug spun off in P21, NOT a P22 regression. The deprecated targetMode/target fields (dropped by mapConfig since P20a) were re-attached in the unit test's dialog action definition to exercise a real state-changing dispatch. Full E2E baseline has 10 pre-existing failures (customers-crud action flow + editor specs incl. p16d, parent-selector, layout-apps, mount-options, p21 customer-detail); confirmed identical with and without the P22 spec, so P22 introduced zero new failures. No node types or node fields added, so gen:example was not required."
+  goals:
+    - Expose the RenderSnapshot to the browser as JSON.
+    - Provide a minimal client runtime that renders a snapshot and round-trips events without a full page reload.
+  deliverables:
+    - HTTP endpoint serving the compiled RenderSnapshot for an app/route/state as JSON (alongside the existing HTML route)
+    - thin vanilla-JS client runtime (no framework) — served as a static resource — that holds the current snapshot, renders it, and on a UI event POSTs to the existing Node-RED action/event endpoints and re-renders from the returned snapshot
+    - efficient DOM update on re-render (keyed morph) so list/state changes do not reset focus or scroll
+    - documented client-runtime <-> runtime contract (event payload shape in, snapshot shape out) referencing the existing msg.ui event format
+  validation:
+    - pnpm test passes with no failures
+    - "unit test: the JSON snapshot endpoint returns the same region/component tree the HTML adapter renders for a given app + route + state (packages/runtime/test/p22-snapshot-transport.test.ts)"
+    - "unit test: dispatching an event through the client-runtime contract returns an updated snapshot reflecting the state change (dialog open via applyPreviewAction)"
+    - "Playwright: clicking a button updates bound content without a full page navigation (tests/e2e/p22-snapshot-transport.spec.ts)"
+    - "Playwright: a query-backed table re-renders new rows after a save/refresh action without losing scroll position"

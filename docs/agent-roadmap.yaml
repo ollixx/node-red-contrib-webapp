@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P22  # Web Component rendering migration (see ADR 0002)
+  current_phase: P23  # Web Component rendering migration (see ADR 0002)
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -144,24 +144,7 @@ phases:
 
   - { id: P21, title: "Renderer consolidation — webapp.js consumes RenderSnapshot", status: done, dependencies: [P20b], archive: "docs/agent-roadmap-archive.yaml#P21" }
 
-  - id: P22
-    title: Snapshot transport — JSON endpoint and thin client runtime
-    status: in_progress
-    dependencies: [P21]
-    goals:
-      - Expose the RenderSnapshot to the browser as JSON.
-      - Provide a minimal client runtime that renders a snapshot and round-trips events without a full page reload.
-    deliverables:
-      - HTTP endpoint serving the compiled RenderSnapshot for an app/route/state as JSON (alongside the existing HTML route)
-      - thin vanilla-JS client runtime (no framework) — served as a static resource — that holds the current snapshot, renders it, and on a UI event POSTs to the existing Node-RED action/event endpoints and re-renders from the returned snapshot
-      - efficient DOM update on re-render (e.g. keyed replacement or a small morph step) so list/state changes do not reset focus or scroll
-      - documented client-runtime ↔ runtime contract (event payload shape in, snapshot shape out) referencing the existing msg.ui event format
-    validation:
-      - pnpm test passes with no failures
-      - unit test: the JSON snapshot endpoint returns the same region/component tree the HTML adapter renders for a given app + route + state
-      - unit test: dispatching an event through the client-runtime contract returns an updated snapshot reflecting the state change (e.g. a store value update changes a bound ui-text)
-      - Playwright: clicking a button updates bound content without a full page navigation
-      - Playwright: a query-backed table re-renders new rows after a refresh action without losing scroll position
+  - { id: P22, title: "Snapshot transport — JSON endpoint and thin client runtime", status: done, dependencies: [P21], archive: "docs/agent-roadmap-archive.yaml#P22" }
 
   - id: P23
     title: Web Component default adapter — Shoelace
