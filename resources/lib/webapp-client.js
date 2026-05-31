@@ -1,22 +1,27 @@
 /**
  * Webapp thin client runtime (P22).
  *
- * Contract — see docs/nodes/concepts/messages.md, section "Snapshot transport":
+ * Contract — see docs/nodes/concepts/events.md (Client → Server events):
  *
  *   IN  (browser → runtime)  POST /webapp/:appId/event
- *     { actionId, sourceId, event, location, params }
- *     - actionId : the ui-action / preview action id to dispatch (required)
- *     - sourceId : the component id that originated the event (msg.ui.componentId)
- *     - event    : the msg.ui.event name ("click" | "submit" | "select" | "change")
+ *     { clientId, event, sourceId, location, params }
+ *     - clientId : id of this browser/tab (so the flow can target it back)
+ *     - event    : the event TYPE that happened ("click" | "submit" | "change" |
+ *                  "rowSelect" | "rowAction" | ...). The browser reports WHAT
+ *                  HAPPENED — it never names or runs an action (P30).
+ *     - sourceId : the node id of the originating UI node (msg.ui.sourceId)
  *     - location : the current route location
  *     - params   : extra event params (form field values, rowId, etc.)
  *
+ *   The runtime emits msg.ui on the originating node's OUTPUT port into the wired
+ *   flow and takes no domain action. There is no automatic event→action link.
+ *
  *   OUT (runtime → browser)
- *     { message, location, dialog, snapshot }
- *     - message  : the emitted msg.ui event message (messages.md shape)
- *     - location : the resulting route location (may differ after navigation)
- *     - dialog   : id of an open dialog, or undefined
- *     - snapshot : the new RenderSnapshot to render
+ *     { message, location, snapshot }
+ *     - message  : the emitted msg.ui event message (events.md shape)
+ *     - location : the current route location
+ *     - snapshot : the current RenderSnapshot (a live push of flow-driven updates
+ *                  is P31; for now this is an unchanged read-only re-render)
  *
  * The client holds the current snapshot and renders it through the SHARED
  * serializer (resources/lib/webapp-serializer.js, window.WebappSerializer) — the
@@ -39,6 +44,11 @@
     let location = root.getAttribute("data-webapp-location") || "/";
     let dialogId = root.getAttribute("data-webapp-dialog") || undefined;
     let currentSnapshot = null;
+
+    // P30: a per-tab client id so the flow can address actions back to this
+    // browser (events.md / actions.md clientId targeting; the live channel is P31).
+    const clientId = root.getAttribute("data-webapp-client-id")
+        || ("client-" + Math.random().toString(36).slice(2) + Date.now().toString(36));
 
     // P26: render through the shared serializer (window.WebappSerializer) so the
     // markup the client morphs in is byte-identical to what the server emitted.
@@ -158,11 +168,13 @@
             Object.assign(params, collectFormValues(detail.formId));
         }
 
+        // P30: report WHAT HAPPENED. We send the originating node id (sourceId)
+        // and the event type — never an actionId to execute.
         const response = await fetch(base() + "/event", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                actionId: detail.action,
+                clientId: clientId,
                 sourceId: detail.source,
                 event: detail.event || "click",
                 location: location,
@@ -181,10 +193,25 @@
         }
     }
 
+    // Click/submit/rowSelect/rowAction triggers (buttons, table row links).
+    const CLICK_EVENTS = ["click", "submit", "rowSelect", "rowAction"];
+
     root.addEventListener("click", function (eventObject) {
-        const trigger = eventObject.target.closest("[data-webapp-action]");
+        // P30: a trigger is any node that reports a click-class event
+        // (data-webapp-source + a click-class data-webapp-event). An action
+        // reference is no longer required — the browser reports WHAT HAPPENED;
+        // the flow decides what (if anything) happens.
+        const trigger = eventObject.target.closest("[data-webapp-source]");
 
         if (!trigger || !root.contains(trigger)) {
+            return;
+        }
+
+        const event = trigger.getAttribute("data-webapp-event") || "click";
+
+        // Value controls report `change`, not click — leave those to the change
+        // listener so a click inside an input does not fire a spurious event.
+        if (CLICK_EVENTS.indexOf(event) === -1) {
             return;
         }
 
@@ -197,11 +224,31 @@
         }
 
         dispatch({
-            action: trigger.getAttribute("data-webapp-action"),
             source: trigger.getAttribute("data-webapp-source"),
-            event: trigger.getAttribute("data-webapp-event") || "click",
+            event: event,
             formId: trigger.getAttribute("data-webapp-form"),
             params: params
+        });
+    });
+
+    // P30: value-control change → a `change` event on the originating node. The
+    // control's value (or checked state) is the documented `value` param.
+    root.addEventListener("change", function (eventObject) {
+        const wrapper = eventObject.target.closest("[data-webapp-source][data-webapp-event=\"change\"]");
+
+        if (!wrapper || !root.contains(wrapper)) {
+            return;
+        }
+
+        const field = eventObject.target;
+        const tag = field.tagName ? field.tagName.toLowerCase() : "";
+        const isToggle = tag === "sl-checkbox" || tag === "sl-switch" || (tag === "input" && field.type === "checkbox");
+        const value = isToggle ? Boolean(field.checked) : field.value;
+
+        dispatch({
+            source: wrapper.getAttribute("data-webapp-source"),
+            event: "change",
+            params: { value: value }
         });
     });
 

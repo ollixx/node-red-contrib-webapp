@@ -4,16 +4,19 @@ import path from "node:path";
 import { expect, test } from "@playwright/test";
 
 /**
- * P22 — Snapshot transport + thin client runtime.
+ * Snapshot transport + thin client runtime (P22), updated for P30.
  *
  * The client runtime (resources/lib/webapp-client.js) hydrates from the JSON
- * snapshot endpoint, renders into #webapp-client-root, and on a UI event POSTs
- * to /webapp/:appId/event and re-renders from the returned snapshot — no full
- * page navigation. These specs drive that round-trip in a real browser.
+ * snapshot endpoint, renders into #webapp-client-root, and on a UI event POSTs to
+ * /webapp/:appId/event. After P30 that POST is a RAW client event
+ * { clientId, event, sourceId, params } (events.md) — never an actionId to
+ * execute. The runtime routes it to the originating node, emits msg.ui on that
+ * node's output port, and takes no domain action. The browser stays on the same
+ * page (no full navigation); a flow-driven re-render is the Server→Client push of
+ * P31. These specs drive that round-trip in a real browser.
  *
- * A dedicated fixture flow is used (not customers-crud) so the dispatched action
- * ids hit handled preview branches; the customers-crud preview action wiring is
- * a separate, pre-existing concern (spun off in P21).
+ * A dedicated fixture flow is used (not customers-crud) so the assertions are
+ * independent of the example's own wiring.
  */
 
 type FlowNode = Record<string, unknown>;
@@ -24,16 +27,11 @@ async function loadFlowFixture(relativePath: string): Promise<FlowNode[]> {
     return JSON.parse(content) as FlowNode[];
 }
 
-test.describe("P22: snapshot transport thin client", () => {
+test.describe("snapshot transport thin client (P30 events)", () => {
     test.beforeAll(async ({ request }) => {
         const flow = await loadFlowFixture("tests/e2e/fixtures/p22-snapshot-transport.flow.json");
         const response = await request.post("/flows", { data: flow });
         expect(response.ok()).toBeTruthy();
-    });
-
-    test.beforeEach(async ({ request }) => {
-        const reset = await request.get("/webapp/p22App/reset");
-        expect(reset.ok()).toBeTruthy();
     });
 
     test("serves the snapshot as JSON and the client runtime as a static resource", async ({ request }) => {
@@ -47,7 +45,7 @@ test.describe("P22: snapshot transport thin client", () => {
         expect(runtime.ok()).toBeTruthy();
     });
 
-    test("clicking a button updates bound content without a full page navigation", async ({ page }) => {
+    test("clicking a button reports a raw event (sourceId + event, no actionId) without a full navigation", async ({ page }) => {
         await page.goto("/webapp/p22App/customers");
         await expect(page.locator("table.webapp-table")).toBeVisible();
 
@@ -56,40 +54,42 @@ test.describe("P22: snapshot transport thin client", () => {
             (window as unknown as { __webappNoReload?: boolean }).__webappNoReload = true;
         });
 
-        // The dialog is not present until the New customer button is clicked.
-        await expect(page.locator(".webapp-dialog-card")).toHaveCount(0);
+        const requestPromise = page.waitForRequest((req) =>
+            req.url().includes("/webapp/p22App/event") && req.method() === "POST"
+        );
 
         await page.getByRole("button", { name: "New customer" }).click();
 
-        // The dialog now renders (bound content changed) and the page never reloaded.
-        await expect(page.locator(".webapp-dialog-card")).toBeVisible();
+        const eventRequest = await requestPromise;
+        const body = eventRequest.postDataJSON() as Record<string, unknown>;
+
+        // P30 contract: the browser reports WHAT HAPPENED, never an action to run.
+        expect(body.actionId).toBeUndefined();
+        expect(body.event).toBe("click");
+        expect(typeof body.sourceId).toBe("string");
+        expect(typeof body.clientId).toBe("string");
+
+        // The page never reloaded — the thin client handled the event in place.
         const survived = await page.evaluate(() => (window as unknown as { __webappNoReload?: boolean }).__webappNoReload === true);
         expect(survived).toBe(true);
     });
 
-    // P29: the save action is interaction-only (closes the editor dialog). The
-    // runtime performs no CRUD — persisting a record is the wired flow's job — so
-    // the query-backed table must NOT gain a row from a save click.
-    test("a save action closes the dialog without mutating the query-backed table", async ({ page }) => {
+    test("the runtime takes no domain action on a client event — the query-backed table is unchanged", async ({ page }) => {
         await page.goto("/webapp/p22App/customers");
         await expect(page.locator("table.webapp-table")).toBeVisible();
 
         const rowsBefore = await page.locator("table.webapp-table tbody tr").count();
 
-        // Open the editor, fill the name, and save.
+        const eventResponse = page.waitForResponse((res) =>
+            res.url().includes("/webapp/p22App/event") && res.request().method() === "POST"
+        );
         await page.getByRole("button", { name: "New customer" }).click();
-        await expect(page.locator(".webapp-dialog-card")).toBeVisible();
-        await page.locator('.webapp-dialog-card input[name="name"]').fill("Katherine Johnson");
+        await eventResponse;
 
-        await page.getByRole("button", { name: "Save" }).click();
-
-        // The dialog closes (interaction state changed) ...
-        await expect(page.locator(".webapp-dialog-card")).toHaveCount(0);
-        // ... but no business data was written: the row count is unchanged and the
-        // typed value never became a row.
+        // No business data was written and no auto event→action link fired: the row
+        // count is unchanged (any reaction is the wired flow's job, arriving in P31).
         await expect
             .poll(async () => page.locator("table.webapp-table tbody tr").count())
             .toBe(rowsBefore);
-        await expect(page.locator("table.webapp-table")).not.toContainText("Katherine Johnson");
     });
 });

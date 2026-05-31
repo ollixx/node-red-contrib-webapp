@@ -193,7 +193,17 @@
         }
 
         const styleAttribute = styles.length > 0 ? " style=\"" + escapeAttribute(styles.join(";")) + "\"" : "";
-        return "<div class=\"webapp-item webapp-item--" + escapeAttribute(layoutVariant) + "\"" + styleAttribute + ">" + innerHtml + "</div>";
+
+        // P30: tag the wrapper of every value-bearing control with its node id so a
+        // browser-side change reports a `change` event on the originating node (the
+        // thin client's change listener reads data-webapp-source here). Buttons and
+        // table rows carry their own source attribute inline; click stays separate.
+        const changeKinds = ["input", "select", "checkbox", "radio", "switch", "textarea", "datepicker", "slider"];
+        const sourceAttribute = component && changeKinds.indexOf(component.kind) !== -1
+            ? " data-webapp-source=\"" + escapeAttribute(component.id) + "\" data-webapp-event=\"change\""
+            : "";
+
+        return "<div class=\"webapp-item webapp-item--" + escapeAttribute(layoutVariant) + "\"" + sourceAttribute + styleAttribute + ">" + innerHtml + "</div>";
     }
 
     function renderRegionHtml(region, layoutId, ctx) {
@@ -229,20 +239,25 @@
             const inForm = Boolean(ctx.formId);
             const attrs = shoelaceAttrs(mapComponentToShoelace("button", component.props || {}).attributes);
 
-            if (component.disabled || !action) {
+            if (component.disabled) {
                 return wrapRenderedComponentHtml(component, layoutId, "<sl-button" + attrs + " disabled>" + label + "</sl-button>");
             }
 
-            // Interactivity is expressed with data-webapp-* attributes (role stays
-            // "button"); the thin client intercepts the click, POSTs /event and
-            // morphs in the new snapshot — no full-page navigation. The no-JS
-            // fallback (/action GET) is also reachable via these attributes. The
-            // href attribute is deliberately NOT set so a button stays a button.
+            // P30: EVERY enabled button is interactive and reports its click as an
+            // event — independent of any action wiring. The browser reports WHAT
+            // HAPPENED via data-webapp-source (the originating node id) + the event
+            // type; the thin client POSTs /event and the runtime emits msg.ui on
+            // that node's output port. data-webapp-action is retained only for the
+            // legacy no-JS GET fallback (removed in P32). The href attribute is
+            // deliberately NOT set so a button stays a button.
             const dataAttrs = [
-                " data-webapp-action=\"" + escapeAttribute(action) + "\"",
                 " data-webapp-source=\"" + escapeAttribute(component.id) + "\"",
                 " data-webapp-event=\"" + (inForm ? "submit" : "click") + "\""
             ];
+
+            if (action) {
+                dataAttrs.push(" data-webapp-action=\"" + escapeAttribute(action) + "\"");
+            }
 
             if (inForm) {
                 dataAttrs.push(" data-webapp-form=\"" + escapeAttribute(ctx.formId) + "\"");
@@ -254,8 +269,19 @@
         if (component.kind === "table") {
             const columns = Array.isArray(component.props.columns) ? component.props.columns : [];
             const rows = Array.isArray(component.rows) ? component.rows : [];
-            const selectEvent = (component.events || []).find(function (event) { return event.event === "select"; });
+            // P30: a table emits rowSelect when it declares the event (or, legacy,
+            // a selectAction). The event TYPE reported is "rowSelect" (events.md);
+            // an action reference is no longer required for the row to be selectable.
+            const tableEvents = (component.events || []).map(function (event) {
+                return typeof event === "string" ? event : (event && event.event);
+            });
+            const selectEvent = (component.events || []).find(function (event) {
+                return (typeof event === "string" ? event : (event && event.event)) === "select"
+                    || (typeof event === "string" ? event : (event && event.event)) === "rowSelect";
+            });
+            const declaresRowSelect = tableEvents.indexOf("rowSelect") !== -1 || tableEvents.indexOf("select") !== -1;
             const selectAction = component.props.selectAction || (selectEvent && selectEvent.action) || undefined;
+            const rowSelectable = declaresRowSelect || Boolean(selectAction);
             const header = columns.map(function (col) {
                 return "<th>" + escapeHtml(col.label || col.key || col) + "</th>";
             }).join("");
@@ -267,11 +293,14 @@
                         const key = col.key || col;
                         const value = escapeHtml(row[key] === undefined || row[key] === null ? "" : row[key]);
 
-                        if (index === 0 && selectAction && rowId) {
+                        if (index === 0 && rowSelectable && rowId) {
+                            const actionAttr = selectAction
+                                ? " data-webapp-action=\"" + escapeAttribute(selectAction) + "\""
+                                : "";
                             return "<td><a class=\"webapp-link\" href=\"#\""
-                                + " data-webapp-action=\"" + escapeAttribute(selectAction) + "\""
+                                + actionAttr
                                 + " data-webapp-source=\"" + escapeAttribute(component.id) + "\""
-                                + " data-webapp-event=\"select\""
+                                + " data-webapp-event=\"rowSelect\""
                                 + " data-webapp-rowid=\"" + escapeAttribute(rowId) + "\">" + value + "</a></td>";
                         }
 

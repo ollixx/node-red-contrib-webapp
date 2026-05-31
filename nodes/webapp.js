@@ -1025,6 +1025,94 @@ function defaultRouteLocation(model) {
     return firstRoute ? firstRoute.path : "/";
 }
 
+// P30: walk a rendered snapshot's region tree for a table component by id so a
+// rowSelect / rowAction event can carry the full `row` object (events.md params),
+// resolved read-only from the current render — never from a runtime data store.
+function findSnapshotComponent(regions, componentId) {
+    if (!Array.isArray(regions)) {
+        return undefined;
+    }
+    for (const region of regions) {
+        for (const component of region.components || []) {
+            if (component.id === componentId) {
+                return component;
+            }
+            if (component.kind === "container") {
+                const nested = findSnapshotComponent(component.regions, componentId);
+                if (nested) {
+                    return nested;
+                }
+            }
+        }
+    }
+    return undefined;
+}
+
+function resolveTableRow(appId, location, tableId, rowId, definitions) {
+    const built = buildAppSnapshot(appId, location || "/", undefined, definitions);
+    if (!built.success || !built.snapshot) {
+        return undefined;
+    }
+    const table = findSnapshotComponent(built.snapshot.regions, tableId);
+    const rows = table && Array.isArray(table.rows) ? table.rows : [];
+    return rows.find((row) => row && row.id !== undefined && String(row.id) === String(rowId));
+}
+
+// P30: ingest a RAW client event and emit it on the ORIGINATING node's output
+// port. The browser reports WHAT HAPPENED ({appId, clientId, event, sourceId,
+// params}); it never names or runs an action. There is no automatic event→action
+// link — the runtime takes NO domain action here. The wired Node-RED flow is the
+// only place that may react. See docs/nodes/concepts/events.md.
+function dispatchClientEvent(RED, appId, body, definitions) {
+    const sourceId = body && body.sourceId ? String(body.sourceId) : undefined;
+    const event = body && body.event ? String(body.event) : undefined;
+
+    if (!sourceId) {
+        return { success: false, status: 400, body: "Missing sourceId." };
+    }
+
+    if (!event) {
+        return { success: false, status: 400, body: "Missing event." };
+    }
+
+    const clientId = body && body.clientId ? String(body.clientId) : undefined;
+    const location = body && body.location ? String(body.location) : "/";
+    const params = body && body.params && typeof body.params === "object" ? { ...body.params } : {};
+
+    // Enrich documented table events with the full row object when only a rowId
+    // was reported. This is a read-only render lookup, not a data action.
+    if ((event === "rowSelect" || event === "rowAction") && params.rowId !== undefined && params.row === undefined) {
+        const row = resolveTableRow(appId, location, sourceId, params.rowId, definitions);
+        if (row !== undefined) {
+            params.row = clone(row);
+        }
+    }
+
+    const message = {
+        ui: {
+            appId,
+            clientId,
+            event,
+            sourceId,
+            params
+        }
+    };
+
+    const node = RED && RED.nodes && typeof RED.nodes.getNode === "function"
+        ? RED.nodes.getNode(sourceId)
+        : undefined;
+
+    if (!node || typeof node.send !== "function") {
+        return { success: false, status: 404, body: `Unknown source node '${sourceId}'.` };
+    }
+
+    // Emit on the originating node's OUTPUT port — into the wired flow. The
+    // runtime does nothing else: no state mutation, no action dispatch.
+    node.send(clone(message));
+
+    return { success: true, message };
+}
+
 function applyPreviewAction(RED, appId, actionId, parameters, definitions) {
     const buckets = getDefinitionBuckets(appId, definitions);
     const matchingInputs = buckets.components.filter((entry) => entry.type === "ui-input" && entry.path && parameters[entry.path] !== undefined);
@@ -1502,35 +1590,29 @@ function registerEndpoints(RED) {
         res.json({ snapshot: built.snapshot });
     });
 
-    // P22: client-runtime event endpoint. Accepts a UI event payload (the same
-    // shape the action GET endpoint used: actionId + sourceId + event + params),
-    // applies it via applyPreviewAction (which emits the msg.ui message and
-    // updates preview state), then returns the resulting snapshot as JSON.
+    // P30: client→server event ingest. The browser reports WHAT HAPPENED — a raw
+    // event { clientId, event, sourceId, params } (events.md) — and the runtime
+    // routes it to the originating node, emitting msg.ui on that node's OUTPUT
+    // port into the wired flow. The runtime takes NO domain action: the old
+    // action-dispatch / preview-mutation semantics are gone. The wired flow is
+    // the only place that may react (a live Server→Client push is P31; the
+    // preview render apparatus is removed in P32). The response echoes the emitted
+    // message and the CURRENT snapshot (unchanged — a read-only re-render) so the
+    // existing thin client keeps a consistent view until P31 lands the push.
     RED.httpNode.post("/webapp/:appId/event", readJsonBody, (req, res) => {
         const { appId } = req.params;
         const body = req.body && typeof req.body === "object" ? req.body : {};
-        const actionId = body.actionId ? String(body.actionId) : undefined;
-
-        if (!actionId) {
-            res.status(400).json({ error: "Missing actionId." });
-            return;
-        }
-
         const definitions = readDeployDefinitions(RED);
-        const parameters = {
-            ...(body.params && typeof body.params === "object" ? body.params : {}),
-            location: body.location ? String(body.location) : "/",
-            sourceId: body.sourceId ? String(body.sourceId) : actionId,
-            event: body.event ? String(body.event) : "click"
-        };
-        const applied = applyPreviewAction(RED, appId, actionId, parameters, definitions);
 
-        if (!applied.success) {
-            res.status(applied.status).json({ error: applied.body });
+        const dispatched = dispatchClientEvent(RED, appId, body, definitions);
+
+        if (!dispatched.success) {
+            res.status(dispatched.status).json({ error: dispatched.body });
             return;
         }
 
-        const built = buildAppSnapshot(appId, applied.redirectLocation, applied.dialogId, definitions);
+        const location = body.location ? String(body.location) : "/";
+        const built = buildAppSnapshot(appId, location, undefined, definitions);
 
         if (!built.success) {
             res.status(built.status).json({ error: built.message });
@@ -1538,9 +1620,8 @@ function registerEndpoints(RED) {
         }
 
         res.json({
-            message: applied.message,
-            location: applied.redirectLocation,
-            dialog: applied.dialogId,
+            message: dispatched.message,
+            location,
             snapshot: built.snapshot
         });
     });
@@ -2479,6 +2560,9 @@ function registerWebappNodes(RED) {
 }
 
 registerWebappNodes.__test__ = {
+    // P30: raw client→server event ingest — routes to the originating node and
+    // emits msg.ui on its output port; takes no domain action.
+    dispatchClientEvent,
     applyPreviewAction,
     applyStoreOperation,
     getPreviewMessages,
