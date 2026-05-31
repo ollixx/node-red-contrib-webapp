@@ -39,9 +39,12 @@ Different tasks use different entry prompts. Start from the right one:
 | Only write missing tests for a phase | `.ai/prompts/write-tests.prompt.md` |
 | Fix a bug / regression that is not a phase | `.ai/prompts/fix-bug.prompt.md` |
 | Turn a decision into an ADR + new phases | `.ai/prompts/evolve-roadmap.prompt.md` |
+| Audit the agent-OS itself (opus) | `.ai/prompts/review-agent-os.prompt.md` |
 
 For running multiple phases, prefer the **orchestrated** mode: it spawns one fresh sub-agent per phase so implementation detail never accumulates in the driving session. The single-session mode is kept only for cases where sub-agents are unavailable.
 
 **Phase work vs. maintenance work.** The numbered rules above (one phase at a time, status updates, archive on done) govern *roadmap-phase* work. Bug fixes and roadmap evolution are not phases: they skip the phase-status bookkeeping but still obey the universal rules — test-first, commit hygiene, minimal-invasive patches, never overwrite user changes. Use the dedicated prompts above. If a bug fix reveals that the roadmap itself is wrong, hand off from `fix-bug` to `evolve-roadmap`.
+
+**Friction log.** When something in this agent-OS or the docs slows you down, misleads you, or causes rework, append one line to `.ai/friction-log.md` before you finish. It is the raw material the `review-agent-os` role mines to keep the OS honest — an empty log makes a cold audit blind.
 
 When implementing phases that add new node types (P16a-d or similar), invoke the `/node-red-node` skill first — it contains the complete four-file pattern, code templates, and checklist so the agent does not need to read existing node files to derive the pattern.

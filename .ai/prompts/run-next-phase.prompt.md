@@ -57,3 +57,4 @@ Then replace the full entry in `docs/agent-roadmap.yaml` with:
 - Implement only this phase's deliverables. Do not touch other phases.
 - Do not read files outside your context budget unless a test failure forces it.
 - Do not mark done unless all validation criteria are explicitly verified.
+- If anything in the agent-OS or docs misled you or cost you rework during this phase (a stale path, a wrong context-budget pointer, an instruction that did not match the code), append one line to `.ai/friction-log.md` before finishing. The `review-agent-os` role depends on it.

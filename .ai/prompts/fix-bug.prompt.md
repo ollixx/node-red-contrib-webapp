@@ -59,3 +59,5 @@ The node UUID (`config.id`) is the canonical identifier. URL paths (`config.root
 Commit the failing-test + fix together (or test first, then fix) with a message naming the root cause, not the symptom. If you spotted adjacent defects you did not fix, name them in your report — do not silently expand scope.
 
 Do **not** update roadmap phase status; a bug fix is not a phase. If the bug reveals that the roadmap or an architecture decision is wrong, stop and hand off to the roadmap-evolution role (`.ai/prompts/evolve-roadmap.prompt.md`).
+
+If anything in the agent-OS or docs misled you or caused rework while fixing this (a stale path, a wrong instruction, a missing pointer), append one line to `.ai/friction-log.md` — that is how the OS gets fixed before it bites the next agent.
