@@ -7,7 +7,6 @@
     "main": "nodes/webapp.js",
     "files": [
         "nodes",
-        "lib",
         "resources",
         "packages/schema/dist",
         "examples",
