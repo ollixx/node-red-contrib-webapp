@@ -41,6 +41,11 @@ const runtimeState = {
     queryEtags: new Map(),
     // clientStateMap: appId → Map<clientId, { state, timestamp }>
     clientStateMap: new Map(),
+    // P31: live Server→Client SSE subscribers.
+    // streamClients: appId → Map<clientId, { res, location }>
+    // Each connected EventSource registers here; flow-driven store/action updates
+    // are pushed to the targeted client (msg.ui.clientId) or broadcast to all.
+    streamClients: new Map(),
     endpointsRegistered: false
 };
 
@@ -1237,7 +1242,7 @@ function applyPreviewAction(RED, appId, actionId, parameters, definitions) {
 
 // P22: a single helper builds the RenderSnapshot for an app + location + open dialog.
 // Both the HTML route and the JSON snapshot endpoint consume this so they cannot drift.
-function buildAppSnapshot(appId, location, dialogId, definitions) {
+function buildAppSnapshot(appId, location, dialogId, definitions, clientId) {
     const modelResult = getAppModelResult(appId, definitions);
 
     if (!modelResult.success) {
@@ -1266,8 +1271,11 @@ function buildAppSnapshot(appId, location, dialogId, definitions) {
     };
     const queries = getPreviewQueries(appId, buckets.queries);
     const state = initializeState(integration.stores, integration.queries, appId);
-    const previewState = runtimeState.previewState.get(appId);
-    const hydratedState = previewState ? mergeDeep(state, previewState) : state;
+    // Per-client state wins when a clientId is given and that client has its own
+    // state (P15 multi-user model); otherwise fall back to the shared broadcast state.
+    const clientStateEntry = clientId ? getClientState(appId, clientId) : null;
+    const liveState = clientStateEntry ? clientStateEntry.state : runtimeState.previewState.get(appId);
+    const hydratedState = liveState ? mergeDeep(state, liveState) : state;
     const effectiveState = dialogId ? setValueAtPath(hydratedState, `ui.dialogs.${dialogId}.open`, true) : hydratedState;
 
     // P21: a single RenderSnapshot from packages/renderer is the source of truth.
@@ -1530,6 +1538,110 @@ function readJsonBody(req, res, next) {
     });
 }
 
+// ════════════════════════════════════════════════════════════════════════
+// P31: live Server→Client push transport (SSE).
+//
+// Decision recorded in docs/adr/0003: a one-directional Server-Sent Events
+// stream on the existing httpNode router. Client→Server is already the
+// POST /event path (P30); this supplies the only missing direction. Each
+// connected EventSource registers under appId + clientId so a flow-driven
+// store/action update addressed to msg.ui.clientId reaches exactly that client,
+// and a broadcast (no clientId) fans out to every subscriber of the app.
+// ════════════════════════════════════════════════════════════════════════
+
+function getStreamSubscribers(appId) {
+    let subscribers = runtimeState.streamClients.get(appId);
+    if (!subscribers) {
+        subscribers = new Map();
+        runtimeState.streamClients.set(appId, subscribers);
+    }
+    return subscribers;
+}
+
+function addStreamClient(appId, clientId, res, location) {
+    getStreamSubscribers(appId).set(clientId, { res, location: location || "/" });
+}
+
+function removeStreamClient(appId, clientId) {
+    const subscribers = runtimeState.streamClients.get(appId);
+    if (subscribers) {
+        subscribers.delete(clientId);
+        if (subscribers.size === 0) {
+            runtimeState.streamClients.delete(appId);
+        }
+    }
+}
+
+// Serialise a single SSE message frame. A named event lets the browser
+// distinguish a full snapshot re-render from an interaction command.
+function writeStreamEvent(res, eventName, payload) {
+    if (!res || typeof res.write !== "function") {
+        return;
+    }
+    res.write(`event: ${eventName}\n`);
+    res.write(`data: ${JSON.stringify(payload)}\n\n`);
+}
+
+// Push the current snapshot (built from the live node state) to one client, or
+// to every subscriber of the app when clientId is undefined (broadcast). Each
+// client is rendered at ITS OWN current location, with ITS OWN per-client state.
+function pushSnapshotToClients(appId, clientId, definitions) {
+    const subscribers = runtimeState.streamClients.get(appId);
+    if (!subscribers || subscribers.size === 0) {
+        return;
+    }
+
+    const targets = clientId
+        ? (subscribers.has(clientId) ? [[clientId, subscribers.get(clientId)]] : [])
+        : Array.from(subscribers.entries());
+
+    for (const [targetClientId, entry] of targets) {
+        const built = buildAppSnapshot(appId, entry.location || "/", undefined, definitions, targetClientId);
+        if (built.success) {
+            writeStreamEvent(entry.res, "snapshot", { snapshot: built.snapshot });
+        }
+    }
+}
+
+// Push an interaction command (navigate / openDialog / show / hide / …) produced
+// by a ui-action in the flow to the targeted client(s). Interaction commands change
+// INTERACTION state only (actions.md) — never business data. When the command moves
+// the client to a new route, the server remembers the new location so subsequent
+// snapshot pushes render the right page.
+function pushActionCommandToClients(appId, clientId, command) {
+    const subscribers = runtimeState.streamClients.get(appId);
+    if (!subscribers || subscribers.size === 0) {
+        return;
+    }
+
+    const targets = clientId
+        ? (subscribers.has(clientId) ? [[clientId, subscribers.get(clientId)]] : [])
+        : Array.from(subscribers.entries());
+
+    for (const [, entry] of targets) {
+        if (command && command.type === "navigate" && command.to) {
+            entry.location = String(command.to);
+        }
+        writeStreamEvent(entry.res, "command", { command });
+    }
+}
+
+// Map a ui-action definition + incoming msg into the interaction command the
+// client applies. Domain-agnostic: only the documented interaction verbs.
+function buildActionCommand(actionDefinition, msg) {
+    const uiMsg = msg && msg.ui && typeof msg.ui === "object" ? msg.ui : {};
+    const override = uiMsg.action && typeof uiMsg.action === "object" ? uiMsg.action : {};
+    const type = override.type || (actionDefinition && actionDefinition.actionType);
+    if (!type) {
+        return null;
+    }
+    return {
+        type: String(type),
+        to: override.to || (actionDefinition && actionDefinition.to) || undefined,
+        target: override.target || override.targetId || (actionDefinition && actionDefinition.target) || undefined
+    };
+}
+
 function registerEndpoints(RED) {
     if (runtimeState.endpointsRegistered) {
         return;
@@ -1588,6 +1700,52 @@ function registerEndpoints(RED) {
         }
 
         res.json({ snapshot: built.snapshot });
+    });
+
+    // P31: live Server→Client SSE stream. The browser opens an EventSource here
+    // with its clientId and current location; the runtime registers it and pushes
+    // an initial snapshot immediately (which subsumes the P15 reconnect sync).
+    // Thereafter, flow-driven ui-store updates push `snapshot` events and ui-action
+    // interaction commands push `command` events to the relevant client(s).
+    RED.httpNode.get("/webapp/:appId/stream", (req, res) => {
+        const { appId } = req.params;
+        const clientId = req.query.clientId ? String(req.query.clientId) : undefined;
+        const location = req.query.location ? String(req.query.location) : "/";
+
+        if (!clientId) {
+            res.status(400).json({ error: "A clientId query parameter is required to subscribe." });
+            return;
+        }
+
+        const buckets = getDefinitionBuckets(appId, readDeployDefinitions(RED));
+        if (!buckets.app) {
+            res.status(404).json({ error: `Unknown app '${appId}'.` });
+            return;
+        }
+
+        res.status(200);
+        res.set({
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache, no-transform",
+            Connection: "keep-alive"
+        });
+        if (typeof res.flushHeaders === "function") {
+            res.flushHeaders();
+        }
+        // Open the SSE comment line so proxies do not buffer the stream.
+        res.write(":ok\n\n");
+
+        addStreamClient(appId, clientId, res, location);
+
+        // Initial sync: push the current live snapshot for this client immediately.
+        const built = buildAppSnapshot(appId, location, undefined, readDeployDefinitions(RED), clientId);
+        if (built.success) {
+            writeStreamEvent(res, "snapshot", { snapshot: built.snapshot });
+        }
+
+        req.on("close", () => {
+            removeStreamClient(appId, clientId);
+        });
     });
 
     // P30: client→server event ingest. The browser reports WHAT HAPPENED — a raw
@@ -1858,6 +2016,17 @@ function actionInputHandler(node, msg, send, done) {
     const overrideTargetId = uiMsg && uiMsg.action && typeof uiMsg.action.targetId === "string"
         ? uiMsg.action.targetId
         : undefined;
+
+    // P31: a ui-action triggered FROM the flow pushes an interaction command
+    // (navigate / openDialog / show / hide / …) to the targeted client(s). The
+    // command changes interaction state only (actions.md) — it never touches
+    // business data. clientId targeting honours the P15 multi-user model.
+    const activeAppId = getActiveRuntimeAppId();
+    const actionClientId = uiMsg && uiMsg.clientId ? String(uiMsg.clientId) : undefined;
+    const command = buildActionCommand(node.webappDefinition, msg);
+    if (RED && activeAppId && command) {
+        pushActionCommandToClients(activeAppId, actionClientId, command);
+    }
 
     if (overrideTargetId) {
         // Dynamic target — send directly to the overridden node
@@ -2200,6 +2369,15 @@ const runtimeNodeRegistry = {
                 };
                 send(notificationMsg);
                 triggerParamQueryRefresh(storeDefinition.id);
+
+                // P31: live push. The node state has changed; push a fresh snapshot
+                // to the targeted client (per-client update) or to every subscriber
+                // (broadcast). No client POST is involved — the flow drove this.
+                const RED = runtimeState.RED;
+                if (RED) {
+                    pushSnapshotToClients(activeAppId, clientId, readDeployDefinitions(RED));
+                }
+
                 if (done) {
                     done();
                 }
@@ -2542,6 +2720,10 @@ const runtimeNodeRegistry = {
 };
 
 function registerNodeType(RED, type) {
+    // P31: the live push (and dynamic action targeting) needs the RED runtime to
+    // resolve nodes and read deploy definitions. Each node self-registers through
+    // this path (not the legacy registerWebappNodes factory), so capture RED here.
+    runtimeState.RED = RED;
     registerEndpoints(RED);
     const registration = runtimeNodeRegistry[type];
 
@@ -2584,7 +2766,15 @@ registerWebappNodes.__test__ = {
     // P15
     getClientState,
     setClientState,
-    resolveReconnectState
+    resolveReconnectState,
+    // P31: live Server→Client push transport (SSE)
+    addStreamClient,
+    removeStreamClient,
+    getStreamSubscribers,
+    pushSnapshotToClients,
+    pushActionCommandToClients,
+    buildActionCommand,
+    writeStreamEvent
 };
 
 registerWebappNodes.registerNodeType = registerNodeType;

@@ -1,5 +1,16 @@
 /**
- * Webapp thin client runtime (P22).
+ * Webapp thin client runtime (P22, live transport P31).
+ *
+ * P31 — live Server→Client push (SSE, see docs/adr/0003):
+ *   The client opens an EventSource at GET /webapp/:appId/stream?clientId&location.
+ *   The runtime pushes two named events:
+ *     - `snapshot` : a fresh RenderSnapshot when a flow message updated a ui-store
+ *                    (or any live node state). The client re-renders via the keyed
+ *                    morph. No client POST is involved — the flow drove the update.
+ *     - `command`  : an interaction command from a ui-action in the flow
+ *                    (navigate / openDialog / hide …). Interaction state only.
+ *   clientId targeting honours the P15 multi-user model: a push addressed to one
+ *   client never reaches another. On (re)connect the server re-pushes the snapshot.
  *
  * Contract — see docs/nodes/concepts/events.md (Client → Server events):
  *
@@ -274,12 +285,92 @@
         }
     }
 
+    // P31: apply an interaction command pushed by a ui-action in the flow. These
+    // change INTERACTION state only (actions.md) — navigate / openDialog / show /
+    // hide — never business data. After a navigate, the client follows the route
+    // (the server has already updated this client's stream location, so the next
+    // pushed snapshot renders the new page).
+    function applyCommand(command) {
+        if (!command || !command.type) {
+            return;
+        }
+
+        switch (command.type) {
+            case "navigate":
+                if (command.to) {
+                    location = String(command.to);
+                    window.location.assign(base() + "/" + String(command.to).replace(/^\//, ""));
+                }
+                break;
+            case "openDialog":
+                if (command.target) {
+                    dialogId = String(command.target);
+                    if (currentSnapshot) {
+                        applySnapshot(currentSnapshot);
+                    }
+                }
+                break;
+            case "closeDialog":
+            case "hide":
+                dialogId = undefined;
+                if (currentSnapshot) {
+                    applySnapshot(currentSnapshot);
+                }
+                break;
+            default:
+                // show / enable / disable / focus … are honoured through the next
+                // snapshot push; no standalone client mutation needed here.
+                break;
+        }
+    }
+
+    // P31: subscribe to the live Server→Client SSE stream. The flow pushes
+    // `snapshot` events (a ui-store update re-renders) and `command` events (a
+    // ui-action interaction). The native EventSource auto-reconnects; on every
+    // (re)connect the server immediately re-pushes the current snapshot.
+    function subscribe() {
+        if (typeof EventSource === "undefined") {
+            return;
+        }
+
+        const streamUrl = base() + "/stream?clientId=" + encodeURIComponent(clientId)
+            + "&location=" + encodeURIComponent(location);
+
+        const source = new EventSource(streamUrl);
+
+        source.addEventListener("snapshot", function (messageEvent) {
+            try {
+                const payload = JSON.parse(messageEvent.data);
+                if (payload && payload.snapshot) {
+                    applySnapshot(payload.snapshot);
+                }
+            }
+            catch (error) {
+                // Ignore a malformed frame; the next push corrects the view.
+            }
+        });
+
+        source.addEventListener("command", function (messageEvent) {
+            try {
+                const payload = JSON.parse(messageEvent.data);
+                if (payload && payload.command) {
+                    applyCommand(payload.command);
+                }
+            }
+            catch (error) {
+                // Ignore a malformed frame.
+            }
+        });
+    }
+
     // Test hook (P26): expose applySnapshot so a jsdom test can drive a
     // re-render / morph and assert no element-kind swap. No-op in production
     // unless a test sets window.__webappClientTestHooks beforehand.
     if (root.ownerDocument.defaultView && root.ownerDocument.defaultView.__webappClientTestHooks) {
         root.ownerDocument.defaultView.__webappClientTestHooks.applySnapshot = applySnapshot;
+        root.ownerDocument.defaultView.__webappClientTestHooks.applyCommand = applyCommand;
     }
 
     hydrate();
+    subscribe();
 })();

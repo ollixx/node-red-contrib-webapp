@@ -1,0 +1,72 @@
+[
+  {
+    "type": "tab",
+    "id": "p31flow",
+    "label": "P31"
+  },
+  {
+    "type": "ui-app",
+    "id": "p31App",
+    "name": "P31 App",
+    "root": "p31App",
+    "layout": "app",
+    "title": "P31",
+    "z": "p31flow",
+    "wires": [],
+    "x": 200,
+    "y": 120
+  },
+  {
+    "type": "ui-store",
+    "id": "greetingStore",
+    "name": "Greeting",
+    "parent": "p31App",
+    "statePath": "greeting",
+    "initialValue": "\"initial\"",
+    "z": "p31flow",
+    "wires": [],
+    "x": 200,
+    "y": 180
+  },
+  {
+    "type": "ui-text",
+    "id": "greetingText",
+    "name": "Greeting text",
+    "parent": "p31App",
+    "mount": "p31App.content",
+    "order": 0,
+    "value": {
+      "kind": "state",
+      "path": "greeting"
+    },
+    "z": "p31flow",
+    "wires": [],
+    "x": 200,
+    "y": 240
+  },
+  {
+    "type": "ui-button",
+    "id": "pushButton",
+    "name": "Push update",
+    "parent": "p31App",
+    "mount": "p31App.content",
+    "order": 1,
+    "label": "Push update",
+    "z": "p31flow",
+    "wires": [["toStoreFn"]],
+    "x": 200,
+    "y": 300
+  },
+  {
+    "type": "function",
+    "id": "toStoreFn",
+    "name": "Build store update",
+    "func": "msg.ui = { store: { id: 'greetingStore', op: 'set', value: 'pushed-live' } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "z": "p31flow",
+    "wires": [["greetingStore"]],
+    "x": 400,
+    "y": 300
+  }
+]
