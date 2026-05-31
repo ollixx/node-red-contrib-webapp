@@ -756,6 +756,70 @@ function toComponentDefinitions(components) {
             };
         }
 
+        // P25: P16x interactive kinds — each maps to its semantic kind so the
+        // renderer snapshot carries the correct kind and renderComponentHtml can
+        // produce the right Shoelace element (or semantic-HTML fallback).
+        const P16X_KIND_MAP = {
+            "ui-select": "select",
+            "ui-checkbox": "checkbox",
+            "ui-radio": "radio",
+            "ui-switch": "switch",
+            "ui-textarea": "textarea",
+            "ui-datepicker": "datepicker",
+            "ui-slider": "slider",
+            "ui-alert": "alert",
+            "ui-badge": "badge",
+            "ui-progress": "progress",
+            "ui-breadcrumb": "breadcrumb",
+            "ui-tabs": "tabs",
+            "ui-accordion": "accordion",
+            "ui-menu": "menu",
+            "ui-avatar": "avatar"
+        };
+        const p16Kind = P16X_KIND_MAP[component.type];
+
+        if (p16Kind) {
+            const valueBinding = getBinding(component.value, component.valuePath ? stateBinding(component.valuePath) : undefined);
+            const disabledBinding = getBinding(component.disabled, component.disabledPath ? stateBinding(component.disabledPath) : undefined);
+            const bind = {};
+            if (valueBinding) {
+                bind.value = valueBinding;
+            }
+            if (disabledBinding) {
+                bind.disabled = disabledBinding;
+            }
+
+            return {
+                id: component.id,
+                kind: p16Kind,
+                mount: component.mount || component.parent,
+                order: toOptionalNumber(component.order),
+                bind,
+                props: {
+                    ...(component.label !== undefined ? { label: component.label } : {}),
+                    ...(component.placeholder !== undefined ? { placeholder: component.placeholder } : {}),
+                    ...(component.options !== undefined ? { options: component.options } : {}),
+                    ...(component.multiple !== undefined ? { multiple: component.multiple } : {}),
+                    ...(component.searchable !== undefined ? { searchable: component.searchable } : {}),
+                    ...(component.rows !== undefined ? { rows: component.rows } : {}),
+                    ...(component.maxLength !== undefined ? { maxLength: component.maxLength } : {}),
+                    ...(component.min !== undefined ? { min: component.min } : {}),
+                    ...(component.max !== undefined ? { max: component.max } : {}),
+                    ...(component.step !== undefined ? { step: component.step } : {}),
+                    ...(component.showValue !== undefined ? { showValue: component.showValue } : {}),
+                    ...(component.severity !== undefined ? { severity: component.severity } : {}),
+                    ...(component.title !== undefined ? { title: component.title } : {}),
+                    ...(component.dismissible !== undefined ? { dismissible: component.dismissible } : {}),
+                    ...(component.message !== undefined ? { message: component.message } : {}),
+                    ...(component.variant !== undefined ? { variant: component.variant } : {}),
+                    ...(component.items !== undefined ? { items: component.items } : {}),
+                    ...(component.tabs !== undefined ? { tabs: component.tabs } : {}),
+                    ...(component.orientation !== undefined ? { orientation: component.orientation } : {})
+                },
+                events: Array.isArray(component.events) ? component.events : []
+            };
+        }
+
         return {
             id: component.id,
             kind: "text",
@@ -1080,6 +1144,158 @@ function renderComponentHtml(component, layoutId, serializerContext) {
         const descriptor = mapComponentToShoelace(component.kind, component.props || {});
         const inner = `<${descriptor.tag} class="webapp-container">${body}</${descriptor.tag}>`;
         return wrapRenderedComponentHtml(component, layoutId, inner);
+    }
+
+    // P25: P16x interactive kinds — render via the Shoelace adapter where a real
+    // element exists. Each handler maps semantic props to Shoelace attributes and
+    // preserves form submission / event interactivity.
+
+    if (component.kind === "select") {
+        const label = String(component.props.label || component.id);
+        const name = String(component.props.path || component.id);
+        const value = component.value === undefined || component.value === null ? "" : String(component.value);
+        const attrs = shoelaceAttrs(mapComponentToShoelace("select", component.props || {}).attributes);
+        const options = Array.isArray(component.props.options) ? component.props.options : [];
+        const optionHtml = options.map((opt) => {
+            const val = escapeAttribute(String(opt.value ?? opt));
+            const lbl = escapeHtml(String(opt.label ?? opt.value ?? opt));
+            const selected = val === escapeAttribute(value) ? " selected" : "";
+            return `<sl-option value="${val}"${selected}>${lbl}</sl-option>`;
+        }).join("");
+        return wrapRenderedComponentHtml(component, layoutId, `<sl-select${attrs} label="${escapeAttribute(label)}" name="${escapeAttribute(name)}" value="${escapeAttribute(value)}">${optionHtml}</sl-select>`);
+    }
+
+    if (component.kind === "checkbox") {
+        const label = String(component.props.label || component.id);
+        const name = String(component.props.path || component.id);
+        const checked = component.value ? " checked" : "";
+        const disabled = component.disabled ? " disabled" : "";
+        const attrs = shoelaceAttrs(mapComponentToShoelace("checkbox", component.props || {}).attributes);
+        return wrapRenderedComponentHtml(component, layoutId, `<sl-checkbox${attrs} name="${escapeAttribute(name)}"${checked}${disabled}>${escapeHtml(label)}</sl-checkbox>`);
+    }
+
+    if (component.kind === "radio") {
+        const label = String(component.props.label || component.id);
+        const name = String(component.props.path || component.id);
+        const value = component.value === undefined || component.value === null ? "" : String(component.value);
+        const options = Array.isArray(component.props.options) ? component.props.options : [];
+        const radioHtml = options.map((opt) => {
+            const val = escapeAttribute(String(opt.value ?? opt));
+            const lbl = escapeHtml(String(opt.label ?? opt.value ?? opt));
+            return `<sl-radio value="${val}">${lbl}</sl-radio>`;
+        }).join("");
+        const attrs = shoelaceAttrs(mapComponentToShoelace("radio", component.props || {}).attributes);
+        return wrapRenderedComponentHtml(component, layoutId, `<sl-radio-group${attrs} label="${escapeAttribute(label)}" name="${escapeAttribute(name)}" value="${escapeAttribute(value)}">${radioHtml}</sl-radio-group>`);
+    }
+
+    if (component.kind === "switch") {
+        const label = String(component.props.label || component.id);
+        const name = String(component.props.path || component.id);
+        const checked = component.value ? " checked" : "";
+        const disabled = component.disabled ? " disabled" : "";
+        const attrs = shoelaceAttrs(mapComponentToShoelace("switch", component.props || {}).attributes);
+        return wrapRenderedComponentHtml(component, layoutId, `<sl-switch${attrs} name="${escapeAttribute(name)}"${checked}${disabled}>${escapeHtml(label)}</sl-switch>`);
+    }
+
+    if (component.kind === "textarea") {
+        const label = String(component.props.label || component.id);
+        const name = String(component.props.path || component.id);
+        const value = component.value === undefined || component.value === null ? "" : String(component.value);
+        const rows = component.props.rows ? ` rows="${escapeAttribute(String(component.props.rows))}"` : "";
+        const attrs = shoelaceAttrs(mapComponentToShoelace("textarea", component.props || {}).attributes);
+        return wrapRenderedComponentHtml(component, layoutId, `<sl-textarea${attrs} label="${escapeAttribute(label)}" name="${escapeAttribute(name)}"${rows} value="${escapeAttribute(value)}"></sl-textarea>`);
+    }
+
+    if (component.kind === "datepicker") {
+        const label = String(component.props.label || component.id);
+        const name = String(component.props.path || component.id);
+        const value = component.value === undefined || component.value === null ? "" : String(component.value);
+        const attrs = shoelaceAttrs(mapComponentToShoelace("datepicker", component.props || {}).attributes);
+        return wrapRenderedComponentHtml(component, layoutId, `<sl-input${attrs} type="date" label="${escapeAttribute(label)}" name="${escapeAttribute(name)}" value="${escapeAttribute(value)}"></sl-input>`);
+    }
+
+    if (component.kind === "slider") {
+        const label = String(component.props.label || "");
+        const name = String(component.props.path || component.id);
+        const value = component.value === undefined || component.value === null ? "" : String(component.value);
+        const min = component.props.min !== undefined ? ` min="${escapeAttribute(String(component.props.min))}"` : "";
+        const max = component.props.max !== undefined ? ` max="${escapeAttribute(String(component.props.max))}"` : "";
+        const step = component.props.step !== undefined ? ` step="${escapeAttribute(String(component.props.step))}"` : "";
+        const attrs = shoelaceAttrs(mapComponentToShoelace("slider", component.props || {}).attributes);
+        return wrapRenderedComponentHtml(component, layoutId, `<sl-range${attrs} label="${escapeAttribute(label)}" name="${escapeAttribute(name)}"${min}${max}${step} value="${escapeAttribute(value)}"></sl-range>`);
+    }
+
+    if (component.kind === "alert") {
+        const message = String(component.props.message || component.value || "");
+        const severity = String(component.props.severity || "primary");
+        const shoelaceVariant = { info: "primary", warning: "warning", error: "danger", success: "success" }[severity] || severity;
+        const dismissible = component.props.dismissible ? " closable" : "";
+        const title = component.props.title ? `<strong>${escapeHtml(String(component.props.title))}</strong><br>` : "";
+        const attrs = shoelaceAttrs(mapComponentToShoelace("alert", component.props || {}).attributes);
+        return wrapRenderedComponentHtml(component, layoutId, `<sl-alert${attrs} variant="${escapeAttribute(shoelaceVariant)}" open${dismissible}>${title}${escapeHtml(message)}</sl-alert>`);
+    }
+
+    if (component.kind === "badge") {
+        const value = component.value === undefined || component.value === null ? "" : String(component.value);
+        const severity = String(component.props.severity || component.props.variant || "neutral");
+        const shoelaceVariant = { success: "success", warning: "warning", error: "danger", info: "primary" }[severity] || severity;
+        const attrs = shoelaceAttrs(mapComponentToShoelace("badge", component.props || {}).attributes);
+        return wrapRenderedComponentHtml(component, layoutId, `<sl-badge${attrs} variant="${escapeAttribute(shoelaceVariant)}">${escapeHtml(value)}</sl-badge>`);
+    }
+
+    if (component.kind === "progress") {
+        const value = component.value === undefined || component.value === null ? 0 : Number(component.value);
+        const label = component.props.label ? ` label="${escapeAttribute(String(component.props.label))}"` : "";
+        const attrs = shoelaceAttrs(mapComponentToShoelace("progress", component.props || {}).attributes);
+        return wrapRenderedComponentHtml(component, layoutId, `<sl-progress-bar${attrs} value="${escapeAttribute(String(value))}"${label}></sl-progress-bar>`);
+    }
+
+    if (component.kind === "breadcrumb") {
+        const items = Array.isArray(component.props.items) ? component.props.items : (Array.isArray(component.value) ? component.value : []);
+        const itemHtml = items.map((item) => {
+            const label = escapeHtml(String(item.label ?? item));
+            const href = item.href ? ` href="${escapeAttribute(item.href)}"` : "";
+            return `<sl-breadcrumb-item${href}>${label}</sl-breadcrumb-item>`;
+        }).join("");
+        return wrapRenderedComponentHtml(component, layoutId, `<sl-breadcrumb>${itemHtml}</sl-breadcrumb>`);
+    }
+
+    if (component.kind === "tabs") {
+        const tabs = Array.isArray(component.props.tabs) ? component.props.tabs : [];
+        const tabHtml = tabs.map((tab) => `<sl-tab slot="nav" panel="${escapeAttribute(String(tab.id ?? tab))}">${escapeHtml(String(tab.label ?? tab.id ?? tab))}</sl-tab>`).join("");
+        const panelHtml = tabs.map((tab) => `<sl-tab-panel name="${escapeAttribute(String(tab.id ?? tab))}"></sl-tab-panel>`).join("");
+        return wrapRenderedComponentHtml(component, layoutId, `<sl-tab-group>${tabHtml}${panelHtml}</sl-tab-group>`);
+    }
+
+    if (component.kind === "accordion") {
+        const items = Array.isArray(component.props.items) ? component.props.items : [];
+        const detailsHtml = items.map((item) => `<sl-details summary="${escapeAttribute(String(item.label ?? item.id ?? item))}"></sl-details>`).join("");
+        return wrapRenderedComponentHtml(component, layoutId, `<div class="webapp-accordion">${detailsHtml}</div>`);
+    }
+
+    if (component.kind === "menu") {
+        const { appId, location } = serializerContext;
+        const items = Array.isArray(component.props.items) ? component.props.items : (Array.isArray(component.value) ? component.value : []);
+        const itemHtml = items.map((item) => {
+            const label = escapeHtml(String(item.label ?? item));
+            const href = item.href
+                ? ` href="${escapeAttribute(item.href)}"`
+                : item.route
+                    ? ` href="/webapp/${encodeURIComponent(appId)}${item.route}"`
+                    : "";
+            return `<sl-menu-item${href}>${label}</sl-menu-item>`;
+        }).join("");
+        return wrapRenderedComponentHtml(component, layoutId, `<sl-menu>${itemHtml}</sl-menu>`);
+    }
+
+    if (component.kind === "avatar") {
+        const src = component.props.src || component.value;
+        const label = String(component.props.label || component.id);
+        const initials = String(component.props.initials || "");
+        const srcAttr = src ? ` image="${escapeAttribute(String(src))}"` : "";
+        const initialsAttr = !src && initials ? ` initials="${escapeAttribute(initials)}"` : "";
+        const attrs = shoelaceAttrs(mapComponentToShoelace("avatar", component.props || {}).attributes);
+        return wrapRenderedComponentHtml(component, layoutId, `<sl-avatar${attrs}${srcAttr}${initialsAttr} label="${escapeAttribute(label)}"></sl-avatar>`);
     }
 
     return "";
@@ -1575,7 +1791,7 @@ function getDefinitionBuckets(appId, definitions) {
         app: matchingApp,
         routes: matchingDefinitions.filter((entry) => entry.type === "ui-route"),
         dialogs: matchingDefinitions.filter((entry) => entry.type === "ui-dialog"),
-        components: matchingDefinitions.filter((entry) => ["ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select", "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider", "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state", "ui-tabs", "ui-accordion", "ui-breadcrumb", "ui-menu", "ui-pagination", "ui-stepper"].includes(entry.type)),
+        components: matchingDefinitions.filter((entry) => ["ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select", "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider", "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state", "ui-tabs", "ui-accordion", "ui-breadcrumb", "ui-menu", "ui-pagination", "ui-stepper", "ui-avatar"].includes(entry.type)),
         stores: matchingDefinitions.filter((entry) => entry.type === "ui-store"),
         queries: matchingDefinitions.filter((entry) => entry.type === "ui-query"),
         actions: matchingDefinitions.filter((entry) => entry.type === "ui-action"),

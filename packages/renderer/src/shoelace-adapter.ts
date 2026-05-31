@@ -25,20 +25,30 @@ export interface AdapterElementDescriptor {
     fallback: boolean;
 }
 
-/** Semantic component kind → Shoelace custom element. */
+/**
+ * Semantic component kind → Shoelace custom element.
+ *
+ * Kinds omitted from this map have no appropriate Shoelace 2.x element and
+ * fall back to semantic HTML (handled by the caller, not by this adapter):
+ *   - text   → rendered as a <p> / <div> by the server-side serializer
+ *   - table  → rendered as a real <table> element by the server-side serializer
+ *
+ * Every entry here must be a real, shipping Shoelace 2.x custom element.
+ * Do NOT add non-existent elements such as sl-format-text or sl-table.
+ */
 const KIND_TO_SHOELACE: Record<string, string> = {
-    text: "sl-format-text",
+    // text: no Shoelace 2.x equivalent — serializer emits semantic <p>/<div>
     button: "sl-button",
-    table: "sl-table",
+    // table: no Shoelace 2.x equivalent — serializer emits a real <table>
     card: "sl-card",
     container: "sl-card",
     input: "sl-input",
     select: "sl-select",
     checkbox: "sl-checkbox",
-    radio: "sl-radio",
+    radio: "sl-radio-group",
     switch: "sl-switch",
     textarea: "sl-textarea",
-    datepicker: "sl-input",
+    datepicker: "sl-input",   // Shoelace 2.x has no date-picker; sl-input type="date" is the closest
     slider: "sl-range",
     alert: "sl-alert",
     badge: "sl-badge",

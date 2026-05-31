@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P25  # Adapter coverage — remaining component kinds + map corrections
+  current_phase: P26  # (next pending phase — none currently defined)
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -75,22 +75,7 @@ phases:
 
   - { id: P24, title: "Page shell and theme — Shoelace + design tokens", status: done, dependencies: [P23], archive: "docs/agent-roadmap-archive.yaml#P24" }
 
-  - id: P25
-    title: Adapter coverage — remaining component kinds + map corrections
-    status: pending
-    dependencies: [P24]
-    goals:
-      - Route every component kind that has a real Shoelace element through the adapter in the served HTML, and correct the adapter's misleading mappings.
-    deliverables:
-      - served HTML renders the remaining interactive kinds via Shoelace where a real element exists (select, checkbox, radio, switch, textarea, slider, alert, badge, progress, breadcrumb, tabs, accordion, menu, avatar, datepicker), preserving each node's interactivity (form submission, events, navigation)
-      - "correct KIND_TO_SHOELACE in packages/renderer/src/shoelace-adapter.ts: text and table have no appropriate Shoelace 2.x element — map them to the documented fallback (semantic HTML) rather than the non-existent sl-format-text / sl-table"
-      - a coverage assertion that uses collectSnapshotKinds to confirm every kind in a representative app either maps to a real sl-* element or renders a defined fallback — never an empty node or an undefined custom element
-    validation:
-      - pnpm test passes with no failures
-      - "unit test: each newly-routed kind appears as its Shoelace element in the served HTML of a fixture app that mounts one of each"
-      - "unit test: text renders as semantic HTML and table renders as a real <table> (not sl-format-text/sl-table)"
-      - "unit test: collectSnapshotKinds coverage check — no kind in the fixture resolves to an undefined custom element"
-      - "docs check: docs/theming.md component-mapping section matches KIND_TO_SHOELACE after the corrections"
+  - { id: P25, title: "Adapter coverage — remaining component kinds + map corrections", status: done, dependencies: [P24], archive: "docs/agent-roadmap-archive.yaml#P25" }
 
   # Deferred — only when a concrete need appears (see ADR 0002):
   #   - ui-custom escape-hatch node for framework-specific components (opt-in, non-portable)

@@ -194,7 +194,30 @@ export const runtimeIntegrationModelSchema = z.object({
 
 export type RuntimeIntegrationModel = z.infer<typeof runtimeIntegrationModelSchema>;
 
-export const componentKindSchema = z.enum(["text", "button", "table", "input", "card", "container"]);
+export const componentKindSchema = z.enum([
+    "text",
+    "button",
+    "table",
+    "input",
+    "card",
+    "container",
+    // P25: remaining interactive kinds from P16x nodes
+    "select",
+    "checkbox",
+    "radio",
+    "switch",
+    "textarea",
+    "datepicker",
+    "slider",
+    "alert",
+    "badge",
+    "progress",
+    "breadcrumb",
+    "tabs",
+    "accordion",
+    "menu",
+    "avatar"
+]);
 
 export const uiEventNameSchema = z.enum(["click", "submit", "change", "select", "open", "close", "navigate", "load"]);
 

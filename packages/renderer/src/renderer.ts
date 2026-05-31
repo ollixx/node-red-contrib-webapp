@@ -72,10 +72,17 @@ export interface RenderedInputComponent extends RenderedComponentBase {
     value: unknown;
 }
 
+/** Generic rendered component for P16x kinds (select, checkbox, radio, etc.). */
+export interface RenderedGenericComponent extends RenderedComponentBase {
+    kind: "select" | "checkbox" | "radio" | "switch" | "textarea" | "datepicker" | "slider" | "alert" | "badge" | "progress" | "breadcrumb" | "tabs" | "accordion" | "menu" | "avatar";
+    value: unknown;
+}
+
 export type RenderedComponent =
     | RenderedButtonComponent
     | RenderedCardComponent
     | RenderedContainerComponent
+    | RenderedGenericComponent
     | RenderedInputComponent
     | RenderedTableComponent
     | RenderedTextComponent;
@@ -474,6 +481,27 @@ function toRenderedComponent(component: ComponentDefinition, context: ComponentR
                 kind: "input",
                 value: resolvedProps.value
             };
+        // P25: P16x interactive kinds — rendered generically with value + all props.
+        case "select":
+        case "checkbox":
+        case "radio":
+        case "switch":
+        case "textarea":
+        case "datepicker":
+        case "slider":
+        case "alert":
+        case "badge":
+        case "progress":
+        case "breadcrumb":
+        case "tabs":
+        case "accordion":
+        case "menu":
+        case "avatar":
+            return {
+                ...baseComponent,
+                kind: component.kind,
+                value: resolvedProps.value
+            } as RenderedGenericComponent;
     }
 }
 

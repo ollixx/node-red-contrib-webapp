@@ -17,6 +17,7 @@ export type {
     RenderedContainerComponent,
     RenderedDialog,
     RenderedEventBinding,
+    RenderedGenericComponent,
     RenderedInputComponent,
     RenderedRegion,
     RenderedTableComponent,

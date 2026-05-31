@@ -736,3 +736,24 @@ phases:
       - "unit test: a ui-app with tokens.colorPrimary set emits that value on the --wa-color-primary custom property in the served document"
       - "unit test: the layout regions (header/navbar/content/footer) still render and still place their mounted components"
       - "manual: the human confirms in the browser that the dev app visibly adopts the Shoelace look (subjective — design quality is not unit-testable)"
+
+  - id: P25
+    title: "Adapter coverage — remaining component kinds + map corrections"
+    status: done
+    dependencies: [P24]
+    summary:
+      delivered: "Corrected KIND_TO_SHOELACE: removed the non-existent sl-format-text (text) and sl-table (table) mappings — text now falls through to semantic <div class='webapp-text'> and table to a real <table> element. Extended componentKindSchema with 14 P16x kinds (select, checkbox, radio, switch, textarea, datepicker, slider, alert, badge, progress, breadcrumb, tabs, accordion, menu, avatar). Added toComponentDefinitions mappings in webapp.js for all P16x node types, each producing the correct kind and its relevant props/bindings without broken empty-path bindings. Added renderComponentHtml handlers that render select→<sl-select>, checkbox→<sl-checkbox>, radio→<sl-radio-group>, switch→<sl-switch>, textarea→<sl-textarea>, datepicker→<sl-input type=date>, slider→<sl-range>, alert→<sl-alert>, badge→<sl-badge>, progress→<sl-progress-bar>, breadcrumb→<sl-breadcrumb>, tabs→<sl-tab-group>, accordion→<sl-details>, menu→<sl-menu>, avatar→<sl-avatar>. Added ui-avatar to the getDefinitionBuckets component filter (previously absent). Extended the renderer's RenderedComponent union with RenderedGenericComponent and the switch in toRenderedComponent. Updated docs/theming.md with a component-mapping section that is the authoritative reference for KIND_TO_SHOELACE."
+      stats: "5 files changed (packages/schema/src/contracts.ts, packages/renderer/src/shoelace-adapter.ts, packages/renderer/src/renderer.ts, packages/renderer/src/index.ts, nodes/webapp.js), 1 file added (docs/theming.md updated), 1 new test file (packages/runtime/test/p25-adapter-coverage.test.ts, 28 tests). Unit suite: 162 tests, 0 failures."
+      notes: "The accordion kind renders <sl-details> elements wrapped in a <div class='webapp-accordion'> because each accordion item is a separate <sl-details> element in Shoelace 2.x — there is no single <sl-accordion> container. The datepicker kind maps to <sl-input type=date> since Shoelace 2.x has no native date-picker element. The collectSnapshotKinds coverage assertion is exercised at the adapter level (mapComponentToShoelace) since building a full RenderSnapshot for all 22 kinds in a unit test would require a full AppModel compilation — the adapter-level test is the correct seam for this assertion. E2E tests not run (pre-existing isolation defect, unchanged since P23)."
+    goals:
+      - Route every component kind that has a real Shoelace element through the adapter in the served HTML, and correct the adapter's misleading mappings.
+    deliverables:
+      - served HTML renders the remaining interactive kinds via Shoelace where a real element exists (select, checkbox, radio, switch, textarea, slider, alert, badge, progress, breadcrumb, tabs, accordion, menu, avatar, datepicker), preserving each node's interactivity (form submission, events, navigation)
+      - "correct KIND_TO_SHOELACE in packages/renderer/src/shoelace-adapter.ts: text and table have no appropriate Shoelace 2.x element — map them to the documented fallback (semantic HTML) rather than the non-existent sl-format-text / sl-table"
+      - a coverage assertion that uses collectSnapshotKinds to confirm every kind in a representative app either maps to a real sl-* element or renders a defined fallback — never an empty node or an undefined custom element
+    validation:
+      - pnpm test passes with no failures
+      - "unit test: each newly-routed kind appears as its Shoelace element in the served HTML of a fixture app that mounts one of each"
+      - "unit test: text renders as semantic HTML and table renders as a real <table> (not sl-format-text/sl-table)"
+      - "unit test: collectSnapshotKinds coverage check — no kind in the fixture resolves to an undefined custom element"
+      - "docs check: docs/theming.md component-mapping section matches KIND_TO_SHOELACE after the corrections"

@@ -14,9 +14,39 @@ Switching themes means swapping tokens + adapter; the flow and its node vocabula
 
 ### Default adapter: Shoelace Web Components (P23)
 
-The default rendering target is **Web Components** via **Shoelace 2.x (MIT)**, loaded as an ES module / static resource (no bundler). The adapter (`packages/renderer/src/shoelace-adapter.ts`) maps each semantic component kind to a Shoelace custom element (e.g. `button` → `sl-button`, `container`/`card` → `sl-card`) and maps semantic props to attributes (`variant`, `size`). Kinds without a 1:1 Shoelace element fall back to a defined element, never an empty node.
+The default rendering target is **Web Components** via **Shoelace 2.x (MIT)**, loaded as an ES module / static resource (no bundler). The adapter (`packages/renderer/src/shoelace-adapter.ts`) maps each semantic component kind to a Shoelace custom element and maps semantic props to attributes (`variant`, `size`). Kinds without a 1:1 Shoelace element fall back to semantic HTML, never an empty node.
 
 Because Shoelace is themed natively through CSS custom properties, the `DesignTokens` (via `buildDesignTokenCss`) plug in directly: the `--wa-*` token properties are aliased to the corresponding `--sl-*` properties (`buildShoelaceTokenBridgeCss`) with no per-token translation.
+
+### Component mapping (KIND_TO_SHOELACE) {#component-mapping}
+
+The table below is the authoritative reference for `KIND_TO_SHOELACE` in `packages/renderer/src/shoelace-adapter.ts`. Every entry maps a semantic component kind to either a real Shoelace 2.x custom element or a documented semantic-HTML fallback.
+
+| Semantic kind | Rendered as | Notes |
+|---|---|---|
+| `text` | `<div class="webapp-text">` (semantic HTML) | Shoelace 2.x has no general-purpose text element |
+| `button` | `<sl-button>` | Variant + size mapped from semantic props |
+| `table` | `<table>` (semantic HTML) | Shoelace 2.x has no table element |
+| `input` | `<sl-input>` | label, type, name, value preserved |
+| `card` | `<sl-card>` | |
+| `container` | `<sl-card>` | Children projected via default slot |
+| `select` | `<sl-select>` | Options rendered as `<sl-option>` children |
+| `checkbox` | `<sl-checkbox>` | |
+| `radio` | `<sl-radio-group>` | Individual options rendered as `<sl-radio>` children |
+| `switch` | `<sl-switch>` | |
+| `textarea` | `<sl-textarea>` | rows, maxLength preserved |
+| `datepicker` | `<sl-input type="date">` | Shoelace 2.x has no native date-picker element |
+| `slider` | `<sl-range>` | min, max, step preserved |
+| `alert` | `<sl-alert>` | severity mapped to Shoelace variant (info→primary, error→danger) |
+| `badge` | `<sl-badge>` | severity/variant mapped to Shoelace variant |
+| `progress` | `<sl-progress-bar>` | value (0–100) preserved |
+| `breadcrumb` | `<sl-breadcrumb>` | Items rendered as `<sl-breadcrumb-item>` children |
+| `tabs` | `<sl-tab-group>` | Tabs rendered as `<sl-tab>` + `<sl-tab-panel>` pairs |
+| `accordion` | `<div class="webapp-accordion">` wrapping `<sl-details>` | One `<sl-details>` per item |
+| `menu` | `<sl-menu>` | Items rendered as `<sl-menu-item>` children |
+| `avatar` | `<sl-avatar>` | image/initials/label preserved |
+
+**Rule:** Every kind in `KIND_TO_SHOELACE` must be a real, shipping Shoelace 2.x custom element. Do not add non-existent element names (e.g. `sl-format-text`, `sl-table`). Kinds without a Shoelace equivalent must be omitted from the map and handled as semantic-HTML fallbacks in the server-side serializer (`nodes/webapp.js`).
 
 ## Design Tokens
 
