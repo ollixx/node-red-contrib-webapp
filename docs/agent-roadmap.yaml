@@ -147,7 +147,7 @@ phases:
 
   - id: P29
     title: ADR 0003 + revert in-runtime business logic (kill submit/remove CRUD)
-    status: pending
+    status: in_progress
     dependencies: [P28]
     goals:
       - Record the reversal in an ADR and remove the invented, domain-bearing action types so the action vocabulary is back to interaction-only, exactly as docs/nodes/concepts/actions.md specifies. This is the safe, foundational teardown step before the transport rebuild.
