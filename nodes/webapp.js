@@ -984,10 +984,18 @@ function renderRegionHtml(region, layoutId, serializerContext) {
     return `<section class="webapp-slot webapp-slot--${escapeAttribute(slotClass)}">${title}<div class="webapp-slot-body webapp-slot-body--${escapeAttribute(layoutVariant)}">${components}</div></section>`;
 }
 
+function shoelaceAttrs(attributes) {
+    return Object.entries(attributes || {})
+        .map(([key, value]) => ` ${key}="${escapeAttribute(String(value))}"`)
+        .join("");
+}
+
 function renderComponentHtml(component, layoutId, serializerContext) {
     const { appId, location } = serializerContext;
 
     if (component.kind === "text") {
+        // Shoelace 2.x has no general-purpose text element, so text stays
+        // semantic HTML styled by the design tokens.
         return wrapRenderedComponentHtml(component, layoutId, `<div class="webapp-text">${escapeHtml(component.text)}</div>`);
     }
 
@@ -998,16 +1006,20 @@ function renderComponentHtml(component, layoutId, serializerContext) {
         const href = action
             ? buildActionHref(appId, action, location, component.id, inForm ? "submit" : "click", serializerContext.params)
             : undefined;
+        // P23 follow-up: buttons render as <sl-button> via the adapter (variant/
+        // size from semantic props). href -> link, in-form -> submit+formaction,
+        // disabled/no-action -> disabled button. Interactivity is preserved.
+        const attrs = shoelaceAttrs(mapComponentToShoelace("button", component.props || {}).attributes);
 
         if (component.disabled || !href) {
-            return wrapRenderedComponentHtml(component, layoutId, `<button class="webapp-button" disabled>${label}</button>`);
+            return wrapRenderedComponentHtml(component, layoutId, `<sl-button${attrs} disabled>${label}</sl-button>`);
         }
 
         if (inForm) {
-            return wrapRenderedComponentHtml(component, layoutId, `<button class="webapp-button" type="submit" form="${escapeAttribute(serializerContext.formId)}" formaction="${escapeAttribute(href)}">${label}</button>`);
+            return wrapRenderedComponentHtml(component, layoutId, `<sl-button${attrs} type="submit" form="${escapeAttribute(serializerContext.formId)}" formaction="${escapeAttribute(href)}">${label}</sl-button>`);
         }
 
-        return wrapRenderedComponentHtml(component, layoutId, `<a class="webapp-button" href="${escapeAttribute(href)}">${label}</a>`);
+        return wrapRenderedComponentHtml(component, layoutId, `<sl-button${attrs} href="${escapeAttribute(href)}">${label}</sl-button>`);
     }
 
     if (component.kind === "table") {
@@ -1044,7 +1056,11 @@ function renderComponentHtml(component, layoutId, serializerContext) {
         const name = String(component.props.path || component.id);
         const inputType = String(component.props.inputType || "text");
         const value = component.value === undefined || component.value === null ? "" : String(component.value);
-        return wrapRenderedComponentHtml(component, layoutId, `<label class="webapp-field">${escapeHtml(label)}<input type="${escapeAttribute(inputType)}" name="${escapeAttribute(name)}" value="${escapeAttribute(value)}"></label>`);
+        // P23 follow-up: inputs render as <sl-input> (its own label attribute
+        // replaces the wrapping <label>); name/value/type preserved so form
+        // submission still works.
+        const attrs = shoelaceAttrs(mapComponentToShoelace("input", component.props || {}).attributes);
+        return wrapRenderedComponentHtml(component, layoutId, `<sl-input${attrs} label="${escapeAttribute(label)}" type="${escapeAttribute(inputType)}" name="${escapeAttribute(name)}" value="${escapeAttribute(value)}"></sl-input>`);
     }
 
     if (component.kind === "container") {
