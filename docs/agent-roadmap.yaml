@@ -151,7 +151,7 @@ phases:
 
   - id: P31
     title: Live Server→Client transport — push store/action updates to clients
-    status: pending
+    status: in_progress
     dependencies: [P30]
     goals:
       - Replace the request/response preview with a real live channel so that when the wired flow feeds ui-store/ui-query (data) or ui-action (interaction), connected browsers update in real time. State lives in the real node runtime (fed by flow messages), not in a runtime-owned preview simulation.
