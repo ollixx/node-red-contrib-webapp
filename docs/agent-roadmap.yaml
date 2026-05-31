@@ -75,7 +75,7 @@ phases:
 
   - id: P24
     title: Page shell and theme — Shoelace + design tokens
-    status: pending
+    status: in_progress
     dependencies: [P23]
     goals:
       - Replace the bespoke hand-rolled page shell and theme in nodes/webapp.js with a Shoelace- and design-token-driven shell, so the whole page adopts the Web Component look instead of just individual widgets.
