@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: null  # P20b is the last phase; no next phase defined yet
+  current_phase: P21  # Web Component rendering migration (see ADR 0002)
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -135,3 +135,76 @@ phases:
   - { id: P20a, title: "ui-action rework", status: done, dependencies: [P19], archive: "docs/agent-roadmap-archive.yaml#P20a" }
 
   - { id: P20b, title: "ui-text binding enhancements", status: done, dependencies: [P20a], archive: "docs/agent-roadmap-archive.yaml#P20b" }
+
+  # ────────────────────────────────────────────────────────────────────────
+  # Web Component rendering migration — see docs/adr/0002-web-component-rendering-and-theming.md
+  # Goal: unify on the framework-agnostic RenderSnapshot, ship a Web Component
+  # default adapter, and lock the theme = tokens + adapter (no node injection) model.
+  # ────────────────────────────────────────────────────────────────────────
+
+  - id: P21
+    title: Renderer consolidation — webapp.js consumes RenderSnapshot
+    status: pending
+    dependencies: [P20b]
+    goals:
+      - Remove the parallel rendering implementation in nodes/webapp.js.
+      - Make the Node-RED runtime render exclusively via the RenderSnapshot produced by packages/renderer.
+    deliverables:
+      - nodes/webapp.js imports createRendererApp from packages/renderer and renders from its RenderSnapshot instead of re-walking the AppModel
+      - removal of the duplicate render functions in webapp.js (renderAppPage's own slot/mount logic, renderSlotTree, mountMatches, renderComponentHtml, renderSlotHtml) — replaced by an HTML serializer that walks the snapshot
+      - container:id/slot, route:, dialog:, layout: and app.slot mount resolution all handled once, inside packages/renderer (verified against the existing rendering-bugs tests)
+      - the verbose webapp-slot/webapp-item preview markup is replaced by snapshot-driven output; slot names are not emitted as visible headings
+      - existing E2E preview tests still pass against the snapshot-driven output
+    validation:
+      - pnpm test passes with no failures
+      - unit test: a ui-text mounted via container:<id>/content renders inside the container (regression guard, packages/runtime/test/rendering-bugs.test.ts)
+      - unit test: no internal slot name (header, navbar, content, footer) appears as an <h2> heading in rendered output
+      - unit test: webapp.js produces output for the customers-crud example whose component set matches the RenderSnapshot region/component tree (no component dropped, none duplicated)
+      - grep check: nodes/webapp.js no longer defines mountMatches or a second slot-tree walker — mount resolution lives only in packages/renderer
+      - Playwright: the customers-crud example still renders all routes, the dialog, and table rows
+
+  - id: P22
+    title: Snapshot transport — JSON endpoint and thin client runtime
+    status: pending
+    dependencies: [P21]
+    goals:
+      - Expose the RenderSnapshot to the browser as JSON.
+      - Provide a minimal client runtime that renders a snapshot and round-trips events without a full page reload.
+    deliverables:
+      - HTTP endpoint serving the compiled RenderSnapshot for an app/route/state as JSON (alongside the existing HTML route)
+      - thin vanilla-JS client runtime (no framework) — served as a static resource — that holds the current snapshot, renders it, and on a UI event POSTs to the existing Node-RED action/event endpoints and re-renders from the returned snapshot
+      - efficient DOM update on re-render (e.g. keyed replacement or a small morph step) so list/state changes do not reset focus or scroll
+      - documented client-runtime ↔ runtime contract (event payload shape in, snapshot shape out) referencing the existing msg.ui event format
+    validation:
+      - pnpm test passes with no failures
+      - unit test: the JSON snapshot endpoint returns the same region/component tree the HTML adapter renders for a given app + route + state
+      - unit test: dispatching an event through the client-runtime contract returns an updated snapshot reflecting the state change (e.g. a store value update changes a bound ui-text)
+      - Playwright: clicking a button updates bound content without a full page navigation
+      - Playwright: a query-backed table re-renders new rows after a refresh action without losing scroll position
+
+  - id: P23
+    title: Web Component default adapter — Shoelace
+    status: pending
+    dependencies: [P22]
+    goals:
+      - Render the snapshot with a Web Component library as the default theme adapter.
+      - Wire DesignTokens to the library's CSS custom properties with no per-token translation.
+    deliverables:
+      - a default adapter that maps each semantic component kind to a Shoelace (MIT) custom element with semantic prop → attribute mapping (variant, size, etc.)
+      - graceful fallback rendering for any kind without a native Shoelace equivalent
+      - DesignTokens (buildDesignTokenCss output) applied as CSS custom properties consumed natively by the components; no framework-token leakage into schemas
+      - Shoelace loaded via ES modules / static resource (no bundler added to the build)
+      - the default app shell (layout regions header/navbar/content/footer) rendered with the Web Component adapter
+    validation:
+      - pnpm test passes with no failures
+      - unit test: kind=button maps to the Shoelace button element with the semantic variant/size mapped to the correct attributes
+      - unit test: kind=stepper (and other nodes without a 1:1 native element) produces a defined fallback rendering, not an empty node
+      - unit test: a ui-app token set (e.g. colorPrimary) appears as the corresponding CSS custom property in the rendered document
+      - unit test: no component prop schema contains framework-specific token values (audit guard — props stay semantic)
+      - Playwright: the customers-crud example renders with Shoelace components and the configured primary color is visibly applied
+      - docs check: docs/theming.md describes theme = tokens + adapter choice + adapter impl, and states that a theme injects no node types (per ADR 0002)
+
+  # Deferred — only when a concrete need appears (see ADR 0002):
+  #   - ui-custom escape-hatch node for framework-specific components (opt-in, non-portable)
+  #   - SSR / hydration adapter for any public, search-indexed surface
+  #   - additional adapters (Material Web, React+MUI) — additive, below the snapshot seam
