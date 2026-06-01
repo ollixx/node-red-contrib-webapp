@@ -6,13 +6,15 @@ import type { AppModel, RenderSnapshot, RenderedComponent, RenderedRegion } from
 /**
  * P22 — Snapshot transport.
  *
- *  - the JSON snapshot endpoint must return the same region/component tree the
- *    HTML adapter renders for a given app + route + state.
- *  - dispatching an event through the client-runtime contract must return an
- *    updated snapshot reflecting the state change.
+ *  - the buildAppSnapshot helper must return the same region/component tree
+ *    the HTML adapter renders for a given app + route + state.
+ *  - passing a dialogId directly to buildAppSnapshot opens the dialog in the
+ *    snapshot (this is how the initial page load with ?dialog=<id> works).
  *
- * These tests drive the webapp.js helpers directly (no HTTP server) so they pin
- * the contract without a browser. The Playwright specs cover the DOM round-trip.
+ * Note (P32): applyPreviewAction was removed. Dialog open/close in the live app
+ * is driven by the wired flow and delivered via the SSE stream; the GET
+ * /webapp/:appId/snapshot endpoint was also removed. These tests now cover the
+ * core helper contract only.
  */
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -66,38 +68,17 @@ const rawNodes = [
 
 const definitions = buildDefinitions(rawNodes);
 
-const applyPreviewAction = webappTest.applyPreviewAction as (
-    RED: unknown,
-    appId: string,
-    actionId: string,
-    parameters: Record<string, unknown>,
-    definitions: unknown[]
-) => { success: boolean; status?: number; redirectLocation?: string; dialogId?: string; message?: unknown };
-
-const resetPreview = webappTest.resetPreview as (appId: string) => void;
-
-const stubRED = { nodes: { getNode: () => undefined } };
-
-// A flow with a dialog and a typed action that opens it. Dispatching the action
-// through the contract must return a snapshot whose dialog set now includes it.
+// A flow with a dialog — buildAppSnapshot should include the dialog when dialogId is passed.
 const dialogRawNodes = [
     { type: "ui-app", id: "dialogApp", name: "Dialog App", root: "dialogApp", layout: "app", z: "flow2" },
     { type: "ui-route", id: "home", name: "Home", parent: "dialogApp", path: "/", title: "Home", layoutId: "app", z: "flow2" },
     { type: "ui-dialog", id: "editor", name: "Editor", parent: "dialogApp", title: "Editor", layoutId: "vertical", z: "flow2" },
-    { type: "ui-action", id: "openEditor", name: "Open Editor", parent: "dialogApp", actionType: "show", targetMode: "path", target: "dialog:editor", z: "flow2" },
     { type: "ui-text", id: "field", name: "Field", mount: "dialog:editor/content", value: { kind: "literal", value: "Inside" }, z: "flow2" }
 ];
 
-const dialogDefinitions = buildDefinitions(dialogRawNodes).map((definition) =>
-    (definition as { type?: string }).type === "ui-action"
-        // targetMode/target are deprecated since P20a and dropped by mapConfig, but the
-        // preview's typed show/hide branch still honours them — re-attach so this test
-        // exercises a real state-changing dispatch through applyPreviewAction.
-        ? { ...definition, targetMode: "path", target: "dialog:editor" }
-        : definition
-);
+const dialogDefinitions = buildDefinitions(dialogRawNodes);
 
-describe("P22: JSON snapshot transport", () => {
+describe("P22: buildAppSnapshot contract", () => {
     it("returns the same region/component tree the HTML adapter renders", () => {
         const built = buildAppSnapshot("transportApp", "/", undefined, definitions);
 
@@ -122,20 +103,14 @@ describe("P22: JSON snapshot transport", () => {
         expect(page.body).toContain(">Ada<");
     });
 
-    it("dispatching an event returns an updated snapshot reflecting the state change", () => {
-        resetPreview("dialogApp");
-
-        // Before: no dialog is open.
+    it("passing a dialogId directly opens the dialog in the snapshot (initial page load with ?dialog=<id>)", () => {
+        // Before: no dialog passed — dialogs array is empty.
         const before = buildAppSnapshot("dialogApp", "/", undefined, dialogDefinitions);
         expect(before.success).toBe(true);
         expect((before.snapshot as RenderSnapshot).dialogs).toHaveLength(0);
 
-        // Dispatch the open-editor event through the contract.
-        const applied = applyPreviewAction(stubRED, "dialogApp", "openEditor", { location: "/", sourceId: "openEditor", event: "click" }, dialogDefinitions);
-        expect(applied.success).toBe(true);
-
-        // After: the returned snapshot now contains the open dialog with its content.
-        const after = buildAppSnapshot("dialogApp", applied.redirectLocation ?? "/", applied.dialogId, dialogDefinitions);
+        // Pass the dialogId directly — simulates a GET /webapp/dialogApp/?dialog=editor page load.
+        const after = buildAppSnapshot("dialogApp", "/", "editor", dialogDefinitions);
         expect(after.success).toBe(true);
         const afterSnapshot = after.snapshot as RenderSnapshot;
         expect(afterSnapshot.dialogs).toHaveLength(1);
@@ -143,7 +118,5 @@ describe("P22: JSON snapshot transport", () => {
 
         const dialogComponents = flattenSnapshotComponents(afterSnapshot.dialogs[0].regions);
         expect(dialogComponents.map((component) => component.id)).toContain("field");
-
-        resetPreview("dialogApp");
     });
 });

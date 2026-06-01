@@ -85,23 +85,22 @@ Siehe [ui-store.md](../state/ui-store.md) für das vollständige Format.
 
 ---
 
-## Snapshot-Transport (P22)
+## Live-Transport (P30/P31)
 
-Die gerenderte Oberfläche wird als framework-neutraler `RenderSnapshot` (siehe
-[ADR 0002](../../adr/0002-web-component-rendering-and-theming.md)) an den Browser
-ausgeliefert. Ein schlanker Vanilla-JS-Client
-(`resources/lib/webapp-client.js`) hält den aktuellen Snapshot, rendert ihn und
-schickt bei einem UI-Event den Snapshot-Zyklus erneut an — ohne vollständigen
-Seiten-Reload.
+Die gerenderte Oberfläche wird als framework-neutraler `RenderSnapshot` über
+einen Live-SSE-Kanal an den Browser geliefert. Der schlanke Vanilla-JS-Client
+(`resources/lib/webapp-client.js`) abonniert den SSE-Stream und empfängt dort
+sowohl den initialen Snapshot als auch alle flow-getriebenen Updates.
 
 ### Endpunkte
 
 ```
-GET  /webapp/:appId/snapshot?location=<route>&dialog=<dialogId?>
-       → { snapshot: RenderSnapshot }     (derselbe Baum, den die HTML-Route serialisiert)
+GET  /webapp/:appId/stream?clientId=<id>&location=<route>
+       → SSE-Stream; erstes Ereignis: snapshot { snapshot: RenderSnapshot }
+         Folgeeignisse: snapshot (Store-Update) | command (ui-action-Interaktion)
 
 POST /webapp/:appId/event   (Content-Type: application/json)
-       → { message, location, dialog, snapshot }
+       → { message, location, snapshot }
 ```
 
 ### Event-Payload (Browser → Runtime)
@@ -110,23 +109,36 @@ Der Client schickt genau die Felder, die die `msg.ui`-Event-Message speisen:
 
 ```
 {
-  actionId : <id der ausgelösten Aktion>          ← Pflicht
-  sourceId : <componentId der auslösenden Komponente>  → msg.ui.componentId
+  clientId : <Browser-Session-ID>                  ← Pflicht
+  sourceId : <componentId der auslösenden Komponente>  → msg.ui.sourceId
   event    : "click" | "submit" | "select" | "change"  → msg.ui.event
   location : <aktuelle Route>                      → msg.ui.route
   params   : { ... }                               ← z.B. Formularwerte, rowId
 }
 ```
 
-### Antwort (Runtime → Browser)
+Die Runtime nimmt **keine Domain-Aktion** vor — sie leitet das Event an den
+Ursprungsknoten weiter, der es auf seinem Output-Port an den verdrahteten Flow
+emittiert. Der Flow entscheidet, was passiert.
+
+### Antwort auf POST /event
 
 ```
 {
-  message  : <die emittierte msg.ui-Event-Message, Format siehe oben>
-  location : <resultierende Route nach Navigation>
-  dialog   : <id eines offenen Dialogs | undefined>
-  snapshot : <neuer RenderSnapshot zum Rendern>
+  message  : <die emittierte msg.ui-Event-Message>
+  location : <aktuelle Route (unverändert)>
+  snapshot : <aktueller RenderSnapshot (read-only re-render)>
 }
+```
+
+### SSE-Ereignisse (Server → Browser)
+
+```
+event: snapshot
+data: { snapshot: RenderSnapshot }   ← bei Store-Updates aus dem Flow
+
+event: command
+data: { command: { type, ... } }     ← bei ui-action-Interaktionsbefehlen
 ```
 
 Der Client führt beim Re-Render einen **keyed Morph** durch: nur geänderte

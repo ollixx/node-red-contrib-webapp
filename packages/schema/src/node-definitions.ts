@@ -249,8 +249,6 @@ export const uiQueryNodeDefinitionSchema = identifiedNodeSchema.extend({
     queryPath: z.string().min(1, "Queries must declare a query path."),
     params: z.string().min(1, "Params store reference must not be empty.").optional(),
     refreshAction: z.string().min(1, "Refresh actions must not be empty.").optional(),
-    // Declarative seed data for the preview/runtime, mounted under `queryPath`.
-    previewData: z.unknown().optional()
 });
 
 export type UiQueryNodeDefinition = z.infer<typeof uiQueryNodeDefinitionSchema>;

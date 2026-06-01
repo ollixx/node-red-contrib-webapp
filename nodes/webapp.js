@@ -35,10 +35,10 @@ const SHOELACE_AUTOLOADER_SRC = `${SHOELACE_CDN_BASE}/shoelace-autoloader.js`;
 
 const runtimeState = {
     definitions: new Map(),
-    previewState: new Map(),
-    previewQueries: new Map(),
-    previewMessages: new Map(),
     queryEtags: new Map(),
+    // liveState: appId → merged store state for broadcast (no clientId) updates.
+    // Per-client state (clientStateMap) takes precedence when a clientId is present.
+    liveState: new Map(),
     // clientStateMap: appId → Map<clientId, { state, timestamp }>
     clientStateMap: new Map(),
     // P31: live Server→Client SSE subscribers.
@@ -201,23 +201,6 @@ function queryBinding(path) {
 
 function clone(value) {
     return value === undefined ? undefined : JSON.parse(JSON.stringify(value));
-}
-
-function parsePreviewData(value) {
-    if (value === undefined || value === null || value === "") {
-        return undefined;
-    }
-
-    if (typeof value === "string") {
-        try {
-            return JSON.parse(value);
-        }
-        catch (error) {
-            return undefined;
-        }
-    }
-
-    return value;
 }
 
 function isPlainObject(value) {
@@ -531,55 +514,6 @@ function initializeState(stores, queries, appId) {
     return state;
 }
 
-// Seed data is declared on the ui-query nodes (previewData), so the runtime
-// entry point carries no example-specific demo data. Each query mounts its
-// previewData under its queryPath's first segment (the collection root).
-function seedQueryDataFromConfig(queries) {
-    let seed = {};
-
-    for (const query of queries) {
-        const previewData = parsePreviewData(query.previewData);
-
-        if (previewData === undefined) {
-            continue;
-        }
-
-        const rootSegment = String(query.queryPath || "").split(".")[0];
-
-        if (!rootSegment) {
-            continue;
-        }
-
-        seed = setValueAtPath(seed, rootSegment, clone(previewData));
-    }
-
-    return seed;
-}
-
-function getPreviewQueries(appId, queries = []) {
-    const stored = runtimeState.previewQueries.get(appId);
-    return clone(stored || seedQueryDataFromConfig(queries));
-}
-
-function getPreviewMessages(appId) {
-    return clone(runtimeState.previewMessages.get(appId) || []);
-}
-
-function resetPreview(appId) {
-    runtimeState.previewState.delete(appId);
-    runtimeState.previewQueries.delete(appId);
-    runtimeState.previewMessages.delete(appId);
-}
-
-function rememberPreviewMessage(appId, message) {
-    const currentMessages = runtimeState.previewMessages.get(appId) || [];
-    const nextMessages = [...currentMessages, {
-        at: new Date().toISOString(),
-        message
-    }].slice(-20);
-    runtimeState.previewMessages.set(appId, nextMessages);
-}
-
 function resolveNavigationTarget(navigationPath, parameters, routeParams) {
     return navigationPath
         .split("/")
@@ -607,12 +541,12 @@ function findDialogCloseAction(actions, dialogId) {
             return false;
         }
 
-        const parsed = parsePreviewTarget(entry.target);
+        const parsed = parseActionTarget(entry.target);
         return (parsed && parsed.scope === "dialog" && parsed.id === dialogId) || entry.dialog === dialogId;
     });
 }
 
-function parsePreviewTarget(target) {
+function parseActionTarget(target) {
     if (typeof target !== "string" || target.trim().length === 0) {
         return undefined;
     }
@@ -718,8 +652,7 @@ function toComponentDefinitions(components) {
         if (component.type === "ui-button") {
             const layoutProps = collectNormalizedLayoutProps(component);
             // P20a: click events are emitted on the button's own output port.
-            // Use the button node's id as the action target so the preview endpoint
-            // routes the click to the button node (which then sends to its wired output).
+            // The button node's id is used as the action target for the /event endpoint.
             const clickAction = component.action || component.id;
             return {
                 id: component.id,
@@ -989,22 +922,6 @@ function resolveBinding(binding, sources) {
     return resolved === undefined ? binding.fallback : resolved;
 }
 
-function buildActionHref(appId, action, location, componentId, eventName, params = {}) {
-    const query = new URLSearchParams({
-        location: location || "/",
-        sourceId: componentId,
-        event: eventName,
-        ...Object.entries(params).reduce((result, [key, value]) => {
-            if (value !== undefined && value !== null && value !== "") {
-                result[key] = String(value);
-            }
-            return result;
-        }, {})
-    });
-
-    return `/webapp/${encodeURIComponent(appId)}/action/${encodeURIComponent(action)}?${query.toString()}`;
-}
-
 // P26: snapshot → Shoelace markup serialization is delegated to the shared
 // module (resources/lib/webapp-serializer.js) so the server and the thin client
 // emit byte-identical markup. The local wrappers preserve the existing call
@@ -1118,130 +1035,8 @@ function dispatchClientEvent(RED, appId, body, definitions) {
     return { success: true, message };
 }
 
-function applyPreviewAction(RED, appId, actionId, parameters, definitions) {
-    const buckets = getDefinitionBuckets(appId, definitions);
-    const matchingInputs = buckets.components.filter((entry) => entry.type === "ui-input" && entry.path && parameters[entry.path] !== undefined);
-    const typedAction = findTypedAction(buckets.actions, actionId);
-    const modelResult = getAppModelResult(appId, definitions);
-
-    if (!modelResult.success) {
-        return {
-            success: false,
-            status: modelResult.status,
-            body: modelResult.message
-        };
-    }
-
-    const { model } = modelResult;
-
-    const location = parameters.location ? String(parameters.location) : "/";
-    const routeMatch = getRouteMatch(location, model.routes) || { route: { id: "default", path: defaultRouteLocation(model) }, params: {} };
-    const currentState = clone(runtimeState.previewState.get(appId) || {});
-    let nextState = currentState;
-    let nextQueries = getPreviewQueries(appId, buckets.queries);
-    let redirectLocation = location;
-    let dialogId;
-    let dialogMessage;
-    let navigationMessage;
-    let queryMessages = [];
-    const matchingRefreshQueries = buckets.queries
-        .filter((query) => query.refreshAction === actionId)
-        .map((query) => ({
-            id: query.id,
-            queryPath: query.queryPath,
-            mode: Array.isArray(getValueAtPath(nextQueries, query.queryPath)) ? "refresh" : "load"
-        }));
-    const componentId = parameters.sourceId ? String(parameters.sourceId) : actionId;
-    const eventName = parameters.event ? String(parameters.event) : matchingInputs.length > 0 ? "submit" : "click";
-    const payload = {};
-    const statePatch = {};
-
-    if (!typedAction) {
-        return {
-            success: false,
-            status: 404,
-            body: "Unknown action."
-        };
-    }
-
-    const actionType = typedAction.actionType;
-
-    if (actionType === "navigate") {
-        // Path navigation resolves the destination; output-port navigations leave the
-        // location untouched and let the wired target handle it.
-        if (typedAction.to && typedAction.targetMode !== "out-port") {
-            redirectLocation = resolveNavigationTarget(typedAction.to, parameters, routeMatch.params);
-            navigationMessage = {
-                id: typedAction.id,
-                to: redirectLocation
-            };
-        }
-    }
-    else if (actionType === "show" || actionType === "hide") {
-        const previewTarget = parsePreviewTarget(typedAction.target);
-
-        if (!previewTarget || previewTarget.scope !== "dialog") {
-            return {
-                success: false,
-                status: 422,
-                body: `Typed action '${typedAction.id}' uses an unsupported preview target.`
-            };
-        }
-
-        const isOpen = actionType === "show";
-        nextState = setValueAtPath(nextState, `ui.dialogs.${previewTarget.id}.open`, isOpen);
-        statePatch[`ui.dialogs.${previewTarget.id}.open`] = isOpen;
-        dialogMessage = { id: previewTarget.id, open: isOpen };
-        dialogId = isOpen ? previewTarget.id : undefined;
-    }
-    else {
-        // trigger / disable / enable and output-port-wired actions: emit the UI
-        // message and let the wired target node handle the rest. Business data
-        // (create/update/delete of records) is never touched here — that logic
-        // lives in the wired Node-RED flow. See docs/adr/0003.
-    }
-
-    if (matchingRefreshQueries.length > 0) {
-        queryMessages = matchingRefreshQueries;
-
-        matchingRefreshQueries.forEach((query) => {
-            statePatch[`ui.queries.${query.id}.loading`] = false;
-            statePatch[`ui.queries.${query.id}.status`] = "success";
-            nextState = setValueAtPath(nextState, `ui.queries.${query.id}.loading`, false);
-            nextState = setValueAtPath(nextState, `ui.queries.${query.id}.status`, "success");
-        });
-    }
-
-    runtimeState.previewState.set(appId, nextState);
-    runtimeState.previewQueries.set(appId, nextQueries);
-
-    const message = buildUiMessage({
-        appId,
-        componentId,
-        eventName,
-        actionId,
-        location,
-        routeParams: routeMatch.params,
-        statePatch,
-        payload,
-        dialog: dialogMessage,
-        navigation: navigationMessage,
-        queries: queryMessages
-    });
-
-    rememberPreviewMessage(appId, message);
-    emitMessageToRuntimeNodes(RED, actionId, queryMessages, navigationMessage && navigationMessage.id, message);
-
-    return {
-        success: true,
-        redirectLocation,
-        dialogId,
-        message
-    };
-}
-
-// P22: a single helper builds the RenderSnapshot for an app + location + open dialog.
-// Both the HTML route and the JSON snapshot endpoint consume this so they cannot drift.
+// Builds the RenderSnapshot for an app + location + open dialog.
+// The HTML route, the SSE stream initial sync, and the /event response all use this.
 function buildAppSnapshot(appId, location, dialogId, definitions, clientId) {
     const modelResult = getAppModelResult(appId, definitions);
 
@@ -1269,13 +1064,14 @@ function buildAppSnapshot(appId, location, dialogId, definitions, clientId) {
         actions: buckets.actions,
         stores: buckets.stores
     };
-    const queries = getPreviewQueries(appId, buckets.queries);
+    const queries = {};
     const state = initializeState(integration.stores, integration.queries, appId);
     // Per-client state wins when a clientId is given and that client has its own
     // state (P15 multi-user model); otherwise fall back to the shared broadcast state.
     const clientStateEntry = clientId ? getClientState(appId, clientId) : null;
-    const liveState = clientStateEntry ? clientStateEntry.state : runtimeState.previewState.get(appId);
-    const hydratedState = liveState ? mergeDeep(state, liveState) : state;
+    const broadcastState = runtimeState.liveState.get(appId);
+    const resolvedState = clientStateEntry ? clientStateEntry.state : broadcastState;
+    const hydratedState = resolvedState ? mergeDeep(state, resolvedState) : state;
     const effectiveState = dialogId ? setValueAtPath(hydratedState, `ui.dialogs.${dialogId}.open`, true) : hydratedState;
 
     // P21: a single RenderSnapshot from packages/renderer is the source of truth.
@@ -1336,11 +1132,6 @@ function renderAppPage(appId, location, dialogId, definitions) {
         })
         .join("");
     const pageBody = renderLayoutHtml(snapshot.layout.id, snapshot.regions, serializerContext);
-    const messageFeed = getPreviewMessages(appId)
-        .slice()
-        .reverse()
-        .map((entry) => `<li><strong>${escapeHtml(entry.message.ui.action || entry.message.ui.event)}</strong> from ${escapeHtml(entry.message.ui.componentId)} <span class="webapp-sub">${escapeHtml(entry.at)}</span></li>`)
-        .join("");
 
     return {
         status: 200,
@@ -1687,21 +1478,6 @@ function registerEndpoints(RED) {
         res.status(page.status).type("html").send(page.body);
     });
 
-    // P22: JSON snapshot transport. Returns the exact RenderSnapshot the HTML
-    // route serializes, so a thin client can render and re-render from data alone.
-    RED.httpNode.get("/webapp/:appId/snapshot", (req, res) => {
-        const location = req.query.location ? String(req.query.location) : "/";
-        const dialogId = req.query.dialog ? String(req.query.dialog) : undefined;
-        const built = buildAppSnapshot(req.params.appId, location, dialogId, readDeployDefinitions(RED));
-
-        if (!built.success) {
-            res.status(built.status).json({ error: built.message });
-            return;
-        }
-
-        res.json({ snapshot: built.snapshot });
-    });
-
     // P31: live Server→Client SSE stream. The browser opens an EventSource here
     // with its clientId and current location; the runtime registers it and pushes
     // an initial snapshot immediately (which subsumes the P15 reconnect sync).
@@ -1751,12 +1527,10 @@ function registerEndpoints(RED) {
     // P30: client→server event ingest. The browser reports WHAT HAPPENED — a raw
     // event { clientId, event, sourceId, params } (events.md) — and the runtime
     // routes it to the originating node, emitting msg.ui on that node's OUTPUT
-    // port into the wired flow. The runtime takes NO domain action: the old
-    // action-dispatch / preview-mutation semantics are gone. The wired flow is
-    // the only place that may react (a live Server→Client push is P31; the
-    // preview render apparatus is removed in P32). The response echoes the emitted
-    // message and the CURRENT snapshot (unchanged — a read-only re-render) so the
-    // existing thin client keeps a consistent view until P31 lands the push.
+    // port into the wired flow. The runtime takes NO domain action. The wired flow
+    // is the only place that may react; live push is via the SSE stream (P31).
+    // The response echoes the emitted message and the CURRENT snapshot (unchanged —
+    // a read-only re-render) so the thin client keeps a consistent view between pushes.
     RED.httpNode.post("/webapp/:appId/event", readJsonBody, (req, res) => {
         const { appId } = req.params;
         const body = req.body && typeof req.body === "object" ? req.body : {};
@@ -1782,33 +1556,6 @@ function registerEndpoints(RED) {
             location,
             snapshot: built.snapshot
         });
-    });
-
-    RED.httpNode.get("/webapp/:appId/events", (req, res) => {
-        res.json({
-            messages: getPreviewMessages(req.params.appId)
-        });
-    });
-
-    RED.httpNode.get("/webapp/:appId/reset", (req, res) => {
-        resetPreview(req.params.appId);
-        res.json({
-            ok: true
-        });
-    });
-
-    RED.httpNode.get("/webapp/:appId/action/:actionId", (req, res) => {
-        const { appId, actionId } = req.params;
-        const definitions = readDeployDefinitions(RED);
-        const applied = applyPreviewAction(RED, appId, actionId, req.query, definitions);
-
-        if (!applied.success) {
-            res.status(applied.status).send(applied.body);
-            return;
-        }
-
-        const redirectTarget = `/webapp/${encodeURIComponent(appId)}${applied.redirectLocation}${applied.dialogId ? `?dialog=${encodeURIComponent(applied.dialogId)}` : ""}`;
-        res.redirect(redirectTarget);
     });
 
     RED.httpNode.get("/webapp/:appId/*", (req, res) => {
@@ -1984,7 +1731,7 @@ function dialogInputHandler(node, msg, send, done) {
 
 // P20a: ui-button emits click events on its output port.
 // Incoming component-state messages (show/hide/enable/disable etc.) are still handled.
-// Click events arrive as msg.ui.event = "click" from the preview action endpoint.
+// Click events arrive as msg.ui.event = "click" from the /event endpoint.
 function buttonInputHandler(node, msg, send, done) {
     const uiMsg = msg && msg.ui && typeof msg.ui === "object" ? msg.ui : undefined;
 
@@ -2340,8 +2087,8 @@ const runtimeNodeRegistry = {
                 const clientId = msg && msg.ui && msg.ui.clientId ? String(msg.ui.clientId) : undefined;
 
                 const baseState = clientId
-                    ? (getClientState(activeAppId, clientId)?.state || clone(runtimeState.previewState.get(activeAppId) || initializeState([storeDefinition], [], activeAppId)))
-                    : clone(runtimeState.previewState.get(activeAppId) || initializeState([storeDefinition], [], activeAppId));
+                    ? (getClientState(activeAppId, clientId)?.state || clone(runtimeState.liveState.get(activeAppId) || initializeState([storeDefinition], [], activeAppId)))
+                    : clone(runtimeState.liveState.get(activeAppId) || initializeState([storeDefinition], [], activeAppId));
 
                 const applied = applyStoreOperation(baseState, storeDefinition, operation);
                 const now = Date.now();
@@ -2351,8 +2098,9 @@ const runtimeNodeRegistry = {
                     setClientState(activeAppId, clientId, applied.nextState, now);
                 }
                 else {
-                    // Broadcast: update shared state.
-                    runtimeState.previewState.set(activeAppId, applied.nextState);
+                    // Broadcast: update the shared live state so all clients and
+                    // future page loads render the current value.
+                    runtimeState.liveState.set(activeAppId, applied.nextState);
                 }
 
                 const notificationMsg = {
@@ -2391,8 +2139,7 @@ const runtimeNodeRegistry = {
             parent: config.parent || undefined,
             queryPath: config.queryPath,
             params: config.params || undefined,
-            refreshAction: config.refreshAction || undefined,
-            previewData: parsePreviewData(config.previewData)
+            refreshAction: config.refreshAction || undefined
         }),
         options: {
             inputHandler: queryInputHandler
@@ -2745,15 +2492,12 @@ registerWebappNodes.__test__ = {
     // P30: raw client→server event ingest — routes to the originating node and
     // emits msg.ui on its output port; takes no domain action.
     dispatchClientEvent,
-    applyPreviewAction,
     applyStoreOperation,
-    getPreviewMessages,
     getAppModelResult,
     renderAppPage,
     buildAppSnapshot,
     renderLayoutHtml,
     renderComponentHtml,
-    resetPreview,
     componentStateInputHandler,
     dialogInputHandler,
     queryInputHandler,

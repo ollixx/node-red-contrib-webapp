@@ -35,8 +35,7 @@ const webapp = require("../../../nodes/webapp.js") as {
             }
         >;
         runtimeState: {
-            previewState: Map<string, unknown>;
-            previewQueries: Map<string, unknown>;
+            liveState: Map<string, unknown>;
             clientStateMap: Map<string, unknown>;
             streamClients: Map<string, Map<string, { res: unknown; location: string }>>;
             definitions: Map<string, { nodeId: string; appId?: string; definition: Record<string, unknown> }>;
@@ -126,8 +125,7 @@ beforeEach(() => {
     userDir = mkdtempSync(join(tmpdir(), "webapp-p31-"));
     writeFileSync(join(userDir, "flows.json"), JSON.stringify(FLOW), "utf8");
 
-    runtimeState.previewState.clear();
-    runtimeState.previewQueries.clear();
+    runtimeState.liveState.clear();
     runtimeState.clientStateMap.clear();
     runtimeState.streamClients.clear();
     runtimeState.definitions.clear();

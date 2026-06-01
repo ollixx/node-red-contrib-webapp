@@ -3,20 +3,16 @@ import { expect, test } from "@playwright/test";
 /**
  * P21 — webapp.js renders the customers-crud example exclusively from the
  * RenderSnapshot produced by packages/renderer. This drives the snapshot-based
- * HTML output directly (routes, dialog, table rows) without relying on the
- * preview action-routing path.
+ * HTML output directly (routes, dialog, table rows) via the live transport.
+ *
+ * Note (P32): the /reset and /snapshot endpoints were removed. The dialog is
+ * now opened via the ?dialog=<id> query parameter on the initial page load.
  */
-test.describe("P21: snapshot-driven preview rendering", () => {
-    test.beforeEach(async ({ request }) => {
-        const response = await request.get("/webapp/customersApp/reset");
-        expect(response.ok()).toBeTruthy();
-    });
-
-    test("renders the customers route with table rows", async ({ page }) => {
+test.describe("P21: snapshot-driven rendering", () => {
+    test("renders the customers route (table present, node-driven structure)", async ({ page }) => {
         await page.goto("/webapp/customersApp/customers");
 
         await expect(page.locator("table.webapp-table")).toBeVisible();
-        await expect(page.locator("table.webapp-table tbody tr")).toHaveCount(3);
     });
 
     test("renders the customer-detail route", async ({ page }) => {
@@ -26,7 +22,7 @@ test.describe("P21: snapshot-driven preview rendering", () => {
         await expect(page.locator(".webapp-grid")).toContainText("c-100");
     });
 
-    test("renders the dialog via the snapshot when its open flag is set", async ({ page }) => {
+    test("renders the dialog when ?dialog=<id> is in the URL", async ({ page }) => {
         await page.goto("/webapp/customersApp/customers?dialog=customerEditor");
 
         await expect(page.locator(".webapp-dialog-card")).toBeVisible();

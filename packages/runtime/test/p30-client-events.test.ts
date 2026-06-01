@@ -32,8 +32,8 @@ const runtimeNodeRegistry = webappTest.runtimeNodeRegistry as Record<
 >;
 
 const runtimeState = webappTest.runtimeState as {
-    previewState: Map<string, unknown>;
-    previewQueries: Map<string, unknown>;
+    liveState: Map<string, unknown>;
+    clientStateMap: Map<string, unknown>;
 };
 
 const getAppModelResult = webappTest.getAppModelResult as (
@@ -105,11 +105,6 @@ describe("P30: client → server events emit on the originating node's output po
     it("a click on a wired ui-button emits msg.ui {event:'click', sourceId, clientId, appId} and changes no runtime state", () => {
         const { emitted, RED } = makeRED(["saveBtn"]);
 
-        const before = {
-            previewState: runtimeState.previewState.get("evtApp"),
-            previewQueries: runtimeState.previewQueries.get("evtApp")
-        };
-
         const result = dispatchClientEvent(
             RED,
             "evtApp",
@@ -128,9 +123,9 @@ describe("P30: client → server events emit on the originating node's output po
             appId: "evtApp"
         });
 
-        // The runtime took NO domain action — preview state is untouched.
-        expect(runtimeState.previewState.get("evtApp")).toBe(before.previewState);
-        expect(runtimeState.previewQueries.get("evtApp")).toBe(before.previewQueries);
+        // The runtime took NO domain action — liveState and clientStateMap are both untouched.
+        expect(runtimeState.liveState.get("evtApp")).toBeUndefined();
+        expect(runtimeState.clientStateMap.get("evtApp")).toBeUndefined();
     });
 
     it("a ui-table row select emits {event:'rowSelect', params:{rowId,row}} on the output port", () => {

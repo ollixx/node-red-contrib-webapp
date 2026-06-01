@@ -4,16 +4,16 @@ import path from "node:path";
 import { expect, test } from "@playwright/test";
 
 /**
- * Snapshot transport + thin client runtime (P22), updated for P30.
+ * P22/P30/P32 — Live client/server event transport.
  *
- * The client runtime (resources/lib/webapp-client.js) hydrates from the JSON
- * snapshot endpoint, renders into #webapp-client-root, and on a UI event POSTs to
- * /webapp/:appId/event. After P30 that POST is a RAW client event
- * { clientId, event, sourceId, params } (events.md) — never an actionId to
- * execute. The runtime routes it to the originating node, emits msg.ui on that
- * node's output port, and takes no domain action. The browser stays on the same
- * page (no full navigation); a flow-driven re-render is the Server→Client push of
- * P31. These specs drive that round-trip in a real browser.
+ * The client runtime (resources/lib/webapp-client.js) connects to the SSE
+ * stream and on a UI event POSTs to /webapp/:appId/event. The POST is a RAW
+ * client event { clientId, event, sourceId, params } (events.md) — never an
+ * actionId to execute. The runtime routes it to the originating node, emits
+ * msg.ui on that node's output port, and takes no domain action.
+ *
+ * Note (P32): the /snapshot endpoint was removed. The thin client now uses the
+ * SSE /stream endpoint for initial hydration and live updates.
  *
  * A dedicated fixture flow is used (not customers-crud) so the assertions are
  * independent of the example's own wiring.
@@ -27,20 +27,14 @@ async function loadFlowFixture(relativePath: string): Promise<FlowNode[]> {
     return JSON.parse(content) as FlowNode[];
 }
 
-test.describe("snapshot transport thin client (P30 events)", () => {
+test.describe("live event transport (P30 events)", () => {
     test.beforeAll(async ({ request }) => {
         const flow = await loadFlowFixture("tests/e2e/fixtures/p22-snapshot-transport.flow.json");
         const response = await request.post("/flows", { data: flow });
         expect(response.ok()).toBeTruthy();
     });
 
-    test("serves the snapshot as JSON and the client runtime as a static resource", async ({ request }) => {
-        const snapshot = await request.get("/webapp/p22App/snapshot?location=/customers");
-        expect(snapshot.ok()).toBeTruthy();
-        const body = await snapshot.json();
-        expect(body.snapshot.appId).toBe("p22App");
-        expect(Array.isArray(body.snapshot.regions)).toBeTruthy();
-
+    test("the client runtime is served as a static resource", async ({ request }) => {
         const runtime = await request.get("/resources/node-red-contrib-webapp/lib/webapp-client.js");
         expect(runtime.ok()).toBeTruthy();
     });
@@ -87,7 +81,7 @@ test.describe("snapshot transport thin client (P30 events)", () => {
         await eventResponse;
 
         // No business data was written and no auto event→action link fired: the row
-        // count is unchanged (any reaction is the wired flow's job, arriving in P31).
+        // count is unchanged (any reaction is the wired flow's job, arriving via SSE push).
         await expect
             .poll(async () => page.locator("table.webapp-table tbody tr").count())
             .toBe(rowsBefore);

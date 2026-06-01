@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P32  # COURSE CORRECTION — remove the preview, restore the live Node-RED app model (see reversal note below P28)
+  current_phase: P33  # Rebuild Customers CRUD as a REAL wired Node-RED flow (zero framework logic)
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -151,22 +151,7 @@ phases:
 
   - { id: P31, title: "Live Server→Client transport — push store/action updates to clients", status: done, dependencies: [P30], archive: "docs/agent-roadmap-archive.yaml#P31" }
 
-  - id: P32
-    title: Remove the preview rendering apparatus entirely
-    status: in_progress
-    dependencies: [P31]
-    goals:
-      - Delete the preview simulation now that the live path (P30 events out, P31 live push) exists. The runtime must no longer simulate a backend or hold a parallel preview state.
-    deliverables:
-      - "delete applyPreviewAction, the previewState/previewQueries simulation, the preview message feed, and the related helpers from nodes/webapp.js"
-      - "remove the preview HTTP endpoints that are now obsolete: GET /snapshot, the action-dispatch /event behaviour, GET /reset, GET /events, GET /action/:actionId (keep only what the live transport and initial page load require)"
-      - "remove preview-only fields/fixtures from packages/schema and the renderer (e.g. ui-query previewData as a runtime backend source) — demo/seed data, if any remains, is clearly marked editor-preview-only and never drives the served app"
-      - "remove preview-specific docs and update concepts/messages.md to describe the live event/action/transport model only"
-    validation:
-      - pnpm test passes with no failures
-      - "grep check: no 'preview' simulation remains in nodes/webapp.js (no applyPreviewAction, previewState, previewQueries)"
-      - "the dev app still loads and renders the current node state via the live transport (no /snapshot dependency)"
-      - "doc check: messages.md no longer documents the snapshot/preview transport"
+  - { id: P32, title: "Remove the preview rendering apparatus entirely", status: done, dependencies: [P31], archive: "docs/agent-roadmap-archive.yaml#P32" }
 
   - id: P33
     title: Rebuild Customers CRUD as a REAL wired Node-RED flow (zero framework logic)

@@ -8,7 +8,7 @@ const webapp = require("../../../nodes/webapp.js") as {
     __test__: {
         runtimeNodeRegistry: Record<string, { mapConfig: (config: Record<string, unknown>) => unknown }>;
         runtimeState: {
-            previewState: Map<string, unknown>;
+            liveState: Map<string, unknown>;
             clientStateMap: Map<string, Map<string, { state: unknown; timestamp: number }>>;
             definitions: Map<string, { nodeId: string; definition: Record<string, unknown> }>;
             RED: unknown;
@@ -47,7 +47,7 @@ function makeMsg(storeId: string, op: string, value: unknown, clientId?: string)
 }
 
 beforeEach(() => {
-    runtimeState.previewState.clear();
+    runtimeState.liveState.clear();
     runtimeState.clientStateMap.clear();
     runtimeState.definitions.clear();
 });
@@ -117,8 +117,8 @@ describe("P15: clientId routing — store input handler", () => {
 
         runtimeNodeRegistry["ui-store"].options.inputHandler(node, msg, send, done);
 
-        // Shared state must remain untouched
-        expect(runtimeState.previewState.has(appId)).toBe(false);
+        // The shared liveState must remain untouched when a clientId is present.
+        expect(runtimeState.liveState.has(appId)).toBe(false);
 
         // Per-client state must be set
         const clientEntry = getClientState(appId, "c1");
@@ -159,9 +159,9 @@ describe("P15: clientId routing — store input handler", () => {
 
         runtimeNodeRegistry["ui-store"].options.inputHandler(node, msg, send, vi.fn());
 
-        // Shared state must be updated
-        const sharedState = runtimeState.previewState.get(appId) as Record<string, unknown>;
-        expect(sharedState.draft).toEqual({ name: "Bob" });
+        // Broadcast: liveState is updated so future page loads and all SSE subscribers see it.
+        const liveState = runtimeState.liveState.get(appId) as Record<string, unknown>;
+        expect(liveState.draft).toEqual({ name: "Bob" });
 
         // Notification must not carry a clientId
         const outMsg = send.mock.calls[0][0] as Record<string, unknown>;

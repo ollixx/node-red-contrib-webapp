@@ -773,15 +773,7 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
         type: "ui-query",
         id: "customersQuery",
         queryPath: "customers.list",
-        refreshAction: "refreshCustomers",
-        previewData: {
-            list: [
-                { id: "c-100", name: "Ada Lovelace", email: "ada@example.com", status: "active" },
-                { id: "c-200", name: "Grace Hopper", email: "grace@example.com", status: "inactive" },
-                { id: "c-300", name: "Radia Perlman", email: "radia@example.com", status: "trial" }
-            ],
-            current: { id: "c-100", name: "Ada Lovelace", email: "ada@example.com", status: "active" }
-        }
+        refreshAction: "refreshCustomers"
     },
     {
         type: "ui-query",

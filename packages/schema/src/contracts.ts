@@ -154,9 +154,6 @@ export const queryDefinitionSchema = z.object({
     queryPath: z.string().min(1, "Queries must declare a query path."),
     source: z.string().min(1, "Query sources must not be empty.").optional(),
     refreshAction: z.string().min(1, "Refresh actions must not be empty.").optional(),
-    // Seed data for the preview/runtime, declared on the node instead of being
-    // hard-coded in the runtime entry point. Mounted under `queryPath`.
-    previewData: z.unknown().optional()
 });
 
 export type QueryDefinition = z.infer<typeof queryDefinitionSchema>;

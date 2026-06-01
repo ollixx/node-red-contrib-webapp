@@ -24,9 +24,6 @@ test.describe("P23: Shoelace Web Component adapter", () => {
         // (earlier specs deploy other apps over the shared Node-RED instance).
         const deploy = await request.post("/flows", { data: baselineFlow });
         expect(deploy.ok()).toBeTruthy();
-
-        const response = await request.get("/webapp/customersApp/reset");
-        expect(response.ok()).toBeTruthy();
     });
 
     test("renders the customers example through the Web Component adapter (sl-card)", async ({ page }) => {
