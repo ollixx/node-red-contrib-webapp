@@ -155,7 +155,7 @@ phases:
 
   - id: P33
     title: Rebuild Customers CRUD as a REAL wired Node-RED flow (zero framework logic)
-    status: pending
+    status: in_progress
     dependencies: [P32]
     goals:
       - Prove the whole thesis: build a working Customers CRUD app purely by wiring generic UI nodes to stock Node-RED nodes — events out, function/storage nodes do the domain logic, ui-store/ui-query + ui-action feed results back. No business logic anywhere in our nodes or runtime, and the example flow has real wires.
