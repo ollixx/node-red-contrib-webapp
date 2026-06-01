@@ -25,6 +25,11 @@ Do not read `prd.md` or `docs/implementation-plan.md` unless explicitly instruct
 7. Before marking a phase done: run `pnpm test` and `pnpm exec playwright test`. Both must pass.
 8. When marking a phase done: write a `summary` to `docs/agent-roadmap-archive.yaml` and replace the full entry in `docs/agent-roadmap.yaml` with a slim archive reference. Format see `.ai/prompts/run-next-phase.prompt.md`.
 9. If a phase uncovers an unresolved architecture decision: write it down in `docs/agent-roadmap.yaml` under the phase as a `blocker` and stop. Resolving it is a separate task — see the roadmap-evolution role below.
+10. **Result accounting — every agent, every run.** Token usage is captured **automatically**: a `SessionEnd` + `SubagentStop` hook (`.ai/hooks/record-run-cost.js`, wired in `.claude/settings.json`) reads the run's transcript and appends the real token totals + duration to `.ai/agent-runs.jsonl`, keyed by `session_id`. You do not estimate tokens. Your job in your result (a phase `summary`, an orchestrator return line, a bug-fix or validation report) is to make your run **correlatable and time-stamped**:
+    - **`session_id`** — your session id, so the authoritative token row in `.ai/agent-runs.jsonl` can be matched to this result.
+    - **`duration`** — measured wall-clock. Capture a UTC timestamp at the start of your run (`date -u +%FT%TZ`, e.g. when you set the phase `in_progress`) and another when you finish; report the elapsed time. (If you also want a token figure inline, read it from `.ai/agent-runs.jsonl` for prior runs — your own lands there only after you stop.)
+
+    Phase work writes this into the archive `summary.cost` block (format in `.ai/prompts/run-next-phase.prompt.md`); non-phase roles append it to their report. Keep it to one line. See `.ai/hooks/README.md` for the log format.
 
 ## Roles
 

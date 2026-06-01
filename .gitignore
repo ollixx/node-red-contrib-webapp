@@ -8,3 +8,8 @@ coverage/
 test-results/
 playwright-report/
 
+# Agent-OS per-run cost trail (AGENTS.md rule 10). Append-only, written by the
+# SessionEnd/SubagentStop hook. Local data — gitignored to avoid EOF-append
+# merge churn. The recorder script + README under .ai/hooks/ ARE tracked.
+.ai/agent-runs.jsonl
+

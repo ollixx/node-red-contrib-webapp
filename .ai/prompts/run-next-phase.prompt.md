@@ -17,7 +17,7 @@ If the phase adds new node types (P16a, P16b, P16c, P16d or similar): invoke the
 
 ## Execute
 
-1. Set the phase status to `in_progress` in `docs/agent-roadmap.yaml`. Commit.
+1. Set the phase status to `in_progress` in `docs/agent-roadmap.yaml`. Commit. **At this moment capture your start timestamp** (`date -u +%FT%TZ`) — you need it for the `cost.duration` field at the end (AGENTS.md rule 10).
 2. Confirm the suite is green *before* you start (`pnpm test`). Know your baseline — if something is already red, you need to know it is not your change.
 3. Implement each deliverable **test-first**: for the deliverable's matching `validation` criterion, write the failing unit/E2E test first, watch it fail, then implement until it passes. This is not bureaucracy — it is what keeps you from the fix→revert→fix thrash of changing code you do not yet understand. One commit per logical change. If a change makes a previously-green test red, revert and re-approach rather than pile on.
 4. When all deliverables are implemented, follow the full validation protocol in `.ai/agents/validation.md` to confirm every criterion is covered (it back-stops anything you did not already test-drive).
@@ -41,6 +41,7 @@ When marking a phase done, add it to `docs/agent-roadmap-archive.yaml`. Entries 
       delivered: "One sentence: what was concretely built"
       stats: "X files, Y tests, Z nodes etc."
       notes: "Decisions made, deviations from plan, tech debt introduced"
+      cost: "session <id>, MMm"   # your session_id + measured wall-clock; token totals auto-logged to .ai/agent-runs.jsonl keyed by session_id (AGENTS.md rule 10)
     goals: [...]
     deliverables: [...]
     validation: [...]

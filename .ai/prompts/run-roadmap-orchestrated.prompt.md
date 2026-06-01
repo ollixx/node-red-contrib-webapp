@@ -29,9 +29,9 @@ Repeat until a stop condition is met:
 
    > Implement roadmap phase `<PHASE_ID>` for node-red-contrib-webapp. Follow `.ai/prompts/run-next-phase.prompt.md` exactly: read AGENTS.md, the phase entry in docs/agent-roadmap.yaml, architecture.md, and context-budget.md. If this phase adds new node types, invoke the `/node-red-node` skill before reading source files. Implement only this phase's deliverables; run the full validation protocol in .ai/agents/validation.md; on success write the summary to the archive, slim the main roadmap entry, update current_phase, and commit. If you hit a stop condition, set status `blocked`, add a `blocker` field, commit, and stop.
    >
-   > Return ONLY a 3-line result: (1) phase id + done|blocked, (2) one-line summary of what was built or why blocked, (3) the next pending phase id. Do not return implementation detail.
+   > Return ONLY a 4-line result: (1) phase id + done|blocked, (2) one-line summary of what was built or why blocked, (3) the next pending phase id, (4) `cost: session <id>, MMm` — your session id + measured wall-clock (token totals are auto-logged to .ai/agent-runs.jsonl per AGENTS.md rule 10). Do not return implementation detail.
 
-4. Read the sub-agent's 3-line result. Append it to your running log.
+4. Read the sub-agent's 4-line result. Append it to your running log.
 5. If the sub-agent reported `done`: continue to the next phase.
 6. If the sub-agent reported `blocked`: stop the loop.
 
@@ -44,7 +44,8 @@ Repeat until a stop condition is met:
 ## Final report
 
 Return a compact summary:
-- One line per phase completed this run (from the sub-agent results you logged)
+- One line per phase completed this run (from the sub-agent results you logged), each with its `cost` (session id + duration)
+- The run total: summed wall-clock across all phases this run, and summed tokens read from `.ai/agent-runs.jsonl` for this run's session ids (e.g. `jq -s` over the matching lines)
 - The blocked phase id and the exact decision or information the human must provide
 - The next ready phase once the blocker is resolved
 

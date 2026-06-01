@@ -23,4 +23,4 @@ Follow `.ai/agents/validation.md` exactly.
 
 ## Output
 
-Report: which criteria passed, which failed, what was fixed, what remains broken. Do not update roadmap status — leave that to the implementation agent.
+Report: which criteria passed, which failed, what was fixed, what remains broken. Do not update roadmap status — leave that to the implementation agent. End the report with a `cost` line — `session <id>, MMm` (your session id + measured wall-clock; tokens auto-logged to `.ai/agent-runs.jsonl` per AGENTS.md rule 10).

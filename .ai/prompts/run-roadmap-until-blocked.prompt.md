@@ -37,6 +37,7 @@ Repeat until a stop condition is met:
 ## Final report
 
 When stopping, return:
-- Phases completed this run (IDs + one-line summary each)
+- Phases completed this run (IDs + one-line summary each, each with its `cost`: session id + duration — AGENTS.md rule 10)
+- The run total: summed wall-clock across all phases, and summed tokens read from `.ai/agent-runs.jsonl` for this run's session ids
 - Blocked phase ID and exact decision or information needed from the human
 - Next ready phase once the blocker is resolved

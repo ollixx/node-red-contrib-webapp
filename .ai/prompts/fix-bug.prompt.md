@@ -60,4 +60,6 @@ Commit the failing-test + fix together (or test first, then fix) with a message 
 
 Do **not** update roadmap phase status; a bug fix is not a phase. If the bug reveals that the roadmap or an architecture decision is wrong, stop and hand off to the roadmap-evolution role (`.ai/prompts/evolve-roadmap.prompt.md`).
 
+End your report with a `cost` line — `session <id>, MMm` (your session id + measured wall-clock; capture a start timestamp at Step 1. Tokens are auto-logged to `.ai/agent-runs.jsonl` per AGENTS.md rule 10).
+
 If anything in the agent-OS or docs misled you or caused rework while fixing this (a stale path, a wrong instruction, a missing pointer), append one line to `.ai/friction-log.md` — that is how the OS gets fixed before it bites the next agent.

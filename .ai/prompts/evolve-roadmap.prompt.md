@@ -37,7 +37,7 @@ Park genuinely-deferred work as a comment block at the end rather than as `pendi
 
 ## Step 4 — Commit and hand off
 
-Commit the ADR and roadmap together (`docs(adr): ...`). Report: the ADR number and one-line decision, the new phase IDs in order, and which phase is now ready to implement via `.ai/prompts/run-next-phase.prompt.md`.
+Commit the ADR and roadmap together (`docs(adr): ...`). Report: the ADR number and one-line decision, the new phase IDs in order, and which phase is now ready to implement via `.ai/prompts/run-next-phase.prompt.md`. End the report with a `cost` line — `session <id>, MMm` (your session id + measured wall-clock; tokens auto-logged to `.ai/agent-runs.jsonl` per AGENTS.md rule 10).
 
 ## Constraints
 
