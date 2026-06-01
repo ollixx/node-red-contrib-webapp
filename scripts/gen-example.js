@@ -153,6 +153,16 @@ const flowNodes = [
         statePath:    "draft.customer", // required
         initialValue: JSON.stringify({ name: "", email: "", status: "draft" })
     }),
+    // The editor dialog's open/closed state is plain UI state. A function node
+    // flips it (per-client, so only the acting user sees the dialog) and the live
+    // snapshot push opens/closes it. No dialog logic lives in the runtime.
+    node("ui-store", "dialogStore", "state", 4, {
+        name:         "Dialog store",
+        uiId:         "dialogStore",
+        parent:       APP,
+        statePath:    "ui.dialogs.customerEditor",
+        initialValue: JSON.stringify({ open: false })
+    }),
     node("ui-query", "customersQuery", "state", 2, {
         name:          "Customers query",
         uiId:          "customersQuery", // required
@@ -485,68 +495,70 @@ const flowNodes = [
     // flow's, not the framework's.
     //
     // The customer list is the authoritative copy kept in flow context
-    // (`flow.get("customers")`), seeded lazily from the same list the
-    // customersStore ships with. Each mutation writes the new list back to flow
-    // context AND emits a ui-store `set` operation so the live SSE transport
-    // re-renders every connected client. clientId is preserved end-to-end so the
-    // update is addressed to the originating client (P15 multi-user model).
+    // (`flow.get("customers")`). Each mutation writes the new list back to flow
+    // context AND emits a ui-store `set` operation. This single-owner CRM demo
+    // uses the app's SHARED (broadcast) state throughout — store ops and navigate
+    // commands carry no clientId — so every change persists across page
+    // navigations (which start a fresh browser clientId) and reaches every
+    // connected client over the live SSE transport. (Per-client targeting exists
+    // for multi-user apps; see docs/nodes/concepts/events.md — it is intentionally
+    // not used here so the demo's data survives reloads.)
     // ══════════════════════════════════════════════════════════════════════════
 
-    // Lazily load (and seed) the working list from flow context.
+    // ui-table rowSelect → make the picked row the current customer (broadcast
+    // data) and navigate THIS client to the detail route.
     fn("fnSelectCustomer", "logic", 0, "Select customer",
         [
-            "// ui-table rowSelect → make the picked row the 'current' customer and",
-            "// navigate to its detail route. The runtime took NO action — we do.",
+            "// The runtime took NO action on the rowSelect — we decide here.",
             "const ui = msg.ui || {};",
             "const row = (ui.params && ui.params.row) || {};",
-            "const clientId = ui.clientId;",
             "flow.set('editingId', row.id);",
-            "const setCurrent = { ui: { clientId, store: { id: 'customersStore', op: 'set', path: 'current', value: row } } };",
-            "const navigate = { ui: { clientId, action: { type: 'navigate', to: '/customers/' + row.id } } };",
+            "const setCurrent = { ui: { store: { id: 'customersStore', op: 'set', path: 'current', value: row } } };",
+            "const navigate = { ui: { action: { type: 'navigate', to: '/customers/' + row.id } } };",
             "return [setCurrent, navigate];"
         ].join("\n"),
         2,
         [["customersStore"], ["openCustomerDetail"]]
     ),
 
-    // ui-button (New) → clear the draft and open the editor for a NEW record.
+    // ui-button (New) → clear the draft (broadcast) and open the editor for THIS
+    // client (per-client dialog state).
     fn("fnNewCustomer", "logic", 1, "New customer",
         [
-            "const clientId = (msg.ui || {}).clientId;",
             "flow.set('editingId', null);",
             "const blank = { name: '', email: '', status: 'trial' };",
-            "const resetDraft = { ui: { clientId, store: { id: 'draftStore', op: 'replace', value: blank } } };",
-            "const openDialog = { ui: { clientId, action: { type: 'show', target: 'dialog:customerEditor' } } };",
+            "const resetDraft = { ui: { store: { id: 'draftStore', op: 'replace', value: blank } } };",
+            "const openDialog = { ui: { store: { id: 'dialogStore', op: 'set', path: 'open', value: true } } };",
             "return [resetDraft, openDialog];"
         ].join("\n"),
         2,
-        [["draftStore"], ["openCustomerEditor"]]
+        [["draftStore"], ["dialogStore"]]
     ),
 
-    // ui-button (Edit) → load the current customer into the draft, open editor.
+    // ui-button (Edit) → load the current customer into the draft (broadcast),
+    // open the editor for THIS client.
     fn("fnEditCustomer", "logic", 2, "Edit customer",
         [
-            "const clientId = (msg.ui || {}).clientId;",
             "const list = flow.get('customers') || [];",
             "const editingId = flow.get('editingId');",
             "const current = list.find(c => c.id === editingId) || {};",
             "const draft = { name: current.name || '', email: current.email || '', status: current.status || 'trial' };",
-            "const loadDraft = { ui: { clientId, store: { id: 'draftStore', op: 'replace', value: draft } } };",
-            "const openDialog = { ui: { clientId, action: { type: 'show', target: 'dialog:customerEditor' } } };",
+            "const loadDraft = { ui: { store: { id: 'draftStore', op: 'replace', value: draft } } };",
+            "const openDialog = { ui: { store: { id: 'dialogStore', op: 'set', path: 'open', value: true } } };",
             "return [loadDraft, openDialog];"
         ].join("\n"),
         2,
-        [["draftStore"], ["openCustomerEditor"]]
+        [["draftStore"], ["dialogStore"]]
     ),
 
     // ui-button (Save) → CREATE or UPDATE the customer from the submitted form
-    // values, write the new list back, and close the editor dialog.
+    // values, write the new list back (broadcast), and close the editor dialog
+    // for THIS client.
     fn("fnSaveCustomer", "logic2", 0, "Save customer (create/update)",
         [
             "// The Save button sits inside the editor form, so the click POST",
             "// carries the field values in msg.ui.params (name, email, status).",
             "const ui = msg.ui || {};",
-            "const clientId = ui.clientId;",
             "const p = ui.params || {};",
             "const list = (flow.get('customers') || []).slice();",
             "const editingId = flow.get('editingId');",
@@ -562,41 +574,47 @@ const flowNodes = [
             "}",
             "flow.set('customers', list);",
             "flow.set('editingId', null);",
-            "const setList = { ui: { clientId, store: { id: 'customersStore', op: 'set', path: 'list', value: list } } };",
-            "const setCurrent = { ui: { clientId, store: { id: 'customersStore', op: 'set', path: 'current', value: saved } } };",
-            "const closeDialog = { ui: { clientId, action: { type: 'hide', target: 'dialog:customerEditor' } } };",
+            "const setList = { ui: { store: { id: 'customersStore', op: 'set', path: 'list', value: list } } };",
+            "const setCurrent = { ui: { store: { id: 'customersStore', op: 'set', path: 'current', value: saved } } };",
+            "const closeDialog = { ui: { store: { id: 'dialogStore', op: 'set', path: 'open', value: false } } };",
             "return [setList, setCurrent, closeDialog];"
         ].join("\n"),
         3,
-        [["customersStore"], ["customersStore"], ["saveCustomer"]]
+        [["customersStore"], ["customersStore"], ["dialogStore"]]
     ),
 
-    // ui-button (Delete) → DELETE the current customer, write the new list back,
-    // and navigate back to the list route.
+    // ui-button (Cancel) → close the editor for THIS client, discard the draft.
+    fn("fnCancelEditor", "logic2", 3, "Cancel editor",
+        [
+            "return { ui: { store: { id: 'dialogStore', op: 'set', path: 'open', value: false } } };"
+        ].join("\n"),
+        1,
+        [["dialogStore"]]
+    ),
+
+    // ui-button (Delete) → DELETE the current customer, write the new list back
+    // (broadcast), and navigate THIS client back to the list route.
     fn("fnDeleteCustomer", "logic2", 1, "Delete customer",
         [
-            "const ui = msg.ui || {};",
-            "const clientId = ui.clientId;",
             "const editingId = flow.get('editingId');",
             "const list = (flow.get('customers') || []).filter(c => c.id !== editingId);",
             "flow.set('customers', list);",
             "flow.set('editingId', null);",
-            "const setList = { ui: { clientId, store: { id: 'customersStore', op: 'set', path: 'list', value: list } } };",
-            "const clearCurrent = { ui: { clientId, store: { id: 'customersStore', op: 'set', path: 'current', value: null } } };",
-            "const goBack = { ui: { clientId, action: { type: 'navigate', to: '/customers' } } };",
+            "const setList = { ui: { store: { id: 'customersStore', op: 'set', path: 'list', value: list } } };",
+            "const clearCurrent = { ui: { store: { id: 'customersStore', op: 'set', path: 'current', value: null } } };",
+            "const goBack = { ui: { action: { type: 'navigate', to: '/customers' } } };",
             "return [setList, clearCurrent, goBack];"
         ].join("\n"),
         3,
         [["customersStore"], ["customersStore"], ["deleteCustomer"]]
     ),
 
-    // ui-button (Refresh) → re-push the authoritative list from flow context.
+    // ui-button (Refresh) → re-push the authoritative list from flow context
+    // (broadcast) to every connected client.
     fn("fnRefreshCustomers", "logic2", 2, "Refresh customers",
         [
-            "const ui = msg.ui || {};",
-            "const clientId = ui.clientId;",
             "const list = flow.get('customers') || [];",
-            "return { ui: { clientId, store: { id: 'customersStore', op: 'set', path: 'list', value: list } } };"
+            "return { ui: { store: { id: 'customersStore', op: 'set', path: 'list', value: list } } };"
         ].join("\n"),
         1,
         [["customersStore"]]
@@ -622,18 +640,25 @@ const flowNodes = [
     },
     fn("fnSeedCustomers", "logic", 5, "Seed flow context",
         [
-            "// Populate the working list in flow context from the seed data.",
-            "// This is DATA seeding, not domain logic — create/update/delete all",
-            "// live in the other function nodes.",
-            "flow.set('customers', [",
+            "// Populate the working list in flow context from the seed data and",
+            "// push it into the customers store so the table renders it. This is",
+            "// DATA seeding, not domain logic — create/update/delete all live in",
+            "// the other function nodes. Re-injecting resets the demo to a known",
+            "// state (used by the E2E suite for test isolation).",
+            "const seed = [",
             "    { id: 'c-100', name: 'Ada Lovelace', email: 'ada@example.com', status: 'active' },",
             "    { id: 'c-200', name: 'Grace Hopper', email: 'grace@example.com', status: 'inactive' },",
             "    { id: 'c-300', name: 'Radia Perlman', email: 'radia@example.com', status: 'trial' }",
-            "]);",
-            "return null;"
+            "];",
+            "flow.set('customers', seed);",
+            "flow.set('editingId', null);",
+            "const setList = { ui: { store: { id: 'customersStore', op: 'set', path: 'list', value: seed } } };",
+            "const setCurrent = { ui: { store: { id: 'customersStore', op: 'set', path: 'current', value: seed[0] } } };",
+            "const closeDialog = { ui: { store: { id: 'dialogStore', op: 'set', path: 'open', value: false } } };",
+            "return [setList, setCurrent, closeDialog];"
         ].join("\n"),
-        1,
-        [[]]
+        3,
+        [["customersStore"], ["customersStore"], ["dialogStore"]]
     )
 ];
 
@@ -646,6 +671,7 @@ const uiToLogicWires = {
     newCustomerButton:    "fnNewCustomer",
     editCustomerButton:   "fnEditCustomer",
     saveCustomerButton:   "fnSaveCustomer",
+    cancelCustomerButton: "fnCancelEditor",
     deleteCustomerButton: "fnDeleteCustomer",
     refreshCustomersButton: "fnRefreshCustomers"
 };

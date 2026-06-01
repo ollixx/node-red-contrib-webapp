@@ -119,6 +119,21 @@
         ]
     },
     {
+        "type": "ui-store",
+        "id": "dialogStore",
+        "name": "Dialog store",
+        "uiId": "dialogStore",
+        "parent": "customersApp",
+        "statePath": "ui.dialogs.customerEditor",
+        "initialValue": "{\"open\":false}",
+        "z": "flow1",
+        "x": 1080,
+        "y": 160,
+        "wires": [
+            []
+        ]
+    },
+    {
         "type": "ui-query",
         "id": "customersQuery",
         "name": "Customers query",
@@ -701,7 +716,9 @@
         "x": 1080,
         "y": 760,
         "wires": [
-            []
+            [
+                "fnCancelEditor"
+            ]
         ]
     },
     {
@@ -735,7 +752,7 @@
         "type": "function",
         "id": "fnSelectCustomer",
         "name": "Select customer",
-        "func": "// ui-table rowSelect → make the picked row the 'current' customer and\n// navigate to its detail route. The runtime took NO action — we do.\nconst ui = msg.ui || {};\nconst row = (ui.params && ui.params.row) || {};\nconst clientId = ui.clientId;\nflow.set('editingId', row.id);\nconst setCurrent = { ui: { clientId, store: { id: 'customersStore', op: 'set', path: 'current', value: row } } };\nconst navigate = { ui: { clientId, action: { type: 'navigate', to: '/customers/' + row.id } } };\nreturn [setCurrent, navigate];",
+        "func": "// The runtime took NO action on the rowSelect — we decide here.\nconst ui = msg.ui || {};\nconst row = (ui.params && ui.params.row) || {};\nflow.set('editingId', row.id);\nconst setCurrent = { ui: { store: { id: 'customersStore', op: 'set', path: 'current', value: row } } };\nconst navigate = { ui: { action: { type: 'navigate', to: '/customers/' + row.id } } };\nreturn [setCurrent, navigate];",
         "outputs": 2,
         "noerr": 0,
         "initialize": "",
@@ -757,7 +774,7 @@
         "type": "function",
         "id": "fnNewCustomer",
         "name": "New customer",
-        "func": "const clientId = (msg.ui || {}).clientId;\nflow.set('editingId', null);\nconst blank = { name: '', email: '', status: 'trial' };\nconst resetDraft = { ui: { clientId, store: { id: 'draftStore', op: 'replace', value: blank } } };\nconst openDialog = { ui: { clientId, action: { type: 'show', target: 'dialog:customerEditor' } } };\nreturn [resetDraft, openDialog];",
+        "func": "flow.set('editingId', null);\nconst blank = { name: '', email: '', status: 'trial' };\nconst resetDraft = { ui: { store: { id: 'draftStore', op: 'replace', value: blank } } };\nconst openDialog = { ui: { store: { id: 'dialogStore', op: 'set', path: 'open', value: true } } };\nreturn [resetDraft, openDialog];",
         "outputs": 2,
         "noerr": 0,
         "initialize": "",
@@ -771,7 +788,7 @@
                 "draftStore"
             ],
             [
-                "openCustomerEditor"
+                "dialogStore"
             ]
         ]
     },
@@ -779,7 +796,7 @@
         "type": "function",
         "id": "fnEditCustomer",
         "name": "Edit customer",
-        "func": "const clientId = (msg.ui || {}).clientId;\nconst list = flow.get('customers') || [];\nconst editingId = flow.get('editingId');\nconst current = list.find(c => c.id === editingId) || {};\nconst draft = { name: current.name || '', email: current.email || '', status: current.status || 'trial' };\nconst loadDraft = { ui: { clientId, store: { id: 'draftStore', op: 'replace', value: draft } } };\nconst openDialog = { ui: { clientId, action: { type: 'show', target: 'dialog:customerEditor' } } };\nreturn [loadDraft, openDialog];",
+        "func": "const list = flow.get('customers') || [];\nconst editingId = flow.get('editingId');\nconst current = list.find(c => c.id === editingId) || {};\nconst draft = { name: current.name || '', email: current.email || '', status: current.status || 'trial' };\nconst loadDraft = { ui: { store: { id: 'draftStore', op: 'replace', value: draft } } };\nconst openDialog = { ui: { store: { id: 'dialogStore', op: 'set', path: 'open', value: true } } };\nreturn [loadDraft, openDialog];",
         "outputs": 2,
         "noerr": 0,
         "initialize": "",
@@ -793,7 +810,7 @@
                 "draftStore"
             ],
             [
-                "openCustomerEditor"
+                "dialogStore"
             ]
         ]
     },
@@ -801,7 +818,7 @@
         "type": "function",
         "id": "fnSaveCustomer",
         "name": "Save customer (create/update)",
-        "func": "// The Save button sits inside the editor form, so the click POST\n// carries the field values in msg.ui.params (name, email, status).\nconst ui = msg.ui || {};\nconst clientId = ui.clientId;\nconst p = ui.params || {};\nconst list = (flow.get('customers') || []).slice();\nconst editingId = flow.get('editingId');\nconst record = { name: p.name || '', email: p.email || '', status: p.status || 'trial' };\nlet saved;\nif (editingId) {\n    saved = Object.assign({}, list.find(c => c.id === editingId), record, { id: editingId });\n    const idx = list.findIndex(c => c.id === editingId);\n    if (idx >= 0) { list[idx] = saved; } else { list.push(saved); }\n} else {\n    saved = Object.assign({ id: 'c-' + Date.now() }, record);\n    list.push(saved);\n}\nflow.set('customers', list);\nflow.set('editingId', null);\nconst setList = { ui: { clientId, store: { id: 'customersStore', op: 'set', path: 'list', value: list } } };\nconst setCurrent = { ui: { clientId, store: { id: 'customersStore', op: 'set', path: 'current', value: saved } } };\nconst closeDialog = { ui: { clientId, action: { type: 'hide', target: 'dialog:customerEditor' } } };\nreturn [setList, setCurrent, closeDialog];",
+        "func": "// The Save button sits inside the editor form, so the click POST\n// carries the field values in msg.ui.params (name, email, status).\nconst ui = msg.ui || {};\nconst p = ui.params || {};\nconst list = (flow.get('customers') || []).slice();\nconst editingId = flow.get('editingId');\nconst record = { name: p.name || '', email: p.email || '', status: p.status || 'trial' };\nlet saved;\nif (editingId) {\n    saved = Object.assign({}, list.find(c => c.id === editingId), record, { id: editingId });\n    const idx = list.findIndex(c => c.id === editingId);\n    if (idx >= 0) { list[idx] = saved; } else { list.push(saved); }\n} else {\n    saved = Object.assign({ id: 'c-' + Date.now() }, record);\n    list.push(saved);\n}\nflow.set('customers', list);\nflow.set('editingId', null);\nconst setList = { ui: { store: { id: 'customersStore', op: 'set', path: 'list', value: list } } };\nconst setCurrent = { ui: { store: { id: 'customersStore', op: 'set', path: 'current', value: saved } } };\nconst closeDialog = { ui: { store: { id: 'dialogStore', op: 'set', path: 'open', value: false } } };\nreturn [setList, setCurrent, closeDialog];",
         "outputs": 3,
         "noerr": 0,
         "initialize": "",
@@ -818,7 +835,26 @@
                 "customersStore"
             ],
             [
-                "saveCustomer"
+                "dialogStore"
+            ]
+        ]
+    },
+    {
+        "type": "function",
+        "id": "fnCancelEditor",
+        "name": "Cancel editor",
+        "func": "return { ui: { store: { id: 'dialogStore', op: 'set', path: 'open', value: false } } };",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "z": "flow1",
+        "x": 840,
+        "y": 960,
+        "wires": [
+            [
+                "dialogStore"
             ]
         ]
     },
@@ -826,7 +862,7 @@
         "type": "function",
         "id": "fnDeleteCustomer",
         "name": "Delete customer",
-        "func": "const ui = msg.ui || {};\nconst clientId = ui.clientId;\nconst editingId = flow.get('editingId');\nconst list = (flow.get('customers') || []).filter(c => c.id !== editingId);\nflow.set('customers', list);\nflow.set('editingId', null);\nconst setList = { ui: { clientId, store: { id: 'customersStore', op: 'set', path: 'list', value: list } } };\nconst clearCurrent = { ui: { clientId, store: { id: 'customersStore', op: 'set', path: 'current', value: null } } };\nconst goBack = { ui: { clientId, action: { type: 'navigate', to: '/customers' } } };\nreturn [setList, clearCurrent, goBack];",
+        "func": "const editingId = flow.get('editingId');\nconst list = (flow.get('customers') || []).filter(c => c.id !== editingId);\nflow.set('customers', list);\nflow.set('editingId', null);\nconst setList = { ui: { store: { id: 'customersStore', op: 'set', path: 'list', value: list } } };\nconst clearCurrent = { ui: { store: { id: 'customersStore', op: 'set', path: 'current', value: null } } };\nconst goBack = { ui: { action: { type: 'navigate', to: '/customers' } } };\nreturn [setList, clearCurrent, goBack];",
         "outputs": 3,
         "noerr": 0,
         "initialize": "",
@@ -851,7 +887,7 @@
         "type": "function",
         "id": "fnRefreshCustomers",
         "name": "Refresh customers",
-        "func": "const ui = msg.ui || {};\nconst clientId = ui.clientId;\nconst list = flow.get('customers') || [];\nreturn { ui: { clientId, store: { id: 'customersStore', op: 'set', path: 'list', value: list } } };",
+        "func": "const list = flow.get('customers') || [];\nreturn { ui: { store: { id: 'customersStore', op: 'set', path: 'list', value: list } } };",
         "outputs": 1,
         "noerr": 0,
         "initialize": "",
@@ -895,8 +931,8 @@
         "type": "function",
         "id": "fnSeedCustomers",
         "name": "Seed flow context",
-        "func": "// Populate the working list in flow context from the seed data.\n// This is DATA seeding, not domain logic — create/update/delete all\n// live in the other function nodes.\nflow.set('customers', [\n    { id: 'c-100', name: 'Ada Lovelace', email: 'ada@example.com', status: 'active' },\n    { id: 'c-200', name: 'Grace Hopper', email: 'grace@example.com', status: 'inactive' },\n    { id: 'c-300', name: 'Radia Perlman', email: 'radia@example.com', status: 'trial' }\n]);\nreturn null;",
-        "outputs": 1,
+        "func": "// Populate the working list in flow context from the seed data and\n// push it into the customers store so the table renders it. This is\n// DATA seeding, not domain logic — create/update/delete all live in\n// the other function nodes. Re-injecting resets the demo to a known\n// state (used by the E2E suite for test isolation).\nconst seed = [\n    { id: 'c-100', name: 'Ada Lovelace', email: 'ada@example.com', status: 'active' },\n    { id: 'c-200', name: 'Grace Hopper', email: 'grace@example.com', status: 'inactive' },\n    { id: 'c-300', name: 'Radia Perlman', email: 'radia@example.com', status: 'trial' }\n];\nflow.set('customers', seed);\nflow.set('editingId', null);\nconst setList = { ui: { store: { id: 'customersStore', op: 'set', path: 'list', value: seed } } };\nconst setCurrent = { ui: { store: { id: 'customersStore', op: 'set', path: 'current', value: seed[0] } } };\nconst closeDialog = { ui: { store: { id: 'dialogStore', op: 'set', path: 'open', value: false } } };\nreturn [setList, setCurrent, closeDialog];",
+        "outputs": 3,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
@@ -905,7 +941,15 @@
         "x": 1320,
         "y": 860,
         "wires": [
-            []
+            [
+                "customersStore"
+            ],
+            [
+                "customersStore"
+            ],
+            [
+                "dialogStore"
+            ]
         ]
     }
 ]
