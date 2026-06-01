@@ -39,7 +39,9 @@ const rows = {
     viewHome:    4,
     viewCustomers: 5,
     viewDetail:  6,
-    viewDialog:  7
+    viewDialog:  7,
+    logic:       8,
+    logic2:      9
 };
 
 function pos(row, col) {
@@ -51,6 +53,25 @@ function pos(row, col) {
 
 function node(type, id, rowName, col, fields) {
     return { type, id, ...fields, z: Z, ...pos(rowName, col), wires: [[]] };
+}
+
+// A plain Node-RED `function` node. ALL domain logic for the CRUD lives in these.
+// `outputs` controls the number of output ports; `wires` is the per-port wiring.
+function fn(id, rowName, col, name, func, outputs, wires) {
+    return {
+        type: "function",
+        id,
+        name,
+        func,
+        outputs,
+        noerr: 0,
+        initialize: "",
+        finalize: "",
+        libs: [],
+        z: Z,
+        ...pos(rowName, col),
+        wires
+    };
 }
 
 // ── Nodes ─────────────────────────────────────────────────────────────────────
@@ -106,14 +127,33 @@ const flowNodes = [
     }),
 
     // ── State ────────────────────────────────────────────────────────────────
-    node("ui-store", "draftStore", "state", 0, {
+    // The customer LIST + the currently-selected customer live in this store.
+    // It is the single source the table and the detail page bind to (via `state`
+    // bindings). The flow's function nodes own every mutation of this store — the
+    // runtime never writes customer data. The seed below is declarative DATA, not
+    // logic: the create/update/delete behaviour lives entirely in function nodes.
+    node("ui-store", "customersStore", "state", 0, {
+        name:         "Customers store",
+        uiId:         "customersStore",  // required
+        parent:       APP,
+        statePath:    "customers",       // required
+        initialValue: JSON.stringify({
+            list: [
+                { id: "c-100", name: "Ada Lovelace", email: "ada@example.com", status: "active" },
+                { id: "c-200", name: "Grace Hopper", email: "grace@example.com", status: "inactive" },
+                { id: "c-300", name: "Radia Perlman", email: "radia@example.com", status: "trial" }
+            ],
+            current: { id: "c-100", name: "Ada Lovelace", email: "ada@example.com", status: "active" }
+        })
+    }),
+    node("ui-store", "draftStore", "state", 1, {
         name:         "Draft store",
         uiId:         "draftStore",     // required
         parent:       APP,
         statePath:    "draft.customer", // required
         initialValue: JSON.stringify({ name: "", email: "", status: "draft" })
     }),
-    node("ui-query", "customersQuery", "state", 1, {
+    node("ui-query", "customersQuery", "state", 2, {
         name:          "Customers query",
         uiId:          "customersQuery", // required
         parent:        APP,
@@ -129,7 +169,7 @@ const flowNodes = [
             current: { id: "c-100", name: "Ada Lovelace", email: "ada@example.com", status: "active" }
         })
     }),
-    node("ui-query", "customerDetailQuery", "state", 2, {
+    node("ui-query", "customerDetailQuery", "state", 3, {
         name:      "Customer detail query",
         uiId:      "customerDetailQuery",
         parent:    APP,
@@ -294,8 +334,13 @@ const flowNodes = [
         mount:        "route:/customers/content",
         order:        3,
         columns:      "name,email,status",       // required (comma-separated)
-        rowsPath:     "customers.list",          // required (editor field for query binding)
-        rows:         { kind: "query", path: "customers.list" },
+        // P33: the table binds to the customers STORE (state), not a query.
+        // The flow's function nodes push list updates into this store; the live
+        // SSE transport re-renders the table. selectAction makes the rows
+        // clickable and emits a `rowSelect` event on this table's OUTPUT port —
+        // a wired function node (not the runtime) decides what happens next.
+        rowsPath:     "customers.list",
+        rows:         { kind: "state", path: "customers.list" },
         selectAction: "openCustomerDetail"
     }),
 
@@ -357,7 +402,7 @@ const flowNodes = [
         mount:     "route:/customers/:id/content",
         order:     5,
         valuePath: "customers.current.status",
-        value:     { kind: "query", path: "customers.current.status" },
+        value:     { kind: "state", path: "customers.current.status" },
         variant:   "status",
         severity:  "info"
     }),
@@ -428,8 +473,189 @@ const flowNodes = [
         disabledPath: "draft.isSaving",
         disabled:     { kind: "state", path: "draft.isSaving", fallback: false },
         row: 4, col: 7, colSize: 6
-    })
+    }),
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // DOMAIN LOGIC — plain Node-RED function nodes.
+    //
+    // This is the whole point of the example: every create / read / update /
+    // delete decision lives HERE, in stock function nodes wired into the flow.
+    // None of it lives in any ui-* node or in nodes/webapp.js. Delete these
+    // function nodes and the CRUD stops working — proving the behaviour is the
+    // flow's, not the framework's.
+    //
+    // The customer list is the authoritative copy kept in flow context
+    // (`flow.get("customers")`), seeded lazily from the same list the
+    // customersStore ships with. Each mutation writes the new list back to flow
+    // context AND emits a ui-store `set` operation so the live SSE transport
+    // re-renders every connected client. clientId is preserved end-to-end so the
+    // update is addressed to the originating client (P15 multi-user model).
+    // ══════════════════════════════════════════════════════════════════════════
+
+    // Lazily load (and seed) the working list from flow context.
+    fn("fnSelectCustomer", "logic", 0, "Select customer",
+        [
+            "// ui-table rowSelect → make the picked row the 'current' customer and",
+            "// navigate to its detail route. The runtime took NO action — we do.",
+            "const ui = msg.ui || {};",
+            "const row = (ui.params && ui.params.row) || {};",
+            "const clientId = ui.clientId;",
+            "flow.set('editingId', row.id);",
+            "const setCurrent = { ui: { clientId, store: { id: 'customersStore', op: 'set', path: 'current', value: row } } };",
+            "const navigate = { ui: { clientId, action: { type: 'navigate', to: '/customers/' + row.id } } };",
+            "return [setCurrent, navigate];"
+        ].join("\n"),
+        2,
+        [["customersStore"], ["openCustomerDetail"]]
+    ),
+
+    // ui-button (New) → clear the draft and open the editor for a NEW record.
+    fn("fnNewCustomer", "logic", 1, "New customer",
+        [
+            "const clientId = (msg.ui || {}).clientId;",
+            "flow.set('editingId', null);",
+            "const blank = { name: '', email: '', status: 'trial' };",
+            "const resetDraft = { ui: { clientId, store: { id: 'draftStore', op: 'replace', value: blank } } };",
+            "const openDialog = { ui: { clientId, action: { type: 'show', target: 'dialog:customerEditor' } } };",
+            "return [resetDraft, openDialog];"
+        ].join("\n"),
+        2,
+        [["draftStore"], ["openCustomerEditor"]]
+    ),
+
+    // ui-button (Edit) → load the current customer into the draft, open editor.
+    fn("fnEditCustomer", "logic", 2, "Edit customer",
+        [
+            "const clientId = (msg.ui || {}).clientId;",
+            "const list = flow.get('customers') || [];",
+            "const editingId = flow.get('editingId');",
+            "const current = list.find(c => c.id === editingId) || {};",
+            "const draft = { name: current.name || '', email: current.email || '', status: current.status || 'trial' };",
+            "const loadDraft = { ui: { clientId, store: { id: 'draftStore', op: 'replace', value: draft } } };",
+            "const openDialog = { ui: { clientId, action: { type: 'show', target: 'dialog:customerEditor' } } };",
+            "return [loadDraft, openDialog];"
+        ].join("\n"),
+        2,
+        [["draftStore"], ["openCustomerEditor"]]
+    ),
+
+    // ui-button (Save) → CREATE or UPDATE the customer from the submitted form
+    // values, write the new list back, and close the editor dialog.
+    fn("fnSaveCustomer", "logic2", 0, "Save customer (create/update)",
+        [
+            "// The Save button sits inside the editor form, so the click POST",
+            "// carries the field values in msg.ui.params (name, email, status).",
+            "const ui = msg.ui || {};",
+            "const clientId = ui.clientId;",
+            "const p = ui.params || {};",
+            "const list = (flow.get('customers') || []).slice();",
+            "const editingId = flow.get('editingId');",
+            "const record = { name: p.name || '', email: p.email || '', status: p.status || 'trial' };",
+            "let saved;",
+            "if (editingId) {",
+            "    saved = Object.assign({}, list.find(c => c.id === editingId), record, { id: editingId });",
+            "    const idx = list.findIndex(c => c.id === editingId);",
+            "    if (idx >= 0) { list[idx] = saved; } else { list.push(saved); }",
+            "} else {",
+            "    saved = Object.assign({ id: 'c-' + Date.now() }, record);",
+            "    list.push(saved);",
+            "}",
+            "flow.set('customers', list);",
+            "flow.set('editingId', null);",
+            "const setList = { ui: { clientId, store: { id: 'customersStore', op: 'set', path: 'list', value: list } } };",
+            "const setCurrent = { ui: { clientId, store: { id: 'customersStore', op: 'set', path: 'current', value: saved } } };",
+            "const closeDialog = { ui: { clientId, action: { type: 'hide', target: 'dialog:customerEditor' } } };",
+            "return [setList, setCurrent, closeDialog];"
+        ].join("\n"),
+        3,
+        [["customersStore"], ["customersStore"], ["saveCustomer"]]
+    ),
+
+    // ui-button (Delete) → DELETE the current customer, write the new list back,
+    // and navigate back to the list route.
+    fn("fnDeleteCustomer", "logic2", 1, "Delete customer",
+        [
+            "const ui = msg.ui || {};",
+            "const clientId = ui.clientId;",
+            "const editingId = flow.get('editingId');",
+            "const list = (flow.get('customers') || []).filter(c => c.id !== editingId);",
+            "flow.set('customers', list);",
+            "flow.set('editingId', null);",
+            "const setList = { ui: { clientId, store: { id: 'customersStore', op: 'set', path: 'list', value: list } } };",
+            "const clearCurrent = { ui: { clientId, store: { id: 'customersStore', op: 'set', path: 'current', value: null } } };",
+            "const goBack = { ui: { clientId, action: { type: 'navigate', to: '/customers' } } };",
+            "return [setList, clearCurrent, goBack];"
+        ].join("\n"),
+        3,
+        [["customersStore"], ["customersStore"], ["deleteCustomer"]]
+    ),
+
+    // ui-button (Refresh) → re-push the authoritative list from flow context.
+    fn("fnRefreshCustomers", "logic2", 2, "Refresh customers",
+        [
+            "const ui = msg.ui || {};",
+            "const clientId = ui.clientId;",
+            "const list = flow.get('customers') || [];",
+            "return { ui: { clientId, store: { id: 'customersStore', op: 'set', path: 'list', value: list } } };"
+        ].join("\n"),
+        1,
+        [["customersStore"]]
+    ),
+
+    // Seed flow context with the initial list when the flow starts, so the
+    // function nodes have an authoritative copy that survives store re-renders.
+    {
+        type: "inject",
+        id: "seedCustomers",
+        z: Z,
+        name: "Seed customers (startup)",
+        props: [{ p: "payload" }],
+        repeat: "",
+        crontab: "",
+        once: true,
+        onceDelay: "0.1",
+        topic: "",
+        payload: "",
+        payloadType: "date",
+        ...pos("logic", 4),
+        wires: [["fnSeedCustomers"]]
+    },
+    fn("fnSeedCustomers", "logic", 5, "Seed flow context",
+        [
+            "// Populate the working list in flow context from the seed data.",
+            "// This is DATA seeding, not domain logic — create/update/delete all",
+            "// live in the other function nodes.",
+            "flow.set('customers', [",
+            "    { id: 'c-100', name: 'Ada Lovelace', email: 'ada@example.com', status: 'active' },",
+            "    { id: 'c-200', name: 'Grace Hopper', email: 'grace@example.com', status: 'inactive' },",
+            "    { id: 'c-300', name: 'Radia Perlman', email: 'radia@example.com', status: 'trial' }",
+            "]);",
+            "return null;"
+        ].join("\n"),
+        1,
+        [[]]
+    )
 ];
+
+// ── Wiring: UI node outputs → function nodes ──────────────────────────────────
+// The UI nodes emit events on their OUTPUT ports (P30); these wires carry those
+// events into the function nodes that hold the domain logic. This is the only
+// place the example "connects" behaviour — and it is plain Node-RED wiring.
+const uiToLogicWires = {
+    customersTable:       "fnSelectCustomer",
+    newCustomerButton:    "fnNewCustomer",
+    editCustomerButton:   "fnEditCustomer",
+    saveCustomerButton:   "fnSaveCustomer",
+    deleteCustomerButton: "fnDeleteCustomer",
+    refreshCustomersButton: "fnRefreshCustomers"
+};
+
+for (const [sourceId, targetId] of Object.entries(uiToLogicWires)) {
+    const source = flowNodes.find((n) => n.id === sourceId);
+    if (source) {
+        source.wires = [[targetId]];
+    }
+}
 
 // ── Assemble flow ─────────────────────────────────────────────────────────────
 

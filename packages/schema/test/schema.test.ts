@@ -843,6 +843,63 @@ describe("generated example flow (gen:example)", () => {
             expect(generatedTypes.has(t), `generated flow must include node type '${t}'`).toBe(true);
         }
     });
+
+    // P33: the example proves the whole thesis — ALL CRUD domain logic lives in
+    // plain Node-RED `function` nodes wired into the flow; the UI nodes only emit
+    // events out and receive store/action updates back. So the flow must contain
+    // real wires connecting UI node outputs to function nodes, and function nodes
+    // back to ui-store / ui-action nodes.
+    describe("P33: real wiring carries the CRUD (zero framework logic)", () => {
+        const nodesById = new Map<string, Record<string, unknown>>();
+        for (const n of rawFlow) {
+            const node = n as Record<string, unknown>;
+            if (node.id) {
+                nodesById.set(node.id as string, node);
+            }
+        }
+
+        const wiresOf = (node: Record<string, unknown> | undefined): string[] => {
+            if (!node || !Array.isArray(node.wires)) {
+                return [];
+            }
+            return (node.wires as unknown[][]).flat().filter((id): id is string => typeof id === "string");
+        };
+
+        const typeOf = (id: string): string | undefined =>
+            nodesById.get(id)?.type as string | undefined;
+
+        it("includes plain Node-RED function nodes that hold the domain logic", () => {
+            const fns = rawFlow.filter((n) => (n as Record<string, unknown>).type === "function");
+            expect(fns.length).toBeGreaterThan(0);
+        });
+
+        it("has non-empty wires from UI node outputs (button/table) into function nodes", () => {
+            const uiTriggerTypes = new Set(["ui-button", "ui-table"]);
+            const wiredFromUiToFn = rawFlow.filter((n) => {
+                const node = n as Record<string, unknown>;
+                if (!uiTriggerTypes.has(node.type as string)) {
+                    return false;
+                }
+                return wiresOf(node).some((targetId) => typeOf(targetId) === "function");
+            });
+            expect(wiredFromUiToFn.length).toBeGreaterThan(0);
+        });
+
+        it("has function nodes wired into ui-store and ui-action nodes", () => {
+            const fns = rawFlow.filter((n) => (n as Record<string, unknown>).type === "function");
+            const downstreamTypes = new Set<string>();
+            for (const fn of fns) {
+                for (const targetId of wiresOf(fn as Record<string, unknown>)) {
+                    const t = typeOf(targetId);
+                    if (t) {
+                        downstreamTypes.add(t);
+                    }
+                }
+            }
+            expect(downstreamTypes.has("ui-store")).toBe(true);
+            expect(downstreamTypes.has("ui-action")).toBe(true);
+        });
+    });
 });
 
 // P20b: ui-text binding enhancements
