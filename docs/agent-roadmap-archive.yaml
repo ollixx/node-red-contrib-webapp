@@ -11,6 +11,28 @@
 
 phases:
 
+  - id: P33
+    title: Rebuild Customers CRUD as a REAL wired Node-RED flow (zero framework logic)
+    status: done
+    dependencies: [P32]
+    summary:
+      delivered: "Rewrote scripts/gen-example.js so examples/customers-crud/flow.json (and .node-red-dev/flows.json) is a REAL wired Node-RED flow: ui-button/ui-table outputs are wired into plain `function` nodes that hold every create/read/update/delete decision, and those function nodes are wired back into ui-store (data) and ui-action (navigate)/ui-store (dialog open) nodes. The customers list + selected customer live in a new `customersStore` (statePath `customers`); the table binds rows to state `customers.list` and the detail badge to `customers.current.status` (no query data path). A `dialogStore` (statePath `ui.dialogs.customerEditor`) lets a function node open/close the editor via state, since the live transport renders dialogs from snapshot state, not action commands. A seed inject populates flow context AND re-pushes the store, and is re-triggerable via POST /inject/seedCustomers for E2E isolation. All domain logic is in the flow's function nodes — nodes/webapp.js contains zero customer identifiers (re-asserted by grep)."
+      stats: "4 files changed (scripts/gen-example.js, examples/customers-crud/flow.json, .node-red-dev/flows.json, tests/e2e/customers-crud.spec.ts) + 3 structural wiring tests in packages/schema/test/schema.test.ts. Unit suite: 276 tests, 0 failures. customers-crud.spec.ts: 5/5 green (list/create/read/delete). pnpm validate (roadmap+lint+test+build) green."
+      notes: "Single-owner CRM demo: all store ops and navigate commands are BROADCAST (no clientId) so data survives a full-page navigation — required because the client mints a fresh random clientId per page load AND buildAppSnapshot picks per-client OR broadcast state without merging (logged in friction-log as a transport gap). The example proves the thesis: deleting the function nodes stops CRUD. E2E baseline was already red (21 specs) BEFORE this phase — editor-template-registration timing (p12/p13/p15/p16d/parent-selector/editor-mount-options) and pre-existing p21 detail (stale link-role; affordance is sl-button/role=button) + p21 ?dialog= vs SSE-snapshot + p23 — all confirmed identical on the stashed pre-P33 baseline via isolated reruns; none introduced by P33. validation.md step 1 still lacks a known-red-baseline carve-out (recurring since P21)."
+    goals:
+      - Prove the whole thesis: build a working Customers CRUD app purely by wiring generic UI nodes to stock Node-RED nodes — events out, function/storage nodes do the domain logic, ui-store/ui-query + ui-action feed results back. No business logic anywhere in our nodes or runtime, and the example flow has real wires.
+    deliverables:
+      - "rewrite scripts/gen-example.js so examples/customers-crud/flow.json contains the WIRING: ui-button(click)/ui-table(rowSelect) outputs → function node(s) doing create/update/delete against Node-RED context (flow/global) or a store → ui-store/ui-query updates + ui-action (close dialog / navigate) back to the client"
+      - "all domain logic (the CRUD) lives in plain Node-RED function nodes in the example flow, NOT in any ui-* node or in nodes/webapp.js"
+      - "regenerate examples/customers-crud/flow.json AND .node-red-dev/flows.json via pnpm gen:example"
+      - "every route has node-built content (home not empty); the example showcases the Shoelace component set where natural (ui-badge for status, ui-alert for feedback)"
+    validation:
+      - pnpm test passes with no failures
+      - "pnpm exec playwright test passes — list/detail/create/edit/delete all work end-to-end, driven by the wired flow (the runtime performs no CRUD)"
+      - "structural check: examples/customers-crud/flow.json has non-empty wires connecting UI node outputs to function/store/action nodes"
+      - "grep check: nodes/webapp.js contains no 'customer'/'/customers' identifiers (already true after P27, re-asserted here)"
+      - "manual: the owner confirms in the browser that create/edit/delete work AND that the behaviour is produced solely by the flow's wiring (deleting the function nodes breaks CRUD, proving the logic lives in the flow)"
+
   - id: P30
     title: Real Client→Server events — UI nodes emit msg out their output port
     status: done

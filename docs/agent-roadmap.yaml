@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P33  # Rebuild Customers CRUD as a REAL wired Node-RED flow (zero framework logic)
+  current_phase: none  # P33 was the final planned phase (P29–P33 course-correction block complete); no phase is pending
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -153,23 +153,7 @@ phases:
 
   - { id: P32, title: "Remove the preview rendering apparatus entirely", status: done, dependencies: [P31], archive: "docs/agent-roadmap-archive.yaml#P32" }
 
-  - id: P33
-    title: Rebuild Customers CRUD as a REAL wired Node-RED flow (zero framework logic)
-    status: in_progress
-    dependencies: [P32]
-    goals:
-      - Prove the whole thesis: build a working Customers CRUD app purely by wiring generic UI nodes to stock Node-RED nodes — events out, function/storage nodes do the domain logic, ui-store/ui-query + ui-action feed results back. No business logic anywhere in our nodes or runtime, and the example flow has real wires.
-    deliverables:
-      - "rewrite scripts/gen-example.js so examples/customers-crud/flow.json contains the WIRING: ui-button(click)/ui-table(rowSelect) outputs → function node(s) doing create/update/delete against Node-RED context (flow/global) or a store → ui-store/ui-query updates + ui-action (close dialog / navigate) back to the client"
-      - "all domain logic (the CRUD) lives in plain Node-RED function nodes in the example flow, NOT in any ui-* node or in nodes/webapp.js"
-      - "regenerate examples/customers-crud/flow.json AND .node-red-dev/flows.json via pnpm gen:example"
-      - "every route has node-built content (home not empty); the example showcases the Shoelace component set where natural (ui-badge for status, ui-alert for feedback)"
-    validation:
-      - pnpm test passes with no failures
-      - "pnpm exec playwright test passes — list/detail/create/edit/delete all work end-to-end, driven by the wired flow (the runtime performs no CRUD)"
-      - "structural check: examples/customers-crud/flow.json has non-empty wires connecting UI node outputs to function/store/action nodes"
-      - "grep check: nodes/webapp.js contains no 'customer'/'/customers' identifiers (already true after P27, re-asserted here)"
-      - "manual: the owner confirms in the browser that create/edit/delete work AND that the behaviour is produced solely by the flow's wiring (deleting the function nodes breaks CRUD, proving the logic lives in the flow)"
+  - { id: P33, title: "Rebuild Customers CRUD as a REAL wired Node-RED flow (zero framework logic)", status: done, dependencies: [P32], archive: "docs/agent-roadmap-archive.yaml#P33" }
 
   # Deferred — only when a concrete need appears (see ADR 0002):
   #   - ui-custom escape-hatch node for framework-specific components (opt-in, non-portable)
