@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: none  # P33 was the final planned phase (P29–P33 course-correction block complete); no phase is pending
+  current_phase: P34  # Full-journey CRUD E2E from the home route + dead-control guard, fix the half-wired example to green
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -154,6 +154,89 @@ phases:
   - { id: P32, title: "Remove the preview rendering apparatus entirely", status: done, dependencies: [P31], archive: "docs/agent-roadmap-archive.yaml#P32" }
 
   - { id: P33, title: "Rebuild Customers CRUD as a REAL wired Node-RED flow (zero framework logic)", status: done, dependencies: [P32], archive: "docs/agent-roadmap-archive.yaml#P33" }
+
+  # ════════════════════════════════════════════════════════════════════════
+  # P33 review (2026-06-01) — the example is half-wired and the E2E suite
+  # gives false green.
+  #
+  # In examples/customers-crud/flow.json (the SAME generated app the dev
+  # instance and the :1882 E2E run both use) several interactive controls are
+  # wired to NOTHING:
+  #   • "Go to customers" (homeGoToCustomersButton, routeHome) → wires [[]]
+  #   • "Back" (detail → list) → wires [[]]
+  #   • 5 orphaned ui-action nodes (openCustomerEditor, closeCustomerEditor,
+  #     saveCustomer, refreshCustomers, goToCustomers) with no feeder.
+  # So the app's entry path is dead: land on "/", click "Go to customers",
+  # nothing happens.
+  #
+  # The existing tests/e2e/customers-crud.spec.ts passes anyway because it is
+  # shaped around the WORKING paths: it deep-links straight to /customers
+  # (never visits "/"), never clicks "Go to customers" or "Back" (only asserts
+  # Back is visible), and has no UPDATE/edit-in-place test. It also leans on
+  # arbitrary page.waitForTimeout(500/800) hacks that paper over live-transport
+  # races. Green here proves almost nothing about the app a user actually uses.
+  # This is a gen-example.js wiring bug + an E2E coverage hole, not a runtime
+  # (webapp.js) bug.
+  # ════════════════════════════════════════════════════════════════════════
+
+  - id: P34
+    title: Full-journey CRUD E2E from the home route + dead-control guard, fix to green
+    status: pending
+    dependencies: [P33]
+    goals:
+      - Replace the false-green E2E with a suite that drives the app as a real user from the app root through every CRUD use case and EVERY interactive control, so any dead/unwired control fails a test. Then fix gen-example.js (and the generated flow) until the suite is green — without adding any business logic to webapp.js.
+      - Guarantee dev/E2E parity so a green E2E means the app the developer runs on :1881 actually works — the E2E exercises the same generated flow, and a structural guard proves no interactive control is left unwired.
+    deliverables:
+      - "rewrite tests/e2e/customers-crud.spec.ts to start at the app root (location '/'), click 'Go to customers', and drive the full lifecycle: home → list (seeded rows) → CREATE (New → fill → Save, row appears, dialog closes) → READ (row → detail route shows that record's fields) → UPDATE (open editor on an existing row, assert the form is PRE-FILLED, change a field, Save, assert the row updates IN PLACE — not appended) → DELETE (from detail, returns to list without the row) → and exercise navigation controls explicitly, including clicking 'Back' on the detail route and 'Go to customers' on home"
+      - "remove every arbitrary page.waitForTimeout: wait on real conditions (the /stream SSE subscription established, network response, element state/text) so the suite is deterministic, not timing-luck"
+      - "a structural guard test over examples/customers-crud/flow.json: NO ui-button / ui-table (and other event-source) node has an empty output wire, and NO ui-action node is orphaned (each has a feeder, or is removed) — i.e. zero dead controls"
+      - "a dev/E2E parity assertion: examples/customers-crud/flow.json equals the current gen-example.js output, and .node-red-dev/flows.json is regenerated from the same source (allowing only clearly-marked local-only additions like a debug node) so both surfaces run the same app"
+      - "fix scripts/gen-example.js so the generated flow wires 'Go to customers' and 'Back' to their navigation, and CLEANS UP all vestigial nodes — the 5 orphaned ui-action nodes (openCustomerEditor, closeCustomerEditor, saveCustomer, refreshCustomers, goToCustomers, whichever stay unfed) and any other dead node left from the preview era are wired into the journey or removed outright; no orphaned node survives. Regenerate examples/customers-crud/flow.json and .node-red-dev/flows.json via pnpm gen:example. Domain/navigation wiring lives in the flow — webapp.js stays example-agnostic and CRUD-logic-free"
+    validation:
+      - "pnpm exec playwright test tests/e2e/customers-crud.spec.ts passes, covering the full journey from '/' including the previously-dead 'Go to customers' and 'Back' controls and the UPDATE/edit-in-place case"
+      - "the suite contains no page.waitForTimeout calls (grep check) and passes 3 runs in a row (determinism)"
+      - "structural guard: zero ui-button/ui-table nodes with an empty output wire and zero orphaned ui-action nodes in examples/customers-crud/flow.json"
+      - "parity check: examples/customers-crud/flow.json matches pnpm gen:example output; the dev flow derives from the same generator"
+      - "grep check: nodes/webapp.js gained no example/CRUD logic as part of the fix (still no 'customer'/'/customers' identifiers)"
+      - "manual: on the dev instance (:1881, restarted), landing on '/' and clicking 'Go to customers' navigates to the list, and the full create/edit/delete journey works"
+
+  - id: P35
+    title: Generator prop hygiene — emit only layout-appropriate props, clean editor validation
+    status: pending
+    dependencies: [P34]
+    goals:
+      - Stop scripts/gen-example.js from dumping layout-placement props that the node's actual parent layout does not use. A node only carries grid props (row/col/colSize/rowSize) when its parent layout is `grid`, and absolute props (layoutX/layoutY) when its parent is `absolute`; under vertical/horizontal/app it carries none. The generated flow must open in the editor with ZERO red validation messages.
+    deliverables:
+      - "make scripts/gen-example.js layout-aware: each node receives placement props only for the layout preset of the slot/route it is mounted in (grid → row/col/colSize/rowSize; absolute → layoutX/layoutY; vertical/horizontal/app → none). A small helper keyed off the mount target's layout, so the rule is enforced in one place, not per node"
+      - "regenerate examples/customers-crud/flow.json and .node-red-dev/flows.json — the customers example uses vertical/app layouts, so its nodes should carry no grid row/col/colSize props after this"
+      - "decide and document the editor's stance on stray layout props: either the editor validation explicitly ignores placement props that don't match the parent layout (no false red), or the generator simply never emits them (preferred — fix the source). Whichever, the loaded example shows no validation errors"
+    validation:
+      - pnpm test passes with no failures
+      - "structural check: in examples/customers-crud/flow.json, no node mounted under a vertical/horizontal/app layout carries grid (row/col/colSize/rowSize) or absolute (layoutX/layoutY) placement props"
+      - "unit test: gen-example's placement helper emits grid props only for grid-mounted nodes and absolute props only for absolute-mounted nodes"
+      - "manual: opening the regenerated flow in the Node-RED editor shows no red node-validation badges on the customers example nodes"
+
+  - id: P36
+    title: App shell — a token-themed application chrome for the `app` layout preset
+    status: pending
+    dependencies: [P34]
+    goals:
+      - Give the app a proper, basic-but-intentional visual frame. Shoelace ships components, not an app shell, by design — so the shell is OUR concern, expressed through the existing `app` layout preset (header/navbar/content/footer slots already exist) plus design tokens. NOT a new dependency and NOT a new component: render the `app` layout as a real application chrome (top app bar with the ui-app brand/title, side navbar, main content, optional footer) styled from the --wa-* tokens. Stays within ADR 0002's seam — layout = preset, look = tokens + page-shell CSS.
+      - "DESIGN DIRECTION (owner, non-negotiable): modern, minimal, clean. NO frames/borders/card boxes around the slots. Remove the current per-slot box chrome (the `.webapp-slot { border; background; padding }` cards). Structure comes from whitespace, type hierarchy and alignment — at most a single subtle divider where genuinely needed — not from boxing each region."
+    deliverables:
+      - "remove the bordered-box chrome from the layout slots (.webapp-slot et al.): the header/navbar/content/footer regions are delineated by spacing, typography and alignment, not by borders or card backgrounds. The page reads as one clean surface, not a grid of boxes"
+      - "render a route whose layout is `app` as a styled shell: a top app bar showing the ui-app title/brand (themed with --wa-color-primary), a side navbar region, a main content region, and an optional footer — held together by spacing and a clear type hierarchy, with a sensible responsive collapse (navbar over/under content on narrow viewports). Keep chrome minimal: the app bar may carry the brand color, but body regions stay frameless"
+      - "the shell chrome is driven entirely by design tokens (color, surface, border, radius, font) so a ui-app's tokens visibly restyle it; no hard-coded colors that bypass the token bridge"
+      - "the navbar slot renders mounted nav nodes (ui-navigation / buttons / links) as a coherent, frameless nav list (e.g. plain stacked links with an active state), not bare bordered boxes"
+      - "update the customers example to use the app shell (brand + a navbar with the primary nav) so the example doubles as the shell showcase; regenerate the flows"
+      - "extend ADR 0002 (or a short note) recording that the application shell is delivered via the `app` layout preset + tokens, explicitly NOT via a Shoelace component or a new dependency, and list the four slots as the shell contract"
+    validation:
+      - pnpm test passes with no failures
+      - "unit/render test: a route with layout `app` emits the shell structure (app bar with the ui-app title, navbar, content, footer regions) and places each slot's mounted components"
+      - "unit test: setting a ui-app token (e.g. colorPrimary) changes the rendered app-bar color via the --wa-* custom property (no hard-coded color)"
+      - "E2E/visual: the dev app renders a recognisable application chrome (header bar + side navbar + content), not a stack of bordered boxes — the human confirms it looks modern, minimal and clean (frameless slots)"
+      - "structural/CSS check: the layout slots carry no border or card-background chrome (the old .webapp-slot box styling is gone); region separation is whitespace/typography-based"
+      - "responsive check: at a narrow viewport the navbar collapses sensibly and content stays usable"
 
   # Deferred — only when a concrete need appears (see ADR 0002):
   #   - ui-custom escape-hatch node for framework-specific components (opt-in, non-portable)
