@@ -153,7 +153,7 @@ phases:
 
   - id: P32
     title: Remove the preview rendering apparatus entirely
-    status: pending
+    status: in_progress
     dependencies: [P31]
     goals:
       - Delete the preview simulation now that the live path (P30 events out, P31 live push) exists. The runtime must no longer simulate a backend or hold a parallel preview state.
