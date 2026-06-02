@@ -32,12 +32,6 @@ async function openEditor(page: Parameters<typeof test>[0]["page"], nodeId: stri
     await page.waitForTimeout(300);
 }
 
-async function closeEditor(page: Parameters<typeof test>[0]["page"]) {
-    await page.evaluate(() => {
-        RED.editor.cancel();
-    });
-    await page.waitForTimeout(100);
-}
 
 test.describe("P16d: display nodes editor", () => {
     let displayFlow: FlowNode[];
@@ -67,7 +61,7 @@ test.describe("P16d: display nodes editor", () => {
         const nameValue = await page.inputValue("#node-input-name");
         expect(nameValue.length).toBeGreaterThan(0);
 
-        await closeEditor(page);
+        // Editor is closed by the next test's page.goto("/") navigation.
     });
 
     test("ui-icon editor shows parent selector and default name", async ({ page }) => {
@@ -81,7 +75,7 @@ test.describe("P16d: display nodes editor", () => {
         const nameValue = await page.inputValue("#node-input-name");
         expect(nameValue.length).toBeGreaterThan(0);
 
-        await closeEditor(page);
+        // Editor is closed by the next test's page.goto("/") navigation.
     });
 
     test("ui-list editor shows parent selector and default name", async ({ page }) => {
@@ -95,7 +89,7 @@ test.describe("P16d: display nodes editor", () => {
         const nameValue = await page.inputValue("#node-input-name");
         expect(nameValue.length).toBeGreaterThan(0);
 
-        await closeEditor(page);
+        // Editor is closed by the next test's page.goto("/") navigation.
     });
 
     test("ui-avatar editor shows parent selector and default name", async ({ page }) => {
@@ -109,7 +103,7 @@ test.describe("P16d: display nodes editor", () => {
         const nameValue = await page.inputValue("#node-input-name");
         expect(nameValue.length).toBeGreaterThan(0);
 
-        await closeEditor(page);
+        // Editor is closed by the next test's page.goto("/") navigation.
     });
 
     test("ui-divider editor shows parent selector and default name", async ({ page }) => {
@@ -123,6 +117,6 @@ test.describe("P16d: display nodes editor", () => {
         const nameValue = await page.inputValue("#node-input-name");
         expect(nameValue.length).toBeGreaterThan(0);
 
-        await closeEditor(page);
+        // Editor is closed by the next test's page.goto("/") navigation.
     });
 });

@@ -1487,6 +1487,9 @@ function registerEndpoints(RED) {
         const { appId } = req.params;
         const clientId = req.query.clientId ? String(req.query.clientId) : undefined;
         const location = req.query.location ? String(req.query.location) : "/";
+        // The client passes the initial dialogId so the first snapshot mirrors the
+        // server-rendered page (e.g. when ?dialog=<id> was in the page URL).
+        const initialDialogId = req.query.dialog ? String(req.query.dialog) : undefined;
 
         if (!clientId) {
             res.status(400).json({ error: "A clientId query parameter is required to subscribe." });
@@ -1514,7 +1517,9 @@ function registerEndpoints(RED) {
         addStreamClient(appId, clientId, res, location);
 
         // Initial sync: push the current live snapshot for this client immediately.
-        const built = buildAppSnapshot(appId, location, undefined, readDeployDefinitions(RED), clientId);
+        // Pass the initialDialogId so the first push matches the server-rendered HTML
+        // (prevents the SSE hydration from closing a dialog opened via ?dialog=<id>).
+        const built = buildAppSnapshot(appId, location, initialDialogId, readDeployDefinitions(RED), clientId);
         if (built.success) {
             writeStreamEvent(res, "snapshot", { snapshot: built.snapshot });
         }

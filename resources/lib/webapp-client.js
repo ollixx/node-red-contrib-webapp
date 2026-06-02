@@ -333,8 +333,12 @@
             return;
         }
 
+        // Include the current dialogId so the server's initial snapshot push matches
+        // the server-rendered page (prevents SSE hydration from closing a dialog
+        // that was opened via the ?dialog=<id> URL param on initial load).
         const streamUrl = base() + "/stream?clientId=" + encodeURIComponent(clientId)
-            + "&location=" + encodeURIComponent(location);
+            + "&location=" + encodeURIComponent(location)
+            + (dialogId ? "&dialog=" + encodeURIComponent(dialogId) : "");
 
         const source = new EventSource(streamUrl);
 

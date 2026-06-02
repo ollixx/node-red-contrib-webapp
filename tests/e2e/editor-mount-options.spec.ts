@@ -33,9 +33,12 @@ async function readMountOptions(page: Parameters<typeof test>[0]["page"], nodeId
     }, nodeId);
     await page.waitForTimeout(300);
 
+    // Return option VALUES (e.g. "mountAppShellDemo.content") — values uniquely
+    // identify mount targets regardless of the display label format used by the
+    // tree select (which shows slot names without app name context).
     return page.evaluate(() => {
         const select = document.querySelector<HTMLSelectElement>("#node-input-mount");
-        return select ? Array.from(select.options).map((option) => option.text) : [];
+        return select ? Array.from(select.options).map((option) => option.value).filter((v) => v !== "") : [];
     });
 }
 
@@ -72,15 +75,18 @@ test.describe("editor mount option coverage", () => {
     });
 
     test("shows all valid app slots for mount-based nodes", async ({ page }) => {
+        // Option VALUES encode the mount target as "<appId>.<slot>" or
+        // "route:<path>/<slot>" — these are the canonical identifiers regardless of
+        // the display label used by the tree-select widget.
         const expectedOptions = [
-            "Absolute Layout Demo -> content",
-            "App Layout Demo -> content",
-            "App Layout Demo -> footer",
-            "App Layout Demo -> header",
-            "App Layout Demo -> navbar",
-            "Grid Layout Demo -> content",
-            "Horizontal Layout Demo -> content",
-            "Vertical Layout Demo -> content"
+            "mountAbsoluteApp.content",
+            "mountAppShellDemo.content",
+            "mountAppShellDemo.footer",
+            "mountAppShellDemo.header",
+            "mountAppShellDemo.navbar",
+            "mountGridApp.content",
+            "mountHorizontalApp.content",
+            "mountVerticalApp.content"
         ];
 
         await page.goto("/");

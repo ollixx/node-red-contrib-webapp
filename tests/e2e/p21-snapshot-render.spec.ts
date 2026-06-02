@@ -18,7 +18,9 @@ test.describe("P21: snapshot-driven rendering", () => {
     test("renders the customer-detail route", async ({ page }) => {
         await page.goto("/webapp/customersApp/customers/c-100");
 
-        await expect(page.getByRole("link", { name: "Back to customers" })).toBeVisible();
+        // The "Back to customers" button renders as <sl-button> (button role, not link).
+        await expect(page.getByRole("button", { name: "Back to customers" })).toBeVisible();
+        // The route param :id is resolved and displayed in the page.
         await expect(page.locator(".webapp-grid")).toContainText("c-100");
     });
 

@@ -72,14 +72,19 @@ test.describe("P11b: parent SelectBox in editors", () => {
         await page.waitForLoadState("networkidle");
         await openEditor(page, "mountButtonNode");
 
-        const mountOptions = await page.evaluate(() => {
+        const mountOptionValues = await page.evaluate(() => {
             const select = document.querySelector<HTMLSelectElement>("#node-input-mount");
-            return select ? Array.from(select.options).map((o) => o.text) : [];
+            // Read option values — the tree-select widget uses "<appId>.<slot>" values
+            // so we can verify the correct app slots are populated without relying on
+            // the human-readable label format which changed with the tree widget.
+            return select ? Array.from(select.options).map((o) => o.value).filter((v) => v !== "") : [];
         });
 
-        // Should include route slot entries (App ... -> content)
-        const routeEntries = mountOptions.filter((t) => t.includes("App") && t.includes("content"));
-        expect(routeEntries.length).toBeGreaterThan(0);
+        // The fixture has 5 apps; each should contribute at least its "content" slot.
+        // Verify slot entries for the "App Layout Demo" (mountAppShellDemo) which has
+        // header, navbar, content, footer — 4 slots covering the full app layout.
+        const appShellEntries = mountOptionValues.filter((v) => v.startsWith("mountAppShellDemo."));
+        expect(appShellEntries.length).toBeGreaterThan(0);
     });
 
     test("ui-button registered type has onadd that produces a name default", async ({ page }) => {
