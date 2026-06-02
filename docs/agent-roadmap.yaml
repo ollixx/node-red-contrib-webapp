@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P38  # Next: P38 node events, P39 input ports, P40 token editor.
+  current_phase: P39  # Next: P39 input ports, P40 token editor.
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -185,70 +185,9 @@ phases:
 
   - { id: P36, title: "App shell — a token-themed application chrome for the `app` layout preset", status: done, dependencies: [P34], archive: "docs/agent-roadmap-archive.yaml#P36" }
 
-  - id: P37
-    title: "Auto-refresh on redeploy — SSE redeploy event triggers browser reload"
-    status: done
-    dependencies: [P36]
-    goal: |
-      After a Node-RED flow deploy the browser automatically reloads the webapp page
-      so the user always sees the current flow state without a manual refresh.
-    scope: |
-      - nodes/webapp.js: hook RED.events.on("flows:started") and emit a named SSE
-        event "redeploy" (empty payload) to every active subscriber in
-        runtimeState.streamClients across all appIds.
-      - resources/lib/webapp-client.js: in subscribe(), add
-        source.addEventListener("redeploy", function() { window.location.reload(); })
-        after the existing snapshot/command listeners.
-      - No schema changes, no new endpoints, no test changes required.
-    validation: |
-      - pnpm validate passes (build + lint + test).
-      - Manual: deploy a flow while a webapp page is open -> page reloads within ~1 s.
+  - { id: P37, title: "Auto-refresh on redeploy — SSE redeploy event triggers browser reload", status: done, dependencies: [P36], archive: "docs/agent-roadmap-archive.yaml#P37" }
 
-  - id: P38
-    title: "UI node events — all interactive nodes always emit their events"
-    status: pending
-    dependencies: [P37]
-    goal: |
-      Every interactive UI node (checkbox, switch, radio, select, slider, input,
-      textarea, datepicker, tabs, pagination, stepper, rating, …) emits a msg.ui
-      event on its output port whenever the user interacts with it in the browser.
-      Containers (ui-container) only emit their own events if they have any — they
-      never forward child events. No per-node filter toggle; all emission is always on.
-    scope: |
-      - Design rule:
-          - Each node that has user interaction gets outputs: 1 (if not already).
-          - The client posts the event via the existing POST /webapp/:appId/event
-            endpoint with { clientId, event, sourceId, location, params }.
-          - webapp.js ingestClientEvent() already routes by sourceId to the
-            originating node's output port — no routing changes needed.
-          - Containers: do NOT add data-webapp-event/data-webapp-source attributes
-            to the container wrapper; only leaf nodes carry these attributes.
-      - nodes/webapp.js buildComponentDescriptor() / shoelace-adapter:
-          - Add data-webapp-source and data-webapp-event attributes to the rendered
-            HTML of every interactive node that currently lacks them.
-            Nodes and their events:
-              ui-checkbox  -> change (params: { checked: bool })
-              ui-switch    -> change (params: { checked: bool })
-              ui-radio     -> change (params: { value: string })
-              ui-select    -> change (params: { value: string })
-              ui-slider    -> change (params: { value: number })
-              ui-input     -> change (params: { value: string })
-              ui-textarea  -> change (params: { value: string })
-              ui-datepicker-> change (params: { value: string })
-              ui-tabs      -> change (params: { value: string })  (active tab id)
-              ui-pagination-> change (params: { page: number })
-              ui-stepper   -> change (params: { value: number })
-          - webapp-client.js already captures sl-change/change events via the
-            existing event delegation in handleDomEvent(); extend the handler to
-            read the correct param key from data-webapp-param or a switch on
-            event type.
-      - packages/schema: no changes (events field stays as-is on ui-app).
-      - Node .html editors: update outputs to 1 for every newly-emitting node;
-        add outputLabels returning "event".
-    validation: |
-      - pnpm validate passes.
-      - Manual: place a ui-checkbox, deploy, tick it in the browser -> debug node
-        on the output receives msg.ui with event="change" and params.checked.
+  - { id: P38, title: "UI node events — all interactive nodes always emit their events", status: done, dependencies: [P37], archive: "docs/agent-roadmap-archive.yaml#P38" }
 
   - id: P39
     title: "Input ports — all view nodes accept incoming messages to update their state"

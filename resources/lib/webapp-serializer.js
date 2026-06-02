@@ -194,10 +194,12 @@
 
         const styleAttribute = styles.length > 0 ? " style=\"" + escapeAttribute(styles.join(";")) + "\"" : "";
 
-        // P30: tag the wrapper of every value-bearing control with its node id so a
+        // P30/P38: tag the wrapper of every value-bearing control with its node id so a
         // browser-side change reports a `change` event on the originating node (the
         // thin client's change listener reads data-webapp-source here). Buttons and
         // table rows carry their own source attribute inline; click stays separate.
+        // Tabs/pagination/stepper handle their source attributes inline in their own
+        // rendering branches below.
         const changeKinds = ["input", "select", "checkbox", "radio", "switch", "textarea", "datepicker", "slider"];
         const sourceAttribute = component && changeKinds.indexOf(component.kind) !== -1
             ? " data-webapp-source=\"" + escapeAttribute(component.id) + "\" data-webapp-event=\"change\""
@@ -452,13 +454,22 @@
 
         if (component.kind === "tabs") {
             const tabs = Array.isArray(component.props.tabs) ? component.props.tabs : [];
+            const activeTab = component.value !== undefined && component.value !== null ? String(component.value) : "";
             const tabHtml = tabs.map(function (tab) {
-                return "<sl-tab slot=\"nav\" panel=\"" + escapeAttribute(String(tab.id !== undefined ? tab.id : tab)) + "\">" + escapeHtml(String(tab.label !== undefined ? tab.label : (tab.id !== undefined ? tab.id : tab))) + "</sl-tab>";
+                const panelId = escapeAttribute(String(tab.id !== undefined ? tab.id : tab));
+                const label = escapeHtml(String(tab.label !== undefined ? tab.label : (tab.id !== undefined ? tab.id : tab)));
+                const active = activeTab && (tab.id !== undefined ? tab.id : tab) === activeTab ? " active" : "";
+                return "<sl-tab slot=\"nav\" panel=\"" + panelId + "\"" + active + ">" + label + "</sl-tab>";
             }).join("");
             const panelHtml = tabs.map(function (tab) {
                 return "<sl-tab-panel name=\"" + escapeAttribute(String(tab.id !== undefined ? tab.id : tab)) + "\"></sl-tab-panel>";
             }).join("");
-            return wrapRenderedComponentHtml(component, layoutId, "<sl-tab-group>" + tabHtml + panelHtml + "</sl-tab-group>");
+            // P38: sl-tab-group fires sl-tab-show (Shoelace custom event) when a tab is
+            // selected. The client listens for sl-tab-show on the root element, finds the
+            // closest [data-webapp-source][data-webapp-event="sl-tab-show"] ancestor, and
+            // dispatches a `change` event with params.value = the newly-active tab id.
+            const tabSourceAttr = " data-webapp-source=\"" + escapeAttribute(component.id) + "\" data-webapp-event=\"sl-tab-show\"";
+            return wrapRenderedComponentHtml(component, layoutId, "<sl-tab-group" + tabSourceAttr + ">" + tabHtml + panelHtml + "</sl-tab-group>");
         }
 
         if (component.kind === "accordion") {
@@ -492,6 +503,39 @@
             const initialsAttr = !src && initials ? " initials=\"" + escapeAttribute(initials) + "\"" : "";
             const attrs = shoelaceAttrs(mapComponentToShoelace("avatar", component.props || {}).attributes);
             return wrapRenderedComponentHtml(component, layoutId, "<sl-avatar" + attrs + srcAttr + initialsAttr + " label=\"" + escapeAttribute(label) + "\"></sl-avatar>");
+        }
+
+        // P38: pagination — renders prev/next buttons. Each button carries
+        // data-webapp-source + data-webapp-event="click" + data-webapp-page so the
+        // click handler can dispatch a `change` event with params.page.
+        if (component.kind === "pagination") {
+            const currentPage = component.page !== undefined && component.page !== null ? Number(component.page) : 1;
+            const totalPages = component.totalPages !== undefined && component.totalPages !== null ? Number(component.totalPages) : 0;
+            const src = " data-webapp-source=\"" + escapeAttribute(component.id) + "\"";
+            const prevPage = Math.max(1, currentPage - 1);
+            const nextPage = totalPages > 0 ? Math.min(totalPages, currentPage + 1) : currentPage + 1;
+            const prevDisabled = currentPage <= 1 ? " disabled" : "";
+            const nextDisabled = totalPages > 0 && currentPage >= totalPages ? " disabled" : "";
+            const prevBtn = "<sl-button" + src + " data-webapp-event=\"click\" data-webapp-page=\"" + prevPage + "\"" + prevDisabled + " size=\"small\">&#8249;</sl-button>";
+            const nextBtn = "<sl-button" + src + " data-webapp-event=\"click\" data-webapp-page=\"" + nextPage + "\"" + nextDisabled + " size=\"small\">&#8250;</sl-button>";
+            const pageLabel = "<span class=\"webapp-pagination-page\">" + escapeHtml(String(currentPage)) + (totalPages > 0 ? " / " + escapeHtml(String(totalPages)) : "") + "</span>";
+            return wrapRenderedComponentHtml(component, layoutId, "<div class=\"webapp-pagination\">" + prevBtn + pageLabel + nextBtn + "</div>");
+        }
+
+        // P38: stepper — renders a step indicator. Each step carries
+        // data-webapp-source + data-webapp-event="click" + data-webapp-step so the
+        // click handler can dispatch a `change` event with params.value (step index).
+        if (component.kind === "stepper") {
+            const steps = Array.isArray(component.props.steps) ? component.props.steps : (Array.isArray(component.steps) ? component.steps : []);
+            const activeStep = component.activeStep !== undefined && component.activeStep !== null ? Number(component.activeStep) : (component.value !== undefined && component.value !== null ? Number(component.value) : 0);
+            const src = " data-webapp-source=\"" + escapeAttribute(component.id) + "\"";
+            const orientation = String(component.variant || component.props.orientation || "horizontal");
+            const stepHtml = steps.map(function (step, idx) {
+                const label = escapeHtml(String(step.label !== undefined ? step.label : (step.id !== undefined ? step.id : step)));
+                const isActive = idx === activeStep ? " webapp-step--active" : "";
+                return "<button class=\"webapp-step" + isActive + "\"" + src + " data-webapp-event=\"click\" data-webapp-step=\"" + idx + "\" type=\"button\">" + label + "</button>";
+            }).join("");
+            return wrapRenderedComponentHtml(component, layoutId, "<div class=\"webapp-stepper webapp-stepper--" + escapeAttribute(orientation) + "\">" + stepHtml + "</div>");
         }
 
         return "";

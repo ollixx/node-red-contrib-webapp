@@ -220,6 +220,32 @@
 
         const event = trigger.getAttribute("data-webapp-event") || "click";
 
+        // P38: pagination buttons carry data-webapp-page — dispatch as a `change`
+        // event with params.page so the flow receives the documented shape.
+        if (trigger.hasAttribute("data-webapp-page")) {
+            eventObject.preventDefault();
+            const page = Number(trigger.getAttribute("data-webapp-page"));
+            dispatch({
+                source: trigger.getAttribute("data-webapp-source"),
+                event: "change",
+                params: { page: page }
+            });
+            return;
+        }
+
+        // P38: stepper step buttons carry data-webapp-step — dispatch as a `change`
+        // event with params.value (step index) so the flow receives the documented shape.
+        if (trigger.hasAttribute("data-webapp-step")) {
+            eventObject.preventDefault();
+            const step = Number(trigger.getAttribute("data-webapp-step"));
+            dispatch({
+                source: trigger.getAttribute("data-webapp-source"),
+                event: "change",
+                params: { value: step }
+            });
+            return;
+        }
+
         // Value controls report `change`, not click — leave those to the change
         // listener so a click inside an input does not fire a spurious event.
         if (CLICK_EVENTS.indexOf(event) === -1) {
@@ -242,8 +268,10 @@
         });
     });
 
-    // P30: value-control change → a `change` event on the originating node. The
-    // control's value (or checked state) is the documented `value` param.
+    // P30/P38: value-control change → a `change` event on the originating node.
+    // Param key depends on the control kind:
+    //   sl-checkbox / sl-switch  → { checked: bool }
+    //   all others               → { value: string|number }
     root.addEventListener("change", function (eventObject) {
         const wrapper = eventObject.target.closest("[data-webapp-source][data-webapp-event=\"change\"]");
 
@@ -254,12 +282,34 @@
         const field = eventObject.target;
         const tag = field.tagName ? field.tagName.toLowerCase() : "";
         const isToggle = tag === "sl-checkbox" || tag === "sl-switch" || (tag === "input" && field.type === "checkbox");
-        const value = isToggle ? Boolean(field.checked) : field.value;
+        const params = isToggle
+            ? { checked: Boolean(field.checked) }
+            : { value: field.value };
 
         dispatch({
             source: wrapper.getAttribute("data-webapp-source"),
             event: "change",
-            params: { value: value }
+            params: params
+        });
+    });
+
+    // P38: tabs — sl-tab-group fires `sl-tab-show` (Shoelace custom event) when a
+    // tab is activated. Find the closest [data-webapp-event="sl-tab-show"] ancestor
+    // and dispatch a `change` event with params.value = the newly-active tab id.
+    root.addEventListener("sl-tab-show", function (eventObject) {
+        const tabGroup = eventObject.target.closest("[data-webapp-source][data-webapp-event=\"sl-tab-show\"]");
+
+        if (!tabGroup || !root.contains(tabGroup)) {
+            return;
+        }
+
+        const detail = eventObject.detail;
+        const tabName = detail && detail.name ? String(detail.name) : "";
+
+        dispatch({
+            source: tabGroup.getAttribute("data-webapp-source"),
+            event: "change",
+            params: { value: tabName }
         });
     });
 
