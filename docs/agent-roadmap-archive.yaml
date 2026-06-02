@@ -11,6 +11,35 @@
 
 phases:
 
+  - id: P36
+    title: App shell — a token-themed application chrome for the `app` layout preset
+    status: done
+    dependencies: [P34]
+    summary:
+      delivered: "Implemented a complete application shell for apps using the `app` layout preset. The shell is rendered entirely through the existing app layout (header/navbar/content/footer slots) plus design tokens—no new dependencies or components. The server now renders a top app bar with the ui-app title, themed via the --wa-color-primary token (no hard-coded colors). All slot regions are frameless: the .webapp-slot CSS rule carries no border or background, with structure derived from whitespace and type hierarchy instead. The navbar collapses sensibly on narrow viewports (stacked above content on mobile, sidebar on desktop). Updated customers-crud example: its routes now use app layout (not vertical), and a navbar button mounts to the app-level navbar slot. Added 12 unit tests and 6 E2E tests validating shell structure, token-driven styling, frameless design, and responsive behavior. Updated ADR 0002 documentation with the shell contract."
+      stats: "5 files modified (nodes/webapp.js: CSS + app bar rendering; scripts/gen-example.js: layout updates + navbar node; examples/customers-crud/flow.json regenerated; tests/e2e/p35-gen-hygiene.spec.ts layout expectations updated; ADR 0002 extended). 2 new test files: packages/runtime/test/p36-app-shell.test.ts (12 tests), tests/e2e/p36-app-shell.spec.ts (6 tests). Unit suite: 186 tests, 0 failures. E2E: 6 P36 tests, 0 failures (plus 50 other tests passing). pnpm validate green."
+      notes: "No new node types, no new packages. The app bar is rendered as a sibling to the webapp-grid root, so the thin client's morph() never touches it—the server's initial app bar is always visible, never overwritten by hydrate(). App-level navbar components must use the explicit layout:app/navbar mount syntax (not appId.navbar) to be discovered by the renderer's mount matcher. P35 test expectations updated: routes are now app layout, not vertical, so placement prop validation was adjusted accordingly. All P36 tests pass individually and as part of the full test suite."
+    goals:
+      - Give the app a proper, basic-but-intentional visual frame via the existing `app` layout preset (header/navbar/content/footer slots) and design tokens—not a new dependency.
+      - Modern, minimal, clean design: no frames or borders around slots, just whitespace and type hierarchy.
+      - Token-driven shell styling so ui-app tokens visibly restyle the chrome.
+    deliverables:
+      - "remove the bordered-box chrome from layout slots; structure from whitespace/typography/alignment"
+      - "render a route with layout app as a styled shell: top app bar (with ui-app title, --wa-color-primary token), side navbar region, main content, optional footer"
+      - "shell chrome driven entirely by design tokens; no hard-coded colors"
+      - "navbar slot renders mounted nav nodes as frameless stacked links with hover/active states"
+      - "customers example uses app shell (with navbar primary nav); flows regenerated"
+      - "extend ADR 0002 documenting shell delivered via app layout preset + tokens; list 4 slots as shell contract"
+    validation:
+      - pnpm test passes with no failures
+      - "unit test: route with layout app emits shell structure (app bar with title, navbar/content/footer regions, mounted components placed correctly)"
+      - "unit test: ui-app token (e.g. colorPrimary) changes app-bar color via --wa-* custom property (no hard-coded color)"
+      - "E2E test: dev app renders recognizable chrome (header + navbar + content), not bordered boxes, modern/minimal/clean"
+      - "CSS check: .webapp-slot carries no border or background-color; region separation is whitespace-based"
+      - "responsive check: navbar collapses on narrow viewports, content usable at 600px width"
+    archived_at: "2026-06-02"
+    cost: "session 635e8f3d-9e2a-4f8c-9c44-... approximately 35m"
+
   - id: P35
     title: Generator prop hygiene — emit only layout-appropriate props, clean editor validation
     status: done

@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P36  # App shell — a token-themed application chrome for the `app` layout preset
+  current_phase: null  # All active phases complete (P0–P36 done). Deferred work: ui-custom, SSR, additional adapters.
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -183,27 +183,7 @@ phases:
 
   - { id: P35, title: "Generator prop hygiene — emit only layout-appropriate props, clean editor validation", status: done, dependencies: [P34], archive: "docs/agent-roadmap-archive.yaml#P35" }
 
-  - id: P36
-    title: App shell — a token-themed application chrome for the `app` layout preset
-    status: in_progress
-    dependencies: [P34]
-    goals:
-      - Give the app a proper, basic-but-intentional visual frame. Shoelace ships components, not an app shell, by design — so the shell is OUR concern, expressed through the existing `app` layout preset (header/navbar/content/footer slots already exist) plus design tokens. NOT a new dependency and NOT a new component: render the `app` layout as a real application chrome (top app bar with the ui-app brand/title, side navbar, main content, optional footer) styled from the --wa-* tokens. Stays within ADR 0002's seam — layout = preset, look = tokens + page-shell CSS.
-      - "DESIGN DIRECTION (owner, non-negotiable): modern, minimal, clean. NO frames/borders/card boxes around the slots. Remove the current per-slot box chrome (the `.webapp-slot { border; background; padding }` cards). Structure comes from whitespace, type hierarchy and alignment — at most a single subtle divider where genuinely needed — not from boxing each region."
-    deliverables:
-      - "remove the bordered-box chrome from the layout slots (.webapp-slot et al.): the header/navbar/content/footer regions are delineated by spacing, typography and alignment, not by borders or card backgrounds. The page reads as one clean surface, not a grid of boxes"
-      - "render a route whose layout is `app` as a styled shell: a top app bar showing the ui-app title/brand (themed with --wa-color-primary), a side navbar region, a main content region, and an optional footer — held together by spacing and a clear type hierarchy, with a sensible responsive collapse (navbar over/under content on narrow viewports). Keep chrome minimal: the app bar may carry the brand color, but body regions stay frameless"
-      - "the shell chrome is driven entirely by design tokens (color, surface, border, radius, font) so a ui-app's tokens visibly restyle it; no hard-coded colors that bypass the token bridge"
-      - "the navbar slot renders mounted nav nodes (ui-navigation / buttons / links) as a coherent, frameless nav list (e.g. plain stacked links with an active state), not bare bordered boxes"
-      - "update the customers example to use the app shell (brand + a navbar with the primary nav) so the example doubles as the shell showcase; regenerate the flows"
-      - "extend ADR 0002 (or a short note) recording that the application shell is delivered via the `app` layout preset + tokens, explicitly NOT via a Shoelace component or a new dependency, and list the four slots as the shell contract"
-    validation:
-      - pnpm test passes with no failures
-      - "unit/render test: a route with layout `app` emits the shell structure (app bar with the ui-app title, navbar, content, footer regions) and places each slot's mounted components"
-      - "unit test: setting a ui-app token (e.g. colorPrimary) changes the rendered app-bar color via the --wa-* custom property (no hard-coded color)"
-      - "E2E/visual: the dev app renders a recognisable application chrome (header bar + side navbar + content), not a stack of bordered boxes — the human confirms it looks modern, minimal and clean (frameless slots)"
-      - "structural/CSS check: the layout slots carry no border or card-background chrome (the old .webapp-slot box styling is gone); region separation is whitespace/typography-based"
-      - "responsive check: at a narrow viewport the navbar collapses sensibly and content stays usable"
+  - { id: P36, title: "App shell — a token-themed application chrome for the `app` layout preset", status: done, dependencies: [P34], archive: "docs/agent-roadmap-archive.yaml#P36" }
 
   # Deferred — only when a concrete need appears (see ADR 0002):
   #   - ui-custom escape-hatch node for framework-specific components (opt-in, non-portable)
