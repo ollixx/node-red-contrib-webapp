@@ -183,7 +183,7 @@ phases:
 
   - id: P35
     title: Generator prop hygiene — emit only layout-appropriate props, clean editor validation
-    status: pending
+    status: in_progress
     dependencies: [P34]
     goals:
       - Stop scripts/gen-example.js from dumping layout-placement props that the node's actual parent layout does not use. A node only carries grid props (row/col/colSize/rowSize) when its parent layout is `grid`, and absolute props (layoutX/layoutY) when its parent is `absolute`; under vertical/horizontal/app it carries none. The generated flow must open in the editor with ZERO red validation messages.
