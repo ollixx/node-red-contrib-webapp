@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P35  # Generator prop hygiene — emit only layout-appropriate props
+  current_phase: P36  # App shell — a token-themed application chrome for the `app` layout preset
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -181,21 +181,7 @@ phases:
 
   - { id: P34, title: "Full-journey CRUD E2E from the home route + dead-control guard, fix to green", status: done, dependencies: [P33], archive: "docs/agent-roadmap-archive.yaml#P34" }
 
-  - id: P35
-    title: Generator prop hygiene — emit only layout-appropriate props, clean editor validation
-    status: in_progress
-    dependencies: [P34]
-    goals:
-      - Stop scripts/gen-example.js from dumping layout-placement props that the node's actual parent layout does not use. A node only carries grid props (row/col/colSize/rowSize) when its parent layout is `grid`, and absolute props (layoutX/layoutY) when its parent is `absolute`; under vertical/horizontal/app it carries none. The generated flow must open in the editor with ZERO red validation messages.
-    deliverables:
-      - "make scripts/gen-example.js layout-aware: each node receives placement props only for the layout preset of the slot/route it is mounted in (grid → row/col/colSize/rowSize; absolute → layoutX/layoutY; vertical/horizontal/app → none). A small helper keyed off the mount target's layout, so the rule is enforced in one place, not per node"
-      - "regenerate examples/customers-crud/flow.json and .node-red-dev/flows.json — the customers example uses vertical/app layouts, so its nodes should carry no grid row/col/colSize props after this"
-      - "decide and document the editor's stance on stray layout props: either the editor validation explicitly ignores placement props that don't match the parent layout (no false red), or the generator simply never emits them (preferred — fix the source). Whichever, the loaded example shows no validation errors"
-    validation:
-      - pnpm test passes with no failures
-      - "structural check: in examples/customers-crud/flow.json, no node mounted under a vertical/horizontal/app layout carries grid (row/col/colSize/rowSize) or absolute (layoutX/layoutY) placement props"
-      - "unit test: gen-example's placement helper emits grid props only for grid-mounted nodes and absolute props only for absolute-mounted nodes"
-      - "manual: opening the regenerated flow in the Node-RED editor shows no red node-validation badges on the customers example nodes"
+  - { id: P35, title: "Generator prop hygiene — emit only layout-appropriate props, clean editor validation", status: done, dependencies: [P34], archive: "docs/agent-roadmap-archive.yaml#P35" }
 
   - id: P36
     title: App shell — a token-themed application chrome for the `app` layout preset
