@@ -32,6 +32,13 @@ test.describe("live Server→Client transport (P31)", () => {
         expect(response.ok()).toBeTruthy();
     });
 
+    // Restore the customers-crud baseline so subsequent specs that depend on
+    // customersApp are not left with the p31App fixture flow.
+    test.afterAll(async ({ request }) => {
+        const baseline = await loadFlowFixture("examples/customers-crud/flow.json");
+        await request.post("/flows", { data: baseline });
+    });
+
     test("opens an SSE stream and pushes the initial snapshot", async ({ request }) => {
         // The stream endpoint exists and serves text/event-stream with an initial
         // snapshot frame. Read a bounded slice so the request resolves.

@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: null  # All active phases complete (P0–P36 done). Deferred work: ui-custom, SSR, additional adapters.
+  current_phase: P37  # Next: P37 auto-refresh, P38 node events, P39 input ports, P40 token editor.
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -184,6 +184,141 @@ phases:
   - { id: P35, title: "Generator prop hygiene — emit only layout-appropriate props, clean editor validation", status: done, dependencies: [P34], archive: "docs/agent-roadmap-archive.yaml#P35" }
 
   - { id: P36, title: "App shell — a token-themed application chrome for the `app` layout preset", status: done, dependencies: [P34], archive: "docs/agent-roadmap-archive.yaml#P36" }
+
+  - id: P37
+    title: "Auto-refresh on redeploy — SSE redeploy event triggers browser reload"
+    status: in_progress
+    dependencies: [P36]
+    goal: |
+      After a Node-RED flow deploy the browser automatically reloads the webapp page
+      so the user always sees the current flow state without a manual refresh.
+    scope: |
+      - nodes/webapp.js: hook RED.events.on("flows:started") and emit a named SSE
+        event "redeploy" (empty payload) to every active subscriber in
+        runtimeState.streamClients across all appIds.
+      - resources/lib/webapp-client.js: in subscribe(), add
+        source.addEventListener("redeploy", function() { window.location.reload(); })
+        after the existing snapshot/command listeners.
+      - No schema changes, no new endpoints, no test changes required.
+    validation: |
+      - pnpm validate passes (build + lint + test).
+      - Manual: deploy a flow while a webapp page is open -> page reloads within ~1 s.
+
+  - id: P38
+    title: "UI node events — all interactive nodes always emit their events"
+    status: pending
+    dependencies: [P37]
+    goal: |
+      Every interactive UI node (checkbox, switch, radio, select, slider, input,
+      textarea, datepicker, tabs, pagination, stepper, rating, …) emits a msg.ui
+      event on its output port whenever the user interacts with it in the browser.
+      Containers (ui-container) only emit their own events if they have any — they
+      never forward child events. No per-node filter toggle; all emission is always on.
+    scope: |
+      - Design rule:
+          - Each node that has user interaction gets outputs: 1 (if not already).
+          - The client posts the event via the existing POST /webapp/:appId/event
+            endpoint with { clientId, event, sourceId, location, params }.
+          - webapp.js ingestClientEvent() already routes by sourceId to the
+            originating node's output port — no routing changes needed.
+          - Containers: do NOT add data-webapp-event/data-webapp-source attributes
+            to the container wrapper; only leaf nodes carry these attributes.
+      - nodes/webapp.js buildComponentDescriptor() / shoelace-adapter:
+          - Add data-webapp-source and data-webapp-event attributes to the rendered
+            HTML of every interactive node that currently lacks them.
+            Nodes and their events:
+              ui-checkbox  -> change (params: { checked: bool })
+              ui-switch    -> change (params: { checked: bool })
+              ui-radio     -> change (params: { value: string })
+              ui-select    -> change (params: { value: string })
+              ui-slider    -> change (params: { value: number })
+              ui-input     -> change (params: { value: string })
+              ui-textarea  -> change (params: { value: string })
+              ui-datepicker-> change (params: { value: string })
+              ui-tabs      -> change (params: { value: string })  (active tab id)
+              ui-pagination-> change (params: { page: number })
+              ui-stepper   -> change (params: { value: number })
+          - webapp-client.js already captures sl-change/change events via the
+            existing event delegation in handleDomEvent(); extend the handler to
+            read the correct param key from data-webapp-param or a switch on
+            event type.
+      - packages/schema: no changes (events field stays as-is on ui-app).
+      - Node .html editors: update outputs to 1 for every newly-emitting node;
+        add outputLabels returning "event".
+    validation: |
+      - pnpm validate passes.
+      - Manual: place a ui-checkbox, deploy, tick it in the browser -> debug node
+        on the output receives msg.ui with event="change" and params.checked.
+
+  - id: P39
+    title: "Input ports — all view nodes accept incoming messages to update their state"
+    status: pending
+    dependencies: [P38]
+    goal: |
+      Every view/input node gains an input port so a Node-RED flow can push state
+      updates (e.g. set a checkbox value, update a text label) directly to that node
+      without going through ui-store. A msg arriving on the input port patches the
+      node's rendered value and triggers a fresh SSE snapshot push to all connected
+      clients.
+    scope: |
+      - nodes/webapp.js:
+          - For each view node registration add inputs: 1 if not already present.
+          - Add a node.on("input", ...) handler that:
+              1. Reads msg.payload (the new value) or msg.ui.patch (object with
+                 field overrides).
+              2. Updates the in-memory node config entry in runtimeState.
+              3. Calls the existing pushSnapshot() helper (or equivalent) to SSE-push
+                 a fresh snapshot to all clients of the parent app.
+          - Affected nodes (initially): ui-text, ui-button (label), ui-badge,
+            ui-checkbox, ui-switch, ui-radio, ui-select, ui-input, ui-textarea,
+            ui-slider, ui-datepicker, ui-progress, ui-image, ui-avatar, ui-alert,
+            ui-table (rows), ui-list (items).
+      - Node .html editors: set inputs: 1 for every updated node so the port
+        appears on the canvas.
+      - packages/schema: no changes required (values come in via msg, not config).
+      - docs/nodes/concepts/: add a short section to an existing or new inputs.md
+        describing the msg.payload / msg.ui.patch contract.
+    validation: |
+      - pnpm validate passes.
+      - Manual: place a ui-text node, inject a msg with payload "Hello updated" ->
+        app page reflects the new text within ~1 s.
+
+  - id: P40
+    title: "Token editor dialog — visual design-token editor in ui-app node"
+    status: pending
+    dependencies: [P36]
+    goal: |
+      The ui-app node editor gets a "Styles anpassen" button that opens a jQuery UI
+      dialog listing all design tokens grouped by category (Colors, Typography,
+      Spacing, Radii). Color tokens show a live colour swatch and an <input type="color">
+      + text field. Non-colour tokens (font, size, radius) show a plain text input.
+      The dialog reads from and writes back to the node's `tokens` field (JSON object).
+    scope: |
+      - nodes/structure/ui-app.html:
+          - Add `tokens: { value: "" }` to defaults (stored as JSON string).
+          - Add a "Styles anpassen" button row in the template.
+          - Add a hidden div#node-dialog-tokens outside the form area.
+          - In oneditprepare: initialise the jQuery UI dialog, populate fields from
+            the current tokens value (parse JSON), wire the button.
+          - In oneditsave (or dialog OK): serialise field values back to
+            #node-input-tokens as a JSON string; strip empty values so unchanged
+            tokens stay at their CSS default.
+          - Token metadata (label, group, type: "color"|"text", CSS default) is
+            declared inline as a JS constant in the script — no server round-trip.
+            Groups: Colors (colorPrimary ... colorTextMuted), Typography
+            (fontFamily, fontSizeBase, fontWeightNormal, fontWeightBold, lineHeightBase),
+            Spacing (spacingUnit), Radii (radiusSm, radiusMd, radiusLg, radiusFull).
+          - Color row layout: [swatch 24x24] [input type=color] [text input for
+            hex/rgb] — the swatch mirrors the color picker value live.
+      - nodes/webapp.js: parseTokens() already handles object input; ensure the
+        hidden input value (JSON string) is also accepted (add a JSON.parse branch
+        if the value is a string).
+      - No schema changes.
+    validation: |
+      - pnpm validate passes.
+      - Manual: open ui-app editor -> click "Styles anpassen" -> dialog appears with
+        all tokens listed, colour swatches visible, current values populated.
+      - Change colorPrimary -> deploy -> app bar reflects new colour.
 
   # Deferred — only when a concrete need appears (see ADR 0002):
   #   - ui-custom escape-hatch node for framework-specific components (opt-in, non-portable)

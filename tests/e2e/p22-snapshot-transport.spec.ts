@@ -34,6 +34,13 @@ test.describe("live event transport (P30 events)", () => {
         expect(response.ok()).toBeTruthy();
     });
 
+    // Restore the customers-crud baseline so subsequent specs that depend on
+    // customersApp are not left with the p22App fixture flow.
+    test.afterAll(async ({ request }) => {
+        const baseline = await loadFlowFixture("examples/customers-crud/flow.json");
+        await request.post("/flows", { data: baseline });
+    });
+
     test("the client runtime is served as a static resource", async ({ request }) => {
         const runtime = await request.get("/resources/node-red-contrib-webapp/lib/webapp-client.js");
         expect(runtime.ok()).toBeTruthy();

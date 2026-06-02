@@ -1380,7 +1380,20 @@ function getStreamSubscribers(appId) {
 }
 
 function addStreamClient(appId, clientId, res, location) {
-    getStreamSubscribers(appId).set(clientId, { res, location: location || "/" });
+    // P37: record the connect time so the redeploy broadcast can skip clients
+    // that just connected (the deploy that triggered flows:started fired BEFORE
+    // this client connected — reloading them immediately would be a false positive).
+    // Suppress write errors on the response and its socket so that EPIPE errors
+    // (browser disconnects) do not crash the server when the redeploy broadcast
+    // writes to stale handles.
+    const noop = function () { /* suppress */ };
+    if (typeof res.on === "function") {
+        res.on("error", noop);
+    }
+    if (res.socket && typeof res.socket.on === "function") {
+        res.socket.on("error", noop);
+    }
+    getStreamSubscribers(appId).set(clientId, { res, location: location || "/", connectedAt: Date.now() });
 }
 
 function removeStreamClient(appId, clientId) {
@@ -2520,6 +2533,50 @@ function registerWebappNodes(RED) {
     runtimeState.RED = RED;
     Object.keys(runtimeNodeRegistry).forEach((type) => {
         registerNodeType(RED, type);
+    });
+
+    // P37: broadcast a "redeploy" SSE event to every connected client after a
+    // flow deploy so browsers automatically reload and pick up the new flow state.
+    // Guard: only notify clients that were connected BEFORE this deploy started
+    // (i.e. connectedAt is more than 500 ms in the past). Clients that connected
+    // during or just after the deploy are loading the new flow already; sending
+    // them a redeploy immediately would cause a spurious extra reload.
+    RED.events.on("flows:started", function () {
+        const deployedAt = Date.now();
+        // Defer by one event-loop tick so pending connection-close callbacks
+        // (req.on("close") → removeStreamClient) fire first. This avoids sending
+        // the redeploy event to connections already closed by the browser.
+        setImmediate(function () {
+            for (const [, subscribers] of runtimeState.streamClients) {
+                for (const [, entry] of subscribers) {
+                    // Only notify clients that were connected well before this
+                    // deploy — clients that connected AFTER the deploy are
+                    // already loading the fresh flow state.
+                    if (entry.connectedAt < deployedAt - 500) {
+                        try {
+                            const res = entry.res;
+                            const socket = res.socket;
+                            // Only write to connections that are definitely still alive:
+                            // the socket must exist, not be destroyed, and not yet
+                            // have sent its half-close (FIN). This prevents EPIPE writes
+                            // to browser connections that closed between the test page
+                            // ending and the TCP FIN propagating to Node.js.
+                            const isLive = !res.writableEnded
+                                && !res.destroyed
+                                && socket
+                                && !socket.destroyed
+                                && !socket.writableEnded
+                                && socket.readable;
+                            if (isLive) {
+                                writeStreamEvent(res, "redeploy", {});
+                            }
+                        } catch (_) {
+                            // Ignore write errors on stale connections.
+                        }
+                    }
+                }
+            }
+        });
     });
 }
 

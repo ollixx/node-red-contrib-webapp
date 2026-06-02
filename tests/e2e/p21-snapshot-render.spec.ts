@@ -1,3 +1,6 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+
 import { expect, test } from "@playwright/test";
 
 /**
@@ -9,6 +12,15 @@ import { expect, test } from "@playwright/test";
  * now opened via the ?dialog=<id> query parameter on the initial page load.
  */
 test.describe("P21: snapshot-driven rendering", () => {
+    // Restore the customers-crud baseline after this spec so subsequent specs
+    // that depend on customersApp start from a known-good state. The tests here
+    // do not change the deployed flow, but they open SSE connections that may
+    // not be fully closed before the next spec's beforeEach deploy fires.
+    test.afterAll(async ({ request }) => {
+        const fixturePath = path.resolve(process.cwd(), "examples/customers-crud/flow.json");
+        const baselineFlow = JSON.parse(await readFile(fixturePath, "utf8"));
+        await request.post("/flows", { data: baselineFlow });
+    });
     test("renders the customers route (table present, node-driven structure)", async ({ page }) => {
         await page.goto("/webapp/customersApp/customers");
 

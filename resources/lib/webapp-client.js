@@ -263,6 +263,11 @@
         });
     });
 
+    // P37: set to true after initial hydration; redeploy reloads are ignored
+    // until the page has fully settled so the SSE connect race does not cause
+    // a reload loop on fresh page load.
+    let hydrated = false;
+
     // Initial hydration: pull the canonical snapshot and take over rendering.
     async function hydrate() {
         const query = "?location=" + encodeURIComponent(location) + (dialogId ? "&dialog=" + encodeURIComponent(dialogId) : "");
@@ -271,6 +276,7 @@
             const response = await fetch(base() + "/snapshot" + query);
 
             if (!response.ok) {
+                hydrated = true;
                 return;
             }
 
@@ -283,6 +289,7 @@
         catch (error) {
             // Leave the server-rendered fallback in place on any failure.
         }
+        hydrated = true;
     }
 
     // P31: apply an interaction command pushed by a ui-action in the flow. These
@@ -363,6 +370,19 @@
             }
             catch (error) {
                 // Ignore a malformed frame.
+            }
+        });
+
+        // P37: reload the page when the server signals a flow redeploy so the
+        // browser always shows the current flow state without a manual refresh.
+        // Guard: only reload once the initial hydration is done AND the SSE
+        // connection has been open long enough that the triggering deploy
+        // pre-dates this page load. This prevents a spurious reload when the
+        // browser connects to SSE shortly after a deploy fires flows:started.
+        var subscribeTime = Date.now();
+        source.addEventListener("redeploy", function () {
+            if (hydrated && (Date.now() - subscribeTime) > 1000) {
+                window.location.reload();
             }
         });
     }

@@ -19,11 +19,14 @@ test.describe("P23: Shoelace Web Component adapter", () => {
         baselineFlow = JSON.parse(await readFile(fixturePath, "utf8")) as FlowNode[];
     });
 
-    test.beforeEach(async ({ request }) => {
+    test.beforeEach(async ({ request, page }) => {
         // Re-deploy the customers flow so this spec is independent of suite order
         // (earlier specs deploy other apps over the shared Node-RED instance).
         const deploy = await request.post("/flows", { data: baselineFlow });
         expect(deploy.ok()).toBeTruthy();
+        // Brief settle so that any stale SSE connections from previous tests finish
+        // closing before the next page navigates and opens a fresh SSE stream.
+        await page.waitForTimeout(150);
     });
 
     test("renders the customers example through the Web Component adapter (sl-card)", async ({ page }) => {
@@ -53,6 +56,9 @@ test.describe("P23: Shoelace Web Component adapter", () => {
 
     test("renders the dialog as a Shoelace card", async ({ page }) => {
         await page.goto("/webapp/customersApp/customers?dialog=customerEditor");
+        // Wait for the page to fully hydrate and for the SSE initial snapshot to
+        // render the dialog overlay. The table appearing confirms the app is live.
+        await expect(page.locator("table.webapp-table")).toBeVisible();
 
         const card = page.locator("sl-card.webapp-dialog-card");
         await expect(card).toBeVisible();
