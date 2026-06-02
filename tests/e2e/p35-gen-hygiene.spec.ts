@@ -12,9 +12,9 @@ test.describe("P35: Generator prop hygiene — layout-aware placement props", ()
         const flow = JSON.parse(readFileSync(flowPath, "utf8"));
 
         const expectedLayouts: Record<string, string> = {
-            routeHome: "vertical",
-            customers: "vertical",
-            customerDetail: "vertical",
+            routeHome: "app",
+            customers: "app",
+            customerDetail: "app",
             customerEditor: "vertical"
         };
 

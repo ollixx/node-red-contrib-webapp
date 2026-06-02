@@ -168,7 +168,7 @@ const flowNodes = [
         parent:   APP,
         path:     "/",
         title:    "Home",
-        layoutId: "vertical"
+        layoutId: "app"
     }),
     node("ui-route", "customers", "structure", 2, {
         name:    "Customers",
@@ -176,7 +176,7 @@ const flowNodes = [
         parent:  APP,
         path:    "/customers",
         title:   "Customers",
-        layoutId: "vertical"
+        layoutId: "app"
     }),
     node("ui-route", "customerDetail", "structure", 3, {
         name:    "Customer detail",
@@ -184,7 +184,7 @@ const flowNodes = [
         parent:  APP,
         path:    "/customers/:id",
         title:   "Customer detail",
-        layoutId: "vertical"
+        layoutId: "app"
     }),
     node("ui-dialog", "customerEditor", "structure", 4, {
         name:    "Edit customer",
@@ -306,6 +306,21 @@ const flowNodes = [
         uiId:   "navToCustomers",  // required
         parent: APP,
         to:     "/customers"       // required
+    }),
+
+    // ── View – App shell (navbar) ─────────────────────────────────────────────
+    // P36: mount a navigation affordance in the app-level navbar slot so the
+    // shell has a coherent sidebar nav. The button triggers the goToCustomers
+    // ui-action; its visual is overridden by navbar-slot CSS to render as a
+    // plain stacked nav link (no pill/border — pure whitespace + type hierarchy).
+    node("ui-button", "navCustomersButton", "viewApp", 0, {
+        name:   "Customers nav link",
+        uiId:   "navCustomersButton",
+        parent: APP,
+        mount:  "layout:app/navbar",
+        order:  0,
+        label:  "Customers",
+        action: "goToCustomers"
     }),
 
     // ── View – / (home) ──────────────────────────────────────────────────────
@@ -732,8 +747,9 @@ const uiToLogicWires = {
     deleteCustomerButton:   "fnDeleteCustomer",
     refreshCustomersButton: "fnRefreshCustomers",
     // Pure-navigation buttons → ui-action node directly (P30: no domain work)
-    homeGoToCustomersButton: "goToCustomers",
-    backToCustomersButton:   "goToCustomers"
+    navCustomersButton:       "goToCustomers",
+    homeGoToCustomersButton:  "goToCustomers",
+    backToCustomersButton:    "goToCustomers"
 };
 
 for (const [sourceId, targetId] of Object.entries(uiToLogicWires)) {

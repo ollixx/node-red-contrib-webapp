@@ -124,3 +124,46 @@ not the default, and is not built until a concrete need arises.
   leaking into a schema is a defect.
 - Any change to the snapshot/tokens contracts, the "theme injects no nodes" rule, or the
   Web Components default after this ADR requires a new ADR and is a stop condition.
+
+---
+
+## Addendum: Application shell delivered via the `app` layout preset (P36, 2026-06-02)
+
+The `app` layout preset (`layout: "app"` on a `ui-app` node) defines **the application
+shell contract** — it is the mechanism for delivering a top app bar, sidebar navigation,
+main content area, and optional footer. This is explicitly **not** a new dependency and
+**not** a new Shoelace component: the shell is implemented through the existing `app`
+layout preset plus CSS driven entirely by design tokens.
+
+### Shell contract
+
+The four slots of the `app` layout preset have defined shell roles:
+
+| Slot | Role |
+|------|------|
+| `header` | Content placed below the top app bar (e.g. route-level sub-header) |
+| `navbar` | Side navigation region — renders as a frameless stacked nav list |
+| `content` | Main content area — frameless, flex-grows to fill available space |
+| `footer` | Optional bottom region, separated by a single `--wa-color-border` divider |
+
+The **top app bar** (`.webapp-app-bar`) is a shell-level concern rendered from
+the `ui-app` title, **not** a mounted component. Its background uses
+`var(--wa-color-primary)` and foreground uses `var(--wa-color-primary-fg)`, so
+a `tokens.colorPrimary` value on the `ui-app` node visibly rebrands the app bar
+without any hard-coded color.
+
+### Design direction (owner-mandated)
+
+- **Frameless slots**: no `border`, `background`, or `border-radius` on slot
+  wrappers. Structure comes from whitespace, type hierarchy, and a single
+  subtle `--wa-color-border` divider where genuinely needed — not from boxing
+  each region.
+- Navigation affordances in the navbar render as plain stacked links
+  (`.webapp-slot--navbar sl-button` is overridden to strip pill/border chrome).
+- The responsive collapse: at narrow viewports the layout stacks vertically
+  (navbar above content); at ≥900 px it switches to a 220 px sidebar + flex-1
+  main column.
+
+This decision is additive to — and fully within — the constraints established
+above. No new dependency is introduced; the seam is: layout = preset,
+look = tokens + page-shell CSS.

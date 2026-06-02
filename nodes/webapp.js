@@ -1131,7 +1131,15 @@ function renderAppPage(appId, location, dialogId, definitions) {
             );
         })
         .join("");
+    const isAppLayout = snapshot.layout.id === "app";
     const pageBody = renderLayoutHtml(snapshot.layout.id, snapshot.regions, serializerContext);
+
+    // P36: for the `app` layout preset, prepend a branded top app bar showing
+    // the ui-app title. The app bar is a shell concern (not a mounted component)
+    // styled entirely via --wa-color-primary / --wa-color-primary-fg tokens.
+    const appBarHtml = isAppLayout
+        ? `<header class="webapp-app-bar"><span class="webapp-app-bar-title">${escapeHtml(model.title || model.id)}</span></header>`
+        : "";
 
     return {
         status: 200,
@@ -1164,17 +1172,24 @@ ${tokenCss ? tokenCss.split("\n").map((line) => `    ${line}`).join("\n") : "   
     * { box-sizing:border-box; }
     body { margin:0; font-family:var(--wa-font-family); font-size:var(--wa-font-size-base); color:var(--wa-color-text); background:var(--wa-color-background); }
     a { color:inherit; text-decoration:none; }
+    /* P36: non-app layouts are constrained; the app-layout shell fills the viewport */
     #webapp-client-root { max-width:1100px; margin:0 auto; padding:24px 20px 60px; }
+    #webapp-client-root.webapp-is-app-layout { max-width:none; padding:0; display:flex; flex-direction:column; min-height:100vh; }
     .webapp-grid { display:grid; gap:16px; }
+    /* P36: for app layout the grid wrapper is a pass-through flex container */
+    .webapp-is-app-layout .webapp-grid { display:contents; }
     .webapp-layout { display:grid; gap:16px; }
-    .webapp-layout--app { grid-template-areas:"header" "navbar" "content" "footer"; }
-    .webapp-slot { border:1px solid var(--wa-color-border); background:var(--wa-color-surface); border-radius:var(--wa-radius-md); padding:16px; }
-    .webapp-slot--header { grid-area:header; }
-    .webapp-slot--navbar { grid-area:navbar; }
-    .webapp-slot--content { grid-area:content; }
-    .webapp-slot--footer { grid-area:footer; }
-    .webapp-slot > header { margin-bottom:12px; }
-    .webapp-slot > header h2 { margin:0; font-size:1rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--wa-color-text-muted); }
+    /* P36: app-layout shell — mobile-first stacked; desktop: sidebar + content */
+    .webapp-layout--app { display:flex; flex-direction:column; gap:0; min-height:0; flex:1; }
+    /* P36: app bar — themed via --wa-color-primary token, no hard-coded color */
+    .webapp-app-bar { display:flex; align-items:center; gap:12px; padding:0 20px; height:56px; background:var(--wa-color-primary); color:var(--wa-color-primary-fg); flex-shrink:0; }
+    .webapp-app-bar-title { font-size:1.1rem; font-weight:600; letter-spacing:0.01em; flex:1; }
+    /* P36: slot regions — frameless; structure from whitespace and type hierarchy */
+    .webapp-slot { padding:0; }
+    .webapp-slot--header { padding:16px 20px; }
+    .webapp-slot--navbar { padding:12px 0; }
+    .webapp-slot--content { flex:1; padding:20px; min-width:0; }
+    .webapp-slot--footer { padding:12px 20px; border-top:1px solid var(--wa-color-border); }
     .webapp-slot-body { gap:12px; }
     .webapp-slot-body--vertical, .webapp-slot-body--app, .webapp-slot-body--custom { display:flex; flex-direction:column; }
     .webapp-slot-body--horizontal { display:flex; flex-direction:row; align-items:flex-start; flex-wrap:wrap; }
@@ -1182,6 +1197,15 @@ ${tokenCss ? tokenCss.split("\n").map((line) => `    ${line}`).join("\n") : "   
     .webapp-slot-body--grid { display:grid; grid-template-columns:repeat(12, minmax(0, 1fr)); gap:12px; }
     .webapp-slot-body--absolute { position:relative; min-height:320px; }
     .webapp-item--absolute { position:absolute; }
+    /* P36: navbar — frameless stacked nav links; active state via color */
+    .webapp-nav-list { display:flex; flex-direction:column; gap:0; list-style:none; margin:0; padding:0; }
+    .webapp-nav-item a, .webapp-nav-link { display:block; padding:10px 20px; font-size:0.95rem; font-weight:500; color:var(--wa-color-text); text-decoration:none; transition:color 0.15s, background 0.15s; }
+    .webapp-nav-item a:hover, .webapp-nav-link:hover { color:var(--wa-color-primary); background:color-mix(in srgb, var(--wa-color-primary) 8%, transparent); }
+    .webapp-nav-item[aria-current="page"] a, .webapp-nav-link[aria-current="page"] { color:var(--wa-color-primary); font-weight:600; border-left:3px solid var(--wa-color-primary); padding-left:17px; }
+    /* P36: buttons inside the navbar slot render as plain nav-style links, not pill buttons */
+    .webapp-slot--navbar sl-button::part(base) { border:none; background:transparent; border-radius:0; width:100%; justify-content:flex-start; padding:10px 20px; font-size:0.95rem; font-weight:500; color:var(--wa-color-text); box-shadow:none; }
+    .webapp-slot--navbar sl-button::part(base):hover { color:var(--wa-color-primary); background:color-mix(in srgb, var(--wa-color-primary) 8%, transparent); }
+    .webapp-slot--navbar .webapp-item { width:100%; }
     .webapp-text { font-size:1.05rem; }
     .webapp-table { width:100%; border-collapse:collapse; background:var(--wa-color-surface); border-radius:var(--wa-radius-md); overflow:hidden; }
     .webapp-table th, .webapp-table td { padding:10px 12px; border-bottom:1px solid var(--wa-color-border); text-align:left; }
@@ -1192,13 +1216,19 @@ ${tokenCss ? tokenCss.split("\n").map((line) => `    ${line}`).join("\n") : "   
     .webapp-dialog-card { width:min(720px, 100%); background:var(--wa-color-surface); border-radius:var(--wa-radius-md); padding:20px; box-shadow:0 25px 70px rgba(0,0,0,0.18); }
     .webapp-dialog-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
     .webapp-link { color:var(--wa-color-primary); font-weight:700; }
+    /* P36: desktop — sidebar layout; navbar collapses over content on narrow viewports */
     @media (min-width:900px) {
-      .webapp-layout--app { grid-template-columns:minmax(220px,280px) minmax(0,1fr); grid-template-areas:"header header" "navbar content" "footer footer"; align-items:start; }
+      .webapp-layout--app { flex-direction:row; flex-wrap:wrap; }
+      .webapp-slot--header { flex:0 0 100%; }
+      .webapp-slot--navbar { width:220px; flex-shrink:0; border-right:1px solid var(--wa-color-border); min-height:calc(100vh - 56px); padding-top:16px; }
+      .webapp-slot--content { flex:1; }
+      .webapp-slot--footer { flex:0 0 100%; }
     }
   </style>
 </head>
 <body>
-  <div id="webapp-client-root"
+  ${appBarHtml}
+  <div id="webapp-client-root"${isAppLayout ? " class=\"webapp-is-app-layout\"" : ""}
        data-webapp-app-id="${escapeAttribute(model.id)}"
        data-webapp-location="${escapeAttribute(snapshot.location)}"${dialogId ? ` data-webapp-dialog="${escapeAttribute(dialogId)}"` : ""}>
     <div class="webapp-grid">${pageBody}</div>
