@@ -147,4 +147,12 @@ describe("P38: client source uses correct param key per control kind", () => {
         expect(clientSource).toContain("data-webapp-step");
         expect(clientSource).toContain("value: step");
     });
+
+    it("client listens for sl-change (Shoelace CustomEvent) in addition to change", () => {
+        // Shoelace fires sl-change from the host element — the native change from
+        // inside the shadow DOM is composed:false and does not cross the boundary.
+        // Both listeners must be present.
+        expect(clientSource).toContain("addEventListener(\"sl-change\"");
+        expect(clientSource).toContain("addEventListener(\"change\"");
+    });
 });

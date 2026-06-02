@@ -272,7 +272,13 @@
     // Param key depends on the control kind:
     //   sl-checkbox / sl-switch  → { checked: bool }
     //   all others               → { value: string|number }
-    root.addEventListener("change", function (eventObject) {
+    //
+    // We listen for BOTH "change" (native re-dispatch from host, works for
+    // sl-input/sl-select/etc.) AND "sl-change" (Shoelace CustomEvent, the only
+    // event that reliably crosses the shadow boundary for sl-checkbox/sl-switch).
+    // The handler is identical; deduplication is not needed because Shoelace
+    // fires either one or the other depending on the component version.
+    function handleChangeEvent(eventObject) {
         const wrapper = eventObject.target.closest("[data-webapp-source][data-webapp-event=\"change\"]");
 
         if (!wrapper || !root.contains(wrapper)) {
@@ -291,7 +297,10 @@
             event: "change",
             params: params
         });
-    });
+    }
+
+    root.addEventListener("change", handleChangeEvent);
+    root.addEventListener("sl-change", handleChangeEvent);
 
     // P38: tabs — sl-tab-group fires `sl-tab-show` (Shoelace custom event) when a
     // tab is activated. Find the closest [data-webapp-event="sl-tab-show"] ancestor
