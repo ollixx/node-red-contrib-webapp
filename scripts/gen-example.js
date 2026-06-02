@@ -22,6 +22,62 @@ const rootDir = resolve(__dirname, "..");
 const FLOW_TAB_ID = "flow1";
 const Z = FLOW_TAB_ID;
 
+// ── Mount-to-Layout Mapping ──────────────────────────────────────────────────
+// Each route/dialog specifies a layoutId. This map lets us determine which
+// placement props are valid for a node based on its mount point.
+// Grid layouts use row/col/colSize/rowSize; absolute layouts use layoutX/layoutY;
+// vertical/horizontal/app layouts use none.
+
+const mountTargetLayouts = {
+    // Routes with their layout presets
+    "routeHome": "vertical",
+    "customers": "vertical",
+    "customerDetail": "vertical",
+    "customerEditor": "vertical"
+};
+
+// Helper to determine which placement props should be emitted for a given mount
+function getPlacementProps(mount, placementData = {}) {
+    if (!mount) {
+        return {};
+    }
+
+    // Determine the target layout from the mount reference
+    let layoutId;
+
+    if (mount.startsWith("layout:")) {
+        // Direct layout reference: "layout:grid/content" → "grid"
+        const match = mount.match(/^layout:(\w+)\//);
+        layoutId = match ? match[1] : null;
+    } else if (mount.includes("/")) {
+        // Route reference: "route:/customers/content" → look up route
+        // or "customerEditor/content" → named reference, look up by name
+        const parts = mount.split("/");
+        const target = parts[0];
+        layoutId = mountTargetLayouts[target];
+    } else {
+        // Other formats - assume no placement
+        layoutId = null;
+    }
+
+    // Emit only the placement props that match the layout
+    const result = {};
+    if (layoutId === "grid") {
+        // Grid layout: emit row, col, colSize, rowSize
+        if ("row" in placementData) result.row = placementData.row;
+        if ("col" in placementData) result.col = placementData.col;
+        if ("colSize" in placementData) result.colSize = placementData.colSize;
+        if ("rowSize" in placementData) result.rowSize = placementData.rowSize;
+    } else if (layoutId === "absolute") {
+        // Absolute layout: emit layoutX, layoutY
+        if ("layoutX" in placementData) result.layoutX = placementData.layoutX;
+        if ("layoutY" in placementData) result.layoutY = placementData.layoutY;
+    }
+    // For vertical/horizontal/app/other, emit no placement props
+
+    return result;
+}
+
 // ── Layout ────────────────────────────────────────────────────────────────────
 // Nodes are placed in named rows; each row gets a Y coordinate.
 // Within a row, nodes are placed left-to-right with X_STEP spacing.
@@ -52,7 +108,20 @@ function pos(row, col) {
 }
 
 function node(type, id, rowName, col, fields) {
-    return { type, id, ...fields, z: Z, ...pos(rowName, col), wires: [[]] };
+    // Extract placement data before filtering by layout
+    const { row, col: gridCol, colSize, rowSize, layoutX, layoutY, ...restFields } = fields;
+    const placementData = {};
+    if (row !== undefined) placementData.row = row;
+    if (gridCol !== undefined) placementData.col = gridCol;
+    if (colSize !== undefined) placementData.colSize = colSize;
+    if (rowSize !== undefined) placementData.rowSize = rowSize;
+    if (layoutX !== undefined) placementData.layoutX = layoutX;
+    if (layoutY !== undefined) placementData.layoutY = layoutY;
+
+    // Filter placement props based on the mount target's layout
+    const layoutAwarePlacement = getPlacementProps(fields.mount, placementData);
+
+    return { type, id, ...restFields, ...layoutAwarePlacement, z: Z, ...pos(rowName, col), wires: [[]] };
 }
 
 // A plain Node-RED `function` node. ALL domain logic for the CRUD lives in these.
