@@ -1788,6 +1788,12 @@ function buttonInputHandler(node, msg, send, done) {
         return componentStateInputHandler(node, msg, send, done);
     }
 
+    // P39: msg.ui.patch or msg.payload updates the button label (and pushes snapshot).
+    if ((uiMsg && uiMsg.patch && typeof uiMsg.patch === "object") ||
+        (msg.payload !== undefined && msg.payload !== null && !(uiMsg && uiMsg.event))) {
+        return viewNodePatchInputHandler(node, msg, send, done);
+    }
+
     // Emit click event on the output port
     const clickMsg = {
         ui: {
@@ -1800,6 +1806,105 @@ function buttonInputHandler(node, msg, send, done) {
     if (done) {
         done();
     }
+}
+
+// P39: locate the ui-app that owns a view node by matching their flow tab (z).
+// Falls back to getActiveRuntimeAppId() when the flow tab cannot be determined.
+function findAppIdForNode(node) {
+    const flowId = node.z;
+    if (flowId) {
+        for (const registration of runtimeState.definitions.values()) {
+            const def = registration.definition;
+            if (def.type === "ui-app" && registration.nodeId) {
+                // The app node's own Node-RED node also has .z matching the flow
+                const appNode = runtimeState.RED ? runtimeState.RED.nodes.getNode(registration.nodeId) : null;
+                if (appNode && appNode.z === flowId) {
+                    return def.id;
+                }
+            }
+        }
+    }
+    return getActiveRuntimeAppId();
+}
+
+// P39: primary mutable field for each view-node type when msg.payload is used.
+const VIEW_NODE_PRIMARY_FIELD = {
+    "ui-text": "value",
+    "ui-button": "label",
+    "ui-badge": "value",
+    "ui-checkbox": "value",
+    "ui-switch": "value",
+    "ui-radio": "value",
+    "ui-select": "value",
+    "ui-input": "value",
+    "ui-textarea": "value",
+    "ui-slider": "value",
+    "ui-datepicker": "value",
+    "ui-progress": "value",
+    "ui-image": "src",
+    "ui-avatar": "src",
+    "ui-alert": "message",
+    "ui-table": "rows",
+    "ui-list": "items"
+};
+
+// Binding-wrapped fields — msg.payload is wrapped in a literalBinding so
+// the renderer can resolve them like any other binding.
+const VIEW_NODE_BINDING_FIELDS = new Set([
+    "value", "src", "message", "rows", "items"
+]);
+
+// P39: handle incoming msg.payload / msg.ui.patch on view nodes.
+// Patches the in-memory definition and pushes a fresh snapshot to all
+// connected clients of the parent app.
+function viewNodePatchInputHandler(node, msg, send, done) {
+    const uiMsg = msg && msg.ui && typeof msg.ui === "object" ? msg.ui : undefined;
+
+    // Delegate component-op messages (show/hide/enable/disable/…) as before.
+    if (uiMsg && uiMsg.component && typeof uiMsg.component.op === "string") {
+        return componentStateInputHandler(node, msg, send, done);
+    }
+
+    const registration = runtimeState.definitions.get(node.id);
+    if (!registration) {
+        send(msg);
+        if (done) { done(); }
+        return;
+    }
+
+    let patched = false;
+
+    // msg.ui.patch — arbitrary field overrides supplied by the flow author.
+    if (uiMsg && uiMsg.patch && typeof uiMsg.patch === "object") {
+        registration.definition = Object.assign({}, registration.definition, uiMsg.patch);
+        node.webappDefinition = registration.definition;
+        patched = true;
+    } else if (msg.payload !== undefined && msg.payload !== null) {
+        // msg.payload — sets the primary mutable field for this node type.
+        const nodeType = registration.definition.type;
+        const field = VIEW_NODE_PRIMARY_FIELD[nodeType];
+        if (field) {
+            const newValue = VIEW_NODE_BINDING_FIELDS.has(field)
+                ? literalBinding(msg.payload)
+                : msg.payload;
+            registration.definition = Object.assign({}, registration.definition, { [field]: newValue });
+            node.webappDefinition = registration.definition;
+            patched = true;
+        }
+    }
+
+    if (patched) {
+        const RED = runtimeState.RED;
+        if (RED) {
+            const appId = findAppIdForNode(node);
+            if (appId) {
+                pushSnapshotToClients(appId, undefined, readDeployDefinitions(RED));
+            }
+        }
+    }
+
+    send(msg);
+    if (done) { done(); }
 }
 
 // P20a: ui-action reads the wired target node from the flow topology and
@@ -1900,7 +2005,7 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: componentStateInputHandler
+            inputHandler: viewNodePatchInputHandler
         }
     },
     "ui-button": {
@@ -1934,7 +2039,7 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: componentStateInputHandler
+            inputHandler: viewNodePatchInputHandler
         }
     },
     "ui-container": {
@@ -1967,7 +2072,7 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: componentStateInputHandler
+            inputHandler: viewNodePatchInputHandler
         }
     },
     "ui-select": {
@@ -1987,7 +2092,7 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: componentStateInputHandler
+            inputHandler: viewNodePatchInputHandler
         }
     },
     "ui-checkbox": {
@@ -2003,7 +2108,7 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: componentStateInputHandler
+            inputHandler: viewNodePatchInputHandler
         }
     },
     "ui-radio": {
@@ -2021,7 +2126,7 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: componentStateInputHandler
+            inputHandler: viewNodePatchInputHandler
         }
     },
     "ui-switch": {
@@ -2039,7 +2144,7 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: componentStateInputHandler
+            inputHandler: viewNodePatchInputHandler
         }
     },
     "ui-textarea": {
@@ -2058,7 +2163,7 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: componentStateInputHandler
+            inputHandler: viewNodePatchInputHandler
         }
     },
     "ui-datepicker": {
@@ -2078,7 +2183,7 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: componentStateInputHandler
+            inputHandler: viewNodePatchInputHandler
         }
     },
     "ui-slider": {
@@ -2098,7 +2203,7 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: componentStateInputHandler
+            inputHandler: viewNodePatchInputHandler
         }
     },
     "ui-store": {
@@ -2233,7 +2338,7 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: componentStateInputHandler
+            inputHandler: viewNodePatchInputHandler
         }
     },
     "ui-toast": {
@@ -2263,7 +2368,7 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: componentStateInputHandler
+            inputHandler: viewNodePatchInputHandler
         }
     },
     "ui-skeleton": {
@@ -2296,7 +2401,7 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: componentStateInputHandler
+            inputHandler: viewNodePatchInputHandler
         }
     },
     "ui-empty-state": {
@@ -2444,7 +2549,7 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: componentStateInputHandler
+            inputHandler: viewNodePatchInputHandler
         }
     },
     "ui-icon": {
@@ -2476,7 +2581,7 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: componentStateInputHandler
+            inputHandler: viewNodePatchInputHandler
         }
     },
     "ui-avatar": {
@@ -2494,7 +2599,7 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: componentStateInputHandler
+            inputHandler: viewNodePatchInputHandler
         }
     },
     "ui-divider": {

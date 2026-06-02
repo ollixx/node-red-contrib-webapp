@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P39  # Next: P39 input ports, P40 token editor.
+  current_phase: P40  # Next: P40 token editor dialog.
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -189,38 +189,7 @@ phases:
 
   - { id: P38, title: "UI node events — all interactive nodes always emit their events", status: done, dependencies: [P37], archive: "docs/agent-roadmap-archive.yaml#P38" }
 
-  - id: P39
-    title: "Input ports — all view nodes accept incoming messages to update their state"
-    status: pending
-    dependencies: [P38]
-    goal: |
-      Every view/input node gains an input port so a Node-RED flow can push state
-      updates (e.g. set a checkbox value, update a text label) directly to that node
-      without going through ui-store. A msg arriving on the input port patches the
-      node's rendered value and triggers a fresh SSE snapshot push to all connected
-      clients.
-    scope: |
-      - nodes/webapp.js:
-          - For each view node registration add inputs: 1 if not already present.
-          - Add a node.on("input", ...) handler that:
-              1. Reads msg.payload (the new value) or msg.ui.patch (object with
-                 field overrides).
-              2. Updates the in-memory node config entry in runtimeState.
-              3. Calls the existing pushSnapshot() helper (or equivalent) to SSE-push
-                 a fresh snapshot to all clients of the parent app.
-          - Affected nodes (initially): ui-text, ui-button (label), ui-badge,
-            ui-checkbox, ui-switch, ui-radio, ui-select, ui-input, ui-textarea,
-            ui-slider, ui-datepicker, ui-progress, ui-image, ui-avatar, ui-alert,
-            ui-table (rows), ui-list (items).
-      - Node .html editors: set inputs: 1 for every updated node so the port
-        appears on the canvas.
-      - packages/schema: no changes required (values come in via msg, not config).
-      - docs/nodes/concepts/: add a short section to an existing or new inputs.md
-        describing the msg.payload / msg.ui.patch contract.
-    validation: |
-      - pnpm validate passes.
-      - Manual: place a ui-text node, inject a msg with payload "Hello updated" ->
-        app page reflects the new text within ~1 s.
+  - { id: P39, title: "Input ports — all view nodes accept incoming messages to update their state", status: done, dependencies: [P38], archive: "docs/agent-roadmap-archive.yaml#P39" }
 
   - id: P40
     title: "Token editor dialog — visual design-token editor in ui-app node"
