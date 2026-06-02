@@ -185,7 +185,7 @@ phases:
 
   - id: P36
     title: App shell — a token-themed application chrome for the `app` layout preset
-    status: pending
+    status: in_progress
     dependencies: [P34]
     goals:
       - Give the app a proper, basic-but-intentional visual frame. Shoelace ships components, not an app shell, by design — so the shell is OUR concern, expressed through the existing `app` layout preset (header/navbar/content/footer slots already exist) plus design tokens. NOT a new dependency and NOT a new component: render the `app` layout as a real application chrome (top app bar with the ui-app brand/title, side navbar, main content, optional footer) styled from the --wa-* tokens. Stays within ADR 0002's seam — layout = preset, look = tokens + page-shell CSS.
