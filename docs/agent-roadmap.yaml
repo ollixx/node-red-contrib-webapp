@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P40  # Next: P40 token editor dialog.
+  current_phase: P41  # Next: P41 (no next phase defined yet).
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -191,42 +191,7 @@ phases:
 
   - { id: P39, title: "Input ports — all view nodes accept incoming messages to update their state", status: done, dependencies: [P38], archive: "docs/agent-roadmap-archive.yaml#P39" }
 
-  - id: P40
-    title: "Token editor dialog — visual design-token editor in ui-app node"
-    status: pending
-    dependencies: [P36]
-    goal: |
-      The ui-app node editor gets a "Styles anpassen" button that opens a jQuery UI
-      dialog listing all design tokens grouped by category (Colors, Typography,
-      Spacing, Radii). Color tokens show a live colour swatch and an <input type="color">
-      + text field. Non-colour tokens (font, size, radius) show a plain text input.
-      The dialog reads from and writes back to the node's `tokens` field (JSON object).
-    scope: |
-      - nodes/structure/ui-app.html:
-          - Add `tokens: { value: "" }` to defaults (stored as JSON string).
-          - Add a "Styles anpassen" button row in the template.
-          - Add a hidden div#node-dialog-tokens outside the form area.
-          - In oneditprepare: initialise the jQuery UI dialog, populate fields from
-            the current tokens value (parse JSON), wire the button.
-          - In oneditsave (or dialog OK): serialise field values back to
-            #node-input-tokens as a JSON string; strip empty values so unchanged
-            tokens stay at their CSS default.
-          - Token metadata (label, group, type: "color"|"text", CSS default) is
-            declared inline as a JS constant in the script — no server round-trip.
-            Groups: Colors (colorPrimary ... colorTextMuted), Typography
-            (fontFamily, fontSizeBase, fontWeightNormal, fontWeightBold, lineHeightBase),
-            Spacing (spacingUnit), Radii (radiusSm, radiusMd, radiusLg, radiusFull).
-          - Color row layout: [swatch 24x24] [input type=color] [text input for
-            hex/rgb] — the swatch mirrors the color picker value live.
-      - nodes/webapp.js: parseTokens() already handles object input; ensure the
-        hidden input value (JSON string) is also accepted (add a JSON.parse branch
-        if the value is a string).
-      - No schema changes.
-    validation: |
-      - pnpm validate passes.
-      - Manual: open ui-app editor -> click "Styles anpassen" -> dialog appears with
-        all tokens listed, colour swatches visible, current values populated.
-      - Change colorPrimary -> deploy -> app bar reflects new colour.
+  - { id: P40, title: "Token editor dialog — visual design-token editor in ui-app node", status: done, dependencies: [P36], archive: "docs/agent-roadmap-archive.yaml#P40" }
 
   # Deferred — only when a concrete need appears (see ADR 0002):
   #   - ui-custom escape-hatch node for framework-specific components (opt-in, non-portable)

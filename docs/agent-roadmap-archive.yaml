@@ -1042,3 +1042,25 @@ phases:
       - "parity check: examples/customers-crud/flow.json matches pnpm gen:example output; the dev flow derives from the same generator"
       - "grep check: nodes/webapp.js gained no example/CRUD logic as part of the fix (still no 'customer'/'/customers' identifiers)"
       - "manual: on the dev instance (:1881, restarted), landing on '/' and clicking 'Go to customers' navigates to the list, and the full create/edit/delete journey works"
+
+  - id: P40
+    title: "Token editor dialog — visual design-token editor in ui-app node"
+    status: done
+    summary:
+      what: |
+        Added a "Styles anpassen" button to the ui-app node editor that opens a jQuery UI
+        dialog with all 17 design tokens grouped into Colors, Typography, Spacing, and Radii.
+        Color tokens show a live colour swatch + <input type="color"> + hex text field with
+        bidirectional sync. Non-colour tokens use plain text inputs. Values are serialised
+        to a hidden #node-input-tokens field as a JSON string on dialog OK; empty values are
+        stripped so unchanged tokens fall back to CSS defaults. The existing parseTokens()
+        in webapp.js already handled both object and JSON-string inputs — no changes required
+        to the runtime.
+      files_changed:
+        - nodes/structure/ui-app.html
+      validation:
+        - "pnpm validate passes (lint + 298 unit tests + build)"
+        - "54 Playwright E2E tests pass"
+    cost:
+      session_id: "(see .ai/agent-runs.jsonl)"
+      duration: "2026-06-02T15:29:23Z → 2026-06-02T15:31:27Z (~2 min)"
