@@ -18,8 +18,10 @@ If the phase adds new node types (P16a, P16b, P16c, P16d or similar): invoke the
 ## Execute
 
 1. Set the phase status to `in_progress` in `docs/agent-roadmap.yaml`. Commit. **At this moment capture your start timestamp** (`date -u +%FT%TZ`) — you need it for the `cost.duration` field at the end (AGENTS.md rule 10).
-2. Confirm the suite is green *before* you start (`pnpm test`). Know your baseline — if something is already red, you need to know it is not your change.
+2. Confirm the suite is green *before* you start (`pnpm test` **and** `pnpm exec playwright test`). Both must be fully green before you write a single line of implementation code. If any test is already failing: **stop, fix it first, commit the fix, then start the phase.** Do not proceed with a red baseline — a red baseline is a blocker, not a footnote.
 3. Implement each deliverable **test-first**: for the deliverable's matching `validation` criterion, write the failing unit/E2E test first, watch it fail, then implement until it passes. This is not bureaucracy — it is what keeps you from the fix→revert→fix thrash of changing code you do not yet understand. One commit per logical change. If a change makes a previously-green test red, revert and re-approach rather than pile on.
+
+   **Anti-baseline rule:** "pre-existing", "unrelated", "net improvement", and "baseline" are never valid reasons to leave an E2E test failing. If your change broke a test that was green before your phase: fix it. If a test was already red when you arrived: you should have stopped in step 2. If you discover mid-phase that there were pre-existing failures you missed in step 2: stop, fix them all, then continue. Zero E2E failures is the only valid state for marking done.
 4. When all deliverables are implemented, follow the full validation protocol in `.ai/agents/validation.md` to confirm every criterion is covered (it back-stops anything you did not already test-drive).
 5. If all three validation steps pass:
    a. Write a `summary` for the phase in `docs/agent-roadmap-archive.yaml` (see format below).

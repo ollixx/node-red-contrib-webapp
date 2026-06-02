@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P34  # Full-journey CRUD E2E from the home route + dead-control guard, fix the half-wired example to green
+  current_phase: P35  # Generator prop hygiene — emit only layout-appropriate props
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -179,26 +179,7 @@ phases:
   # (webapp.js) bug.
   # ════════════════════════════════════════════════════════════════════════
 
-  - id: P34
-    title: Full-journey CRUD E2E from the home route + dead-control guard, fix to green
-    status: pending
-    dependencies: [P33]
-    goals:
-      - Replace the false-green E2E with a suite that drives the app as a real user from the app root through every CRUD use case and EVERY interactive control, so any dead/unwired control fails a test. Then fix gen-example.js (and the generated flow) until the suite is green — without adding any business logic to webapp.js.
-      - Guarantee dev/E2E parity so a green E2E means the app the developer runs on :1881 actually works — the E2E exercises the same generated flow, and a structural guard proves no interactive control is left unwired.
-    deliverables:
-      - "rewrite tests/e2e/customers-crud.spec.ts to start at the app root (location '/'), click 'Go to customers', and drive the full lifecycle: home → list (seeded rows) → CREATE (New → fill → Save, row appears, dialog closes) → READ (row → detail route shows that record's fields) → UPDATE (open editor on an existing row, assert the form is PRE-FILLED, change a field, Save, assert the row updates IN PLACE — not appended) → DELETE (from detail, returns to list without the row) → and exercise navigation controls explicitly, including clicking 'Back' on the detail route and 'Go to customers' on home"
-      - "remove every arbitrary page.waitForTimeout: wait on real conditions (the /stream SSE subscription established, network response, element state/text) so the suite is deterministic, not timing-luck"
-      - "a structural guard test over examples/customers-crud/flow.json: NO ui-button / ui-table (and other event-source) node has an empty output wire, and NO ui-action node is orphaned (each has a feeder, or is removed) — i.e. zero dead controls"
-      - "a dev/E2E parity assertion: examples/customers-crud/flow.json equals the current gen-example.js output, and .node-red-dev/flows.json is regenerated from the same source (allowing only clearly-marked local-only additions like a debug node) so both surfaces run the same app"
-      - "fix scripts/gen-example.js so the generated flow wires 'Go to customers' and 'Back' to their navigation, and CLEANS UP all vestigial nodes — the 5 orphaned ui-action nodes (openCustomerEditor, closeCustomerEditor, saveCustomer, refreshCustomers, goToCustomers, whichever stay unfed) and any other dead node left from the preview era are wired into the journey or removed outright; no orphaned node survives. Regenerate examples/customers-crud/flow.json and .node-red-dev/flows.json via pnpm gen:example. Domain/navigation wiring lives in the flow — webapp.js stays example-agnostic and CRUD-logic-free"
-    validation:
-      - "pnpm exec playwright test tests/e2e/customers-crud.spec.ts passes, covering the full journey from '/' including the previously-dead 'Go to customers' and 'Back' controls and the UPDATE/edit-in-place case"
-      - "the suite contains no page.waitForTimeout calls (grep check) and passes 3 runs in a row (determinism)"
-      - "structural guard: zero ui-button/ui-table nodes with an empty output wire and zero orphaned ui-action nodes in examples/customers-crud/flow.json"
-      - "parity check: examples/customers-crud/flow.json matches pnpm gen:example output; the dev flow derives from the same generator"
-      - "grep check: nodes/webapp.js gained no example/CRUD logic as part of the fix (still no 'customer'/'/customers' identifiers)"
-      - "manual: on the dev instance (:1881, restarted), landing on '/' and clicking 'Go to customers' navigates to the list, and the full create/edit/delete journey works"
+  - { id: P34, title: "Full-journey CRUD E2E from the home route + dead-control guard, fix to green", status: done, dependencies: [P33], archive: "docs/agent-roadmap-archive.yaml#P34" }
 
   - id: P35
     title: Generator prop hygiene — emit only layout-appropriate props, clean editor validation

@@ -12,6 +12,14 @@ pnpm test
 pnpm exec playwright test
 ```
 
+**Anti-baseline rule — no exceptions, no rationalisation.**
+It does not matter whether a failing test was already failing before your phase started.
+If `pnpm exec playwright test` exits with any failure, you must fix every failing test before
+marking the phase done — even tests unrelated to this phase's deliverables. "Pre-existing",
+"unrelated", "net improvement", and "baseline" are not valid reasons to leave a test red.
+If a test is genuinely obsolete (tests a removed feature), delete it. If it tests something
+real, fix it. The only acceptable exit state is zero failures.
+
 ## Step 2: Write and verify tests for every validation criterion
 
 Open `docs/agent-roadmap.yaml` and find the `validation` list for the current phase. For each criterion, **write the test first if it does not exist**, then verify it passes:

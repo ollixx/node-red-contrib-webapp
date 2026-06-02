@@ -187,42 +187,25 @@ const flowNodes = [
     }),
 
     // ── Actions ──────────────────────────────────────────────────────────────
-    node("ui-action", "openCustomerEditor", "actions", 0, {
-        name:        "Open editor",
-        uiId:        "openCustomerEditor", // required
-        parent:      APP,
-        actionType:  "show",
-        targetMode:  "path",
-        target:      "dialog:customerEditor",
-        description: "Open the customer editor dialog."
-    }),
-    node("ui-action", "closeCustomerEditor", "actions", 1, {
+    // Orphaned ui-action nodes from earlier iterations are removed:
+    //   • openCustomerEditor  — dialog opens via dialogStore; no feeder, unused.
+    //   • saveCustomer        — dialog closes via dialogStore after save; no feeder.
+    //   • refreshCustomers    — refresh goes through fnRefreshCustomers→customersStore; no feeder.
+    //
+    // closeCustomerEditor IS kept — it is the dialog's Close affordance source:
+    // findDialogCloseAction discovers it and renders a Close link in the dialog
+    // header with data-webapp-source="closeCustomerEditor". The browser fires
+    // events directly on it; no flow-wired feeder is needed.
+    node("ui-action", "closeCustomerEditor", "actions", 0, {
         name:        "Close editor",
         uiId:        "closeCustomerEditor",
         parent:      APP,
         actionType:  "hide",
         targetMode:  "path",
         target:      "dialog:customerEditor",
-        description: "Close the customer editor dialog."
+        description: "Close the customer editor dialog (rendered as the dialog header Close link)."
     }),
-    node("ui-action", "saveCustomer", "actions", 2, {
-        name:        "Save customer",
-        uiId:        "saveCustomer",
-        parent:      APP,
-        actionType:  "hide",
-        targetMode:  "path",
-        target:      "dialog:customerEditor",
-        description: "Close the editor dialog after the wired flow has persisted the customer."
-    }),
-    node("ui-action", "refreshCustomers", "actions", 3, {
-        name:        "Refresh customers",
-        uiId:        "refreshCustomers",
-        parent:      APP,
-        actionType:  "trigger",
-        targetMode:  "out-port",
-        description: "Refresh the customer list query."
-    }),
-    node("ui-action", "openCustomerDetail", "actions", 4, {
+    node("ui-action", "openCustomerDetail", "actions", 1, {
         name:       "Open detail",
         uiId:       "openCustomerDetail",
         parent:     APP,
@@ -231,7 +214,7 @@ const flowNodes = [
         target:     "app",
         to:         "/customers/:id"
     }),
-    node("ui-action", "goToCustomers", "actions", 5, {
+    node("ui-action", "goToCustomers", "actions", 2, {
         name:       "Go to customers",
         uiId:       "goToCustomers",
         parent:     APP,
@@ -240,7 +223,7 @@ const flowNodes = [
         target:     "app",
         to:         "/customers"
     }),
-    node("ui-action", "deleteCustomer", "actions", 6, {
+    node("ui-action", "deleteCustomer", "actions", 3, {
         name:       "Delete customer",
         uiId:       "deleteCustomer",
         parent:     APP,
@@ -249,7 +232,7 @@ const flowNodes = [
         target:     "app",
         to:         "/customers"
     }),
-    node("ui-navigation", "navToCustomers", "actions", 7, {
+    node("ui-navigation", "navToCustomers", "actions", 4, {
         name:   "Nav to customers",
         uiId:   "navToCustomers",  // required
         parent: APP,
@@ -314,8 +297,7 @@ const flowNodes = [
         parent: APP,
         mount:  "route:/customers/content", // required
         order:  0,
-        label:  "New customer",             // required
-        action: "openCustomerEditor"        // required
+        label:  "New customer"              // required; wired → fnNewCustomer which opens dialog via dialogStore
     }),
     node("ui-button", "refreshCustomersButton", "viewCustomers", 1, {
         name:         "Refresh",
@@ -324,7 +306,7 @@ const flowNodes = [
         mount:        "route:/customers/content",
         order:        1,
         label:        "Refresh",
-        action:       "refreshCustomers",
+        // no action ref — wired directly to fnRefreshCustomers which re-pushes the list
         disabledPath: "ui.queries.customersQuery.loading",
         disabled:     { kind: "state", path: "ui.queries.customersQuery.loading", fallback: false }
     }),
@@ -380,8 +362,8 @@ const flowNodes = [
         parent: APP,
         mount:  "route:/customers/:id/content",
         order:  2,
-        label:  "Edit customer",
-        action: "openCustomerEditor"
+        label:  "Edit customer"
+        // no action ref — wired to fnEditCustomer which opens dialog via dialogStore
     }),
     node("ui-button", "deleteCustomerButton", "viewDetail", 3, {
         name:         "Delete",
@@ -470,7 +452,7 @@ const flowNodes = [
         parent: APP,
         mount:  "layout:grid/content",
         label:  "Cancel",
-        action: "closeCustomerEditor",
+        action: "closeCustomerEditor", // keep: closeCustomerEditor is a live action node
         row: 4, col: 1, colSize: 6
     }),
     node("ui-button", "saveCustomerButton", "viewDialog", 5, {
@@ -479,7 +461,7 @@ const flowNodes = [
         parent:       APP,
         mount:        "layout:grid/content",
         label:        "Save",
-        action:       "saveCustomer",
+        // no action ref — wired to fnSaveCustomer which closes dialog via dialogStore
         disabledPath: "draft.isSaving",
         disabled:     { kind: "state", path: "draft.isSaving", fallback: false },
         row: 4, col: 7, colSize: 6
@@ -662,18 +644,27 @@ const flowNodes = [
     )
 ];
 
-// ── Wiring: UI node outputs → function nodes ──────────────────────────────────
+// ── Wiring: UI node outputs → function nodes / ui-action nodes ───────────────
 // The UI nodes emit events on their OUTPUT ports (P30); these wires carry those
-// events into the function nodes that hold the domain logic. This is the only
-// place the example "connects" behaviour — and it is plain Node-RED wiring.
+// events into the function nodes (domain logic) or directly into ui-action nodes
+// (pure navigation with no domain work needed). This is the only place the
+// example "connects" behaviour — and it is plain Node-RED wiring.
+//
+// Navigation buttons wire DIRECTLY to the goToCustomers ui-action node — no
+// intermediate function node is needed because there is no domain work to do:
+// the action node just pushes a navigate command to the client over SSE.
 const uiToLogicWires = {
-    customersTable:       "fnSelectCustomer",
-    newCustomerButton:    "fnNewCustomer",
-    editCustomerButton:   "fnEditCustomer",
-    saveCustomerButton:   "fnSaveCustomer",
-    cancelCustomerButton: "fnCancelEditor",
-    deleteCustomerButton: "fnDeleteCustomer",
-    refreshCustomersButton: "fnRefreshCustomers"
+    // Domain-logic buttons → function nodes
+    customersTable:         "fnSelectCustomer",
+    newCustomerButton:      "fnNewCustomer",
+    editCustomerButton:     "fnEditCustomer",
+    saveCustomerButton:     "fnSaveCustomer",
+    cancelCustomerButton:   "fnCancelEditor",
+    deleteCustomerButton:   "fnDeleteCustomer",
+    refreshCustomersButton: "fnRefreshCustomers",
+    // Pure-navigation buttons → ui-action node directly (P30: no domain work)
+    homeGoToCustomersButton: "goToCustomers",
+    backToCustomersButton:   "goToCustomers"
 };
 
 for (const [sourceId, targetId] of Object.entries(uiToLogicWires)) {
