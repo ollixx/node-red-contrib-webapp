@@ -210,7 +210,7 @@ phases:
 
   - id: P41
     title: "Per-node E2E — test infrastructure"
-    status: pending
+    status: in_progress
     dependencies: [P40]
     # Architecture-sensitive: sets the foundation every subsequent E-phase builds on.
     # Use opus.
