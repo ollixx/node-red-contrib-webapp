@@ -752,9 +752,21 @@ function toComponentDefinitions(components) {
         if (p16Kind) {
             const valueBinding = getBinding(component.value, component.valuePath ? stateBinding(component.valuePath) : undefined);
             const disabledBinding = getBinding(component.disabled, component.disabledPath ? stateBinding(component.disabledPath) : undefined);
+            // For alert/badge nodes that use `message`/`value` as primary binding fields
+            // (not `value`), fall back to those fields as the value binding so the
+            // renderer resolves them and the serializer can read the string from
+            // component.value rather than the raw binding object in component.props.
+            const messageBinding = !valueBinding && p16Kind === "alert" ? getBinding(component.message, undefined) : undefined;
+            const srcBinding = !valueBinding && p16Kind === "avatar" ? getBinding(component.src, undefined) : undefined;
             const bind = {};
             if (valueBinding) {
                 bind.value = valueBinding;
+            }
+            else if (messageBinding) {
+                bind.value = messageBinding;
+            }
+            else if (srcBinding) {
+                bind.value = srcBinding;
             }
             if (disabledBinding) {
                 bind.disabled = disabledBinding;
@@ -2472,7 +2484,7 @@ const runtimeNodeRegistry = {
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
-            items: getBinding(config.items, config.itemsPath ? stateBinding(config.itemsPath) : undefined) || parseList(config.items),
+            items: getBinding(config.items, config.itemsPath ? stateBinding(config.itemsPath) : undefined) || (Array.isArray(config.items) ? config.items : parseList(config.items)),
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {

@@ -1,0 +1,5 @@
+
+## P43 — 2026-06-03
+- Binding fields in node schemas (bindingSchema) require proper {kind,…} objects — plain strings silently fail Zod validation and prevent node registration with no visible error. The E2E test helper FlowBuilder defaults and test comments don't warn about this. Each failing test had no obvious error message — just an empty page or missing element. This caused several wasted debug cycles before the root cause was found.
+- Shoelace web component attribute reflection is inconsistent: some components reflect attributes back to the DOM after upgrade (sl-badge variant), others don't (sl-avatar image). No pattern to predict from outside the Shoelace source. Tests that assume CSS attribute selectors work reliably fail for non-reflected attributes.
+- The breadcrumb mapConfig used parseList for items which converts object arrays to "[object Object]" strings — a silent data loss bug. The fix is trivial (Array.isArray check) but the bug was invisible until a specific E2E test tried to assert item count.

@@ -418,7 +418,15 @@
         }
 
         if (component.kind === "alert") {
-            const message = String(component.props.message || component.value || "");
+            // component.props.message may be a raw binding object (when the message
+            // binding has not been resolved through bind.value). Use component.value
+            // (the resolved binding) as the canonical source; fall back to props.message
+            // only when it is a plain string.
+            const rawMessage = component.props.message;
+            const message = String(
+                component.value !== undefined && component.value !== null ? component.value
+                    : (typeof rawMessage === "string" ? rawMessage : "")
+            );
             const severity = String(component.props.severity || "primary");
             const shoelaceVariant = ({ info: "primary", warning: "warning", error: "danger", success: "success" })[severity] || severity;
             const dismissible = component.props.dismissible ? " closable" : "";
@@ -496,7 +504,12 @@
         }
 
         if (component.kind === "avatar") {
-            const src = component.props.src || component.value;
+            // component.value is the resolved src binding (routed through bind.value
+            // in toComponentDefinitions); component.props.src is the raw binding
+            // object when no value binding was resolved. Prefer the resolved value.
+            const rawSrc = component.props.src;
+            const src = (component.value !== undefined && component.value !== null) ? component.value
+                : (typeof rawSrc === "string" ? rawSrc : undefined);
             const label = String(component.props.label || component.id);
             const initials = String(component.props.initials || "");
             const srcAttr = src ? " image=\"" + escapeAttribute(String(src)) + "\"" : "";

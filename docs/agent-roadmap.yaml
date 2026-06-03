@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P43  # Next: P43 per-node E2E — stateless view nodes.
+  current_phase: P44  # Next: P44 per-node E2E — interactive view nodes (events + input ports).
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -212,43 +212,7 @@ phases:
 
   - { id: P42, title: "Per-node E2E — structure nodes (ui-app, ui-route, ui-dialog)", status: done, dependencies: [P41], archive: "docs/agent-roadmap-archive.yaml#P42" }
 
-  - id: P43
-    title: "Per-node E2E — stateless view nodes"
-    status: pending
-    dependencies: [P42]
-    goal: |
-      Rendering-only specs for every view node that has no user interaction:
-      ui-text, ui-button (render only, no click test here), ui-badge, ui-progress,
-      ui-image, ui-avatar, ui-skeleton, ui-empty-state, ui-alert, ui-breadcrumb.
-      Each spec verifies that every documented prop maps to the correct HTML
-      attribute or content.
-    scope: |
-      One spec file per node under tests/e2e/nodes/view/:
-
-      ui-text.spec.ts
-        - text content renders inside the component.
-        - binding to store value renders the store's current value.
-        - size prop maps to correct sl-* size attribute (if applicable).
-
-      ui-button.spec.ts  (render-only; click/event in P44 interactive group)
-        - label renders as button text.
-        - variant "primary" → sl-button variant="primary".
-        - variant "danger" → sl-button variant="danger".
-        - disabled → sl-button[disabled].
-        - icon prop → icon slot rendered.
-
-      ui-badge, ui-progress, ui-image, ui-avatar, ui-skeleton, ui-empty-state,
-      ui-alert, ui-breadcrumb:
-        Each gets a minimal spec (2–4 tests) covering:
-          1. Renders the correct Shoelace element.
-          2. Core props map to attributes (variant, value, src, label, …).
-          3. Empty/default state renders without crashing.
-
-      ui-breadcrumb: items array → correct number of <sl-breadcrumb-item> elements.
-    validation: |
-      - pnpm validate passes.
-      - `pnpm exec playwright test tests/e2e/nodes/view` for the nodes in this
-        phase — all pass.
+  - { id: P43, title: "Per-node E2E — stateless view nodes", status: done, dependencies: [P42], archive: "docs/agent-roadmap-archive.yaml#P43" }
 
   - id: P44
     title: "Per-node E2E — interactive view nodes (events + input ports)"
