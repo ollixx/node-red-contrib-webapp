@@ -1064,3 +1064,46 @@ phases:
     cost:
       session_id: "(see .ai/agent-runs.jsonl)"
       duration: "2026-06-02T15:29:23Z → 2026-06-02T15:31:27Z (~2 min)"
+
+  - id: P41
+    title: "Per-node E2E — test infrastructure"
+    status: done
+    dependencies: [P40]
+    summary:
+      delivered: >
+        Shared per-node E2E infrastructure: a FlowBuilder fluent flow assembler
+        with canonical per-type defaults, admin-API helpers (deployFlow,
+        resetFlow, injectMessage) for the live E2E Node-RED, and a WebappPage
+        page-object (navigate, expectComponent/expectAttr, getHtml,
+        interceptNextEvent, waitForSseSnapshot). customers-crud is tagged
+        @integration and gated out of the default run; playwright.config.ts seeds
+        the baseline only when E2E_RESET_ON_START != false.
+      stats: "9 files (3 helpers, 1 smoke spec, .gitkeep, config, package.json, customers-crud spec, TESTING.md), 2 new smoke tests, 0 new nodes"
+      notes: >
+        Deviation from scope: scope suggested excluding @integration via
+        config grep:/^(?!.*@integration)/ and running it with `--grep
+        @integration`. That does not work in Playwright 1.58 — a CLI --grep is
+        ANDed with config grep/grepInvert, not substituted, so any config-side
+        @integration exclusion is uncancellable from the CLI. Implemented an
+        E2E_INTEGRATION=1 env toggle instead (grepInvert by default, grep when
+        set) exposed as `pnpm test:e2e:integration`. The {tag:"@integration"}
+        object form on describe was also not grep-matchable in this version; used
+        the title-suffix " @integration" convention. deployFlow uses POST /flows
+        (matching existing specs), not PUT. FlowBuilder view-node mounts default
+        to the id-keyed `<routeId>.content` form. Default E2E run: 44 pass;
+        integration run: 12 pass; full unit suite: 207 pass.
+      cost: "session 9bad3814-4228-45bf-a0d0-ebc42ef878ca, ~13m"
+    goals: ["Establish shared per-node E2E test infrastructure with isolated flow build/deploy/drive helpers."]
+    deliverables:
+      - "tests/helpers/flow-builder.ts — FlowBuilder fluent API with typed per-type defaults"
+      - "tests/helpers/admin-api.ts — deployFlow/resetFlow/injectMessage"
+      - "tests/helpers/webapp-page.ts — WebappPage page-object"
+      - "playwright.config.ts — E2E_RESET_ON_START seeding + @integration gating"
+      - "tests/e2e/customers-crud.spec.ts — tagged @integration"
+      - "tests/e2e/nodes/.gitkeep + infra-smoke.spec.ts"
+      - "TESTING.md — spec template + helper API + integration-vs-regression docs"
+    validation:
+      - "pnpm validate passes (check:roadmap + lint + 207 unit tests + build)"
+      - "default `pnpm exec playwright test` skips @integration (customers-crud absent), 44 pass"
+      - "`pnpm test:e2e:integration` runs the 12 customers-crud tests, all pass"
+      - "infra-smoke.spec.ts: deployFlow+resetFlow round-trip + WebappPage.interceptNextEvent"

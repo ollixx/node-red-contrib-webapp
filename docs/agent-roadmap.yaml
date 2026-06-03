@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P41  # Next: P41 per-node E2E suite — infrastructure phase.
+  current_phase: P42  # Next: P42 per-node E2E — structure nodes (ui-app, ui-route, ui-dialog).
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -208,83 +208,7 @@ phases:
   # no fixed startup flow, full isolation.
   # ════════════════════════════════════════════════════════════════════════
 
-  - id: P41
-    title: "Per-node E2E — test infrastructure"
-    status: in_progress
-    dependencies: [P40]
-    # Architecture-sensitive: sets the foundation every subsequent E-phase builds on.
-    # Use opus.
-    goal: |
-      Establish the shared test infrastructure that all per-node specs depend on.
-      The result is a set of helpers and a revised Playwright config that lets any
-      spec build an isolated minimal flow, deploy it to the live E2E Node-RED
-      instance, drive the webapp in the browser, and assert on rendering and events
-      — all without relying on a fixed startup flow.
-    scope: |
-      - tests/helpers/flow-builder.ts
-          A FlowBuilder class with a fluent API:
-            new FlowBuilder()
-              .app(overrides?)         → adds a ui-app node
-              .route(overrides?)       → adds a ui-route (parent defaults to last app)
-              .node(type, overrides?)  → generic method for any node type
-              .withInjectNode(id, wiredTo)  → standard inject node for input-port tests
-              .build() → NodeDef[]
-          Provides typed factory overload for every node type (ui-checkbox, ui-input,
-          …) so callers never write raw JSON.
-          Canonical minimal defaults for each type (label, parent binding, etc.) so
-          specs only override what they test.
-
-      - tests/helpers/admin-api.ts
-          Functions (not a class — simpler for Playwright's request fixture):
-            deployFlow(request, nodes)  → PUT /flows, waits for 200
-            resetFlow(request)          → PUT /flows with a single empty tab
-            injectMessage(request, nodeId, payload)
-              → POST http://localhost:1882/inject/:nodeId  (Node-RED admin)
-          All functions throw on non-2xx so tests fail fast.
-
-      - tests/helpers/webapp-page.ts
-          WebappPage page-object (constructed with a Playwright Page):
-            navigate(appId, path?)
-            expectComponent(selector)          → toBeVisible assertion
-            expectAttr(selector, attr, value)  → attribute assertion
-            getHtml()                          → innerHTML of app root
-            interceptNextEvent()
-              → intercepts the next POST /webapp/:appId/event fetch call;
-                returns a Promise that resolves with the parsed body.
-            waitForSseSnapshot()
-              → waits for the SSE "snapshot" event and returns the parsed HTML.
-
-      - playwright.config.ts
-          - Remove the webServer globalSetup that copies examples/customers-crud/
-            flow.json into .node-red-e2e/. The E2E Node-RED starts with whatever
-            flow was last deployed (or empty). Each spec resets via resetFlow().
-          - Keep the existing webServer config (port 1882).
-          - Add an E2E_RESET_ON_START env flag (default true) so CI can still
-            start with a known-good flow if needed.
-
-      - tests/e2e/customers-crud.spec.ts
-          Tag every describe/test with { tag: "@integration" } (Playwright tag API).
-          Add a comment explaining it is an integration smoke test — not a
-          regression guard — and should be run with `--grep @integration` explicitly,
-          not during the default `pnpm exec playwright test` run.
-          Update playwright.config.ts to exclude @integration tests by default
-          (set grep: /^(?!.*@integration)/ or use the `--ignore-snapshots` approach).
-
-      - tests/e2e/nodes/.gitkeep
-          Placeholder directory to establish the spec tree.
-
-      - A brief TESTING.md section in the repo (or an addition to CLAUDE.md) that
-          documents the spec template, helper API, and how to run integration vs.
-          regression tests.
-    validation: |
-      - pnpm validate passes (no new TypeScript errors).
-      - `pnpm exec playwright test` runs and skips @integration — customers-crud
-        tests do NOT appear in the default run output.
-      - `pnpm exec playwright test --grep @integration` runs and the existing
-        customers-crud tests still pass.
-      - A smoke-spec `tests/e2e/nodes/infra-smoke.spec.ts` verifies the helpers:
-          it("deployFlow + resetFlow round-trip works", ...)
-          it("WebappPage.interceptNextEvent captures a POST /event body", ...)
+  - { id: P41, title: "Per-node E2E — test infrastructure", status: done, dependencies: [P40], archive: "docs/agent-roadmap-archive.yaml#P41" }
 
   - id: P42
     title: "Per-node E2E — structure nodes (ui-app, ui-route, ui-dialog)"
