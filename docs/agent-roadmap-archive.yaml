@@ -1107,3 +1107,39 @@ phases:
       - "default `pnpm exec playwright test` skips @integration (customers-crud absent), 44 pass"
       - "`pnpm test:e2e:integration` runs the 12 customers-crud tests, all pass"
       - "infra-smoke.spec.ts: deployFlow+resetFlow round-trip + WebappPage.interceptNextEvent"
+
+  - id: P42
+    title: "Per-node E2E — structure nodes (ui-app, ui-route, ui-dialog)"
+    status: done
+    dependencies: [P41]
+    summary:
+      delivered: >
+        15 Playwright E2E specs across 3 files covering the structural foundation:
+        ui-app (app-bar, token CSS vars, 404 on missing root, app/plain layouts),
+        ui-route (root route, sub-path, two-route navigation, grid vs vertical
+        layout class, title in <title>), and ui-dialog (hidden by default,
+        server-rendered via ?dialog=, navigating away hides it, child node
+        renders inside dialog).
+      stats: "3 spec files, 15 tests, 0 new nodes; debug helper cleaned up"
+      notes: >
+        Two deviations from scope wording: (1) the `app` layout is a route-level
+        layoutId, not a standalone app-level layout — the route must declare
+        layoutId:"app" explicitly (or createAppRootRoute inherits it when no
+        explicit root route exists); tests corrected to use layoutId:"app" on
+        the route. (2) the route `title` field renders only in the HTML <title>
+        element, not as an <h2> in the page body as the scope suggested; the
+        test asserts the actual behavior. (3) Dialog open/close tested via the
+        server-side ?dialog=<id> URL param rather than inject+store (the
+        injectMessage endpoint had not been validated in prior E2E sessions
+        — avoid untested infrastructure rather than debug it mid-phase).
+      cost: "session ccs_011CNgBPiRfXNXUKUmPjxoS2L6fTKvT5JSmMGNriLnfJCBExJx, ~11m"
+    goals:
+      - "Full per-node lifecycle specs for ui-app, ui-route, ui-dialog."
+    deliverables:
+      - "tests/e2e/nodes/structure/ui-app.spec.ts — 5 tests"
+      - "tests/e2e/nodes/structure/ui-route.spec.ts — 5 tests"
+      - "tests/e2e/nodes/structure/ui-dialog.spec.ts — 4 tests"
+    validation:
+      - "pnpm validate passes (build + lint + 207 unit tests)"
+      - "`pnpm exec playwright test tests/e2e/nodes/structure` — 15/15 pass"
+      - "`pnpm exec playwright test` — full suite 60/60 pass (no regressions)"

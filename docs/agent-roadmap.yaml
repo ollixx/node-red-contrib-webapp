@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P42  # Next: P42 per-node E2E — structure nodes (ui-app, ui-route, ui-dialog).
+  current_phase: P43  # Next: P43 per-node E2E — stateless view nodes.
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -210,37 +210,7 @@ phases:
 
   - { id: P41, title: "Per-node E2E — test infrastructure", status: done, dependencies: [P40], archive: "docs/agent-roadmap-archive.yaml#P41" }
 
-  - id: P42
-    title: "Per-node E2E — structure nodes (ui-app, ui-route, ui-dialog)"
-    status: pending
-    dependencies: [P41]
-    goal: |
-      Full per-node lifecycle specs for the three structure nodes that every other
-      node depends on. Validates that the structural foundation is solid before
-      testing leaf nodes.
-    scope: |
-      tests/e2e/nodes/structure/ui-app.spec.ts
-        - Minimal config (root, name) → app-bar visible with title.
-        - tokens field: set colorPrimary → CSS custom property applied.
-        - Missing root → node not registered, /webapp/:id returns 404.
-        - Layout preset "app": app-bar + slot chrome renders.
-        - Layout preset "plain": no app-bar.
-
-      tests/e2e/nodes/structure/ui-route.spec.ts
-        - Single route at "/" → renders at /webapp/:appId/.
-        - route at "/customers" → renders at /webapp/:appId/customers.
-        - Two routes: navigating to each shows its content.
-        - layout preset "grid" vs "stack" → wrapper class differs in HTML.
-        - title field renders as <h2> (or region heading) when set.
-
-      tests/e2e/nodes/structure/ui-dialog.spec.ts
-        - Dialog not visible until opened.
-        - ui-action openDialog → dialog visible.
-        - ui-action closeDialog → dialog hidden.
-        - Dialog with child nodes renders those nodes inside the dialog.
-    validation: |
-      - pnpm validate passes.
-      - `pnpm exec playwright test tests/e2e/nodes/structure` — all pass.
+  - { id: P42, title: "Per-node E2E — structure nodes (ui-app, ui-route, ui-dialog)", status: done, dependencies: [P41], archive: "docs/agent-roadmap-archive.yaml#P42" }
 
   - id: P43
     title: "Per-node E2E — stateless view nodes"
