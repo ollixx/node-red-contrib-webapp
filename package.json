@@ -68,6 +68,7 @@
         "example:customers-crud": "vitest run packages/schema/test/schema.test.ts packages/runtime/test/customers-crud-example.test.ts packages/renderer/test/renderer.test.ts",
         "lint": "pnpm -r lint",
         "test:e2e": "playwright test",
+        "test:e2e:integration": "E2E_INTEGRATION=1 playwright test",
         "test": "pnpm -r test",
         "gen:example": "node scripts/gen-example.js",
         "check:roadmap": "node scripts/check-roadmap-yaml.js",

@@ -1,14 +1,32 @@
 import { defineConfig } from "@playwright/test";
 
+// P41: per-node E2E specs build isolated flows and reset between tests, so the
+// E2E Node-RED no longer needs the customers-crud flow as a fixed startup flow.
+// Set E2E_RESET_ON_START=false to start empty; default true seeds the known-good
+// customers-crud flow so the @integration smoke suite has its baseline available.
+const seedBaseline = process.env.E2E_RESET_ON_START !== "false";
+const seedStep = seedBaseline
+    ? "cp examples/customers-crud/flow.json .node-red-e2e/flows.json && "
+    : "";
+
 export default defineConfig({
     testDir: "./tests/e2e",
     fullyParallel: false,
     workers: 1,
+    // @integration-tagged specs (the customers-crud smoke + fixture guards) are
+    // excluded from the default run and gated behind E2E_INTEGRATION=1 instead.
+    // NOTE: a CLI `--grep` does NOT replace config grep/grepInvert — they AND
+    // together — so a config-side exclusion can never be overridden from the CLI.
+    // The env flag is therefore the override mechanism (see pnpm test:e2e:integration).
+    // Default: exclude @integration. With E2E_INTEGRATION=1: run ONLY @integration.
+    ...(process.env.E2E_INTEGRATION === "1"
+        ? { grep: /@integration/ }
+        : { grepInvert: /@integration/ }),
     use: {
         baseURL: "http://127.0.0.1:1882"
     },
     webServer: {
-        command: "rm -rf .node-red-e2e && mkdir -p .node-red-e2e/node_modules && cp .node-red-dev/settings.js .node-red-e2e/settings.js && cp examples/customers-crud/flow.json .node-red-e2e/flows.json && ln -sfn ../.. .node-red-e2e/node_modules/node-red-contrib-webapp && node-red --userDir .node-red-e2e --port 1882 >/tmp/node-red-webapp-playwright.log 2>&1",
+        command: `rm -rf .node-red-e2e && mkdir -p .node-red-e2e/node_modules && cp .node-red-dev/settings.js .node-red-e2e/settings.js && ${seedStep}ln -sfn ../.. .node-red-e2e/node_modules/node-red-contrib-webapp && node-red --userDir .node-red-e2e --port 1882 >/tmp/node-red-webapp-playwright.log 2>&1`,
         url: "http://127.0.0.1:1882",
         reuseExistingServer: false,
         timeout: 120000

@@ -18,11 +18,18 @@ import { expect, test } from "@playwright/test";
  *
  * No page.waitForTimeout calls are used. Every wait is on a real condition:
  * network response, element state, or element text.
+ *
+ * P41: this is an INTEGRATION smoke test, not a per-node regression guard. Every
+ * describe here is tagged @integration and excluded from the default
+ * `pnpm exec playwright test` run (see playwright.config.ts). Run it explicitly:
+ *     pnpm test:e2e:integration        (sets E2E_INTEGRATION=1)
+ * The env flag — not a CLI --grep — is the toggle, because Playwright ANDs a CLI
+ * --grep with the config grep/grepInvert rather than replacing it.
  */
 
 // ── setup ─────────────────────────────────────────────────────────────────────
 
-test.describe("customers CRUD — wired flow (zero framework logic)", () => {
+test.describe("customers CRUD — wired flow (zero framework logic) @integration", () => {
     // Re-seed the store before each test so mutations from the previous test
     // don't carry over. The seed inject node (once:true at startup) has already
     // fired; we POST to Node-RED's built-in /inject/:id endpoint to re-trigger it.
@@ -379,7 +386,7 @@ test.describe("customers CRUD — wired flow (zero framework logic)", () => {
 // A green suite here means the full-journey tests above cannot silently skip
 // dead controls because the example grows stale.
 
-test.describe("structural guard — examples/customers-crud/flow.json", () => {
+test.describe("structural guard — examples/customers-crud/flow.json @integration", () => {
     const FLOW_PATH = resolve(__dirname, "../../examples/customers-crud/flow.json");
 
     function loadFlow(): unknown[] {
@@ -474,7 +481,7 @@ test.describe("structural guard — examples/customers-crud/flow.json", () => {
 // Ensure examples/customers-crud/flow.json matches the current gen-example.js
 // output so the generated example and the checked-in JSON stay in sync.
 
-test.describe("dev/E2E parity — gen-example.js output matches flow.json", () => {
+test.describe("dev/E2E parity — gen-example.js output matches flow.json @integration", () => {
     test("examples/customers-crud/flow.json matches pnpm gen:example output", () => {
         const FLOW_PATH = resolve(__dirname, "../../examples/customers-crud/flow.json");
         const ROOT = resolve(__dirname, "../..");
