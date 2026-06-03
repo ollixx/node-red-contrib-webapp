@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P41  # Next: P41 (no next phase defined yet).
+  current_phase: P41  # Next: P41 per-node E2E suite — infrastructure phase.
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -192,6 +192,347 @@ phases:
   - { id: P39, title: "Input ports — all view nodes accept incoming messages to update their state", status: done, dependencies: [P38], archive: "docs/agent-roadmap-archive.yaml#P39" }
 
   - { id: P40, title: "Token editor dialog — visual design-token editor in ui-app node", status: done, dependencies: [P36], archive: "docs/agent-roadmap-archive.yaml#P40" }
+
+  # ════════════════════════════════════════════════════════════════════════
+  # Per-node E2E test suite (P41–P47)
+  #
+  # Motivation: the single customers-crud E2E spec tests one happy-path scenario
+  # and gives no signal when an individual node breaks (see: P38 sl-change bug
+  # undetected by the test suite). Each node needs its own spec covering the full
+  # lifecycle: empty creation → required fields → validation → rendering →
+  # option changes → events → input/output ports → child nodes.
+  #
+  # Approach: API-driven (Node-RED admin API + Playwright) for rendering/event
+  # tests; Playwright→editor for property-panel validation tests (P47).
+  # Each spec resets the running E2E Node-RED to an empty flow before every test —
+  # no fixed startup flow, full isolation.
+  # ════════════════════════════════════════════════════════════════════════
+
+  - id: P41
+    title: "Per-node E2E — test infrastructure"
+    status: pending
+    dependencies: [P40]
+    # Architecture-sensitive: sets the foundation every subsequent E-phase builds on.
+    # Use opus.
+    goal: |
+      Establish the shared test infrastructure that all per-node specs depend on.
+      The result is a set of helpers and a revised Playwright config that lets any
+      spec build an isolated minimal flow, deploy it to the live E2E Node-RED
+      instance, drive the webapp in the browser, and assert on rendering and events
+      — all without relying on a fixed startup flow.
+    scope: |
+      - tests/helpers/flow-builder.ts
+          A FlowBuilder class with a fluent API:
+            new FlowBuilder()
+              .app(overrides?)         → adds a ui-app node
+              .route(overrides?)       → adds a ui-route (parent defaults to last app)
+              .node(type, overrides?)  → generic method for any node type
+              .withInjectNode(id, wiredTo)  → standard inject node for input-port tests
+              .build() → NodeDef[]
+          Provides typed factory overload for every node type (ui-checkbox, ui-input,
+          …) so callers never write raw JSON.
+          Canonical minimal defaults for each type (label, parent binding, etc.) so
+          specs only override what they test.
+
+      - tests/helpers/admin-api.ts
+          Functions (not a class — simpler for Playwright's request fixture):
+            deployFlow(request, nodes)  → PUT /flows, waits for 200
+            resetFlow(request)          → PUT /flows with a single empty tab
+            injectMessage(request, nodeId, payload)
+              → POST http://localhost:1882/inject/:nodeId  (Node-RED admin)
+          All functions throw on non-2xx so tests fail fast.
+
+      - tests/helpers/webapp-page.ts
+          WebappPage page-object (constructed with a Playwright Page):
+            navigate(appId, path?)
+            expectComponent(selector)          → toBeVisible assertion
+            expectAttr(selector, attr, value)  → attribute assertion
+            getHtml()                          → innerHTML of app root
+            interceptNextEvent()
+              → intercepts the next POST /webapp/:appId/event fetch call;
+                returns a Promise that resolves with the parsed body.
+            waitForSseSnapshot()
+              → waits for the SSE "snapshot" event and returns the parsed HTML.
+
+      - playwright.config.ts
+          - Remove the webServer globalSetup that copies examples/customers-crud/
+            flow.json into .node-red-e2e/. The E2E Node-RED starts with whatever
+            flow was last deployed (or empty). Each spec resets via resetFlow().
+          - Keep the existing webServer config (port 1882).
+          - Add an E2E_RESET_ON_START env flag (default true) so CI can still
+            start with a known-good flow if needed.
+
+      - tests/e2e/customers-crud.spec.ts
+          Tag every describe/test with { tag: "@integration" } (Playwright tag API).
+          Add a comment explaining it is an integration smoke test — not a
+          regression guard — and should be run with `--grep @integration` explicitly,
+          not during the default `pnpm exec playwright test` run.
+          Update playwright.config.ts to exclude @integration tests by default
+          (set grep: /^(?!.*@integration)/ or use the `--ignore-snapshots` approach).
+
+      - tests/e2e/nodes/.gitkeep
+          Placeholder directory to establish the spec tree.
+
+      - A brief TESTING.md section in the repo (or an addition to CLAUDE.md) that
+          documents the spec template, helper API, and how to run integration vs.
+          regression tests.
+    validation: |
+      - pnpm validate passes (no new TypeScript errors).
+      - `pnpm exec playwright test` runs and skips @integration — customers-crud
+        tests do NOT appear in the default run output.
+      - `pnpm exec playwright test --grep @integration` runs and the existing
+        customers-crud tests still pass.
+      - A smoke-spec `tests/e2e/nodes/infra-smoke.spec.ts` verifies the helpers:
+          it("deployFlow + resetFlow round-trip works", ...)
+          it("WebappPage.interceptNextEvent captures a POST /event body", ...)
+
+  - id: P42
+    title: "Per-node E2E — structure nodes (ui-app, ui-route, ui-dialog)"
+    status: pending
+    dependencies: [P41]
+    goal: |
+      Full per-node lifecycle specs for the three structure nodes that every other
+      node depends on. Validates that the structural foundation is solid before
+      testing leaf nodes.
+    scope: |
+      tests/e2e/nodes/structure/ui-app.spec.ts
+        - Minimal config (root, name) → app-bar visible with title.
+        - tokens field: set colorPrimary → CSS custom property applied.
+        - Missing root → node not registered, /webapp/:id returns 404.
+        - Layout preset "app": app-bar + slot chrome renders.
+        - Layout preset "plain": no app-bar.
+
+      tests/e2e/nodes/structure/ui-route.spec.ts
+        - Single route at "/" → renders at /webapp/:appId/.
+        - route at "/customers" → renders at /webapp/:appId/customers.
+        - Two routes: navigating to each shows its content.
+        - layout preset "grid" vs "stack" → wrapper class differs in HTML.
+        - title field renders as <h2> (or region heading) when set.
+
+      tests/e2e/nodes/structure/ui-dialog.spec.ts
+        - Dialog not visible until opened.
+        - ui-action openDialog → dialog visible.
+        - ui-action closeDialog → dialog hidden.
+        - Dialog with child nodes renders those nodes inside the dialog.
+    validation: |
+      - pnpm validate passes.
+      - `pnpm exec playwright test tests/e2e/nodes/structure` — all pass.
+
+  - id: P43
+    title: "Per-node E2E — stateless view nodes"
+    status: pending
+    dependencies: [P42]
+    goal: |
+      Rendering-only specs for every view node that has no user interaction:
+      ui-text, ui-button (render only, no click test here), ui-badge, ui-progress,
+      ui-image, ui-avatar, ui-skeleton, ui-empty-state, ui-alert, ui-breadcrumb.
+      Each spec verifies that every documented prop maps to the correct HTML
+      attribute or content.
+    scope: |
+      One spec file per node under tests/e2e/nodes/view/:
+
+      ui-text.spec.ts
+        - text content renders inside the component.
+        - binding to store value renders the store's current value.
+        - size prop maps to correct sl-* size attribute (if applicable).
+
+      ui-button.spec.ts  (render-only; click/event in P44 interactive group)
+        - label renders as button text.
+        - variant "primary" → sl-button variant="primary".
+        - variant "danger" → sl-button variant="danger".
+        - disabled → sl-button[disabled].
+        - icon prop → icon slot rendered.
+
+      ui-badge, ui-progress, ui-image, ui-avatar, ui-skeleton, ui-empty-state,
+      ui-alert, ui-breadcrumb:
+        Each gets a minimal spec (2–4 tests) covering:
+          1. Renders the correct Shoelace element.
+          2. Core props map to attributes (variant, value, src, label, …).
+          3. Empty/default state renders without crashing.
+
+      ui-breadcrumb: items array → correct number of <sl-breadcrumb-item> elements.
+    validation: |
+      - pnpm validate passes.
+      - `pnpm exec playwright test tests/e2e/nodes/view` for the nodes in this
+        phase — all pass.
+
+  - id: P44
+    title: "Per-node E2E — interactive view nodes (events + input ports)"
+    status: pending
+    dependencies: [P43]
+    goal: |
+      Full lifecycle specs for every interactive form control:
+      ui-input, ui-checkbox, ui-switch, ui-radio, ui-select, ui-slider,
+      ui-textarea, ui-datepicker.
+      Covers: rendering, option props, sl-change → POST /event (correct params),
+      input-port message → SSE snapshot update.
+    scope: |
+      One spec file per node under tests/e2e/nodes/view/:
+
+      For each node:
+        describe("rendering")
+          - renders correct Shoelace element.
+          - label prop visible.
+          - placeholder / min / max / options / … node-specific props.
+          - disabled renders with [disabled].
+
+        describe("events — output port")
+          - Use WebappPage.interceptNextEvent().
+          - Trigger sl-change via page.evaluate (dispatch CustomEvent on the
+            rendered Shoelace element).
+          - Assert intercepted POST body:
+              ui-checkbox / ui-switch: { event:"change", params:{ checked: bool } }
+              ui-input / ui-textarea / ui-datepicker: { event:"change", params:{ value: string } }
+              ui-radio / ui-select: { event:"change", params:{ value: string } }
+              ui-slider: { event:"change", params:{ value: number } }
+
+        describe("input port — state update")
+          - Deploy flow with an inject node wired to the view node.
+          - Call injectMessage(request, injectNodeId, newValue).
+          - Wait for SSE snapshot update (WebappPage.waitForSseSnapshot()).
+          - Assert the rendered component reflects the new value.
+
+      ui-button gets its click → POST /event test here too (moved from P43).
+    validation: |
+      - pnpm validate passes.
+      - `pnpm exec playwright test tests/e2e/nodes/view` — all pass (P43 + P44).
+
+  - id: P45
+    title: "Per-node E2E — composite and layout nodes"
+    status: pending
+    dependencies: [P44]
+    goal: |
+      Specs for nodes that involve child nodes, multi-part rendering, or composite
+      events: ui-table, ui-container, ui-tabs, ui-accordion, ui-menu, ui-list,
+      ui-pagination, ui-stepper, ui-toast.
+    scope: |
+      ui-table.spec.ts
+        - columns + rows render as <table> with correct header/cell content.
+        - Row click → POST /event { event:"rowSelect", params:{ rowId } }.
+        - Input port: inject new rows array → table updates via SSE.
+        - Optional columns (sortable, actions) render correctly.
+
+      ui-container.spec.ts
+        - Renders sl-card wrapper.
+        - Child ui-text node mounted inside → text visible inside card.
+        - Multiple children render in order.
+        - layout preset "grid": children placed in CSS grid.
+
+      ui-tabs.spec.ts
+        - Two tab children render as sl-tab / sl-panel pairs.
+        - Active tab set via value prop.
+        - sl-tab-show event → POST /event { event:"change", params:{ value: tabId } }.
+
+      ui-accordion.spec.ts, ui-menu.spec.ts, ui-list.spec.ts
+        - Items array renders correct child elements.
+        - Click / select → POST /event with correct params.
+
+      ui-pagination.spec.ts
+        - prev/next buttons visible.
+        - prev click → POST /event { params:{ page: n-1 } }.
+        - next click → POST /event { params:{ page: n+1 } }.
+        - Disabled state on first/last page.
+
+      ui-stepper.spec.ts
+        - Steps render with labels.
+        - Active step has webapp-step--active class.
+        - Step click → POST /event { params:{ value: stepIndex } }.
+
+      ui-toast.spec.ts
+        - Not visible by default.
+        - Input port message → toast appears via SSE.
+    validation: |
+      - pnpm validate passes.
+      - `pnpm exec playwright test tests/e2e/nodes` — all passes (P42–P45).
+
+  - id: P46
+    title: "Per-node E2E — state and behavior nodes"
+    status: pending
+    dependencies: [P45]
+    goal: |
+      Specs for ui-store, ui-query, ui-action, ui-navigation.
+      These nodes don't render components themselves but drive state and
+      transitions — the tests verify the downstream effects.
+    scope: |
+      ui-store.spec.ts
+        - Store with an initial value → ui-text bound to store renders that value.
+        - Inject a message to the store node → all bound nodes update via SSE.
+        - persist=true: value survives a resetFlow + re-deploy (uses Node-RED
+          context storage; verifiable by re-navigating after inject).
+
+      ui-query.spec.ts
+        - Query with trigger "onShow" → executes on route enter, data visible.
+        - Query wired from a function node that returns JSON →
+          ui-table bound to query shows the data.
+        - Refresh: inject message to query node → table updates.
+
+      ui-action.spec.ts
+        - navigate action → browser URL changes to target route.
+        - openDialog action → dialog becomes visible.
+        - closeDialog action → dialog hidden.
+        - show/hide action → target node visibility toggles.
+        - enable/disable action → target node disabled attribute toggled.
+        - No CRUD / no store mutation: action nodes must NOT write to any store
+          (assert that no store update SSE is pushed after action fires).
+
+      ui-navigation.spec.ts
+        - Nav link renders with correct href.
+        - Clicking nav link navigates to target route.
+        - Active route highlights the correct nav item.
+    validation: |
+      - pnpm validate passes.
+      - `pnpm exec playwright test tests/e2e/nodes` — all pass.
+
+  - id: P47
+    title: "Per-node E2E — Node-RED editor property panels"
+    status: pending
+    dependencies: [P46]
+    # Architecture-sensitive: requires Playwright driving the Node-RED canvas,
+    # which needs its own interaction helpers. Use opus.
+    goal: |
+      Verify each node's Node-RED editor property panel: the form fields are
+      correct, required-field validation indicators fire, and the SelectBox
+      parent/mount selectors populate correctly.
+      This is the only phase that drives the Node-RED EDITOR (canvas) via
+      Playwright, not the webapp output.
+    scope: |
+      - tests/helpers/node-editor-page.ts
+          NodeEditorPage page-object for the Node-RED editor at port 1882:
+            openNode(nodeId)          → double-clicks the node on canvas to open
+                                        its editor panel
+            fillField(fieldId, value) → fills an #node-input-* field
+            getValidationState()      → returns "valid"|"invalid" based on the
+                                        node's indicator (red border / error icon)
+            save()                    → clicks Done
+            deploy()                  → clicks Deploy and waits for success toast
+          Uses Node-RED admin API to inject nodes into the canvas before opening
+          them, to avoid drag-and-drop.
+
+      - tests/e2e/nodes/editor/
+          One spec per node (or grouped by category for brevity).
+          Each spec covers:
+            1. Empty node: open editor → all fields present, no crash.
+            2. Missing required fields: save without filling → validation
+               indicator visible (red node badge after deploy, or editor error).
+            3. Parent SelectBox: parent select shows available routes/apps.
+            4. Optional fields: fill, save, re-open → values persisted.
+            5. outputLabels: "event" label visible on output port.
+            6. inputs: 1 visible on nodes that have an input port.
+
+      - Focus nodes for P47 (highest editor complexity):
+          ui-app (tokens dialog, layout preset, events config),
+          ui-route (parent selector, layout preset, path),
+          ui-input / ui-checkbox / ui-select (label, parent, value binding),
+          ui-table (columns editor),
+          ui-action (actionType selector, target selector),
+          ui-store (initialValue, persist).
+          Remaining nodes get a minimal "opens without crash, has correct fields"
+          test each.
+    validation: |
+      - pnpm validate passes.
+      - `pnpm exec playwright test tests/e2e/nodes/editor` — all pass.
+      - No test in this spec drives the webapp URL — editor tests and rendering
+        tests are strictly separate.
 
   # Deferred — only when a concrete need appears (see ADR 0002):
   #   - ui-custom escape-hatch node for framework-specific components (opt-in, non-portable)
