@@ -222,7 +222,7 @@ phases:
 
   - id: P47
     title: "Per-node E2E — Node-RED editor property panels"
-    status: pending
+    status: in_progress
     dependencies: [P46]
     # Architecture-sensitive: requires Playwright driving the Node-RED canvas,
     # which needs its own interaction helpers. Use opus.
