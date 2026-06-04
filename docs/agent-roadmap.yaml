@@ -218,7 +218,7 @@ phases:
 
   - id: P45
     title: "Per-node E2E — composite and layout nodes"
-    status: pending
+    status: in_progress
     dependencies: [P44]
     goal: |
       Specs for nodes that involve child nodes, multi-part rendering, or composite
