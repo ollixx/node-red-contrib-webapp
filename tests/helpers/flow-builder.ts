@@ -79,8 +79,19 @@ function defaultsFor(type: string, ctx: { appId: string; routeId?: string; id: s
         case "ui-container":
             return { ...base, layoutId: "vertical" };
         case "ui-store":
-            // store has no mount/UI; it carries a statePath.
-            return { type, id: ctx.id, uiId: ctx.id, name: ctx.id, parent: ctx.appId, statePath: "state", initialValue: "{}", z: TAB_ID, wires: [[]] };
+            // store has no visible mount but MUST have x/y so Node-RED places it
+            // in flow.nodes (not flow.configs). Nodes without x/y are treated as
+            // config nodes, which causes "Circular config node dependency" errors.
+            return { type, id: ctx.id, uiId: ctx.id, name: ctx.id, parent: ctx.appId, statePath: "state", initialValue: "{}", z: TAB_ID, x: 100, y: 300, wires: [[]] };
+        case "ui-query":
+            // query has no visible mount; x/y required to avoid config-node treatment.
+            return { type, id: ctx.id, uiId: ctx.id, name: ctx.id, parent: ctx.appId, queryPath: "data", z: TAB_ID, x: 100, y: 350, wires: [[]] };
+        case "ui-action":
+            // action has no visible mount; x/y required to avoid config-node treatment.
+            return { type, id: ctx.id, uiId: ctx.id, name: ctx.id, parent: ctx.appId, actionType: "navigate", z: TAB_ID, x: 100, y: 400, wires: [[]] };
+        case "ui-navigation":
+            // navigation has no visible mount; x/y required to avoid config-node treatment.
+            return { type, id: ctx.id, uiId: ctx.id, name: ctx.id, parent: ctx.appId, to: "/", z: TAB_ID, x: 100, y: 450, wires: [[]] };
         default:
             return base;
     }
@@ -146,6 +157,52 @@ export class FlowBuilder {
         const id = (overrides.id as string) ?? uid(type.replace(/^ui-/, ""));
         const defaults = defaultsFor(type, { appId: this.appId, routeId: this.routeId, id });
         this.nodes.push({ ...defaults, ...overrides });
+        return this;
+    }
+
+    /**
+     * Add an inject → function pipeline that issues a ui-store `replace` operation.
+     * The inject id is `<injectId>`; fire it via `injectMessage(request, injectId)`.
+     * The function node reformats `msg.payload` into the `msg.ui.store` structure
+     * the store input-handler expects.
+     *
+     * @param injectId   id for the inject node (pass to injectMessage)
+     * @param storeId    ui-store node id (must match the store's uiId)
+     * @param value      value to replace the store with (must be JSON-serialisable)
+     * @param storeNodeId  Node-RED node id of the ui-store (typically same as storeId)
+     */
+    withStoreInject(injectId: string, storeId: string, value: unknown, storeNodeId?: string): this {
+        const funcId = `${injectId}__fn`;
+        const targetId = storeNodeId ?? storeId;
+        const funcCode = `msg.ui = { store: { id: "${storeId}", op: "replace", value: ${JSON.stringify(value)} } }; return msg;`;
+        this.nodes.push({
+            type: "inject",
+            id: injectId,
+            name: injectId,
+            props: [{ p: "payload" }],
+            repeat: "",
+            crontab: "",
+            once: false,
+            onceDelay: "0.1",
+            topic: "",
+            payload: "",
+            payloadType: "date",
+            z: TAB_ID,
+            x: 100,
+            y: 420,
+            wires: [[funcId]]
+        });
+        this.nodes.push({
+            type: "function",
+            id: funcId,
+            name: funcId,
+            func: funcCode,
+            outputs: 1,
+            z: TAB_ID,
+            x: 300,
+            y: 420,
+            wires: [[targetId]]
+        });
         return this;
     }
 

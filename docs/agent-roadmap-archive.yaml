@@ -1298,3 +1298,34 @@ phases:
     validation:
       - "pnpm validate passes"
       - "`pnpm exec playwright test tests/e2e/nodes` — 119/119 pass (P42–P45)"
+
+  - id: P46
+    title: "Per-node E2E — state and behavior nodes"
+    status: done
+    dependencies: [P45]
+    summary:
+      delivered: "14 E2E specs for 4 state/behavior nodes: ui-store (4), ui-query (3), ui-action (4), ui-navigation (3) — covering rendering, SSE updates, store mutation, dialog lifecycle, and navigation."
+      stats: "4 spec files (14 tests) in tests/e2e/nodes/behavior/; FlowBuilder extended with withStoreInject() helper and x/y defaults for non-visual nodes"
+      notes: >
+        Key finding: nodes without x/y coordinates in the flow JSON are treated as config nodes by Node-RED
+        (flow.configs instead of flow.nodes), which causes "Circular config node dependency" errors and prevents
+        inject-node registration. Fixed by adding x: 100, y: <N> to all non-visual node defaults in FlowBuilder
+        (ui-store, ui-query, ui-action, ui-navigation). The withStoreInject() helper was added to FlowBuilder
+        to create inject→function→store pipelines, since inject nodes set msg.payload but the store handler
+        reads msg.ui.store. Dialog lifecycle tests (openDialog/closeDialog) use store-driven state
+        (state.ui.dialogs.<id>.open) rather than SSE command re-render, which matches the production pattern
+        in customers-crud (fn node sets both draft store and dialog state store simultaneously). The SSE
+        openDialog command alone cannot show a dialog because currentSnapshot.dialogs is empty until a store
+        update triggers a snapshot push with the dialog included.
+      cost: "session <see .ai/agent-runs.jsonl>, 2026-06-04T06:55:39Z → 2026-06-04T13:19:48Z"
+    goals:
+      - "E2E specs for ui-store, ui-query, ui-action, ui-navigation"
+    deliverables:
+      - "tests/e2e/nodes/behavior/ui-store.spec.ts — 4 tests"
+      - "tests/e2e/nodes/behavior/ui-query.spec.ts — 3 tests"
+      - "tests/e2e/nodes/behavior/ui-action.spec.ts — 4 tests"
+      - "tests/e2e/nodes/behavior/ui-navigation.spec.ts — 3 tests"
+      - "tests/helpers/flow-builder.ts — withStoreInject() helper, x/y defaults for non-visual nodes"
+    validation:
+      - "pnpm validate passes"
+      - "`pnpm exec playwright test tests/e2e/nodes` — 133/133 pass (P42–P46)"

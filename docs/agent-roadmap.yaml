@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P46  # Next: P46 per-node E2E — state and behavior nodes.
+  current_phase: P47  # Next: P47 per-node E2E — Node-RED editor property panels.
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -218,43 +218,7 @@ phases:
 
   - { id: P45, title: "Per-node E2E — composite and layout nodes", status: done, dependencies: [P44], archive: "docs/agent-roadmap-archive.yaml#P45" }
 
-  - id: P46
-    title: "Per-node E2E — state and behavior nodes"
-    status: in_progress
-    dependencies: [P45]
-    goal: |
-      Specs for ui-store, ui-query, ui-action, ui-navigation.
-      These nodes don't render components themselves but drive state and
-      transitions — the tests verify the downstream effects.
-    scope: |
-      ui-store.spec.ts
-        - Store with an initial value → ui-text bound to store renders that value.
-        - Inject a message to the store node → all bound nodes update via SSE.
-        - persist=true: value survives a resetFlow + re-deploy (uses Node-RED
-          context storage; verifiable by re-navigating after inject).
-
-      ui-query.spec.ts
-        - Query with trigger "onShow" → executes on route enter, data visible.
-        - Query wired from a function node that returns JSON →
-          ui-table bound to query shows the data.
-        - Refresh: inject message to query node → table updates.
-
-      ui-action.spec.ts
-        - navigate action → browser URL changes to target route.
-        - openDialog action → dialog becomes visible.
-        - closeDialog action → dialog hidden.
-        - show/hide action → target node visibility toggles.
-        - enable/disable action → target node disabled attribute toggled.
-        - No CRUD / no store mutation: action nodes must NOT write to any store
-          (assert that no store update SSE is pushed after action fires).
-
-      ui-navigation.spec.ts
-        - Nav link renders with correct href.
-        - Clicking nav link navigates to target route.
-        - Active route highlights the correct nav item.
-    validation: |
-      - pnpm validate passes.
-      - `pnpm exec playwright test tests/e2e/nodes` — all pass.
+  - { id: P46, title: "Per-node E2E — state and behavior nodes", status: done, dependencies: [P45], archive: "docs/agent-roadmap-archive.yaml#P46" }
 
   - id: P47
     title: "Per-node E2E — Node-RED editor property panels"
