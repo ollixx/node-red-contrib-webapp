@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P47  # Next: P47 per-node E2E — Node-RED editor property panels.
+  current_phase: none  # All planned phases (P0–P47) done. Next work: deferred items below or a new roadmap slice.
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -220,56 +220,7 @@ phases:
 
   - { id: P46, title: "Per-node E2E — state and behavior nodes", status: done, dependencies: [P45], archive: "docs/agent-roadmap-archive.yaml#P46" }
 
-  - id: P47
-    title: "Per-node E2E — Node-RED editor property panels"
-    status: in_progress
-    dependencies: [P46]
-    # Architecture-sensitive: requires Playwright driving the Node-RED canvas,
-    # which needs its own interaction helpers. Use opus.
-    goal: |
-      Verify each node's Node-RED editor property panel: the form fields are
-      correct, required-field validation indicators fire, and the SelectBox
-      parent/mount selectors populate correctly.
-      This is the only phase that drives the Node-RED EDITOR (canvas) via
-      Playwright, not the webapp output.
-    scope: |
-      - tests/helpers/node-editor-page.ts
-          NodeEditorPage page-object for the Node-RED editor at port 1882:
-            openNode(nodeId)          → double-clicks the node on canvas to open
-                                        its editor panel
-            fillField(fieldId, value) → fills an #node-input-* field
-            getValidationState()      → returns "valid"|"invalid" based on the
-                                        node's indicator (red border / error icon)
-            save()                    → clicks Done
-            deploy()                  → clicks Deploy and waits for success toast
-          Uses Node-RED admin API to inject nodes into the canvas before opening
-          them, to avoid drag-and-drop.
-
-      - tests/e2e/nodes/editor/
-          One spec per node (or grouped by category for brevity).
-          Each spec covers:
-            1. Empty node: open editor → all fields present, no crash.
-            2. Missing required fields: save without filling → validation
-               indicator visible (red node badge after deploy, or editor error).
-            3. Parent SelectBox: parent select shows available routes/apps.
-            4. Optional fields: fill, save, re-open → values persisted.
-            5. outputLabels: "event" label visible on output port.
-            6. inputs: 1 visible on nodes that have an input port.
-
-      - Focus nodes for P47 (highest editor complexity):
-          ui-app (tokens dialog, layout preset, events config),
-          ui-route (parent selector, layout preset, path),
-          ui-input / ui-checkbox / ui-select (label, parent, value binding),
-          ui-table (columns editor),
-          ui-action (actionType selector, target selector),
-          ui-store (initialValue, persist).
-          Remaining nodes get a minimal "opens without crash, has correct fields"
-          test each.
-    validation: |
-      - pnpm validate passes.
-      - `pnpm exec playwright test tests/e2e/nodes/editor` — all pass.
-      - No test in this spec drives the webapp URL — editor tests and rendering
-        tests are strictly separate.
+  - { id: P47, title: "Per-node E2E — Node-RED editor property panels", status: done, dependencies: [P46], archive: "docs/agent-roadmap-archive.yaml#P47" }
 
   # Deferred — only when a concrete need appears (see ADR 0002):
   #   - ui-custom escape-hatch node for framework-specific components (opt-in, non-portable)
