@@ -46,6 +46,8 @@ function defaultsFor(type: string, ctx: { appId: string; routeId?: string; id: s
         parent: ctx.appId,
         mount,
         z: TAB_ID,
+        x: 100,
+        y: 100,
         wires: [[]]
     };
     switch (type) {
@@ -57,21 +59,21 @@ function defaultsFor(type: string, ctx: { appId: string; routeId?: string; id: s
         case "ui-button":
             return { ...base, label: "Button" };
         case "ui-input":
-            return { ...base, label: "Input", inputType: "text" };
+            return { ...base, label: "Input", inputType: "text", value: { kind: "literal", value: "" } };
         case "ui-textarea":
-            return { ...base, label: "Textarea" };
+            return { ...base, label: "Textarea", value: { kind: "literal", value: "" } };
         case "ui-select":
-            return { ...base, label: "Select", optionsJson: JSON.stringify([{ label: "A", value: "a" }]) };
+            return { ...base, label: "Select", optionsJson: JSON.stringify([{ label: "A", value: "a" }]), value: { kind: "literal", value: "" } };
         case "ui-checkbox":
-            return { ...base, label: "Checkbox" };
+            return { ...base, label: "Checkbox", value: { kind: "literal", value: false } };
         case "ui-radio":
-            return { ...base, label: "Radio", optionsJson: JSON.stringify([{ label: "A", value: "a" }]) };
+            return { ...base, label: "Radio", optionsJson: JSON.stringify([{ label: "A", value: "a" }]), value: { kind: "literal", value: "" } };
         case "ui-switch":
-            return { ...base, label: "Switch" };
+            return { ...base, label: "Switch", value: { kind: "literal", value: false } };
         case "ui-datepicker":
-            return { ...base, label: "Date" };
+            return { ...base, label: "Date", value: { kind: "literal", value: "" } };
         case "ui-slider":
-            return { ...base, label: "Slider", min: 0, max: 100, step: 1 };
+            return { ...base, label: "Slider", min: 0, max: 100, step: 1, value: { kind: "literal", value: 0 } };
         case "ui-table":
             return { ...base, columns: JSON.stringify([{ key: "name", label: "Name" }]), rowsPath: "rows" };
         case "ui-container":
@@ -100,6 +102,8 @@ export class FlowBuilder {
             root: id,
             layout: "vertical",
             z: TAB_ID,
+            x: 100,
+            y: 100,
             wires: [[]],
             ...overrides
         };
@@ -124,6 +128,8 @@ export class FlowBuilder {
             title: id,
             layoutId: "vertical",
             z: TAB_ID,
+            x: 100,
+            y: 200,
             wires: [[]],
             ...overrides
         };
@@ -162,6 +168,8 @@ export class FlowBuilder {
             payload: hasPayload ? JSON.stringify(payload) : "",
             payloadType: hasPayload ? "json" : "date",
             z: TAB_ID,
+            x: 100,
+            y: 400,
             wires: [[wiredTo]]
         });
         return this;

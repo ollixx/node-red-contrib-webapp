@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P44  # Next: P44 per-node E2E — interactive view nodes (events + input ports).
+  current_phase: P45  # Next: P45 per-node E2E — composite and layout nodes.
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -214,46 +214,7 @@ phases:
 
   - { id: P43, title: "Per-node E2E — stateless view nodes", status: done, dependencies: [P42], archive: "docs/agent-roadmap-archive.yaml#P43" }
 
-  - id: P44
-    title: "Per-node E2E — interactive view nodes (events + input ports)"
-    status: pending
-    dependencies: [P43]
-    goal: |
-      Full lifecycle specs for every interactive form control:
-      ui-input, ui-checkbox, ui-switch, ui-radio, ui-select, ui-slider,
-      ui-textarea, ui-datepicker.
-      Covers: rendering, option props, sl-change → POST /event (correct params),
-      input-port message → SSE snapshot update.
-    scope: |
-      One spec file per node under tests/e2e/nodes/view/:
-
-      For each node:
-        describe("rendering")
-          - renders correct Shoelace element.
-          - label prop visible.
-          - placeholder / min / max / options / … node-specific props.
-          - disabled renders with [disabled].
-
-        describe("events — output port")
-          - Use WebappPage.interceptNextEvent().
-          - Trigger sl-change via page.evaluate (dispatch CustomEvent on the
-            rendered Shoelace element).
-          - Assert intercepted POST body:
-              ui-checkbox / ui-switch: { event:"change", params:{ checked: bool } }
-              ui-input / ui-textarea / ui-datepicker: { event:"change", params:{ value: string } }
-              ui-radio / ui-select: { event:"change", params:{ value: string } }
-              ui-slider: { event:"change", params:{ value: number } }
-
-        describe("input port — state update")
-          - Deploy flow with an inject node wired to the view node.
-          - Call injectMessage(request, injectNodeId, newValue).
-          - Wait for SSE snapshot update (WebappPage.waitForSseSnapshot()).
-          - Assert the rendered component reflects the new value.
-
-      ui-button gets its click → POST /event test here too (moved from P43).
-    validation: |
-      - pnpm validate passes.
-      - `pnpm exec playwright test tests/e2e/nodes/view` — all pass (P43 + P44).
+  - { id: P44, title: "Per-node E2E — interactive view nodes (events + input ports)", status: done, dependencies: [P43], archive: "docs/agent-roadmap-archive.yaml#P44" }
 
   - id: P45
     title: "Per-node E2E — composite and layout nodes"

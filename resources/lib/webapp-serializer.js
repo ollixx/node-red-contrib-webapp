@@ -318,9 +318,10 @@
             const name = String(component.props.path || component.id);
             const inputType = String(component.props.inputType || "text");
             const value = component.value === undefined || component.value === null ? "" : String(component.value);
+            const disabled = component.disabled ? " disabled" : "";
             const attrs = shoelaceAttrs(mapComponentToShoelace("input", component.props || {}).attributes);
             return wrapRenderedComponentHtml(component, layoutId, "<sl-input" + attrs + " label=\"" + escapeAttribute(label)
-                + "\" type=\"" + escapeAttribute(inputType) + "\" name=\"" + escapeAttribute(name) + "\" value=\"" + escapeAttribute(value) + "\"></sl-input>");
+                + "\" type=\"" + escapeAttribute(inputType) + "\" name=\"" + escapeAttribute(name) + "\" value=\"" + escapeAttribute(value) + "\"" + disabled + "></sl-input>");
         }
 
         if (component.kind === "container") {
@@ -341,6 +342,7 @@
             const label = String(component.props.label || component.id);
             const name = String(component.props.path || component.id);
             const value = component.value === undefined || component.value === null ? "" : String(component.value);
+            const disabled = component.disabled ? " disabled" : "";
             const attrs = shoelaceAttrs(mapComponentToShoelace("select", component.props || {}).attributes);
             const options = Array.isArray(component.props.options) ? component.props.options : [];
             const optionHtml = options.map(function (opt) {
@@ -350,7 +352,7 @@
                 return "<sl-option value=\"" + val + "\"" + selected + ">" + lbl + "</sl-option>";
             }).join("");
             return wrapRenderedComponentHtml(component, layoutId, "<sl-select" + attrs + " label=\"" + escapeAttribute(label)
-                + "\" name=\"" + escapeAttribute(name) + "\" value=\"" + escapeAttribute(value) + "\">" + optionHtml + "</sl-select>");
+                + "\" name=\"" + escapeAttribute(name) + "\" value=\"" + escapeAttribute(value) + "\"" + disabled + ">" + optionHtml + "</sl-select>");
         }
 
         if (component.kind === "checkbox") {
@@ -391,18 +393,20 @@
             const name = String(component.props.path || component.id);
             const value = component.value === undefined || component.value === null ? "" : String(component.value);
             const rows = component.props.rows ? " rows=\"" + escapeAttribute(String(component.props.rows)) + "\"" : "";
+            const disabled = component.disabled ? " disabled" : "";
             const attrs = shoelaceAttrs(mapComponentToShoelace("textarea", component.props || {}).attributes);
             return wrapRenderedComponentHtml(component, layoutId, "<sl-textarea" + attrs + " label=\"" + escapeAttribute(label)
-                + "\" name=\"" + escapeAttribute(name) + "\"" + rows + " value=\"" + escapeAttribute(value) + "\"></sl-textarea>");
+                + "\" name=\"" + escapeAttribute(name) + "\"" + rows + " value=\"" + escapeAttribute(value) + "\"" + disabled + "></sl-textarea>");
         }
 
         if (component.kind === "datepicker") {
             const label = String(component.props.label || component.id);
             const name = String(component.props.path || component.id);
             const value = component.value === undefined || component.value === null ? "" : String(component.value);
+            const disabled = component.disabled ? " disabled" : "";
             const attrs = shoelaceAttrs(mapComponentToShoelace("datepicker", component.props || {}).attributes);
             return wrapRenderedComponentHtml(component, layoutId, "<sl-input" + attrs + " type=\"date\" label=\"" + escapeAttribute(label)
-                + "\" name=\"" + escapeAttribute(name) + "\" value=\"" + escapeAttribute(value) + "\"></sl-input>");
+                + "\" name=\"" + escapeAttribute(name) + "\" value=\"" + escapeAttribute(value) + "\"" + disabled + "></sl-input>");
         }
 
         if (component.kind === "slider") {

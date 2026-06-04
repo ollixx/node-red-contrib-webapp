@@ -220,7 +220,8 @@ export const uiInputNodeDefinitionSchema = mountableNodeSchema.extend({
     storeId: identifierSchema.optional(),
     path: z.string().min(1, "Input store paths must not be empty.").optional(),
     inputType: z.enum(["text", "email", "number"]).default("text"),
-    placeholder: z.string().min(1, "Input placeholders must not be empty.").optional()
+    placeholder: z.string().min(1, "Input placeholders must not be empty.").optional(),
+    disabled: bindingSchema.optional()
 }).superRefine((input, context) => {
     if ((input.storeId && !input.path) || (!input.storeId && input.path)) {
         context.addIssue({

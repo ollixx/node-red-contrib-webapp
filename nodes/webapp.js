@@ -708,14 +708,19 @@ function toComponentDefinitions(components) {
 
         if (component.type === "ui-input") {
             const layoutProps = collectNormalizedLayoutProps(component);
+            const disabledBinding = getBinding(component.disabled, component.disabledPath ? stateBinding(component.disabledPath) : undefined);
+            const bind = {
+                value: getBinding(component.value, stateBinding(joinStatePath(component.storeId ? undefined : "", component.path || "")))
+            };
+            if (disabledBinding) {
+                bind.disabled = disabledBinding;
+            }
             return {
                 id: component.id,
                 kind: "input",
                 mount: component.mount || component.parent,
                 order: toOptionalNumber(component.order),
-                bind: {
-                    value: getBinding(component.value, stateBinding(joinStatePath(component.storeId ? undefined : "", component.path || "")))
-                },
+                bind,
                 props: {
                     label: component.label,
                     storeId: component.storeId,
@@ -1285,10 +1290,26 @@ function readDeployDefinitions(RED) {
                     };
                 }
 
-                return {
+                const baseDefinition = {
                     ...registration.mapConfig(entry),
                     z: entry.z
                 };
+
+                // P39: merge the in-memory `value` patch from viewNodePatchInputHandler
+                // into the flow-file-derived definition so SSE snapshots and
+                // re-renders reflect msg.payload updates. Only applied to view nodes
+                // that carry a `value` binding (structural nodes like ui-app do not).
+                const liveRegistration = runtimeState.definitions.get(entry.id);
+                if (liveRegistration && liveRegistration.definition
+                        && liveRegistration.definition.type === entry.type
+                        && liveRegistration.definition.value !== undefined
+                        && liveRegistration.definition.value !== baseDefinition.value) {
+                    return Object.assign({}, baseDefinition, {
+                        value: liveRegistration.definition.value
+                    });
+                }
+
+                return baseDefinition;
             });
     }
     catch {
@@ -2081,6 +2102,7 @@ const runtimeNodeRegistry = {
             storeId: config.storeId || undefined,
             path: config.path || undefined,
             inputType: config.inputType || undefined,
+            disabled: getBinding(config.disabled, config.disabledPath ? stateBinding(config.disabledPath) : undefined),
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {

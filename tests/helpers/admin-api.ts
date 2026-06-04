@@ -68,8 +68,20 @@ export async function injectMessage(
     payload?: unknown
 ): Promise<void> {
     const options = payload === undefined ? {} : { data: { __user_inject_props__: [{ p: "payload", v: payload, vt: "json" }] } };
-    const response = await request.post(`/inject/${encodeURIComponent(nodeId)}`, options);
-    if (!response.ok()) {
+
+    // Node-RED registers the inject endpoint asynchronously after `POST /flows`
+    // resolves. Retry up to 5× with a 200ms back-off so the test does not fail
+    // on a transient 404 before the node is fully registered.
+    const maxRetries = 5;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        const response = await request.post(`/inject/${encodeURIComponent(nodeId)}`, options);
+        if (response.ok()) {
+            return;
+        }
+        if (response.status() === 404 && attempt < maxRetries) {
+            await new Promise((resolve) => setTimeout(resolve, 200 * attempt));
+            continue;
+        }
         const body = await response.text().catch(() => "<unreadable>");
         throw new Error(`injectMessage(${nodeId}) failed: ${response.status()} ${response.statusText()} — ${body}`);
     }
