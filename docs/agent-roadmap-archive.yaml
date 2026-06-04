@@ -1203,62 +1203,98 @@ phases:
       - "`pnpm exec playwright test tests/e2e/nodes/view` — 36/36 pass"
       - "`pnpm exec playwright test` — full suite 95/95 pass (no regressions)"
 
-- id: P44
-  title: "Per-node E2E — interactive view nodes (events + input ports)"
-  status: done
-  summary:
-    delivered: >
-      Full lifecycle E2E specs for every interactive form control: ui-input,
-      ui-checkbox, ui-switch, ui-radio, ui-select, ui-slider, ui-textarea,
-      ui-datepicker. Plus ui-button click→POST /event (deferred from P43).
-      Each spec covers rendering (element presence, label/prop attributes,
-      disabled state), events (sl-change → POST /event with correct params),
-      and input port (inject → re-navigate → asserts patched value). Five
-      implementation bugs were discovered and fixed in the same phase:
-      (1) FlowBuilder: nodes missing x/y coords were treated by Node-RED 4 as
-      config nodes, causing "Circular config node dependency" errors and
-      preventing inject node registration — fixed by adding x/y to all nodes;
-      (2) FlowBuilder: interactive nodes missing required `value` bindingSchema
-      field caused silent schema validation failures — fixed with literal defaults;
-      (3) readDeployDefinitions: in-memory patches from viewNodePatchInputHandler
-      were ignored when building SSE snapshots (read from flow file only) — fixed
-      by merging live definition.value into the flow-file-derived definition;
-      (4) webapp-serializer.js: sl-input, sl-select, sl-textarea, sl-input[type=date]
-      did not render the `disabled` attribute — fixed by adding explicit disabled
-      handling matching checkbox/switch pattern;
-      (5) ui-input mapConfig + schema: disabled binding not threaded through —
-      added disabled field to uiInputNodeDefinitionSchema and mapConfig.
-    stats: "8 spec files + 1 button-events spec, 35 E2E tests; 5 implementation bug-fixes across schema, webapp.js, webapp-serializer.js, and test helpers"
-    notes: >
-      Input port tests use re-navigate strategy (inject → navigate again) rather
-      than waitForSseSnapshot because: (a) the SSE mechanism works but relies on
-      browser event listeners attaching before the push arrives, creating
-      inherent race conditions in E2E; (b) re-navigate provides a deterministic
-      assertion path since the snapshot builder reads patched in-memory definitions.
-      The admin-api.ts injectMessage now retries up to 5x with exponential backoff
-      to handle Node-RED 4's async flow start (setFlows resolves before nodes are
-      registered). Slider value assertion accepts numeric or string form since
-      Shoelace sl-range.value coerces at the JS level.
-    cost: "session a0ef64cc-0d56-43b8-a170-42191e3d46ff, 2026-06-03T16:22:59Z → 2026-06-04T06:01:43Z"
-  goals:
-    - "Full lifecycle E2E specs for ui-input, ui-checkbox, ui-switch, ui-radio, ui-select, ui-slider, ui-textarea, ui-datepicker"
-    - "ui-button click → POST /event test (deferred from P43)"
-  deliverables:
-    - "tests/e2e/nodes/view/ui-button-events.spec.ts — 1 test (click event)"
-    - "tests/e2e/nodes/view/ui-checkbox.spec.ts — 4 tests (render, disabled, event, input port)"
-    - "tests/e2e/nodes/view/ui-datepicker.spec.ts — 4 tests"
-    - "tests/e2e/nodes/view/ui-input.spec.ts — 5 tests (render, label, disabled, event, input port)"
-    - "tests/e2e/nodes/view/ui-radio.spec.ts — 3 tests"
-    - "tests/e2e/nodes/view/ui-select.spec.ts — 4 tests"
-    - "tests/e2e/nodes/view/ui-slider.spec.ts — 3 tests"
-    - "tests/e2e/nodes/view/ui-switch.spec.ts — 4 tests"
-    - "tests/e2e/nodes/view/ui-textarea.spec.ts — 4 tests"
-    - "tests/helpers/flow-builder.ts — x/y positions for all nodes; value binding defaults"
-    - "tests/helpers/admin-api.ts — injectMessage retry loop (Node-RED 4 async start)"
-    - "packages/schema/src/node-definitions.ts — disabled field added to uiInputNodeDefinitionSchema"
-    - "nodes/webapp.js — readDeployDefinitions: merge live value patches; ui-input disabled binding; toComponentDefinitions: ui-input disabled bind"
-    - "resources/lib/webapp-serializer.js — disabled attribute for sl-input, sl-select, sl-textarea, sl-input[type=date]"
-  validation:
-    - "pnpm validate passes (build + lint + 207 unit tests)"
-    - "`pnpm exec playwright test tests/e2e/nodes/view` — 68/68 pass (P43 + P44)"
-    - "`pnpm exec playwright test` — full suite 127/127 pass (no regressions)"
+  - id: P44
+    title: "Per-node E2E — interactive view nodes (events + input ports)"
+    status: done
+    summary:
+      delivered: >
+        Full lifecycle E2E specs for every interactive form control: ui-input,
+        ui-checkbox, ui-switch, ui-radio, ui-select, ui-slider, ui-textarea,
+        ui-datepicker. Plus ui-button click→POST /event (deferred from P43).
+        Each spec covers rendering (element presence, label/prop attributes,
+        disabled state), events (sl-change → POST /event with correct params),
+        and input port (inject → re-navigate → asserts patched value). Five
+        implementation bugs were discovered and fixed in the same phase:
+        (1) FlowBuilder: nodes missing x/y coords were treated by Node-RED 4 as
+        config nodes, causing "Circular config node dependency" errors and
+        preventing inject node registration — fixed by adding x/y to all nodes;
+        (2) FlowBuilder: interactive nodes missing required `value` bindingSchema
+        field caused silent schema validation failures — fixed with literal defaults;
+        (3) readDeployDefinitions: in-memory patches from viewNodePatchInputHandler
+        were ignored when building SSE snapshots (read from flow file only) — fixed
+        by merging live definition.value into the flow-file-derived definition;
+        (4) webapp-serializer.js: sl-input, sl-select, sl-textarea, sl-input[type=date]
+        did not render the `disabled` attribute — fixed by adding explicit disabled
+        handling matching checkbox/switch pattern;
+        (5) ui-input mapConfig + schema: disabled binding not threaded through —
+        added disabled field to uiInputNodeDefinitionSchema and mapConfig.
+      stats: "8 spec files + 1 button-events spec, 35 E2E tests; 5 implementation bug-fixes across schema, webapp.js, webapp-serializer.js, and test helpers"
+      notes: >
+        Input port tests use re-navigate strategy (inject → navigate again) rather
+        than waitForSseSnapshot because: (a) the SSE mechanism works but relies on
+        browser event listeners attaching before the push arrives, creating
+        inherent race conditions in E2E; (b) re-navigate provides a deterministic
+        assertion path since the snapshot builder reads patched in-memory definitions.
+        The admin-api.ts injectMessage now retries up to 5x with exponential backoff
+        to handle Node-RED 4's async flow start (setFlows resolves before nodes are
+        registered). Slider value assertion accepts numeric or string form since
+        Shoelace sl-range.value coerces at the JS level.
+      cost: "session a0ef64cc-0d56-43b8-a170-42191e3d46ff, 2026-06-03T16:22:59Z → 2026-06-04T06:01:43Z"
+    goals:
+      - "Full lifecycle E2E specs for ui-input, ui-checkbox, ui-switch, ui-radio, ui-select, ui-slider, ui-textarea, ui-datepicker"
+      - "ui-button click → POST /event test (deferred from P43)"
+    deliverables:
+      - "tests/e2e/nodes/view/ui-button-events.spec.ts — 1 test (click event)"
+      - "tests/e2e/nodes/view/ui-checkbox.spec.ts — 4 tests (render, disabled, event, input port)"
+      - "tests/e2e/nodes/view/ui-datepicker.spec.ts — 4 tests"
+      - "tests/e2e/nodes/view/ui-input.spec.ts — 5 tests (render, label, disabled, event, input port)"
+      - "tests/e2e/nodes/view/ui-radio.spec.ts — 3 tests"
+      - "tests/e2e/nodes/view/ui-select.spec.ts — 4 tests"
+      - "tests/e2e/nodes/view/ui-slider.spec.ts — 3 tests"
+      - "tests/e2e/nodes/view/ui-switch.spec.ts — 4 tests"
+      - "tests/e2e/nodes/view/ui-textarea.spec.ts — 4 tests"
+      - "tests/helpers/flow-builder.ts — x/y positions for all nodes; value binding defaults"
+      - "tests/helpers/admin-api.ts — injectMessage retry loop (Node-RED 4 async start)"
+      - "packages/schema/src/node-definitions.ts — disabled field added to uiInputNodeDefinitionSchema"
+      - "nodes/webapp.js — readDeployDefinitions: merge live value patches; ui-input disabled binding; toComponentDefinitions: ui-input disabled bind"
+      - "resources/lib/webapp-serializer.js — disabled attribute for sl-input, sl-select, sl-textarea, sl-input[type=date]"
+    validation:
+      - "pnpm validate passes (build + lint + 207 unit tests)"
+      - "`pnpm exec playwright test tests/e2e/nodes/view` — 68/68 pass (P43 + P44)"
+      - "`pnpm exec playwright test` — full suite 127/127 pass (no regressions)"
+
+  - id: P45
+    title: "Per-node E2E — composite and layout nodes"
+    status: done
+    dependencies: [P44]
+    summary:
+      delivered: "34 E2E specs for 9 composite/layout nodes: ui-table, ui-container, ui-tabs, ui-accordion, ui-menu, ui-list, ui-pagination, ui-stepper, ui-toast — covering rendering, events, and input ports."
+      stats: "7 spec files (34 tests) in tests/e2e/nodes/composite/; 10 runtime/schema/serializer bug-fixes across 6 files"
+      notes: >
+        Several pre-existing bugs were uncovered and fixed: (1) ui-list, ui-pagination, ui-stepper not in P16X_KIND_MAP — added
+        with value-binding aliases; (2) parseList used for JSON-array inputs in accordion/tabs/menu/stepper mapConfigs — switched
+        to parseJsonList with parseList fallback; (3) parseColumns used parseList on JSON array strings — same fix; (4) listItemSchema
+        missing id field — Zod was stripping it; (5) menuItemSchema missing route/href fields — stripping caused empty hrefs;
+        (6) ui-list missing from getDefinitionBuckets components filter; (7) readDeployDefinitions merge only patched value field —
+        extended to also merge rows (ui-table) and items (ui-list); (8) pagination/stepper serializer read component.page/totalPages
+        directly but renderer stores them in props — fixed serializer to prefer props with literal-resolution fallback; (9) table
+        serializer events read from component.events (always [] after Zod) — now reads component.props.events; (10) list/pagination/
+        stepper component events stored in props.componentEvents to avoid Zod uiEventNameSchema validation failure.
+        ui-toast implemented: passThroughInputHandler replaced with toastInputHandler that pushes SSE "toast" events; client handles
+        "toast" SSE frames by appending sl-alert to document.body.
+      cost: "session a0ef64cc-0d56-43b8-a170-42191e3d46ff, 2026-06-04T06:04:11Z → 2026-06-04T06:48:56Z"
+    goals:
+      - "E2E specs for ui-table, ui-container, ui-tabs, ui-accordion, ui-menu, ui-list, ui-pagination, ui-stepper, ui-toast"
+    deliverables:
+      - "tests/e2e/nodes/composite/ui-accordion.spec.ts — 3 tests"
+      - "tests/e2e/nodes/composite/ui-container.spec.ts — 4 tests"
+      - "tests/e2e/nodes/composite/ui-list.spec.ts — 3 tests"
+      - "tests/e2e/nodes/composite/ui-menu.spec.ts — 3 tests"
+      - "tests/e2e/nodes/composite/ui-pagination.spec.ts — 6 tests"
+      - "tests/e2e/nodes/composite/ui-stepper.spec.ts — 4 tests"
+      - "tests/e2e/nodes/composite/ui-table.spec.ts — 5 tests"
+      - "tests/e2e/nodes/composite/ui-tabs.spec.ts — 3 tests"
+      - "tests/e2e/nodes/composite/ui-toast.spec.ts — 3 tests"
+    validation:
+      - "pnpm validate passes"
+      - "`pnpm exec playwright test tests/e2e/nodes` — 119/119 pass (P42–P45)"

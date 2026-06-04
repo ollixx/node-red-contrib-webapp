@@ -74,7 +74,7 @@ export interface RenderedInputComponent extends RenderedComponentBase {
 
 /** Generic rendered component for P16x kinds (select, checkbox, radio, etc.). */
 export interface RenderedGenericComponent extends RenderedComponentBase {
-    kind: "select" | "checkbox" | "radio" | "switch" | "textarea" | "datepicker" | "slider" | "alert" | "badge" | "progress" | "breadcrumb" | "tabs" | "accordion" | "menu" | "avatar";
+    kind: "select" | "checkbox" | "radio" | "switch" | "textarea" | "datepicker" | "slider" | "alert" | "badge" | "progress" | "breadcrumb" | "tabs" | "accordion" | "menu" | "avatar" | "list" | "pagination" | "stepper";
     value: unknown;
 }
 
@@ -497,6 +497,10 @@ function toRenderedComponent(component: ComponentDefinition, context: ComponentR
         case "accordion":
         case "menu":
         case "avatar":
+        // falls through — P45: composite and layout nodes
+        case "list":
+        case "pagination":
+        case "stepper":
             return {
                 ...baseComponent,
                 kind: component.kind,

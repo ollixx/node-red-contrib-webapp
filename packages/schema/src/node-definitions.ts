@@ -472,8 +472,10 @@ export const uiBreadcrumbNodeDefinitionSchema = mountableNodeSchema.extend({
 
 export type UiBreadcrumbNodeDefinition = z.infer<typeof uiBreadcrumbNodeDefinitionSchema>;
 
-const menuItemSchema: z.ZodType<{ label: string; path?: string; icon?: string; children?: Array<{ label: string; path?: string; icon?: string }> }> = z.object({
+const menuItemSchema: z.ZodType<{ label: string; route?: string; href?: string; path?: string; icon?: string; children?: Array<{ label: string; path?: string; icon?: string }> }> = z.object({
     label: z.string().min(1),
+    route: z.string().optional(),
+    href: z.string().optional(),
     path: z.string().optional(),
     icon: z.string().optional(),
     children: z.array(z.object({ label: z.string().min(1), path: z.string().optional(), icon: z.string().optional() })).optional()
@@ -537,6 +539,7 @@ export const uiIconNodeDefinitionSchema = mountableNodeSchema.extend({
 export type UiIconNodeDefinition = z.infer<typeof uiIconNodeDefinitionSchema>;
 
 const listItemSchema = z.object({
+    id: z.string().optional(),
     label: z.string().min(1),
     value: z.string().optional(),
     icon: z.string().optional()

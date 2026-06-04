@@ -220,7 +220,11 @@ export const componentKindSchema = z.enum([
     "tabs",
     "accordion",
     "menu",
-    "avatar"
+    "avatar",
+    // P45: composite and layout nodes
+    "list",
+    "pagination",
+    "stepper"
 ]);
 
 export const uiEventNameSchema = z.enum(["click", "submit", "change", "select", "open", "close", "navigate", "load"]);

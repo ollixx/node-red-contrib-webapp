@@ -246,6 +246,19 @@
             return;
         }
 
+        // P45: list items carry data-webapp-item — dispatch as an `itemClick`
+        // event with params.value = item id so the flow receives the documented shape.
+        if (trigger.hasAttribute("data-webapp-item")) {
+            eventObject.preventDefault();
+            const itemId = trigger.getAttribute("data-webapp-item");
+            dispatch({
+                source: trigger.getAttribute("data-webapp-source"),
+                event: "itemClick",
+                params: { value: itemId }
+            });
+            return;
+        }
+
         // Value controls report `change`, not click — leave those to the change
         // listener so a click inside an input does not fire a spurious event.
         if (CLICK_EVENTS.indexOf(event) === -1) {
@@ -429,6 +442,45 @@
             }
             catch (error) {
                 // Ignore a malformed frame.
+            }
+        });
+
+        // P45: ui-toast — display a transient notification pushed by the flow.
+        // The toast is appended to the document body (outside the app root) and
+        // removed after `duration` milliseconds. Uses sl-alert when Shoelace is
+        // available, otherwise falls back to a plain <div>.
+        source.addEventListener("toast", function (messageEvent) {
+            try {
+                const payload = JSON.parse(messageEvent.data);
+                if (!payload || !payload.toast) {
+                    return;
+                }
+                const toast = payload.toast;
+                const duration = typeof toast.duration === "number" ? toast.duration : 3000;
+                const severity = String(toast.severity || "info");
+                const message = String(toast.message || "");
+                const position = String(toast.position || "top-right");
+
+                const el = document.createElement("sl-alert");
+                el.setAttribute("variant", severity);
+                el.setAttribute("open", "");
+                el.setAttribute("closable", "");
+                el.className = "webapp-toast webapp-toast--" + position;
+                el.style.cssText = "position:fixed;z-index:9999;max-width:320px;"
+                    + (position.includes("bottom") ? "bottom:1rem;" : "top:1rem;")
+                    + (position.includes("left") ? "left:1rem;" : "right:1rem;");
+                el.textContent = message;
+
+                document.body.appendChild(el);
+
+                if (duration > 0) {
+                    setTimeout(function () {
+                        el.remove();
+                    }, duration);
+                }
+            }
+            catch (error) {
+                // Ignore a malformed toast frame.
             }
         });
 

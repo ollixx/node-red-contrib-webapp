@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P45  # Next: P45 per-node E2E — composite and layout nodes.
+  current_phase: P46  # Next: P46 per-node E2E — state and behavior nodes.
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -216,53 +216,7 @@ phases:
 
   - { id: P44, title: "Per-node E2E — interactive view nodes (events + input ports)", status: done, dependencies: [P43], archive: "docs/agent-roadmap-archive.yaml#P44" }
 
-  - id: P45
-    title: "Per-node E2E — composite and layout nodes"
-    status: in_progress
-    dependencies: [P44]
-    goal: |
-      Specs for nodes that involve child nodes, multi-part rendering, or composite
-      events: ui-table, ui-container, ui-tabs, ui-accordion, ui-menu, ui-list,
-      ui-pagination, ui-stepper, ui-toast.
-    scope: |
-      ui-table.spec.ts
-        - columns + rows render as <table> with correct header/cell content.
-        - Row click → POST /event { event:"rowSelect", params:{ rowId } }.
-        - Input port: inject new rows array → table updates via SSE.
-        - Optional columns (sortable, actions) render correctly.
-
-      ui-container.spec.ts
-        - Renders sl-card wrapper.
-        - Child ui-text node mounted inside → text visible inside card.
-        - Multiple children render in order.
-        - layout preset "grid": children placed in CSS grid.
-
-      ui-tabs.spec.ts
-        - Two tab children render as sl-tab / sl-panel pairs.
-        - Active tab set via value prop.
-        - sl-tab-show event → POST /event { event:"change", params:{ value: tabId } }.
-
-      ui-accordion.spec.ts, ui-menu.spec.ts, ui-list.spec.ts
-        - Items array renders correct child elements.
-        - Click / select → POST /event with correct params.
-
-      ui-pagination.spec.ts
-        - prev/next buttons visible.
-        - prev click → POST /event { params:{ page: n-1 } }.
-        - next click → POST /event { params:{ page: n+1 } }.
-        - Disabled state on first/last page.
-
-      ui-stepper.spec.ts
-        - Steps render with labels.
-        - Active step has webapp-step--active class.
-        - Step click → POST /event { params:{ value: stepIndex } }.
-
-      ui-toast.spec.ts
-        - Not visible by default.
-        - Input port message → toast appears via SSE.
-    validation: |
-      - pnpm validate passes.
-      - `pnpm exec playwright test tests/e2e/nodes` — all passes (P42–P45).
+  - { id: P45, title: "Per-node E2E — composite and layout nodes", status: done, dependencies: [P44], archive: "docs/agent-roadmap-archive.yaml#P45" }
 
   - id: P46
     title: "Per-node E2E — state and behavior nodes"

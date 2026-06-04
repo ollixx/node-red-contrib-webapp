@@ -274,7 +274,10 @@
             // P30: a table emits rowSelect when it declares the event (or, legacy,
             // a selectAction). The event TYPE reported is "rowSelect" (events.md);
             // an action reference is no longer required for the row to be selectable.
-            const tableEvents = (component.events || []).map(function (event) {
+            // Events are in component.props.events (renderer preserves props) or component.events.
+            const rawTableEvents = Array.isArray(component.props.events) ? component.props.events
+                : (Array.isArray(component.events) ? component.events : []);
+            const tableEvents = rawTableEvents.map(function (event) {
                 return typeof event === "string" ? event : (event && event.event);
             });
             const selectEvent = (component.events || []).find(function (event) {
@@ -526,8 +529,18 @@
         // data-webapp-source + data-webapp-event="click" + data-webapp-page so the
         // click handler can dispatch a `change` event with params.page.
         if (component.kind === "pagination") {
-            const currentPage = component.page !== undefined && component.page !== null ? Number(component.page) : 1;
-            const totalPages = component.totalPages !== undefined && component.totalPages !== null ? Number(component.totalPages) : 0;
+            // component.value = resolved page binding (from renderer); component.props.page = raw binding obj.
+            // Prefer the resolved value; fall back to props.page then component.page (legacy path).
+            const rawPage = component.value !== undefined && component.value !== null ? component.value
+                : (component.props && component.props.page !== undefined ? component.props.page : component.page);
+            const rawTotal = (component.props && component.props.totalPages !== undefined) ? component.props.totalPages
+                : component.totalPages;
+            // If the value is a binding object (kind + value), extract the value.
+            const resolveLiteral = function (v) {
+                return (v && typeof v === "object" && v.kind === "literal") ? v.value : v;
+            };
+            const currentPage = rawPage !== undefined && rawPage !== null ? Number(resolveLiteral(rawPage)) : 1;
+            const totalPages = rawTotal !== undefined && rawTotal !== null ? Number(resolveLiteral(rawTotal)) : 0;
             const src = " data-webapp-source=\"" + escapeAttribute(component.id) + "\"";
             const prevPage = Math.max(1, currentPage - 1);
             const nextPage = totalPages > 0 ? Math.min(totalPages, currentPage + 1) : currentPage + 1;
@@ -553,6 +566,32 @@
                 return "<button class=\"webapp-step" + isActive + "\"" + src + " data-webapp-event=\"click\" data-webapp-step=\"" + idx + "\" type=\"button\">" + label + "</button>";
             }).join("");
             return wrapRenderedComponentHtml(component, layoutId, "<div class=\"webapp-stepper webapp-stepper--" + escapeAttribute(orientation) + "\">" + stepHtml + "</div>");
+        }
+
+        // P45: list — renders a <ul> with <li> items. Each item carries
+        // data-webapp-source + data-webapp-event="click" so clicks dispatch
+        // an itemClick event with params.value = item id (or label).
+        if (component.kind === "list") {
+            const rawItems = Array.isArray(component.props.items) ? component.props.items
+                : (Array.isArray(component.value) ? component.value : []);
+            const src = " data-webapp-source=\"" + escapeAttribute(component.id) + "\"";
+            // Events are stored in props.componentEvents (to avoid Zod uiEventName validation).
+            const allEvents = Array.isArray(component.props.componentEvents) ? component.props.componentEvents
+                : (Array.isArray(component.events) ? component.events : []);
+            const declaresClick = allEvents.some(function (ev) {
+                return (typeof ev === "string" ? ev : (ev && ev.event)) === "itemClick";
+            });
+            const itemHtml = rawItems.map(function (item) {
+                const label = escapeHtml(String(item.label !== undefined ? item.label : (item.id !== undefined ? item.id : item)));
+                const itemId = item.id !== undefined ? String(item.id) : label;
+                if (declaresClick) {
+                    return "<li class=\"webapp-list-item\"><a class=\"webapp-link\" href=\"#\""
+                        + src + " data-webapp-event=\"click\" data-webapp-item=\"" + escapeAttribute(itemId) + "\">"
+                        + label + "</a></li>";
+                }
+                return "<li class=\"webapp-list-item\">" + label + "</li>";
+            }).join("");
+            return wrapRenderedComponentHtml(component, layoutId, "<ul class=\"webapp-list\">" + itemHtml + "</ul>");
         }
 
         return "";

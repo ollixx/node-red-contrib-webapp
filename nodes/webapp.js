@@ -142,7 +142,9 @@ function parseTokens(value) {
 }
 
 function parseColumns(value) {
-    const raw = Array.isArray(value) ? value : parseList(value);
+    // Prefer parseJsonList for JSON array strings; fall back to parseList for
+    // newline/comma-separated plain-text column names.
+    const raw = Array.isArray(value) ? value : (parseJsonList(value).length > 0 ? parseJsonList(value) : parseList(value));
     return raw.map((entry) => {
         if (typeof entry === "string") {
             return { key: entry, label: entry };
@@ -750,7 +752,11 @@ function toComponentDefinitions(components) {
             "ui-tabs": "tabs",
             "ui-accordion": "accordion",
             "ui-menu": "menu",
-            "ui-avatar": "avatar"
+            "ui-avatar": "avatar",
+            // P45: composite and layout nodes
+            "ui-list": "list",
+            "ui-pagination": "pagination",
+            "ui-stepper": "stepper"
         };
         const p16Kind = P16X_KIND_MAP[component.type];
 
@@ -763,6 +769,10 @@ function toComponentDefinitions(components) {
             // component.value rather than the raw binding object in component.props.
             const messageBinding = !valueBinding && p16Kind === "alert" ? getBinding(component.message, undefined) : undefined;
             const srcBinding = !valueBinding && p16Kind === "avatar" ? getBinding(component.src, undefined) : undefined;
+            // P45: pagination uses `page` as its primary binding; stepper uses `activeStep`; list uses `items`.
+            const pageBinding = !valueBinding && p16Kind === "pagination" ? getBinding(component.page, component.pagePath ? stateBinding(component.pagePath) : undefined) : undefined;
+            const activeStepBinding = !valueBinding && p16Kind === "stepper" ? getBinding(component.activeStep, component.activeStepPath ? stateBinding(component.activeStepPath) : undefined) : undefined;
+            const itemsBinding = !valueBinding && p16Kind === "list" ? getBinding(component.items, component.itemsPath ? stateBinding(component.itemsPath) : undefined) : undefined;
             const bind = {};
             if (valueBinding) {
                 bind.value = valueBinding;
@@ -772,6 +782,15 @@ function toComponentDefinitions(components) {
             }
             else if (srcBinding) {
                 bind.value = srcBinding;
+            }
+            else if (pageBinding) {
+                bind.value = pageBinding;
+            }
+            else if (activeStepBinding) {
+                bind.value = activeStepBinding;
+            }
+            else if (itemsBinding) {
+                bind.value = itemsBinding;
             }
             if (disabledBinding) {
                 bind.disabled = disabledBinding;
@@ -802,9 +821,17 @@ function toComponentDefinitions(components) {
                     ...(component.variant !== undefined ? { variant: component.variant } : {}),
                     ...(component.items !== undefined ? { items: component.items } : {}),
                     ...(component.tabs !== undefined ? { tabs: component.tabs } : {}),
-                    ...(component.orientation !== undefined ? { orientation: component.orientation } : {})
+                    ...(component.orientation !== undefined ? { orientation: component.orientation } : {}),
+                    // P45: composite and layout node props
+                    ...(component.steps !== undefined ? { steps: component.steps } : {}),
+                    ...(component.page !== undefined ? { page: component.page } : {}),
+                    ...(component.totalPages !== undefined ? { totalPages: component.totalPages } : {}),
+                    ...(component.activeStep !== undefined ? { activeStep: component.activeStep } : {}),
+                    // Store domain-specific events (itemClick, change, etc.) in props
+                    // so they reach the serializer without failing Zod event-name validation.
+                    ...(Array.isArray(component.events) && component.events.length > 0 ? { componentEvents: component.events } : {})
                 },
-                events: Array.isArray(component.events) ? component.events : []
+                events: []
             };
         }
 
@@ -1299,14 +1326,25 @@ function readDeployDefinitions(RED) {
                 // into the flow-file-derived definition so SSE snapshots and
                 // re-renders reflect msg.payload updates. Only applied to view nodes
                 // that carry a `value` binding (structural nodes like ui-app do not).
+                // P45: also merge `rows` (ui-table) and `items` (ui-list) which are
+                // the primary binding fields for those node types.
                 const liveRegistration = runtimeState.definitions.get(entry.id);
                 if (liveRegistration && liveRegistration.definition
-                        && liveRegistration.definition.type === entry.type
-                        && liveRegistration.definition.value !== undefined
-                        && liveRegistration.definition.value !== baseDefinition.value) {
-                    return Object.assign({}, baseDefinition, {
-                        value: liveRegistration.definition.value
-                    });
+                        && liveRegistration.definition.type === entry.type) {
+                    const liveDef = liveRegistration.definition;
+                    const patch = {};
+                    if (liveDef.value !== undefined && liveDef.value !== baseDefinition.value) {
+                        patch.value = liveDef.value;
+                    }
+                    if (liveDef.rows !== undefined && liveDef.rows !== baseDefinition.rows) {
+                        patch.rows = liveDef.rows;
+                    }
+                    if (liveDef.items !== undefined && liveDef.items !== baseDefinition.items) {
+                        patch.items = liveDef.items;
+                    }
+                    if (Object.keys(patch).length > 0) {
+                        return Object.assign({}, baseDefinition, patch);
+                    }
                 }
 
                 return baseDefinition;
@@ -1342,7 +1380,7 @@ function getDefinitionBuckets(appId, definitions) {
         app: matchingApp,
         routes: matchingDefinitions.filter((entry) => entry.type === "ui-route"),
         dialogs: matchingDefinitions.filter((entry) => entry.type === "ui-dialog"),
-        components: matchingDefinitions.filter((entry) => ["ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select", "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider", "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state", "ui-tabs", "ui-accordion", "ui-breadcrumb", "ui-menu", "ui-pagination", "ui-stepper", "ui-avatar"].includes(entry.type)),
+        components: matchingDefinitions.filter((entry) => ["ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select", "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider", "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state", "ui-tabs", "ui-accordion", "ui-breadcrumb", "ui-menu", "ui-pagination", "ui-stepper", "ui-avatar", "ui-list"].includes(entry.type)),
         stores: matchingDefinitions.filter((entry) => entry.type === "ui-store"),
         queries: matchingDefinitions.filter((entry) => entry.type === "ui-query"),
         actions: matchingDefinitions.filter((entry) => entry.type === "ui-action"),
@@ -1467,6 +1505,24 @@ function pushSnapshotToClients(appId, clientId, definitions) {
         if (built.success) {
             writeStreamEvent(entry.res, "snapshot", { snapshot: built.snapshot });
         }
+    }
+}
+
+// P45: push a toast notification to connected SSE clients. Toasts are transient
+// notifications that appear in the browser and disappear after `duration` ms.
+// They are pushed as "toast" SSE events (distinct from "snapshot" and "command").
+function pushToastToClients(appId, clientId, toast) {
+    const subscribers = runtimeState.streamClients.get(appId);
+    if (!subscribers || subscribers.size === 0) {
+        return;
+    }
+
+    const targets = clientId
+        ? (subscribers.has(clientId) ? [[clientId, subscribers.get(clientId)]] : [])
+        : Array.from(subscribers.entries());
+
+    for (const [, entry] of targets) {
+        writeStreamEvent(entry.res, "toast", { toast });
     }
 }
 
@@ -1708,6 +1764,34 @@ function getUiId(config) {
 }
 
 function passThroughInputHandler(node, msg, send, done) {
+    send(msg);
+    if (done) {
+        done();
+    }
+}
+
+// P45: ui-toast input handler — push a toast command to connected SSE clients
+// and forward the message on the output port so flows can chain further.
+function toastInputHandler(node, msg, send, done) {
+    const toastDefinition = node.webappDefinition;
+    const activeAppId = getActiveRuntimeAppId();
+    const uiMsg = msg && msg.ui && typeof msg.ui === "object" ? msg.ui : {};
+    const clientId = uiMsg.clientId ? String(uiMsg.clientId) : undefined;
+
+    if (activeAppId) {
+        // Build the toast payload from the node definition + optional msg overrides.
+        const toastPayload = {
+            id: toastDefinition ? toastDefinition.id : node.id,
+            message: uiMsg.toast && uiMsg.toast.message !== undefined ? String(uiMsg.toast.message)
+                : (msg.payload !== undefined && msg.payload !== null ? String(msg.payload) : ""),
+            severity: (uiMsg.toast && uiMsg.toast.severity) || (toastDefinition && toastDefinition.severity) || "info",
+            duration: (uiMsg.toast && uiMsg.toast.duration !== undefined ? Number(uiMsg.toast.duration)
+                : (toastDefinition && toastDefinition.duration !== undefined ? toastDefinition.duration : 3000)),
+            position: (uiMsg.toast && uiMsg.toast.position) || (toastDefinition && toastDefinition.position) || "top-right"
+        };
+        pushToastToClients(activeAppId, clientId, toastPayload);
+    }
+
     send(msg);
     if (done) {
         done();
@@ -2385,7 +2469,7 @@ const runtimeNodeRegistry = {
             position: config.position || undefined
         }),
         options: {
-            inputHandler: passThroughInputHandler
+            inputHandler: toastInputHandler
         }
     },
     "ui-progress": {
@@ -2464,7 +2548,7 @@ const runtimeNodeRegistry = {
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
-            tabs: parseList(config.tabs).map((t) => {
+            tabs: (parseJsonList(config.tabs).length > 0 ? parseJsonList(config.tabs) : parseList(config.tabs)).map((t) => {
                 if (typeof t === "string") {
                     try { return JSON.parse(t); } catch { return { id: t, label: t }; }
                 }
@@ -2485,7 +2569,7 @@ const runtimeNodeRegistry = {
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
-            items: parseList(config.items).map((t) => {
+            items: (parseJsonList(config.items).length > 0 ? parseJsonList(config.items) : parseList(config.items)).map((t) => {
                 if (typeof t === "string") {
                     try { return JSON.parse(t); } catch { return { id: t, label: t }; }
                 }
@@ -2521,7 +2605,7 @@ const runtimeNodeRegistry = {
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
             variant: config.variant || undefined,
-            items: getBinding(config.items, config.itemsPath ? stateBinding(config.itemsPath) : undefined) || parseList(config.items),
+            items: getBinding(config.items, config.itemsPath ? stateBinding(config.itemsPath) : undefined) || parseJsonList(config.items),
             activeItem: getBinding(config.activeRoute, config.activeRoutePath ? stateBinding(config.activeRoutePath) : undefined),
             ...collectNodeConfigLayoutProps(config)
         }),
@@ -2553,7 +2637,7 @@ const runtimeNodeRegistry = {
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
-            steps: parseList(config.steps).map((t) => {
+            steps: (parseJsonList(config.steps).length > 0 ? parseJsonList(config.steps) : parseList(config.steps)).map((t) => {
                 if (typeof t === "string") {
                     try { return JSON.parse(t); } catch { return { id: t, label: t }; }
                 }
@@ -2609,7 +2693,7 @@ const runtimeNodeRegistry = {
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
-            items: getBinding(config.items, config.itemsPath ? stateBinding(config.itemsPath) : undefined) || parseList(config.items),
+            items: getBinding(config.items, config.itemsPath ? stateBinding(config.itemsPath) : undefined) || parseJsonList(config.items),
             variant: config.variant || undefined,
             events: parseJsonList(config.events).length > 0 ? parseJsonList(config.events) : undefined,
             ...collectNodeConfigLayoutProps(config)
