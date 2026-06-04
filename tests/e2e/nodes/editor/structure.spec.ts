@@ -1,0 +1,114 @@
+import { expect, test } from "@playwright/test";
+
+import { deployFlow, resetFlow } from "../../../helpers/admin-api";
+import { FlowBuilder } from "../../../helpers/flow-builder";
+import { NodeEditorPage } from "../../../helpers/node-editor-page";
+
+/**
+ * P47 — Node-RED EDITOR property-panel specs for structure nodes
+ * (ui-app, ui-route, ui-dialog).
+ *
+ * These drive the Node-RED editor canvas via Playwright (NodeEditorPage), not
+ * the rendered webapp. Nodes are injected via the admin API, then their editor
+ * panel is opened programmatically (RED.editor.edit) — never the webapp URL.
+ */
+
+test.describe("editor panels — structure nodes (P47)", () => {
+    test.afterEach(async ({ request }) => {
+        await resetFlow(request);
+    });
+
+    test("ui-app — fields present, required root drives validity, optional fields persist", async ({ page, request }) => {
+        // Deploy an app with an EMPTY root so it starts invalid.
+        await deployFlow(request, new FlowBuilder().app({ id: "edApp", root: "", name: "" }).build());
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode("edApp");
+
+        // 1. All documented fields present.
+        await editor.expectFields(["name", "root", "layout-preset", "tokens", "events"]);
+
+        // 2. Missing required field (root empty) → node invalid.
+        expect(await editor.getValidationState("edApp")).toBe("invalid");
+
+        // 3. Layout preset SelectBox is populated.
+        const layoutOptions = await editor.selectOptionValues("layout-preset");
+        expect(layoutOptions.length).toBeGreaterThan(0);
+
+        // 4. Fill required field, save, re-open → persisted and valid.
+        await editor.fillField("root", "myApp");
+        await editor.save();
+        expect(await editor.getValidationState("edApp")).toBe("valid");
+
+        await editor.openNode("edApp");
+        expect(await editor.readField("root")).toBe("myApp");
+    });
+
+    test("ui-app — no input port; configured event surfaces as an output label", async ({ page, request }) => {
+        // outputs is derived from the node's events config (outputLabels reads
+        // events[index]). Configure one event so the output port carries its name.
+        await deployFlow(
+            request,
+            new FlowBuilder()
+                .app({ id: "edApp2", root: "edApp2", events: JSON.stringify(["submit"]), outputs: 1 })
+                .build()
+        );
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+
+        // Structure nodes have no input port.
+        expect(await editor.inputPortCount("edApp2")).toBe(0);
+        // The configured event name appears as the output port label.
+        expect(await editor.outputLabels("edApp2")).toEqual(["submit"]);
+    });
+
+    test("ui-route — fields present, parent SelectBox lists the app, path required", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "routeEdApp", root: "routeEdApp", name: "Route Editor App" })
+            .route({ id: "routeEd", path: "", layoutId: "vertical" })
+            .build();
+        await deployFlow(request, flow);
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode("routeEd");
+
+        // Fields documented for ui-route.
+        await editor.expectFields(["name", "parent", "path", "title", "layout-preset"]);
+
+        // Parent SelectBox lists the app.
+        const parentOptions = await editor.selectOptionValues("parent");
+        expect(parentOptions).toContain("routeEdApp");
+
+        // Empty path → invalid.
+        expect(await editor.getValidationState("routeEd")).toBe("invalid");
+
+        // Fill path → valid, persists.
+        await editor.fillField("path", "/customers");
+        await editor.save();
+        expect(await editor.getValidationState("routeEd")).toBe("valid");
+
+        await editor.openNode("routeEd");
+        expect(await editor.readField("path")).toBe("/customers");
+    });
+
+    test("ui-dialog — opens without crash, has expected fields", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "dlgApp", root: "dlgApp" })
+            .node("ui-dialog", { id: "dlgEd", title: "My Dialog" })
+            .build();
+        await deployFlow(request, flow);
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode("dlgEd");
+
+        await editor.expectFields(["name"]);
+        // Parent selector present and lists the app.
+        if (await editor.hasField("parent")) {
+            expect(await editor.selectOptionValues("parent")).toContain("dlgApp");
+        }
+    });
+});
