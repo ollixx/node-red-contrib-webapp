@@ -220,7 +220,7 @@ phases:
 
   - id: P46
     title: "Per-node E2E — state and behavior nodes"
-    status: pending
+    status: in_progress
     dependencies: [P45]
     goal: |
       Specs for ui-store, ui-query, ui-action, ui-navigation.
