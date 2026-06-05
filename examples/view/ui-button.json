@@ -14,71 +14,182 @@
     "root": "btnApp",
     "layout": "app",
     "z": "ex-ui-button",
-    "x": 100,
+    "x": 120,
     "y": 80,
     "wires": [
       []
     ]
   },
   {
-    "id": "btnHome",
+    "id": "btnRoute",
     "type": "ui-route",
-    "name": "btnHome",
-    "uiId": "btnHome",
+    "name": "btnRoute",
+    "uiId": "btnRoute",
     "path": "/",
     "parent": "btnApp",
     "layoutId": "vertical",
     "z": "ex-ui-button",
-    "x": 100,
+    "x": 120,
     "y": 180,
     "wires": [
       []
     ]
   },
   {
-    "id": "primaryBtn",
+    "id": "btnNode",
     "type": "ui-button",
-    "name": "primaryBtn",
-    "uiId": "primaryBtn",
+    "name": "primary button",
+    "uiId": "btnNode",
     "parent": "btnApp",
-    "mount": "btnHome.content",
+    "mount": "btnRoute.content",
     "z": "ex-ui-button",
-    "x": 400,
-    "y": 180,
+    "x": 480,
+    "y": 280,
     "wires": [
-      []
+      [
+        "btnDbg"
+      ]
     ],
-    "label": "Primary Button"
+    "label": "Click me",
+    "variant": "primary"
   },
   {
-    "id": "dangerBtn",
+    "id": "btnDanger",
     "type": "ui-button",
-    "name": "dangerBtn",
-    "uiId": "dangerBtn",
+    "name": "danger button",
+    "uiId": "btnDanger",
     "parent": "btnApp",
-    "mount": "btnHome.content",
+    "mount": "btnRoute.content",
     "z": "ex-ui-button",
-    "x": 400,
-    "y": 260,
+    "x": 480,
+    "y": 360,
     "wires": [
       []
     ],
-    "label": "Danger Button",
+    "label": "Delete",
     "variant": "danger"
   },
   {
-    "id": "ex-ui-button-dbg",
+    "id": "btnDisabled",
+    "type": "ui-button",
+    "name": "disabled button",
+    "uiId": "btnDisabled",
+    "parent": "btnApp",
+    "mount": "btnRoute.content",
+    "z": "ex-ui-button",
+    "x": 480,
+    "y": 440,
+    "wires": [
+      []
+    ],
+    "label": "Disabled",
+    "disabled": {
+      "kind": "literal",
+      "value": true
+    }
+  },
+  {
+    "id": "btnDbg",
     "type": "debug",
-    "name": "Events",
+    "name": "click events",
     "z": "ex-ui-button",
     "x": 700,
-    "y": 180,
+    "y": 280,
     "active": true,
     "tosidebar": true,
-    "complete": "payload",
+    "complete": "ui",
     "targetType": "msg",
     "wires": [
       []
+    ]
+  },
+  {
+    "id": "inj-label",
+    "type": "inject",
+    "name": "Update label",
+    "z": "ex-ui-button",
+    "x": 120,
+    "y": 540,
+    "payload": "New Label!",
+    "payloadType": "str",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "btnNode"
+      ]
+    ]
+  },
+  {
+    "id": "inj-disable",
+    "type": "inject",
+    "name": "disable",
+    "z": "ex-ui-button",
+    "x": 120,
+    "y": 620,
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "fn-disable"
+      ]
+    ]
+  },
+  {
+    "id": "fn-disable",
+    "type": "function",
+    "name": "→ disable",
+    "z": "ex-ui-button",
+    "func": "msg.ui = { component: { op: \"disable\" } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 380,
+    "y": 620,
+    "wires": [
+      [
+        "btnNode"
+      ]
+    ]
+  },
+  {
+    "id": "inj-enable",
+    "type": "inject",
+    "name": "enable",
+    "z": "ex-ui-button",
+    "x": 120,
+    "y": 700,
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "fn-enable"
+      ]
+    ]
+  },
+  {
+    "id": "fn-enable",
+    "type": "function",
+    "name": "→ enable",
+    "z": "ex-ui-button",
+    "func": "msg.ui = { component: { op: \"enable\" } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 380,
+    "y": 700,
+    "wires": [
+      [
+        "btnNode"
+      ]
     ]
   }
 ]

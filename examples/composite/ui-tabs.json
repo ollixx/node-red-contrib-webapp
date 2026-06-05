@@ -14,89 +14,125 @@
     "root": "tabsApp",
     "layout": "app",
     "z": "ex-ui-tabs",
-    "x": 100,
+    "x": 120,
     "y": 80,
     "wires": [
       []
     ]
   },
   {
-    "id": "tabsHome",
+    "id": "tabsRoute",
     "type": "ui-route",
-    "name": "tabsHome",
-    "uiId": "tabsHome",
+    "name": "tabsRoute",
+    "uiId": "tabsRoute",
     "path": "/",
     "parent": "tabsApp",
     "layoutId": "vertical",
     "z": "ex-ui-tabs",
-    "x": 100,
+    "x": 120,
     "y": 180,
     "wires": [
       []
     ]
   },
   {
-    "id": "myTabs",
+    "id": "tabsNode",
     "type": "ui-tabs",
-    "name": "myTabs",
-    "uiId": "myTabs",
+    "name": "tabs",
+    "uiId": "tabsNode",
     "parent": "tabsApp",
-    "mount": "tabsHome.content",
+    "mount": "tabsRoute.content",
     "z": "ex-ui-tabs",
-    "x": 400,
-    "y": 180,
+    "x": 480,
+    "y": 280,
     "wires": [
-      []
+      [
+        "tabsDbg"
+      ]
     ],
-    "tabs": "[{\"id\":\"tab1\",\"label\":\"Overview\"},{\"id\":\"tab2\",\"label\":\"Details\"},{\"id\":\"tab3\",\"label\":\"History\"}]",
+    "tabs": "[{\"id\":\"overview\",\"label\":\"Overview\"},{\"id\":\"details\",\"label\":\"Details\"},{\"id\":\"history\",\"label\":\"History\"}]",
     "value": {
       "kind": "literal",
-      "value": "tab1"
+      "value": "overview"
     }
   },
   {
-    "id": "tabContent1",
+    "id": "tabOverview",
     "type": "ui-text",
-    "name": "tabContent1",
-    "uiId": "tabContent1",
+    "name": "overview content",
+    "uiId": "tabOverview",
     "parent": "tabsApp",
-    "mount": "myTabs.tab1",
+    "mount": "tabsNode.overview",
     "z": "ex-ui-tabs",
     "x": 700,
-    "y": 160,
+    "y": 200,
     "wires": [
       []
     ],
-    "text": "Overview content"
+    "text": "Overview content here."
   },
   {
-    "id": "tabContent2",
+    "id": "tabDetails",
     "type": "ui-text",
-    "name": "tabContent2",
-    "uiId": "tabContent2",
+    "name": "details content",
+    "uiId": "tabDetails",
     "parent": "tabsApp",
-    "mount": "myTabs.tab2",
+    "mount": "tabsNode.details",
     "z": "ex-ui-tabs",
     "x": 700,
-    "y": 220,
+    "y": 280,
     "wires": [
       []
     ],
-    "text": "Details content"
+    "text": "Details content here."
   },
   {
-    "id": "ex-ui-tabs-dbg",
+    "id": "tabHistory",
+    "type": "ui-text",
+    "name": "history content",
+    "uiId": "tabHistory",
+    "parent": "tabsApp",
+    "mount": "tabsNode.history",
+    "z": "ex-ui-tabs",
+    "x": 700,
+    "y": 360,
+    "wires": [
+      []
+    ],
+    "text": "History content here."
+  },
+  {
+    "id": "tabsDbg",
     "type": "debug",
-    "name": "Events",
+    "name": "tabChange events",
     "z": "ex-ui-tabs",
     "x": 700,
-    "y": 420,
+    "y": 280,
     "active": true,
     "tosidebar": true,
-    "complete": "payload",
+    "complete": "ui",
     "targetType": "msg",
     "wires": [
       []
+    ]
+  },
+  {
+    "id": "inj-tab",
+    "type": "inject",
+    "name": "Switch to Details tab",
+    "z": "ex-ui-tabs",
+    "x": 120,
+    "y": 480,
+    "payload": "details",
+    "payloadType": "str",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "tabsNode"
+      ]
     ]
   }
 ]

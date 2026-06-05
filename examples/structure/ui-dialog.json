@@ -14,7 +14,7 @@
     "root": "dlgApp",
     "layout": "app",
     "z": "ex-ui-dialog",
-    "x": 100,
+    "x": 120,
     "y": 80,
     "wires": [
       []
@@ -29,7 +29,7 @@
     "parent": "dlgApp",
     "layoutId": "vertical",
     "z": "ex-ui-dialog",
-    "x": 100,
+    "x": 120,
     "y": 180,
     "wires": [
       []
@@ -38,12 +38,12 @@
   {
     "id": "myDialog",
     "type": "ui-dialog",
-    "name": "My Dialog",
+    "name": "Confirm Action",
     "uiId": "myDialog",
     "parent": "dlgApp",
-    "title": "Hello Dialog",
+    "title": "Confirm Action",
     "z": "ex-ui-dialog",
-    "x": 100,
+    "x": 120,
     "y": 360,
     "wires": [
       []
@@ -52,44 +52,89 @@
   {
     "id": "openBtn",
     "type": "ui-button",
-    "name": "openBtn",
+    "name": "open dialog",
     "uiId": "openBtn",
     "parent": "dlgApp",
     "mount": "dlgHome.content",
     "z": "ex-ui-dialog",
-    "x": 400,
-    "y": 180,
+    "x": 480,
+    "y": 280,
     "wires": [
       []
     ],
     "label": "Open Dialog"
   },
   {
-    "id": "dlgContent",
+    "id": "dlgText",
     "type": "ui-text",
-    "name": "dlgContent",
-    "uiId": "dlgContent",
+    "name": "dialog text",
+    "uiId": "dlgText",
     "parent": "dlgApp",
     "mount": "myDialog.content",
     "z": "ex-ui-dialog",
-    "x": 400,
-    "y": 280,
+    "x": 480,
+    "y": 440,
     "wires": [
       []
     ],
-    "text": "Dialog content here."
+    "text": "Are you sure you want to proceed?"
   },
   {
-    "id": "openAction",
+    "id": "dlgConfirmBtn",
+    "type": "ui-button",
+    "name": "confirm",
+    "uiId": "dlgConfirmBtn",
+    "parent": "dlgApp",
+    "mount": "myDialog.content",
+    "z": "ex-ui-dialog",
+    "x": 480,
+    "y": 520,
+    "wires": [
+      []
+    ],
+    "label": "Confirm"
+  },
+  {
+    "id": "dlgCancelBtn",
+    "type": "ui-button",
+    "name": "cancel",
+    "uiId": "dlgCancelBtn",
+    "parent": "dlgApp",
+    "mount": "myDialog.content",
+    "z": "ex-ui-dialog",
+    "x": 700,
+    "y": 520,
+    "wires": [
+      []
+    ],
+    "label": "Cancel"
+  },
+  {
+    "id": "openDlgAction",
     "type": "ui-action",
-    "name": "Open Dialog",
-    "uiId": "openAction",
+    "name": "openDialog",
+    "uiId": "openDlgAction",
     "parent": "dlgApp",
     "actionType": "openDialog",
     "target": "myDialog",
     "z": "ex-ui-dialog",
     "x": 700,
-    "y": 180,
+    "y": 280,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "closeDlgAction",
+    "type": "ui-action",
+    "name": "closeDialog",
+    "uiId": "closeDlgAction",
+    "parent": "dlgApp",
+    "actionType": "closeDialog",
+    "target": "myDialog",
+    "z": "ex-ui-dialog",
+    "x": 900,
+    "y": 520,
     "wires": [
       []
     ]

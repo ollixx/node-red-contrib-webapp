@@ -14,22 +14,22 @@
     "root": "emptyApp",
     "layout": "app",
     "z": "ex-ui-empty-state",
-    "x": 100,
+    "x": 120,
     "y": 80,
     "wires": [
       []
     ]
   },
   {
-    "id": "emptyHome",
+    "id": "emptyRoute",
     "type": "ui-route",
-    "name": "emptyHome",
-    "uiId": "emptyHome",
+    "name": "emptyRoute",
+    "uiId": "emptyRoute",
     "path": "/",
     "parent": "emptyApp",
     "layoutId": "vertical",
     "z": "ex-ui-empty-state",
-    "x": 100,
+    "x": 120,
     "y": 180,
     "wires": [
       []
@@ -38,18 +38,88 @@
   {
     "id": "noResults",
     "type": "ui-empty-state",
-    "name": "noResults",
+    "name": "no results",
     "uiId": "noResults",
     "parent": "emptyApp",
-    "mount": "emptyHome.content",
+    "mount": "emptyRoute.content",
     "z": "ex-ui-empty-state",
-    "x": 400,
-    "y": 180,
+    "x": 480,
+    "y": 280,
     "wires": [
       []
     ],
-    "title": "No results",
-    "description": "Try adjusting your search or filters.",
+    "title": "No results found",
+    "description": "Try adjusting your search filters.",
     "icon": "search"
+  },
+  {
+    "id": "inj-show",
+    "type": "inject",
+    "name": "show (no results)",
+    "z": "ex-ui-empty-state",
+    "x": 120,
+    "y": 480,
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "fn-show"
+      ]
+    ]
+  },
+  {
+    "id": "fn-show",
+    "type": "function",
+    "name": "→ show",
+    "z": "ex-ui-empty-state",
+    "func": "msg.ui = { component: { op: \"show\" } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 380,
+    "y": 480,
+    "wires": [
+      [
+        "noResults"
+      ]
+    ]
+  },
+  {
+    "id": "inj-hide",
+    "type": "inject",
+    "name": "hide (results found)",
+    "z": "ex-ui-empty-state",
+    "x": 120,
+    "y": 560,
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "fn-hide"
+      ]
+    ]
+  },
+  {
+    "id": "fn-hide",
+    "type": "function",
+    "name": "→ hide",
+    "z": "ex-ui-empty-state",
+    "func": "msg.ui = { component: { op: \"hide\" } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 380,
+    "y": 560,
+    "wires": [
+      [
+        "noResults"
+      ]
+    ]
   }
 ]

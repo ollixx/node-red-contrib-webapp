@@ -14,7 +14,7 @@
     "root": "navApp",
     "layout": "app",
     "z": "ex-ui-navigation",
-    "x": 100,
+    "x": 120,
     "y": 80,
     "wires": [
       []
@@ -29,8 +29,23 @@
     "parent": "navApp",
     "layoutId": "app",
     "z": "ex-ui-navigation",
-    "x": 100,
+    "x": 120,
     "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "navProducts",
+    "type": "ui-route",
+    "name": "navProducts",
+    "uiId": "navProducts",
+    "path": "/products",
+    "parent": "navApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-navigation",
+    "x": 120,
+    "y": 260,
     "wires": [
       []
     ]
@@ -44,23 +59,8 @@
     "parent": "navApp",
     "layoutId": "vertical",
     "z": "ex-ui-navigation",
-    "x": 100,
-    "y": 260,
-    "wires": [
-      []
-    ]
-  },
-  {
-    "id": "navContact",
-    "type": "ui-route",
-    "name": "navContact",
-    "uiId": "navContact",
-    "path": "/contact",
-    "parent": "navApp",
-    "layoutId": "vertical",
-    "z": "ex-ui-navigation",
-    "x": 100,
-    "y": 320,
+    "x": 120,
+    "y": 340,
     "wires": [
       []
     ]
@@ -72,57 +72,93 @@
     "uiId": "mainNav",
     "parent": "navApp",
     "mount": "navApp.nav",
-    "links": "[{\"label\":\"Home\",\"to\":\"/\"},{\"label\":\"About\",\"to\":\"/about\"},{\"label\":\"Contact\",\"to\":\"/contact\"}]",
+    "links": "[{\"label\":\"Home\",\"to\":\"/\"},{\"label\":\"Products\",\"to\":\"/products\"},{\"label\":\"About\",\"to\":\"/about\"}]",
     "z": "ex-ui-navigation",
-    "x": 400,
+    "x": 480,
     "y": 180,
     "wires": [
-      []
+      [
+        "navDbg"
+      ]
     ]
   },
   {
     "id": "homeContent",
     "type": "ui-text",
-    "name": "homeContent",
+    "name": "home content",
     "uiId": "homeContent",
     "parent": "navApp",
     "mount": "navHome.content",
     "z": "ex-ui-navigation",
-    "x": 400,
-    "y": 180,
+    "x": 480,
+    "y": 280,
     "wires": [
       []
     ],
     "text": "Home page"
   },
   {
+    "id": "productsContent",
+    "type": "ui-text",
+    "name": "products content",
+    "uiId": "productsContent",
+    "parent": "navApp",
+    "mount": "navProducts.content",
+    "z": "ex-ui-navigation",
+    "x": 480,
+    "y": 260,
+    "wires": [
+      []
+    ],
+    "text": "Products page"
+  },
+  {
     "id": "aboutContent",
     "type": "ui-text",
-    "name": "aboutContent",
+    "name": "about content",
     "uiId": "aboutContent",
     "parent": "navApp",
     "mount": "navAbout.content",
     "z": "ex-ui-navigation",
-    "x": 700,
-    "y": 260,
+    "x": 480,
+    "y": 340,
     "wires": [
       []
     ],
     "text": "About page"
   },
   {
-    "id": "contactContent",
-    "type": "ui-text",
-    "name": "contactContent",
-    "uiId": "contactContent",
-    "parent": "navApp",
-    "mount": "navContact.content",
+    "id": "navDbg",
+    "type": "debug",
+    "name": "navigate events",
     "z": "ex-ui-navigation",
     "x": 700,
-    "y": 320,
+    "y": 280,
+    "active": true,
+    "tosidebar": true,
+    "complete": "ui",
+    "targetType": "msg",
     "wires": [
       []
-    ],
-    "text": "Contact page"
+    ]
+  },
+  {
+    "id": "inj-links",
+    "type": "inject",
+    "name": "Update nav links",
+    "z": "ex-ui-navigation",
+    "x": 120,
+    "y": 480,
+    "payload": "[{\"label\":\"Home\",\"to\":\"/\"},{\"label\":\"FAQ\",\"to\":\"/about\"}]",
+    "payloadType": "json",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "mainNav"
+      ]
+    ]
   }
 ]

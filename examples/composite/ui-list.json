@@ -14,54 +14,56 @@
     "root": "listApp",
     "layout": "app",
     "z": "ex-ui-list",
-    "x": 100,
+    "x": 120,
     "y": 80,
     "wires": [
       []
     ]
   },
   {
-    "id": "listHome",
+    "id": "listRoute",
     "type": "ui-route",
-    "name": "listHome",
-    "uiId": "listHome",
+    "name": "listRoute",
+    "uiId": "listRoute",
     "path": "/",
     "parent": "listApp",
     "layoutId": "vertical",
     "z": "ex-ui-list",
-    "x": 100,
+    "x": 120,
     "y": 180,
     "wires": [
       []
     ]
   },
   {
-    "id": "itemsStore",
+    "id": "listStore",
     "type": "ui-store",
-    "name": "itemsStore",
-    "uiId": "itemsStore",
+    "name": "items store",
+    "uiId": "listStore",
     "parent": "listApp",
     "z": "ex-ui-list",
-    "x": 400,
-    "y": 320,
+    "x": 480,
+    "y": 380,
     "wires": [
       []
     ],
     "statePath": "items",
-    "initialValue": "[{\"id\":\"1\",\"label\":\"First item\"},{\"id\":\"2\",\"label\":\"Second item\"},{\"id\":\"3\",\"label\":\"Third item\"}]"
+    "initialValue": "[{\"id\":\"1\",\"label\":\"First item\",\"description\":\"A short description\"},{\"id\":\"2\",\"label\":\"Second item\",\"description\":\"Another description\"},{\"id\":\"3\",\"label\":\"Third item\"}]"
   },
   {
-    "id": "myList",
+    "id": "listNode",
     "type": "ui-list",
-    "name": "myList",
-    "uiId": "myList",
+    "name": "items list",
+    "uiId": "listNode",
     "parent": "listApp",
-    "mount": "listHome.content",
+    "mount": "listRoute.content",
     "z": "ex-ui-list",
-    "x": 400,
-    "y": 180,
+    "x": 480,
+    "y": 280,
     "wires": [
-      []
+      [
+        "listDbg"
+      ]
     ],
     "items": {
       "kind": "state",
@@ -69,18 +71,56 @@
     }
   },
   {
-    "id": "ex-ui-list-dbg",
+    "id": "listDbg",
     "type": "debug",
-    "name": "Events",
+    "name": "itemClick events",
     "z": "ex-ui-list",
     "x": 700,
-    "y": 180,
+    "y": 280,
     "active": true,
     "tosidebar": true,
-    "complete": "payload",
+    "complete": "ui",
     "targetType": "msg",
     "wires": [
       []
+    ]
+  },
+  {
+    "id": "inj-items",
+    "type": "inject",
+    "name": "Replace items",
+    "z": "ex-ui-list",
+    "x": 120,
+    "y": 480,
+    "payload": "[{\"id\":\"a\",\"label\":\"Alpha\"},{\"id\":\"b\",\"label\":\"Beta\"}]",
+    "payloadType": "json",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "listStore"
+      ]
+    ]
+  },
+  {
+    "id": "inj-clear",
+    "type": "inject",
+    "name": "Clear list",
+    "z": "ex-ui-list",
+    "x": 120,
+    "y": 560,
+    "payload": "[]",
+    "payloadType": "json",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "listStore"
+      ]
     ]
   }
 ]

@@ -14,37 +14,37 @@
     "root": "badgeApp",
     "layout": "app",
     "z": "ex-ui-badge",
-    "x": 100,
+    "x": 120,
     "y": 80,
     "wires": [
       []
     ]
   },
   {
-    "id": "badgeHome",
+    "id": "badgeRoute",
     "type": "ui-route",
-    "name": "badgeHome",
-    "uiId": "badgeHome",
+    "name": "badgeRoute",
+    "uiId": "badgeRoute",
     "path": "/",
     "parent": "badgeApp",
     "layoutId": "vertical",
     "z": "ex-ui-badge",
-    "x": 100,
+    "x": 120,
     "y": 180,
     "wires": [
       []
     ]
   },
   {
-    "id": "successBadge",
+    "id": "badgeSuccess",
     "type": "ui-badge",
-    "name": "successBadge",
-    "uiId": "successBadge",
+    "name": "success badge",
+    "uiId": "badgeSuccess",
     "parent": "badgeApp",
-    "mount": "badgeHome.content",
+    "mount": "badgeRoute.content",
     "z": "ex-ui-badge",
-    "x": 400,
-    "y": 180,
+    "x": 480,
+    "y": 280,
     "wires": [
       []
     ],
@@ -52,15 +52,15 @@
     "variant": "success"
   },
   {
-    "id": "warningBadge",
+    "id": "badgeWarning",
     "type": "ui-badge",
-    "name": "warningBadge",
-    "uiId": "warningBadge",
+    "name": "warning badge",
+    "uiId": "badgeWarning",
     "parent": "badgeApp",
-    "mount": "badgeHome.content",
+    "mount": "badgeRoute.content",
     "z": "ex-ui-badge",
-    "x": 400,
-    "y": 260,
+    "x": 480,
+    "y": 360,
     "wires": [
       []
     ],
@@ -68,19 +68,73 @@
     "variant": "warning"
   },
   {
-    "id": "dangerBadge",
+    "id": "badgeDanger",
     "type": "ui-badge",
-    "name": "dangerBadge",
-    "uiId": "dangerBadge",
+    "name": "danger badge",
+    "uiId": "badgeDanger",
     "parent": "badgeApp",
-    "mount": "badgeHome.content",
+    "mount": "badgeRoute.content",
     "z": "ex-ui-badge",
-    "x": 400,
-    "y": 320,
+    "x": 480,
+    "y": 440,
     "wires": [
       []
     ],
     "label": "Error",
     "variant": "danger"
+  },
+  {
+    "id": "badgeNeutral",
+    "type": "ui-badge",
+    "name": "neutral badge",
+    "uiId": "badgeNeutral",
+    "parent": "badgeApp",
+    "mount": "badgeRoute.content",
+    "z": "ex-ui-badge",
+    "x": 480,
+    "y": 520,
+    "wires": [
+      []
+    ],
+    "label": "Archived",
+    "variant": "neutral"
+  },
+  {
+    "id": "inj-label",
+    "type": "inject",
+    "name": "Update badge label",
+    "z": "ex-ui-badge",
+    "x": 120,
+    "y": 620,
+    "payload": "Updated!",
+    "payloadType": "str",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "badgeSuccess"
+      ]
+    ]
+  },
+  {
+    "id": "inj-patch",
+    "type": "inject",
+    "name": "Patch variant to danger",
+    "z": "ex-ui-badge",
+    "x": 120,
+    "y": 700,
+    "payload": "{\"variant\":\"danger\",\"label\":\"Critical\"}",
+    "payloadType": "json",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "badgeSuccess"
+      ]
+    ]
   }
 ]

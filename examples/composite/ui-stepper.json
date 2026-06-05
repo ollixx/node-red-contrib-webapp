@@ -14,22 +14,22 @@
     "root": "stepApp",
     "layout": "app",
     "z": "ex-ui-stepper",
-    "x": 100,
+    "x": 120,
     "y": 80,
     "wires": [
       []
     ]
   },
   {
-    "id": "stepHome",
+    "id": "stepRoute",
     "type": "ui-route",
-    "name": "stepHome",
-    "uiId": "stepHome",
+    "name": "stepRoute",
+    "uiId": "stepRoute",
     "path": "/",
     "parent": "stepApp",
     "layoutId": "vertical",
     "z": "ex-ui-stepper",
-    "x": 100,
+    "x": 120,
     "y": 180,
     "wires": [
       []
@@ -38,50 +38,112 @@
   {
     "id": "stepStore",
     "type": "ui-store",
-    "name": "stepStore",
+    "name": "step store",
     "uiId": "stepStore",
     "parent": "stepApp",
     "z": "ex-ui-stepper",
-    "x": 400,
-    "y": 320,
+    "x": 480,
+    "y": 380,
     "wires": [
       []
     ],
     "statePath": "step",
-    "initialValue": "0"
+    "initialValue": "\"step1\""
   },
   {
-    "id": "wizard",
+    "id": "stepNode",
     "type": "ui-stepper",
     "name": "wizard",
-    "uiId": "wizard",
+    "uiId": "stepNode",
     "parent": "stepApp",
-    "mount": "stepHome.content",
+    "mount": "stepRoute.content",
     "z": "ex-ui-stepper",
-    "x": 400,
-    "y": 180,
+    "x": 480,
+    "y": 280,
     "wires": [
-      []
+      [
+        "stepDbg"
+      ],
+      [
+        "stepDbg"
+      ]
     ],
-    "steps": "[{\"id\":\"s0\",\"label\":\"Account\"},{\"id\":\"s1\",\"label\":\"Profile\"},{\"id\":\"s2\",\"label\":\"Confirm\"}]",
+    "steps": "[{\"id\":\"step1\",\"label\":\"Account\"},{\"id\":\"step2\",\"label\":\"Profile\"},{\"id\":\"step3\",\"label\":\"Confirm\"}]",
     "value": {
       "kind": "state",
       "path": "step"
     }
   },
   {
-    "id": "ex-ui-stepper-dbg",
+    "id": "stepDbg",
     "type": "debug",
-    "name": "Events",
+    "name": "stepChange / complete events",
     "z": "ex-ui-stepper",
     "x": 700,
-    "y": 180,
+    "y": 280,
     "active": true,
     "tosidebar": true,
-    "complete": "payload",
+    "complete": "ui",
     "targetType": "msg",
     "wires": [
       []
+    ]
+  },
+  {
+    "id": "inj-step2",
+    "type": "inject",
+    "name": "Go to Profile step",
+    "z": "ex-ui-stepper",
+    "x": 120,
+    "y": 480,
+    "payload": "step2",
+    "payloadType": "str",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "stepStore"
+      ]
+    ]
+  },
+  {
+    "id": "inj-step3",
+    "type": "inject",
+    "name": "Go to Confirm step",
+    "z": "ex-ui-stepper",
+    "x": 120,
+    "y": 560,
+    "payload": "step3",
+    "payloadType": "str",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "stepStore"
+      ]
+    ]
+  },
+  {
+    "id": "inj-step1",
+    "type": "inject",
+    "name": "Reset to Account step",
+    "z": "ex-ui-stepper",
+    "x": 120,
+    "y": 640,
+    "payload": "step1",
+    "payloadType": "str",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "stepStore"
+      ]
     ]
   }
 ]

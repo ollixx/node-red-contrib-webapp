@@ -14,22 +14,22 @@
     "root": "storeApp",
     "layout": "app",
     "z": "ex-ui-store",
-    "x": 100,
+    "x": 120,
     "y": 80,
     "wires": [
       []
     ]
   },
   {
-    "id": "storeHome",
+    "id": "storeRoute",
     "type": "ui-route",
-    "name": "storeHome",
-    "uiId": "storeHome",
+    "name": "storeRoute",
+    "uiId": "storeRoute",
     "path": "/",
     "parent": "storeApp",
     "layoutId": "vertical",
     "z": "ex-ui-store",
-    "x": 100,
+    "x": 120,
     "y": 180,
     "wires": [
       []
@@ -38,14 +38,16 @@
   {
     "id": "counterStore",
     "type": "ui-store",
-    "name": "counterStore",
+    "name": "counter store",
     "uiId": "counterStore",
     "parent": "storeApp",
     "z": "ex-ui-store",
-    "x": 400,
-    "y": 320,
+    "x": 480,
+    "y": 380,
     "wires": [
-      []
+      [
+        "storeDbg"
+      ]
     ],
     "statePath": "counter",
     "initialValue": "0"
@@ -53,13 +55,13 @@
   {
     "id": "counterDisplay",
     "type": "ui-text",
-    "name": "counterDisplay",
+    "name": "counter display",
     "uiId": "counterDisplay",
     "parent": "storeApp",
-    "mount": "storeHome.content",
+    "mount": "storeRoute.content",
     "z": "ex-ui-store",
-    "x": 400,
-    "y": 180,
+    "x": 480,
+    "y": 280,
     "wires": [
       []
     ],
@@ -69,12 +71,81 @@
     }
   },
   {
-    "id": "ex-ui-store-inj",
-    "type": "inject",
-    "name": "Inject",
+    "id": "nameStore",
+    "type": "ui-store",
+    "name": "name store",
+    "uiId": "nameStore",
+    "parent": "storeApp",
     "z": "ex-ui-store",
-    "x": 100,
-    "y": 420,
+    "x": 480,
+    "y": 460,
+    "wires": [
+      [
+        "storeDbg"
+      ]
+    ],
+    "statePath": "name",
+    "initialValue": "\"World\""
+  },
+  {
+    "id": "greeting",
+    "type": "ui-text",
+    "name": "greeting",
+    "uiId": "greeting",
+    "parent": "storeApp",
+    "mount": "storeRoute.content",
+    "z": "ex-ui-store",
+    "x": 480,
+    "y": 360,
+    "wires": [
+      []
+    ],
+    "value": {
+      "kind": "state",
+      "path": "name"
+    }
+  },
+  {
+    "id": "storeDbg",
+    "type": "debug",
+    "name": "store change notifications",
+    "z": "ex-ui-store",
+    "x": 700,
+    "y": 280,
+    "active": true,
+    "tosidebar": true,
+    "complete": "ui",
+    "targetType": "msg",
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "inj-0",
+    "type": "inject",
+    "name": "Reset counter to 0",
+    "z": "ex-ui-store",
+    "x": 120,
+    "y": 540,
+    "payload": "0",
+    "payloadType": "str",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "counterStore"
+      ]
+    ]
+  },
+  {
+    "id": "inj-42",
+    "type": "inject",
+    "name": "Set counter to 42",
+    "z": "ex-ui-store",
+    "x": 120,
+    "y": 620,
     "payload": "42",
     "payloadType": "str",
     "repeat": "",
@@ -88,18 +159,21 @@
     ]
   },
   {
-    "id": "ex-ui-store-fn",
-    "type": "function",
-    "name": "Increment",
+    "id": "inj-name",
+    "type": "inject",
+    "name": "Update name",
     "z": "ex-ui-store",
-    "x": 400,
-    "y": 420,
-    "func": "msg.payload = (parseInt(msg.payload) || 0) + 1;\nreturn msg;",
-    "outputs": 1,
-    "noerr": 0,
+    "x": 120,
+    "y": 700,
+    "payload": "Node-RED",
+    "payloadType": "str",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
     "wires": [
       [
-        "counterStore"
+        "nameStore"
       ]
     ]
   }

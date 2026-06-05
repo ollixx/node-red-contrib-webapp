@@ -14,40 +14,76 @@
     "root": "breadApp",
     "layout": "app",
     "z": "ex-ui-breadcrumb",
-    "x": 100,
+    "x": 120,
     "y": 80,
     "wires": [
       []
     ]
   },
   {
-    "id": "breadHome",
+    "id": "breadRoute",
     "type": "ui-route",
-    "name": "breadHome",
-    "uiId": "breadHome",
+    "name": "breadRoute",
+    "uiId": "breadRoute",
     "path": "/",
     "parent": "breadApp",
     "layoutId": "vertical",
     "z": "ex-ui-breadcrumb",
-    "x": 100,
+    "x": 120,
     "y": 180,
     "wires": [
       []
     ]
   },
   {
-    "id": "navBread",
+    "id": "breadNode",
     "type": "ui-breadcrumb",
-    "name": "navBread",
-    "uiId": "navBread",
+    "name": "breadcrumb",
+    "uiId": "breadNode",
     "parent": "breadApp",
-    "mount": "breadHome.content",
+    "mount": "breadRoute.content",
     "z": "ex-ui-breadcrumb",
-    "x": 400,
-    "y": 180,
+    "x": 480,
+    "y": 280,
+    "wires": [
+      [
+        "breadDbg"
+      ]
+    ],
+    "items": "[{\"label\":\"Home\",\"href\":\"/\"},{\"label\":\"Products\",\"href\":\"/products\"},{\"label\":\"Widget 42\"}]"
+  },
+  {
+    "id": "breadDbg",
+    "type": "debug",
+    "name": "navigate events",
+    "z": "ex-ui-breadcrumb",
+    "x": 700,
+    "y": 280,
+    "active": true,
+    "tosidebar": true,
+    "complete": "ui",
+    "targetType": "msg",
     "wires": [
       []
-    ],
-    "items": "[{\"label\":\"Home\",\"href\":\"/\"},{\"label\":\"Products\",\"href\":\"/products\"},{\"label\":\"Detail\"}]"
+    ]
+  },
+  {
+    "id": "inj-items",
+    "type": "inject",
+    "name": "Update breadcrumb",
+    "z": "ex-ui-breadcrumb",
+    "x": 120,
+    "y": 480,
+    "payload": "[{\"label\":\"Home\",\"href\":\"/\"},{\"label\":\"Settings\"}]",
+    "payloadType": "json",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "breadNode"
+      ]
+    ]
   }
 ]

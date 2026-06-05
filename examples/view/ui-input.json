@@ -9,46 +9,48 @@
   {
     "id": "inputApp",
     "type": "ui-app",
-    "name": "Input App",
+    "name": "ui-input App",
     "uiId": "inputApp",
     "root": "inputApp",
     "layout": "app",
     "z": "ex-ui-input",
-    "x": 100,
+    "x": 120,
     "y": 80,
     "wires": [
       []
     ]
   },
   {
-    "id": "inputHome",
+    "id": "inputRoute",
     "type": "ui-route",
-    "name": "inputHome",
-    "uiId": "inputHome",
+    "name": "inputRoute",
+    "uiId": "inputRoute",
     "path": "/",
     "parent": "inputApp",
     "layoutId": "vertical",
     "z": "ex-ui-input",
-    "x": 100,
+    "x": 120,
     "y": 180,
     "wires": [
       []
     ]
   },
   {
-    "id": "nameInput",
+    "id": "inputNode",
     "type": "ui-input",
-    "name": "nameInput",
-    "uiId": "nameInput",
+    "name": "inputNode",
+    "uiId": "inputNode",
     "parent": "inputApp",
-    "mount": "inputHome.content",
+    "mount": "inputRoute.content",
     "z": "ex-ui-input",
-    "x": 400,
-    "y": 180,
+    "x": 480,
+    "y": 280,
     "wires": [
-      []
+      [
+        "inputNodeDbg"
+      ]
     ],
-    "label": "Full Name",
+    "label": "Full name",
     "inputType": "text",
     "placeholder": "Enter your name",
     "value": {
@@ -57,39 +59,142 @@
     }
   },
   {
-    "id": "emailInput",
-    "type": "ui-input",
-    "name": "emailInput",
-    "uiId": "emailInput",
-    "parent": "inputApp",
-    "mount": "inputHome.content",
-    "z": "ex-ui-input",
-    "x": 400,
-    "y": 260,
-    "wires": [
-      []
-    ],
-    "label": "Email",
-    "inputType": "email",
-    "placeholder": "you@example.com",
-    "value": {
-      "kind": "literal",
-      "value": ""
-    }
-  },
-  {
-    "id": "ex-ui-input-dbg",
+    "id": "inputNodeDbg",
     "type": "debug",
-    "name": "Events",
+    "name": "change / submit events",
     "z": "ex-ui-input",
     "x": 700,
-    "y": 180,
+    "y": 280,
     "active": true,
     "tosidebar": true,
-    "complete": "payload",
+    "complete": "ui",
     "targetType": "msg",
     "wires": [
       []
+    ]
+  },
+  {
+    "id": "inj-val",
+    "type": "inject",
+    "name": "Set value",
+    "z": "ex-ui-input",
+    "x": 120,
+    "y": 500,
+    "payload": "Jane Doe",
+    "payloadType": "str",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "inputNode"
+      ]
+    ]
+  },
+  {
+    "id": "inj-disable",
+    "type": "inject",
+    "name": "disable",
+    "z": "ex-ui-input",
+    "x": 120,
+    "y": 580,
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "fn-disable"
+      ]
+    ]
+  },
+  {
+    "id": "fn-disable",
+    "type": "function",
+    "name": "→ disable",
+    "z": "ex-ui-input",
+    "func": "msg.ui = { component: { op: \"disable\" } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 380,
+    "y": 580,
+    "wires": [
+      [
+        "inputNode"
+      ]
+    ]
+  },
+  {
+    "id": "inj-enable",
+    "type": "inject",
+    "name": "enable",
+    "z": "ex-ui-input",
+    "x": 120,
+    "y": 660,
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "fn-enable"
+      ]
+    ]
+  },
+  {
+    "id": "fn-enable",
+    "type": "function",
+    "name": "→ enable",
+    "z": "ex-ui-input",
+    "func": "msg.ui = { component: { op: \"enable\" } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 380,
+    "y": 660,
+    "wires": [
+      [
+        "inputNode"
+      ]
+    ]
+  },
+  {
+    "id": "inj-reset",
+    "type": "inject",
+    "name": "reset",
+    "z": "ex-ui-input",
+    "x": 120,
+    "y": 740,
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "fn-reset"
+      ]
+    ]
+  },
+  {
+    "id": "fn-reset",
+    "type": "function",
+    "name": "→ reset",
+    "z": "ex-ui-input",
+    "func": "msg.ui = { component: { op: \"reset\" } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 380,
+    "y": 740,
+    "wires": [
+      [
+        "inputNode"
+      ]
     ]
   }
 ]

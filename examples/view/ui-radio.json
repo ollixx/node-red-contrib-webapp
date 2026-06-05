@@ -9,44 +9,46 @@
   {
     "id": "radioApp",
     "type": "ui-app",
-    "name": "Radio App",
+    "name": "ui-radio App",
     "uiId": "radioApp",
     "root": "radioApp",
     "layout": "app",
     "z": "ex-ui-radio",
-    "x": 100,
+    "x": 120,
     "y": 80,
     "wires": [
       []
     ]
   },
   {
-    "id": "radioHome",
+    "id": "radioRoute",
     "type": "ui-route",
-    "name": "radioHome",
-    "uiId": "radioHome",
+    "name": "radioRoute",
+    "uiId": "radioRoute",
     "path": "/",
     "parent": "radioApp",
     "layoutId": "vertical",
     "z": "ex-ui-radio",
-    "x": 100,
+    "x": 120,
     "y": 180,
     "wires": [
       []
     ]
   },
   {
-    "id": "sizeRadio",
+    "id": "radioNode",
     "type": "ui-radio",
-    "name": "sizeRadio",
-    "uiId": "sizeRadio",
+    "name": "radioNode",
+    "uiId": "radioNode",
     "parent": "radioApp",
-    "mount": "radioHome.content",
+    "mount": "radioRoute.content",
     "z": "ex-ui-radio",
-    "x": 400,
-    "y": 180,
+    "x": 480,
+    "y": 280,
     "wires": [
-      []
+      [
+        "radioNodeDbg"
+      ]
     ],
     "label": "Size",
     "optionsJson": "[{\"label\":\"Small\",\"value\":\"s\"},{\"label\":\"Medium\",\"value\":\"m\"},{\"label\":\"Large\",\"value\":\"l\"}]",
@@ -56,18 +58,142 @@
     }
   },
   {
-    "id": "ex-ui-radio-dbg",
+    "id": "radioNodeDbg",
     "type": "debug",
-    "name": "Events",
+    "name": "change / submit events",
     "z": "ex-ui-radio",
     "x": 700,
-    "y": 180,
+    "y": 280,
     "active": true,
     "tosidebar": true,
-    "complete": "payload",
+    "complete": "ui",
     "targetType": "msg",
     "wires": [
       []
+    ]
+  },
+  {
+    "id": "inj-val",
+    "type": "inject",
+    "name": "Set value",
+    "z": "ex-ui-radio",
+    "x": 120,
+    "y": 500,
+    "payload": "l",
+    "payloadType": "str",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "radioNode"
+      ]
+    ]
+  },
+  {
+    "id": "inj-disable",
+    "type": "inject",
+    "name": "disable",
+    "z": "ex-ui-radio",
+    "x": 120,
+    "y": 580,
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "fn-disable"
+      ]
+    ]
+  },
+  {
+    "id": "fn-disable",
+    "type": "function",
+    "name": "→ disable",
+    "z": "ex-ui-radio",
+    "func": "msg.ui = { component: { op: \"disable\" } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 380,
+    "y": 580,
+    "wires": [
+      [
+        "radioNode"
+      ]
+    ]
+  },
+  {
+    "id": "inj-enable",
+    "type": "inject",
+    "name": "enable",
+    "z": "ex-ui-radio",
+    "x": 120,
+    "y": 660,
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "fn-enable"
+      ]
+    ]
+  },
+  {
+    "id": "fn-enable",
+    "type": "function",
+    "name": "→ enable",
+    "z": "ex-ui-radio",
+    "func": "msg.ui = { component: { op: \"enable\" } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 380,
+    "y": 660,
+    "wires": [
+      [
+        "radioNode"
+      ]
+    ]
+  },
+  {
+    "id": "inj-reset",
+    "type": "inject",
+    "name": "reset",
+    "z": "ex-ui-radio",
+    "x": 120,
+    "y": 740,
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "fn-reset"
+      ]
+    ]
+  },
+  {
+    "id": "fn-reset",
+    "type": "function",
+    "name": "→ reset",
+    "z": "ex-ui-radio",
+    "func": "msg.ui = { component: { op: \"reset\" } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 380,
+    "y": 740,
+    "wires": [
+      [
+        "radioNode"
+      ]
     ]
   }
 ]

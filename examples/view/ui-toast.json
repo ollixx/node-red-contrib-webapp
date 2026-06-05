@@ -1,0 +1,145 @@
+[
+  {
+    "id": "ex-ui-toast",
+    "type": "tab",
+    "label": "ui-toast example",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "toastApp",
+    "type": "ui-app",
+    "name": "Toast App",
+    "uiId": "toastApp",
+    "root": "toastApp",
+    "layout": "app",
+    "z": "ex-ui-toast",
+    "x": 120,
+    "y": 80,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "toastRoute",
+    "type": "ui-route",
+    "name": "toastRoute",
+    "uiId": "toastRoute",
+    "path": "/",
+    "parent": "toastApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-toast",
+    "x": 120,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "toastNode",
+    "type": "ui-toast",
+    "name": "toast",
+    "uiId": "toastNode",
+    "parent": "toastApp",
+    "mount": "toastRoute.content",
+    "z": "ex-ui-toast",
+    "x": 480,
+    "y": 280,
+    "wires": [
+      [
+        "toastDbg"
+      ]
+    ],
+    "message": "",
+    "variant": "primary",
+    "duration": 4000
+  },
+  {
+    "id": "toastDbg",
+    "type": "debug",
+    "name": "dismiss events",
+    "z": "ex-ui-toast",
+    "x": 700,
+    "y": 280,
+    "active": true,
+    "tosidebar": true,
+    "complete": "ui",
+    "targetType": "msg",
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "inj-info",
+    "type": "inject",
+    "name": "Show info toast",
+    "z": "ex-ui-toast",
+    "x": 120,
+    "y": 480,
+    "payload": "Operation completed!",
+    "payloadType": "str",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "toastNode"
+      ]
+    ]
+  },
+  {
+    "id": "inj-success",
+    "type": "inject",
+    "name": "Show success toast",
+    "z": "ex-ui-toast",
+    "x": 120,
+    "y": 560,
+    "payload": "Saved successfully.",
+    "payloadType": "str",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "toastNode"
+      ]
+    ]
+  },
+  {
+    "id": "inj-patch",
+    "type": "inject",
+    "name": "Show danger toast",
+    "z": "ex-ui-toast",
+    "x": 120,
+    "y": 640,
+    "payload": "{\"message\":\"Something went wrong.\",\"variant\":\"danger\",\"duration\":6000}",
+    "payloadType": "json",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "fn-patch"
+      ]
+    ]
+  },
+  {
+    "id": "fn-patch",
+    "type": "function",
+    "name": "→ patch",
+    "z": "ex-ui-toast",
+    "func": "msg.ui = { patch: msg.payload };\nmsg.payload = undefined;\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 380,
+    "y": 640,
+    "wires": [
+      [
+        "toastNode"
+      ]
+    ]
+  }
+]

@@ -14,73 +14,196 @@
     "root": "alertApp",
     "layout": "app",
     "z": "ex-ui-alert",
-    "x": 100,
+    "x": 120,
     "y": 80,
     "wires": [
       []
     ]
   },
   {
-    "id": "alertHome",
+    "id": "alertRoute",
     "type": "ui-route",
-    "name": "alertHome",
-    "uiId": "alertHome",
+    "name": "alertRoute",
+    "uiId": "alertRoute",
     "path": "/",
     "parent": "alertApp",
     "layoutId": "vertical",
     "z": "ex-ui-alert",
-    "x": 100,
+    "x": 120,
     "y": 180,
     "wires": [
       []
     ]
   },
   {
-    "id": "infoAlert",
+    "id": "alertNode",
     "type": "ui-alert",
-    "name": "infoAlert",
-    "uiId": "infoAlert",
+    "name": "info alert",
+    "uiId": "alertNode",
     "parent": "alertApp",
-    "mount": "alertHome.content",
+    "mount": "alertRoute.content",
     "z": "ex-ui-alert",
-    "x": 400,
-    "y": 180,
+    "x": 480,
+    "y": 280,
     "wires": [
-      []
+      [
+        "alertDbg"
+      ]
     ],
     "message": "This is an informational message.",
-    "variant": "primary"
+    "variant": "primary",
+    "closable": true
   },
   {
-    "id": "successAlert",
+    "id": "alertSuccess",
     "type": "ui-alert",
-    "name": "successAlert",
-    "uiId": "successAlert",
+    "name": "success alert",
+    "uiId": "alertSuccess",
     "parent": "alertApp",
-    "mount": "alertHome.content",
+    "mount": "alertRoute.content",
     "z": "ex-ui-alert",
-    "x": 400,
-    "y": 260,
+    "x": 480,
+    "y": 360,
     "wires": [
       []
     ],
-    "message": "Action completed successfully!",
+    "message": "Action completed!",
     "variant": "success"
   },
   {
-    "id": "dangerAlert",
+    "id": "alertWarning",
     "type": "ui-alert",
-    "name": "dangerAlert",
-    "uiId": "dangerAlert",
+    "name": "warning alert",
+    "uiId": "alertWarning",
     "parent": "alertApp",
-    "mount": "alertHome.content",
+    "mount": "alertRoute.content",
     "z": "ex-ui-alert",
-    "x": 400,
-    "y": 320,
+    "x": 480,
+    "y": 440,
+    "wires": [
+      []
+    ],
+    "message": "Disk almost full.",
+    "variant": "warning"
+  },
+  {
+    "id": "alertDanger",
+    "type": "ui-alert",
+    "name": "danger alert",
+    "uiId": "alertDanger",
+    "parent": "alertApp",
+    "mount": "alertRoute.content",
+    "z": "ex-ui-alert",
+    "x": 480,
+    "y": 520,
     "wires": [
       []
     ],
     "message": "Something went wrong.",
     "variant": "danger"
+  },
+  {
+    "id": "alertDbg",
+    "type": "debug",
+    "name": "dismiss events",
+    "z": "ex-ui-alert",
+    "x": 700,
+    "y": 280,
+    "active": true,
+    "tosidebar": true,
+    "complete": "ui",
+    "targetType": "msg",
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "inj-msg",
+    "type": "inject",
+    "name": "Update message",
+    "z": "ex-ui-alert",
+    "x": 120,
+    "y": 620,
+    "payload": "Updated alert message!",
+    "payloadType": "str",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "alertNode"
+      ]
+    ]
+  },
+  {
+    "id": "inj-show",
+    "type": "inject",
+    "name": "show",
+    "z": "ex-ui-alert",
+    "x": 120,
+    "y": 700,
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "fn-show"
+      ]
+    ]
+  },
+  {
+    "id": "fn-show",
+    "type": "function",
+    "name": "→ show",
+    "z": "ex-ui-alert",
+    "func": "msg.ui = { component: { op: \"show\" } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 380,
+    "y": 700,
+    "wires": [
+      [
+        "alertNode"
+      ]
+    ]
+  },
+  {
+    "id": "inj-hide",
+    "type": "inject",
+    "name": "hide",
+    "z": "ex-ui-alert",
+    "x": 120,
+    "y": 780,
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "fn-hide"
+      ]
+    ]
+  },
+  {
+    "id": "fn-hide",
+    "type": "function",
+    "name": "→ hide",
+    "z": "ex-ui-alert",
+    "func": "msg.ui = { component: { op: \"hide\" } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 380,
+    "y": 780,
+    "wires": [
+      [
+        "alertNode"
+      ]
+    ]
   }
 ]

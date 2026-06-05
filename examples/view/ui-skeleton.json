@@ -14,56 +14,141 @@
     "root": "skelApp",
     "layout": "app",
     "z": "ex-ui-skeleton",
-    "x": 100,
+    "x": 120,
     "y": 80,
     "wires": [
       []
     ]
   },
   {
-    "id": "skelHome",
+    "id": "skelRoute",
     "type": "ui-route",
-    "name": "skelHome",
-    "uiId": "skelHome",
+    "name": "skelRoute",
+    "uiId": "skelRoute",
     "path": "/",
     "parent": "skelApp",
     "layoutId": "vertical",
     "z": "ex-ui-skeleton",
-    "x": 100,
+    "x": 120,
     "y": 180,
     "wires": [
       []
     ]
   },
   {
-    "id": "textSkeleton",
+    "id": "skelText",
     "type": "ui-skeleton",
-    "name": "textSkeleton",
-    "uiId": "textSkeleton",
+    "name": "text skeleton",
+    "uiId": "skelText",
     "parent": "skelApp",
-    "mount": "skelHome.content",
+    "mount": "skelRoute.content",
     "z": "ex-ui-skeleton",
-    "x": 400,
-    "y": 180,
+    "x": 480,
+    "y": 280,
     "wires": [
       []
     ],
     "effect": "sheen"
   },
   {
-    "id": "avatarSkeleton",
+    "id": "skelCircle",
     "type": "ui-skeleton",
-    "name": "avatarSkeleton",
-    "uiId": "avatarSkeleton",
+    "name": "circle skeleton",
+    "uiId": "skelCircle",
     "parent": "skelApp",
-    "mount": "skelHome.content",
+    "mount": "skelRoute.content",
     "z": "ex-ui-skeleton",
-    "x": 400,
-    "y": 260,
+    "x": 480,
+    "y": 360,
     "wires": [
       []
     ],
     "shape": "circle",
     "effect": "pulse"
+  },
+  {
+    "id": "skelRect",
+    "type": "ui-skeleton",
+    "name": "rect skeleton",
+    "uiId": "skelRect",
+    "parent": "skelApp",
+    "mount": "skelRoute.content",
+    "z": "ex-ui-skeleton",
+    "x": 480,
+    "y": 440,
+    "wires": [
+      []
+    ],
+    "shape": "none"
+  },
+  {
+    "id": "inj-show",
+    "type": "inject",
+    "name": "show skeleton",
+    "z": "ex-ui-skeleton",
+    "x": 120,
+    "y": 540,
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "fn-show"
+      ]
+    ]
+  },
+  {
+    "id": "fn-show",
+    "type": "function",
+    "name": "→ show",
+    "z": "ex-ui-skeleton",
+    "func": "msg.ui = { component: { op: \"show\" } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 380,
+    "y": 540,
+    "wires": [
+      [
+        "skelText"
+      ]
+    ]
+  },
+  {
+    "id": "inj-hide",
+    "type": "inject",
+    "name": "hide skeleton",
+    "z": "ex-ui-skeleton",
+    "x": 120,
+    "y": 620,
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "fn-hide"
+      ]
+    ]
+  },
+  {
+    "id": "fn-hide",
+    "type": "function",
+    "name": "→ hide",
+    "z": "ex-ui-skeleton",
+    "func": "msg.ui = { component: { op: \"hide\" } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 380,
+    "y": 620,
+    "wires": [
+      [
+        "skelText"
+      ]
+    ]
   }
 ]

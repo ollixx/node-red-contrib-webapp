@@ -14,37 +14,37 @@
     "root": "avatarApp",
     "layout": "app",
     "z": "ex-ui-avatar",
-    "x": 100,
+    "x": 120,
     "y": 80,
     "wires": [
       []
     ]
   },
   {
-    "id": "avatarHome",
+    "id": "avatarRoute",
     "type": "ui-route",
-    "name": "avatarHome",
-    "uiId": "avatarHome",
+    "name": "avatarRoute",
+    "uiId": "avatarRoute",
     "path": "/",
     "parent": "avatarApp",
     "layoutId": "vertical",
     "z": "ex-ui-avatar",
-    "x": 100,
+    "x": 120,
     "y": 180,
     "wires": [
       []
     ]
   },
   {
-    "id": "userAvatar",
+    "id": "initialsAvatar",
     "type": "ui-avatar",
-    "name": "userAvatar",
-    "uiId": "userAvatar",
+    "name": "initials avatar",
+    "uiId": "initialsAvatar",
     "parent": "avatarApp",
-    "mount": "avatarHome.content",
+    "mount": "avatarRoute.content",
     "z": "ex-ui-avatar",
-    "x": 400,
-    "y": 180,
+    "x": 480,
+    "y": 280,
     "wires": [
       []
     ],
@@ -54,17 +54,55 @@
   {
     "id": "imgAvatar",
     "type": "ui-avatar",
-    "name": "imgAvatar",
+    "name": "photo avatar",
     "uiId": "imgAvatar",
     "parent": "avatarApp",
-    "mount": "avatarHome.content",
+    "mount": "avatarRoute.content",
     "z": "ex-ui-avatar",
-    "x": 400,
-    "y": 260,
+    "x": 480,
+    "y": 360,
     "wires": [
       []
     ],
-    "src": "https://picsum.photos/seed/user/40/40",
+    "src": "https://i.pravatar.cc/80",
     "label": "Photo avatar"
+  },
+  {
+    "id": "inj-src",
+    "type": "inject",
+    "name": "Update src",
+    "z": "ex-ui-avatar",
+    "x": 120,
+    "y": 480,
+    "payload": "https://i.pravatar.cc/80?img=3",
+    "payloadType": "str",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "imgAvatar"
+      ]
+    ]
+  },
+  {
+    "id": "inj-initials",
+    "type": "inject",
+    "name": "Update initials",
+    "z": "ex-ui-avatar",
+    "x": 120,
+    "y": 560,
+    "payload": "MX",
+    "payloadType": "str",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "initialsAvatar"
+      ]
+    ]
   }
 ]

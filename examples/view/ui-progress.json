@@ -14,22 +14,22 @@
     "root": "progApp",
     "layout": "app",
     "z": "ex-ui-progress",
-    "x": 100,
+    "x": 120,
     "y": 80,
     "wires": [
       []
     ]
   },
   {
-    "id": "progHome",
+    "id": "progRoute",
     "type": "ui-route",
-    "name": "progHome",
-    "uiId": "progHome",
+    "name": "progRoute",
+    "uiId": "progRoute",
     "path": "/",
     "parent": "progApp",
     "layoutId": "vertical",
     "z": "ex-ui-progress",
-    "x": 100,
+    "x": 120,
     "y": 180,
     "wires": [
       []
@@ -38,12 +38,12 @@
   {
     "id": "progStore",
     "type": "ui-store",
-    "name": "progStore",
+    "name": "progress store",
     "uiId": "progStore",
     "parent": "progApp",
     "z": "ex-ui-progress",
-    "x": 400,
-    "y": 320,
+    "x": 480,
+    "y": 380,
     "wires": [
       []
     ],
@@ -51,15 +51,15 @@
     "initialValue": "25"
   },
   {
-    "id": "uploadProgress",
+    "id": "progBar",
     "type": "ui-progress",
-    "name": "uploadProgress",
-    "uiId": "uploadProgress",
+    "name": "progress bar",
+    "uiId": "progBar",
     "parent": "progApp",
-    "mount": "progHome.content",
+    "mount": "progRoute.content",
     "z": "ex-ui-progress",
-    "x": 400,
-    "y": 180,
+    "x": 480,
+    "y": 280,
     "wires": [
       []
     ],
@@ -70,13 +70,70 @@
     }
   },
   {
-    "id": "ex-ui-progress-inj",
-    "type": "inject",
-    "name": "Inject",
+    "id": "progBarFixed",
+    "type": "ui-progress",
+    "name": "fixed 75%",
+    "uiId": "progBarFixed",
+    "parent": "progApp",
+    "mount": "progRoute.content",
     "z": "ex-ui-progress",
-    "x": 100,
-    "y": 420,
+    "x": 480,
+    "y": 360,
+    "wires": [
+      []
+    ],
+    "label": "Fixed",
+    "value": {
+      "kind": "literal",
+      "value": 75
+    }
+  },
+  {
+    "id": "inj-25",
+    "type": "inject",
+    "name": "Set 25%",
+    "z": "ex-ui-progress",
+    "x": 120,
+    "y": 480,
+    "payload": "25",
+    "payloadType": "str",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "progStore"
+      ]
+    ]
+  },
+  {
+    "id": "inj-75",
+    "type": "inject",
+    "name": "Set 75%",
+    "z": "ex-ui-progress",
+    "x": 120,
+    "y": 560,
     "payload": "75",
+    "payloadType": "str",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "progStore"
+      ]
+    ]
+  },
+  {
+    "id": "inj-100",
+    "type": "inject",
+    "name": "Set 100%",
+    "z": "ex-ui-progress",
+    "x": 120,
+    "y": 640,
+    "payload": "100",
     "payloadType": "str",
     "repeat": "",
     "crontab": "",

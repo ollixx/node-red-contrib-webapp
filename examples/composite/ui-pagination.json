@@ -14,22 +14,22 @@
     "root": "pagApp",
     "layout": "app",
     "z": "ex-ui-pagination",
-    "x": 100,
+    "x": 120,
     "y": 80,
     "wires": [
       []
     ]
   },
   {
-    "id": "pagHome",
+    "id": "pagRoute",
     "type": "ui-route",
-    "name": "pagHome",
-    "uiId": "pagHome",
+    "name": "pagRoute",
+    "uiId": "pagRoute",
     "path": "/",
     "parent": "pagApp",
     "layoutId": "vertical",
     "z": "ex-ui-pagination",
-    "x": 100,
+    "x": 120,
     "y": 180,
     "wires": [
       []
@@ -38,12 +38,12 @@
   {
     "id": "pageStore",
     "type": "ui-store",
-    "name": "pageStore",
+    "name": "page store",
     "uiId": "pageStore",
     "parent": "pagApp",
     "z": "ex-ui-pagination",
-    "x": 400,
-    "y": 320,
+    "x": 480,
+    "y": 380,
     "wires": [
       []
     ],
@@ -51,17 +51,19 @@
     "initialValue": "1"
   },
   {
-    "id": "pager",
+    "id": "pagNode",
     "type": "ui-pagination",
     "name": "pager",
-    "uiId": "pager",
+    "uiId": "pagNode",
     "parent": "pagApp",
-    "mount": "pagHome.content",
+    "mount": "pagRoute.content",
     "z": "ex-ui-pagination",
-    "x": 400,
-    "y": 180,
+    "x": 480,
+    "y": 280,
     "wires": [
-      []
+      [
+        "pagDbg"
+      ]
     ],
     "page": {
       "kind": "state",
@@ -70,18 +72,90 @@
     "pageCount": 10
   },
   {
-    "id": "ex-ui-pagination-dbg",
+    "id": "pageDisplay",
+    "type": "ui-text",
+    "name": "current page",
+    "uiId": "pageDisplay",
+    "parent": "pagApp",
+    "mount": "pagRoute.content",
+    "z": "ex-ui-pagination",
+    "x": 480,
+    "y": 360,
+    "wires": [
+      []
+    ],
+    "value": {
+      "kind": "state",
+      "path": "page"
+    }
+  },
+  {
+    "id": "pagDbg",
     "type": "debug",
-    "name": "Events",
+    "name": "pageChange events",
     "z": "ex-ui-pagination",
     "x": 700,
-    "y": 180,
+    "y": 280,
     "active": true,
     "tosidebar": true,
-    "complete": "payload",
+    "complete": "ui",
     "targetType": "msg",
     "wires": [
       []
+    ]
+  },
+  {
+    "id": "inj-page3",
+    "type": "inject",
+    "name": "Jump to page 3",
+    "z": "ex-ui-pagination",
+    "x": 120,
+    "y": 480,
+    "payload": "3",
+    "payloadType": "str",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "pageStore"
+      ]
+    ]
+  },
+  {
+    "id": "inj-page1",
+    "type": "inject",
+    "name": "Jump to page 1",
+    "z": "ex-ui-pagination",
+    "x": 120,
+    "y": 560,
+    "payload": "1",
+    "payloadType": "str",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "pageStore"
+      ]
+    ]
+  },
+  {
+    "id": "fn-updatePage",
+    "type": "function",
+    "name": "→ update page store",
+    "z": "ex-ui-pagination",
+    "func": "msg.payload = String(msg.ui.params?.page ?? msg.ui.page ?? 1);\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 380,
+    "y": 640,
+    "wires": [
+      [
+        "pageStore"
+      ]
     ]
   }
 ]

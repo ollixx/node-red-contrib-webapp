@@ -14,22 +14,22 @@
     "root": "tblApp",
     "layout": "app",
     "z": "ex-ui-table",
-    "x": 100,
+    "x": 120,
     "y": 80,
     "wires": [
       []
     ]
   },
   {
-    "id": "tblHome",
+    "id": "tblRoute",
     "type": "ui-route",
-    "name": "tblHome",
-    "uiId": "tblHome",
+    "name": "tblRoute",
+    "uiId": "tblRoute",
     "path": "/",
     "parent": "tblApp",
     "layoutId": "vertical",
     "z": "ex-ui-table",
-    "x": 100,
+    "x": 120,
     "y": 180,
     "wires": [
       []
@@ -38,45 +38,62 @@
   {
     "id": "rowsStore",
     "type": "ui-store",
-    "name": "rowsStore",
+    "name": "rows store",
     "uiId": "rowsStore",
     "parent": "tblApp",
     "z": "ex-ui-table",
-    "x": 400,
-    "y": 320,
+    "x": 480,
+    "y": 380,
     "wires": [
       []
     ],
     "statePath": "users",
-    "initialValue": "[{\"id\":\"1\",\"name\":\"Alice\",\"role\":\"Admin\"},{\"id\":\"2\",\"name\":\"Bob\",\"role\":\"Editor\"}]"
+    "initialValue": "[{\"id\":\"1\",\"name\":\"Alice Müller\",\"role\":\"Admin\",\"status\":\"active\"},{\"id\":\"2\",\"name\":\"Bob Schmidt\",\"role\":\"Editor\",\"status\":\"active\"},{\"id\":\"3\",\"name\":\"Carol Weber\",\"role\":\"Viewer\",\"status\":\"inactive\"}]"
   },
   {
-    "id": "usersTable",
+    "id": "tblNode",
     "type": "ui-table",
-    "name": "usersTable",
-    "uiId": "usersTable",
+    "name": "users table",
+    "uiId": "tblNode",
     "parent": "tblApp",
-    "mount": "tblHome.content",
+    "mount": "tblRoute.content",
     "z": "ex-ui-table",
-    "x": 400,
-    "y": 180,
+    "x": 480,
+    "y": 280,
     "wires": [
-      []
+      [
+        "tblDbg"
+      ]
     ],
-    "columns": "[{\"key\":\"name\",\"label\":\"Name\"},{\"key\":\"role\",\"label\":\"Role\"}]",
+    "columns": "[{\"key\":\"name\",\"label\":\"Name\"},{\"key\":\"role\",\"label\":\"Role\"},{\"key\":\"status\",\"label\":\"Status\"}]",
     "rows": {
       "kind": "state",
       "path": "users"
     }
   },
   {
-    "id": "ex-ui-table-inj",
-    "type": "inject",
-    "name": "Inject",
+    "id": "tblDbg",
+    "type": "debug",
+    "name": "rowSelect / rowAction events",
     "z": "ex-ui-table",
-    "x": 100,
-    "y": 420,
-    "payload": "[{\"id\":\"1\",\"name\":\"Alice\",\"role\":\"Admin\"},{\"id\":\"2\",\"name\":\"Bob\",\"role\":\"Editor\"},{\"id\":\"3\",\"name\":\"Carol\",\"role\":\"Viewer\"}]",
+    "x": 700,
+    "y": 280,
+    "active": true,
+    "tosidebar": true,
+    "complete": "ui",
+    "targetType": "msg",
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "inj-rows",
+    "type": "inject",
+    "name": "Replace rows",
+    "z": "ex-ui-table",
+    "x": 120,
+    "y": 500,
+    "payload": "[{\"id\":\"1\",\"name\":\"Alice Müller\",\"role\":\"Admin\",\"status\":\"active\"},{\"id\":\"4\",\"name\":\"Dave Neuer\",\"role\":\"Editor\",\"status\":\"active\"}]",
     "payloadType": "json",
     "repeat": "",
     "crontab": "",
@@ -89,18 +106,92 @@
     ]
   },
   {
-    "id": "ex-ui-table-dbg",
-    "type": "debug",
-    "name": "Events",
+    "id": "inj-clear",
+    "type": "inject",
+    "name": "Clear rows",
     "z": "ex-ui-table",
-    "x": 700,
-    "y": 180,
-    "active": true,
-    "tosidebar": true,
-    "complete": "payload",
-    "targetType": "msg",
+    "x": 120,
+    "y": 580,
+    "payload": "[]",
+    "payloadType": "json",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
     "wires": [
-      []
+      [
+        "rowsStore"
+      ]
+    ]
+  },
+  {
+    "id": "inj-show",
+    "type": "inject",
+    "name": "show table",
+    "z": "ex-ui-table",
+    "x": 120,
+    "y": 660,
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "fn-show"
+      ]
+    ]
+  },
+  {
+    "id": "fn-show",
+    "type": "function",
+    "name": "→ show",
+    "z": "ex-ui-table",
+    "func": "msg.ui = { component: { op: \"show\" } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 380,
+    "y": 660,
+    "wires": [
+      [
+        "tblNode"
+      ]
+    ]
+  },
+  {
+    "id": "inj-hide",
+    "type": "inject",
+    "name": "hide table",
+    "z": "ex-ui-table",
+    "x": 120,
+    "y": 740,
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "fn-hide"
+      ]
+    ]
+  },
+  {
+    "id": "fn-hide",
+    "type": "function",
+    "name": "→ hide",
+    "z": "ex-ui-table",
+    "func": "msg.ui = { component: { op: \"hide\" } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 380,
+    "y": 740,
+    "wires": [
+      [
+        "tblNode"
+      ]
     ]
   }
 ]

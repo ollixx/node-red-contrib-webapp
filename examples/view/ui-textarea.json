@@ -9,47 +9,49 @@
   {
     "id": "taApp",
     "type": "ui-app",
-    "name": "Textarea App",
+    "name": "ui-textarea App",
     "uiId": "taApp",
     "root": "taApp",
     "layout": "app",
     "z": "ex-ui-textarea",
-    "x": 100,
+    "x": 120,
     "y": 80,
     "wires": [
       []
     ]
   },
   {
-    "id": "taHome",
+    "id": "taRoute",
     "type": "ui-route",
-    "name": "taHome",
-    "uiId": "taHome",
+    "name": "taRoute",
+    "uiId": "taRoute",
     "path": "/",
     "parent": "taApp",
     "layoutId": "vertical",
     "z": "ex-ui-textarea",
-    "x": 100,
+    "x": 120,
     "y": 180,
     "wires": [
       []
     ]
   },
   {
-    "id": "notesArea",
+    "id": "taNode",
     "type": "ui-textarea",
-    "name": "notesArea",
-    "uiId": "notesArea",
+    "name": "taNode",
+    "uiId": "taNode",
     "parent": "taApp",
-    "mount": "taHome.content",
+    "mount": "taRoute.content",
     "z": "ex-ui-textarea",
-    "x": 400,
-    "y": 180,
+    "x": 480,
+    "y": 280,
     "wires": [
-      []
+      [
+        "taNodeDbg"
+      ]
     ],
     "label": "Notes",
-    "placeholder": "Enter your notes here…",
+    "placeholder": "Enter your notes…",
     "rows": 4,
     "value": {
       "kind": "literal",
@@ -57,18 +59,142 @@
     }
   },
   {
-    "id": "ex-ui-textarea-dbg",
+    "id": "taNodeDbg",
     "type": "debug",
-    "name": "Events",
+    "name": "change / submit events",
     "z": "ex-ui-textarea",
     "x": 700,
-    "y": 180,
+    "y": 280,
     "active": true,
     "tosidebar": true,
-    "complete": "payload",
+    "complete": "ui",
     "targetType": "msg",
     "wires": [
       []
+    ]
+  },
+  {
+    "id": "inj-val",
+    "type": "inject",
+    "name": "Set value",
+    "z": "ex-ui-textarea",
+    "x": 120,
+    "y": 500,
+    "payload": "Injected text content.",
+    "payloadType": "str",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "taNode"
+      ]
+    ]
+  },
+  {
+    "id": "inj-disable",
+    "type": "inject",
+    "name": "disable",
+    "z": "ex-ui-textarea",
+    "x": 120,
+    "y": 580,
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "fn-disable"
+      ]
+    ]
+  },
+  {
+    "id": "fn-disable",
+    "type": "function",
+    "name": "→ disable",
+    "z": "ex-ui-textarea",
+    "func": "msg.ui = { component: { op: \"disable\" } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 380,
+    "y": 580,
+    "wires": [
+      [
+        "taNode"
+      ]
+    ]
+  },
+  {
+    "id": "inj-enable",
+    "type": "inject",
+    "name": "enable",
+    "z": "ex-ui-textarea",
+    "x": 120,
+    "y": 660,
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "fn-enable"
+      ]
+    ]
+  },
+  {
+    "id": "fn-enable",
+    "type": "function",
+    "name": "→ enable",
+    "z": "ex-ui-textarea",
+    "func": "msg.ui = { component: { op: \"enable\" } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 380,
+    "y": 660,
+    "wires": [
+      [
+        "taNode"
+      ]
+    ]
+  },
+  {
+    "id": "inj-reset",
+    "type": "inject",
+    "name": "reset",
+    "z": "ex-ui-textarea",
+    "x": 120,
+    "y": 740,
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "fn-reset"
+      ]
+    ]
+  },
+  {
+    "id": "fn-reset",
+    "type": "function",
+    "name": "→ reset",
+    "z": "ex-ui-textarea",
+    "func": "msg.ui = { component: { op: \"reset\" } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 380,
+    "y": 740,
+    "wires": [
+      [
+        "taNode"
+      ]
     ]
   }
 ]

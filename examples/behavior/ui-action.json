@@ -14,37 +14,37 @@
     "root": "actionApp",
     "layout": "app",
     "z": "ex-ui-action",
-    "x": 100,
+    "x": 120,
     "y": 80,
     "wires": [
       []
     ]
   },
   {
-    "id": "actionHome",
+    "id": "homeRoute",
     "type": "ui-route",
-    "name": "actionHome",
-    "uiId": "actionHome",
+    "name": "homeRoute",
+    "uiId": "homeRoute",
     "path": "/",
     "parent": "actionApp",
     "layoutId": "vertical",
     "z": "ex-ui-action",
-    "x": 100,
+    "x": 120,
     "y": 180,
     "wires": [
       []
     ]
   },
   {
-    "id": "actionDetail",
+    "id": "detailRoute",
     "type": "ui-route",
-    "name": "actionDetail",
-    "uiId": "actionDetail",
+    "name": "detailRoute",
+    "uiId": "detailRoute",
     "path": "/detail",
     "parent": "actionApp",
     "layoutId": "vertical",
     "z": "ex-ui-action",
-    "x": 100,
+    "x": 120,
     "y": 260,
     "wires": [
       []
@@ -53,12 +53,12 @@
   {
     "id": "infoDialog",
     "type": "ui-dialog",
-    "name": "Info Dialog",
+    "name": "Info",
     "uiId": "infoDialog",
     "parent": "actionApp",
     "title": "Information",
     "z": "ex-ui-action",
-    "x": 100,
+    "x": 120,
     "y": 360,
     "wires": [
       []
@@ -67,68 +67,128 @@
   {
     "id": "goDetailBtn",
     "type": "ui-button",
-    "name": "goDetailBtn",
+    "name": "go to detail",
     "uiId": "goDetailBtn",
     "parent": "actionApp",
-    "mount": "actionHome.content",
+    "mount": "homeRoute.content",
     "z": "ex-ui-action",
-    "x": 400,
-    "y": 180,
+    "x": 480,
+    "y": 280,
     "wires": [
       []
     ],
     "label": "Go to Detail"
   },
   {
-    "id": "openDialogBtn",
+    "id": "openDlgBtn",
     "type": "ui-button",
-    "name": "openDialogBtn",
-    "uiId": "openDialogBtn",
+    "name": "open dialog",
+    "uiId": "openDlgBtn",
     "parent": "actionApp",
-    "mount": "actionHome.content",
+    "mount": "homeRoute.content",
     "z": "ex-ui-action",
-    "x": 400,
-    "y": 260,
+    "x": 480,
+    "y": 360,
     "wires": [
       []
     ],
     "label": "Open Dialog"
   },
   {
-    "id": "navigateAction",
-    "type": "ui-action",
-    "name": "navigate → /detail",
-    "uiId": "navigateAction",
+    "id": "hideCardBtn",
+    "type": "ui-button",
+    "name": "hide card",
+    "uiId": "hideCardBtn",
     "parent": "actionApp",
-    "actionType": "navigate",
-    "target": "/detail",
+    "mount": "homeRoute.content",
     "z": "ex-ui-action",
-    "x": 700,
-    "y": 180,
+    "x": 480,
+    "y": 440,
     "wires": [
       []
-    ]
+    ],
+    "label": "Hide Card"
   },
   {
-    "id": "openDialogAction",
-    "type": "ui-action",
-    "name": "openDialog",
-    "uiId": "openDialogAction",
+    "id": "showCardBtn",
+    "type": "ui-button",
+    "name": "show card",
+    "uiId": "showCardBtn",
     "parent": "actionApp",
-    "actionType": "openDialog",
-    "target": "infoDialog",
+    "mount": "homeRoute.content",
+    "z": "ex-ui-action",
+    "x": 480,
+    "y": 520,
+    "wires": [
+      []
+    ],
+    "label": "Show Card"
+  },
+  {
+    "id": "toggleCard",
+    "type": "ui-container",
+    "name": "toggle card",
+    "uiId": "toggleCard",
+    "parent": "actionApp",
+    "mount": "homeRoute.content",
+    "z": "ex-ui-action",
+    "x": 480,
+    "y": 600,
+    "wires": [
+      []
+    ],
+    "layoutId": "vertical"
+  },
+  {
+    "id": "cardContent",
+    "type": "ui-text",
+    "name": "card content",
+    "uiId": "cardContent",
+    "parent": "actionApp",
+    "mount": "toggleCard.content",
     "z": "ex-ui-action",
     "x": 700,
+    "y": 600,
+    "wires": [
+      []
+    ],
+    "text": "This card can be shown/hidden."
+  },
+  {
+    "id": "detailText",
+    "type": "ui-text",
+    "name": "detail text",
+    "uiId": "detailText",
+    "parent": "actionApp",
+    "mount": "detailRoute.content",
+    "z": "ex-ui-action",
+    "x": 480,
     "y": 260,
     "wires": [
       []
-    ]
+    ],
+    "text": "Detail page — use Back to go home."
   },
   {
-    "id": "dialogMsg",
+    "id": "goHomeBtn",
+    "type": "ui-button",
+    "name": "go home",
+    "uiId": "goHomeBtn",
+    "parent": "actionApp",
+    "mount": "detailRoute.content",
+    "z": "ex-ui-action",
+    "x": 480,
+    "y": 340,
+    "wires": [
+      []
+    ],
+    "label": "← Back"
+  },
+  {
+    "id": "dlgText",
     "type": "ui-text",
-    "name": "dialogMsg",
-    "uiId": "dialogMsg",
+    "name": "dialog text",
+    "uiId": "dlgText",
     "parent": "actionApp",
     "mount": "infoDialog.content",
     "z": "ex-ui-action",
@@ -137,6 +197,111 @@
     "wires": [
       []
     ],
-    "text": "This dialog was opened by a ui-action node."
+    "text": "Dialog content."
+  },
+  {
+    "id": "dlgCloseBtn",
+    "type": "ui-button",
+    "name": "close dialog",
+    "uiId": "dlgCloseBtn",
+    "parent": "actionApp",
+    "mount": "infoDialog.content",
+    "z": "ex-ui-action",
+    "x": 700,
+    "y": 440,
+    "wires": [
+      []
+    ],
+    "label": "Close"
+  },
+  {
+    "id": "navToDetail",
+    "type": "ui-action",
+    "name": "navigate → /detail",
+    "uiId": "navToDetail",
+    "parent": "actionApp",
+    "z": "ex-ui-action",
+    "x": 700,
+    "y": 280,
+    "wires": [
+      []
+    ],
+    "actionType": "navigate",
+    "target": "/detail"
+  },
+  {
+    "id": "navToHome",
+    "type": "ui-action",
+    "name": "navigate → /",
+    "uiId": "navToHome",
+    "parent": "actionApp",
+    "z": "ex-ui-action",
+    "x": 700,
+    "y": 340,
+    "wires": [
+      []
+    ],
+    "actionType": "navigate",
+    "target": "/"
+  },
+  {
+    "id": "openDialog",
+    "type": "ui-action",
+    "name": "openDialog",
+    "uiId": "openDialog",
+    "parent": "actionApp",
+    "z": "ex-ui-action",
+    "x": 700,
+    "y": 440,
+    "wires": [
+      []
+    ],
+    "actionType": "openDialog",
+    "target": "infoDialog"
+  },
+  {
+    "id": "closeDialog",
+    "type": "ui-action",
+    "name": "closeDialog",
+    "uiId": "closeDialog",
+    "parent": "actionApp",
+    "z": "ex-ui-action",
+    "x": 900,
+    "y": 440,
+    "wires": [
+      []
+    ],
+    "actionType": "closeDialog",
+    "target": "infoDialog"
+  },
+  {
+    "id": "hideCard",
+    "type": "ui-action",
+    "name": "hide card",
+    "uiId": "hideCard",
+    "parent": "actionApp",
+    "z": "ex-ui-action",
+    "x": 700,
+    "y": 520,
+    "wires": [
+      []
+    ],
+    "actionType": "hide",
+    "target": "toggleCard"
+  },
+  {
+    "id": "showCard",
+    "type": "ui-action",
+    "name": "show card",
+    "uiId": "showCard",
+    "parent": "actionApp",
+    "z": "ex-ui-action",
+    "x": 700,
+    "y": 600,
+    "wires": [
+      []
+    ],
+    "actionType": "show",
+    "target": "toggleCard"
   }
 ]

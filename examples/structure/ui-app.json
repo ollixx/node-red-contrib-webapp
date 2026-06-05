@@ -14,11 +14,12 @@
     "root": "myApp",
     "layout": "app",
     "z": "ex-ui-app",
-    "x": 100,
+    "x": 120,
     "y": 80,
     "wires": [
       []
-    ]
+    ],
+    "tokens": "{\"colorPrimary\":\"#2563eb\"}"
   },
   {
     "id": "homeRoute",
@@ -29,25 +30,25 @@
     "parent": "myApp",
     "layoutId": "vertical",
     "z": "ex-ui-app",
-    "x": 100,
+    "x": 120,
     "y": 180,
     "wires": [
       []
     ]
   },
   {
-    "id": "welcomeText",
+    "id": "appInfo",
     "type": "ui-text",
-    "name": "welcomeText",
-    "uiId": "welcomeText",
+    "name": "app info",
+    "uiId": "appInfo",
     "parent": "myApp",
     "mount": "homeRoute.content",
     "z": "ex-ui-app",
-    "x": 400,
-    "y": 180,
+    "x": 480,
+    "y": 280,
     "wires": [
       []
     ],
-    "text": "Welcome to My App!"
+    "text": "Open /webapp/myApp/ in your browser. The top bar colour comes from the tokens field."
   }
 ]

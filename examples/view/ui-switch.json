@@ -9,64 +9,190 @@
   {
     "id": "swApp",
     "type": "ui-app",
-    "name": "Switch App",
+    "name": "ui-switch App",
     "uiId": "swApp",
     "root": "swApp",
     "layout": "app",
     "z": "ex-ui-switch",
-    "x": 100,
+    "x": 120,
     "y": 80,
     "wires": [
       []
     ]
   },
   {
-    "id": "swHome",
+    "id": "swRoute",
     "type": "ui-route",
-    "name": "swHome",
-    "uiId": "swHome",
+    "name": "swRoute",
+    "uiId": "swRoute",
     "path": "/",
     "parent": "swApp",
     "layoutId": "vertical",
     "z": "ex-ui-switch",
-    "x": 100,
+    "x": 120,
     "y": 180,
     "wires": [
       []
     ]
   },
   {
-    "id": "darkMode",
+    "id": "swNode",
     "type": "ui-switch",
-    "name": "darkMode",
-    "uiId": "darkMode",
+    "name": "swNode",
+    "uiId": "swNode",
     "parent": "swApp",
-    "mount": "swHome.content",
+    "mount": "swRoute.content",
     "z": "ex-ui-switch",
-    "x": 400,
-    "y": 180,
+    "x": 480,
+    "y": 280,
     "wires": [
-      []
+      [
+        "swNodeDbg"
+      ]
     ],
-    "label": "Dark Mode",
+    "label": "Dark mode",
     "value": {
       "kind": "literal",
       "value": false
     }
   },
   {
-    "id": "ex-ui-switch-dbg",
+    "id": "swNodeDbg",
     "type": "debug",
-    "name": "Events",
+    "name": "change / submit events",
     "z": "ex-ui-switch",
     "x": 700,
-    "y": 180,
+    "y": 280,
     "active": true,
     "tosidebar": true,
-    "complete": "payload",
+    "complete": "ui",
     "targetType": "msg",
     "wires": [
       []
+    ]
+  },
+  {
+    "id": "inj-val",
+    "type": "inject",
+    "name": "Set value",
+    "z": "ex-ui-switch",
+    "x": 120,
+    "y": 500,
+    "payload": "true",
+    "payloadType": "str",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "swNode"
+      ]
+    ]
+  },
+  {
+    "id": "inj-disable",
+    "type": "inject",
+    "name": "disable",
+    "z": "ex-ui-switch",
+    "x": 120,
+    "y": 580,
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "fn-disable"
+      ]
+    ]
+  },
+  {
+    "id": "fn-disable",
+    "type": "function",
+    "name": "→ disable",
+    "z": "ex-ui-switch",
+    "func": "msg.ui = { component: { op: \"disable\" } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 380,
+    "y": 580,
+    "wires": [
+      [
+        "swNode"
+      ]
+    ]
+  },
+  {
+    "id": "inj-enable",
+    "type": "inject",
+    "name": "enable",
+    "z": "ex-ui-switch",
+    "x": 120,
+    "y": 660,
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "fn-enable"
+      ]
+    ]
+  },
+  {
+    "id": "fn-enable",
+    "type": "function",
+    "name": "→ enable",
+    "z": "ex-ui-switch",
+    "func": "msg.ui = { component: { op: \"enable\" } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 380,
+    "y": 660,
+    "wires": [
+      [
+        "swNode"
+      ]
+    ]
+  },
+  {
+    "id": "inj-reset",
+    "type": "inject",
+    "name": "reset",
+    "z": "ex-ui-switch",
+    "x": 120,
+    "y": 740,
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "fn-reset"
+      ]
+    ]
+  },
+  {
+    "id": "fn-reset",
+    "type": "function",
+    "name": "→ reset",
+    "z": "ex-ui-switch",
+    "func": "msg.ui = { component: { op: \"reset\" } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 380,
+    "y": 740,
+    "wires": [
+      [
+        "swNode"
+      ]
     ]
   }
 ]

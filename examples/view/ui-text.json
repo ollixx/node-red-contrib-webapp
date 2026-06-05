@@ -14,83 +14,83 @@
     "root": "textApp",
     "layout": "app",
     "z": "ex-ui-text",
-    "x": 100,
+    "x": 120,
     "y": 80,
     "wires": [
       []
     ]
   },
   {
-    "id": "textHome",
+    "id": "textRoute",
     "type": "ui-route",
-    "name": "textHome",
-    "uiId": "textHome",
+    "name": "textRoute",
+    "uiId": "textRoute",
     "path": "/",
     "parent": "textApp",
     "layoutId": "vertical",
     "z": "ex-ui-text",
-    "x": 100,
+    "x": 120,
     "y": 180,
     "wires": [
       []
     ]
   },
   {
-    "id": "counterStore",
+    "id": "textStore",
     "type": "ui-store",
-    "name": "counterStore",
-    "uiId": "counterStore",
+    "name": "text store",
+    "uiId": "textStore",
     "parent": "textApp",
     "z": "ex-ui-text",
-    "x": 400,
-    "y": 320,
+    "x": 480,
+    "y": 380,
     "wires": [
       []
     ],
-    "statePath": "counter",
-    "initialValue": "0"
+    "statePath": "label",
+    "initialValue": "\"Hello from store\""
   },
   {
     "id": "staticText",
     "type": "ui-text",
-    "name": "staticText",
+    "name": "static text",
     "uiId": "staticText",
     "parent": "textApp",
-    "mount": "textHome.content",
+    "mount": "textRoute.content",
     "z": "ex-ui-text",
-    "x": 400,
-    "y": 180,
+    "x": 480,
+    "y": 280,
     "wires": [
       []
     ],
-    "text": "Static label"
+    "text": "Static text — always shows this string."
   },
   {
-    "id": "boundText",
+    "id": "textNode",
     "type": "ui-text",
-    "name": "boundText",
-    "uiId": "boundText",
+    "name": "store-bound text",
+    "uiId": "textNode",
     "parent": "textApp",
-    "mount": "textHome.content",
+    "mount": "textRoute.content",
     "z": "ex-ui-text",
-    "x": 400,
-    "y": 260,
+    "x": 480,
+    "y": 360,
     "wires": [
       []
     ],
     "value": {
       "kind": "state",
-      "path": "counter"
+      "path": "label"
     }
   },
   {
-    "id": "ex-ui-text-inj",
+    "id": "inj-newVal",
     "type": "inject",
-    "name": "Inject",
+    "name": "Update text via store",
     "z": "ex-ui-text",
-    "x": 100,
-    "y": 420,
-    "payload": "42",
+    "x": 120,
+    "y": 480,
+    "payload": "Updated at runtime!",
     "payloadType": "str",
     "repeat": "",
     "crontab": "",
@@ -98,23 +98,97 @@
     "onceDelay": 0,
     "wires": [
       [
-        "counterStore"
+        "textStore"
       ]
     ]
   },
   {
-    "id": "ex-ui-text-dbg",
-    "type": "debug",
-    "name": "Events",
+    "id": "inj-direct",
+    "type": "inject",
+    "name": "Update static text directly",
     "z": "ex-ui-text",
-    "x": 700,
-    "y": 180,
-    "active": true,
-    "tosidebar": true,
-    "complete": "payload",
-    "targetType": "msg",
+    "x": 120,
+    "y": 560,
+    "payload": "Directly updated!",
+    "payloadType": "str",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
     "wires": [
-      []
+      [
+        "staticText"
+      ]
+    ]
+  },
+  {
+    "id": "inj-show",
+    "type": "inject",
+    "name": "show",
+    "z": "ex-ui-text",
+    "x": 120,
+    "y": 640,
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "fn-show"
+      ]
+    ]
+  },
+  {
+    "id": "fn-show",
+    "type": "function",
+    "name": "→ show",
+    "z": "ex-ui-text",
+    "func": "msg.ui = { component: { op: \"show\" } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 380,
+    "y": 640,
+    "wires": [
+      [
+        "textNode"
+      ]
+    ]
+  },
+  {
+    "id": "inj-hide",
+    "type": "inject",
+    "name": "hide",
+    "z": "ex-ui-text",
+    "x": 120,
+    "y": 720,
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "fn-hide"
+      ]
+    ]
+  },
+  {
+    "id": "fn-hide",
+    "type": "function",
+    "name": "→ hide",
+    "z": "ex-ui-text",
+    "func": "msg.ui = { component: { op: \"hide\" } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 380,
+    "y": 720,
+    "wires": [
+      [
+        "textNode"
+      ]
     ]
   }
 ]

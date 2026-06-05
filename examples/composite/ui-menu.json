@@ -14,55 +14,76 @@
     "root": "menuApp",
     "layout": "app",
     "z": "ex-ui-menu",
-    "x": 100,
+    "x": 120,
     "y": 80,
     "wires": [
       []
     ]
   },
   {
-    "id": "menuHome",
+    "id": "menuRoute",
     "type": "ui-route",
-    "name": "menuHome",
-    "uiId": "menuHome",
+    "name": "menuRoute",
+    "uiId": "menuRoute",
     "path": "/",
     "parent": "menuApp",
     "layoutId": "vertical",
     "z": "ex-ui-menu",
-    "x": 100,
+    "x": 120,
     "y": 180,
     "wires": [
       []
     ]
   },
   {
-    "id": "sideMenu",
+    "id": "menuNode",
     "type": "ui-menu",
-    "name": "sideMenu",
-    "uiId": "sideMenu",
+    "name": "side menu",
+    "uiId": "menuNode",
     "parent": "menuApp",
-    "mount": "menuHome.content",
+    "mount": "menuRoute.content",
     "z": "ex-ui-menu",
-    "x": 400,
-    "y": 180,
+    "x": 480,
+    "y": 280,
     "wires": [
-      []
+      [
+        "menuDbg"
+      ]
     ],
-    "items": "[{\"id\":\"home\",\"label\":\"Home\",\"icon\":\"house\"},{\"id\":\"settings\",\"label\":\"Settings\",\"icon\":\"gear\"},{\"id\":\"help\",\"label\":\"Help\",\"icon\":\"question-circle\"}]"
+    "items": "[{\"id\":\"home\",\"label\":\"Home\",\"icon\":\"house\",\"href\":\"/\"},{\"id\":\"settings\",\"label\":\"Settings\",\"icon\":\"gear\",\"href\":\"/settings\"},{\"id\":\"help\",\"label\":\"Help\",\"icon\":\"question-circle\",\"href\":\"/help\"}]"
   },
   {
-    "id": "ex-ui-menu-dbg",
+    "id": "menuDbg",
     "type": "debug",
-    "name": "Events",
+    "name": "navigate events",
     "z": "ex-ui-menu",
     "x": 700,
-    "y": 320,
+    "y": 280,
     "active": true,
     "tosidebar": true,
-    "complete": "payload",
+    "complete": "ui",
     "targetType": "msg",
     "wires": [
       []
+    ]
+  },
+  {
+    "id": "inj-items",
+    "type": "inject",
+    "name": "Update menu items",
+    "z": "ex-ui-menu",
+    "x": 120,
+    "y": 480,
+    "payload": "[{\"id\":\"home\",\"label\":\"Home\",\"icon\":\"house\",\"href\":\"/\"},{\"id\":\"profile\",\"label\":\"My Profile\",\"icon\":\"person\",\"href\":\"/profile\"}]",
+    "payloadType": "json",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "menuNode"
+      ]
     ]
   }
 ]

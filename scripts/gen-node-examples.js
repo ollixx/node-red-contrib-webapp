@@ -2,8 +2,13 @@
 /**
  * gen-node-examples.js
  *
- * Generates one importable example flow.json per node type, mirroring the
- * flows used in the per-node E2E test suite (P41–P46).
+ * Generates one comprehensive, importable example flow per node type.
+ * Each example shows ALL relevant features:
+ *   - every documented prop set to a meaningful value
+ *   - inject nodes to test incoming messages (msg.payload → primary field,
+ *     function nodes for component ops: show/hide/enable/disable/reset)
+ *   - debug node(s) wired to the output port(s) so events are visible
+ *     in the Node-RED debug sidebar
  *
  * Output: examples/<category>/<node-name>.json
  *
@@ -11,10 +16,8 @@
  *   node scripts/gen-node-examples.js
  *   pnpm gen:node-examples
  *
- * Each generated file is a standard Node-RED flow array that can be imported
- * via Menu → Import → Examples → node-red-contrib-webapp.
- *
- * DO NOT hand-edit the generated files. Re-run this script instead.
+ * DO NOT hand-edit the generated files — re-run this script instead.
+ * Regenerate whenever a node's fields, events, or input behaviour changes.
  */
 
 "use strict";
@@ -24,7 +27,7 @@ const { resolve, dirname } = require("node:path");
 
 const ROOT = resolve(__dirname, "..");
 
-// ── write helper ─────────────────────────────────────────────────────────────
+// ── helpers ───────────────────────────────────────────────────────────────────
 
 function write(relPath, nodes) {
     const abs = resolve(ROOT, relPath);
@@ -33,850 +36,1154 @@ function write(relPath, nodes) {
     console.log("  wrote", relPath);
 }
 
-// ── node factory helpers ─────────────────────────────────────────────────────
-
-/** Returns a Node-RED tab node. */
+// Standard Node-RED structural nodes
 function tab(id, label) {
     return { id, type: "tab", label, disabled: false, info: "" };
 }
 
-/** Returns a ui-app node. */
 function uiApp(id, tabId, overrides = {}) {
-    return {
-        id, type: "ui-app", name: overrides.name ?? id, uiId: id,
-        root: id, layout: "app", z: tabId,
-        x: 100, y: 80, wires: [[]],
-        ...overrides
-    };
+    return { id, type: "ui-app", name: overrides.name ?? id, uiId: id, root: id, layout: "app", z: tabId, x: 120, y: 80, wires: [[]], ...overrides };
 }
 
-/** Returns a ui-route node mounted into the given app. */
 function uiRoute(id, path, appId, tabId, overrides = {}) {
-    return {
-        id, type: "ui-route", name: id, uiId: id,
-        path, parent: appId, layoutId: overrides.layoutId ?? "vertical",
-        z: tabId, x: 100, y: 180, wires: [[]],
-        ...overrides
-    };
+    return { id, type: "ui-route", name: id, uiId: id, path, parent: appId, layoutId: "vertical", z: tabId, x: 120, y: 180, wires: [[]], ...overrides };
 }
 
-/** Returns any view/composite node mounted into a route. */
-function viewNode(type, id, appId, routeId, tabId, overrides = {}) {
+// Inject node that sends msg.payload (updates primary field of any view node)
+function injectPayload(id, tabId, label, payload, payloadType, targetId, y) {
     return {
-        id, type, name: id, uiId: id,
-        parent: appId, mount: `${routeId}.content`,
-        z: tabId, x: 400, y: 180, wires: [[]],
-        ...overrides
-    };
-}
-
-/** Returns a non-visual node (store, query, action, navigation) — no mount. */
-function stateNode(type, id, appId, tabId, overrides = {}) {
-    return {
-        id, type, name: id, uiId: id,
-        parent: appId,
-        z: tabId, x: 400, y: 320, wires: [[]],
-        ...overrides
-    };
-}
-
-/** Returns a standard Node-RED inject node wired to targetId. */
-function inject(id, tabId, payload, payloadType, targetId, y = 420) {
-    return {
-        id, type: "inject", name: "Inject", z: tabId,
-        x: 100, y,
+        id, type: "inject", name: label, z: tabId,
+        x: 120, y,
         payload, payloadType,
         repeat: "", crontab: "", once: false, onceDelay: 0,
         wires: [[targetId]]
     };
 }
 
-/** Returns a standard Node-RED debug node. */
-function debug(id, tabId, y = 320) {
+// Function node that sets msg.ui.component.op for show/hide/enable/disable/reset
+function componentOpFn(id, tabId, op, targetId, y) {
+    const labels = { show: "→ show", hide: "→ hide", enable: "→ enable", disable: "→ disable", reset: "→ reset", focus: "→ focus" };
     return {
-        id, type: "debug", name: "Events", z: tabId,
-        x: 700, y, active: true, tosidebar: true,
-        complete: "payload", targetType: "msg",
+        id, type: "function", name: labels[op] ?? op, z: tabId,
+        func: `msg.ui = { component: { op: "${op}" } };\nreturn msg;`,
+        outputs: 1, noerr: 0,
+        x: 380, y,
+        wires: [[targetId]]
+    };
+}
+
+// Trigger inject that fires a function node (inject → fn → node)
+function injectTrigger(id, tabId, label, targetId, y) {
+    return {
+        id, type: "inject", name: label, z: tabId,
+        x: 120, y,
+        payload: "", payloadType: "date",
+        repeat: "", crontab: "", once: false, onceDelay: 0,
+        wires: [[targetId]]
+    };
+}
+
+// Debug node — sits on the right, receives a node's output
+function debugNode(id, tabId, label, y) {
+    return {
+        id, type: "debug", name: label, z: tabId,
+        x: 700, y,
+        active: true, tosidebar: true,
+        complete: "ui", targetType: "msg",
         wires: [[]]
     };
 }
 
-// ── examples definition ──────────────────────────────────────────────────────
-// Each entry: { path, nodes }
-// All paths relative to the project root.
+// View node (renders in a route slot)
+function viewNode(type, id, appId, routeId, tabId, overrides = {}) {
+    const y = overrides.y ?? 280;
+    const x = overrides.x ?? 480;
+    delete overrides.x; delete overrides.y;
+    return {
+        id, type, name: overrides.name ?? id, uiId: id,
+        parent: appId, mount: `${routeId}.content`,
+        z: tabId, x, y, wires: [[]], ...overrides
+    };
+}
+
+// State/behavior node (no mount)
+function stateNode(type, id, appId, tabId, overrides = {}) {
+    const y = overrides.y ?? 380;
+    const x = overrides.x ?? 480;
+    delete overrides.x; delete overrides.y;
+    return {
+        id, type, name: overrides.name ?? id, uiId: id,
+        parent: appId,
+        z: tabId, x, y, wires: [[]], ...overrides
+    };
+}
+
+// ── examples ──────────────────────────────────────────────────────────────────
 
 const examples = [];
 
-// ── STRUCTURE ────────────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════
+// STRUCTURE
+// ════════════════════════════════════════════════════════════════════════
 
-// ui-app — app-layout shell with title and one home route
+// ui-app ──────────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-app";
+    const T = "ex-ui-app"; const A = "myApp"; const R = "homeRoute";
     examples.push({
         path: "examples/structure/ui-app.json",
         nodes: [
             tab(T, "ui-app example"),
-            uiApp("myApp", T, { name: "My App", layout: "app" }),
-            uiRoute("homeRoute", "/", "myApp", T, { layoutId: "vertical" }),
-            viewNode("ui-text", "welcomeText", "myApp", "homeRoute", T, { text: "Welcome to My App!" })
+            // The ui-app node is the root. layout:"app" renders a top bar.
+            // tokens override design tokens (CSS custom properties).
+            uiApp(A, T, {
+                name: "My App",
+                layout: "app",
+                tokens: JSON.stringify({ colorPrimary: "#2563eb" })
+            }),
+            uiRoute(R, "/", A, T, { layoutId: "vertical" }),
+            // Simple content so there is something to see when the app loads
+            viewNode("ui-text", "appInfo", A, R, T, {
+                name: "app info",
+                text: "Open /webapp/myApp/ in your browser. The top bar colour comes from the tokens field."
+            })
         ]
     });
 }
 
-// ui-route — two routes: home and detail, with a navigate action between them
+// ui-route ────────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-route";
+    const T = "ex-ui-route"; const A = "routeApp";
     examples.push({
         path: "examples/structure/ui-route.json",
         nodes: [
             tab(T, "ui-route example"),
-            uiApp("routeApp", T, { name: "Route App" }),
-            uiRoute("homeR", "/", "routeApp", T, { layoutId: "vertical" }),
-            uiRoute("detailR", "/detail", "routeApp", T, { layoutId: "vertical", x: 100, y: 260 }),
-            viewNode("ui-text", "homeText", "routeApp", "homeR", T, { text: "Home route — click the button to navigate." }),
-            viewNode("ui-button", "goDetail", "routeApp", "homeR", T,
-                { id: "goDetail", label: "Go to Detail", x: 400, y: 260 }),
-            viewNode("ui-text", "detailText", "routeApp", "detailR", T,
-                { id: "detailText", text: "Detail route.", x: 400, y: 340 }),
+            uiApp(A, T, { name: "Route App" }),
+
+            // Two routes. The first is the landing page; the second has a param.
+            uiRoute("routeHome", "/", A, T, { layoutId: "vertical" }),
+            uiRoute("routeDetail", "/item/:id", A, T, { layoutId: "vertical", x: 120, y: 260 }),
+
+            // Home page content
+            viewNode("ui-text", "homeText", A, "routeHome", T, {
+                name: "home text", text: "Home — navigate to /webapp/routeApp/item/42 to see the detail route."
+            }),
+
+            // Detail page shows the :id route param bound from the URL
+            viewNode("ui-text", "detailText", A, "routeDetail", T, {
+                name: "detail text", x: 480, y: 360,
+                text: "Detail route. The :id param is available as a route param binding."
+            }),
+
+            // Navigate action wired from home button
+            viewNode("ui-button", "goDetailBtn", A, "routeHome", T, {
+                name: "go to detail", label: "Go to Item 42", x: 480, y: 360
+            }),
             {
-                id: "navAction", type: "ui-action", name: "Navigate to /detail", uiId: "navAction",
-                parent: "routeApp", actionType: "navigate", target: "/detail",
-                z: T, x: 700, y: 260, wires: [[]]
+                id: "navToDetail", type: "ui-action", name: "navigate → /item/42",
+                uiId: "navToDetail", parent: A, actionType: "navigate", target: "/item/42",
+                z: T, x: 700, y: 360, wires: [[]]
             }
         ]
     });
 }
 
-// ui-dialog — dialog opened by a button via ui-action
+// ui-dialog ───────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-dialog";
+    const T = "ex-ui-dialog"; const A = "dlgApp"; const R = "dlgHome";
     examples.push({
         path: "examples/structure/ui-dialog.json",
         nodes: [
             tab(T, "ui-dialog example"),
-            uiApp("dlgApp", T, { name: "Dialog App" }),
-            uiRoute("dlgHome", "/", "dlgApp", T, { layoutId: "vertical" }),
-            { id: "myDialog", type: "ui-dialog", name: "My Dialog", uiId: "myDialog",
-              parent: "dlgApp", title: "Hello Dialog",
-              z: T, x: 100, y: 360, wires: [[]] },
-            viewNode("ui-button", "openBtn", "dlgApp", "dlgHome", T, { label: "Open Dialog" }),
-            viewNode("ui-text", "dlgContent", "dlgApp", "dlgHome", T,
-                { id: "dlgContent", mount: "myDialog.content", text: "Dialog content here.", x: 400, y: 280 }),
-            { id: "openAction", type: "ui-action", name: "Open Dialog", uiId: "openAction",
-              parent: "dlgApp", actionType: "openDialog", target: "myDialog",
-              z: T, x: 700, y: 180, wires: [[]] }
+            uiApp(A, T, { name: "Dialog App" }),
+            uiRoute(R, "/", A, T, { layoutId: "vertical" }),
+
+            // The dialog — mounts to the app, not a route
+            {
+                id: "myDialog", type: "ui-dialog", name: "Confirm Action",
+                uiId: "myDialog", parent: A, title: "Confirm Action",
+                z: T, x: 120, y: 360, wires: [[]]
+            },
+
+            // Trigger button on the main route
+            viewNode("ui-button", "openBtn", A, R, T, { name: "open dialog", label: "Open Dialog" }),
+
+            // Content inside the dialog
+            viewNode("ui-text", "dlgText", A, R, T, {
+                name: "dialog text", mount: "myDialog.content",
+                text: "Are you sure you want to proceed?", x: 480, y: 440
+            }),
+            viewNode("ui-button", "dlgConfirmBtn", A, R, T, {
+                name: "confirm", mount: "myDialog.content", label: "Confirm", x: 480, y: 520
+            }),
+            viewNode("ui-button", "dlgCancelBtn", A, R, T, {
+                name: "cancel", mount: "myDialog.content", label: "Cancel", x: 700, y: 520
+            }),
+
+            // Actions
+            {
+                id: "openDlgAction", type: "ui-action", name: "openDialog",
+                uiId: "openDlgAction", parent: A, actionType: "openDialog", target: "myDialog",
+                z: T, x: 700, y: 280, wires: [[]]
+            },
+            {
+                id: "closeDlgAction", type: "ui-action", name: "closeDialog",
+                uiId: "closeDlgAction", parent: A, actionType: "closeDialog", target: "myDialog",
+                z: T, x: 900, y: 520, wires: [[]]
+            }
         ]
     });
 }
 
-// ── VIEW — display nodes ─────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════
+// VIEW — display
+// ════════════════════════════════════════════════════════════════════════
 
-// ui-text — literal text and store-bound text
+// ui-text ─────────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-text";
+    const T = "ex-ui-text"; const A = "textApp"; const R = "textRoute";
+    const NODE = "textNode"; const DBG = "textDbg";
     examples.push({
         path: "examples/view/ui-text.json",
         nodes: [
             tab(T, "ui-text example"),
-            uiApp("textApp", T, { name: "Text App" }),
-            uiRoute("textHome", "/", "textApp", T),
-            stateNode("ui-store", "counterStore", "textApp", T,
-                { statePath: "counter", initialValue: "0" }),
-            viewNode("ui-text", "staticText", "textApp", "textHome", T,
-                { text: "Static label" }),
-            viewNode("ui-text", "boundText", "textApp", "textHome", T,
-                { id: "boundText", value: { kind: "state", path: "counter" }, x: 400, y: 260 }),
-            inject(T + "-inj", T, "42", "str", "counterStore", 420),
-            debug(T + "-dbg", T, 180)
+            uiApp(A, T, { name: "Text App" }),
+            uiRoute(R, "/", A, T),
+
+            // Store provides dynamic value
+            stateNode("ui-store", "textStore", A, T, {
+                name: "text store", statePath: "label", initialValue: '"Hello from store"'
+            }),
+
+            // Literal text
+            viewNode("ui-text", "staticText", A, R, T, {
+                name: "static text", text: "Static text — always shows this string."
+            }),
+            // Store-bound text — updates when store changes
+            viewNode("ui-text", NODE, A, R, T, {
+                name: "store-bound text",
+                value: { kind: "state", path: "label" },
+                x: 480, y: 360
+            }),
+
+            // ui-text has no output port → no debug needed
+            // Inject: update the store (which updates the bound text via SSE)
+            injectPayload("inj-newVal", T, "Update text via store", "Updated at runtime!", "str", "textStore", 480),
+            // Inject: update static text directly via msg.payload
+            injectPayload("inj-direct", T, "Update static text directly", "Directly updated!", "str", "staticText", 560),
+
+            // Show/hide ops via function nodes
+            injectTrigger("inj-show", T, "show", "fn-show", 640),
+            componentOpFn("fn-show", T, "show", NODE, 640),
+            injectTrigger("inj-hide", T, "hide", "fn-hide", 720),
+            componentOpFn("fn-hide", T, "hide", NODE, 720)
         ]
     });
 }
 
-// ui-button — primary and danger variant, with event output
+// ui-button ───────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-button";
+    const T = "ex-ui-button"; const A = "btnApp"; const R = "btnRoute";
+    const NODE = "btnNode"; const DBG = "btnDbg";
     examples.push({
         path: "examples/view/ui-button.json",
         nodes: [
             tab(T, "ui-button example"),
-            uiApp("btnApp", T, { name: "Button App" }),
-            uiRoute("btnHome", "/", "btnApp", T),
-            viewNode("ui-button", "primaryBtn", "btnApp", "btnHome", T,
-                { label: "Primary Button" }),
-            viewNode("ui-button", "dangerBtn", "btnApp", "btnHome", T,
-                { id: "dangerBtn", label: "Danger Button", variant: "danger", x: 400, y: 260 }),
-            debug(T + "-dbg", T, 180)
-        ]
-    });
-}
+            uiApp(A, T, { name: "Button App" }),
+            uiRoute(R, "/", A, T),
 
-// ui-input — text input with label
-{
-    const T = "ex-ui-input";
-    examples.push({
-        path: "examples/view/ui-input.json",
-        nodes: [
-            tab(T, "ui-input example"),
-            uiApp("inputApp", T, { name: "Input App" }),
-            uiRoute("inputHome", "/", "inputApp", T),
-            viewNode("ui-input", "nameInput", "inputApp", "inputHome", T,
-                { label: "Full Name", inputType: "text", placeholder: "Enter your name",
-                  value: { kind: "literal", value: "" } }),
-            viewNode("ui-input", "emailInput", "inputApp", "inputHome", T,
-                { id: "emailInput", label: "Email", inputType: "email",
-                  placeholder: "you@example.com", value: { kind: "literal", value: "" },
-                  x: 400, y: 260 }),
-            debug(T + "-dbg", T, 180)
-        ]
-    });
-}
-
-// ui-checkbox — checked / unchecked
-{
-    const T = "ex-ui-checkbox";
-    examples.push({
-        path: "examples/view/ui-checkbox.json",
-        nodes: [
-            tab(T, "ui-checkbox example"),
-            uiApp("cbApp", T, { name: "Checkbox App" }),
-            uiRoute("cbHome", "/", "cbApp", T),
-            viewNode("ui-checkbox", "agreeBox", "cbApp", "cbHome", T,
-                { label: "I agree to the terms", value: { kind: "literal", value: false } }),
-            viewNode("ui-checkbox", "preChecked", "cbApp", "cbHome", T,
-                { id: "preChecked", label: "Pre-selected option",
-                  value: { kind: "literal", value: true }, x: 400, y: 260 }),
-            debug(T + "-dbg", T, 180)
-        ]
-    });
-}
-
-// ui-switch — on/off toggle
-{
-    const T = "ex-ui-switch";
-    examples.push({
-        path: "examples/view/ui-switch.json",
-        nodes: [
-            tab(T, "ui-switch example"),
-            uiApp("swApp", T, { name: "Switch App" }),
-            uiRoute("swHome", "/", "swApp", T),
-            viewNode("ui-switch", "darkMode", "swApp", "swHome", T,
-                { label: "Dark Mode", value: { kind: "literal", value: false } }),
-            debug(T + "-dbg", T, 180)
-        ]
-    });
-}
-
-// ui-radio — radio group with options
-{
-    const T = "ex-ui-radio";
-    examples.push({
-        path: "examples/view/ui-radio.json",
-        nodes: [
-            tab(T, "ui-radio example"),
-            uiApp("radioApp", T, { name: "Radio App" }),
-            uiRoute("radioHome", "/", "radioApp", T),
-            viewNode("ui-radio", "sizeRadio", "radioApp", "radioHome", T, {
-                label: "Size",
-                optionsJson: JSON.stringify([
-                    { label: "Small", value: "s" },
-                    { label: "Medium", value: "m" },
-                    { label: "Large", value: "l" }
-                ]),
-                value: { kind: "literal", value: "m" }
+            // The button — wired to debug so click events appear in the sidebar
+            { ...viewNode("ui-button", NODE, A, R, T, { name: "primary button", label: "Click me", variant: "primary" }), wires: [[DBG]] },
+            viewNode("ui-button", "btnDanger", A, R, T, { name: "danger button", label: "Delete", variant: "danger", x: 480, y: 360 }),
+            viewNode("ui-button", "btnDisabled", A, R, T, {
+                name: "disabled button", label: "Disabled",
+                disabled: { kind: "literal", value: true }, x: 480, y: 440
             }),
-            debug(T + "-dbg", T, 180)
+
+            // Debug: shows msg.ui.event = "click" when button is clicked in browser
+            debugNode(DBG, T, "click events", 280),
+
+            // Inject: update button label at runtime
+            injectPayload("inj-label", T, "Update label", "New Label!", "str", NODE, 540),
+            // Enable/disable via function nodes
+            injectTrigger("inj-disable", T, "disable", "fn-disable", 620),
+            componentOpFn("fn-disable", T, "disable", NODE, 620),
+            injectTrigger("inj-enable", T, "enable", "fn-enable", 700),
+            componentOpFn("fn-enable", T, "enable", NODE, 700)
         ]
     });
 }
 
-// ui-select — dropdown with options
+// ui-image ─────────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-select";
-    examples.push({
-        path: "examples/view/ui-select.json",
-        nodes: [
-            tab(T, "ui-select example"),
-            uiApp("selApp", T, { name: "Select App" }),
-            uiRoute("selHome", "/", "selApp", T),
-            viewNode("ui-select", "countrySelect", "selApp", "selHome", T, {
-                label: "Country",
-                optionsJson: JSON.stringify([
-                    { label: "Germany", value: "de" },
-                    { label: "Austria", value: "at" },
-                    { label: "Switzerland", value: "ch" }
-                ]),
-                value: { kind: "literal", value: "" }
-            }),
-            debug(T + "-dbg", T, 180)
-        ]
-    });
-}
-
-// ui-slider — range slider
-{
-    const T = "ex-ui-slider";
-    examples.push({
-        path: "examples/view/ui-slider.json",
-        nodes: [
-            tab(T, "ui-slider example"),
-            uiApp("sliderApp", T, { name: "Slider App" }),
-            uiRoute("sliderHome", "/", "sliderApp", T),
-            viewNode("ui-slider", "volumeSlider", "sliderApp", "sliderHome", T,
-                { label: "Volume", min: 0, max: 100, step: 5,
-                  value: { kind: "literal", value: 50 } }),
-            debug(T + "-dbg", T, 180)
-        ]
-    });
-}
-
-// ui-textarea — multi-line text input
-{
-    const T = "ex-ui-textarea";
-    examples.push({
-        path: "examples/view/ui-textarea.json",
-        nodes: [
-            tab(T, "ui-textarea example"),
-            uiApp("taApp", T, { name: "Textarea App" }),
-            uiRoute("taHome", "/", "taApp", T),
-            viewNode("ui-textarea", "notesArea", "taApp", "taHome", T,
-                { label: "Notes", placeholder: "Enter your notes here…",
-                  rows: 4, value: { kind: "literal", value: "" } }),
-            debug(T + "-dbg", T, 180)
-        ]
-    });
-}
-
-// ui-datepicker — date picker
-{
-    const T = "ex-ui-datepicker";
-    examples.push({
-        path: "examples/view/ui-datepicker.json",
-        nodes: [
-            tab(T, "ui-datepicker example"),
-            uiApp("dpApp", T, { name: "Datepicker App" }),
-            uiRoute("dpHome", "/", "dpApp", T),
-            viewNode("ui-datepicker", "startDate", "dpApp", "dpHome", T,
-                { label: "Start Date", value: { kind: "literal", value: "" } }),
-            debug(T + "-dbg", T, 180)
-        ]
-    });
-}
-
-// ui-badge — badge with variants
-{
-    const T = "ex-ui-badge";
-    examples.push({
-        path: "examples/view/ui-badge.json",
-        nodes: [
-            tab(T, "ui-badge example"),
-            uiApp("badgeApp", T, { name: "Badge App" }),
-            uiRoute("badgeHome", "/", "badgeApp", T),
-            viewNode("ui-badge", "successBadge", "badgeApp", "badgeHome", T,
-                { label: "Active", variant: "success" }),
-            viewNode("ui-badge", "warningBadge", "badgeApp", "badgeHome", T,
-                { id: "warningBadge", label: "Pending", variant: "warning", x: 400, y: 260 }),
-            viewNode("ui-badge", "dangerBadge", "badgeApp", "badgeHome", T,
-                { id: "dangerBadge", label: "Error", variant: "danger", x: 400, y: 320 })
-        ]
-    });
-}
-
-// ui-progress — progress bar
-{
-    const T = "ex-ui-progress";
-    examples.push({
-        path: "examples/view/ui-progress.json",
-        nodes: [
-            tab(T, "ui-progress example"),
-            uiApp("progApp", T, { name: "Progress App" }),
-            uiRoute("progHome", "/", "progApp", T),
-            stateNode("ui-store", "progStore", "progApp", T,
-                { statePath: "progress", initialValue: "25" }),
-            viewNode("ui-progress", "uploadProgress", "progApp", "progHome", T,
-                { label: "Upload", value: { kind: "state", path: "progress" } }),
-            inject(T + "-inj", T, "75", "str", "progStore", 420),
-        ]
-    });
-}
-
-// ui-image — image with src
-{
-    const T = "ex-ui-image";
+    const T = "ex-ui-image"; const A = "imgApp"; const R = "imgRoute";
+    const NODE = "imgNode"; const DBG = "imgDbg";
     examples.push({
         path: "examples/view/ui-image.json",
         nodes: [
             tab(T, "ui-image example"),
-            uiApp("imgApp", T, { name: "Image App" }),
-            uiRoute("imgHome", "/", "imgApp", T),
-            viewNode("ui-image", "heroImage", "imgApp", "imgHome", T, {
-                src: "https://picsum.photos/400/200",
-                alt: "Random photo",
-                width: "400", height: "200"
-            })
+            uiApp(A, T, { name: "Image App" }),
+            uiRoute(R, "/", A, T),
+
+            // Output: "error" event if the image src fails to load
+            { ...viewNode("ui-image", NODE, A, R, T, {
+                name: "hero image",
+                src: "https://picsum.photos/seed/webapp/600/300",
+                alt: "A placeholder image"
+            }), wires: [[DBG]] },
+
+            debugNode(DBG, T, "error events", 280),
+
+            // Inject: swap image src at runtime (msg.payload = new URL)
+            injectPayload("inj-src", T, "Swap image src", "https://picsum.photos/seed/changed/600/300", "str", NODE, 480),
+
+            injectTrigger("inj-show", T, "show", "fn-show", 560),
+            componentOpFn("fn-show", T, "show", NODE, 560),
+            injectTrigger("inj-hide", T, "hide", "fn-hide", 640),
+            componentOpFn("fn-hide", T, "hide", NODE, 640)
         ]
     });
 }
 
-// ui-avatar — avatar with initials
+// ui-avatar ───────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-avatar";
+    const T = "ex-ui-avatar"; const A = "avatarApp"; const R = "avatarRoute";
     examples.push({
         path: "examples/view/ui-avatar.json",
         nodes: [
             tab(T, "ui-avatar example"),
-            uiApp("avatarApp", T, { name: "Avatar App" }),
-            uiRoute("avatarHome", "/", "avatarApp", T),
-            viewNode("ui-avatar", "userAvatar", "avatarApp", "avatarHome", T,
-                { initials: "AK", label: "Anna K." }),
-            viewNode("ui-avatar", "imgAvatar", "avatarApp", "avatarHome", T,
-                { id: "imgAvatar", src: "https://picsum.photos/seed/user/40/40",
-                  label: "Photo avatar", x: 400, y: 260 })
+            uiApp(A, T, { name: "Avatar App" }),
+            uiRoute(R, "/", A, T),
+
+            viewNode("ui-avatar", "initialsAvatar", A, R, T, { name: "initials avatar", initials: "AK", label: "Anna K." }),
+            viewNode("ui-avatar", "imgAvatar", A, R, T, {
+                name: "photo avatar", src: "https://i.pravatar.cc/80", label: "Photo avatar", x: 480, y: 360
+            }),
+
+            // No output port — no debug needed
+            // Inject: update avatar src at runtime
+            injectPayload("inj-src", T, "Update src", "https://i.pravatar.cc/80?img=3", "str", "imgAvatar", 480),
+            injectPayload("inj-initials", T, "Update initials", "MX", "str", "initialsAvatar", 560)
         ]
     });
 }
 
-// ui-skeleton — loading placeholder
-{
-    const T = "ex-ui-skeleton";
-    examples.push({
-        path: "examples/view/ui-skeleton.json",
+// ════════════════════════════════════════════════════════════════════════
+// VIEW — input controls (all emit "change" on output port)
+// ════════════════════════════════════════════════════════════════════════
+
+function inputNodeExample({ path, tabId, appId, routeId, nodeId, nodeType, nodeProps, injectValue, injectPayloadType, extraNodes = [] }) {
+    const T = tabId; const A = appId; const R = routeId; const NODE = nodeId; const DBG = nodeId + "Dbg";
+    return {
+        path,
         nodes: [
-            tab(T, "ui-skeleton example"),
-            uiApp("skelApp", T, { name: "Skeleton App" }),
-            uiRoute("skelHome", "/", "skelApp", T),
-            viewNode("ui-skeleton", "textSkeleton", "skelApp", "skelHome", T,
-                { effect: "sheen" }),
-            viewNode("ui-skeleton", "avatarSkeleton", "skelApp", "skelHome", T,
-                { id: "avatarSkeleton", shape: "circle", effect: "pulse", x: 400, y: 260 })
+            tab(T, nodeType + " example"),
+            uiApp(A, T, { name: nodeType + " App" }),
+            uiRoute(R, "/", A, T),
+
+            // The node — wired to debug so change events appear in sidebar
+            { ...viewNode(nodeType, NODE, A, R, T, { name: nodeId, ...nodeProps }), wires: [[DBG]] },
+
+            ...extraNodes,
+
+            // Debug: shows msg.ui when user interacts in browser
+            debugNode(DBG, T, "change / submit events", 280),
+
+            // Inject: update the node's value at runtime
+            injectPayload("inj-val", T, "Set value", injectValue, injectPayloadType, NODE, 500),
+            // Component ops
+            injectTrigger("inj-disable", T, "disable", "fn-disable", 580),
+            componentOpFn("fn-disable", T, "disable", NODE, 580),
+            injectTrigger("inj-enable", T, "enable", "fn-enable", 660),
+            componentOpFn("fn-enable", T, "enable", NODE, 660),
+            injectTrigger("inj-reset", T, "reset", "fn-reset", 740),
+            componentOpFn("fn-reset", T, "reset", NODE, 740)
         ]
-    });
+    };
 }
 
-// ui-empty-state — empty state message
+examples.push(inputNodeExample({
+    path: "examples/view/ui-input.json",
+    tabId: "ex-ui-input", appId: "inputApp", routeId: "inputRoute", nodeId: "inputNode",
+    nodeType: "ui-input",
+    nodeProps: {
+        label: "Full name", inputType: "text", placeholder: "Enter your name",
+        value: { kind: "literal", value: "" }
+    },
+    injectValue: "Jane Doe", injectPayloadType: "str"
+}));
+
+examples.push(inputNodeExample({
+    path: "examples/view/ui-textarea.json",
+    tabId: "ex-ui-textarea", appId: "taApp", routeId: "taRoute", nodeId: "taNode",
+    nodeType: "ui-textarea",
+    nodeProps: {
+        label: "Notes", placeholder: "Enter your notes…",
+        rows: 4, value: { kind: "literal", value: "" }
+    },
+    injectValue: "Injected text content.", injectPayloadType: "str"
+}));
+
+examples.push(inputNodeExample({
+    path: "examples/view/ui-checkbox.json",
+    tabId: "ex-ui-checkbox", appId: "cbApp", routeId: "cbRoute", nodeId: "cbNode",
+    nodeType: "ui-checkbox",
+    nodeProps: { label: "I agree to the terms", value: { kind: "literal", value: false } },
+    injectValue: "true", injectPayloadType: "str"
+}));
+
+examples.push(inputNodeExample({
+    path: "examples/view/ui-switch.json",
+    tabId: "ex-ui-switch", appId: "swApp", routeId: "swRoute", nodeId: "swNode",
+    nodeType: "ui-switch",
+    nodeProps: { label: "Dark mode", value: { kind: "literal", value: false } },
+    injectValue: "true", injectPayloadType: "str"
+}));
+
+examples.push(inputNodeExample({
+    path: "examples/view/ui-radio.json",
+    tabId: "ex-ui-radio", appId: "radioApp", routeId: "radioRoute", nodeId: "radioNode",
+    nodeType: "ui-radio",
+    nodeProps: {
+        label: "Size",
+        optionsJson: JSON.stringify([{ label: "Small", value: "s" }, { label: "Medium", value: "m" }, { label: "Large", value: "l" }]),
+        value: { kind: "literal", value: "m" }
+    },
+    injectValue: "l", injectPayloadType: "str"
+}));
+
+examples.push(inputNodeExample({
+    path: "examples/view/ui-select.json",
+    tabId: "ex-ui-select", appId: "selApp", routeId: "selRoute", nodeId: "selNode",
+    nodeType: "ui-select",
+    nodeProps: {
+        label: "Country",
+        optionsJson: JSON.stringify([{ label: "Germany", value: "de" }, { label: "Austria", value: "at" }, { label: "Switzerland", value: "ch" }]),
+        value: { kind: "literal", value: "" }
+    },
+    injectValue: "at", injectPayloadType: "str"
+}));
+
+examples.push(inputNodeExample({
+    path: "examples/view/ui-slider.json",
+    tabId: "ex-ui-slider", appId: "sliderApp", routeId: "sliderRoute", nodeId: "sliderNode",
+    nodeType: "ui-slider",
+    nodeProps: { label: "Volume", min: 0, max: 100, step: 5, showValue: true, value: { kind: "literal", value: 50 } },
+    injectValue: "75", injectPayloadType: "str"
+}));
+
+examples.push(inputNodeExample({
+    path: "examples/view/ui-datepicker.json",
+    tabId: "ex-ui-datepicker", appId: "dpApp", routeId: "dpRoute", nodeId: "dpNode",
+    nodeType: "ui-datepicker",
+    nodeProps: { label: "Start date", value: { kind: "literal", value: "" } },
+    injectValue: "2026-06-01", injectPayloadType: "str"
+}));
+
+// ════════════════════════════════════════════════════════════════════════
+// VIEW — feedback
+// ════════════════════════════════════════════════════════════════════════
+
+// ui-badge ────────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-empty-state";
+    const T = "ex-ui-badge"; const A = "badgeApp"; const R = "badgeRoute";
     examples.push({
-        path: "examples/view/ui-empty-state.json",
+        path: "examples/view/ui-badge.json",
         nodes: [
-            tab(T, "ui-empty-state example"),
-            uiApp("emptyApp", T, { name: "Empty State App" }),
-            uiRoute("emptyHome", "/", "emptyApp", T),
-            viewNode("ui-empty-state", "noResults", "emptyApp", "emptyHome", T, {
-                title: "No results",
-                description: "Try adjusting your search or filters.",
-                icon: "search"
-            })
+            tab(T, "ui-badge example"),
+            uiApp(A, T, { name: "Badge App" }),
+            uiRoute(R, "/", A, T),
+
+            // No output port — badge is display-only
+            viewNode("ui-badge", "badgeSuccess", A, R, T, { name: "success badge", label: "Active", variant: "success" }),
+            viewNode("ui-badge", "badgeWarning", A, R, T, { name: "warning badge", label: "Pending", variant: "warning", x: 480, y: 360 }),
+            viewNode("ui-badge", "badgeDanger", A, R, T, { name: "danger badge", label: "Error", variant: "danger", x: 480, y: 440 }),
+            viewNode("ui-badge", "badgeNeutral", A, R, T, { name: "neutral badge", label: "Archived", variant: "neutral", x: 480, y: 520 }),
+
+            // Inject: update badge text at runtime
+            injectPayload("inj-label", T, "Update badge label", "Updated!", "str", "badgeSuccess", 620),
+            injectPayload("inj-patch", T, "Patch variant to danger",
+                JSON.stringify({ variant: "danger", label: "Critical" }), "json", "badgeSuccess", 700)
         ]
     });
 }
 
-// ui-alert — alert with message and variant
+// ui-alert ────────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-alert";
+    const T = "ex-ui-alert"; const A = "alertApp"; const R = "alertRoute";
+    const NODE = "alertNode"; const DBG = "alertDbg";
     examples.push({
         path: "examples/view/ui-alert.json",
         nodes: [
             tab(T, "ui-alert example"),
-            uiApp("alertApp", T, { name: "Alert App" }),
-            uiRoute("alertHome", "/", "alertApp", T),
-            viewNode("ui-alert", "infoAlert", "alertApp", "alertHome", T,
-                { message: "This is an informational message.", variant: "primary" }),
-            viewNode("ui-alert", "successAlert", "alertApp", "alertHome", T,
-                { id: "successAlert", message: "Action completed successfully!", variant: "success",
-                  x: 400, y: 260 }),
-            viewNode("ui-alert", "dangerAlert", "alertApp", "alertHome", T,
-                { id: "dangerAlert", message: "Something went wrong.", variant: "danger",
-                  x: 400, y: 320 })
+            uiApp(A, T, { name: "Alert App" }),
+            uiRoute(R, "/", A, T),
+
+            // Output: "dismiss" event when user closes the alert
+            { ...viewNode("ui-alert", NODE, A, R, T, {
+                name: "info alert", message: "This is an informational message.", variant: "primary", closable: true
+            }), wires: [[DBG]] },
+            viewNode("ui-alert", "alertSuccess", A, R, T, { name: "success alert", message: "Action completed!", variant: "success", x: 480, y: 360 }),
+            viewNode("ui-alert", "alertWarning", A, R, T, { name: "warning alert", message: "Disk almost full.", variant: "warning", x: 480, y: 440 }),
+            viewNode("ui-alert", "alertDanger", A, R, T, { name: "danger alert", message: "Something went wrong.", variant: "danger", x: 480, y: 520 }),
+
+            debugNode(DBG, T, "dismiss events", 280),
+
+            // Inject: update alert message
+            injectPayload("inj-msg", T, "Update message", "Updated alert message!", "str", NODE, 620),
+            injectTrigger("inj-show", T, "show", "fn-show", 700),
+            componentOpFn("fn-show", T, "show", NODE, 700),
+            injectTrigger("inj-hide", T, "hide", "fn-hide", 780),
+            componentOpFn("fn-hide", T, "hide", NODE, 780)
         ]
     });
 }
 
-// ui-breadcrumb — breadcrumb navigation
+// ui-progress ──────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-breadcrumb";
+    const T = "ex-ui-progress"; const A = "progApp"; const R = "progRoute";
+    examples.push({
+        path: "examples/view/ui-progress.json",
+        nodes: [
+            tab(T, "ui-progress example"),
+            uiApp(A, T, { name: "Progress App" }),
+            uiRoute(R, "/", A, T),
+
+            stateNode("ui-store", "progStore", A, T, {
+                name: "progress store", statePath: "progress", initialValue: "25"
+            }),
+
+            // No output port
+            viewNode("ui-progress", "progBar", A, R, T, {
+                name: "progress bar", label: "Upload", value: { kind: "state", path: "progress" }
+            }),
+            viewNode("ui-progress", "progBarFixed", A, R, T, {
+                name: "fixed 75%", label: "Fixed", value: { kind: "literal", value: 75 }, x: 480, y: 360
+            }),
+
+            // Inject: update via store
+            injectPayload("inj-25", T, "Set 25%", "25", "str", "progStore", 480),
+            injectPayload("inj-75", T, "Set 75%", "75", "str", "progStore", 560),
+            injectPayload("inj-100", T, "Set 100%", "100", "str", "progStore", 640)
+        ]
+    });
+}
+
+// ui-skeleton ─────────────────────────────────────────────────────────────────
+{
+    const T = "ex-ui-skeleton"; const A = "skelApp"; const R = "skelRoute";
+    examples.push({
+        path: "examples/view/ui-skeleton.json",
+        nodes: [
+            tab(T, "ui-skeleton example"),
+            uiApp(A, T, { name: "Skeleton App" }),
+            uiRoute(R, "/", A, T),
+
+            // No output port — skeleton is display-only
+            viewNode("ui-skeleton", "skelText", A, R, T, { name: "text skeleton", effect: "sheen" }),
+            viewNode("ui-skeleton", "skelCircle", A, R, T, { name: "circle skeleton", shape: "circle", effect: "pulse", x: 480, y: 360 }),
+            viewNode("ui-skeleton", "skelRect", A, R, T, { name: "rect skeleton", shape: "none", x: 480, y: 440 }),
+
+            // Inject: show / hide skeleton (typically shown while data is loading)
+            injectTrigger("inj-show", T, "show skeleton", "fn-show", 540),
+            componentOpFn("fn-show", T, "show", "skelText", 540),
+            injectTrigger("inj-hide", T, "hide skeleton", "fn-hide", 620),
+            componentOpFn("fn-hide", T, "hide", "skelText", 620)
+        ]
+    });
+}
+
+// ui-empty-state ───────────────────────────────────────────────────────────────
+{
+    const T = "ex-ui-empty-state"; const A = "emptyApp"; const R = "emptyRoute";
+    examples.push({
+        path: "examples/view/ui-empty-state.json",
+        nodes: [
+            tab(T, "ui-empty-state example"),
+            uiApp(A, T, { name: "Empty State App" }),
+            uiRoute(R, "/", A, T),
+
+            // No output port
+            viewNode("ui-empty-state", "noResults", A, R, T, {
+                name: "no results", title: "No results found",
+                description: "Try adjusting your search filters.", icon: "search"
+            }),
+
+            // Inject: show / hide (toggle visibility based on whether list has items)
+            injectTrigger("inj-show", T, "show (no results)", "fn-show", 480),
+            componentOpFn("fn-show", T, "show", "noResults", 480),
+            injectTrigger("inj-hide", T, "hide (results found)", "fn-hide", 560),
+            componentOpFn("fn-hide", T, "hide", "noResults", 560)
+        ]
+    });
+}
+
+// ui-toast ─────────────────────────────────────────────────────────────────────
+{
+    const T = "ex-ui-toast"; const A = "toastApp"; const R = "toastRoute";
+    const NODE = "toastNode"; const DBG = "toastDbg";
+    examples.push({
+        path: "examples/view/ui-toast.json",
+        nodes: [
+            tab(T, "ui-toast example"),
+            uiApp(A, T, { name: "Toast App" }),
+            uiRoute(R, "/", A, T),
+
+            // Output: "dismiss" event
+            { ...viewNode("ui-toast", NODE, A, R, T, {
+                name: "toast", message: "", variant: "primary", duration: 4000
+            }), wires: [[DBG]] },
+
+            debugNode(DBG, T, "dismiss events", 280),
+
+            // Toast is triggered by sending msg.payload = message string
+            injectPayload("inj-info", T, "Show info toast", "Operation completed!", "str", NODE, 480),
+            injectPayload("inj-success", T, "Show success toast", "Saved successfully.", "str", NODE, 560),
+            {
+                // Show toast with custom variant via patch
+                id: "inj-patch", type: "inject", name: "Show danger toast", z: T,
+                x: 120, y: 640,
+                payload: JSON.stringify({ message: "Something went wrong.", variant: "danger", duration: 6000 }),
+                payloadType: "json",
+                repeat: "", crontab: "", once: false, onceDelay: 0,
+                wires: [["fn-patch"]]
+            },
+            {
+                id: "fn-patch", type: "function", name: "→ patch", z: T,
+                func: "msg.ui = { patch: msg.payload };\nmsg.payload = undefined;\nreturn msg;",
+                outputs: 1, noerr: 0, x: 380, y: 640, wires: [[NODE]]
+            }
+        ]
+    });
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// VIEW — display (no output)
+// ════════════════════════════════════════════════════════════════════════
+
+// ui-breadcrumb ───────────────────────────────────────────────────────────────
+{
+    const T = "ex-ui-breadcrumb"; const A = "breadApp"; const R = "breadRoute";
+    const NODE = "breadNode"; const DBG = "breadDbg";
     examples.push({
         path: "examples/view/ui-breadcrumb.json",
         nodes: [
             tab(T, "ui-breadcrumb example"),
-            uiApp("breadApp", T, { name: "Breadcrumb App" }),
-            uiRoute("breadHome", "/", "breadApp", T),
-            viewNode("ui-breadcrumb", "navBread", "breadApp", "breadHome", T, {
+            uiApp(A, T, { name: "Breadcrumb App" }),
+            uiRoute(R, "/", A, T),
+
+            // Output: "navigate" event when a crumb is clicked
+            { ...viewNode("ui-breadcrumb", NODE, A, R, T, {
+                name: "breadcrumb",
                 items: JSON.stringify([
                     { label: "Home", href: "/" },
                     { label: "Products", href: "/products" },
-                    { label: "Detail" }
+                    { label: "Widget 42" }
                 ])
-            })
+            }), wires: [[DBG]] },
+
+            debugNode(DBG, T, "navigate events", 280),
+
+            // Inject: update breadcrumb items at runtime
+            injectPayload("inj-items", T, "Update breadcrumb",
+                JSON.stringify([{ label: "Home", href: "/" }, { label: "Settings" }]), "json", NODE, 480)
         ]
     });
 }
 
-// ── COMPOSITE nodes ──────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════
+// COMPOSITE
+// ════════════════════════════════════════════════════════════════════════
 
-// ui-table — table with columns and injected rows
+// ui-table ─────────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-table";
+    const T = "ex-ui-table"; const A = "tblApp"; const R = "tblRoute";
+    const NODE = "tblNode"; const DBG = "tblDbg";
+    const ROWS = [
+        { id: "1", name: "Alice Müller", role: "Admin", status: "active" },
+        { id: "2", name: "Bob Schmidt", role: "Editor", status: "active" },
+        { id: "3", name: "Carol Weber", role: "Viewer", status: "inactive" }
+    ];
     examples.push({
         path: "examples/composite/ui-table.json",
         nodes: [
             tab(T, "ui-table example"),
-            uiApp("tblApp", T, { name: "Table App" }),
-            uiRoute("tblHome", "/", "tblApp", T),
-            stateNode("ui-store", "rowsStore", "tblApp", T,
-                {
-                    statePath: "users",
-                    initialValue: JSON.stringify([
-                        { id: "1", name: "Alice", role: "Admin" },
-                        { id: "2", name: "Bob", role: "Editor" }
-                    ])
-                }),
-            viewNode("ui-table", "usersTable", "tblApp", "tblHome", T, {
+            uiApp(A, T, { name: "Table App" }),
+            uiRoute(R, "/", A, T),
+
+            stateNode("ui-store", "rowsStore", A, T, {
+                name: "rows store", statePath: "users", initialValue: JSON.stringify(ROWS)
+            }),
+
+            // Output: rowSelect event (wired to debug)
+            { ...viewNode("ui-table", NODE, A, R, T, {
+                name: "users table",
                 columns: JSON.stringify([
                     { key: "name", label: "Name" },
-                    { key: "role", label: "Role" }
+                    { key: "role", label: "Role" },
+                    { key: "status", label: "Status" }
                 ]),
                 rows: { kind: "state", path: "users" }
-            }),
-            inject(T + "-inj", T,
+            }), wires: [[DBG]] },
+
+            debugNode(DBG, T, "rowSelect / rowAction events", 280),
+
+            // Inject: replace rows at runtime
+            injectPayload("inj-rows", T, "Replace rows",
                 JSON.stringify([
-                    { id: "1", name: "Alice", role: "Admin" },
-                    { id: "2", name: "Bob", role: "Editor" },
-                    { id: "3", name: "Carol", role: "Viewer" }
-                ]), "json", "rowsStore", 420),
-            debug(T + "-dbg", T, 180)
+                    { id: "1", name: "Alice Müller", role: "Admin", status: "active" },
+                    { id: "4", name: "Dave Neuer", role: "Editor", status: "active" }
+                ]), "json", "rowsStore", 500),
+            injectPayload("inj-clear", T, "Clear rows", "[]", "json", "rowsStore", 580),
+
+            injectTrigger("inj-show", T, "show table", "fn-show", 660),
+            componentOpFn("fn-show", T, "show", NODE, 660),
+            injectTrigger("inj-hide", T, "hide table", "fn-hide", 740),
+            componentOpFn("fn-hide", T, "hide", NODE, 740)
         ]
     });
 }
 
-// ui-container — card wrapper with child nodes
+// ui-container ─────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-container";
+    const T = "ex-ui-container"; const A = "ctApp"; const R = "ctRoute";
+    const NODE = "ctNode"; const DBG = "ctDbg";
     examples.push({
         path: "examples/composite/ui-container.json",
         nodes: [
             tab(T, "ui-container example"),
-            uiApp("ctApp", T, { name: "Container App" }),
-            uiRoute("ctHome", "/", "ctApp", T),
-            viewNode("ui-container", "myCard", "ctApp", "ctHome", T,
-                { layoutId: "vertical" }),
-            viewNode("ui-text", "cardTitle", "ctApp", "ctHome", T,
-                { id: "cardTitle", mount: "myCard.content", text: "Card Title",
-                  x: 700, y: 160 }),
-            viewNode("ui-text", "cardBody", "ctApp", "ctHome", T,
-                { id: "cardBody", mount: "myCard.content", text: "Card content goes here.",
-                  x: 700, y: 220 }),
-            viewNode("ui-button", "cardBtn", "ctApp", "ctHome", T,
-                { id: "cardBtn", mount: "myCard.content", label: "Action",
-                  x: 700, y: 280 })
+            uiApp(A, T, { name: "Container App" }),
+            uiRoute(R, "/", A, T),
+
+            // Output: onShow / onHide (if configured)
+            { ...viewNode("ui-container", NODE, A, R, T, { name: "card", layoutId: "vertical" }), wires: [[DBG]] },
+
+            // Children mounted inside the container
+            viewNode("ui-text", "ctTitle", A, R, T, { name: "card title", mount: "ctNode.content", text: "Card title", x: 700, y: 200 }),
+            viewNode("ui-text", "ctBody", A, R, T, { name: "card body", mount: "ctNode.content", text: "Card body text goes here.", x: 700, y: 280 }),
+            viewNode("ui-button", "ctBtn", A, R, T, { name: "card button", mount: "ctNode.content", label: "Card Action", x: 700, y: 360 }),
+
+            debugNode(DBG, T, "onShow / onHide events", 280),
+
+            // Inject: show / hide the entire container
+            injectTrigger("inj-show", T, "show container", "fn-show", 480),
+            componentOpFn("fn-show", T, "show", NODE, 480),
+            injectTrigger("inj-hide", T, "hide container", "fn-hide", 560),
+            componentOpFn("fn-hide", T, "hide", NODE, 560)
         ]
     });
 }
 
-// ui-tabs — tabbed interface
+// ui-tabs ──────────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-tabs";
+    const T = "ex-ui-tabs"; const A = "tabsApp"; const R = "tabsRoute";
+    const NODE = "tabsNode"; const DBG = "tabsDbg";
     examples.push({
         path: "examples/composite/ui-tabs.json",
         nodes: [
             tab(T, "ui-tabs example"),
-            uiApp("tabsApp", T, { name: "Tabs App" }),
-            uiRoute("tabsHome", "/", "tabsApp", T),
-            viewNode("ui-tabs", "myTabs", "tabsApp", "tabsHome", T, {
+            uiApp(A, T, { name: "Tabs App" }),
+            uiRoute(R, "/", A, T),
+
+            // Output: tabChange event
+            { ...viewNode("ui-tabs", NODE, A, R, T, {
+                name: "tabs",
                 tabs: JSON.stringify([
-                    { id: "tab1", label: "Overview" },
-                    { id: "tab2", label: "Details" },
-                    { id: "tab3", label: "History" }
+                    { id: "overview", label: "Overview" },
+                    { id: "details", label: "Details" },
+                    { id: "history", label: "History" }
                 ]),
-                value: { kind: "literal", value: "tab1" }
-            }),
-            viewNode("ui-text", "tabContent1", "tabsApp", "tabsHome", T,
-                { id: "tabContent1", mount: "myTabs.tab1", text: "Overview content",
-                  x: 700, y: 160 }),
-            viewNode("ui-text", "tabContent2", "tabsApp", "tabsHome", T,
-                { id: "tabContent2", mount: "myTabs.tab2", text: "Details content",
-                  x: 700, y: 220 }),
-            debug(T + "-dbg", T, 420)
+                value: { kind: "literal", value: "overview" }
+            }), wires: [[DBG]] },
+
+            // Content per tab slot
+            viewNode("ui-text", "tabOverview", A, R, T, { name: "overview content", mount: "tabsNode.overview", text: "Overview content here.", x: 700, y: 200 }),
+            viewNode("ui-text", "tabDetails", A, R, T, { name: "details content", mount: "tabsNode.details", text: "Details content here.", x: 700, y: 280 }),
+            viewNode("ui-text", "tabHistory", A, R, T, { name: "history content", mount: "tabsNode.history", text: "History content here.", x: 700, y: 360 }),
+
+            debugNode(DBG, T, "tabChange events", 280),
+
+            // Inject: programmatically switch tab
+            injectPayload("inj-tab", T, "Switch to Details tab", "details", "str", NODE, 480)
         ]
     });
 }
 
-// ui-accordion — accordion sections
+// ui-accordion ─────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-accordion";
+    const T = "ex-ui-accordion"; const A = "accApp"; const R = "accRoute";
+    const NODE = "accNode"; const DBG = "accDbg";
     examples.push({
         path: "examples/composite/ui-accordion.json",
         nodes: [
             tab(T, "ui-accordion example"),
-            uiApp("accApp", T, { name: "Accordion App" }),
-            uiRoute("accHome", "/", "accApp", T),
-            viewNode("ui-accordion", "faqAccordion", "accApp", "accHome", T, {
+            uiApp(A, T, { name: "Accordion App" }),
+            uiRoute(R, "/", A, T),
+
+            // Output: sectionOpen / sectionClose events
+            { ...viewNode("ui-accordion", NODE, A, R, T, {
+                name: "FAQ accordion",
                 items: JSON.stringify([
-                    { id: "q1", label: "What is Node-RED?", content: "Node-RED is a flow-based programming tool." },
-                    { id: "q2", label: "What is a webapp node?", content: "A declarative UI node for building web apps." },
-                    { id: "q3", label: "Where do I find examples?", content: "Menu → Import → Examples." }
+                    { id: "q1", label: "What is node-red-contrib-webapp?", content: "A set of declarative UI nodes for Node-RED to build web apps without custom HTML." },
+                    { id: "q2", label: "How does routing work?", content: "Each ui-route node defines a URL path. Navigation is handled by ui-action nodes." },
+                    { id: "q3", label: "Can I use it with my existing flows?", content: "Yes — nodes emit standard msg.ui events on their output port, compatible with any Node-RED node." }
                 ])
-            }),
-            debug(T + "-dbg", T, 320)
+            }), wires: [[DBG]] },
+
+            debugNode(DBG, T, "sectionOpen / sectionClose events", 280),
+
+            // Inject: update items at runtime
+            injectPayload("inj-items", T, "Update items",
+                JSON.stringify([{ id: "new", label: "New Section", content: "Injected at runtime." }]),
+                "json", NODE, 480)
         ]
     });
 }
 
-// ui-menu — context/side menu
+// ui-menu ──────────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-menu";
+    const T = "ex-ui-menu"; const A = "menuApp"; const R = "menuRoute";
+    const NODE = "menuNode"; const DBG = "menuDbg";
     examples.push({
         path: "examples/composite/ui-menu.json",
         nodes: [
             tab(T, "ui-menu example"),
-            uiApp("menuApp", T, { name: "Menu App" }),
-            uiRoute("menuHome", "/", "menuApp", T),
-            viewNode("ui-menu", "sideMenu", "menuApp", "menuHome", T, {
+            uiApp(A, T, { name: "Menu App" }),
+            uiRoute(R, "/", A, T),
+
+            // Output: navigate event when menu item is clicked
+            { ...viewNode("ui-menu", NODE, A, R, T, {
+                name: "side menu",
                 items: JSON.stringify([
-                    { id: "home", label: "Home", icon: "house" },
-                    { id: "settings", label: "Settings", icon: "gear" },
-                    { id: "help", label: "Help", icon: "question-circle" }
+                    { id: "home", label: "Home", icon: "house", href: "/" },
+                    { id: "settings", label: "Settings", icon: "gear", href: "/settings" },
+                    { id: "help", label: "Help", icon: "question-circle", href: "/help" }
                 ])
-            }),
-            debug(T + "-dbg", T, 320)
+            }), wires: [[DBG]] },
+
+            debugNode(DBG, T, "navigate events", 280),
+
+            // Inject: update menu items dynamically
+            injectPayload("inj-items", T, "Update menu items",
+                JSON.stringify([
+                    { id: "home", label: "Home", icon: "house", href: "/" },
+                    { id: "profile", label: "My Profile", icon: "person", href: "/profile" }
+                ]), "json", NODE, 480)
         ]
     });
 }
 
-// ui-list — simple list
+// ui-list ──────────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-list";
+    const T = "ex-ui-list"; const A = "listApp"; const R = "listRoute";
+    const NODE = "listNode"; const DBG = "listDbg";
+    const ITEMS = [
+        { id: "1", label: "First item", description: "A short description" },
+        { id: "2", label: "Second item", description: "Another description" },
+        { id: "3", label: "Third item" }
+    ];
     examples.push({
         path: "examples/composite/ui-list.json",
         nodes: [
             tab(T, "ui-list example"),
-            uiApp("listApp", T, { name: "List App" }),
-            uiRoute("listHome", "/", "listApp", T),
-            stateNode("ui-store", "itemsStore", "listApp", T, {
-                statePath: "items",
-                initialValue: JSON.stringify([
-                    { id: "1", label: "First item" },
-                    { id: "2", label: "Second item" },
-                    { id: "3", label: "Third item" }
-                ])
+            uiApp(A, T, { name: "List App" }),
+            uiRoute(R, "/", A, T),
+
+            stateNode("ui-store", "listStore", A, T, {
+                name: "items store", statePath: "items", initialValue: JSON.stringify(ITEMS)
             }),
-            viewNode("ui-list", "myList", "listApp", "listHome", T, {
-                items: { kind: "state", path: "items" }
-            }),
-            debug(T + "-dbg", T, 180)
+
+            // Output: itemClick event
+            { ...viewNode("ui-list", NODE, A, R, T, {
+                name: "items list", items: { kind: "state", path: "items" }
+            }), wires: [[DBG]] },
+
+            debugNode(DBG, T, "itemClick events", 280),
+
+            // Inject: replace items at runtime
+            injectPayload("inj-items", T, "Replace items",
+                JSON.stringify([{ id: "a", label: "Alpha" }, { id: "b", label: "Beta" }]),
+                "json", "listStore", 480),
+            injectPayload("inj-clear", T, "Clear list", "[]", "json", "listStore", 560)
         ]
     });
 }
 
-// ui-pagination — prev/next pager
+// ui-pagination ────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-pagination";
+    const T = "ex-ui-pagination"; const A = "pagApp"; const R = "pagRoute";
+    const NODE = "pagNode"; const DBG = "pagDbg";
     examples.push({
         path: "examples/composite/ui-pagination.json",
         nodes: [
             tab(T, "ui-pagination example"),
-            uiApp("pagApp", T, { name: "Pagination App" }),
-            uiRoute("pagHome", "/", "pagApp", T),
-            stateNode("ui-store", "pageStore", "pagApp", T,
-                { statePath: "page", initialValue: "1" }),
-            viewNode("ui-pagination", "pager", "pagApp", "pagHome", T, {
+            uiApp(A, T, { name: "Pagination App" }),
+            uiRoute(R, "/", A, T),
+
+            stateNode("ui-store", "pageStore", A, T, {
+                name: "page store", statePath: "page", initialValue: "1"
+            }),
+
+            // Output: pageChange event
+            { ...viewNode("ui-pagination", NODE, A, R, T, {
+                name: "pager",
                 page: { kind: "state", path: "page" },
                 pageCount: 10
+            }), wires: [[DBG]] },
+
+            // Pair with a text showing the current page
+            viewNode("ui-text", "pageDisplay", A, R, T, {
+                name: "current page", value: { kind: "state", path: "page" }, x: 480, y: 360
             }),
-            debug(T + "-dbg", T, 180)
+
+            debugNode(DBG, T, "pageChange events", 280),
+
+            // Inject: jump to a specific page
+            injectPayload("inj-page3", T, "Jump to page 3", "3", "str", "pageStore", 480),
+            injectPayload("inj-page1", T, "Jump to page 1", "1", "str", "pageStore", 560),
+
+            // Wire: pageChange event → update store (so the display stays in sync)
+            // Done by wiring pagNode → fn-updatePage → pageStore
+            {
+                id: "fn-updatePage", type: "function", name: "→ update page store",
+                z: T, func: "msg.payload = String(msg.ui.params?.page ?? msg.ui.page ?? 1);\nreturn msg;",
+                outputs: 1, noerr: 0, x: 380, y: 640, wires: [["pageStore"]]
+            }
         ]
     });
 }
 
-// ui-stepper — step wizard
+// ui-stepper ───────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-stepper";
+    const T = "ex-ui-stepper"; const A = "stepApp"; const R = "stepRoute";
+    const NODE = "stepNode"; const DBG = "stepDbg";
     examples.push({
         path: "examples/composite/ui-stepper.json",
         nodes: [
             tab(T, "ui-stepper example"),
-            uiApp("stepApp", T, { name: "Stepper App" }),
-            uiRoute("stepHome", "/", "stepApp", T),
-            stateNode("ui-store", "stepStore", "stepApp", T,
-                { statePath: "step", initialValue: "0" }),
-            viewNode("ui-stepper", "wizard", "stepApp", "stepHome", T, {
+            uiApp(A, T, { name: "Stepper App" }),
+            uiRoute(R, "/", A, T),
+
+            stateNode("ui-store", "stepStore", A, T, {
+                name: "step store", statePath: "step", initialValue: '"step1"'
+            }),
+
+            // Output: stepChange + complete events (2 output ports)
+            { ...viewNode("ui-stepper", NODE, A, R, T, {
+                name: "wizard",
                 steps: JSON.stringify([
-                    { id: "s0", label: "Account" },
-                    { id: "s1", label: "Profile" },
-                    { id: "s2", label: "Confirm" }
+                    { id: "step1", label: "Account" },
+                    { id: "step2", label: "Profile" },
+                    { id: "step3", label: "Confirm" }
                 ]),
                 value: { kind: "state", path: "step" }
-            }),
-            debug(T + "-dbg", T, 180)
+            }), wires: [[DBG], [DBG]] },
+
+            debugNode(DBG, T, "stepChange / complete events", 280),
+
+            // Inject: advance to specific step
+            injectPayload("inj-step2", T, "Go to Profile step", "step2", "str", "stepStore", 480),
+            injectPayload("inj-step3", T, "Go to Confirm step", "step3", "str", "stepStore", 560),
+            injectPayload("inj-step1", T, "Reset to Account step", "step1", "str", "stepStore", 640)
         ]
     });
 }
 
-// ui-toast — triggered via inject → store → toast
-{
-    const T = "ex-ui-toast";
-    examples.push({
-        path: "examples/composite/ui-toast.json",
-        nodes: [
-            tab(T, "ui-toast example"),
-            uiApp("toastApp", T, { name: "Toast App" }),
-            uiRoute("toastHome", "/", "toastApp", T),
-            viewNode("ui-toast", "myToast", "toastApp", "toastHome", T,
-                { message: "", variant: "primary", duration: 3000 }),
-            viewNode("ui-button", "triggerBtn", "toastApp", "toastHome", T,
-                { id: "triggerBtn", label: "Show Toast", x: 400, y: 260 }),
-            {
-                id: T + "-inj", type: "inject", name: "Trigger Toast", z: T,
-                x: 100, y: 420,
-                payload: JSON.stringify({ message: "Hello from Node-RED!", variant: "success" }),
-                payloadType: "json",
-                repeat: "", crontab: "", once: false, onceDelay: 0,
-                wires: [["myToast"]]
-            }
-        ]
-    });
-}
+// ════════════════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════════════════
 
-// ── STATE nodes ──────────────────────────────────────────────────────────────
-
-// ui-store — shared state bound to a text display; inject updates it
+// ui-store ─────────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-store";
+    const T = "ex-ui-store"; const A = "storeApp"; const R = "storeRoute";
+    const STORE = "counterStore"; const DBG = "storeDbg";
     examples.push({
         path: "examples/state/ui-store.json",
         nodes: [
             tab(T, "ui-store example"),
-            uiApp("storeApp", T, { name: "Store App" }),
-            uiRoute("storeHome", "/", "storeApp", T),
-            stateNode("ui-store", "counterStore", "storeApp", T,
-                { statePath: "counter", initialValue: "0" }),
-            viewNode("ui-text", "counterDisplay", "storeApp", "storeHome", T,
-                { value: { kind: "state", path: "counter" } }),
-            inject(T + "-inj", T, "42", "str", "counterStore", 420),
+            uiApp(A, T, { name: "Store App" }),
+            uiRoute(R, "/", A, T),
+
+            // Store node — output: store notification on every change
+            { ...stateNode("ui-store", STORE, A, T, {
+                name: "counter store", statePath: "counter", initialValue: "0"
+            }), wires: [[DBG]] },
+
+            // Bound display — updates live via SSE whenever store changes
+            viewNode("ui-text", "counterDisplay", A, R, T, {
+                name: "counter display", value: { kind: "state", path: "counter" }
+            }),
+
+            // Second store — shows multiple independent stores in one app
+            { ...stateNode("ui-store", "nameStore", A, T, {
+                name: "name store", statePath: "name", initialValue: '"World"', y: 460
+            }), wires: [[DBG]] },
+            viewNode("ui-text", "greeting", A, R, T, {
+                name: "greeting", value: { kind: "state", path: "name" }, x: 480, y: 360
+            }),
+
+            debugNode(DBG, T, "store change notifications", 280),
+
+            // Inject: set counter
+            injectPayload("inj-0", T, "Reset counter to 0", "0", "str", STORE, 540),
+            injectPayload("inj-42", T, "Set counter to 42", "42", "str", STORE, 620),
+            // Inject: update name
+            injectPayload("inj-name", T, "Update name", "Node-RED", "str", "nameStore", 700)
+        ]
+    });
+}
+
+// ui-query ─────────────────────────────────────────────────────────────────────
+{
+    const T = "ex-ui-query"; const A = "queryApp"; const R = "queryRoute";
+    const QUERY = "usersQuery"; const DBG = "queryDbg";
+    examples.push({
+        path: "examples/state/ui-query.json",
+        nodes: [
+            tab(T, "ui-query example"),
+            uiApp(A, T, { name: "Query App" }),
+            uiRoute(R, "/", A, T),
+
+            // Query node:
+            //   Output port → function node (simulates DB response) → back to query input.
+            //   This is the canonical round-trip pattern: query fires → your data source
+            //   responds → query receives the result and pushes it to bound nodes via SSE.
+            { ...stateNode("ui-query", QUERY, A, T, {
+                name: "users query", queryPath: "users", trigger: "onShow"
+            }), wires: [[DBG]] },
+
+            // Simulate a database: receives the query trigger, returns rows
             {
-                id: T + "-fn", type: "function", name: "Increment", z: T,
-                x: 400, y: 420,
-                func: "msg.payload = (parseInt(msg.payload) || 0) + 1;\nreturn msg;",
+                id: "dbFn", type: "function", name: "Simulate DB", z: T,
+                x: 380, y: 520,
+                func: [
+                    "// Simulate a database result.",
+                    "// In a real flow: replace this with an http-request, mongodb,",
+                    "// sqlite, or any Node-RED data node.",
+                    "msg.payload = [",
+                    "  { id: '1', name: 'Alice', role: 'Admin' },",
+                    "  { id: '2', name: 'Bob',   role: 'Editor' },",
+                    "  { id: '3', name: 'Carol', role: 'Viewer' }",
+                    "];",
+                    "return msg;"
+                ].join("\n"),
                 outputs: 1, noerr: 0,
-                wires: [["counterStore"]]
+                wires: [[QUERY]]   // → back to the query's input port
+            },
+
+            // Table bound to the query result
+            viewNode("ui-table", "usersTable", A, R, T, {
+                name: "users table",
+                columns: JSON.stringify([{ key: "name", label: "Name" }, { key: "role", label: "Role" }]),
+                rows: { kind: "query", path: "users" }
+            }),
+
+            debugNode(DBG, T, "query emit (passes through to DB node)", 280),
+
+            // Inject: manually re-trigger the query
+            {
+                id: "inj-refresh", type: "inject", name: "Refresh data", z: T,
+                x: 120, y: 520,
+                payload: "", payloadType: "date",
+                repeat: "", crontab: "", once: false, onceDelay: 0,
+                wires: [["dbFn"]]
             }
         ]
     });
 }
 
-// ui-query — query node wired from a function, result bound to a table
-{
-    const T = "ex-ui-query";
-    examples.push({
-        path: "examples/state/ui-query.json",
-        nodes: [
-            tab(T, "ui-query example"),
-            uiApp("queryApp", T, { name: "Query App" }),
-            uiRoute("queryHome", "/", "queryApp", T),
-            stateNode("ui-query", "usersQuery", "queryApp", T,
-                { queryPath: "users", trigger: "onShow" }),
-            {
-                id: T + "-fn", type: "function", name: "Return users", z: T,
-                x: 700, y: 320,
-                func: [
-                    "// Simulate a database result.",
-                    "msg.payload = [",
-                    "  { id: '1', name: 'Alice', role: 'Admin' },",
-                    "  { id: '2', name: 'Bob',   role: 'Editor' }",
-                    "];",
-                    "return msg;"
-                ].join("\n"),
-                outputs: 1, noerr: 0,
-                wires: [["usersQuery"]]
-            },
-            viewNode("ui-table", "usersTable", "queryApp", "queryHome", T, {
-                columns: JSON.stringify([
-                    { key: "name", label: "Name" },
-                    { key: "role", label: "Role" }
-                ]),
-                rows: { kind: "query", path: "users" }
-            })
-        ]
-    });
-}
+// ════════════════════════════════════════════════════════════════════════
+// BEHAVIOR
+// ════════════════════════════════════════════════════════════════════════
 
-// ── BEHAVIOR nodes ───────────────────────────────────────────────────────────
-
-// ui-action — navigate / openDialog / show / hide
+// ui-action ────────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-action";
+    const T = "ex-ui-action"; const A = "actionApp";
     examples.push({
         path: "examples/behavior/ui-action.json",
         nodes: [
             tab(T, "ui-action example"),
-            uiApp("actionApp", T, { name: "Action App" }),
-            uiRoute("actionHome", "/", "actionApp", T),
-            uiRoute("actionDetail", "/detail", "actionApp", T,
-                { x: 100, y: 260, z: T }),
-            { id: "infoDialog", type: "ui-dialog", name: "Info Dialog",
-              uiId: "infoDialog", parent: "actionApp", title: "Information",
-              z: T, x: 100, y: 360, wires: [[]] },
+            uiApp(A, T, { name: "Action App", layout: "app" }),
 
-            // Buttons on the home route
-            viewNode("ui-button", "goDetailBtn", "actionApp", "actionHome", T,
-                { label: "Go to Detail" }),
-            viewNode("ui-button", "openDialogBtn", "actionApp", "actionHome", T,
-                { id: "openDialogBtn", label: "Open Dialog", x: 400, y: 260 }),
+            // Two routes
+            uiRoute("homeRoute", "/", A, T, { layoutId: "vertical" }),
+            uiRoute("detailRoute", "/detail", A, T, { layoutId: "vertical", x: 120, y: 260 }),
 
-            // Action nodes (non-visual; placed beside their trigger buttons)
-            { id: "navigateAction", type: "ui-action", name: "navigate → /detail",
-              uiId: "navigateAction", parent: "actionApp",
-              actionType: "navigate", target: "/detail",
-              z: T, x: 700, y: 180, wires: [[]] },
-            { id: "openDialogAction", type: "ui-action", name: "openDialog",
-              uiId: "openDialogAction", parent: "actionApp",
-              actionType: "openDialog", target: "infoDialog",
-              z: T, x: 700, y: 260, wires: [[]] },
+            // A dialog
+            { id: "infoDialog", type: "ui-dialog", name: "Info", uiId: "infoDialog",
+              parent: A, title: "Information", z: T, x: 120, y: 360, wires: [[]] },
 
-            viewNode("ui-text", "dialogMsg", "actionApp", "actionHome", T,
-                { id: "dialogMsg", mount: "infoDialog.content",
-                  text: "This dialog was opened by a ui-action node.",
-                  x: 700, y: 360 })
+            // Home page: navigate button + show/hide toggle buttons
+            viewNode("ui-button", "goDetailBtn", A, "homeRoute", T, { name: "go to detail", label: "Go to Detail" }),
+            viewNode("ui-button", "openDlgBtn", A, "homeRoute", T, { name: "open dialog", label: "Open Dialog", x: 480, y: 360 }),
+            viewNode("ui-button", "hideCardBtn", A, "homeRoute", T, { name: "hide card", label: "Hide Card", x: 480, y: 440 }),
+            viewNode("ui-button", "showCardBtn", A, "homeRoute", T, { name: "show card", label: "Show Card", x: 480, y: 520 }),
+
+            // A container that gets shown/hidden
+            viewNode("ui-container", "toggleCard", A, "homeRoute", T, { name: "toggle card", layoutId: "vertical", x: 480, y: 600 }),
+            viewNode("ui-text", "cardContent", A, "homeRoute", T, { name: "card content", mount: "toggleCard.content", text: "This card can be shown/hidden.", x: 700, y: 600 }),
+
+            // Detail page content
+            viewNode("ui-text", "detailText", A, "detailRoute", T, { name: "detail text", text: "Detail page — use Back to go home.", x: 480, y: 260 }),
+            viewNode("ui-button", "goHomeBtn", A, "detailRoute", T, { name: "go home", label: "← Back", x: 480, y: 340 }),
+
+            // Dialog content
+            viewNode("ui-text", "dlgText", A, "homeRoute", T, { name: "dialog text", mount: "infoDialog.content", text: "Dialog content.", x: 700, y: 360 }),
+            viewNode("ui-button", "dlgCloseBtn", A, "homeRoute", T, { name: "close dialog", mount: "infoDialog.content", label: "Close", x: 700, y: 440 }),
+
+            // Action nodes (non-visual)
+            stateNode("ui-action", "navToDetail", A, T, { name: "navigate → /detail", actionType: "navigate", target: "/detail", x: 700, y: 280 }),
+            stateNode("ui-action", "navToHome", A, T, { name: "navigate → /", actionType: "navigate", target: "/", x: 700, y: 340 }),
+            stateNode("ui-action", "openDialog", A, T, { name: "openDialog", actionType: "openDialog", target: "infoDialog", x: 700, y: 440 }),
+            stateNode("ui-action", "closeDialog", A, T, { name: "closeDialog", actionType: "closeDialog", target: "infoDialog", x: 900, y: 440 }),
+            stateNode("ui-action", "hideCard", A, T, { name: "hide card", actionType: "hide", target: "toggleCard", x: 700, y: 520 }),
+            stateNode("ui-action", "showCard", A, T, { name: "show card", actionType: "show", target: "toggleCard", x: 700, y: 600 })
         ]
     });
 }
 
-// ui-navigation — nav bar with links
+// ui-navigation ────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-navigation";
+    const T = "ex-ui-navigation"; const A = "navApp"; const DBG = "navDbg";
     examples.push({
         path: "examples/behavior/ui-navigation.json",
         nodes: [
             tab(T, "ui-navigation example"),
-            uiApp("navApp", T, { name: "Navigation App", layout: "app" }),
-            uiRoute("navHome", "/", "navApp", T, { layoutId: "app" }),
-            uiRoute("navAbout", "/about", "navApp", T,
-                { layoutId: "vertical", x: 100, y: 260 }),
-            uiRoute("navContact", "/contact", "navApp", T,
-                { layoutId: "vertical", x: 100, y: 320 }),
+            uiApp(A, T, { name: "Navigation App", layout: "app" }),
 
-            // Navigation bar mounted in the app sidebar / nav slot
-            { id: "mainNav", type: "ui-navigation", name: "Main Nav",
-              uiId: "mainNav", parent: "navApp", mount: "navApp.nav",
-              links: JSON.stringify([
-                  { label: "Home", to: "/" },
-                  { label: "About", to: "/about" },
-                  { label: "Contact", to: "/contact" }
-              ]),
-              z: T, x: 400, y: 180, wires: [[]] },
+            uiRoute("navHome", "/", A, T, { layoutId: "app" }),
+            uiRoute("navProducts", "/products", A, T, { layoutId: "vertical", x: 120, y: 260 }),
+            uiRoute("navAbout", "/about", A, T, { layoutId: "vertical", x: 120, y: 340 }),
 
-            viewNode("ui-text", "homeContent", "navApp", "navHome", T,
-                { text: "Home page" }),
-            viewNode("ui-text", "aboutContent", "navApp", "navAbout", T,
-                { id: "aboutContent", text: "About page", x: 700, y: 260 }),
-            viewNode("ui-text", "contactContent", "navApp", "navContact", T,
-                { id: "contactContent", text: "Contact page", x: 700, y: 320 })
+            // Navigation mounted in the app nav slot — output: navigate event
+            {
+                id: "mainNav", type: "ui-navigation", name: "Main Nav",
+                uiId: "mainNav", parent: A, mount: `${A}.nav`,
+                links: JSON.stringify([
+                    { label: "Home", to: "/" },
+                    { label: "Products", to: "/products" },
+                    { label: "About", to: "/about" }
+                ]),
+                z: T, x: 480, y: 180, wires: [[DBG]]
+            },
+
+            // Route content
+            viewNode("ui-text", "homeContent", A, "navHome", T, { name: "home content", text: "Home page" }),
+            viewNode("ui-text", "productsContent", A, "navProducts", T, { name: "products content", text: "Products page", x: 480, y: 260 }),
+            viewNode("ui-text", "aboutContent", A, "navAbout", T, { name: "about content", text: "About page", x: 480, y: 340 }),
+
+            debugNode(DBG, T, "navigate events", 280),
+
+            // Inject: update nav links dynamically
+            injectPayload("inj-links", T, "Update nav links",
+                JSON.stringify([{ label: "Home", to: "/" }, { label: "FAQ", to: "/about" }]),
+                "json", "mainNav", 480)
         ]
     });
 }
 
-// ── write all examples ────────────────────────────────────────────────────────
+// ── write all files ────────────────────────────────────────────────────────────
 
-console.log("Generating node examples…");
+console.log("Generating per-node example flows…\n");
 for (const { path, nodes } of examples) {
     write(path, nodes);
 }

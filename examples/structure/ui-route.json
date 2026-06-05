@@ -14,37 +14,37 @@
     "root": "routeApp",
     "layout": "app",
     "z": "ex-ui-route",
-    "x": 100,
+    "x": 120,
     "y": 80,
     "wires": [
       []
     ]
   },
   {
-    "id": "homeR",
+    "id": "routeHome",
     "type": "ui-route",
-    "name": "homeR",
-    "uiId": "homeR",
+    "name": "routeHome",
+    "uiId": "routeHome",
     "path": "/",
     "parent": "routeApp",
     "layoutId": "vertical",
     "z": "ex-ui-route",
-    "x": 100,
+    "x": 120,
     "y": 180,
     "wires": [
       []
     ]
   },
   {
-    "id": "detailR",
+    "id": "routeDetail",
     "type": "ui-route",
-    "name": "detailR",
-    "uiId": "detailR",
-    "path": "/detail",
+    "name": "routeDetail",
+    "uiId": "routeDetail",
+    "path": "/item/:id",
     "parent": "routeApp",
     "layoutId": "vertical",
     "z": "ex-ui-route",
-    "x": 100,
+    "x": 120,
     "y": 260,
     "wires": [
       []
@@ -53,59 +53,59 @@
   {
     "id": "homeText",
     "type": "ui-text",
-    "name": "homeText",
+    "name": "home text",
     "uiId": "homeText",
     "parent": "routeApp",
-    "mount": "homeR.content",
+    "mount": "routeHome.content",
     "z": "ex-ui-route",
-    "x": 400,
-    "y": 180,
+    "x": 480,
+    "y": 280,
     "wires": [
       []
     ],
-    "text": "Home route — click the button to navigate."
-  },
-  {
-    "id": "goDetail",
-    "type": "ui-button",
-    "name": "goDetail",
-    "uiId": "goDetail",
-    "parent": "routeApp",
-    "mount": "homeR.content",
-    "z": "ex-ui-route",
-    "x": 400,
-    "y": 260,
-    "wires": [
-      []
-    ],
-    "label": "Go to Detail"
+    "text": "Home — navigate to /webapp/routeApp/item/42 to see the detail route."
   },
   {
     "id": "detailText",
     "type": "ui-text",
-    "name": "detailText",
+    "name": "detail text",
     "uiId": "detailText",
     "parent": "routeApp",
-    "mount": "detailR.content",
+    "mount": "routeDetail.content",
     "z": "ex-ui-route",
-    "x": 400,
-    "y": 340,
+    "x": 480,
+    "y": 360,
     "wires": [
       []
     ],
-    "text": "Detail route."
+    "text": "Detail route. The :id param is available as a route param binding."
   },
   {
-    "id": "navAction",
+    "id": "goDetailBtn",
+    "type": "ui-button",
+    "name": "go to detail",
+    "uiId": "goDetailBtn",
+    "parent": "routeApp",
+    "mount": "routeHome.content",
+    "z": "ex-ui-route",
+    "x": 480,
+    "y": 360,
+    "wires": [
+      []
+    ],
+    "label": "Go to Item 42"
+  },
+  {
+    "id": "navToDetail",
     "type": "ui-action",
-    "name": "Navigate to /detail",
-    "uiId": "navAction",
+    "name": "navigate → /item/42",
+    "uiId": "navToDetail",
     "parent": "routeApp",
     "actionType": "navigate",
-    "target": "/detail",
+    "target": "/item/42",
     "z": "ex-ui-route",
     "x": 700,
-    "y": 260,
+    "y": 360,
     "wires": [
       []
     ]

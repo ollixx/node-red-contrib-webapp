@@ -14,43 +14,147 @@
     "root": "imgApp",
     "layout": "app",
     "z": "ex-ui-image",
-    "x": 100,
+    "x": 120,
     "y": 80,
     "wires": [
       []
     ]
   },
   {
-    "id": "imgHome",
+    "id": "imgRoute",
     "type": "ui-route",
-    "name": "imgHome",
-    "uiId": "imgHome",
+    "name": "imgRoute",
+    "uiId": "imgRoute",
     "path": "/",
     "parent": "imgApp",
     "layoutId": "vertical",
     "z": "ex-ui-image",
-    "x": 100,
+    "x": 120,
     "y": 180,
     "wires": [
       []
     ]
   },
   {
-    "id": "heroImage",
+    "id": "imgNode",
     "type": "ui-image",
-    "name": "heroImage",
-    "uiId": "heroImage",
+    "name": "hero image",
+    "uiId": "imgNode",
     "parent": "imgApp",
-    "mount": "imgHome.content",
+    "mount": "imgRoute.content",
     "z": "ex-ui-image",
-    "x": 400,
-    "y": 180,
+    "x": 480,
+    "y": 280,
+    "wires": [
+      [
+        "imgDbg"
+      ]
+    ],
+    "src": "https://picsum.photos/seed/webapp/600/300",
+    "alt": "A placeholder image"
+  },
+  {
+    "id": "imgDbg",
+    "type": "debug",
+    "name": "error events",
+    "z": "ex-ui-image",
+    "x": 700,
+    "y": 280,
+    "active": true,
+    "tosidebar": true,
+    "complete": "ui",
+    "targetType": "msg",
     "wires": [
       []
-    ],
-    "src": "https://picsum.photos/400/200",
-    "alt": "Random photo",
-    "width": "400",
-    "height": "200"
+    ]
+  },
+  {
+    "id": "inj-src",
+    "type": "inject",
+    "name": "Swap image src",
+    "z": "ex-ui-image",
+    "x": 120,
+    "y": 480,
+    "payload": "https://picsum.photos/seed/changed/600/300",
+    "payloadType": "str",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "imgNode"
+      ]
+    ]
+  },
+  {
+    "id": "inj-show",
+    "type": "inject",
+    "name": "show",
+    "z": "ex-ui-image",
+    "x": 120,
+    "y": 560,
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "fn-show"
+      ]
+    ]
+  },
+  {
+    "id": "fn-show",
+    "type": "function",
+    "name": "→ show",
+    "z": "ex-ui-image",
+    "func": "msg.ui = { component: { op: \"show\" } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 380,
+    "y": 560,
+    "wires": [
+      [
+        "imgNode"
+      ]
+    ]
+  },
+  {
+    "id": "inj-hide",
+    "type": "inject",
+    "name": "hide",
+    "z": "ex-ui-image",
+    "x": 120,
+    "y": 640,
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "fn-hide"
+      ]
+    ]
+  },
+  {
+    "id": "fn-hide",
+    "type": "function",
+    "name": "→ hide",
+    "z": "ex-ui-image",
+    "func": "msg.ui = { component: { op: \"hide\" } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 380,
+    "y": 640,
+    "wires": [
+      [
+        "imgNode"
+      ]
+    ]
   }
 ]

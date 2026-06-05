@@ -14,85 +14,172 @@
     "root": "ctApp",
     "layout": "app",
     "z": "ex-ui-container",
-    "x": 100,
+    "x": 120,
     "y": 80,
     "wires": [
       []
     ]
   },
   {
-    "id": "ctHome",
+    "id": "ctRoute",
     "type": "ui-route",
-    "name": "ctHome",
-    "uiId": "ctHome",
+    "name": "ctRoute",
+    "uiId": "ctRoute",
     "path": "/",
     "parent": "ctApp",
     "layoutId": "vertical",
     "z": "ex-ui-container",
-    "x": 100,
+    "x": 120,
     "y": 180,
     "wires": [
       []
     ]
   },
   {
-    "id": "myCard",
+    "id": "ctNode",
     "type": "ui-container",
-    "name": "myCard",
-    "uiId": "myCard",
+    "name": "card",
+    "uiId": "ctNode",
     "parent": "ctApp",
-    "mount": "ctHome.content",
+    "mount": "ctRoute.content",
     "z": "ex-ui-container",
-    "x": 400,
-    "y": 180,
+    "x": 480,
+    "y": 280,
     "wires": [
-      []
+      [
+        "ctDbg"
+      ]
     ],
     "layoutId": "vertical"
   },
   {
-    "id": "cardTitle",
+    "id": "ctTitle",
     "type": "ui-text",
-    "name": "cardTitle",
-    "uiId": "cardTitle",
+    "name": "card title",
+    "uiId": "ctTitle",
     "parent": "ctApp",
-    "mount": "myCard.content",
+    "mount": "ctNode.content",
     "z": "ex-ui-container",
     "x": 700,
-    "y": 160,
+    "y": 200,
     "wires": [
       []
     ],
-    "text": "Card Title"
+    "text": "Card title"
   },
   {
-    "id": "cardBody",
+    "id": "ctBody",
     "type": "ui-text",
-    "name": "cardBody",
-    "uiId": "cardBody",
+    "name": "card body",
+    "uiId": "ctBody",
     "parent": "ctApp",
-    "mount": "myCard.content",
-    "z": "ex-ui-container",
-    "x": 700,
-    "y": 220,
-    "wires": [
-      []
-    ],
-    "text": "Card content goes here."
-  },
-  {
-    "id": "cardBtn",
-    "type": "ui-button",
-    "name": "cardBtn",
-    "uiId": "cardBtn",
-    "parent": "ctApp",
-    "mount": "myCard.content",
+    "mount": "ctNode.content",
     "z": "ex-ui-container",
     "x": 700,
     "y": 280,
     "wires": [
       []
     ],
-    "label": "Action"
+    "text": "Card body text goes here."
+  },
+  {
+    "id": "ctBtn",
+    "type": "ui-button",
+    "name": "card button",
+    "uiId": "ctBtn",
+    "parent": "ctApp",
+    "mount": "ctNode.content",
+    "z": "ex-ui-container",
+    "x": 700,
+    "y": 360,
+    "wires": [
+      []
+    ],
+    "label": "Card Action"
+  },
+  {
+    "id": "ctDbg",
+    "type": "debug",
+    "name": "onShow / onHide events",
+    "z": "ex-ui-container",
+    "x": 700,
+    "y": 280,
+    "active": true,
+    "tosidebar": true,
+    "complete": "ui",
+    "targetType": "msg",
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "inj-show",
+    "type": "inject",
+    "name": "show container",
+    "z": "ex-ui-container",
+    "x": 120,
+    "y": 480,
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "fn-show"
+      ]
+    ]
+  },
+  {
+    "id": "fn-show",
+    "type": "function",
+    "name": "→ show",
+    "z": "ex-ui-container",
+    "func": "msg.ui = { component: { op: \"show\" } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 380,
+    "y": 480,
+    "wires": [
+      [
+        "ctNode"
+      ]
+    ]
+  },
+  {
+    "id": "inj-hide",
+    "type": "inject",
+    "name": "hide container",
+    "z": "ex-ui-container",
+    "x": 120,
+    "y": 560,
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "fn-hide"
+      ]
+    ]
+  },
+  {
+    "id": "fn-hide",
+    "type": "function",
+    "name": "→ hide",
+    "z": "ex-ui-container",
+    "func": "msg.ui = { component: { op: \"hide\" } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 380,
+    "y": 560,
+    "wires": [
+      [
+        "ctNode"
+      ]
+    ]
   }
 ]

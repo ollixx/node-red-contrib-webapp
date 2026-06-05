@@ -9,44 +9,46 @@
   {
     "id": "selApp",
     "type": "ui-app",
-    "name": "Select App",
+    "name": "ui-select App",
     "uiId": "selApp",
     "root": "selApp",
     "layout": "app",
     "z": "ex-ui-select",
-    "x": 100,
+    "x": 120,
     "y": 80,
     "wires": [
       []
     ]
   },
   {
-    "id": "selHome",
+    "id": "selRoute",
     "type": "ui-route",
-    "name": "selHome",
-    "uiId": "selHome",
+    "name": "selRoute",
+    "uiId": "selRoute",
     "path": "/",
     "parent": "selApp",
     "layoutId": "vertical",
     "z": "ex-ui-select",
-    "x": 100,
+    "x": 120,
     "y": 180,
     "wires": [
       []
     ]
   },
   {
-    "id": "countrySelect",
+    "id": "selNode",
     "type": "ui-select",
-    "name": "countrySelect",
-    "uiId": "countrySelect",
+    "name": "selNode",
+    "uiId": "selNode",
     "parent": "selApp",
-    "mount": "selHome.content",
+    "mount": "selRoute.content",
     "z": "ex-ui-select",
-    "x": 400,
-    "y": 180,
+    "x": 480,
+    "y": 280,
     "wires": [
-      []
+      [
+        "selNodeDbg"
+      ]
     ],
     "label": "Country",
     "optionsJson": "[{\"label\":\"Germany\",\"value\":\"de\"},{\"label\":\"Austria\",\"value\":\"at\"},{\"label\":\"Switzerland\",\"value\":\"ch\"}]",
@@ -56,18 +58,142 @@
     }
   },
   {
-    "id": "ex-ui-select-dbg",
+    "id": "selNodeDbg",
     "type": "debug",
-    "name": "Events",
+    "name": "change / submit events",
     "z": "ex-ui-select",
     "x": 700,
-    "y": 180,
+    "y": 280,
     "active": true,
     "tosidebar": true,
-    "complete": "payload",
+    "complete": "ui",
     "targetType": "msg",
     "wires": [
       []
+    ]
+  },
+  {
+    "id": "inj-val",
+    "type": "inject",
+    "name": "Set value",
+    "z": "ex-ui-select",
+    "x": 120,
+    "y": 500,
+    "payload": "at",
+    "payloadType": "str",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "selNode"
+      ]
+    ]
+  },
+  {
+    "id": "inj-disable",
+    "type": "inject",
+    "name": "disable",
+    "z": "ex-ui-select",
+    "x": 120,
+    "y": 580,
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "fn-disable"
+      ]
+    ]
+  },
+  {
+    "id": "fn-disable",
+    "type": "function",
+    "name": "→ disable",
+    "z": "ex-ui-select",
+    "func": "msg.ui = { component: { op: \"disable\" } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 380,
+    "y": 580,
+    "wires": [
+      [
+        "selNode"
+      ]
+    ]
+  },
+  {
+    "id": "inj-enable",
+    "type": "inject",
+    "name": "enable",
+    "z": "ex-ui-select",
+    "x": 120,
+    "y": 660,
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "fn-enable"
+      ]
+    ]
+  },
+  {
+    "id": "fn-enable",
+    "type": "function",
+    "name": "→ enable",
+    "z": "ex-ui-select",
+    "func": "msg.ui = { component: { op: \"enable\" } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 380,
+    "y": 660,
+    "wires": [
+      [
+        "selNode"
+      ]
+    ]
+  },
+  {
+    "id": "inj-reset",
+    "type": "inject",
+    "name": "reset",
+    "z": "ex-ui-select",
+    "x": 120,
+    "y": 740,
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "fn-reset"
+      ]
+    ]
+  },
+  {
+    "id": "fn-reset",
+    "type": "function",
+    "name": "→ reset",
+    "z": "ex-ui-select",
+    "func": "msg.ui = { component: { op: \"reset\" } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 380,
+    "y": 740,
+    "wires": [
+      [
+        "selNode"
+      ]
     ]
   }
 ]

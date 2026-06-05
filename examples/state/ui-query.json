@@ -14,22 +14,22 @@
     "root": "queryApp",
     "layout": "app",
     "z": "ex-ui-query",
-    "x": 100,
+    "x": 120,
     "y": 80,
     "wires": [
       []
     ]
   },
   {
-    "id": "queryHome",
+    "id": "queryRoute",
     "type": "ui-route",
-    "name": "queryHome",
-    "uiId": "queryHome",
+    "name": "queryRoute",
+    "uiId": "queryRoute",
     "path": "/",
     "parent": "queryApp",
     "layoutId": "vertical",
     "z": "ex-ui-query",
-    "x": 100,
+    "x": 120,
     "y": 180,
     "wires": [
       []
@@ -38,26 +38,28 @@
   {
     "id": "usersQuery",
     "type": "ui-query",
-    "name": "usersQuery",
+    "name": "users query",
     "uiId": "usersQuery",
     "parent": "queryApp",
     "z": "ex-ui-query",
-    "x": 400,
-    "y": 320,
+    "x": 480,
+    "y": 380,
     "wires": [
-      []
+      [
+        "queryDbg"
+      ]
     ],
     "queryPath": "users",
     "trigger": "onShow"
   },
   {
-    "id": "ex-ui-query-fn",
+    "id": "dbFn",
     "type": "function",
-    "name": "Return users",
+    "name": "Simulate DB",
     "z": "ex-ui-query",
-    "x": 700,
-    "y": 320,
-    "func": "// Simulate a database result.\nmsg.payload = [\n  { id: '1', name: 'Alice', role: 'Admin' },\n  { id: '2', name: 'Bob',   role: 'Editor' }\n];\nreturn msg;",
+    "x": 380,
+    "y": 520,
+    "func": "// Simulate a database result.\n// In a real flow: replace this with an http-request, mongodb,\n// sqlite, or any Node-RED data node.\nmsg.payload = [\n  { id: '1', name: 'Alice', role: 'Admin' },\n  { id: '2', name: 'Bob',   role: 'Editor' },\n  { id: '3', name: 'Carol', role: 'Viewer' }\n];\nreturn msg;",
     "outputs": 1,
     "noerr": 0,
     "wires": [
@@ -69,13 +71,13 @@
   {
     "id": "usersTable",
     "type": "ui-table",
-    "name": "usersTable",
+    "name": "users table",
     "uiId": "usersTable",
     "parent": "queryApp",
-    "mount": "queryHome.content",
+    "mount": "queryRoute.content",
     "z": "ex-ui-query",
-    "x": 400,
-    "y": 180,
+    "x": 480,
+    "y": 280,
     "wires": [
       []
     ],
@@ -84,5 +86,39 @@
       "kind": "query",
       "path": "users"
     }
+  },
+  {
+    "id": "queryDbg",
+    "type": "debug",
+    "name": "query emit (passes through to DB node)",
+    "z": "ex-ui-query",
+    "x": 700,
+    "y": 280,
+    "active": true,
+    "tosidebar": true,
+    "complete": "ui",
+    "targetType": "msg",
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "inj-refresh",
+    "type": "inject",
+    "name": "Refresh data",
+    "z": "ex-ui-query",
+    "x": 120,
+    "y": 520,
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "dbFn"
+      ]
+    ]
   }
 ]
