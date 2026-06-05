@@ -1,0 +1,98 @@
+[
+  {
+    "id": "ex-ui-container",
+    "type": "tab",
+    "label": "ui-container example",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "ctApp",
+    "type": "ui-app",
+    "name": "Container App",
+    "uiId": "ctApp",
+    "root": "ctApp",
+    "layout": "app",
+    "z": "ex-ui-container",
+    "x": 100,
+    "y": 80,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "ctHome",
+    "type": "ui-route",
+    "name": "ctHome",
+    "uiId": "ctHome",
+    "path": "/",
+    "parent": "ctApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-container",
+    "x": 100,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "myCard",
+    "type": "ui-container",
+    "name": "myCard",
+    "uiId": "myCard",
+    "parent": "ctApp",
+    "mount": "ctHome.content",
+    "z": "ex-ui-container",
+    "x": 400,
+    "y": 180,
+    "wires": [
+      []
+    ],
+    "layoutId": "vertical"
+  },
+  {
+    "id": "cardTitle",
+    "type": "ui-text",
+    "name": "cardTitle",
+    "uiId": "cardTitle",
+    "parent": "ctApp",
+    "mount": "myCard.content",
+    "z": "ex-ui-container",
+    "x": 700,
+    "y": 160,
+    "wires": [
+      []
+    ],
+    "text": "Card Title"
+  },
+  {
+    "id": "cardBody",
+    "type": "ui-text",
+    "name": "cardBody",
+    "uiId": "cardBody",
+    "parent": "ctApp",
+    "mount": "myCard.content",
+    "z": "ex-ui-container",
+    "x": 700,
+    "y": 220,
+    "wires": [
+      []
+    ],
+    "text": "Card content goes here."
+  },
+  {
+    "id": "cardBtn",
+    "type": "ui-button",
+    "name": "cardBtn",
+    "uiId": "cardBtn",
+    "parent": "ctApp",
+    "mount": "myCard.content",
+    "z": "ex-ui-container",
+    "x": 700,
+    "y": 280,
+    "wires": [
+      []
+    ],
+    "label": "Action"
+  }
+]

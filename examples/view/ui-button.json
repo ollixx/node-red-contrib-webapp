@@ -1,0 +1,84 @@
+[
+  {
+    "id": "ex-ui-button",
+    "type": "tab",
+    "label": "ui-button example",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "btnApp",
+    "type": "ui-app",
+    "name": "Button App",
+    "uiId": "btnApp",
+    "root": "btnApp",
+    "layout": "app",
+    "z": "ex-ui-button",
+    "x": 100,
+    "y": 80,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "btnHome",
+    "type": "ui-route",
+    "name": "btnHome",
+    "uiId": "btnHome",
+    "path": "/",
+    "parent": "btnApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-button",
+    "x": 100,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "primaryBtn",
+    "type": "ui-button",
+    "name": "primaryBtn",
+    "uiId": "primaryBtn",
+    "parent": "btnApp",
+    "mount": "btnHome.content",
+    "z": "ex-ui-button",
+    "x": 400,
+    "y": 180,
+    "wires": [
+      []
+    ],
+    "label": "Primary Button"
+  },
+  {
+    "id": "dangerBtn",
+    "type": "ui-button",
+    "name": "dangerBtn",
+    "uiId": "dangerBtn",
+    "parent": "btnApp",
+    "mount": "btnHome.content",
+    "z": "ex-ui-button",
+    "x": 400,
+    "y": 260,
+    "wires": [
+      []
+    ],
+    "label": "Danger Button",
+    "variant": "danger"
+  },
+  {
+    "id": "ex-ui-button-dbg",
+    "type": "debug",
+    "name": "Events",
+    "z": "ex-ui-button",
+    "x": 700,
+    "y": 180,
+    "active": true,
+    "tosidebar": true,
+    "complete": "payload",
+    "targetType": "msg",
+    "wires": [
+      []
+    ]
+  }
+]

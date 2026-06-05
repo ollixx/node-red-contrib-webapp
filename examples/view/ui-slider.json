@@ -1,0 +1,75 @@
+[
+  {
+    "id": "ex-ui-slider",
+    "type": "tab",
+    "label": "ui-slider example",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "sliderApp",
+    "type": "ui-app",
+    "name": "Slider App",
+    "uiId": "sliderApp",
+    "root": "sliderApp",
+    "layout": "app",
+    "z": "ex-ui-slider",
+    "x": 100,
+    "y": 80,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "sliderHome",
+    "type": "ui-route",
+    "name": "sliderHome",
+    "uiId": "sliderHome",
+    "path": "/",
+    "parent": "sliderApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-slider",
+    "x": 100,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "volumeSlider",
+    "type": "ui-slider",
+    "name": "volumeSlider",
+    "uiId": "volumeSlider",
+    "parent": "sliderApp",
+    "mount": "sliderHome.content",
+    "z": "ex-ui-slider",
+    "x": 400,
+    "y": 180,
+    "wires": [
+      []
+    ],
+    "label": "Volume",
+    "min": 0,
+    "max": 100,
+    "step": 5,
+    "value": {
+      "kind": "literal",
+      "value": 50
+    }
+  },
+  {
+    "id": "ex-ui-slider-dbg",
+    "type": "debug",
+    "name": "Events",
+    "z": "ex-ui-slider",
+    "x": 700,
+    "y": 180,
+    "active": true,
+    "tosidebar": true,
+    "complete": "payload",
+    "targetType": "msg",
+    "wires": [
+      []
+    ]
+  }
+]

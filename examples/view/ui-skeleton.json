@@ -1,0 +1,69 @@
+[
+  {
+    "id": "ex-ui-skeleton",
+    "type": "tab",
+    "label": "ui-skeleton example",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "skelApp",
+    "type": "ui-app",
+    "name": "Skeleton App",
+    "uiId": "skelApp",
+    "root": "skelApp",
+    "layout": "app",
+    "z": "ex-ui-skeleton",
+    "x": 100,
+    "y": 80,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "skelHome",
+    "type": "ui-route",
+    "name": "skelHome",
+    "uiId": "skelHome",
+    "path": "/",
+    "parent": "skelApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-skeleton",
+    "x": 100,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "textSkeleton",
+    "type": "ui-skeleton",
+    "name": "textSkeleton",
+    "uiId": "textSkeleton",
+    "parent": "skelApp",
+    "mount": "skelHome.content",
+    "z": "ex-ui-skeleton",
+    "x": 400,
+    "y": 180,
+    "wires": [
+      []
+    ],
+    "effect": "sheen"
+  },
+  {
+    "id": "avatarSkeleton",
+    "type": "ui-skeleton",
+    "name": "avatarSkeleton",
+    "uiId": "avatarSkeleton",
+    "parent": "skelApp",
+    "mount": "skelHome.content",
+    "z": "ex-ui-skeleton",
+    "x": 400,
+    "y": 260,
+    "wires": [
+      []
+    ],
+    "shape": "circle",
+    "effect": "pulse"
+  }
+]

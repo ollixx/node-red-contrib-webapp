@@ -1,0 +1,142 @@
+[
+  {
+    "id": "ex-ui-action",
+    "type": "tab",
+    "label": "ui-action example",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "actionApp",
+    "type": "ui-app",
+    "name": "Action App",
+    "uiId": "actionApp",
+    "root": "actionApp",
+    "layout": "app",
+    "z": "ex-ui-action",
+    "x": 100,
+    "y": 80,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "actionHome",
+    "type": "ui-route",
+    "name": "actionHome",
+    "uiId": "actionHome",
+    "path": "/",
+    "parent": "actionApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-action",
+    "x": 100,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "actionDetail",
+    "type": "ui-route",
+    "name": "actionDetail",
+    "uiId": "actionDetail",
+    "path": "/detail",
+    "parent": "actionApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-action",
+    "x": 100,
+    "y": 260,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "infoDialog",
+    "type": "ui-dialog",
+    "name": "Info Dialog",
+    "uiId": "infoDialog",
+    "parent": "actionApp",
+    "title": "Information",
+    "z": "ex-ui-action",
+    "x": 100,
+    "y": 360,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "goDetailBtn",
+    "type": "ui-button",
+    "name": "goDetailBtn",
+    "uiId": "goDetailBtn",
+    "parent": "actionApp",
+    "mount": "actionHome.content",
+    "z": "ex-ui-action",
+    "x": 400,
+    "y": 180,
+    "wires": [
+      []
+    ],
+    "label": "Go to Detail"
+  },
+  {
+    "id": "openDialogBtn",
+    "type": "ui-button",
+    "name": "openDialogBtn",
+    "uiId": "openDialogBtn",
+    "parent": "actionApp",
+    "mount": "actionHome.content",
+    "z": "ex-ui-action",
+    "x": 400,
+    "y": 260,
+    "wires": [
+      []
+    ],
+    "label": "Open Dialog"
+  },
+  {
+    "id": "navigateAction",
+    "type": "ui-action",
+    "name": "navigate → /detail",
+    "uiId": "navigateAction",
+    "parent": "actionApp",
+    "actionType": "navigate",
+    "target": "/detail",
+    "z": "ex-ui-action",
+    "x": 700,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "openDialogAction",
+    "type": "ui-action",
+    "name": "openDialog",
+    "uiId": "openDialogAction",
+    "parent": "actionApp",
+    "actionType": "openDialog",
+    "target": "infoDialog",
+    "z": "ex-ui-action",
+    "x": 700,
+    "y": 260,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "dialogMsg",
+    "type": "ui-text",
+    "name": "dialogMsg",
+    "uiId": "dialogMsg",
+    "parent": "actionApp",
+    "mount": "infoDialog.content",
+    "z": "ex-ui-action",
+    "x": 700,
+    "y": 360,
+    "wires": [
+      []
+    ],
+    "text": "This dialog was opened by a ui-action node."
+  }
+]

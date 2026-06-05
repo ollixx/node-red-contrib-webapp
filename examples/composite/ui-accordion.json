@@ -1,0 +1,68 @@
+[
+  {
+    "id": "ex-ui-accordion",
+    "type": "tab",
+    "label": "ui-accordion example",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "accApp",
+    "type": "ui-app",
+    "name": "Accordion App",
+    "uiId": "accApp",
+    "root": "accApp",
+    "layout": "app",
+    "z": "ex-ui-accordion",
+    "x": 100,
+    "y": 80,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "accHome",
+    "type": "ui-route",
+    "name": "accHome",
+    "uiId": "accHome",
+    "path": "/",
+    "parent": "accApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-accordion",
+    "x": 100,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "faqAccordion",
+    "type": "ui-accordion",
+    "name": "faqAccordion",
+    "uiId": "faqAccordion",
+    "parent": "accApp",
+    "mount": "accHome.content",
+    "z": "ex-ui-accordion",
+    "x": 400,
+    "y": 180,
+    "wires": [
+      []
+    ],
+    "items": "[{\"id\":\"q1\",\"label\":\"What is Node-RED?\",\"content\":\"Node-RED is a flow-based programming tool.\"},{\"id\":\"q2\",\"label\":\"What is a webapp node?\",\"content\":\"A declarative UI node for building web apps.\"},{\"id\":\"q3\",\"label\":\"Where do I find examples?\",\"content\":\"Menu → Import → Examples.\"}]"
+  },
+  {
+    "id": "ex-ui-accordion-dbg",
+    "type": "debug",
+    "name": "Events",
+    "z": "ex-ui-accordion",
+    "x": 700,
+    "y": 320,
+    "active": true,
+    "tosidebar": true,
+    "complete": "payload",
+    "targetType": "msg",
+    "wires": [
+      []
+    ]
+  }
+]

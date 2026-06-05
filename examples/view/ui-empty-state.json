@@ -1,0 +1,55 @@
+[
+  {
+    "id": "ex-ui-empty-state",
+    "type": "tab",
+    "label": "ui-empty-state example",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "emptyApp",
+    "type": "ui-app",
+    "name": "Empty State App",
+    "uiId": "emptyApp",
+    "root": "emptyApp",
+    "layout": "app",
+    "z": "ex-ui-empty-state",
+    "x": 100,
+    "y": 80,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "emptyHome",
+    "type": "ui-route",
+    "name": "emptyHome",
+    "uiId": "emptyHome",
+    "path": "/",
+    "parent": "emptyApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-empty-state",
+    "x": 100,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "noResults",
+    "type": "ui-empty-state",
+    "name": "noResults",
+    "uiId": "noResults",
+    "parent": "emptyApp",
+    "mount": "emptyHome.content",
+    "z": "ex-ui-empty-state",
+    "x": 400,
+    "y": 180,
+    "wires": [
+      []
+    ],
+    "title": "No results",
+    "description": "Try adjusting your search or filters.",
+    "icon": "search"
+  }
+]

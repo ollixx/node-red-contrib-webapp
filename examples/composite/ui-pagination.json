@@ -1,0 +1,87 @@
+[
+  {
+    "id": "ex-ui-pagination",
+    "type": "tab",
+    "label": "ui-pagination example",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "pagApp",
+    "type": "ui-app",
+    "name": "Pagination App",
+    "uiId": "pagApp",
+    "root": "pagApp",
+    "layout": "app",
+    "z": "ex-ui-pagination",
+    "x": 100,
+    "y": 80,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "pagHome",
+    "type": "ui-route",
+    "name": "pagHome",
+    "uiId": "pagHome",
+    "path": "/",
+    "parent": "pagApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-pagination",
+    "x": 100,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "pageStore",
+    "type": "ui-store",
+    "name": "pageStore",
+    "uiId": "pageStore",
+    "parent": "pagApp",
+    "z": "ex-ui-pagination",
+    "x": 400,
+    "y": 320,
+    "wires": [
+      []
+    ],
+    "statePath": "page",
+    "initialValue": "1"
+  },
+  {
+    "id": "pager",
+    "type": "ui-pagination",
+    "name": "pager",
+    "uiId": "pager",
+    "parent": "pagApp",
+    "mount": "pagHome.content",
+    "z": "ex-ui-pagination",
+    "x": 400,
+    "y": 180,
+    "wires": [
+      []
+    ],
+    "page": {
+      "kind": "state",
+      "path": "page"
+    },
+    "pageCount": 10
+  },
+  {
+    "id": "ex-ui-pagination-dbg",
+    "type": "debug",
+    "name": "Events",
+    "z": "ex-ui-pagination",
+    "x": 700,
+    "y": 180,
+    "active": true,
+    "tosidebar": true,
+    "complete": "payload",
+    "targetType": "msg",
+    "wires": [
+      []
+    ]
+  }
+]

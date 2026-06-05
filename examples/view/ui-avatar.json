@@ -1,0 +1,70 @@
+[
+  {
+    "id": "ex-ui-avatar",
+    "type": "tab",
+    "label": "ui-avatar example",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "avatarApp",
+    "type": "ui-app",
+    "name": "Avatar App",
+    "uiId": "avatarApp",
+    "root": "avatarApp",
+    "layout": "app",
+    "z": "ex-ui-avatar",
+    "x": 100,
+    "y": 80,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "avatarHome",
+    "type": "ui-route",
+    "name": "avatarHome",
+    "uiId": "avatarHome",
+    "path": "/",
+    "parent": "avatarApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-avatar",
+    "x": 100,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "userAvatar",
+    "type": "ui-avatar",
+    "name": "userAvatar",
+    "uiId": "userAvatar",
+    "parent": "avatarApp",
+    "mount": "avatarHome.content",
+    "z": "ex-ui-avatar",
+    "x": 400,
+    "y": 180,
+    "wires": [
+      []
+    ],
+    "initials": "AK",
+    "label": "Anna K."
+  },
+  {
+    "id": "imgAvatar",
+    "type": "ui-avatar",
+    "name": "imgAvatar",
+    "uiId": "imgAvatar",
+    "parent": "avatarApp",
+    "mount": "avatarHome.content",
+    "z": "ex-ui-avatar",
+    "x": 400,
+    "y": 260,
+    "wires": [
+      []
+    ],
+    "src": "https://picsum.photos/seed/user/40/40",
+    "label": "Photo avatar"
+  }
+]

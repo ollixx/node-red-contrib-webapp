@@ -71,6 +71,7 @@
         "test:e2e:integration": "E2E_INTEGRATION=1 playwright test",
         "test": "pnpm -r test",
         "gen:example": "node scripts/gen-example.js",
+        "gen:node-examples": "node scripts/gen-node-examples.js",
         "check:roadmap": "node scripts/check-roadmap-yaml.js",
         "validate": "pnpm check:roadmap && pnpm lint && pnpm test && pnpm build"
     },

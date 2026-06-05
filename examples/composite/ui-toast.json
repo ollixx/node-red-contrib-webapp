@@ -1,0 +1,89 @@
+[
+  {
+    "id": "ex-ui-toast",
+    "type": "tab",
+    "label": "ui-toast example",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "toastApp",
+    "type": "ui-app",
+    "name": "Toast App",
+    "uiId": "toastApp",
+    "root": "toastApp",
+    "layout": "app",
+    "z": "ex-ui-toast",
+    "x": 100,
+    "y": 80,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "toastHome",
+    "type": "ui-route",
+    "name": "toastHome",
+    "uiId": "toastHome",
+    "path": "/",
+    "parent": "toastApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-toast",
+    "x": 100,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "myToast",
+    "type": "ui-toast",
+    "name": "myToast",
+    "uiId": "myToast",
+    "parent": "toastApp",
+    "mount": "toastHome.content",
+    "z": "ex-ui-toast",
+    "x": 400,
+    "y": 180,
+    "wires": [
+      []
+    ],
+    "message": "",
+    "variant": "primary",
+    "duration": 3000
+  },
+  {
+    "id": "triggerBtn",
+    "type": "ui-button",
+    "name": "triggerBtn",
+    "uiId": "triggerBtn",
+    "parent": "toastApp",
+    "mount": "toastHome.content",
+    "z": "ex-ui-toast",
+    "x": 400,
+    "y": 260,
+    "wires": [
+      []
+    ],
+    "label": "Show Toast"
+  },
+  {
+    "id": "ex-ui-toast-inj",
+    "type": "inject",
+    "name": "Trigger Toast",
+    "z": "ex-ui-toast",
+    "x": 100,
+    "y": 420,
+    "payload": "{\"message\":\"Hello from Node-RED!\",\"variant\":\"success\"}",
+    "payloadType": "json",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "myToast"
+      ]
+    ]
+  }
+]

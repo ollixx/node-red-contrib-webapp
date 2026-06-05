@@ -1,0 +1,95 @@
+[
+  {
+    "id": "ex-ui-input",
+    "type": "tab",
+    "label": "ui-input example",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "inputApp",
+    "type": "ui-app",
+    "name": "Input App",
+    "uiId": "inputApp",
+    "root": "inputApp",
+    "layout": "app",
+    "z": "ex-ui-input",
+    "x": 100,
+    "y": 80,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "inputHome",
+    "type": "ui-route",
+    "name": "inputHome",
+    "uiId": "inputHome",
+    "path": "/",
+    "parent": "inputApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-input",
+    "x": 100,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "nameInput",
+    "type": "ui-input",
+    "name": "nameInput",
+    "uiId": "nameInput",
+    "parent": "inputApp",
+    "mount": "inputHome.content",
+    "z": "ex-ui-input",
+    "x": 400,
+    "y": 180,
+    "wires": [
+      []
+    ],
+    "label": "Full Name",
+    "inputType": "text",
+    "placeholder": "Enter your name",
+    "value": {
+      "kind": "literal",
+      "value": ""
+    }
+  },
+  {
+    "id": "emailInput",
+    "type": "ui-input",
+    "name": "emailInput",
+    "uiId": "emailInput",
+    "parent": "inputApp",
+    "mount": "inputHome.content",
+    "z": "ex-ui-input",
+    "x": 400,
+    "y": 260,
+    "wires": [
+      []
+    ],
+    "label": "Email",
+    "inputType": "email",
+    "placeholder": "you@example.com",
+    "value": {
+      "kind": "literal",
+      "value": ""
+    }
+  },
+  {
+    "id": "ex-ui-input-dbg",
+    "type": "debug",
+    "name": "Events",
+    "z": "ex-ui-input",
+    "x": 700,
+    "y": 180,
+    "active": true,
+    "tosidebar": true,
+    "complete": "payload",
+    "targetType": "msg",
+    "wires": [
+      []
+    ]
+  }
+]

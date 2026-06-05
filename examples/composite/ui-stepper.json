@@ -1,0 +1,87 @@
+[
+  {
+    "id": "ex-ui-stepper",
+    "type": "tab",
+    "label": "ui-stepper example",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "stepApp",
+    "type": "ui-app",
+    "name": "Stepper App",
+    "uiId": "stepApp",
+    "root": "stepApp",
+    "layout": "app",
+    "z": "ex-ui-stepper",
+    "x": 100,
+    "y": 80,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "stepHome",
+    "type": "ui-route",
+    "name": "stepHome",
+    "uiId": "stepHome",
+    "path": "/",
+    "parent": "stepApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-stepper",
+    "x": 100,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "stepStore",
+    "type": "ui-store",
+    "name": "stepStore",
+    "uiId": "stepStore",
+    "parent": "stepApp",
+    "z": "ex-ui-stepper",
+    "x": 400,
+    "y": 320,
+    "wires": [
+      []
+    ],
+    "statePath": "step",
+    "initialValue": "0"
+  },
+  {
+    "id": "wizard",
+    "type": "ui-stepper",
+    "name": "wizard",
+    "uiId": "wizard",
+    "parent": "stepApp",
+    "mount": "stepHome.content",
+    "z": "ex-ui-stepper",
+    "x": 400,
+    "y": 180,
+    "wires": [
+      []
+    ],
+    "steps": "[{\"id\":\"s0\",\"label\":\"Account\"},{\"id\":\"s1\",\"label\":\"Profile\"},{\"id\":\"s2\",\"label\":\"Confirm\"}]",
+    "value": {
+      "kind": "state",
+      "path": "step"
+    }
+  },
+  {
+    "id": "ex-ui-stepper-dbg",
+    "type": "debug",
+    "name": "Events",
+    "z": "ex-ui-stepper",
+    "x": 700,
+    "y": 180,
+    "active": true,
+    "tosidebar": true,
+    "complete": "payload",
+    "targetType": "msg",
+    "wires": [
+      []
+    ]
+  }
+]

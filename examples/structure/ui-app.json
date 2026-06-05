@@ -1,0 +1,53 @@
+[
+  {
+    "id": "ex-ui-app",
+    "type": "tab",
+    "label": "ui-app example",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "myApp",
+    "type": "ui-app",
+    "name": "My App",
+    "uiId": "myApp",
+    "root": "myApp",
+    "layout": "app",
+    "z": "ex-ui-app",
+    "x": 100,
+    "y": 80,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "homeRoute",
+    "type": "ui-route",
+    "name": "homeRoute",
+    "uiId": "homeRoute",
+    "path": "/",
+    "parent": "myApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-app",
+    "x": 100,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "welcomeText",
+    "type": "ui-text",
+    "name": "welcomeText",
+    "uiId": "welcomeText",
+    "parent": "myApp",
+    "mount": "homeRoute.content",
+    "z": "ex-ui-app",
+    "x": 400,
+    "y": 180,
+    "wires": [
+      []
+    ],
+    "text": "Welcome to My App!"
+  }
+]

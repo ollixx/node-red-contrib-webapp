@@ -1,0 +1,86 @@
+[
+  {
+    "id": "ex-ui-badge",
+    "type": "tab",
+    "label": "ui-badge example",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "badgeApp",
+    "type": "ui-app",
+    "name": "Badge App",
+    "uiId": "badgeApp",
+    "root": "badgeApp",
+    "layout": "app",
+    "z": "ex-ui-badge",
+    "x": 100,
+    "y": 80,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "badgeHome",
+    "type": "ui-route",
+    "name": "badgeHome",
+    "uiId": "badgeHome",
+    "path": "/",
+    "parent": "badgeApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-badge",
+    "x": 100,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "successBadge",
+    "type": "ui-badge",
+    "name": "successBadge",
+    "uiId": "successBadge",
+    "parent": "badgeApp",
+    "mount": "badgeHome.content",
+    "z": "ex-ui-badge",
+    "x": 400,
+    "y": 180,
+    "wires": [
+      []
+    ],
+    "label": "Active",
+    "variant": "success"
+  },
+  {
+    "id": "warningBadge",
+    "type": "ui-badge",
+    "name": "warningBadge",
+    "uiId": "warningBadge",
+    "parent": "badgeApp",
+    "mount": "badgeHome.content",
+    "z": "ex-ui-badge",
+    "x": 400,
+    "y": 260,
+    "wires": [
+      []
+    ],
+    "label": "Pending",
+    "variant": "warning"
+  },
+  {
+    "id": "dangerBadge",
+    "type": "ui-badge",
+    "name": "dangerBadge",
+    "uiId": "dangerBadge",
+    "parent": "badgeApp",
+    "mount": "badgeHome.content",
+    "z": "ex-ui-badge",
+    "x": 400,
+    "y": 320,
+    "wires": [
+      []
+    ],
+    "label": "Error",
+    "variant": "danger"
+  }
+]

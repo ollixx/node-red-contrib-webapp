@@ -1,0 +1,53 @@
+[
+  {
+    "id": "ex-ui-breadcrumb",
+    "type": "tab",
+    "label": "ui-breadcrumb example",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "breadApp",
+    "type": "ui-app",
+    "name": "Breadcrumb App",
+    "uiId": "breadApp",
+    "root": "breadApp",
+    "layout": "app",
+    "z": "ex-ui-breadcrumb",
+    "x": 100,
+    "y": 80,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "breadHome",
+    "type": "ui-route",
+    "name": "breadHome",
+    "uiId": "breadHome",
+    "path": "/",
+    "parent": "breadApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-breadcrumb",
+    "x": 100,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "navBread",
+    "type": "ui-breadcrumb",
+    "name": "navBread",
+    "uiId": "navBread",
+    "parent": "breadApp",
+    "mount": "breadHome.content",
+    "z": "ex-ui-breadcrumb",
+    "x": 400,
+    "y": 180,
+    "wires": [
+      []
+    ],
+    "items": "[{\"label\":\"Home\",\"href\":\"/\"},{\"label\":\"Products\",\"href\":\"/products\"},{\"label\":\"Detail\"}]"
+  }
+]

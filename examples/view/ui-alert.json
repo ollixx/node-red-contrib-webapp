@@ -1,0 +1,86 @@
+[
+  {
+    "id": "ex-ui-alert",
+    "type": "tab",
+    "label": "ui-alert example",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "alertApp",
+    "type": "ui-app",
+    "name": "Alert App",
+    "uiId": "alertApp",
+    "root": "alertApp",
+    "layout": "app",
+    "z": "ex-ui-alert",
+    "x": 100,
+    "y": 80,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "alertHome",
+    "type": "ui-route",
+    "name": "alertHome",
+    "uiId": "alertHome",
+    "path": "/",
+    "parent": "alertApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-alert",
+    "x": 100,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "infoAlert",
+    "type": "ui-alert",
+    "name": "infoAlert",
+    "uiId": "infoAlert",
+    "parent": "alertApp",
+    "mount": "alertHome.content",
+    "z": "ex-ui-alert",
+    "x": 400,
+    "y": 180,
+    "wires": [
+      []
+    ],
+    "message": "This is an informational message.",
+    "variant": "primary"
+  },
+  {
+    "id": "successAlert",
+    "type": "ui-alert",
+    "name": "successAlert",
+    "uiId": "successAlert",
+    "parent": "alertApp",
+    "mount": "alertHome.content",
+    "z": "ex-ui-alert",
+    "x": 400,
+    "y": 260,
+    "wires": [
+      []
+    ],
+    "message": "Action completed successfully!",
+    "variant": "success"
+  },
+  {
+    "id": "dangerAlert",
+    "type": "ui-alert",
+    "name": "dangerAlert",
+    "uiId": "dangerAlert",
+    "parent": "alertApp",
+    "mount": "alertHome.content",
+    "z": "ex-ui-alert",
+    "x": 400,
+    "y": 320,
+    "wires": [
+      []
+    ],
+    "message": "Something went wrong.",
+    "variant": "danger"
+  }
+]

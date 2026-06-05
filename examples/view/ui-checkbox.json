@@ -1,0 +1,91 @@
+[
+  {
+    "id": "ex-ui-checkbox",
+    "type": "tab",
+    "label": "ui-checkbox example",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "cbApp",
+    "type": "ui-app",
+    "name": "Checkbox App",
+    "uiId": "cbApp",
+    "root": "cbApp",
+    "layout": "app",
+    "z": "ex-ui-checkbox",
+    "x": 100,
+    "y": 80,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "cbHome",
+    "type": "ui-route",
+    "name": "cbHome",
+    "uiId": "cbHome",
+    "path": "/",
+    "parent": "cbApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-checkbox",
+    "x": 100,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "agreeBox",
+    "type": "ui-checkbox",
+    "name": "agreeBox",
+    "uiId": "agreeBox",
+    "parent": "cbApp",
+    "mount": "cbHome.content",
+    "z": "ex-ui-checkbox",
+    "x": 400,
+    "y": 180,
+    "wires": [
+      []
+    ],
+    "label": "I agree to the terms",
+    "value": {
+      "kind": "literal",
+      "value": false
+    }
+  },
+  {
+    "id": "preChecked",
+    "type": "ui-checkbox",
+    "name": "preChecked",
+    "uiId": "preChecked",
+    "parent": "cbApp",
+    "mount": "cbHome.content",
+    "z": "ex-ui-checkbox",
+    "x": 400,
+    "y": 260,
+    "wires": [
+      []
+    ],
+    "label": "Pre-selected option",
+    "value": {
+      "kind": "literal",
+      "value": true
+    }
+  },
+  {
+    "id": "ex-ui-checkbox-dbg",
+    "type": "debug",
+    "name": "Events",
+    "z": "ex-ui-checkbox",
+    "x": 700,
+    "y": 180,
+    "active": true,
+    "tosidebar": true,
+    "complete": "payload",
+    "targetType": "msg",
+    "wires": [
+      []
+    ]
+  }
+]

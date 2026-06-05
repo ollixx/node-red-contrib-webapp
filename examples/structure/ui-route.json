@@ -1,0 +1,113 @@
+[
+  {
+    "id": "ex-ui-route",
+    "type": "tab",
+    "label": "ui-route example",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "routeApp",
+    "type": "ui-app",
+    "name": "Route App",
+    "uiId": "routeApp",
+    "root": "routeApp",
+    "layout": "app",
+    "z": "ex-ui-route",
+    "x": 100,
+    "y": 80,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "homeR",
+    "type": "ui-route",
+    "name": "homeR",
+    "uiId": "homeR",
+    "path": "/",
+    "parent": "routeApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-route",
+    "x": 100,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "detailR",
+    "type": "ui-route",
+    "name": "detailR",
+    "uiId": "detailR",
+    "path": "/detail",
+    "parent": "routeApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-route",
+    "x": 100,
+    "y": 260,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "homeText",
+    "type": "ui-text",
+    "name": "homeText",
+    "uiId": "homeText",
+    "parent": "routeApp",
+    "mount": "homeR.content",
+    "z": "ex-ui-route",
+    "x": 400,
+    "y": 180,
+    "wires": [
+      []
+    ],
+    "text": "Home route — click the button to navigate."
+  },
+  {
+    "id": "goDetail",
+    "type": "ui-button",
+    "name": "goDetail",
+    "uiId": "goDetail",
+    "parent": "routeApp",
+    "mount": "homeR.content",
+    "z": "ex-ui-route",
+    "x": 400,
+    "y": 260,
+    "wires": [
+      []
+    ],
+    "label": "Go to Detail"
+  },
+  {
+    "id": "detailText",
+    "type": "ui-text",
+    "name": "detailText",
+    "uiId": "detailText",
+    "parent": "routeApp",
+    "mount": "detailR.content",
+    "z": "ex-ui-route",
+    "x": 400,
+    "y": 340,
+    "wires": [
+      []
+    ],
+    "text": "Detail route."
+  },
+  {
+    "id": "navAction",
+    "type": "ui-action",
+    "name": "Navigate to /detail",
+    "uiId": "navAction",
+    "parent": "routeApp",
+    "actionType": "navigate",
+    "target": "/detail",
+    "z": "ex-ui-route",
+    "x": 700,
+    "y": 260,
+    "wires": [
+      []
+    ]
+  }
+]

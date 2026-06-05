@@ -1,0 +1,72 @@
+[
+  {
+    "id": "ex-ui-datepicker",
+    "type": "tab",
+    "label": "ui-datepicker example",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "dpApp",
+    "type": "ui-app",
+    "name": "Datepicker App",
+    "uiId": "dpApp",
+    "root": "dpApp",
+    "layout": "app",
+    "z": "ex-ui-datepicker",
+    "x": 100,
+    "y": 80,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "dpHome",
+    "type": "ui-route",
+    "name": "dpHome",
+    "uiId": "dpHome",
+    "path": "/",
+    "parent": "dpApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-datepicker",
+    "x": 100,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "startDate",
+    "type": "ui-datepicker",
+    "name": "startDate",
+    "uiId": "startDate",
+    "parent": "dpApp",
+    "mount": "dpHome.content",
+    "z": "ex-ui-datepicker",
+    "x": 400,
+    "y": 180,
+    "wires": [
+      []
+    ],
+    "label": "Start Date",
+    "value": {
+      "kind": "literal",
+      "value": ""
+    }
+  },
+  {
+    "id": "ex-ui-datepicker-dbg",
+    "type": "debug",
+    "name": "Events",
+    "z": "ex-ui-datepicker",
+    "x": 700,
+    "y": 180,
+    "active": true,
+    "tosidebar": true,
+    "complete": "payload",
+    "targetType": "msg",
+    "wires": [
+      []
+    ]
+  }
+]

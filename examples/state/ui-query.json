@@ -1,0 +1,88 @@
+[
+  {
+    "id": "ex-ui-query",
+    "type": "tab",
+    "label": "ui-query example",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "queryApp",
+    "type": "ui-app",
+    "name": "Query App",
+    "uiId": "queryApp",
+    "root": "queryApp",
+    "layout": "app",
+    "z": "ex-ui-query",
+    "x": 100,
+    "y": 80,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "queryHome",
+    "type": "ui-route",
+    "name": "queryHome",
+    "uiId": "queryHome",
+    "path": "/",
+    "parent": "queryApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-query",
+    "x": 100,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "usersQuery",
+    "type": "ui-query",
+    "name": "usersQuery",
+    "uiId": "usersQuery",
+    "parent": "queryApp",
+    "z": "ex-ui-query",
+    "x": 400,
+    "y": 320,
+    "wires": [
+      []
+    ],
+    "queryPath": "users",
+    "trigger": "onShow"
+  },
+  {
+    "id": "ex-ui-query-fn",
+    "type": "function",
+    "name": "Return users",
+    "z": "ex-ui-query",
+    "x": 700,
+    "y": 320,
+    "func": "// Simulate a database result.\nmsg.payload = [\n  { id: '1', name: 'Alice', role: 'Admin' },\n  { id: '2', name: 'Bob',   role: 'Editor' }\n];\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "wires": [
+      [
+        "usersQuery"
+      ]
+    ]
+  },
+  {
+    "id": "usersTable",
+    "type": "ui-table",
+    "name": "usersTable",
+    "uiId": "usersTable",
+    "parent": "queryApp",
+    "mount": "queryHome.content",
+    "z": "ex-ui-query",
+    "x": 400,
+    "y": 180,
+    "wires": [
+      []
+    ],
+    "columns": "[{\"key\":\"name\",\"label\":\"Name\"},{\"key\":\"role\",\"label\":\"Role\"}]",
+    "rows": {
+      "kind": "query",
+      "path": "users"
+    }
+  }
+]

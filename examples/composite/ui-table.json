@@ -1,0 +1,106 @@
+[
+  {
+    "id": "ex-ui-table",
+    "type": "tab",
+    "label": "ui-table example",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "tblApp",
+    "type": "ui-app",
+    "name": "Table App",
+    "uiId": "tblApp",
+    "root": "tblApp",
+    "layout": "app",
+    "z": "ex-ui-table",
+    "x": 100,
+    "y": 80,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "tblHome",
+    "type": "ui-route",
+    "name": "tblHome",
+    "uiId": "tblHome",
+    "path": "/",
+    "parent": "tblApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-table",
+    "x": 100,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "rowsStore",
+    "type": "ui-store",
+    "name": "rowsStore",
+    "uiId": "rowsStore",
+    "parent": "tblApp",
+    "z": "ex-ui-table",
+    "x": 400,
+    "y": 320,
+    "wires": [
+      []
+    ],
+    "statePath": "users",
+    "initialValue": "[{\"id\":\"1\",\"name\":\"Alice\",\"role\":\"Admin\"},{\"id\":\"2\",\"name\":\"Bob\",\"role\":\"Editor\"}]"
+  },
+  {
+    "id": "usersTable",
+    "type": "ui-table",
+    "name": "usersTable",
+    "uiId": "usersTable",
+    "parent": "tblApp",
+    "mount": "tblHome.content",
+    "z": "ex-ui-table",
+    "x": 400,
+    "y": 180,
+    "wires": [
+      []
+    ],
+    "columns": "[{\"key\":\"name\",\"label\":\"Name\"},{\"key\":\"role\",\"label\":\"Role\"}]",
+    "rows": {
+      "kind": "state",
+      "path": "users"
+    }
+  },
+  {
+    "id": "ex-ui-table-inj",
+    "type": "inject",
+    "name": "Inject",
+    "z": "ex-ui-table",
+    "x": 100,
+    "y": 420,
+    "payload": "[{\"id\":\"1\",\"name\":\"Alice\",\"role\":\"Admin\"},{\"id\":\"2\",\"name\":\"Bob\",\"role\":\"Editor\"},{\"id\":\"3\",\"name\":\"Carol\",\"role\":\"Viewer\"}]",
+    "payloadType": "json",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "rowsStore"
+      ]
+    ]
+  },
+  {
+    "id": "ex-ui-table-dbg",
+    "type": "debug",
+    "name": "Events",
+    "z": "ex-ui-table",
+    "x": 700,
+    "y": 180,
+    "active": true,
+    "tosidebar": true,
+    "complete": "payload",
+    "targetType": "msg",
+    "wires": [
+      []
+    ]
+  }
+]

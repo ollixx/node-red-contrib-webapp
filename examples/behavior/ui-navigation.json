@@ -1,0 +1,128 @@
+[
+  {
+    "id": "ex-ui-navigation",
+    "type": "tab",
+    "label": "ui-navigation example",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "navApp",
+    "type": "ui-app",
+    "name": "Navigation App",
+    "uiId": "navApp",
+    "root": "navApp",
+    "layout": "app",
+    "z": "ex-ui-navigation",
+    "x": 100,
+    "y": 80,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "navHome",
+    "type": "ui-route",
+    "name": "navHome",
+    "uiId": "navHome",
+    "path": "/",
+    "parent": "navApp",
+    "layoutId": "app",
+    "z": "ex-ui-navigation",
+    "x": 100,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "navAbout",
+    "type": "ui-route",
+    "name": "navAbout",
+    "uiId": "navAbout",
+    "path": "/about",
+    "parent": "navApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-navigation",
+    "x": 100,
+    "y": 260,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "navContact",
+    "type": "ui-route",
+    "name": "navContact",
+    "uiId": "navContact",
+    "path": "/contact",
+    "parent": "navApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-navigation",
+    "x": 100,
+    "y": 320,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "mainNav",
+    "type": "ui-navigation",
+    "name": "Main Nav",
+    "uiId": "mainNav",
+    "parent": "navApp",
+    "mount": "navApp.nav",
+    "links": "[{\"label\":\"Home\",\"to\":\"/\"},{\"label\":\"About\",\"to\":\"/about\"},{\"label\":\"Contact\",\"to\":\"/contact\"}]",
+    "z": "ex-ui-navigation",
+    "x": 400,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "homeContent",
+    "type": "ui-text",
+    "name": "homeContent",
+    "uiId": "homeContent",
+    "parent": "navApp",
+    "mount": "navHome.content",
+    "z": "ex-ui-navigation",
+    "x": 400,
+    "y": 180,
+    "wires": [
+      []
+    ],
+    "text": "Home page"
+  },
+  {
+    "id": "aboutContent",
+    "type": "ui-text",
+    "name": "aboutContent",
+    "uiId": "aboutContent",
+    "parent": "navApp",
+    "mount": "navAbout.content",
+    "z": "ex-ui-navigation",
+    "x": 700,
+    "y": 260,
+    "wires": [
+      []
+    ],
+    "text": "About page"
+  },
+  {
+    "id": "contactContent",
+    "type": "ui-text",
+    "name": "contactContent",
+    "uiId": "contactContent",
+    "parent": "navApp",
+    "mount": "navContact.content",
+    "z": "ex-ui-navigation",
+    "x": 700,
+    "y": 320,
+    "wires": [
+      []
+    ],
+    "text": "Contact page"
+  }
+]

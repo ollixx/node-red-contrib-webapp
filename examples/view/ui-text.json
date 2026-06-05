@@ -1,0 +1,120 @@
+[
+  {
+    "id": "ex-ui-text",
+    "type": "tab",
+    "label": "ui-text example",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "textApp",
+    "type": "ui-app",
+    "name": "Text App",
+    "uiId": "textApp",
+    "root": "textApp",
+    "layout": "app",
+    "z": "ex-ui-text",
+    "x": 100,
+    "y": 80,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "textHome",
+    "type": "ui-route",
+    "name": "textHome",
+    "uiId": "textHome",
+    "path": "/",
+    "parent": "textApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-text",
+    "x": 100,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "counterStore",
+    "type": "ui-store",
+    "name": "counterStore",
+    "uiId": "counterStore",
+    "parent": "textApp",
+    "z": "ex-ui-text",
+    "x": 400,
+    "y": 320,
+    "wires": [
+      []
+    ],
+    "statePath": "counter",
+    "initialValue": "0"
+  },
+  {
+    "id": "staticText",
+    "type": "ui-text",
+    "name": "staticText",
+    "uiId": "staticText",
+    "parent": "textApp",
+    "mount": "textHome.content",
+    "z": "ex-ui-text",
+    "x": 400,
+    "y": 180,
+    "wires": [
+      []
+    ],
+    "text": "Static label"
+  },
+  {
+    "id": "boundText",
+    "type": "ui-text",
+    "name": "boundText",
+    "uiId": "boundText",
+    "parent": "textApp",
+    "mount": "textHome.content",
+    "z": "ex-ui-text",
+    "x": 400,
+    "y": 260,
+    "wires": [
+      []
+    ],
+    "value": {
+      "kind": "state",
+      "path": "counter"
+    }
+  },
+  {
+    "id": "ex-ui-text-inj",
+    "type": "inject",
+    "name": "Inject",
+    "z": "ex-ui-text",
+    "x": 100,
+    "y": 420,
+    "payload": "42",
+    "payloadType": "str",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "counterStore"
+      ]
+    ]
+  },
+  {
+    "id": "ex-ui-text-dbg",
+    "type": "debug",
+    "name": "Events",
+    "z": "ex-ui-text",
+    "x": 700,
+    "y": 180,
+    "active": true,
+    "tosidebar": true,
+    "complete": "payload",
+    "targetType": "msg",
+    "wires": [
+      []
+    ]
+  }
+]

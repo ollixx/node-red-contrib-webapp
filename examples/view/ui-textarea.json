@@ -1,0 +1,74 @@
+[
+  {
+    "id": "ex-ui-textarea",
+    "type": "tab",
+    "label": "ui-textarea example",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "taApp",
+    "type": "ui-app",
+    "name": "Textarea App",
+    "uiId": "taApp",
+    "root": "taApp",
+    "layout": "app",
+    "z": "ex-ui-textarea",
+    "x": 100,
+    "y": 80,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "taHome",
+    "type": "ui-route",
+    "name": "taHome",
+    "uiId": "taHome",
+    "path": "/",
+    "parent": "taApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-textarea",
+    "x": 100,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "notesArea",
+    "type": "ui-textarea",
+    "name": "notesArea",
+    "uiId": "notesArea",
+    "parent": "taApp",
+    "mount": "taHome.content",
+    "z": "ex-ui-textarea",
+    "x": 400,
+    "y": 180,
+    "wires": [
+      []
+    ],
+    "label": "Notes",
+    "placeholder": "Enter your notes here…",
+    "rows": 4,
+    "value": {
+      "kind": "literal",
+      "value": ""
+    }
+  },
+  {
+    "id": "ex-ui-textarea-dbg",
+    "type": "debug",
+    "name": "Events",
+    "z": "ex-ui-textarea",
+    "x": 700,
+    "y": 180,
+    "active": true,
+    "tosidebar": true,
+    "complete": "payload",
+    "targetType": "msg",
+    "wires": [
+      []
+    ]
+  }
+]

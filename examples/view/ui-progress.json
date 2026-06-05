@@ -1,0 +1,91 @@
+[
+  {
+    "id": "ex-ui-progress",
+    "type": "tab",
+    "label": "ui-progress example",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "progApp",
+    "type": "ui-app",
+    "name": "Progress App",
+    "uiId": "progApp",
+    "root": "progApp",
+    "layout": "app",
+    "z": "ex-ui-progress",
+    "x": 100,
+    "y": 80,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "progHome",
+    "type": "ui-route",
+    "name": "progHome",
+    "uiId": "progHome",
+    "path": "/",
+    "parent": "progApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-progress",
+    "x": 100,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "progStore",
+    "type": "ui-store",
+    "name": "progStore",
+    "uiId": "progStore",
+    "parent": "progApp",
+    "z": "ex-ui-progress",
+    "x": 400,
+    "y": 320,
+    "wires": [
+      []
+    ],
+    "statePath": "progress",
+    "initialValue": "25"
+  },
+  {
+    "id": "uploadProgress",
+    "type": "ui-progress",
+    "name": "uploadProgress",
+    "uiId": "uploadProgress",
+    "parent": "progApp",
+    "mount": "progHome.content",
+    "z": "ex-ui-progress",
+    "x": 400,
+    "y": 180,
+    "wires": [
+      []
+    ],
+    "label": "Upload",
+    "value": {
+      "kind": "state",
+      "path": "progress"
+    }
+  },
+  {
+    "id": "ex-ui-progress-inj",
+    "type": "inject",
+    "name": "Inject",
+    "z": "ex-ui-progress",
+    "x": 100,
+    "y": 420,
+    "payload": "75",
+    "payloadType": "str",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0,
+    "wires": [
+      [
+        "progStore"
+      ]
+    ]
+  }
+]

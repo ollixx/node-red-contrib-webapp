@@ -1,0 +1,68 @@
+[
+  {
+    "id": "ex-ui-menu",
+    "type": "tab",
+    "label": "ui-menu example",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "menuApp",
+    "type": "ui-app",
+    "name": "Menu App",
+    "uiId": "menuApp",
+    "root": "menuApp",
+    "layout": "app",
+    "z": "ex-ui-menu",
+    "x": 100,
+    "y": 80,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "menuHome",
+    "type": "ui-route",
+    "name": "menuHome",
+    "uiId": "menuHome",
+    "path": "/",
+    "parent": "menuApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-menu",
+    "x": 100,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "sideMenu",
+    "type": "ui-menu",
+    "name": "sideMenu",
+    "uiId": "sideMenu",
+    "parent": "menuApp",
+    "mount": "menuHome.content",
+    "z": "ex-ui-menu",
+    "x": 400,
+    "y": 180,
+    "wires": [
+      []
+    ],
+    "items": "[{\"id\":\"home\",\"label\":\"Home\",\"icon\":\"house\"},{\"id\":\"settings\",\"label\":\"Settings\",\"icon\":\"gear\"},{\"id\":\"help\",\"label\":\"Help\",\"icon\":\"question-circle\"}]"
+  },
+  {
+    "id": "ex-ui-menu-dbg",
+    "type": "debug",
+    "name": "Events",
+    "z": "ex-ui-menu",
+    "x": 700,
+    "y": 320,
+    "active": true,
+    "tosidebar": true,
+    "complete": "payload",
+    "targetType": "msg",
+    "wires": [
+      []
+    ]
+  }
+]

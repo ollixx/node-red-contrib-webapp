@@ -1,0 +1,73 @@
+[
+  {
+    "id": "ex-ui-select",
+    "type": "tab",
+    "label": "ui-select example",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "selApp",
+    "type": "ui-app",
+    "name": "Select App",
+    "uiId": "selApp",
+    "root": "selApp",
+    "layout": "app",
+    "z": "ex-ui-select",
+    "x": 100,
+    "y": 80,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "selHome",
+    "type": "ui-route",
+    "name": "selHome",
+    "uiId": "selHome",
+    "path": "/",
+    "parent": "selApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-select",
+    "x": 100,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "countrySelect",
+    "type": "ui-select",
+    "name": "countrySelect",
+    "uiId": "countrySelect",
+    "parent": "selApp",
+    "mount": "selHome.content",
+    "z": "ex-ui-select",
+    "x": 400,
+    "y": 180,
+    "wires": [
+      []
+    ],
+    "label": "Country",
+    "optionsJson": "[{\"label\":\"Germany\",\"value\":\"de\"},{\"label\":\"Austria\",\"value\":\"at\"},{\"label\":\"Switzerland\",\"value\":\"ch\"}]",
+    "value": {
+      "kind": "literal",
+      "value": ""
+    }
+  },
+  {
+    "id": "ex-ui-select-dbg",
+    "type": "debug",
+    "name": "Events",
+    "z": "ex-ui-select",
+    "x": 700,
+    "y": 180,
+    "active": true,
+    "tosidebar": true,
+    "complete": "payload",
+    "targetType": "msg",
+    "wires": [
+      []
+    ]
+  }
+]

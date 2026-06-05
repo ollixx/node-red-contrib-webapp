@@ -1,0 +1,102 @@
+[
+  {
+    "id": "ex-ui-tabs",
+    "type": "tab",
+    "label": "ui-tabs example",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "tabsApp",
+    "type": "ui-app",
+    "name": "Tabs App",
+    "uiId": "tabsApp",
+    "root": "tabsApp",
+    "layout": "app",
+    "z": "ex-ui-tabs",
+    "x": 100,
+    "y": 80,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "tabsHome",
+    "type": "ui-route",
+    "name": "tabsHome",
+    "uiId": "tabsHome",
+    "path": "/",
+    "parent": "tabsApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-tabs",
+    "x": 100,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "myTabs",
+    "type": "ui-tabs",
+    "name": "myTabs",
+    "uiId": "myTabs",
+    "parent": "tabsApp",
+    "mount": "tabsHome.content",
+    "z": "ex-ui-tabs",
+    "x": 400,
+    "y": 180,
+    "wires": [
+      []
+    ],
+    "tabs": "[{\"id\":\"tab1\",\"label\":\"Overview\"},{\"id\":\"tab2\",\"label\":\"Details\"},{\"id\":\"tab3\",\"label\":\"History\"}]",
+    "value": {
+      "kind": "literal",
+      "value": "tab1"
+    }
+  },
+  {
+    "id": "tabContent1",
+    "type": "ui-text",
+    "name": "tabContent1",
+    "uiId": "tabContent1",
+    "parent": "tabsApp",
+    "mount": "myTabs.tab1",
+    "z": "ex-ui-tabs",
+    "x": 700,
+    "y": 160,
+    "wires": [
+      []
+    ],
+    "text": "Overview content"
+  },
+  {
+    "id": "tabContent2",
+    "type": "ui-text",
+    "name": "tabContent2",
+    "uiId": "tabContent2",
+    "parent": "tabsApp",
+    "mount": "myTabs.tab2",
+    "z": "ex-ui-tabs",
+    "x": 700,
+    "y": 220,
+    "wires": [
+      []
+    ],
+    "text": "Details content"
+  },
+  {
+    "id": "ex-ui-tabs-dbg",
+    "type": "debug",
+    "name": "Events",
+    "z": "ex-ui-tabs",
+    "x": 700,
+    "y": 420,
+    "active": true,
+    "tosidebar": true,
+    "complete": "payload",
+    "targetType": "msg",
+    "wires": [
+      []
+    ]
+  }
+]

@@ -38,6 +38,9 @@ pnpm dev:start
 
 # Smoke-test the customers-crud example (schema + runtime + renderer)
 pnpm example:customers-crud
+
+# Generate per-node example flows for Node-RED import (examples/<category>/<node>.json)
+pnpm gen:node-examples
 ```
 
 ## Architecture

@@ -7,9 +7,12 @@ description: "Schutzregeln fuer Flow-Dateien: nur angefragte Knoten/Felder aende
 
 **`.node-red-dev/flows.json` darf von Agenten niemals gelesen, geschrieben oder neu generiert werden** — auch nicht über `pnpm gen:example`. Diese Datei ist die persönliche Dev-Umgebung des Owners und ausschließlich von ihm zu verwalten. Kein Auftrag des Nutzers rechtfertigt eine Ausnahme.
 
-## Regeln für `examples/customers-crud/flow.json`
+## Regeln für generierte Flow-Dateien
 
-Diese Datei wird ausschließlich über `pnpm gen:example` erzeugt — nie manuell bearbeitet. Beim Bearbeiten gelten harte Regeln:
+`examples/customers-crud/flow.json` → wird von `pnpm gen:example` erzeugt.
+`examples/structure/*.json`, `examples/view/*.json`, `examples/composite/*.json`, `examples/state/*.json`, `examples/behavior/*.json` → werden von `pnpm gen:node-examples` erzeugt.
+
+Alle diese Dateien werden **ausschließlich über den zugehörigen Generator-Script** erzeugt — nie manuell bearbeitet. Beim Bearbeiten gelten harte Regeln:
 
 1. Nur die vom Nutzer explizit angefragten Aenderungen umsetzen.
 2. Keine globalen Normalisierungen (z, x, y, order, wires, Reihenfolge von Feldern) ohne ausdruecklichen Auftrag.

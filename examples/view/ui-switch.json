@@ -1,0 +1,72 @@
+[
+  {
+    "id": "ex-ui-switch",
+    "type": "tab",
+    "label": "ui-switch example",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "swApp",
+    "type": "ui-app",
+    "name": "Switch App",
+    "uiId": "swApp",
+    "root": "swApp",
+    "layout": "app",
+    "z": "ex-ui-switch",
+    "x": 100,
+    "y": 80,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "swHome",
+    "type": "ui-route",
+    "name": "swHome",
+    "uiId": "swHome",
+    "path": "/",
+    "parent": "swApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-switch",
+    "x": 100,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "darkMode",
+    "type": "ui-switch",
+    "name": "darkMode",
+    "uiId": "darkMode",
+    "parent": "swApp",
+    "mount": "swHome.content",
+    "z": "ex-ui-switch",
+    "x": 400,
+    "y": 180,
+    "wires": [
+      []
+    ],
+    "label": "Dark Mode",
+    "value": {
+      "kind": "literal",
+      "value": false
+    }
+  },
+  {
+    "id": "ex-ui-switch-dbg",
+    "type": "debug",
+    "name": "Events",
+    "z": "ex-ui-switch",
+    "x": 700,
+    "y": 180,
+    "active": true,
+    "tosidebar": true,
+    "complete": "payload",
+    "targetType": "msg",
+    "wires": [
+      []
+    ]
+  }
+]

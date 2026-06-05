@@ -1,0 +1,56 @@
+[
+  {
+    "id": "ex-ui-image",
+    "type": "tab",
+    "label": "ui-image example",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "imgApp",
+    "type": "ui-app",
+    "name": "Image App",
+    "uiId": "imgApp",
+    "root": "imgApp",
+    "layout": "app",
+    "z": "ex-ui-image",
+    "x": 100,
+    "y": 80,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "imgHome",
+    "type": "ui-route",
+    "name": "imgHome",
+    "uiId": "imgHome",
+    "path": "/",
+    "parent": "imgApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-image",
+    "x": 100,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "heroImage",
+    "type": "ui-image",
+    "name": "heroImage",
+    "uiId": "heroImage",
+    "parent": "imgApp",
+    "mount": "imgHome.content",
+    "z": "ex-ui-image",
+    "x": 400,
+    "y": 180,
+    "wires": [
+      []
+    ],
+    "src": "https://picsum.photos/400/200",
+    "alt": "Random photo",
+    "width": "400",
+    "height": "200"
+  }
+]

@@ -1,0 +1,97 @@
+[
+  {
+    "id": "ex-ui-dialog",
+    "type": "tab",
+    "label": "ui-dialog example",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "dlgApp",
+    "type": "ui-app",
+    "name": "Dialog App",
+    "uiId": "dlgApp",
+    "root": "dlgApp",
+    "layout": "app",
+    "z": "ex-ui-dialog",
+    "x": 100,
+    "y": 80,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "dlgHome",
+    "type": "ui-route",
+    "name": "dlgHome",
+    "uiId": "dlgHome",
+    "path": "/",
+    "parent": "dlgApp",
+    "layoutId": "vertical",
+    "z": "ex-ui-dialog",
+    "x": 100,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "myDialog",
+    "type": "ui-dialog",
+    "name": "My Dialog",
+    "uiId": "myDialog",
+    "parent": "dlgApp",
+    "title": "Hello Dialog",
+    "z": "ex-ui-dialog",
+    "x": 100,
+    "y": 360,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "openBtn",
+    "type": "ui-button",
+    "name": "openBtn",
+    "uiId": "openBtn",
+    "parent": "dlgApp",
+    "mount": "dlgHome.content",
+    "z": "ex-ui-dialog",
+    "x": 400,
+    "y": 180,
+    "wires": [
+      []
+    ],
+    "label": "Open Dialog"
+  },
+  {
+    "id": "dlgContent",
+    "type": "ui-text",
+    "name": "dlgContent",
+    "uiId": "dlgContent",
+    "parent": "dlgApp",
+    "mount": "myDialog.content",
+    "z": "ex-ui-dialog",
+    "x": 400,
+    "y": 280,
+    "wires": [
+      []
+    ],
+    "text": "Dialog content here."
+  },
+  {
+    "id": "openAction",
+    "type": "ui-action",
+    "name": "Open Dialog",
+    "uiId": "openAction",
+    "parent": "dlgApp",
+    "actionType": "openDialog",
+    "target": "myDialog",
+    "z": "ex-ui-dialog",
+    "x": 700,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  }
+]
