@@ -1,9 +1,15 @@
 ---
-applyTo: ".node-red-dev/flows.json,examples/customers-crud/flow.json"
+applyTo: "examples/customers-crud/flow.json"
 description: "Schutzregeln fuer Flow-Dateien: nur angefragte Knoten/Felder aendern und bestehende Layout-/Positionsdaten unveraendert lassen"
 ---
 
-Beim Bearbeiten von Flow-Dateien gelten harte Regeln:
+## ABSOLUTES VERBOT
+
+**`.node-red-dev/flows.json` darf von Agenten niemals gelesen, geschrieben oder neu generiert werden** — auch nicht über `pnpm gen:example`. Diese Datei ist die persönliche Dev-Umgebung des Owners und ausschließlich von ihm zu verwalten. Kein Auftrag des Nutzers rechtfertigt eine Ausnahme.
+
+## Regeln für `examples/customers-crud/flow.json`
+
+Diese Datei wird ausschließlich über `pnpm gen:example` erzeugt — nie manuell bearbeitet. Beim Bearbeiten gelten harte Regeln:
 
 1. Nur die vom Nutzer explizit angefragten Aenderungen umsetzen.
 2. Keine globalen Normalisierungen (z, x, y, order, wires, Reihenfolge von Feldern) ohne ausdruecklichen Auftrag.

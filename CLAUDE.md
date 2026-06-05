@@ -86,7 +86,7 @@ Each category also has a matching `docs/nodes/<category>/` directory with per-no
 
 ### Dev and E2E environments
 
-- `.node-red-dev/` — persistent dev Node-RED user directory (port 1881). Used for manual testing. `flows.json` here is **generated** by `pnpm gen:example` (it overwrites this file when the directory exists) — do not hand-edit it; regenerate instead.
+- `.node-red-dev/` — persistent dev Node-RED user directory (port 1881). Used for manual testing. **`.node-red-dev/flows.json` is the owner's personal dev environment and is completely off-limits for agents** — never read, write, or regenerate it (not even via `pnpm gen:example`). Only the owner manages this file.
 - `.node-red-e2e/` — ephemeral E2E user directory (port 1882). Rebuilt from scratch before every Playwright run using `examples/customers-crud/flow.json`.
 
 ## Agent workflow
@@ -101,4 +101,4 @@ This repo uses a phased roadmap. Before any implementation work, read:
 
 Per-node spec files live in `docs/nodes/<category>/<node>.md`. The roadmap, not `prd.md` or `docs/implementation-plan.md`, is the source of truth for what to implement.
 
-Flow files (`.node-red-dev/flows.json`, `examples/customers-crud/flow.json`) must only be changed for the exact fields requested — no positional normalisation, no re-ordering, no touching other flows in the same file.
+**`.node-red-dev/flows.json` is completely off-limits for agents** — never touch it. `examples/customers-crud/flow.json` is generated (not hand-edited) and must only be changed via `pnpm gen:example` — no positional normalisation, no re-ordering, no touching other flows in the same file.
