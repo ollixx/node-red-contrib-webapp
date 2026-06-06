@@ -1654,3 +1654,35 @@ phases:
       - "pnpm validate green"
       - "E2E 252 passed / 0 failed (authoritative, main checkout): wireless picked ui-dialog target opens the dialog via receive(); picker lists only interaction-capable webapp nodes."
       - "unit: two picked targets both receive via receive(); targetId override delivers via receive() to exactly that node; schema round-trip preserves `targets`."
+
+  - id: P61
+    title: "ui-app — Fehler-Weiterleitung als einzelne 'Logging'-Select + Info-Icon-Dialog"
+    status: done
+    dependencies: [P57]
+    summary:
+      delivered: "Replaced ui-app's verbose 3-element error-forwarding UI (checkbox + permanent form-tips block + conditional 'Min. Stufe' select + updateForwardVisibility) with ONE 'Logging' select (aus/debug/info/warn/error, default 'aus') plus a small fa-info-circle button opening a jQuery-UI explainer dialog (same pattern as the existing token dialog). Pure EDITOR mapping in oneditprepare/oneditsave onto the two unchanged config fields: 'aus' → forwardErrorsToClient=false; any severity → forwardErrorsToClient=true + forwardErrorMinSeverity=<value>. Schema (packages/schema) and runtime (nodes/webapp.js) UNCHANGED; secure default preserved."
+      stats: "nodes/structure/ui-app.html only (+ new tests/e2e/nodes/editor/ui-app-logging.spec.ts, 6 tests). E2E 258 passed / 0 failed; pnpm validate green. No diff in examples/customers-crud/flow.json (fields optional, not generator-emitted)."
+      notes: >
+        Editor-only phase, but the boolean round-trip took THREE attempts — a Node-RED editor gotcha worth
+        recording. After oneditsave returns, Node-RED re-reads every `#node-input-<key>` DOM element for each
+        key in `defaults` and overwrites this.<key> with the DOM value. (1) Setting this.forwardErrorsToClient
+        in oneditsave was clobbered by the stale hidden input ('aus'→false passed only by coincidence).
+        (2) Writing $("#node-input-forwardErrorsToClient").val("true"/"false") stored the STRING "false" —
+        which is TRUTHY, so it broke both the strict-boolean test and (worse) the runtime secure-default guard.
+        (3) CORRECT FIX: back forwardErrorsToClient with a hidden <input type="checkbox"> and set
+        .prop('checked', val !== 'aus') in oneditsave — Node-RED reads checkboxes back as real booleans.
+        Severity stays a hidden text field via .val(). LESSON: a Node-RED boolean `defaults` field must be
+        backed by a checkbox element, never a hidden text input (string "false" is truthy). All three round-trip
+        regressions were caught by the orchestrator's main-checkout E2E run; worktrees cannot bootstrap Playwright.
+      cost: "session <see .ai/agent-runs.jsonl>; impl 2026-06-06T23:18Z→23:23Z + fix1 23:24Z→23:29Z + fix2 23:30Z→23:33Z; orchestrator main-checkout E2E across 3 iterations; subagent_tokens ~150k across 3 agents"
+    goals:
+      - "Replace the verbose 3-element error-forwarding UI with ONE 'Logging' select."
+      - "Move the explanation from a permanent form-tips block into a small info-icon dialog."
+    deliverables:
+      - "ui-app.html: single 'Logging' select (aus/debug/info/warn/error, default 'aus'); editor-only mapping onto the two unchanged hidden fields; schema + runtime unchanged."
+      - "fa-info-circle button opens a jQuery-UI explainer dialog (token-dialog pattern); permanent tips block + conditional 'Min. Stufe' row + updateForwardVisibility removed."
+      - "Migration: existing {forwardErrorsToClient,forwardErrorMinSeverity} map back into the select (false→'aus'; true→stored severity)."
+    validation:
+      - "pnpm validate green"
+      - "E2E 258 passed / 0 failed (main checkout): single Logging select + info button, no tips block / no Min. Stufe row; info dialog opens+closes; round-trip 'aus'→false, 'warn'→true+warn (strict booleans); legacy node with true+info loads as 'info'."
+      - "No diff in examples/customers-crud/flow.json from gen:example."

@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P61  # ui-app — Fehler-Weiterleitung als einzelne 'Logging'-Select + Info-Icon-Dialog
+  current_phase: P62  # Bugfix — Shoelace token-bridge self-reference cycle (missing sl-button padding)
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -474,26 +474,7 @@ phases:
   # (secure default, ADR 0006 §4 unverändert; kein Verhaltenswechsel).
   # ════════════════════════════════════════════════════════════════════════
 
-  - id: P61
-    title: "ui-app — Fehler-Weiterleitung als einzelne 'Logging'-Select + Info-Icon-Dialog"
-    status: in_progress
-    dependencies: [P57]
-    goals:
-      - Das verbose 3-Element-UI (Checkbox + form-tips + bedingte 'Min. Stufe') durch EINE Select 'Logging' ersetzen.
-      - Die Erklärung aus einem permanenten form-tips-Block in einen kleinen Info-Dialog verlagern, der über einen 'i im Kreis'-Icon-Button geöffnet wird.
-    deliverables:
-      - "ui-app.html: eine Select mit Label 'Logging', Optionen: aus / debug / info / warn / error; erste Option 'aus', Default 'aus' (secure default bleibt)."
-      - "Reiner Editor-Mapping in oneditprepare/oneditsave auf die zwei bestehenden hidden-Felder: 'aus' → forwardErrorsToClient=false; jede Severity → forwardErrorsToClient=true + forwardErrorMinSeverity=<wert>. Schema (packages/schema) und Runtime (nodes/webapp.js) bleiben UNVERÄNDERT."
-      - "Kleiner Icon-Button neben dem Label (font-awesome fa-info-circle, 'i im Kreis') öffnet einen kleinen jQuery-UI-Dialog (gleiches Muster wie der bestehende Token-Dialog #node-dialog-tokens), der erklärt: Framework-Fehler ab der gewählten Stufe gehen redigiert per SSE an verbundene Browser; 'aus' = keine Weiterleitung; Sicherheitshinweis."
-      - "Den permanenten form-tips-Block und die bedingte 'Min. Stufe'-Zeile (samt updateForwardVisibility-Logik) entfernen — die Erklärung lebt jetzt im Dialog, die Schwelle in der Select."
-      - "Migration alter Knoten: bestehende {forwardErrorsToClient,forwardErrorMinSeverity}-Werte korrekt in die Select zurück-mappen (false → 'aus'; true → gespeicherte Schwelle)."
-    validation:
-      - pnpm validate grün (build + lint + test + roadmap)
-      - "Editor: ui-app zeigt EINE 'Logging'-Select + Info-Icon-Button; kein Dauer-Tips-Block, keine separate 'Min. Stufe'-Zeile."
-      - "Editor: Klick auf den Info-Icon-Button öffnet den Erklär-Dialog; schließt sauber."
-      - "Round-trip: 'aus' speichert forwardErrorsToClient=false; 'warn' speichert true + minSeverity=warn; erneutes Öffnen zeigt die richtige Select-Option."
-      - "Bestehender Knoten mit forwardErrorsToClient=true,minSeverity=info lädt als Select-Wert 'info' (Migration)."
-      - "Kein Diff in examples/customers-crud/flow.json durch gen:example (Felder optional, vom Generator nicht emittiert)."
+  - { id: P61, title: "ui-app — Fehler-Weiterleitung als einzelne 'Logging'-Select + Info-Icon-Dialog", status: done, dependencies: [P57], archive: "docs/agent-roadmap-archive.yaml#P61" }
 
   # ════════════════════════════════════════════════════════════════════════
   # Bugfix: Shoelace Token-Bridge erzeugt CSS-Cycles → fehlendes Padding (P62)
