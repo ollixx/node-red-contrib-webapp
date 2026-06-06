@@ -84,6 +84,36 @@
     const serializer = root.ownerDocument.defaultView.WebappSerializer
         || (typeof window !== "undefined" ? window.WebappSerializer : undefined);
 
+    // P55: shared console logger (ADR 0006 shape).
+    //   severity  → console method
+    //   debug     → console.debug  (DevTools-filterable, no flood in default console)
+    //   info      → console.info   (lifecycle events: connected / disconnected / reconnect)
+    //   warn      → console.warn   (recoverable: malformed frame, failed fetch)
+    //   error     → console.error  (unrecoverable / unexpected)
+    //
+    // Every log includes a compact context object { appId, op } so DevTools
+    // "Filter" on appId finds all messages for one app without grep.
+    // Never throws — the logger itself is a no-op fallback if console is absent.
+    const log = (function () {
+        var con = (typeof console !== "undefined") ? console : null;
+        function emit(method, op, message, extra) {
+            if (!con) { return; }
+            var ctx = { appId: appId, op: op };
+            if (extra !== undefined) {
+                ctx.detail = extra;
+            }
+            // ADR 0006: message is human-readable; context is the second arg so
+            // DevTools shows the structured object collapsible next to the text.
+            (con[method] || con.log).call(con, "[webapp:" + appId + "] " + message, ctx);
+        }
+        return {
+            debug: function (op, msg, extra) { emit("debug", op, msg, extra); },
+            info:  function (op, msg, extra) { emit("info",  op, msg, extra); },
+            warn:  function (op, msg, extra) { emit("warn",  op, msg, extra); },
+            error: function (op, msg, extra) { emit("error", op, msg, extra); }
+        };
+    }());
+
     function base() {
         return "/webapp/" + encodeURIComponent(appId);
     }
@@ -289,19 +319,31 @@
         // that live push with the stale pre-reaction state (a race), so the event
         // POST is now fire-and-report only — the stream is the single source of
         // re-renders.
+        const eventPayload = {
+            clientId: clientId,
+            sourceId: detail.source,
+            event: detail.event || "click",
+            location: location,
+            params: params
+        };
+        // P55: trace outgoing event POST at DEBUG.
+        log.debug("dispatch", "→ POST /event " + eventPayload.event, {
+            sourceId: eventPayload.sourceId,
+            event: eventPayload.event,
+            params: eventPayload.params
+        });
         await fetch(base() + "/event", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                clientId: clientId,
-                sourceId: detail.source,
-                event: detail.event || "click",
-                location: location,
-                params: params
-            })
-        }).catch(function () {
-            // The event report failed; nothing to apply. The next user action or
-            // stream push will reconcile the view.
+            body: JSON.stringify(eventPayload)
+        }).catch(function (err) {
+            // P55: log instead of silently swallowing. The next user action or
+            // stream push will reconcile the view (graceful degradation kept).
+            log.warn("dispatch", "POST /event failed — UI event not delivered to flow", {
+                event: eventPayload.event,
+                sourceId: eventPayload.sourceId,
+                error: err && err.message ? err.message : String(err)
+            });
         });
     }
 
@@ -445,10 +487,17 @@
     async function hydrate() {
         const query = "?location=" + encodeURIComponent(location) + (dialogId ? "&dialog=" + encodeURIComponent(dialogId) : "");
 
+        // P55: trace outgoing hydrate fetch at DEBUG.
+        log.debug("hydrate", "→ GET /snapshot" + query);
+
         try {
             const response = await fetch(base() + "/snapshot" + query);
 
             if (!response.ok) {
+                // P55: warn on non-OK response; the server-rendered fallback stays.
+                log.warn("hydrate", "GET /snapshot returned " + response.status + " — keeping server-rendered fallback", {
+                    status: response.status
+                });
                 hydrated = true;
                 return;
             }
@@ -456,11 +505,16 @@
             const result = await response.json();
 
             if (result && result.snapshot) {
+                // P55: trace incoming snapshot at DEBUG.
+                log.debug("hydrate", "← snapshot received (location: " + (result.snapshot.location || location) + ")");
                 applySnapshot(result.snapshot);
             }
         }
         catch (error) {
-            // Leave the server-rendered fallback in place on any failure.
+            // P55: log instead of silently swallowing. Server-rendered fallback stays.
+            log.warn("hydrate", "GET /snapshot failed — keeping server-rendered fallback", {
+                error: error && error.message ? error.message : String(error)
+            });
         }
         hydrated = true;
     }
@@ -638,15 +692,76 @@
 
         const source = new EventSource(streamUrl);
 
+        // P55: lifecycle — log SSE connection open at INFO.
+        source.addEventListener("open", function () {
+            log.info("sse", "Connected to live stream");
+        });
+
+        // P55: "error" listener handles BOTH:
+        //   a) native EventSource connection failures (browser-generated, no .data)
+        //   b) named SSE `event: error` frames pushed by the backend (P56, have .data)
+        // Distinguish by checking evt.data: presence means it is a server-pushed
+        // structured error frame (ADR 0006 decision 4); absence means a connection event.
+        source.addEventListener("error", function (evt) {
+            // Branch (b): backend-forwarded structured error frame (P55 receiving end,
+            // transport implemented in P56). Log at the carried severity.
+            if (evt.data !== undefined && evt.data !== null && evt.data !== "") {
+                try {
+                    var payload = JSON.parse(evt.data);
+                    if (payload && payload.error) {
+                        var err = payload.error;
+                        var severity = err.severity || "error";
+                        var msg = "[server] " + (err.message || "Unknown server error");
+                        var extra = { code: err.code, context: err.context, origin: "server" };
+                        if (log[severity]) {
+                            log[severity]("sse/error", msg, extra);
+                        } else {
+                            log.error("sse/error", msg, extra);
+                        }
+                        return;
+                    }
+                }
+                catch (parseErr) {
+                    log.warn("sse/error", "Failed to parse server error frame", {
+                        error: parseErr && parseErr.message ? parseErr.message : String(parseErr),
+                        data: evt.data ? String(evt.data).slice(0, 120) : "<empty>"
+                    });
+                    return;
+                }
+            }
+
+            // Branch (a): native connection lifecycle event (EventSource.readyState).
+            // EventSource.readyState: 0=CONNECTING, 1=OPEN, 2=CLOSED
+            var state = source.readyState;
+            if (state === 2) {
+                log.info("sse", "Stream closed (will not reconnect)");
+            } else if (state === 0) {
+                log.info("sse", "Stream disconnected — reconnecting…");
+            } else {
+                log.warn("sse", "Stream error (readyState=" + state + ")");
+            }
+        });
+
         source.addEventListener("snapshot", function (messageEvent) {
             try {
                 const payload = JSON.parse(messageEvent.data);
                 if (payload && payload.snapshot) {
+                    // P55: trace incoming snapshot at DEBUG (compact summary).
+                    log.debug("sse/snapshot", "← snapshot (location: " + (payload.snapshot.location || location) + ")");
                     applySnapshot(payload.snapshot);
+                }
+                else {
+                    log.warn("sse/snapshot", "Received snapshot frame with missing payload — skipping", {
+                        data: messageEvent.data ? messageEvent.data.slice(0, 120) : "<empty>"
+                    });
                 }
             }
             catch (error) {
-                // Ignore a malformed frame; the next push corrects the view.
+                // P55: log instead of silently swallowing. Next push corrects view.
+                log.warn("sse/snapshot", "Failed to parse snapshot frame — skipping", {
+                    error: error && error.message ? error.message : String(error),
+                    data: messageEvent.data ? messageEvent.data.slice(0, 120) : "<empty>"
+                });
             }
         });
 
@@ -654,11 +769,25 @@
             try {
                 const payload = JSON.parse(messageEvent.data);
                 if (payload && payload.command) {
+                    // P55: trace incoming command at DEBUG.
+                    log.debug("sse/command", "← command " + (payload.command.type || "?"), {
+                        target: payload.command.target,
+                        part: payload.command.part
+                    });
                     applyCommand(payload.command);
+                }
+                else {
+                    log.warn("sse/command", "Received command frame with missing payload — skipping", {
+                        data: messageEvent.data ? messageEvent.data.slice(0, 120) : "<empty>"
+                    });
                 }
             }
             catch (error) {
-                // Ignore a malformed frame.
+                // P55: log instead of silently swallowing.
+                log.warn("sse/command", "Failed to parse command frame — skipping", {
+                    error: error && error.message ? error.message : String(error),
+                    data: messageEvent.data ? messageEvent.data.slice(0, 120) : "<empty>"
+                });
             }
         });
 
@@ -670,9 +799,14 @@
             try {
                 const payload = JSON.parse(messageEvent.data);
                 if (!payload || !payload.toast) {
+                    log.warn("sse/toast", "Received toast frame with missing payload — skipping", {
+                        data: messageEvent.data ? messageEvent.data.slice(0, 120) : "<empty>"
+                    });
                     return;
                 }
                 const toast = payload.toast;
+                // P55: trace incoming toast at DEBUG.
+                log.debug("sse/toast", "← toast severity=" + (toast.severity || "info") + " \"" + String(toast.message || "").slice(0, 60) + "\"");
                 const duration = typeof toast.duration === "number" ? toast.duration : 3000;
                 const severity = String(toast.severity || "info");
                 const message = String(toast.message || "");
@@ -697,7 +831,11 @@
                 }
             }
             catch (error) {
-                // Ignore a malformed toast frame.
+                // P55: log instead of silently swallowing.
+                log.warn("sse/toast", "Failed to parse or display toast frame — skipping", {
+                    error: error && error.message ? error.message : String(error),
+                    data: messageEvent.data ? messageEvent.data.slice(0, 120) : "<empty>"
+                });
             }
         });
 
@@ -710,6 +848,8 @@
         var subscribeTime = Date.now();
         source.addEventListener("redeploy", function () {
             if (hydrated && (Date.now() - subscribeTime) > 1000) {
+                // P55: log reload trigger at INFO.
+                log.info("sse/redeploy", "Flow redeployed — reloading page");
                 window.location.reload();
             }
         });
@@ -718,9 +858,24 @@
     // Test hook (P26): expose applySnapshot so a jsdom test can drive a
     // re-render / morph and assert no element-kind swap. No-op in production
     // unless a test sets window.__webappClientTestHooks beforehand.
+    //
+    // P55: also expose handleServerError so E2E tests can fire a synthetic
+    // "webapp-error" payload without needing to intercept the SSE stream.
     if (root.ownerDocument.defaultView && root.ownerDocument.defaultView.__webappClientTestHooks) {
         root.ownerDocument.defaultView.__webappClientTestHooks.applySnapshot = applySnapshot;
         root.ownerDocument.defaultView.__webappClientTestHooks.applyCommand = applyCommand;
+        root.ownerDocument.defaultView.__webappClientTestHooks.handleServerError = function (errorPayload) {
+            // Simulate receiving a backend-forwarded "error" SSE frame (ADR 0006 §4).
+            var err = errorPayload || {};
+            var severity = err.severity || "error";
+            var msg = "[server] " + (err.message || "Unknown server error");
+            var extra = { code: err.code, context: err.context, origin: "server" };
+            if (log[severity]) {
+                log[severity]("sse/error", msg, extra);
+            } else {
+                log.error("sse/error", msg, extra);
+            }
+        };
     }
 
     hydrate();
