@@ -705,10 +705,15 @@ phases:
   #   4. Ein ui-debug/ui-error/ui-log-Knoten zeigt das Log konfigurierbar als
   #      UI-Element.
   #
-  # Fehler-Modell (im ADR final):
+  # Fehler-/Log-Modell (im ADR final):
   #   { severity, code, message (menschenlesbar), context:{appId,nodeId,op},
   #     timestamp, origin: "client" | "server" }
-  #   severity → console.error/warn/info im Client.
+  #   severity = debug | info | warn | error → console.debug/info/warn/error.
+  #   Message-Tracing (Owner-Wunsch): ALLE ein- und ausgehenden Messages im
+  #   Client als DEBUG loggen (ausgehend: /event-POSTs; eingehend: SSE snapshot/
+  #   command/toast/error). Lifecycle (Connected/Disconnected/Reconnect) als
+  #   INFO. DEBUG → console.debug, in DevTools filterbar, flutet die Default-
+  #   Konsole nicht.
   #   Abgrenzung: ui-toast = flüchtige User-Notification; ui-log = persistenter,
   #   inspizierbarer Log. Kein Duplikat.
   #   SICHERHEIT: Server-Fehler ans Frontend zu leiten kann Interna leaken →
@@ -732,12 +737,15 @@ phases:
            frame), webapp runtime (mapConfig validation, store/action handling),
            vs. the flow author's own function nodes (those keep using Node-RED
            catch nodes — out of scope, but documented as the boundary).
-         - The structured error shape: { severity, code, message (human-
+         - The structured error/log shape: { severity, code, message (human-
            readable, with context), context:{appId,nodeId,op}, timestamp,
-           origin }. severity enum (e.g. error|warn|info).
-         - Client logging policy: log by default, severity→console method, never
-           swallow. How human-readable messages are produced (a message catalog
-           vs inline) — decide.
+           origin }. severity enum = debug | info | warn | error.
+         - Client logging policy: log by default, severity→console method
+           (debug→console.debug, info→console.info, warn→console.warn,
+           error→console.error), never swallow. DEBUG is used for message
+           tracing (P55) and maps to console.debug so it stays filterable and
+           does not flood the default console. How human-readable messages are
+           produced (a message catalog vs inline) — decide.
          - Backend→frontend forwarding: opt-in per ui-app, severity threshold,
            redaction option; transported via a new SSE "error" event. Security
            rationale (no silent leak of server internals).
@@ -754,32 +762,46 @@ phases:
       - No behaviour change: existing E2E suite stays green unchanged.
 
   - id: P55
-    title: "Client-Fehler-Surfacing — Konsole statt stillem Schlucken"
+    title: "Client-Logging — Konsole statt Schlucken + Message-Tracing"
     status: pending
     dependencies: [P54]
-    # Routine but broad: touches every catch site in the thin client. Use sonnet.
+    # Routine but broad: touches every catch site and every message in/out of
+    # the thin client. Use sonnet.
     goal: |
-      Stop the thin client from swallowing errors. Every failure is logged to the
-      browser console with a human-readable, contextual message (not a bare
-      code), per the P54 policy. Also render errors forwarded from the backend
-      (the receiving end of P56's transport).
+      Make the thin client observable. Three things, all per the P54 policy:
+        1. Stop swallowing errors — every failure logs to the console with a
+           human-readable, contextual message (not a bare code) at warn/error.
+        2. Message tracing — log ALL incoming and outgoing messages at DEBUG.
+        3. Lifecycle — log connect / disconnect / reconnect at INFO.
+      Also log errors forwarded from the backend (the receiving end of P56's
+      transport).
     scope: |
       - resources/lib/webapp-client.js
-          Replace every silent catch ("ignore a malformed frame", "nothing to
-          apply", "leave fallback in place", the empty .catch on event POST,
-          hydrate/snapshot/command/toast handlers) with a logging call that
-          emits the structured error (P54 shape) to the console via a small
-          shared logger. Keep the existing graceful-degradation behaviour — log
-          AND degrade, don't throw.
-          Add a console logger that maps severity→console.error/warn/info and
-          prints message + context readably.
+          Add a shared console logger: severity → console.debug/info/warn/error,
+          printing message + context readably (P54 shape).
+          (1) Replace every silent catch ("ignore a malformed frame", "nothing
+              to apply", "leave fallback in place", the empty .catch on the
+              event POST, the hydrate/snapshot/command/toast handlers) with a
+              warn/error log. Keep graceful degradation — log AND degrade, never
+              throw.
+          (2) Message tracing at DEBUG:
+              - OUTGOING: each /event POST (event name + params + appId) and the
+                hydrate fetch.
+              - INCOMING: each SSE frame — snapshot / command / toast / error
+                (event type + a compact summary, not the full payload dump).
+          (3) Lifecycle at INFO: EventSource open (connected), error/close
+              (disconnected), and auto-reconnect.
           Add an SSE "error" event listener that logs backend-forwarded errors
-          (the payload P56 pushes).
+          (the payload P56 pushes) at their carried severity.
     validation: |
       - pnpm validate passes.
-      - `pnpm exec playwright test` passes; add an E2E asserting that a forced
-        failure (e.g. a malformed SSE frame / a failing /event POST) produces a
-        console.error with a contextual message (captured via page.on("console")).
+      - `pnpm exec playwright test` passes; add E2E assertions (captured via
+        page.on("console")):
+          * a forced failure (malformed SSE frame / failing /event POST) logs a
+            console.error/warn with a contextual message;
+          * a button click logs an outgoing DEBUG trace; an incoming snapshot
+            logs an incoming DEBUG trace;
+          * the SSE connection open logs an INFO lifecycle message.
       - No silent catch remains in webapp-client.js (spot-checked in review).
 
   - id: P56
