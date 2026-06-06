@@ -6,6 +6,20 @@ description: "Implement the next ready roadmap phase and self-validate before ma
 
 You are an implementation agent. You implement exactly one roadmap phase per run.
 
+## Mode — standalone vs orchestrated
+
+You run in one of two modes. The spawning instruction tells you which; if nothing says "ORCHESTRATED mode", you are standalone.
+
+- **Standalone** (default): you own the roadmap for this phase. You do the full `Execute` sequence below, including every `docs/agent-roadmap.yaml` / archive write.
+- **Orchestrated**: an orchestrator owns the roadmap and works in the main checkout; you are in your own git worktree on branch `phase/<PHASE_ID>`. The division of labour is strict:
+  - The orchestrator has ALREADY set this phase `in_progress` — **do not** set it (skip Execute step 1's status write; still capture your start timestamp for the cost figure).
+  - You **never** edit `docs/agent-roadmap.yaml` or `docs/agent-roadmap-archive.yaml`. Skip Execute step 5's roadmap writes entirely.
+  - You implement, validate, and **commit only code** to your `phase/<PHASE_ID>` branch.
+  - Instead of writing the archive, you **return** the summary as text (the `archive-summary:` block the orchestrator prompt specifies) plus your branch name and the next pending phase. The orchestrator transcribes it and merges your branch.
+  - On a stop condition: do not set `blocked` in the YAML yourself — report `blocked` + a `blocker:` line; the orchestrator records it.
+
+Everything else in this prompt (green baseline, test-first, the validation protocol, the friction log) applies identically in both modes.
+
 ## Setup — read in this order, nothing more
 
 1. `AGENTS.md`
@@ -17,18 +31,20 @@ If the phase adds new node types (P16a, P16b, P16c, P16d or similar): invoke the
 
 ## Execute
 
-1. Set the phase status to `in_progress` in `docs/agent-roadmap.yaml`. Commit. **At this moment capture your start timestamp** (`date -u +%FT%TZ`) — you need it for the `cost.duration` field at the end (AGENTS.md rule 10).
+1. Set the phase status to `in_progress` in `docs/agent-roadmap.yaml`. Commit. **At this moment capture your start timestamp** (`date -u +%FT%TZ`) — you need it for the `cost.duration` field at the end (AGENTS.md rule 10). *(Orchestrated mode: the orchestrator already set `in_progress` — skip the status write and commit, but still capture the timestamp.)*
 2. Confirm the suite is green *before* you start (`pnpm test` **and** `pnpm exec playwright test`). Both must be fully green before you write a single line of implementation code. If any test is already failing: **stop, fix it first, commit the fix, then start the phase.** Do not proceed with a red baseline — a red baseline is a blocker, not a footnote.
 3. Implement each deliverable **test-first**: for the deliverable's matching `validation` criterion, write the failing unit/E2E test first, watch it fail, then implement until it passes. This is not bureaucracy — it is what keeps you from the fix→revert→fix thrash of changing code you do not yet understand. One commit per logical change. If a change makes a previously-green test red, revert and re-approach rather than pile on.
 
    **Anti-baseline rule:** "pre-existing", "unrelated", "net improvement", and "baseline" are never valid reasons to leave an E2E test failing. If your change broke a test that was green before your phase: fix it. If a test was already red when you arrived: you should have stopped in step 2. If you discover mid-phase that there were pre-existing failures you missed in step 2: stop, fix them all, then continue. Zero E2E failures is the only valid state for marking done.
 4. When all deliverables are implemented, follow the full validation protocol in `.ai/agents/validation.md` to confirm every criterion is covered (it back-stops anything you did not already test-drive).
 5. If all three validation steps pass:
-   a. Write a `summary` for the phase in `docs/agent-roadmap-archive.yaml` (see format below).
-   b. Replace the full phase entry in `docs/agent-roadmap.yaml` with a slim archive reference (see format below).
-   c. Update `current_phase` to the next pending phase.
-   d. Commit everything, then report the next ready phase.
-6. If a stop condition from `.ai/agents/architecture.md` is hit: set status to `blocked`, add a `blocker` field explaining the decision needed, commit, and stop.
+   - **Standalone:**
+     a. Write a `summary` for the phase in `docs/agent-roadmap-archive.yaml` (see format below).
+     b. Replace the full phase entry in `docs/agent-roadmap.yaml` with a slim archive reference (see format below).
+     c. Update `current_phase` to the next pending phase.
+     d. Commit everything, then report the next ready phase.
+   - **Orchestrated:** do NOT touch the roadmap files. Commit your code to `phase/<PHASE_ID>`, then return the result block (the `archive-summary:` fields, branch name, next pending phase) for the orchestrator to transcribe and merge.
+6. If a stop condition from `.ai/agents/architecture.md` is hit: **standalone** — set status to `blocked`, add a `blocker` field, commit, and stop. **Orchestrated** — do not edit the YAML; report `blocked` + a `blocker:` line to the orchestrator and stop.
 
 ## Archive format
 
