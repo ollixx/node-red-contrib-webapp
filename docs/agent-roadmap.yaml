@@ -294,7 +294,7 @@ phases:
 
   - id: P49
     title: "Varianten-Vokabular im Schema + einheitliches Serializer-Mapping"
-    status: pending
+    status: in_progress
     dependencies: [P48]
     # Architecture-sensitive: defines a new shared contract (the variant
     # vocabulary) that sits ABOVE the backend seam, and consolidates the
