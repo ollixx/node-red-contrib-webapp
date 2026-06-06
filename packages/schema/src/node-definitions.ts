@@ -10,6 +10,7 @@ import {
     INPUT_VARIANTS,
     routeNodePathSchema,
     routePathSchema,
+    SEVERITY_VARIANTS,
     TEXT_VARIANTS
 } from "./contracts";
 import { standardLayoutPresetIds } from "./layout-presets";
@@ -382,7 +383,10 @@ export type UiSliderNodeDefinition = z.infer<typeof uiSliderNodeDefinitionSchema
 export const uiAlertNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-alert"),
     message: bindingSchema,
-    severity: z.enum(["info", "warning", "error", "success"]).optional(),
+    // P49b: unified with SEVERITY_VARIANTS — the single source of truth.
+    // Legacy values "error" and "default" are no longer accepted; they were
+    // normalised in the serializer before reaching here, so no runtime impact.
+    severity: z.enum(SEVERITY_VARIANTS).optional(),
     title: z.string().optional(),
     dismissible: z.boolean().optional(),
     visible: bindingSchema.optional()
@@ -393,7 +397,8 @@ export type UiAlertNodeDefinition = z.infer<typeof uiAlertNodeDefinitionSchema>;
 export const uiToastNodeDefinitionSchema = identifiedNodeSchema.extend({
     type: z.literal("ui-toast"),
     parent: identifierSchema.optional(),
-    severity: z.enum(["info", "warning", "error", "success"]).optional(),
+    // P49b: unified with SEVERITY_VARIANTS — same single source of truth as ui-alert.
+    severity: z.enum(SEVERITY_VARIANTS).optional(),
     duration: z.number().int().min(0).optional(),
     position: z.enum(["top-right", "top-center", "bottom-right", "bottom-center"]).optional()
 });
@@ -429,7 +434,9 @@ export const uiBadgeNodeDefinitionSchema = mountableNodeSchema.extend({
     // P49: count/dot/status is a DISPLAY TYPE, not a semantic variant. The
     // semantic Ebene-2 variant for a badge is `severity`.
     displayType: z.enum(["count", "dot", "status"]).optional(),
-    severity: z.enum(["default", "info", "warning", "error", "success"]).optional(),
+    // P49b: unified with SEVERITY_VARIANTS — the single source of truth.
+    // Legacy values "error" and "default" are no longer accepted here.
+    severity: z.enum(SEVERITY_VARIANTS).optional(),
     max: z.number().int().positive().optional()
 });
 

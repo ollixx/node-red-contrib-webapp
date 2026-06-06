@@ -92,17 +92,22 @@
         link: "text"
     };
 
-    // P49: status/severity vocabulary shared by ui-badge + ui-alert. `info` is a
-    // deliberate ALIAS of primary. Legacy severity tokens (error/default) map too.
+    // P49/P49b: status/severity vocabulary shared by ui-badge + ui-alert.
+    // Canonical SEVERITY_VARIANTS set: primary, success, warning, danger, neutral, info.
+    // `info` is a deliberate ALIAS of primary (many-to-one, documented).
+    // Legacy tokens "error" → "danger" and "default" → "neutral" are kept as
+    // graceful fallbacks for any deployed flow configs that pre-date P49b; the
+    // schema now rejects them at authoring time but the renderer degrades
+    // gracefully rather than breaking (P49 mapping rule: unknown → kind default).
     const SEVERITY_TO_SHOELACE = {
         primary: "primary",
         info: "primary",
         success: "success",
         warning: "warning",
         danger: "danger",
-        error: "danger",
+        error: "danger",    // graceful fallback for pre-P49b deployed configs
         neutral: "neutral",
-        default: "neutral"
+        default: "neutral"  // graceful fallback for pre-P49b deployed configs
     };
 
     // P49: per-kind variant→Shoelace mapping table. ONE place that turns the

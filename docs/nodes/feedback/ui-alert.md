@@ -17,7 +17,7 @@ Rendert eine farbige Hinweisleiste für Info-, Warn-, Fehler- oder Erfolgsmeldun
 
 **Optionale Felder:**
 - `name`: Node-RED-Anzeigefeld. Default: `"Alert N"`
-- `severity`: semantische Ebene-2-Variante (`SEVERITY_VARIANTS`). Portables Zielvokabular: `primary | success | warning | danger | neutral` (+ `info` als Alias von `primary`). Das Feld akzeptiert aktuell zusätzlich den Legacy-Wert `error` (Serializer mappt `error → danger`). Default: `info` (= `primary`). Vokabular siehe [theming.md](../concepts/theming.md).
+- `severity`: semantische Ebene-2-Variante (`SEVERITY_VARIANTS`). Vokabular: `primary | success | warning | danger | neutral | info` (`info` ist ein Alias von `primary`). Default: `info` (= `primary`). Vokabular siehe [theming.md](../concepts/theming.md). (P49b: Legacy-Wert `error` wird vom Schema abgelehnt; der Serializer mappt ihn weiterhin gracefully auf `danger` für ältere deployed Flows.)
 - `title`: optionale Überschrift
 - `dismissible`: Nutzer kann die Meldung schließen
 - `visible`: Binding auf Boolean — steuert Sichtbarkeit
