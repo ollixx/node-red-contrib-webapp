@@ -11,7 +11,7 @@
                 mount: { value: "", required: true },
                 visiblePath: { value: "", required: true },
                 visible: { value: null },
-                variant: { value: "text" },
+                displayType: { value: "text" },
                 lines: { value: 3, validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 row: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
@@ -42,8 +42,8 @@
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <div class="form-row"><label for="node-input-visiblePath">Visible Path</label><input type="text" id="node-input-visiblePath"></div>
-    <div class="form-row"><label for="node-input-variant">Variant</label>
-        <select id="node-input-variant">
+    <div class="form-row"><label for="node-input-displayType">Display Type</label>
+        <select id="node-input-displayType">
             <option value="text">Text</option>
             <option value="avatar">Avatar</option>
             <option value="card">Card</option>

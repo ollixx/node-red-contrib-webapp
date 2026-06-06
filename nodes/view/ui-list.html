@@ -11,7 +11,7 @@
                 mount: { value: "", required: true },
                 itemsPath: { value: "" },
                 items: { value: null },
-                variant: { value: "unordered" },
+                displayType: { value: "default" },
                 events: { value: [] },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 row: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
@@ -42,11 +42,11 @@
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <div class="form-row"><label for="node-input-itemsPath">Items Path</label><input type="text" id="node-input-itemsPath" placeholder="state.path.to.items"></div>
-    <div class="form-row"><label for="node-input-variant">Variant</label>
-        <select id="node-input-variant">
-            <option value="unordered">Unordered</option>
-            <option value="ordered">Ordered</option>
-            <option value="description">Description</option>
+    <div class="form-row"><label for="node-input-displayType">Display Type</label>
+        <select id="node-input-displayType">
+            <option value="default">Default</option>
+            <option value="divided">Divided</option>
+            <option value="compact">Compact</option>
         </select>
     </div>
     <hr style="margin: 8px 0;">

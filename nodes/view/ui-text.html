@@ -11,7 +11,7 @@
                 mount: { value: "", required: true },
                 text: { value: "", required: true },
                 value: { value: { kind: "literal", value: "" } },
-                variant: { value: "" },
+                variant: { value: "body" },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 row: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 col: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
@@ -94,7 +94,18 @@
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <div class="form-row"><label for="node-input-text">Text</label><input type="text" id="node-input-text"></div>
-    <div class="form-row"><label for="node-input-variant">Variant</label><input type="text" id="node-input-variant"></div>
+    <div class="form-row"><label for="node-input-variant">Variant</label>
+        <select id="node-input-variant">
+            <option value="heading-1">Heading 1</option>
+            <option value="heading-2">Heading 2</option>
+            <option value="heading-3">Heading 3</option>
+            <option value="body">Body</option>
+            <option value="caption">Caption</option>
+            <option value="label">Label</option>
+            <option value="code">Code</option>
+            <option value="muted">Muted</option>
+        </select>
+    </div>
     <hr style="margin: 8px 0;">
     <div class="form-row" data-layout-child-prop-row="order" style="display: none;"><label for="node-input-order">Order</label><input type="number" id="node-input-order"></div>
     <div class="form-row" data-layout-child-prop-row="row" style="display: none;"><label for="node-input-row">Row</label><input type="number" id="node-input-row"></div>
