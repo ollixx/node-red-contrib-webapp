@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P50
+  current_phase: P51
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -298,43 +298,7 @@ phases:
 
   - { id: P49b, title: "Tech-Debt: severity-Feld-Enum mit SEVERITY_VARIANTS abgleichen", status: done, dependencies: [P49], archive: "docs/agent-roadmap-archive.yaml#P49b" }
 
-  - id: P50
-    title: "Editor-SelectBox für `variant` — gespeist aus dem Schema-Vokabular"
-    status: in_progress
-    dependencies: [P49, P49a]
-    # Routine editor wiring once P49 provides the vocabulary and P49a provides
-    # the central field-injection mechanism. Use sonnet.
-    goal: |
-      Expose the `variant` field as a SelectBox in every node's Node-RED editor
-      panel. The options come exclusively from the schema vocabulary defined in
-      P49 (true variants only — display types were split off there) — never from
-      the active rendering backend — so the editor stays backend-agnostic and
-      portable. The SelectBox is built and injected via the central mechanism
-      from P49a, NOT hand-rolled per node.
-    scope: |
-      - resources/lib/editor-common.js
-          Add a variant-field builder on top of the P49a injection mechanism:
-          given a node type, it looks up that type's vocabulary (exported by
-          P49) and injects a SelectBox with those options + the documented
-          default. One implementation, reused by every node.
-      - nodes/**/<node>.html
-          For each node that has a TRUE `variant` field (per the P49 audit):
-          remove the hand-rolled <select>/text-input markup and its per-file
-          option list; call the central variant-field builder in oneditprepare
-          instead. The per-node `defaults` + mapConfig keep working.
-          Nodes whose old "variant" was actually a display type use their new
-          `displayType` field (from P49) — not this SelectBox.
-      - No node HTML may hard-code the variant list — adding a variant in the
-        schema vocabulary must surface in every relevant editor automatically.
-    validation: |
-      - pnpm validate passes (lint + build + unit + roadmap check).
-      - `pnpm exec playwright test tests/e2e/nodes/editor` passes; add/extend
-        an editor spec asserting the variant SelectBox is present for a
-        representative node (e.g. ui-button) and offers the schema vocabulary
-        values (not backend-specific ones).
-      - Selecting a variant in the editor, deploying, and loading the webapp
-        renders the corresponding Shoelace output (round-trip through P49's
-        mapping).
+  - { id: P50, title: "Editor-SelectBox für `variant` — gespeist aus dem Schema-Vokabular", status: done, dependencies: [P49, P49a], archive: "docs/agent-roadmap-archive.yaml#P50" }
 
   # ════════════════════════════════════════════════════════════════════════
   # Grid-Platzierung: Validierung & dynamische Werte (P51–P52)
@@ -359,7 +323,7 @@ phases:
 
   - id: P51
     title: "Grid-Child-Props row/col/colSize/rowSize müssen positive Integer sein"
-    status: pending
+    status: in_progress
     dependencies: [P49a]
     # Routine schema + editor tightening, built on the P49a central field
     # injection so the editor rule lives in ONE place, not 28 files. Use sonnet.
@@ -529,52 +493,11 @@ phases:
 
   - { id: P54, title: "ADR 0006 Error-Handling + gemeinsames Fehler-Modell (Contract)", status: done, dependencies: [P47], archive: "docs/agent-roadmap-archive.yaml#P54" }
 
-  - id: P55
-    title: "Client-Logging — Konsole statt Schlucken + Message-Tracing"
-    status: in_progress
-    dependencies: [P54]
-    # Routine but broad: touches every catch site and every message in/out of
-    # the thin client. Use sonnet.
-    goal: |
-      Make the thin client observable. Three things, all per the P54 policy:
-        1. Stop swallowing errors — every failure logs to the console with a
-           human-readable, contextual message (not a bare code) at warn/error.
-        2. Message tracing — log ALL incoming and outgoing messages at DEBUG.
-        3. Lifecycle — log connect / disconnect / reconnect at INFO.
-      Also log errors forwarded from the backend (the receiving end of P56's
-      transport).
-    scope: |
-      - resources/lib/webapp-client.js
-          Add a shared console logger: severity → console.debug/info/warn/error,
-          printing message + context readably (P54 shape).
-          (1) Replace every silent catch ("ignore a malformed frame", "nothing
-              to apply", "leave fallback in place", the empty .catch on the
-              event POST, the hydrate/snapshot/command/toast handlers) with a
-              warn/error log. Keep graceful degradation — log AND degrade, never
-              throw.
-          (2) Message tracing at DEBUG:
-              - OUTGOING: each /event POST (event name + params + appId) and the
-                hydrate fetch.
-              - INCOMING: each SSE frame — snapshot / command / toast / error
-                (event type + a compact summary, not the full payload dump).
-          (3) Lifecycle at INFO: EventSource open (connected), error/close
-              (disconnected), and auto-reconnect.
-          Add an SSE "error" event listener that logs backend-forwarded errors
-          (the payload P56 pushes) at their carried severity.
-    validation: |
-      - pnpm validate passes.
-      - `pnpm exec playwright test` passes; add E2E assertions (captured via
-        page.on("console")):
-          * a forced failure (malformed SSE frame / failing /event POST) logs a
-            console.error/warn with a contextual message;
-          * a button click logs an outgoing DEBUG trace; an incoming snapshot
-            logs an incoming DEBUG trace;
-          * the SSE connection open logs an INFO lifecycle message.
-      - No silent catch remains in webapp-client.js (spot-checked in review).
+  - { id: P55, title: "Client-Logging — Konsole statt Schlucken + Message-Tracing", status: done, dependencies: [P54], archive: "docs/agent-roadmap-archive.yaml#P55" }
 
   - id: P56
     title: "Runtime-Logging + konfigurierbarer Backend→Frontend-Fehler-Transport"
-    status: pending
+    status: in_progress
     dependencies: [P54, P55]
     # Architecture-sensitive: structured runtime logging + a new SSE error
     # channel gated by per-app config. Touches webapp.js transport. Use opus.

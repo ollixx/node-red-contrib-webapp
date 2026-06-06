@@ -83,12 +83,31 @@ export class NodeEditorPage {
      * Open the editor property panel for the node with the given id. The node
      * must already exist on the canvas (deploy a flow via the admin API first).
      * Resolves once the editor tray is on screen and its fields are bound.
+     *
+     * Includes a reload-once fallback: if the node is not found within 5 s the
+     * editor page is reloaded (the admin-API deploy may have raced the previous
+     * page load) and we wait a further 15 s before failing.
      */
     async openNode(nodeId: string): Promise<void> {
-        await this.page.waitForFunction((id) => {
+        const nodeReady = (id: string) => {
             const red = (window as unknown as { RED?: REDGlobal }).RED;
             return typeof red?.nodes?.node === "function" && red.nodes.node(id) !== null && red.nodes.node(id) !== undefined;
-        }, nodeId);
+        };
+
+        // First attempt: 5 s
+        const found = await this.page
+            .waitForFunction(nodeReady, nodeId, { timeout: 5000 })
+            .then(() => true)
+            .catch(() => false);
+
+        if (!found) {
+            // The editor may have loaded before the admin-API deploy completed.
+            // Reload to pick up the current flow, then wait again.
+            await this.page.reload();
+            await this.page.waitForLoadState("networkidle");
+            await this.dismissWelcomeTour();
+            await this.page.waitForFunction(nodeReady, nodeId, { timeout: 20000 });
+        }
         await this.page.evaluate((id) => {
             const node = RED.nodes.node(id);
             if (node) {

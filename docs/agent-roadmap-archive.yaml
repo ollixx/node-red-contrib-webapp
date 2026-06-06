@@ -11,6 +11,28 @@
 
 phases:
 
+  - id: P55
+    title: "Client-Logging — Konsole statt Schlucken + Message-Tracing"
+    status: done
+    dependencies: [P54]
+    summary:
+      delivered: "Added a shared console logger to webapp-client.js replacing all silent catch blocks with contextual warn/error logs, message tracing at DEBUG for all in/out SSE frames and event POSTs, lifecycle INFO logs on SSE connect/disconnect, and a receiving-end handler for backend-forwarded ADR-0006 error frames on the SSE 'error' event."
+      stats: "1 client file changed (+363/-14 net), 1 new E2E spec (5 tests), 2 test helper fixes (baseline); 231/231 E2E green, 219/219 unit green"
+      notes: "Fixed two pre-existing E2E fragilities: (1) webapp-page.ts navigate() now waits for SSE stream response headers so command-only flows are not dropped; (2) node-editor-page.ts openNode() has a reload-once fallback for the admin-API/editor-load race. SSE 'error' event disambiguates native EventSource connection failures (no .data) from backend-forwarded structured error frames (have .data) per ADR 0006 §4; a __webappClientTestHooks.handleServerError hook enables E2E testing without SSE stream interception."
+      cost: "session b3vnu33c1, 86m"
+    archived_at: "2026-06-06"
+
+  - id: P50
+    title: "Editor-SelectBox für `variant` — gespeist aus dem Schema-Vokabular"
+    status: done
+    dependencies: [P49, P49a]
+    summary:
+      delivered: "Added installVariantSelectBox(kind) to editor-common.js and wired it into all 4 nodes with TRUE semantic variant fields (ui-button, ui-text, ui-input, ui-container), removing their hand-rolled <select> option lists from templates."
+      stats: "8 files changed, 252 insertions, 46 deletions; 6 new E2E tests (5 editor SelectBox + 1 render round-trip); all 219 unit tests + 34 editor E2E tests green"
+      notes: "buildFieldRowMarkup extended for type='select' with options array; COMPONENT_VARIANT_VOCABULARY and COMPONENT_VARIANT_DEFAULT embedded in editor-common.js (mirrors schema constants, must stay in sync manually); worktree was again at stale db4f4ff commit, fixed with git merge --allow-unrelated-histories; .node-red-dev symlinked for E2E; full 232-test suite gets SIGKILL'd on this machine after ~5min so validated in targeted batches instead."
+      cost: "session a959dcd94220e4990, 55m"
+    archived_at: "2026-06-06"
+
   - id: P53
     title: "ui-action — vollständiges Interaktions-Verb-Set client-seitig + Vokabular-Entmischung"
     status: done

@@ -31,6 +31,7 @@
             },
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
+                common.installVariantSelectBox("text").call(this);
                 common.installLayoutChildPropRows().call(this);
                 const binding = common.bindingValueForEditor(common.parseBindingValue(this.value), this.text || "");
                 const textInput = $("#node-input-text");
@@ -94,18 +95,6 @@
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <div class="form-row"><label for="node-input-text">Text</label><input type="text" id="node-input-text"></div>
-    <div class="form-row"><label for="node-input-variant">Variant</label>
-        <select id="node-input-variant">
-            <option value="heading-1">Heading 1</option>
-            <option value="heading-2">Heading 2</option>
-            <option value="heading-3">Heading 3</option>
-            <option value="body">Body</option>
-            <option value="caption">Caption</option>
-            <option value="label">Label</option>
-            <option value="code">Code</option>
-            <option value="muted">Muted</option>
-        </select>
-    </div>
 </script>
 <script type="text/html" data-help-name="ui-text">
 <p>Displays text at a mount point. The text content can be a static literal or a dynamic binding.</p>
