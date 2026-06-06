@@ -66,10 +66,13 @@
     //   visibility:  nodeId -> true (hidden)
     //   disabled:    nodeId -> true (disabled)
     //   open:        "<target>" or "<target>#<part>" -> true (disclosed)
+    //   selected:    "<target>" -> "<part>" (active sub-part of a single-active
+    //                set: tabs / stepper / menu — survives a snapshot re-render)
     const interaction = {
         hidden: Object.create(null),
         disabled: Object.create(null),
-        open: Object.create(null)
+        open: Object.create(null),
+        selected: Object.create(null)
     };
 
     // P30: a per-tab client id so the flow can address actions back to this
@@ -211,6 +214,36 @@
                 openTarget.setAttribute("open", "");
             }
         });
+
+        // Single-active selection (tabs / stepper / menu): re-stamp the active
+        // sub-part so a `select` survives a snapshot re-render the same way
+        // open/hide/disable do. Additive — only re-applies flagged selections.
+        Object.keys(interaction.selected).forEach(function (targetId) {
+            const part = interaction.selected[targetId];
+            if (!part) {
+                return;
+            }
+            const targetEl = findTargetElement(targetId);
+            if (targetEl) {
+                activateSelection(targetEl, String(part));
+            }
+        });
+    }
+
+    // P59: activate a single-active sub-part within a target (tab / step / menu
+    // item). Prefer the element's own activation affordance (click) and fall back
+    // to the `active`/`selected` attribute the Shoelace markup uses.
+    function activateSelection(targetEl, part) {
+        const partEl = findPartElement(targetEl, part);
+        if (!partEl) {
+            return;
+        }
+        if (typeof partEl.click === "function") {
+            partEl.click();
+        }
+        else {
+            partEl.setAttribute("active", "");
+        }
     }
 
     // P53: set the disabled state on a wrapper and its inner control(s). The
@@ -619,13 +652,13 @@
             // ── single-active selection ───────────────────────────────────────
             case "select":
                 if (target && part) {
+                    // Record in the overlay so the selection survives a later
+                    // snapshot re-render (applyInteractionOverlay re-stamps it),
+                    // then activate it now.
+                    interaction.selected[target] = part;
                     const targetEl = findTargetElement(target);
-                    const partEl = targetEl && findPartElement(targetEl, part);
-                    if (partEl && typeof partEl.click === "function") {
-                        partEl.click();
-                    }
-                    else if (partEl) {
-                        partEl.setAttribute("active", "");
+                    if (targetEl) {
+                        activateSelection(targetEl, part);
                     }
                 }
                 break;
@@ -648,6 +681,7 @@
                     // snapshot's own intrinsic state) and re-render.
                     delete interaction.hidden[target];
                     delete interaction.disabled[target];
+                    delete interaction.selected[target];
                     Object.keys(interaction.open).forEach(function (key) {
                         if (key === target || key.indexOf(target + "#") === 0) {
                             delete interaction.open[key];
