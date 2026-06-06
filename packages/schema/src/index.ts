@@ -113,6 +113,7 @@ export {
     uiListNodeDefinitionSchema,
     uiAvatarNodeDefinitionSchema,
     uiDividerNodeDefinitionSchema,
+    uiLogNodeDefinitionSchema,
     validateUiNodeDefinition
 } from "./node-definitions";
 export type {
@@ -133,6 +134,7 @@ export type {
     UiImageNodeDefinition,
     UiInputNodeDefinition,
     UiListNodeDefinition,
+    UiLogNodeDefinition,
     UiNavigationNodeDefinition,
     UiNodeDefinition,
     UiProgressNodeDefinition,

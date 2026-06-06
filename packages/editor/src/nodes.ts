@@ -39,7 +39,8 @@ import {
     type UiIconNodeDefinition,
     type UiListNodeDefinition,
     type UiAvatarNodeDefinition,
-    type UiDividerNodeDefinition
+    type UiDividerNodeDefinition,
+    type UiLogNodeDefinition
 } from "@node-red-contrib-webapp/schema";
 
 export type NodeEditorType = UiNodeDefinition["type"];
@@ -328,6 +329,12 @@ export interface UiDividerEditorConfig extends MountableEditorConfig {
     label?: string;
 }
 
+export interface UiLogEditorConfig extends MountableEditorConfig {
+    minSeverity?: "debug" | "info" | "warn" | "error";
+    maxEntries?: number;
+    collapsed?: boolean;
+}
+
 export type NodeEditorConfig =
     | UiAppEditorConfig
     | UiRouteEditorConfig
@@ -364,7 +371,8 @@ export type NodeEditorConfig =
     | UiIconEditorConfig
     | UiListEditorConfig
     | UiAvatarEditorConfig
-    | UiDividerEditorConfig;
+    | UiDividerEditorConfig
+    | UiLogEditorConfig;
 
 export type NodeEditorDefinition =
     | UiAppEditorNodeDefinition
@@ -402,7 +410,8 @@ export type NodeEditorDefinition =
     | BaseEditorNodeDefinition<UiIconEditorConfig, UiIconNodeDefinition>
     | BaseEditorNodeDefinition<UiListEditorConfig, UiListNodeDefinition>
     | BaseEditorNodeDefinition<UiAvatarEditorConfig, UiAvatarNodeDefinition>
-    | BaseEditorNodeDefinition<UiDividerEditorConfig, UiDividerNodeDefinition>;
+    | BaseEditorNodeDefinition<UiDividerEditorConfig, UiDividerNodeDefinition>
+    | BaseEditorNodeDefinition<UiLogEditorConfig, UiLogNodeDefinition>;
 
 function requiredString(message: string): EditorFieldDefinition {
     return {
@@ -1181,6 +1190,19 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         mount: config.mount ?? "",
         orientation: config.orientation,
         label: config.label || undefined,
+        ...collectLayoutChildConfig(config)
+    })),
+    // P57: ui-log — persistent error/log display
+    "ui-log": createDefinition("ui-log", "view", {
+        id: requiredString("Log IDs are required before deploy."),
+        mount: requiredString("Log must declare a parent slot.")
+    }, (config: UiLogEditorConfig): UiLogNodeDefinition => ({
+        type: "ui-log",
+        id: config.id ?? "",
+        mount: config.mount ?? "",
+        minSeverity: config.minSeverity,
+        maxEntries: config.maxEntries !== undefined ? Number(config.maxEntries) : undefined,
+        collapsed: config.collapsed,
         ...collectLayoutChildConfig(config)
     }))
 };

@@ -271,7 +271,9 @@ export const componentKindSchema = z.enum([
     // P45: composite and layout nodes
     "list",
     "pagination",
-    "stepper"
+    "stepper",
+    // P57: log display node
+    "log"
 ]);
 
 /**
