@@ -263,6 +263,49 @@ function collectNormalizedLayoutProps(source) {
     };
 }
 
+// P52 / ADR 0004: grid placement props that must stay positive integers (>= 1)
+// at RUNTIME, not just at deploy time (P51 enforced the schema side). layoutX /
+// layoutY are intentionally excluded — 0 is the legitimate absolute-layout origin.
+const PLACEMENT_INTEGER_FIELDS = ["row", "col", "colSize", "rowSize"];
+
+function isPositiveInteger(value) {
+    return typeof value === "number" && Number.isInteger(value) && value > 0;
+}
+
+// Sanitize a runtime patch's grid placement props. Any of row/col/colSize/rowSize
+// present in the patch must resolve to a positive integer; an invalid one is
+// dropped from the patch (other keys still apply) and a clear error is raised on
+// the node. Returns the cleaned patch (a fresh object; the input is not mutated).
+function sanitizePlacementPatch(patch, node) {
+    if (!isPlainObject(patch)) {
+        return patch;
+    }
+
+    const cleaned = { ...patch };
+    PLACEMENT_INTEGER_FIELDS.forEach((field) => {
+        if (!(field in cleaned)) {
+            return;
+        }
+
+        const raw = cleaned[field];
+        const numeric = typeof raw === "string" ? toOptionalNumber(raw) : raw;
+        if (isPositiveInteger(numeric)) {
+            cleaned[field] = numeric;
+            return;
+        }
+
+        delete cleaned[field];
+        reportRuntimeError(node, {
+            severity: "error",
+            code: "client.placement.invalid",
+            message: `Grid placement '${field}' must be a positive integer (>= 1); got ${JSON.stringify(raw)} — update ignored.`,
+            context: { appId: findAppIdForNode(node), nodeId: node && node.id, op: "viewNodePatchInputHandler" }
+        });
+    });
+
+    return cleaned;
+}
+
 function blankToUndefined(value) {
     if (value === undefined || value === null) {
         return undefined;
@@ -1354,6 +1397,14 @@ function readDeployDefinitions(RED) {
                     if (liveDef.items !== undefined && liveDef.items !== baseDefinition.items) {
                         patch.items = liveDef.items;
                     }
+                    // P52 / ADR 0004: carry a live placement patch (row/col/colSize/
+                    // rowSize/layoutX/layoutY) into the pushed snapshot so a runtime
+                    // re-placement actually reaches the client and the element reflows.
+                    ["row", "col", "colSize", "rowSize", "layoutX", "layoutY"].forEach((field) => {
+                        if (liveDef[field] !== undefined && liveDef[field] !== baseDefinition[field]) {
+                            patch[field] = liveDef[field];
+                        }
+                    });
                     if (Object.keys(patch).length > 0) {
                         return Object.assign({}, baseDefinition, patch);
                     }
@@ -2190,7 +2241,11 @@ function viewNodePatchInputHandler(node, msg, send, done) {
 
     // msg.ui.patch — arbitrary field overrides supplied by the flow author.
     if (uiMsg && uiMsg.patch && typeof uiMsg.patch === "object") {
-        registration.definition = Object.assign({}, registration.definition, uiMsg.patch);
+        // P52 / ADR 0004: enforce the P51 positive-integer rule on grid placement
+        // props on this runtime path too — an invalid row/col/colSize/rowSize is
+        // dropped (other keys still apply) and a clear node error is raised.
+        const cleanPatch = sanitizePlacementPatch(uiMsg.patch, node);
+        registration.definition = Object.assign({}, registration.definition, cleanPatch);
         node.webappDefinition = registration.definition;
         patched = true;
     } else if (msg.payload !== undefined && msg.payload !== null) {
@@ -3051,6 +3106,9 @@ registerWebappNodes.__test__ = {
     actionInputHandler,
     runtimeNodeRegistry,
     runtimeState,
+    // P39 / P52: view-node input patch handler + deploy-definition reader
+    viewNodePatchInputHandler,
+    readDeployDefinitions,
     // P15
     getClientState,
     setClientState,
