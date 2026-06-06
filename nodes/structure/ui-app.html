@@ -271,21 +271,24 @@
                 });
             },
             oneditsave: function () {
-                // P61: Map the Logging select back onto the two hidden config fields.
+                // P61: Map the Logging select back onto the two backing config fields.
                 // 'aus' → forwardErrorsToClient=false (severity left unchanged).
                 // any severity → forwardErrorsToClient=true + minSeverity=<value>.
                 //
-                // IMPORTANT: Node-RED reads node-input-* hidden fields AFTER oneditsave
-                // and overwrites this.* with those values. We must therefore sync the
-                // hidden inputs here so both code paths agree.
+                // IMPORTANT: after oneditsave returns, Node-RED re-reads every
+                // #node-input-<key> element for keys in `defaults` and overwrites
+                // this.<key> with the DOM value — so assigning this.* here is not
+                // enough; the backing inputs must hold the right value/type.
+                //
+                // forwardErrorsToClient is backed by a hidden CHECKBOX: Node-RED
+                // reads checkboxes via .prop('checked'), yielding a REAL boolean
+                // (storing the string "false" via a text/hidden input is a bug —
+                // "false" is truthy and the runtime's truthy check would forward
+                // errors even when the user picked 'aus').
                 const val = $("#node-ui-app-logging").val();
-                if (val === "aus") {
-                    this.forwardErrorsToClient = false;
-                    $("#node-input-forwardErrorsToClient").val("false");
-                } else {
-                    this.forwardErrorsToClient = true;
-                    this.forwardErrorMinSeverity = val;
-                    $("#node-input-forwardErrorsToClient").val("true");
+                const enabled = val !== "aus";
+                $("#node-input-forwardErrorsToClient").prop("checked", enabled);
+                if (enabled) {
                     $("#node-input-forwardErrorMinSeverity").val(val);
                 }
                 // tokens are already serialised to #node-input-tokens inside the dialog OK handler.
@@ -318,8 +321,11 @@
     <input type="hidden" id="node-input-outputs">
     <!-- P61: forwardErrorsToClient and forwardErrorMinSeverity are stored in the
          node config but not rendered as visible form fields. The Logging select
-         below maps onto them in oneditprepare/oneditsave. -->
-    <input type="hidden" id="node-input-forwardErrorsToClient">
+         below maps onto them in oneditprepare/oneditsave.
+         forwardErrorsToClient is a hidden CHECKBOX (not a text input) so that
+         Node-RED reads it back via .prop('checked') as a REAL boolean — a hidden
+         text input would persist the string "false"/"true" instead. -->
+    <input type="checkbox" id="node-input-forwardErrorsToClient" style="display: none;">
     <input type="hidden" id="node-input-forwardErrorMinSeverity">
     <hr style="margin: 8px 0;">
     <!-- P61: single Logging select replaces the old checkbox + tips + severity row -->
