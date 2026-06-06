@@ -1556,3 +1556,33 @@ phases:
       - "pnpm test passes — 329 unit tests incl. P49 vocabulary (9) + serializer (7)"
       - "variant E2E green — ui-button render, ui-badge severity=success, ui-alert severity error→danger (sl-* output)"
       - "non-button variant renders (ui-text/ui-container variant fields present + accepted; serializer maps severity nodes)"
+
+  - id: P58
+    title: "ADR 0007 — action-message Contract (Schema) + Vorgehensentscheidung"
+    status: done
+    dependencies: [P57]
+    summary:
+      delivered: "Codified the public msg.ui.action message contract as the single source of truth in packages/schema (actionMessageSchema + actionMessageCommandSchema) ahead of any behaviour change (decision-first, analog P54). Validates only msg.ui.action with the ADR-0005 verb set; foreign msg.* fields (payload/topic/_msgid) pass through via .passthrough() — no .strict() on msg/msg.ui. ADR 0007 (action-message contract + per-node interaction handlers) was already committed in the planning step. No runtime/nodes behaviour changed."
+      stats: "5 files (+211/-42): packages/schema/src/contracts.ts (schema + inferred types ActionMessage/ActionMessageCommand), index.ts re-export, schema.test.ts (+11 unit tests); actions.md + messages.md reconciled to the contract. No diff in examples/customers-crud/flow.json."
+      notes: >
+        Decision-first contract phase, no behaviour change in runtime/nodes (those land in P59/P60).
+        Schema imports nothing from other repo packages (packages/schema invariant upheld). Docs drift
+        from ADR-0005-Stop-Klasse 5 resolved: actions.md/messages.md now use `to` for navigate, `target`
+        (not the stale `targetId`), and dropped the obsolete msg.ui.component.op / targetMode notes.
+        Playwright was not bootstrappable in the isolated worktree (.node-red-dev/settings.js is owner-only),
+        but P58 has zero browser-observable behaviour so nothing is E2E-testable this phase. Implemented in a
+        git worktree on branch phase/P58 (484063f), merged --no-ff into develop by the orchestrator.
+      cost: "session <see .ai/agent-runs.jsonl>, 2026-06-06T21:32:37Z → 2026-06-06T21:39:41Z (~7m); subagent_tokens ~87.6k"
+    goals:
+      - "Pin the msg.ui.action contract as single source of truth in packages/schema before behaviour changes (decision-first, analog P54)."
+      - "Make the ADR 0007 delivery-model decision binding (push moves into the target node; ui-action becomes emitter; addressing = wire/picker)."
+    deliverables:
+      - "ADR 0007 committed: action-message contract + per-node interaction handlers (Context: doc↔impl drift, doubled 'target', send/receive bug; Decision §§1–4)."
+      - "packages/schema: actionMessageSchema (msg.ui.action = { type, to?, part?, target?, clientId via msg.ui }) with the ADR-0005 verb set; validates ONLY msg.ui.action, foreign msg.* passthrough."
+      - "Inferred types exported + re-exported from packages/schema/src/index.ts; no behaviour change in runtime/nodes."
+      - "actions.md / messages.md reconciled with the contract; drift note resolved."
+    validation:
+      - "pnpm validate green (build + lint + test + roadmap)"
+      - "unit tests: actionMessageSchema accepts a valid msg.ui.action per verb; leaves foreign msg.* fields untouched; rejects unknown verb / missing type."
+      - "Schema imports nothing from other repo packages (packages/schema invariant)."
+      - "No diff in examples/customers-crud/flow.json (pure contract phase)."

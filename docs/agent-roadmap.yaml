@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P58  # ADR 0007 — action message contract + per-node interaction handlers
+  current_phase: P59  # ADR 0007 — per-node interaction handlers (SSE push moves into target node)
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -452,23 +452,7 @@ phases:
   #      inject an ui-app mit {ui:{action:{type:navigate,to:"/"}}} springt heim.
   # ════════════════════════════════════════════════════════════════════════
 
-  - id: P58
-    title: "ADR 0007 — action-message Contract (Schema) + Vorgehensentscheidung"
-    status: in_progress
-    dependencies: [P57]
-    goals:
-      - Den msg.ui.action-Contract als single source of truth in packages/schema festschreiben, bevor Verhalten verändert wird (Decision-first, analog P54).
-      - Die Liefer-Modell-Entscheidung aus ADR 0007 verbindlich dokumentieren (Push wandert in den Zielknoten; ui-action wird Emitter; Adressierung = Wire/Picker).
-    deliverables:
-      - "ADR 0007 committed (bereits entworfen): action-message contract + per-node interaction handlers, mit Context (Doku↔Impl-Drift, doppeltes 'target', send/receive-Bug) und Decision §§1–4."
-      - "packages/schema: actionMessageSchema (msg.ui.action = { type, to?, part?, target?, clientId via msg.ui }) mit ADR-0005-Verbset; validiert NUR msg.ui.action, fremde msg.*-Felder passthrough (kein .strict() auf msg/msg.ui)."
-      - "Inferred type exportiert + aus packages/schema/src/index.ts re-exportiert; keine Verhaltensänderung in runtime/nodes in dieser Phase."
-      - "actions.md / messages.md mit dem Contract abgeglichen (Doku-Update kann hier oder in P59 landen; Drift-Hinweis auflösen)."
-    validation:
-      - pnpm validate grün (build + lint + test + roadmap)
-      - "unit test: actionMessageSchema akzeptiert ein valides msg.ui.action je Verb; lässt fremde msg.*-Felder (payload/topic/_msgid) unangetastet durch; weist ein unbekanntes Verb / fehlendes type ab."
-      - "Schema importiert nichts aus anderen Repo-Paketen (Invariante packages/schema)."
-      - "Kein Diff in examples/customers-crud/flow.json (reine Contract-Phase)."
+  - { id: P58, title: "ADR 0007 — action-message Contract (Schema) + Vorgehensentscheidung", status: done, dependencies: [P57], archive: "docs/agent-roadmap-archive.yaml#P58" }
 
   - id: P59
     title: "Per-Node Interaction-Handler — SSE-Push wandert aus ui-action in den Zielknoten"
