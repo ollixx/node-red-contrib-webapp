@@ -300,7 +300,7 @@ phases:
 
   - id: P50
     title: "Editor-SelectBox für `variant` — gespeist aus dem Schema-Vokabular"
-    status: pending
+    status: in_progress
     dependencies: [P49, P49a]
     # Routine editor wiring once P49 provides the vocabulary and P49a provides
     # the central field-injection mechanism. Use sonnet.
@@ -531,7 +531,7 @@ phases:
 
   - id: P55
     title: "Client-Logging — Konsole statt Schlucken + Message-Tracing"
-    status: pending
+    status: in_progress
     dependencies: [P54]
     # Routine but broad: touches every catch site and every message in/out of
     # the thin client. Use sonnet.
