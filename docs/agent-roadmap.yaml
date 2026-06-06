@@ -296,7 +296,7 @@ phases:
 
   - id: P49a
     title: "Zentrale Editor-Feld-Injektion + Migration der Grid-Platzierungs-Zeilen"
-    status: pending
+    status: in_progress
     dependencies: [P48]
     # Architecture-sensitive: establishes the shared editor-field pattern every
     # later editor phase builds on, and touches the single canonical
@@ -673,7 +673,7 @@ phases:
 
   - id: P54
     title: "ADR 0006 Error-Handling + gemeinsames Fehler-Modell (Contract)"
-    status: pending
+    status: in_progress
     dependencies: [P47]
     # Decision-first foundation: defines the cross-cutting error contract every
     # later error phase consumes. Architecture-sensitive. Use opus.
