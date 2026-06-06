@@ -14,7 +14,9 @@ const registerWebappNodes = require("../../../nodes/webapp.js") as {
         applyStoreOperation: (currentState: Record<string, unknown>, storeDefinition: StoreDefinition, operation: StoreOperation) => StoreResult;
         renderAppPage: (appId: string, location: string, dialogId: string | undefined, definitions: NodeDefinition[]) => { status: number; body: string };
         buttonInputHandler: (node: NodeStub, msg: unknown, send: ReturnType<typeof vi.fn>, done: ReturnType<typeof vi.fn>) => void;
-        actionInputHandler: (node: NodeStub, msg: unknown, send: ReturnType<typeof vi.fn>, done: ReturnType<typeof vi.fn>) => void;
+        actionInputHandler: (node: unknown, msg: unknown, send: ReturnType<typeof vi.fn>, done: ReturnType<typeof vi.fn>) => void;
+        parseTargetIds: (value: unknown) => string[] | undefined;
+        collectConfiguredTargetIds: (definition: unknown) => string[];
         runtimeState: { RED: unknown };
     };
 };
@@ -224,6 +226,85 @@ describe("P20a: ui-button click and ui-action wiring", () => {
         expect(done).toHaveBeenCalledTimes(1);
 
         registerWebappNodes.__test__.runtimeState.RED = savedRED;
+    });
+
+    it("P60: a configured `targets` list delivers the action to EACH selected node via receive() (wireless picker path)", () => {
+        // The node picker stores a LIST of target ids. No msg-level override.
+        const node = {
+            id: "showBothAction",
+            wires: [[]],
+            webappDefinition: { type: "ui-action", id: "showBothAction", actionType: "show", targets: ["panelA", "panelB"] }
+        };
+        const panelA = { id: "panelA", send: vi.fn(), receive: vi.fn() };
+        const panelB = { id: "panelB", send: vi.fn(), receive: vi.fn() };
+        const send = vi.fn();
+        const done = vi.fn();
+
+        const savedRED = registerWebappNodes.__test__.runtimeState.RED;
+        registerWebappNodes.__test__.runtimeState.RED = {
+            nodes: {
+                getNode: (id: string) => (id === "panelA" ? panelA : id === "panelB" ? panelB : undefined)
+            }
+        };
+
+        registerWebappNodes.__test__.actionInputHandler(node, { ui: { action: {} } }, send, done);
+
+        // Both targets receive the action via their INPUT (receive()) — the same
+        // path a wire uses. Neither send() (output injection) is used.
+        expect(send).not.toHaveBeenCalled();
+        expect(panelA.send).not.toHaveBeenCalled();
+        expect(panelB.send).not.toHaveBeenCalled();
+        expect(panelA.receive).toHaveBeenCalledTimes(1);
+        expect(panelB.receive).toHaveBeenCalledTimes(1);
+        const toA = panelA.receive.mock.calls[0][0] as { ui: { action: { type: string } } };
+        const toB = panelB.receive.mock.calls[0][0] as { ui: { action: { type: string } } };
+        expect(toA.ui.action).toMatchObject({ type: "show" });
+        expect(toB.ui.action).toMatchObject({ type: "show" });
+        expect(done).toHaveBeenCalledTimes(1);
+
+        registerWebappNodes.__test__.runtimeState.RED = savedRED;
+    });
+
+    it("P60: msg.ui.action.targetId override delivers via receive() to EXACTLY that node (unified with target)", () => {
+        // A configured `targets` list is present, but the msg-level targetId
+        // override wins and addresses exactly one node — delivered via receive().
+        const node = {
+            id: "dynAction",
+            wires: [["wired"]],
+            webappDefinition: { type: "ui-action", id: "dynAction", actionType: "disable", targets: ["panelA"] }
+        };
+        const chosen = { id: "chosenBtn", send: vi.fn(), receive: vi.fn() };
+        const panelA = { id: "panelA", send: vi.fn(), receive: vi.fn() };
+        const send = vi.fn();
+        const done = vi.fn();
+
+        const savedRED = registerWebappNodes.__test__.runtimeState.RED;
+        registerWebappNodes.__test__.runtimeState.RED = {
+            nodes: {
+                getNode: (id: string) => (id === "chosenBtn" ? chosen : id === "panelA" ? panelA : undefined)
+            }
+        };
+
+        registerWebappNodes.__test__.actionInputHandler(node, { ui: { action: { targetId: "chosenBtn" } } }, send, done);
+
+        // Only the override target receives; the configured `targets` list is
+        // ignored when an explicit override is supplied. receive(), not send().
+        expect(send).not.toHaveBeenCalled();
+        expect(panelA.receive).not.toHaveBeenCalled();
+        expect(chosen.send).not.toHaveBeenCalled();
+        expect(chosen.receive).toHaveBeenCalledTimes(1);
+        const injected = chosen.receive.mock.calls[0][0] as { ui: { action: { type: string; target: string } } };
+        expect(injected.ui.action).toMatchObject({ type: "disable", target: "chosenBtn" });
+        expect(done).toHaveBeenCalledTimes(1);
+
+        registerWebappNodes.__test__.runtimeState.RED = savedRED;
+    });
+
+    it("P60: parseTargetIds normalises a JSON-string array into a de-duplicated id list", () => {
+        expect(registerWebappNodes.__test__.parseTargetIds("[\"a\",\"b\",\"a\"]")).toEqual(["a", "b"]);
+        expect(registerWebappNodes.__test__.parseTargetIds("[]")).toBeUndefined();
+        expect(registerWebappNodes.__test__.parseTargetIds("")).toBeUndefined();
+        expect(registerWebappNodes.__test__.parseTargetIds(["x", "", "y"])).toEqual(["x", "y"]);
     });
 });
 

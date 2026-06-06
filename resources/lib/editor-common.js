@@ -908,6 +908,141 @@
         };
     }
 
+    // P60 / ADR 0007 §3: multi-select canvas node picker built on Node-RED's
+    // RED.view.selectNodes() — the same canvas-pick API the core catch / status /
+    // complete nodes use for scope. Stores a LIST of picked node ids in a hidden
+    // input as a JSON array. Used by ui-action for the optional "wireless" target
+    // path (wiring the output port stays the primary path).
+    //
+    // options:
+    //   fieldId          — hidden input id holding the JSON list (default "node-input-targets")
+    //   listContainerId  — id of the <div> that renders the picked-node chips
+    //   buttonId         — id of the "pick on canvas" <button>
+    //   nodeTypes        — array of node types the picker accepts (filter); other
+    //                      types are not selectable. Defaults to all webapp ui-*
+    //                      interaction-capable types.
+    function installNodePicker(options) {
+        const opts = options || {};
+        const fieldSelector = "#" + (opts.fieldId || "node-input-targets");
+        const listSelector = "#" + (opts.listContainerId || "node-input-targets-list");
+        const buttonSelector = "#" + (opts.buttonId || "node-input-targets-pick");
+        const acceptedTypes = Array.isArray(opts.nodeTypes) && opts.nodeTypes.length > 0
+            ? opts.nodeTypes
+            : null;
+
+        function isAcceptedType(type) {
+            if (acceptedTypes) {
+                return acceptedTypes.indexOf(type) !== -1;
+            }
+            // Default filter: interaction-capable webapp nodes only — the ui-app /
+            // ui-route navigation owners and every ui-* view/structure node. The
+            // emitter (ui-action) itself and non-webapp nodes are excluded.
+            return typeof type === "string"
+                && type.indexOf("ui-") === 0
+                && type !== "ui-action"
+                && type !== "ui-navigation";
+        }
+
+        function nodeLabel(node) {
+            if (!node) {
+                return "";
+            }
+            const name = node.name && String(node.name).trim().length > 0 ? node.name : null;
+            return (name || node.type || node.id) + " (" + node.type + ")";
+        }
+
+        function readIds() {
+            let raw = $(fieldSelector).val();
+            if (Array.isArray(raw)) {
+                return raw.slice();
+            }
+            if (typeof raw !== "string" || raw.trim().length === 0) {
+                return [];
+            }
+            try {
+                const parsed = JSON.parse(raw);
+                return Array.isArray(parsed) ? parsed : [];
+            }
+            catch (_e) {
+                return [];
+            }
+        }
+
+        function writeIds(ids) {
+            const deduped = ids.filter(function (id, index) {
+                return typeof id === "string" && id && ids.indexOf(id) === index;
+            });
+            $(fieldSelector).val(JSON.stringify(deduped));
+            renderList(deduped);
+        }
+
+        function renderList(ids) {
+            const $list = $(listSelector);
+            if ($list.length === 0) {
+                return;
+            }
+            $list.empty();
+            if (!ids || ids.length === 0) {
+                $list.append(
+                    $("<div>").css({ color: "#999", "font-style": "italic", padding: "2px 0" })
+                        .text("Kein Ziel gewählt — Output-Port verdrahten oder Knoten wählen.")
+                );
+                return;
+            }
+            ids.forEach(function (id) {
+                const node = RED.nodes.node(id);
+                const $chip = $("<div>").css({
+                    display: "flex",
+                    "align-items": "center",
+                    "justify-content": "space-between",
+                    padding: "2px 0"
+                });
+                $("<span>").text(node ? nodeLabel(node) : id + " (entfernt?)").appendTo($chip);
+                const $remove = $("<button type=\"button\" class=\"red-ui-button red-ui-button-small\">")
+                    .html("<i class=\"fa fa-remove\"></i>")
+                    .appendTo($chip);
+                $remove.on("click", function (event) {
+                    event.preventDefault();
+                    writeIds(readIds().filter(function (existing) { return existing !== id; }));
+                });
+                $list.append($chip);
+            });
+        }
+
+        function pickFromCanvas() {
+            if (!RED.view || typeof RED.view.selectNodes !== "function") {
+                return;
+            }
+            RED.view.selectNodes({
+                single: false,
+                filter: function (node) {
+                    return isAcceptedType(node.type);
+                },
+                done: function (selection) {
+                    if (!selection) {
+                        return;
+                    }
+                    const picked = Array.isArray(selection) ? selection : [selection];
+                    const next = readIds();
+                    picked.forEach(function (node) {
+                        if (node && node.id && isAcceptedType(node.type)) {
+                            next.push(node.id);
+                        }
+                    });
+                    writeIds(next);
+                }
+            });
+        }
+
+        return function () {
+            $(buttonSelector).on("click", function (event) {
+                event.preventDefault();
+                pickFromCanvas();
+            });
+            renderList(readIds());
+        };
+    }
+
     function registerNodeType(type, definition) {
         RED.nodes.registerType(type, withUiIdMigration(definition));
     }
@@ -926,6 +1061,7 @@
         installEventCheckboxes,
         installLayoutChildPropRows,
         installLayoutSelector,
+        installNodePicker,
         installParentAppSelector,
         installReferenceSelectors,
         installVariantSelectBox,
