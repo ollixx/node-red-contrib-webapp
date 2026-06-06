@@ -25,11 +25,18 @@ test.describe("editor panels — behavior & state nodes (P47)", () => {
         await editor.open();
         await editor.openNode("actEd");
 
-        await editor.expectFields(["name", "parent", "actionType", "to", "description"]);
+        await editor.expectFields(["name", "parent", "actionType", "to", "target", "part", "description"]);
 
-        // actionType selector exposes the documented action types.
+        // P53: actionType selector exposes the canonical interaction verb set
+        // (ADR 0005) — no submit/remove (P29), no trigger; open/close/select/
+        // focus/reset added.
         const actionTypes = await editor.selectOptionValues("actionType");
-        expect(actionTypes).toEqual(expect.arrayContaining(["navigate", "show", "hide", "trigger"]));
+        expect(actionTypes).toEqual(expect.arrayContaining([
+            "navigate", "show", "hide", "open", "close", "select", "enable", "disable", "focus", "reset"
+        ]));
+        expect(actionTypes).not.toContain("trigger");
+        expect(actionTypes).not.toContain("submit");
+        expect(actionTypes).not.toContain("remove");
 
         // parent SelectBox lists the app.
         expect(await editor.selectOptionValues("parent")).toContain("actApp");

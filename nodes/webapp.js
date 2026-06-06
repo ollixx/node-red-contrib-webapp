@@ -1251,6 +1251,8 @@ ${tokenCss ? tokenCss.split("\n").map((line) => `    ${line}`).join("\n") : "   
     .webapp-slot-body--grid { display:grid; grid-template-columns:repeat(12, minmax(0, 1fr)); gap:12px; }
     .webapp-slot-body--absolute { position:relative; min-height:320px; }
     .webapp-item--absolute { position:absolute; }
+    /* P53: a ui-action hide command toggles this class on a component wrapper */
+    .webapp-hidden { display:none !important; }
     /* P36: navbar — frameless stacked nav links; active state via color */
     .webapp-nav-list { display:flex; flex-direction:column; gap:0; list-style:none; margin:0; padding:0; }
     .webapp-nav-item a, .webapp-nav-link { display:block; padding:10px 20px; font-size:0.95rem; font-weight:500; color:var(--wa-color-text); text-decoration:none; transition:color 0.15s, background 0.15s; }
@@ -1568,10 +1570,14 @@ function buildActionCommand(actionDefinition, msg) {
     if (!type) {
         return null;
     }
+    // P53 (ADR 0005): the command carries `target` (a rendered node id) and an
+    // optional `part` (a sub-id within that element — accordion section, tree
+    // branch, tab) for open/close/select granularity. msg.ui.action overrides win.
     return {
         type: String(type),
         to: override.to || (actionDefinition && actionDefinition.to) || undefined,
-        target: override.target || override.targetId || (actionDefinition && actionDefinition.target) || undefined
+        target: override.target || override.targetId || (actionDefinition && actionDefinition.target) || undefined,
+        part: override.part || (actionDefinition && actionDefinition.part) || undefined
     };
 }
 
@@ -2437,6 +2443,7 @@ const runtimeNodeRegistry = {
             actionType: blankToUndefined(config.actionType),
             to: blankToUndefined(config.to),
             target: blankToUndefined(config.target),
+            part: blankToUndefined(config.part),
             description: config.description || undefined
         }),
         options: {

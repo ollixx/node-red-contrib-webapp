@@ -71,14 +71,22 @@ Für dynamisch erzeugte Elemente (z.B. Zeilen in einer Tabelle, Items in einer L
 
 Eine Action ist ein typisiertes Kommando. Der Typ bestimmt, was der Client tut.
 
-> **Implementierter Typsatz (Schema):** `navigate`, `show`, `hide`, `enable`,
-> `disable`, `trigger`. `openDialog` / `closeDialog` werden über `show` / `hide`
-> auf ein Dialog-Ziel ausgedrückt. `focus` und `reset` sind hier spezifiziert,
-> aber noch nicht im Schema umgesetzt (spätere Phase). Alle Typen ändern
-> ausschließlich den Interaktionszustand — niemals fachliche Daten. Die früheren
+> **Implementierter Typsatz (Schema, P53 / [ADR 0005](../../adr/0005-ui-action-interaction-vocabulary.md)):**
+> drei semantische Klassen —
+> *Sichtbarkeit* `show` / `hide` (beliebiges Element),
+> *Offenlegung* `open` / `close` (Dialog, Drawer, Accordion-Sektion, Details,
+> Tree-Branch; mit optionalem `part` für die Sub-Granularität),
+> *Einzelauswahl* `select` (Tab, Stepper, Menü; mit `part`) —
+> plus `navigate`, `enable` / `disable`, `focus`, `reset`. `open` / `close`
+> ersetzen das frühere `openDialog` / `closeDialog`, das als Alias erhalten bleibt.
+> `show` / `hide` (Präsenz) sind bewusst getrennt von `open` / `close`
+> (Offenlegungszustand eines bereits sichtbaren Elements). Alle Typen ändern
+> ausschließlich den Interaktionszustand — niemals fachliche Daten. Sichtbarkeit /
+> enabled / open-Zustand werden client-seitig in einer Interaktions-Overlay
+> gehalten, die nach jedem Snapshot-Re-Render erneut angewandt wird. Die früheren
 > Datenaktionen `submit` / `remove` wurden in P29 entfernt (siehe
 > [ADR 0003](../../adr/0003-live-node-red-app-no-preview.md)); CRUD gehört in den
-> verdrahteten Flow.
+> verdrahteten Flow. (`trigger` bleibt als Legacy-Pass-Through-Verb im Schema.)
 
 ### `navigate`
 
@@ -99,22 +107,29 @@ Navigiert den Client zu einer Route.
 
 ---
 
-### `openDialog` / `closeDialog`
+### `open` / `close` (vormals `openDialog` / `closeDialog`)
 
-Öffnet oder schließt einen Dialog.
+Öffnet oder schließt ein aufklappbares, sichtbares Element: Dialog, Drawer,
+Accordion-Sektion, Details/Collapse oder Tree-Branch. `open` / `close` sind die
+kanonischen Verben (P53 / ADR 0005); `openDialog` / `closeDialog` bleiben als
+Alias erhalten.
 
 ```json
 {
   "ui": {
     "action": {
-      "type":     "openDialog",
-      "dialogId": "<node-id des ui-dialog>"
+      "type":   "open",
+      "target": "<node-id des Ziel-Elements>",
+      "part":   "<optionale Sub-ID: Accordion-Sektion / Tree-Branch / Tab>"
     }
   }
 }
 ```
 
-Alternative zu Store-basiertem Dialog-State — sinnvoll wenn kein persistenter Zustand benötigt wird.
+Ohne `part` adressiert ein bares `target` das Element als Ganzes (z.B. einen
+Dialog — das frühere `openDialog`-Verhalten). Mit `part` wird genau eine
+Sektion/Branch innerhalb des Ziels geöffnet. Alternative zu Store-basiertem
+Dialog-State — sinnvoll wenn kein persistenter Zustand benötigt wird.
 
 ---
 

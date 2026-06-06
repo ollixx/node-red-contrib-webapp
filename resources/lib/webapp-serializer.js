@@ -254,7 +254,17 @@
             ? " data-webapp-source=\"" + escapeAttribute(component.id) + "\" data-webapp-event=\"change\""
             : "";
 
-        return "<div class=\"webapp-item webapp-item--" + escapeAttribute(layoutVariant) + "\"" + sourceAttribute + styleAttribute + ">" + innerHtml + "</div>";
+        // P53: tag every component wrapper with its node id so a ui-action
+        // interaction command (show / hide / enable / disable / focus / reset /
+        // open / close) can resolve its `target` to the rendered element. The
+        // overlay that applies the command lives client-side only (ADR 0005);
+        // the serializer just emits the stable hook so server and client markup
+        // stay byte-identical (P26).
+        const nodeAttribute = component && component.id !== undefined
+            ? " data-webapp-node=\"" + escapeAttribute(component.id) + "\""
+            : "";
+
+        return "<div class=\"webapp-item webapp-item--" + escapeAttribute(layoutVariant) + "\"" + nodeAttribute + sourceAttribute + styleAttribute + ">" + innerHtml + "</div>";
     }
 
     function renderRegionHtml(region, layoutId, ctx) {
@@ -556,7 +566,11 @@
         if (component.kind === "accordion") {
             const items = Array.isArray(component.props.items) ? component.props.items : [];
             const detailsHtml = items.map(function (item) {
-                return "<sl-details summary=\"" + escapeAttribute(String(item.label !== undefined ? item.label : (item.id !== undefined ? item.id : item))) + "\"></sl-details>";
+                // P53: each section carries a stable data-webapp-part hook (its id,
+                // falling back to the label) so a ui-action open/close command can
+                // disclose one section by `part` (ADR 0005).
+                const partId = String(item.id !== undefined ? item.id : (item.label !== undefined ? item.label : item));
+                return "<sl-details data-webapp-part=\"" + escapeAttribute(partId) + "\" summary=\"" + escapeAttribute(String(item.label !== undefined ? item.label : (item.id !== undefined ? item.id : item))) + "\"></sl-details>";
             }).join("");
             return wrapRenderedComponentHtml(component, layoutId, "<div class=\"webapp-accordion\">" + detailsHtml + "</div>");
         }

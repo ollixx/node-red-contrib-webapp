@@ -10,6 +10,8 @@
                 parent: { value: "" },
                 actionType: { value: "" },
                 to: { value: "" },
+                target: { value: "" },
+                part: { value: "" },
                 description: { value: "" }
             },
             inputs: 1,
@@ -29,9 +31,11 @@
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-parent">App</label><select id="node-input-parent"></select></div>
-    <div class="form-row"><label for="node-input-actionType">Action-Typ</label><select id="node-input-actionType"><option value="">unspezifiziert</option><option value="navigate">navigate</option><option value="show">show</option><option value="hide">hide</option><option value="enable">enable</option><option value="disable">disable</option><option value="trigger">trigger</option></select></div>
+    <div class="form-row"><label for="node-input-actionType">Action-Typ</label><select id="node-input-actionType"><option value="">unspezifiziert</option><option value="navigate">navigate</option><option value="show">show</option><option value="hide">hide</option><option value="open">open</option><option value="close">close</option><option value="select">select</option><option value="enable">enable</option><option value="disable">disable</option><option value="focus">focus</option><option value="reset">reset</option></select></div>
     <div class="form-row"><label for="node-input-to">Navigation zu</label><input type="text" id="node-input-to" placeholder="z.B. /customers/:id"></div>
+    <div class="form-row"><label for="node-input-target">Ziel (Node-ID)</label><input type="text" id="node-input-target" placeholder="optional — sonst via Output-Port"></div>
+    <div class="form-row"><label for="node-input-part">Teil (Sub-ID)</label><input type="text" id="node-input-part" placeholder="open/close/select: z.B. Accordion-Sektion"></div>
     <div class="form-row"><label for="node-input-description">Beschreibung</label><input type="text" id="node-input-description"></div>
 </script>
 <script type="text/html"
-    data-help-name="ui-action"><p>Sendet eine UI-Aktion an den Client. Der Output-Port wird mit dem Zielknoten verdrahtet (z.B. ui-dialog, ui-button). Der Zielknoten kann durch msg.ui.action.targetId dynamisch ueberschrieben werden.</p></script>
+    data-help-name="ui-action"><p>Sendet eine Interaktions-Aktion an den Client (Interaktionszustand, keine Fachdaten). Verben: navigate, show/hide (Element-Sichtbarkeit), open/close (Offenlegung: Dialog, Accordion, Tree), select (Einzelauswahl), enable/disable, focus, reset. Das Ziel wird ueber den Output-Port verdrahtet oder per Feld "Ziel" / msg.ui.action.targetId bestimmt; open/close/select nutzen "Teil" (bzw. msg.ui.action.part) fuer die Sub-Granularitaet. Die eingehende msg wird unveraendert am Output-Port weitergereicht.</p></script>
