@@ -476,7 +476,7 @@ phases:
 
   - id: P61
     title: "ui-app — Fehler-Weiterleitung als einzelne 'Logging'-Select + Info-Icon-Dialog"
-    status: pending
+    status: in_progress
     dependencies: [P57]
     goals:
       - Das verbose 3-Element-UI (Checkbox + form-tips + bedingte 'Min. Stufe') durch EINE Select 'Logging' ersetzen.
