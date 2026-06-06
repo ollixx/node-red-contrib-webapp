@@ -6,6 +6,7 @@ import {
     BUTTON_VARIANTS,
     bindingSchema,
     CONTAINER_VARIANTS,
+    errorSeveritySchema,
     identifierSchema,
     INPUT_VARIANTS,
     routeNodePathSchema,
@@ -26,10 +27,10 @@ const mountableNodeSchema = identifiedNodeSchema.extend({
     parent: z.string().min(1, "Component parent paths must not be empty.").optional(),
     mount: z.string().min(1, "Component mounts must not be empty.").optional(),
     order: z.number().int("Component order must be an integer.").optional(),
-    row: z.number().int("Component rows must be integers.").optional(),
-    col: z.number().int("Component columns must be integers.").optional(),
-    colSize: z.number().int("Component column spans must be integers.").optional(),
-    rowSize: z.number().int("Component row spans must be integers.").optional(),
+    row: z.number().int("Grid rows are 1-based — row must be a positive integer.").positive("Grid rows are 1-based — row must be a positive integer.").optional(),
+    col: z.number().int("Grid columns are 1-based — col must be a positive integer.").positive("Grid columns are 1-based — col must be a positive integer.").optional(),
+    colSize: z.number().int("Grid column spans must be positive integers.").positive("Grid column spans must be positive integers.").optional(),
+    rowSize: z.number().int("Grid row spans must be positive integers.").positive("Grid row spans must be positive integers.").optional(),
     layoutX: z.number().int("Component x coordinates must be integers.").optional(),
     layoutY: z.number().int("Component y coordinates must be integers.").optional()
 }).superRefine((node, context) => {
@@ -139,7 +140,16 @@ export const uiAppNodeDefinitionSchema = z.object({
     title: z.string().min(1, "App titles must not be empty."),
     layout: standardLayoutPresetSchema,
     events: z.array(z.enum(["clientConnected", "clientDisconnected"])).optional(),
-    tokens: designTokensSchema
+    tokens: designTokensSchema,
+    // P56 / ADR 0006 §4: opt-in backend→frontend error forwarding. Absent means
+    // OFF (security: anonymous httpNode visitors must not receive server
+    // internals unless the app deliberately enables it). When enabled, only
+    // framework errors at or above `forwardErrorMinSeverity` (default "error")
+    // are forwarded over the SSE "error" channel, redacted. Optional rather than
+    // .default() so existing fixtures/configs stay valid; the runtime applies the
+    // secure fallbacks (false / "error") when the fields are absent.
+    forwardErrorsToClient: z.boolean().optional(),
+    forwardErrorMinSeverity: errorSeveritySchema.optional()
 });
 
 export type UiAppNodeDefinition = z.infer<typeof uiAppNodeDefinitionSchema>;

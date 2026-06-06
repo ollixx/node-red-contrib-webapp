@@ -151,7 +151,11 @@
                 layout: { value: "vertical", required: true },
                 events: { value: "[]" },
                 outputs: { value: 0 },
-                tokens: { value: "" }
+                tokens: { value: "" },
+                // P56 / ADR 0006 §4: opt-in backend→frontend error forwarding.
+                // Default OFF (security). minSeverity gates which errors forward.
+                forwardErrorsToClient: { value: false },
+                forwardErrorMinSeverity: { value: "error" }
             },
             inputs: 0,
             outputs: 0,
@@ -239,6 +243,21 @@
                 $("#node-ui-app-styles-btn").on("click", function () {
                     $dialogWrapper.dialog("open");
                 });
+
+                // P56 / ADR 0006 §4: show the severity threshold only when
+                // forwarding is enabled.
+                const $forward = $("#node-input-forwardErrorsToClient");
+                const $severityRow = $("#node-ui-app-min-severity-row");
+                function updateForwardVisibility() {
+                    if ($forward.is(":checked")) {
+                        $severityRow.show();
+                    }
+                    else {
+                        $severityRow.hide();
+                    }
+                }
+                $forward.on("change", updateForwardVisibility);
+                updateForwardVisibility();
             },
             oneditsave: function () {
                 // tokens are already serialised to #node-input-tokens inside the dialog OK handler.
@@ -270,6 +289,27 @@
     <input type="hidden" id="node-input-tokens">
     <input type="hidden" id="node-input-events">
     <input type="hidden" id="node-input-outputs">
+    <hr style="margin: 8px 0;">
+    <div class="form-row">
+        <label for="node-input-forwardErrorsToClient" style="width: auto;">
+            <input type="checkbox" id="node-input-forwardErrorsToClient" style="display: inline-block; width: auto; vertical-align: top; margin-right: 6px;">
+            Fehler an Client weiterleiten
+        </label>
+    </div>
+    <div class="form-tips" style="margin-bottom: 8px;">
+        Sendet Framework-Fehler ab der gewählten Stufe an verbundene Browser
+        (SSE, redigiert). Standard: aus (Sicherheit).
+    </div>
+    <div class="form-row" id="node-ui-app-min-severity-row">
+        <label for="node-input-forwardErrorMinSeverity">Min. Stufe</label>
+        <select id="node-input-forwardErrorMinSeverity">
+            <option value="debug">debug</option>
+            <option value="info">info</option>
+            <option value="warn">warn</option>
+            <option value="error">error</option>
+        </select>
+    </div>
+    <hr style="margin: 8px 0;">
     <div class="form-row"><label>Events</label></div>
     <div id="node-input-events-container"></div>
 </script>

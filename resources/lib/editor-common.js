@@ -90,7 +90,12 @@
             control = '<select id="node-input-' + escapeHtml(field.id) + '">' + optionMarkup + "</select>";
         } else {
             const inputType = field.type || "text";
-            control = '<input type="' + escapeHtml(inputType) + '" id="node-input-' + escapeHtml(field.id) + '">';
+            const inputAttrs = field.inputAttrs || {};
+            let extraAttrs = "";
+            Object.keys(inputAttrs).forEach(function (key) {
+                extraAttrs += ' ' + key + '="' + escapeHtml(String(inputAttrs[key])) + '"';
+            });
+            control = '<input type="' + escapeHtml(inputType) + '" id="node-input-' + escapeHtml(field.id) + '"' + extraAttrs + '>';
         }
         return (
             '<div class="form-row"' + attrs + style + '>' +
@@ -139,12 +144,15 @@
     // duplicated in every view node's template. Order, labels, ids, input types
     // and the leading <hr> match the former hand-written markup exactly so the
     // rendered panel and the saved config are unchanged (pure refactor).
+    // Grid placement fields (row/col/colSize/rowSize) enforce min=1/step=1 — grid
+    // positions are 1-based positive integers. layoutX/layoutY allow 0 (absolute
+    // coordinates). order has no lower bound constraint.
     const placementRowFields = [
         { id: "order", label: "Order", type: "number", rowAttrs: { "data-layout-child-prop-row": "order" }, hidden: true },
-        { id: "row", label: "Row", type: "number", rowAttrs: { "data-layout-child-prop-row": "row" }, hidden: true },
-        { id: "col", label: "Col", type: "number", rowAttrs: { "data-layout-child-prop-row": "col" }, hidden: true },
-        { id: "colSize", label: "Col Size", type: "number", rowAttrs: { "data-layout-child-prop-row": "colSize" }, hidden: true },
-        { id: "rowSize", label: "Row Size", type: "number", rowAttrs: { "data-layout-child-prop-row": "rowSize" }, hidden: true },
+        { id: "row", label: "Row", type: "number", rowAttrs: { "data-layout-child-prop-row": "row" }, inputAttrs: { min: "1", step: "1" }, hidden: true },
+        { id: "col", label: "Col", type: "number", rowAttrs: { "data-layout-child-prop-row": "col" }, inputAttrs: { min: "1", step: "1" }, hidden: true },
+        { id: "colSize", label: "Col Size", type: "number", rowAttrs: { "data-layout-child-prop-row": "colSize" }, inputAttrs: { min: "1", step: "1" }, hidden: true },
+        { id: "rowSize", label: "Row Size", type: "number", rowAttrs: { "data-layout-child-prop-row": "rowSize" }, inputAttrs: { min: "1", step: "1" }, hidden: true },
         { id: "layoutX", label: "X", type: "number", rowAttrs: { "data-layout-child-prop-row": "layoutX" }, hidden: true },
         { id: "layoutY", label: "Y", type: "number", rowAttrs: { "data-layout-child-prop-row": "layoutY" }, hidden: true }
     ];
