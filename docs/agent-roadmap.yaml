@@ -462,6 +462,110 @@ phases:
         renders the corresponding Shoelace output (round-trip through P49's
         mapping).
 
+  # ════════════════════════════════════════════════════════════════════════
+  # Grid-Platzierung: Validierung & dynamische Werte (P51–P52)
+  #
+  # Aufgedeckt bei der Knoten-Review (2026-06-06): die Grid-Child-Props
+  # row / col / colSize / rowSize werden im Schema aktuell nur als
+  # z.number().int().optional() geprüft (packages/schema/src/node-definitions.ts
+  # Z. 24–27). Damit sind 0 und negative Werte erlaubt — fachlich falsch:
+  # Grid-Spalten/-Zeilen sind 1-basiert, ein Span < 1 ist sinnlos.
+  #
+  #   • Feste Invariante (über alle Folgephasen): row/col/colSize/rowSize müssen
+  #     POSITIVE INTEGER (>= 1) sein. layoutX/layoutY (absolute-Layout) sind NICHT
+  #     betroffen — dort ist 0 die legitime obere linke Ecke.
+  #   • Offene Designfrage (P52): sollen diese Felder dynamisch werden — Update
+  #     per Input-Message (auf P39 aufbauend) und/oder typedInput-Bindings
+  #     (msg/flow/global, über die heutigen literal/state/query/routeParam-Kinds
+  #     hinaus)? Egal wie: validiert wird immer auf positive Integer.
+  # ════════════════════════════════════════════════════════════════════════
+
+  - id: P51
+    title: "Grid-Child-Props row/col/colSize/rowSize müssen positive Integer sein"
+    status: pending
+    dependencies: [P48]
+    # Routine schema + editor tightening. Use sonnet.
+    goal: |
+      Enforce that the grid placement child props are positive integers (>= 1)
+      in BOTH the schema and the Node-RED editor. This is the firm, undisputed
+      part of the grid-placement review — independent of the dynamic-value
+      question (P52).
+    scope: |
+      1. packages/schema/src/node-definitions.ts (mountableNodeSchema, ~Z. 24–27)
+         - row, col, colSize, rowSize: change z.number().int() to
+           z.number().int().positive() with clear messages, e.g.
+           "Grid columns are 1-based — col must be a positive integer."
+         - Do NOT touch layoutX / layoutY: 0 is a valid absolute coordinate.
+         - Rebuild: pnpm build.
+
+      2. resources/lib/editor-common.js
+         - The grid child fields come from
+           layoutChildFieldsByVariant.grid = ["row","col","colSize","rowSize"].
+         - Render these as number inputs with min="1" step="1" and add
+           client-side validation so an out-of-range value flags the node
+           (invalid badge) before deploy, consistent with the existing editor
+           validation pattern.
+
+      3. docs/nodes/concepts/layout.md
+         - Document the positive-integer constraint for grid placement and the
+           explicit exception for layoutX/layoutY.
+
+      4. Check fixtures / example generator for any 0-valued grid props that
+         would now fail validation; fix them (and regenerate examples via
+         pnpm gen:node-examples if the generator emits any).
+    validation: |
+      - pnpm build passes.
+      - pnpm test passes; add a unit test asserting the schema REJECTS 0,
+        negative, and non-integer for row/col/colSize/rowSize, and still
+        ACCEPTS 0 for layoutX/layoutY.
+      - `pnpm exec playwright test` passes; an editor spec asserts a grid
+        child node with col=0 is flagged invalid.
+
+  - id: P52
+    title: "Dynamische Werte für Grid-Platzierung — Evaluation + ggf. Umsetzung"
+    status: pending
+    dependencies: [P51]
+    # Architecture-sensitive: touches the binding model and the placement
+    # resolution path in renderer + thin client. Decision-first. Use opus.
+    goal: |
+      Evaluate whether the grid placement props (row/col/colSize/rowSize) should
+      support dynamic values, and — if the evaluation says yes — implement the
+      chosen subset. Decision-first: this phase produces an ADR before any
+      implementation.
+
+      Two candidate capabilities (independent; the ADR decides which, if any):
+        A) Update via input message — let a flow change placement at runtime
+           through the input port (building on P39's msg.payload / msg.ui.patch),
+           with positive-integer validation enforced ON THIS PATH too.
+        B) typedInput bindings — allow the editor to bind these fields to
+           msg / flow / global values (new binding kinds beyond the current
+           literal / state / query / routeParam), resolved at render time.
+    scope: |
+      1. Write docs/adr/0004-dynamic-grid-placement.md:
+         - Weigh the value (runtime-reconfigurable layouts) against the cost:
+           layout is STRUCTURAL — dynamic placement means the thin client must
+           re-place elements on update (reflow), and binding kinds msg/flow/
+           global are a broader concept than the current render-time bindings.
+         - Decide: implement A, A+B, or neither-now (with rationale). If the
+           decision is "neither now", record it and STOP — the firm validation
+           from P51 already stands.
+      2. If A is chosen: route placement-prop updates through the input handler,
+         validate the resolved value as a positive integer (reuse P51's rule),
+         reject/ignore invalid updates with a clear node error, and push a
+         snapshot so the element re-places.
+      3. If B is chosen: extend the binding model + editor typedInput, resolve
+         placement bindings in the renderer/serializer, and validate the
+         resolved value as a positive integer at render time.
+    validation: |
+      - ADR 0004 committed and referenced from this phase's archive entry.
+      - INVARIANT regardless of the chosen path: any resolved placement value
+        that is not a positive integer is rejected/ignored with a clear error —
+        unit-tested.
+      - If A/B implemented: pnpm validate + `pnpm exec playwright test` pass,
+        with an E2E test driving a runtime placement change end to end.
+      - If neither: P51's validation tests remain green; the ADR documents the
+        deferral and any follow-up trigger.
+
   # Deferred — only when a concrete need appears (see ADR 0002):
   #   - ui-custom escape-hatch node for framework-specific components (opt-in, non-portable)
   #   - SSR / hydration adapter for any public, search-indexed surface
