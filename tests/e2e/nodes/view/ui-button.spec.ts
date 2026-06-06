@@ -11,10 +11,7 @@ import { WebappPage } from "../../../helpers/webapp-page";
  *   - label renders as button text inside sl-button.
  *   - sl-button element is present in the rendered DOM.
  *   - disabled binding (literal) → sl-button[disabled] rendered.
- *
- * Note: ui-button does not currently plumb the `variant` node prop through the
- * config chain (not present in the spec or mapConfig). Variant tests are
- * therefore omitted here.
+ *   - variant prop → sl-button[variant] attribute (P50 round-trip).
  */
 
 test.describe("ui-button render (P43)", () => {
@@ -80,5 +77,22 @@ test.describe("ui-button render (P43)", () => {
         await webapp.navigate("/");
         await expect(webapp.root()).toBeVisible();
         await expect(page.locator("sl-button")).toBeVisible();
+    });
+
+    /**
+     * P50 round-trip: the `variant` prop stored by the editor SelectBox must
+     * reach the Shoelace adapter and produce sl-button[variant="<value>"].
+     */
+    test("variant='danger' → sl-button[variant=danger] rendered", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "btnApp5", root: "btnApp5" })
+            .node("ui-button", { id: "btnNode5", label: "Delete", variant: "danger" })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "btnApp5");
+        await webapp.navigate("/");
+        await expect(page.locator('sl-button[variant="danger"]')).toBeVisible();
     });
 });
