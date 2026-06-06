@@ -180,7 +180,33 @@ export type QueryDefinition = z.infer<typeof queryDefinitionSchema>;
 // enabled state, focus, reset) — never business data. See
 // docs/nodes/concepts/actions.md. CRUD belongs in the wired flow, not here;
 // the former "submit"/"remove" data actions were removed in P29 (ADR 0003).
-export const actionTypeSchema = z.enum(["navigate", "disable", "enable", "show", "hide", "trigger"]);
+// P53 (ADR 0005): the canonical interaction verb set, in three semantic classes:
+//   presence:    show / hide   — element visibility (any element)
+//   disclosure:  open / close  — disclosure state of an openable, visible element
+//                                (dialog, drawer, accordion section, details, tree
+//                                branch). openDialog / closeDialog are kept as
+//                                back-compat aliases.
+//   single:      select        — single-active among siblings (tab, stepper, menu)
+//   plus navigate, enable / disable, focus, reset.
+// submit / remove stay removed (P29 / ADR 0003) — CRUD belongs in the wired flow.
+export const actionTypeSchema = z.enum([
+    "navigate",
+    "show",
+    "hide",
+    "open",
+    "close",
+    "select",
+    "enable",
+    "disable",
+    "focus",
+    "reset",
+    // back-compat aliases for open / close (P53 / ADR 0005):
+    "openDialog",
+    "closeDialog",
+    // legacy pure pass-through verb (pre-P53): pushes no interaction overlay
+    // change; the wired flow handles everything. Kept for existing flows.
+    "trigger"
+]);
 
 export type ActionType = z.infer<typeof actionTypeSchema>;
 
@@ -194,6 +220,9 @@ export const actionDefinitionSchema = z.object({
     // targetMode and target are deprecated — wiring the output port is the preferred model.
     targetMode: actionTargetModeSchema.optional(),
     target: z.string().min(1, "Action targets must not be empty.").optional(),
+    // P53: open / close / select granularity — a sub-id within the target element
+    // (accordion section, tree branch, tab name).
+    part: z.string().min(1, "Action parts must not be empty.").optional(),
     to: z.string().min(1, "Navigate actions must declare a destination.").optional(),
     description: z.string().min(1, "Action descriptions must not be empty.").optional()
 });

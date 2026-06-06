@@ -275,6 +275,9 @@ export const uiActionNodeDefinitionSchema = identifiedNodeSchema.extend({
     // The preferred model is wiring the output port to the target node.
     targetMode: actionTargetModeSchema.optional(),
     target: z.string().min(1, "Action targets must not be empty.").optional(),
+    // P53 (ADR 0005): sub-id within the target for open / close / select
+    // granularity (accordion section, tree branch, tab name).
+    part: z.string().min(1, "Action parts must not be empty.").optional(),
     to: z.string().min(1, "Navigate actions must declare a destination.").optional(),
     description: z.string().min(1, "Action descriptions must not be empty.").optional()
 });

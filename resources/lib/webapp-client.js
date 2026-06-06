@@ -56,6 +56,22 @@
     let dialogId = root.getAttribute("data-webapp-dialog") || undefined;
     let currentSnapshot = null;
 
+    // P53: per-client interaction-state overlay (ADR 0005). A ui-action verb
+    // (show/hide/enable/disable/open/close) mutates this overlay, and the overlay
+    // is RE-APPLIED after every snapshot render so a flow-driven snapshot push
+    // (e.g. a ui-store update) does not wipe a prior interaction command. The
+    // overlay is INTERACTION state only — never business data, never sent to the
+    // server (ADR 0003): it lives in this tab and is re-stamped on the freshly
+    // rendered markup.
+    //   visibility:  nodeId -> true (hidden)
+    //   disabled:    nodeId -> true (disabled)
+    //   open:        "<target>" or "<target>#<part>" -> true (disclosed)
+    const interaction = {
+        hidden: Object.create(null),
+        disabled: Object.create(null),
+        open: Object.create(null)
+    };
+
     // P30: a per-tab client id so the flow can address actions back to this
     // browser (events.md / actions.md clientId targeting; the live channel is P31).
     const clientId = root.getAttribute("data-webapp-client-id")
@@ -112,6 +128,87 @@
         }
     }
 
+    // P53: resolve a target node id to its rendered wrapper element. The
+    // serializer tags every component wrapper with data-webapp-node (ADR 0005).
+    function findTargetElement(nodeId) {
+        if (!nodeId) {
+            return null;
+        }
+        return root.querySelector('[data-webapp-node="' + cssEscapeAttr(nodeId) + '"]');
+    }
+
+    // Minimal attribute-value escaper for the selector (no CSS.escape in older
+    // engines). Node ids are simple tokens, but guard quotes/backslashes anyway.
+    function cssEscapeAttr(value) {
+        return String(value).replace(/(["\\])/g, "\\$1");
+    }
+
+    // P53: stamp the interaction overlay onto the freshly rendered DOM. Called
+    // after every snapshot render so a show/hide/enable/disable survives a
+    // re-render. The overlay is ADDITIVE-ONLY: it never clears a component's
+    // intrinsic state (e.g. a server-rendered sl-input[disabled] from its own
+    // `disabled` prop). Clearing an overlay flag (show/enable) is done by
+    // re-rendering from the snapshot — which restores the intrinsic markup — and
+    // then re-stamping only the still-flagged overlay entries on top.
+    function applyInteractionOverlay() {
+        root.querySelectorAll("[data-webapp-node]").forEach(function (element) {
+            const id = element.getAttribute("data-webapp-node");
+            if (interaction.hidden[id]) {
+                element.classList.add("webapp-hidden");
+                element.setAttribute("hidden", "");
+            }
+            if (interaction.disabled[id]) {
+                applyDisabledState(element, true);
+            }
+        });
+
+        // Disclosure (open/close) of a sub-part of a target element — additive:
+        // only opens flagged sections; closing is handled by removing the flag
+        // and re-applying (the fresh markup is closed by default).
+        Object.keys(interaction.open).forEach(function (key) {
+            if (!interaction.open[key]) {
+                return;
+            }
+            const hashIndex = key.indexOf("#");
+            const targetId = hashIndex === -1 ? key : key.slice(0, hashIndex);
+            const part = hashIndex === -1 ? undefined : key.slice(hashIndex + 1);
+            const targetEl = findTargetElement(targetId);
+            if (!targetEl) {
+                return;
+            }
+            const openTarget = part ? findPartElement(targetEl, part) : targetEl;
+            if (openTarget) {
+                openTarget.setAttribute("open", "");
+            }
+        });
+    }
+
+    // P53: set the disabled state on a wrapper and its inner control(s). The
+    // [disabled] attribute on form controls (sl-* / native) is what the browser
+    // reads. ADDITIVE — only ever called with disabled=true from the overlay; an
+    // `enable` clears the flag and re-renders rather than removing the attribute
+    // here (so a component's intrinsic disabled prop is never stripped).
+    function applyDisabledState(element, disabled) {
+        const controls = element.matches("sl-button, button, input, textarea, select, sl-input, sl-textarea, sl-select, sl-checkbox, sl-switch, sl-radio-group, sl-range")
+            ? [element]
+            : Array.prototype.slice.call(element.querySelectorAll("sl-button, button, input, textarea, select, sl-input, sl-textarea, sl-select, sl-checkbox, sl-switch, sl-radio-group, sl-range"));
+        controls.forEach(function (control) {
+            if (disabled) {
+                control.setAttribute("disabled", "");
+            }
+        });
+    }
+
+    // P53: find an openable sub-part within a target (accordion section, tree
+    // branch, tab) by its name/id. Shoelace disclosure elements expose `name`
+    // (sl-tab-panel) or an id; fall back to a data hook.
+    function findPartElement(targetEl, part) {
+        const esc = cssEscapeAttr(part);
+        return targetEl.querySelector('[name="' + esc + '"]')
+            || targetEl.querySelector('[data-webapp-part="' + esc + '"]')
+            || (typeof targetEl.querySelector === "function" ? targetEl.querySelector("#" + esc) : null);
+    }
+
     function applySnapshot(snapshot) {
         currentSnapshot = snapshot;
         location = snapshot.location;
@@ -134,6 +231,10 @@
                 root.appendChild(node);
             });
         }
+
+        // P53: re-stamp interaction state on the freshly rendered markup so a
+        // store-driven re-render does not wipe a prior show/hide/enable/disable.
+        applyInteractionOverlay();
     }
 
     function collectFormValues(formId) {
@@ -364,15 +465,24 @@
         hydrated = true;
     }
 
-    // P31: apply an interaction command pushed by a ui-action in the flow. These
-    // change INTERACTION state only (actions.md) — navigate / openDialog / show /
-    // hide — never business data. After a navigate, the client follows the route
-    // (the server has already updated this client's stream location, so the next
-    // pushed snapshot renders the new page).
+    // P53 (ADR 0005): apply an interaction command pushed by a ui-action in the
+    // flow. These change INTERACTION state only (actions.md) — never business
+    // data. The canonical verb set, in three semantic classes:
+    //   presence:   show / hide        (any element, via the overlay)
+    //   disclosure: open / close       (dialog / accordion section / tree branch;
+    //                                    openDialog / closeDialog are aliases)
+    //   single:     select             (active sub-part of a sibling set)
+    //   plus:       navigate, enable / disable, focus, reset
+    // Visibility / disabled / open-state live in the client overlay so they
+    // survive the next snapshot push (applyInteractionOverlay re-stamps them).
     function applyCommand(command) {
         if (!command || !command.type) {
             return;
         }
+
+        const target = command.target ? String(command.target) : undefined;
+        const part = command.part ? String(command.part) : undefined;
+        const openKey = target ? (part ? target + "#" + part : target) : undefined;
 
         switch (command.type) {
             case "navigate":
@@ -381,25 +491,132 @@
                     window.location.assign(base() + "/" + String(command.to).replace(/^\//, ""));
                 }
                 break;
-            case "openDialog":
-                if (command.target) {
-                    dialogId = String(command.target);
+
+            // ── presence ──────────────────────────────────────────────────────
+            case "show":
+                if (target) {
+                    // Clearing a flag → re-render from snapshot to restore the
+                    // intrinsic markup, then re-stamp the remaining overlay.
+                    delete interaction.hidden[target];
+                    reRenderWithOverlay();
+                }
+                break;
+            case "hide":
+                // P53: `hide` is ELEMENT visibility. A target-less `hide` keeps the
+                // legacy "close the open dialog" behaviour for back-compat.
+                if (target) {
+                    interaction.hidden[target] = true;
+                    applyInteractionOverlay(); // additive — no re-render needed
+                }
+                else {
+                    dialogId = undefined;
                     if (currentSnapshot) {
                         applySnapshot(currentSnapshot);
                     }
                 }
                 break;
-            case "closeDialog":
-            case "hide":
-                dialogId = undefined;
-                if (currentSnapshot) {
-                    applySnapshot(currentSnapshot);
+
+            // ── enabled state ─────────────────────────────────────────────────
+            case "enable":
+                if (target) {
+                    delete interaction.disabled[target];
+                    reRenderWithOverlay();
                 }
                 break;
-            default:
-                // show / enable / disable / focus … are honoured through the next
-                // snapshot push; no standalone client mutation needed here.
+            case "disable":
+                if (target) {
+                    interaction.disabled[target] = true;
+                    applyInteractionOverlay(); // additive
+                }
                 break;
+
+            // ── disclosure (open/close) — dialogs + sub-parts ─────────────────
+            case "open":
+            case "openDialog": // alias (back-compat)
+                if (target && part) {
+                    interaction.open[openKey] = true;
+                    applyInteractionOverlay(); // additive
+                }
+                else if (target) {
+                    // A bare target opens it as a dialog (the original openDialog).
+                    dialogId = target;
+                    if (currentSnapshot) {
+                        applySnapshot(currentSnapshot);
+                    }
+                }
+                break;
+            case "close":
+            case "closeDialog": // alias (back-compat)
+                if (target && part) {
+                    // Clearing an open flag → re-render to the (closed) intrinsic
+                    // markup, then re-stamp any other still-open sections.
+                    delete interaction.open[openKey];
+                    reRenderWithOverlay();
+                }
+                else {
+                    // Bare close (or target matching the open dialog) closes the dialog.
+                    dialogId = undefined;
+                    if (currentSnapshot) {
+                        applySnapshot(currentSnapshot);
+                    }
+                }
+                break;
+
+            // ── single-active selection ───────────────────────────────────────
+            case "select":
+                if (target && part) {
+                    const targetEl = findTargetElement(target);
+                    const partEl = targetEl && findPartElement(targetEl, part);
+                    if (partEl && typeof partEl.click === "function") {
+                        partEl.click();
+                    }
+                    else if (partEl) {
+                        partEl.setAttribute("active", "");
+                    }
+                }
+                break;
+
+            // ── transient effects ─────────────────────────────────────────────
+            case "focus":
+                if (target) {
+                    const focusEl = findTargetElement(target);
+                    const control = focusEl && (focusEl.matches("input, textarea, select, sl-input, sl-textarea, sl-select, button, sl-button")
+                        ? focusEl
+                        : focusEl && focusEl.querySelector("input, textarea, select, sl-input, sl-textarea, sl-select, button, sl-button"));
+                    if (control && typeof control.focus === "function") {
+                        control.focus();
+                    }
+                }
+                break;
+            case "reset":
+                if (target) {
+                    // Clear all overlay flags for this target (back to the
+                    // snapshot's own intrinsic state) and re-render.
+                    delete interaction.hidden[target];
+                    delete interaction.disabled[target];
+                    Object.keys(interaction.open).forEach(function (key) {
+                        if (key === target || key.indexOf(target + "#") === 0) {
+                            delete interaction.open[key];
+                        }
+                    });
+                    reRenderWithOverlay();
+                }
+                break;
+
+            default:
+                // Unknown verb — re-render so any snapshot-borne effect still lands.
+                reRenderWithOverlay();
+                break;
+        }
+    }
+
+    // P53: re-render from the current snapshot (restoring every component's
+    // intrinsic markup) and then re-stamp the additive interaction overlay. Used
+    // whenever an overlay flag is CLEARED (show / enable / close-part / reset) so
+    // a component's own state is not clobbered.
+    function reRenderWithOverlay() {
+        if (currentSnapshot) {
+            applySnapshot(currentSnapshot); // applySnapshot re-applies the overlay
         }
     }
 

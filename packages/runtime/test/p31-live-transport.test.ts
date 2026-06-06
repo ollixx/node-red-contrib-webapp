@@ -242,7 +242,75 @@ describe("P31: a flow ui-action pushes an interaction command to the client", ()
             { type: "ui-action", id: "a", actionType: "navigate", to: "/x" },
             { ui: {} }
         );
-        expect(command).toEqual({ type: "navigate", to: "/x", target: undefined });
+        // P53: the command now also carries an optional `part` (open/close/select
+        // granularity); undefined when not specified.
+        expect(command).toEqual({ type: "navigate", to: "/x", target: undefined, part: undefined });
+    });
+});
+
+// P53 (ADR 0005): the canonical interaction verb set + target/part granularity.
+describe("P53: ui-action interaction verb vocabulary", () => {
+    it("buildActionCommand emits show/hide/enable/disable with the resolved target", () => {
+        for (const verb of ["show", "hide", "enable", "disable", "focus", "reset"]) {
+            const command = buildActionCommand(
+                { type: "ui-action", id: "a", actionType: verb, target: "panel1" },
+                { ui: {} }
+            );
+            expect(command).toEqual({ type: verb, to: undefined, target: "panel1", part: undefined });
+        }
+    });
+
+    it("buildActionCommand carries `part` for open/close granularity (accordion section)", () => {
+        const command = buildActionCommand(
+            { type: "ui-action", id: "a", actionType: "open", target: "acc1", part: "section2" },
+            { ui: {} }
+        );
+        expect(command).toEqual({ type: "open", to: undefined, target: "acc1", part: "section2" });
+    });
+
+    it("msg.ui.action overrides win for type / target / part", () => {
+        const command = buildActionCommand(
+            { type: "ui-action", id: "a", actionType: "show", target: "static" },
+            { ui: { action: { type: "hide", targetId: "dynamic", part: "branchX" } } }
+        );
+        expect(command).toEqual({ type: "hide", to: undefined, target: "dynamic", part: "branchX" });
+    });
+
+    it("an open command with target+part is pushed verbatim to the client", () => {
+        const res = makeFakeRes();
+        addStreamClient(APP_ID, "c1", res, "/");
+
+        pushActionCommandToClients(APP_ID, "c1", { type: "open", target: "acc1", part: "s2" });
+
+        const commands = res.events().filter((e) => e.event === "command");
+        expect(commands).toHaveLength(1);
+        expect(commands[0].data).toMatchObject({ command: { type: "open", target: "acc1", part: "s2" } });
+    });
+
+    it("the ui-action OUTPUT passes the incoming msg through UNCHANGED (wire chaining; effect rides the SSE command channel only)", () => {
+        const res = makeFakeRes();
+        addStreamClient(APP_ID, "c1", res, "/");
+
+        const actionNode = {
+            id: "showPanel",
+            webappDefinition: { type: "ui-action", id: "showPanel", actionType: "show", target: "panel1" }
+        };
+
+        const incoming = { topic: "t", payload: { keep: 42 }, ui: { clientId: "c1", action: {} } };
+        const send = vi.fn();
+        actionInputHandler(actionNode, incoming, send, vi.fn());
+
+        // The interaction effect went out over the SSE command channel …
+        const commands = res.events().filter((e) => e.event === "command");
+        expect(commands).toHaveLength(1);
+        expect(commands[0].data).toMatchObject({ command: { type: "show", target: "panel1" } });
+
+        // … and the wire output forwarded the ORIGINAL msg, not a command-bearing one.
+        expect(send).toHaveBeenCalledTimes(1);
+        const forwarded = send.mock.calls[0][0];
+        expect(forwarded).toBe(incoming);
+        expect(forwarded.payload).toEqual({ keep: 42 });
+        expect(forwarded.topic).toBe("t");
     });
 });
 
