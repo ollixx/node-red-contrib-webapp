@@ -15,8 +15,6 @@ Format:
 
 ## Open owner actions
 
-- ⚠️ 2026-06-06 [P48] `pnpm gen:example` overwrote `.node-red-dev/flows.json` ONCE before the opt-in fix landed (dev-copy is now behind `WEBAPP_GEN_DEV=1`). **OWNER:** restore your dev flows from `.node-red-dev/.flows.json.backup` if needed — the file is off-limits to agents, so this cannot be done for you.
-
 ## Entries
 
 - 2026-06-01 [run-next-phase/P33] Flow-driven dialog open does not work over the live transport: a ui-action `show`/`openDialog` command is a no-op for opening because the client only renders dialogs present in `snapshot.dialogs`, which the renderer fills only when `ui.dialogs.<id>.open===true` in STATE. `applyCommand` (resources/lib/webapp-client.js) ignores `show` entirely and `hide` only flips a client-local `dialogId` that `renderSnapshot` never reads. **Captured in P53** (ui-action verb set + ADR 0005) — prune once P53 lands.
