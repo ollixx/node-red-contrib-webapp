@@ -154,6 +154,8 @@
                 tokens: { value: "" },
                 // P56 / ADR 0006 §4: opt-in backend→frontend error forwarding.
                 // Default OFF (security). minSeverity gates which errors forward.
+                // P61: these fields are now managed via the Logging select in the
+                // editor; they remain as the underlying stored config fields.
                 forwardErrorsToClient: { value: false },
                 forwardErrorMinSeverity: { value: "error" }
             },
@@ -246,24 +248,40 @@
                     $dialogWrapper.dialog("open");
                 });
 
-                // P56 / ADR 0006 §4: show the severity threshold only when
-                // forwarding is enabled.
-                const $forward = $("#node-input-forwardErrorsToClient");
-                const $severityRow = $("#node-ui-app-min-severity-row");
-                function updateForwardVisibility() {
-                    if ($forward.is(":checked")) {
-                        $severityRow.show();
+                // P61: Map the two stored error-forwarding fields onto the single
+                // Logging select (aus / debug / info / warn / error).
+                // Migration: false → 'aus'; true → stored minSeverity value.
+                const forwardEnabled = (this.forwardErrorsToClient === true);
+                const storedSeverity = this.forwardErrorMinSeverity || "error";
+                const loggingValue = forwardEnabled ? storedSeverity : "aus";
+                $("#node-ui-app-logging").val(loggingValue);
+
+                // P61: Info dialog explaining the Logging select.
+                $("#node-dialog-logging-info").dialog({
+                    title: "Logging — Fehler-Weiterleitung",
+                    autoOpen: false,
+                    modal: true,
+                    width: 400,
+                    buttons: {
+                        "Schließen": function () { $(this).dialog("close"); }
                     }
-                    else {
-                        $severityRow.hide();
-                    }
-                }
-                $forward.on("change", updateForwardVisibility);
-                updateForwardVisibility();
+                });
+                $("#node-ui-app-logging-info-btn").on("click", function () {
+                    $("#node-dialog-logging-info").dialog("open");
+                });
             },
             oneditsave: function () {
+                // P61: Map the Logging select back onto the two hidden config fields.
+                // 'aus' → forwardErrorsToClient=false (severity left unchanged).
+                // any severity → forwardErrorsToClient=true + minSeverity=<value>.
+                const val = $("#node-ui-app-logging").val();
+                if (val === "aus") {
+                    this.forwardErrorsToClient = false;
+                } else {
+                    this.forwardErrorsToClient = true;
+                    this.forwardErrorMinSeverity = val;
+                }
                 // tokens are already serialised to #node-input-tokens inside the dialog OK handler.
-                // Nothing extra needed here.
             },
             label: function () {
                 return this.name || this.root || "ui-app";
@@ -291,20 +309,25 @@
     <input type="hidden" id="node-input-tokens">
     <input type="hidden" id="node-input-events">
     <input type="hidden" id="node-input-outputs">
+    <!-- P61: forwardErrorsToClient and forwardErrorMinSeverity are stored in the
+         node config but not rendered as visible form fields. The Logging select
+         below maps onto them in oneditprepare/oneditsave. -->
+    <input type="hidden" id="node-input-forwardErrorsToClient">
+    <input type="hidden" id="node-input-forwardErrorMinSeverity">
     <hr style="margin: 8px 0;">
+    <!-- P61: single Logging select replaces the old checkbox + tips + severity row -->
     <div class="form-row">
-        <label for="node-input-forwardErrorsToClient" style="width: auto;">
-            <input type="checkbox" id="node-input-forwardErrorsToClient" style="display: inline-block; width: auto; vertical-align: top; margin-right: 6px;">
-            Fehler an Client weiterleiten
+        <label for="node-ui-app-logging" style="display: inline;">
+            Logging
+            <button type="button" id="node-ui-app-logging-info-btn"
+                    class="red-ui-button"
+                    style="width: auto; padding: 0 4px; margin-left: 4px; line-height: 1; font-size: 12px; vertical-align: middle;"
+                    title="Informationen zur Fehler-Weiterleitung">
+                <i class="fa fa-info-circle"></i>
+            </button>
         </label>
-    </div>
-    <div class="form-tips" style="margin-bottom: 8px;">
-        Sendet Framework-Fehler ab der gewählten Stufe an verbundene Browser
-        (SSE, redigiert). Standard: aus (Sicherheit).
-    </div>
-    <div class="form-row" id="node-ui-app-min-severity-row">
-        <label for="node-input-forwardErrorMinSeverity">Min. Stufe</label>
-        <select id="node-input-forwardErrorMinSeverity">
+        <select id="node-ui-app-logging" style="width: 70%;">
+            <option value="aus">aus</option>
             <option value="debug">debug</option>
             <option value="info">info</option>
             <option value="warn">warn</option>
@@ -317,4 +340,20 @@
 </script>
 <!-- P40: token editor dialog container — lives outside the form so jQuery UI dialog can move it to <body> -->
 <div id="node-dialog-tokens" style="display: none;"></div>
+<!-- P61: logging info dialog container — lives outside the form so jQuery UI dialog can move it to <body> -->
+<div id="node-dialog-logging-info" style="display: none;">
+    <p>Framework-Fehler ab der gewählten Stufe werden <strong>redigiert</strong> per SSE an alle verbundenen Browser gesendet.</p>
+    <ul style="margin: 8px 0 8px 16px; padding: 0;">
+        <li><strong>aus</strong> — keine Weiterleitung (Standard, sicher)</li>
+        <li><strong>debug</strong> — alle Meldungen einschließlich Debug</li>
+        <li><strong>info</strong> — Info, Warnungen und Fehler</li>
+        <li><strong>warn</strong> — Warnungen und Fehler</li>
+        <li><strong>error</strong> — nur Fehler</li>
+    </ul>
+    <p style="color: #c00; font-size: 12px;">
+        <i class="fa fa-exclamation-triangle"></i>
+        <strong>Sicherheitshinweis:</strong> Aktivieren Sie die Weiterleitung nur in vertrauenswürdigen Umgebungen.
+        Trotz Redaktionierung können Fehlermeldungen interne Informationen enthalten.
+    </p>
+</div>
 <script type="text/html" data-help-name="ui-app"><p>Root-Knoten einer deklarativen Web-App fuer Node-RED.</p></script>
