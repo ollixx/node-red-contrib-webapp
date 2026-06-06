@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P62  # Bugfix — Shoelace token-bridge self-reference cycle (missing sl-button padding)
+  current_phase: P63  # Self-hosted Shoelace assets (vendored) — strictly local, no CDN (ADR 0008)
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -502,23 +502,7 @@ phases:
   # Owner-Entscheidung (2026-06-06): als Phase einplanen (nicht ad-hoc fixen).
   # ════════════════════════════════════════════════════════════════════════
 
-  - id: P62
-    title: "Bugfix — Shoelace Token-Bridge: Self-Reference-Cycle entfernen (fehlendes sl-button-Padding)"
-    status: in_progress
-    dependencies: [P57]
-    goals:
-      - "Den CSS-Cycle in buildShoelaceTokenBridgeCss beheben: jeder --sl-* fällt auf seinen LITERALEN Shoelace-Default zurück statt auf sich selbst, sodass partielle --wa-*-Token-Sets sicher sind (was der Doc-Kommentar bereits behauptet, aber nicht leistet)."
-      - "Die semantisch falsche Abbildung --sl-spacing-medium ← --wa-spacing-unit entfernen (Basis-Einheit 0.25rem vs. absoluter Medium-Wert 1rem); Shoelace behält seine eigene Spacing-Skala."
-    deliverables:
-      - "shoelace-adapter.ts: WA_TO_SHOELACE_VARS / buildShoelaceTokenBridgeCss so ändern, dass die Bridge `--sl-X: var(--wa-Y, <literaler sl-default>);` emittiert — KEIN `var(--sl-X)` im eigenen Fallback. Literale Defaults entsprechen Shoelace 2.20.1 light theme."
-      - "Den Eintrag für --sl-spacing-medium aus der Bridge entfernen (kein Padding-Bridging über --wa-spacing-unit)."
-      - "Doc-Kommentar bei buildShoelaceTokenBridgeCss an das tatsächliche Verhalten angleichen."
-      - "Optional konsistenzhalber: fehlende --wa-*-Defaults im <head> :root (nodes/webapp.js) ergänzen ODER bewusst weglassen — Entscheidung dokumentieren; der literale Fallback macht sie für die Korrektheit unnötig."
-    validation:
-      - pnpm validate grün (build + lint + test + roadmap)
-      - "Regressions-Unit-Test: buildShoelaceTokenBridgeCss enthält für KEINEN Token den eigenen `var(--sl-…)` im Fallback (kein Self-Reference); --sl-spacing-medium wird nicht (mehr) gebridged."
-      - "E2E/Browser: ein gerenderter sl-button (Default-Tokens, ohne --wa-spacing-unit) hat horizontales Padding > 0 (Label-Padding ~16px), nicht 0 — Computed-Style-Check (preview_inspect), kein Screenshot."
-      - "Render-Parität (p26) und shoelace-served-html-Tests bleiben grün; bestehende Theming-Tests (Farb-Bridge) unverändert grün."
+  - { id: P62, title: "Bugfix — Shoelace Token-Bridge: Self-Reference-Cycle entfernen (fehlendes sl-button-Padding)", status: done, dependencies: [P57], archive: "docs/agent-roadmap-archive.yaml#P62" }
 
   # ════════════════════════════════════════════════════════════════════════
   # Self-hosted Shoelace-Assets statt CDN (P63) — ADR 0008
