@@ -1,0 +1,88 @@
+[
+  {
+    "type": "tab",
+    "id": "p52flow",
+    "label": "P52"
+  },
+  {
+    "type": "ui-app",
+    "id": "p52App",
+    "name": "P52 App",
+    "root": "p52App",
+    "layout": "grid",
+    "title": "P52",
+    "z": "p52flow",
+    "wires": [],
+    "x": 200,
+    "y": 120
+  },
+  {
+    "type": "ui-text",
+    "id": "tile",
+    "name": "Tile",
+    "parent": "p52App",
+    "mount": "p52App.content",
+    "order": 0,
+    "col": 1,
+    "row": 1,
+    "colSize": 1,
+    "value": {
+      "kind": "literal",
+      "value": "Tile"
+    },
+    "z": "p52flow",
+    "wires": [],
+    "x": 200,
+    "y": 200
+  },
+  {
+    "type": "ui-button",
+    "id": "moveButton",
+    "name": "Move tile",
+    "parent": "p52App",
+    "mount": "p52App.content",
+    "order": 1,
+    "label": "Move tile",
+    "z": "p52flow",
+    "wires": [["movePlacementFn"]],
+    "x": 200,
+    "y": 260
+  },
+  {
+    "type": "function",
+    "id": "movePlacementFn",
+    "name": "Build placement patch",
+    "func": "msg.ui = { patch: { col: 5, colSize: 2 } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "z": "p52flow",
+    "wires": [["tile"]],
+    "x": 400,
+    "y": 260
+  },
+  {
+    "type": "ui-button",
+    "id": "badButton",
+    "name": "Bad move",
+    "parent": "p52App",
+    "mount": "p52App.content",
+    "order": 2,
+    "label": "Bad move",
+    "z": "p52flow",
+    "wires": [["badPlacementFn"]],
+    "x": 200,
+    "y": 320
+  },
+  {
+    "type": "function",
+    "id": "badPlacementFn",
+    "name": "Build invalid placement patch",
+    "func": "msg.ui = { patch: { col: 0 } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "z": "p52flow",
+    "wires": [["tile"]],
+    "x": 400,
+    "y": 320
+  }
+]

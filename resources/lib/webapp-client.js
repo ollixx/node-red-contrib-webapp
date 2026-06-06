@@ -674,6 +674,53 @@
         }
     }
 
+    // P57: append a structured error entry (ADR 0006 shape) to all ui-log elements
+    // whose minSeverity threshold is at or below the entry's severity.
+    // ui-log elements are rendered as <sl-details data-webapp-log="<nodeId>"> with
+    // a <ul class="webapp-log-entries"> child. New entries are <li> elements prepended
+    // (newest first) and the list is capped at data-log-max-entries.
+    var LOG_SEVERITY_RANK = { debug: 0, info: 1, warn: 2, error: 3 };
+    function appendLogEntry(err) {
+        if (!err) {
+            return;
+        }
+        var severity = err.severity || "error";
+        var rank = LOG_SEVERITY_RANK[severity] !== undefined ? LOG_SEVERITY_RANK[severity] : 3;
+        var logPanels = document.querySelectorAll("[data-webapp-log]");
+        for (var i = 0; i < logPanels.length; i++) {
+            var panel = logPanels[i];
+            var minSev = panel.getAttribute("data-log-min-severity") || "debug";
+            var minRank = LOG_SEVERITY_RANK[minSev] !== undefined ? LOG_SEVERITY_RANK[minSev] : 0;
+            if (rank < minRank) {
+                continue; // below threshold for this panel
+            }
+            var maxEntries = parseInt(panel.getAttribute("data-log-max-entries") || "50", 10);
+            if (isNaN(maxEntries) || maxEntries < 1) {
+                maxEntries = 50;
+            }
+            var list = panel.querySelector(".webapp-log-entries");
+            if (!list) {
+                continue;
+            }
+            // Build the entry element.
+            var timestamp = err.timestamp ? String(err.timestamp) : new Date().toISOString();
+            var message = String(err.message || "");
+            var code = err.code ? String(err.code) : "";
+            var li = document.createElement("li");
+            li.className = "webapp-log-entry webapp-log-entry--" + severity;
+            li.setAttribute("data-log-severity", severity);
+            li.innerHTML = "<span class=\"webapp-log-ts\">" + timestamp.replace("T", " ").slice(0, 19) + "</span>"
+                + " <span class=\"webapp-log-sev webapp-log-sev--" + severity + "\">" + severity.toUpperCase() + "</span>"
+                + (code ? " <span class=\"webapp-log-code\">" + code + "</span>" : "")
+                + " <span class=\"webapp-log-msg\">" + message.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") + "</span>";
+            // Prepend (newest first) and cap at maxEntries.
+            list.insertBefore(li, list.firstChild);
+            while (list.children.length > maxEntries) {
+                list.removeChild(list.lastChild);
+            }
+        }
+    }
+
     // P31: subscribe to the live Server→Client SSE stream. The flow pushes
     // `snapshot` events (a ui-store update re-renders) and `command` events (a
     // ui-action interaction). The native EventSource auto-reconnects; on every
@@ -718,6 +765,9 @@
                         } else {
                             log.error("sse/error", msg, extra);
                         }
+                        // P57: push structured error entries to all ui-log nodes
+                        // whose minSeverity threshold is at or below this severity.
+                        appendLogEntry(err);
                         return;
                     }
                 }

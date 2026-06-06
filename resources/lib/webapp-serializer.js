@@ -674,6 +674,29 @@
             return wrapRenderedComponentHtml(component, layoutId, "<ul class=\"webapp-list\">" + itemHtml + "</ul>");
         }
 
+        // P57: ui-log — persistent error/log display that updates live via SSE "error" events.
+        // Rendered as a collapsible panel with an empty log list; entries are appended by the
+        // thin client when it receives SSE "error" frames. The data attributes carry the node's
+        // config so the client can apply the severity filter and max-entries cap without a
+        // round-trip to the server.
+        if (component.kind === "log") {
+            const minSeverity = component.props.minSeverity ? String(component.props.minSeverity) : "debug";
+            const maxEntries = component.props.maxEntries !== undefined ? String(component.props.maxEntries) : "50";
+            // Shoelace sl-details: `open` attribute = expanded; absence = collapsed.
+            // collapsed=true → omit `open`; collapsed=false/undefined → add ` open`.
+            const openAttr = component.props.collapsed ? "" : " open";
+            const nodeId = escapeAttribute(component.id);
+            return wrapRenderedComponentHtml(component, layoutId,
+                "<sl-details class=\"webapp-log\" data-webapp-log=\"" + nodeId + "\""
+                + " data-log-min-severity=\"" + escapeAttribute(minSeverity) + "\""
+                + " data-log-max-entries=\"" + escapeAttribute(maxEntries) + "\""
+                + openAttr + ">"
+                + "<span slot=\"summary\">Log</span>"
+                + "<ul class=\"webapp-log-entries\"></ul>"
+                + "</sl-details>"
+            );
+        }
+
         return "";
     }
 

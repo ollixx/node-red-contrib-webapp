@@ -646,6 +646,25 @@ examples.push(inputNodeExample({
     });
 }
 
+// ui-log ───────────────────────────────────────────────────────────────────────
+{
+    const T = "ex-ui-log"; const A = "logApp"; const R = A;
+    const NODE = "logNode";
+    examples.push({
+        path: "examples/view/ui-log.json",
+        nodes: [
+            tab(T, "ui-log example"),
+            // Enable error forwarding so the ui-log panel receives server errors.
+            { ...uiApp(A, T, { name: "Log App" }), forwardErrorsToClient: true, forwardErrorMinSeverity: "debug" },
+
+            // The ui-log panel — shows all severity levels, keeps last 100 entries.
+            { ...viewNode("ui-log", NODE, A, R, T, {
+                name: "log", minSeverity: "debug", maxEntries: 100, collapsed: false
+            }), wires: [] }
+        ]
+    });
+}
+
 // ════════════════════════════════════════════════════════════════════════
 // VIEW — display (no output)
 // ════════════════════════════════════════════════════════════════════════

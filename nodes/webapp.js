@@ -85,7 +85,8 @@ const WEBAPP_NODE_TYPES = new Set([
     "ui-icon",
     "ui-list",
     "ui-avatar",
-    "ui-divider"
+    "ui-divider",
+    "ui-log"
 ]);
 
 function parseList(value) {
@@ -261,6 +262,49 @@ function collectNormalizedLayoutProps(source) {
         ...(x !== undefined ? { x } : {}),
         ...(y !== undefined ? { y } : {})
     };
+}
+
+// P52 / ADR 0004: grid placement props that must stay positive integers (>= 1)
+// at RUNTIME, not just at deploy time (P51 enforced the schema side). layoutX /
+// layoutY are intentionally excluded — 0 is the legitimate absolute-layout origin.
+const PLACEMENT_INTEGER_FIELDS = ["row", "col", "colSize", "rowSize"];
+
+function isPositiveInteger(value) {
+    return typeof value === "number" && Number.isInteger(value) && value > 0;
+}
+
+// Sanitize a runtime patch's grid placement props. Any of row/col/colSize/rowSize
+// present in the patch must resolve to a positive integer; an invalid one is
+// dropped from the patch (other keys still apply) and a clear error is raised on
+// the node. Returns the cleaned patch (a fresh object; the input is not mutated).
+function sanitizePlacementPatch(patch, node) {
+    if (!isPlainObject(patch)) {
+        return patch;
+    }
+
+    const cleaned = { ...patch };
+    PLACEMENT_INTEGER_FIELDS.forEach((field) => {
+        if (!(field in cleaned)) {
+            return;
+        }
+
+        const raw = cleaned[field];
+        const numeric = typeof raw === "string" ? toOptionalNumber(raw) : raw;
+        if (isPositiveInteger(numeric)) {
+            cleaned[field] = numeric;
+            return;
+        }
+
+        delete cleaned[field];
+        reportRuntimeError(node, {
+            severity: "error",
+            code: "client.placement.invalid",
+            message: `Grid placement '${field}' must be a positive integer (>= 1); got ${JSON.stringify(raw)} — update ignored.`,
+            context: { appId: findAppIdForNode(node), nodeId: node && node.id, op: "viewNodePatchInputHandler" }
+        });
+    });
+
+    return cleaned;
 }
 
 function blankToUndefined(value) {
@@ -759,7 +803,9 @@ function toComponentDefinitions(components) {
             // P45: composite and layout nodes
             "ui-list": "list",
             "ui-pagination": "pagination",
-            "ui-stepper": "stepper"
+            "ui-stepper": "stepper",
+            // P57: log display node
+            "ui-log": "log"
         };
         const p16Kind = P16X_KIND_MAP[component.type];
 
@@ -834,7 +880,11 @@ function toComponentDefinitions(components) {
                     ...(component.activeStep !== undefined ? { activeStep: component.activeStep } : {}),
                     // Store domain-specific events (itemClick, change, etc.) in props
                     // so they reach the serializer without failing Zod event-name validation.
-                    ...(Array.isArray(component.events) && component.events.length > 0 ? { componentEvents: component.events } : {})
+                    ...(Array.isArray(component.events) && component.events.length > 0 ? { componentEvents: component.events } : {}),
+                    // P57: ui-log config props
+                    ...(component.minSeverity !== undefined ? { minSeverity: component.minSeverity } : {}),
+                    ...(component.maxEntries !== undefined ? { maxEntries: component.maxEntries } : {}),
+                    ...(component.collapsed !== undefined ? { collapsed: component.collapsed } : {})
                 },
                 events: []
             };
@@ -1354,6 +1404,14 @@ function readDeployDefinitions(RED) {
                     if (liveDef.items !== undefined && liveDef.items !== baseDefinition.items) {
                         patch.items = liveDef.items;
                     }
+                    // P52 / ADR 0004: carry a live placement patch (row/col/colSize/
+                    // rowSize/layoutX/layoutY) into the pushed snapshot so a runtime
+                    // re-placement actually reaches the client and the element reflows.
+                    ["row", "col", "colSize", "rowSize", "layoutX", "layoutY"].forEach((field) => {
+                        if (liveDef[field] !== undefined && liveDef[field] !== baseDefinition[field]) {
+                            patch[field] = liveDef[field];
+                        }
+                    });
                     if (Object.keys(patch).length > 0) {
                         return Object.assign({}, baseDefinition, patch);
                     }
@@ -1392,7 +1450,7 @@ function getDefinitionBuckets(appId, definitions) {
         app: matchingApp,
         routes: matchingDefinitions.filter((entry) => entry.type === "ui-route"),
         dialogs: matchingDefinitions.filter((entry) => entry.type === "ui-dialog"),
-        components: matchingDefinitions.filter((entry) => ["ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select", "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider", "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state", "ui-tabs", "ui-accordion", "ui-breadcrumb", "ui-menu", "ui-pagination", "ui-stepper", "ui-avatar", "ui-list"].includes(entry.type)),
+        components: matchingDefinitions.filter((entry) => ["ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select", "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider", "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state", "ui-tabs", "ui-accordion", "ui-breadcrumb", "ui-menu", "ui-pagination", "ui-stepper", "ui-avatar", "ui-list", "ui-log"].includes(entry.type)),
         stores: matchingDefinitions.filter((entry) => entry.type === "ui-store"),
         queries: matchingDefinitions.filter((entry) => entry.type === "ui-query"),
         actions: matchingDefinitions.filter((entry) => entry.type === "ui-action"),
@@ -2190,7 +2248,11 @@ function viewNodePatchInputHandler(node, msg, send, done) {
 
     // msg.ui.patch — arbitrary field overrides supplied by the flow author.
     if (uiMsg && uiMsg.patch && typeof uiMsg.patch === "object") {
-        registration.definition = Object.assign({}, registration.definition, uiMsg.patch);
+        // P52 / ADR 0004: enforce the P51 positive-integer rule on grid placement
+        // props on this runtime path too — an invalid row/col/colSize/rowSize is
+        // dropped (other keys still apply) and a clear node error is raised.
+        const cleanPatch = sanitizePlacementPatch(uiMsg.patch, node);
+        registration.definition = Object.assign({}, registration.definition, cleanPatch);
         node.webappDefinition = registration.definition;
         patched = true;
     } else if (msg.payload !== undefined && msg.payload !== null) {
@@ -2963,6 +3025,23 @@ const runtimeNodeRegistry = {
         options: {
             inputHandler: componentStateInputHandler
         }
+    },
+    // P57: ui-log — persistent error/log display, subscribes to SSE "error" channel
+    "ui-log": {
+        mapConfig: (config) => ({
+            type: "ui-log",
+            id: getUiId(config),
+            parent: config.parent || undefined,
+            mount: config.mount || config.parent,
+            order: toOptionalNumber(config.order),
+            minSeverity: config.minSeverity || undefined,
+            maxEntries: toOptionalNumber(config.maxEntries),
+            collapsed: config.collapsed === true || config.collapsed === "true" || undefined,
+            ...collectNodeConfigLayoutProps(config)
+        }),
+        options: {
+            inputHandler: passThroughInputHandler
+        }
     }
 };
 
@@ -3051,6 +3130,9 @@ registerWebappNodes.__test__ = {
     actionInputHandler,
     runtimeNodeRegistry,
     runtimeState,
+    // P39 / P52: view-node input patch handler + deploy-definition reader
+    viewNodePatchInputHandler,
+    readDeployDefinitions,
     // P15
     getClientState,
     setClientState,

@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P52
+  current_phase: null  # roadmap complete — all phases done
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -323,50 +323,7 @@ phases:
 
   - { id: P51, title: "Grid-Child-Props row/col/colSize/rowSize müssen positive Integer sein", status: done, dependencies: [P49a], archive: "docs/agent-roadmap-archive.yaml#P51" }
 
-  - id: P52
-    title: "Dynamische Werte für Grid-Platzierung — Evaluation + ggf. Umsetzung"
-    status: in_progress
-    dependencies: [P51]
-    # Architecture-sensitive: touches the binding model and the placement
-    # resolution path in renderer + thin client. Decision-first. Use opus.
-    goal: |
-      Evaluate whether the grid placement props (row/col/colSize/rowSize) should
-      support dynamic values, and — if the evaluation says yes — implement the
-      chosen subset. Decision-first: this phase produces an ADR before any
-      implementation.
-
-      Two candidate capabilities (independent; the ADR decides which, if any):
-        A) Update via input message — let a flow change placement at runtime
-           through the input port (building on P39's msg.payload / msg.ui.patch),
-           with positive-integer validation enforced ON THIS PATH too.
-        B) typedInput bindings — allow the editor to bind these fields to
-           msg / flow / global values (new binding kinds beyond the current
-           literal / state / query / routeParam), resolved at render time.
-    scope: |
-      1. Write docs/adr/0004-dynamic-grid-placement.md:
-         - Weigh the value (runtime-reconfigurable layouts) against the cost:
-           layout is STRUCTURAL — dynamic placement means the thin client must
-           re-place elements on update (reflow), and binding kinds msg/flow/
-           global are a broader concept than the current render-time bindings.
-         - Decide: implement A, A+B, or neither-now (with rationale). If the
-           decision is "neither now", record it and STOP — the firm validation
-           from P51 already stands.
-      2. If A is chosen: route placement-prop updates through the input handler,
-         validate the resolved value as a positive integer (reuse P51's rule),
-         reject/ignore invalid updates with a clear node error, and push a
-         snapshot so the element re-places.
-      3. If B is chosen: extend the binding model + editor typedInput, resolve
-         placement bindings in the renderer/serializer, and validate the
-         resolved value as a positive integer at render time.
-    validation: |
-      - ADR 0004 committed and referenced from this phase's archive entry.
-      - INVARIANT regardless of the chosen path: any resolved placement value
-        that is not a positive integer is rejected/ignored with a clear error —
-        unit-tested.
-      - If A/B implemented: pnpm validate + `pnpm exec playwright test` pass,
-        with an E2E test driving a runtime placement change end to end.
-      - If neither: P51's validation tests remain green; the ADR documents the
-        deferral and any follow-up trigger.
+  - { id: P52, title: "Dynamische Werte für Grid-Platzierung — Evaluation + ggf. Umsetzung", status: done, dependencies: [P51], archive: "docs/agent-roadmap-archive.yaml#P52" }
 
   # ════════════════════════════════════════════════════════════════════════
   # ui-action: vollständiges Interaktions-Verb-Set + Doc/Impl-Entmischung (P53)
@@ -457,35 +414,7 @@ phases:
 
   - { id: P56, title: "Runtime-Logging + konfigurierbarer Backend→Frontend-Fehler-Transport", status: done, dependencies: [P54, P55], archive: "docs/agent-roadmap-archive.yaml#P56" }
 
-  - id: P57
-    title: "ui-log Knoten — Fehler/Log als konfigurierbares UI-Element"
-    status: in_progress
-    dependencies: [P56]
-    # New node type — invoke the /node-red-node skill before implementation.
-    # Use sonnet.
-    goal: |
-      Add the log-display node (name per ADR 0006, lean ui-log) that subscribes
-      to the app's error/log stream and renders it as a configurable UI element —
-      so the log is visible in the app itself, not only in the dev console.
-    scope: |
-      - New node ui-log (four-file pattern via the /node-red-node skill):
-          nodes/<category>/ui-log.{js,html}, schema definition, webapp.js
-          mapConfig + serializer rendering.
-          Config: which severities to show, max entries, initial collapsed/
-          expanded, position (mounts into a slot like any view node).
-          Renders the structured errors (P54 shape) as a readable list/console
-          element; updates live as new errors arrive over the SSE "error"
-          channel (P56).
-      - examples + gen-node-examples.js entry; per-node E2E spec under
-        tests/e2e/nodes/.
-      - docs/nodes/<category>/ui-log.md.
-    validation: |
-      - pnpm validate passes.
-      - `pnpm exec playwright test`: a ui-log node renders; an error pushed over
-        the SSE "error" channel appears as a new readable entry; severity filter
-        and max-entries config are honoured.
-      - The node follows the four-file pattern and registers like every other
-        node (appears in the editor palette, has the standard input/parent wiring).
+  - { id: P57, title: "ui-log Knoten — Fehler/Log als konfigurierbares UI-Element", status: done, dependencies: [P56], archive: "docs/agent-roadmap-archive.yaml#P57" }
 
   # Deferred — only when a concrete need appears (see ADR 0002):
   #   - ui-custom escape-hatch node for framework-specific components (opt-in, non-portable)

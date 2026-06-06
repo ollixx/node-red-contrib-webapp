@@ -40,8 +40,9 @@ describe("editor node set", () => {
             "ui-tabs",
             "ui-text",
             "ui-textarea",
-            "ui-toast"
-        ]);
+            "ui-toast",
+            "ui-log"
+        ].sort());
     });
 
     it("blocks incomplete required fields before emit", () => {

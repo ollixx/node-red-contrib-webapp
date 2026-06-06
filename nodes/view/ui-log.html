@@ -1,0 +1,80 @@
+<script type="text/javascript" src="resources/node-red-contrib-webapp/lib/editor-common.js"></script>
+<script type="text/javascript">
+    (function () {
+        const common = window.WebappEditorCommon;
+        common.registerNodeType("ui-log", {
+            category: "webapp view",
+            color: "#f4efcf",
+            defaults: {
+                name:        { value: "" },
+                uiId:        { value: "", required: true },
+                parent:      { value: "" },
+                mount:       { value: "", required: true },
+                minSeverity: { value: "debug" },
+                maxEntries:  { value: 50, validate: function (v) { return v === "" || (RED.validators.number()(v) && Number(v) >= 1); } },
+                collapsed:   { value: false },
+                order:       { value: "", validate: function (v) { return v === "" || RED.validators.number()(v); } },
+                row:         { value: "", validate: function (v) { return v === "" || RED.validators.number()(v); } },
+                col:         { value: "", validate: function (v) { return v === "" || RED.validators.number()(v); } },
+                colSize:     { value: "", validate: function (v) { return v === "" || RED.validators.number()(v); } },
+                rowSize:     { value: "", validate: function (v) { return v === "" || RED.validators.number()(v); } },
+                layoutX:     { value: "", validate: function (v) { return v === "" || RED.validators.number()(v); } },
+                layoutY:     { value: "", validate: function (v) { return v === "" || RED.validators.number()(v); } }
+            },
+            inputs: 0,
+            outputs: 0,
+            icon: "font-awesome/fa-list-alt",
+            label: common.labelWithName("ui-log"),
+            onadd: function () {
+                if (!this.name) {
+                    this.name = common.getNextNameDefault("ui-log", "Log");
+                }
+            },
+            oneditprepare: function () {
+                common.installReferenceSelectors({ mount: true }).call(this);
+                common.installLayoutChildPropRows().call(this);
+            }
+        });
+    })();
+</script>
+<script type="text/html" data-template-name="ui-log">
+    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-uiId">Node ID</label><input type="text" id="node-input-uiId"></div>
+    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-row">
+        <label for="node-input-minSeverity">Min Severity</label>
+        <select id="node-input-minSeverity">
+            <option value="debug">debug (all)</option>
+            <option value="info">info</option>
+            <option value="warn">warn</option>
+            <option value="error">error only</option>
+        </select>
+    </div>
+    <div class="form-row">
+        <label for="node-input-maxEntries">Max Entries</label>
+        <input type="number" id="node-input-maxEntries" min="1" step="1" style="width:80px;">
+    </div>
+    <div class="form-row">
+        <label for="node-input-collapsed" style="width:auto; margin-right:8px;">Start collapsed</label>
+        <input type="checkbox" id="node-input-collapsed" style="display:inline-block; width:auto; vertical-align:top; margin-top:4px;">
+    </div>
+    <div class="form-row" data-layout-child-prop-row="order"   style="display:none;"><label for="node-input-order">Order</label><input type="number" id="node-input-order"></div>
+    <div class="form-row" data-layout-child-prop-row="row"     style="display:none;"><label for="node-input-row">Row</label><input type="number" id="node-input-row" min="1" step="1"></div>
+    <div class="form-row" data-layout-child-prop-row="col"     style="display:none;"><label for="node-input-col">Col</label><input type="number" id="node-input-col" min="1" step="1"></div>
+    <div class="form-row" data-layout-child-prop-row="colSize" style="display:none;"><label for="node-input-colSize">Col Size</label><input type="number" id="node-input-colSize" min="1" step="1"></div>
+    <div class="form-row" data-layout-child-prop-row="rowSize" style="display:none;"><label for="node-input-rowSize">Row Size</label><input type="number" id="node-input-rowSize" min="1" step="1"></div>
+    <div class="form-row" data-layout-child-prop-row="layoutX" style="display:none;"><label for="node-input-layoutX">X</label><input type="number" id="node-input-layoutX"></div>
+    <div class="form-row" data-layout-child-prop-row="layoutY" style="display:none;"><label for="node-input-layoutY">Y</label><input type="number" id="node-input-layoutY"></div>
+</script>
+<script type="text/html" data-help-name="ui-log">
+    <p>Zeigt strukturierte Fehler- und Log-Einträge als persistente, inspizierbare Liste im App-Interface an.</p>
+    <p>Der Knoten abonniert automatisch den SSE-Fehlerkanal der App und aktualisiert seine Anzeige live,
+       sobald neue Einträge eintreffen. Im Gegensatz zu <code>ui-toast</code> sind die Einträge dauerhaft
+       sichtbar und nach Schweregrad filterbar — gedacht für Entwickler und Betreiber, nicht für Endbenutzer.</p>
+    <h3>Eigenschaften</h3>
+    <dl>
+        <dt>Min Severity</dt><dd>Minimaler Schweregrad, der angezeigt wird (debug · info · warn · error).</dd>
+        <dt>Max Entries</dt><dd>Maximale Anzahl gespeicherter Einträge; älteste werden verworfen.</dd>
+        <dt>Start collapsed</dt><dd>Panel startet eingeklappt (kann vom Benutzer aufgeklappt werden).</dd>
+    </dl>
+</script>
