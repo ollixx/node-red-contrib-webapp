@@ -4,6 +4,10 @@ import { describe, expect, it } from "vitest";
 
 import {
     bindingSchema,
+    errorContextSchema,
+    errorOriginSchema,
+    errorSeveritySchema,
+    structuredErrorSchema,
     customersCrudAppModelFixture,
     customersCrudExampleFlowFixture,
     customersCrudNodeSetFixture,
@@ -986,5 +990,85 @@ describe("P20b: bindingSchema extended kinds", () => {
     it("accepts msg binding nested path", () => {
         const result = bindingSchema.safeParse({ kind: "msg", path: "payload.user.name" });
         expect(result.success).toBe(true);
+    });
+});
+
+describe("P54: structured error/log contract (ADR 0006)", () => {
+    const validError = {
+        severity: "error" as const,
+        code: "client.snapshot.malformed",
+        message: "Snapshot frame could not be parsed (appId=app1).",
+        context: { appId: "app1", nodeId: "comp1", op: "applySnapshot" },
+        timestamp: "2026-06-06T12:00:00.000Z",
+        origin: "client" as const
+    };
+
+    it("accepts a fully-populated structured error", () => {
+        const result = structuredErrorSchema.safeParse(validError);
+        expect(result.success).toBe(true);
+    });
+
+    it("accepts a server-origin error with an empty context", () => {
+        const result = structuredErrorSchema.safeParse({
+            ...validError,
+            origin: "server",
+            context: {}
+        });
+        expect(result.success).toBe(true);
+    });
+
+    it("accepts every documented severity level", () => {
+        for (const severity of ["debug", "info", "warn", "error"]) {
+            expect(errorSeveritySchema.safeParse(severity).success).toBe(true);
+            expect(structuredErrorSchema.safeParse({ ...validError, severity }).success).toBe(true);
+        }
+    });
+
+    it("rejects a severity outside the enum", () => {
+        expect(errorSeveritySchema.safeParse("fatal").success).toBe(false);
+        expect(structuredErrorSchema.safeParse({ ...validError, severity: "fatal" }).success).toBe(false);
+    });
+
+    it("accepts both documented origins and rejects others", () => {
+        expect(errorOriginSchema.safeParse("client").success).toBe(true);
+        expect(errorOriginSchema.safeParse("server").success).toBe(true);
+        expect(errorOriginSchema.safeParse("flow").success).toBe(false);
+        expect(structuredErrorSchema.safeParse({ ...validError, origin: "flow" }).success).toBe(false);
+    });
+
+    it("requires severity, code, message, timestamp and origin", () => {
+        for (const field of ["severity", "code", "message", "timestamp", "origin"]) {
+            const incomplete: Record<string, unknown> = { ...validError };
+            delete incomplete[field];
+            expect(structuredErrorSchema.safeParse(incomplete).success).toBe(false);
+        }
+    });
+
+    it("rejects an empty code, message or timestamp", () => {
+        expect(structuredErrorSchema.safeParse({ ...validError, code: "" }).success).toBe(false);
+        expect(structuredErrorSchema.safeParse({ ...validError, message: "" }).success).toBe(false);
+        expect(structuredErrorSchema.safeParse({ ...validError, timestamp: "" }).success).toBe(false);
+    });
+
+    it("treats every context field as optional", () => {
+        const result = errorContextSchema.safeParse({});
+        expect(result.success).toBe(true);
+        expect(errorContextSchema.safeParse({ appId: "app1" }).success).toBe(true);
+        expect(errorContextSchema.safeParse({ nodeId: "n1" }).success).toBe(true);
+        expect(errorContextSchema.safeParse({ op: "mapConfig" }).success).toBe(true);
+    });
+
+    it("defaults context to an empty object when omitted", () => {
+        const result = structuredErrorSchema.safeParse({
+            severity: "warn",
+            code: "client.event.post-failed",
+            message: "Event POST failed.",
+            timestamp: "2026-06-06T12:00:00.000Z",
+            origin: "client"
+        });
+        expect(result.success).toBe(true);
+        if (result.success) {
+            expect(result.data.context).toEqual({});
+        }
     });
 });
