@@ -399,6 +399,51 @@ export const uiEventMessageSchema = z.object({
 
 export type UiEventMessage = z.infer<typeof uiEventMessageSchema>;
 
+/**
+ * Structured error/log contract — ADR 0006.
+ *
+ * The SINGLE source of truth for the shape of an error/log entry across the
+ * thin client (P55), the webapp runtime forwarder (P56), and the ui-log display
+ * node (P57). P54 adds the contract only; no behaviour is wired here.
+ *
+ * `severity` is the only enum that maps to a console method (debug→console.debug,
+ * info→console.info, warn→console.warn, error→console.error) and to the
+ * backend→frontend forwarding threshold. `origin` records which side produced the
+ * entry, so a forwarded server error stays recognisable as `origin: "server"`
+ * once it is logged in the browser.
+ */
+export const errorSeveritySchema = z.enum(["debug", "info", "warn", "error"]);
+
+export type ErrorSeverity = z.infer<typeof errorSeveritySchema>;
+
+export const errorOriginSchema = z.enum(["client", "server"]);
+
+export type ErrorOrigin = z.infer<typeof errorOriginSchema>;
+
+/** Structural context for an error/log entry — every field optional. */
+export const errorContextSchema = z.object({
+    appId: identifierSchema.optional(),
+    nodeId: identifierSchema.optional(),
+    op: z.string().min(1, "Error context op must not be empty.").optional()
+});
+
+export type ErrorContext = z.infer<typeof errorContextSchema>;
+
+export const structuredErrorSchema = z.object({
+    severity: errorSeveritySchema,
+    // Stable, machine-greppable identifier: "<origin>.<area>.<reason>",
+    // e.g. "client.snapshot.malformed". Not shown to end users.
+    code: z.string().min(1, "Error code must not be empty."),
+    // Human-readable line, with context interpolated inline (ADR 0006).
+    message: z.string().min(1, "Error message must not be empty."),
+    context: errorContextSchema.default({}),
+    // ISO 8601 timestamp (new Date().toISOString()).
+    timestamp: z.string().min(1, "Error timestamp must not be empty."),
+    origin: errorOriginSchema
+});
+
+export type StructuredError = z.infer<typeof structuredErrorSchema>;
+
 export const appModelSchema = z.object({
     id: identifierSchema,
     title: z.string().min(1, "App titles must not be empty."),
