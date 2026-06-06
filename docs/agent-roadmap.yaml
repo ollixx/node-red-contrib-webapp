@@ -326,11 +326,12 @@ phases:
         no ui-route node at all; nodes mount to myApp.content directly.
 
   # ════════════════════════════════════════════════════════════════════════
-  # Varianten-Vokabular (P49–P50)
+  # Editor-Feld-Konsolidierung + Varianten-Vokabular (P49–P51)
   #
   # Aufgedeckt bei der Knoten-Review (2026-06-06): das `variant`-Feld soll im
-  # Editor als SelectBox erscheinen. Die konzeptuelle Klärung dazu:
+  # Editor als SelectBox erscheinen. Die Analyse legte zwei Probleme frei.
   #
+  # PROBLEM 1 — Varianten-Vokabular fehlt / ist semantisch vermischt:
   #   • Varianten sind EBENE 2 in theming.md (semantische Rollen wie primary,
   #     danger, ghost, card …) — NICHT Tokens (Ebene 1) und NICHT vom
   #     Renderer-Backend (Ebene 3) injizierbar.
@@ -340,19 +341,39 @@ phases:
   #     Implementierung mappen (z.B. Shoelace bildet `ghost` und `link` evtl.
   #     beide auf dasselbe ab). So bleibt der Contract ausdrucksstark, ohne
   #     dass jedes Backend jede Variante optisch unterscheiden muss.
+  #   • `variant` steht NICHT im Schema (packages/schema/src/contracts.ts);
+  #     im Serializer (resources/lib/webapp-serializer.js) ist es ad-hoc: nur
+  #     ui-button hat ein echtes Mapping, ui-alert nutzt `severity`, ui-badge
+  #     `severity || variant`. Die Ebene-2-Listen aus theming.md sind nirgends
+  #     codifiziert.
+  #   • ACHTUNG semantische Vermischung: einige Knoten nennen ein Feld
+  #     `variant`, das in Wahrheit ein ANZEIGE-TYP ist, keine Ebene-2-Rolle —
+  #     z.B. ui-progress `bar/spinner/circular`, ui-list/ui-menu Darstellungs-
+  #     modi. Diese müssen von echten Varianten getrennt werden (eigenes Feld,
+  #     z.B. `displayType`), sonst wird das SelectBox-Vokabular bedeutungslos.
   #
-  # Ist-Zustand (Schuld, die diese Phasen abtragen):
-  #   • `variant` steht NICHT im Schema (packages/schema/src/contracts.ts) —
-  #     es gibt kein maschinenlesbares Vokabular pro Knotentyp.
-  #   • Im Serializer (resources/lib/webapp-serializer.js) ist es ad-hoc: nur
-  #     ui-button hat ein echtes BUTTON_VARIANT_TO_SHOELACE-Mapping; ui-alert
-  #     nutzt `severity`, ui-badge `severity || variant` — uneinheitlich.
-  #   • Die Ebene-2-Listen aus theming.md (button/text/container/input …) sind
-  #     nirgends codifiziert.
+  # PROBLEM 2 — gemeinsame Editor-Felder sind dupliziert, nicht zentral:
+  #   • editor-common.js (von allen 36 Knoten geladen) teilt nur die LOGIK
+  #     (SelectBox, Mount-Tree, installLayoutChildPropRows-Sichtbarkeit).
+  #   • Das MARKUP gemeinsamer Felder ist dupliziert: die 7 Platzierungs-Zeilen
+  #     (order/row/col/colSize/rowSize/layoutX/layoutY) sind byte-identisch in
+  #     28 HTML-Dateien einkopiert; `variant` ist 6× handgestrickt (5× <select>
+  #     mit je eigener Optionsliste, 1× freies Textfeld).
+  #   • Würde man P50/P51 naiv umsetzen, zementierte man diese Duplikation
+  #     (variant: 7. Sonderfall; grid: 28 Dateien editieren). Deshalb baut
+  #     P49a zuerst eine ZENTRALE, schema-gespeiste Feld-Injektion, auf die
+  #     P50 (variant) und P51 (grid) dann aufsetzen.
   #
-  # Reihenfolge: erst das Vokabular + Mapping als Single Source of Truth
-  # (P49), dann die Editor-SelectBox die daraus liest (P50). Die SelectBox
-  # darf NIE aus dem aktiven Backend gespeist werden.
+  # Reihenfolge & Abhängigkeiten:
+  #   P49  Vokabular + Serializer-Mapping + Entmischung variant/displayType
+  #        (Single Source of Truth im Schema).            [dep P48]
+  #   P49a Zentrale Editor-Feld-Injektion + Migration der Grid-Platzierungs-
+  #        Zeilen (reiner Refactor, kein Verhaltenswechsel). [dep P48]
+  #   P50  Variant-SelectBox über alle Knoten, gespeist aus P49-Vokabular,
+  #        gebaut mit der P49a-Infrastruktur.              [dep P49, P49a]
+  #   P51  Grid-Props als positive Integer (Schema + zentraler Helper).
+  #                                                        [dep P49a]
+  # Die SelectBox darf NIE aus dem aktiven Backend gespeist werden.
   # ════════════════════════════════════════════════════════════════════════
 
   - id: P49
@@ -392,6 +413,13 @@ phases:
            err on the side of MORE variants, not fewer.)
          - Add a `variant` field (z.enum of the node's vocabulary, optional,
            with a documented default) to the relevant component schemas.
+         - UNTANGLE the semantic conflation: audit every node that currently
+           has a `variant` field in its HTML and decide per node whether it is
+           a true Ebene-2 semantic variant (keep as `variant`) or a DISPLAY
+           TYPE (e.g. ui-progress bar/spinner/circular, ui-list/ui-menu render
+           modes). Display types move to a separate field (e.g. `displayType`)
+           and are NOT part of the variant vocabulary. Record the per-node
+           decision so P50 only puts true variants in the SelectBox.
          - Export the vocabularies so both the editor and the serializer import
            the SAME source of truth.
          - Rebuild: pnpm build.
@@ -429,29 +457,82 @@ phases:
       - A flow setting a NON-button variant (e.g. ui-text variant "heading-2",
         ui-container variant "card") renders the mapped Shoelace output.
 
+  - id: P49a
+    title: "Zentrale Editor-Feld-Injektion + Migration der Grid-Platzierungs-Zeilen"
+    status: pending
+    dependencies: [P48]
+    # Architecture-sensitive: establishes the shared editor-field pattern every
+    # later editor phase builds on, and touches the single canonical
+    # editor-common.js + all node HTML. Pure refactor (no behaviour change).
+    # Use opus.
+    goal: |
+      Remove the duplicated editor-field MARKUP. Today editor-common.js shares
+      only the LOGIC; the markup of common fields is copy-pasted into node HTML
+      (the 7 placement rows live byte-identically in 28 files; `variant` is
+      hand-rolled 6×). Establish ONE central, schema-fed field-injection helper
+      and prove it by migrating the grid placement rows. This is the
+      infrastructure P50 (variant) and P51 (grid validation) both build on.
+
+      Constraint: this phase is a PURE REFACTOR — the rendered editor panels and
+      the deployed node configs must be unchanged. No new validation, no new
+      fields, no behaviour change. (P51 adds the positive-integer rule on top;
+      P50 adds the variant rollout on top.)
+    scope: |
+      - resources/lib/editor-common.js
+          Add a field-injection helper that BUILDS the shared placement-row
+          markup (order/row/col/colSize/rowSize/layoutX/layoutY) and inserts it
+          into a node's edit panel, replacing the per-file copy. Keep the
+          existing installLayoutChildPropRows() visibility logic working against
+          the injected rows (same data-layout-child-prop-row contract).
+          Design the helper so a second field family (the variant SelectBox in
+          P50) can reuse the same injection mechanism — i.e. a small generic
+          "inject this shared field group" primitive, not a one-off.
+      - nodes/**/*.html (the 28 files carrying the placement rows)
+          Remove the duplicated placement-row markup; call the central helper
+          in oneditprepare instead. The per-node `defaults` entries for these
+          fields stay (Node-RED needs them), but their markup is no longer
+          hand-written per file.
+      - Do NOT change which fields show for which layout — that mapping
+          (layoutChildFieldsByVariant) already lives centrally and stays.
+    validation: |
+      - pnpm validate passes (lint + build + unit + roadmap check).
+      - `pnpm exec playwright test tests/e2e/nodes/editor` passes UNCHANGED —
+        the placement fields still appear/hide per layout exactly as before
+        (this is the regression guard for a pure refactor).
+      - A diff check / spot check: at least two migrated nodes (e.g. ui-text,
+        ui-table) no longer contain the literal placement-row <div> markup but
+        their editor panels still render those rows when mounted into a grid.
+      - No deployed-config change: opening + saving a migrated node without
+        edits produces an identical node definition.
+
   - id: P50
     title: "Editor-SelectBox für `variant` — gespeist aus dem Schema-Vokabular"
     status: pending
-    dependencies: [P49]
-    # Routine editor wiring once P49 provides the vocabulary. Use sonnet.
+    dependencies: [P49, P49a]
+    # Routine editor wiring once P49 provides the vocabulary and P49a provides
+    # the central field-injection mechanism. Use sonnet.
     goal: |
       Expose the `variant` field as a SelectBox in every node's Node-RED editor
       panel. The options come exclusively from the schema vocabulary defined in
-      P49 — never from the active rendering backend — so the editor stays
-      backend-agnostic and portable.
+      P49 (true variants only — display types were split off there) — never from
+      the active rendering backend — so the editor stays backend-agnostic and
+      portable. The SelectBox is built and injected via the central mechanism
+      from P49a, NOT hand-rolled per node.
     scope: |
       - resources/lib/editor-common.js
-          A small helper that builds a variant SelectBox for a given node type
-          from the exported vocabulary (mirrors the existing SelectBox pattern
-          used for parent/mount selectors).
+          Add a variant-field builder on top of the P49a injection mechanism:
+          given a node type, it looks up that type's vocabulary (exported by
+          P49) and injects a SelectBox with those options + the documented
+          default. One implementation, reused by every node.
       - nodes/**/<node>.html
-          For each node that has a `variant` field (P49): replace the current
-          free-text/absent variant input with the SelectBox, defaulting to the
-          node's documented default variant. The node's existing defaults and
-          mapConfig must keep working.
-      - Ensure no node HTML hard-codes the variant list — it must read from the
-        single shared vocabulary so adding a variant in the schema surfaces in
-        the editor automatically.
+          For each node that has a TRUE `variant` field (per the P49 audit):
+          remove the hand-rolled <select>/text-input markup and its per-file
+          option list; call the central variant-field builder in oneditprepare
+          instead. The per-node `defaults` + mapConfig keep working.
+          Nodes whose old "variant" was actually a display type use their new
+          `displayType` field (from P49) — not this SelectBox.
+      - No node HTML may hard-code the variant list — adding a variant in the
+        schema vocabulary must surface in every relevant editor automatically.
     validation: |
       - pnpm validate passes (lint + build + unit + roadmap check).
       - `pnpm exec playwright test tests/e2e/nodes/editor` passes; add/extend
@@ -474,6 +555,9 @@ phases:
   #   • Feste Invariante (über alle Folgephasen): row/col/colSize/rowSize müssen
   #     POSITIVE INTEGER (>= 1) sein. layoutX/layoutY (absolute-Layout) sind NICHT
   #     betroffen — dort ist 0 die legitime obere linke Ecke.
+  #   • P51 setzt auf der zentralen Editor-Feld-Injektion aus P49a auf: die
+  #     min/step/Validierung der Grid-Zeilen wird dort EINMAL gesetzt, nicht in
+  #     28 HTML-Dateien. Deshalb dep [P49a] statt [P48].
   #   • Offene Designfrage (P52): sollen diese Felder dynamisch werden — Update
   #     per Input-Message (auf P39 aufbauend) und/oder typedInput-Bindings
   #     (msg/flow/global, über die heutigen literal/state/query/routeParam-Kinds
@@ -483,8 +567,9 @@ phases:
   - id: P51
     title: "Grid-Child-Props row/col/colSize/rowSize müssen positive Integer sein"
     status: pending
-    dependencies: [P48]
-    # Routine schema + editor tightening. Use sonnet.
+    dependencies: [P49a]
+    # Routine schema + editor tightening, built on the P49a central field
+    # injection so the editor rule lives in ONE place, not 28 files. Use sonnet.
     goal: |
       Enforce that the grid placement child props are positive integers (>= 1)
       in BOTH the schema and the Node-RED editor. This is the firm, undisputed
@@ -498,13 +583,13 @@ phases:
          - Do NOT touch layoutX / layoutY: 0 is a valid absolute coordinate.
          - Rebuild: pnpm build.
 
-      2. resources/lib/editor-common.js
-         - The grid child fields come from
-           layoutChildFieldsByVariant.grid = ["row","col","colSize","rowSize"].
-         - Render these as number inputs with min="1" step="1" and add
-           client-side validation so an out-of-range value flags the node
-           (invalid badge) before deploy, consistent with the existing editor
-           validation pattern.
+      2. resources/lib/editor-common.js (the central placement-row injection
+         introduced by P49a — edit it ONCE, not per node)
+         - In the injected markup for row/col/colSize/rowSize set min="1"
+           step="1" and add client-side validation so an out-of-range value
+           flags the node (invalid badge) before deploy, consistent with the
+           existing editor validation pattern. Because P49a centralised the
+           rows, this change applies to all nodes automatically.
 
       3. docs/nodes/concepts/layout.md
          - Document the positive-integer constraint for grid placement and the
