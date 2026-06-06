@@ -454,7 +454,7 @@ phases:
 
   - id: P58
     title: "ADR 0007 — action-message Contract (Schema) + Vorgehensentscheidung"
-    status: pending
+    status: in_progress
     dependencies: [P57]
     goals:
       - Den msg.ui.action-Contract als single source of truth in packages/schema festschreiben, bevor Verhalten verändert wird (Decision-first, analog P54).
