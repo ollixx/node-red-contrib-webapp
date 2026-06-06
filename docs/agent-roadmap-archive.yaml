@@ -11,6 +11,28 @@
 
 phases:
 
+  - id: P56
+    title: "Runtime-Logging + konfigurierbarer Backend→Frontend-Fehler-Transport"
+    status: done
+    dependencies: [P54, P55]
+    summary:
+      delivered: "Runtime structured logging + opt-in backend→frontend error transport (ADR 0006 §§3,4). nodes/webapp.js gained reportRuntimeError() and pushErrorToClients() — logs every framework failure with context and writes a new SSE 'error' frame gated by per-app config + severity threshold, message redacted. ui-app gained forwardErrorsToClient (bool) + forwardErrorMinSeverity (debug|info|warn|error), default OFF/error. Browser logs forwarded errors via the P55 receiving handler."
+      stats: "9 files changed (+870/-13): schema, nodes/webapp.js, ui-app.html, 2 docs; 12 new unit tests (363 unit total); 2 new E2E (239 E2E total)."
+      notes: "Schema fields are .optional() not .default() — absent = secure default (false/error), applied at the runtime read site. SSE event name 'error' + payload shape {error:{...}} consistent across server write, P55 client handler, and ADR 0006. gen:example produced no diff (fields optional, generator does not emit them)."
+      cost: "session worktree-agent-ac783282a6def061f, 18m"
+    archived_at: "2026-06-06"
+
+  - id: P51
+    title: "Grid-Child-Props row/col/colSize/rowSize müssen positive Integer sein"
+    status: done
+    dependencies: [P49a]
+    summary:
+      delivered: "Enforced positive-integer constraint (>= 1) on grid placement child props (row/col/colSize/rowSize) in both Zod schema and all 28 node HTML editor validate functions; layoutX/layoutY retain any-integer semantics; editor-common.js central placement-row injection now emits min=1 step=1 HTML attributes; layout.md documents the constraint and the explicit 0-allowed exception."
+      stats: "33 files changed; 20 unit tests added (p51-grid-child-props.test.ts); 3 E2E tests added (p51-grid-child-props.spec.ts); 240 E2E tests all pass."
+      notes: "Node-RED input-error CSS class is not applied by the engine on input change — client-side validation triggered via the RED API validate function check (returns false for value=0), which is the correct mechanism; min/step HTML attributes confirmed present by E2E. No fixture 0-values found."
+      cost: "session a6b7dc9b8fa03bc79, 10m"
+    archived_at: "2026-06-06"
+
   - id: P55
     title: "Client-Logging — Konsole statt Schlucken + Message-Tracing"
     status: done

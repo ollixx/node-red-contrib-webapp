@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P51
+  current_phase: P52
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -321,10 +321,7 @@ phases:
   #     hinaus)? Egal wie: validiert wird immer auf positive Integer.
   # ════════════════════════════════════════════════════════════════════════
 
-  - id: P51
-    title: "Grid-Child-Props row/col/colSize/rowSize müssen positive Integer sein"
-    status: in_progress
-    dependencies: [P49a]
+  - { id: P51, title: "Grid-Child-Props row/col/colSize/rowSize müssen positive Integer sein", status: done, dependencies: [P49a], archive: "docs/agent-roadmap-archive.yaml#P51" }
     # Routine schema + editor tightening, built on the P49a central field
     # injection so the editor rule lives in ONE place, not 28 files. Use sonnet.
     goal: |
@@ -365,7 +362,7 @@ phases:
 
   - id: P52
     title: "Dynamische Werte für Grid-Platzierung — Evaluation + ggf. Umsetzung"
-    status: pending
+    status: in_progress
     dependencies: [P51]
     # Architecture-sensitive: touches the binding model and the placement
     # resolution path in renderer + thin client. Decision-first. Use opus.
@@ -495,39 +492,11 @@ phases:
 
   - { id: P55, title: "Client-Logging — Konsole statt Schlucken + Message-Tracing", status: done, dependencies: [P54], archive: "docs/agent-roadmap-archive.yaml#P55" }
 
-  - id: P56
-    title: "Runtime-Logging + konfigurierbarer Backend→Frontend-Fehler-Transport"
-    status: in_progress
-    dependencies: [P54, P55]
-    # Architecture-sensitive: structured runtime logging + a new SSE error
-    # channel gated by per-app config. Touches webapp.js transport. Use opus.
-    goal: |
-      Make the webapp runtime log every failure with context (node.error/warn +
-      the structured shape) and, when enabled on the ui-app, forward errors to
-      the connected clients over a new SSE "error" channel so the browser logs
-      them too (received by P55).
-    scope: |
-      - nodes/webapp.js
-          Audit the bare error paths (mapConfig validation, store ops, action
-          handling, snapshot build, SSE write failures) and emit structured
-          errors with context (appId/nodeId/op) via node.error/node.warn.
-          Add a pushErrorToClients(appId, clientId?, error) that writes an SSE
-          "error" event — gated by the ui-app config flag + severity threshold,
-          with the ADR's redaction applied. Honour P15 clientId targeting.
-      - nodes/structure/ui-app.html + ui-app schema/mapConfig
-          Add the opt-in config: forwardErrorsToClient (bool) + minSeverity
-          (select). Default OFF (security).
-      - docs/nodes/concepts/ + ui-app.md: document the forwarding config.
-    validation: |
-      - pnpm validate passes.
-      - pnpm test: a runtime failure emits a structured node.error with context.
-      - `pnpm exec playwright test`: with forwarding ENABLED on the app, a
-        backend error reaches the browser console (via the SSE "error" event +
-        P55 logger); with forwarding DISABLED (default), it does NOT.
+  - { id: P56, title: "Runtime-Logging + konfigurierbarer Backend→Frontend-Fehler-Transport", status: done, dependencies: [P54, P55], archive: "docs/agent-roadmap-archive.yaml#P56" }
 
   - id: P57
     title: "ui-log Knoten — Fehler/Log als konfigurierbares UI-Element"
-    status: pending
+    status: in_progress
     dependencies: [P56]
     # New node type — invoke the /node-red-node skill before implementation.
     # Use sonnet.
