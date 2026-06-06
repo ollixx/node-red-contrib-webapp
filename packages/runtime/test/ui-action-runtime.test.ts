@@ -179,26 +179,32 @@ describe("P20a: ui-button click and ui-action wiring", () => {
         expect(emitted.ui.clientId).toBeUndefined();
     });
 
-    it("ui-action forwards msg to wired output port when no targetId override", () => {
-        const node: NodeStub = { id: "openDialogAction", send: vi.fn() };
+    it("P59: ui-action emits the enriched action msg on its wired output port (typed emitter, no central push)", () => {
+        // Node with a wired output → backward-compat receive() path is OFF.
+        const node = { id: "openDialogAction", wires: [["dlg"]], webappDefinition: { type: "ui-action", id: "openDialogAction", actionType: "open" } };
         const send = vi.fn();
         const done = vi.fn();
-        const msg = { ui: { action: { type: "trigger" } } };
+        const msg = { payload: { keep: 1 }, ui: { action: {} } };
 
         registerWebappNodes.__test__.actionInputHandler(node, msg, send, done);
 
         expect(send).toHaveBeenCalledTimes(1);
-        expect(send.mock.calls[0][0]).toBe(msg);
+        const emitted = send.mock.calls[0][0] as { payload: unknown; ui: { action: { type: string } } };
+        // Foreign fields ride along; msg.ui.action is enriched with the typed verb.
+        expect(emitted.payload).toEqual({ keep: 1 });
+        // ui-action emits the typed verb; it does NOT set target to its own id —
+        // the wired target node resolves target to itself on receipt (ADR 0007 §2).
+        expect(emitted.ui.action).toMatchObject({ type: "open" });
+        expect(emitted.ui.action.target).toBeUndefined();
         expect(done).toHaveBeenCalledTimes(1);
     });
 
-    it("ui-action with msg.ui.action.targetId overrides wired target and sends directly to target node", () => {
-        const node: NodeStub = { id: "openDialogAction", send: vi.fn() };
-        const targetNode: NodeStub = { id: "customerDialog", send: vi.fn() };
+    it("P59 backward-compat: a configured target with an UNWIRED output injects via targetNode.receive() (not send())", () => {
+        const node = { id: "openDialogAction", wires: [[]], webappDefinition: { type: "ui-action", id: "openDialogAction", actionType: "open", target: "customerDialog" } };
+        const targetNode = { id: "customerDialog", send: vi.fn(), receive: vi.fn() };
         const send = vi.fn();
         const done = vi.fn();
 
-        // Temporarily inject a minimal RED stub
         const savedRED = registerWebappNodes.__test__.runtimeState.RED;
         registerWebappNodes.__test__.runtimeState.RED = {
             nodes: {
@@ -206,14 +212,15 @@ describe("P20a: ui-button click and ui-action wiring", () => {
             }
         };
 
-        const msg = { ui: { action: { type: "open", targetId: "customerDialog" } } };
-
+        const msg = { ui: { action: {} } };
         registerWebappNodes.__test__.actionInputHandler(node, msg, send, done);
 
-        // Should NOT use the wired output (send not called)
+        // No output wire → the action is injected into the target's INPUT via receive().
         expect(send).not.toHaveBeenCalled();
-        // Should send directly to the target node
-        expect(targetNode.send).toHaveBeenCalledTimes(1);
+        expect(targetNode.send).not.toHaveBeenCalled();
+        expect(targetNode.receive).toHaveBeenCalledTimes(1);
+        const injected = targetNode.receive.mock.calls[0][0] as { ui: { action: { type: string; target: string } } };
+        expect(injected.ui.action).toMatchObject({ type: "open", target: "customerDialog" });
         expect(done).toHaveBeenCalledTimes(1);
 
         registerWebappNodes.__test__.runtimeState.RED = savedRED;

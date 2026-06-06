@@ -48,6 +48,19 @@ Gatekeeper. Er hat:
 emittiert sie am Output-Port; der verdrahtete Zielknoten verarbeitet das ihm
 bekannte Verb. Der Output-Port dient also der Zieladressierung über das Wiring.
 
+**Wo der SSE-Push passiert (P59 / ADR 0007 §2):** Nicht `ui-action`, sondern der
+**Zielknoten** führt den Push an den Client aus. Jeder interaktionsfähige Knoten
+besitzt ein Verb-Set (`ui-dialog` → open/close; View-Knoten → show/hide;
+`ui-button`/`ui-input` → enable/disable; `ui-input` → focus/reset;
+Einzelauswahl-Container wie Tabs/Stepper/Menü → select; `ui-app`/`ui-route` →
+navigate/reset) und verwendet einen gemeinsamen
+`interactionInputHandler(ownedVerbs)`. Bei Eingang löst er `target` auf seine
+**eigene Node-ID** auf (das Wiring *ist* die Adresse), pusht das Kommando über den
+SSE-Kanal und reicht `msg` am Output-Port weiter. Ein Verb, das der Knoten nicht
+besitzt, wird **unverändert durchgereicht** (kein stilles Verschlucken). So kann
+auch ein blanker `inject`/`function`-Knoten, der den Contract sendet, eine
+Interaktion auslösen — `ui-action` ist nur der bequeme Emitter.
+
 ```
 ui-button (click event) ──→ function node ──→ ui-action (openDialog) ──→ ui-dialog
                                                       ↓
@@ -82,7 +95,15 @@ Wenn das Ziel erst zur Laufzeit bekannt ist — z.B. weil es aus den Daten des a
 { "ui": { "action": { "type": "disable", "target": "<node-id>" } } }
 ```
 
-`target` überschreibt das statische Wiring (expliziter Override). Typischer Anwendungsfall: Das Event enthält eine `sourceId`, die als Ziel der Reaktion genutzt wird.
+`target` überschreibt die Default-Auflösung des Zielknotens (der sonst seine
+eigene Node-ID als Ziel setzt). Typischer Anwendungsfall: Das Event enthält eine
+`sourceId`, die als Ziel der Reaktion genutzt wird.
+
+> **Backward-Compat (P59 / ADR 0007):** Altflows, die das Config-Feld `target`
+> von `ui-action` mit **unverdrahtetem** Output nutzten, funktionieren weiter:
+> `ui-action` liefert die Aktion dann direkt in den **Input** des Zielknotens via
+> `targetNode.receive()` (nicht `send()`). Sobald der Output verdrahtet ist, gilt
+> ausschließlich der primäre Wiring-Pfad.
 
 ### 3. Pfad-Selektor (zukünftig — dynamische Elemente)
 
@@ -260,7 +281,9 @@ ui-button output ──→ HTTP Request (z.B. Kunde speichern)
                  └──→ ui-action  (zu Kundenliste navigieren)
 ```
 
-Mehrere `ui-action`-Knoten können parallel verdrahtet werden — jeder sendet seine eigene Action an den Client.
+Mehrere `ui-action`-Knoten können parallel verdrahtet werden — jeder emittiert
+seine eigene Action; den Push an den Client führt der jeweils verdrahtete
+Zielknoten aus (P59 / ADR 0007).
 
 ---
 
@@ -274,7 +297,10 @@ Pflichtfelder:
 
 Optionale Felder:
 - `actionType`: voreingestellter Action-Typ
-- `target` / `to`: voreingestelltes Ziel (kann durch `msg` überschrieben werden)
+- `to`: voreingestelltes Navigationsziel (kann durch `msg` überschrieben werden)
+- `target`: nur ein optionaler Override — das Ziel wird primär über das **Wiring
+  des Output-Ports** bestimmt. Leer lassen, wenn verdrahtet wird. (Gesetzt +
+  unverdrahtet ⇒ Backward-Compat-Pfad via `receive()`, s.o.)
 
 ---
 

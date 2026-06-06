@@ -22,7 +22,9 @@
                 events: { value: "[]" },
                 outputs: { value: 0 }
             },
-            inputs: 0,
+            // P59 / ADR 0007 §4: ui-route accepts an input port so navigate / reset
+            // actions can be wired (or picked) to it like any other target node.
+            inputs: 1,
             outputs: 0,
             outputLabels: function (index) {
                 try {
