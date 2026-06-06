@@ -281,6 +281,10 @@ export const uiActionNodeDefinitionSchema = identifiedNodeSchema.extend({
     type: z.literal("ui-action"),
     parent: identifierSchema.optional(),
     actionType: actionTypeSchema.optional(),
+    // P60 (ADR 0007 §3): the node picker (RED.view.selectNodes) stores a LIST of
+    // target node ids — the optional "wireless" addressing path delivered via
+    // targetNode.receive(). Wiring the output port stays the primary model.
+    targets: z.array(identifierSchema).optional(),
     // targetMode and target are kept for backward compatibility but deprecated.
     // The preferred model is wiring the output port to the target node.
     targetMode: actionTargetModeSchema.optional(),

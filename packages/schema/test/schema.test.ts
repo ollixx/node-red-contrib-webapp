@@ -218,6 +218,23 @@ describe("app validation", () => {
         }).success).toBe(true);
     });
 
+    it("P60: preserves the ui-action `targets` picker list through validation", () => {
+        // Regression: validateUiNodeDefinition strips unknown keys by default, so a
+        // missing `targets` field in the schema silently dropped the wireless
+        // picker target list at runtime (node.webappDefinition.targets === undefined),
+        // breaking targetNode.receive() delivery. The list must survive validation.
+        const result = validateUiNodeDefinition({
+            type: "ui-action",
+            id: "openDialog",
+            actionType: "open",
+            targets: ["dialogA", "dialogB"]
+        });
+        expect(result.success).toBe(true);
+        if (result.success) {
+            expect((result.data as { targets?: string[] }).targets).toEqual(["dialogA", "dialogB"]);
+        }
+    });
+
     it("requires layout on ui-app definitions", () => {
         const missingLayout = validateUiNodeDefinition({
             type: "ui-app",
