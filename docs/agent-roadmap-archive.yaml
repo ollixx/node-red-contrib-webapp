@@ -1366,3 +1366,44 @@ phases:
       - "pnpm validate passes"
       - "`pnpm exec playwright test tests/e2e/nodes/editor` — 39/39 pass"
       - "No editor spec drives the webapp URL — editor and rendering tests strictly separate"
+
+  - id: P48
+    title: "ui-route path '/' verboten — app ist die implizite Root-Route"
+    status: done
+    dependencies: [P47]
+    summary:
+      delivered: "Enforced the invariant that a ui-route node may never use path '/' (reserved for the implicit ui-app root route); home content now mounts directly into the ui-app's slots (appId.content)."
+      stats: "~45 files; +5 schema unit tests, +1 editor E2E test; 313 unit + 216 E2E green; 34 per-node examples + customers-crud/flow.json regenerated."
+      notes: >
+        Schema seam: added routeNodePathSchema (= routePathSchema refined to reject '/') and applied it to
+        uiRouteNodeDefinitionSchema.path ONLY. routeDefinitionSchema.path keeps routePathSchema because the
+        compiled AppModel legitimately contains the implicit root route (id === appId, path '/', via
+        createAppRootRoute) and navigation destinations (navigationDefinitionSchema.to) may still target '/'.
+        Editor: ui-route.html path field gains a validate() rejecting '/'; webapp.js already surfaces schema
+        failures as a red node-status + node.error at deploy. FlowBuilder defaults mount to `${appId}.content`
+        when no route and throws on route('/'); tab label 'E2E'→'Flow'. Migrated customersCrudNodeSetFixture
+        (dropped routeHome, remounted to customersApp.content) and the dependent runtime tests. Both generators
+        (gen-node-examples.js, gen-example.js) drop their '/' routes. NOTE/tech-debt: examples/composite/ui-toast.json
+        is a stale ORPHAN (not produced by any generator) still containing a '/' ui-route — flagged for separate
+        cleanup, not consumed by tests. FRICTION+FIX: `pnpm gen:example` used to auto-overwrite the off-limits
+        .node-red-dev/flows.json; it clobbered the owner's dev flows once before this was caught. The dev-copy is
+        now opt-in behind WEBAPP_GEN_DEV=1 so gen:example is safe by default. Owner should restore dev flows from
+        .node-red-dev/.flows.json.backup if needed (agents cannot touch that file).
+      cost: "session a0ef64cc-0d56-43b8-a170-42191e3d46ff, 2026-06-06T11:54:51Z → 2026-06-06T12:22:21Z (~27m)"
+    goals:
+      - "Enforce: ui-app is the implicit '/' route; ui-route paths must never be '/'."
+    deliverables:
+      - "packages/schema/src/contracts.ts — routeNodePathSchema (refine '/' rejection); node-definitions.ts uses it for ui-route.path"
+      - "packages/schema/src/fixtures.ts — customersCrudNodeSetFixture migrated to app-direct home mounting"
+      - "tests/helpers/flow-builder.ts — default mount appId.content, route() throws on '/', tab label 'Flow'"
+      - "All tests/e2e/nodes specs — '/' route calls removed; ui-route/ui-app specs exercise layoutId/title on sub-paths"
+      - "tests/e2e/nodes/editor/structure.spec.ts — new test: editor + schema reject ui-route path '/'"
+      - "scripts/gen-node-examples.js + scripts/gen-example.js — drop '/' routes; gen-example dev-copy gated behind WEBAPP_GEN_DEV=1"
+      - "nodes/structure/ui-route.html — path validate() rejects '/'"
+      - "docs/nodes/structure/ui-route.md + .ai/agents/architecture.md — invariant documented"
+      - "examples/**/*.json (34) + examples/customers-crud/flow.json regenerated"
+    validation:
+      - "pnpm build / pnpm test (313) / pnpm validate pass"
+      - "pnpm exec playwright test — 216 pass, zero failures"
+      - "Deploying a ui-route with path '/' is rejected: editor flags node invalid + schema fails at mapConfig (red node-status, node.error)"
+      - "examples/structure/ui-app.json has no ui-route node; home content mounts to myApp.content"

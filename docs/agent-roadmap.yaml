@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P48
+  current_phase: P49
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -239,91 +239,7 @@ phases:
   #     Beispiel-Flows umgesetzt werden. → P48
   # ════════════════════════════════════════════════════════════════════════
 
-  - id: P48
-    title: "ui-route path '/' verboten — app ist die implizite Root-Route"
-    status: in_progress
-    dependencies: [P47]
-    # Architecture-sensitive: changes the schema contract, breaks ~130 test
-    # call-sites, and requires a systematic migration of all E2E specs and
-    # example flows. Use opus.
-    goal: |
-      Enforce the invariant that ui-app is the implicit "/" route and
-      ui-route paths must never be "/".
-
-      Background: ui-app acts as the app's root — it owns the "/" path and
-      its layout slots (content, nav, header, footer for the "app" preset).
-      A ui-route with path "/" conflicts with this implicit route and creates
-      ambiguity about which layout's slots are active. The correct pattern
-      (Pattern A) is: home-page content mounts directly into the ui-app's
-      slots; ui-route nodes are used only for sub-paths (/customers, /detail).
-    scope: |
-      1. packages/schema/src/contracts.ts — routePathSchema
-         Add .refine(p => p !== "/", { message: "Route path '/' is reserved
-         for the implicit app root. Mount content directly to the ui-app slots
-         (e.g. appId.content) instead." })
-         Rebuild: pnpm build (schema dist must be updated).
-
-      2. tests/helpers/flow-builder.ts
-         Conceptual model: home-page children attach with `parent: appId`
-         and choose ONE of the ui-app layout's slots via their `mount` field
-         (for the "app" preset: appId.header / appId.navbar / appId.content /
-         appId.footer; for vertical/horizontal/grid/absolute only appId.content
-         exists). The slot is already freely overridable — `mount` is a normal
-         override. This phase only changes the DEFAULT when no route and no
-         explicit mount is given.
-         a) defaultsFor(): change mount fallback from `undefined` to
-            `${ctx.appId}.content` when ctx.routeId is undefined. So a node
-            with no explicit mount lands in the app's content slot (the sensible
-            default for most examples); callers that want another slot still
-            pass `mount: "appId.navbar"` etc. as before — that override path
-            is unchanged.
-         b) route() method: throw if the path is "/":
-            if ((overrides.path ?? "/") === "/") throw new Error(...)
-         c) Update the TAB node's label from "E2E" to "Flow" (minor cleanup).
-
-      3. All E2E spec files under tests/e2e/nodes/ (~39 files, ~130 occurrences)
-         For every test that only has one route (the "/" route):
-           - Remove the .route(...) call entirely.
-           - The .node() calls remain unchanged; FlowBuilder now auto-mounts
-             to appId.content.
-           - WebappPage.navigate("/") calls stay unchanged.
-         For specs that test multi-route behaviour (ui-route, ui-action,
-         ui-navigation, ui-dialog): remove the "/" route; mount any home
-         content directly to the app; keep non-"/" routes.
-         For ui-app.spec.ts "app-bar persists" test: remove the explicit "/"
-         route; deploy app + node only.
-
-      4. scripts/gen-node-examples.js + regenerated example files
-         Remove all uiRoute(R, "/", ...) calls. Home content mounts directly
-         to the app: pass the app id as the routeId arg to viewNode (the
-         `${routeId}.content` template then yields `appId.content`). Most
-         example nodes use the content slot; where an example demonstrates
-         another slot (e.g. ui-navigation in appId.navbar), keep that explicit
-         mount. The ui-app example must end up with NO ui-route node at all.
-         Run `node scripts/gen-node-examples.js` to regenerate all 34 files.
-
-      5. docs/nodes/structure/ui-route.md
-         Add a "Pflichtfeld"-Hinweis: path darf nicht "/" oder leer sein.
-         Add a "Besonderheit": die Root-Route "/" gehört dem ui-app-Knoten;
-         Inhalte für die Startseite in die Slots des ui-app eingehängt.
-
-      6. .ai/agents/architecture.md
-         Add invariant: "A ui-route path must never be '/'. The app node
-         is the implicit root route; home content mounts to appId.* slots."
-
-    validation: |
-      - pnpm build passes (schema compiles, .refine check in dist).
-      - pnpm test passes (207 unit tests green).
-      - `pnpm exec playwright test` passes — zero failures.
-        Specifically: all per-node specs still pass with the app-direct
-        mounting pattern; ui-route spec tests multi-route navigation using
-        non-"/" paths.
-      - Deploying a flow with ui-route path "/" via the Node-RED admin API
-        returns a runtime error or the node is rejected at deploy-validation
-        time (if editor validation is wired — otherwise the schema rejects
-        it when webapp.js calls mapConfig).
-      - The generated ui-app example (examples/structure/ui-app.json) has
-        no ui-route node at all; nodes mount to myApp.content directly.
+  - { id: P48, title: "ui-route path '/' verboten — app ist die implizite Root-Route", status: done, dependencies: [P47], archive: "docs/agent-roadmap-archive.yaml#P48" }
 
   # ════════════════════════════════════════════════════════════════════════
   # Editor-Feld-Konsolidierung + Varianten-Vokabular (P49–P51)
