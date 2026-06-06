@@ -592,10 +592,23 @@ phases:
   #     ist im Client als „Dialog schließen" verdrahtet, nicht „Element
   #     verstecken". Das ist Stop-Condition 5 (Doc widerspricht Impl).
   #
-  # Vorgeschlagenes kanonisches Vokabular (im ADR final zu entscheiden):
-  #   navigate · openDialog/closeDialog · show/hide (Element-Sichtbarkeit) ·
-  #   enable/disable · focus · reset.  submit/remove endgültig raus (P29).
-  #   show/hide werden für Elemente reserviert; Dialoge haben eigene Verben.
+  # Vorgeschlagenes kanonisches Vokabular (im ADR final zu entscheiden) —
+  # in drei semantische Klassen getrennt:
+  #   • Sichtbarkeit:  show / hide   → beliebiges Element (display an/aus)
+  #   • Offenlegung:   open / close  → aufklappbare Elemente, die sichtbar sind
+  #       (Dialog-Overlay, Drawer, Accordion-Sektion, Collapse/Details,
+  #        Tree-Branch). Ersetzt das alte openDialog/closeDialog — ein Verb,
+  #        das `target` sagt was. HTML/Shoelace nutzen durchgängig ein
+  #        `open`-Attribut, das passt.
+  #   • Einzelauswahl: select        → genau eines aus Geschwistern aktiv
+  #       (Tab, Stepper-Schritt, Menü). NICHT open/close. Kandidat-Verb, im
+  #        ADR zu bestätigen.
+  #   plus: navigate · enable/disable · focus · reset.
+  #   submit/remove endgültig raus (P29).
+  #   ACHTUNG Abgrenzung: show/hide (Präsenz) ≠ open/close (Offenlegungszustand
+  #   eines sichtbaren Elements). Ein Button kann show/hide, nicht open.
+  #   open/close braucht Target-GRANULARITÄT: bei Accordion/Tree wird eine
+  #   Sektion/Branch geöffnet → Command-Schema = target + optionale Sub-ID.
   # ════════════════════════════════════════════════════════════════════════
 
   - id: P53
@@ -619,13 +632,24 @@ phases:
       only (actions.md); never business data.
     scope: |
       1. docs/adr/0005-ui-action-interaction-vocabulary.md
-         - Fix the canonical verb set (recommendation: navigate,
-           openDialog/closeDialog, show/hide for ELEMENT visibility,
-           enable/disable, focus, reset; drop submit/remove per P29).
-         - Decide the target field name (align on `target` as used by the impl;
-           keep msg.ui.action.targetId override). Decide how element visibility
-           / enabled / focus state is represented client-side so it survives a
-           snapshot re-render (the core architectural question).
+         - Fix the canonical verb set in three semantic classes:
+             * show / hide      — element presence/visibility (any element)
+             * open / close     — disclosure state of openable, visible
+                                  elements (dialog, drawer, accordion section,
+                                  collapse/details, tree branch). Replaces
+                                  openDialog/closeDialog with one general pair.
+             * select           — single-active-among-siblings (tab, stepper,
+                                  menu); NOT open/close. Confirm or defer.
+             plus navigate, enable/disable, focus, reset. Drop submit/remove
+             (P29). Keep show/hide DISTINCT from open/close.
+         - Target model: align on `target` (keep msg.ui.action.targetId
+           override). open/close needs GRANULARITY — a target node id PLUS an
+           optional sub-id (accordion section / tree branch / tab). Define how
+           the command carries it (e.g. target + part).
+         - Decide how visibility / open-state / enabled / focus is represented
+           client-side so it survives a snapshot re-render (the core
+           architectural question) — open/close reuses the same interaction
+           overlay as show/hide, just keyed differently.
       2. resources/lib/webapp-client.js — applyCommand()
          - Implement show / hide (element), enable / disable, focus, reset
            against a per-client interaction-state overlay; re-apply it on every
@@ -649,7 +673,9 @@ phases:
       - `pnpm exec playwright test` passes; add E2E per verb:
           * show/hide → target element appears/disappears in the browser;
           * enable/disable → target gets/loses [disabled];
-          * openDialog/closeDialog → dialog toggles (existing behaviour kept);
+          * open/close → dialog toggles (the former openDialog behaviour, kept);
+          * open/close with target granularity → opening one accordion section
+            (target + sub-id) opens that section only;
           * a show, FOLLOWED BY a ui-store snapshot push, keeps the element
             shown (interaction overlay survives re-render).
       - The ui-action OUTPUT still passes the incoming msg through unchanged
