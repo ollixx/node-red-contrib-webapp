@@ -41,6 +41,7 @@
             },
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
+                common.installVariantSelectBox("container").call(this);
                 common.installLayoutChildPropRows().call(this);
                 common.installLayoutSelector({
                     valueSelector: "#node-input-layoutId",
@@ -59,14 +60,6 @@
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <input type="hidden" id="node-input-layoutId">
     <div class="form-row"><label for="node-input-layout-preset">Child Layout</label><select id="node-input-layout-preset"></select></div>
-    <div class="form-row"><label for="node-input-variant">Variant</label>
-        <select id="node-input-variant">
-            <option value="card">Card</option>
-            <option value="panel">Panel</option>
-            <option value="section">Section</option>
-            <option value="transparent">Transparent</option>
-        </select>
-    </div>
     <input type="hidden" id="node-input-events">
     <input type="hidden" id="node-input-outputs">
     <div class="form-row"><label>Events</label></div>

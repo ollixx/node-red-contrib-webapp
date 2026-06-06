@@ -141,3 +141,139 @@ test.describe("editor panels — view nodes (P47)", () => {
         expect(await editor.inputPortCount("tblEd2")).toBe(1);
     });
 });
+
+/**
+ * P50 — variant SelectBox injected from schema vocabulary (not backend-specific).
+ *
+ * For each node with a TRUE semantic `variant` field the editor panel must expose
+ * a <select id="node-input-variant"> whose options match the schema vocabulary
+ * exactly (COMPONENT_VARIANT_VOCABULARY), and the stored value must be pre-selected
+ * on panel open. No node HTML may hard-code the option list.
+ */
+test.describe("editor panels — variant SelectBox (P50)", () => {
+    test.afterEach(async ({ request }) => {
+        await resetFlow(request);
+    });
+
+    function appOnly(builder: FlowBuilder, appId: string): FlowBuilder {
+        return builder.app({ id: appId, root: appId, name: appId });
+    }
+
+    test("ui-button — variant SelectBox present with schema vocabulary, stored value pre-selected", async ({
+        page,
+        request
+    }) => {
+        const flow = appOnly(new FlowBuilder(), "btnVApp")
+            .node("ui-button", { id: "btnV1", label: "Go", variant: "ghost" })
+            .build();
+        await deployFlow(request, flow);
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode("btnV1");
+
+        // The variant SelectBox must be present (injected by installVariantSelectBox).
+        await editor.expectFields(["variant"]);
+
+        // Options must match the schema BUTTON_VARIANTS vocabulary exactly.
+        const options = await editor.selectOptionValues("variant");
+        expect(options).toEqual([
+            "primary",
+            "secondary",
+            "success",
+            "danger",
+            "warning",
+            "neutral",
+            "ghost",
+            "link"
+        ]);
+
+        // The stored value ("ghost") must be pre-selected.
+        expect(await editor.readField("variant")).toBe("ghost");
+    });
+
+    test("ui-text — variant SelectBox present with schema vocabulary (text variants)", async ({
+        page,
+        request
+    }) => {
+        const flow = appOnly(new FlowBuilder(), "txtVApp")
+            .node("ui-text", { id: "txtV1", text: "Hello", variant: "heading-1" })
+            .build();
+        await deployFlow(request, flow);
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode("txtV1");
+
+        await editor.expectFields(["variant"]);
+        const options = await editor.selectOptionValues("variant");
+        expect(options).toEqual([
+            "heading-1",
+            "heading-2",
+            "heading-3",
+            "body",
+            "caption",
+            "label",
+            "code",
+            "muted"
+        ]);
+        expect(await editor.readField("variant")).toBe("heading-1");
+    });
+
+    test("ui-input — variant SelectBox present with schema vocabulary (input variants)", async ({
+        page,
+        request
+    }) => {
+        const flow = appOnly(new FlowBuilder(), "inpVApp")
+            .node("ui-input", { id: "inpV1", label: "Email", valuePath: "form.email", variant: "filled" })
+            .build();
+        await deployFlow(request, flow);
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode("inpV1");
+
+        await editor.expectFields(["variant"]);
+        const options = await editor.selectOptionValues("variant");
+        expect(options).toEqual(["default", "filled", "outlined"]);
+        expect(await editor.readField("variant")).toBe("filled");
+    });
+
+    test("ui-container — variant SelectBox present with schema vocabulary (container variants)", async ({
+        page,
+        request
+    }) => {
+        const flow = appOnly(new FlowBuilder(), "ctrVApp")
+            .node("ui-container", { id: "ctrV1", layoutId: "vertical", variant: "panel" })
+            .build();
+        await deployFlow(request, flow);
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode("ctrV1");
+
+        await editor.expectFields(["variant"]);
+        const options = await editor.selectOptionValues("variant");
+        expect(options).toEqual(["card", "panel", "section", "transparent"]);
+        expect(await editor.readField("variant")).toBe("panel");
+    });
+
+    test("ui-button — changing variant in editor persists after save", async ({ page, request }) => {
+        const flow = appOnly(new FlowBuilder(), "btnVApp2")
+            .node("ui-button", { id: "btnV2", label: "Save", variant: "neutral" })
+            .build();
+        await deployFlow(request, flow);
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode("btnV2");
+
+        // Change from neutral → danger.
+        await editor.fillField("variant", "danger");
+        await editor.save();
+
+        // Re-open: persisted value must be "danger".
+        await editor.openNode("btnV2");
+        expect(await editor.readField("variant")).toBe("danger");
+    });
+});

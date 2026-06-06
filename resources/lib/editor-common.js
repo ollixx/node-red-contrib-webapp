@@ -22,6 +22,33 @@
         absolute: ["layoutX", "layoutY"]
     };
 
+    // ── Variant vocabulary (P50) ─────────────────────────────────────────────
+    // Mirrors COMPONENT_VARIANT_VOCABULARY / COMPONENT_VARIANT_DEFAULT from
+    // packages/schema/src/contracts.ts. Keyed by the component KIND (matches the
+    // node type without the "ui-" prefix). Only nodes with TRUE Ebene-2 semantic
+    // variants are present; nodes whose "variant"-named field is actually a
+    // displayType are absent (they were split off by P49).
+    //
+    // IMPORTANT: when updating the schema vocabulary, update this table too.
+    const COMPONENT_VARIANT_VOCABULARY = {
+        button: ["primary", "secondary", "success", "danger", "warning", "neutral", "ghost", "link"],
+        text: ["heading-1", "heading-2", "heading-3", "body", "caption", "label", "code", "muted"],
+        container: ["card", "panel", "section", "transparent"],
+        card: ["card", "panel", "section", "transparent"],
+        input: ["default", "filled", "outlined"],
+        badge: ["primary", "success", "warning", "danger", "neutral", "info"],
+        alert: ["primary", "success", "warning", "danger", "neutral", "info"]
+    };
+    const COMPONENT_VARIANT_DEFAULT = {
+        button: "neutral",
+        text: "body",
+        container: "card",
+        card: "card",
+        input: "default",
+        badge: "neutral",
+        alert: "primary"
+    };
+
     // ── Central editor-field injection ──────────────────────────────────────
     // The markup of fields shared by many nodes used to be copy-pasted into each
     // node's HTML template (the 7 placement rows lived byte-identically in 28
@@ -46,7 +73,8 @@
     }
 
     // Build the markup for one form row described by a field spec:
-    //   { id, label, type, rowAttrs?, hidden? }
+    //   { id, label, type, rowAttrs?, hidden?, options? }
+    // type "select" uses the `options` array: [{ value, label }]
     function buildFieldRowMarkup(field) {
         const rowAttrs = field.rowAttrs || {};
         let attrs = "";
@@ -54,11 +82,20 @@
             attrs += ' ' + key + '="' + escapeHtml(rowAttrs[key]) + '"';
         });
         const style = field.hidden ? ' style="display: none;"' : "";
-        const inputType = field.type || "text";
+        let control;
+        if (field.type === "select") {
+            const optionMarkup = (field.options || []).map(function (opt) {
+                return '<option value="' + escapeHtml(opt.value) + '">' + escapeHtml(opt.label) + "</option>";
+            }).join("");
+            control = '<select id="node-input-' + escapeHtml(field.id) + '">' + optionMarkup + "</select>";
+        } else {
+            const inputType = field.type || "text";
+            control = '<input type="' + escapeHtml(inputType) + '" id="node-input-' + escapeHtml(field.id) + '">';
+        }
         return (
             '<div class="form-row"' + attrs + style + '>' +
             '<label for="node-input-' + escapeHtml(field.id) + '">' + escapeHtml(field.label) + "</label>" +
-            '<input type="' + escapeHtml(inputType) + '" id="node-input-' + escapeHtml(field.id) + '">' +
+            control +
             "</div>"
         );
     }
@@ -118,6 +155,58 @@
             separator: true,
             fields: placementRowFields
         });
+    }
+
+    // ── Variant SelectBox (P50) ──────────────────────────────────────────────
+    // installVariantSelectBox(kind) — call in oneditprepare for any node that has
+    // a TRUE semantic `variant` field. `kind` is the component kind key used in
+    // COMPONENT_VARIANT_VOCABULARY (e.g. "button", "text", "container", "input").
+    //
+    // Behaviour:
+    //   1. Looks up the vocabulary for `kind` — if unknown, does nothing.
+    //   2. Injects a <select id="node-input-variant"> via injectFieldGroup()
+    //      (idempotent — re-opening the panel never duplicates the row).
+    //   3. Manually binds the stored value (this.variant || default) to the
+    //      select, because Node-RED binds defaults BEFORE oneditprepare runs.
+    //
+    // Returns a function bound to the node context (for use as:
+    //   common.installVariantSelectBox("button").call(this)
+    // or assigned to a variable and called).
+    function installVariantSelectBox(kind) {
+        return function () {
+            const self = this;
+            const vocabulary = COMPONENT_VARIANT_VOCABULARY[kind];
+            if (!vocabulary || !vocabulary.length) {
+                return;
+            }
+            const defaultVariant = COMPONENT_VARIANT_DEFAULT[kind] || vocabulary[0];
+            const options = vocabulary.map(function (v) {
+                // Produce a human-readable label: capitalise first letter,
+                // replace hyphens with spaces.
+                const label = v.charAt(0).toUpperCase() + v.slice(1).replace(/-/g, " ");
+                return { value: v, label: label };
+            });
+
+            injectFieldGroup({
+                groupId: "variant-select",
+                separator: false,
+                fields: [
+                    {
+                        id: "variant",
+                        label: "Variant",
+                        type: "select",
+                        options: options
+                    }
+                ]
+            });
+
+            // Bind the stored value (Node-RED already ran, so #node-input-variant
+            // did not exist yet when it tried to bind the default).
+            const select = $("#node-input-variant");
+            if (select.length) {
+                select.val(self.variant || defaultVariant);
+            }
+        };
     }
 
     function labelWithName(fallback) {
@@ -831,6 +920,7 @@
         installLayoutSelector,
         installParentAppSelector,
         installReferenceSelectors,
+        installVariantSelectBox,
         isStandardLayoutPreset,
         labelWithName,
         parseBindingValue,
