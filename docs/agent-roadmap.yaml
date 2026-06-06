@@ -264,9 +264,19 @@ phases:
          Rebuild: pnpm build (schema dist must be updated).
 
       2. tests/helpers/flow-builder.ts
+         Conceptual model: home-page children attach with `parent: appId`
+         and choose ONE of the ui-app layout's slots via their `mount` field
+         (for the "app" preset: appId.header / appId.navbar / appId.content /
+         appId.footer; for vertical/horizontal/grid/absolute only appId.content
+         exists). The slot is already freely overridable — `mount` is a normal
+         override. This phase only changes the DEFAULT when no route and no
+         explicit mount is given.
          a) defaultsFor(): change mount fallback from `undefined` to
-            `${ctx.appId}.content` when ctx.routeId is undefined, so nodes
-            mount to the app's content slot when no explicit route exists.
+            `${ctx.appId}.content` when ctx.routeId is undefined. So a node
+            with no explicit mount lands in the app's content slot (the sensible
+            default for most examples); callers that want another slot still
+            pass `mount: "appId.navbar"` etc. as before — that override path
+            is unchanged.
          b) route() method: throw if the path is "/":
             if ((overrides.path ?? "/") === "/") throw new Error(...)
          c) Update the TAB node's label from "E2E" to "Flow" (minor cleanup).
@@ -284,12 +294,12 @@ phases:
          route; deploy app + node only.
 
       4. scripts/gen-node-examples.js + regenerated example files
-         Remove all uiRoute(R, "/", ...) calls. Instead mount content
-         directly to the app using viewNode(..., A, A, T, ...) which will
-         set mount to appId.content (since routeId === appId in viewNode's
-         mount template `${routeId}.content` → make the helper smarter:
-         if routeId === appId, use `${appId}.content` — which is already
-         correct).
+         Remove all uiRoute(R, "/", ...) calls. Home content mounts directly
+         to the app: pass the app id as the routeId arg to viewNode (the
+         `${routeId}.content` template then yields `appId.content`). Most
+         example nodes use the content slot; where an example demonstrates
+         another slot (e.g. ui-navigation in appId.navbar), keep that explicit
+         mount. The ui-app example must end up with NO ui-route node at all.
          Run `node scripts/gen-node-examples.js` to regenerate all 34 files.
 
       5. docs/nodes/structure/ui-route.md
