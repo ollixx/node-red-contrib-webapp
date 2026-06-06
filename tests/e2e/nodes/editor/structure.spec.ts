@@ -94,6 +94,44 @@ test.describe("editor panels — structure nodes (P47)", () => {
         expect(await editor.readField("path")).toBe("/customers");
     });
 
+    test("ui-route — path '/' is rejected (reserved for the implicit app root)", async ({ page, request }) => {
+        // P48: "/" is reserved for the ui-app implicit root route. A ui-route
+        // node with path "/" must be flagged invalid by the editor (and rejected
+        // by the schema at deploy time). FlowBuilder.route() refuses "/", so the
+        // raw node is constructed here to exercise the rejection path directly.
+        const app = new FlowBuilder().app({ id: "slashApp", root: "slashApp", name: "Slash App" }).build();
+        const flow = [
+            ...app,
+            {
+                type: "ui-route",
+                id: "slashRoute",
+                uiId: "slashRoute",
+                name: "slashRoute",
+                parent: "slashApp",
+                path: "/",
+                title: "Bad Route",
+                layoutId: "vertical",
+                z: "e2e-flow",
+                x: 100,
+                y: 200,
+                wires: [[]]
+            }
+        ];
+        await deployFlow(request, flow);
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode("slashRoute");
+
+        // path "/" → invalid.
+        expect(await editor.getValidationState("slashRoute")).toBe("invalid");
+
+        // Changing to a non-"/" sub-path makes it valid.
+        await editor.fillField("path", "/customers");
+        await editor.save();
+        expect(await editor.getValidationState("slashRoute")).toBe("valid");
+    });
+
     test("ui-dialog — opens without crash, has expected fields", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "dlgApp", root: "dlgApp" })
