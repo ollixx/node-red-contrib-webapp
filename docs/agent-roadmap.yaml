@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P49a
+  current_phase: P49b
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -294,53 +294,7 @@ phases:
 
   - { id: P49, title: "Varianten-Vokabular im Schema + einheitliches Serializer-Mapping", status: done, dependencies: [P48], archive: "docs/agent-roadmap-archive.yaml#P49" }
 
-  - id: P49a
-    title: "Zentrale Editor-Feld-Injektion + Migration der Grid-Platzierungs-Zeilen"
-    status: in_progress
-    dependencies: [P48]
-    # Architecture-sensitive: establishes the shared editor-field pattern every
-    # later editor phase builds on, and touches the single canonical
-    # editor-common.js + all node HTML. Pure refactor (no behaviour change).
-    # Use opus.
-    goal: |
-      Remove the duplicated editor-field MARKUP. Today editor-common.js shares
-      only the LOGIC; the markup of common fields is copy-pasted into node HTML
-      (the 7 placement rows live byte-identically in 28 files; `variant` is
-      hand-rolled 6×). Establish ONE central, schema-fed field-injection helper
-      and prove it by migrating the grid placement rows. This is the
-      infrastructure P50 (variant) and P51 (grid validation) both build on.
-
-      Constraint: this phase is a PURE REFACTOR — the rendered editor panels and
-      the deployed node configs must be unchanged. No new validation, no new
-      fields, no behaviour change. (P51 adds the positive-integer rule on top;
-      P50 adds the variant rollout on top.)
-    scope: |
-      - resources/lib/editor-common.js
-          Add a field-injection helper that BUILDS the shared placement-row
-          markup (order/row/col/colSize/rowSize/layoutX/layoutY) and inserts it
-          into a node's edit panel, replacing the per-file copy. Keep the
-          existing installLayoutChildPropRows() visibility logic working against
-          the injected rows (same data-layout-child-prop-row contract).
-          Design the helper so a second field family (the variant SelectBox in
-          P50) can reuse the same injection mechanism — i.e. a small generic
-          "inject this shared field group" primitive, not a one-off.
-      - nodes/**/*.html (the 28 files carrying the placement rows)
-          Remove the duplicated placement-row markup; call the central helper
-          in oneditprepare instead. The per-node `defaults` entries for these
-          fields stay (Node-RED needs them), but their markup is no longer
-          hand-written per file.
-      - Do NOT change which fields show for which layout — that mapping
-          (layoutChildFieldsByVariant) already lives centrally and stays.
-    validation: |
-      - pnpm validate passes (lint + build + unit + roadmap check).
-      - `pnpm exec playwright test tests/e2e/nodes/editor` passes UNCHANGED —
-        the placement fields still appear/hide per layout exactly as before
-        (this is the regression guard for a pure refactor).
-      - A diff check / spot check: at least two migrated nodes (e.g. ui-text,
-        ui-table) no longer contain the literal placement-row <div> markup but
-        their editor panels still render those rows when mounted into a grid.
-      - No deployed-config change: opening + saving a migrated node without
-        edits produces an identical node definition.
+  - { id: P49a, title: "Zentrale Editor-Feld-Injektion + Migration der Grid-Platzierungs-Zeilen", status: done, dependencies: [P48], archive: "docs/agent-roadmap-archive.yaml#P49a" }
 
   - id: P49b
     title: "Tech-Debt: severity-Feld-Enum mit SEVERITY_VARIANTS abgleichen"
@@ -671,46 +625,7 @@ phases:
   #   opt-in pro ui-app, mit Severity-Schwelle und Redaktions-Option.
   # ════════════════════════════════════════════════════════════════════════
 
-  - id: P54
-    title: "ADR 0006 Error-Handling + gemeinsames Fehler-Modell (Contract)"
-    status: in_progress
-    dependencies: [P47]
-    # Decision-first foundation: defines the cross-cutting error contract every
-    # later error phase consumes. Architecture-sensitive. Use opus.
-    goal: |
-      Establish the error-handling architecture and the shared, structured error
-      contract — the foundation P55 (client logging), P56 (backend→frontend
-      transport) and P57 (the log node) all build on. Foundation only: the
-      contract + types, no behaviour change yet.
-    scope: |
-      1. docs/adr/0006-error-handling-and-logging.md
-         - Error taxonomy & origins: client runtime (fetch/render/malformed
-           frame), webapp runtime (mapConfig validation, store/action handling),
-           vs. the flow author's own function nodes (those keep using Node-RED
-           catch nodes — out of scope, but documented as the boundary).
-         - The structured error/log shape: { severity, code, message (human-
-           readable, with context), context:{appId,nodeId,op}, timestamp,
-           origin }. severity enum = debug | info | warn | error.
-         - Client logging policy: log by default, severity→console method
-           (debug→console.debug, info→console.info, warn→console.warn,
-           error→console.error), never swallow. DEBUG is used for message
-           tracing (P55) and maps to console.debug so it stays filterable and
-           does not flood the default console. How human-readable messages are
-           produced (a message catalog vs inline) — decide.
-         - Backend→frontend forwarding: opt-in per ui-app, severity threshold,
-           redaction option; transported via a new SSE "error" event. Security
-           rationale (no silent leak of server internals).
-         - The log node: name decision (ui-log vs ui-error vs ui-debug; lean
-           ui-log), role (display the error/log stream as a UI element), and how
-           it differs from ui-toast.
-      2. packages/schema/src/contracts.ts
-         - Add the error shape + severity enum as exported schema/types (single
-           source of truth for client, runtime, and the log node). No wiring yet.
-    validation: |
-      - ADR 0006 committed; referenced from this phase's archive entry.
-      - pnpm build + pnpm test pass; a unit test validates the error-shape
-        schema (required fields, severity enum, origin enum).
-      - No behaviour change: existing E2E suite stays green unchanged.
+  - { id: P54, title: "ADR 0006 Error-Handling + gemeinsames Fehler-Modell (Contract)", status: done, dependencies: [P47], archive: "docs/agent-roadmap-archive.yaml#P54" }
 
   - id: P55
     title: "Client-Logging — Konsole statt Schlucken + Message-Tracing"
