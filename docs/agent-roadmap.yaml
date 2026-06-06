@@ -567,6 +567,96 @@ phases:
       - If neither: P51's validation tests remain green; the ADR documents the
         deferral and any follow-up trigger.
 
+  # ════════════════════════════════════════════════════════════════════════
+  # ui-action: vollständiges Interaktions-Verb-Set + Doc/Impl-Entmischung (P53)
+  #
+  # Aufgedeckt bei der Knoten-Review (2026-06-06): ein Button wurde mit einer
+  # ui-action `show` verdrahtet — es passiert NICHTS. Diagnose:
+  #
+  #   • Der Pfad an sich stimmt: Button-Klick → Output-Port → ui-action →
+  #     pushActionCommandToClients → SSE-"command" → Client applyCommand().
+  #     Der Aktions-Effekt reist per SSE an den Browser, NICHT in der Wire-msg
+  #     (die durchgereichte msg ist bewusst der unveränderte Klick-Event, damit
+  #     der Flow dahinter weiterarbeiten kann — events.md). Das ist korrekt und
+  #     bleibt so.
+  #   • ABER: der Client-Switch applyCommand() (resources/lib/webapp-client.js)
+  #     kennt nur navigate / openDialog / closeDialog / hide. show / enable /
+  #     disable / focus / reset fallen in den default-Zweig und sind NO-OPS.
+  #     Es gibt keine client-seitige Interaktions-State-Schicht (Sichtbarkeit /
+  #     enabled / focus) die ein Command mutiert und die der nächste Snapshot
+  #     respektiert. → show/hide/enable/disable/focus/reset für ELEMENTE sind
+  #     faktisch nicht implementiert.
+  #   • Vokabular-Drift Doc vs. Impl: actions.md definiert show/hide als DIALOG-
+  #     Verben (Feld `dialog`) und listet noch submit/remove — beide in P29 als
+  #     CRUD gekillt. Die Impl nutzt openDialog/closeDialog mit `target`. `hide`
+  #     ist im Client als „Dialog schließen" verdrahtet, nicht „Element
+  #     verstecken". Das ist Stop-Condition 5 (Doc widerspricht Impl).
+  #
+  # Vorgeschlagenes kanonisches Vokabular (im ADR final zu entscheiden):
+  #   navigate · openDialog/closeDialog · show/hide (Element-Sichtbarkeit) ·
+  #   enable/disable · focus · reset.  submit/remove endgültig raus (P29).
+  #   show/hide werden für Elemente reserviert; Dialoge haben eigene Verben.
+  # ════════════════════════════════════════════════════════════════════════
+
+  - id: P53
+    title: "ui-action — vollständiges Interaktions-Verb-Set client-seitig + Vokabular-Entmischung"
+    status: pending
+    dependencies: [P48]
+    # Architecture-sensitive + product decision: fixes the canonical action
+    # vocabulary (doc vs impl drift) and introduces a client-side interaction-
+    # state layer the snapshot respects. Decision-first (ADR). Use opus.
+    goal: |
+      Make every documented ui-action verb actually work end to end, and resolve
+      the doc/implementation vocabulary drift. Today only navigate / openDialog /
+      closeDialog work; show / hide(element) / enable / disable / focus / reset
+      are pushed as SSE commands but the client no-ops them — and actions.md
+      still uses show/hide for dialogs and lists the P29-killed submit/remove.
+
+      Constraint (unchanged, do not regress): the action effect travels via the
+      SSE "command" channel to the browser. The ui-action OUTPUT port keeps
+      passing the incoming msg through UNCHANGED so the flow can chain — the
+      action is NOT injected into the wire msg. Actions change INTERACTION state
+      only (actions.md); never business data.
+    scope: |
+      1. docs/adr/0005-ui-action-interaction-vocabulary.md
+         - Fix the canonical verb set (recommendation: navigate,
+           openDialog/closeDialog, show/hide for ELEMENT visibility,
+           enable/disable, focus, reset; drop submit/remove per P29).
+         - Decide the target field name (align on `target` as used by the impl;
+           keep msg.ui.action.targetId override). Decide how element visibility
+           / enabled / focus state is represented client-side so it survives a
+           snapshot re-render (the core architectural question).
+      2. resources/lib/webapp-client.js — applyCommand()
+         - Implement show / hide (element), enable / disable, focus, reset
+           against a per-client interaction-state overlay; re-apply it on every
+           snapshot render so a ui-store-driven snapshot push does not wipe a
+           prior show/hide. Resolve the command `target` to the rendered node.
+      3. resources/lib/webapp-serializer.js
+         - Ensure the serializer respects the interaction-state overlay
+           (visibility/disabled) when (re-)rendering, server and thin client
+           byte-identical (P26 invariant).
+      4. nodes/webapp.js — buildActionCommand / pushActionCommandToClients
+         - Emit the canonical verbs; keep clientId targeting (P15). No business
+           logic. (Mind concurrent edits — sequence after P48.)
+      5. nodes/behavior/ui-action.html + docs/nodes/behavior/ui-action.md
+         - Editor actionType options = the canonical set (SelectBox); remove
+           submit/remove. Rewrite actions.md to match the implementation
+           (show/hide = elements, openDialog/closeDialog = dialogs, `target`
+           field) and drop the stale verbs.
+    validation: |
+      - ADR 0005 committed and referenced from this phase's archive entry.
+      - pnpm validate passes.
+      - `pnpm exec playwright test` passes; add E2E per verb:
+          * show/hide → target element appears/disappears in the browser;
+          * enable/disable → target gets/loses [disabled];
+          * openDialog/closeDialog → dialog toggles (existing behaviour kept);
+          * a show, FOLLOWED BY a ui-store snapshot push, keeps the element
+            shown (interaction overlay survives re-render).
+      - The ui-action OUTPUT still passes the incoming msg through unchanged
+        (wire chaining intact) — asserted by intercepting the wired output.
+      - docs/nodes/behavior/ui-action.md matches the implementation (no
+        submit/remove; show/hide documented as element visibility).
+
   # Deferred — only when a concrete need appears (see ADR 0002):
   #   - ui-custom escape-hatch node for framework-specific components (opt-in, non-portable)
   #   - SSR / hydration adapter for any public, search-indexed surface
