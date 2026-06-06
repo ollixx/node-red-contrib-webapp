@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P59  # ADR 0007 — per-node interaction handlers (SSE push moves into target node)
+  current_phase: P60  # ADR 0007 — ui-action node picker (RED.view.selectNodes) + receive() fix + multi-target
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -454,27 +454,7 @@ phases:
 
   - { id: P58, title: "ADR 0007 — action-message Contract (Schema) + Vorgehensentscheidung", status: done, dependencies: [P57], archive: "docs/agent-roadmap-archive.yaml#P58" }
 
-  - id: P59
-    title: "Per-Node Interaction-Handler — SSE-Push wandert aus ui-action in den Zielknoten"
-    status: in_progress
-    dependencies: [P58]
-    goals:
-      - Den zentralen SSE-Push aus ui-action in die Zielknoten verlagern, verallgemeinert aus dem ui-toast-Muster; ui-action wird zum reinen, typisierten Action-Emitter am Output-Port.
-      - Interaktion democratisieren — jeder Knoten, der den Contract schickt (inject/trigger/function), löst die Interaktion aus.
-    deliverables:
-      - "Shared interactionInputHandler(ownedVerbs)-Factory in nodes/webapp.js: resolved command.target = node.id (msg-Override gewinnt), wendet part/to/Overrides an, pusht via pushActionCommandToClients an die relevanten Clients, reicht msg durch; nicht-eigenes Verb → Pass-Through."
-      - "Verb-Ownership registriert: ui-dialog→open/close; View-Knoten (ui-button/ui-input/ui-text/ui-table/ui-container)→show/hide; ui-button/ui-input→enable/disable; ui-input→focus/reset; single-active→select; ui-app & ui-route→navigate, reset (app-scoped)."
-      - "ui-route bekommt inputs:1 (+ Editor-HTML angepasst); ui-app input handler ergänzt."
-      - "ui-action: actionInputHandler baut schema-valides msg.ui.action aus Config (+msg-Overrides, ADR 0005) und sendet es am Output-Port; eigener zentraler Push entfällt. Dokumentierter Backward-Compat-Pfad für Altflows mit Config-`target` + unverdrahtetem Port."
-      - "ui-action.html: irreführendes 'Ziel (Node-ID) … sonst via Output-Port'-Feld entschärft (Hilfetext + Placeholder an das neue Modell angepasst; `target` nur noch als optionaler Override dokumentiert)."
-      - "actions.md / ui-action.md / messages.md auf das implementierte Modell gebracht; gen:example + gen:node-examples regeneriert (Diff geprüft)."
-    validation:
-      - pnpm validate grün
-      - "unit test: ui-dialog erhält msg.ui.action.type=open → pushActionCommandToClients mit { type:open, target:<dialog-id> }; msg wird unverändert am Port weitergereicht."
-      - "unit test: Knoten erhält ein Verb das er nicht besitzt → kein Push, reiner Pass-Through."
-      - "unit test: ui-action mit actionType=open auf Input → emittiert msg.ui.action am Output-Port (pusht NICHT selbst); fremde msg-Felder erhalten."
-      - "E2E: ui-button → ui-action(open) → ui-dialog verdrahtet öffnet den Dialog (bestehendes Verhalten bleibt grün)."
-      - "E2E: ein inject/trigger-Knoten (KEIN ui-action) mit {ui:{action:{type:navigate,to:'/'}}} an ui-app verdrahtet löst Navigation aus."
+  - { id: P59, title: "Per-Node Interaction-Handler — SSE-Push wandert aus ui-action in den Zielknoten", status: done, dependencies: [P58], archive: "docs/agent-roadmap-archive.yaml#P59" }
 
   - id: P60
     title: "Knoten-Auswahl-Picker für ui-action (RED.view.selectNodes) + receive()-Fix + Multi-Target"
