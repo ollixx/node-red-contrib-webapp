@@ -74,7 +74,7 @@ export interface RenderedInputComponent extends RenderedComponentBase {
 
 /** Generic rendered component for P16x kinds (select, checkbox, radio, etc.). */
 export interface RenderedGenericComponent extends RenderedComponentBase {
-    kind: "select" | "checkbox" | "radio" | "switch" | "textarea" | "datepicker" | "slider" | "alert" | "badge" | "progress" | "breadcrumb" | "tabs" | "accordion" | "menu" | "avatar" | "list" | "pagination" | "stepper";
+    kind: "select" | "checkbox" | "radio" | "switch" | "textarea" | "datepicker" | "slider" | "alert" | "badge" | "progress" | "breadcrumb" | "tabs" | "accordion" | "menu" | "avatar" | "list" | "pagination" | "stepper" | "log";
     value: unknown;
 }
 
@@ -505,6 +505,15 @@ function toRenderedComponent(component: ComponentDefinition, context: ComponentR
                 ...baseComponent,
                 kind: component.kind,
                 value: resolvedProps.value
+            } as RenderedGenericComponent;
+        // P57: ui-log — persistent error/log display panel. No value binding;
+        // config props (minSeverity, maxEntries, collapsed) are passed through
+        // via baseComponent.props.
+        case "log":
+            return {
+                ...baseComponent,
+                kind: "log",
+                value: undefined
             } as RenderedGenericComponent;
     }
 }

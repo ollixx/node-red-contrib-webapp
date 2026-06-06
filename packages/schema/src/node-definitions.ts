@@ -614,6 +614,23 @@ export const uiDividerNodeDefinitionSchema = mountableNodeSchema.extend({
 
 export type UiDividerNodeDefinition = z.infer<typeof uiDividerNodeDefinitionSchema>;
 
+// ── P57: ui-log — persistent inspectable error/log display ──────────────────
+// Subscribes to the app's SSE "error" channel and renders structured log
+// entries (ADR 0006 shape) as a readable list. Distinct from ui-toast:
+// ui-log is persistent and aimed at operator inspection, not end-user toasts.
+
+export const uiLogNodeDefinitionSchema = mountableNodeSchema.extend({
+    type: z.literal("ui-log"),
+    // Which severity levels to display. Defaults to all levels when unset.
+    minSeverity: errorSeveritySchema.optional(),
+    // Maximum number of entries to retain in the list (oldest dropped first).
+    maxEntries: z.number().int().positive().optional(),
+    // Whether the panel starts collapsed or expanded.
+    collapsed: z.boolean().optional()
+});
+
+export type UiLogNodeDefinition = z.infer<typeof uiLogNodeDefinitionSchema>;
+
 export const uiNodeDefinitionSchema = z.union([
     uiAppNodeDefinitionSchema,
     uiRouteNodeDefinitionSchema,
@@ -650,7 +667,8 @@ export const uiNodeDefinitionSchema = z.union([
     uiIconNodeDefinitionSchema,
     uiListNodeDefinitionSchema,
     uiAvatarNodeDefinitionSchema,
-    uiDividerNodeDefinitionSchema
+    uiDividerNodeDefinitionSchema,
+    uiLogNodeDefinitionSchema
 ]);
 
 const uiNodeSchemaByType: Record<string, z.ZodTypeAny> = {
@@ -689,7 +707,8 @@ const uiNodeSchemaByType: Record<string, z.ZodTypeAny> = {
     "ui-icon": uiIconNodeDefinitionSchema,
     "ui-list": uiListNodeDefinitionSchema,
     "ui-avatar": uiAvatarNodeDefinitionSchema,
-    "ui-divider": uiDividerNodeDefinitionSchema
+    "ui-divider": uiDividerNodeDefinitionSchema,
+    "ui-log": uiLogNodeDefinitionSchema
 };
 
 export type UiNodeDefinition = z.infer<typeof uiNodeDefinitionSchema>;
