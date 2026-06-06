@@ -45,7 +45,7 @@ test.describe("editor panels — structure nodes (P47)", () => {
         expect(await editor.readField("root")).toBe("myApp");
     });
 
-    test("ui-app — no input port; configured event surfaces as an output label", async ({ page, request }) => {
+    test("ui-app — has one input port (P59 interaction handler); configured event surfaces as an output label", async ({ page, request }) => {
         // outputs is derived from the node's events config (outputLabels reads
         // events[index]). Configure one event so the output port carries its name.
         await deployFlow(
@@ -58,8 +58,9 @@ test.describe("editor panels — structure nodes (P47)", () => {
         const editor = new NodeEditorPage(page);
         await editor.open();
 
-        // Structure nodes have no input port.
-        expect(await editor.inputPortCount("edApp2")).toBe(0);
+        // P59 (ADR 0007 §2): ui-app now owns navigate/reset interaction verbs and
+        // carries one input port so a wired ui-action can drive it.
+        expect(await editor.inputPortCount("edApp2")).toBe(1);
         // The configured event name appears as the output port label.
         expect(await editor.outputLabels("edApp2")).toEqual(["submit"]);
     });

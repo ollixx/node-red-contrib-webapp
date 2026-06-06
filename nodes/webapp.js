@@ -2040,6 +2040,22 @@ function createNodeConstructor(RED, type, mapConfig, options = {}) {
 
         const validation = validateUiNodeDefinition(definition);
 
+        // P59 / ADR 0007 §2: the input handler is attached even when the definition
+        // fails schema validation. The runtime still RENDERS the node from its
+        // mapConfig output (readDeployDefinitions bypasses validation), so an
+        // interaction verb (open/close/select/show/…) targeting it must still push.
+        // Before P59 the push lived centrally in ui-action and did not depend on the
+        // target node carrying a handler; moving the push onto the target node would
+        // otherwise silently drop verbs for any node whose definition is invalid.
+        // The interaction handler only ever pushes for OWNED verbs; every other
+        // message falls through to `next`, which no-ops gracefully when the node has
+        // no registered definition (it reads runtimeState.definitions.get(node.id)).
+        if (options.inputHandler) {
+            node.on("input", function onInput(msg, send, done) {
+                options.inputHandler(node, msg, send, done);
+            });
+        }
+
         if (!validation.success) {
             node.status({ fill: "red", shape: "ring", text: validation.error });
             reportRuntimeError(node, {
@@ -2060,12 +2076,6 @@ function createNodeConstructor(RED, type, mapConfig, options = {}) {
         });
 
         node.status({ fill: "green", shape: "dot", text: type });
-
-        if (options.inputHandler) {
-            node.on("input", function onInput(msg, send, done) {
-                options.inputHandler(node, msg, send, done);
-            });
-        }
 
         node.on("close", () => {
             runtimeState.definitions.delete(node.id);
@@ -2258,6 +2268,24 @@ function findAppIdForNode(node) {
         }
     }
     return getActiveRuntimeAppId();
+}
+
+// P59 / ADR 0007 §4: find the Node-RED node id of the ui-app that owns `node`.
+// Used to route an app-global interaction verb (navigate / reset) emitted by a
+// ui-action that has no explicit target and no output wire to the app node that
+// owns those verbs — the app then performs the SSE push from its own handler.
+function findOwningAppNodeId(node) {
+    const appId = findAppIdForNode(node);
+    if (!appId) {
+        return undefined;
+    }
+    for (const registration of runtimeState.definitions.values()) {
+        const def = registration.definition;
+        if (def && def.type === "ui-app" && def.id === appId && registration.nodeId) {
+            return registration.nodeId;
+        }
+    }
+    return undefined;
 }
 
 // P39: primary mutable field for each view-node type when msg.payload is used.
@@ -2483,6 +2511,24 @@ function actionInputHandler(node, msg, send, done) {
         const targetNode = RED.nodes.getNode(deliverTarget);
         if (targetNode && typeof targetNode.receive === "function") {
             targetNode.receive(clone(outMsg));
+            if (done) {
+                done();
+            }
+            return;
+        }
+    }
+
+    // P59 / ADR 0007 §4: app-global verbs (navigate / reset) have no per-element
+    // target — their owner is the ui-app. A ui-action(navigate) with no explicit
+    // target and no output wire (the common navbar-button case) is delivered to
+    // the owning ui-app node's INPUT, which owns the verb and performs the push.
+    const verb = command && command.type ? String(command.type) : undefined;
+    const isAppGlobalVerb = verb && (INTERACTION_VERBS_BY_TYPE["ui-app"] || []).indexOf(verb) !== -1;
+    if (isAppGlobalVerb && !deliverTarget && RED && !nodeHasOutputWire(node)) {
+        const appNodeId = findOwningAppNodeId(node);
+        const appNode = appNodeId ? RED.nodes.getNode(appNodeId) : undefined;
+        if (appNode && typeof appNode.receive === "function") {
+            appNode.receive(clone(outMsg));
             if (done) {
                 done();
             }
