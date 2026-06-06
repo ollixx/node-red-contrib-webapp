@@ -33,6 +33,7 @@ Aktuelles MVP-Verhalten:
 - `path`
 - `inputType`
 - `placeholder`
+- `variant`: visuelle Feld-Rolle (`INPUT_VARIANTS`): `default | filled | outlined`. Default: `default`. Vokabular siehe [theming.md](../concepts/theming.md).
 - `order`
 - layoutabhängige Child-Props: sichtbar abhängig vom Layout-Preset des gewählten Parent — `row`, `col`, `colSize`, `rowSize` (grid) bzw. `layoutX`, `layoutY` (absolute). Details in [layout.md](../concepts/layout.md).
 

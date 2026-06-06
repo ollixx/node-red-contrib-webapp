@@ -52,28 +52,58 @@ Der App-Autor konfiguriert das Theme am `ui-app`-Knoten. Alle Komponenten konsum
 
 Variants sind semantische Rollen die ein Component einnehmen kann. Sie sind vom Theme unabhängig — das Theme entscheidet wie `primary` aussieht, der Variant entscheidet welche Rolle ein Element spielt.
 
-**`ui-button` Variants:**
+**Single Source of Truth.** Das Vokabular pro Knoten ist im Schema als exportierte Konstante festgeschrieben (`BUTTON_VARIANTS`, `TEXT_VARIANTS`, `CONTAINER_VARIANTS`, `INPUT_VARIANTS`, `SEVERITY_VARIANTS` in `packages/schema/src/contracts.ts`). Editor-SelectBox und Serializer importieren dieselben Konstanten — die folgenden Listen spiegeln sie nur wider und sind nicht die Quelle.
+
+**`ui-button`** (`BUTTON_VARIANTS`, Default `neutral`):
 - `primary` — Hauptaktion (Submit, Speichern)
-- `secondary` — Nebenaction (Abbrechen, Zurück)
+- `secondary` — Nebenaktion (Abbrechen, Zurück)
+- `success` — bestätigende Aktion
 - `danger` — destruktive Aktion (Löschen)
+- `warning` — warnende Aktion
+- `neutral` — neutrale Standardaktion
 - `ghost` — dezente Aktion (Icons, Links)
 - `link` — rein textuelle Aktion
 
-**`ui-text` Variants:**
+**`ui-text`** (`TEXT_VARIANTS`, Default `body`):
 - `heading-1`, `heading-2`, `heading-3`
 - `body`, `caption`, `label`
 - `code`, `muted`
 
-**`ui-container` Variants:**
+**`ui-container`** (`CONTAINER_VARIANTS`, Default `card`):
 - `card` — erhöhte Fläche mit Shadow
 - `panel` — flache abgegrenzte Fläche
 - `section` — Seitenabschnitt mit Padding
 - `transparent` — kein visueller Rahmen
 
-**`ui-input` Variants:**
+**`ui-input`** (`INPUT_VARIANTS`, Default `default`):
 - `default`, `filled`, `outlined`
 
-Das Variant-System verhindert direkte Style-Overrides — wenn ein Element vom Theme abweichen muss, ist das meistens ein Signal dass ein neues Variant fehlt.
+**`ui-badge` / `ui-alert`** (`SEVERITY_VARIANTS`; Badge-Default `neutral`, Alert-Default `primary`):
+- `primary`, `success`, `warning`, `danger`, `neutral`
+- `info` — akzeptierter **Alias** von `primary` (mappt auf den primary-Look)
+
+> Diese Knoten tragen ihre semantische Variante im Feld `severity` (nicht `variant`).
+
+### Variant vs. displayType
+
+Einige Knoten haben ein HTML-Feld namens `variant`, das in Wahrheit ein **Darstellungstyp** ist, keine Ebene-2-Rolle. Diese gehören **nicht** ins Variant-Vokabular und erscheinen nicht in der Variant-SelectBox — sie liegen im Feld `displayType`:
+
+| Knoten | `displayType`-Werte |
+|---|---|
+| `ui-progress` | `bar`, `spinner`, `circular` |
+| `ui-avatar` | `text`, `avatar`, `card`, `table` |
+| `ui-badge` (Form) | `count`, `dot`, `status` |
+| `ui-menu` | `sidebar`, `topbar`, `dropdown` |
+
+### Regeln für Backends (Ebene 3)
+
+Das Vokabular ist **fest und portabel** — es gehört zum Komponenten-Contract, nicht zum aktiven Backend. Daraus folgen drei harte Regeln:
+
+1. **Many-to-one ist erlaubt.** Ein Backend darf mehrere Varianten auf dasselbe konkrete Ausgabe-Token abbilden (z.B. Shoelace: `ghost` → `default`, `link`/`text` → `text`; `secondary` + `neutral` → `neutral`).
+2. **Graceful degradation, kein Pass-through.** Ein unbekannter Wert fällt auf den dokumentierten Default des Knotens zurück — niemals ein Crash und niemals rohes Durchreichen eines nicht gemappten Tokens.
+3. **Backends erweitern das Vokabular NIE.** Ein Backend darf keine eigenen Varianten hinzufügen. Wenn ein Element vom Theme abweichen muss, ist das ein Signal, dass im Schema-Vokabular eine Variante fehlt — nicht im Backend.
+
+Das Variant-System verhindert so direkte Style-Overrides und hält Flows über Backends hinweg portabel.
 
 ---
 

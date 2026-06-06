@@ -21,6 +21,7 @@ Rendert einen klickbaren Button. Ab P20a emittiert der Button Klick-Events direk
 **Optionale Felder:**
 - `name`: Node-RED-Anzeigefeld. Wird bei der Darstellung des Knotens und in Auswahlfeldern angezeigt.
   - Default: `"Button N"` (fortlaufende Nummer aller ui-button-Knoten, startend bei 1)
+- `variant`: semantische Rolle (`BUTTON_VARIANTS`): `primary | secondary | success | danger | warning | neutral | ghost | link`. Default: `neutral`. Vokabular siehe [theming.md](../concepts/theming.md).
 - `disabled`
 - `order`
 - layoutabhängige Child-Props: sichtbar abhängig vom Layout-Preset des gewählten Parent — `row`, `col`, `colSize`, `rowSize` (grid) bzw. `layoutX`, `layoutY` (absolute). Details in [layout.md](../concepts/layout.md).

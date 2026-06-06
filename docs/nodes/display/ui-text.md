@@ -25,7 +25,7 @@ Aktuelles MVP-Verhalten:
 **Optionale Felder:**
 - `name`: Node-RED-Anzeigefeld. Wird bei der Darstellung des Knotens und in Auswahlfeldern angezeigt.
   - Default: `"Text N"` (fortlaufende Nummer aller ui-text-Knoten, startend bei 1)
-- `variant`
+- `variant`: typografische Rolle (`TEXT_VARIANTS`): `heading-1 | heading-2 | heading-3 | body | caption | label | code | muted`. Default: `body`. Vokabular siehe [theming.md](../concepts/theming.md).
 - `order`
 - layoutabhängige Child-Props: sichtbar abhängig vom Layout-Preset des gewählten Parent — `row`, `col`, `colSize`, `rowSize` (grid) bzw. `layoutX`, `layoutY` (absolute). Details in [layout.md](../concepts/layout.md).
 
@@ -56,5 +56,5 @@ The editor validates query paths and highlights invalid entries before deploy.
 ## Besonderheiten
 
 - Es ist unklar, ob `ui-text` nur Plaintext oder auch formatierte Inhalte unterstützen soll.
-- Varianten sind heute frei benannt, aber noch nicht als Design-Tokens festgelegt.
+- Das Varianten-Vokabular ist seit P49 im Schema festgeschrieben (`TEXT_VARIANTS`) und über alle Backends portabel.
 - Welche Layout-Child-Props sichtbar sind, hängt vom gewählten Mount ab. Details dazu stehen in [layout.md](../concepts/layout.md).

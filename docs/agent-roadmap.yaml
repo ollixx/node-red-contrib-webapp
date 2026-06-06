@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P49
+  current_phase: P49a
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -292,86 +292,7 @@ phases:
   # Die SelectBox darf NIE aus dem aktiven Backend gespeist werden.
   # ════════════════════════════════════════════════════════════════════════
 
-  - id: P49
-    title: "Varianten-Vokabular im Schema + einheitliches Serializer-Mapping"
-    status: in_progress
-    dependencies: [P48]
-    # Architecture-sensitive: defines a new shared contract (the variant
-    # vocabulary) that sits ABOVE the backend seam, and consolidates the
-    # ad-hoc variant/severity handling in the serializer. Use opus.
-    goal: |
-      Codify a single, portable variant vocabulary per node type in the schema
-      and route ALL variant rendering through one consistent mapping in the
-      serializer. This is the prerequisite for the editor SelectBox (P50).
-
-      Principle (theming.md Ebene 2 + owner decision):
-        - The variant vocabulary is FIXED and PORTABLE — it belongs to the
-          component contract, not to the active backend.
-        - It is deliberately GENEROUS: offer the full sensible semantic set per
-          node. A backend may map several variants to the same concrete output
-          (many-to-one is allowed) and must degrade gracefully (unknown →
-          sensible default) — it must NEVER add its own variants.
-    scope: |
-      1. packages/schema/src/contracts.ts
-         - Define a per-node-type variant vocabulary as exported constants
-           (e.g. BUTTON_VARIANTS, TEXT_VARIANTS, CONTAINER_VARIANTS,
-           INPUT_VARIANTS, BADGE_VARIANTS, ALERT_VARIANTS, …). Seed from the
-           theming.md Ebene-2 lists and EXPAND to a generous sensible set:
-             button:    primary, secondary, success, danger, warning, neutral,
-                        ghost, text/link
-             text:      heading-1, heading-2, heading-3, body, caption, label,
-                        code, muted
-             container: card, panel, section, transparent
-             input:     default, filled, outlined
-             badge/alert: primary, success, warning, danger, neutral (+info as
-                        alias of primary)
-           (The implementing agent finalises the lists from each node's spec;
-           err on the side of MORE variants, not fewer.)
-         - Add a `variant` field (z.enum of the node's vocabulary, optional,
-           with a documented default) to the relevant component schemas.
-         - UNTANGLE the semantic conflation: audit every node that currently
-           has a `variant` field in its HTML and decide per node whether it is
-           a true Ebene-2 semantic variant (keep as `variant`) or a DISPLAY
-           TYPE (e.g. ui-progress bar/spinner/circular, ui-list/ui-menu render
-           modes). Display types move to a separate field (e.g. `displayType`)
-           and are NOT part of the variant vocabulary. Record the per-node
-           decision so P50 only puts true variants in the SelectBox.
-         - Export the vocabularies so both the editor and the serializer import
-           the SAME source of truth.
-         - Rebuild: pnpm build.
-
-      2. resources/lib/webapp-serializer.js
-         - Replace the ad-hoc BUTTON_VARIANT_TO_SHOELACE / severity / mixed
-           `severity || variant` handling with ONE variant→Shoelace mapping
-           layer that covers every node's vocabulary. Many-to-one mappings are
-           expected and fine (e.g. ghost+text → Shoelace text button).
-         - Unknown variant → graceful default, never a crash, never raw
-           pass-through of an unmapped token.
-         - Keep server and thin-client output byte-identical (the shared
-           serializer is used by both — P26 invariant).
-
-      3. docs/nodes/concepts/theming.md
-         - Replace the illustrative Ebene-2 lists with the now-authoritative
-           per-node vocabularies (point to the schema constants as the source
-           of truth).
-         - State the many-to-one mapping rule and the "backends never add
-           variants" rule explicitly.
-
-      4. Per-node spec docs (docs/nodes/**/<node>.md)
-         - For each node that gains a `variant` field: list its variant values
-           under Optionale Felder and note the default.
-    validation: |
-      - pnpm build passes (schema compiles; vocabularies exported).
-      - pnpm test passes (207+ unit tests). Add unit tests asserting:
-          * each exported vocabulary is non-empty and contains the documented
-            core values;
-          * the serializer maps every vocabulary value to a valid Shoelace
-            output and falls back gracefully for an unknown value.
-      - `pnpm exec playwright test` passes — existing variant E2E assertions
-        (ui-button primary/danger, ui-badge, ui-alert) still hold; server and
-        thin-client render parity is preserved.
-      - A flow setting a NON-button variant (e.g. ui-text variant "heading-2",
-        ui-container variant "card") renders the mapped Shoelace output.
+  - { id: P49, title: "Varianten-Vokabular im Schema + einheitliches Serializer-Mapping", status: done, dependencies: [P48], archive: "docs/agent-roadmap-archive.yaml#P49" }
 
   - id: P49a
     title: "Zentrale Editor-Feld-Injektion + Migration der Grid-Platzierungs-Zeilen"

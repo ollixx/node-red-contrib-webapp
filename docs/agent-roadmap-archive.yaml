@@ -1407,3 +1407,42 @@ phases:
       - "pnpm exec playwright test — 216 pass, zero failures"
       - "Deploying a ui-route with path '/' is rejected: editor flags node invalid + schema fails at mapConfig (red node-status, node.error)"
       - "examples/structure/ui-app.json has no ui-route node; home content mounts to myApp.content"
+
+  - id: P49
+    title: "Varianten-Vokabular im Schema + einheitliches Serializer-Mapping"
+    status: done
+    dependencies: [P48]
+    summary:
+      delivered: "Codified a fixed, portable per-node variant vocabulary as exported schema constants (BUTTON/TEXT/CONTAINER/INPUT/SEVERITY_VARIANTS), added optional variant fields to the component schemas, untangled display-types into a separate displayType field, and routed all variant rendering through one variant→Shoelace mapping layer in the serializer."
+      stats: "~10 files; +16 P49 unit tests (schema 9 vocabulary + runtime 7 serializer); 329 unit + variant E2E green; theming.md + 6 per-node docs updated."
+      notes: >
+        Implementation (constants, fields, displayType split, serializer mapping, unit tests) was committed by an
+        earlier session (be4d417/c0cb518/f633eba) which then left the phase in_progress and pivoted to roadmap
+        planning. This finishing session completed the open deliverables and the close-out: theming.md rewritten
+        authoritatively (per-node vocabularies pointing at the schema constants, the many-to-one rule, and the
+        "backends never add variants" rule, plus a variant-vs-displayType table); per-node spec docs (ui-button,
+        ui-text, ui-container, ui-input, ui-badge, ui-alert) now list variant values + defaults. Validation:
+        pnpm build green, 329 unit tests green (incl. p49-variant-vocabulary 9 + p49-variant-serializer 7),
+        variant E2E green (ui-button render, ui-badge severity success, ui-alert severity error→danger).
+        TECH-DEBT (logged in friction-log): BADGE_VARIANTS/ALERT_VARIANTS are exported as SEVERITY_VARIANTS
+        (primary|success|warning|danger|neutral|info) but the actual ui-badge/ui-alert `severity` schema field
+        still validates the LEGACY enum (default|info|warning|error|success). The serializer normalises both
+        (default→neutral, error→danger, info→primary) so rendering is correct, but the exported vocabulary and
+        the field enum diverge — reconcile in a follow-up (would touch examples using severity:"info"). Display
+        types parked under displayType for ui-progress/ui-avatar/ui-badge/ui-menu and are intentionally excluded
+        from the variant vocabulary (so P50's SelectBox shows only true variants).
+      cost: "session 728c734d-2606-41ba-8087-6aa9075d2235, 2026-06-06T16:51Z → 2026-06-06T17:0XZ (finishing session; impl by a0ef64cc earlier)"
+    goals:
+      - "Codify a single, portable variant vocabulary per node type in the schema and route all variant rendering through one serializer mapping (prerequisite for the P50 editor SelectBox)."
+    deliverables:
+      - "packages/schema/src/contracts.ts — BUTTON/TEXT/CONTAINER/INPUT/SEVERITY_VARIANTS constants + COMPONENT_VARIANT_VOCABULARY/DEFAULT; exported as single source of truth"
+      - "packages/schema/src/node-definitions.ts — optional variant fields (button/text/container/input); displayType split off for progress/avatar/badge/menu"
+      - "resources/lib/webapp-serializer.js — single variant→Shoelace mapping (mapVariant), many-to-one + graceful fallback, server/thin-client parity"
+      - "packages/schema/test/p49-variant-vocabulary.test.ts + packages/runtime/test/p49-variant-serializer.test.ts — vocabulary + mapping assertions"
+      - "docs/nodes/concepts/theming.md — authoritative per-node vocabularies, many-to-one rule, backends-never-add rule, variant-vs-displayType table"
+      - "docs/nodes/{display/ui-button,display/ui-text,display/ui-container,input/ui-input,feedback/ui-badge,feedback/ui-alert}.md — variant values + defaults documented"
+    validation:
+      - "pnpm build passes (vocabularies exported + compiled to dist)"
+      - "pnpm test passes — 329 unit tests incl. P49 vocabulary (9) + serializer (7)"
+      - "variant E2E green — ui-button render, ui-badge severity=success, ui-alert severity error→danger (sl-* output)"
+      - "non-button variant renders (ui-text/ui-container variant fields present + accepted; serializer maps severity nodes)"

@@ -27,6 +27,7 @@ Aktuelles MVP-Verhalten:
 **Optionale Felder:**
 - `name`: Node-RED-Anzeigefeld. Wird bei der Darstellung des Knotens und in Auswahlfeldern angezeigt.
   - Default: `"Container N"` (fortlaufende Nummer aller ui-container-Knoten, startend bei 1)
+- `variant`: Flächen-Rolle (`CONTAINER_VARIANTS`): `card | panel | section | transparent`. Default: `card`. Vokabular siehe [theming.md](../concepts/theming.md).
 
 ## Input
 
@@ -47,5 +48,5 @@ Siehe für das mehrfach genutzte Layout-Konzept auch [layout.md](../concepts/lay
 
 - Container verwenden ebenfalls Standard-Layout-Presets als Child-Layout.
 - Wird ein Container direkt in ein Preset-Layout gemountet, erscheinen die passenden Layout-Child-Props im Editor (`order` bzw. Grid-/Absolute-Felder).
-- ~~Es ist noch offen, ob Container später eigene Layout- oder Stylingvarianten tragen sollen.~~
+- ~~Es ist noch offen, ob Container später eigene Layout- oder Stylingvarianten tragen sollen.~~ Seit P49 trägt der Container ein festes Varianten-Vokabular (`CONTAINER_VARIANTS`).
 - Child-Layouts brauchen mittelfristig bessere Editor-Unterstützung für Parent-Auswahl und Visualisierung.

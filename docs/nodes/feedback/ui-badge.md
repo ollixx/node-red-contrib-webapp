@@ -17,8 +17,8 @@ Rendert einen kleinen Zähler oder Status-Indikator, typischerweise an einem and
 
 **Optionale Felder:**
 - `name`: Node-RED-Anzeigefeld. Default: `"Badge N"`
-- `variant`: `count | dot | status`. Default: `count`
-- `severity`: `default | info | warning | error | success`. Default: `default`
+- `displayType`: Darstellungsform (KEIN semantischer Variant) — `count | dot | status`. Default: `count`. Siehe [theming.md → Variant vs. displayType](../concepts/theming.md).
+- `severity`: semantische Ebene-2-Variante des Badge (`SEVERITY_VARIANTS`). Portables Zielvokabular: `primary | success | warning | danger | neutral` (+ `info` als Alias von `primary`). Das Feld akzeptiert aktuell zusätzlich die Legacy-Werte `default | error` (Serializer mappt `default → neutral`, `error → danger`). Default: `default` (= `neutral`). Vokabular siehe [theming.md](../concepts/theming.md).
 - `max`: Maximalwert — darüber wird `{max}+` angezeigt. Default: `99`
 - `order`
 - layoutabhängige Child-Props. Details in [layout.md](../concepts/layout.md).
