@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P60  # ADR 0007 — ui-action node picker (RED.view.selectNodes) + receive() fix + multi-target
+  current_phase: P61  # ui-app — Fehler-Weiterleitung als einzelne 'Logging'-Select + Info-Icon-Dialog
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -456,25 +456,7 @@ phases:
 
   - { id: P59, title: "Per-Node Interaction-Handler — SSE-Push wandert aus ui-action in den Zielknoten", status: done, dependencies: [P58], archive: "docs/agent-roadmap-archive.yaml#P59" }
 
-  - id: P60
-    title: "Knoten-Auswahl-Picker für ui-action (RED.view.selectNodes) + receive()-Fix + Multi-Target"
-    status: in_progress
-    dependencies: [P59]
-    goals:
-      - Das Freitext-Copy-Paste durch eine echte Canvas-Knoten-Auswahl ersetzen (Node-RED-Kern-API), als optionalen "wireless"-Pfad — identisch zur Verdrahtung.
-      - Den send()→receive()-Injektions-Bug beheben und Mehrfach-Ziele erlauben.
-    deliverables:
-      - "ui-action.html: Multi-Select-Knoten-Picker via RED.view.selectNodes() (Muster catch/status/complete), gefiltert auf interaktionsfähige webapp-Knoten; speichert eine Liste von Ziel-Node-IDs in der Config; Freitextfeld ersetzt."
-      - "ui-action.js/webapp.js: bei Input Zustellung an jede gewählte Ziel-ID via targetNode.receive(msg) — derselbe Input-Pfad wie ein Wire; gilt auch für ui-app/ui-route als Ziel."
-      - "Bestehender msg.ui.action.targetId / target Override-Pfad auf receive() umgestellt (statt node.send, das am Output injizierte) und mit `target` vereinheitlicht."
-      - "editor-common.js: ggf. ein wiederverwendbarer selectNodes-Helper, falls weitere Knoten ihn brauchen (single canonical copy beachten)."
-      - "actions.md §2/§3 aktualisiert; Picker als sekundäre, implizite Option dokumentiert (Wiring bleibt primär)."
-    validation:
-      - pnpm validate grün
-      - "unit test: ui-action mit zwei gewählten Ziel-IDs → beide Zielknoten erhalten die Message via receive() (Input-Pfad), nicht via send()."
-      - "unit test: msg.ui.action.targetId-Override stellt via receive() an genau diesen Knoten zu."
-      - "E2E: ui-action ohne Wire, aber mit gewähltem ui-dialog-Ziel → Dialog öffnet (wireless-Pfad äquivalent zur Verdrahtung)."
-      - "Editor: Picker listet nur interaktionsfähige webapp-Knoten; ausgewählte Knoten werden auf dem Canvas hervorgehoben (selectNodes-Standardverhalten)."
+  - { id: P60, title: "Knoten-Auswahl-Picker für ui-action (RED.view.selectNodes) + receive()-Fix + Multi-Target", status: done, dependencies: [P59], archive: "docs/agent-roadmap-archive.yaml#P60" }
 
   # ════════════════════════════════════════════════════════════════════════
   # ui-app Editor-UX: Fehler-Weiterleitung straffen (P61)

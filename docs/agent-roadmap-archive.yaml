@@ -1623,3 +1623,34 @@ phases:
       - "pnpm validate green"
       - "E2E 250 passed / 0 failed (authoritative, main checkout): wired ui-button→ui-action(open)→ui-dialog opens; select verb applies; navigate via ui-app/ui-route routes; inject (non-ui-action) with {ui:{action:{type:navigate}}} routes."
       - "unit: ui-dialog open pushes target=<dialog-id> + passthrough; non-owned verb → pure pass-through; ui-action emits msg.ui.action without self-push."
+
+  - id: P60
+    title: "Knoten-Auswahl-Picker für ui-action (RED.view.selectNodes) + receive()-Fix + Multi-Target"
+    status: done
+    dependencies: [P59]
+    summary:
+      delivered: "Replaced ui-action's free-text target-node-ID field with a real multi-select canvas node picker via RED.view.selectNodes() (the pattern Node-RED core uses for catch/status/complete), filtered to interaction-capable webapp nodes, storing a LIST of target node IDs (`targets`) in the config — a reusable installNodePicker helper in the single canonical resources/lib/editor-common.js. On input, ui-action now delivers to each picked target — and the targetId/target override — via targetNode.receive(msg), the SAME input path as a wire (fixing the prior send()-injects-at-output bug). Wiring the output port stays the primary path; the picker is the secondary 'wireless' option. Works for ui-app/ui-route targets too."
+      stats: "ui-action.html, nodes/webapp.js, resources/lib/editor-common.js, packages/schema/src/node-definitions.ts; +P60 unit tests (schema + runtime; 419→ total) incl. a schema round-trip regression test; actions.md §2/§3 updated; 2 new E2E specs. E2E 252 passed / 0 failed; pnpm validate green."
+      notes: >
+        Landed in two merges: phase/P60 (picker + receive() delivery) and phase/P60-fix. The orchestrator's
+        main-checkout E2E run caught one regression the sub-agent could not (worktrees cannot bootstrap
+        Playwright): the wireless picked-target path never opened the dialog. Root cause: the new `targets`
+        list was never declared in uiActionNodeDefinitionSchema, so validateUiNodeDefinition (Zod strip-by-default)
+        dropped it — node.webappDefinition.targets was always undefined and the wireless receive() loop never
+        fired (the wired path worked because it carries msg.ui.action over a real wire). The hand-built unit
+        tests bypassed validation so they missed it; the fix added `targets: z.array(identifierSchema).optional()`
+        plus a schema round-trip regression test. Reinforces the P59 lesson: a schema field that the editor
+        writes but the schema does not declare is silently stripped — always add a validation round-trip test,
+        and always run E2E in the main checkout before marking a behaviour phase done.
+      cost: "session <see .ai/agent-runs.jsonl>; impl 2026-06-06T22:51Z→23:01Z (~10m) + fix 23:07Z→23:11Z (~4m); orchestrator main-checkout E2E verification; subagent_tokens ~160k across 2 agents"
+    goals:
+      - "Replace free-text copy-paste with a real canvas node selection (Node-RED core API) as an optional wireless path."
+      - "Fix the send()→receive() injection bug and allow multiple targets."
+    deliverables:
+      - "ui-action.html: multi-select picker via RED.view.selectNodes() filtered to interaction-capable webapp nodes; stores a list of target node IDs; free-text field replaced."
+      - "ui-action.js/webapp.js: input delivers to each picked target via targetNode.receive(msg) (same path as a wire); targetId/target override unified onto receive()."
+      - "editor-common.js: reusable installNodePicker helper (single canonical copy); actions.md §2/§3 documents the picker as secondary."
+    validation:
+      - "pnpm validate green"
+      - "E2E 252 passed / 0 failed (authoritative, main checkout): wireless picked ui-dialog target opens the dialog via receive(); picker lists only interaction-capable webapp nodes."
+      - "unit: two picked targets both receive via receive(); targetId override delivers via receive() to exactly that node; schema round-trip preserves `targets`."
