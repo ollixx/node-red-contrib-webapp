@@ -13,3 +13,6 @@ playwright-report/
 # merge churn. The recorder script + README under .ai/hooks/ ARE tracked.
 .ai/agent-runs.jsonl
 
+
+# agent phase worktrees
+.claude/worktrees/

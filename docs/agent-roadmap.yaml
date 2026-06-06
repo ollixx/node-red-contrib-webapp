@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: null  # roadmap complete — all phases done
+  current_phase: P58  # ADR 0007 — action message contract + per-node interaction handlers
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -415,6 +415,222 @@ phases:
   - { id: P56, title: "Runtime-Logging + konfigurierbarer Backend→Frontend-Fehler-Transport", status: done, dependencies: [P54, P55], archive: "docs/agent-roadmap-archive.yaml#P56" }
 
   - { id: P57, title: "ui-log Knoten — Fehler/Log als konfigurierbares UI-Element", status: done, dependencies: [P56], archive: "docs/agent-roadmap-archive.yaml#P57" }
+
+  # ════════════════════════════════════════════════════════════════════════
+  # Action-Delivery-Modell vereinheitlichen (P58–P60) — ADR 0007
+  #
+  # Aufgedeckt bei der ui-action Editor-Review (2026-06-06): die Verdrahtung ist
+  # für Owner & Nutzer unverständlich. Das "Ziel"-Feld ist ein Freitext-Knoten-ID
+  # zum Copy-Pasten; der Hinweis "sonst via Output-Port" ist irreführend, denn der
+  # Output-Port liefert die Action gar nicht — er reicht msg nur durch. Der echte
+  # Liefer-Weg ist ein ZENTRALER SSE-Push in ui-action selbst.
+  #
+  # Zwei Kern-Inkohärenzen (siehe ADR 0007 Context):
+  #   • actions.md §1 verspricht "Output-Port-Wiring → Runtime liest die Topologie
+  #     und leitet an den Component" — der Code liest die Topologie NIE; er pusht
+  #     aus dem Config-Feld `target`. Doku ↔ Impl driften (ADR-0005-Stop-Klasse 5).
+  #   • Zwei Dinge heißen "target": command.target (gerenderte Component, per SSE)
+  #     und msg.ui.action.targetId (Flow-Knoten, per node.send — das injiziert
+  #     fälschlich am OUTPUT statt am Input; korrekt wäre node.receive).
+  #
+  # Owner-Entscheidung (ADR 0007):
+  #   1. msg.ui.action wird ein öffentlicher, schema-validierter Message-Contract;
+  #      fremde msg.*-Teile werden durchgereicht, nicht ersetzt ("Message
+  #      anreichern"). JEDER Knoten (inject/trigger/function/…) kann ihn schicken
+  #      — ui-action ist nur der bequeme, typisierte Emitter, kein Gatekeeper.
+  #   2. Der SSE-Push WANDERT aus ui-action in den ZIELKNOTEN (per-node input
+  #      handler, verallgemeinert aus dem ui-toast-Muster). Der Zielknoten kennt
+  #      seine Verben, pusht für seine eigene Component und reicht msg durch;
+  #      unbekanntes Verb → Pass-Through (kein stilles Schlucken).
+  #   3. Adressierung = der Wire. ui-action emittiert die Message am Output-Port;
+  #      optional ("wireless") ein Multi-Select-Knoten-Picker via
+  #      RED.view.selectNodes (wie catch/status/complete), Zustellung per
+  #      receive() — identischer Pfad wie ein Wire. receive() statt send() fixt
+  #      den Injektions-Bug.
+  #   4. App-globale Verben (navigate/reset) verdrahtet/picked man zu ui-app /
+  #      ui-route (ui-route bekommt inputs:1) — keine Sonderbehandlung. Folge: ein
+  #      inject an ui-app mit {ui:{action:{type:navigate,to:"/"}}} springt heim.
+  # ════════════════════════════════════════════════════════════════════════
+
+  - id: P58
+    title: "ADR 0007 — action-message Contract (Schema) + Vorgehensentscheidung"
+    status: pending
+    dependencies: [P57]
+    goals:
+      - Den msg.ui.action-Contract als single source of truth in packages/schema festschreiben, bevor Verhalten verändert wird (Decision-first, analog P54).
+      - Die Liefer-Modell-Entscheidung aus ADR 0007 verbindlich dokumentieren (Push wandert in den Zielknoten; ui-action wird Emitter; Adressierung = Wire/Picker).
+    deliverables:
+      - "ADR 0007 committed (bereits entworfen): action-message contract + per-node interaction handlers, mit Context (Doku↔Impl-Drift, doppeltes 'target', send/receive-Bug) und Decision §§1–4."
+      - "packages/schema: actionMessageSchema (msg.ui.action = { type, to?, part?, target?, clientId via msg.ui }) mit ADR-0005-Verbset; validiert NUR msg.ui.action, fremde msg.*-Felder passthrough (kein .strict() auf msg/msg.ui)."
+      - "Inferred type exportiert + aus packages/schema/src/index.ts re-exportiert; keine Verhaltensänderung in runtime/nodes in dieser Phase."
+      - "actions.md / messages.md mit dem Contract abgeglichen (Doku-Update kann hier oder in P59 landen; Drift-Hinweis auflösen)."
+    validation:
+      - pnpm validate grün (build + lint + test + roadmap)
+      - "unit test: actionMessageSchema akzeptiert ein valides msg.ui.action je Verb; lässt fremde msg.*-Felder (payload/topic/_msgid) unangetastet durch; weist ein unbekanntes Verb / fehlendes type ab."
+      - "Schema importiert nichts aus anderen Repo-Paketen (Invariante packages/schema)."
+      - "Kein Diff in examples/customers-crud/flow.json (reine Contract-Phase)."
+
+  - id: P59
+    title: "Per-Node Interaction-Handler — SSE-Push wandert aus ui-action in den Zielknoten"
+    status: pending
+    dependencies: [P58]
+    goals:
+      - Den zentralen SSE-Push aus ui-action in die Zielknoten verlagern, verallgemeinert aus dem ui-toast-Muster; ui-action wird zum reinen, typisierten Action-Emitter am Output-Port.
+      - Interaktion democratisieren — jeder Knoten, der den Contract schickt (inject/trigger/function), löst die Interaktion aus.
+    deliverables:
+      - "Shared interactionInputHandler(ownedVerbs)-Factory in nodes/webapp.js: resolved command.target = node.id (msg-Override gewinnt), wendet part/to/Overrides an, pusht via pushActionCommandToClients an die relevanten Clients, reicht msg durch; nicht-eigenes Verb → Pass-Through."
+      - "Verb-Ownership registriert: ui-dialog→open/close; View-Knoten (ui-button/ui-input/ui-text/ui-table/ui-container)→show/hide; ui-button/ui-input→enable/disable; ui-input→focus/reset; single-active→select; ui-app & ui-route→navigate, reset (app-scoped)."
+      - "ui-route bekommt inputs:1 (+ Editor-HTML angepasst); ui-app input handler ergänzt."
+      - "ui-action: actionInputHandler baut schema-valides msg.ui.action aus Config (+msg-Overrides, ADR 0005) und sendet es am Output-Port; eigener zentraler Push entfällt. Dokumentierter Backward-Compat-Pfad für Altflows mit Config-`target` + unverdrahtetem Port."
+      - "ui-action.html: irreführendes 'Ziel (Node-ID) … sonst via Output-Port'-Feld entschärft (Hilfetext + Placeholder an das neue Modell angepasst; `target` nur noch als optionaler Override dokumentiert)."
+      - "actions.md / ui-action.md / messages.md auf das implementierte Modell gebracht; gen:example + gen:node-examples regeneriert (Diff geprüft)."
+    validation:
+      - pnpm validate grün
+      - "unit test: ui-dialog erhält msg.ui.action.type=open → pushActionCommandToClients mit { type:open, target:<dialog-id> }; msg wird unverändert am Port weitergereicht."
+      - "unit test: Knoten erhält ein Verb das er nicht besitzt → kein Push, reiner Pass-Through."
+      - "unit test: ui-action mit actionType=open auf Input → emittiert msg.ui.action am Output-Port (pusht NICHT selbst); fremde msg-Felder erhalten."
+      - "E2E: ui-button → ui-action(open) → ui-dialog verdrahtet öffnet den Dialog (bestehendes Verhalten bleibt grün)."
+      - "E2E: ein inject/trigger-Knoten (KEIN ui-action) mit {ui:{action:{type:navigate,to:'/'}}} an ui-app verdrahtet löst Navigation aus."
+
+  - id: P60
+    title: "Knoten-Auswahl-Picker für ui-action (RED.view.selectNodes) + receive()-Fix + Multi-Target"
+    status: pending
+    dependencies: [P59]
+    goals:
+      - Das Freitext-Copy-Paste durch eine echte Canvas-Knoten-Auswahl ersetzen (Node-RED-Kern-API), als optionalen "wireless"-Pfad — identisch zur Verdrahtung.
+      - Den send()→receive()-Injektions-Bug beheben und Mehrfach-Ziele erlauben.
+    deliverables:
+      - "ui-action.html: Multi-Select-Knoten-Picker via RED.view.selectNodes() (Muster catch/status/complete), gefiltert auf interaktionsfähige webapp-Knoten; speichert eine Liste von Ziel-Node-IDs in der Config; Freitextfeld ersetzt."
+      - "ui-action.js/webapp.js: bei Input Zustellung an jede gewählte Ziel-ID via targetNode.receive(msg) — derselbe Input-Pfad wie ein Wire; gilt auch für ui-app/ui-route als Ziel."
+      - "Bestehender msg.ui.action.targetId / target Override-Pfad auf receive() umgestellt (statt node.send, das am Output injizierte) und mit `target` vereinheitlicht."
+      - "editor-common.js: ggf. ein wiederverwendbarer selectNodes-Helper, falls weitere Knoten ihn brauchen (single canonical copy beachten)."
+      - "actions.md §2/§3 aktualisiert; Picker als sekundäre, implizite Option dokumentiert (Wiring bleibt primär)."
+    validation:
+      - pnpm validate grün
+      - "unit test: ui-action mit zwei gewählten Ziel-IDs → beide Zielknoten erhalten die Message via receive() (Input-Pfad), nicht via send()."
+      - "unit test: msg.ui.action.targetId-Override stellt via receive() an genau diesen Knoten zu."
+      - "E2E: ui-action ohne Wire, aber mit gewähltem ui-dialog-Ziel → Dialog öffnet (wireless-Pfad äquivalent zur Verdrahtung)."
+      - "Editor: Picker listet nur interaktionsfähige webapp-Knoten; ausgewählte Knoten werden auf dem Canvas hervorgehoben (selectNodes-Standardverhalten)."
+
+  # ════════════════════════════════════════════════════════════════════════
+  # ui-app Editor-UX: Fehler-Weiterleitung straffen (P61)
+  #
+  # Aufgedeckt bei der ui-app Editor-Review (2026-06-06): das P56-Feld
+  # "Fehler an Client weiterleiten" ist zu verbose — Checkbox + langer
+  # form-tips-Block + bedingt eingeblendete "Min. Stufe"-Select (drei Elemente
+  # für eine Einstellung). Owner-Wunsch: eine einzelne Select mit Label
+  # "Logging", plus ein kleiner Info-Icon-Button (i im Kreis), der einen kleinen
+  # Dialog mit der Erklärung öffnet.
+  #
+  # Owner-Entscheidung (2026-06-06): die Select bildet rein im Editor auf die
+  # zwei bestehenden Felder (forwardErrorsToClient + forwardErrorMinSeverity) ab
+  # — KEIN Schema-/Runtime-Eingriff. Erste Option "aus" und Default "aus" bleibt
+  # (secure default, ADR 0006 §4 unverändert; kein Verhaltenswechsel).
+  # ════════════════════════════════════════════════════════════════════════
+
+  - id: P61
+    title: "ui-app — Fehler-Weiterleitung als einzelne 'Logging'-Select + Info-Icon-Dialog"
+    status: pending
+    dependencies: [P57]
+    goals:
+      - Das verbose 3-Element-UI (Checkbox + form-tips + bedingte 'Min. Stufe') durch EINE Select 'Logging' ersetzen.
+      - Die Erklärung aus einem permanenten form-tips-Block in einen kleinen Info-Dialog verlagern, der über einen 'i im Kreis'-Icon-Button geöffnet wird.
+    deliverables:
+      - "ui-app.html: eine Select mit Label 'Logging', Optionen: aus / debug / info / warn / error; erste Option 'aus', Default 'aus' (secure default bleibt)."
+      - "Reiner Editor-Mapping in oneditprepare/oneditsave auf die zwei bestehenden hidden-Felder: 'aus' → forwardErrorsToClient=false; jede Severity → forwardErrorsToClient=true + forwardErrorMinSeverity=<wert>. Schema (packages/schema) und Runtime (nodes/webapp.js) bleiben UNVERÄNDERT."
+      - "Kleiner Icon-Button neben dem Label (font-awesome fa-info-circle, 'i im Kreis') öffnet einen kleinen jQuery-UI-Dialog (gleiches Muster wie der bestehende Token-Dialog #node-dialog-tokens), der erklärt: Framework-Fehler ab der gewählten Stufe gehen redigiert per SSE an verbundene Browser; 'aus' = keine Weiterleitung; Sicherheitshinweis."
+      - "Den permanenten form-tips-Block und die bedingte 'Min. Stufe'-Zeile (samt updateForwardVisibility-Logik) entfernen — die Erklärung lebt jetzt im Dialog, die Schwelle in der Select."
+      - "Migration alter Knoten: bestehende {forwardErrorsToClient,forwardErrorMinSeverity}-Werte korrekt in die Select zurück-mappen (false → 'aus'; true → gespeicherte Schwelle)."
+    validation:
+      - pnpm validate grün (build + lint + test + roadmap)
+      - "Editor: ui-app zeigt EINE 'Logging'-Select + Info-Icon-Button; kein Dauer-Tips-Block, keine separate 'Min. Stufe'-Zeile."
+      - "Editor: Klick auf den Info-Icon-Button öffnet den Erklär-Dialog; schließt sauber."
+      - "Round-trip: 'aus' speichert forwardErrorsToClient=false; 'warn' speichert true + minSeverity=warn; erneutes Öffnen zeigt die richtige Select-Option."
+      - "Bestehender Knoten mit forwardErrorsToClient=true,minSeverity=info lädt als Select-Wert 'info' (Migration)."
+      - "Kein Diff in examples/customers-crud/flow.json durch gen:example (Felder optional, vom Generator nicht emittiert)."
+
+  # ════════════════════════════════════════════════════════════════════════
+  # Bugfix: Shoelace Token-Bridge erzeugt CSS-Cycles → fehlendes Padding (P62)
+  #
+  # Aufgedeckt 2026-06-06 (Owner-Report: gerenderter sl-button ohne Padding,
+  # sieht nicht aus wie in der Shoelace-Doku). Ursache verifiziert (isolierte
+  # Browser-Repro + getComputedStyle):
+  #   buildShoelaceTokenBridgeCss() (packages/renderer/src/shoelace-adapter.ts)
+  #   emittiert pro Token  --sl-X: var(--wa-Y, var(--sl-X));  — der Fallback
+  #   verweist auf DIESELBE Property. Ist --wa-Y gesetzt (Farben/font-family/
+  #   radius-md), greift Arm 1 → ok. Ist --wa-Y NICHT gesetzt, triggert der
+  #   Fallback var(--sl-X) einen Self-Reference → Dependency-CYCLE → die Property
+  #   wird per CSS-Spec guaranteed-invalid (der Shoelace-Default wird NICHT
+  #   wiederhergestellt). sl-button::part(label) nutzt padding:0 var(--sl-spacing-
+  #   medium) → Padding kollabiert auf 0. Beweis: --sl-spacing-medium = invalid
+  #   (buggy) vs 1rem (literal-Fallback); Label-Padding 0px vs 16px; Button 92px
+  #   vs 117px.
+  #
+  #   Ohne --wa-*-Default im <head> :root (nodes/webapp.js) und damit aktuell
+  #   STILL kaputt: --sl-spacing-medium (sichtbar), --sl-font-weight-normal/bold,
+  #   --sl-line-height-normal, --sl-border-radius-small/large/circle.
+  #   (--wa-spacing-unit, --wa-font-weight-*, --wa-line-height-base,
+  #   --wa-radius-sm/lg/full sind im Default-:root nicht definiert.)
+  #
+  # Owner-Entscheidung (2026-06-06): als Phase einplanen (nicht ad-hoc fixen).
+  # ════════════════════════════════════════════════════════════════════════
+
+  - id: P62
+    title: "Bugfix — Shoelace Token-Bridge: Self-Reference-Cycle entfernen (fehlendes sl-button-Padding)"
+    status: pending
+    dependencies: [P57]
+    goals:
+      - "Den CSS-Cycle in buildShoelaceTokenBridgeCss beheben: jeder --sl-* fällt auf seinen LITERALEN Shoelace-Default zurück statt auf sich selbst, sodass partielle --wa-*-Token-Sets sicher sind (was der Doc-Kommentar bereits behauptet, aber nicht leistet)."
+      - "Die semantisch falsche Abbildung --sl-spacing-medium ← --wa-spacing-unit entfernen (Basis-Einheit 0.25rem vs. absoluter Medium-Wert 1rem); Shoelace behält seine eigene Spacing-Skala."
+    deliverables:
+      - "shoelace-adapter.ts: WA_TO_SHOELACE_VARS / buildShoelaceTokenBridgeCss so ändern, dass die Bridge `--sl-X: var(--wa-Y, <literaler sl-default>);` emittiert — KEIN `var(--sl-X)` im eigenen Fallback. Literale Defaults entsprechen Shoelace 2.20.1 light theme."
+      - "Den Eintrag für --sl-spacing-medium aus der Bridge entfernen (kein Padding-Bridging über --wa-spacing-unit)."
+      - "Doc-Kommentar bei buildShoelaceTokenBridgeCss an das tatsächliche Verhalten angleichen."
+      - "Optional konsistenzhalber: fehlende --wa-*-Defaults im <head> :root (nodes/webapp.js) ergänzen ODER bewusst weglassen — Entscheidung dokumentieren; der literale Fallback macht sie für die Korrektheit unnötig."
+    validation:
+      - pnpm validate grün (build + lint + test + roadmap)
+      - "Regressions-Unit-Test: buildShoelaceTokenBridgeCss enthält für KEINEN Token den eigenen `var(--sl-…)` im Fallback (kein Self-Reference); --sl-spacing-medium wird nicht (mehr) gebridged."
+      - "E2E/Browser: ein gerenderter sl-button (Default-Tokens, ohne --wa-spacing-unit) hat horizontales Padding > 0 (Label-Padding ~16px), nicht 0 — Computed-Style-Check (preview_inspect), kein Screenshot."
+      - "Render-Parität (p26) und shoelace-served-html-Tests bleiben grün; bestehende Theming-Tests (Farb-Bridge) unverändert grün."
+
+  # ════════════════════════════════════════════════════════════════════════
+  # Self-hosted Shoelace-Assets statt CDN (P63) — ADR 0008
+  #
+  # Aufgedeckt 2026-06-06: Shoelace wird AUSSCHLIESSLICH vom jsdelivr-CDN geladen
+  # (nodes/webapp.js: SHOELACE_CDN_BASE + Theme/Autoloader im <head>); Shoelace
+  # ist nicht mal eine npm-Dependency. Für Node-RED-Ziele (air-gapped/industriell,
+  # offline, Privacy, Supply-Chain) ist das der falsche Default.
+  #
+  # Owner-Entscheidung (2026-06-06): Variante B (vendoren) + STRIKT LOKAL.
+  #   • Shoelace cdn-Build nach resources/shoelace/ vendoren (generiert, .gitignore,
+  #     vor Publish erzeugt → im Tarball). Ausliefern über den bestehenden
+  #     Modul-Resource-Mechanismus (wie webapp-client.js) → KEIN neuer Route-Code.
+  #     Autoloader ermittelt Base-Path selbst → Lazy-Chunks + sl-icon-Assets lokal.
+  #   • Alle externen/CDN-Referenzen entfernen; KEIN konfigurierbarer externer
+  #     Base-Path (strikt lokal).
+  # Siehe ADR 0008.
+  # ════════════════════════════════════════════════════════════════════════
+
+  - id: P63
+    title: "Self-hosted Shoelace-Assets (vendoren nach resources/) statt CDN — strikt lokal (ADR 0008)"
+    status: pending
+    dependencies: [P57]
+    goals:
+      - Die App voll offline-/air-gapped-fähig machen: keine CDN-Abhängigkeit zur Laufzeit.
+      - Shoelace-Version reproduzierbar in package.json pinnen statt per CDN-URL.
+    deliverables:
+      - "ADR 0008 committed (bereits entworfen): self-hosted (vendored) Shoelace assets, strikt lokal, kein CDN."
+      - "@shoelace-style/shoelace als devDependency, gepinnt auf SHOELACE_VERSION (2.20.1)."
+      - "scripts/vendor-shoelace.js: kopiert node_modules/@shoelace-style/shoelace/cdn → resources/shoelace/; asserted, dass die installierte Paketversion == SHOELACE_VERSION (kein Drift)."
+      - "package.json: vendor-Schritt in pnpm build + npm prepare einhängen, sodass dev:start, E2E-Rebuild, validate und publish die Assets haben; resources/shoelace via .gitignore ausschließen (generiert); sicherstellen, dass resources/ (inkl. shoelace) im publizierten Tarball landet (files/npmignore prüfen)."
+      - "nodes/webapp.js: SHOELACE_CDN_BASE + jsdelivr-URLs entfernen; eine lokale Base-Konstante /resources/node-red-contrib-webapp/shoelace/ einführen; <head> lädt themes/light.css + shoelace-autoloader.js von dort. SHOELACE_VERSION bleibt (pinnt Dependency + treibt das Vendoring)."
+      - "ADR 0002 mit Verweis auf ADR 0008 ergänzen (Asset-Delivery)."
+    validation:
+      - pnpm validate grün (build + lint + test + roadmap); build erzeugt resources/shoelace/.
+      - "Grep-/Unit-Check: keine jsdelivr-/externen Shoelace-URLs mehr in nodes/ resources/ packages/ (außer ggf. Doku/ADR)."
+      - "E2E (offline): die gerenderte App lädt Theme + Autoloader von /resources/node-red-contrib-webapp/shoelace/…; ein sl-button upgradet (Custom-Element definiert) und ein lazy-geladenes Element (z.B. sl-dialog) funktioniert — ohne Netzwerkzugriff nach außen."
+      - "Network-Check (preview_network): keine Requests an cdn.jsdelivr.net o.ä.; Shoelace-Requests gehen alle an den lokalen Origin."
+      - "Vendor-Script schlägt fehl, wenn die installierte Shoelace-Version != SHOELACE_VERSION (Drift-Guard greift)."
 
   # Deferred — only when a concrete need appears (see ADR 0002):
   #   - ui-custom escape-hatch node for framework-specific components (opt-in, non-portable)
