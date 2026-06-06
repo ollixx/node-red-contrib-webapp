@@ -456,7 +456,7 @@ phases:
 
   - id: P59
     title: "Per-Node Interaction-Handler — SSE-Push wandert aus ui-action in den Zielknoten"
-    status: pending
+    status: in_progress
     dependencies: [P58]
     goals:
       - Den zentralen SSE-Push aus ui-action in die Zielknoten verlagern, verallgemeinert aus dem ui-toast-Muster; ui-action wird zum reinen, typisierten Action-Emitter am Output-Port.
