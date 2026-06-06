@@ -22,6 +22,104 @@
         absolute: ["layoutX", "layoutY"]
     };
 
+    // ── Central editor-field injection ──────────────────────────────────────
+    // The markup of fields shared by many nodes used to be copy-pasted into each
+    // node's HTML template (the 7 placement rows lived byte-identically in 28
+    // files). injectFieldGroup() is the single generic primitive that builds a
+    // shared field group's markup and inserts it into the node's edit panel, so
+    // the markup is authored ONCE here, not per node. A later field family (the
+    // variant SelectBox, P50) reuses the same mechanism by passing its own spec.
+    //
+    // A field group is identified by `groupId` (a data-attribute marker) so the
+    // injection is idempotent — re-opening a panel never duplicates the rows.
+
+    function escapeHtml(value) {
+        return String(value).replace(/[&<>"']/g, function (ch) {
+            switch (ch) {
+                case "&": return "&amp;";
+                case "<": return "&lt;";
+                case ">": return "&gt;";
+                case '"': return "&quot;";
+                default: return "&#39;";
+            }
+        });
+    }
+
+    // Build the markup for one form row described by a field spec:
+    //   { id, label, type, rowAttrs?, hidden? }
+    function buildFieldRowMarkup(field) {
+        const rowAttrs = field.rowAttrs || {};
+        let attrs = "";
+        Object.keys(rowAttrs).forEach(function (key) {
+            attrs += ' ' + key + '="' + escapeHtml(rowAttrs[key]) + '"';
+        });
+        const style = field.hidden ? ' style="display: none;"' : "";
+        const inputType = field.type || "text";
+        return (
+            '<div class="form-row"' + attrs + style + '>' +
+            '<label for="node-input-' + escapeHtml(field.id) + '">' + escapeHtml(field.label) + "</label>" +
+            '<input type="' + escapeHtml(inputType) + '" id="node-input-' + escapeHtml(field.id) + '">' +
+            "</div>"
+        );
+    }
+
+    // Generic "inject this shared field group" primitive.
+    // spec = {
+    //   groupId:   unique marker (data-field-group="<groupId>"), for idempotency
+    //   separator: boolean — prepend an <hr> matching the template convention
+    //   fields:    array of field specs (see buildFieldRowMarkup)
+    // }
+    // Returns the injected (or pre-existing) container as a jQuery object, or null
+    // if no edit form is present. Appends to the form that hosts the node fields.
+    function injectFieldGroup(spec) {
+        const form = $("#node-input-mount").closest("form, .red-ui-tray-content, #dialog-form");
+        const container = form.length ? form : $("#dialog-form");
+        const target = container.length ? container : $(".red-ui-tray-body").first();
+        if (!target.length) {
+            return null;
+        }
+
+        const existing = target.find('[data-field-group="' + spec.groupId + '"]');
+        if (existing.length) {
+            return existing;
+        }
+
+        let markup = '<span data-field-group="' + escapeHtml(spec.groupId) + '" style="display: contents;">';
+        if (spec.separator) {
+            markup += '<hr style="margin: 8px 0;">';
+        }
+        (spec.fields || []).forEach(function (field) {
+            markup += buildFieldRowMarkup(field);
+        });
+        markup += "</span>";
+
+        const group = $(markup);
+        target.append(group);
+        return group;
+    }
+
+    // The placement-row field group: the 7 layout child-prop rows that used to be
+    // duplicated in every view node's template. Order, labels, ids, input types
+    // and the leading <hr> match the former hand-written markup exactly so the
+    // rendered panel and the saved config are unchanged (pure refactor).
+    const placementRowFields = [
+        { id: "order", label: "Order", type: "number", rowAttrs: { "data-layout-child-prop-row": "order" }, hidden: true },
+        { id: "row", label: "Row", type: "number", rowAttrs: { "data-layout-child-prop-row": "row" }, hidden: true },
+        { id: "col", label: "Col", type: "number", rowAttrs: { "data-layout-child-prop-row": "col" }, hidden: true },
+        { id: "colSize", label: "Col Size", type: "number", rowAttrs: { "data-layout-child-prop-row": "colSize" }, hidden: true },
+        { id: "rowSize", label: "Row Size", type: "number", rowAttrs: { "data-layout-child-prop-row": "rowSize" }, hidden: true },
+        { id: "layoutX", label: "X", type: "number", rowAttrs: { "data-layout-child-prop-row": "layoutX" }, hidden: true },
+        { id: "layoutY", label: "Y", type: "number", rowAttrs: { "data-layout-child-prop-row": "layoutY" }, hidden: true }
+    ];
+
+    function injectPlacementRows() {
+        return injectFieldGroup({
+            groupId: "layout-placement",
+            separator: true,
+            fields: placementRowFields
+        });
+    }
+
     function labelWithName(fallback) {
         return function () {
             return this.name || this.id || fallback;
@@ -470,6 +568,25 @@
 
     function installLayoutChildPropRows() {
         return function () {
+            const self = this;
+            // Inject the shared placement rows into this panel (idempotent). The
+            // markup used to live in each node's template; it now comes from the
+            // central field group so editing it happens in one place.
+            injectPlacementRows();
+
+            // Node-RED binds `defaults` fields to their `#node-input-*` inputs
+            // when it builds the edit form — which is BEFORE oneditprepare runs,
+            // and therefore before these inputs exist. Bind the values manually
+            // from the node config so the panel shows the stored values, and
+            // write them back on save so the deployed config is unchanged.
+            placementRowFields.forEach(function (field) {
+                const input = $("#node-input-" + field.id);
+                if (input.length) {
+                    const stored = self[field.id];
+                    input.val(stored === undefined || stored === null ? "" : stored);
+                }
+            });
+
             const mountInput = $("#node-input-mount");
 
             function refreshRows() {
@@ -706,6 +823,7 @@
         bindingValueForEditor,
         buildMountOptionsTree,
         collectEventCheckboxValues,
+        injectFieldGroup,
         getNextNameDefault,
         getStandardLayoutPresetOptions,
         installEventCheckboxes,
