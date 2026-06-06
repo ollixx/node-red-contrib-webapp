@@ -683,6 +683,165 @@ phases:
       - docs/nodes/behavior/ui-action.md matches the implementation (no
         submit/remove; show/hide documented as element visibility).
 
+  # ════════════════════════════════════════════════════════════════════════
+  # Error-Handling & Logging (P54–P57) — ADR 0006
+  #
+  # Aufgedeckt bei der Knoten-Review (2026-06-06): Error-Handling ist nicht
+  # bedacht. Ist-Zustand ist sogar das GEGENTEIL der Anforderung:
+  #   • Client (resources/lib/webapp-client.js): jeder catch-Block SCHLUCKT den
+  #     Fehler still ("ignore a malformed frame", "nothing to apply"). Kein
+  #     einziges console.*-Logging. Bricht etwas, sieht niemand etwas.
+  #   • Runtime (nodes/webapp.js): nur vereinzelt node.error ohne Kontext; die
+  #     meisten Fehlerpfade sind bare. Kein strukturiertes Fehler-Modell.
+  #   • Kein Transport Backend→Frontend, kein Log-Surfacing, kein Log-Node.
+  #
+  # Owner-Anforderung:
+  #   1. Alles was schiefläuft wird SINNVOLL geloggt (mit Kontext, nicht nur ein
+  #      Exception-Code).
+  #   2. Client: Fehler standardmäßig in die Konsole, gut verständlich für
+  #      Menschen — nie stilles Schlucken.
+  #   3. Backend-Fehler gehen KONFIGURIERBAR ans Frontend und werden dort
+  #      geloggt.
+  #   4. Ein ui-debug/ui-error/ui-log-Knoten zeigt das Log konfigurierbar als
+  #      UI-Element.
+  #
+  # Fehler-Modell (im ADR final):
+  #   { severity, code, message (menschenlesbar), context:{appId,nodeId,op},
+  #     timestamp, origin: "client" | "server" }
+  #   severity → console.error/warn/info im Client.
+  #   Abgrenzung: ui-toast = flüchtige User-Notification; ui-log = persistenter,
+  #   inspizierbarer Log. Kein Duplikat.
+  #   SICHERHEIT: Server-Fehler ans Frontend zu leiten kann Interna leaken →
+  #   opt-in pro ui-app, mit Severity-Schwelle und Redaktions-Option.
+  # ════════════════════════════════════════════════════════════════════════
+
+  - id: P54
+    title: "ADR 0006 Error-Handling + gemeinsames Fehler-Modell (Contract)"
+    status: pending
+    dependencies: [P47]
+    # Decision-first foundation: defines the cross-cutting error contract every
+    # later error phase consumes. Architecture-sensitive. Use opus.
+    goal: |
+      Establish the error-handling architecture and the shared, structured error
+      contract — the foundation P55 (client logging), P56 (backend→frontend
+      transport) and P57 (the log node) all build on. Foundation only: the
+      contract + types, no behaviour change yet.
+    scope: |
+      1. docs/adr/0006-error-handling-and-logging.md
+         - Error taxonomy & origins: client runtime (fetch/render/malformed
+           frame), webapp runtime (mapConfig validation, store/action handling),
+           vs. the flow author's own function nodes (those keep using Node-RED
+           catch nodes — out of scope, but documented as the boundary).
+         - The structured error shape: { severity, code, message (human-
+           readable, with context), context:{appId,nodeId,op}, timestamp,
+           origin }. severity enum (e.g. error|warn|info).
+         - Client logging policy: log by default, severity→console method, never
+           swallow. How human-readable messages are produced (a message catalog
+           vs inline) — decide.
+         - Backend→frontend forwarding: opt-in per ui-app, severity threshold,
+           redaction option; transported via a new SSE "error" event. Security
+           rationale (no silent leak of server internals).
+         - The log node: name decision (ui-log vs ui-error vs ui-debug; lean
+           ui-log), role (display the error/log stream as a UI element), and how
+           it differs from ui-toast.
+      2. packages/schema/src/contracts.ts
+         - Add the error shape + severity enum as exported schema/types (single
+           source of truth for client, runtime, and the log node). No wiring yet.
+    validation: |
+      - ADR 0006 committed; referenced from this phase's archive entry.
+      - pnpm build + pnpm test pass; a unit test validates the error-shape
+        schema (required fields, severity enum, origin enum).
+      - No behaviour change: existing E2E suite stays green unchanged.
+
+  - id: P55
+    title: "Client-Fehler-Surfacing — Konsole statt stillem Schlucken"
+    status: pending
+    dependencies: [P54]
+    # Routine but broad: touches every catch site in the thin client. Use sonnet.
+    goal: |
+      Stop the thin client from swallowing errors. Every failure is logged to the
+      browser console with a human-readable, contextual message (not a bare
+      code), per the P54 policy. Also render errors forwarded from the backend
+      (the receiving end of P56's transport).
+    scope: |
+      - resources/lib/webapp-client.js
+          Replace every silent catch ("ignore a malformed frame", "nothing to
+          apply", "leave fallback in place", the empty .catch on event POST,
+          hydrate/snapshot/command/toast handlers) with a logging call that
+          emits the structured error (P54 shape) to the console via a small
+          shared logger. Keep the existing graceful-degradation behaviour — log
+          AND degrade, don't throw.
+          Add a console logger that maps severity→console.error/warn/info and
+          prints message + context readably.
+          Add an SSE "error" event listener that logs backend-forwarded errors
+          (the payload P56 pushes).
+    validation: |
+      - pnpm validate passes.
+      - `pnpm exec playwright test` passes; add an E2E asserting that a forced
+        failure (e.g. a malformed SSE frame / a failing /event POST) produces a
+        console.error with a contextual message (captured via page.on("console")).
+      - No silent catch remains in webapp-client.js (spot-checked in review).
+
+  - id: P56
+    title: "Runtime-Logging + konfigurierbarer Backend→Frontend-Fehler-Transport"
+    status: pending
+    dependencies: [P54, P55]
+    # Architecture-sensitive: structured runtime logging + a new SSE error
+    # channel gated by per-app config. Touches webapp.js transport. Use opus.
+    goal: |
+      Make the webapp runtime log every failure with context (node.error/warn +
+      the structured shape) and, when enabled on the ui-app, forward errors to
+      the connected clients over a new SSE "error" channel so the browser logs
+      them too (received by P55).
+    scope: |
+      - nodes/webapp.js
+          Audit the bare error paths (mapConfig validation, store ops, action
+          handling, snapshot build, SSE write failures) and emit structured
+          errors with context (appId/nodeId/op) via node.error/node.warn.
+          Add a pushErrorToClients(appId, clientId?, error) that writes an SSE
+          "error" event — gated by the ui-app config flag + severity threshold,
+          with the ADR's redaction applied. Honour P15 clientId targeting.
+      - nodes/structure/ui-app.html + ui-app schema/mapConfig
+          Add the opt-in config: forwardErrorsToClient (bool) + minSeverity
+          (select). Default OFF (security).
+      - docs/nodes/concepts/ + ui-app.md: document the forwarding config.
+    validation: |
+      - pnpm validate passes.
+      - pnpm test: a runtime failure emits a structured node.error with context.
+      - `pnpm exec playwright test`: with forwarding ENABLED on the app, a
+        backend error reaches the browser console (via the SSE "error" event +
+        P55 logger); with forwarding DISABLED (default), it does NOT.
+
+  - id: P57
+    title: "ui-log Knoten — Fehler/Log als konfigurierbares UI-Element"
+    status: pending
+    dependencies: [P56]
+    # New node type — invoke the /node-red-node skill before implementation.
+    # Use sonnet.
+    goal: |
+      Add the log-display node (name per ADR 0006, lean ui-log) that subscribes
+      to the app's error/log stream and renders it as a configurable UI element —
+      so the log is visible in the app itself, not only in the dev console.
+    scope: |
+      - New node ui-log (four-file pattern via the /node-red-node skill):
+          nodes/<category>/ui-log.{js,html}, schema definition, webapp.js
+          mapConfig + serializer rendering.
+          Config: which severities to show, max entries, initial collapsed/
+          expanded, position (mounts into a slot like any view node).
+          Renders the structured errors (P54 shape) as a readable list/console
+          element; updates live as new errors arrive over the SSE "error"
+          channel (P56).
+      - examples + gen-node-examples.js entry; per-node E2E spec under
+        tests/e2e/nodes/.
+      - docs/nodes/<category>/ui-log.md.
+    validation: |
+      - pnpm validate passes.
+      - `pnpm exec playwright test`: a ui-log node renders; an error pushed over
+        the SSE "error" channel appears as a new readable entry; severity filter
+        and max-entries config are honoured.
+      - The node follows the four-file pattern and registers like every other
+        node (appears in the editor palette, has the standard input/parent wiring).
+
   # Deferred — only when a concrete need appears (see ADR 0002):
   #   - ui-custom escape-hatch node for framework-specific components (opt-in, non-portable)
   #   - SSR / hydration adapter for any public, search-indexed surface
