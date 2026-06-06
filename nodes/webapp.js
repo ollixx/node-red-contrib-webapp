@@ -1468,6 +1468,22 @@ function getActiveRuntimeAppId() {
     return undefined;
 }
 
+// P59-fix: resolve the registered node type for an id. Used to tell a dialog
+// open/close command (which needs a snapshot re-render so snapshot.dialogs is
+// populated) apart from sub-part disclosure commands the client renders locally.
+function getDefinitionTypeById(id) {
+    if (!id) {
+        return undefined;
+    }
+    for (const registration of runtimeState.definitions.values()) {
+        const def = registration.definition;
+        if (def && def.id === id) {
+            return def.type;
+        }
+    }
+    return undefined;
+}
+
 // P22: a self-contained JSON body reader so the event endpoint does not depend on
 // Node-RED's optional httpNode body-parser configuration. If a body parser already
 // ran (req.body present), it is reused.
@@ -1634,6 +1650,51 @@ function pushActionCommandToClients(appId, clientId, command) {
     const targets = clientId
         ? (subscribers.has(clientId) ? [[clientId, subscribers.get(clientId)]] : [])
         : Array.from(subscribers.entries());
+
+    // P59-fix: a bare open/close on a ui-dialog target (no `part`) cannot be
+    // rendered by the client from its stale snapshot — `snapshot.dialogs` only
+    // contains dialogs the server built as open. So for those we write the dialog
+    // open state into the SAME state channel a ui-store uses, then push a fresh
+    // SNAPSHOT — mirroring the store-driven open path. This keeps the dialog state
+    // unified: a later store update to ui.dialogs.<id>.open overrides it naturally.
+    // Every other command (navigate, show/hide, sub-part open/close, …) stays a
+    // `command` the client applies locally.
+    const verb = command && typeof command.type === "string" ? command.type : undefined;
+    const isDialogVerb = (verb === "open" || verb === "openDialog" || verb === "close" || verb === "closeDialog");
+    const isBareDialogTarget = isDialogVerb
+        && !command.part
+        && command.target
+        && getDefinitionTypeById(String(command.target)) === "ui-dialog";
+
+    if (isBareDialogTarget) {
+        const opening = verb === "open" || verb === "openDialog";
+        const dialogStatePath = `ui.dialogs.${String(command.target)}.open`;
+        const definitions = readDeployDefinitions(runtimeState.RED);
+
+        // Mirror ui-store's per-client vs broadcast rule, keyed on the COMMAND's
+        // clientId (the function arg) — NOT the loop's target. A broadcast action
+        // (no clientId) must write broadcast state so a later broadcast store
+        // update can override it; writing per-client here would shadow it.
+        if (clientId) {
+            const current = getClientState(appId, clientId);
+            const base = current && current.state
+                ? current.state
+                : clone(runtimeState.liveState.get(appId) || {});
+            setClientState(appId, clientId, setValueAtPath(base, dialogStatePath, opening), Date.now());
+        }
+        else {
+            const base = clone(runtimeState.liveState.get(appId) || {});
+            runtimeState.liveState.set(appId, setValueAtPath(base, dialogStatePath, opening));
+        }
+
+        for (const [targetClientId, entry] of targets) {
+            const built = buildAppSnapshot(appId, entry.location || "/", undefined, definitions, targetClientId);
+            if (built.success) {
+                writeStreamEvent(entry.res, "snapshot", { snapshot: built.snapshot });
+            }
+        }
+        return;
+    }
 
     for (const [, entry] of targets) {
         if (command && command.type === "navigate" && command.to) {
