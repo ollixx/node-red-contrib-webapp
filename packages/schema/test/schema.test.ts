@@ -516,7 +516,9 @@ describe("P16b feedback and status nodes", () => {
             mount: "route:/customers/content",
             value: { kind: "state", path:"notifications.count" },
             variant: "count",
-            severity: "error",
+            // P49b: "error" was a legacy value removed from the severity enum;
+            // the canonical value is "danger" (maps to the same Shoelace output).
+            severity: "danger",
             max: 99
         });
 

@@ -214,14 +214,16 @@ export interface UiNavigationEditorConfig extends IdentifiedEditorConfig {
 // P16b: feedback and status node editor configs
 export interface UiAlertEditorConfig extends MountableEditorConfig {
     messagePath?: string;
-    severity?: "info" | "warning" | "error" | "success";
+    // P49b: unified with SEVERITY_VARIANTS — primary|success|warning|danger|neutral|info
+    severity?: "primary" | "success" | "warning" | "danger" | "neutral" | "info";
     title?: string;
     dismissible?: boolean;
 }
 
 export interface UiToastEditorConfig extends IdentifiedEditorConfig {
     parent?: string;
-    severity?: "info" | "warning" | "error" | "success";
+    // P49b: unified with SEVERITY_VARIANTS — primary|success|warning|danger|neutral|info
+    severity?: "primary" | "success" | "warning" | "danger" | "neutral" | "info";
     duration?: number;
     position?: "top-right" | "top-center" | "bottom-right" | "bottom-center";
 }
@@ -242,7 +244,8 @@ export interface UiSkeletonEditorConfig extends MountableEditorConfig {
 export interface UiBadgeEditorConfig extends MountableEditorConfig {
     valuePath?: string;
     displayType?: "count" | "dot" | "status";
-    severity?: "default" | "info" | "warning" | "error" | "success";
+    // P49b: unified with SEVERITY_VARIANTS — primary|success|warning|danger|neutral|info
+    severity?: "primary" | "success" | "warning" | "danger" | "neutral" | "info";
     max?: number;
 }
 
