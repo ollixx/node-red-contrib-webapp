@@ -458,7 +458,7 @@ phases:
 
   - id: P60
     title: "Knoten-Auswahl-Picker für ui-action (RED.view.selectNodes) + receive()-Fix + Multi-Target"
-    status: pending
+    status: in_progress
     dependencies: [P59]
     goals:
       - Das Freitext-Copy-Paste durch eine echte Canvas-Knoten-Auswahl ersetzen (Node-RED-Kern-API), als optionalen "wireless"-Pfad — identisch zur Verdrahtung.
