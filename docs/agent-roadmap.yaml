@@ -298,7 +298,7 @@ phases:
 
   - id: P49b
     title: "Tech-Debt: severity-Feld-Enum mit SEVERITY_VARIANTS abgleichen"
-    status: pending
+    status: in_progress
     dependencies: [P49]
     # Small reconciliation flagged by the P49 review. Use sonnet.
     goal: |
