@@ -25,17 +25,20 @@ export class WebappPage {
     }
 
     /**
-     * Navigate to the app at `path` (default "/") and wait for the SSE stream to
-     * be requested so the client is subscribed before the test interacts.
+     * Navigate to the app at `path` (default "/") and wait for the SSE stream
+     * response headers to arrive. Waiting for the response (rather than just the
+     * request) guarantees the server has registered this client before the test
+     * injects any messages — otherwise a command push could arrive before the
+     * subscriber is in the map and be silently dropped.
      */
     async navigate(path = "/"): Promise<void> {
-        const streamRequested = this.page.waitForRequest((req) =>
-            req.url().includes(`${this.base()}/stream`)
+        const streamConnected = this.page.waitForResponse((res) =>
+            res.url().includes(`${this.base()}/stream`)
         );
         const suffix = path.startsWith("/") ? path : `/${path}`;
         await this.page.goto(`${this.base()}${suffix}`);
         await expect(this.root()).toBeVisible();
-        await streamRequested;
+        await streamConnected;
     }
 
     /** Assert a component matching `selector` is visible in the rendered tree. */
