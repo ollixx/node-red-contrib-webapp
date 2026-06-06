@@ -1280,7 +1280,12 @@ function renderAppPage(appId, location, dialogId, definitions) {
       --wa-font-family:system-ui, sans-serif; --wa-font-size-base:16px;
       --wa-radius-md:6px;
     }
-    /* P23: --wa-* → --sl-* bridge (Shoelace themed via the same tokens). */
+    /* P23: --wa-* → --sl-* bridge (Shoelace themed via the same tokens).
+       P62: the bridge falls back to literal Shoelace defaults when a --wa-*
+       token is unset, so the :root above need NOT define every --wa-* token
+       (e.g. --wa-spacing-unit, --wa-font-weight-*, --wa-line-height-base,
+       --wa-radius-sm/lg/full). They are intentionally omitted — correctness no
+       longer depends on them, and the bridge restores the real Shoelace value. */
 ${shoelaceBridgeCss.split("\n").map((line) => `    ${line}`).join("\n")}
     /* P24: user-defined ui-app tokens (highest precedence). */
 ${tokenCss ? tokenCss.split("\n").map((line) => `    ${line}`).join("\n") : "    /* (no app tokens set) */"}
