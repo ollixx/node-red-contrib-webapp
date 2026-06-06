@@ -274,12 +274,19 @@
                 // P61: Map the Logging select back onto the two hidden config fields.
                 // 'aus' → forwardErrorsToClient=false (severity left unchanged).
                 // any severity → forwardErrorsToClient=true + minSeverity=<value>.
+                //
+                // IMPORTANT: Node-RED reads node-input-* hidden fields AFTER oneditsave
+                // and overwrites this.* with those values. We must therefore sync the
+                // hidden inputs here so both code paths agree.
                 const val = $("#node-ui-app-logging").val();
                 if (val === "aus") {
                     this.forwardErrorsToClient = false;
+                    $("#node-input-forwardErrorsToClient").val("false");
                 } else {
                     this.forwardErrorsToClient = true;
                     this.forwardErrorMinSeverity = val;
+                    $("#node-input-forwardErrorsToClient").val("true");
+                    $("#node-input-forwardErrorMinSeverity").val(val);
                 }
                 // tokens are already serialised to #node-input-tokens inside the dialog OK handler.
             },
