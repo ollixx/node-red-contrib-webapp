@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P49b
+  current_phase: P53
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -296,35 +296,7 @@ phases:
 
   - { id: P49a, title: "Zentrale Editor-Feld-Injektion + Migration der Grid-Platzierungs-Zeilen", status: done, dependencies: [P48], archive: "docs/agent-roadmap-archive.yaml#P49a" }
 
-  - id: P49b
-    title: "Tech-Debt: severity-Feld-Enum mit SEVERITY_VARIANTS abgleichen"
-    status: in_progress
-    dependencies: [P49]
-    # Small reconciliation flagged by the P49 review. Use sonnet.
-    goal: |
-      Reconcile the divergence P49 left behind (recorded in the review): the
-      schema exports BADGE_VARIANTS/ALERT_VARIANTS as SEVERITY_VARIANTS
-      (primary|success|warning|danger|neutral|info), but the actual `severity`
-      field on ui-badge/ui-alert still validates the LEGACY enum
-      (default|info|warning|error|success). The serializer normalises both so it
-      works today — this phase removes the double truth before P50's SelectBox
-      surfaces it to users.
-    scope: |
-      - packages/schema/src/contracts.ts: make the ui-badge / ui-alert severity
-        field validate exactly the exported SEVERITY_VARIANTS set (or, if the
-        ADR/decision prefers, rename the field to `variant` consistently). One
-        enum, one source of truth.
-      - resources/lib/webapp-serializer.js: drop the now-redundant
-        legacy↔new normalisation once the enum is unified (keep a graceful
-        fallback for unknown values per P49's mapping rule).
-      - Update any fixtures/examples using the legacy values; regenerate
-        examples via pnpm gen:node-examples if affected.
-      - docs: ui-badge.md / ui-alert.md list the single severity vocabulary.
-    validation: |
-      - pnpm validate passes; a unit test asserts the severity field accepts the
-        SEVERITY_VARIANTS set and rejects a removed legacy-only value.
-      - `pnpm exec playwright test` passes; ui-badge/ui-alert render unchanged
-        for the still-valid values.
+  - { id: P49b, title: "Tech-Debt: severity-Feld-Enum mit SEVERITY_VARIANTS abgleichen", status: done, dependencies: [P49], archive: "docs/agent-roadmap-archive.yaml#P49b" }
 
   - id: P50
     title: "Editor-SelectBox für `variant` — gespeist aus dem Schema-Vokabular"
@@ -518,7 +490,7 @@ phases:
 
   - id: P53
     title: "ui-action — vollständiges Interaktions-Verb-Set client-seitig + Vokabular-Entmischung"
-    status: pending
+    status: in_progress
     dependencies: [P48]
     # Architecture-sensitive + product decision: fixes the canonical action
     # vocabulary (doc vs impl drift) and introduces a client-side interaction-
