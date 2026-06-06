@@ -122,6 +122,17 @@ function parseJsonList(value) {
     }
 }
 
+// P60 / ADR 0007 §3: the ui-action node picker stores a LIST of target node ids.
+// The value arrives as a JSON-string array (editor field) or an array (fixture /
+// gen-example). Returns a de-duplicated array of non-empty strings, or undefined
+// when empty (keeps the definition clean).
+function parseTargetIds(value) {
+    const list = parseJsonList(value)
+        .filter((id) => typeof id === "string" && id.trim().length > 0);
+    const deduped = list.filter((id, index) => list.indexOf(id) === index);
+    return deduped.length > 0 ? deduped : undefined;
+}
+
 // P23: design tokens may arrive as an object (typed fixture / gen-example) or a
 // JSON string (editor field). Returns a plain object or undefined.
 function parseTokens(value) {
@@ -2465,17 +2476,47 @@ function interactionInputHandler(ownedVerbs, next) {
     };
 }
 
-// P59 / ADR 0007 §3: ui-action is now a pure typed EMITTER. On input it builds a
+// Collect the configured wireless target node ids from a ui-action definition.
+// P60 / ADR 0007 §3: the editor's node picker (RED.view.selectNodes) stores a
+// LIST of target node ids in `targets`. The legacy singular `target` config
+// field (pre-P60 free-text) is still honoured for backward-compat. Returns a
+// de-duplicated, order-preserving array.
+function collectConfiguredTargetIds(definition) {
+    const ids = [];
+    if (definition) {
+        if (Array.isArray(definition.targets)) {
+            for (const id of definition.targets) {
+                if (typeof id === "string" && id) {
+                    ids.push(id);
+                }
+            }
+        }
+        if (typeof definition.target === "string" && definition.target) {
+            ids.push(definition.target);
+        }
+    }
+    return ids.filter((id, index) => ids.indexOf(id) === index);
+}
+
+// P59 / ADR 0007 §3: ui-action is a pure typed EMITTER. On input it builds a
 // schema-valid msg.ui.action from its config (msg.ui.action overrides win, ADR
 // 0005) and SENDS IT OUT its output port — the wired target node performs the
 // SSE push. ui-action no longer pushes centrally.
 //
-// Backward-compat (ADR 0007 §Consequences): old flows that relied on ui-action's
-// configured `target` field with an UNWIRED output had no wire to carry the
-// action. To keep those working, when the node has NO output wires AND a config
-// `target` resolves, ui-action delivers the action straight to that node via
-// targetNode.receive() (the same input path a wire uses — receive(), not send(),
-// fixing the ADR 0007 §Context-3 bug).
+// P60 / ADR 0007 §3: addressing has two equivalent paths, both delivering via
+// the SAME input path a wire uses (targetNode.receive(), NOT send() — fixing the
+// ADR 0007 §Context-3 bug):
+//   - Wiring (primary, visible): the output port is wired to the target node(s);
+//     Node-RED carries the message into their input.
+//   - Node picker (optional, "wireless"): the editor's RED.view.selectNodes()
+//     picker stores a LIST of target ids in `targets`; on input ui-action
+//     delivers the enriched message to EACH selected target via receive().
+//
+// An explicit msg.ui.action.target / .targetId override is unified with the
+// picker path: it too is delivered via receive() to exactly that node id.
+//
+// Backward-compat: old flows relying on the singular `target` config field with
+// an UNWIRED output still work — `target` is treated as a single picked target.
 function actionInputHandler(node, msg, send, done) {
     const RED = runtimeState.RED;
     const uiMsg = msg && msg.ui && typeof msg.ui === "object" ? msg.ui : undefined;
@@ -2497,20 +2538,33 @@ function actionInputHandler(node, msg, send, done) {
         })
         : msg;
 
-    // Backward-compat (ADR 0007 §Consequences): a configured `target`, no wired
-    // output → deliver to the target node's INPUT via receive() so legacy unwired
-    // flows keep working. `command.target` already resolves config target + msg
-    // override. receive() (not send()) injects into the target's input — fixing
-    // the ADR 0007 §Context-3 bug.
-    const configTarget = node.webappDefinition && node.webappDefinition.target
-        ? String(node.webappDefinition.target)
+    // Explicit msg-level override (ADR 0007 §3, unified): msg.ui.action.target /
+    // .targetId names a single node id and is delivered via receive() to exactly
+    // that node — NOT via send() (the ADR 0007 §Context-3 bug).
+    const override = uiMsg && uiMsg.action && typeof uiMsg.action === "object" ? uiMsg.action : undefined;
+    const overrideTargetId = override
+        ? (typeof override.targetId === "string" && override.targetId
+            ? override.targetId
+            : (typeof override.target === "string" && override.target ? override.target : undefined))
         : undefined;
-    const deliverTarget = command && command.target ? command.target : configTarget;
 
-    if (configTarget && deliverTarget && RED && !nodeHasOutputWire(node)) {
-        const targetNode = RED.nodes.getNode(deliverTarget);
-        if (targetNode && typeof targetNode.receive === "function") {
-            targetNode.receive(clone(outMsg));
+    // Wireless picker (+ legacy singular `target`) → deliver to each selected
+    // target's INPUT via receive(). The override, when present, takes precedence
+    // and addresses exactly that node.
+    const deliverTargetIds = overrideTargetId
+        ? [overrideTargetId]
+        : collectConfiguredTargetIds(node.webappDefinition);
+
+    if (deliverTargetIds.length > 0 && RED) {
+        let deliveredAny = false;
+        for (const targetId of deliverTargetIds) {
+            const targetNode = RED.nodes.getNode(targetId);
+            if (targetNode && typeof targetNode.receive === "function") {
+                targetNode.receive(clone(outMsg));
+                deliveredAny = true;
+            }
+        }
+        if (deliveredAny) {
             if (done) {
                 done();
             }
@@ -2524,7 +2578,7 @@ function actionInputHandler(node, msg, send, done) {
     // the owning ui-app node's INPUT, which owns the verb and performs the push.
     const verb = command && command.type ? String(command.type) : undefined;
     const isAppGlobalVerb = verb && (INTERACTION_VERBS_BY_TYPE["ui-app"] || []).indexOf(verb) !== -1;
-    if (isAppGlobalVerb && !deliverTarget && RED && !nodeHasOutputWire(node)) {
+    if (isAppGlobalVerb && deliverTargetIds.length === 0 && RED && !nodeHasOutputWire(node)) {
         const appNodeId = findOwningAppNodeId(node);
         const appNode = appNodeId ? RED.nodes.getNode(appNodeId) : undefined;
         if (appNode && typeof appNode.receive === "function") {
@@ -2960,6 +3014,10 @@ const runtimeNodeRegistry = {
             parent: config.parent || undefined,
             actionType: blankToUndefined(config.actionType),
             to: blankToUndefined(config.to),
+            // P60 / ADR 0007 §3: the node picker stores a LIST of target node ids
+            // (the optional "wireless" path). Legacy singular `target` (pre-P60
+            // free-text) is still honoured for backward-compat.
+            targets: parseTargetIds(config.targets),
             target: blankToUndefined(config.target),
             part: blankToUndefined(config.part),
             description: config.description || undefined
@@ -3375,6 +3433,9 @@ registerWebappNodes.__test__ = {
     // P20a
     buttonInputHandler,
     actionInputHandler,
+    // P60 / ADR 0007 §3: ui-action node-picker target list helpers
+    parseTargetIds,
+    collectConfiguredTargetIds,
     // P59 / ADR 0007 §2: per-node interaction handler factory + verb ownership
     interactionInputHandler,
     INTERACTION_VERBS_BY_TYPE,

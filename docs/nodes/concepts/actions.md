@@ -85,9 +85,29 @@ ui-action (open)    ──→ ui-dialog "Bestätigung"
 
 Vorteile: visuell explizit, keine String-Referenzen, Node-RED-idiomatisch, statisch validierbar.
 
-Einschränkung: Das Ziel muss zur Flow-Editierzeit bekannt sein. Für dynamisch berechnete Ziele → Option 2.
+Einschränkung: Das Ziel muss zur Flow-Editierzeit bekannt sein. Für dynamisch berechnete Ziele → Option 3.
 
-### 2. `target` aus `msg` (dynamisch zur Laufzeit)
+### 2. Knoten-Picker (sekundär, "wireless")
+
+Wer keine Wires ziehen will, kann im `ui-action`-Editor die Zielknoten über den
+Button **"Auf Canvas wählen"** direkt auf dem Canvas auswählen (P60 / ADR 0007
+§3). Technisch nutzt der Picker `RED.view.selectNodes()` — dieselbe Canvas-Pick-API,
+die die Kern-Knoten `catch` / `status` / `complete` für ihren Scope verwenden —
+gefiltert auf **interaktionsfähige webapp-Knoten** (alle `ui-*` außer dem Emitter
+`ui-action`/`ui-navigation` selbst). Es lassen sich **mehrere** Ziele wählen; die
+IDs werden als Liste (`targets`) in der Config gespeichert.
+
+Bei Eingang stellt `ui-action` die Aktion an **jeden** gewählten Zielknoten via
+`targetNode.receive(msg)` zu — **derselbe Input-Pfad wie ein Wire** (`receive()`,
+nicht `send()`; das behebt den ADR 0007 §Context-3-Bug). Verhalten und Push sind
+damit identisch zur Verdrahtung.
+
+> **Sekundär, bewusst:** Node-RED lebt von sichtbaren Flows; versteckte
+> ID-Referenzen sind schwerer nachzuvollziehen. Das Wiring des Output-Ports
+> (Option 1) bleibt der primäre, empfohlene Weg. Der Picker ist die implizite
+> Alternative für Wireless-Setups.
+
+### 3. `target` aus `msg` (dynamisch zur Laufzeit)
 
 Wenn das Ziel erst zur Laufzeit bekannt ist — z.B. weil es aus den Daten des auslösenden Events stammt — kann die Node-/Component-ID des Zielknotens als `target` in der `msg` mitgeliefert werden:
 
@@ -97,15 +117,18 @@ Wenn das Ziel erst zur Laufzeit bekannt ist — z.B. weil es aus den Daten des a
 
 `target` überschreibt die Default-Auflösung des Zielknotens (der sonst seine
 eigene Node-ID als Ziel setzt). Typischer Anwendungsfall: Das Event enthält eine
-`sourceId`, die als Ziel der Reaktion genutzt wird.
+`sourceId`, die als Ziel der Reaktion genutzt wird. `targetId` ist ein Alias für
+`target` und mit ihm vereinheitlicht.
 
-> **Backward-Compat (P59 / ADR 0007):** Altflows, die das Config-Feld `target`
-> von `ui-action` mit **unverdrahtetem** Output nutzten, funktionieren weiter:
-> `ui-action` liefert die Aktion dann direkt in den **Input** des Zielknotens via
-> `targetNode.receive()` (nicht `send()`). Sobald der Output verdrahtet ist, gilt
-> ausschließlich der primäre Wiring-Pfad.
+> **Zustellung via `receive()` (P60 / ADR 0007 §3):** Ein `target`/`targetId`-Override
+> in der `msg` adressiert genau diesen Knoten; `ui-action` stellt die Aktion an
+> dessen **Input** via `targetNode.receive()` zu (nicht `send()`, das am Output
+> injizierte — der ADR 0007 §Context-3-Bug). Damit ist der Override-Pfad mit dem
+> Picker-Pfad (Option 2) vereinheitlicht. Altflows, die das Config-Feld `target`
+> mit unverdrahtetem Output nutzten, funktionieren unverändert weiter (`target`
+> wird wie ein einzelnes gewähltes Ziel behandelt).
 
-### 3. Pfad-Selektor (zukünftig — dynamische Elemente)
+### 4. Pfad-Selektor (zukünftig — dynamische Elemente)
 
 Für dynamisch erzeugte Elemente (z.B. Zeilen in einer Tabelle, Items in einer Liste) gibt es keine feste Node-ID. Hier wird ein Adressierungsschema auf dem App-State oder DOM benötigt — z.B. JSONPath auf den Store-Zustand.
 
@@ -298,9 +321,12 @@ Pflichtfelder:
 Optionale Felder:
 - `actionType`: voreingestellter Action-Typ
 - `to`: voreingestelltes Navigationsziel (kann durch `msg` überschrieben werden)
-- `target`: nur ein optionaler Override — das Ziel wird primär über das **Wiring
-  des Output-Ports** bestimmt. Leer lassen, wenn verdrahtet wird. (Gesetzt +
-  unverdrahtet ⇒ Backward-Compat-Pfad via `receive()`, s.o.)
+- `targets`: die über den **Knoten-Picker** ("Auf Canvas wählen", Option 2)
+  gewählten Zielknoten-IDs (Liste). Sekundärer "wireless"-Pfad — primär bleibt das
+  **Wiring des Output-Ports**. Bei Eingang Zustellung an jeden Knoten via
+  `receive()`.
+- `target` (legacy): Einzel-Override aus Altflows (pre-P60 Freitext). Wird wie ein
+  einzelnes gewähltes Ziel behandelt; im Editor durch den Picker ersetzt.
 
 ---
 

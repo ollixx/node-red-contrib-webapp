@@ -14,7 +14,7 @@ test.describe("editor panels — behavior & state nodes (P47)", () => {
         await resetFlow(request);
     });
 
-    test("ui-action — actionType selector + target field, parent SelectBox lists app", async ({ page, request }) => {
+    test("ui-action — actionType selector + node picker, parent SelectBox lists app", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "actApp", root: "actApp", name: "Action App" })
             .node("ui-action", { id: "actEd", actionType: "navigate" })
@@ -25,7 +25,13 @@ test.describe("editor panels — behavior & state nodes (P47)", () => {
         await editor.open();
         await editor.openNode("actEd");
 
-        await editor.expectFields(["name", "parent", "actionType", "to", "target", "part", "description"]);
+        // P60 / ADR 0007 §3: the free-text `target` field is replaced by a canvas
+        // node picker. `targets` (JSON list) is the new config field; legacy
+        // `target` survives as a hidden input for backward-compat.
+        await editor.expectFields(["name", "parent", "actionType", "to", "targets", "part", "description"]);
+
+        // The wireless picker exposes a "pick on canvas" button.
+        await expect(page.locator("#node-input-targets-pick")).toHaveCount(1);
 
         // P53: actionType selector exposes the canonical interaction verb set
         // (ADR 0005) — no submit/remove (P29), no trigger; open/close/select/
