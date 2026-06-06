@@ -229,6 +229,60 @@ export const actionDefinitionSchema = z.object({
 
 export type ActionDefinition = z.infer<typeof actionDefinitionSchema>;
 
+/**
+ * P58 (ADR 0007): the public ACTION MESSAGE contract.
+ *
+ * An interaction command travels in `msg.ui.action`. Because it is a plain
+ * message contract, ANY node — `inject`, `trigger`, `function`, an HTTP
+ * response, or `ui-action` — can produce it; `ui-action` is the ergonomic,
+ * schema-backed emitter, not a privileged one.
+ *
+ * Validation scope is deliberately NARROW. The schema validates ONLY
+ * `msg.ui.action`. Unrelated `msg.*` fields (e.g. `payload`, `topic`,
+ * `_msgid`) and unrelated `msg.ui.*` fields are PASSED THROUGH untouched —
+ * there is intentionally no `.strict()` on `msg` or on `msg.ui`. This is the
+ * idiomatic "enrich the incoming message" model: the emitter sets/merges
+ * `msg.ui.action`, everything else rides along. `msg.ui.action` itself is
+ * strict so that typos in the command are caught.
+ *
+ *   msg.ui = {
+ *     clientId?: string,   // P15 per-client targeting; absent = broadcast
+ *     action: {
+ *       type:    <verb>,   // ADR 0005 / actionTypeSchema verb set
+ *       to?:     string,   // navigate destination (route path)
+ *       part?:   string,   // disclosure / single-active sub-id
+ *       target?: string,   // OPTIONAL explicit component / node id (override)
+ *     }
+ *   }
+ */
+export const actionMessageCommandSchema = z
+    .object({
+        type: actionTypeSchema,
+        to: z.string().min(1, "Navigate actions must declare a destination.").optional(),
+        part: z.string().min(1, "Action parts must not be empty.").optional(),
+        target: z.string().min(1, "Action targets must not be empty.").optional()
+    })
+    .strict();
+
+export type ActionMessageCommand = z.infer<typeof actionMessageCommandSchema>;
+
+export const actionMessageSchema = z
+    .object({
+        // `.passthrough()` (not `.strict()`): foreign msg.ui.* fields (appId, …)
+        // ride along untouched. `action` is strict so typos are caught.
+        ui: z
+            .object({
+                clientId: identifierSchema.optional(),
+                action: actionMessageCommandSchema
+            })
+            .passthrough()
+    })
+    // `.passthrough()` (not `.strict()`): foreign msg.* fields (payload, topic,
+    // _msgid, …) ride along untouched (ADR 0007 §1 — enrich, don't replace).
+    .passthrough();
+
+export type ActionMessage = z.infer<typeof actionMessageSchema>;
+
 export const navigationDefinitionSchema = z.object({
     id: identifierSchema,
     to: routePathSchema

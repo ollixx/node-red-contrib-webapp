@@ -12,14 +12,41 @@ Actions verändern den **Interaktionszustand** der UI: Sichtbarkeit, Aktivierung
 
 ---
 
+## Der Action-Message-Contract
+
+Eine Action reist als **`msg.ui.action`** durch den Flow. Dieses Format ist ein
+öffentlicher, schema-validierter Message-Contract (`actionMessageSchema` in
+`packages/schema`, [ADR 0007](../../adr/0007-action-message-and-per-node-interaction-handlers.md)):
+
+```
+msg.ui = {
+  clientId?: string,         // Ziel-Client; fehlt = Broadcast an alle Clients
+  action: {
+    type:    <verb>,         // Verbset siehe unten (ADR 0005)
+    to?:     string,         // navigate-Ziel (Route-Pfad)
+    part?:   string,         // Sub-ID für open/close/select (Sektion/Branch/Tab)
+    target?: string          // OPTIONALE explizite Component-/Node-ID (Override)
+  }
+}
+```
+
+Das Schema validiert **nur** `msg.ui.action`. Fremde `msg.*`-Felder (`payload`,
+`topic`, `_msgid`, …) und fremde `msg.ui.*`-Felder werden **unangetastet
+durchgereicht** — der Emitter reichert die eingehende Message an, er ersetzt sie
+nicht. Weil es ein gewöhnlicher Message-Contract ist, kann **jeder** Knoten ihn
+erzeugen (`inject`, `trigger`, `function`, eine HTTP-Response oder `ui-action`).
+
 ## Der `ui-action` Knoten
 
-`ui-action` ist der einzige Knoten, der Actions an den Client sendet. Er hat:
+`ui-action` ist der bequeme, typisierte **Emitter** dieses Contracts — kein
+Gatekeeper. Er hat:
 
 - **Input-Port**: empfängt eine `msg` aus dem Node-RED Flow — das löst die Action aus
 - **Output-Port**: verdrahtet mit dem **Zielknoten** der Action (z.B. `ui-dialog`, `ui-button`, `ui-input`)
 
-Der Output-Port dient der Zieladressierung, nicht der Weiterverarbeitung im Flow. Die Runtime liest das Wiring und leitet die Action an den entsprechenden Client-Component weiter.
+`ui-action` baut aus seiner Konfiguration eine schema-valide `msg.ui.action` und
+emittiert sie am Output-Port; der verdrahtete Zielknoten verarbeitet das ihm
+bekannte Verb. Der Output-Port dient also der Zieladressierung über das Wiring.
 
 ```
 ui-button (click event) ──→ function node ──→ ui-action (openDialog) ──→ ui-dialog
@@ -47,17 +74,15 @@ Vorteile: visuell explizit, keine String-Referenzen, Node-RED-idiomatisch, stati
 
 Einschränkung: Das Ziel muss zur Flow-Editierzeit bekannt sein. Für dynamisch berechnete Ziele → Option 2.
 
-### 2. `targetId` aus `msg` (dynamisch zur Laufzeit)
+### 2. `target` aus `msg` (dynamisch zur Laufzeit)
 
-Wenn das Ziel erst zur Laufzeit bekannt ist — z.B. weil es aus den Daten des auslösenden Events stammt — kann die Node-ID des Zielknotens in der `msg` mitgeliefert werden:
+Wenn das Ziel erst zur Laufzeit bekannt ist — z.B. weil es aus den Daten des auslösenden Events stammt — kann die Node-/Component-ID des Zielknotens als `target` in der `msg` mitgeliefert werden:
 
 ```json
-{ "ui": { "action": { "type": "disable", "targetId": "<node-id>" } } }
+{ "ui": { "action": { "type": "disable", "target": "<node-id>" } } }
 ```
 
-`targetId` überschreibt das statische Wiring. Typischer Anwendungsfall: Das Event enthält eine `sourceId`, die als Ziel der Reaktion genutzt wird.
-
-In diesem Fall schickt der Knoten die Message direkt an die App.
+`target` überschreibt das statische Wiring (expliziter Override). Typischer Anwendungsfall: Das Event enthält eine `sourceId`, die als Ziel der Reaktion genutzt wird.
 
 ### 3. Pfad-Selektor (zukünftig — dynamische Elemente)
 
@@ -96,14 +121,14 @@ Navigiert den Client zu einer Route.
 {
   "ui": {
     "action": {
-      "type":   "navigate",
-      "target": "/customers/42"
+      "type": "navigate",
+      "to":   "/customers/42"
     }
   }
 }
 ```
 
-`target` ist ein absoluter Pfad innerhalb der App. Route-Parameter werden inline aufgelöst.
+`to` ist ein absoluter Pfad innerhalb der App. Route-Parameter werden inline aufgelöst.
 
 ---
 
@@ -141,8 +166,8 @@ Blendet ein UI-Element ein oder aus.
 {
   "ui": {
     "action": {
-      "type":     "show",
-      "targetId": "<node-id des Ziel-Knotens>"
+      "type":   "show",
+      "target": "<node-id des Ziel-Knotens>"
     }
   }
 }
@@ -160,8 +185,8 @@ Aktiviert oder deaktiviert ein interaktives Element.
 {
   "ui": {
     "action": {
-      "type":     "disable",
-      "targetId": "<node-id>"
+      "type":   "disable",
+      "target": "<node-id>"
     }
   }
 }
@@ -179,8 +204,8 @@ Setzt den Fokus auf ein Eingabefeld.
 {
   "ui": {
     "action": {
-      "type":     "focus",
-      "targetId": "<node-id eines ui-input>"
+      "type":   "focus",
+      "target": "<node-id eines ui-input>"
     }
   }
 }
@@ -196,8 +221,8 @@ Setzt ein Eingabefeld auf seinen Initialwert zurück.
 {
   "ui": {
     "action": {
-      "type":     "reset",
-      "targetId": "<node-id eines ui-input>"
+      "type":   "reset",
+      "target": "<node-id eines ui-input>"
     }
   }
 }
@@ -214,8 +239,8 @@ Standardmäßig wird eine Action an **alle verbundenen Clients** der App gesende
   "ui": {
     "clientId": "client-abc123",
     "action": {
-      "type":   "navigate",
-      "target": "/dashboard"
+      "type": "navigate",
+      "to":   "/dashboard"
     }
   }
 }
