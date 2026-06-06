@@ -322,43 +322,6 @@ phases:
   # ════════════════════════════════════════════════════════════════════════
 
   - { id: P51, title: "Grid-Child-Props row/col/colSize/rowSize müssen positive Integer sein", status: done, dependencies: [P49a], archive: "docs/agent-roadmap-archive.yaml#P51" }
-    # Routine schema + editor tightening, built on the P49a central field
-    # injection so the editor rule lives in ONE place, not 28 files. Use sonnet.
-    goal: |
-      Enforce that the grid placement child props are positive integers (>= 1)
-      in BOTH the schema and the Node-RED editor. This is the firm, undisputed
-      part of the grid-placement review — independent of the dynamic-value
-      question (P52).
-    scope: |
-      1. packages/schema/src/node-definitions.ts (mountableNodeSchema, ~Z. 24–27)
-         - row, col, colSize, rowSize: change z.number().int() to
-           z.number().int().positive() with clear messages, e.g.
-           "Grid columns are 1-based — col must be a positive integer."
-         - Do NOT touch layoutX / layoutY: 0 is a valid absolute coordinate.
-         - Rebuild: pnpm build.
-
-      2. resources/lib/editor-common.js (the central placement-row injection
-         introduced by P49a — edit it ONCE, not per node)
-         - In the injected markup for row/col/colSize/rowSize set min="1"
-           step="1" and add client-side validation so an out-of-range value
-           flags the node (invalid badge) before deploy, consistent with the
-           existing editor validation pattern. Because P49a centralised the
-           rows, this change applies to all nodes automatically.
-
-      3. docs/nodes/concepts/layout.md
-         - Document the positive-integer constraint for grid placement and the
-           explicit exception for layoutX/layoutY.
-
-      4. Check fixtures / example generator for any 0-valued grid props that
-         would now fail validation; fix them (and regenerate examples via
-         pnpm gen:node-examples if the generator emits any).
-    validation: |
-      - pnpm build passes.
-      - pnpm test passes; add a unit test asserting the schema REJECTS 0,
-        negative, and non-integer for row/col/colSize/rowSize, and still
-        ACCEPTS 0 for layoutX/layoutY.
-      - `pnpm exec playwright test` passes; an editor spec asserts a grid
-        child node with col=0 is flagged invalid.
 
   - id: P52
     title: "Dynamische Werte für Grid-Platzierung — Evaluation + ggf. Umsetzung"
