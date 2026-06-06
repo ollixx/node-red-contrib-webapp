@@ -504,7 +504,7 @@ phases:
 
   - id: P62
     title: "Bugfix — Shoelace Token-Bridge: Self-Reference-Cycle entfernen (fehlendes sl-button-Padding)"
-    status: pending
+    status: in_progress
     dependencies: [P57]
     goals:
       - "Den CSS-Cycle in buildShoelaceTokenBridgeCss beheben: jeder --sl-* fällt auf seinen LITERALEN Shoelace-Default zurück statt auf sich selbst, sodass partielle --wa-*-Token-Sets sicher sind (was der Doc-Kommentar bereits behauptet, aber nicht leistet)."
