@@ -1493,10 +1493,23 @@ function removeStreamClient(appId, clientId) {
 // distinguish a full snapshot re-render from an interaction command.
 function writeStreamEvent(res, eventName, payload) {
     if (!res || typeof res.write !== "function") {
-        return;
+        return false;
     }
-    res.write(`event: ${eventName}\n`);
-    res.write(`data: ${JSON.stringify(payload)}\n\n`);
+    try {
+        res.write(`event: ${eventName}\n`);
+        res.write(`data: ${JSON.stringify(payload)}\n\n`);
+        return true;
+    }
+    catch (error) {
+        // P56: an SSE write failure (broken pipe, closed socket) is logged with
+        // context instead of crashing the push loop. Not forwarded to clients —
+        // the failing transport is the very channel forwarding would use.
+        const RED = runtimeState.RED;
+        if (RED && RED.log && RED.log.warn) {
+            RED.log.warn(`[webapp] SSE write failed for '${eventName}' frame (op=writeStreamEvent): ${error instanceof Error ? error.message : String(error)}`);
+        }
+        return false;
+    }
 }
 
 // Push the current snapshot (built from the live node state) to one client, or
@@ -1516,6 +1529,17 @@ function pushSnapshotToClients(appId, clientId, definitions) {
         const built = buildAppSnapshot(appId, entry.location || "/", undefined, definitions, targetClientId);
         if (built.success) {
             writeStreamEvent(entry.res, "snapshot", { snapshot: built.snapshot });
+        }
+        else {
+            // P56: a failed snapshot build is no longer silently dropped — log it
+            // with context and (when forwarding is on) surface it to the client.
+            reportRuntimeError(undefined, {
+                severity: "warn",
+                code: "server.snapshot.build-failed",
+                message: `Snapshot build failed for '${entry.location || "/"}' (status ${built.status}): ${built.message || "unknown error"}`,
+                context: { appId, op: "buildAppSnapshot" },
+                clientId: targetClientId
+            });
         }
     }
 }
@@ -1559,6 +1583,153 @@ function pushActionCommandToClients(appId, clientId, command) {
         }
         writeStreamEvent(entry.res, "command", { command });
     }
+}
+
+// ─── P56 / ADR 0006: structured runtime logging + opt-in error forwarding ───
+//
+// Every framework failure in the runtime is logged WITH CONTEXT via node.error /
+// node.warn (never bare), shaped after the ADR 0006 structured-error contract
+// ({ severity, code, message, context:{appId,nodeId,op}, timestamp, origin }).
+// When the owning ui-app opts in (forwardErrorsToClient), errors at or above its
+// severity threshold are ALSO forwarded to connected clients over a new SSE
+// "error" event — redacted, default OFF (security). The browser logs them via
+// the P55 receiving-end handler.
+
+// severity → ordinal, for the forwarding threshold comparison (ADR 0006 §4).
+const ERROR_SEVERITY_RANK = { debug: 0, info: 1, warn: 2, error: 3 };
+
+function nowIso() {
+    return new Date().toISOString();
+}
+
+// Resolve the forwarding config for an app from its registered ui-app definition.
+// Absent fields fall back to the SECURE default: no forwarding, "error" threshold.
+function resolveAppForwardConfig(appId) {
+    if (!appId) {
+        return { enabled: false, minSeverity: "error" };
+    }
+    for (const registration of runtimeState.definitions.values()) {
+        const def = registration.definition;
+        if (def && def.type === "ui-app" && def.id === appId) {
+            return {
+                enabled: def.forwardErrorsToClient === true,
+                minSeverity: def.forwardErrorMinSeverity || "error"
+            };
+        }
+    }
+    return { enabled: false, minSeverity: "error" };
+}
+
+// Redact a message before forwarding it to anonymous clients (ADR 0006 §4):
+// strip absolute file paths and any stack-trace tail so server internals do not
+// leak. The structured `code` + `context` ids still travel; only the free-text
+// message is sanitised.
+function redactErrorMessage(message) {
+    let text = message === undefined || message === null ? "" : String(message);
+    // Drop everything from the first stack frame marker onwards.
+    const stackAt = text.search(/\n?\s*at\s+/);
+    if (stackAt !== -1) {
+        text = text.slice(0, stackAt);
+    }
+    // Replace absolute filesystem paths (POSIX or Windows) with a placeholder.
+    text = text.replace(/(?:\/[^\s:]+)+\.[a-zA-Z]+(?::\d+(?::\d+)?)?/g, "<path>");
+    text = text.replace(/[A-Za-z]:\\[^\s]+/g, "<path>");
+    return text.trim() || "An internal error occurred.";
+}
+
+// Build the structured-error wire object (ADR 0006 decision 1).
+function makeStructuredError(severity, code, message, context) {
+    return {
+        severity,
+        code,
+        message,
+        context: context && typeof context === "object" ? context : {},
+        timestamp: nowIso(),
+        origin: "server"
+    };
+}
+
+// Push a structured server error to the targeted client(s) over the SSE "error"
+// channel — gated by the owning app's forwarding config + severity threshold,
+// with the message redacted. The frame shape matches the P55 receiving handler:
+//   event: error\n data: { "error": { … } }
+// clientId targeting honours the P15 multi-user model (broadcast when absent).
+function pushErrorToClients(appId, clientId, structuredError) {
+    const config = resolveAppForwardConfig(appId);
+    if (!config.enabled) {
+        return false;
+    }
+    const rank = ERROR_SEVERITY_RANK[structuredError.severity];
+    const threshold = ERROR_SEVERITY_RANK[config.minSeverity];
+    if (rank === undefined || threshold === undefined || rank < threshold) {
+        return false;
+    }
+
+    const subscribers = runtimeState.streamClients.get(appId);
+    if (!subscribers || subscribers.size === 0) {
+        return false;
+    }
+
+    const forwarded = {
+        severity: structuredError.severity,
+        code: structuredError.code,
+        message: redactErrorMessage(structuredError.message),
+        // Only framework ids travel — never arbitrary payload (ADR 0006 §4).
+        context: {
+            ...(structuredError.context && structuredError.context.appId ? { appId: structuredError.context.appId } : {}),
+            ...(structuredError.context && structuredError.context.nodeId ? { nodeId: structuredError.context.nodeId } : {}),
+            ...(structuredError.context && structuredError.context.op ? { op: structuredError.context.op } : {})
+        },
+        timestamp: structuredError.timestamp || nowIso(),
+        origin: "server"
+    };
+
+    const targets = clientId
+        ? (subscribers.has(clientId) ? [[clientId, subscribers.get(clientId)]] : [])
+        : Array.from(subscribers.entries());
+
+    let delivered = false;
+    for (const [, entry] of targets) {
+        writeStreamEvent(entry.res, "error", { error: forwarded });
+        delivered = true;
+    }
+    return delivered;
+}
+
+// Central runtime error reporter (ADR 0006). Logs the failure WITH CONTEXT via
+// the matching Node-RED logger (warn→node.warn, everything else→node.error) and,
+// when the owning app opts in, forwards it to clients via pushErrorToClients.
+// `node` may be a real Node-RED node (preferred — keeps the error on the node)
+// or undefined (falls back to the runtime logger). Returns the structured error.
+function reportRuntimeError(node, { severity, code, message, context, clientId }) {
+    const sev = ERROR_SEVERITY_RANK[severity] !== undefined ? severity : "error";
+    const ctx = context && typeof context === "object" ? context : {};
+    const structured = makeStructuredError(sev, code, message, ctx);
+
+    // Human-readable line: message + a compact rendering of the context + code.
+    const ctxBits = [];
+    if (ctx.appId) { ctxBits.push(`appId=${ctx.appId}`); }
+    if (ctx.nodeId) { ctxBits.push(`nodeId=${ctx.nodeId}`); }
+    if (ctx.op) { ctxBits.push(`op=${ctx.op}`); }
+    const suffix = `${ctxBits.length ? ` [${ctxBits.join(" ")}]` : ""} (${code})`;
+    const line = `${message}${suffix}`;
+
+    if (node && typeof node[sev === "warn" ? "warn" : "error"] === "function") {
+        node[sev === "warn" ? "warn" : "error"](line);
+    }
+    else {
+        const RED = runtimeState.RED;
+        const logger = RED && RED.log;
+        if (logger) {
+            (sev === "warn" ? logger.warn : logger.error).call(logger, `[webapp] ${line}`);
+        }
+    }
+
+    const appId = ctx.appId;
+    if (appId) {
+        pushErrorToClients(appId, clientId, structured);
+    }
+    return structured;
 }
 
 // Map a ui-action definition + incoming msg into the interaction command the
@@ -1739,7 +1910,12 @@ function createNodeConstructor(RED, type, mapConfig, options = {}) {
         }
         catch (error) {
             node.status({ fill: "red", shape: "ring", text: "config error" });
-            node.error(error instanceof Error ? error.message : String(error));
+            reportRuntimeError(node, {
+                severity: "error",
+                code: "server.mapConfig.failed",
+                message: `Failed to map ${type} config: ${error instanceof Error ? error.message : String(error)}`,
+                context: { appId: findAppIdForNode(node), nodeId: node.id, op: "mapConfig" }
+            });
             return;
         }
 
@@ -1747,7 +1923,12 @@ function createNodeConstructor(RED, type, mapConfig, options = {}) {
 
         if (!validation.success) {
             node.status({ fill: "red", shape: "ring", text: validation.error });
-            node.error(validation.error);
+            reportRuntimeError(node, {
+                severity: "error",
+                code: "server.validation.failed",
+                message: `Invalid ${type} definition: ${validation.error}`,
+                context: { appId: findAppIdForNode(node), nodeId: node.id, op: "validateUiNodeDefinition" }
+            });
             return;
         }
 
@@ -2091,7 +2272,12 @@ const runtimeNodeRegistry = {
             events: parseJsonList(config.events).length > 0 ? parseJsonList(config.events) : undefined,
             // P23: design tokens drive the Web Component theme via CSS custom
             // properties. Carried through unchanged so the page can inject them.
-            tokens: parseTokens(config.tokens)
+            tokens: parseTokens(config.tokens),
+            // P56 / ADR 0006 §4: opt-in backend→frontend error forwarding.
+            // Absent/false = OFF (secure default). minSeverity gates which errors
+            // are forwarded; absent falls back to "error" at the read site.
+            forwardErrorsToClient: config.forwardErrorsToClient === true || config.forwardErrorsToClient === "true",
+            forwardErrorMinSeverity: blankToUndefined(config.forwardErrorMinSeverity)
         }),
         options: {
             inputHandler: passThroughInputHandler
@@ -2366,21 +2552,44 @@ const runtimeNodeRegistry = {
                     return;
                 }
 
+                // P15: clientId routing — per-client state when clientId is present
+                const clientId = msg && msg.ui && msg.ui.clientId ? String(msg.ui.clientId) : undefined;
+
                 if (!activeAppId) {
+                    reportRuntimeError(node, {
+                        severity: "error",
+                        code: "server.store.no-active-app",
+                        message: "No active ui-app is registered for ui-store updates.",
+                        context: { nodeId: node.id, op: "storeUpdate" },
+                        clientId
+                    });
                     if (done) {
                         done(new Error("No active ui-app is registered for ui-store updates."));
                     }
                     return;
                 }
 
-                // P15: clientId routing — per-client state when clientId is present
-                const clientId = msg && msg.ui && msg.ui.clientId ? String(msg.ui.clientId) : undefined;
-
                 const baseState = clientId
                     ? (getClientState(activeAppId, clientId)?.state || clone(runtimeState.liveState.get(activeAppId) || initializeState([storeDefinition], [], activeAppId)))
                     : clone(runtimeState.liveState.get(activeAppId) || initializeState([storeDefinition], [], activeAppId));
 
-                const applied = applyStoreOperation(baseState, storeDefinition, operation);
+                let applied;
+                try {
+                    applied = applyStoreOperation(baseState, storeDefinition, operation);
+                }
+                catch (error) {
+                    reportRuntimeError(node, {
+                        severity: "error",
+                        code: "server.store.operation-failed",
+                        message: `ui-store operation failed: ${error instanceof Error ? error.message : String(error)}`,
+                        context: { appId: activeAppId, nodeId: node.id, op: `store:${operation && operation.op ? operation.op : "?"}` },
+                        clientId
+                    });
+                    if (done) {
+                        done(error instanceof Error ? error : new Error(String(error)));
+                    }
+                    return;
+                }
                 const now = Date.now();
 
                 if (clientId) {
@@ -2853,7 +3062,13 @@ registerWebappNodes.__test__ = {
     pushSnapshotToClients,
     pushActionCommandToClients,
     buildActionCommand,
-    writeStreamEvent
+    writeStreamEvent,
+    // P56: structured runtime logging + opt-in error forwarding (ADR 0006)
+    pushErrorToClients,
+    reportRuntimeError,
+    resolveAppForwardConfig,
+    redactErrorMessage,
+    makeStructuredError
 };
 
 registerWebappNodes.registerNodeType = registerNodeType;

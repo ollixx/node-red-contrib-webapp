@@ -30,6 +30,17 @@ Aktuelles Verhalten:
 **Optionale Felder:**
 - `name`: Node-RED-Anzeigefeld. Wird bei der Darstellung des Knotens und in Auswahlfeldern angezeigt.
   - Default: `"App N"` (fortlaufende Nummer aller ui-app-Knoten, startend bei 1)
+- `forwardErrorsToClient` (Checkbox): leitet Framework-Fehler des Backends an
+  verbundene Clients weiter (SSE-`error`-Event), wo sie geloggt werden (P55).
+  - Default: **aus** (Sicherheit — siehe [ADR 0006](../../adr/0006-error-handling-and-logging.md) §4).
+    Anonyme `httpNode`-Besucher erhalten ohne dieses Opt-in keine Server-Interna.
+- `forwardErrorMinSeverity` (Auswahl `debug` | `info` | `warn` | `error`): nur
+  Fehler ab dieser Stufe werden weitergeleitet. Nur sichtbar/aktiv, wenn
+  `forwardErrorsToClient` an ist.
+  - Default: `error`.
+  - Die weitergeleitete `message` wird **redigiert** (Dateipfade/Stacktraces
+    entfernt); nur `code` + Framework-IDs (`appId`/`nodeId`/`op`) reisen mit.
+  - Siehe [errors.md](../concepts/errors.md) für das Fehler-/Log-Modell.
 
 ## Input
 
