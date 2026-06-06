@@ -158,41 +158,55 @@ export function mapComponentToShoelace(
  * Bridge the webapp design-token CSS custom properties (`--wa-*`) onto the
  * Shoelace custom properties (`--sl-*`) that its components consume natively.
  *
- * No per-token *translation* happens here — the `--wa-*` values produced by
- * `buildDesignTokenCss` are simply aliased to the Shoelace property names via
- * `var()`. A theme is therefore "tokens + adapter", with the adapter choosing
- * how the tokens reach the components.
+ * Each entry is `[slVar, waVar, shoelaceDefault]`: the Shoelace property is set
+ * to `var(--wa-*, <literal Shoelace default>)`. When the `--wa-*` token is set
+ * it wins; when it is unset the bridge restores the *literal* Shoelace default
+ * value — it must NOT fall back to `var(--sl-*)` (its own property), as that
+ * self-reference forms a CSS dependency cycle that renders the property
+ * guaranteed-invalid (P62: this collapsed sl-button's label padding to 0).
+ *
+ * The literal defaults below are copied verbatim from the Shoelace 2.20.1 light
+ * theme (`themes/light.css`). Color defaults that themselves reference a palette
+ * scale (e.g. `var(--sl-color-sky-600)`) are safe: they point at a *different*
+ * property, not the one being defined, so no cycle is created.
+ *
+ * `--sl-spacing-medium` is intentionally NOT bridged: `--wa-spacing-unit` is a
+ * base unit (0.25rem) whereas `--sl-spacing-medium` is an absolute medium value
+ * (1rem); aliasing them is semantically wrong. Shoelace keeps its own spacing
+ * scale.
  */
-const WA_TO_SHOELACE_VARS: Array<[string, string]> = [
-    ["--sl-color-primary-600", "--wa-color-primary"],
-    ["--sl-color-primary-500", "--wa-color-primary"],
-    ["--sl-color-danger-600", "--wa-color-danger"],
-    ["--sl-color-success-600", "--wa-color-success"],
-    ["--sl-color-warning-600", "--wa-color-warning"],
-    ["--sl-color-neutral-600", "--wa-color-neutral"],
-    ["--sl-color-neutral-0", "--wa-color-background"],
-    ["--sl-panel-background-color", "--wa-color-surface"],
-    ["--sl-panel-border-color", "--wa-color-border"],
-    ["--sl-color-neutral-1000", "--wa-color-text"],
-    ["--sl-font-sans", "--wa-font-family"],
-    ["--sl-font-size-medium", "--wa-font-size-base"],
-    ["--sl-font-weight-normal", "--wa-font-weight-normal"],
-    ["--sl-font-weight-bold", "--wa-font-weight-bold"],
-    ["--sl-line-height-normal", "--wa-line-height-base"],
-    ["--sl-spacing-medium", "--wa-spacing-unit"],
-    ["--sl-border-radius-small", "--wa-radius-sm"],
-    ["--sl-border-radius-medium", "--wa-radius-md"],
-    ["--sl-border-radius-large", "--wa-radius-lg"],
-    ["--sl-border-radius-circle", "--wa-radius-full"]
+const WA_TO_SHOELACE_VARS: Array<[string, string, string]> = [
+    ["--sl-color-primary-600", "--wa-color-primary", "var(--sl-color-sky-600)"],
+    ["--sl-color-primary-500", "--wa-color-primary", "var(--sl-color-sky-500)"],
+    ["--sl-color-danger-600", "--wa-color-danger", "var(--sl-color-red-600)"],
+    ["--sl-color-success-600", "--wa-color-success", "var(--sl-color-green-600)"],
+    ["--sl-color-warning-600", "--wa-color-warning", "var(--sl-color-amber-600)"],
+    ["--sl-color-neutral-600", "--wa-color-neutral", "var(--sl-color-gray-600)"],
+    ["--sl-color-neutral-0", "--wa-color-background", "hsl(0, 0%, 100%)"],
+    ["--sl-panel-background-color", "--wa-color-surface", "var(--sl-color-neutral-0)"],
+    ["--sl-panel-border-color", "--wa-color-border", "var(--sl-color-neutral-200)"],
+    ["--sl-color-neutral-1000", "--wa-color-text", "hsl(0, 0%, 0%)"],
+    ["--sl-font-sans", "--wa-font-family", "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\""],
+    ["--sl-font-size-medium", "--wa-font-size-base", "1rem"],
+    ["--sl-font-weight-normal", "--wa-font-weight-normal", "400"],
+    ["--sl-font-weight-bold", "--wa-font-weight-bold", "700"],
+    ["--sl-line-height-normal", "--wa-line-height-base", "1.8"],
+    ["--sl-border-radius-small", "--wa-radius-sm", "0.1875rem"],
+    ["--sl-border-radius-medium", "--wa-radius-md", "0.25rem"],
+    ["--sl-border-radius-large", "--wa-radius-lg", "0.5rem"],
+    ["--sl-border-radius-circle", "--wa-radius-full", "50%"]
 ];
 
 /**
  * Produce a `:root { … }` CSS block that aliases Shoelace's custom properties
- * to the webapp tokens. Each `--sl-*` falls back to its own default when the
- * matching `--wa-*` token is unset, so partial token sets are safe.
+ * to the webapp tokens. Each `--sl-*` falls back to its *literal* Shoelace
+ * default (never to `var(--sl-*)` itself) when the matching `--wa-*` token is
+ * unset, so partial token sets are safe and never trigger a self-reference cycle.
  */
 export function buildShoelaceTokenBridgeCss(): string {
-    const declarations = WA_TO_SHOELACE_VARS.map(([slVar, waVar]) => `  ${slVar}: var(${waVar}, var(${slVar}));`);
+    const declarations = WA_TO_SHOELACE_VARS.map(
+        ([slVar, waVar, slDefault]) => `  ${slVar}: var(${waVar}, ${slDefault});`
+    );
     return `:root {\n${declarations.join("\n")}\n}`;
 }
 

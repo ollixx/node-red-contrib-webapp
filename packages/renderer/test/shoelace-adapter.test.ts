@@ -45,13 +45,48 @@ describe("P23 Shoelace adapter", () => {
         expect(descriptor.attributes["data-wa-fallback"]).toBe("true");
     });
 
-    it("aliases Shoelace custom properties to the --wa-* design tokens with safe fallbacks", () => {
+    it("aliases Shoelace custom properties to the --wa-* design tokens with literal fallbacks", () => {
         const css = buildShoelaceTokenBridgeCss();
 
-        // colorPrimary token reaches Shoelace's primary color property.
-        expect(css).toContain("--sl-color-primary-600: var(--wa-color-primary, var(--sl-color-primary-600));");
+        // colorPrimary token reaches Shoelace's primary color property; when the
+        // --wa-* token is unset the fallback is the *literal* Shoelace default
+        // (the palette ref), never the property itself.
+        expect(css).toContain("--sl-color-primary-600: var(--wa-color-primary, var(--sl-color-sky-600));");
         // The bridge is a :root block consumed natively by the components.
         expect(css.startsWith(":root {")).toBe(true);
+    });
+
+    it("P62 regression: no bridged token falls back to its own --sl-* property (no self-reference cycle)", () => {
+        const css = buildShoelaceTokenBridgeCss();
+
+        // Each declaration looks like:  --sl-X: var(--wa-Y, <literal default>);
+        // A self-reference (`var(--wa-Y, var(--sl-X))`) creates a CSS dependency
+        // cycle that makes --sl-X guaranteed-invalid when --wa-Y is unset — which
+        // collapsed sl-button's label padding to 0. Assert it never recurs.
+        const declRe = /^\s*(--sl-[\w-]+):\s*(.+);\s*$/;
+
+        for (const line of css.split("\n")) {
+            const match = declRe.exec(line);
+
+            if (!match) {
+                continue;
+            }
+
+            const [, slVar, value] = match;
+
+            expect(
+                value.includes(`var(${slVar})`),
+                `bridge declaration for ${slVar} must not reference itself in its fallback: "${value}"`
+            ).toBe(false);
+        }
+    });
+
+    it("P62 regression: --sl-spacing-medium is no longer bridged (Shoelace keeps its own spacing scale)", () => {
+        const css = buildShoelaceTokenBridgeCss();
+
+        expect(css).not.toContain("--sl-spacing-medium");
+        // The semantically-wrong source token must not appear either.
+        expect(css).not.toContain("--wa-spacing-unit");
     });
 
     it("keeps the adapter's accepted variant vocabulary semantic — no framework token as input (audit guard)", () => {
