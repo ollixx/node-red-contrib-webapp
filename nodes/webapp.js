@@ -1133,6 +1133,7 @@ function buildAppSnapshot(appId, location, dialogId, definitions, clientId) {
         model,
         routeMatch,
         layout,
+        appLayout: buckets.app ? buckets.app.layout : undefined,
         tokens: parseTokens(buckets.app && buckets.app.tokens),
         snapshot: rendererApp.render()
     };
@@ -1149,7 +1150,7 @@ function renderAppPage(appId, location, dialogId, definitions) {
         };
     }
 
-    const { model, routeMatch, snapshot, tokens } = built;
+    const { model, routeMatch, snapshot, tokens, appLayout } = built;
     // P23: design tokens → CSS custom properties (consumed natively by the Web
     // Components) plus the --wa-* → --sl-* bridge so Shoelace is themed without
     // per-token translation. Unset tokens fall back to the defaults below.
@@ -1175,7 +1176,11 @@ function renderAppPage(appId, location, dialogId, definitions) {
             );
         })
         .join("");
-    const isAppLayout = snapshot.layout.id === "app";
+    // The app-bar is a GLOBAL chrome element — it follows the ui-app node's
+    // layout field, not the current route's layoutId. This means the app-bar
+    // persists across all routes in the same app, regardless of their individual
+    // layout presets.
+    const isAppLayout = appLayout === "app";
     const pageBody = renderLayoutHtml(snapshot.layout.id, snapshot.regions, serializerContext);
 
     // P36: for the `app` layout preset, prepend a branded top app bar showing

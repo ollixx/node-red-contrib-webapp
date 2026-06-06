@@ -133,18 +133,21 @@ const examples = [];
         path: "examples/structure/ui-app.json",
         nodes: [
             tab(T, "ui-app example"),
-            // The ui-app node is the root. layout:"app" renders a top bar.
-            // tokens override design tokens (CSS custom properties).
+            // layout:"app" on the ui-app node renders a coloured top bar on ALL
+            // routes of this app, regardless of the individual route's layoutId.
+            // tokens override the CSS custom properties used by the top bar.
             uiApp(A, T, {
                 name: "My App",
                 layout: "app",
                 tokens: JSON.stringify({ colorPrimary: "#2563eb" })
             }),
+            // The route's layoutId controls how content is arranged inside the
+            // content area — it does NOT affect the global app-bar.
             uiRoute(R, "/", A, T, { layoutId: "vertical" }),
             // Simple content so there is something to see when the app loads
             viewNode("ui-text", "appInfo", A, R, T, {
                 name: "app info",
-                text: "Open /webapp/myApp/ in your browser. The top bar colour comes from the tokens field."
+                text: "Open /webapp/myApp/ in your browser. The top bar colour comes from the tokens field on the ui-app node."
             })
         ]
     });

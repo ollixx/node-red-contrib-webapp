@@ -49,6 +49,6 @@
     "wires": [
       []
     ],
-    "text": "Open /webapp/myApp/ in your browser. The top bar colour comes from the tokens field."
+    "text": "Open /webapp/myApp/ in your browser. The top bar colour comes from the tokens field on the ui-app node."
   }
 ]

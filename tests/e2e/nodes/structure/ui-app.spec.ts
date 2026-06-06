@@ -14,6 +14,7 @@ import { WebappPage } from "../../../helpers/webapp-page";
  *   - Missing root → no app registered, /webapp/:id returns 404.
  *   - layout "app" → app-bar + slot chrome renders.
  *   - layout "plain" → no app-bar rendered.
+ *   - app-bar persists when navigating to a route with a non-"app" layoutId.
  */
 
 test.describe("ui-app (P42)", () => {
@@ -106,5 +107,25 @@ test.describe("ui-app (P42)", () => {
         await expect(page.locator(".webapp-app-bar")).not.toBeVisible();
         // The content root must still render.
         await expect(webapp.root()).toBeVisible();
+    });
+
+    test("app-bar persists on routes with non-'app' layoutId", async ({ page, request }) => {
+        // The app-bar is driven by the ui-app node's layout field, NOT by the
+        // individual route's layoutId. This means navigating to a route that
+        // uses layoutId: "vertical" must still show the app-bar when the app
+        // itself has layout: "app".
+        const flow = new FlowBuilder()
+            .app({ id: "appBarPersist", root: "appBarPersist", name: "Persistent Bar", layout: "app" })
+            .route({ id: "appBarPersistHome", path: "/", layoutId: "vertical" })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "appBarPersist");
+        await webapp.navigate("/");
+
+        // App-bar must be visible even though the route uses layoutId "vertical".
+        await expect(page.locator(".webapp-app-bar")).toBeVisible();
+        await expect(page.locator(".webapp-app-bar-title")).toHaveText("Persistent Bar");
     });
 });
