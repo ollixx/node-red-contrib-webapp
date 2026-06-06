@@ -21,21 +21,6 @@
     ]
   },
   {
-    "id": "routeHome",
-    "type": "ui-route",
-    "name": "routeHome",
-    "uiId": "routeHome",
-    "path": "/",
-    "parent": "routeApp",
-    "layoutId": "vertical",
-    "z": "ex-ui-route",
-    "x": 120,
-    "y": 180,
-    "wires": [
-      []
-    ]
-  },
-  {
     "id": "routeDetail",
     "type": "ui-route",
     "name": "routeDetail",
@@ -56,7 +41,7 @@
     "name": "home text",
     "uiId": "homeText",
     "parent": "routeApp",
-    "mount": "routeHome.content",
+    "mount": "routeApp.content",
     "z": "ex-ui-route",
     "x": 480,
     "y": 280,
@@ -86,7 +71,7 @@
     "name": "go to detail",
     "uiId": "goDetailBtn",
     "parent": "routeApp",
-    "mount": "routeHome.content",
+    "mount": "routeApp.content",
     "z": "ex-ui-route",
     "x": 480,
     "y": 360,

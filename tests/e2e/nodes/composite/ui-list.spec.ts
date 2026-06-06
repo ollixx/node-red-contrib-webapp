@@ -20,7 +20,6 @@ test.describe("ui-list (P45)", () => {
     test("items render as <ul class='webapp-list'> with <li> elements", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "lstApp1", root: "lstApp1" })
-            .route({ id: "lstRoute1", path: "/" })
             .node("ui-list", {
                 id: "lstNode1",
                 items: JSON.stringify([
@@ -45,7 +44,6 @@ test.describe("ui-list (P45)", () => {
     test("itemClick event: click → POST /event with event='itemClick' and params.value", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "lstApp2", root: "lstApp2" })
-            .route({ id: "lstRoute2", path: "/" })
             .node("ui-list", {
                 id: "lstNode2",
                 items: JSON.stringify([
@@ -81,7 +79,6 @@ test.describe("ui-list (P45)", () => {
     test("empty items renders <ul> without crashing", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "lstApp3", root: "lstApp3" })
-            .route({ id: "lstRoute3", path: "/" })
             .node("ui-list", { id: "lstNode3", items: JSON.stringify([]) })
             .build();
 

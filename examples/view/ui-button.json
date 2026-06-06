@@ -21,27 +21,12 @@
     ]
   },
   {
-    "id": "btnRoute",
-    "type": "ui-route",
-    "name": "btnRoute",
-    "uiId": "btnRoute",
-    "path": "/",
-    "parent": "btnApp",
-    "layoutId": "vertical",
-    "z": "ex-ui-button",
-    "x": 120,
-    "y": 180,
-    "wires": [
-      []
-    ]
-  },
-  {
     "id": "btnNode",
     "type": "ui-button",
     "name": "primary button",
     "uiId": "btnNode",
     "parent": "btnApp",
-    "mount": "btnRoute.content",
+    "mount": "btnApp.content",
     "z": "ex-ui-button",
     "x": 480,
     "y": 280,
@@ -59,7 +44,7 @@
     "name": "danger button",
     "uiId": "btnDanger",
     "parent": "btnApp",
-    "mount": "btnRoute.content",
+    "mount": "btnApp.content",
     "z": "ex-ui-button",
     "x": 480,
     "y": 360,
@@ -75,7 +60,7 @@
     "name": "disabled button",
     "uiId": "btnDisabled",
     "parent": "btnApp",
-    "mount": "btnRoute.content",
+    "mount": "btnApp.content",
     "z": "ex-ui-button",
     "x": 480,
     "y": 440,

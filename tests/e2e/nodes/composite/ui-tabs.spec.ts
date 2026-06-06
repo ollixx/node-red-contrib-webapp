@@ -26,7 +26,6 @@ test.describe("ui-tabs (P45)", () => {
 
         const flow = new FlowBuilder()
             .app({ id: "tabApp1", root: "tabApp1" })
-            .route({ id: "tabRoute1", path: "/" })
             .node("ui-tabs", { id: "tabNode1", tabs })
             .build();
 
@@ -48,7 +47,6 @@ test.describe("ui-tabs (P45)", () => {
 
         const flow = new FlowBuilder()
             .app({ id: "tabApp2", root: "tabApp2" })
-            .route({ id: "tabRoute2", path: "/" })
             .node("ui-tabs", { id: "tabNode2", tabs })
             .build();
 
@@ -69,7 +67,6 @@ test.describe("ui-tabs (P45)", () => {
 
         const flow = new FlowBuilder()
             .app({ id: "tabApp3", root: "tabApp3" })
-            .route({ id: "tabRoute3", path: "/" })
             .node("ui-tabs", {
                 id: "tabNode3",
                 tabs,

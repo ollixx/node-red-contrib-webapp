@@ -29,8 +29,9 @@ const Z = FLOW_TAB_ID;
 // vertical/horizontal/app layouts use none.
 
 const mountTargetLayouts = {
-    // Routes with their layout presets
-    "routeHome": "vertical",
+    // Routes with their layout presets. P48: home content mounts to the app's
+    // implicit root route (customersApp), which uses the "app" layout preset.
+    "customersApp": "app",
     "customers": "vertical",
     "customerDetail": "vertical",
     "customerEditor": "vertical"
@@ -162,14 +163,9 @@ const flowNodes = [
             colorPrimaryFg: "rgb(255, 255, 255)"
         }
     }),
-    node("ui-route", "routeHome", "structure", 1, {
-        name:     "Home",
-        uiId:     "routeHome",      // required: semantic ID
-        parent:   APP,
-        path:     "/",
-        title:    "Home",
-        layoutId: "app"
-    }),
+    // P48: the ui-app is the implicit root route ("/"). Home content mounts
+    // directly into the app's content slot (customersApp.content) — there is no
+    // ui-route with path "/" (that path is reserved for the app root).
     node("ui-route", "customers", "structure", 2, {
         name:    "Customers",
         uiId:    "customers",
@@ -328,7 +324,7 @@ const flowNodes = [
         name:    "Page title",
         uiId:    "pageTitle",              // required
         parent:  APP,
-        mount:   "routeHome.content",      // home route heading
+        mount:   "customersApp.content",      // home route heading
         order:   -1,
         text:    "Customers CRM",          // required (editor field for literal text)
         value:   { kind: "literal", value: "Customers CRM" },
@@ -338,7 +334,7 @@ const flowNodes = [
         name:    "Welcome heading",
         uiId:    "homeWelcomeHeading",
         parent:  APP,
-        mount:   "routeHome.content",
+        mount:   "customersApp.content",
         order:   0,
         text:    "Welcome to Customers CRM",
         value:   { kind: "literal", value: "Welcome to Customers CRM" },
@@ -348,7 +344,7 @@ const flowNodes = [
         name:    "Welcome body",
         uiId:    "homeWelcomeBody",
         parent:  APP,
-        mount:   "routeHome.content",
+        mount:   "customersApp.content",
         order:   1,
         text:    "Manage your customer relationships in one place.",
         value:   { kind: "literal", value: "Manage your customer relationships in one place." }
@@ -357,7 +353,7 @@ const flowNodes = [
         name:   "Go to customers",
         uiId:   "homeGoToCustomersButton",
         parent: APP,
-        mount:   "routeHome.content",
+        mount:   "customersApp.content",
         order:  2,
         label:  "Go to customers",
         action: "goToCustomers"
@@ -366,7 +362,7 @@ const flowNodes = [
         name:     "Home tip",
         uiId:     "homeTipAlert",
         parent:   APP,
-        mount:    "routeHome.content",
+        mount:    "customersApp.content",
         order:    3,
         // Pass message as a binding object so mapConfig's getBinding resolves it correctly
         message:  { kind: "literal", value: "Use the Customers section to create, view and edit customer records." },
@@ -772,11 +768,20 @@ const examplePath = resolve(rootDir, "examples/customers-crud/flow.json");
 writeFileSync(examplePath, json + "\n", "utf8");
 console.log(`Wrote ${flow.length} nodes to ${examplePath}`);
 
+// The dev workspace flows.json is the owner's personal environment and is
+// off-limits to agents (AGENTS.md rule 5). The copy is therefore OPT-IN: only
+// when WEBAPP_GEN_DEV=1 is set will the example be copied into .node-red-dev.
+// This lets `pnpm gen:example` regenerate the example flow without ever
+// clobbering the dev environment by default.
 const devDir = resolve(rootDir, ".node-red-dev");
-if (existsSync(devDir)) {
-    const devFlowsPath = resolve(devDir, "flows.json");
-    writeFileSync(devFlowsPath, json + "\n", "utf8");
-    console.log(`Copied to ${devFlowsPath}`);
+if (process.env.WEBAPP_GEN_DEV === "1") {
+    if (existsSync(devDir)) {
+        const devFlowsPath = resolve(devDir, "flows.json");
+        writeFileSync(devFlowsPath, json + "\n", "utf8");
+        console.log(`Copied to ${devFlowsPath}`);
+    } else {
+        console.log(`Skipped .node-red-dev/flows.json (directory does not exist)`);
+    }
 } else {
-    console.log(`Skipped .node-red-dev/flows.json (directory does not exist)`);
+    console.log("Skipped .node-red-dev/flows.json (set WEBAPP_GEN_DEV=1 to copy)");
 }

@@ -20,7 +20,6 @@ test.describe("ui-button events (P44)", () => {
     test("click on sl-button → POST /event with event='click'", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "btnEvtApp1", root: "btnEvtApp1" })
-            .route({ id: "btnEvtRoute1", path: "/" })
             .node("ui-button", { id: "btnEvtNode1", label: "Submit" })
             .build();
 

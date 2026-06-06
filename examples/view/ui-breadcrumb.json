@@ -21,27 +21,12 @@
     ]
   },
   {
-    "id": "breadRoute",
-    "type": "ui-route",
-    "name": "breadRoute",
-    "uiId": "breadRoute",
-    "path": "/",
-    "parent": "breadApp",
-    "layoutId": "vertical",
-    "z": "ex-ui-breadcrumb",
-    "x": 120,
-    "y": 180,
-    "wires": [
-      []
-    ]
-  },
-  {
     "id": "breadNode",
     "type": "ui-breadcrumb",
     "name": "breadcrumb",
     "uiId": "breadNode",
     "parent": "breadApp",
-    "mount": "breadRoute.content",
+    "mount": "breadApp.content",
     "z": "ex-ui-breadcrumb",
     "x": 480,
     "y": 280,

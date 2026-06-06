@@ -23,6 +23,9 @@ Aktuelles MVP-Verhalten:
 - `parent`: Auswahl gültiger Parents, d.h. hier einer App (ui-app). Wenn es mehr als X (20?) mögliche Einträge gibt, wird stattdessen ein kleiner Dialog angezeigt, der eine scrollbare Liste von Apps zeigt und gefiltert werden kann.
 - `path`: Das URL-Element, das die Route definiert (Beispiel: /webapp/appName/<path>)
   - Validierung: innerhalb einer App (selbes Parent) muss der path eindeutig sein
+  - **`path` darf nicht leer und nicht `"/"` sein.** Der Pfad `"/"` ist für die
+    implizite Root-Route reserviert (siehe Besonderheiten). Schema und Editor
+    lehnen einen `ui-route`-Knoten mit `path: "/"` ab.
 - `layout`: Layout-Preset
   - Default: `vertical` (Kinder werden untereinander dargestellt)
   - Presets: `vertical`, `horizontal`, `app`, `grid`, `absolute`
@@ -52,7 +55,7 @@ Konfigurierbare Events — im Editor per Checkbox aktivierbar. Pro aktivem Event
 
 ## Besonderheiten
 
-- `ui-app` ist gleichzeitig die implizite Route `"/"`. View-Knoten können direkt in die Slots der App gehängt werden — `ui-route` ist nur nötig wenn es mehr als eine Seite gibt. `ui-app` sollte deshalb alles unterstützen, was `ui-route` bietet. Hier sollte gemeinsamer Code genutzt werden.
+- **Die Root-Route `"/"` gehört dem `ui-app`-Knoten.** `ui-app` ist gleichzeitig die implizite Route `"/"`. Inhalte für die Startseite werden direkt in die Slots des `ui-app`-Layouts eingehängt (z.B. `appId.content`, beim `app`-Preset auch `appId.header` / `appId.navbar` / `appId.footer`). Ein `ui-route`-Knoten mit `path: "/"` würde mit dieser impliziten Route kollidieren und ist deshalb verboten — `ui-route` wird nur für Unterseiten verwendet (`/customers`, `/customers/:id`). `ui-app` unterstützt damit alles, was `ui-route` für die Startseite bietet; hier wird gemeinsamer Code genutzt.
 
 Siehe für das mehrfach genutzte Layout-Konzept auch [layout.md](../concepts/layout.md).
 

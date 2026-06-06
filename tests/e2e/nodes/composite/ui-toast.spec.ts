@@ -22,7 +22,6 @@ test.describe("ui-toast (P45)", () => {
     test("not visible by default — no toast in DOM on page load", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "toastApp1", root: "toastApp1" })
-            .route({ id: "toastRoute1", path: "/" })
             // ui-toast has no mount — it does not render into the layout.
             .node("ui-toast", {
                 id: "toastNode1",
@@ -43,7 +42,6 @@ test.describe("ui-toast (P45)", () => {
     test("input port message → sl-alert.webapp-toast appears in DOM via SSE", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "toastApp2", root: "toastApp2" })
-            .route({ id: "toastRoute2", path: "/" })
             .node("ui-toast", {
                 id: "toastNode2",
                 severity: "success",
@@ -69,7 +67,6 @@ test.describe("ui-toast (P45)", () => {
     test("toast carries the severity from the node definition", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "toastApp3", root: "toastApp3" })
-            .route({ id: "toastRoute3", path: "/" })
             .node("ui-toast", {
                 id: "toastNode3",
                 severity: "warning",

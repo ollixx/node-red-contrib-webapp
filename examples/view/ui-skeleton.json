@@ -21,27 +21,12 @@
     ]
   },
   {
-    "id": "skelRoute",
-    "type": "ui-route",
-    "name": "skelRoute",
-    "uiId": "skelRoute",
-    "path": "/",
-    "parent": "skelApp",
-    "layoutId": "vertical",
-    "z": "ex-ui-skeleton",
-    "x": 120,
-    "y": 180,
-    "wires": [
-      []
-    ]
-  },
-  {
     "id": "skelText",
     "type": "ui-skeleton",
     "name": "text skeleton",
     "uiId": "skelText",
     "parent": "skelApp",
-    "mount": "skelRoute.content",
+    "mount": "skelApp.content",
     "z": "ex-ui-skeleton",
     "x": 480,
     "y": 280,
@@ -56,7 +41,7 @@
     "name": "circle skeleton",
     "uiId": "skelCircle",
     "parent": "skelApp",
-    "mount": "skelRoute.content",
+    "mount": "skelApp.content",
     "z": "ex-ui-skeleton",
     "x": 480,
     "y": 360,
@@ -72,7 +57,7 @@
     "name": "rect skeleton",
     "uiId": "skelRect",
     "parent": "skelApp",
-    "mount": "skelRoute.content",
+    "mount": "skelApp.content",
     "z": "ex-ui-skeleton",
     "x": 480,
     "y": 440,

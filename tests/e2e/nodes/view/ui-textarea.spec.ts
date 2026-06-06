@@ -23,7 +23,6 @@ test.describe("ui-textarea (P44)", () => {
     test("renders sl-textarea with label attribute", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "taApp1", root: "taApp1" })
-            .route({ id: "taRoute1", path: "/" })
             .node("ui-textarea", { id: "taNode1", label: "Notes" })
             .build();
 
@@ -38,7 +37,6 @@ test.describe("ui-textarea (P44)", () => {
     test("disabled renders sl-textarea[disabled]", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "taApp2", root: "taApp2" })
-            .route({ id: "taRoute2", path: "/" })
             .node("ui-textarea", {
                 id: "taNode2",
                 label: "Read-only notes",
@@ -58,7 +56,6 @@ test.describe("ui-textarea (P44)", () => {
     test("sl-change → POST /event with { event:'change', params:{ value: string } }", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "taApp3", root: "taApp3" })
-            .route({ id: "taRoute3", path: "/" })
             .node("ui-textarea", { id: "taNode3", label: "Description" })
             .build();
 
@@ -87,7 +84,6 @@ test.describe("ui-textarea (P44)", () => {
     test("inject 'Updated notes' → sl-textarea value updates after navigate", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "taApp4", root: "taApp4" })
-            .route({ id: "taRoute4", path: "/" })
             .node("ui-textarea", { id: "taNode4", label: "Notes" })
             .withInjectNode("taInj4", "taNode4", "Updated notes")
             .build();

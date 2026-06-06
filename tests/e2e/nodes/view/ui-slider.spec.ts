@@ -23,7 +23,6 @@ test.describe("ui-slider (P44)", () => {
     test("renders sl-range element with min, max, step", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "slApp1", root: "slApp1" })
-            .route({ id: "slRoute1", path: "/" })
             .node("ui-slider", { id: "slNode1", label: "Volume", min: 0, max: 100, step: 5 })
             .build();
 
@@ -42,7 +41,6 @@ test.describe("ui-slider (P44)", () => {
     test("sl-change → POST /event with { event:'change', params:{ value: number } }", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "slApp2", root: "slApp2" })
-            .route({ id: "slRoute2", path: "/" })
             .node("ui-slider", { id: "slNode2", min: 0, max: 100, step: 1 })
             .build();
 
@@ -74,7 +72,6 @@ test.describe("ui-slider (P44)", () => {
     test("inject 75 → sl-range value updates after navigate", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "slApp3", root: "slApp3" })
-            .route({ id: "slRoute3", path: "/" })
             .node("ui-slider", { id: "slNode3", min: 0, max: 100, step: 1 })
             .withInjectNode("slInj3", "slNode3", 75)
             .build();

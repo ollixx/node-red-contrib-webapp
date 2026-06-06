@@ -21,27 +21,12 @@
     ]
   },
   {
-    "id": "imgRoute",
-    "type": "ui-route",
-    "name": "imgRoute",
-    "uiId": "imgRoute",
-    "path": "/",
-    "parent": "imgApp",
-    "layoutId": "vertical",
-    "z": "ex-ui-image",
-    "x": 120,
-    "y": 180,
-    "wires": [
-      []
-    ]
-  },
-  {
     "id": "imgNode",
     "type": "ui-image",
     "name": "hero image",
     "uiId": "imgNode",
     "parent": "imgApp",
-    "mount": "imgRoute.content",
+    "mount": "imgApp.content",
     "z": "ex-ui-image",
     "x": 480,
     "y": 280,

@@ -21,21 +21,6 @@
     ]
   },
   {
-    "id": "progRoute",
-    "type": "ui-route",
-    "name": "progRoute",
-    "uiId": "progRoute",
-    "path": "/",
-    "parent": "progApp",
-    "layoutId": "vertical",
-    "z": "ex-ui-progress",
-    "x": 120,
-    "y": 180,
-    "wires": [
-      []
-    ]
-  },
-  {
     "id": "progStore",
     "type": "ui-store",
     "name": "progress store",
@@ -56,7 +41,7 @@
     "name": "progress bar",
     "uiId": "progBar",
     "parent": "progApp",
-    "mount": "progRoute.content",
+    "mount": "progApp.content",
     "z": "ex-ui-progress",
     "x": 480,
     "y": 280,
@@ -75,7 +60,7 @@
     "name": "fixed 75%",
     "uiId": "progBarFixed",
     "parent": "progApp",
-    "mount": "progRoute.content",
+    "mount": "progApp.content",
     "z": "ex-ui-progress",
     "x": 480,
     "y": 360,

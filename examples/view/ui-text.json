@@ -21,21 +21,6 @@
     ]
   },
   {
-    "id": "textRoute",
-    "type": "ui-route",
-    "name": "textRoute",
-    "uiId": "textRoute",
-    "path": "/",
-    "parent": "textApp",
-    "layoutId": "vertical",
-    "z": "ex-ui-text",
-    "x": 120,
-    "y": 180,
-    "wires": [
-      []
-    ]
-  },
-  {
     "id": "textStore",
     "type": "ui-store",
     "name": "text store",
@@ -56,7 +41,7 @@
     "name": "static text",
     "uiId": "staticText",
     "parent": "textApp",
-    "mount": "textRoute.content",
+    "mount": "textApp.content",
     "z": "ex-ui-text",
     "x": 480,
     "y": 280,
@@ -71,7 +56,7 @@
     "name": "store-bound text",
     "uiId": "textNode",
     "parent": "textApp",
-    "mount": "textRoute.content",
+    "mount": "textApp.content",
     "z": "ex-ui-text",
     "x": 480,
     "y": 360,

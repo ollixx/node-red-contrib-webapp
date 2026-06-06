@@ -24,7 +24,6 @@ test.describe("ui-switch (P44)", () => {
     test("renders sl-switch element with label", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "swApp1", root: "swApp1" })
-            .route({ id: "swRoute1", path: "/" })
             .node("ui-switch", { id: "swNode1", label: "Dark mode" })
             .build();
 
@@ -39,7 +38,6 @@ test.describe("ui-switch (P44)", () => {
     test("disabled renders sl-switch[disabled]", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "swApp2", root: "swApp2" })
-            .route({ id: "swRoute2", path: "/" })
             .node("ui-switch", {
                 id: "swNode2",
                 label: "Locked",
@@ -59,7 +57,6 @@ test.describe("ui-switch (P44)", () => {
     test("sl-change → POST /event with { event:'change', params:{ checked: bool } }", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "swApp3", root: "swApp3" })
-            .route({ id: "swRoute3", path: "/" })
             .node("ui-switch", { id: "swNode3", label: "Enable" })
             .build();
 
@@ -88,7 +85,6 @@ test.describe("ui-switch (P44)", () => {
     test("inject true → sl-switch renders checked after navigate", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "swApp4", root: "swApp4" })
-            .route({ id: "swRoute4", path: "/" })
             .node("ui-switch", { id: "swNode4", label: "Active" })
             .withInjectNode("swInj4", "swNode4", true)
             .build();

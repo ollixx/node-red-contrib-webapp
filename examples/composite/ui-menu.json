@@ -21,27 +21,12 @@
     ]
   },
   {
-    "id": "menuRoute",
-    "type": "ui-route",
-    "name": "menuRoute",
-    "uiId": "menuRoute",
-    "path": "/",
-    "parent": "menuApp",
-    "layoutId": "vertical",
-    "z": "ex-ui-menu",
-    "x": 120,
-    "y": 180,
-    "wires": [
-      []
-    ]
-  },
-  {
     "id": "menuNode",
     "type": "ui-menu",
     "name": "side menu",
     "uiId": "menuNode",
     "parent": "menuApp",
-    "mount": "menuRoute.content",
+    "mount": "menuApp.content",
     "z": "ex-ui-menu",
     "x": 480,
     "y": 280,

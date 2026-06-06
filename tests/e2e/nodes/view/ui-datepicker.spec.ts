@@ -25,7 +25,6 @@ test.describe("ui-datepicker (P44)", () => {
     test("renders sl-input[type=date] with label", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "dpApp1", root: "dpApp1" })
-            .route({ id: "dpRoute1", path: "/" })
             .node("ui-datepicker", { id: "dpNode1", label: "Birthday" })
             .build();
 
@@ -40,7 +39,6 @@ test.describe("ui-datepicker (P44)", () => {
     test("disabled renders sl-input[type=date][disabled]", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "dpApp2", root: "dpApp2" })
-            .route({ id: "dpRoute2", path: "/" })
             .node("ui-datepicker", {
                 id: "dpNode2",
                 label: "Locked date",
@@ -60,7 +58,6 @@ test.describe("ui-datepicker (P44)", () => {
     test("sl-change → POST /event with { event:'change', params:{ value: string } }", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "dpApp3", root: "dpApp3" })
-            .route({ id: "dpRoute3", path: "/" })
             .node("ui-datepicker", { id: "dpNode3", label: "Date" })
             .build();
 
@@ -89,7 +86,6 @@ test.describe("ui-datepicker (P44)", () => {
     test("inject '2025-12-31' → sl-input[type=date] value updates after navigate", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "dpApp4", root: "dpApp4" })
-            .route({ id: "dpRoute4", path: "/" })
             .node("ui-datepicker", { id: "dpNode4", label: "Due date" })
             .withInjectNode("dpInj4", "dpNode4", "2025-12-31")
             .build();

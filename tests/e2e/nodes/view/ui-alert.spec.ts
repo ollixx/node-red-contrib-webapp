@@ -25,7 +25,6 @@ test.describe("ui-alert (P43)", () => {
     test("renders sl-alert element", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "alertApp1", root: "alertApp1" })
-            .route({ id: "alertRoute1", path: "/" })
             .node("ui-alert", { id: "alertNode1", message: { kind: "literal", value: "Something happened" } })
             .build();
 
@@ -39,7 +38,6 @@ test.describe("ui-alert (P43)", () => {
     test("severity 'warning' — sl-alert variant=warning", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "alertApp2", root: "alertApp2" })
-            .route({ id: "alertRoute2", path: "/" })
             .node("ui-alert", {
                 id: "alertNode2",
                 message: { kind: "literal", value: "Watch out" },
@@ -58,7 +56,6 @@ test.describe("ui-alert (P43)", () => {
     test("severity 'error' — sl-alert variant=danger", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "alertApp3", root: "alertApp3" })
-            .route({ id: "alertRoute3", path: "/" })
             .node("ui-alert", {
                 id: "alertNode3",
                 message: { kind: "literal", value: "Error occurred" },
@@ -77,7 +74,6 @@ test.describe("ui-alert (P43)", () => {
     test("message binding renders as alert content", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "alertApp4", root: "alertApp4" })
-            .route({ id: "alertRoute4", path: "/" })
             .node("ui-alert", {
                 id: "alertNode4",
                 message: { kind: "literal", value: "Alert message text" }

@@ -22,7 +22,6 @@ test.describe("ui-pagination (P45)", () => {
     test("prev and next buttons render inside .webapp-pagination", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "pgApp1", root: "pgApp1" })
-            .route({ id: "pgRoute1", path: "/" })
             .node("ui-pagination", {
                 id: "pgNode1",
                 page: { kind: "literal", value: 2 },
@@ -43,7 +42,6 @@ test.describe("ui-pagination (P45)", () => {
     test("current page label shows page / totalPages", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "pgApp2", root: "pgApp2" })
-            .route({ id: "pgRoute2", path: "/" })
             .node("ui-pagination", {
                 id: "pgNode2",
                 page: { kind: "literal", value: 3 },
@@ -62,7 +60,6 @@ test.describe("ui-pagination (P45)", () => {
     test("next button click → POST /event with event='change' and params.page = n+1", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "pgApp3", root: "pgApp3" })
-            .route({ id: "pgRoute3", path: "/" })
             .node("ui-pagination", {
                 id: "pgNode3",
                 page: { kind: "literal", value: 2 },
@@ -88,7 +85,6 @@ test.describe("ui-pagination (P45)", () => {
     test("prev button click → POST /event with event='change' and params.page = n-1", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "pgApp4", root: "pgApp4" })
-            .route({ id: "pgRoute4", path: "/" })
             .node("ui-pagination", {
                 id: "pgNode4",
                 page: { kind: "literal", value: 4 },
@@ -114,7 +110,6 @@ test.describe("ui-pagination (P45)", () => {
     test("prev button disabled on first page", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "pgApp5", root: "pgApp5" })
-            .route({ id: "pgRoute5", path: "/" })
             .node("ui-pagination", {
                 id: "pgNode5",
                 page: { kind: "literal", value: 1 },
@@ -134,7 +129,6 @@ test.describe("ui-pagination (P45)", () => {
     test("next button disabled on last page", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "pgApp6", root: "pgApp6" })
-            .route({ id: "pgRoute6", path: "/" })
             .node("ui-pagination", {
                 id: "pgNode6",
                 page: { kind: "literal", value: 5 },

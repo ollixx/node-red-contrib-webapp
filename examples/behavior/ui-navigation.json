@@ -21,21 +21,6 @@
     ]
   },
   {
-    "id": "navHome",
-    "type": "ui-route",
-    "name": "navHome",
-    "uiId": "navHome",
-    "path": "/",
-    "parent": "navApp",
-    "layoutId": "app",
-    "z": "ex-ui-navigation",
-    "x": 120,
-    "y": 180,
-    "wires": [
-      []
-    ]
-  },
-  {
     "id": "navProducts",
     "type": "ui-route",
     "name": "navProducts",
@@ -88,7 +73,7 @@
     "name": "home content",
     "uiId": "homeContent",
     "parent": "navApp",
-    "mount": "navHome.content",
+    "mount": "navApp.content",
     "z": "ex-ui-navigation",
     "x": 480,
     "y": 280,

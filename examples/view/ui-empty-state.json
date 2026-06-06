@@ -21,27 +21,12 @@
     ]
   },
   {
-    "id": "emptyRoute",
-    "type": "ui-route",
-    "name": "emptyRoute",
-    "uiId": "emptyRoute",
-    "path": "/",
-    "parent": "emptyApp",
-    "layoutId": "vertical",
-    "z": "ex-ui-empty-state",
-    "x": 120,
-    "y": 180,
-    "wires": [
-      []
-    ]
-  },
-  {
     "id": "noResults",
     "type": "ui-empty-state",
     "name": "no results",
     "uiId": "noResults",
     "parent": "emptyApp",
-    "mount": "emptyRoute.content",
+    "mount": "emptyApp.content",
     "z": "ex-ui-empty-state",
     "x": 480,
     "y": 280,

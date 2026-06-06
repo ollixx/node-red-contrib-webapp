@@ -23,7 +23,6 @@ test.describe("ui-empty-state (P43)", () => {
     test("renders without crashing", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "emptyApp1", root: "emptyApp1" })
-            .route({ id: "emptyRoute1", path: "/" })
             .node("ui-empty-state", {
                 id: "emptyNode1",
                 visible: "true",
@@ -42,7 +41,6 @@ test.describe("ui-empty-state (P43)", () => {
     test("empty-state alongside text node — layout renders correctly", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "emptyApp2", root: "emptyApp2" })
-            .route({ id: "emptyRoute2", path: "/" })
             .node("ui-empty-state", { id: "emptyNode2", visible: "true", title: "Empty" })
             .node("ui-text", { id: "emptyText2", text: "Other content" })
             .build();
@@ -57,7 +55,6 @@ test.describe("ui-empty-state (P43)", () => {
     test("icon and actionLabel props accepted without crashing", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "emptyApp3", root: "emptyApp3" })
-            .route({ id: "emptyRoute3", path: "/" })
             .node("ui-empty-state", {
                 id: "emptyNode3",
                 visible: "true",

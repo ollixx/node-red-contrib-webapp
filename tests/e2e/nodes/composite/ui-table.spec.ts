@@ -24,7 +24,6 @@ test.describe("ui-table (P45)", () => {
     test("columns render as <th> header cells", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "tblApp1", root: "tblApp1" })
-            .route({ id: "tblRoute1", path: "/" })
             .node("ui-table", {
                 id: "tblNode1",
                 columns: JSON.stringify([
@@ -46,7 +45,6 @@ test.describe("ui-table (P45)", () => {
     test("rows render as <td> cells with correct values", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "tblApp2", root: "tblApp2" })
-            .route({ id: "tblRoute2", path: "/" })
             .node("ui-table", {
                 id: "tblNode2",
                 columns: JSON.stringify([{ key: "name", label: "Name" }]),
@@ -74,7 +72,6 @@ test.describe("ui-table (P45)", () => {
     test("empty table shows 'No rows loaded.' message", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "tblApp3", root: "tblApp3" })
-            .route({ id: "tblRoute3", path: "/" })
             .node("ui-table", {
                 id: "tblNode3",
                 columns: JSON.stringify([{ key: "name", label: "Name" }])
@@ -94,7 +91,6 @@ test.describe("ui-table (P45)", () => {
     test("row click → POST /event with event='rowSelect' and params.rowId", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "tblApp4", root: "tblApp4" })
-            .route({ id: "tblRoute4", path: "/" })
             .node("ui-table", {
                 id: "tblNode4",
                 columns: JSON.stringify([{ key: "name", label: "Name" }]),
@@ -126,7 +122,6 @@ test.describe("ui-table (P45)", () => {
     test("inject new rows → table updates after navigate", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "tblApp5", root: "tblApp5" })
-            .route({ id: "tblRoute5", path: "/" })
             .node("ui-table", {
                 id: "tblNode5",
                 columns: JSON.stringify([{ key: "name", label: "Name" }])

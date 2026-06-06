@@ -31,7 +31,6 @@ test.describe("ui-avatar (P43)", () => {
     test("renders sl-avatar element", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "avatarApp1", root: "avatarApp1" })
-            .route({ id: "avatarRoute1", path: "/" })
             .node("ui-avatar", { id: "avatarNode1" })
             .build();
 
@@ -46,7 +45,6 @@ test.describe("ui-avatar (P43)", () => {
         const imageUrl = "https://example.com/avatar.png";
         const flow = new FlowBuilder()
             .app({ id: "avatarApp2", root: "avatarApp2" })
-            .route({ id: "avatarRoute2", path: "/" })
             .node("ui-avatar", { id: "avatarNode2", src: { kind: "literal", value: imageUrl } })
             .build();
 
@@ -72,7 +70,6 @@ test.describe("ui-avatar (P43)", () => {
         // this test verifies the node registers and renders without a server error.
         const flow = new FlowBuilder()
             .app({ id: "avatarApp3", root: "avatarApp3" })
-            .route({ id: "avatarRoute3", path: "/" })
             .node("ui-avatar", { id: "avatarNode3", initials: { kind: "literal", value: "AB" } })
             .build();
 
@@ -87,7 +84,6 @@ test.describe("ui-avatar (P43)", () => {
     test("default state renders without crashing", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "avatarApp4", root: "avatarApp4" })
-            .route({ id: "avatarRoute4", path: "/" })
             .node("ui-avatar", { id: "avatarNode4" })
             .build();
 

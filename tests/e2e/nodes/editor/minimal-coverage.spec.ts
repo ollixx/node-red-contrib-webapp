@@ -65,7 +65,6 @@ test.describe("editor panels — minimal coverage (P47)", () => {
             const nodeId = `${testCase.type}-ed`;
             const flow = new FlowBuilder()
                 .app({ id: "covApp", root: "covApp", name: "Coverage App" })
-                .route({ id: "covRoute", path: "/" })
                 .node(testCase.type, { id: nodeId, ...(testCase.overrides ?? {}) })
                 .build();
             await deployFlow(request, flow);

@@ -25,7 +25,6 @@ test.describe("ui-progress (P43)", () => {
     test("renders sl-progress-bar element", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "progressApp1", root: "progressApp1" })
-            .route({ id: "progressRoute1", path: "/" })
             .node("ui-progress", { id: "progressNode1", value: { kind: "literal", value: 50 } })
             .build();
 
@@ -39,7 +38,6 @@ test.describe("ui-progress (P43)", () => {
     test("value binding maps to sl-progress-bar value attribute", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "progressApp2", root: "progressApp2" })
-            .route({ id: "progressRoute2", path: "/" })
             .node("ui-progress", { id: "progressNode2", value: { kind: "literal", value: 75 } })
             .build();
 
@@ -55,7 +53,6 @@ test.describe("ui-progress (P43)", () => {
     test("label prop maps to sl-progress-bar label attribute", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "progressApp3", root: "progressApp3" })
-            .route({ id: "progressRoute3", path: "/" })
             .node("ui-progress", { id: "progressNode3", value: { kind: "literal", value: 30 }, label: "Loading..." })
             .build();
 
@@ -71,7 +68,6 @@ test.describe("ui-progress (P43)", () => {
         // value is optional in the schema — omitting it is valid.
         const flow = new FlowBuilder()
             .app({ id: "progressApp4", root: "progressApp4" })
-            .route({ id: "progressRoute4", path: "/" })
             .node("ui-progress", { id: "progressNode4" })
             .build();
 

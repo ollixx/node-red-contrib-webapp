@@ -24,7 +24,6 @@ test.describe("ui-skeleton (P43)", () => {
     test("renders without crashing", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "skelApp1", root: "skelApp1" })
-            .route({ id: "skelRoute1", path: "/" })
             .node("ui-skeleton", { id: "skelNode1", visible: "true" })
             .build();
 
@@ -38,7 +37,6 @@ test.describe("ui-skeleton (P43)", () => {
     test("skeleton alongside text node — layout renders correctly", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "skelApp2", root: "skelApp2" })
-            .route({ id: "skelRoute2", path: "/" })
             .node("ui-skeleton", { id: "skelNode2", visible: "true" })
             .node("ui-text", { id: "skelText2", text: "Content loaded" })
             .build();
@@ -53,7 +51,6 @@ test.describe("ui-skeleton (P43)", () => {
     test("variant prop accepted without crashing", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "skelApp3", root: "skelApp3" })
-            .route({ id: "skelRoute3", path: "/" })
             .node("ui-skeleton", { id: "skelNode3", visible: "true", variant: "text" })
             .build();
 

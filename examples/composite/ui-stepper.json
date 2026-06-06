@@ -21,21 +21,6 @@
     ]
   },
   {
-    "id": "stepRoute",
-    "type": "ui-route",
-    "name": "stepRoute",
-    "uiId": "stepRoute",
-    "path": "/",
-    "parent": "stepApp",
-    "layoutId": "vertical",
-    "z": "ex-ui-stepper",
-    "x": 120,
-    "y": 180,
-    "wires": [
-      []
-    ]
-  },
-  {
     "id": "stepStore",
     "type": "ui-store",
     "name": "step store",
@@ -56,7 +41,7 @@
     "name": "wizard",
     "uiId": "stepNode",
     "parent": "stepApp",
-    "mount": "stepRoute.content",
+    "mount": "stepApp.content",
     "z": "ex-ui-stepper",
     "x": 480,
     "y": 280,

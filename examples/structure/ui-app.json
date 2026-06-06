@@ -22,27 +22,12 @@
     "tokens": "{\"colorPrimary\":\"#2563eb\"}"
   },
   {
-    "id": "homeRoute",
-    "type": "ui-route",
-    "name": "homeRoute",
-    "uiId": "homeRoute",
-    "path": "/",
-    "parent": "myApp",
-    "layoutId": "vertical",
-    "z": "ex-ui-app",
-    "x": 120,
-    "y": 180,
-    "wires": [
-      []
-    ]
-  },
-  {
     "id": "appInfo",
     "type": "ui-text",
     "name": "app info",
     "uiId": "appInfo",
     "parent": "myApp",
-    "mount": "homeRoute.content",
+    "mount": "myApp.content",
     "z": "ex-ui-app",
     "x": 480,
     "y": 280,

@@ -24,7 +24,6 @@ test.describe("ui-checkbox (P44)", () => {
     test("renders sl-checkbox element with label", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "cbApp1", root: "cbApp1" })
-            .route({ id: "cbRoute1", path: "/" })
             .node("ui-checkbox", { id: "cbNode1", label: "Accept terms" })
             .build();
 
@@ -39,7 +38,6 @@ test.describe("ui-checkbox (P44)", () => {
     test("disabled renders sl-checkbox[disabled]", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "cbApp2", root: "cbApp2" })
-            .route({ id: "cbRoute2", path: "/" })
             .node("ui-checkbox", {
                 id: "cbNode2",
                 label: "Locked",
@@ -59,7 +57,6 @@ test.describe("ui-checkbox (P44)", () => {
     test("sl-change → POST /event with { event:'change', params:{ checked: bool } }", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "cbApp3", root: "cbApp3" })
-            .route({ id: "cbRoute3", path: "/" })
             .node("ui-checkbox", { id: "cbNode3", label: "Subscribe" })
             .build();
 
@@ -88,7 +85,6 @@ test.describe("ui-checkbox (P44)", () => {
     test("inject true → sl-checkbox renders checked after SSE snapshot", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "cbApp4", root: "cbApp4" })
-            .route({ id: "cbRoute4", path: "/" })
             .node("ui-checkbox", { id: "cbNode4", label: "Agreed" })
             .withInjectNode("cbInj4", "cbNode4", true)
             .build();

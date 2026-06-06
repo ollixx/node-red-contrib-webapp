@@ -21,27 +21,12 @@
     ]
   },
   {
-    "id": "ctRoute",
-    "type": "ui-route",
-    "name": "ctRoute",
-    "uiId": "ctRoute",
-    "path": "/",
-    "parent": "ctApp",
-    "layoutId": "vertical",
-    "z": "ex-ui-container",
-    "x": 120,
-    "y": 180,
-    "wires": [
-      []
-    ]
-  },
-  {
     "id": "ctNode",
     "type": "ui-container",
     "name": "card",
     "uiId": "ctNode",
     "parent": "ctApp",
-    "mount": "ctRoute.content",
+    "mount": "ctApp.content",
     "z": "ex-ui-container",
     "x": 480,
     "y": 280,

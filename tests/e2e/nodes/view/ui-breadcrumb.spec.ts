@@ -26,7 +26,6 @@ test.describe("ui-breadcrumb (P43)", () => {
     test("renders sl-breadcrumb element", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "bcApp1", root: "bcApp1" })
-            .route({ id: "bcRoute1", path: "/" })
             .node("ui-breadcrumb", {
                 id: "bcNode1",
                 items: [{ label: "Home" }, { label: "Products" }]
@@ -43,7 +42,6 @@ test.describe("ui-breadcrumb (P43)", () => {
     test("items array — correct number of sl-breadcrumb-item elements", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "bcApp2", root: "bcApp2" })
-            .route({ id: "bcRoute2", path: "/" })
             .node("ui-breadcrumb", {
                 id: "bcNode2",
                 items: [
@@ -64,7 +62,6 @@ test.describe("ui-breadcrumb (P43)", () => {
     test("breadcrumb item labels render as text content", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "bcApp3", root: "bcApp3" })
-            .route({ id: "bcRoute3", path: "/" })
             .node("ui-breadcrumb", {
                 id: "bcNode3",
                 items: [{ label: "Start" }, { label: "Middle" }, { label: "End" }]
@@ -83,7 +80,6 @@ test.describe("ui-breadcrumb (P43)", () => {
     test("empty items array renders without crashing", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "bcApp4", root: "bcApp4" })
-            .route({ id: "bcRoute4", path: "/" })
             .node("ui-breadcrumb", {
                 id: "bcNode4",
                 items: []

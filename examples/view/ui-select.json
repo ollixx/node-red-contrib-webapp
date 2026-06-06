@@ -21,27 +21,12 @@
     ]
   },
   {
-    "id": "selRoute",
-    "type": "ui-route",
-    "name": "selRoute",
-    "uiId": "selRoute",
-    "path": "/",
-    "parent": "selApp",
-    "layoutId": "vertical",
-    "z": "ex-ui-select",
-    "x": 120,
-    "y": 180,
-    "wires": [
-      []
-    ]
-  },
-  {
     "id": "selNode",
     "type": "ui-select",
     "name": "selNode",
     "uiId": "selNode",
     "parent": "selApp",
-    "mount": "selRoute.content",
+    "mount": "selApp.content",
     "z": "ex-ui-select",
     "x": 480,
     "y": 280,

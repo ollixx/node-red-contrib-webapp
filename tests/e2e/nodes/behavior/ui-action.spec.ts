@@ -84,7 +84,6 @@ test.describe("ui-action (P46)", () => {
 
         const baseFlow = new FlowBuilder()
             .app({ id: "actionApp2", root: "actionApp2" })
-            .route({ id: "actionRoute2", path: "/" })
             .node("ui-text", { id: "actionTxt2", text: "Main content" })
             // dialogStore: controls state.ui.dialogs.<id>.open
             .node("ui-store", {
@@ -187,7 +186,6 @@ test.describe("ui-action (P46)", () => {
 
         const baseFlow = new FlowBuilder()
             .app({ id: "actionApp3", root: "actionApp3" })
-            .route({ id: "actionRoute3", path: "/" })
             .node("ui-text", { id: "actionTxt3", text: "Main" })
             .node("ui-store", {
                 id: storeId,
@@ -305,7 +303,6 @@ test.describe("ui-action (P46)", () => {
         // action and check that the store's state value remains unchanged.
         const flow = new FlowBuilder()
             .app({ id: "actionApp4", root: "actionApp4" })
-            .route({ id: "actionRoute4a", path: "/" })
             .node("ui-store", {
                 id: "actionStore4",
                 statePath: "counter",

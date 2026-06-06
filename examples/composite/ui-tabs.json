@@ -21,27 +21,12 @@
     ]
   },
   {
-    "id": "tabsRoute",
-    "type": "ui-route",
-    "name": "tabsRoute",
-    "uiId": "tabsRoute",
-    "path": "/",
-    "parent": "tabsApp",
-    "layoutId": "vertical",
-    "z": "ex-ui-tabs",
-    "x": 120,
-    "y": 180,
-    "wires": [
-      []
-    ]
-  },
-  {
     "id": "tabsNode",
     "type": "ui-tabs",
     "name": "tabs",
     "uiId": "tabsNode",
     "parent": "tabsApp",
-    "mount": "tabsRoute.content",
+    "mount": "tabsApp.content",
     "z": "ex-ui-tabs",
     "x": 480,
     "y": 280,

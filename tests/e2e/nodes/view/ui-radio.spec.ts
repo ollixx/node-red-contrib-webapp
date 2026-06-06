@@ -23,7 +23,6 @@ test.describe("ui-radio (P44)", () => {
     test("renders sl-radio-group with label and sl-radio options", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "rdApp1", root: "rdApp1" })
-            .route({ id: "rdRoute1", path: "/" })
             .node("ui-radio", {
                 id: "rdNode1",
                 label: "Size",
@@ -49,7 +48,6 @@ test.describe("ui-radio (P44)", () => {
     test("sl-change on sl-radio-group → POST /event with { event:'change', params:{ value: string } }", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "rdApp2", root: "rdApp2" })
-            .route({ id: "rdRoute2", path: "/" })
             .node("ui-radio", {
                 id: "rdNode2",
                 label: "Color",
@@ -85,7 +83,6 @@ test.describe("ui-radio (P44)", () => {
     test("inject 'l' → sl-radio-group value updates after navigate", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "rdApp3", root: "rdApp3" })
-            .route({ id: "rdRoute3", path: "/" })
             .node("ui-radio", {
                 id: "rdNode3",
                 label: "Size",

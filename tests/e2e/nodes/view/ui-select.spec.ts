@@ -23,7 +23,6 @@ test.describe("ui-select (P44)", () => {
     test("renders sl-select with label and sl-option elements", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "selApp1", root: "selApp1" })
-            .route({ id: "selRoute1", path: "/" })
             .node("ui-select", {
                 id: "selNode1",
                 label: "Country",
@@ -47,7 +46,6 @@ test.describe("ui-select (P44)", () => {
     test("disabled renders sl-select[disabled]", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "selApp2", root: "selApp2" })
-            .route({ id: "selRoute2", path: "/" })
             .node("ui-select", {
                 id: "selNode2",
                 label: "Locked",
@@ -68,7 +66,6 @@ test.describe("ui-select (P44)", () => {
     test("sl-change → POST /event with { event:'change', params:{ value: string } }", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "selApp3", root: "selApp3" })
-            .route({ id: "selRoute3", path: "/" })
             .node("ui-select", {
                 id: "selNode3",
                 label: "Lang",
@@ -104,7 +101,6 @@ test.describe("ui-select (P44)", () => {
     test("inject 'fr' → sl-select value updates after navigate", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "selApp4", root: "selApp4" })
-            .route({ id: "selRoute4", path: "/" })
             .node("ui-select", {
                 id: "selNode4",
                 label: "Country",

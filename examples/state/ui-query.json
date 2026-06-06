@@ -21,21 +21,6 @@
     ]
   },
   {
-    "id": "queryRoute",
-    "type": "ui-route",
-    "name": "queryRoute",
-    "uiId": "queryRoute",
-    "path": "/",
-    "parent": "queryApp",
-    "layoutId": "vertical",
-    "z": "ex-ui-query",
-    "x": 120,
-    "y": 180,
-    "wires": [
-      []
-    ]
-  },
-  {
     "id": "usersQuery",
     "type": "ui-query",
     "name": "users query",
@@ -74,7 +59,7 @@
     "name": "users table",
     "uiId": "usersTable",
     "parent": "queryApp",
-    "mount": "queryRoute.content",
+    "mount": "queryApp.content",
     "z": "ex-ui-query",
     "x": 480,
     "y": 280,

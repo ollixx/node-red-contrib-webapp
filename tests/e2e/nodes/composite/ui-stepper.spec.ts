@@ -28,7 +28,6 @@ test.describe("ui-stepper (P45)", () => {
 
         const flow = new FlowBuilder()
             .app({ id: "stpApp1", root: "stpApp1" })
-            .route({ id: "stpRoute1", path: "/" })
             .node("ui-stepper", { id: "stpNode1", steps })
             .build();
 
@@ -53,7 +52,6 @@ test.describe("ui-stepper (P45)", () => {
 
         const flow = new FlowBuilder()
             .app({ id: "stpApp2", root: "stpApp2" })
-            .route({ id: "stpRoute2", path: "/" })
             .node("ui-stepper", { id: "stpNode2", steps })
             .build();
 
@@ -76,7 +74,6 @@ test.describe("ui-stepper (P45)", () => {
 
         const flow = new FlowBuilder()
             .app({ id: "stpApp3", root: "stpApp3" })
-            .route({ id: "stpRoute3", path: "/" })
             .node("ui-stepper", { id: "stpNode3", steps, activeStep: { kind: "literal", value: 1 } })
             .build();
 
@@ -98,7 +95,6 @@ test.describe("ui-stepper (P45)", () => {
 
         const flow = new FlowBuilder()
             .app({ id: "stpApp4", root: "stpApp4" })
-            .route({ id: "stpRoute4", path: "/" })
             .node("ui-stepper", {
                 id: "stpNode4",
                 steps,

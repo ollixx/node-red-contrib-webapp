@@ -25,7 +25,6 @@ test.describe("ui-image (P43)", () => {
     test("app with ui-image node deploys and serves (no crash)", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "imgApp1", root: "imgApp1" })
-            .route({ id: "imgRoute1", path: "/" })
             .node("ui-image", { id: "imgNode1", src: "https://example.com/photo.jpg", alt: "Photo" })
             .build();
 
@@ -40,7 +39,6 @@ test.describe("ui-image (P43)", () => {
     test("app with ui-image renders root without crashing", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "imgApp2", root: "imgApp2" })
-            .route({ id: "imgRoute2", path: "/" })
             .node("ui-image", { id: "imgNode2", src: "https://example.com/avatar.png" })
             .node("ui-text", { id: "imgText2", text: "Caption" })
             .build();
@@ -56,7 +54,6 @@ test.describe("ui-image (P43)", () => {
     test("ui-image with fallbackSrc — app still serves without error", async ({ request }) => {
         const flow = new FlowBuilder()
             .app({ id: "imgApp3", root: "imgApp3" })
-            .route({ id: "imgRoute3", path: "/" })
             .node("ui-image", {
                 id: "imgNode3",
                 src: "https://example.com/broken.jpg",

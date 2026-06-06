@@ -23,7 +23,6 @@ test.describe("ui-input (P44)", () => {
     test("renders sl-input element", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "inpApp1", root: "inpApp1" })
-            .route({ id: "inpRoute1", path: "/" })
             .node("ui-input", { id: "inpNode1", label: "Name" })
             .build();
 
@@ -37,7 +36,6 @@ test.describe("ui-input (P44)", () => {
     test("label prop is set as the label attribute", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "inpApp2", root: "inpApp2" })
-            .route({ id: "inpRoute2", path: "/" })
             .node("ui-input", { id: "inpNode2", label: "Email address" })
             .build();
 
@@ -51,7 +49,6 @@ test.describe("ui-input (P44)", () => {
     test("disabled renders sl-input[disabled]", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "inpApp3", root: "inpApp3" })
-            .route({ id: "inpRoute3", path: "/" })
             .node("ui-input", {
                 id: "inpNode3",
                 label: "Locked",
@@ -71,7 +68,6 @@ test.describe("ui-input (P44)", () => {
     test("sl-change on sl-input → POST /event with { event:'change', params:{ value } }", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "inpApp4", root: "inpApp4" })
-            .route({ id: "inpRoute4", path: "/" })
             .node("ui-input", { id: "inpNode4", label: "City" })
             .build();
 
@@ -100,7 +96,6 @@ test.describe("ui-input (P44)", () => {
     test("inject 'alice' → sl-input value updates after navigate", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "inpApp5", root: "inpApp5" })
-            .route({ id: "inpRoute5", path: "/" })
             .node("ui-input", { id: "inpNode5", label: "Username" })
             .withInjectNode("inpInj5", "inpNode5", "alice")
             .build();

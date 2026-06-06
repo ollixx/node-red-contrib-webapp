@@ -21,27 +21,12 @@
     ]
   },
   {
-    "id": "toastRoute",
-    "type": "ui-route",
-    "name": "toastRoute",
-    "uiId": "toastRoute",
-    "path": "/",
-    "parent": "toastApp",
-    "layoutId": "vertical",
-    "z": "ex-ui-toast",
-    "x": 120,
-    "y": 180,
-    "wires": [
-      []
-    ]
-  },
-  {
     "id": "toastNode",
     "type": "ui-toast",
     "name": "toast",
     "uiId": "toastNode",
     "parent": "toastApp",
-    "mount": "toastRoute.content",
+    "mount": "toastApp.content",
     "z": "ex-ui-toast",
     "x": 480,
     "y": 280,

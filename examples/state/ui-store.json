@@ -21,21 +21,6 @@
     ]
   },
   {
-    "id": "storeRoute",
-    "type": "ui-route",
-    "name": "storeRoute",
-    "uiId": "storeRoute",
-    "path": "/",
-    "parent": "storeApp",
-    "layoutId": "vertical",
-    "z": "ex-ui-store",
-    "x": 120,
-    "y": 180,
-    "wires": [
-      []
-    ]
-  },
-  {
     "id": "counterStore",
     "type": "ui-store",
     "name": "counter store",
@@ -58,7 +43,7 @@
     "name": "counter display",
     "uiId": "counterDisplay",
     "parent": "storeApp",
-    "mount": "storeRoute.content",
+    "mount": "storeApp.content",
     "z": "ex-ui-store",
     "x": 480,
     "y": 280,
@@ -93,7 +78,7 @@
     "name": "greeting",
     "uiId": "greeting",
     "parent": "storeApp",
-    "mount": "storeRoute.content",
+    "mount": "storeApp.content",
     "z": "ex-ui-store",
     "x": 480,
     "y": 360,

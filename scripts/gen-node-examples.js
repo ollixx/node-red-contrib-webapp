@@ -128,7 +128,7 @@ const examples = [];
 
 // ui-app ──────────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-app"; const A = "myApp"; const R = "homeRoute";
+    const T = "ex-ui-app"; const A = "myApp"; const R = A;
     examples.push({
         path: "examples/structure/ui-app.json",
         nodes: [
@@ -136,14 +136,13 @@ const examples = [];
             // layout:"app" on the ui-app node renders a coloured top bar on ALL
             // routes of this app, regardless of the individual route's layoutId.
             // tokens override the CSS custom properties used by the top bar.
+            // The ui-app is the implicit root route ("/") — no ui-route node is
+            // needed for the home page; content mounts into the app's content slot.
             uiApp(A, T, {
                 name: "My App",
                 layout: "app",
                 tokens: JSON.stringify({ colorPrimary: "#2563eb" })
             }),
-            // The route's layoutId controls how content is arranged inside the
-            // content area — it does NOT affect the global app-bar.
-            uiRoute(R, "/", A, T, { layoutId: "vertical" }),
             // Simple content so there is something to see when the app loads
             viewNode("ui-text", "appInfo", A, R, T, {
                 name: "app info",
@@ -162,12 +161,12 @@ const examples = [];
             tab(T, "ui-route example"),
             uiApp(A, T, { name: "Route App" }),
 
-            // Two routes. The first is the landing page; the second has a param.
-            uiRoute("routeHome", "/", A, T, { layoutId: "vertical" }),
+            // The app is the implicit root route ("/"). One explicit sub-route
+            // with a :id param demonstrates the ui-route node.
             uiRoute("routeDetail", "/item/:id", A, T, { layoutId: "vertical", x: 120, y: 260 }),
 
-            // Home page content
-            viewNode("ui-text", "homeText", A, "routeHome", T, {
+            // Home page content mounts directly into the ui-app content slot.
+            viewNode("ui-text", "homeText", A, A, T, {
                 name: "home text", text: "Home — navigate to /webapp/routeApp/item/42 to see the detail route."
             }),
 
@@ -178,7 +177,7 @@ const examples = [];
             }),
 
             // Navigate action wired from home button
-            viewNode("ui-button", "goDetailBtn", A, "routeHome", T, {
+            viewNode("ui-button", "goDetailBtn", A, A, T, {
                 name: "go to detail", label: "Go to Item 42", x: 480, y: 360
             }),
             {
@@ -192,13 +191,12 @@ const examples = [];
 
 // ui-dialog ───────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-dialog"; const A = "dlgApp"; const R = "dlgHome";
+    const T = "ex-ui-dialog"; const A = "dlgApp"; const R = A;
     examples.push({
         path: "examples/structure/ui-dialog.json",
         nodes: [
             tab(T, "ui-dialog example"),
             uiApp(A, T, { name: "Dialog App" }),
-            uiRoute(R, "/", A, T, { layoutId: "vertical" }),
 
             // The dialog — mounts to the app, not a route
             {
@@ -243,14 +241,13 @@ const examples = [];
 
 // ui-text ─────────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-text"; const A = "textApp"; const R = "textRoute";
+    const T = "ex-ui-text"; const A = "textApp"; const R = A;
     const NODE = "textNode"; const DBG = "textDbg";
     examples.push({
         path: "examples/view/ui-text.json",
         nodes: [
             tab(T, "ui-text example"),
             uiApp(A, T, { name: "Text App" }),
-            uiRoute(R, "/", A, T),
 
             // Store provides dynamic value
             stateNode("ui-store", "textStore", A, T, {
@@ -285,14 +282,13 @@ const examples = [];
 
 // ui-button ───────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-button"; const A = "btnApp"; const R = "btnRoute";
+    const T = "ex-ui-button"; const A = "btnApp"; const R = A;
     const NODE = "btnNode"; const DBG = "btnDbg";
     examples.push({
         path: "examples/view/ui-button.json",
         nodes: [
             tab(T, "ui-button example"),
             uiApp(A, T, { name: "Button App" }),
-            uiRoute(R, "/", A, T),
 
             // The button — wired to debug so click events appear in the sidebar
             { ...viewNode("ui-button", NODE, A, R, T, { name: "primary button", label: "Click me", variant: "primary" }), wires: [[DBG]] },
@@ -318,14 +314,13 @@ const examples = [];
 
 // ui-image ─────────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-image"; const A = "imgApp"; const R = "imgRoute";
+    const T = "ex-ui-image"; const A = "imgApp"; const R = A;
     const NODE = "imgNode"; const DBG = "imgDbg";
     examples.push({
         path: "examples/view/ui-image.json",
         nodes: [
             tab(T, "ui-image example"),
             uiApp(A, T, { name: "Image App" }),
-            uiRoute(R, "/", A, T),
 
             // Output: "error" event if the image src fails to load
             { ...viewNode("ui-image", NODE, A, R, T, {
@@ -349,13 +344,12 @@ const examples = [];
 
 // ui-avatar ───────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-avatar"; const A = "avatarApp"; const R = "avatarRoute";
+    const T = "ex-ui-avatar"; const A = "avatarApp"; const R = A;
     examples.push({
         path: "examples/view/ui-avatar.json",
         nodes: [
             tab(T, "ui-avatar example"),
             uiApp(A, T, { name: "Avatar App" }),
-            uiRoute(R, "/", A, T),
 
             viewNode("ui-avatar", "initialsAvatar", A, R, T, { name: "initials avatar", initials: "AK", label: "Anna K." }),
             viewNode("ui-avatar", "imgAvatar", A, R, T, {
@@ -375,13 +369,12 @@ const examples = [];
 // ════════════════════════════════════════════════════════════════════════
 
 function inputNodeExample({ path, tabId, appId, routeId, nodeId, nodeType, nodeProps, injectValue, injectPayloadType, extraNodes = [] }) {
-    const T = tabId; const A = appId; const R = routeId; const NODE = nodeId; const DBG = nodeId + "Dbg";
+    const T = tabId; const A = appId; const R = A; const NODE = nodeId; const DBG = nodeId + "Dbg";
     return {
         path,
         nodes: [
             tab(T, nodeType + " example"),
             uiApp(A, T, { name: nodeType + " App" }),
-            uiRoute(R, "/", A, T),
 
             // The node — wired to debug so change events appear in sidebar
             { ...viewNode(nodeType, NODE, A, R, T, { name: nodeId, ...nodeProps }), wires: [[DBG]] },
@@ -488,13 +481,12 @@ examples.push(inputNodeExample({
 
 // ui-badge ────────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-badge"; const A = "badgeApp"; const R = "badgeRoute";
+    const T = "ex-ui-badge"; const A = "badgeApp"; const R = A;
     examples.push({
         path: "examples/view/ui-badge.json",
         nodes: [
             tab(T, "ui-badge example"),
             uiApp(A, T, { name: "Badge App" }),
-            uiRoute(R, "/", A, T),
 
             // No output port — badge is display-only
             viewNode("ui-badge", "badgeSuccess", A, R, T, { name: "success badge", label: "Active", variant: "success" }),
@@ -512,14 +504,13 @@ examples.push(inputNodeExample({
 
 // ui-alert ────────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-alert"; const A = "alertApp"; const R = "alertRoute";
+    const T = "ex-ui-alert"; const A = "alertApp"; const R = A;
     const NODE = "alertNode"; const DBG = "alertDbg";
     examples.push({
         path: "examples/view/ui-alert.json",
         nodes: [
             tab(T, "ui-alert example"),
             uiApp(A, T, { name: "Alert App" }),
-            uiRoute(R, "/", A, T),
 
             // Output: "dismiss" event when user closes the alert
             { ...viewNode("ui-alert", NODE, A, R, T, {
@@ -543,13 +534,12 @@ examples.push(inputNodeExample({
 
 // ui-progress ──────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-progress"; const A = "progApp"; const R = "progRoute";
+    const T = "ex-ui-progress"; const A = "progApp"; const R = A;
     examples.push({
         path: "examples/view/ui-progress.json",
         nodes: [
             tab(T, "ui-progress example"),
             uiApp(A, T, { name: "Progress App" }),
-            uiRoute(R, "/", A, T),
 
             stateNode("ui-store", "progStore", A, T, {
                 name: "progress store", statePath: "progress", initialValue: "25"
@@ -573,13 +563,12 @@ examples.push(inputNodeExample({
 
 // ui-skeleton ─────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-skeleton"; const A = "skelApp"; const R = "skelRoute";
+    const T = "ex-ui-skeleton"; const A = "skelApp"; const R = A;
     examples.push({
         path: "examples/view/ui-skeleton.json",
         nodes: [
             tab(T, "ui-skeleton example"),
             uiApp(A, T, { name: "Skeleton App" }),
-            uiRoute(R, "/", A, T),
 
             // No output port — skeleton is display-only
             viewNode("ui-skeleton", "skelText", A, R, T, { name: "text skeleton", effect: "sheen" }),
@@ -597,13 +586,12 @@ examples.push(inputNodeExample({
 
 // ui-empty-state ───────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-empty-state"; const A = "emptyApp"; const R = "emptyRoute";
+    const T = "ex-ui-empty-state"; const A = "emptyApp"; const R = A;
     examples.push({
         path: "examples/view/ui-empty-state.json",
         nodes: [
             tab(T, "ui-empty-state example"),
             uiApp(A, T, { name: "Empty State App" }),
-            uiRoute(R, "/", A, T),
 
             // No output port
             viewNode("ui-empty-state", "noResults", A, R, T, {
@@ -622,14 +610,13 @@ examples.push(inputNodeExample({
 
 // ui-toast ─────────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-toast"; const A = "toastApp"; const R = "toastRoute";
+    const T = "ex-ui-toast"; const A = "toastApp"; const R = A;
     const NODE = "toastNode"; const DBG = "toastDbg";
     examples.push({
         path: "examples/view/ui-toast.json",
         nodes: [
             tab(T, "ui-toast example"),
             uiApp(A, T, { name: "Toast App" }),
-            uiRoute(R, "/", A, T),
 
             // Output: "dismiss" event
             { ...viewNode("ui-toast", NODE, A, R, T, {
@@ -665,14 +652,13 @@ examples.push(inputNodeExample({
 
 // ui-breadcrumb ───────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-breadcrumb"; const A = "breadApp"; const R = "breadRoute";
+    const T = "ex-ui-breadcrumb"; const A = "breadApp"; const R = A;
     const NODE = "breadNode"; const DBG = "breadDbg";
     examples.push({
         path: "examples/view/ui-breadcrumb.json",
         nodes: [
             tab(T, "ui-breadcrumb example"),
             uiApp(A, T, { name: "Breadcrumb App" }),
-            uiRoute(R, "/", A, T),
 
             // Output: "navigate" event when a crumb is clicked
             { ...viewNode("ui-breadcrumb", NODE, A, R, T, {
@@ -699,7 +685,7 @@ examples.push(inputNodeExample({
 
 // ui-table ─────────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-table"; const A = "tblApp"; const R = "tblRoute";
+    const T = "ex-ui-table"; const A = "tblApp"; const R = A;
     const NODE = "tblNode"; const DBG = "tblDbg";
     const ROWS = [
         { id: "1", name: "Alice Müller", role: "Admin", status: "active" },
@@ -711,7 +697,6 @@ examples.push(inputNodeExample({
         nodes: [
             tab(T, "ui-table example"),
             uiApp(A, T, { name: "Table App" }),
-            uiRoute(R, "/", A, T),
 
             stateNode("ui-store", "rowsStore", A, T, {
                 name: "rows store", statePath: "users", initialValue: JSON.stringify(ROWS)
@@ -748,14 +733,13 @@ examples.push(inputNodeExample({
 
 // ui-container ─────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-container"; const A = "ctApp"; const R = "ctRoute";
+    const T = "ex-ui-container"; const A = "ctApp"; const R = A;
     const NODE = "ctNode"; const DBG = "ctDbg";
     examples.push({
         path: "examples/composite/ui-container.json",
         nodes: [
             tab(T, "ui-container example"),
             uiApp(A, T, { name: "Container App" }),
-            uiRoute(R, "/", A, T),
 
             // Output: onShow / onHide (if configured)
             { ...viewNode("ui-container", NODE, A, R, T, { name: "card", layoutId: "vertical" }), wires: [[DBG]] },
@@ -778,14 +762,13 @@ examples.push(inputNodeExample({
 
 // ui-tabs ──────────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-tabs"; const A = "tabsApp"; const R = "tabsRoute";
+    const T = "ex-ui-tabs"; const A = "tabsApp"; const R = A;
     const NODE = "tabsNode"; const DBG = "tabsDbg";
     examples.push({
         path: "examples/composite/ui-tabs.json",
         nodes: [
             tab(T, "ui-tabs example"),
             uiApp(A, T, { name: "Tabs App" }),
-            uiRoute(R, "/", A, T),
 
             // Output: tabChange event
             { ...viewNode("ui-tabs", NODE, A, R, T, {
@@ -813,14 +796,13 @@ examples.push(inputNodeExample({
 
 // ui-accordion ─────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-accordion"; const A = "accApp"; const R = "accRoute";
+    const T = "ex-ui-accordion"; const A = "accApp"; const R = A;
     const NODE = "accNode"; const DBG = "accDbg";
     examples.push({
         path: "examples/composite/ui-accordion.json",
         nodes: [
             tab(T, "ui-accordion example"),
             uiApp(A, T, { name: "Accordion App" }),
-            uiRoute(R, "/", A, T),
 
             // Output: sectionOpen / sectionClose events
             { ...viewNode("ui-accordion", NODE, A, R, T, {
@@ -844,14 +826,13 @@ examples.push(inputNodeExample({
 
 // ui-menu ──────────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-menu"; const A = "menuApp"; const R = "menuRoute";
+    const T = "ex-ui-menu"; const A = "menuApp"; const R = A;
     const NODE = "menuNode"; const DBG = "menuDbg";
     examples.push({
         path: "examples/composite/ui-menu.json",
         nodes: [
             tab(T, "ui-menu example"),
             uiApp(A, T, { name: "Menu App" }),
-            uiRoute(R, "/", A, T),
 
             // Output: navigate event when menu item is clicked
             { ...viewNode("ui-menu", NODE, A, R, T, {
@@ -877,7 +858,7 @@ examples.push(inputNodeExample({
 
 // ui-list ──────────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-list"; const A = "listApp"; const R = "listRoute";
+    const T = "ex-ui-list"; const A = "listApp"; const R = A;
     const NODE = "listNode"; const DBG = "listDbg";
     const ITEMS = [
         { id: "1", label: "First item", description: "A short description" },
@@ -889,7 +870,6 @@ examples.push(inputNodeExample({
         nodes: [
             tab(T, "ui-list example"),
             uiApp(A, T, { name: "List App" }),
-            uiRoute(R, "/", A, T),
 
             stateNode("ui-store", "listStore", A, T, {
                 name: "items store", statePath: "items", initialValue: JSON.stringify(ITEMS)
@@ -913,14 +893,13 @@ examples.push(inputNodeExample({
 
 // ui-pagination ────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-pagination"; const A = "pagApp"; const R = "pagRoute";
+    const T = "ex-ui-pagination"; const A = "pagApp"; const R = A;
     const NODE = "pagNode"; const DBG = "pagDbg";
     examples.push({
         path: "examples/composite/ui-pagination.json",
         nodes: [
             tab(T, "ui-pagination example"),
             uiApp(A, T, { name: "Pagination App" }),
-            uiRoute(R, "/", A, T),
 
             stateNode("ui-store", "pageStore", A, T, {
                 name: "page store", statePath: "page", initialValue: "1"
@@ -957,14 +936,13 @@ examples.push(inputNodeExample({
 
 // ui-stepper ───────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-stepper"; const A = "stepApp"; const R = "stepRoute";
+    const T = "ex-ui-stepper"; const A = "stepApp"; const R = A;
     const NODE = "stepNode"; const DBG = "stepDbg";
     examples.push({
         path: "examples/composite/ui-stepper.json",
         nodes: [
             tab(T, "ui-stepper example"),
             uiApp(A, T, { name: "Stepper App" }),
-            uiRoute(R, "/", A, T),
 
             stateNode("ui-store", "stepStore", A, T, {
                 name: "step store", statePath: "step", initialValue: '"step1"'
@@ -997,14 +975,13 @@ examples.push(inputNodeExample({
 
 // ui-store ─────────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-store"; const A = "storeApp"; const R = "storeRoute";
+    const T = "ex-ui-store"; const A = "storeApp"; const R = A;
     const STORE = "counterStore"; const DBG = "storeDbg";
     examples.push({
         path: "examples/state/ui-store.json",
         nodes: [
             tab(T, "ui-store example"),
             uiApp(A, T, { name: "Store App" }),
-            uiRoute(R, "/", A, T),
 
             // Store node — output: store notification on every change
             { ...stateNode("ui-store", STORE, A, T, {
@@ -1037,14 +1014,13 @@ examples.push(inputNodeExample({
 
 // ui-query ─────────────────────────────────────────────────────────────────────
 {
-    const T = "ex-ui-query"; const A = "queryApp"; const R = "queryRoute";
+    const T = "ex-ui-query"; const A = "queryApp"; const R = A;
     const QUERY = "usersQuery"; const DBG = "queryDbg";
     examples.push({
         path: "examples/state/ui-query.json",
         nodes: [
             tab(T, "ui-query example"),
             uiApp(A, T, { name: "Query App" }),
-            uiRoute(R, "/", A, T),
 
             // Query node:
             //   Output port → function node (simulates DB response) → back to query input.
@@ -1107,31 +1083,30 @@ examples.push(inputNodeExample({
             tab(T, "ui-action example"),
             uiApp(A, T, { name: "Action App", layout: "app" }),
 
-            // Two routes
-            uiRoute("homeRoute", "/", A, T, { layoutId: "vertical" }),
+            // The app is the implicit root route ("/"); one explicit sub-route.
             uiRoute("detailRoute", "/detail", A, T, { layoutId: "vertical", x: 120, y: 260 }),
 
             // A dialog
             { id: "infoDialog", type: "ui-dialog", name: "Info", uiId: "infoDialog",
               parent: A, title: "Information", z: T, x: 120, y: 360, wires: [[]] },
 
-            // Home page: navigate button + show/hide toggle buttons
-            viewNode("ui-button", "goDetailBtn", A, "homeRoute", T, { name: "go to detail", label: "Go to Detail" }),
-            viewNode("ui-button", "openDlgBtn", A, "homeRoute", T, { name: "open dialog", label: "Open Dialog", x: 480, y: 360 }),
-            viewNode("ui-button", "hideCardBtn", A, "homeRoute", T, { name: "hide card", label: "Hide Card", x: 480, y: 440 }),
-            viewNode("ui-button", "showCardBtn", A, "homeRoute", T, { name: "show card", label: "Show Card", x: 480, y: 520 }),
+            // Home page (app content slot): navigate button + show/hide toggle buttons
+            viewNode("ui-button", "goDetailBtn", A, A, T, { name: "go to detail", label: "Go to Detail" }),
+            viewNode("ui-button", "openDlgBtn", A, A, T, { name: "open dialog", label: "Open Dialog", x: 480, y: 360 }),
+            viewNode("ui-button", "hideCardBtn", A, A, T, { name: "hide card", label: "Hide Card", x: 480, y: 440 }),
+            viewNode("ui-button", "showCardBtn", A, A, T, { name: "show card", label: "Show Card", x: 480, y: 520 }),
 
             // A container that gets shown/hidden
-            viewNode("ui-container", "toggleCard", A, "homeRoute", T, { name: "toggle card", layoutId: "vertical", x: 480, y: 600 }),
-            viewNode("ui-text", "cardContent", A, "homeRoute", T, { name: "card content", mount: "toggleCard.content", text: "This card can be shown/hidden.", x: 700, y: 600 }),
+            viewNode("ui-container", "toggleCard", A, A, T, { name: "toggle card", layoutId: "vertical", x: 480, y: 600 }),
+            viewNode("ui-text", "cardContent", A, A, T, { name: "card content", mount: "toggleCard.content", text: "This card can be shown/hidden.", x: 700, y: 600 }),
 
             // Detail page content
             viewNode("ui-text", "detailText", A, "detailRoute", T, { name: "detail text", text: "Detail page — use Back to go home.", x: 480, y: 260 }),
             viewNode("ui-button", "goHomeBtn", A, "detailRoute", T, { name: "go home", label: "← Back", x: 480, y: 340 }),
 
             // Dialog content
-            viewNode("ui-text", "dlgText", A, "homeRoute", T, { name: "dialog text", mount: "infoDialog.content", text: "Dialog content.", x: 700, y: 360 }),
-            viewNode("ui-button", "dlgCloseBtn", A, "homeRoute", T, { name: "close dialog", mount: "infoDialog.content", label: "Close", x: 700, y: 440 }),
+            viewNode("ui-text", "dlgText", A, A, T, { name: "dialog text", mount: "infoDialog.content", text: "Dialog content.", x: 700, y: 360 }),
+            viewNode("ui-button", "dlgCloseBtn", A, A, T, { name: "close dialog", mount: "infoDialog.content", label: "Close", x: 700, y: 440 }),
 
             // Action nodes (non-visual)
             stateNode("ui-action", "navToDetail", A, T, { name: "navigate → /detail", actionType: "navigate", target: "/detail", x: 700, y: 280 }),
@@ -1153,7 +1128,7 @@ examples.push(inputNodeExample({
             tab(T, "ui-navigation example"),
             uiApp(A, T, { name: "Navigation App", layout: "app" }),
 
-            uiRoute("navHome", "/", A, T, { layoutId: "app" }),
+            // The app is the implicit root route ("/"); two explicit sub-routes.
             uiRoute("navProducts", "/products", A, T, { layoutId: "vertical", x: 120, y: 260 }),
             uiRoute("navAbout", "/about", A, T, { layoutId: "vertical", x: 120, y: 340 }),
 
@@ -1169,8 +1144,8 @@ examples.push(inputNodeExample({
                 z: T, x: 480, y: 180, wires: [[DBG]]
             },
 
-            // Route content
-            viewNode("ui-text", "homeContent", A, "navHome", T, { name: "home content", text: "Home page" }),
+            // Route content (home content mounts into the app's content slot)
+            viewNode("ui-text", "homeContent", A, A, T, { name: "home content", text: "Home page" }),
             viewNode("ui-text", "productsContent", A, "navProducts", T, { name: "products content", text: "Products page", x: 480, y: 260 }),
             viewNode("ui-text", "aboutContent", A, "navAbout", T, { name: "about content", text: "About page", x: 480, y: 340 }),
 

@@ -21,27 +21,12 @@
     ]
   },
   {
-    "id": "dpRoute",
-    "type": "ui-route",
-    "name": "dpRoute",
-    "uiId": "dpRoute",
-    "path": "/",
-    "parent": "dpApp",
-    "layoutId": "vertical",
-    "z": "ex-ui-datepicker",
-    "x": 120,
-    "y": 180,
-    "wires": [
-      []
-    ]
-  },
-  {
     "id": "dpNode",
     "type": "ui-datepicker",
     "name": "dpNode",
     "uiId": "dpNode",
     "parent": "dpApp",
-    "mount": "dpRoute.content",
+    "mount": "dpApp.content",
     "z": "ex-ui-datepicker",
     "x": 480,
     "y": 280,

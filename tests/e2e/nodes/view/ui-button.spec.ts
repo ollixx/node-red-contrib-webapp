@@ -25,7 +25,6 @@ test.describe("ui-button render (P43)", () => {
     test("label renders as button text inside sl-button", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "btnApp1", root: "btnApp1" })
-            .route({ id: "btnRoute1", path: "/" })
             .node("ui-button", { id: "btnNode1", label: "Click me" })
             .build();
 
@@ -39,7 +38,6 @@ test.describe("ui-button render (P43)", () => {
     test("sl-button element is present in rendered DOM", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "btnApp2", root: "btnApp2" })
-            .route({ id: "btnRoute2", path: "/" })
             .node("ui-button", { id: "btnNode2", label: "My Button" })
             .build();
 
@@ -56,7 +54,6 @@ test.describe("ui-button render (P43)", () => {
         // produces sl-button[disabled].
         const flow = new FlowBuilder()
             .app({ id: "btnApp3", root: "btnApp3" })
-            .route({ id: "btnRoute3", path: "/" })
             .node("ui-button", {
                 id: "btnNode3",
                 label: "Locked",
@@ -74,7 +71,6 @@ test.describe("ui-button render (P43)", () => {
     test("default state renders without crashing", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "btnApp4", root: "btnApp4" })
-            .route({ id: "btnRoute4", path: "/" })
             .node("ui-button", { id: "btnNode4" })
             .build();
 

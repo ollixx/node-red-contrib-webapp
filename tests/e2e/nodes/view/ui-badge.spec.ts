@@ -22,7 +22,6 @@ test.describe("ui-badge (P43)", () => {
     test("renders sl-badge element", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "badgeApp1", root: "badgeApp1" })
-            .route({ id: "badgeRoute1", path: "/" })
             .node("ui-badge", { id: "badgeNode1", value: { kind: "literal", value: "42" } })
             .build();
 
@@ -36,7 +35,6 @@ test.describe("ui-badge (P43)", () => {
     test("value renders inside sl-badge", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "badgeApp2", root: "badgeApp2" })
-            .route({ id: "badgeRoute2", path: "/" })
             .node("ui-badge", { id: "badgeNode2", value: { kind: "literal", value: "99" } })
             .build();
 
@@ -50,7 +48,6 @@ test.describe("ui-badge (P43)", () => {
     test("severity 'success' — sl-badge variant=success", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "badgeApp3", root: "badgeApp3" })
-            .route({ id: "badgeRoute3", path: "/" })
             .node("ui-badge", { id: "badgeNode3", value: { kind: "literal", value: "OK" }, severity: "success" })
             .build();
 
@@ -66,7 +63,6 @@ test.describe("ui-badge (P43)", () => {
     test("default/empty state renders without crashing", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "badgeApp4", root: "badgeApp4" })
-            .route({ id: "badgeRoute4", path: "/" })
             .node("ui-badge", { id: "badgeNode4", value: { kind: "literal", value: "" } })
             .build();
 

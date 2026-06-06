@@ -145,7 +145,6 @@ test.describe("ui-navigation (P46)", () => {
     test("deploying a ui-navigation node alone does not break the page render", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "navApp3", root: "navApp3" })
-            .route({ id: "navRoute3", path: "/" })
             .node("ui-text", { id: "navTxt3", text: "Page renders fine" })
             .node("ui-navigation", {
                 id: "navNode3",

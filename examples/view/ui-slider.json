@@ -21,27 +21,12 @@
     ]
   },
   {
-    "id": "sliderRoute",
-    "type": "ui-route",
-    "name": "sliderRoute",
-    "uiId": "sliderRoute",
-    "path": "/",
-    "parent": "sliderApp",
-    "layoutId": "vertical",
-    "z": "ex-ui-slider",
-    "x": 120,
-    "y": 180,
-    "wires": [
-      []
-    ]
-  },
-  {
     "id": "sliderNode",
     "type": "ui-slider",
     "name": "sliderNode",
     "uiId": "sliderNode",
     "parent": "sliderApp",
-    "mount": "sliderRoute.content",
+    "mount": "sliderApp.content",
     "z": "ex-ui-slider",
     "x": 480,
     "y": 280,

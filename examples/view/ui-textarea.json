@@ -21,27 +21,12 @@
     ]
   },
   {
-    "id": "taRoute",
-    "type": "ui-route",
-    "name": "taRoute",
-    "uiId": "taRoute",
-    "path": "/",
-    "parent": "taApp",
-    "layoutId": "vertical",
-    "z": "ex-ui-textarea",
-    "x": 120,
-    "y": 180,
-    "wires": [
-      []
-    ]
-  },
-  {
     "id": "taNode",
     "type": "ui-textarea",
     "name": "taNode",
     "uiId": "taNode",
     "parent": "taApp",
-    "mount": "taRoute.content",
+    "mount": "taApp.content",
     "z": "ex-ui-textarea",
     "x": 480,
     "y": 280,

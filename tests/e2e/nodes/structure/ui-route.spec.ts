@@ -8,11 +8,14 @@ import { WebappPage } from "../../../helpers/webapp-page";
  * P42 — per-node E2E specs for ui-route (structure node).
  *
  * Covers the properties documented in the P42 scope:
- *   - Single route at "/" → renders at /webapp/:appId/.
+ *   - App root "/" (the implicit ui-app route) → renders at /webapp/:appId/.
  *   - route at "/customers" → renders at /webapp/:appId/customers.
- *   - Two routes: navigating to each shows its content.
+ *   - app root + one sub-route: navigating to each shows its content.
  *   - layoutId "grid" vs "stack" → wrapper class differs in HTML.
  *   - title field → appears in the page <title> element.
+ *
+ * P48: a ui-route never uses path "/". The app is the implicit root route;
+ * home content mounts directly to the ui-app slots (appId.content).
  */
 
 test.describe("ui-route (P42)", () => {
@@ -20,10 +23,9 @@ test.describe("ui-route (P42)", () => {
         await resetFlow(request);
     });
 
-    test("single route at '/' — renders at /webapp/:appId/", async ({ page, request }) => {
+    test("app root '/' (no ui-route) — renders home content at /webapp/:appId/", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "routeApp1", root: "routeApp1", name: "Route App", layout: "vertical" })
-            .route({ id: "routeHome1", path: "/" })
             .node("ui-text", { id: "routeHomeText", text: "Home content" })
             .build();
 
@@ -52,7 +54,6 @@ test.describe("ui-route (P42)", () => {
         // Build a flow with two routes, each containing a distinct text node.
         const flow = new FlowBuilder()
             .app({ id: "routeApp3", root: "routeApp3", name: "Multi-Route App", layout: "vertical" })
-            .route({ id: "routeHome3", path: "/" })
             .node("ui-text", { id: "routeHomeText3", text: "Home page" })
             .route({ id: "routeAbout3", path: "/about" })
             .node("ui-text", { id: "routeAboutText3", text: "About page" })
@@ -74,41 +75,45 @@ test.describe("ui-route (P42)", () => {
     });
 
     test("layoutId 'grid' — webapp-layout--grid class in HTML", async ({ page, request }) => {
+        // P48: layoutId is a ui-route property, so exercise it on a sub-path route.
         const flow = new FlowBuilder()
             .app({ id: "routeApp4", root: "routeApp4", name: "Grid App", layout: "vertical" })
-            .route({ id: "routeGrid4", path: "/", layoutId: "grid" })
+            .route({ id: "routeGrid4", path: "/grid", layoutId: "grid" })
+            .node("ui-text", { id: "routeGridText4", text: "Grid content" })
             .build();
 
         await deployFlow(request, flow);
 
         const webapp = new WebappPage(page, "routeApp4");
-        await webapp.navigate("/");
+        await webapp.navigate("/grid");
         await expect(page.locator(".webapp-layout--grid")).toBeVisible();
     });
 
     test("layoutId 'vertical' (stack) — webapp-layout--vertical class in HTML", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "routeApp5", root: "routeApp5", name: "Stack App", layout: "vertical" })
-            .route({ id: "routeStack5", path: "/", layoutId: "vertical" })
+            .route({ id: "routeStack5", path: "/stack", layoutId: "vertical" })
+            .node("ui-text", { id: "routeStackText5", text: "Stack content" })
             .build();
 
         await deployFlow(request, flow);
 
         const webapp = new WebappPage(page, "routeApp5");
-        await webapp.navigate("/");
+        await webapp.navigate("/stack");
         await expect(page.locator(".webapp-layout--vertical")).toBeVisible();
     });
 
     test("title field — appears in the page <title> element", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "routeApp6", root: "routeApp6", name: "Titled App", layout: "vertical" })
-            .route({ id: "routeTitle6", path: "/", title: "My Route Title" })
+            .route({ id: "routeTitle6", path: "/titled", title: "My Route Title" })
+            .node("ui-text", { id: "routeTitleText6", text: "Titled content" })
             .build();
 
         await deployFlow(request, flow);
 
         const webapp = new WebappPage(page, "routeApp6");
-        await webapp.navigate("/");
+        await webapp.navigate("/titled");
         await expect(page).toHaveTitle(/My Route Title/);
     });
 });

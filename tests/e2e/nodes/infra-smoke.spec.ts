@@ -24,7 +24,6 @@ test.describe("per-node E2E infrastructure (P41)", () => {
     test("deployFlow + resetFlow round-trip works", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "smokeApp", root: "smokeApp" })
-            .route({ id: "smokeHome", path: "/" })
             .node("ui-text", { id: "smokeText", text: "Hello smoke" })
             .build();
 
@@ -47,7 +46,6 @@ test.describe("per-node E2E infrastructure (P41)", () => {
     test("WebappPage.interceptNextEvent captures a POST /event body", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "evtApp", root: "evtApp" })
-            .route({ id: "evtHome", path: "/" })
             .node("ui-button", { id: "evtButton", label: "Fire" })
             .build();
         await deployFlow(request, flow);

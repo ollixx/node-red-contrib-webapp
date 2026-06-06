@@ -18,8 +18,9 @@ test.describe("editor panels — view nodes (P47)", () => {
         await resetFlow(request);
     });
 
+    // P48: the app is the implicit root route; nodes auto-mount to `${appId}.content`.
     function appWithRoute(builder: FlowBuilder, appId: string): FlowBuilder {
-        return builder.app({ id: appId, root: appId, name: appId }).route({ id: `${appId}Route`, path: "/" });
+        return builder.app({ id: appId, root: appId, name: appId });
     }
 
     test("ui-input — fields present, required valuePath drives validity, persists", async ({ page, request }) => {

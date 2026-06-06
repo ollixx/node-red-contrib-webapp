@@ -26,22 +26,6 @@
     },
     {
         "type": "ui-route",
-        "id": "routeHome",
-        "name": "Home",
-        "uiId": "routeHome",
-        "parent": "customersApp",
-        "path": "/",
-        "title": "Home",
-        "layoutId": "app",
-        "z": "flow1",
-        "x": 360,
-        "y": 60,
-        "wires": [
-            []
-        ]
-    },
-    {
-        "type": "ui-route",
         "id": "customers",
         "name": "Customers",
         "uiId": "customers",
@@ -270,7 +254,7 @@
         "name": "Page title",
         "uiId": "pageTitle",
         "parent": "customersApp",
-        "mount": "routeHome.content",
+        "mount": "customersApp.content",
         "order": -1,
         "text": "Customers CRM",
         "value": {
@@ -291,7 +275,7 @@
         "name": "Welcome heading",
         "uiId": "homeWelcomeHeading",
         "parent": "customersApp",
-        "mount": "routeHome.content",
+        "mount": "customersApp.content",
         "order": 0,
         "text": "Welcome to Customers CRM",
         "value": {
@@ -312,7 +296,7 @@
         "name": "Welcome body",
         "uiId": "homeWelcomeBody",
         "parent": "customersApp",
-        "mount": "routeHome.content",
+        "mount": "customersApp.content",
         "order": 1,
         "text": "Manage your customer relationships in one place.",
         "value": {
@@ -332,7 +316,7 @@
         "name": "Go to customers",
         "uiId": "homeGoToCustomersButton",
         "parent": "customersApp",
-        "mount": "routeHome.content",
+        "mount": "customersApp.content",
         "order": 2,
         "label": "Go to customers",
         "action": "goToCustomers",
@@ -351,7 +335,7 @@
         "name": "Home tip",
         "uiId": "homeTipAlert",
         "parent": "customersApp",
-        "mount": "routeHome.content",
+        "mount": "customersApp.content",
         "order": 3,
         "message": {
             "kind": "literal",

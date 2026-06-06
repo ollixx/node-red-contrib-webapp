@@ -48,7 +48,6 @@ test.describe("ui-query (P46)", () => {
         // to the store node which applies the update.
         const flow = new FlowBuilder()
             .app({ id: "queryApp1", root: "queryApp1" })
-            .route({ id: "queryRoute1", path: "/" })
             .node("ui-store", {
                 id: storeId,
                 statePath: "rows",
@@ -127,7 +126,6 @@ test.describe("ui-query (P46)", () => {
         // flow through it.
         const flow = new FlowBuilder()
             .app({ id: "queryApp2", root: "queryApp2" })
-            .route({ id: "queryRoute2", path: "/" })
             .node("ui-query", {
                 id: "qQueryNode2",
                 queryPath: "items.list",
@@ -161,7 +159,6 @@ test.describe("ui-query (P46)", () => {
     test("injecting directly to a query node (no downstream wiring) does not crash the runtime", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "queryApp3", root: "queryApp3" })
-            .route({ id: "queryRoute3", path: "/" })
             .node("ui-query", {
                 id: "qQueryNode3",
                 queryPath: "data.list",

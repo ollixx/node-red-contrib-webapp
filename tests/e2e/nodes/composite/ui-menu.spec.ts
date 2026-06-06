@@ -27,7 +27,6 @@ test.describe("ui-menu (P45)", () => {
 
         const flow = new FlowBuilder()
             .app({ id: "menuApp1", root: "menuApp1" })
-            .route({ id: "menuRoute1", path: "/" })
             .node("ui-menu", { id: "menuNode1", items })
             .build();
 
@@ -46,7 +45,6 @@ test.describe("ui-menu (P45)", () => {
     test("item with route renders correctly with label text", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "menuApp2", root: "menuApp2" })
-            .route({ id: "menuRoute2", path: "/" })
             .node("ui-menu", {
                 id: "menuNode2",
                 items: JSON.stringify([{ label: "Customers", route: "/customers" }])
@@ -69,7 +67,6 @@ test.describe("ui-menu (P45)", () => {
     test("item with explicit href renders in the page HTML", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "menuApp3", root: "menuApp3" })
-            .route({ id: "menuRoute3", path: "/" })
             .node("ui-menu", {
                 id: "menuNode3",
                 items: JSON.stringify([{ label: "External", href: "https://example.com" }])

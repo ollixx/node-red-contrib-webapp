@@ -23,12 +23,10 @@ test.describe("ui-app (P42)", () => {
     });
 
     test("minimal config — app-bar visible with title", async ({ page, request }) => {
-        // The 'app' layout is the app node's layout field; it is propagated to the
-        // root route via createAppRootRoute when no explicit route for "/" exists.
-        // Set layoutId: "app" on the route so the route uses the app-layout preset.
+        // P48: the app node's layout field drives the implicit root route's layout
+        // via createAppRootRoute — no explicit ui-route for "/" is needed (or allowed).
         const flow = new FlowBuilder()
             .app({ id: "appMinimal", root: "appMinimal", name: "My App", layout: "app" })
-            .route({ id: "appMinimalHome", path: "/", layoutId: "app" })
             .build();
 
         await deployFlow(request, flow);
@@ -49,7 +47,6 @@ test.describe("ui-app (P42)", () => {
                 layout: "app",
                 tokens: JSON.stringify({ colorPrimary: "#7c3aed" })
             })
-            .route({ id: "appTokensHome", path: "/", layoutId: "app" })
             .build();
 
         await deployFlow(request, flow);
@@ -79,7 +76,6 @@ test.describe("ui-app (P42)", () => {
     test("layout preset 'app' — app-bar and slot chrome render", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "appLayoutApp", root: "appLayoutApp", name: "Shell App", layout: "app" })
-            .route({ id: "appLayoutAppHome", path: "/", layoutId: "app" })
             .build();
 
         await deployFlow(request, flow);
@@ -95,7 +91,6 @@ test.describe("ui-app (P42)", () => {
     test("layout preset 'plain' — no app-bar rendered", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "appLayoutPlain", root: "appLayoutPlain", name: "Plain App", layout: "vertical" })
-            .route({ id: "appLayoutPlainHome", path: "/" })
             .build();
 
         await deployFlow(request, flow);
@@ -114,15 +109,17 @@ test.describe("ui-app (P42)", () => {
         // individual route's layoutId. This means navigating to a route that
         // uses layoutId: "vertical" must still show the app-bar when the app
         // itself has layout: "app".
+        // P48: "/" is the implicit app root; the sub-route uses layoutId "vertical".
         const flow = new FlowBuilder()
             .app({ id: "appBarPersist", root: "appBarPersist", name: "Persistent Bar", layout: "app" })
-            .route({ id: "appBarPersistHome", path: "/", layoutId: "vertical" })
+            .route({ id: "appBarPersistSub", path: "/sub", layoutId: "vertical" })
+            .node("ui-text", { id: "appBarPersistText", text: "Sub page" })
             .build();
 
         await deployFlow(request, flow);
 
         const webapp = new WebappPage(page, "appBarPersist");
-        await webapp.navigate("/");
+        await webapp.navigate("/sub");
 
         // App-bar must be visible even though the route uses layoutId "vertical".
         await expect(page.locator(".webapp-app-bar")).toBeVisible();

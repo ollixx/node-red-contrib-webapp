@@ -21,27 +21,12 @@
     ]
   },
   {
-    "id": "avatarRoute",
-    "type": "ui-route",
-    "name": "avatarRoute",
-    "uiId": "avatarRoute",
-    "path": "/",
-    "parent": "avatarApp",
-    "layoutId": "vertical",
-    "z": "ex-ui-avatar",
-    "x": 120,
-    "y": 180,
-    "wires": [
-      []
-    ]
-  },
-  {
     "id": "initialsAvatar",
     "type": "ui-avatar",
     "name": "initials avatar",
     "uiId": "initialsAvatar",
     "parent": "avatarApp",
-    "mount": "avatarRoute.content",
+    "mount": "avatarApp.content",
     "z": "ex-ui-avatar",
     "x": 480,
     "y": 280,
@@ -57,7 +42,7 @@
     "name": "photo avatar",
     "uiId": "imgAvatar",
     "parent": "avatarApp",
-    "mount": "avatarRoute.content",
+    "mount": "avatarApp.content",
     "z": "ex-ui-avatar",
     "x": 480,
     "y": 360,

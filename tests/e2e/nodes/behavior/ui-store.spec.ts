@@ -26,7 +26,6 @@ test.describe("ui-store (P46)", () => {
     test("store with initial value → bound ui-text renders that value", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "storeApp1", root: "storeApp1" })
-            .route({ id: "storeRoute1", path: "/" })
             .node("ui-store", {
                 id: "storeNode1",
                 statePath: "greeting",
@@ -48,7 +47,6 @@ test.describe("ui-store (P46)", () => {
     test("store with numeric initial value → bound ui-text renders the number", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "storeApp2", root: "storeApp2" })
-            .route({ id: "storeRoute2", path: "/" })
             .node("ui-store", {
                 id: "storeNode2",
                 statePath: "count",
@@ -72,7 +70,6 @@ test.describe("ui-store (P46)", () => {
     test("inject message to store node → bound ui-text updates via SSE", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "storeApp3", root: "storeApp3" })
-            .route({ id: "storeRoute3", path: "/" })
             .node("ui-store", {
                 id: "storeNode3",
                 statePath: "msg",
@@ -107,7 +104,6 @@ test.describe("ui-store (P46)", () => {
     test("value injected into store persists when re-navigating within session", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "storeApp4", root: "storeApp4" })
-            .route({ id: "storeRoute4", path: "/" })
             .node("ui-store", {
                 id: "storeNode4",
                 statePath: "label",

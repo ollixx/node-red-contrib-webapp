@@ -21,27 +21,12 @@
     ]
   },
   {
-    "id": "inputRoute",
-    "type": "ui-route",
-    "name": "inputRoute",
-    "uiId": "inputRoute",
-    "path": "/",
-    "parent": "inputApp",
-    "layoutId": "vertical",
-    "z": "ex-ui-input",
-    "x": 120,
-    "y": 180,
-    "wires": [
-      []
-    ]
-  },
-  {
     "id": "inputNode",
     "type": "ui-input",
     "name": "inputNode",
     "uiId": "inputNode",
     "parent": "inputApp",
-    "mount": "inputRoute.content",
+    "mount": "inputApp.content",
     "z": "ex-ui-input",
     "x": 480,
     "y": 280,

@@ -21,27 +21,12 @@
     ]
   },
   {
-    "id": "accRoute",
-    "type": "ui-route",
-    "name": "accRoute",
-    "uiId": "accRoute",
-    "path": "/",
-    "parent": "accApp",
-    "layoutId": "vertical",
-    "z": "ex-ui-accordion",
-    "x": 120,
-    "y": 180,
-    "wires": [
-      []
-    ]
-  },
-  {
     "id": "accNode",
     "type": "ui-accordion",
     "name": "FAQ accordion",
     "uiId": "accNode",
     "parent": "accApp",
-    "mount": "accRoute.content",
+    "mount": "accApp.content",
     "z": "ex-ui-accordion",
     "x": 480,
     "y": 280,

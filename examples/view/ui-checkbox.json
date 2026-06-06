@@ -21,27 +21,12 @@
     ]
   },
   {
-    "id": "cbRoute",
-    "type": "ui-route",
-    "name": "cbRoute",
-    "uiId": "cbRoute",
-    "path": "/",
-    "parent": "cbApp",
-    "layoutId": "vertical",
-    "z": "ex-ui-checkbox",
-    "x": 120,
-    "y": 180,
-    "wires": [
-      []
-    ]
-  },
-  {
     "id": "cbNode",
     "type": "ui-checkbox",
     "name": "cbNode",
     "uiId": "cbNode",
     "parent": "cbApp",
-    "mount": "cbRoute.content",
+    "mount": "cbApp.content",
     "z": "ex-ui-checkbox",
     "x": 480,
     "y": 280,

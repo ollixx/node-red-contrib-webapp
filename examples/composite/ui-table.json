@@ -21,21 +21,6 @@
     ]
   },
   {
-    "id": "tblRoute",
-    "type": "ui-route",
-    "name": "tblRoute",
-    "uiId": "tblRoute",
-    "path": "/",
-    "parent": "tblApp",
-    "layoutId": "vertical",
-    "z": "ex-ui-table",
-    "x": 120,
-    "y": 180,
-    "wires": [
-      []
-    ]
-  },
-  {
     "id": "rowsStore",
     "type": "ui-store",
     "name": "rows store",
@@ -56,7 +41,7 @@
     "name": "users table",
     "uiId": "tblNode",
     "parent": "tblApp",
-    "mount": "tblRoute.content",
+    "mount": "tblApp.content",
     "z": "ex-ui-table",
     "x": 480,
     "y": 280,

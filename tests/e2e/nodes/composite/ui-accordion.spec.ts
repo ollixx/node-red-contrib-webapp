@@ -26,7 +26,6 @@ test.describe("ui-accordion (P45)", () => {
 
         const flow = new FlowBuilder()
             .app({ id: "accApp1", root: "accApp1" })
-            .route({ id: "accRoute1", path: "/" })
             .node("ui-accordion", { id: "accNode1", items })
             .build();
 
@@ -47,7 +46,6 @@ test.describe("ui-accordion (P45)", () => {
 
         const flow = new FlowBuilder()
             .app({ id: "accApp2", root: "accApp2" })
-            .route({ id: "accRoute2", path: "/" })
             .node("ui-accordion", { id: "accNode2", items })
             .build();
 
@@ -63,7 +61,6 @@ test.describe("ui-accordion (P45)", () => {
     test("empty items renders accordion container without crashing", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "accApp3", root: "accApp3" })
-            .route({ id: "accRoute3", path: "/" })
             .node("ui-accordion", { id: "accNode3", items: "" })
             .build();
 

@@ -8,7 +8,15 @@
             defaults: {
                 name: { value: "" },
                 parent: { value: "" },
-                path: { value: "", required: true },
+                path: {
+                    value: "",
+                    required: true,
+                    // P48: "/" is reserved for the implicit app root route (the
+                    // ui-app owns "/"). A ui-route must declare a sub-path.
+                    validate: function (v) {
+                        return typeof v === "string" && v.length > 0 && v !== "/";
+                    }
+                },
                 title: { value: "" },
                 layoutId: { value: "", required: true },
                 events: { value: "[]" },

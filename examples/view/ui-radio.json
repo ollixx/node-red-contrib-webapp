@@ -21,27 +21,12 @@
     ]
   },
   {
-    "id": "radioRoute",
-    "type": "ui-route",
-    "name": "radioRoute",
-    "uiId": "radioRoute",
-    "path": "/",
-    "parent": "radioApp",
-    "layoutId": "vertical",
-    "z": "ex-ui-radio",
-    "x": 120,
-    "y": 180,
-    "wires": [
-      []
-    ]
-  },
-  {
     "id": "radioNode",
     "type": "ui-radio",
     "name": "radioNode",
     "uiId": "radioNode",
     "parent": "radioApp",
-    "mount": "radioRoute.content",
+    "mount": "radioApp.content",
     "z": "ex-ui-radio",
     "x": 480,
     "y": 280,

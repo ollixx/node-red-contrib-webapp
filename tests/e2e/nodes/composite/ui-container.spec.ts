@@ -22,7 +22,6 @@ test.describe("ui-container (P45)", () => {
     test("renders sl-card wrapper", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "ctnApp1", root: "ctnApp1" })
-            .route({ id: "ctnRoute1", path: "/" })
             .node("ui-container", { id: "ctnNode1", layoutId: "vertical" })
             .build();
 
@@ -37,7 +36,6 @@ test.describe("ui-container (P45)", () => {
         const containerId = "ctnNode2";
         const flow = new FlowBuilder()
             .app({ id: "ctnApp2", root: "ctnApp2" })
-            .route({ id: "ctnRoute2", path: "/" })
             .node("ui-container", { id: containerId, layoutId: "vertical" })
             .node("ui-text", {
                 id: "ctnText2",
@@ -58,7 +56,6 @@ test.describe("ui-container (P45)", () => {
         const containerId = "ctnNode3";
         const flow = new FlowBuilder()
             .app({ id: "ctnApp3", root: "ctnApp3" })
-            .route({ id: "ctnRoute3", path: "/" })
             .node("ui-container", { id: containerId, layoutId: "vertical" })
             .node("ui-text", { id: "ctnText3a", text: "First", mount: `container:${containerId}/content` })
             .node("ui-text", { id: "ctnText3b", text: "Second", mount: `container:${containerId}/content` })
@@ -75,7 +72,6 @@ test.describe("ui-container (P45)", () => {
     test("layout preset 'grid' — container renders without crashing", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "ctnApp4", root: "ctnApp4" })
-            .route({ id: "ctnRoute4", path: "/" })
             .node("ui-container", { id: "ctnNode4", layoutId: "grid" })
             .build();
 

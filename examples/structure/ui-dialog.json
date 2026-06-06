@@ -21,21 +21,6 @@
     ]
   },
   {
-    "id": "dlgHome",
-    "type": "ui-route",
-    "name": "dlgHome",
-    "uiId": "dlgHome",
-    "path": "/",
-    "parent": "dlgApp",
-    "layoutId": "vertical",
-    "z": "ex-ui-dialog",
-    "x": 120,
-    "y": 180,
-    "wires": [
-      []
-    ]
-  },
-  {
     "id": "myDialog",
     "type": "ui-dialog",
     "name": "Confirm Action",
@@ -55,7 +40,7 @@
     "name": "open dialog",
     "uiId": "openBtn",
     "parent": "dlgApp",
-    "mount": "dlgHome.content",
+    "mount": "dlgApp.content",
     "z": "ex-ui-dialog",
     "x": 480,
     "y": 280,

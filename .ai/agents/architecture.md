@@ -21,6 +21,7 @@
 - Layout presets are the only layout mechanism. There are no custom `ui-layout` or `ui-slot` nodes.
 - App scoping: every non-app node belongs to exactly one `ui-app` via its `parent` field.
 - Mount paths follow the pattern `<type>:<id>/<slot>` (e.g. `route:/customers/content`).
+- A `ui-route` path must never be `"/"`. The `ui-app` node is the implicit root route; home content mounts to `appId.*` slots (e.g. `appId.content`). The schema (`routeNodePathSchema` in `packages/schema/src/contracts.ts`) and the editor reject a `ui-route` with `path: "/"`. The compiled `AppModel` still contains a single `"/"` route — the implicit app root with `id === appId`, created by `createAppRootRoute`.
 - The example flow (`examples/customers-crud/flow.json`) is **generated**, not hand-edited. It is produced from the typed schema fixture via `pnpm gen:example` (see P18). After any phase that renames or adds node fields, re-run `pnpm gen:example` as the final step so the example stays current without manual migration.
 - **`.node-red-dev/flows.json` is completely off-limits for agents.** Never read, write, or regenerate it — not even via `pnpm gen:example`. It is the owner's personal dev environment and only the owner manages it.
 
