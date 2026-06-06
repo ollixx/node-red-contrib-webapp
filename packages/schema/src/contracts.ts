@@ -245,6 +245,100 @@ export const componentKindSchema = z.enum([
     "stepper"
 ]);
 
+/**
+ * Component variant vocabularies (theming.md Ebene 2 — semantic roles).
+ *
+ * P49: a SINGLE, PORTABLE source of truth for the `variant` field of each
+ * component kind. The vocabulary belongs to the component CONTRACT, above the
+ * renderer-backend seam (ADR 0002), so the editor SelectBox (P50) and the
+ * serializer import the SAME constants. It is deliberately GENEROUS: a backend
+ * may map several variants onto the same concrete output (many-to-one) and must
+ * degrade gracefully for an unknown value — a backend NEVER adds its own
+ * variants.
+ *
+ * IMPORTANT — variant vs displayType. Some nodes carry an HTML field named
+ * `variant` that is really a DISPLAY TYPE, not an Ebene-2 semantic role
+ * (ui-progress bar/spinner/circular, ui-list unordered/ordered/description,
+ * ui-menu sidebar/topbar, ui-skeleton text/avatar/card/table, ui-badge
+ * count/dot/status). Those are NOT part of the variant vocabulary and must not
+ * appear in the variant SelectBox — they are display types. The semantic
+ * variant for those nodes lives elsewhere (ui-badge/ui-alert use `severity`).
+ */
+export const BUTTON_VARIANTS = [
+    "primary",
+    "secondary",
+    "success",
+    "danger",
+    "warning",
+    "neutral",
+    "ghost",
+    "link"
+] as const;
+
+export const TEXT_VARIANTS = [
+    "heading-1",
+    "heading-2",
+    "heading-3",
+    "body",
+    "caption",
+    "label",
+    "code",
+    "muted"
+] as const;
+
+export const CONTAINER_VARIANTS = ["card", "panel", "section", "transparent"] as const;
+
+export const INPUT_VARIANTS = ["default", "filled", "outlined"] as const;
+
+/**
+ * Status/severity vocabulary shared by ui-alert and ui-badge. `info` is an
+ * accepted ALIAS of `primary` (the serializer maps it onto the primary look).
+ */
+export const SEVERITY_VARIANTS = ["primary", "success", "warning", "danger", "neutral", "info"] as const;
+
+export const BADGE_VARIANTS = SEVERITY_VARIANTS;
+export const ALERT_VARIANTS = SEVERITY_VARIANTS;
+
+export type ButtonVariant = (typeof BUTTON_VARIANTS)[number];
+export type TextVariant = (typeof TEXT_VARIANTS)[number];
+export type ContainerVariant = (typeof CONTAINER_VARIANTS)[number];
+export type InputVariant = (typeof INPUT_VARIANTS)[number];
+export type SeverityVariant = (typeof SEVERITY_VARIANTS)[number];
+
+/**
+ * Per-node-type variant vocabulary lookup. Maps a component `kind` to its
+ * fixed list of TRUE Ebene-2 semantic variants. Kinds whose `variant`-named
+ * field is actually a display type are intentionally ABSENT here so that
+ * downstream consumers (editor SelectBox, serializer) treat only real variants
+ * as variants. ui-badge/ui-alert expose their semantic variant via `severity`,
+ * so the vocabulary is keyed for both `kind` and the field convention used by
+ * each node.
+ */
+export const COMPONENT_VARIANT_VOCABULARY: Readonly<Record<string, readonly string[]>> = {
+    button: BUTTON_VARIANTS,
+    text: TEXT_VARIANTS,
+    container: CONTAINER_VARIANTS,
+    card: CONTAINER_VARIANTS,
+    input: INPUT_VARIANTS,
+    badge: BADGE_VARIANTS,
+    alert: ALERT_VARIANTS
+};
+
+/**
+ * Documented default variant per kind. A node that omits `variant` renders as
+ * if it had this value; the serializer must produce the same output for an
+ * absent variant and for the explicit default.
+ */
+export const COMPONENT_VARIANT_DEFAULT: Readonly<Record<string, string>> = {
+    button: "neutral",
+    text: "body",
+    container: "card",
+    card: "card",
+    input: "default",
+    badge: "neutral",
+    alert: "primary"
+};
+
 export const uiEventNameSchema = z.enum(["click", "submit", "change", "select", "open", "close", "navigate", "load"]);
 
 export const componentEventHandlerSchema = z.object({

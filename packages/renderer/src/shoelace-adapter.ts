@@ -76,8 +76,13 @@ const FALLBACK_TAG = "div";
 const BUTTON_VARIANT_TO_SHOELACE: Record<string, string> = {
     primary: "primary",
     secondary: "neutral",
+    success: "success",
     danger: "danger",
+    warning: "warning",
+    neutral: "neutral",
     ghost: "default",
+    // text/link are textual buttons → Shoelace "text" (many-to-one, P49)
+    text: "text",
     link: "text"
 };
 

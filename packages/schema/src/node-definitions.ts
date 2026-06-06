@@ -3,10 +3,14 @@ import { z } from "zod";
 import {
     actionTargetModeSchema,
     actionTypeSchema,
+    BUTTON_VARIANTS,
     bindingSchema,
+    CONTAINER_VARIANTS,
     identifierSchema,
+    INPUT_VARIANTS,
     routeNodePathSchema,
-    routePathSchema
+    routePathSchema,
+    TEXT_VARIANTS
 } from "./contracts";
 import { standardLayoutPresetIds } from "./layout-presets";
 import { formatValidationIssues } from "./validation";
@@ -142,6 +146,8 @@ export type UiAppNodeDefinition = z.infer<typeof uiAppNodeDefinitionSchema>;
 export const uiContainerNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-container"),
     layout: standardLayoutPresetSchema,
+    // P49: true Ebene-2 variant (surface role). Default "card".
+    variant: z.enum(CONTAINER_VARIANTS).optional(),
     events: z.array(z.enum(["onShow", "onHide"])).optional()
 });
 
@@ -173,7 +179,8 @@ export type UiDialogNodeDefinition = z.infer<typeof uiDialogNodeDefinitionSchema
 export const uiTextNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-text"),
     value: bindingSchema,
-    variant: z.string().min(1, "Text variants must not be empty.").optional()
+    // P49: constrained to the portable text vocabulary. Default "body".
+    variant: z.enum(TEXT_VARIANTS).optional()
 });
 
 export type UiTextNodeDefinition = z.infer<typeof uiTextNodeDefinitionSchema>;
@@ -181,6 +188,8 @@ export type UiTextNodeDefinition = z.infer<typeof uiTextNodeDefinitionSchema>;
 export const uiButtonNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-button"),
     label: z.string().min(1, "Button labels must not be empty."),
+    // P49: true Ebene-2 variant (semantic action role). Default "neutral".
+    variant: z.enum(BUTTON_VARIANTS).optional(),
     // action is deprecated — click events are now emitted on the output port.
     // Kept for backward compatibility with existing flows.
     action: z.string().min(1, "Buttons must reference an action.").optional(),
@@ -221,6 +230,8 @@ export const uiInputNodeDefinitionSchema = mountableNodeSchema.extend({
     storeId: identifierSchema.optional(),
     path: z.string().min(1, "Input store paths must not be empty.").optional(),
     inputType: z.enum(["text", "email", "number"]).default("text"),
+    // P49: true Ebene-2 variant (field style). Default "default".
+    variant: z.enum(INPUT_VARIANTS).optional(),
     placeholder: z.string().min(1, "Input placeholders must not be empty.").optional(),
     disabled: bindingSchema.optional()
 }).superRefine((input, context) => {
@@ -391,7 +402,10 @@ export type UiToastNodeDefinition = z.infer<typeof uiToastNodeDefinitionSchema>;
 
 export const uiProgressNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-progress"),
-    variant: z.enum(["bar", "spinner", "circular"]).optional(),
+    // P49: this is a DISPLAY TYPE (rendering form), not an Ebene-2 semantic
+    // variant — renamed from `variant` so the variant SelectBox (P50) stays
+    // semantic. Legacy `variant` is still accepted by webapp.js mapConfig.
+    displayType: z.enum(["bar", "spinner", "circular"]).optional(),
     value: bindingSchema.optional(),
     label: z.string().optional(),
     showValue: z.boolean().optional()
@@ -402,7 +416,8 @@ export type UiProgressNodeDefinition = z.infer<typeof uiProgressNodeDefinitionSc
 export const uiSkeletonNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-skeleton"),
     visible: bindingSchema,
-    variant: z.enum(["text", "avatar", "card", "table"]).optional(),
+    // P49: DISPLAY TYPE (placeholder shape), not a semantic variant.
+    displayType: z.enum(["text", "avatar", "card", "table"]).optional(),
     lines: z.number().int().positive().optional()
 });
 
@@ -411,7 +426,9 @@ export type UiSkeletonNodeDefinition = z.infer<typeof uiSkeletonNodeDefinitionSc
 export const uiBadgeNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-badge"),
     value: bindingSchema,
-    variant: z.enum(["count", "dot", "status"]).optional(),
+    // P49: count/dot/status is a DISPLAY TYPE, not a semantic variant. The
+    // semantic Ebene-2 variant for a badge is `severity`.
+    displayType: z.enum(["count", "dot", "status"]).optional(),
     severity: z.enum(["default", "info", "warning", "error", "success"]).optional(),
     max: z.number().int().positive().optional()
 });
@@ -484,7 +501,9 @@ const menuItemSchema: z.ZodType<{ label: string; route?: string; href?: string; 
 
 export const uiMenuNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-menu"),
-    variant: z.enum(["sidebar", "topbar", "dropdown"]).optional(),
+    // P49: sidebar/topbar/dropdown is a DISPLAY TYPE (layout mode), not a
+    // semantic variant.
+    displayType: z.enum(["sidebar", "topbar", "dropdown"]).optional(),
     items: z.union([z.array(menuItemSchema), bindingSchema]),
     activeItem: bindingSchema.optional(),
     collapsed: bindingSchema.optional()
@@ -549,7 +568,8 @@ const listItemSchema = z.object({
 export const uiListNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-list"),
     items: z.union([z.array(listItemSchema), bindingSchema]),
-    variant: z.enum(["default", "divided", "compact"]).optional(),
+    // P49: list render mode is a DISPLAY TYPE, not a semantic variant.
+    displayType: z.enum(["default", "divided", "compact"]).optional(),
     events: z.array(z.enum(["itemClick", "itemSelect"])).optional()
 });
 

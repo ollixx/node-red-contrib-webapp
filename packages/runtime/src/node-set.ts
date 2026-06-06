@@ -82,7 +82,8 @@ function toButtonComponent(node: UiButtonNodeDefinition): ComponentDefinition {
         order: node.order,
         bind: node.disabled ? { disabled: node.disabled } : {},
         props: {
-            label: node.label
+            label: node.label,
+            ...(node.variant ? { variant: node.variant } : {})
         },
         events: [
             {
@@ -127,7 +128,8 @@ function toContainerComponent(node: UiContainerNodeDefinition): ComponentDefinit
         order: node.order,
         bind: {},
         props: {
-            layoutId: node.layout
+            layoutId: node.layout,
+            ...(node.variant ? { variant: node.variant } : {})
         },
         events: []
     };
@@ -147,7 +149,8 @@ function toInputComponent(node: UiInputNodeDefinition): ComponentDefinition {
             inputType: node.inputType,
             placeholder: node.placeholder,
             storeId: node.storeId,
-            path: node.path
+            path: node.path,
+            ...(node.variant ? { variant: node.variant } : {})
         },
         events: []
     };
@@ -177,7 +180,7 @@ function toBadgeComponent(node: UiBadgeNodeDefinition): ComponentDefinition {
         order: node.order,
         bind: { value: node.value },
         props: {
-            variant: node.variant,
+            displayType: node.displayType,
             severity: node.severity,
             max: node.max
         },

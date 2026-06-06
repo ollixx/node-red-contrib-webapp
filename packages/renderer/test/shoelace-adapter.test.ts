@@ -56,22 +56,22 @@ describe("P23 Shoelace adapter", () => {
 
     it("keeps the adapter's accepted variant vocabulary semantic — no framework token as input (audit guard)", () => {
         // The semantic side (what the schema/props emit, the adapter's *input*)
-        // must be the documented semantic vocabulary, never a Shoelace token.
-        // Framework values (neutral/text/contained/outlined) appear only on the
-        // *output* side of the mapping, produced inside the adapter.
-        const semanticVariants = ["primary", "secondary", "danger", "ghost", "link"];
-        const shoelaceOnlyTokens = ["neutral", "text", "contained", "outlined"];
+        // must be the documented P49 BUTTON_VARIANTS vocabulary. `neutral` and
+        // `text` are deliberately part of that semantic vocabulary (owner
+        // decision: generous, portable set) even though they coincide with
+        // Shoelace output tokens — that overlap is fine. Genuinely
+        // framework-specific tokens (contained/outlined) must NEVER be accepted.
+        const semanticVariants = ["primary", "secondary", "success", "danger", "warning", "neutral", "ghost", "link"];
+        const frameworkOnlyTokens = ["contained", "outlined"];
 
         // Every documented semantic variant resolves to a Shoelace variant…
         for (const variant of semanticVariants) {
             expect(mapButtonVariant(variant)).not.toBe("");
         }
 
-        // …and no Shoelace-only output token is itself accepted as a semantic
-        // input (i.e. passing a framework token does not silently pass through).
-        for (const token of shoelaceOnlyTokens) {
-            // Unknown semantic input falls back to "default", proving the schema
-            // side never carries framework tokens as valid variants.
+        // …and no framework-specific token is accepted as a semantic input
+        // (passing one does not silently pass through — it falls back).
+        for (const token of frameworkOnlyTokens) {
             expect(mapButtonVariant(token)).toBe("default");
         }
     });

@@ -77,6 +77,7 @@ export interface IdentifiedEditorConfig {
 export interface UiContainerEditorConfig extends MountableEditorConfig {
     layoutId?: StandardLayoutPresetId;
     title?: string;
+    variant?: "card" | "panel" | "section" | "transparent";
 }
 
 export interface UiRouteEditorConfig extends IdentifiedEditorConfig {
@@ -106,13 +107,14 @@ interface MountableEditorConfig extends IdentifiedEditorConfig {
 export interface UiTextEditorConfig extends MountableEditorConfig {
     text?: string;
     value?: BindingDefinition;
-    variant?: string;
+    variant?: "heading-1" | "heading-2" | "heading-3" | "body" | "caption" | "label" | "code" | "muted";
 }
 
 export interface UiButtonEditorConfig extends MountableEditorConfig {
     label?: string;
     action?: string;
     disabledPath?: string;
+    variant?: "primary" | "secondary" | "success" | "danger" | "warning" | "neutral" | "ghost" | "link";
 }
 
 export interface UiTableEditorConfig extends MountableEditorConfig {
@@ -128,6 +130,7 @@ export interface UiInputEditorConfig extends MountableEditorConfig {
     path?: string;
     inputType?: "text" | "email" | "number";
     placeholder?: string;
+    variant?: "default" | "filled" | "outlined";
 }
 
 export interface UiStoreEditorConfig extends IdentifiedEditorConfig {
@@ -224,7 +227,7 @@ export interface UiToastEditorConfig extends IdentifiedEditorConfig {
 }
 
 export interface UiProgressEditorConfig extends MountableEditorConfig {
-    variant?: "bar" | "spinner" | "circular";
+    displayType?: "bar" | "spinner" | "circular";
     valuePath?: string;
     label?: string;
     showValue?: boolean;
@@ -232,13 +235,13 @@ export interface UiProgressEditorConfig extends MountableEditorConfig {
 
 export interface UiSkeletonEditorConfig extends MountableEditorConfig {
     visiblePath?: string;
-    variant?: "text" | "avatar" | "card" | "table";
+    displayType?: "text" | "avatar" | "card" | "table";
     lines?: number;
 }
 
 export interface UiBadgeEditorConfig extends MountableEditorConfig {
     valuePath?: string;
-    variant?: "count" | "dot" | "status";
+    displayType?: "count" | "dot" | "status";
     severity?: "default" | "info" | "warning" | "error" | "success";
     max?: number;
 }
@@ -270,7 +273,7 @@ export interface UiBreadcrumbEditorConfig extends MountableEditorConfig {
 }
 
 export interface UiMenuEditorConfig extends MountableEditorConfig {
-    variant?: "sidebar" | "topbar";
+    displayType?: "sidebar" | "topbar";
     itemsPath?: string;
     activeRoutePath?: string;
 }
@@ -305,7 +308,7 @@ export interface UiIconEditorConfig extends MountableEditorConfig {
 
 export interface UiListEditorConfig extends MountableEditorConfig {
     itemsPath?: string;
-    variant?: "unordered" | "ordered" | "description";
+    displayType?: "default" | "divided" | "compact";
     events?: string;
 }
 
@@ -632,6 +635,7 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         mount: config.mount ?? "",
         label: config.label ?? "",
         action: config.action ?? "",
+        variant: config.variant,
         disabled: config.disabledPath ? stateBinding(config.disabledPath) : undefined,
         ...collectLayoutChildConfig(config)
     })),
@@ -672,6 +676,7 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         id: config.id ?? "",
         mount: config.mount ?? "",
         layout: config.layoutId ?? "vertical",
+        variant: config.variant,
         ...collectLayoutChildConfig(config)
     })),
     "ui-input": createDefinition("ui-input", "view", {
@@ -715,6 +720,7 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         path: config.path,
         inputType: config.inputType ?? "text",
         placeholder: config.placeholder,
+        variant: config.variant,
         ...collectLayoutChildConfig(config)
     })),
     "ui-select": createDefinition("ui-select", "view", {
@@ -988,7 +994,7 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         type: "ui-progress",
         id: config.id ?? "",
         mount: config.mount ?? "",
-        variant: config.variant,
+        displayType: config.displayType,
         value: config.valuePath ? stateBinding(config.valuePath) : undefined,
         label: config.label,
         showValue: config.showValue,
@@ -1003,7 +1009,7 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         id: config.id ?? "",
         mount: config.mount ?? "",
         visible: stateBinding(config.visiblePath ?? ""),
-        variant: config.variant,
+        displayType: config.displayType,
         lines: config.lines,
         ...collectLayoutChildConfig(config)
     })),
@@ -1016,7 +1022,7 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         id: config.id ?? "",
         mount: config.mount ?? "",
         value: stateBinding(config.valuePath ?? ""),
-        variant: config.variant,
+        displayType: config.displayType,
         severity: config.severity,
         max: config.max,
         ...collectLayoutChildConfig(config)
@@ -1080,7 +1086,7 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         type: "ui-menu",
         id: config.id ?? "",
         mount: config.mount ?? "",
-        variant: config.variant,
+        displayType: config.displayType,
         items: stateBinding(config.itemsPath ?? ""),
         activeItem: config.activeRoutePath ? stateBinding(config.activeRoutePath) : undefined,
         ...collectLayoutChildConfig(config)
@@ -1146,7 +1152,7 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         id: config.id ?? "",
         mount: config.mount ?? "",
         items: config.itemsPath ? stateBinding(config.itemsPath) : [],
-        variant: config.variant as "default" | "divided" | "compact" | undefined,
+        displayType: config.displayType,
         ...collectLayoutChildConfig(config)
     })),
     "ui-avatar": createDefinition("ui-avatar", "view", {

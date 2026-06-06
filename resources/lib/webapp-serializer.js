@@ -82,18 +82,62 @@
     const BUTTON_VARIANT_TO_SHOELACE = {
         primary: "primary",
         secondary: "neutral",
+        success: "success",
         danger: "danger",
+        warning: "warning",
+        neutral: "neutral",
         ghost: "default",
+        // text/link are textual buttons → Shoelace "text" (many-to-one ok)
+        text: "text",
         link: "text"
+    };
+
+    // P49: status/severity vocabulary shared by ui-badge + ui-alert. `info` is a
+    // deliberate ALIAS of primary. Legacy severity tokens (error/default) map too.
+    const SEVERITY_TO_SHOELACE = {
+        primary: "primary",
+        info: "primary",
+        success: "success",
+        warning: "warning",
+        danger: "danger",
+        error: "danger",
+        neutral: "neutral",
+        default: "neutral"
+    };
+
+    // P49: per-kind variant→Shoelace mapping table. ONE place that turns the
+    // portable Ebene-2 vocabulary into Shoelace variant tokens. Many-to-one is
+    // expected (ghost+text → "text"); an unknown value degrades to the kind
+    // default, never a raw pass-through.
+    const VARIANT_MAP_BY_KIND = {
+        button: BUTTON_VARIANT_TO_SHOELACE,
+        badge: SEVERITY_TO_SHOELACE,
+        alert: SEVERITY_TO_SHOELACE,
+        toast: SEVERITY_TO_SHOELACE
+    };
+
+    const VARIANT_DEFAULT_BY_KIND = {
+        button: "default",
+        badge: "neutral",
+        alert: "primary",
+        toast: "primary"
     };
 
     const SIZE_TO_SHOELACE = { xs: "small", sm: "small", md: "medium", lg: "large", xl: "large" };
 
-    function mapButtonVariant(variant) {
-        if (!variant) {
-            return "default";
+    // P49: single entry point. Maps a kind's semantic variant onto the Shoelace
+    // variant token. Unknown / absent → the kind's documented default.
+    function mapVariant(kind, variant) {
+        const table = VARIANT_MAP_BY_KIND[kind] || {};
+        const fallback = VARIANT_DEFAULT_BY_KIND[kind] || "default";
+        if (variant === undefined || variant === null || variant === "") {
+            return fallback;
         }
-        return BUTTON_VARIANT_TO_SHOELACE[variant] || "default";
+        return table[variant] || fallback;
+    }
+
+    function mapButtonVariant(variant) {
+        return mapVariant("button", variant);
     }
 
     function mapSize(size) {
@@ -232,7 +276,14 @@
         ctx = ctx || {};
 
         if (component.kind === "text") {
-            return wrapRenderedComponentHtml(component, layoutId, "<div class=\"webapp-text\">" + escapeHtml(component.text) + "</div>");
+            // P49: text has no Shoelace element. Its semantic Ebene-2 variant
+            // (heading-1…/body/muted/…) surfaces as a class modifier so a backend
+            // / theme can style it. Default "body" when absent.
+            const textVariant = (component.props && typeof component.props.variant === "string" && component.props.variant)
+                ? component.props.variant
+                : "body";
+            const variantClass = " webapp-text--" + sanitizeClassSuffix(textVariant);
+            return wrapRenderedComponentHtml(component, layoutId, "<div class=\"webapp-text" + variantClass + "\">" + escapeHtml(component.text) + "</div>");
         }
 
         if (component.kind === "button") {
@@ -337,7 +388,15 @@
                 ? "<form class=\"webapp-form\" id=\"" + escapeAttribute(formId) + "\" data-webapp-form-id=\"" + escapeAttribute(formId) + "\">" + content + "</form>"
                 : content;
             const descriptor = mapComponentToShoelace(component.kind, component.props || {});
-            const inner = "<" + descriptor.tag + " class=\"webapp-container\">" + body + "</" + descriptor.tag + ">";
+            // P49: container's semantic Ebene-2 variant (card/panel/section/
+            // transparent) surfaces as a class modifier + a data hook. Default
+            // "card" when absent.
+            const containerVariant = (component.props && typeof component.props.variant === "string" && component.props.variant)
+                ? component.props.variant
+                : "card";
+            const containerVariantClass = " webapp-container--" + sanitizeClassSuffix(containerVariant);
+            const inner = "<" + descriptor.tag + " class=\"webapp-container" + containerVariantClass
+                + "\" variant=\"" + escapeAttribute(containerVariant) + "\">" + body + "</" + descriptor.tag + ">";
             return wrapRenderedComponentHtml(component, layoutId, inner);
         }
 
@@ -434,8 +493,8 @@
                 component.value !== undefined && component.value !== null ? component.value
                     : (typeof rawMessage === "string" ? rawMessage : "")
             );
-            const severity = String(component.props.severity || "primary");
-            const shoelaceVariant = ({ info: "primary", warning: "warning", error: "danger", success: "success" })[severity] || severity;
+            const severity = component.props.severity ? String(component.props.severity) : undefined;
+            const shoelaceVariant = mapVariant("alert", severity);
             const dismissible = component.props.dismissible ? " closable" : "";
             const title = component.props.title ? "<strong>" + escapeHtml(String(component.props.title)) + "</strong><br>" : "";
             const attrs = shoelaceAttrs(mapComponentToShoelace("alert", component.props || {}).attributes);
@@ -444,8 +503,10 @@
 
         if (component.kind === "badge") {
             const value = component.value === undefined || component.value === null ? "" : String(component.value);
-            const severity = String(component.props.severity || component.props.variant || "neutral");
-            const shoelaceVariant = ({ success: "success", warning: "warning", error: "danger", info: "primary" })[severity] || severity;
+            // P49: badge's semantic variant is `severity`. `variant`/`displayType`
+            // (count/dot/status) is a display type and is NOT a severity.
+            const severity = component.props.severity ? String(component.props.severity) : undefined;
+            const shoelaceVariant = mapVariant("badge", severity);
             const attrs = shoelaceAttrs(mapComponentToShoelace("badge", component.props || {}).attributes);
             return wrapRenderedComponentHtml(component, layoutId, "<sl-badge" + attrs + " variant=\"" + escapeAttribute(shoelaceVariant) + "\">" + escapeHtml(value) + "</sl-badge>");
         }
@@ -624,6 +685,7 @@
     return {
         escapeHtml: escapeHtml,
         escapeAttribute: escapeAttribute,
+        mapVariant: mapVariant,
         mapComponentToShoelace: mapComponentToShoelace,
         sanitizeClassSuffix: sanitizeClassSuffix,
         getLayoutVariant: getLayoutVariant,

@@ -664,6 +664,7 @@ function toComponentDefinitions(components) {
                 bind: component.disabled || component.disabledPath ? { disabled: getBinding(component.disabled, stateBinding(component.disabledPath || "")) } : {},
                 props: {
                     label: component.label,
+                    ...(blankToUndefined(component.variant) ? { variant: component.variant } : {}),
                     ...(Object.keys(layoutProps).length > 0 ? { layout: layoutProps } : {})
                 },
                 events: [{ event: "click", action: clickAction }]
@@ -702,6 +703,7 @@ function toComponentDefinitions(components) {
                 bind: {},
                 props: {
                     layoutId: component.layout || component.layoutId,
+                    ...(blankToUndefined(component.variant) ? { variant: component.variant } : {}),
                     ...(Object.keys(layoutProps).length > 0 ? { layout: layoutProps } : {})
                 },
                 events: []
@@ -728,6 +730,7 @@ function toComponentDefinitions(components) {
                     storeId: component.storeId,
                     path: component.path,
                     inputType: component.inputType,
+                    ...(blankToUndefined(component.variant) ? { variant: component.variant } : {}),
                     ...(Object.keys(layoutProps).length > 0 ? { layout: layoutProps } : {})
                 },
                 events: []
@@ -819,6 +822,8 @@ function toComponentDefinitions(components) {
                     ...(component.dismissible !== undefined ? { dismissible: component.dismissible } : {}),
                     ...(component.message !== undefined ? { message: component.message } : {}),
                     ...(component.variant !== undefined ? { variant: component.variant } : {}),
+                    // P49: display type (progress/skeleton/badge/menu/list render mode).
+                    ...(component.displayType !== undefined ? { displayType: component.displayType } : {}),
                     ...(component.items !== undefined ? { items: component.items } : {}),
                     ...(component.tabs !== undefined ? { tabs: component.tabs } : {}),
                     ...(component.orientation !== undefined ? { orientation: component.orientation } : {}),
@@ -2138,6 +2143,7 @@ const runtimeNodeRegistry = {
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
             label: config.label,
+            variant: config.variant || undefined,
             action: blankToUndefined(config.action),
             disabled: getBinding(config.disabled, config.disabledPath ? stateBinding(config.disabledPath) : undefined),
             ...collectNodeConfigLayoutProps(config)
@@ -2172,6 +2178,7 @@ const runtimeNodeRegistry = {
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
             layout: config.layoutId,
+            variant: config.variant || undefined,
             events: parseJsonList(config.events).length > 0 ? parseJsonList(config.events) : undefined,
             ...collectNodeConfigLayoutProps(config)
         }),
@@ -2191,6 +2198,7 @@ const runtimeNodeRegistry = {
             storeId: config.storeId || undefined,
             path: config.path || undefined,
             inputType: config.inputType || undefined,
+            variant: config.variant || undefined,
             disabled: getBinding(config.disabled, config.disabledPath ? stateBinding(config.disabledPath) : undefined),
             ...collectNodeConfigLayoutProps(config)
         }),
@@ -2484,7 +2492,7 @@ const runtimeNodeRegistry = {
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
-            variant: config.variant || undefined,
+            displayType: config.displayType || config.variant || undefined,
             value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
             label: config.label || undefined,
             showValue: config.showValue === true || config.showValue === "true" || undefined,
@@ -2502,7 +2510,7 @@ const runtimeNodeRegistry = {
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
             visible: getBinding(config.visible, config.visiblePath ? stateBinding(config.visiblePath) : undefined),
-            variant: config.variant || undefined,
+            displayType: config.displayType || config.variant || undefined,
             lines: toOptionalNumber(config.lines),
             ...collectNodeConfigLayoutProps(config)
         }),
@@ -2518,7 +2526,7 @@ const runtimeNodeRegistry = {
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
             value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
-            variant: config.variant || undefined,
+            displayType: config.displayType || config.variant || undefined,
             severity: config.severity || undefined,
             max: toOptionalNumber(config.max),
             ...collectNodeConfigLayoutProps(config)
@@ -2609,7 +2617,7 @@ const runtimeNodeRegistry = {
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
-            variant: config.variant || undefined,
+            displayType: config.displayType || config.variant || undefined,
             items: getBinding(config.items, config.itemsPath ? stateBinding(config.itemsPath) : undefined) || parseJsonList(config.items),
             activeItem: getBinding(config.activeRoute, config.activeRoutePath ? stateBinding(config.activeRoutePath) : undefined),
             ...collectNodeConfigLayoutProps(config)
@@ -2699,7 +2707,7 @@ const runtimeNodeRegistry = {
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
             items: getBinding(config.items, config.itemsPath ? stateBinding(config.itemsPath) : undefined) || parseJsonList(config.items),
-            variant: config.variant || undefined,
+            displayType: config.displayType || config.variant || undefined,
             events: parseJsonList(config.events).length > 0 ? parseJsonList(config.events) : undefined,
             ...collectNodeConfigLayoutProps(config)
         }),

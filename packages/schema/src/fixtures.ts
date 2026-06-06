@@ -61,7 +61,7 @@ export const customersCrudAppModelFixture: AppModel = {
                 }
             },
             props: {
-                variant: "headline"
+                variant: "heading-1"
             },
             events: []
         },
@@ -140,7 +140,7 @@ export const customersCrudAppModelFixture: AppModel = {
                 }
             },
             props: {
-                variant: "headline"
+                variant: "heading-1"
             },
             events: []
         },
@@ -354,7 +354,7 @@ export const operationsConsoleAppModelFixture: AppModel = {
                 }
             },
             props: {
-                variant: "headline"
+                variant: "heading-1"
             },
             events: []
         },
@@ -523,7 +523,7 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
             kind: "literal",
             value: "Customers"
         },
-        variant: "headline"
+        variant: "heading-1"
     },
     // ── Home route content ────────────────────────────────────────────────────
     {
@@ -535,7 +535,7 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
             kind: "literal",
             value: "Welcome to Customers CRM"
         },
-        variant: "headline"
+        variant: "heading-1"
     },
     {
         type: "ui-text",
@@ -619,7 +619,7 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
             kind: "literal",
             value: "Customer detail"
         },
-        variant: "headline"
+        variant: "heading-1"
     },
     {
         type: "ui-button",
@@ -669,7 +669,7 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
             kind: "query",
             path: "customers.current.status"
         },
-        variant: "status",
+        displayType: "status",
         severity: "info"
     },
     {
