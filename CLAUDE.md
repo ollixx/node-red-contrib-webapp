@@ -56,7 +56,7 @@ This is a pnpm workspace of TypeScript packages that add declarative UI nodes to
 | `packages/renderer` | Takes a compiled `AppModel` and produces route/slot/event snapshots. Resolves state bindings, query bindings, and route params. Emits `msg.ui`-format events. |
 | `packages/editor` | Validates node configurations before deploy. Builds a structural sidebar view from the compiled registry — not from canvas wires. |
 | `nodes/` | Node-RED node registrations (one `.js` + `.html` pair per node). At runtime these map node configs to schema definitions and handle message routing. |
-| `nodes/webapp.js` | The single Node-RED runtime entry point. All 12 node types are registered here; it holds the `runtimeState` map and registers HTTP endpoints. |
+| `nodes/webapp.js` | The single Node-RED runtime entry point. All node types are registered here (see the `node-red.nodes` block in `package.json` for the current set); it holds the `runtimeState` map and registers HTTP endpoints. |
 | `resources/lib/editor-common.js` | Shared editor UI helpers: SelectBox, reference selectors, layout helpers used by all node HTML files. **Single canonical copy** — Node-RED serves `resources/` statically; node HTML loads it via `resources/node-red-contrib-webapp/lib/editor-common.js`. Do not recreate `lib/` or `nodes/lib/` copies. |
 
 ### Data flow
@@ -78,14 +78,14 @@ This is a pnpm workspace of TypeScript packages that add declarative UI nodes to
 
 ### Node categories
 
-Nodes are grouped under `nodes/` by category:
+Nodes are grouped under `nodes/` by **four** runtime categories:
 
 - `structure/` — `ui-app`, `ui-route`, `ui-dialog`
-- `view/` — `ui-text`, `ui-button`, `ui-table`, `ui-container`, `ui-input`
+- `view/` — all display & input components (`ui-text`, `ui-button`, `ui-table`, `ui-input`, `ui-select`, `ui-badge`, …)
 - `state/` — `ui-store`, `ui-query`
 - `behavior/` — `ui-action`, `ui-navigation`
 
-Each category also has a matching `docs/nodes/<category>/` directory with per-node spec files.
+**Note:** the spec docs under `docs/nodes/` use a *finer* taxonomy — `concepts`, `structure`, `input`, `display`, `feedback`, `navigation`, `state`, `behavior` (there is **no** `docs/nodes/view/`). A `view/` node's spec lives under `input`/`display`/`feedback`/`navigation` by its role. The authoritative list is in `.ai/agents/context-budget.md`.
 
 ### Dev and E2E environments
 

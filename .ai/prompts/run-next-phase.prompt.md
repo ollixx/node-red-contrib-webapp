@@ -81,6 +81,7 @@ It confirms both files parse and that every done phase has an archive entry (and
 
 ## Constraints
 
+- Never end your run with a phase left `in_progress` while code is already committed. Standalone: finish the close-out (validate → status `done` → archive → slim → `current_phase`) before you stop or pivot to anything else. Orchestrated: report `done`/`blocked` back so the orchestrator closes it out. A phase that is "implemented but not closed out" has repeatedly been discovered later by inspection — do not create that state.
 - Implement only this phase's deliverables. Do not touch other phases.
 - Do not read files outside your context budget unless a test failure forces it.
 - Do not mark done unless all validation criteria are explicitly verified.

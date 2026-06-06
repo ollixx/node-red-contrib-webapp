@@ -19,7 +19,7 @@ Use the `/node-red-node` skill — it contains the complete four-file pattern, c
 Minimum additional reads:
 - `docs/nodes/<category>/<node>.md` for the node being implemented
 - `packages/schema/src/node-definitions.ts` (grep for the base schema to extend)
-- `nodes/webapp.js` lines ~24 (WEBAPP_NODE_TYPES) and ~1860 (runtimeNodeRegistry) — use grep
+- `nodes/webapp.js` — `grep` for `WEBAPP_NODE_TYPES` and `runtimeNodeRegistry` (the file is large and line numbers drift; do not trust a hardcoded line)
 
 ### Schema work (P11a-style)
 - `packages/schema/src/node-definitions.ts`
@@ -35,11 +35,18 @@ Minimum additional reads:
 ### Editor work (P11b-style)
 - `resources/lib/editor-common.js` — the single canonical shared-editor file (Node-RED serves `resources/` statically). Do not create or read `lib/` or `nodes/lib/` copies; they must not exist.
 - The specific `nodes/<category>/<node>.html` files for the phase
-- One existing E2E test: `tests/e2e/editor-mount-options.spec.ts`
+- One existing E2E test for editor work: `tests/e2e/editor-mount-options.spec.ts` for the structure-view sidebar, **or** the canonical per-node editor specs under `tests/e2e/nodes/editor/` (since P47) plus their helper `tests/helpers/node-editor-page.ts`.
+- Editor-test gotchas (from P47): open panels via `RED.editor.edit(RED.nodes.node(id))` (not canvas double-click); Node-RED 4.x shows a first-run welcome-tour overlay that intercepts clicks (dismiss with Escape); the tray's Done button is `#node-dialog-ok` (not a footer `.primary`).
 
 ### Test-only work
 - The specific test file(s) for the package
 - The source file under test (grep first)
+
+### Known pitfalls (cost repeated debug cycles — check these first)
+- **Node-RED config-node trap:** a node without `x`/`y` coordinates is parsed as a *config node*, not a flow node — it silently never registers (causing `/inject/:id` 404s and "Circular config node dependency"). Every node a test deploys needs `x`/`y`.
+- **`parseList` vs `parseJsonList`:** fields holding a JSON array string (columns, tabs, menu/accordion/stepper items, …) must use `parseJsonList` in `mapConfig`; `parseList` comma-splits the JSON into garbage.
+- **Zod strips unknown fields silently:** if a rendered field goes missing, check the item schema actually declares it — Zod drops unknown props with no warning.
+- **Serializer per-control attributes:** form-control attributes (e.g. `disabled`) must be emitted in *each* control's serializer branch; it is easy to add one to `sl-checkbox` and forget `sl-input`/`select`/`textarea`.
 
 ## What never needs reading unless explicitly relevant
 - `prd.md` (read once at project start, not per phase)
