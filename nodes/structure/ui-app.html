@@ -157,7 +157,9 @@
                 forwardErrorsToClient: { value: false },
                 forwardErrorMinSeverity: { value: "error" }
             },
-            inputs: 0,
+            // P59 / ADR 0007 §4: ui-app accepts an input port so app-global verbs
+            // navigate / reset can be wired (or picked) to it like any other target.
+            inputs: 1,
             outputs: 0,
             outputLabels: function (index) {
                 try {

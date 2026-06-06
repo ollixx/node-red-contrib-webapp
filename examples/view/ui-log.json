@@ -1,0 +1,40 @@
+[
+  {
+    "id": "ex-ui-log",
+    "type": "tab",
+    "label": "ui-log example",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "logApp",
+    "type": "ui-app",
+    "name": "Log App",
+    "uiId": "logApp",
+    "root": "logApp",
+    "layout": "app",
+    "z": "ex-ui-log",
+    "x": 120,
+    "y": 80,
+    "wires": [
+      []
+    ],
+    "forwardErrorsToClient": true,
+    "forwardErrorMinSeverity": "debug"
+  },
+  {
+    "id": "logNode",
+    "type": "ui-log",
+    "name": "log",
+    "uiId": "logNode",
+    "parent": "logApp",
+    "mount": "logApp.content",
+    "z": "ex-ui-log",
+    "x": 480,
+    "y": 280,
+    "wires": [],
+    "minSeverity": "debug",
+    "maxEntries": 100,
+    "collapsed": false
+  }
+]

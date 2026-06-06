@@ -2,7 +2,14 @@
 
 ## Zusammenfassung
 
-Sendet eine UI-Aktion vom Node-RED Flow an den Client. `ui-action` ist der einzige Knoten, der den Interaktionszustand der UI verändert (Sichtbarkeit, Aktivierungszustand, Navigation, Fokus). Fachliche Daten gehören in `ui-store`.
+Typisierter Emitter für UI-Aktionen (Interaktionszustand: Sichtbarkeit,
+Aktivierungszustand, Navigation, Fokus). Bei Eingang baut `ui-action` eine
+schema-valide `msg.ui.action` aus seiner Konfiguration und sendet sie am
+Output-Port. Den SSE-Push an den Client führt der **verdrahtete Zielknoten** aus
+(P59 / [ADR 0007](../../adr/0007-action-message-and-per-node-interaction-handlers.md)) —
+`ui-action` ist kein privilegierter Knoten mehr: Jeder Knoten, der den
+`msg.ui.action`-Contract sendet (`inject`, `function`, …), löst die Interaktion
+aus. Fachliche Daten gehören in `ui-store`.
 
 ## Abhängigkeiten
 
@@ -20,8 +27,12 @@ Sendet eine UI-Aktion vom Node-RED Flow an den Client. `ui-action` ist der einzi
 - `actionType`: das kanonische Interaktions-Verb (SelectBox). Kann durch
   `msg.ui.action.type` überschrieben werden.
 - `to`: Zielpfad für `actionType: navigate`.
-- `target`: Node-ID des Zielknotens (alternativ zum Output-Port-Wiring; wird durch
-  `msg.ui.action.targetId` zur Laufzeit überschrieben).
+- `target`: **optionaler** Override. Das Ziel wird primär über das **Wiring des
+  Output-Ports** bestimmt — leer lassen, wenn verdrahtet wird. Gesetzt +
+  unverdrahteter Output ⇒ Backward-Compat-Pfad: die Aktion wird via
+  `targetNode.receive()` direkt in den Input des Zielknotens injiziert (P59 /
+  ADR 0007). Zur Laufzeit überschreibbar via `msg.ui.action.target` /
+  `msg.ui.action.targetId`.
 - `part`: Sub-ID innerhalb des Ziels für `open` / `close` / `select`
   (z.B. Accordion-Sektion, Tree-Branch, Tab-Name). Überschreibbar via
   `msg.ui.action.part`.
@@ -46,11 +57,11 @@ plus `navigate`, `enable` / `disable`, `focus`, `reset`.
 `submit` und `remove` wurden in P29 entfernt (Daten-Actions verstoßen gegen
 "Actions ändern nur Interaktionszustand"). Es gibt **keine** CRUD-Verben.
 
-Der Aktions-Effekt reist über den SSE-`command`-Kanal an den Browser, **nicht** in
-der Wire-`msg`. Sichtbarkeit / enabled / open-Zustand werden client-seitig in einer
-Interaktions-Overlay gehalten (ADR 0005), die nach jedem Snapshot-Re-Render erneut
-angewandt wird — ein `show`/`hide` überlebt also einen ui-store-getriebenen
-Snapshot-Push.
+Der Aktions-Effekt reist über den SSE-`command`-Kanal an den Browser — gepusht vom
+**Zielknoten**, nicht von `ui-action`. Sichtbarkeit / enabled / open-Zustand werden
+client-seitig in einer Interaktions-Overlay gehalten (ADR 0005), die nach jedem
+Snapshot-Re-Render erneut angewandt wird — ein `show`/`hide` überlebt also einen
+ui-store-getriebenen Snapshot-Push.
 
 ## Zieladressierung
 
@@ -64,15 +75,18 @@ ui-action (show)    ──→ ui-container "Fehlermeldung"
 ui-action (open)    ──→ ui-dialog "Bestätigung"
 ```
 
-### `targetId` aus `msg` (dynamisch zur Laufzeit)
+### `target` aus `msg` (dynamisch zur Laufzeit)
 
-Wenn das Ziel erst zur Laufzeit bekannt ist, kann die Node-ID des Zielknotens in der `msg` mitgeliefert werden:
+Wenn das Ziel erst zur Laufzeit bekannt ist, kann die Node-ID des Zielknotens in
+der `msg` mitgeliefert werden (`targetId` bleibt als Alias akzeptiert):
 
 ```json
-{ "ui": { "action": { "type": "disable", "targetId": "<node-id>" } } }
+{ "ui": { "action": { "type": "disable", "target": "<node-id>" } } }
 ```
 
-`targetId` überschreibt das statische Wiring. Typischer Anwendungsfall: Das Event enthält eine `sourceId`, die als Ziel der Reaktion genutzt wird.
+`target` überschreibt die Default-Auflösung des Zielknotens (der sonst seine
+eigene Node-ID setzt). Typischer Anwendungsfall: Das Event enthält eine
+`sourceId`, die als Ziel der Reaktion genutzt wird.
 
 ## Input
 
@@ -80,19 +94,22 @@ Empfängt eine `msg` aus dem Node-RED Flow. Relevante Felder:
 
 ```
 msg.ui.action.type      = "navigate" | "show" | "hide" | "open" | "close" | "select" | "enable" | "disable" | "focus" | "reset"
-msg.ui.action.targetId  = <node-id>  ← überschreibt das statische Wiring / das `target`-Feld
+msg.ui.action.target    = <node-id>  ← optionaler Ziel-Override (sonst löst der Zielknoten auf sich selbst auf); `targetId` als Alias
 msg.ui.action.part      = <sub-id>    ← Granularität für open / close / select (Accordion-Sektion, Tree-Branch, Tab)
+msg.ui.action.to        = <pfad>      ← Navigationsziel für `navigate`
 msg.ui.clientId         = <client>    ← schränkt die Action auf einen bestimmten Client ein
 ```
 
 ## Output
 
-Der Output-Port reicht die **eingehende `msg` unverändert** weiter (Wire-Chaining,
-events.md) — der Aktions-Effekt wird NICHT in die Wire-`msg` injiziert, sondern
-reist separat über den SSE-`command`-Kanal an den Client. So kann der Flow hinter
-dem `ui-action`-Knoten mit dem ursprünglichen Event weiterarbeiten.
+Der Output-Port emittiert die **mit `msg.ui.action` angereicherte `msg`**: Der
+typisierte Befehl wird aus Konfiguration + msg-Overrides gebaut und in
+`msg.ui.action` geschrieben; alle fremden `msg.*`- und `msg.ui.*`-Felder reisen
+unverändert mit (ADR 0007 §1 — anreichern, nicht ersetzen). Der verdrahtete
+Zielknoten verarbeitet das ihm bekannte Verb und führt den SSE-Push aus.
 
 ## Besonderheiten
 
+- Den SSE-Push führt der **Zielknoten** aus, nicht `ui-action` (P59 / ADR 0007 §2).
 - `ui-button` hat ab P20a keinen `action`-Verweis mehr — Klick-Events werden direkt auf dem Output-Port des Buttons ausgegeben und dann ggf. an `ui-action` weitergeleitet.
 - `openDialog` / `closeDialog` werden als Aliase von `open` / `close` (ohne `part`) weiterhin akzeptiert (Abwärtskompatibilität, ADR 0005).

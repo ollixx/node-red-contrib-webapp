@@ -2283,44 +2283,181 @@ function viewNodePatchInputHandler(node, msg, send, done) {
     if (done) { done(); }
 }
 
-// P20a: ui-action reads the wired target node from the flow topology and
-// forwards the action to it. If msg.ui.action.targetId is set, it overrides
-// the wired target.
+// ─── P59 / ADR 0007 §2: per-node interaction handlers ───
+//
+// The SSE push moved OUT of ui-action and INTO the target node. Each
+// interaction-capable node owns a set of verbs (open/close, show/hide, …) and
+// uses the shared `interactionInputHandler(ownedVerbs[, next])` factory. This
+// generalises the ui-toast pattern (input → push own SSE command → pass msg
+// through). When a wire (ui-action → ui-dialog) or a bare inject carries
+// `msg.ui.action`, the target node — not ui-action — performs the push.
+//
+// Resolution rules (ADR 0007 §2):
+//   - command.target resolves to THE NODE'S OWN id (the wire/selection is the
+//     addressing). An explicit msg.ui.action.target / .targetId OVERRIDES it.
+//   - `to` / `part` ride along from msg.ui.action.
+//   - A verb the node does NOT own → pure pass-through (no push, no swallow),
+//     so a chain of wired targets each handle the verbs they own (ADR 0007 §2,
+//     ADR 0006 "no silent drops" spirit).
+//   - With no msg.ui.action at all → delegate to `next` (the node's existing
+//     patch / component / click / dialog handler), preserving prior behaviour.
+
+// Verb ownership per node type (ADR 0007 §2). A node pushes only for verbs it
+// owns; every other verb is passed through untouched.
+const INTERACTION_VERBS_BY_TYPE = {
+    "ui-dialog": ["open", "close", "openDialog", "closeDialog", "toggle"],
+    "ui-app": ["navigate", "reset"],
+    "ui-route": ["navigate", "reset"],
+    // presence (show/hide) for view nodes; interactive controls add enable/disable;
+    // input controls add focus/reset; single-active containers add select.
+    "ui-button": ["show", "hide", "enable", "disable"],
+    "ui-input": ["show", "hide", "enable", "disable", "focus", "reset"],
+    "ui-text": ["show", "hide"],
+    "ui-table": ["show", "hide", "select"],
+    "ui-container": ["show", "hide"],
+    "ui-select": ["show", "hide", "enable", "disable"],
+    "ui-textarea": ["show", "hide", "enable", "disable", "focus", "reset"],
+    "ui-checkbox": ["show", "hide", "enable", "disable"],
+    "ui-radio": ["show", "hide", "enable", "disable"],
+    "ui-switch": ["show", "hide", "enable", "disable"],
+    "ui-slider": ["show", "hide", "enable", "disable"],
+    "ui-datepicker": ["show", "hide", "enable", "disable", "focus", "reset"],
+    // single-active containers (tabs / stepper / menu) own `select`
+    "ui-tabs": ["show", "hide", "select"],
+    "ui-stepper": ["show", "hide", "select"],
+    "ui-menu": ["show", "hide", "select"],
+    "ui-accordion": ["show", "hide", "open", "close"]
+};
+
+// Build the interaction command for a target node from msg.ui.action. The target
+// defaults to the node's own id; an explicit msg.ui.action.target / .targetId wins.
+function buildInteractionCommand(node, uiAction) {
+    const type = String(uiAction.type);
+    const explicitTarget = typeof uiAction.target === "string" && uiAction.target
+        ? uiAction.target
+        : (typeof uiAction.targetId === "string" && uiAction.targetId ? uiAction.targetId : undefined);
+    return {
+        type,
+        target: explicitTarget || node.id,
+        to: typeof uiAction.to === "string" && uiAction.to ? uiAction.to : undefined,
+        part: typeof uiAction.part === "string" && uiAction.part ? uiAction.part : undefined
+    };
+}
+
+// P59 / ADR 0007 §2: shared per-node interaction handler factory.
+// `ownedVerbs` — the verb set this node type owns. `next` — the node's existing
+// input handler, invoked when the message is NOT an owned interaction command.
+function interactionInputHandler(ownedVerbs, next) {
+    const owned = new Set(ownedVerbs || []);
+    const fallback = next || passThroughInputHandler;
+    return function onInteractionInput(node, msg, send, done) {
+        const uiMsg = msg && msg.ui && typeof msg.ui === "object" ? msg.ui : undefined;
+        const uiAction = uiMsg && uiMsg.action && typeof uiMsg.action === "object" ? uiMsg.action : undefined;
+
+        if (uiAction && typeof uiAction.type === "string" && owned.has(uiAction.type)) {
+            // Owned verb → this node performs the SSE push, then passes msg through.
+            const RED = runtimeState.RED;
+            const appId = findAppIdForNode(node);
+            const clientId = uiMsg && uiMsg.clientId ? String(uiMsg.clientId) : undefined;
+            const command = buildInteractionCommand(node, uiAction);
+            if (RED && appId) {
+                pushActionCommandToClients(appId, clientId, command);
+            }
+            send(msg);
+            if (done) {
+                done();
+            }
+            return;
+        }
+
+        // Not an owned interaction command: defer to the node's existing handler.
+        // A foreign action verb falls through here too → pure pass-through.
+        fallback(node, msg, send, done);
+    };
+}
+
+// P59 / ADR 0007 §3: ui-action is now a pure typed EMITTER. On input it builds a
+// schema-valid msg.ui.action from its config (msg.ui.action overrides win, ADR
+// 0005) and SENDS IT OUT its output port — the wired target node performs the
+// SSE push. ui-action no longer pushes centrally.
+//
+// Backward-compat (ADR 0007 §Consequences): old flows that relied on ui-action's
+// configured `target` field with an UNWIRED output had no wire to carry the
+// action. To keep those working, when the node has NO output wires AND a config
+// `target` resolves, ui-action delivers the action straight to that node via
+// targetNode.receive() (the same input path a wire uses — receive(), not send(),
+// fixing the ADR 0007 §Context-3 bug).
 function actionInputHandler(node, msg, send, done) {
     const RED = runtimeState.RED;
     const uiMsg = msg && msg.ui && typeof msg.ui === "object" ? msg.ui : undefined;
-    const overrideTargetId = uiMsg && uiMsg.action && typeof uiMsg.action.targetId === "string"
-        ? uiMsg.action.targetId
-        : undefined;
 
-    // P31: a ui-action triggered FROM the flow pushes an interaction command
-    // (navigate / openDialog / show / hide / …) to the targeted client(s). The
-    // command changes interaction state only (actions.md) — it never touches
-    // business data. clientId targeting honours the P15 multi-user model.
-    const activeAppId = getActiveRuntimeAppId();
-    const actionClientId = uiMsg && uiMsg.clientId ? String(uiMsg.clientId) : undefined;
+    // Build the typed action command from config + msg overrides (ADR 0005).
     const command = buildActionCommand(node.webappDefinition, msg);
-    if (RED && activeAppId && command) {
-        pushActionCommandToClients(activeAppId, actionClientId, command);
+
+    // Enrich the incoming message with msg.ui.action (ADR 0007 §1: enrich, don't
+    // replace) — every other msg / msg.ui field rides along untouched.
+    const outMsg = command
+        ? Object.assign({}, msg, {
+            ui: Object.assign({}, uiMsg, {
+                action: Object.assign(
+                    {},
+                    uiMsg && uiMsg.action && typeof uiMsg.action === "object" ? uiMsg.action : {},
+                    pruneUndefined(command)
+                )
+            })
+        })
+        : msg;
+
+    // Backward-compat (ADR 0007 §Consequences): a configured `target`, no wired
+    // output → deliver to the target node's INPUT via receive() so legacy unwired
+    // flows keep working. `command.target` already resolves config target + msg
+    // override. receive() (not send()) injects into the target's input — fixing
+    // the ADR 0007 §Context-3 bug.
+    const configTarget = node.webappDefinition && node.webappDefinition.target
+        ? String(node.webappDefinition.target)
+        : undefined;
+    const deliverTarget = command && command.target ? command.target : configTarget;
+
+    if (configTarget && deliverTarget && RED && !nodeHasOutputWire(node)) {
+        const targetNode = RED.nodes.getNode(deliverTarget);
+        if (targetNode && typeof targetNode.receive === "function") {
+            targetNode.receive(clone(outMsg));
+            if (done) {
+                done();
+            }
+            return;
+        }
     }
 
-    if (overrideTargetId) {
-        // Dynamic target — send directly to the overridden node
-        const targetNode = RED ? RED.nodes.getNode(overrideTargetId) : null;
-        if (targetNode && typeof targetNode.send === "function") {
-            targetNode.send(clone(msg));
-        }
-        if (done) {
-            done();
-        }
-        return;
-    }
-
-    // Static wiring — pass the message through to the wired output port
-    send(msg);
+    // Primary path: emit the action message on the output port; the wired target
+    // node performs the push.
+    send(outMsg);
     if (done) {
         done();
     }
+}
+
+// Strip undefined values so Object.assign merges cleanly without clobbering
+// existing fields with `undefined`.
+function pruneUndefined(obj) {
+    const out = {};
+    for (const key of Object.keys(obj)) {
+        if (obj[key] !== undefined) {
+            out[key] = obj[key];
+        }
+    }
+    return out;
+}
+
+// Does this ui-action node have at least one output wire? Reads the flow
+// topology via the node's own `wires` array (populated by Node-RED on the
+// runtime node). Used for the backward-compat unwired-target path.
+function nodeHasOutputWire(node) {
+    const wires = node && node.wires;
+    if (!Array.isArray(wires)) {
+        return false;
+    }
+    return wires.some((port) => Array.isArray(port) && port.length > 0);
 }
 
 const runtimeNodeRegistry = {
@@ -2342,7 +2479,8 @@ const runtimeNodeRegistry = {
             forwardErrorMinSeverity: blankToUndefined(config.forwardErrorMinSeverity)
         }),
         options: {
-            inputHandler: passThroughInputHandler
+            // P59 / ADR 0007 §4: ui-app owns the app-global verbs navigate / reset.
+            inputHandler: interactionInputHandler(INTERACTION_VERBS_BY_TYPE["ui-app"], passThroughInputHandler)
         }
     },
     "ui-route": {
@@ -2356,7 +2494,9 @@ const runtimeNodeRegistry = {
             events: parseJsonList(config.events).length > 0 ? parseJsonList(config.events) : undefined
         }),
         options: {
-            inputHandler: passThroughInputHandler
+            // P59 / ADR 0007 §4: ui-route gains an input handler (and inputs:1 in
+            // its HTML) for the app-global verbs navigate / reset.
+            inputHandler: interactionInputHandler(INTERACTION_VERBS_BY_TYPE["ui-route"], passThroughInputHandler)
         }
     },
     "ui-dialog": {
@@ -2371,7 +2511,7 @@ const runtimeNodeRegistry = {
             events: parseJsonList(config.events).length > 0 ? parseJsonList(config.events) : undefined
         }),
         options: {
-            inputHandler: dialogInputHandler
+            inputHandler: interactionInputHandler(INTERACTION_VERBS_BY_TYPE["ui-dialog"], dialogInputHandler)
         }
     },
     "ui-text": {
@@ -2386,7 +2526,7 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: viewNodePatchInputHandler
+            inputHandler: interactionInputHandler(INTERACTION_VERBS_BY_TYPE["ui-text"], viewNodePatchInputHandler)
         }
     },
     "ui-button": {
@@ -2403,7 +2543,7 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: buttonInputHandler
+            inputHandler: interactionInputHandler(INTERACTION_VERBS_BY_TYPE["ui-button"], buttonInputHandler)
         }
     },
     "ui-table": {
@@ -2421,7 +2561,7 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: viewNodePatchInputHandler
+            inputHandler: interactionInputHandler(INTERACTION_VERBS_BY_TYPE["ui-table"], viewNodePatchInputHandler)
         }
     },
     "ui-container": {
@@ -2437,7 +2577,7 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: componentStateInputHandler
+            inputHandler: interactionInputHandler(INTERACTION_VERBS_BY_TYPE["ui-container"], componentStateInputHandler)
         }
     },
     "ui-input": {
@@ -2457,7 +2597,7 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: viewNodePatchInputHandler
+            inputHandler: interactionInputHandler(INTERACTION_VERBS_BY_TYPE["ui-input"], viewNodePatchInputHandler)
         }
     },
     "ui-select": {
@@ -2477,7 +2617,7 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: viewNodePatchInputHandler
+            inputHandler: interactionInputHandler(INTERACTION_VERBS_BY_TYPE["ui-select"], viewNodePatchInputHandler)
         }
     },
     "ui-checkbox": {
@@ -2493,7 +2633,7 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: viewNodePatchInputHandler
+            inputHandler: interactionInputHandler(INTERACTION_VERBS_BY_TYPE["ui-checkbox"], viewNodePatchInputHandler)
         }
     },
     "ui-radio": {
@@ -2511,7 +2651,7 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: viewNodePatchInputHandler
+            inputHandler: interactionInputHandler(INTERACTION_VERBS_BY_TYPE["ui-radio"], viewNodePatchInputHandler)
         }
     },
     "ui-switch": {
@@ -2529,7 +2669,7 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: viewNodePatchInputHandler
+            inputHandler: interactionInputHandler(INTERACTION_VERBS_BY_TYPE["ui-switch"], viewNodePatchInputHandler)
         }
     },
     "ui-textarea": {
@@ -2548,7 +2688,7 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: viewNodePatchInputHandler
+            inputHandler: interactionInputHandler(INTERACTION_VERBS_BY_TYPE["ui-textarea"], viewNodePatchInputHandler)
         }
     },
     "ui-datepicker": {
@@ -2568,7 +2708,7 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: viewNodePatchInputHandler
+            inputHandler: interactionInputHandler(INTERACTION_VERBS_BY_TYPE["ui-datepicker"], viewNodePatchInputHandler)
         }
     },
     "ui-slider": {
@@ -2588,7 +2728,7 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: viewNodePatchInputHandler
+            inputHandler: interactionInputHandler(INTERACTION_VERBS_BY_TYPE["ui-slider"], viewNodePatchInputHandler)
         }
     },
     "ui-store": {
@@ -2850,7 +2990,7 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: componentStateInputHandler
+            inputHandler: interactionInputHandler(INTERACTION_VERBS_BY_TYPE["ui-tabs"], componentStateInputHandler)
         }
     },
     "ui-accordion": {
@@ -2871,7 +3011,7 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: componentStateInputHandler
+            inputHandler: interactionInputHandler(INTERACTION_VERBS_BY_TYPE["ui-accordion"], componentStateInputHandler)
         }
     },
     "ui-breadcrumb": {
@@ -2901,7 +3041,7 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: componentStateInputHandler
+            inputHandler: interactionInputHandler(INTERACTION_VERBS_BY_TYPE["ui-menu"], componentStateInputHandler)
         }
     },
     "ui-pagination": {
@@ -2940,7 +3080,7 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: componentStateInputHandler
+            inputHandler: interactionInputHandler(INTERACTION_VERBS_BY_TYPE["ui-stepper"], componentStateInputHandler)
         }
     },
     "ui-image": {
@@ -3128,6 +3268,9 @@ registerWebappNodes.__test__ = {
     // P20a
     buttonInputHandler,
     actionInputHandler,
+    // P59 / ADR 0007 §2: per-node interaction handler factory + verb ownership
+    interactionInputHandler,
+    INTERACTION_VERBS_BY_TYPE,
     runtimeNodeRegistry,
     runtimeState,
     // P39 / P52: view-node input patch handler + deploy-definition reader

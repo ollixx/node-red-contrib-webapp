@@ -202,8 +202,8 @@ describe("P31: a flow ui-store update pushes a re-render to the subscribed clien
     });
 });
 
-describe("P31: a flow ui-action pushes an interaction command to the client", () => {
-    it("a navigate action triggered from the flow pushes a navigate command and updates the client's stream location", () => {
+describe("P59 / ADR 0007: ui-action emits the action message; the target node pushes", () => {
+    it("ui-action emits a navigate action on its OUTPUT and does NOT push the command itself", () => {
         const res = makeFakeRes();
         addStreamClient(APP_ID, "c1", res, "/");
 
@@ -212,9 +212,36 @@ describe("P31: a flow ui-action pushes an interaction command to the client", ()
             webappDefinition: { type: "ui-action", id: "goDetail", actionType: "navigate", to: "/detail" }
         };
 
+        const send = vi.fn();
         actionInputHandler(
             actionNode,
             { ui: { clientId: "c1", action: {} } },
+            send,
+            vi.fn()
+        );
+
+        // P59: ui-action no longer pushes centrally — the wired target node does.
+        const commands = res.events().filter((e) => e.event === "command");
+        expect(commands).toHaveLength(0);
+
+        // It emits a schema-valid msg.ui.action on its output port instead.
+        expect(send).toHaveBeenCalledTimes(1);
+        const emitted = send.mock.calls[0][0] as { ui: { clientId: string; action: { type: string; to: string } } };
+        expect(emitted.ui.action).toMatchObject({ type: "navigate", to: "/detail" });
+        expect(emitted.ui.clientId).toBe("c1");
+    });
+
+    it("an interactionInputHandler-wrapped target node pushes the navigate command and updates the client's stream location", () => {
+        const res = makeFakeRes();
+        addStreamClient(APP_ID, "c1", res, "/");
+
+        // ui-app owns navigate/reset (ADR 0007 §4). Its handler pushes on input.
+        const appHandler = runtimeNodeRegistry["ui-app"].options.inputHandler;
+        const appNode = { id: APP_ID, z: undefined, webappDefinition: { type: "ui-app", id: APP_ID } };
+
+        appHandler(
+            appNode,
+            { ui: { clientId: "c1", action: { type: "navigate", to: "/detail" } } },
             vi.fn(),
             vi.fn()
         );
@@ -287,12 +314,14 @@ describe("P53: ui-action interaction verb vocabulary", () => {
         expect(commands[0].data).toMatchObject({ command: { type: "open", target: "acc1", part: "s2" } });
     });
 
-    it("the ui-action OUTPUT passes the incoming msg through UNCHANGED (wire chaining; effect rides the SSE command channel only)", () => {
+    it("P59: the ui-action OUTPUT carries the enriched msg.ui.action (foreign msg fields ride along) and does NOT push itself", () => {
         const res = makeFakeRes();
         addStreamClient(APP_ID, "c1", res, "/");
 
+        // The node has a wired output so the backward-compat receive() path is off.
         const actionNode = {
             id: "showPanel",
+            wires: [["downstream"]],
             webappDefinition: { type: "ui-action", id: "showPanel", actionType: "show", target: "panel1" }
         };
 
@@ -300,17 +329,17 @@ describe("P53: ui-action interaction verb vocabulary", () => {
         const send = vi.fn();
         actionInputHandler(actionNode, incoming, send, vi.fn());
 
-        // The interaction effect went out over the SSE command channel …
+        // P59: ui-action no longer pushes — the wired target node does.
         const commands = res.events().filter((e) => e.event === "command");
-        expect(commands).toHaveLength(1);
-        expect(commands[0].data).toMatchObject({ command: { type: "show", target: "panel1" } });
+        expect(commands).toHaveLength(0);
 
-        // … and the wire output forwarded the ORIGINAL msg, not a command-bearing one.
+        // The wire output carries an enriched action message; foreign fields ride along.
         expect(send).toHaveBeenCalledTimes(1);
-        const forwarded = send.mock.calls[0][0];
-        expect(forwarded).toBe(incoming);
+        const forwarded = send.mock.calls[0][0] as { topic: string; payload: unknown; ui: { clientId: string; action: { type: string; target: string } } };
+        expect(forwarded.ui.action).toMatchObject({ type: "show", target: "panel1" });
         expect(forwarded.payload).toEqual({ keep: 42 });
         expect(forwarded.topic).toBe("t");
+        expect(forwarded.ui.clientId).toBe("c1");
     });
 });
 

@@ -46,7 +46,10 @@ test.describe("ui-action (P46)", () => {
             .node("ui-action", {
                 id: "actionNav1",
                 actionType: "navigate",
-                to: "/second"
+                to: "/second",
+                // P59 / ADR 0007 §4: ui-action emits the action; the wired ui-app
+                // (which owns navigate) performs the SSE push.
+                wires: [["actionApp1"]]
             })
             .withInjectNode("actionInj1", "actionNav1")
             .build();
@@ -315,7 +318,9 @@ test.describe("ui-action (P46)", () => {
             .node("ui-action", {
                 id: "actionNode4",
                 actionType: "navigate",
-                to: "/"
+                to: "/",
+                // P59: wire to the app so the navigate command is actually pushed.
+                wires: [["actionApp4"]]
             })
             .route({ id: "actionRoute4b", path: "/other" })
             .node("ui-text", { id: "actionTxt4b", text: "Other page" })

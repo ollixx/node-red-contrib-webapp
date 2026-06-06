@@ -29,7 +29,8 @@ Das Schema validiert **nur** `msg.ui.action`; alle übrigen `msg.*`- und
 Message-Contract ist, kann **jeder** Knoten ihn erzeugen — `ui-action` ist nur
 der bequeme, typisierte Emitter. Der App-Autor verdrahtet den Out-Port von
 `ui-action` direkt mit dem In-Port des Zielknotens; der Zielknoten verarbeitet
-das ihm bekannte Verb und reicht die Message sonst durch.
+das ihm bekannte Verb, **führt den SSE-`command`-Push an den/die Client(s) aus**
+(P59 / ADR 0007 §2) und reicht die Message sonst durch.
 
 ### Verfügbare Verben
 
@@ -106,7 +107,7 @@ sowohl den initialen Snapshot als auch alle flow-getriebenen Updates.
 ```
 GET  /webapp/:appId/stream?clientId=<id>&location=<route>
        → SSE-Stream; erstes Ereignis: snapshot { snapshot: RenderSnapshot }
-         Folgeeignisse: snapshot (Store-Update) | command (ui-action-Interaktion)
+         Folgeeignisse: snapshot (Store-Update) | command (Interaktionsbefehl vom Zielknoten)
 
 POST /webapp/:appId/event   (Content-Type: application/json)
        → { message, location, snapshot }
@@ -147,7 +148,7 @@ event: snapshot
 data: { snapshot: RenderSnapshot }   ← bei Store-Updates aus dem Flow
 
 event: command
-data: { command: { type, ... } }     ← bei ui-action-Interaktionsbefehlen
+data: { command: { type, ... } }     ← Interaktionsbefehl, gepusht vom Zielknoten (ADR 0007 §2)
 ```
 
 Der Client führt beim Re-Render einen **keyed Morph** durch: nur geänderte
