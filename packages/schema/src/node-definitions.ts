@@ -6,6 +6,7 @@ import {
     BUTTON_VARIANTS,
     bindingSchema,
     CONTAINER_VARIANTS,
+    errorSeveritySchema,
     identifierSchema,
     INPUT_VARIANTS,
     routeNodePathSchema,
@@ -139,7 +140,16 @@ export const uiAppNodeDefinitionSchema = z.object({
     title: z.string().min(1, "App titles must not be empty."),
     layout: standardLayoutPresetSchema,
     events: z.array(z.enum(["clientConnected", "clientDisconnected"])).optional(),
-    tokens: designTokensSchema
+    tokens: designTokensSchema,
+    // P56 / ADR 0006 §4: opt-in backend→frontend error forwarding. Absent means
+    // OFF (security: anonymous httpNode visitors must not receive server
+    // internals unless the app deliberately enables it). When enabled, only
+    // framework errors at or above `forwardErrorMinSeverity` (default "error")
+    // are forwarded over the SSE "error" channel, redacted. Optional rather than
+    // .default() so existing fixtures/configs stay valid; the runtime applies the
+    // secure fallbacks (false / "error") when the fields are absent.
+    forwardErrorsToClient: z.boolean().optional(),
+    forwardErrorMinSeverity: errorSeveritySchema.optional()
 });
 
 export type UiAppNodeDefinition = z.infer<typeof uiAppNodeDefinitionSchema>;

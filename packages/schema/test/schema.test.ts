@@ -1074,3 +1074,45 @@ describe("P54: structured error/log contract (ADR 0006)", () => {
         }
     });
 });
+
+describe("P56: ui-app backend→frontend error forwarding config (ADR 0006 §4)", () => {
+    const baseApp = {
+        type: "ui-app" as const,
+        id: "app1",
+        title: "App One",
+        layout: "vertical" as const
+    };
+
+    it("validates an app with forwarding fields absent (runtime defaults OFF)", () => {
+        const result = validateUiNodeDefinition(baseApp);
+        expect(result.success).toBe(true);
+        if (result.success) {
+            const data = result.data as Record<string, unknown>;
+            // Absent → undefined in the validated definition; the runtime treats
+            // absent as the secure default (no forwarding). The schema must never
+            // require these fields (back-compat with pre-P56 configs/fixtures).
+            expect(data.forwardErrorsToClient).toBeUndefined();
+            expect(data.forwardErrorMinSeverity).toBeUndefined();
+        }
+    });
+
+    it("accepts forwarding enabled with a valid severity threshold", () => {
+        for (const minSeverity of ["debug", "info", "warn", "error"]) {
+            const result = validateUiNodeDefinition({
+                ...baseApp,
+                forwardErrorsToClient: true,
+                forwardErrorMinSeverity: minSeverity
+            });
+            expect(result.success, minSeverity).toBe(true);
+        }
+    });
+
+    it("rejects a threshold outside the severity enum", () => {
+        const result = validateUiNodeDefinition({
+            ...baseApp,
+            forwardErrorsToClient: true,
+            forwardErrorMinSeverity: "fatal"
+        });
+        expect(result.success).toBe(false);
+    });
+});
