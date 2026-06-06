@@ -466,3 +466,10 @@ phases:
   #   - ui-custom escape-hatch node for framework-specific components (opt-in, non-portable)
   #   - SSR / hydration adapter for any public, search-indexed surface
   #   - additional adapters (Material Web, React+MUI) — additive, below the snapshot seam
+  #   - Per-app GUI override of the backend's variant→markup mapping (extends
+  #     P49/P50). Ebene-3 (backend-scoped) config attached to ui-app: lets an
+  #     app refine how THIS backend renders a given variant, without touching
+  #     the portable Ebene-2 vocabulary. Backward-compatible (no override →
+  #     P49 default mapping) and portability-safe (override is backend-specific,
+  #     ignored on backend swap). The app-level sibling of the deferred
+  #     ui-style element escape-hatch.

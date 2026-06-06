@@ -15,6 +15,7 @@ export {
     runtimeIntegrationModelSchema,
     slotDefinitionSchema,
     routeDefinitionSchema,
+    routeNodePathSchema,
     storeOperationSchema,
     storeDefinitionSchema,
     uiEventMessageSchema,

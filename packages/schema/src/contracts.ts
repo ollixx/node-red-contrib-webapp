@@ -13,6 +13,20 @@ export const routePathSchema = z
     .min(1, "Route paths must not be empty.")
     .startsWith("/", "Route paths must start with '/'.");
 
+/**
+ * Path schema for a ui-route node's own `path` field. Identical to
+ * {@link routePathSchema} but additionally forbids "/" — the root path is
+ * reserved for the implicit app root route (ui-app owns "/"). Home-page content
+ * mounts directly into the ui-app's layout slots (e.g. `appId.content`) instead
+ * of declaring a `path: "/"` route. See docs/nodes/structure/ui-route.md.
+ *
+ * Navigation destinations (navigationDefinitionSchema.to, ui.navigation.to) keep
+ * using routePathSchema: navigating *to* "/" (the app root) is always valid.
+ */
+export const routeNodePathSchema = routePathSchema.refine((path) => path !== "/", {
+    message: "Route path '/' is reserved for the implicit app root. Mount content directly to the ui-app slots (e.g. appId.content) instead."
+});
+
 /** Binding kinds that require a path (i.e. they are not literal). */
 export const DYNAMIC_BINDING_KINDS = ["state", "query", "routeParam", "msg", "flow", "global", "jsonata", "env"] as const;
 
@@ -82,6 +96,10 @@ export const layoutDefinitionSchema: z.ZodType<LayoutDefinition> = z
 
 export const routeDefinitionSchema = z.object({
     id: identifierSchema,
+    // path uses routePathSchema (NOT routeNodePathSchema): the compiled AppModel
+    // legitimately contains the implicit app root route with path "/" (id === appId,
+    // produced by createAppRootRoute). The "/" prohibition applies to authored
+    // ui-route NODES only — enforced via routeNodePathSchema in node-definitions.ts.
     path: routePathSchema,
     title: z.string().min(1, "Route titles must not be empty.").optional(),
     layoutId: identifierSchema

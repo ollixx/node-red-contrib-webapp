@@ -493,14 +493,6 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
     },
     {
         type: "ui-route",
-        id: "routeHome",
-        parent: "customersApp",
-        path: "/",
-        title: "Home",
-        layout: "vertical"
-    },
-    {
-        type: "ui-route",
         id: "customers",
         parent: "customersApp",
         path: "/customers",
@@ -526,7 +518,7 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
     {
         type: "ui-text",
         id: "pageTitle",
-        mount: "routeHome.content", order: -1,
+        mount: "customersApp.content", order: -1,
         value: {
             kind: "literal",
             value: "Customers"
@@ -537,7 +529,7 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
     {
         type: "ui-text",
         id: "homeWelcomeHeading",
-        mount: "routeHome.content",
+        mount: "customersApp.content",
         order: 0,
         value: {
             kind: "literal",
@@ -548,7 +540,7 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
     {
         type: "ui-text",
         id: "homeWelcomeBody",
-        mount: "routeHome.content",
+        mount: "customersApp.content",
         order: 1,
         value: {
             kind: "literal",
@@ -558,7 +550,7 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
     {
         type: "ui-button",
         id: "homeGoToCustomersButton",
-        mount: "routeHome.content",
+        mount: "customersApp.content",
         order: 2,
         label: "Go to customers",
         action: "goToCustomers"
@@ -566,7 +558,7 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
     {
         type: "ui-alert",
         id: "homeTipAlert",
-        mount: "routeHome.content",
+        mount: "customersApp.content",
         order: 3,
         message: {
             kind: "literal",

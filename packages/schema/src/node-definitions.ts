@@ -5,6 +5,7 @@ import {
     actionTypeSchema,
     bindingSchema,
     identifierSchema,
+    routeNodePathSchema,
     routePathSchema
 } from "./contracts";
 import { standardLayoutPresetIds } from "./layout-presets";
@@ -149,7 +150,7 @@ export type UiContainerNodeDefinition = z.infer<typeof uiContainerNodeDefinition
 export const uiRouteNodeDefinitionSchema = identifiedNodeSchema.extend({
     type: z.literal("ui-route"),
     parent: identifierSchema.optional(),
-    path: routePathSchema,
+    path: routeNodePathSchema,
     title: z.string().min(1, "Route titles must not be empty.").optional(),
     layout: standardLayoutPresetSchema,
     events: z.array(z.enum(["onEnter", "onLeave"])).optional()

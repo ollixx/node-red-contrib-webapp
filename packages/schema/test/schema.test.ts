@@ -9,8 +9,10 @@ import {
     customersCrudNodeSetFixture,
     customersCrudRuntimeIntegrationFixture,
     fixtureAppModels,
+    navigationDefinitionSchema,
     parseMountReference,
     resolveMountReference,
+    routeNodePathSchema,
     runtimeIntegrationModelSchema,
     storeOperationSchema,
     validateUiNodeDefinition,
@@ -55,6 +57,48 @@ describe("mount parsing", () => {
             success: false,
             error: "Route mounts must include a route path and at least one region, for example 'route:/customers/content'."
         });
+    });
+});
+
+describe("P48: ui-route path '/' is reserved for the implicit app root", () => {
+    it("rejects a ui-route node whose path is '/'", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-route",
+            id: "homeRoute",
+            uiId: "homeRoute",
+            parent: "myApp",
+            path: "/",
+            layout: "vertical"
+        });
+
+        expect(result.success).toBe(false);
+        if (!result.success) {
+            expect(result.error).toContain("implicit app root");
+        }
+    });
+
+    it("accepts a ui-route node with a non-'/' path", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-route",
+            id: "customersRoute",
+            uiId: "customersRoute",
+            parent: "myApp",
+            path: "/customers",
+            layout: "vertical"
+        });
+
+        expect(result.success).toBe(true);
+    });
+
+    it("routeNodePathSchema rejects '/' but accepts sub-paths", () => {
+        expect(routeNodePathSchema.safeParse("/").success).toBe(false);
+        expect(routeNodePathSchema.safeParse("/customers").success).toBe(true);
+        expect(routeNodePathSchema.safeParse("/item/:id").success).toBe(true);
+    });
+
+    it("navigation destinations may still target '/' (the app root)", () => {
+        // Navigating TO "/" is valid — only declaring a ui-route with path "/" is forbidden.
+        expect(navigationDefinitionSchema.safeParse({ id: "nav1", to: "/" }).success).toBe(true);
     });
 });
 

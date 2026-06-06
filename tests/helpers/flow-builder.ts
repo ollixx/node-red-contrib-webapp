@@ -20,9 +20,11 @@ import type { NodeDef } from "./admin-api";
  * Usage:
  *   const flow = new FlowBuilder()
  *     .app({ id: "testApp", root: "testApp" })
- *     .route({ id: "home", path: "/" })
- *     .node("ui-text", { id: "t1", text: "Hello" })
+ *     .node("ui-text", { id: "t1", text: "Hello" })   // mounts to testApp.content
  *     .build();
+ *
+ * P48: the ui-app is the implicit root route ("/"). A .route() call must use a
+ * non-"/" path (e.g. "/customers"); path "/" throws. Home content needs no route.
  */
 
 const TAB_ID = "e2e-flow";
@@ -37,7 +39,10 @@ type Overrides = Record<string, unknown>;
 
 /** Canonical minimal default for one node type, given the current app/route. */
 function defaultsFor(type: string, ctx: { appId: string; routeId?: string; id: string }): NodeDef {
-    const mount = ctx.routeId ? `${ctx.routeId}.content` : undefined;
+    // P48: with no explicit route, content mounts into the ui-app's content slot
+    // (the app is the implicit root route). `mount` is a normal override — a spec
+    // that wants another slot (e.g. `appId.navbar`) still passes it explicitly.
+    const mount = ctx.routeId ? `${ctx.routeId}.content` : `${ctx.appId}.content`;
     const base: NodeDef = {
         type,
         id: ctx.id,
@@ -127,6 +132,15 @@ export class FlowBuilder {
     route(overrides: Overrides = {}): this {
         if (!this.appId) {
             throw new Error("FlowBuilder.route() called before .app()");
+        }
+        // P48: path "/" is reserved for the implicit app root route. Home content
+        // mounts directly to the ui-app slots; ui-route is for sub-paths only.
+        if ((overrides.path as string | undefined ?? "/") === "/") {
+            throw new Error(
+                "FlowBuilder.route() path '/' is reserved for the implicit app root. " +
+                "Drop the .route() call and mount content to the app's content slot, " +
+                "or pass a non-'/' path (e.g. { path: '/customers' })."
+            );
         }
         const id = (overrides.id as string) ?? uid("route");
         const node: NodeDef = {
@@ -234,7 +248,7 @@ export class FlowBuilder {
 
     /** Return the assembled flow, with a leading tab node. */
     build(): NodeDef[] {
-        const tab: NodeDef = { id: TAB_ID, type: "tab", label: "E2E", disabled: false, info: "" };
+        const tab: NodeDef = { id: TAB_ID, type: "tab", label: "Flow", disabled: false, info: "" };
         return [tab, ...this.nodes];
     }
 }

@@ -461,7 +461,6 @@ describe("P11a: parent field compilation", () => {
     it("compiles a ui-button with parent used as mount into the correct slot", () => {
         const assembly = assembleNodeSet([
             { type: "ui-app", id: "testApp", title: "Test", layout: "app" },
-            { type: "ui-route", id: "home", path: "/", layout: "vertical" },
             {
                 type: "ui-button",
                 id: "btn1",
@@ -491,7 +490,6 @@ describe("P11a: parent field compilation", () => {
     it("compiles a ui-button with mount field (no parent) — backward compatibility", () => {
         const assembly = assembleNodeSet([
             { type: "ui-app", id: "testApp", title: "Test", layout: "app" },
-            { type: "ui-route", id: "home", path: "/", layout: "vertical" },
             {
                 type: "ui-button",
                 id: "btn2",
@@ -507,7 +505,6 @@ describe("P11a: parent field compilation", () => {
     it("compiles a ui-store with parent scoped to an app", () => {
         const assembly = assembleNodeSet([
             { type: "ui-app", id: "myApp", title: "My App", layout: "vertical" },
-            { type: "ui-route", id: "home", path: "/", layout: "vertical" },
             {
                 type: "ui-store",
                 id: "myStore",
@@ -531,7 +528,6 @@ describe("P11a: parent field compilation", () => {
     it("rejects a slot-scoped node with neither mount nor parent", () => {
         const assembly = assembleNodeSet([
             { type: "ui-app", id: "testApp", title: "Test", layout: "app" },
-            { type: "ui-route", id: "home", path: "/", layout: "vertical" },
             {
                 type: "ui-button",
                 id: "brokenBtn",
@@ -550,7 +546,6 @@ describe("P11a: parent field compilation", () => {
     it("compiles a node with uiId but no parent (backward compatibility)", () => {
         const assembly = assembleNodeSet([
             { type: "ui-app", id: "testApp", title: "Test", layout: "app" },
-            { type: "ui-route", id: "home", path: "/", layout: "vertical" },
             {
                 type: "ui-button",
                 id: "legacyBtn",

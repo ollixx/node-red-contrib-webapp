@@ -43,7 +43,9 @@ describe("customers CRUD example flow", () => {
         const compiled = registry.compile("customersApp");
 
         expect(compiled.diagnostics).toEqual([]);
-        expect(compiled.model?.routes.map((route) => route.id)).toEqual(["routeHome", "customers", "customerDetail"]);
+        // P48: home content mounts to the app's implicit root route (id === appId),
+        // there is no explicit ui-route with path "/".
+        expect(compiled.model?.routes.map((route) => route.id)).toEqual(["customersApp", "customers", "customerDetail"]);
         expect(compiled.model?.dialogs.map((dialog) => dialog.id)).toEqual(["customerEditor"]);
         expect(compiled.model?.components.map((component) => component.id)).toEqual(
             expect.arrayContaining([
@@ -83,12 +85,13 @@ describe("customers CRUD example flow", () => {
         const compiled = registry.compile("customersApp");
         expect(compiled.diagnostics).toEqual([]);
 
-        const homeRoute = compiled.model?.routes.find((r) => r.id === "routeHome");
+        // P48: the home route is the app's implicit root route (id === appId).
+        const homeRoute = compiled.model?.routes.find((r) => r.id === "customersApp" && r.path === "/");
         expect(homeRoute).toBeDefined();
         // The home route must have at least one component mounted under it.
-        // Components on home route use named mount "routeHome.content".
+        // Home content now uses the named mount "customersApp.content".
         const homeComponents = compiled.model?.components.filter(
-            (c) => String(c.mount ?? "").startsWith("routeHome.")
+            (c) => String(c.mount ?? "").startsWith("customersApp.")
         );
         expect(homeComponents?.length).toBeGreaterThan(0);
     });
