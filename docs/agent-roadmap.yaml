@@ -524,7 +524,7 @@ phases:
 
   - id: P63
     title: "Self-hosted Shoelace-Assets (vendoren nach resources/) statt CDN — strikt lokal (ADR 0008)"
-    status: pending
+    status: in_progress
     dependencies: [P57]
     goals:
       - Die App voll offline-/air-gapped-fähig machen: keine CDN-Abhängigkeit zur Laufzeit.
