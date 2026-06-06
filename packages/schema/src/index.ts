@@ -2,6 +2,8 @@ export const packageName = "@node-red-contrib-webapp/schema";
 
 export {
     actionDefinitionSchema,
+    actionMessageCommandSchema,
+    actionMessageSchema,
     actionTargetModeSchema,
     actionTypeSchema,
     appModelSchema,
@@ -43,6 +45,8 @@ export {
 } from "./layout-presets";
 export type {
     ActionDefinition,
+    ActionMessage,
+    ActionMessageCommand,
     ActionTargetMode,
     ActionType,
     AppModel,

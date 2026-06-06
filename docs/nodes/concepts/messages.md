@@ -9,34 +9,43 @@ Alle Messages zwischen Webapp-Knoten tragen ein `msg.ui`-Objekt. Dieses enthält
 
 ---
 
-## Eingehende Component-State-Messages
+## Action-Messages (`msg.ui.action`)
 
-Alle View-Knoten (`ui-button`, `ui-input`, `ui-text`, `ui-table`, `ui-container`) akzeptieren eingehende Messages zur Zustandssteuerung. Das Format ist identisch mit dem, was `ui-action` auf seinem Out-Port emittiert — der App-Autor verdrahtet den Out-Port von `ui-action` direkt mit dem In-Port des Ziel-Knotens.
+Interaktions-Kommandos (Sichtbarkeit, Aktivierung, Offenlegung, Navigation,
+Fokus, Reset) reisen einheitlich als **`msg.ui.action`**. Das ist ein
+öffentlicher, schema-validierter Contract (`actionMessageSchema` in
+`packages/schema`, [ADR 0007](../../adr/0007-action-message-and-per-node-interaction-handlers.md)):
 
 ```
-msg.ui.component.id   = <nodeId des Zielknotens>
-msg.ui.component.op   = "show" | "hide" | "enable" | "disable" | "focus" | "reset"
-msg.ui.clientId       = <optional: nur für diesen Client>
+msg.ui.action.type   = <verb>              ← siehe Verbset in actions.md
+msg.ui.action.to     = "/route/path"       ← nur navigate (optional)
+msg.ui.action.part   = "<sub-id>"          ← open/close/select (optional)
+msg.ui.action.target = "<node-/component-id>"  ← optionaler Override
+msg.ui.clientId      = <optional: nur für diesen Client>
 ```
 
-### Verfügbare Operationen
+Das Schema validiert **nur** `msg.ui.action`; alle übrigen `msg.*`- und
+`msg.ui.*`-Felder werden unangetastet durchgereicht. Weil es ein gewöhnlicher
+Message-Contract ist, kann **jeder** Knoten ihn erzeugen — `ui-action` ist nur
+der bequeme, typisierte Emitter. Der App-Autor verdrahtet den Out-Port von
+`ui-action` direkt mit dem In-Port des Zielknotens; der Zielknoten verarbeitet
+das ihm bekannte Verb und reicht die Message sonst durch.
 
-| `op` | Beschreibung | Gilt für |
+### Verfügbare Verben
+
+| Verb | Beschreibung | Gilt für |
 |---|---|---|
-| `show` | Blendet das Element ein | alle View-Knoten |
-| `hide` | Blendet das Element aus | alle View-Knoten |
-| `enable` | Aktiviert das Element | `ui-button`, `ui-input` |
-| `disable` | Deaktiviert das Element | `ui-button`, `ui-input` |
-| `focus` | Setzt den Fokus | `ui-input` |
-| `reset` | Setzt den Wert auf den Initialwert zurück | `ui-input` |
+| `show` / `hide` | Element ein-/ausblenden | alle View-Knoten |
+| `open` / `close` | Offenlegung (Dialog/Drawer/Accordion/…) | aufklappbare Elemente |
+| `select` | Einzelauswahl unter Geschwistern | Tab, Stepper, Menü |
+| `enable` / `disable` | Element aktivieren/deaktivieren | `ui-button`, `ui-input` |
+| `focus` | Fokus setzen | `ui-input` |
+| `reset` | Wert auf Initialwert zurücksetzen | `ui-input` |
+| `navigate` | Client zu einer Route navigieren | `ui-app`, `ui-route` |
 
-Unbekannte `op`-Werte werden ignoriert. Fehlende `msg.ui.component.id` → Message wird verworfen.
-
-### Verhältnis zu `ui-action`
-
-`ui-action` mit `targetMode: out-port` emittiert exakt dieses Format auf seinem Out-Port. Der App-Autor verdrahtet den Out-Port mit dem Ziel-Knoten — kein separates Message-Konzept, kein doppeltes Format.
-
-`ui-action` mit `targetMode: path` übernimmt das Routing zur Laufzeit und schickt die Message intern an den richtigen Knoten, ohne explizite Flow-Verdrahtung.
+Ein Verb, das ein Zielknoten nicht kennt → Pass-Through (kein stilles Schlucken).
+Das vollständige Verbset und die Zieladressierung stehen in
+[actions.md](./actions.md).
 
 ---
 

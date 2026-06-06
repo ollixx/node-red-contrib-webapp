@@ -3,6 +3,8 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+    actionMessageSchema,
+    actionTypeSchema,
     bindingSchema,
     errorContextSchema,
     errorOriginSchema,
@@ -1114,5 +1116,80 @@ describe("P56: ui-app backend→frontend error forwarding config (ADR 0006 §4)"
             forwardErrorMinSeverity: "fatal"
         });
         expect(result.success).toBe(false);
+    });
+});
+
+describe("P58: action message contract (ADR 0007 §1)", () => {
+    it("accepts a valid msg.ui.action for every verb in the verb set", () => {
+        for (const type of actionTypeSchema.options) {
+            const result = actionMessageSchema.safeParse({ ui: { action: { type } } });
+            expect(result.success, type).toBe(true);
+        }
+    });
+
+    it("accepts the optional to / part / target / clientId fields", () => {
+        const result = actionMessageSchema.safeParse({
+            ui: {
+                clientId: "client-abc123",
+                action: { type: "navigate", to: "/customers/42", target: "node1", part: "tab-2" }
+            }
+        });
+        expect(result.success).toBe(true);
+    });
+
+    it("passes foreign msg.* fields (payload/topic/_msgid) through untouched", () => {
+        const message = {
+            payload: { customerId: 42 },
+            topic: "customers/save",
+            _msgid: "abc.def",
+            ui: { action: { type: "open", target: "dialog1" } }
+        };
+        const result = actionMessageSchema.safeParse(message);
+        expect(result.success).toBe(true);
+        if (result.success) {
+            const data = result.data as Record<string, unknown>;
+            // Foreign top-level fields survive validation — the contract enriches
+            // the message, it does not replace it (no .strict() on msg).
+            expect(data.payload).toEqual({ customerId: 42 });
+            expect(data.topic).toBe("customers/save");
+            expect(data._msgid).toBe("abc.def");
+        }
+    });
+
+    it("passes foreign msg.ui.* fields (e.g. appId) through untouched", () => {
+        const result = actionMessageSchema.safeParse({
+            ui: { appId: "app1", action: { type: "hide", target: "panel1" } }
+        });
+        expect(result.success).toBe(true);
+        if (result.success) {
+            const ui = (result.data as { ui: Record<string, unknown> }).ui;
+            expect(ui.appId).toBe("app1");
+        }
+    });
+
+    it("rejects an unknown verb", () => {
+        const result = actionMessageSchema.safeParse({ ui: { action: { type: "explode" } } });
+        expect(result.success).toBe(false);
+    });
+
+    it("rejects a missing action type", () => {
+        const result = actionMessageSchema.safeParse({ ui: { action: { target: "node1" } } });
+        expect(result.success).toBe(false);
+    });
+
+    it("rejects an unknown field inside msg.ui.action (action is strict)", () => {
+        const result = actionMessageSchema.safeParse({
+            ui: { action: { type: "navigate", targetId: "node1" } }
+        });
+        expect(result.success).toBe(false);
+    });
+
+    it("rejects empty-string to / part / target values", () => {
+        for (const field of ["to", "part", "target"]) {
+            const result = actionMessageSchema.safeParse({
+                ui: { action: { type: "navigate", [field]: "" } }
+            });
+            expect(result.success, field).toBe(false);
+        }
     });
 });
