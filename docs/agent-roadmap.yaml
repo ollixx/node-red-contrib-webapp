@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P53
+  current_phase: P50
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -488,77 +488,7 @@ phases:
   #   Sektion/Branch geöffnet → Command-Schema = target + optionale Sub-ID.
   # ════════════════════════════════════════════════════════════════════════
 
-  - id: P53
-    title: "ui-action — vollständiges Interaktions-Verb-Set client-seitig + Vokabular-Entmischung"
-    status: in_progress
-    dependencies: [P48]
-    # Architecture-sensitive + product decision: fixes the canonical action
-    # vocabulary (doc vs impl drift) and introduces a client-side interaction-
-    # state layer the snapshot respects. Decision-first (ADR). Use opus.
-    goal: |
-      Make every documented ui-action verb actually work end to end, and resolve
-      the doc/implementation vocabulary drift. Today only navigate / openDialog /
-      closeDialog work; show / hide(element) / enable / disable / focus / reset
-      are pushed as SSE commands but the client no-ops them — and actions.md
-      still uses show/hide for dialogs and lists the P29-killed submit/remove.
-
-      Constraint (unchanged, do not regress): the action effect travels via the
-      SSE "command" channel to the browser. The ui-action OUTPUT port keeps
-      passing the incoming msg through UNCHANGED so the flow can chain — the
-      action is NOT injected into the wire msg. Actions change INTERACTION state
-      only (actions.md); never business data.
-    scope: |
-      1. docs/adr/0005-ui-action-interaction-vocabulary.md
-         - Fix the canonical verb set in three semantic classes:
-             * show / hide      — element presence/visibility (any element)
-             * open / close     — disclosure state of openable, visible
-                                  elements (dialog, drawer, accordion section,
-                                  collapse/details, tree branch). Replaces
-                                  openDialog/closeDialog with one general pair.
-             * select           — single-active-among-siblings (tab, stepper,
-                                  menu); NOT open/close. Confirm or defer.
-             plus navigate, enable/disable, focus, reset. Drop submit/remove
-             (P29). Keep show/hide DISTINCT from open/close.
-         - Target model: align on `target` (keep msg.ui.action.targetId
-           override). open/close needs GRANULARITY — a target node id PLUS an
-           optional sub-id (accordion section / tree branch / tab). Define how
-           the command carries it (e.g. target + part).
-         - Decide how visibility / open-state / enabled / focus is represented
-           client-side so it survives a snapshot re-render (the core
-           architectural question) — open/close reuses the same interaction
-           overlay as show/hide, just keyed differently.
-      2. resources/lib/webapp-client.js — applyCommand()
-         - Implement show / hide (element), enable / disable, focus, reset
-           against a per-client interaction-state overlay; re-apply it on every
-           snapshot render so a ui-store-driven snapshot push does not wipe a
-           prior show/hide. Resolve the command `target` to the rendered node.
-      3. resources/lib/webapp-serializer.js
-         - Ensure the serializer respects the interaction-state overlay
-           (visibility/disabled) when (re-)rendering, server and thin client
-           byte-identical (P26 invariant).
-      4. nodes/webapp.js — buildActionCommand / pushActionCommandToClients
-         - Emit the canonical verbs; keep clientId targeting (P15). No business
-           logic. (Mind concurrent edits — sequence after P48.)
-      5. nodes/behavior/ui-action.html + docs/nodes/behavior/ui-action.md
-         - Editor actionType options = the canonical set (SelectBox); remove
-           submit/remove. Rewrite actions.md to match the implementation
-           (show/hide = elements, openDialog/closeDialog = dialogs, `target`
-           field) and drop the stale verbs.
-    validation: |
-      - ADR 0005 committed and referenced from this phase's archive entry.
-      - pnpm validate passes.
-      - `pnpm exec playwright test` passes; add E2E per verb:
-          * show/hide → target element appears/disappears in the browser;
-          * enable/disable → target gets/loses [disabled];
-          * open/close → dialog toggles (the former openDialog behaviour, kept);
-          * open/close with target granularity → opening one accordion section
-            (target + sub-id) opens that section only;
-          * a show, FOLLOWED BY a ui-store snapshot push, keeps the element
-            shown (interaction overlay survives re-render).
-      - The ui-action OUTPUT still passes the incoming msg through unchanged
-        (wire chaining intact) — asserted by intercepting the wired output.
-      - docs/nodes/behavior/ui-action.md matches the implementation (no
-        submit/remove; show/hide documented as element visibility).
+  - { id: P53, title: "ui-action — vollständiges Interaktions-Verb-Set client-seitig + Vokabular-Entmischung", status: done, dependencies: [P48], archive: "docs/agent-roadmap-archive.yaml#P53" }
 
   # ════════════════════════════════════════════════════════════════════════
   # Error-Handling & Logging (P54–P57) — ADR 0006
