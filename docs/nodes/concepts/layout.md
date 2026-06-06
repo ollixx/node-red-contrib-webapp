@@ -31,6 +31,14 @@ Direkte Kinder eines Preset-Layouts erhalten im Editor layoutabhängige Zusatzfe
 - `absolute`: `layoutX`, `layoutY`
 - `app`: keine zusätzlichen Child-Props
 
+### Wertebereich Grid-Platzierung
+
+Die Grid-Child-Props `row`, `col`, `colSize` und `rowSize` sind **positive Integer (>= 1)**. Grid-Positionen sind 1-basiert — ein Wert von 0 oder eine negative Zahl ist ungültig und wird vom Schema abgelehnt.
+
+**Ausnahme:** `layoutX` und `layoutY` (Absolute-Preset) akzeptieren auch 0 und negative Werte, da sie absolute Koordinaten im Koordinatensystem des Containers darstellen.
+
+Im Editor erzwingen die Eingabefelder für `row`, `col`, `colSize` und `rowSize` `min="1"` und `step="1"`. Ein Wert ausserhalb dieses Bereichs markiert den Knoten sofort als ungültig (roter Badge), bevor er deployed werden kann.
+
 ## Referenzierende Knoten
 
 - `ui-app`: Basis-Layout der Anwendung

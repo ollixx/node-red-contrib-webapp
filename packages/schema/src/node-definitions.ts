@@ -26,10 +26,10 @@ const mountableNodeSchema = identifiedNodeSchema.extend({
     parent: z.string().min(1, "Component parent paths must not be empty.").optional(),
     mount: z.string().min(1, "Component mounts must not be empty.").optional(),
     order: z.number().int("Component order must be an integer.").optional(),
-    row: z.number().int("Component rows must be integers.").optional(),
-    col: z.number().int("Component columns must be integers.").optional(),
-    colSize: z.number().int("Component column spans must be integers.").optional(),
-    rowSize: z.number().int("Component row spans must be integers.").optional(),
+    row: z.number().int("Grid rows are 1-based — row must be a positive integer.").positive("Grid rows are 1-based — row must be a positive integer.").optional(),
+    col: z.number().int("Grid columns are 1-based — col must be a positive integer.").positive("Grid columns are 1-based — col must be a positive integer.").optional(),
+    colSize: z.number().int("Grid column spans must be positive integers.").positive("Grid column spans must be positive integers.").optional(),
+    rowSize: z.number().int("Grid row spans must be positive integers.").positive("Grid row spans must be positive integers.").optional(),
     layoutX: z.number().int("Component x coordinates must be integers.").optional(),
     layoutY: z.number().int("Component y coordinates must be integers.").optional()
 }).superRefine((node, context) => {
