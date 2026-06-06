@@ -241,7 +241,7 @@ phases:
 
   - id: P48
     title: "ui-route path '/' verboten — app ist die implizite Root-Route"
-    status: pending
+    status: in_progress
     dependencies: [P47]
     # Architecture-sensitive: changes the schema contract, breaks ~130 test
     # call-sites, and requires a systematic migration of all E2E specs and
