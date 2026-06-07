@@ -326,7 +326,10 @@
             "value": "Use the Customers section to create, view and edit customer records."
         },
         "severity": "info",
-        "title": "Tip",
+        "title": {
+            "kind": "literal",
+            "value": "Tip"
+        },
         "z": "flow1",
         "x": 840,
         "y": 460,

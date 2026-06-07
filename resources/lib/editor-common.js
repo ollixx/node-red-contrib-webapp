@@ -260,7 +260,8 @@
             };
         }
 
-        if (binding && ["state", "query", "routeParam", "msg", "flow", "global", "jsonata", "env"].includes(binding.kind)) {
+        // P67: `store` binding — path holds the referenced ui-store id.
+        if (binding && ["state", "query", "routeParam", "msg", "flow", "global", "jsonata", "env", "store"].includes(binding.kind)) {
             return {
                 type: binding.kind,
                 value: binding.path || ""
@@ -638,6 +639,62 @@
                 }
             });
         });
+    }
+
+    // P67: a custom Node-RED typedInput type for the new `store` binding kind.
+    // Its `value` is the referenced ui-store node id; the expand button opens the
+    // SAME P68 node-picker dialog (stores preset) used everywhere else — no second
+    // picker. Reusable on every binding field (ui-alert message/title, …).
+    function storeTypedInputType(options) {
+        const opts = options || {};
+        return {
+            value: "store",
+            label: opts.label || "Store",
+            icon: "fa fa-database",
+            hasValue: true,
+            // Render the store id; the picker is the primary way to choose one.
+            expand: function () {
+                const that = this;
+                openNodePickerDialog({
+                    title: opts.pickerTitle || "Store auswählen",
+                    value: String(that.value() || ""),
+                    entries: nodePickerOptionsForPreset("stores"),
+                    onSelect: function (value) {
+                        that.value(value);
+                    }
+                });
+            }
+        };
+    }
+
+    // P67: the full typedInput `types` array for a bindable value field — the
+    // canonical ui-text type set PLUS the `store` type. literal label is
+    // configurable (e.g. "Text", "Message", "Title").
+    function bindingTypedInputTypes(options) {
+        const opts = options || {};
+        return [
+            { value: "literal", label: opts.literalLabel || "Text", icon: "fa fa-font", hasValue: true },
+            { value: "state", label: "State", icon: "fa fa-database", hasValue: true },
+            {
+                value: "query",
+                label: "Query",
+                icon: "fa fa-search",
+                hasValue: true,
+                validate: function (value) {
+                    if (!value || value.trim().length === 0) {
+                        return false;
+                    }
+                    return /^[a-zA-Z_$][a-zA-Z0-9_$]*(\.[a-zA-Z_$][a-zA-Z0-9_$]*|\[\d+\])*$/.test(value.trim());
+                }
+            },
+            { value: "routeParam", label: "Route Param", icon: "fa fa-map-signs", hasValue: true },
+            storeTypedInputType({ label: "Store" }),
+            "msg",
+            "flow",
+            "global",
+            "jsonata",
+            "env"
+        ];
     }
 
     function isStandardLayoutPreset(value) {
@@ -1342,6 +1399,7 @@
     }
 
     global.WebappEditorCommon = {
+        bindingTypedInputTypes,
         bindingValueForEditor,
         buildMountOptionsTree,
         collectEventCheckboxValues,
@@ -1366,6 +1424,7 @@
         registerNodeType,
         registerNodeTypeWithEvents,
         required,
-        setSelectOptionsTree
+        setSelectOptionsTree,
+        storeTypedInputType
     };
 })(window);

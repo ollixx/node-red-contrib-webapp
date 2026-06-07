@@ -4,6 +4,7 @@ export { emitNodeDefinition, nodeSet, validateEditorNodeConfig } from "./nodes";
 export {
     buildEditorStructureView,
     findStructureItem,
+    findUnknownStoreBindings,
     selectFromCanvas,
     selectFromStructure
 } from "./structure-view";

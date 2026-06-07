@@ -49,6 +49,9 @@ export interface CompiledRegistrySnapshot {
     appId: string;
     model?: AppModel;
     diagnostics?: readonly RuntimeDiagnosticLike[];
+    // P67: ids of the ui-store nodes that belong to this app. Used to validate
+    // that every `store` binding references an existing store in the same app.
+    storeIds?: readonly string[];
 }
 
 export interface EditorStructureItem {
@@ -67,10 +70,39 @@ export interface EditorStructureItem {
 
 export interface EditorStructureDiagnostic {
     severity: "warning";
-    code: "orphaned-mount" | "unresolved-slot" | "compiler-diagnostic";
+    code: "orphaned-mount" | "unresolved-slot" | "compiler-diagnostic" | "unknown-store-binding";
     message: string;
     canvasNodeIds: string[];
     structureItemIds: string[];
+}
+
+/**
+ * P67: collect every `store` binding across a model's components whose
+ * referenced store id is not in {@link storeIds}. Pure helper so the rule is
+ * unit-testable independent of the structure-view wiring.
+ */
+export function findUnknownStoreBindings(
+    model: AppModel,
+    storeIds: readonly string[]
+): Array<{ componentId: string; storeId: string; prop: string }> {
+    const known = new Set(storeIds);
+    const issues: Array<{ componentId: string; storeId: string; prop: string }> = [];
+
+    for (const component of model.components) {
+        for (const [prop, binding] of Object.entries(component.bind)) {
+            if (binding.kind !== "store") {
+                continue;
+            }
+
+            const storeId = binding.path ?? "";
+
+            if (!known.has(storeId)) {
+                issues.push({ componentId: component.id, storeId, prop });
+            }
+        }
+    }
+
+    return issues;
 }
 
 export interface EditorStructureSelection {
@@ -379,6 +411,21 @@ function createMountDiagnostics(
         });
 }
 
+function createStoreBindingDiagnostics(
+    model: AppModel,
+    storeIds: readonly string[],
+    sourceNodes: readonly UiNodeDefinition[],
+    structureIndex: StructureIndex
+): EditorStructureDiagnostic[] {
+    return findUnknownStoreBindings(model, storeIds).map((issue) => ({
+        severity: "warning",
+        code: "unknown-store-binding",
+        message: `Component '${issue.componentId}' binds '${issue.prop}' to store '${issue.storeId}', which is not a ui-store in this app.`,
+        canvasNodeIds: registrationIdsToCanvasNodeIds([issue.componentId], sourceNodes),
+        structureItemIds: structureIndex.structureItemIdsByCanvasNodeId.get(issue.componentId) ?? []
+    }));
+}
+
 export function buildEditorStructureView(
     snapshot: CompiledRegistrySnapshot,
     sourceNodes: readonly UiNodeDefinition[] = []
@@ -472,7 +519,8 @@ export function buildEditorStructureView(
         root,
         diagnostics: [
             ...createCompilerDiagnostics(snapshot, sourceNodes, structureIndex),
-            ...createMountDiagnostics(snapshot.model, sourceNodes, structureIndex)
+            ...createMountDiagnostics(snapshot.model, sourceNodes, structureIndex),
+            ...createStoreBindingDiagnostics(snapshot.model, snapshot.storeIds ?? [], sourceNodes, structureIndex)
         ],
         itemsById: structureIndex.itemsById
     };

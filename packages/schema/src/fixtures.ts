@@ -572,7 +572,10 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
             value: "Use the Customers section to create, view and edit customer records."
         },
         severity: "info",
-        title: "Tip"
+        title: {
+            kind: "literal",
+            value: "Tip"
+        }
     },
     {
         type: "ui-button",

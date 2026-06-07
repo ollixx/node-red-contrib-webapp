@@ -335,3 +335,70 @@ describe("renderer MVP", () => {
         expect(detailDialogNameInput?.kind).toBe("input");
     });
 });
+
+// P67: the renderer resolves a `store` binding to the referenced store's
+// current value via that store's statePath.
+describe("P67: store bindings", () => {
+    function textBoundToStore(storeId: string) {
+        return {
+            ...customersCrudAppModelFixture,
+            components: [
+                ...customersCrudAppModelFixture.components,
+                {
+                    id: "storeBoundText",
+                    kind: "text" as const,
+                    mount: "layout:app/footer",
+                    bind: {
+                        value: { kind: "store" as const, path: storeId }
+                    },
+                    props: {},
+                    events: []
+                }
+            ]
+        };
+    }
+
+    it("resolves a store binding to the store's value via its statePath", () => {
+        const app = createRendererApp(textBoundToStore("draftStore"), {
+            integration: customersCrudRuntimeIntegrationFixture,
+            location: "/",
+            state: { draft: { customer: "Ada Lovelace" } }
+        });
+
+        const text = findComponentInSnapshot(app.render(), "storeBoundText");
+
+        expect(text?.kind).toBe("text");
+        expect(text && "text" in text ? text.text : undefined).toBe("Ada Lovelace");
+    });
+
+    it("is robust to statePath renames — the binding references the store id, not the path", () => {
+        const renamedIntegration = {
+            ...customersCrudRuntimeIntegrationFixture,
+            stores: customersCrudRuntimeIntegrationFixture.stores.map((store) =>
+                store.id === "draftStore" ? { ...store, statePath: "drafts.active.customer", initialValue: undefined } : store
+            )
+        };
+
+        const app = createRendererApp(textBoundToStore("draftStore"), {
+            integration: renamedIntegration,
+            location: "/",
+            state: { drafts: { active: { customer: "Grace Hopper" } } }
+        });
+
+        const text = findComponentInSnapshot(app.render(), "storeBoundText");
+
+        expect(text && "text" in text ? text.text : undefined).toBe("Grace Hopper");
+    });
+
+    it("resolves to undefined (empty text) when the store id is unknown", () => {
+        const app = createRendererApp(textBoundToStore("noSuchStore"), {
+            integration: customersCrudRuntimeIntegrationFixture,
+            location: "/",
+            state: { draft: { customer: "ignored" } }
+        });
+
+        const text = findComponentInSnapshot(app.render(), "storeBoundText");
+
+        expect(text && "text" in text ? text.text : undefined).toBe("");
+    });
+});

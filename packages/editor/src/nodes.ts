@@ -220,10 +220,14 @@ export interface UiNavigationEditorConfig extends IdentifiedEditorConfig {
 
 // P16b: feedback and status node editor configs
 export interface UiAlertEditorConfig extends MountableEditorConfig {
+    // P67: message is a full binding (literal/state/query/.../store). messagePath
+    // stays for back-compat (legacy flows) → wrapped as a state binding.
+    message?: BindingDefinition;
     messagePath?: string;
     // P49b: unified with SEVERITY_VARIANTS — primary|success|warning|danger|neutral|info
     severity?: "primary" | "success" | "warning" | "danger" | "neutral" | "info";
-    title?: string;
+    // P67: title is a binding too (or a plain string → literal binding).
+    title?: BindingDefinition | string;
     dismissible?: boolean;
 }
 
@@ -1039,14 +1043,31 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
     "ui-alert": createDefinition("ui-alert", "view", {
         id: requiredString("Alert IDs are required before deploy."),
         mount: requiredString("Alerts must declare a parent slot."),
-        messagePath: requiredString("Alerts must declare a message path.")
+        // P67: a binding object satisfies the requirement; otherwise messagePath
+        // (back-compat) must be a non-empty string.
+        message: {
+            validate(value, config) {
+                if (value && typeof value === "object") {
+                    return undefined;
+                }
+
+                const messagePath = config.messagePath;
+
+                return typeof messagePath === "string" && messagePath.trim().length > 0
+                    ? undefined
+                    : "Alerts must declare a message.";
+            }
+        }
     }, (config: UiAlertEditorConfig): UiAlertNodeDefinition => ({
         type: "ui-alert",
         id: config.id ?? "",
         mount: config.mount ?? "",
-        message: stateBinding(config.messagePath ?? ""),
+        message: config.message ?? stateBinding(config.messagePath ?? ""),
         severity: config.severity,
-        title: config.title,
+        // P67: a plain-string title is wrapped as a literal binding.
+        title: typeof config.title === "string"
+            ? (config.title.length > 0 ? literalBinding(config.title) : undefined)
+            : config.title,
         dismissible: config.dismissible,
         ...collectLayoutChildConfig(config)
     })),
