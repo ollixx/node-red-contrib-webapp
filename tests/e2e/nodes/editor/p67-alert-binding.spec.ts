@@ -43,11 +43,21 @@ test.describe("editor panel — ui-alert message/title typedInput (P67)", () => 
         await editor.expectFields(["message", "title"]);
 
         // Both widgets expose the new `store` type alongside the literal/dynamic
-        // kinds. Read the type set straight off the typedInput widget.
+        // kinds. Node-RED's `typedInput("types")` is a SETTER only (it calls
+        // `types.map(...)` on its argument and throws on a bare get), so read the
+        // configured type list off the widget instance stored in jQuery `.data()`
+        // instead. The jQuery-UI bridge keys the instance by namespace+widget
+        // name; probe the element's data for the entry exposing `typeList`.
         const messageTypes = await page.evaluate(() => {
-            const $ = (window as unknown as { $: (sel: string) => { typedInput: (...a: unknown[]) => unknown } }).$;
-            return ($("#node-input-message").typedInput("types") as Array<{ value?: string } | string>)
-                .map((t) => (typeof t === "string" ? t : t.value));
+            const $ = (window as unknown as { $: (sel: string) => unknown }).$;
+            const el = ($("#node-input-message") as unknown as { get: (i: number) => Element }).get(0);
+            const data = (($ as unknown as { _data?: (e: Element) => Record<string, unknown> })._data?.(el))
+                ?? (($ as unknown as { data: (e: Element) => Record<string, unknown> }).data(el));
+            const instance = Object.values(data ?? {}).find(
+                (v): v is { typeList: Array<{ value?: string } | string> } =>
+                    !!v && Array.isArray((v as { typeList?: unknown }).typeList)
+            );
+            return (instance?.typeList ?? []).map((t) => (typeof t === "string" ? t : t.value));
         });
         expect(messageTypes).toEqual(expect.arrayContaining([
             "literal", "state", "query", "routeParam", "store", "msg", "flow", "global", "jsonata", "env"
