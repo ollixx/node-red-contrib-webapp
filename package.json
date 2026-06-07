@@ -62,7 +62,9 @@
         }
     },
     "scripts": {
-        "build": "pnpm -r build",
+        "vendor:shoelace": "node scripts/vendor-shoelace.js",
+        "build": "pnpm vendor:shoelace && pnpm -r build",
+        "prepare": "node scripts/vendor-shoelace.js",
         "dev:start": "lsof -ti tcp:1881 | xargs kill -9 2>/dev/null || true && node-red --userDir .node-red-dev --port 1881",
         "e2e:server:start": "rm -rf .node-red-e2e && mkdir -p .node-red-e2e/node_modules && cp .node-red-dev/settings.js .node-red-e2e/settings.js && cp examples/customers-crud/flow.json .node-red-e2e/flows.json && ln -sfn ../.. .node-red-e2e/node_modules/node-red-contrib-webapp && node-red --userDir .node-red-e2e --port 1882",
         "example:start": "lsof -ti tcp:1881 | xargs kill -9 2>/dev/null || true && rm -rf .node-red-example && mkdir -p .node-red-example/node_modules && cp .node-red-dev/settings.js .node-red-example/settings.js && cp examples/customers-crud/flow.json .node-red-example/flows.json && ln -sfn ../.. .node-red-example/node_modules/node-red-contrib-webapp && node-red --userDir .node-red-example --port 1881",
@@ -79,6 +81,7 @@
     "devDependencies": {
         "@eslint/js": "^9.36.0",
         "@playwright/test": "^1.58.2",
+        "@shoelace-style/shoelace": "2.20.1",
         "eslint": "^9.36.0",
         "jsdom": "^29.1.1",
         "typescript": "^5.9.3",

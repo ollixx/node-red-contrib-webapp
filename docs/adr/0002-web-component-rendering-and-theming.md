@@ -4,6 +4,7 @@
 - Date: 2026-05-31
 - Supersedes: the renderer-framework decision in [ADR 0001](0001-initial-architecture.md) (React + React Router)
 - Superseded-by: [ADR 0003](0003-live-node-red-app-no-preview.md) supersedes **only** the transport/preview slice (snapshot transport, thin-client preview, runtime-executed actions). The rendering and theming decisions here (RenderSnapshot, Shoelace Web Component adapter, design tokens, shared serializer) remain in force.
+- Asset delivery: how the Shoelace runtime assets reach the browser is decided in [ADR 0008](0008-self-hosted-shoelace-assets.md) — self-hosted (vendored into `resources/shoelace/`), strictly local, no CDN. ADR 0008 builds on the rendering target chosen here.
 
 ## Context
 
