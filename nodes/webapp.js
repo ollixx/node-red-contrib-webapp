@@ -28,10 +28,20 @@ const CLIENT_SERIALIZER_PATH = "/resources/node-red-contrib-webapp/lib/webapp-se
 // the autoloader registers each custom element on first use. Components are
 // themed natively through CSS custom properties, so the design tokens plug in
 // without per-token translation.
+//
+// P63 / ADR 0008: Shoelace is self-hosted (vendored), strictly local — NO CDN.
+// scripts/vendor-shoelace.js copies the package's `cdn` build into
+// resources/shoelace/, which Node-RED serves via the module-resource mechanism
+// (same path webapp-client.js rides on — no new HTTP route). SHOELACE_VERSION
+// pins the @shoelace-style/shoelace devDependency and drives the vendor copy;
+// the vendor script asserts the installed version matches it (drift guard).
+// The autoloader auto-detects its own base path from its script URL, so lazy
+// component chunks and sl-icon assets resolve under the same local path — no
+// setBasePath() call needed.
 const SHOELACE_VERSION = "2.20.1";
-const SHOELACE_CDN_BASE = `https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@${SHOELACE_VERSION}/cdn`;
-const SHOELACE_THEME_HREF = `${SHOELACE_CDN_BASE}/themes/light.css`;
-const SHOELACE_AUTOLOADER_SRC = `${SHOELACE_CDN_BASE}/shoelace-autoloader.js`;
+const SHOELACE_LOCAL_BASE = "/resources/node-red-contrib-webapp/shoelace";
+const SHOELACE_THEME_HREF = `${SHOELACE_LOCAL_BASE}/themes/light.css`;
+const SHOELACE_AUTOLOADER_SRC = `${SHOELACE_LOCAL_BASE}/shoelace-autoloader.js`;
 
 const runtimeState = {
     definitions: new Map(),

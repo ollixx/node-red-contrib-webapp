@@ -57,3 +57,30 @@ describe("served HTML routes components through the Shoelace adapter", () => {
         expect(result.body).toContain("<sl-input");
     });
 });
+
+/**
+ * P63 / ADR 0008 — Shoelace is self-hosted (vendored), strictly local, no CDN.
+ * The served page must load the theme + autoloader from the local module-resource
+ * path and must NOT reference jsdelivr or any external Shoelace origin.
+ */
+describe("served HTML loads Shoelace strictly from the local resource path", () => {
+    const LOCAL_BASE = "/resources/node-red-contrib-webapp/shoelace";
+
+    it("loads the theme stylesheet from the local shoelace path", () => {
+        const result = renderAppPage("app1", "/", undefined, definitions);
+        expect(result.body).toContain(`href="${LOCAL_BASE}/themes/light.css"`);
+    });
+
+    it("loads the autoloader from the local shoelace path", () => {
+        const result = renderAppPage("app1", "/", undefined, definitions);
+        expect(result.body).toContain(`src="${LOCAL_BASE}/shoelace-autoloader.js"`);
+    });
+
+    it("contains NO jsdelivr or external Shoelace URL", () => {
+        const result = renderAppPage("app1", "/", undefined, definitions);
+        expect(result.body).not.toContain("jsdelivr");
+        expect(result.body).not.toContain("cdn.jsdelivr.net");
+        // No absolute http(s) reference to a shoelace asset — local path only.
+        expect(result.body).not.toMatch(/https?:\/\/[^"']*shoelace/i);
+    });
+});
