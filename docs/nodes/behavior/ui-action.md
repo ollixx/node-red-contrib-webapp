@@ -26,7 +26,15 @@ aus. Fachliche Daten gehören in `ui-store`.
   - Default: `"Action N"` (fortlaufende Nummer aller ui-action-Knoten, startend bei 1)
 - `actionType`: das kanonische Interaktions-Verb (SelectBox). Kann durch
   `msg.ui.action.type` überschrieben werden.
-- `to`: Zielpfad für `actionType: navigate`.
+- `to`: Navigationsziel für `actionType: navigate`, als **typedInput**
+  (`str` | `msg` | `flow` | `global` | `jsonata`; P66 / ADR 0007 Amendment).
+  `str` ist ein literaler Pfad (ggf. mit `:platzhaltern`); `msg`/`flow`/`global`
+  lesen den Pfad zur Laufzeit aus Kontext, `jsonata` berechnet ihn aus der
+  Nachricht. **Leer lassen, wenn der Knoten mit einer `ui-route` verdrahtet ist**
+  (Szenario 1) — die Route liefert den Pfad aus ihrem eigenen `path`.
+- `params`: benannte URL-Parameter (Key/Value). Füllen die `:platzhalter` der
+  Ziel-Route. Hauptsächlich für Szenario 1 (verdrahtet mit einer `ui-route`),
+  aber auch zusätzlich zu einem `to`-Template nutzbar (P66).
 - `target`: **optionaler** Override. Das Ziel wird primär über das **Wiring des
   Output-Ports** bestimmt — leer lassen, wenn verdrahtet wird. Gesetzt +
   unverdrahteter Output ⇒ Backward-Compat-Pfad: die Aktion wird via
@@ -96,9 +104,23 @@ Empfängt eine `msg` aus dem Node-RED Flow. Relevante Felder:
 msg.ui.action.type      = "navigate" | "show" | "hide" | "open" | "close" | "select" | "enable" | "disable" | "focus" | "reset"
 msg.ui.action.target    = <node-id>  ← optionaler Ziel-Override (sonst löst der Zielknoten auf sich selbst auf); `targetId` als Alias
 msg.ui.action.part      = <sub-id>    ← Granularität für open / close / select (Accordion-Sektion, Tree-Branch, Tab)
-msg.ui.action.to        = <pfad>      ← Navigationsziel für `navigate`
+msg.ui.action.to        = <pfad>      ← Navigationsziel für `navigate` (Szenario 2; leer bei Verdrahtung zu einer ui-route)
+msg.ui.action.params    = { k: v }    ← benannte URL-Parameter für `navigate` (füllen :platzhalter der Ziel-Route)
 msg.ui.clientId         = <client>    ← schränkt die Action auf einen bestimmten Client ein
 ```
+
+### Navigation: zwei Szenarien (P66 / ADR 0007 Amendment)
+
+- **Szenario 1 — verdrahtet mit einer `ui-route`** (oder mit der `ui-app` für die
+  implizite Root `/`): `to` leer; optionale `params`. Die Route baut die Location
+  aus ihrem **eigenen `path`** + `params`. Kein Pfad-Drift bei Route-Umbenennung.
+- **Szenario 2 — nicht verdrahtet:** `to` (typedInput) gesetzt; app-global an die
+  `ui-app`, die die Location auflöst.
+
+`onEnter` (und `onLeave` auf der verlassenen Route) wird in **beiden** Szenarien
+beim Routen-Eintritt emittiert. Mehrdeutigkeit (verdrahtet **und** `to`),
+fehlendes Ziel oder ein statischer toter Link werden zur Deploy-Zeit geprüft
+(`webapp.js`, da der Wire für die per-Node-Editor-Validierung unsichtbar ist).
 
 ## Output
 

@@ -143,6 +143,37 @@ function parseTargetIds(value) {
     return deduped.length > 0 ? deduped : undefined;
 }
 
+// P66 (ADR 0007): a navigate action's named URL params. Arrives as an object
+// (typed fixture / gen-example) or a JSON-object string (editor key/value rows).
+// Returns a string→string record (non-string values are coerced to String so a
+// param taken from a number still fills its URL segment), or undefined when empty.
+function parseParamsObject(value) {
+    let raw;
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+        raw = value;
+    }
+    else if (typeof value === "string" && value.trim().length > 0) {
+        try {
+            const parsed = JSON.parse(value);
+            raw = parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : undefined;
+        }
+        catch (_e) {
+            raw = undefined;
+        }
+    }
+    if (!raw) {
+        return undefined;
+    }
+    const out = {};
+    for (const key of Object.keys(raw)) {
+        const v = raw[key];
+        if (v !== undefined && v !== null) {
+            out[key] = String(v);
+        }
+    }
+    return Object.keys(out).length > 0 ? out : undefined;
+}
+
 // P23: design tokens may arrive as an object (typed fixture / gen-example) or a
 // JSON string (editor field). Returns a plain object or undefined.
 function parseTokens(value) {
@@ -1455,6 +1486,137 @@ function readDeployDefinitions(RED) {
     }
 }
 
+// P66 (ADR 0007): compile-/deploy-time cross-validation of navigate actions.
+// The wire that links a navigate ui-action to a ui-route is INVISIBLE to the
+// per-node editor validator, so these checks run here with the full flow graph:
+//   • navigate wired-to-route AND `to` set        → ambiguous (which destination?)
+//   • navigate with no wire-to-route and no `to`   → no destination at all
+//   • navigate with a STATIC `to` matching no route → dead link
+// A dynamic `to` (msg / flow / global / jsonata) is NOT edit-time checkable —
+// it is validated at runtime on no-match. Returns a list of { nodeId, message }.
+function validateNavigationFlow(RED) {
+    const issues = [];
+    let nodes;
+    try {
+        const flowFilePath = getFlowFilePath(RED);
+        if (!fs.existsSync(flowFilePath)) {
+            return issues;
+        }
+        const parsed = JSON.parse(fs.readFileSync(flowFilePath, "utf8"));
+        nodes = Array.isArray(parsed) ? parsed : [];
+    }
+    catch {
+        return issues;
+    }
+
+    // Map Node-RED node id → type, and uiId → type (targets/picker store uiIds or
+    // node ids depending on the path; check both). Collect route paths per app
+    // is not needed for the dead-link check — any declared route path counts.
+    const typeByNodeId = new Map();
+    const typeByUiId = new Map();
+    const routePaths = new Set();
+    for (const n of nodes) {
+        if (!n || !WEBAPP_NODE_TYPES.has(n.type)) {
+            continue;
+        }
+        typeByNodeId.set(n.id, n.type);
+        if (n.uiId) {
+            typeByUiId.set(n.uiId, n.type);
+        }
+        if (n.type === "ui-route" && typeof n.path === "string" && n.path) {
+            routePaths.add(n.path);
+        }
+        if (n.type === "ui-app") {
+            // The ui-app owns the implicit root route "/".
+            routePaths.add("/");
+        }
+    }
+
+    const isRouteOrApp = (id) => {
+        const t = typeByNodeId.get(id) || typeByUiId.get(id);
+        return t === "ui-route" || t === "ui-app";
+    };
+
+    // Does a STATIC path template match a declared route (ignoring :param values)?
+    const staticPathMatchesARoute = (template) => {
+        const norm = template.startsWith("/") ? template : `/${template}`;
+        for (const routePath of routePaths) {
+            const rp = routePath.startsWith("/") ? routePath : `/${routePath}`;
+            const tplSegs = norm.split("/");
+            const rpSegs = rp.split("/");
+            if (tplSegs.length !== rpSegs.length) {
+                continue;
+            }
+            let ok = true;
+            for (let i = 0; i < rpSegs.length; i += 1) {
+                if (rpSegs[i].startsWith(":")) {
+                    continue; // a placeholder matches any segment
+                }
+                if (rpSegs[i] !== tplSegs[i]) {
+                    ok = false;
+                    break;
+                }
+            }
+            if (ok) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    for (const n of nodes) {
+        if (!n || n.type !== "ui-action" || n.actionType !== "navigate") {
+            continue;
+        }
+        // Wired to a route/app? Check output wires + picker targets + legacy target.
+        const wiredIds = [];
+        if (Array.isArray(n.wires)) {
+            for (const port of n.wires) {
+                if (Array.isArray(port)) {
+                    for (const id of port) {
+                        wiredIds.push(id);
+                    }
+                }
+            }
+        }
+        const pickerTargets = parseTargetIds(n.targets) || [];
+        for (const id of pickerTargets) {
+            wiredIds.push(id);
+        }
+        if (typeof n.target === "string" && n.target) {
+            wiredIds.push(n.target);
+        }
+        const wiredToRoute = wiredIds.some(isRouteOrApp);
+
+        const toType = n.toType || (n.to ? "str" : undefined);
+        const hasTo = typeof n.to === "string" && n.to.trim().length > 0;
+        const ref = n.uiId || n.id;
+
+        if (wiredToRoute && hasTo) {
+            issues.push({
+                nodeId: n.id,
+                message: `ui-action '${ref}': navigate is wired to a ui-route/ui-app AND has a 'to' — ambiguous. Remove the 'to' (the route supplies the path) or the wire.`
+            });
+            continue;
+        }
+        if (!wiredToRoute && !hasTo) {
+            issues.push({
+                nodeId: n.id,
+                message: `ui-action '${ref}': navigate has no destination — wire it to a ui-route/ui-app, or set 'to'.`
+            });
+            continue;
+        }
+        if (!wiredToRoute && hasTo && toType === "str" && !staticPathMatchesARoute(n.to)) {
+            issues.push({
+                nodeId: n.id,
+                message: `ui-action '${ref}': navigate 'to' = '${n.to}' matches no ui-route — dead link. Every navigable path needs a ui-route.`
+            });
+        }
+    }
+
+    return issues;
+}
+
 function getDefinitionBuckets(appId, definitions) {
     const matchingApp = definitions.find((entry) => entry.type === "ui-app" && (entry.id === appId || entry.root === appId));
 
@@ -1897,21 +2059,80 @@ function reportRuntimeError(node, { severity, code, message, context, clientId }
     return structured;
 }
 
+// P66 (ADR 0007): resolve a ui-action's navigate `to` typedInput into a concrete
+// path string. `str` is a literal; `msg` / `flow` / `global` read from the
+// respective context via RED.util.evaluateNodeProperty; `jsonata` evaluates the
+// expression against the incoming message. The JSONata context is the full `msg`
+// (so an expression can compute the path from payload, route params, etc.). All
+// paths here are synchronous; a no-match / runtime error is surfaced to the node
+// and the result is undefined (the navigate is then treated as "no destination").
+function resolveActionTo(node, toValue, toType, msg) {
+    if (toValue === undefined || toValue === null || toValue === "") {
+        return undefined;
+    }
+    const type = toType || "str";
+    if (type === "str") {
+        return String(toValue);
+    }
+    const RED = runtimeState.RED;
+    if (!RED || !RED.util) {
+        return type === "str" ? String(toValue) : undefined;
+    }
+    try {
+        if (type === "jsonata") {
+            const expr = RED.util.prepareJSONataExpression(String(toValue), node);
+            const result = RED.util.evaluateJSONataExpression(expr, msg);
+            return result === undefined || result === null ? undefined : String(result);
+        }
+        // msg / flow / global
+        const result = RED.util.evaluateNodeProperty(String(toValue), type, node, msg);
+        return result === undefined || result === null ? undefined : String(result);
+    }
+    catch (err) {
+        reportRuntimeError(node, {
+            severity: "error",
+            code: "navigate-to-eval-failed",
+            message: `Could not resolve navigate destination (${type}): ${err && err.message ? err.message : err}`,
+            context: { nodeId: node && node.id, op: "navigate" }
+        });
+        return undefined;
+    }
+}
+
 // Map a ui-action definition + incoming msg into the interaction command the
 // client applies. Domain-agnostic: only the documented interaction verbs.
-function buildActionCommand(actionDefinition, msg) {
+// `node` (optional) is the ui-action runtime node — needed to resolve a navigate
+// `to` typedInput of type msg/flow/global/jsonata (P66). When absent (e.g. unit
+// tests passing only a definition) `to` is treated as a literal string.
+function buildActionCommand(actionDefinition, msg, node) {
     const uiMsg = msg && msg.ui && typeof msg.ui === "object" ? msg.ui : {};
     const override = uiMsg.action && typeof uiMsg.action === "object" ? uiMsg.action : {};
     const type = override.type || (actionDefinition && actionDefinition.actionType);
     if (!type) {
         return null;
     }
+    // P66: resolve the navigate `to` typedInput. An explicit msg.ui.action.to
+    // override (already a literal path) wins; otherwise resolve the configured
+    // `to` against its `toType`.
+    const resolvedConfigTo = node
+        ? resolveActionTo(node, actionDefinition && actionDefinition.to, actionDefinition && actionDefinition.toType, msg)
+        : (actionDefinition && actionDefinition.to ? String(actionDefinition.to) : undefined);
+    const to = override.to || resolvedConfigTo || undefined;
+    // P66: merge named URL params (msg override wins per-key over config).
+    const configParams = actionDefinition && actionDefinition.params && typeof actionDefinition.params === "object"
+        ? actionDefinition.params
+        : undefined;
+    const overrideParams = override.params && typeof override.params === "object" ? override.params : undefined;
+    const mergedParams = (configParams || overrideParams)
+        ? Object.assign({}, configParams, overrideParams)
+        : undefined;
     // P53 (ADR 0005): the command carries `target` (a rendered node id) and an
     // optional `part` (a sub-id within that element — accordion section, tree
     // branch, tab) for open/close/select granularity. msg.ui.action overrides win.
     return {
         type: String(type),
-        to: override.to || (actionDefinition && actionDefinition.to) || undefined,
+        to,
+        params: mergedParams && Object.keys(mergedParams).length > 0 ? mergedParams : undefined,
         target: override.target || override.targetId || (actionDefinition && actionDefinition.target) || undefined,
         part: override.part || (actionDefinition && actionDefinition.part) || undefined
     };
@@ -2479,6 +2700,166 @@ function buildInteractionCommand(node, uiAction) {
     };
 }
 
+// ─── P66 (ADR 0007): navigate handling for ui-route / ui-app ───
+//
+// Two usage scenarios for actionType "navigate", both ending in the SAME push:
+//   • SCENARIO 1 — the navigate action is wired (or picked) to a ui-route (or to
+//     the ui-app for its implicit root "/"). The route/app builds the location
+//     from ITS OWN path + the action's params. NO `to` is needed on the action.
+//   • SCENARIO 2 — the navigate action is NOT wired to a route. It carries a `to`
+//     (a path template, possibly with params) and is delivered app-global to the
+//     ui-app, which resolves the location and navigates.
+// onEnter/onLeave are emitted in BOTH scenarios as a consequence of ARRIVING at
+// the new route — decoupled from the navigation mechanism (P66 owner decision).
+
+// Collect the live in-memory node definitions (from registrations). Preferred
+// over the flow file for runtime route resolution: it reflects the deployed
+// nodes without a disk read and works in unit tests that populate registrations.
+function collectLiveDefinitions() {
+    const defs = [];
+    for (const registration of runtimeState.definitions.values()) {
+        if (registration && registration.definition) {
+            defs.push(registration.definition);
+        }
+    }
+    return defs;
+}
+
+// Find the route definition (and its runtime node) whose path matches a location
+// for an app. The implicit app-root route has id === appId and path "/".
+function findRouteNodeForLocation(RED, appId, location) {
+    const live = collectLiveDefinitions();
+    const definitions = live.length > 0 ? live : readDeployDefinitions(RED);
+    const modelResult = getAppModelResult(appId, definitions);
+    if (!modelResult.success) {
+        return undefined;
+    }
+    const match = getRouteMatch(location || "/", modelResult.model.routes);
+    if (!match) {
+        return undefined;
+    }
+    const routeId = match.route.id;
+    // The route definition id (uiId) equals the matched route id. Find its node.
+    for (const registration of runtimeState.definitions.values()) {
+        const def = registration.definition;
+        if (def && (def.type === "ui-route" || def.type === "ui-app") && def.id === routeId && registration.nodeId) {
+            return { routeId, node: RED.nodes.getNode(registration.nodeId), params: match.params || {} };
+        }
+    }
+    return { routeId, node: undefined, params: match.params || {} };
+}
+
+// Emit an onEnter / onLeave event on a route/app node IF that node declares the
+// event (positional out-port routing, mirroring dispatchClientEvent). This is how
+// a wired flow reacts to a route being entered or left.
+function emitRouteLifecycleEvent(node, eventName, appId, clientId, location, params) {
+    if (!node || typeof node.send !== "function") {
+        return;
+    }
+    const events = node.webappDefinition && Array.isArray(node.webappDefinition.events)
+        ? node.webappDefinition.events
+        : undefined;
+    if (!events || events.indexOf(eventName) === -1) {
+        return;
+    }
+    const message = {
+        ui: {
+            appId,
+            clientId,
+            event: eventName,
+            sourceId: node.webappDefinition ? node.webappDefinition.id : node.id,
+            route: location,
+            params: params || {}
+        }
+    };
+    const portIndex = events.indexOf(eventName);
+    if (portIndex > 0) {
+        const outputs = new Array(portIndex + 1).fill(null);
+        outputs[portIndex] = message;
+        node.send(outputs);
+    }
+    else {
+        node.send(message);
+    }
+}
+
+// Resolve the navigate destination location for a ui-route / ui-app target.
+//   • ui-route → its own path, with :placeholders filled from action.params.
+//   • ui-app   → action.to (Scenario 2 path template) filled from params, or the
+//     implicit root "/" (Scenario 1: wired to the app for the home route).
+// Returns the concrete location string (params already substituted).
+function resolveNavigateLocation(node, uiAction) {
+    const def = node && node.webappDefinition ? node.webappDefinition : {};
+    const params = uiAction && uiAction.params && typeof uiAction.params === "object" ? uiAction.params : {};
+    const explicitTo = typeof uiAction.to === "string" && uiAction.to ? uiAction.to : undefined;
+
+    if (def.type === "ui-route") {
+        // Scenario 1: the route owns its path. An explicit `to` on the action is
+        // ambiguous (compile-time validation flags it) — the route's own path wins.
+        const template = typeof def.path === "string" && def.path ? def.path : "/";
+        return resolveNavigationTarget(template, params, {});
+    }
+
+    // ui-app: Scenario 2 (a `to` template) or Scenario 1 to the implicit root.
+    const template = explicitTo || "/";
+    return resolveNavigationTarget(template, params, {});
+}
+
+// Perform a navigate for a ui-route / ui-app target: resolve the new location,
+// emit onLeave on the route being left and onEnter on the route being entered
+// (in BOTH scenarios), then push the navigate command (which moves the client).
+function performTargetNavigate(node, msg, send, done) {
+    const RED = runtimeState.RED;
+    const uiMsg = msg && msg.ui && typeof msg.ui === "object" ? msg.ui : undefined;
+    const uiAction = uiMsg && uiMsg.action && typeof uiMsg.action === "object" ? uiMsg.action : {};
+    const appId = findAppIdForNode(node);
+    const clientId = uiMsg && uiMsg.clientId ? String(uiMsg.clientId) : undefined;
+
+    const newLocation = resolveNavigateLocation(node, uiAction);
+
+    if (RED && appId && newLocation) {
+        // onLeave on the route(s) the targeted client(s) are currently on, before
+        // the location changes. Then push (updates entry.location), then onEnter.
+        const subscribers = runtimeState.streamClients.get(appId);
+        const oldLocations = new Set();
+        if (subscribers) {
+            for (const [cid, entry] of subscribers.entries()) {
+                if (!clientId || cid === clientId) {
+                    oldLocations.add(entry.location || "/");
+                }
+            }
+        }
+        for (const oldLocation of oldLocations) {
+            if (oldLocation !== newLocation) {
+                const leaving = findRouteNodeForLocation(RED, appId, oldLocation);
+                if (leaving && leaving.node) {
+                    emitRouteLifecycleEvent(leaving.node, "onLeave", appId, clientId, oldLocation, leaving.params);
+                }
+            }
+        }
+
+        const command = {
+            type: "navigate",
+            target: node.id,
+            to: newLocation
+        };
+        pushActionCommandToClients(appId, clientId, command);
+
+        // onEnter on the route now entered. The targeted route node is usually
+        // `node` itself (Scenario 1), but resolve by location so ui-app→sub-route
+        // and `to`-template navigations emit on the correct route.
+        const entering = findRouteNodeForLocation(RED, appId, newLocation);
+        if (entering && entering.node) {
+            emitRouteLifecycleEvent(entering.node, "onEnter", appId, clientId, newLocation, entering.params);
+        }
+    }
+
+    send(msg);
+    if (done) {
+        done();
+    }
+}
+
 // P59 / ADR 0007 §2: shared per-node interaction handler factory.
 // `ownedVerbs` — the verb set this node type owns. `next` — the node's existing
 // input handler, invoked when the message is NOT an owned interaction command.
@@ -2490,6 +2871,16 @@ function interactionInputHandler(ownedVerbs, next) {
         const uiAction = uiMsg && uiMsg.action && typeof uiMsg.action === "object" ? uiMsg.action : undefined;
 
         if (uiAction && typeof uiAction.type === "string" && owned.has(uiAction.type)) {
+            // P66: a navigate verb owned by a ui-route / ui-app is handled by the
+            // shared navigate path — it resolves the location from the route's own
+            // path (Scenario 1) or the action's `to` template (Scenario 2) and
+            // emits onEnter/onLeave around the push. (DRY: route and app share it.)
+            const ownerType = node && node.webappDefinition ? node.webappDefinition.type : undefined;
+            if (uiAction.type === "navigate" && (ownerType === "ui-route" || ownerType === "ui-app")) {
+                performTargetNavigate(node, msg, send, done);
+                return;
+            }
+
             // Owned verb → this node performs the SSE push, then passes msg through.
             const RED = runtimeState.RED;
             const appId = findAppIdForNode(node);
@@ -2557,7 +2948,7 @@ function actionInputHandler(node, msg, send, done) {
     const uiMsg = msg && msg.ui && typeof msg.ui === "object" ? msg.ui : undefined;
 
     // Build the typed action command from config + msg overrides (ADR 0005).
-    const command = buildActionCommand(node.webappDefinition, msg);
+    const command = buildActionCommand(node.webappDefinition, msg, node);
 
     // Enrich the incoming message with msg.ui.action (ADR 0007 §1: enrich, don't
     // replace) — every other msg / msg.ui field rides along untouched.
@@ -3050,7 +3441,13 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: config.parent || undefined,
             actionType: blankToUndefined(config.actionType),
+            // P66 (ADR 0007): navigate `to` is a typedInput — `to` is the value,
+            // `toType` its type (default "str", a literal path). Resolution of
+            // msg/flow/global/jsonata happens at input time in actionInputHandler.
             to: blankToUndefined(config.to),
+            toType: blankToUndefined(config.toType) || (blankToUndefined(config.to) ? "str" : undefined),
+            // P66: named URL params (Scenario 1: wired to a ui-route).
+            params: parseParamsObject(config.params),
             // P60 / ADR 0007 §3: the node picker stores a LIST of target node ids
             // (the optional "wireless" path). Legacy singular `target` (pre-P60
             // free-text) is still honoured for backward-compat.
@@ -3415,6 +3812,25 @@ function registerWebappNodes(RED) {
     // during or just after the deploy are loading the new flow already; sending
     // them a redeploy immediately would cause a spurious extra reload.
     RED.events.on("flows:started", function () {
+        // P66 (ADR 0007): cross-validate navigate actions against the full flow
+        // graph (ambiguous / no-destination / dead-link). These can only be seen
+        // with the whole flow, not in per-node editor validation. Surface each as
+        // a structured runtime error so it is visible in the Node-RED log.
+        try {
+            const navIssues = validateNavigationFlow(RED);
+            for (const issue of navIssues) {
+                reportRuntimeError(undefined, {
+                    severity: "error",
+                    code: "navigate-validation",
+                    message: issue.message,
+                    context: { nodeId: issue.nodeId, op: "deploy" }
+                });
+            }
+        }
+        catch (_e) {
+            // Never let validation crash the deploy.
+        }
+
         const deployedAt = Date.now();
         // Defer by one event-loop tick so pending connection-close callbacks
         // (req.on("close") → removeStreamClient) fire first. This avoids sending
@@ -3476,6 +3892,12 @@ registerWebappNodes.__test__ = {
     // P59 / ADR 0007 §2: per-node interaction handler factory + verb ownership
     interactionInputHandler,
     INTERACTION_VERBS_BY_TYPE,
+    // P66 (ADR 0007): navigate scenarios + cross-validation
+    resolveActionTo,
+    resolveNavigateLocation,
+    performTargetNavigate,
+    validateNavigationFlow,
+    parseParamsObject,
     runtimeNodeRegistry,
     runtimeState,
     // P39 / P52: view-node input patch handler + deploy-definition reader

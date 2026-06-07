@@ -1,7 +1,9 @@
 import { z } from "zod";
 
 import {
+    actionParamsSchema,
     actionTargetModeSchema,
+    actionToTypeSchema,
     actionTypeSchema,
     BUTTON_VARIANTS,
     bindingSchema,
@@ -139,7 +141,10 @@ export const uiAppNodeDefinitionSchema = z.object({
     id: identifierSchema,
     title: z.string().min(1, "App titles must not be empty."),
     layout: standardLayoutPresetSchema,
-    events: z.array(z.enum(["clientConnected", "clientDisconnected"])).optional(),
+    // P66 (ADR 0007): ui-app owns the implicit root route "/", so a navigate
+    // action wired to it enters/leaves the root — it emits onEnter / onLeave just
+    // like a ui-route. clientConnected / clientDisconnected remain its own events.
+    events: z.array(z.enum(["clientConnected", "clientDisconnected", "onEnter", "onLeave"])).optional(),
     tokens: designTokensSchema,
     // P56 / ADR 0006 §4: opt-in backend→frontend error forwarding. Absent means
     // OFF (security: anonymous httpNode visitors must not receive server
@@ -296,7 +301,15 @@ export const uiActionNodeDefinitionSchema = identifiedNodeSchema.extend({
     // P53 (ADR 0005): sub-id within the target for open / close / select
     // granularity (accordion section, tree branch, tab name).
     part: z.string().min(1, "Action parts must not be empty.").optional(),
+    // P66 (ADR 0007): navigate destination as a typedInput. `to` holds the value
+    // (a path template, a msg/flow/global reference, or a JSONata expression),
+    // `toType` its type (default "str"). Both optional: Scenario 1 (wired to a
+    // ui-route) carries NO `to` — the route supplies the path. The dead-link /
+    // ambiguity cross-checks are RUNTIME checks (the wire is invisible here).
     to: z.string().min(1, "Navigate actions must declare a destination.").optional(),
+    toType: actionToTypeSchema.optional(),
+    // P66: named URL params (Scenario 1 wired-route; or extra params with a `to`).
+    params: actionParamsSchema.optional(),
     description: z.string().min(1, "Action descriptions must not be empty.").optional()
 });
 

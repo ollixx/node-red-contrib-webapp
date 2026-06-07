@@ -79,18 +79,43 @@ describe("editor node set", () => {
             ])
         );
 
+        // P66 (ADR 0007): a navigate action wired (out-port) to a ui-route needs
+        // NO `to` — the route supplies the path (Scenario 1). The per-node editor
+        // validator cannot see the wire, so it no longer flags a missing `to`;
+        // the dead-link / ambiguity cross-checks are RUNTIME checks.
         const navigateIssues = validateEditorNodeConfig("ui-action", {
             id: "goToCustomers",
             actionType: "navigate",
             targetMode: "out-port"
         });
 
-        expect(navigateIssues).toEqual(
+        expect(navigateIssues).not.toEqual(
             expect.arrayContaining([
                 expect.objectContaining({
                     field: "to"
                 })
             ])
+        );
+
+        // P66: but a bogus typedInput type or non-object params are per-node
+        // shape errors that ARE caught here.
+        const badType = validateEditorNodeConfig("ui-action", {
+            id: "badNav",
+            actionType: "navigate",
+            to: "/x",
+            toType: "bogus" as never
+        });
+        expect(badType).toEqual(
+            expect.arrayContaining([expect.objectContaining({ field: "toType" })])
+        );
+
+        const badParams = validateEditorNodeConfig("ui-action", {
+            id: "badParams",
+            actionType: "navigate",
+            params: "[1,2,3]"
+        });
+        expect(badParams).toEqual(
+            expect.arrayContaining([expect.objectContaining({ field: "params" })])
         );
     });
 

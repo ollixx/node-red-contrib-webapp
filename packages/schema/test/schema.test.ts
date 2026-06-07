@@ -4,7 +4,10 @@ import { describe, expect, it } from "vitest";
 
 import {
     actionMessageSchema,
+    actionMessageCommandSchema,
     actionTypeSchema,
+    uiActionNodeDefinitionSchema,
+    uiAppNodeDefinitionSchema,
     bindingSchema,
     dialogDefinitionSchema,
     errorContextSchema,
@@ -1212,6 +1215,78 @@ describe("P58: action message contract (ADR 0007 §1)", () => {
             });
             expect(result.success, field).toBe(false);
         }
+    });
+});
+
+describe("P66: ui-action navigation — typedInput `to` + params; ui-app onEnter/onLeave", () => {
+    it("accepts a navigate action message carrying params (Scenario 1: wired-route URL params)", () => {
+        const result = actionMessageSchema.safeParse({
+            ui: { action: { type: "navigate", params: { id: "42", tab: "orders" } } }
+        });
+        expect(result.success).toBe(true);
+        if (result.success) {
+            const action = (result.data as { ui: { action: Record<string, unknown> } }).ui.action;
+            expect(action.params).toEqual({ id: "42", tab: "orders" });
+        }
+    });
+
+    it("accepts a navigate action message with both `to` and params (Scenario 2: path template + extra params)", () => {
+        const result = actionMessageCommandSchema.safeParse({ type: "navigate", to: "/customers/42", params: { tab: "orders" } });
+        expect(result.success).toBe(true);
+    });
+
+    it("rejects non-string param values (params are URL params → string-only)", () => {
+        const result = actionMessageCommandSchema.safeParse({ type: "navigate", params: { id: 42 } });
+        expect(result.success).toBe(false);
+    });
+
+    it("ui-action node accepts `to` + `toType` (typedInput) + params (Scenario 1)", () => {
+        const result = uiActionNodeDefinitionSchema.safeParse({
+            type: "ui-action",
+            id: "goCustomer",
+            actionType: "navigate",
+            to: "msg.dest",
+            toType: "msg",
+            params: { id: "rowId" }
+        });
+        expect(result.success).toBe(true);
+        if (result.success) {
+            expect(result.data.toType).toBe("msg");
+            expect(result.data.params).toEqual({ id: "rowId" });
+        }
+    });
+
+    it("ui-action node accepts a navigate action with NO `to` (Scenario 1: wired to a ui-route)", () => {
+        const result = uiActionNodeDefinitionSchema.safeParse({
+            type: "ui-action",
+            id: "goWired",
+            actionType: "navigate"
+        });
+        // The schema no longer forces a `to`; ambiguity/dead-link checks are
+        // runtime cross-checks (the wire is invisible to per-node validation).
+        expect(result.success).toBe(true);
+    });
+
+    it("ui-action node rejects an unknown `toType`", () => {
+        const result = uiActionNodeDefinitionSchema.safeParse({
+            type: "ui-action",
+            id: "badType",
+            actionType: "navigate",
+            to: "x",
+            toType: "bogus"
+        });
+        expect(result.success).toBe(false);
+    });
+
+    it("ui-app events accept onEnter / onLeave (implicit root route entry/leave)", () => {
+        const result = uiAppNodeDefinitionSchema.safeParse({
+            type: "ui-app",
+            id: "app1",
+            title: "App",
+            layout: "vertical",
+            events: ["clientConnected", "onEnter", "onLeave"]
+        });
+        expect(result.success).toBe(true);
     });
 });
 
