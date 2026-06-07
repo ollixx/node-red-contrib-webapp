@@ -1743,3 +1743,36 @@ phases:
       - "grep: no jsdelivr/external Shoelace URLs in nodes/ resources/ packages/."
       - "E2E 262 passed / 0 failed (main checkout): app loads theme+autoloader locally; NO external CDN requests (network check); sl-button + lazy sl-card upgrade offline."
       - "vendor script fails when installed Shoelace version != SHOELACE_VERSION (drift guard unit test)."
+
+  - id: P64
+    title: "ui-dialog — nativer <sl-dialog> + First-class Close-Button (closable-Property, onClose-Emission + State-Sync, Dialog-Layout-Preset)"
+    status: done
+    dependencies: [P63]
+    summary:
+      delivered: "ui-dialog now renders as a native Shoelace <sl-dialog> (native X / ESC / overlay dismissal, focus-trap, a11y) with a first-class closable property and a new 'dialog' layout preset (header / header-actions / content / footer → native slots). Native dismissal emits onClose on the dialog's out-port AND authoritatively sets ui.dialogs.<id>.open=false + pushes a snapshot; the hard-coded closeCustomerEditor/cancelCustomerButton close-link, findDialogCloseAction, and bespoke sl-card dialog chrome are removed. dispatchClientEvent gained positional multi-event out-port routing (events.indexOf(event))."
+      stats: "24 files changed (3 new test files); +18 unit tests (schema 143→152, renderer 12→14, runtime 267→276 incl. 9 P64 tests); 1 new layout preset; E2E specs updated/added across 6 spec files. E2E 264 passed / 0 failed (orchestrator main-checkout after rebuild); pnpm validate green."
+      notes: >
+        closable defaults to true everywhere (schema, contracts, mapConfig, editor checkbox checked); closable:false →
+        native no-header (removes X + title, accepted). Server/client dialog markup parity (P26) preserved — both call
+        the shared serializer with the unmodified snapshot dialog. Factored writeDialogOpenState/pushSnapshotToTargets
+        out of pushActionCommandToClients. Old .webapp-dialog overlay/card/head CSS removed (Shoelace owns chrome);
+        .webapp-dialog class now sits on the sl-dialog so existing .webapp-dialog visibility selectors still match.
+        Scope boundary: removed closeCustomerEditor from gen-example/flow.json (P64 scope) but intentionally KEPT it in
+        the schema AppModel test fixture (fixtures.ts) to avoid churning renderer/runtime fixture tests. Orchestrator
+        note: dist is gitignored — a first E2E pass on stale P63 dist produced 6 "cannot find layout 'dialog'" failures;
+        after `pnpm build` on develop all 264 E2E passed.
+      cost: "session c242a981-027e-462b-9583-6aede9c2291d, ~28m; orchestrator main-checkout rebuild + E2E (264) + validate"
+    goals:
+      - "Render ui-dialog as a native Shoelace <sl-dialog> with native dismissal (X / ESC / overlay), focus-trap and a11y."
+      - "First-class closable property + onClose emission with authoritative open-state sync and snapshot push."
+      - "Add a 'dialog' layout preset (header / header-actions / content / footer) mapped to native sl-dialog slots."
+    deliverables:
+      - "schema: uiDialogNodeDefinitionSchema.closable + dialogDefinitionSchema.closable; 'dialog' in standardLayoutPresetIds + preset record."
+      - "renderer: RenderedDialog.closable passthrough; serializer renders <sl-dialog open label data-webapp-dialog> with header→label / header-actions→header-actions / content→default / footer→footer slot mapping; 'dialog' in getLayoutVariant (serializer/webapp-client.js/editor-common.js kept in sync)."
+      - "client: sl-after-hide listener → dispatch onClose + optimistic local close; client close-markup hardcode removed (P26 parity)."
+      - "webapp.js: mapConfig closable; onClose authoritatively sets open=false + snapshot push (writeDialogOpenState/pushSnapshotToTargets factored out); positional out-port routing; findDialogCloseAction removed."
+      - "editor: ui-dialog.html closable checkbox (default checked); editor-common preset options/slots include 'dialog'."
+      - "example: via gen-example only — customerEditor layoutId:'dialog', closable:true; closeCustomerEditor action removed; fields→content, Save/Cancel→footer."
+    validation:
+      - "pnpm validate green (build + lint + unit; schema 152 / renderer 14 / runtime 276)."
+      - "E2E 264 passed / 0 failed (orchestrator main checkout after pnpm build): native sl-dialog renders via ?dialog=, X/ESC/overlay close emits onClose + syncs state, closable:false → no-header, orphan-action test without closeCustomerEditor."

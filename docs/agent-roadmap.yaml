@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P64  # in_progress: ui-dialog native <sl-dialog> + first-class Close-Button
+  current_phase: P65  # next to implement: demo-deployment (Docker + GHCR + SSH/Caddy on Hetzner, in-repo)
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -594,7 +594,7 @@ phases:
   # dreifach; Out-Port-Fix ist allg. Verhaltensänderung für Multi-Event-Knoten.
   # ════════════════════════════════════════════════════════════════════════
 
-  - { id: P64, title: "ui-dialog — nativer <sl-dialog> + First-class Close-Button (closable-Property, onClose-Emission + State-Sync, Dialog-Layout-Preset)", status: in_progress, dependencies: [P63] }
+  - { id: P64, title: "ui-dialog — nativer <sl-dialog> + First-class Close-Button (closable-Property, onClose-Emission + State-Sync, Dialog-Layout-Preset)", status: done, dependencies: [P63], archive: "docs/agent-roadmap-archive.yaml#P64" }
 
   # ════════════════════════════════════════════════════════════════════════
   # Demo-Deployment des Beispiel-Apps für Remote-Reviews (P65)
@@ -759,6 +759,81 @@ phases:
   # ════════════════════════════════════════════════════════════════════════
 
   - { id: P66, title: "ui-action/ui-route Navigation — 2 Szenarien (wired-route mit params / pfad-typedInput mit JSONata) + onEnter immer + Mehrdeutigkeits-Validierung + ui-app implizite Root-Route (gleiches Verhalten)", status: pending, dependencies: [P60] }
+
+  # ════════════════════════════════════════════════════════════════════════
+  # ui-alert — "Message Path" durch typedInput ersetzen + neue Binding-Art
+  # "store" (P67)
+  #
+  # Owner-Report (2026-06-07): ui-alert hat im Editor ein stumpfes Textfeld
+  # "Message Path" — schlechtes Konzept. Wie bei allen Knoten gilt "wiring-first":
+  # das Feld muss mit ALLEN sinnvollen Typen befüllbar sein.
+  #
+  # Ist-Stand (verifiziert):
+  #   • Schema ist bereits korrekt: ui-alert.message ist bindingSchema
+  #     (node-definitions.ts:400); bindingSchema unterstützt kinds state/query/
+  #     routeParam/literal/msg/flow/global/jsonata/env (contracts.ts:33). title ist
+  #     hingegen z.string().optional() (nur statisch).
+  #   • PROBLEM ist NUR der Editor: ui-alert.html hat ein plain-text Feld
+  #     messagePath + ein verstecktes message-Feld; mapConfig (webapp.js:3062)
+  #     macht aus messagePath ZWANGSWEISE eine state-Bindung. Alle anderen Typen
+  #     sind im Editor unerreichbar.
+  #   • Vorbild existiert: ui-text nutzt EINEN typedInput auf `text` → value-
+  #     Bindung mit 8+ Typen (ui-text.html:36). Genau dieses Muster fehlt bei
+  #     ui-alert.
+  #   • Editor-Bausteine für Store-Auswahl existieren: installReferenceSelectors
+  #     ({store}), collectReferenceNodes (sammelt ui-store-Knoten), SelectBox in
+  #     resources/lib/editor-common.js. ui-store hat statePath + initialValue.
+  #
+  # Owner-Entscheidungen (2026-06-07):
+  #   • ui-alert.message (und title) bekommen einen typedInput WIE ui-text mit
+  #     allen sinnvollen Typen: literal/state/query/routeParam/msg/flow/global/
+  #     jsonata/env — PLUS neuer Typ "Store".
+  #   • Bei Typ "Store": filterbare/scrollbare SelectBox (kleiner Dialog) zur
+  #     Auswahl eines bekannten ui-store-Knotens DERSELBEN App; die Bindung
+  #     referenziert dann diesen Store. Bei allen anderen Typen wird die SelectBox
+  #     ausgeblendet (normales typedInput-Value-Feld).
+  #   • messagePath entfällt aus dem Editor (Back-Compat-Fallback in mapConfig
+  #     bleibt: messagePath → state-Bindung).
+  #   • "wiring-first" ist automatisch dabei: Typ msg lässt den Alert-Text aus der
+  #     eingehenden Message kommen (Node nutzt bereits viewNodePatchInputHandler).
+  #
+  # Design-Empfehlung (Implementierung): "Store" als EIGENE, wiederverwendbare
+  # Binding-Art `store` umsetzen, die den Store PER ID referenziert und zur
+  # Laufzeit auf dessen aktuellen Wert (über dessen statePath) auflöst — robust
+  # gegen spätere statePath-Umbenennungen und für ALLE typedInput-Felder
+  # (ui-text etc.) wiederverwendbar. Cross-cutting → betrifft das gemeinsame
+  # Binding-Modell, nicht nur ui-alert.
+  #
+  # Umfang (Dateien):
+  #   • schema: bindingSchema kind-Enum um "store" erweitern (contracts.ts:33);
+  #     ui-alert.title von string → bindingSchema.optional() (node-definitions.ts).
+  #   • renderer: resolveBinding (renderer.ts:198) Fall "store" — Store-Id →
+  #     dessen statePath → getValueAtPath(sources.state, …); Store-Lookup aus dem
+  #     kompilierten Modell verfügbar machen.
+  #   • nodes/view/ui-alert.html: messagePath-Feld durch typedInput auf message
+  #     ersetzen (Muster aus ui-text.html); title ebenfalls typedInput; custom
+  #     typedInput-Typ "store" mit filterbarer SelectBox (editor-common SelectBox
+  #     + collectReferenceNodes/Store-Referenzen), nur bei "store" sichtbar.
+  #   • webapp.js: mapConfig ui-alert — getBinding für message UND title; "store"-
+  #     Bindung durchreichen; messagePath-Fallback behalten.
+  #   • packages/editor: ui-alert-Validierung (z.B. store-Bindung muss einen
+  #     existierenden ui-store derselben App referenzieren).
+  #   • examples nur via scripts/gen-example.js, falls Felder sich ändern.
+  #   • Tests: schema (store kind, title binding); renderer (store-Auflösung,
+  #     statePath-Rename-Robustheit); Editor-Round-Trip; E2E ui-alert mit msg-Typ
+  #     und mit store-Typ.
+  #
+  # Folgearbeit (separat, nicht Teil von P67): den typedInput inkl. "Store"-Typ
+  # auf weitere bestehende Binding-Felder ausrollen (ui-text value, ui-badge,
+  # ui-input value, …) — additive Vereinheitlichung.
+  #
+  # Risiken: neue Binding-Art berührt das gemeinsame Binding-Modell (alle kind-
+  # Listen/Validierungen synchron halten); custom typedInput-Typ mit SelectBox-
+  # Picker ist mehr als ein Standard-Typ (Node-RED typedInput); Store-Auflösung
+  # braucht Zugriff auf statePath im Renderer-Kontext.
+  # ════════════════════════════════════════════════════════════════════════
+
+  - { id: P67, title: "ui-alert — 'Message Path' durch typedInput (alle Typen + neue Binding-Art 'store' mit Store-Picker) ersetzen; title ebenfalls typedInput", status: pending, dependencies: [P20b] }
 
   # Deferred — only when a concrete need appears (see ADR 0002):
   #   - ui-custom escape-hatch node for framework-specific components (opt-in, non-portable)
