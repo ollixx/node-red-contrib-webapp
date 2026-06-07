@@ -902,7 +902,7 @@ phases:
   # Knoten (Such-/Scroll-Liste).
   # ════════════════════════════════════════════════════════════════════════
 
-  - { id: P68, title: "Einheitlicher Node-Picker-Dialog (Scroll + Contains-Suche über Name/ID/Typ, Default-Filter-Presets) für ALLE ui-*-Auswahlen (parents, references, mount, stores, routes, actions)", status: pending, dependencies: [P19] }
+  - { id: P68, title: "Einheitlicher Node-Picker-Dialog (Scroll + Contains-Suche über Name/ID/Typ, Default-Filter-Presets) für ALLE ui-*-Auswahlen (parents, references, mount, stores, routes, actions)", status: in_progress, dependencies: [P19] }
 
   # ════════════════════════════════════════════════════════════════════════
   # Icon-System — backend-neutraler Wert + global registrierbare Libs +
