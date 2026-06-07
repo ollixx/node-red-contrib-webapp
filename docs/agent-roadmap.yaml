@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P68  # next to implement: unified node-picker dialog (scroll + contains-search, filter presets) for all ui-* selections
+  current_phase: P67  # next to implement: ui-alert Message Path/title → typedInput (incl. new 'store' binding via P68 store-picker)
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -902,7 +902,7 @@ phases:
   # Knoten (Such-/Scroll-Liste).
   # ════════════════════════════════════════════════════════════════════════
 
-  - { id: P68, title: "Einheitlicher Node-Picker-Dialog (Scroll + Contains-Suche über Name/ID/Typ, Default-Filter-Presets) für ALLE ui-*-Auswahlen (parents, references, mount, stores, routes, actions)", status: in_progress, dependencies: [P19] }
+  - { id: P68, title: "Einheitlicher Node-Picker-Dialog (Scroll + Contains-Suche über Name/ID/Typ, Default-Filter-Presets) für ALLE ui-*-Auswahlen (parents, references, mount, stores, routes, actions)", status: done, dependencies: [P19], archive: "docs/agent-roadmap-archive.yaml#P68" }
 
   # ════════════════════════════════════════════════════════════════════════
   # Icon-System — backend-neutraler Wert + global registrierbare Libs +
@@ -1050,6 +1050,73 @@ phases:
   # ════════════════════════════════════════════════════════════════════════
 
   - { id: P70, title: "ui-image / Bildverwaltung — Rendering aktivieren + src-URL (typedInput, bindbar) + wiring-first msg/Buffer→data: + Media-Store (mediaStoreUrl in ui-app, asset:<id>, Backend-Proxy/Obfuskation) + Editor-Media-Picker", status: pending, dependencies: [P20b, P68] }
+
+  # ════════════════════════════════════════════════════════════════════════
+  # Komponenten-Felder — size, outline, Button-Link-Modus, Button-Slots (P71)
+  #
+  # Owner-Wunsch (2026-06-07): Für Knoten wie button, text, avatar u.a. fehlen
+  # gängige Felder. "Kleine Fixes", berühren aber mehrere Knoten + das Slot-Konzept.
+  #
+  # Ist-Stand (verifiziert):
+  #   • Adapter hat bereits mapSize (semantisches Token → Shoelaces 3 Größen
+  #     small/medium/large) und liest props.size generisch (shoelace-adapter.ts:
+  #     89-138). Aber: nur ui-avatar/ui-badge haben ein size-Feld (xs..xl, 5
+  #     Stufen, node-definitions.ts:596/624); ui-button/ui-text haben KEIN size.
+  #   • ui-button-Schema (node-definitions.ts:208): label, variant (BUTTON_
+  #     VARIANTS), action (deprecated), disabled. KEIN size, KEIN outline, KEIN
+  #     href, KEINE prefix/suffix-Slots.
+  #   • outline wird heute IM Adapter aus der Variante abgeleitet ("contained/
+  #     outlined leakt nie nach oben") — ein explizites outline-Flag ist neu.
+  #   • Button rendert heute nur das Label (webapp-serializer.js:311/334). href
+  #     existiert nur für menu/breadcrumb-items, nicht für ui-button.
+  #
+  # Owner-Entscheidungen (2026-06-07):
+  #   • SIZE: SelectBox, aber PRO KNOTEN unterschiedlich (kein Vereinheitlichen):
+  #     S/M/L (sm/md/lg) dort wo Shoelace nur 3 Größen hat (button/input/text/
+  #     select/textarea …); xs..xl bei avatar/badge belassen. size-Feld in den
+  #     jeweiligen Schemas ergänzen + SelectBox im Editor (Adapter mappt bereits).
+  #   • OUTLINE: explizites Flag (Checkbox) — NUR bei Knoten, die es unterstützen
+  #     (button, ggf. badge/tag). An den Adapter durchreichen (sl-button outline);
+  #     mit der variant-abgeleiteten Logik abgleichen (kein Doppel-Apply).
+  #   • BUTTON-LINK-MODUS: SelectBox mit 3 Optionen —
+  #       - "Button (kein Link)": normaler Button, Aktion via Output-Port (heutiges
+  #         Verhalten).
+  #       - "URL": ein typedInput-Feld für href/src wird eingeblendet; rendert als
+  #         echter Hyperlink (sl-button href → <a>).
+  #       - "Navigate (Route)": emittiert direkt eine navigate-Action (Integration
+  #         mit P66; Route-Ziel via Picker P68).
+  #     Der Knoten braucht GUTE DOKU im HTML (Hilfetext, was die Modi bedeuten).
+  #   • BUTTON-SLOTS: ui-button wird slot-fähig — default = Label, prefix = Icons/
+  #     Elemente VOR dem Label, suffix = nach dem Label. Kind-Knoten (z.B. ui-icon
+  #     aus P69) mounten in prefix/suffix. Slot-Mechanik analog P64 (Dialog-Slots);
+  #     Mount-Auswahl via P68.
+  #
+  # Umfang (Dateien):
+  #   • schema: size pro unterstützendem Knoten (sm/md/lg-Enum); outline-Flag
+  #     (button, badge/tag); ui-button um linkMode ("button"|"url"|"navigate") +
+  #     href (binding/typedInput) + Slot-Definition (default/prefix/suffix).
+  #   • renderer/shoelace-adapter: outline-Attribut; href → <a>/sl-button href;
+  #     Button mit prefix/suffix-Slots (slot="prefix"/"suffix", default=Label);
+  #     navigate-Modus erzeugt navigate-Action (P66).
+  #   • serializer: sl-button mit prefix/suffix-Slot-Markup + href.
+  #   • nodes: ui-button.html (Size-SelectBox, Outline-Checkbox, Link-Modus-
+  #     SelectBox mit bedingt eingeblendetem href-Feld, Slot-Felder, AUSFÜHRLICHE
+  #     Doku); size-SelectBox + ggf. outline in ui-text/ui-input/ui-badge/… .
+  #   • examples nur via scripts/gen-example.js, falls Felder sich ändern.
+  #   • Tests: schema (size/outline/linkMode/href/slots); renderer (outline, href→
+  #     <a>, prefix/suffix-Slots, navigate-Emission); E2E (Link-Modi, Icon im
+  #     prefix-Slot, Size-Varianten).
+  #
+  # Offene Design-Punkte: welche Knoten genau size bzw. outline bekommen (Mapping-
+  # Tabelle nach Shoelace-Support bei Umsetzung festlegen); Slot-Mechanik für
+  # ui-button (feste Slots vs. Layout-Preset).
+  #
+  # Risiken: outline-Doppel-Apply mit variant-Logik; Button-Slots machen einen
+  # bisherigen Leaf-Knoten zum Mini-Container (Mount-Ziele); navigate-Modus
+  # koppelt an P66.
+  # ════════════════════════════════════════════════════════════════════════
+
+  - { id: P71, title: "Komponenten-Felder — size (SelectBox, pro Knoten), outline (Flag wo unterstützt), Button-Link-Modus (Button/URL/Navigate) + Button-Slots (default=Label, prefix, suffix)", status: pending, dependencies: [P66] }
 
   # Deferred — only when a concrete need appears (see ADR 0002):
   #   - ui-custom escape-hatch node for framework-specific components (opt-in, non-portable)
