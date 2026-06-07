@@ -657,7 +657,7 @@ phases:
   # das Image in nacktem node-red wirklich lädt (relative require-Pfade auflösbar).
   # ════════════════════════════════════════════════════════════════════════
 
-  - { id: P65, title: "Demo-Deployment des Beispiel-Apps (Docker + GHCR + SSH/Caddy auf Hetzner, in-repo, extraktionsbereit) für Remote-Reviews", status: pending, dependencies: [P7] }
+  - { id: P65, title: "Demo-Deployment des Beispiel-Apps (Docker + GHCR + SSH/Caddy auf Hetzner, in-repo, extraktionsbereit) für Remote-Reviews", status: in_progress, dependencies: [P7] }
 
   # ════════════════════════════════════════════════════════════════════════
   # ui-action / ui-route Navigation — zwei Szenarien + Validierung (P66)
@@ -758,7 +758,7 @@ phases:
   # Doppel-Fire bei direkter Route-Navigation); JSONata-Kontext sauber definieren.
   # ════════════════════════════════════════════════════════════════════════
 
-  - { id: P66, title: "ui-action/ui-route Navigation — 2 Szenarien (wired-route mit params / pfad-typedInput mit JSONata) + onEnter immer + Mehrdeutigkeits-Validierung + ui-app implizite Root-Route (gleiches Verhalten)", status: pending, dependencies: [P60] }
+  - { id: P66, title: "ui-action/ui-route Navigation — 2 Szenarien (wired-route mit params / pfad-typedInput mit JSONata) + onEnter immer + Mehrdeutigkeits-Validierung + ui-app implizite Root-Route (gleiches Verhalten)", status: in_progress, dependencies: [P60] }
 
   # ════════════════════════════════════════════════════════════════════════
   # ui-alert — "Message Path" durch typedInput ersetzen + neue Binding-Art
