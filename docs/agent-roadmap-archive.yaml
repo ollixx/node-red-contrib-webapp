@@ -1715,3 +1715,31 @@ phases:
       - "pnpm validate green"
       - "regression unit test: no token has its own var(--sl-…) in the fallback; --sl-spacing-medium not bridged."
       - "render parity (P26) + shoelace-served-html + color-bridge theming tests green; full E2E 258 passed / 0 failed."
+
+  - id: P63
+    title: "Self-hosted Shoelace-Assets (vendoren nach resources/) statt CDN — strikt lokal (ADR 0008)"
+    status: done
+    dependencies: [P57]
+    summary:
+      delivered: "Made the app fully offline/air-gapped capable: removed all jsdelivr/CDN references and vendored Shoelace 2.20.1 locally. @shoelace-style/shoelace pinned as an exact devDependency; scripts/vendor-shoelace.js copies node_modules/@shoelace-style/shoelace/cdn → resources/shoelace/ with a hard drift guard (fails if installed version != SHOELACE_VERSION). Vendor step hooked into `pnpm build` AND npm `prepare` so dev:start, E2E rebuild, validate and publish all have the assets; resources/shoelace/ is .gitignored (generated) and ships in the tarball (npm pack --dry-run: 2939 files). nodes/webapp.js: SHOELACE_CDN_BASE/jsdelivr removed; <head> loads themes/light.css + shoelace-autoloader.js from /resources/node-red-contrib-webapp/shoelace/ (autoloader self-detects base path → lazy chunks + sl-icon assets resolve locally) via the existing module-resource mechanism (no new route code). ADR 0002 references ADR 0008."
+      stats: "package.json, pnpm-lock.yaml, .gitignore, scripts/vendor-shoelace.js, nodes/webapp.js, ADR 0002; +P63 tests (drift guard, no-external-URL source guard, served-HTML local-path, offline+network E2E). E2E 262 passed / 0 failed; pnpm validate green; gen:example/gen:node-examples no diff."
+      notes: >
+        Final roadmap phase. Verified authoritatively in the main checkout: after `corepack pnpm install` (new
+        devDependency) + `corepack pnpm build`, the vendor step produced resources/shoelace/ (2938 files); the
+        offline E2E spec (tests/e2e/p63-offline-shoelace.spec.ts) passed — theme + autoloader load from the local
+        resource path, ZERO requests to any external Shoelace CDN, an sl-button upgrades without network, and a
+        lazily-loaded element upgrades from local chunks. Source grep confirms no jsdelivr/SHOELACE_CDN_BASE
+        remains in nodes/ resources/ packages/. Generated assets correctly gitignored (not committed).
+      cost: "session <see .ai/agent-runs.jsonl>; impl ~7m; orchestrator main-checkout install+build+E2E (262) + network verification; subagent_tokens ~79k"
+    goals:
+      - "Make the app fully offline/air-gapped capable — no runtime CDN dependency."
+      - "Pin the Shoelace version reproducibly in package.json instead of via a CDN URL."
+    deliverables:
+      - "ADR 0008 committed; @shoelace-style/shoelace devDependency pinned to SHOELACE_VERSION (2.20.1)."
+      - "scripts/vendor-shoelace.js copies cdn build → resources/shoelace/ with a version drift guard; vendor step in pnpm build + npm prepare; resources/shoelace .gitignored but shipped in the tarball."
+      - "nodes/webapp.js: jsdelivr removed; local base /resources/node-red-contrib-webapp/shoelace/; ADR 0002 references ADR 0008."
+    validation:
+      - "pnpm validate green; build produces resources/shoelace/."
+      - "grep: no jsdelivr/external Shoelace URLs in nodes/ resources/ packages/."
+      - "E2E 262 passed / 0 failed (main checkout): app loads theme+autoloader locally; NO external CDN requests (network check); sl-button + lazy sl-card upgrade offline."
+      - "vendor script fails when installed Shoelace version != SHOELACE_VERSION (drift guard unit test)."

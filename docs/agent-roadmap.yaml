@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P63  # Self-hosted Shoelace assets (vendored) — strictly local, no CDN (ADR 0008)
+  current_phase: null  # roadmap complete — all phases done (P0–P63)
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -522,26 +522,7 @@ phases:
   # Siehe ADR 0008.
   # ════════════════════════════════════════════════════════════════════════
 
-  - id: P63
-    title: "Self-hosted Shoelace-Assets (vendoren nach resources/) statt CDN — strikt lokal (ADR 0008)"
-    status: in_progress
-    dependencies: [P57]
-    goals:
-      - Die App voll offline-/air-gapped-fähig machen: keine CDN-Abhängigkeit zur Laufzeit.
-      - Shoelace-Version reproduzierbar in package.json pinnen statt per CDN-URL.
-    deliverables:
-      - "ADR 0008 committed (bereits entworfen): self-hosted (vendored) Shoelace assets, strikt lokal, kein CDN."
-      - "@shoelace-style/shoelace als devDependency, gepinnt auf SHOELACE_VERSION (2.20.1)."
-      - "scripts/vendor-shoelace.js: kopiert node_modules/@shoelace-style/shoelace/cdn → resources/shoelace/; asserted, dass die installierte Paketversion == SHOELACE_VERSION (kein Drift)."
-      - "package.json: vendor-Schritt in pnpm build + npm prepare einhängen, sodass dev:start, E2E-Rebuild, validate und publish die Assets haben; resources/shoelace via .gitignore ausschließen (generiert); sicherstellen, dass resources/ (inkl. shoelace) im publizierten Tarball landet (files/npmignore prüfen)."
-      - "nodes/webapp.js: SHOELACE_CDN_BASE + jsdelivr-URLs entfernen; eine lokale Base-Konstante /resources/node-red-contrib-webapp/shoelace/ einführen; <head> lädt themes/light.css + shoelace-autoloader.js von dort. SHOELACE_VERSION bleibt (pinnt Dependency + treibt das Vendoring)."
-      - "ADR 0002 mit Verweis auf ADR 0008 ergänzen (Asset-Delivery)."
-    validation:
-      - pnpm validate grün (build + lint + test + roadmap); build erzeugt resources/shoelace/.
-      - "Grep-/Unit-Check: keine jsdelivr-/externen Shoelace-URLs mehr in nodes/ resources/ packages/ (außer ggf. Doku/ADR)."
-      - "E2E (offline): die gerenderte App lädt Theme + Autoloader von /resources/node-red-contrib-webapp/shoelace/…; ein sl-button upgradet (Custom-Element definiert) und ein lazy-geladenes Element (z.B. sl-dialog) funktioniert — ohne Netzwerkzugriff nach außen."
-      - "Network-Check (preview_network): keine Requests an cdn.jsdelivr.net o.ä.; Shoelace-Requests gehen alle an den lokalen Origin."
-      - "Vendor-Script schlägt fehl, wenn die installierte Shoelace-Version != SHOELACE_VERSION (Drift-Guard greift)."
+  - { id: P63, title: "Self-hosted Shoelace-Assets (vendoren nach resources/) statt CDN — strikt lokal (ADR 0008)", status: done, dependencies: [P57], archive: "docs/agent-roadmap-archive.yaml#P63" }
 
   # Deferred — only when a concrete need appears (see ADR 0002):
   #   - ui-custom escape-hatch node for framework-specific components (opt-in, non-portable)
