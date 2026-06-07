@@ -46,17 +46,28 @@ test.describe("editor panel — ui-alert message/title typedInput (P67)", () => 
         // kinds. Node-RED's `typedInput("types")` is a SETTER only (it calls
         // `types.map(...)` on its argument and throws on a bare get), so read the
         // configured type list off the widget instance stored in jQuery `.data()`
-        // instead. The jQuery-UI bridge keys the instance by namespace+widget
-        // name; probe the element's data for the entry exposing `typeList`.
+        // instead. The jQuery-UI widget bridge stores the instance via
+        // `$.data(el, widgetFullName, this)` where widgetFullName is
+        // `"nodered-typedInput"` — i.e. in jQuery's USER data cache (`$.data(el)`),
+        // NOT the private/event cache (`$._data(el)`, which is jQuery's `dataPriv`
+        // and never holds the widget instance). The instance keeps the configured
+        // type definitions on `this.typeList`. Read the user-data entry by its
+        // widget key, falling back to scanning all user data for a `typeList`.
         const messageTypes = await page.evaluate(() => {
-            const $ = (window as unknown as { $: (sel: string) => unknown }).$;
+            const $ = (window as unknown as {
+                $: ((sel: string) => unknown) & {
+                    data: ((e: Element, key: string) => unknown) & ((e: Element) => Record<string, unknown>);
+                };
+            }).$;
             const el = ($("#node-input-message") as unknown as { get: (i: number) => Element }).get(0);
-            const data = (($ as unknown as { _data?: (e: Element) => Record<string, unknown> })._data?.(el))
-                ?? (($ as unknown as { data: (e: Element) => Record<string, unknown> }).data(el));
-            const instance = Object.values(data ?? {}).find(
-                (v): v is { typeList: Array<{ value?: string } | string> } =>
-                    !!v && Array.isArray((v as { typeList?: unknown }).typeList)
-            );
+            type Inst = { typeList?: Array<{ value?: string } | string> };
+            const direct = $.data(el, "nodered-typedInput") as Inst | undefined;
+            const userData = $.data(el) as Record<string, unknown>;
+            const instance: Inst | undefined = (direct && Array.isArray(direct.typeList))
+                ? direct
+                : (Object.values(userData ?? {}).find(
+                    (v): v is Inst => !!v && Array.isArray((v as Inst).typeList)
+                ));
             return (instance?.typeList ?? []).map((t) => (typeof t === "string" ? t : t.value));
         });
         expect(messageTypes).toEqual(expect.arrayContaining([
