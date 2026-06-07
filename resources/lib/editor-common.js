@@ -343,6 +343,7 @@
             if (node.type === "ui-store") {
                 references.stores.push({
                     id,
+                    name: node.name || "",
                     statePath: node.statePath || ""
                 });
             }
@@ -416,8 +417,10 @@
         },
         stores: function (references) {
             return references.stores.map(function (store) {
-                const name = store.statePath ? store.id + " (" + store.statePath + ")" : store.id;
-                return { value: store.id, label: name, name: store.id, id: store.id, type: "ui-store" };
+                const name = store.name || store.id;
+                const detail = store.statePath ? store.id + " (" + store.statePath + ")" : store.id;
+                const label = store.name ? store.name + " — " + detail : detail;
+                return { value: store.id, label: label, name: name, id: store.id, type: "ui-store" };
             });
         }
     };
