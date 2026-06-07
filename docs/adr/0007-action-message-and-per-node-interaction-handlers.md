@@ -151,3 +151,36 @@ client home, with no `ui-action` involved.
   handled in the implementing phase with a documented compat path.
 - `msg.ui.action.targetId` (ADR 0005 / actions.md §2) is unified with `target`:
   both name a node id; the override path uses `receive()`.
+
+## Amendment (P66): navigate destinations + route lifecycle
+
+§4 left `navigate` under-specified: it relied solely on a raw `to` path on the
+action, which silently drifts when a route is renamed, and never emitted route
+lifecycle events. P66 refines navigate without changing the contract's shape:
+
+1. **Two navigate scenarios, one push.**
+   - *Scenario 1 — wired to a `ui-route` (or to `ui-app` for the implicit root
+     "/").* The action carries **no `to`**; it may carry **`params`** (named
+     URL params). The wired route builds the location from **its own `path`** +
+     `params` (filling `:placeholders`). Renaming the route can no longer drift
+     the action.
+   - *Scenario 2 — not wired to a route.* The action carries a **`to`** template
+     and is delivered app-global to the `ui-app`, which resolves the location.
+2. **`to` is a typedInput.** `to` + `toType` (`str` | `msg` | `flow` | `global` |
+   `jsonata`). `str` is a literal path; the others resolve at input time against
+   the message / context (the JSONata context is the full `msg`). The message
+   contract gains an optional **`params`** (string→string) on `msg.ui.action`.
+3. **`onEnter` / `onLeave` always.** Route entry/leave events are emitted in both
+   scenarios as a consequence of *arriving*, decoupled from the navigation
+   mechanism. `ui-app` owns the implicit root route, so it gains `onEnter` /
+   `onLeave` (alongside `clientConnected` / `clientDisconnected`) and behaves like
+   a `ui-route` for a navigate wired to it.
+4. **Cross-validation is a runtime/compile check.** Because the wire is invisible
+   to per-node editor validation, the ambiguity checks live in `webapp.js`
+   (`validateNavigationFlow`, run on `flows:started`): navigate *wired to a route
+   AND* `to` set → ambiguous; navigate with *neither* wire-to-route *nor* `to` →
+   no destination; navigate with a *static* `to` matching no route → dead link.
+   A dynamic `to` (msg/flow/global/jsonata) is validated at runtime on no-match.
+5. **Shared handler.** `ui-route` and `ui-app` share one navigate path
+   (`performTargetNavigate` / `resolveNavigateLocation`) — no duplication.
+6. **`ui-navigation` stays deprecated;** `ui-action` navigate is the way.

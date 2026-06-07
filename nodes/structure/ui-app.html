@@ -296,7 +296,7 @@
             label: function () {
                 return this.name || this.root || "ui-app";
             }
-        });
+        }, ["clientConnected", "clientDisconnected", "onEnter", "onLeave"]);
     })();
 </script>
 <script type="text/html" data-template-name="ui-app">

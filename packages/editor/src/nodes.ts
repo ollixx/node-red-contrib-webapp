@@ -206,6 +206,11 @@ export interface UiActionEditorConfig extends IdentifiedEditorConfig {
     targetMode?: "out-port" | "path";
     target?: string;
     to?: string;
+    // P66: navigate `to` is a typedInput. `toType` is its type.
+    toType?: "str" | "msg" | "flow" | "global" | "jsonata";
+    // P66: named URL params (Scenario 1: wired to a ui-route). Stored as a JSON
+    // object string by the editor (key/value rows).
+    params?: string;
     description?: string;
 }
 
@@ -514,6 +519,32 @@ function emitDefinition<TDefinition extends UiNodeDefinition>(
         success: true,
         data: validation.data as TDefinition
     };
+}
+
+// P66: parse the editor's key/value params (stored as a JSON object string) into
+// a string→string record. Returns undefined for empty / invalid input so the
+// emitted definition omits `params` rather than carrying noise.
+function parseParamsObject(value: string | undefined): Record<string, string> | undefined {
+    if (!value || typeof value !== "string") {
+        return undefined;
+    }
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(value);
+    }
+    catch {
+        return undefined;
+    }
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+        return undefined;
+    }
+    const out: Record<string, string> = {};
+    for (const [key, val] of Object.entries(parsed as Record<string, unknown>)) {
+        if (typeof val === "string") {
+            out[key] = val;
+        }
+    }
+    return Object.keys(out).length > 0 ? out : undefined;
 }
 
 function literalBinding(value: string): BindingDefinition {
@@ -949,15 +980,41 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
                 return undefined;
             }
         },
-        to: {
-            validate(value, config) {
-                if (config.actionType === "navigate") {
-                    return typeof value === "string" && value.trim().length > 0
-                        ? undefined
-                        : "Navigate actions must declare a destination.";
+        // P66 (ADR 0007): a navigate action no longer REQUIRES `to`. When the
+        // action is wired (or picked) to a ui-route, the route supplies the path
+        // from its own definition (Scenario 1) and `to` is empty. The wire is
+        // invisible to this per-node validator, so the "no target at all" /
+        // "ambiguous (wired AND `to`)" / "dead static link" cross-checks are
+        // RUNTIME checks (full flow graph). Here we only validate per-node shape:
+        // a known `toType`, and a `params` value that parses as a JSON object.
+        toType: {
+            validate(value) {
+                if (value === undefined || value === "") {
+                    return undefined;
                 }
-
-                return undefined;
+                return ["str", "msg", "flow", "global", "jsonata"].includes(value as string)
+                    ? undefined
+                    : "Navigate `to` must use a known typedInput type.";
+            }
+        },
+        params: {
+            validate(value) {
+                if (value === undefined || value === "" || typeof value !== "string") {
+                    return undefined;
+                }
+                let parsed: unknown;
+                try {
+                    parsed = JSON.parse(value);
+                }
+                catch {
+                    return "Navigate params must be a JSON object.";
+                }
+                if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+                    return "Navigate params must be a JSON object.";
+                }
+                return Object.values(parsed as Record<string, unknown>).every((v) => typeof v === "string")
+                    ? undefined
+                    : "Navigate param values must be strings (they fill URL segments).";
             }
         }
     }, (config: UiActionEditorConfig): UiActionNodeDefinition => ({
@@ -967,6 +1024,8 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         targetMode: config.targetMode,
         target: config.target,
         to: config.to,
+        toType: config.toType,
+        params: parseParamsObject(config.params),
         description: config.description
     })),
     "ui-navigation": createDefinition("ui-navigation", "behavior", {

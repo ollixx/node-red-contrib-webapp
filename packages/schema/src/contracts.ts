@@ -216,6 +216,21 @@ export const actionTargetModeSchema = z.enum(["out-port", "path"]);
 
 export type ActionTargetMode = z.infer<typeof actionTargetModeSchema>;
 
+// P66 (ADR 0007): the navigate `to` destination is a Node-RED typedInput — the
+// path can be a static string ("str"), taken from the message ("msg"), a flow /
+// global context value, or computed by a JSONata expression. `to` holds the
+// value, `toType` the typedInput type (default "str", a literal path).
+export const actionToTypeSchema = z.enum(["str", "msg", "flow", "global", "jsonata"]);
+
+export type ActionToType = z.infer<typeof actionToTypeSchema>;
+
+// P66: named URL parameters for a navigate action. Keys/values are strings —
+// they fill the `:placeholder` segments of the target route's path (Scenario 1:
+// a wired ui-route builds the location from its OWN path + these params).
+export const actionParamsSchema = z.record(z.string(), z.string());
+
+export type ActionParams = z.infer<typeof actionParamsSchema>;
+
 export const actionDefinitionSchema = z.object({
     id: identifierSchema,
     actionType: actionTypeSchema.optional(),
@@ -225,7 +240,13 @@ export const actionDefinitionSchema = z.object({
     // P53: open / close / select granularity — a sub-id within the target element
     // (accordion section, tree branch, tab name).
     part: z.string().min(1, "Action parts must not be empty.").optional(),
+    // P66: `to` is a navigate destination typedInput; `toType` is its type.
+    // Optional everywhere because Scenario 1 (wired to a ui-route) carries no
+    // `to` at all — the wired route supplies the path from its own definition.
     to: z.string().min(1, "Navigate actions must declare a destination.").optional(),
+    toType: actionToTypeSchema.optional(),
+    // P66: named URL params (Scenario 1, and extra params alongside a `to`).
+    params: actionParamsSchema.optional(),
     description: z.string().min(1, "Action descriptions must not be empty.").optional()
 });
 
@@ -262,7 +283,11 @@ export const actionMessageCommandSchema = z
         type: actionTypeSchema,
         to: z.string().min(1, "Navigate actions must declare a destination.").optional(),
         part: z.string().min(1, "Action parts must not be empty.").optional(),
-        target: z.string().min(1, "Action targets must not be empty.").optional()
+        target: z.string().min(1, "Action targets must not be empty.").optional(),
+        // P66 (ADR 0007): named URL params for a navigate action. In Scenario 1
+        // (wired to a ui-route, no `to`) the route fills its own path's
+        // `:placeholders` from these. String values only (they become URL parts).
+        params: actionParamsSchema.optional()
     })
     .strict();
 

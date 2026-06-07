@@ -52,8 +52,16 @@ Konfigurierbare Events — im Editor per Checkbox aktivierbar. Pro aktivem Event
 |---|---|---|
 | `clientConnected` | Ein Client hat die App geöffnet | `event: "clientConnected"`, `clientId` |
 | `clientDisconnected` | Ein Client hat die App geschlossen / Verbindung verloren | `event: "clientDisconnected"`, `clientId` |
+| `onEnter` | Die implizite Root-Route `/` wurde betreten | `event: "onEnter"`, `route`, `params`, `clientId` |
+| `onLeave` | Die implizite Root-Route `/` wurde verlassen | `event: "onLeave"`, `route`, `params`, `clientId` |
 
 Typischer Anwendungsfall für `clientConnected`: initiale Daten für den neuen Client laden und per `clientId` gezielt an ihn senden.
+
+`onEnter` / `onLeave` (P66 / ADR 0007 Amendment): Die `ui-app` besitzt die
+implizite Root-Route `/` (Home-Content mountet direkt in die App-Slots, ohne
+eigene `ui-route`). Eine an die `ui-app` verdrahtete `navigate`-Action wird daher
+wie bei einer `ui-route` behandelt — zur Root navigieren — und emittiert
+`onEnter` / `onLeave` beim Root-Eintritt/-Austritt, genau wie eine `ui-route`.
 
 ## Besonderheiten
 
