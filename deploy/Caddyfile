@@ -1,0 +1,21 @@
+# Caddy reverse-proxy configuration for the node-red-contrib-webapp demo.
+#
+# Caddy auto-provisions TLS via Let's Encrypt using the domain in $DEMO_DOMAIN.
+# Basic-Auth protects both the Node-RED editor (/) and the webapp UI,
+# so the demo is inaccessible without credentials.
+#
+# Environment variables (injected via docker-compose.yml):
+#   DEMO_DOMAIN            — hostname, e.g. demo.example.com
+#   DEMO_BASIC_AUTH_HASH   — bcrypt hash of the reviewer password
+#                            (generate: caddy hash-password --plaintext 'pw')
+
+{$DEMO_DOMAIN} {
+    # Protect the entire site with Basic-Auth.
+    # The username is "reviewer"; the hash comes from the environment.
+    basicauth /* {
+        reviewer {$DEMO_BASIC_AUTH_HASH}
+    }
+
+    # Proxy all traffic to the Node-RED container on its internal port.
+    reverse_proxy node-red:1880
+}

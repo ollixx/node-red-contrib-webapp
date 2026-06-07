@@ -1,0 +1,55 @@
+# Docker Compose for the node-red-contrib-webapp demo deployment.
+#
+# Services:
+#   node-red  — the GHCR image containing Node-RED + the plugin + demo flow
+#   caddy     — reverse proxy with auto-HTTPS and Basic-Auth protection
+#
+# Node-RED data is intentionally EPHEMERAL: every "docker compose up -d"
+# after a pull restarts with a freshly seeded demo flow — always a clean
+# state for reviewers.
+#
+# Required files on the Hetzner host (beside this file):
+#   Caddyfile        — in the same directory as this file (see deploy/Caddyfile)
+#   caddy_data/      — persistent Caddy TLS certificate store (auto-created)
+#
+# Required environment variables / GitHub Secrets (set via .env or CI):
+#   DEMO_IMAGE         ghcr.io/<owner>/<repo>:latest (or a pinned digest)
+#   DEMO_DOMAIN        hostname the demo is reachable on, e.g. demo.example.com
+#   NODE_RED_CREDENTIAL_SECRET   (optional) stable secret for credential storage
+
+services:
+  node-red:
+    image: ${DEMO_IMAGE:-ghcr.io/github_owner/node-red-contrib-webapp:latest}
+    restart: unless-stopped
+    # Bind to 127.0.0.1 only — Caddy is the only ingress, never expose 1880 to
+    # the public internet.
+    ports:
+      - "127.0.0.1:1880:1880"
+    environment:
+      - NODE_RED_CREDENTIAL_SECRET=${NODE_RED_CREDENTIAL_SECRET:-}
+    # No volume for /data so Node-RED always starts with the seeded flow.json.
+    # If you need persistence, add: volumes: - node_red_data:/data
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"   # HTTP/3
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      - DEMO_DOMAIN=${DEMO_DOMAIN:-localhost}
+      # The hashed password for Basic-Auth.
+      # Generate with: caddy hash-password --plaintext 'your-password'
+      - DEMO_BASIC_AUTH_HASH=${DEMO_BASIC_AUTH_HASH:-}
+    depends_on:
+      - node-red
+
+volumes:
+  # Caddy stores TLS certificates here — must be persistent across restarts.
+  caddy_data:
+  caddy_config:
