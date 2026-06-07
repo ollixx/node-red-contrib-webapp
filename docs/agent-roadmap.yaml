@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P65  # next to implement: demo-deployment (Docker + GHCR + SSH/Caddy on Hetzner, in-repo)
+  current_phase: P68  # next to implement: unified node-picker dialog (scroll + contains-search, filter presets) for all ui-* selections
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -657,7 +657,7 @@ phases:
   # das Image in nacktem node-red wirklich lädt (relative require-Pfade auflösbar).
   # ════════════════════════════════════════════════════════════════════════
 
-  - { id: P65, title: "Demo-Deployment des Beispiel-Apps (Docker + GHCR + SSH/Caddy auf Hetzner, in-repo, extraktionsbereit) für Remote-Reviews", status: in_progress, dependencies: [P7] }
+  - { id: P65, title: "Demo-Deployment des Beispiel-Apps (Docker + GHCR + SSH/Caddy auf Hetzner, in-repo, extraktionsbereit) für Remote-Reviews", status: done, dependencies: [P7], archive: "docs/agent-roadmap-archive.yaml#P65" }
 
   # ════════════════════════════════════════════════════════════════════════
   # ui-action / ui-route Navigation — zwei Szenarien + Validierung (P66)
@@ -758,7 +758,7 @@ phases:
   # Doppel-Fire bei direkter Route-Navigation); JSONata-Kontext sauber definieren.
   # ════════════════════════════════════════════════════════════════════════
 
-  - { id: P66, title: "ui-action/ui-route Navigation — 2 Szenarien (wired-route mit params / pfad-typedInput mit JSONata) + onEnter immer + Mehrdeutigkeits-Validierung + ui-app implizite Root-Route (gleiches Verhalten)", status: in_progress, dependencies: [P60] }
+  - { id: P66, title: "ui-action/ui-route Navigation — 2 Szenarien (wired-route mit params / pfad-typedInput mit JSONata) + onEnter immer + Mehrdeutigkeits-Validierung + ui-app implizite Root-Route (gleiches Verhalten)", status: done, dependencies: [P60], archive: "docs/agent-roadmap-archive.yaml#P66" }
 
   # ════════════════════════════════════════════════════════════════════════
   # ui-alert — "Message Path" durch typedInput ersetzen + neue Binding-Art
@@ -833,7 +833,150 @@ phases:
   # braucht Zugriff auf statePath im Renderer-Kontext.
   # ════════════════════════════════════════════════════════════════════════
 
-  - { id: P67, title: "ui-alert — 'Message Path' durch typedInput (alle Typen + neue Binding-Art 'store' mit Store-Picker) ersetzen; title ebenfalls typedInput", status: pending, dependencies: [P20b] }
+  - { id: P67, title: "ui-alert — 'Message Path' durch typedInput (alle Typen + neue Binding-Art 'store' mit Store-Picker via P68) ersetzen; title ebenfalls typedInput", status: pending, dependencies: [P20b, P68] }
+
+  # ════════════════════════════════════════════════════════════════════════
+  # Einheitlicher Node-Picker-Dialog für ALLE ui-*-Knoten-Auswahlen (P68)
+  #
+  # Owner-Wunsch (2026-06-07): Das in P67 für die Store-Auswahl skizzierte
+  # Dialog-Feature (Liste mit Scrolling, Filter, Contains-Suche) soll ÜBERALL
+  # eingesetzt werden, wo ein ui-*-Knoten ausgewählt werden muss — parents,
+  # references, mount-Ziele, routes, actions, stores usw. Immer gleiches
+  # Aussehen, nur unterschiedliche DEFAULT-Filter (z.B. "nur Apps", "Knoten in
+  # dieser App", "alle validen Parents", "nur Stores", "Routen", "Actions",
+  # "Mount-Ziele/Slots"). Im Dialog können die Ergebnisse zusätzlich gefiltert
+  # werden: Contains-Suche über Name, ID UND Knotentyp.
+  #
+  # Ist-Stand (verifiziert):
+  #   • Node-Auswahl läuft heute über simple <select>-Dropdowns ohne Suche/Filter:
+  #     installParentAppSelector (editor-common.js:719), installReferenceSelectors
+  #     (:734, Varianten route/action/store/mount/layout via setSelectOptions /
+  #     setSelectOptionsTree), installLayoutSelector (:815). Daten kommen aus
+  #     collectReferenceNodes (:276), das apps/routes/actions/stores/… inkl.
+  #     id/type/label/title/parent/path sammelt.
+  #   • Verbreitung: installReferenceSelectors 32×, installParentAppSelector 6×,
+  #     installLayoutSelector 4× — quer durch fast alle nodes/**/*.html. Werte
+  #     werden als IDs gespeichert.
+  #   • P60 brachte einen Canvas-Picker (RED.view.selectNodes, installNodePicker
+  #     :927, 1×) — anderes Paradigma (Canvas-Auswahl), NICHT der Listen-Dialog.
+  #   • Editor-UI ist Node-RED-Admin-UI (jQuery), NICHT die Runtime-Shoelace —
+  #     der Dialog muss admin-UI-kompatibel sein (kein sl-dialog).
+  #
+  # Owner-Entscheidungen (2026-06-07):
+  #   • EINE wiederverwendbare Picker-Dialog-Komponente in editor-common.js, die
+  #     überall gleich aussieht. Parametrisiert über einen DEFAULT-Filter (Preset),
+  #     der die Kandidatenliste vorab einschränkt.
+  #   • Im Dialog: Such-/Filterfeld mit Contains-Match (case-insensitive) über
+  #     Name, ID und Knotentyp; scrollbare Ergebnisliste; aktuelle Auswahl
+  #     hervorgehoben; Zeilen zeigen Name + ID + Typ.
+  #   • Default-Filter-Presets (erweiterbar): "nur Apps", "Knoten in dieser App",
+  #     "alle validen Parents", "nur Stores", "Routen", "Actions", "Mount-Ziele".
+  #
+  # Umfang (Dateien):
+  #   • resources/lib/editor-common.js: neue Dialog-Komponente
+  #     (openNodePickerDialog({ filterPreset, title, value, onSelect })) + ein
+  #     generischer Installer (installNodeReference({ field, filterPreset, title }))
+  #     der ein hidden input mit der gewählten ID füllt und einen "Auswählen…"-
+  #     Button + Anzeige der aktuellen Auswahl rendert. Filter-Presets als
+  #     Funktionen über collectReferenceNodes definieren.
+  #   • installParentAppSelector / installReferenceSelectors (route/action/store/
+  #     mount/layout) auf die neue Komponente umstellen — Signaturen möglichst
+  #     beibehalten, damit die per-Node-HTML-Änderungen minimal/zentral bleiben.
+  #   • Konsistentes Styling (admin-UI-Overlay, kein Shoelace).
+  #   • Werte bleiben IDs (Round-Trip unverändert).
+  #   • P67-Store-Picker baut auf dieser Komponente auf (Preset "nur Stores").
+  #   • Tests: editor-common ist browserseitig schwer unit-testbar → Round-Trip-/
+  #     E2E-Abdeckung (Auswahl per Dialog, Contains-Suche, Preset-Filter). Wo
+  #     möglich, Filter-Preset-Funktionen rein/unit-testbar halten.
+  #
+  # Offene Design-Punkte (bei Umsetzung klären):
+  #   • mount ist heute ein TREE (Slots, setSelectOptionsTree) — andere Form als
+  #     flache Node-Liste. Entweder Dialog mit Gruppierung/Hierarchie für Mount-
+  #     Ziele, oder Mount bleibt vorerst Tree. Entscheiden.
+  #   • Verhältnis zum P60-Canvas-Picker (RED.view.selectNodes): koexistieren oder
+  #     den Dialog als Alternative anbieten?
+  #
+  # Risiken: große Editor-Oberfläche (zentralisieren in editor-common minimiert
+  # per-Node-Churn, aber UX-Wechsel <select> → Dialog ist spürbar); admin-UI-
+  # Dialog (nicht Runtime-Shoelace); Mount-Hierarchie; Performance bei vielen
+  # Knoten (Such-/Scroll-Liste).
+  # ════════════════════════════════════════════════════════════════════════
+
+  - { id: P68, title: "Einheitlicher Node-Picker-Dialog (Scroll + Contains-Suche über Name/ID/Typ, Default-Filter-Presets) für ALLE ui-*-Auswahlen (parents, references, mount, stores, routes, actions)", status: pending, dependencies: [P19] }
+
+  # ════════════════════════════════════════════════════════════════════════
+  # Icon-System — backend-neutraler Wert + global registrierbare Libs +
+  # Icon-Picker-Dialog (P69)
+  #
+  # Owner-Wunsch (2026-06-07): Wir brauchen Icons für ui-avatar, ui-button,
+  # ui-icon etc. Die Theme-Backends bringen Icons über übliche Icon-Sets mit.
+  # Zusätzlich soll man — UNABHÄNGIG vom Backend — weitere Icon-Libs einbinden
+  # können (korrekt registriert). Für die Auswahl braucht es im Editor einen
+  # Dialog, der alle Icons anzeigt, mit Filter, Scrollbars und Filter nach Lib.
+  #
+  # Ist-Stand (verifiziert):
+  #   • Icon-Felder sind heute Freitext-Strings: ui-icon.icon (Pflicht,
+  #     node-definitions.ts:595), ui-empty-state.icon (optional), menu/list-items
+  #     .icon (optional). KEIN Picker, KEIN Lib/Prefix-Konzept.
+  #   • Gerendert als <sl-icon name="…"> → Shoelaces Default-Set Bootstrap Icons,
+  #     2052 SVGs lokal vendored unter resources/shoelace/assets/icons/ (ADR 0008).
+  #     Autoloader ermittelt Base-Path selbst, kein setBasePath nötig.
+  #   • ui-button und ui-avatar haben HEUTE KEIN Icon-Feld → muss ergänzt werden
+  #     (sl-button prefix/suffix-Slots; sl-avatar icon-Fallback).
+  #   • ADR 0002: Props semantisch & backend-agnostisch, Adapter mappt aufs
+  #     Framework. Heute ist der Icon-Wert an Shoelace/Bootstrap-Icons gekoppelt.
+  #   • Editor-Palette-Icons (font-awesome/... in den .html) sind ein SEPARATES
+  #     System (Node-RED-Editor) — NICHT anfassen, nicht verwechseln.
+  #
+  # Owner-Entscheidungen (2026-06-07):
+  #   • Icon-Wert BACKEND-NEUTRAL als { library, name } (bzw. "library:name",
+  #     Default-Lib wenn weggelassen). Adapter rendert <sl-icon library name>;
+  #     anderes Backend kann eigenes Mapping machen (ADR-0002-konform).
+  #   • Zusätzliche Icon-Libraries auf GLOBALER / MODUL-Ebene registrierbar
+  #     (einmal registrieren, überall verfügbar), LOKAL ausgeliefert und
+  #     client-seitig via Shoelace registerIconLibrary() registriert — unabhängig
+  #     vom Backend. Default-Lib = das vendorte Bootstrap-Set.
+  #   • Icon-Feld ist typedInput: meist literal via Picker, ABER auch dynamisch
+  #     bindbar (state/msg/jsonata/store …) — konsistent mit P67.
+  #   • Icon-Picker-Dialog im Editor: nutzt die P68-Dialog-Chrome (gleiches
+  #     Aussehen), zeigt Icon-VORSCHAU, Contains-Suche über den Icon-Namen,
+  #     scrollbar, zusätzlich Filter NACH LIB.
+  #
+  # Umfang (Dateien):
+  #   • schema: Icon-Wert-Typ { library?: string, name: string } (backend-neutral);
+  #     icon-Feld binding-fähig (literal {library,name} ODER dynamische Bindung);
+  #     icon zu ui-button (prefix, ggf. suffix) und ui-avatar (Fallback) ergänzen;
+  #     ui-icon vorhanden; menu/list/empty-state auf neuen Typ migrieren
+  #     (Back-Compat: nackter String → Default-Lib).
+  #   • renderer/shoelace-adapter: kind "icon" + icon-Slots rendern als
+  #     <sl-icon library name>; Bindung auflösen; Default-Lib wenn library leer.
+  #   • Icon-Library-Registry (global/Modul): Konfigurationsmechanismus für Libs
+  #     { name, lokaler Asset-Pfad/Resolver }; client-seitige Registrierung via
+  #     registerIconLibrary in der Client-Bootstrap (nodes/webapp.js <head>).
+  #   • Manifest: Server-Endpoint bzw. generiertes Manifest, das die Icon-Namen
+  #     pro Library auflistet (Quelle für den Picker).
+  #   • editor: Icon-Picker-Dialog (P68-Chrome wiederverwenden) mit Vorschau
+  #     (lokale SVGs/Manifest, kein Shoelace im Editor nötig), Namens-Suche,
+  #     Lib-Filter; typedInput für das Icon-Feld (literal-Picker + dynamisch).
+  #   • webapp.js: mapConfig der Icon-Felder → {library,name}-Bindung; Lib-
+  #     Registrierung; Manifest-Endpoint.
+  #   • examples nur via scripts/gen-example.js, falls Felder sich ändern.
+  #   • Tests: schema (Icon-Wert, Bindung, Back-Compat); renderer (Render mit
+  #     Library, Default-Lib, dynamisch); Manifest; E2E Icon-Picker (Suche,
+  #     Lib-Filter, Auswahl).
+  #
+  # Offene Design-Punkte (bei Umsetzung klären):
+  #   • Konkreter globaler Konfig-Ort für Libs (Node-RED settings vs. Modul-
+  #     Konfigdatei vs. ENV) — entscheiden.
+  #   • Editor-Vorschau via <img src=SVG> vs. sl-icon im Editor laden.
+  #   • Performance: Picker mit 2000+ Icons → virtualisierte/lazy Liste + Suche.
+  #
+  # Risiken: Portabilität von {library,name} gilt nur, wenn die Lib im Ziel-
+  # Backend registriert ist (dokumentieren); Back-Compat-Migration bestehender
+  # Freitext-Icons; registerIconLibrary-Client-Wiring + Base-Path (P63).
+  # ════════════════════════════════════════════════════════════════════════
+
+  - { id: P69, title: "Icon-System — backend-neutraler {library,name}-Wert + global registrierbare Icon-Libraries (lokal) + Icon-Picker-Dialog (Vorschau/Suche/Lib-Filter); Icon-Felder für ui-button/ui-avatar (+ui-icon), bindbar", status: pending, dependencies: [P63, P68] }
 
   # Deferred — only when a concrete need appears (see ADR 0002):
   #   - ui-custom escape-hatch node for framework-specific components (opt-in, non-portable)

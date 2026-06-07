@@ -1776,3 +1776,70 @@ phases:
     validation:
       - "pnpm validate green (build + lint + unit; schema 152 / renderer 14 / runtime 276)."
       - "E2E 264 passed / 0 failed (orchestrator main checkout after pnpm build): native sl-dialog renders via ?dialog=, X/ESC/overlay close emits onClose + syncs state, closable:false → no-header, orphan-action test without closeCustomerEditor."
+
+  - id: P65
+    title: "Demo-Deployment des Beispiel-Apps (Docker + GHCR + SSH/Caddy auf Hetzner, in-repo, extraktionsbereit) für Remote-Reviews"
+    status: done
+    dependencies: [P7]
+    summary:
+      delivered: "Complete demo-deployment infrastructure, all under deploy/ plus one workflow file (extraction-ready): deploy/Dockerfile (multi-stage — stage 1 corepack pnpm install --frozen-lockfile && pnpm build; stage 2 nodered/node-red copies the BUILT repo tree — nodes/, resources/, packages/*/dist, package.json — into /data/node_modules/node-red-contrib-webapp, installs only zod, seeds examples/customers-crud/flow.json → /data/flows.json), deploy/settings.js (created fresh; NOT copied from owner-private .node-red-dev), deploy/docker-compose.yml (node-red ephemeral + caddy reverse_proxy with auto-TLS + Basic-Auth), deploy/Caddyfile (domain + basicauth + reverse_proxy :1880), deploy/README.md (one-time server setup, GitHub Environment 'demo' secrets table, extraction guide for publish time), .github/workflows/deploy-demo.yml (build+push GHCR then SSH docker compose pull && up -d)."
+      stats: "6 files, 406 lines (deploy/: 5 files; .github/workflows/: 1); pnpm validate green (452 unit tests)."
+      notes: >
+        Did NOT read or copy .node-red-dev/settings.js (owner-private/off-limits) — settings.js created fresh.
+        Did NOT pnpm pack (files-whitelist omits packages/renderer/dist → would break) — copies the built repo
+        tree + installs only zod at runtime. Workflow trigger strictly gated: workflow_dispatch + push to develop
+        ONLY (never pull_request_target / fork PRs → secrets safe). Node-RED data intentionally ephemeral (no
+        /data volume) so every deploy re-seeds the demo flow for a clean reviewer state. Could NOT verify
+        end-to-end (no Docker daemon / GHCR / Hetzner server / secrets in the agent or orchestrator environment):
+        actual image build, GHCR push and SSH deploy are deferred to when the owner provisions the server. Base
+        images not yet digest-pinned (owner can pin at provisioning). Merging P65 locally does NOT trigger the
+        workflow — that fires only on a push to the remote develop branch.
+      cost: "session a4dc397ded6e9b612, ~14m; orchestrator merge (no E2E needed — infra only)"
+    goals:
+      - "Make the customers-crud example reachable for remote reviews: Hetzner server, GitHub Action, Docker."
+      - "Keep it minimal and IN-REPO now (gated workflow + deploy/ dir), extraction into a private deploy repo deferred to publish time."
+    deliverables:
+      - "deploy/Dockerfile (multi-stage, copies built repo tree + zod, seeds customers-crud flow); deploy/settings.js (fresh, demo-safe)."
+      - "deploy/docker-compose.yml (node-red + caddy) + deploy/Caddyfile (auto-TLS + basicauth + reverse_proxy)."
+      - "deploy/README.md (server prerequisites, secrets table, extraction guide); .github/workflows/deploy-demo.yml (workflow_dispatch + push-develop only)."
+    validation:
+      - "pnpm validate green."
+      - "Workflow trigger gated to workflow_dispatch + push:develop (no pull_request_target)."
+      - "settings.js created fresh (not copied from .node-red-dev); image copies built tree (no pnpm pack)."
+      - "NOT verified without infra: Docker build, GHCR push, SSH deploy (deferred to server provisioning)."
+
+  - id: P66
+    title: "ui-action/ui-route Navigation — 2 Szenarien (wired-route mit params / pfad-typedInput mit JSONata) + onEnter immer + Mehrdeutigkeits-Validierung + ui-app implizite Root-Route (gleiches Verhalten)"
+    status: done
+    dependencies: [P60]
+    summary:
+      delivered: "ui-action navigate redesigned (ADR 0007 Amendment): Scenario 1 (wired to a ui-route/ui-app — params fill the route's own path, no `to`) and Scenario 2 (`to` typedInput str/msg/flow/global/jsonata resolved app-global at the ui-app); onEnter/onLeave emitted on route entry/leave in BOTH scenarios; ui-app gains onEnter/onLeave for its implicit root route and treats a wired navigate-action like a ui-route (navigate to '/'); deploy-time cross-validation in webapp.js (ambiguous = wired AND `to` set / no-destination / dead static link to a non-existent route); ui-route and ui-app share one navigate code path (DRY)."
+      stats: "14 files changed (2 new tests) +782/-20; schema 152→159, runtime 276→294 (+18 P66 tests); ADR 0007 + ui-action.md + ui-app.md updated; new E2E p66-navigation.spec.ts. Plus follow-up P66-fix: typedInput-aware E2E helpers (tests/helpers/node-editor-page.ts) + behavior-state.spec.ts update."
+      notes: >
+        `to`+`toType`+`params` added to schema/mapConfig; JSONata context is the full msg
+        (RED.util.prepareJSONataExpression/evaluateJSONataExpression; msg/flow/global via
+        evaluateNodeProperty). ADR 0007 extended with a P66 Amendment (not a new ADR). Renderer needed no change
+        (runtime owns navigate; existing route-param resolution already covered). Latent ui-app.html bug fixed
+        incidentally (registerNodeTypeWithEvents was called with no availableEvents). gen:example produced a
+        byte-identical flow.json (new fields unused by the example). ORCHESTRATOR VERIFICATION: first post-merge
+        E2E showed 6 stale-dist failures (dist is gitignored — must pnpm build after merge), then a deterministic
+        behavior-state:17 regression because P66 made `to` a typedInput and that older test drove it as a plain
+        input — fixed via phase/P66-fix (typedInput-aware helpers, no editor bug; editor persists the value
+        correctly). The p12/p13/p15/parent-selector editor-registration failures seen transiently were
+        PRE-EXISTING shared-server parallel-run flakiness (pass in isolation; clean on full re-run), not P66.
+        Final full E2E on develop: 267 passed / 0 failed.
+      cost: "session ~28m (impl) + P66-fix session a088cefb6b3fe503a ~3m; orchestrator: merge + rebuild + full E2E (267) + diagnosis of stale-dist & flakiness"
+    goals:
+      - "Two navigate usage scenarios: (1) ui-action wired to a ui-route via output port, params fill the route's own path; (2) unwired, `to` typedInput resolved app-global at the ui-app."
+      - "onEnter emitted on every route entry (both scenarios), decoupled from the navigation mechanism; ui-app implicit root route gets the same behaviour incl. onEnter/onLeave."
+      - "Ambiguity/dead-link validation at compile/deploy time (the wire is invisible to per-node editor validation)."
+    deliverables:
+      - "schema: ui-action `to`/`toType` (typedInput) + `params`; ui-app events enum +onEnter/onLeave; validation refinement (contracts.ts/node-definitions.ts)."
+      - "nodes/behavior/ui-action.html: `to` typedInput (str/msg/flow/global/jsonata) + params key/value editor + navigate-conditional UI; ui-app.html events list."
+      - "webapp.js: resolveActionTo/resolveNavigateLocation/performTargetNavigate/validateNavigationFlow; shared ui-route+ui-app navigate path; deploy-time cross-checks."
+      - "ADR 0007 P66 Amendment; ui-action.md + ui-app.md updated; ui-navigation deprecation continued."
+      - "Tests: schema, editor, runtime (S1 wired-route, S2 app-global, validation errors), E2E p66-navigation.spec.ts; typedInput-aware E2E helpers."
+    validation:
+      - "pnpm validate green (schema 159 / runtime 294)."
+      - "Full E2E on develop after rebuild: 267 passed / 0 failed (incl. p66-navigation Scenario 1/2 + onEnter-with-params, and the fixed behavior-state ui-action editor test)."
+      - "Deploy-time validation rejects ambiguous (wired + `to`), no-destination, and dead-static-link navigate configs."
