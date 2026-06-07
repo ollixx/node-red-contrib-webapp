@@ -357,6 +357,286 @@
         });
     }
 
+    // ── Unified node-picker dialog (P68) ────────────────────────────────────
+    // A single reusable picker for EVERY ui-* node selection (parents, routes,
+    // actions, stores, references). Same look everywhere; only the DEFAULT
+    // filter (preset) differs. Inside the dialog the candidate list is further
+    // narrowed by a case-insensitive contains-match over name, id AND node type.
+    //
+    // The candidate entries are produced by the FILTER PRESETS below — pure
+    // functions over the collectReferenceNodes() result. Each returns a flat
+    // list of { value, label, name, id, type } so the match/render logic stays
+    // generic and the presets stay independently testable.
+    //
+    // The editor UI is the Node-RED admin UI (jQuery), NOT the runtime Shoelace,
+    // so the dialog is built from plain admin-UI DOM (no <sl-dialog>).
+
+    // Case-insensitive contains-match over an entry's name, id and type. An
+    // empty query matches everything. Pure — unit-testable without a DOM.
+    function nodePickerMatch(entry, query) {
+        const q = String(query == null ? "" : query).trim().toLowerCase();
+        if (!q) {
+            return true;
+        }
+        const haystack = [entry && entry.name, entry && entry.id, entry && entry.type]
+            .filter(function (part) { return part != null && part !== ""; })
+            .join(" ")
+            .toLowerCase();
+        return haystack.indexOf(q) !== -1;
+    }
+
+    // Filter presets: references → candidate entries. Pure functions; keyed by a
+    // stable preset id so callers select by name and the set stays extensible.
+    const nodePickerPresets = {
+        apps: function (references) {
+            return references.apps.map(function (app) {
+                const name = app.title || app.id;
+                return { value: app.id, label: name, name: name, id: app.id, type: "ui-app" };
+            });
+        },
+        routes: function (references) {
+            return references.routes.map(function (route) {
+                const name = route.title || route.path || route.id;
+                const label = route.path ? name + " (" + route.path + ")" : name;
+                return { value: route.id, label: label, name: name, id: route.id, type: "ui-route" };
+            });
+        },
+        actions: function (references) {
+            return references.actions.map(function (action) {
+                const name = action.label || action.id;
+                const suffix = action.type === "ui-navigation" && action.to ? " -> " + action.to : "";
+                return {
+                    value: action.id,
+                    label: name + suffix,
+                    name: name,
+                    id: action.id,
+                    type: action.type || "ui-action"
+                };
+            });
+        },
+        stores: function (references) {
+            return references.stores.map(function (store) {
+                const name = store.statePath ? store.id + " (" + store.statePath + ")" : store.id;
+                return { value: store.id, label: name, name: store.id, id: store.id, type: "ui-store" };
+            });
+        }
+    };
+
+    function getNodePickerPreset(preset) {
+        if (typeof preset === "function") {
+            return preset;
+        }
+        if (typeof preset === "string" && nodePickerPresets[preset]) {
+            return nodePickerPresets[preset];
+        }
+        return function () { return []; };
+    }
+
+    // Produce the candidate entries for a preset against the live editor graph.
+    function nodePickerOptionsForPreset(preset) {
+        const references = collectReferenceNodes();
+        return sortOptions(getNodePickerPreset(preset)(references));
+    }
+
+    // Open the modal picker. options:
+    //   title      — dialog heading
+    //   value      — currently-selected id (highlighted, pre-scrolled)
+    //   entries    — array of { value, label, name, id, type }
+    //   onSelect   — function(value) called with the chosen id when confirmed
+    function openNodePickerDialog(options) {
+        const opts = options || {};
+        const entries = Array.isArray(opts.entries) ? opts.entries : [];
+        const currentValue = opts.value ? String(opts.value) : "";
+
+        const $overlay = $("<div>")
+            .addClass("webapp-node-picker-overlay")
+            .css({
+                position: "fixed",
+                inset: "0",
+                background: "rgba(0,0,0,0.4)",
+                "z-index": "2000",
+                display: "flex",
+                "align-items": "center",
+                "justify-content": "center"
+            });
+
+        const $dialog = $("<div>")
+            .addClass("webapp-node-picker-dialog")
+            .css({
+                background: "var(--red-ui-primary-background, #fff)",
+                color: "var(--red-ui-primary-text-color, #333)",
+                border: "1px solid var(--red-ui-secondary-border-color, #ccc)",
+                "border-radius": "4px",
+                "box-shadow": "0 4px 24px rgba(0,0,0,0.3)",
+                width: "420px",
+                "max-width": "90vw",
+                "max-height": "80vh",
+                display: "flex",
+                "flex-direction": "column",
+                overflow: "hidden"
+            })
+            .appendTo($overlay);
+
+        $("<div>")
+            .css({ padding: "10px 12px", "font-weight": "bold", "border-bottom": "1px solid var(--red-ui-secondary-border-color, #ddd)" })
+            .text(opts.title || "Knoten auswählen")
+            .appendTo($dialog);
+
+        const $search = $("<input type=\"text\">")
+            .attr("placeholder", "Suche (Name, ID, Typ)…")
+            .addClass("webapp-node-picker-search")
+            .css({ margin: "10px 12px", width: "calc(100% - 24px)" })
+            .appendTo($dialog);
+
+        const $list = $("<div>")
+            .addClass("webapp-node-picker-list")
+            .css({ flex: "1 1 auto", "overflow-y": "auto", "min-height": "120px", padding: "0 6px 6px" })
+            .appendTo($dialog);
+
+        const $footer = $("<div>")
+            .css({ padding: "8px 12px", "border-top": "1px solid var(--red-ui-secondary-border-color, #ddd)", "text-align": "right" })
+            .appendTo($dialog);
+
+        let selectedValue = currentValue;
+
+        function close() {
+            $overlay.remove();
+            $(document).off("keydown.webappNodePicker");
+        }
+
+        function confirm(value) {
+            close();
+            if (typeof opts.onSelect === "function") {
+                opts.onSelect(value);
+            }
+        }
+
+        function renderRows() {
+            const query = $search.val();
+            $list.empty();
+            const matches = entries.filter(function (entry) { return nodePickerMatch(entry, query); });
+
+            if (matches.length === 0) {
+                $("<div>")
+                    .css({ color: "#999", "font-style": "italic", padding: "8px" })
+                    .text("Keine Treffer.")
+                    .appendTo($list);
+                return;
+            }
+
+            matches.forEach(function (entry) {
+                const isSelected = entry.value === selectedValue;
+                const $row = $("<div>")
+                    .addClass("webapp-node-picker-row")
+                    .attr("data-value", entry.value)
+                    .css({
+                        padding: "6px 8px",
+                        cursor: "pointer",
+                        "border-radius": "3px",
+                        background: isSelected ? "var(--red-ui-list-item-background-selected, #efe)" : "transparent"
+                    });
+                if (isSelected) {
+                    $row.addClass("selected");
+                }
+
+                $("<div>")
+                    .css({ "font-weight": "bold" })
+                    .text(entry.label || entry.name || entry.id)
+                    .appendTo($row);
+                $("<div>")
+                    .css({ "font-size": "0.8em", color: "#888" })
+                    .text(entry.id + "  ·  " + entry.type)
+                    .appendTo($row);
+
+                $row.on("click", function () { confirm(entry.value); });
+                $row.on("mouseenter", function () {
+                    if (entry.value !== selectedValue) {
+                        $row.css("background", "var(--red-ui-list-item-background-hover, #f3f3f3)");
+                    }
+                });
+                $row.on("mouseleave", function () {
+                    $row.css("background", entry.value === selectedValue
+                        ? "var(--red-ui-list-item-background-selected, #efe)"
+                        : "transparent");
+                });
+
+                $list.append($row);
+            });
+        }
+
+        const $clearBtn = $("<button type=\"button\" class=\"red-ui-button\">")
+            .text("Leeren")
+            .css({ "margin-right": "6px" })
+            .on("click", function (event) {
+                event.preventDefault();
+                confirm("");
+            });
+        const $cancelBtn = $("<button type=\"button\" class=\"red-ui-button\">")
+            .text("Abbrechen")
+            .css({ "margin-right": "6px" })
+            .on("click", function (event) {
+                event.preventDefault();
+                close();
+            });
+        $footer.append($clearBtn).append($cancelBtn);
+
+        $search.on("input", renderRows);
+        $overlay.on("click", function (event) {
+            if (event.target === $overlay[0]) {
+                close();
+            }
+        });
+        $(document).on("keydown.webappNodePicker", function (event) {
+            if (event.key === "Escape") {
+                close();
+            }
+        });
+
+        renderRows();
+        $("body").append($overlay);
+        $search.trigger("focus");
+
+        return { close: close };
+    }
+
+    // Enhance an existing <select> (already populated as the bound, round-trip
+    // field) with a "Auswählen…" button that opens the unified picker dialog.
+    // Selecting in the dialog writes the chosen id back into the <select> (it is
+    // appended as an option if missing) and fires `change`, so the existing
+    // round-trip / save path is unchanged. Idempotent per select.
+    function enhanceSelectWithPicker(selectSelector, config) {
+        const cfg = config || {};
+        const $select = $(selectSelector);
+        if ($select.length === 0 || $select.data("webappPickerEnhanced")) {
+            return;
+        }
+        $select.data("webappPickerEnhanced", true);
+
+        const $button = $("<button type=\"button\" class=\"red-ui-button\">")
+            .addClass("webapp-node-picker-button")
+            .attr("title", "Aus Liste auswählen (Suche/Filter)")
+            .html("<i class=\"fa fa-list\"></i>")
+            .css({ "margin-left": "6px", "vertical-align": "middle" });
+
+        $select.after($button);
+
+        $button.on("click", function (event) {
+            event.preventDefault();
+            openNodePickerDialog({
+                title: cfg.title || "Knoten auswählen",
+                value: String($select.val() || ""),
+                entries: nodePickerOptionsForPreset(cfg.filterPreset),
+                onSelect: function (value) {
+                    if (value && $select.find("option[value='" + value + "']").length === 0) {
+                        $select.append($("<option></option>").attr("value", value).text(value));
+                    }
+                    $select.val(value);
+                    $select.trigger("change");
+                }
+            });
+        });
+    }
+
     function isStandardLayoutPreset(value) {
         return standardLayoutPresetOptions.some(function (option) {
             return option.value === value;
@@ -728,6 +1008,7 @@
                 self.parent || self.id,
                 "App auswaehlen"
             );
+            enhanceSelectWithPicker("#node-input-parent", { filterPreset: "apps", title: "App auswählen" });
         };
     }
 
@@ -764,6 +1045,7 @@
                         self.routeId,
                         "Optional: Parent-Route auswaehlen"
                     );
+                    enhanceSelectWithPicker("#node-input-routeId", { filterPreset: "routes", title: "Route auswählen" });
                 }
 
                 if (config.mount) {
@@ -787,6 +1069,7 @@
                         $(config.action).val() || self.action || self.selectAction || self.refreshAction,
                         "Action auswaehlen"
                     );
+                    enhanceSelectWithPicker(config.action, { filterPreset: "actions", title: "Action auswählen" });
                 }
 
                 if (config.store) {
@@ -805,6 +1088,7 @@
                         currentStoreVal,
                         "Optional: Store auswaehlen"
                     );
+                    enhanceSelectWithPicker(storeSelector, { filterPreset: "stores", title: "Store auswählen" });
                 }
             }
 
@@ -1058,6 +1342,7 @@
         bindingValueForEditor,
         buildMountOptionsTree,
         collectEventCheckboxValues,
+        enhanceSelectWithPicker,
         injectFieldGroup,
         getNextNameDefault,
         getStandardLayoutPresetOptions,
@@ -1070,6 +1355,10 @@
         installVariantSelectBox,
         isStandardLayoutPreset,
         labelWithName,
+        nodePickerMatch,
+        nodePickerOptionsForPreset,
+        nodePickerPresets,
+        openNodePickerDialog,
         parseBindingValue,
         registerNodeType,
         registerNodeTypeWithEvents,
