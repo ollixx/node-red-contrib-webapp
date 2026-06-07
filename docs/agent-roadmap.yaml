@@ -978,6 +978,79 @@ phases:
 
   - { id: P69, title: "Icon-System — backend-neutraler {library,name}-Wert + global registrierbare Icon-Libraries (lokal) + Icon-Picker-Dialog (Vorschau/Suche/Lib-Filter); Icon-Felder für ui-button/ui-avatar (+ui-icon), bindbar", status: pending, dependencies: [P63, P68] }
 
+  # ════════════════════════════════════════════════════════════════════════
+  # ui-image / Bildverwaltung — Rendering + URL + msg/Buffer + Media-Store (P70)
+  #
+  # Owner-Frage (2026-06-07): Wie gehen wir mit Bildern um? src auf eine URL ist
+  # klares Muss. Aber wie verwaltet man Bilder "node-red-like"?
+  #
+  # Ist-Stand (verifiziert):
+  #   • ui-image-Schema existiert: src ist bindingSchema, plus alt/fallbackSrc/
+  #     width/height/fit (node-definitions.ts:581). ABER: ui-image RENDERT HEUTE
+  #     NICHT — der Knoten ist im components-Filter (webapp.js ~1315) AUSGESCHLOSSEN
+  #     → erzeugt kein DOM (siehe tests/e2e/.../ui-image.spec.ts). fit/width/height
+  #     sind im Editor nicht verdrahtet; Editor hat nur srcPath (plain text).
+  #   • ui-avatar zeigt das funktionierende Vorbild: src-Binding → <sl-avatar
+  #     image=…> (webapp-serializer.js ~593). viewNodePatchInputHandler patcht src
+  #     bereits aus msg.payload (webapp.js ~2572/2588).
+  #   • KEINE Asset-Verwaltung: kein Upload, kein Buffer/Base64-Handling, kein
+  #     Media-Store, kein content-type-Handling. Statisch wird nur resources/
+  #     ausgeliefert (Modul-Resource-Mechanismus).
+  #
+  # Owner-Entscheidungen (2026-06-07) — VOLLER UMFANG (Ebene 1+2+3):
+  #   • VORBEDINGUNG: ui-image-Rendering aktivieren (aus components-Filter nehmen +
+  #     Adapter kind "image" → natives <img> mit src/alt/fallbackSrc/width/height/
+  #     fit (object-fit)).
+  #   • EBENE 1 (URL, Muss): src als literal/dynamische Bindung auf eine URL; im
+  #     Editor src als typedInput (statt plain srcPath), konsistent mit P67.
+  #   • EBENE 2 (wiring-first, node-red-nativ): src an msg gebunden — Buffer ODER
+  #     Base64/data:-String; Knoten konvertiert Buffer → data:-URL (content-type
+  #     aus msg-Hinweis oder Sniffing). CAVEAT: data:/Base64 landet im Snapshot/
+  #     State und wird bei JEDEM Render mitgeschickt → nur für kleine/seltene
+  #     Bilder; große/häufige Bilder via URL/Asset.
+  #   • EBENE 3 (verwaltete Assets / Media-Store):
+  #       - Media-Store-URL wird in ui-app konfiguriert (APP-Ebene, neues Feld
+  #         z.B. mediaStoreUrl).
+  #       - Referenz als asset:<id>.
+  #       - Client greift NICHT direkt auf den Store zu, sondern über einen
+  #         Node-RED-BACKEND-PROXY-Endpoint (Obfuskation: echte Store-URL bleibt
+  #         verborgen). Der Adapter/Renderer löst asset:<id> → Proxy-URL auf; das
+  #         Backend holt vom mediaStoreUrl und streamt.
+  #       - Editor-MEDIA-PICKER-Dialog (P68-Chrome): Assets aus dem Store
+  #         durchsuchen + Upload + Auswahl, mit Vorschau/Filter/Scroll. Auch im
+  #         src-typedInput als Typ "Asset" verfügbar (analog Icon-/Store-Picker).
+  #
+  # Umfang (Dateien):
+  #   • webapp.js: ui-image aus components-Filter-Ausschluss nehmen; mediaStoreUrl
+  #     in ui-app mapConfig; Backend-Proxy-Endpoint (app-scoped) asset:<id> →
+  #     Store-Fetch+Stream; Editor/Admin-Endpoints für Asset-Liste + Upload;
+  #     Buffer→data:-URL im viewNodePatchInputHandler (content-type).
+  #   • schema: ui-app.mediaStoreUrl; ui-image fit/width/height im Contract sauber;
+  #     asset:<id>-Konvention (literal-String, vom Adapter aufgelöst — KEIN neuer
+  #     binding-kind nötig; alternativ kind "asset" — bei Umsetzung entscheiden).
+  #   • renderer/shoelace-adapter: kind "image" → <img> (src/alt/fallback/fit/
+  #     width/height); asset:<id> → Proxy-URL auflösen.
+  #   • nodes/view/ui-image.html: srcPath → src typedInput (inkl. Typ "Asset" →
+  #     Media-Picker); alt/fallback/width/height/fit-Felder vervollständigen.
+  #   • editor-common.js: Media-Picker-Dialog (P68-Chrome) + Upload.
+  #   • examples nur via scripts/gen-example.js, falls Felder sich ändern.
+  #   • Tests: schema; renderer (<img>, fit, asset:-Auflösung); Proxy-Endpoint
+  #     (Stream, Obfuskation); Buffer→data:-Konvertierung; E2E (URL, msg-Buffer,
+  #     Media-Picker + Render).
+  #
+  # Offene Design-Punkte (bei Umsetzung klären):
+  #   • Upload-Schreibpfad zum Store (Ordner vs. Service), Auth, Pfad-Traversal-
+  #     Schutz auf <id>.
+  #   • Caching/Streaming + content-type-Passthrough im Proxy.
+  #   • Warum ui-image bisher bewusst nicht im Filter war (Regression vermeiden).
+  #
+  # Risiken: Base64-im-Snapshot-Bloat (Ebene 2 — dokumentieren, große Bilder via
+  # URL/Asset); Obfuskation muss wasserdicht sein (Client sieht echte Store-URL
+  # NIE); Upload-Security; Aktivieren von ui-image darf nichts brechen.
+  # ════════════════════════════════════════════════════════════════════════
+
+  - { id: P70, title: "ui-image / Bildverwaltung — Rendering aktivieren + src-URL (typedInput, bindbar) + wiring-first msg/Buffer→data: + Media-Store (mediaStoreUrl in ui-app, asset:<id>, Backend-Proxy/Obfuskation) + Editor-Media-Picker", status: pending, dependencies: [P20b, P68] }
+
   # Deferred — only when a concrete need appears (see ADR 0002):
   #   - ui-custom escape-hatch node for framework-specific components (opt-in, non-portable)
   #   - SSR / hydration adapter for any public, search-indexed surface

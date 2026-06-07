@@ -12,9 +12,16 @@
       "Bash(sed -n *)",
       "Bash(find . *)",
       "Bash(find .ai *)",
-      "Bash(find ./nodes *)"
+      "Bash(find ./nodes *)",
+      "Read(//Users/ollix/repos/node-red-contrib-webapp/**)",
+      "Edit(//Users/ollix/repos/node-red-contrib-webapp/**)",
+      "Write(//Users/ollix/repos/node-red-contrib-webapp/**)"
     ],
-    "deny": []
+    "deny": [
+      "Read(//Users/ollix/repos/node-red-contrib-webapp/.node-red-dev/flows.json)",
+      "Edit(//Users/ollix/repos/node-red-contrib-webapp/.node-red-dev/flows.json)",
+      "Write(//Users/ollix/repos/node-red-contrib-webapp/.node-red-dev/flows.json)"
+    ]
   },
   "hooks": {
     "SessionEnd": [
