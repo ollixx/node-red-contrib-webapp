@@ -198,7 +198,7 @@
     }
 
     function getLayoutVariant(layoutId) {
-        return ["horizontal", "vertical", "app", "grid", "absolute"].indexOf(layoutId) !== -1 ? layoutId : "custom";
+        return ["horizontal", "vertical", "app", "grid", "absolute", "dialog"].indexOf(layoutId) !== -1 ? layoutId : "custom";
     }
 
     function getComponentLayoutProps(component) {
@@ -700,16 +700,47 @@
         return "";
     }
 
+    // P64: map a dialog layout region name onto the native <sl-dialog> slot.
+    // The "dialog" preset names them directly; other presets (vertical/grid …)
+    // only have a "content" region, which lands in the default (body) slot.
+    function dialogSlotForRegion(regionName) {
+        if (regionName === "header") {
+            return "label";
+        }
+        if (regionName === "header-actions") {
+            return "header-actions";
+        }
+        if (regionName === "footer") {
+            return "footer";
+        }
+        // "content" and anything else → default slot (the dialog body).
+        return "";
+    }
+
+    // P64: dialogs render as a native Shoelace <sl-dialog>. It provides the close
+    // button (X), ESC/overlay dismissal, focus-trap and a11y natively — no bespoke
+    // chrome. `closable === false` ⇒ native `no-header` (removes X + title). Each
+    // dialog-layout region maps to a native slot; the slot attribute MUST sit on
+    // the direct light-DOM child of <sl-dialog>, so we emit one slotted wrapper
+    // per region (NOT the webapp-layout/-slot wrappers, which Shoelace would not
+    // project). data-webapp-dialog lets the client find the element for dismissal.
     function renderDialogHtml(dialog, ctx) {
-        const closeAction = dialog.closeAction;
-        const closeSource = dialog.closeSource || dialog.id;
-        const closeLink = closeAction
-            ? "<a href=\"#\" class=\"webapp-link\" data-webapp-action=\"" + escapeAttribute(closeAction)
-                + "\" data-webapp-source=\"" + escapeAttribute(closeSource) + "\" data-webapp-event=\"click\">Close</a>"
-            : "";
-        return "<div class=\"webapp-dialog\"><sl-card class=\"webapp-dialog-card\"><div class=\"webapp-dialog-head\"><h2>"
-            + escapeHtml(dialog.title || dialog.id) + "</h2>" + closeLink + "</div>"
-            + renderLayoutHtml(dialog.layoutId, dialog.regions, ctx) + "</sl-card></div>";
+        const closable = dialog.closable !== false;
+        const slotted = (dialog.regions || []).map(function (region) {
+            const slotName = dialogSlotForRegion(region.name);
+            const slotAttr = slotName ? " slot=\"" + escapeAttribute(slotName) + "\"" : "";
+            const body = region.components
+                .map(function (component) { return renderComponentHtml(component, dialog.layoutId, ctx); })
+                .join("");
+            const slotClass = sanitizeClassSuffix(region.name);
+            return "<div class=\"webapp-dialog-region webapp-dialog-region--" + escapeAttribute(slotClass) + "\""
+                + slotAttr + ">" + body + "</div>";
+        }).join("");
+
+        return "<sl-dialog class=\"webapp-dialog\" data-webapp-dialog=\"" + escapeAttribute(dialog.id) + "\" open"
+            + " label=\"" + escapeAttribute(dialog.title || dialog.id) + "\""
+            + (closable ? "" : " no-header") + ">"
+            + slotted + "</sl-dialog>";
     }
 
     // Serialize a whole snapshot into { grid, dialogs }. `ctx` carries appId and

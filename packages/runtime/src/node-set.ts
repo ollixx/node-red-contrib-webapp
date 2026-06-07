@@ -251,7 +251,8 @@ function assembleDialogContribution(appId: string, dialogNode: UiDialogNodeDefin
         title: dialogNode.title,
         layoutId: dialogNode.layout,
         routeId: dialogNode.routeId,
-        modal: dialogNode.modal
+        modal: dialogNode.modal,
+        closable: dialogNode.closable
     };
     const validation = dialogDefinitionSchema.safeParse(definition);
 

@@ -21,7 +21,7 @@ describe("editor structure view", () => {
         const customerDialog = findStructureItem(view, "app:customersApp/dialog:customerEditor");
         const dialogActions = findStructureItem(
             view,
-            "app:customersApp/dialog:customerEditor/layout:vertical/slot:content/component:customerEditorContainer/layout:grid/slot:content"
+            "app:customersApp/dialog:customerEditor/layout:dialog/slot:content/component:customerEditorContainer/layout:grid/slot:content"
         );
 
         expect(result.diagnostics).toEqual([]);
@@ -37,7 +37,7 @@ describe("editor structure view", () => {
         expect(contentSlot?.canvasNodeId).toBeUndefined();
         expect(contentSlot?.children.map((item) => item.label)).toEqual(["newCustomerButton", "refreshCustomersButton", "editorStatus", "customersTable"]);
         expect(customerDialog?.children.map((item) => item.id)).toEqual([
-            "app:customersApp/dialog:customerEditor/layout:vertical"
+            "app:customersApp/dialog:customerEditor/layout:dialog"
         ]);
         expect(dialogActions?.children.map((item) => item.label)).toEqual([
             "cancelCustomerButton",

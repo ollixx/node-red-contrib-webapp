@@ -19,6 +19,11 @@ export const customersCrudAppModelFixture: AppModel = {
             id: "grid",
             title: "Grid",
             slots: [{ name: "content" }]
+        },
+        {
+            id: "dialog",
+            title: "Dialog",
+            slots: [{ name: "header" }, { name: "header-actions" }, { name: "content" }, { name: "footer" }]
         }
     ],
     routes: [
@@ -45,8 +50,9 @@ export const customersCrudAppModelFixture: AppModel = {
         {
             id: "customerEditor",
             title: "Edit customer",
-            layoutId: "vertical",
-            modal: true
+            layoutId: "dialog",
+            modal: true,
+            closable: true
         }
     ],
     components: [
@@ -512,8 +518,9 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
         id: "customerEditor",
         parent: "customersApp",
         title: "Edit customer",
-        layout: "vertical",
-        modal: true
+        layout: "dialog",
+        modal: true,
+        closable: true
     },
     {
         type: "ui-text",

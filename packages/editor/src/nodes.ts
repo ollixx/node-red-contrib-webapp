@@ -92,6 +92,7 @@ export interface UiDialogEditorConfig extends IdentifiedEditorConfig {
     layoutId?: StandardLayoutPresetId;
     routeId?: string;
     modal?: boolean;
+    closable?: boolean;
 }
 
 interface MountableEditorConfig extends IdentifiedEditorConfig {
@@ -598,7 +599,8 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         title: config.title,
         layout: config.layoutId ?? "vertical",
         routeId: config.routeId,
-        modal: config.modal ?? true
+        modal: config.modal ?? true,
+        closable: config.closable ?? true
     })),
     "ui-text": createDefinition("ui-text", "view", {
         id: requiredString("Text node IDs are required before deploy."),

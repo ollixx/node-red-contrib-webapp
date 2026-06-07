@@ -25,7 +25,11 @@ Aktuelles MVP-Verhalten:
 - `parent`: Auswahl einer `ui-app`. Wird als SelectBox angezeigt; bei mehr als 20 Einträgen als filterbarer Dialog.
 - `layout`: Layout-Preset
   - Default: `vertical`
-  - Presets: `vertical`, `horizontal`, `app`, `grid`, `absolute`
+  - Presets: `vertical`, `horizontal`, `app`, `grid`, `absolute`, `dialog`
+  - Das `dialog`-Preset (P64) ist auf den nativen `<sl-dialog>` zugeschnitten.
+    Seine Slots werden direkt auf die nativen Shoelace-Slots abgebildet:
+    `header` → `label`, `header-actions` → `header-actions`, `content` → Default
+    (Body), `footer` → `footer`.
 
 **Optionale Felder:**
 - `name`: Node-RED-Anzeigefeld. Wird bei der Darstellung des Knotens und in Auswahlfeldern angezeigt.
@@ -33,6 +37,11 @@ Aktuelles MVP-Verhalten:
 - `title`: sichtbarer Titel des Dialogs
 - `routeId`: optionale Route-Verknüpfung
 - `modal`: Legt fest, ob der rest der webapp geblockt wird (light box) oder nicht.
+- `closable`: Default `true`. Steuert den nativen Schließen-Button (X) des
+  `<sl-dialog>`. Bei `true` zeigt der Dialog das native X und ist per X / ESC /
+  Overlay-Klick schließbar. Bei `false` rendert der Dialog `no-header` — der
+  gesamte Header (natives X **und** Titel) entfällt; der Dialog wird dann
+  ausschließlich über Store-State / Message gesteuert.
 
 ## Input
 
@@ -43,17 +52,25 @@ Ein Dialog kann auf zwei Wegen geöffnet und geschlossen werden — beide könne
 
 ## Output
 
-Konfigurierbare Events — im Editor per Checkbox aktivierbar. Pro aktivem Event ein Out-Port:
+Konfigurierbare Events — im Editor per Checkbox aktivierbar. Pro aktivem Event ein Out-Port
+(positionelles Routing: Out-Port-Index = `events.indexOf(event)`):
 
 | Event | Beschreibung | `msg.ui`-Felder |
 |---|---|---|
 | `onOpen` | Dialog wurde geöffnet | `event: "onOpen"`, `clientId` |
-| `onClose` | Dialog wurde geschlossen | `event: "onClose"`, `clientId` |
+| `onClose` | Dialog wurde geschlossen (auch via natives X / ESC / Overlay) | `event: "onClose"`, `clientId` |
+
+Wird der native Dialog über X / ESC / Overlay geschlossen, emittiert der Knoten
+`onClose` an seinem Out-Port UND der Server setzt autoritativ
+`ui.dialogs.{id}.open = false` und pusht einen frischen Snapshot — ein impliziter
+Close ohne verdrahtete Close-Action.
 
 ## Besonderheiten
 
 Siehe für das mehrfach genutzte Layout-Konzept auch [layout.md](../concepts/layout.md).
 
-- Dialoge verwenden heute eines der vorhandenen Layout-Presets.
-- Das Öffnen und Schließen ist heute nicht generisch modelliert, sondern im Preview-Pfad teilhart codiert.
-- Es fehlt ein klares Dialogmodell für Fokus, Backdrop, Escape-Verhalten und Rückgabewerte.
+- Dialoge rendern als nativer Shoelace `<sl-dialog>` (P64): das native X, ESC- und
+  Overlay-Dismissal sowie Focus-Trap/a11y kommen direkt von Shoelace — kein
+  selbstgebautes Chrome, kein hartkodierter Close-Link mehr.
+- `closable` steuert das native Header/X (siehe Editor-Feld); `closable: false`
+  ⇒ natives `no-header` (entfernt Header inkl. Titel).

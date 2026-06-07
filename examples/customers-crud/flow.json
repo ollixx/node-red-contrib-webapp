@@ -63,8 +63,9 @@
         "uiId": "customerEditor",
         "parent": "customersApp",
         "title": "Edit customer",
-        "layoutId": "vertical",
+        "layoutId": "dialog",
         "modal": true,
+        "closable": true,
         "z": "flow1",
         "x": 1080,
         "y": 60,
@@ -143,23 +144,6 @@
         "z": "flow1",
         "x": 840,
         "y": 160,
-        "wires": [
-            []
-        ]
-    },
-    {
-        "type": "ui-action",
-        "id": "closeCustomerEditor",
-        "name": "Close editor",
-        "uiId": "closeCustomerEditor",
-        "parent": "customersApp",
-        "actionType": "hide",
-        "targetMode": "path",
-        "target": "dialog:customerEditor",
-        "description": "Close the customer editor dialog (rendered as the dialog header Close link).",
-        "z": "flow1",
-        "x": 120,
-        "y": 260,
         "wires": [
             []
         ]
@@ -660,12 +644,8 @@
         "name": "Cancel",
         "uiId": "cancelCustomerButton",
         "parent": "customersApp",
-        "mount": "layout:grid/content",
+        "mount": "dialog:customerEditor/footer",
         "label": "Cancel",
-        "action": "closeCustomerEditor",
-        "row": 4,
-        "col": 1,
-        "colSize": 6,
         "z": "flow1",
         "x": 1080,
         "y": 760,
@@ -681,7 +661,7 @@
         "name": "Save",
         "uiId": "saveCustomerButton",
         "parent": "customersApp",
-        "mount": "layout:grid/content",
+        "mount": "dialog:customerEditor/footer",
         "label": "Save",
         "disabledPath": "draft.isSaving",
         "disabled": {
@@ -689,9 +669,6 @@
             "path": "draft.isSaving",
             "fallback": false
         },
-        "row": 4,
-        "col": 7,
-        "colSize": 6,
         "z": "flow1",
         "x": 1320,
         "y": 760,

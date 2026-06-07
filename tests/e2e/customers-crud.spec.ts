@@ -119,7 +119,7 @@ test.describe("customers CRUD — wired flow (zero framework logic) @integration
         await newEventResponse;
 
         // Wait for the dialog to appear (driven by SSE snapshot push)
-        const dialog = page.locator(".webapp-dialog-card");
+        const dialog = page.locator(".webapp-dialog");
         await expect(dialog).toBeVisible({ timeout: 10000 });
 
         // Fill the form fields
@@ -138,6 +138,42 @@ test.describe("customers CRUD — wired flow (zero framework logic) @integration
         await expect(page.locator("table.webapp-table")).toContainText("Margaret Hamilton", {
             timeout: 10000
         });
+        await expect(dialog).toBeHidden({ timeout: 10000 });
+    });
+
+    // ── Native dialog dismissal (P64) ──────────────────────────────────────────
+
+    test("CLOSE: pressing Escape on the native dialog emits onClose and closes it", async ({ page }) => {
+        const streamRequested = page.waitForRequest((req) =>
+            req.url().includes("/webapp/customersApp/stream")
+        );
+        await page.goto("/webapp/customersApp/customers");
+        await streamRequested;
+        await expect(page.locator("table.webapp-table")).toBeVisible();
+
+        // Open the editor dialog.
+        const newEventResponse = page.waitForResponse((res) =>
+            res.url().includes("/webapp/customersApp/event") && res.request().method() === "POST"
+        );
+        await page.getByRole("button", { name: "New customer" }).click();
+        await newEventResponse;
+
+        const dialog = page.locator(".webapp-dialog");
+        await expect(dialog).toBeVisible({ timeout: 10000 });
+        // The dialog renders as a native <sl-dialog>, not bespoke chrome.
+        await expect(dialog).toHaveJSProperty("tagName", "SL-DIALOG");
+
+        // Native ESC dismissal → client fires onClose → server flips
+        // ui.dialogs.customerEditor.open=false → snapshot push removes the dialog.
+        const closeEventResponse = page.waitForResponse((res) =>
+            res.url().includes("/webapp/customersApp/event") &&
+            res.request().method() === "POST" &&
+            (res.request().postData() || "").includes("\"onClose\"")
+        );
+        await dialog.getByRole("textbox", { name: "Name" }).focus();
+        await page.keyboard.press("Escape");
+        await closeEventResponse;
+
         await expect(dialog).toBeHidden({ timeout: 10000 });
     });
 
@@ -219,7 +255,7 @@ test.describe("customers CRUD — wired flow (zero framework logic) @integration
         await editEventResponse;
 
         // Wait for the dialog
-        const dialog = page.locator(".webapp-dialog-card");
+        const dialog = page.locator(".webapp-dialog");
         await expect(dialog).toBeVisible({ timeout: 10000 });
 
         // The form must be pre-filled with Ada's current values
@@ -316,7 +352,7 @@ test.describe("customers CRUD — wired flow (zero framework logic) @integration
         );
         await page.getByRole("button", { name: "New customer" }).click();
         await newEvent;
-        const dialog = page.locator(".webapp-dialog-card");
+        const dialog = page.locator(".webapp-dialog");
         await expect(dialog).toBeVisible({ timeout: 10000 });
         await dialog.getByRole("textbox", { name: "Name" }).fill("Margaret Hamilton");
         await dialog.getByRole("textbox", { name: "Email" }).fill("margaret@example.com");
@@ -344,7 +380,7 @@ test.describe("customers CRUD — wired flow (zero framework logic) @integration
         );
         await page.getByRole("button", { name: "Edit customer" }).click();
         await editEvent;
-        const editDialog = page.locator(".webapp-dialog-card");
+        const editDialog = page.locator(".webapp-dialog");
         await expect(editDialog).toBeVisible({ timeout: 10000 });
         await expect(editDialog.getByRole("textbox", { name: "Name" })).toHaveValue("Grace Hopper", { timeout: 5000 });
         await editDialog.getByRole("textbox", { name: "Status" }).fill("active");
@@ -427,7 +463,7 @@ test.describe("structural guard — examples/customers-crud/flow.json @integrati
         }
     });
 
-    test("no ui-action node is orphaned (every non-dialog-close action has a feeder)", () => {
+    test("no ui-action node is orphaned (every action has a feeder)", () => {
         const flow = loadFlow();
 
         // Collect all wire targets across the whole flow
@@ -452,28 +488,29 @@ test.describe("structural guard — examples/customers-crud/flow.json @integrati
                 continue;
             }
 
-            const hasFeeder = allWireTargets.has(String(n.id));
-            if (hasFeeder) {
-                continue;
-            }
-
-            // A dialog-close action is self-sourced: findDialogCloseAction in
-            // webapp.js renders a Close link in the dialog header using this
-            // node's id as data-webapp-source. The browser fires events on it
-            // directly — no flow-wired feeder is needed or expected.
-            const isDialogClose =
-                n.actionType === "hide" &&
-                typeof n.target === "string" &&
-                n.target.startsWith("dialog:");
-
-            if (!isDialogClose) {
-                orphans.push(`${String(n.id)} (${String(n.uiId)}): no feeder and not a dialog-close action`);
+            // P64: the dialog-close action self-source exemption is gone. The
+            // native <sl-dialog> X / ESC / overlay dismissal closes the dialog
+            // (onClose → server flips ui.dialogs.<id>.open=false). There is no
+            // hard-coded Close link any more, so EVERY ui-action must have a feeder.
+            if (!allWireTargets.has(String(n.id))) {
+                orphans.push(`${String(n.id)} (${String(n.uiId)}): no feeder`);
             }
         }
 
         if (orphans.length > 0) {
             throw new Error(`Orphaned ui-action nodes found:\n  ${orphans.join("\n  ")}`);
         }
+    });
+
+    test("the hard-coded closeCustomerEditor action is gone (P64 native dismissal)", () => {
+        const flow = loadFlow();
+        const hasCloseAction = flow.some(
+            (node) =>
+                typeof node === "object" &&
+                node !== null &&
+                (node as Record<string, unknown>).uiId === "closeCustomerEditor"
+        );
+        expect(hasCloseAction).toBe(false);
     });
 });
 

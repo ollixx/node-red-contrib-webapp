@@ -1,6 +1,6 @@
 import type { LayoutDefinition, RouteDefinition } from "./contracts";
 
-export const standardLayoutPresetIds = ["horizontal", "vertical", "app", "grid", "absolute"] as const;
+export const standardLayoutPresetIds = ["horizontal", "vertical", "app", "grid", "absolute", "dialog"] as const;
 
 export type StandardLayoutPresetId = (typeof standardLayoutPresetIds)[number];
 
@@ -29,6 +29,16 @@ const standardLayoutPresets: Record<StandardLayoutPresetId, LayoutDefinition> = 
         id: "absolute",
         title: "Absolute",
         slots: [{ name: "content" }]
+    },
+    // P64: dialog layout preset. Its slots map onto the native <sl-dialog> slots:
+    //   header         → sl-dialog `label`          (the dialog title region)
+    //   header-actions → sl-dialog `header-actions` (controls beside the native X)
+    //   content        → sl-dialog default slot     (the dialog body)
+    //   footer         → sl-dialog `footer`
+    dialog: {
+        id: "dialog",
+        title: "Dialog",
+        slots: [{ name: "header" }, { name: "header-actions" }, { name: "content" }, { name: "footer" }]
     }
 };
 

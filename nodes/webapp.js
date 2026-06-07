@@ -600,36 +600,6 @@ function findTypedAction(actions, actionId) {
     return actions.find((entry) => entry.id === actionId && entry.actionType);
 }
 
-// The dialog's Close affordance is the `hide` action targeting that dialog
-// (target "dialog:<id>" or an explicit `dialog` field) — derived from config.
-function findDialogCloseAction(actions, dialogId) {
-    return actions.find((entry) => {
-        if (entry.actionType !== "hide") {
-            return false;
-        }
-
-        const parsed = parseActionTarget(entry.target);
-        return (parsed && parsed.scope === "dialog" && parsed.id === dialogId) || entry.dialog === dialogId;
-    });
-}
-
-function parseActionTarget(target) {
-    if (typeof target !== "string" || target.trim().length === 0) {
-        return undefined;
-    }
-
-    const [scope, ...pathSegments] = target.split(":");
-
-    if (scope === "dialog" && pathSegments.length === 1 && pathSegments[0]) {
-        return {
-            scope,
-            id: pathSegments[0]
-        };
-    }
-
-    return undefined;
-}
-
 function buildUiMessage({ componentId, eventName, actionId, location, routeParams, statePatch, payload, dialog, navigation, queries }) {
     return uiEventMessageSchema.parse({
         ui: {
@@ -976,7 +946,9 @@ function getAppModelResult(appId, definitions) {
                 title: blankToUndefined(dialog.title),
                 layoutId: dialog.layout || dialog.layoutId,
                 routeId: blankToUndefined(dialog.routeId),
-                modal: dialog.modal !== false
+                modal: dialog.modal !== false,
+                // P64: closable defaults to true (only false when explicitly set).
+                closable: dialog.closable !== false
             }))
             .sort((left, right) => left.id.localeCompare(right.id)),
         components: toComponentDefinitions(buckets.components)
@@ -1148,9 +1120,45 @@ function dispatchClientEvent(RED, appId, body, definitions) {
         return { success: false, status: 404, body: `Unknown source node '${sourceId}'.` };
     }
 
+    // P64: a ui-dialog dismissed natively (X / ESC / overlay → onClose) is the
+    // authoritative close. Set ui.dialogs.<id>.open = false on the server and push
+    // a fresh snapshot, so every client (incl. ones that did not click) reconciles
+    // — there is NO wired close action any more. The client already removed its own
+    // dialog optimistically; this makes the server state agree.
+    const definitionType = node.webappDefinition ? node.webappDefinition.type : undefined;
+    if (definitionType === "ui-dialog" && event === "onClose") {
+        const subscribers = runtimeState.streamClients.get(appId);
+        if (subscribers && subscribers.size > 0) {
+            const targets = clientId
+                ? (subscribers.has(clientId) ? [[clientId, subscribers.get(clientId)]] : [])
+                : Array.from(subscribers.entries());
+            writeDialogOpenState(appId, clientId, sourceId, false);
+            pushSnapshotToTargets(appId, targets);
+        }
+    }
+
     // Emit on the originating node's OUTPUT port — into the wired flow. The
     // runtime does nothing else: no state mutation, no action dispatch.
-    node.send(clone(message));
+    //
+    // P64: positional out-port routing. A node with multiple configured events
+    // exposes one output port per event (port index === events.indexOf(event)).
+    // node.send was previously a bare object → ALWAYS port 0, so e.g. a ui-dialog
+    // with events ["onOpen","onClose"] mis-emitted onClose on the onOpen port.
+    // Build a sparse output array so the message lands on the matching port.
+    const events = node.webappDefinition && Array.isArray(node.webappDefinition.events)
+        ? node.webappDefinition.events
+        : undefined;
+    const portIndex = events ? events.indexOf(event) : -1;
+
+    if (portIndex > 0) {
+        const outputs = new Array(portIndex + 1).fill(null);
+        outputs[portIndex] = clone(message);
+        node.send(outputs);
+    }
+    else {
+        // portIndex 0 (or no per-event ports / event not found) → port 0.
+        node.send(clone(message));
+    }
 
     return { success: true, message };
 }
@@ -1239,18 +1247,12 @@ function renderAppPage(appId, location, dialogId, definitions) {
         formId: undefined
     };
 
-    // P26/P27: dialogs are serialized through the shared module so the server and
-    // the thin client emit identical markup. The Close affordance is config-driven:
-    // it is the `hide` action that targets this dialog (no hard-coded wiring).
-    const dialogBuckets = getDefinitionBuckets(appId, definitions);
+    // P26: dialogs are serialized through the shared module so the server and the
+    // thin client emit identical markup. P64: each dialog renders as a native
+    // <sl-dialog> whose X / ESC / overlay dismissal is handled client-side — no
+    // hard-coded or wired close action.
     const dialogHtml = snapshot.dialogs
-        .map((dialog) => {
-            const closeAction = findDialogCloseAction(dialogBuckets.actions, dialog.id);
-            return sharedSerializer.renderDialogHtml(
-                closeAction ? { ...dialog, closeAction: closeAction.id, closeSource: closeAction.id } : dialog,
-                serializerContext
-            );
-        })
+        .map((dialog) => sharedSerializer.renderDialogHtml(dialog, serializerContext))
         .join("");
     // The app-bar is a GLOBAL chrome element — it follows the ui-app node's
     // layout field, not the current route's layoutId. This means the app-bar
@@ -1344,9 +1346,11 @@ ${tokenCss ? tokenCss.split("\n").map((line) => `    ${line}`).join("\n") : "   
     .webapp-form { display:grid; gap:10px; }
     .webapp-field { display:grid; gap:6px; color:var(--wa-color-text-muted); font-size:0.95rem; }
     .webapp-container { display:grid; gap:12px; }
-    .webapp-dialog { position:fixed; inset:0; background:rgba(20,26,31,0.38); display:flex; align-items:center; justify-content:center; padding:24px; }
-    .webapp-dialog-card { width:min(720px, 100%); background:var(--wa-color-surface); border-radius:var(--wa-radius-md); padding:20px; box-shadow:0 25px 70px rgba(0,0,0,0.18); }
-    .webapp-dialog-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
+    /* P64: dialogs are native <sl-dialog> (own overlay, backdrop, focus-trap).
+       Only the slotted region wrappers need light layout; the footer lays its
+       actions out in a row. */
+    .webapp-dialog-region { display:grid; gap:10px; }
+    .webapp-dialog-region--footer { display:flex; justify-content:flex-end; gap:8px; }
     .webapp-link { color:var(--wa-color-primary); font-weight:700; }
     /* P36: desktop — sidebar layout; navbar collapses over content on narrow viewports */
     @media (min-width:900px) {
@@ -1662,6 +1666,42 @@ function pushToastToClients(appId, clientId, toast) {
     }
 }
 
+// P64: authoritatively write a dialog's open state into the SAME state channel a
+// ui-store uses. Mirrors ui-store's per-client vs broadcast rule, keyed on the
+// given clientId: a broadcast write (no clientId) updates the shared state so a
+// later broadcast store update can override it; a per-client write shadows it for
+// just that client. Factored out of pushActionCommandToClients so the dialog
+// open (ui-action) path and the dialog close (native dismissal) path share it.
+function writeDialogOpenState(appId, clientId, dialogId, open) {
+    const dialogStatePath = `ui.dialogs.${String(dialogId)}.open`;
+
+    if (clientId) {
+        const current = getClientState(appId, clientId);
+        const base = current && current.state
+            ? current.state
+            : clone(runtimeState.liveState.get(appId) || {});
+        setClientState(appId, clientId, setValueAtPath(base, dialogStatePath, open), Date.now());
+    }
+    else {
+        const base = clone(runtimeState.liveState.get(appId) || {});
+        runtimeState.liveState.set(appId, setValueAtPath(base, dialogStatePath, open));
+    }
+}
+
+// P64: rebuild and push a fresh snapshot to each target client at its current
+// location. Used after a server-side interaction-state write (e.g. a dialog open
+// or close) so every affected client re-renders from the authoritative state.
+function pushSnapshotToTargets(appId, targets, definitions) {
+    const defs = definitions || readDeployDefinitions(runtimeState.RED);
+
+    for (const [targetClientId, entry] of targets) {
+        const built = buildAppSnapshot(appId, entry.location || "/", undefined, defs, targetClientId);
+        if (built.success) {
+            writeStreamEvent(entry.res, "snapshot", { snapshot: built.snapshot });
+        }
+    }
+}
+
 // Push an interaction command (navigate / openDialog / show / hide / …) produced
 // by a ui-action in the flow to the targeted client(s). Interaction commands change
 // INTERACTION state only (actions.md) — never business data. When the command moves
@@ -1694,31 +1734,11 @@ function pushActionCommandToClients(appId, clientId, command) {
 
     if (isBareDialogTarget) {
         const opening = verb === "open" || verb === "openDialog";
-        const dialogStatePath = `ui.dialogs.${String(command.target)}.open`;
-        const definitions = readDeployDefinitions(runtimeState.RED);
 
         // Mirror ui-store's per-client vs broadcast rule, keyed on the COMMAND's
-        // clientId (the function arg) — NOT the loop's target. A broadcast action
-        // (no clientId) must write broadcast state so a later broadcast store
-        // update can override it; writing per-client here would shadow it.
-        if (clientId) {
-            const current = getClientState(appId, clientId);
-            const base = current && current.state
-                ? current.state
-                : clone(runtimeState.liveState.get(appId) || {});
-            setClientState(appId, clientId, setValueAtPath(base, dialogStatePath, opening), Date.now());
-        }
-        else {
-            const base = clone(runtimeState.liveState.get(appId) || {});
-            runtimeState.liveState.set(appId, setValueAtPath(base, dialogStatePath, opening));
-        }
-
-        for (const [targetClientId, entry] of targets) {
-            const built = buildAppSnapshot(appId, entry.location || "/", undefined, definitions, targetClientId);
-            if (built.success) {
-                writeStreamEvent(entry.res, "snapshot", { snapshot: built.snapshot });
-            }
-        }
+        // clientId (the function arg) — NOT the loop's target (see writeDialogOpenState).
+        writeDialogOpenState(appId, clientId, String(command.target), opening);
+        pushSnapshotToTargets(appId, targets);
         return;
     }
 
@@ -2684,6 +2704,8 @@ const runtimeNodeRegistry = {
             layout: config.layoutId,
             routeId: config.routeId || undefined,
             modal: config.modal !== false && config.modal !== "false",
+            // P64: closable defaults to true; only an explicit false disables it.
+            closable: config.closable !== false && config.closable !== "false",
             events: parseJsonList(config.events).length > 0 ? parseJsonList(config.events) : undefined
         }),
         options: {

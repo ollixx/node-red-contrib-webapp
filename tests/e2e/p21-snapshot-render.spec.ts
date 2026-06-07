@@ -39,10 +39,13 @@ test.describe("P21: snapshot-driven rendering", () => {
     test("renders the dialog when ?dialog=<id> is in the URL", async ({ page }) => {
         await page.goto("/webapp/customersApp/customers?dialog=customerEditor");
 
-        await expect(page.locator(".webapp-dialog-card")).toBeVisible();
-        await expect(page.getByRole("heading", { name: "Edit customer" })).toBeVisible();
-        // Dialog content (mounted via dialog:customerEditor/content) renders inside the card.
-        await expect(page.locator(".webapp-dialog-card").getByRole("textbox", { name: "Name" })).toBeVisible();
+        // P64: dialogs render as a native <sl-dialog> with a `label` attribute
+        // (the title lives in Shoelace's shadow DOM, not a light-DOM heading).
+        const dialog = page.locator("sl-dialog.webapp-dialog");
+        await expect(dialog).toBeVisible();
+        await expect(dialog).toHaveAttribute("label", "Edit customer");
+        // Dialog content (mounted via dialog:customerEditor/content) renders inside it.
+        await expect(dialog.getByRole("textbox", { name: "Name" })).toBeVisible();
     });
 
     test("does not surface internal slot names as visible headings", async ({ page }) => {

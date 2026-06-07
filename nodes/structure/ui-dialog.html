@@ -12,6 +12,7 @@
                 layoutId: { value: "", required: true },
                 routeId: { value: "" },
                 modal: { value: true },
+                closable: { value: true },
                 events: { value: "[]" },
                 outputs: { value: 0 }
             },
@@ -56,6 +57,7 @@
     <div class="form-row"><label for="node-input-layout-preset">Parent Layout</label><select id="node-input-layout-preset"></select></div>
     <div class="form-row"><label for="node-input-routeId">Parent Route</label><select id="node-input-routeId"></select></div>
     <div class="form-row"><label for="node-input-modal">Modal</label><input type="checkbox" id="node-input-modal" style="width:auto"></div>
+    <div class="form-row"><label for="node-input-closable">Schließbar</label><input type="checkbox" id="node-input-closable" style="width:auto"></div>
     <input type="hidden" id="node-input-events">
     <input type="hidden" id="node-input-outputs">
     <div class="form-row"><label>Events</label></div>

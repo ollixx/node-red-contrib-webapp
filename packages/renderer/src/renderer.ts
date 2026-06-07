@@ -99,6 +99,8 @@ export interface RenderedDialog {
     id: string;
     title?: string;
     modal: boolean;
+    // P64: false → the native <sl-dialog> renders no-header (no X / title).
+    closable: boolean;
     open: boolean;
     layoutId: string;
     regions: RenderedRegion[];
@@ -676,6 +678,7 @@ export function createRendererApp(appModel: AppModel, options: RendererAppOption
                 id: dialog.id,
                 title: dialog.title,
                 modal: dialog.modal,
+                closable: dialog.closable,
                 open: true,
                 layoutId: dialog.layoutId,
                 regions: renderRegions(

@@ -36,7 +36,7 @@ function buildDialogFlow(): NodeDef[] {
     };
     const dialog: NodeDef = {
         type: "ui-dialog", id: dialogId, uiId: dialogId, name: "Test Dialog",
-        title: "Test Dialog", parent: appId, layoutId: "vertical", z: TAB_ID, wires: [[]]
+        title: "Test Dialog", parent: appId, layoutId: "vertical", closable: true, z: TAB_ID, wires: [[]]
     };
     // A text node mounted inside the dialog to verify child rendering.
     const dialogText: NodeDef = {
@@ -111,5 +111,45 @@ test.describe("ui-dialog (P42)", () => {
         // The child text node must appear inside the dialog overlay.
         const dialog = page.locator(".webapp-dialog");
         await expect(dialog).toContainText("Dialog content here");
+    });
+
+    // ── P64: native <sl-dialog> + closable ─────────────────────────────────────
+
+    test("dialog renders as a native <sl-dialog> with the title as its label", async ({ page, request }) => {
+        await deployFlow(request, buildDialogFlow());
+
+        const streamRequested = page.waitForRequest((req) =>
+            req.url().includes("/webapp/dialogApp/stream")
+        );
+        await page.goto("/webapp/dialogApp/?dialog=testDialog");
+        await expect(page.locator("#webapp-client-root")).toBeVisible();
+        await streamRequested;
+
+        const dialog = page.locator("sl-dialog.webapp-dialog");
+        await expect(dialog).toBeVisible();
+        await expect(dialog).toHaveJSProperty("tagName", "SL-DIALOG");
+        await expect(dialog).toHaveAttribute("label", "Test Dialog");
+        // closable (default) → no `no-header` attribute.
+        await expect(dialog).not.toHaveAttribute("no-header", /.*/);
+    });
+
+    test("closable:false → native no-header (no X / title)", async ({ page, request }) => {
+        const flow = buildDialogFlow();
+        const dialogNode = flow.find((n) => n.type === "ui-dialog");
+        if (dialogNode) {
+            dialogNode.closable = false;
+        }
+        await deployFlow(request, flow);
+
+        const streamRequested = page.waitForRequest((req) =>
+            req.url().includes("/webapp/dialogApp/stream")
+        );
+        await page.goto("/webapp/dialogApp/?dialog=testDialog");
+        await expect(page.locator("#webapp-client-root")).toBeVisible();
+        await streamRequested;
+
+        const dialog = page.locator("sl-dialog.webapp-dialog");
+        await expect(dialog).toBeVisible();
+        await expect(dialog).toHaveAttribute("no-header", /.*/);
     });
 });
