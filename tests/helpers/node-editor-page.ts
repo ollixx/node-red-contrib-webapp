@@ -151,6 +151,42 @@ export class NodeEditorPage {
         return this.page.locator(`#node-input-${fieldId}`).inputValue();
     }
 
+    /**
+     * Set the value (and optional type) of an `#node-input-<fieldId>` control
+     * that has been turned into a Node-RED `typedInput` widget. After
+     * `$(input).typedInput(...)` the original `<input>` is hidden and the widget
+     * renders its own visible text box, so a plain `fill()` no longer drives it.
+     * The widget's jQuery API (`typedInput("value", ...)`/`"type"`) writes back
+     * to the underlying input and fires the change events the editor relies on.
+     */
+    async fillTypedInput(fieldId: string, value: string, type = "str"): Promise<void> {
+        await this.page.evaluate(
+            (args: { id: string; value: string; type: string }) => {
+                const $ = (window as unknown as { $: (sel: string) => { typedInput: (...a: unknown[]) => unknown } }).$;
+                const el = $(`#node-input-${args.id}`);
+                el.typedInput("type", args.type);
+                el.typedInput("value", args.value);
+            },
+            { id: fieldId, value, type }
+        );
+    }
+
+    /** Read the value of an `#node-input-<fieldId>` `typedInput` widget. */
+    async readTypedInput(fieldId: string): Promise<string> {
+        return this.page.evaluate((id) => {
+            const $ = (window as unknown as { $: (sel: string) => { typedInput: (...a: unknown[]) => string } }).$;
+            return String($(`#node-input-${id}`).typedInput("value") ?? "");
+        }, fieldId);
+    }
+
+    /** Read the selected type of an `#node-input-<fieldId>` `typedInput` widget. */
+    async readTypedInputType(fieldId: string): Promise<string> {
+        return this.page.evaluate((id) => {
+            const $ = (window as unknown as { $: (sel: string) => { typedInput: (...a: unknown[]) => string } }).$;
+            return String($(`#node-input-${id}`).typedInput("type") ?? "");
+        }, fieldId);
+    }
+
     /** The `<option>` values of a `#node-input-<fieldId>` select (empty filtered out). */
     async selectOptionValues(fieldId: string): Promise<string[]> {
         return this.page.evaluate((id) => {

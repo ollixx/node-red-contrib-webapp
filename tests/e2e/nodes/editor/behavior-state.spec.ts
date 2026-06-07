@@ -47,11 +47,14 @@ test.describe("editor panels — behavior & state nodes (P47)", () => {
         // parent SelectBox lists the app.
         expect(await editor.selectOptionValues("parent")).toContain("actApp");
 
-        // Optional target field persists.
-        await editor.fillField("to", "/customers/:id");
+        // P66 (ADR 0007): `to` is now a typedInput (str / msg / flow / global /
+        // jsonata) — driven via the widget API, not a plain visible <input>. The
+        // literal-path (str) value must round-trip across save/reopen.
+        await editor.fillTypedInput("to", "/customers/:id", "str");
         await editor.save();
         await editor.openNode("actEd");
-        expect(await editor.readField("to")).toBe("/customers/:id");
+        expect(await editor.readTypedInput("to")).toBe("/customers/:id");
+        expect(await editor.readTypedInputType("to")).toBe("str");
 
         // ui-action has both an input and an output port.
         expect(await editor.inputPortCount("actEd")).toBe(1);
