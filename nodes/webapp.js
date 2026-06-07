@@ -839,6 +839,10 @@ function toComponentDefinitions(components) {
             // renderer resolves them and the serializer can read the string from
             // component.value rather than the raw binding object in component.props.
             const messageBinding = !valueBinding && p16Kind === "alert" ? getBinding(component.message, undefined) : undefined;
+            // P67: ui-alert `title` is a binding (literal/state/.../store) routed
+            // through bind.title so the renderer resolves it to a string in
+            // resolvedProps.title (the serializer reads component.props.title).
+            const titleBinding = p16Kind === "alert" ? getBinding(component.title, undefined) : undefined;
             const srcBinding = !valueBinding && p16Kind === "avatar" ? getBinding(component.src, undefined) : undefined;
             // P45: pagination uses `page` as its primary binding; stepper uses `activeStep`; list uses `items`.
             const pageBinding = !valueBinding && p16Kind === "pagination" ? getBinding(component.page, component.pagePath ? stateBinding(component.pagePath) : undefined) : undefined;
@@ -866,6 +870,9 @@ function toComponentDefinitions(components) {
             if (disabledBinding) {
                 bind.disabled = disabledBinding;
             }
+            if (titleBinding) {
+                bind.title = titleBinding;
+            }
 
             return {
                 id: component.id,
@@ -886,7 +893,9 @@ function toComponentDefinitions(components) {
                     ...(component.step !== undefined ? { step: component.step } : {}),
                     ...(component.showValue !== undefined ? { showValue: component.showValue } : {}),
                     ...(component.severity !== undefined ? { severity: component.severity } : {}),
-                    ...(component.title !== undefined ? { title: component.title } : {}),
+                    // P67: ui-alert title is a binding routed through bind.title;
+                    // other nodes may still carry a plain-string title prop.
+                    ...(component.title !== undefined && !(component.title && typeof component.title === "object" && typeof component.title.kind === "string") ? { title: component.title } : {}),
                     ...(component.dismissible !== undefined ? { dismissible: component.dismissible } : {}),
                     ...(component.message !== undefined ? { message: component.message } : {}),
                     ...(component.variant !== undefined ? { variant: component.variant } : {}),
@@ -3480,7 +3489,9 @@ const runtimeNodeRegistry = {
             order: toOptionalNumber(config.order),
             message: getBinding(config.message, config.messagePath ? stateBinding(config.messagePath) : undefined),
             severity: config.severity || undefined,
-            title: config.title || undefined,
+            // P67: title is a binding. Back-compat: a plain-string title (legacy
+            // flows / programmatic configs) is wrapped as a literal binding.
+            title: getBinding(config.title, typeof config.title === "string" && config.title.length > 0 ? literalBinding(config.title) : undefined),
             dismissible: config.dismissible === true || config.dismissible === "true" || undefined,
             visible: getBinding(config.visible, undefined),
             ...collectNodeConfigLayoutProps(config)

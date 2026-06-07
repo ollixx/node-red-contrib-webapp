@@ -139,6 +139,10 @@ interface BindingSources {
     state: Record<string, unknown>;
     queries: Record<string, unknown>;
     params: Record<string, string>;
+    // P67: store id → statePath, so a `store` binding resolves to the store's
+    // current value via state. Referencing by id (not statePath) stays robust
+    // against later statePath renames.
+    storePaths: Record<string, string>;
 }
 
 interface ComponentRenderContext {
@@ -217,6 +221,13 @@ function resolveBinding(binding: BindingDefinition | undefined, sources: Binding
         case "state":
             resolvedValue = getValueAtPath(sources.state, binding.path);
             break;
+        case "store": {
+            // P67: binding.path holds the referenced ui-store node id. Resolve
+            // it to the store's statePath, then read the live value from state.
+            const statePath = binding.path ? sources.storePaths[binding.path] : undefined;
+            resolvedValue = getValueAtPath(sources.state, statePath);
+            break;
+        }
     }
 
     return resolvedValue === undefined ? binding.fallback : resolvedValue;
@@ -657,6 +668,12 @@ function findRenderedComponent(snapshot: RenderSnapshot, componentId: string): R
 
 export function createRendererApp(appModel: AppModel, options: RendererAppOptions = {}): RendererApp {
     const integration = normalizeIntegration(options.integration);
+    // P67: store id → statePath lookup for `store` bindings. Built once; stores
+    // do not change between renders within an app instance.
+    const storePaths = integration.stores.reduce<Record<string, string>>((paths, store) => {
+        paths[store.id] = store.statePath;
+        return paths;
+    }, {});
     let location = options.location ?? appModel.routes[0]?.path ?? "/";
     let queries = options.queries ?? {};
     let state = initializeState(options.state ?? {}, queries, integration);
@@ -668,7 +685,8 @@ export function createRendererApp(appModel: AppModel, options: RendererAppOption
             sources: {
                 state,
                 queries,
-                params: routeMatch.params
+                params: routeMatch.params,
+                storePaths
             }
         };
         const dialogs = appModel.dialogs

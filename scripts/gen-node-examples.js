@@ -513,12 +513,13 @@ examples.push(inputNodeExample({
             uiApp(A, T, { name: "Alert App" }),
 
             // Output: "dismiss" event when user closes the alert
+            // P67: message is a binding (typedInput) — pass a literal binding object.
             { ...viewNode("ui-alert", NODE, A, R, T, {
-                name: "info alert", message: "This is an informational message.", variant: "primary", closable: true
+                name: "info alert", message: { kind: "literal", value: "This is an informational message." }, variant: "primary", closable: true
             }), wires: [[DBG]] },
-            viewNode("ui-alert", "alertSuccess", A, R, T, { name: "success alert", message: "Action completed!", variant: "success", x: 480, y: 360 }),
-            viewNode("ui-alert", "alertWarning", A, R, T, { name: "warning alert", message: "Disk almost full.", variant: "warning", x: 480, y: 440 }),
-            viewNode("ui-alert", "alertDanger", A, R, T, { name: "danger alert", message: "Something went wrong.", variant: "danger", x: 480, y: 520 }),
+            viewNode("ui-alert", "alertSuccess", A, R, T, { name: "success alert", message: { kind: "literal", value: "Action completed!" }, variant: "success", x: 480, y: 360 }),
+            viewNode("ui-alert", "alertWarning", A, R, T, { name: "warning alert", message: { kind: "literal", value: "Disk almost full." }, variant: "warning", x: 480, y: 440 }),
+            viewNode("ui-alert", "alertDanger", A, R, T, { name: "danger alert", message: { kind: "literal", value: "Something went wrong." }, variant: "danger", x: 480, y: 520 }),
 
             debugNode(DBG, T, "dismiss events", 280),
 

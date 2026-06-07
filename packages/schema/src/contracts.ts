@@ -27,12 +27,19 @@ export const routeNodePathSchema = routePathSchema.refine((path) => path !== "/"
     message: "Route path '/' is reserved for the implicit app root. Mount content directly to the ui-app slots (e.g. appId.content) instead."
 });
 
-/** Binding kinds that require a path (i.e. they are not literal). */
-export const DYNAMIC_BINDING_KINDS = ["state", "query", "routeParam", "msg", "flow", "global", "jsonata", "env"] as const;
+/**
+ * Binding kinds that require a path (i.e. they are not literal).
+ *
+ * `store` is path-bearing too: its `path` holds the referenced ui-store node's
+ * id, which the renderer resolves to the store's current value via its
+ * statePath. Referencing the store by id (not by statePath) keeps the binding
+ * robust against later statePath renames.
+ */
+export const DYNAMIC_BINDING_KINDS = ["state", "query", "routeParam", "msg", "flow", "global", "jsonata", "env", "store"] as const;
 
 export const bindingSchema = z
     .object({
-        kind: z.enum(["state", "query", "routeParam", "literal", "msg", "flow", "global", "jsonata", "env"]),
+        kind: z.enum(["state", "query", "routeParam", "literal", "msg", "flow", "global", "jsonata", "env", "store"]),
         path: z.string().min(1, "Binding paths must not be empty.").optional(),
         value: z.unknown().optional(),
         fallback: z.unknown().optional()

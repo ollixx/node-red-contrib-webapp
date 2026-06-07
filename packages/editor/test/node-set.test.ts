@@ -215,6 +215,54 @@ describe("editor node set", () => {
         }
     });
 
+    // P67: ui-alert message/title are bindings (incl. the new `store` kind).
+    it("emits a ui-alert with a store message binding and a literal title binding", () => {
+        const emitted = emitNodeDefinition("ui-alert", {
+            id: "draftAlert",
+            mount: "route:/customers/content",
+            message: { kind: "store", path: "draftStore" },
+            title: "Heads up"
+        });
+
+        expect(emitted.success).toBe(true);
+
+        if (!emitted.success) {
+            return;
+        }
+
+        expect(emitted.data.message).toEqual({ kind: "store", path: "draftStore" });
+        expect(emitted.data.title).toEqual({ kind: "literal", value: "Heads up" });
+    });
+
+    // P67: legacy messagePath still maps to a state binding.
+    it("maps a legacy ui-alert messagePath to a state binding", () => {
+        const emitted = emitNodeDefinition("ui-alert", {
+            id: "legacyAlert",
+            mount: "route:/customers/content",
+            messagePath: "alerts.current"
+        });
+
+        expect(emitted.success).toBe(true);
+
+        if (!emitted.success) {
+            return;
+        }
+
+        expect(emitted.data.message).toEqual({ kind: "state", path: "alerts.current" });
+    });
+
+    // P67: an alert with neither a message binding nor a messagePath is blocked.
+    it("blocks a ui-alert without a message", () => {
+        const issues = validateEditorNodeConfig("ui-alert", {
+            id: "emptyAlert",
+            mount: "route:/customers/content"
+        });
+
+        expect(issues).toEqual(
+            expect.arrayContaining([expect.objectContaining({ field: "message" })])
+        );
+    });
+
     it("validates and emits ui-app definitions with root-to-id mapping", () => {
         const issues = validateEditorNodeConfig("ui-app", {
             root: "customersApp"

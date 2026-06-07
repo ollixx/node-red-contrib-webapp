@@ -446,11 +446,43 @@ describe("P16b feedback and status nodes", () => {
             mount: "route:/dashboard/content",
             message: { kind: "state", path:"alerts.current" },
             severity: "warning",
-            title: "Achtung",
+            title: { kind: "literal", value: "Achtung" },
             dismissible: true
         });
 
         expect(result.success).toBe(true);
+    });
+
+    // P67: title is a binding, not a plain string.
+    it("rejects a ui-alert with a plain-string title", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-alert",
+            id: "alert1",
+            mount: "route:/dashboard/content",
+            message: { kind: "state", path: "alerts.current" },
+            title: "Achtung"
+        });
+
+        expect(result.success).toBe(false);
+    });
+
+    // P67: message (and title) accept the new `store` binding kind.
+    it("compiles a ui-alert whose message is a store binding", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-alert",
+            id: "alert1",
+            mount: "route:/dashboard/content",
+            message: { kind: "store", path: "draftStore" },
+            title: { kind: "store", path: "draftStore" }
+        });
+
+        expect(result.success).toBe(true);
+    });
+
+    // P67: a store binding still requires a path (the referenced store id).
+    it("rejects a store binding without a path", () => {
+        expect(bindingSchema.safeParse({ kind: "store" }).success).toBe(false);
+        expect(bindingSchema.safeParse({ kind: "store", path: "draftStore" }).success).toBe(true);
     });
 
     it("rejects ui-alert without mount or parent", () => {

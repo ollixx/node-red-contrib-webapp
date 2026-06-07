@@ -357,10 +357,11 @@ const flowNodes = [
         parent:   APP,
         mount:    "customersApp.content",
         order:    3,
-        // Pass message as a binding object so mapConfig's getBinding resolves it correctly
+        // P67: message and title are bindings (typedInput). Pass binding objects
+        // so mapConfig's getBinding resolves them directly.
         message:  { kind: "literal", value: "Use the Customers section to create, view and edit customer records." },
         severity: "info",
-        title:    "Tip"
+        title:    { kind: "literal", value: "Tip" }
     }),
 
     // ── View – /customers ────────────────────────────────────────────────────

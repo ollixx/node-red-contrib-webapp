@@ -35,7 +35,10 @@
         "alertDbg"
       ]
     ],
-    "message": "This is an informational message.",
+    "message": {
+      "kind": "literal",
+      "value": "This is an informational message."
+    },
     "variant": "primary",
     "closable": true
   },
@@ -52,7 +55,10 @@
     "wires": [
       []
     ],
-    "message": "Action completed!",
+    "message": {
+      "kind": "literal",
+      "value": "Action completed!"
+    },
     "variant": "success"
   },
   {
@@ -68,7 +74,10 @@
     "wires": [
       []
     ],
-    "message": "Disk almost full.",
+    "message": {
+      "kind": "literal",
+      "value": "Disk almost full."
+    },
     "variant": "warning"
   },
   {
@@ -84,7 +93,10 @@
     "wires": [
       []
     ],
-    "message": "Something went wrong.",
+    "message": {
+      "kind": "literal",
+      "value": "Something went wrong."
+    },
     "variant": "danger"
   },
   {

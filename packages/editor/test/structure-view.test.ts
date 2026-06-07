@@ -4,7 +4,8 @@ import type { UiNodeDefinition } from "@node-red-contrib-webapp/schema";
 import { customersCrudAppModelFixture, customersCrudNodeSetFixture } from "@node-red-contrib-webapp/schema";
 import { createContributionsFromAppModel, createRuntimeRegistry } from "@node-red-contrib-webapp/runtime";
 
-import { buildEditorStructureView, findStructureItem, selectFromCanvas, selectFromStructure } from "../src";
+import type { AppModel } from "@node-red-contrib-webapp/schema";
+import { buildEditorStructureView, findStructureItem, findUnknownStoreBindings, selectFromCanvas, selectFromStructure } from "../src";
 
 const sourceNodes: UiNodeDefinition[] = customersCrudNodeSetFixture;
 
@@ -101,5 +102,66 @@ describe("editor structure view", () => {
                 })
             ])
         );
+    });
+});
+
+// P67: a `store` binding must reference an existing ui-store in the same app.
+describe("P67: store-binding validation", () => {
+    function modelWithStoreBinding(storeId: string): AppModel {
+        return {
+            ...customersCrudAppModelFixture,
+            components: [
+                ...customersCrudAppModelFixture.components,
+                {
+                    id: "storeBoundAlert",
+                    kind: "alert",
+                    mount: "layout:app/footer",
+                    bind: { value: { kind: "store", path: storeId } },
+                    props: {},
+                    events: []
+                }
+            ]
+        };
+    }
+
+    it("findUnknownStoreBindings flags a binding to a non-existent store", () => {
+        const issues = findUnknownStoreBindings(modelWithStoreBinding("ghostStore"), ["draftStore"]);
+
+        expect(issues).toEqual([
+            { componentId: "storeBoundAlert", storeId: "ghostStore", prop: "value" }
+        ]);
+    });
+
+    it("findUnknownStoreBindings accepts a binding to an existing store", () => {
+        const issues = findUnknownStoreBindings(modelWithStoreBinding("draftStore"), ["draftStore"]);
+
+        expect(issues).toEqual([]);
+    });
+
+    it("emits an unknown-store-binding diagnostic from the structure view", () => {
+        const view = buildEditorStructureView({
+            appId: "customersApp",
+            model: modelWithStoreBinding("ghostStore"),
+            storeIds: ["draftStore"]
+        });
+
+        expect(view.diagnostics).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    code: "unknown-store-binding",
+                    message: expect.stringContaining("ghostStore")
+                })
+            ])
+        );
+    });
+
+    it("emits no store diagnostic when the binding resolves", () => {
+        const view = buildEditorStructureView({
+            appId: "customersApp",
+            model: modelWithStoreBinding("draftStore"),
+            storeIds: ["draftStore"]
+        });
+
+        expect(view.diagnostics.some((diagnostic) => diagnostic.code === "unknown-store-binding")).toBe(false);
     });
 });

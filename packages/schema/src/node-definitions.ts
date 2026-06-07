@@ -421,7 +421,10 @@ export const uiAlertNodeDefinitionSchema = mountableNodeSchema.extend({
     // Legacy values "error" and "default" are no longer accepted; they were
     // normalised in the serializer before reaching here, so no runtime impact.
     severity: z.enum(SEVERITY_VARIANTS).optional(),
-    title: z.string().optional(),
+    // P67: title is now a full binding (literal/state/query/.../store), mirroring
+    // `message`. Plain strings are no longer valid here — the editor and serializer
+    // wrap a static title as { kind: "literal", value }.
+    title: bindingSchema.optional(),
     dismissible: z.boolean().optional(),
     visible: bindingSchema.optional()
 });
