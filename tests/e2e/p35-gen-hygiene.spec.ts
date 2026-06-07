@@ -15,7 +15,8 @@ test.describe("P35: Generator prop hygiene — layout-aware placement props", ()
             routeHome: "app",
             customers: "app",
             customerDetail: "app",
-            customerEditor: "vertical"
+            // P64: the editor dialog uses the native dialog layout preset.
+            customerEditor: "dialog"
         };
 
         const placementPropNames = ["row", "col", "colSize", "rowSize", "layoutX", "layoutY"];
@@ -79,6 +80,8 @@ test.describe("P35: Generator prop hygiene — layout-aware placement props", ()
         }
 
         expect(violations).toEqual([]);
-        expect(gridPropsCount).toBe(5); // Verify grid nodes still have their props
+        // P64: Cancel/Save moved from the grid container to the dialog footer slot,
+        // so only the 3 grid inputs carry grid placement props now (was 5).
+        expect(gridPropsCount).toBe(3); // Verify grid nodes still have their props
     });
 });

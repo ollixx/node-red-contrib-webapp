@@ -112,7 +112,9 @@ export const dialogDefinitionSchema = z.object({
     title: z.string().min(1, "Dialog titles must not be empty.").optional(),
     layoutId: identifierSchema,
     routeId: identifierSchema.optional(),
-    modal: z.boolean().default(true)
+    modal: z.boolean().default(true),
+    // P64: see uiDialogNodeDefinitionSchema.closable. false → native no-header.
+    closable: z.boolean().default(true)
 });
 
 export type DialogDefinition = z.infer<typeof dialogDefinitionSchema>;

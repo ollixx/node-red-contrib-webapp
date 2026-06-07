@@ -182,6 +182,10 @@ export const uiDialogNodeDefinitionSchema = identifiedNodeSchema.extend({
     layout: standardLayoutPresetSchema,
     routeId: identifierSchema.optional(),
     modal: z.boolean().default(true),
+    // P64: when false the native <sl-dialog> renders with `no-header`, removing
+    // the whole header (native X + title). When true (default) the dialog shows
+    // the native close button and is dismissable via X / ESC / overlay click.
+    closable: z.boolean().default(true),
     events: z.array(z.enum(["onOpen", "onClose"])).optional()
 });
 

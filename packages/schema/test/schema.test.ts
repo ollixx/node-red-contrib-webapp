@@ -6,9 +6,12 @@ import {
     actionMessageSchema,
     actionTypeSchema,
     bindingSchema,
+    dialogDefinitionSchema,
     errorContextSchema,
     errorOriginSchema,
     errorSeveritySchema,
+    getStandardLayoutPresetDefinition,
+    standardLayoutPresetIds,
     structuredErrorSchema,
     customersCrudAppModelFixture,
     customersCrudExampleFlowFixture,
@@ -21,6 +24,7 @@ import {
     routeNodePathSchema,
     runtimeIntegrationModelSchema,
     storeOperationSchema,
+    uiDialogNodeDefinitionSchema,
     validateUiNodeDefinition,
     validateAppModel
 } from "../src";
@@ -1208,5 +1212,97 @@ describe("P58: action message contract (ADR 0007 §1)", () => {
             });
             expect(result.success, field).toBe(false);
         }
+    });
+});
+
+describe("P64: ui-dialog closable + dialog layout preset", () => {
+    it("ui-dialog closable defaults to true", () => {
+        const result = uiDialogNodeDefinitionSchema.safeParse({
+            type: "ui-dialog",
+            id: "d1",
+            layout: "dialog"
+        });
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+            expect(result.data.closable).toBe(true);
+        }
+    });
+
+    it("ui-dialog closable can be set to false", () => {
+        const result = uiDialogNodeDefinitionSchema.safeParse({
+            type: "ui-dialog",
+            id: "d1",
+            layout: "dialog",
+            closable: false
+        });
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+            expect(result.data.closable).toBe(false);
+        }
+    });
+
+    it("dialogDefinitionSchema closable defaults to true", () => {
+        const result = dialogDefinitionSchema.safeParse({
+            id: "d1",
+            layoutId: "dialog"
+        });
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+            expect(result.data.closable).toBe(true);
+        }
+    });
+
+    it("'dialog' is a standard layout preset", () => {
+        expect(standardLayoutPresetIds).toContain("dialog");
+    });
+
+    it("the dialog preset declares header / header-actions / content / footer slots", () => {
+        const preset = getStandardLayoutPresetDefinition("dialog");
+        expect(preset).toBeDefined();
+        expect(preset?.slots.map((slot) => slot.name)).toEqual([
+            "header",
+            "header-actions",
+            "content",
+            "footer"
+        ]);
+    });
+
+    it("'header-actions' is a valid region name (no schema change needed)", () => {
+        const preset = getStandardLayoutPresetDefinition("dialog");
+        expect(preset?.slots.some((slot) => slot.name === "header-actions")).toBe(true);
+    });
+
+    it("ui-dialog can use the dialog layout preset", () => {
+        const result = uiDialogNodeDefinitionSchema.safeParse({
+            type: "ui-dialog",
+            id: "d1",
+            layout: "dialog"
+        });
+        expect(result.success).toBe(true);
+    });
+});
+
+describe("P64: generated example uses a native closable dialog (no closeCustomerEditor action)", () => {
+    const flowPath = resolve(__dirname, "../../../examples/customers-crud/flow.json");
+    const rawFlow: unknown[] = JSON.parse(readFileSync(flowPath, "utf8"));
+
+    it("the customerEditor ui-dialog node is closable and uses the dialog layout", () => {
+        const dialogNode = rawFlow.find(
+            (n): n is Record<string, unknown> =>
+                typeof n === "object" && n !== null && (n as Record<string, unknown>).type === "ui-dialog"
+        );
+        expect(dialogNode).toBeDefined();
+        expect(dialogNode?.layoutId).toBe("dialog");
+        expect(dialogNode?.closable).not.toBe(false);
+    });
+
+    it("the closeCustomerEditor action node is gone (native dismissal replaces it)", () => {
+        const hasCloseAction = rawFlow.some(
+            (n) => typeof n === "object" && n !== null && (n as Record<string, unknown>).uiId === "closeCustomerEditor"
+        );
+        expect(hasCloseAction).toBe(false);
     });
 });

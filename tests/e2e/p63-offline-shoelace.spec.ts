@@ -90,16 +90,18 @@ test.describe("P63: Shoelace served strictly locally (offline)", () => {
         expect(defined).toBe(true);
     });
 
-    test("a lazily-loaded element (sl-card dialog) upgrades from local chunks", async ({ page }) => {
+    test("a lazily-loaded element (sl-dialog) upgrades from local chunks", async ({ page }) => {
         await page.goto("/webapp/customersApp/customers?dialog=customerEditor");
-        const card = page.locator("sl-card.webapp-dialog-card");
-        await expect(card).toBeVisible();
+        // P64: the dialog renders as a native <sl-dialog> (lazily loaded via the
+        // local autoloader chunks, like every other Shoelace element).
+        const dialog = page.locator("sl-dialog.webapp-dialog");
+        await expect(dialog).toBeVisible();
 
-        const cardDefined = await page.evaluate(async () => {
-            await customElements.whenDefined("sl-card");
-            const el = document.querySelector("sl-card");
+        const dialogDefined = await page.evaluate(async () => {
+            await customElements.whenDefined("sl-dialog");
+            const el = document.querySelector("sl-dialog");
             return Boolean(el && el.shadowRoot);
         });
-        expect(cardDefined).toBe(true);
+        expect(dialogDefined).toBe(true);
     });
 });

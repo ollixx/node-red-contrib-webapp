@@ -6,14 +6,17 @@
         { value: "horizontal", label: "Horizontal" },
         { value: "app", label: "App" },
         { value: "grid", label: "Grid" },
-        { value: "absolute", label: "Absolute" }
+        { value: "absolute", label: "Absolute" },
+        { value: "dialog", label: "Dialog" }
     ];
     const standardLayoutPresetSlots = {
         vertical: ["content"],
         horizontal: ["content"],
         app: ["header", "navbar", "content", "footer"],
         grid: ["content"],
-        absolute: ["content"]
+        absolute: ["content"],
+        // P64: maps onto native <sl-dialog> slots (label / header-actions / default / footer).
+        dialog: ["header", "header-actions", "content", "footer"]
     };
     const layoutChildFieldsByVariant = {
         horizontal: ["order"],

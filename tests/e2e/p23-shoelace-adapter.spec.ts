@@ -54,14 +54,15 @@ test.describe("P23: Shoelace Web Component adapter", () => {
         expect(primary).toBeTruthy();
     });
 
-    test("renders the dialog as a Shoelace card", async ({ page }) => {
+    test("renders the dialog as a native Shoelace sl-dialog", async ({ page }) => {
         await page.goto("/webapp/customersApp/customers?dialog=customerEditor");
         // Wait for the page to fully hydrate and for the SSE initial snapshot to
         // render the dialog overlay. The table appearing confirms the app is live.
         await expect(page.locator("table.webapp-table")).toBeVisible();
 
-        const card = page.locator("sl-card.webapp-dialog-card");
-        await expect(card).toBeVisible();
-        await expect(card.getByRole("textbox", { name: "Name" })).toBeVisible();
+        // P64: dialogs render as a native <sl-dialog>, not an sl-card.
+        const dialog = page.locator("sl-dialog.webapp-dialog");
+        await expect(dialog).toBeVisible();
+        await expect(dialog.getByRole("textbox", { name: "Name" })).toBeVisible();
     });
 });

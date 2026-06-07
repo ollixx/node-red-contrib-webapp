@@ -187,8 +187,12 @@ const flowNodes = [
         uiId:    "customerEditor",
         parent:  APP,
         title:   "Edit customer",
-        layoutId: "vertical",
-        modal:   true
+        // P64: native <sl-dialog> with the dialog layout preset (header / content /
+        // footer slots). closable → native X / ESC / overlay dismissal emits
+        // onClose; no wired close action needed.
+        layoutId: "dialog",
+        modal:   true,
+        closable: true
     }),
 
     // ── State ────────────────────────────────────────────────────────────────
@@ -256,20 +260,9 @@ const flowNodes = [
     //   • openCustomerEditor  — dialog opens via dialogStore; no feeder, unused.
     //   • saveCustomer        — dialog closes via dialogStore after save; no feeder.
     //   • refreshCustomers    — refresh goes through fnRefreshCustomers→customersStore; no feeder.
-    //
-    // closeCustomerEditor IS kept — it is the dialog's Close affordance source:
-    // findDialogCloseAction discovers it and renders a Close link in the dialog
-    // header with data-webapp-source="closeCustomerEditor". The browser fires
-    // events directly on it; no flow-wired feeder is needed.
-    node("ui-action", "closeCustomerEditor", "actions", 0, {
-        name:        "Close editor",
-        uiId:        "closeCustomerEditor",
-        parent:      APP,
-        actionType:  "hide",
-        targetMode:  "path",
-        target:      "dialog:customerEditor",
-        description: "Close the customer editor dialog (rendered as the dialog header Close link)."
-    }),
+    //   • closeCustomerEditor — P64 removed the hard-coded dialog Close link. The
+    //     native <sl-dialog> X / ESC / overlay dismissal emits onClose and the
+    //     server flips ui.dialogs.customerEditor.open=false; Cancel is flow-wired.
     node("ui-action", "openCustomerDetail", "actions", 1, {
         name:       "Open detail",
         uiId:       "openCustomerDetail",
@@ -526,25 +519,26 @@ const flowNodes = [
         inputType: "text",
         row: 3, col: 1, colSize: 12
     }),
+    // P64: Cancel / Save live in the dialog FOOTER slot (native sl-dialog footer),
+    // not inside the grid content container. Cancel no longer references a wired
+    // close action — it is flow-wired (fnCancelEditor) to flip the dialogStore,
+    // exactly like Save. The native X / ESC / overlay also close the dialog.
     node("ui-button", "cancelCustomerButton", "viewDialog", 4, {
         name:   "Cancel",
         uiId:   "cancelCustomerButton",
         parent: APP,
-        mount:  "layout:grid/content",
-        label:  "Cancel",
-        action: "closeCustomerEditor", // keep: closeCustomerEditor is a live action node
-        row: 4, col: 1, colSize: 6
+        mount:  "dialog:customerEditor/footer",
+        label:  "Cancel"
     }),
     node("ui-button", "saveCustomerButton", "viewDialog", 5, {
         name:         "Save",
         uiId:         "saveCustomerButton",
         parent:       APP,
-        mount:        "layout:grid/content",
+        mount:        "dialog:customerEditor/footer",
         label:        "Save",
         // no action ref — wired to fnSaveCustomer which closes dialog via dialogStore
         disabledPath: "draft.isSaving",
-        disabled:     { kind: "state", path: "draft.isSaving", fallback: false },
-        row: 4, col: 7, colSize: 6
+        disabled:     { kind: "state", path: "draft.isSaving", fallback: false }
     }),
 
     // ══════════════════════════════════════════════════════════════════════════

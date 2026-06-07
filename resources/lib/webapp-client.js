@@ -124,11 +124,11 @@
     function renderSnapshot(snapshot) {
         const ctx = { appId: appId, location: snapshot.location || location, params: snapshot.params, formId: undefined };
         const grid = serializer.renderLayoutHtml(snapshot.layout.id, snapshot.regions, ctx);
-        // Match the server's dialog markup exactly (incl. the Close affordance);
-        // de-hardcoding the closeAction is P27.
+        // P64: dialogs render as native <sl-dialog> directly from the snapshot —
+        // no hard-coded close action. The native X / ESC / overlay dismissal is
+        // handled by the sl-after-hide listener wired in bindDialogDismissal().
         const dialogs = (snapshot.dialogs || []).map(function (dialog) {
-            const withClose = Object.assign({}, dialog, { closeAction: "closeCustomerEditor", closeSource: "cancelCustomerButton" });
-            return serializer.renderDialogHtml(withClose, ctx);
+            return serializer.renderDialogHtml(dialog, ctx);
         }).join("");
         return { grid: grid, dialogs: dialogs };
     }
@@ -509,6 +509,36 @@
             event: "change",
             params: { value: tabName }
         });
+    });
+
+    // P64: native <sl-dialog> dismissal. X / ESC / overlay-click all converge on
+    // Shoelace's `sl-after-hide` (fired after the dialog has finished hiding). We
+    // (1) report onClose to the flow (sourceId = the dialog node id) so a wired
+    // flow reacts, and (2) optimistically remove the element so it disappears even
+    // before the authoritative server snapshot (which sets ui.dialogs.<id>.open =
+    // false) arrives. Guard against bubbled sl-after-hide from nested Shoelace
+    // components (e.g. an sl-details inside the dialog body).
+    root.addEventListener("sl-after-hide", function (eventObject) {
+        const dialogEl = eventObject.target;
+
+        if (!dialogEl || !dialogEl.hasAttribute || !dialogEl.hasAttribute("data-webapp-dialog")) {
+            return;
+        }
+
+        if (!root.contains(dialogEl)) {
+            return;
+        }
+
+        const dialogNodeId = dialogEl.getAttribute("data-webapp-dialog");
+
+        dispatch({
+            source: dialogNodeId,
+            event: "onClose",
+            params: {}
+        });
+
+        // Optimistic local close; the server snapshot will reconcile.
+        dialogEl.remove();
     });
 
     // P37: set to true after initial hydration; redeploy reloads are ignored
