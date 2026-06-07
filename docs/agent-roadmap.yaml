@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: null  # roadmap complete — all phases done (P0–P63)
+  current_phase: P64  # in_progress: ui-dialog native <sl-dialog> + first-class Close-Button
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -523,6 +523,242 @@ phases:
   # ════════════════════════════════════════════════════════════════════════
 
   - { id: P63, title: "Self-hosted Shoelace-Assets (vendoren nach resources/) statt CDN — strikt lokal (ADR 0008)", status: done, dependencies: [P57], archive: "docs/agent-roadmap-archive.yaml#P63" }
+
+  # ════════════════════════════════════════════════════════════════════════
+  # ui-dialog — nativer <sl-dialog> + First-class Close-Button (P64)
+  #
+  # Owner-Report (2026-06-07): der "Close"-Button im Dialog ist implizit und
+  # hartkodiert. Verifiziert: Dialoge werden NICHT als <sl-dialog> gerendert,
+  # sondern als <sl-card> in <div class="webapp-dialog"> mit einem hartkodierten
+  # Close-<a>-Link, verdrahtet auf action "closeCustomerEditor"/source
+  # "cancelCustomerButton" (P27-Schuld) — in resources/lib/webapp-client.js
+  # (~Z.130, Hardcode-Object.assign) UND resources/lib/webapp-serializer.js
+  # (renderDialogHtml ~Z.703) sowie der Server-Discovery findDialogCloseAction
+  # (nodes/webapp.js ~Z.1248). Shoelaces vendored <sl-dialog> liefert nativ ein
+  # X, ESC- und Overlay-Dismissal + Focus-Trap/a11y — heute ungenutzt.
+  #   Attrs: open, label, no-header. Slots: label, header-actions, default(body),
+  #   footer. Events: sl-request-close (detail.source close-button|keyboard|
+  #   overlay), sl-hide, sl-after-hide.
+  #
+  # Nebenbefund (verifiziert): dispatchClientEvent (nodes/webapp.js:1153) sendet
+  # IMMER auf Port 0 — es gibt KEIN per-event-name → Output-Port-Routing. Eine
+  # ui-dialog mit events:["onOpen","onClose"] würde onClose falsch auf Port 0
+  # emittieren. Wird in dieser Phase positional gefixt (Array nach
+  # events.indexOf(event)), für Dialog mind., generell wünschenswert.
+  #
+  # Owner-Entscheidungen (2026-06-07):
+  #   1. NATIVE Shoelace Header/X (kein selbstgebautes Chrome). closable=false
+  #      ⇒ natives no-header (entfernt akzeptiertermaßen den ganzen Header inkl.
+  #      Titel). Steuerung per nativer Property, NICHT per CSS.
+  #   2. Neue Property closable: z.boolean().default(true) + Editor-Checkbox.
+  #   3. Schließen (X/ESC/Overlay) MUSS onClose am ui-dialog-Out-Port emittieren
+  #      UND Server-State ui.dialogs.{id}.open=false setzen — impliziter Close,
+  #      OHNE verdrahtete Close-Action. Hardcode closeCustomerEditor/
+  #      cancelCustomerButton + findDialogCloseAction entfernen.
+  #   4. Neues Dialog-Layout-Preset "dialog" mit Slots header, header-actions,
+  #      content, footer → gemappt auf Shoelace label / header-actions / default
+  #      / footer. (header-actions = z.B. Hilfe/Maximieren neben dem nativen X.)
+  #
+  # Umfang (Dateien):
+  #   • schema: node-definitions.ts (uiDialogNodeDefinitionSchema.closable),
+  #     contracts.ts (dialogDefinitionSchema.closable), layout-presets.ts
+  #     ("dialog" in standardLayoutPresetIds + Preset-Record). regionNameSchema
+  #     ist z.string().min(1) → "header-actions" gültig, KEIN Schema-Umbau.
+  #   • renderer: RenderedDialog.closable + Durchreichen (renderer.ts).
+  #   • serializer: renderDialogHtml → <sl-dialog open label data-webapp-dialog
+  #     [no-header wenn !closable]>; Slot-Mapping header→label / header-actions→
+  #     header-actions / content→default / footer→footer; Slot-Attr MUSS am
+  #     direkten Light-DOM-Kind sitzen (NICHT die webapp-slot/-layout-Wrapper
+  #     wiederverwenden). "dialog" in getLayoutVariant (3 Kopien synchron halten:
+  #     serializer, webapp-client.js, editor-common.js).
+  #   • client (webapp-client.js): sl-after-hide-Listener (X/ESC/Overlay
+  #     konvergieren hier) → dispatch onClose + optimistischer lokaler Close;
+  #     Hardcode-Object.assign entfernen (Server/Client-Markup byte-identisch, P26).
+  #   • webapp.js: mapConfig closable; in dispatchClientEvent bei ui-dialog +
+  #     onClose autoritativ open=false + Snapshot-Push (Block ~1704-1721 als
+  #     writeDialogOpenState/pushSnapshotToTargets faktorisieren); Out-Port-
+  #     Positional-Fix; findDialogCloseAction-Nutzung entfernen.
+  #   • editor: ui-dialog.html closable-Checkbox (default checked); editor-common
+  #     standardLayoutPresetOptions/Slots um "dialog" ergänzen.
+  #   • example: NUR via scripts/gen-example.js — customerEditor layoutId:"dialog",
+  #     closable:true; closeCustomerEditor-Action entfernen; Felder→content,
+  #     Save/Cancel→footer; danach pnpm gen:example. flow.json NIE handeditieren.
+  #   • Tests: schema/renderer/serializer-Units + E2E customers-crud (Selektoren
+  #     .webapp-dialog-card→.webapp-dialog; neuer X-/ESC-/Overlay-Close-Test;
+  #     Orphan-Action-Test ohne closeCustomerEditor). Validation: pnpm validate;
+  #     E2E vom Orchestrator auf develop (Worktree-Subagents können kein Playwright).
+  #
+  # Risiken: Server/Client-Markup-Parität (P26) — Client-Hardcode + Server-
+  # findDialogCloseAction gemeinsam entfernen; Shoelace slottet nur direkte
+  # Kinder; no-header entfernt den Titel mit (akzeptiert); getLayoutVariant
+  # dreifach; Out-Port-Fix ist allg. Verhaltensänderung für Multi-Event-Knoten.
+  # ════════════════════════════════════════════════════════════════════════
+
+  - { id: P64, title: "ui-dialog — nativer <sl-dialog> + First-class Close-Button (closable-Property, onClose-Emission + State-Sync, Dialog-Layout-Preset)", status: in_progress, dependencies: [P63] }
+
+  # ════════════════════════════════════════════════════════════════════════
+  # Demo-Deployment des Beispiel-Apps für Remote-Reviews (P65)
+  #
+  # Owner-Bedarf (2026-06-07): für Reviews von unterwegs soll das Beispiel-App
+  # (examples/customers-crud) irgendwo erreichbar deployed sein. Ziel: Hetzner-
+  # Server, via GitHub Action, Docker.
+  #
+  # Owner-Entscheidungen (2026-06-07):
+  #   • Topologie: ERST SPÄTER ENTSCHEIDEN. Jetzt minimal IN-REPO (gegateter
+  #     Workflow + deploy/-Verzeichnis); Auslagerung in ein privates Deploy-Repo
+  #     erst zum Veröffentlichungszeitpunkt. Repo ist aktuell privat, später public.
+  #   • Klarstellung (verifiziert): npm-Publish ist UNBERÜHRT — .github/ ist nicht
+  #     im files-Whitelist, GitHub Actions landen nie im npm-Tarball. Die Sorge
+  #     "Deploy-Code im veröffentlichten Paket" trifft nur die GitHub-Repo-
+  #     Sichtbarkeit, nicht npm.
+  #   • Deploy-Mechanik: GHCR-Image → per SSH "docker compose up -d" auf Hetzner;
+  #     Caddy als Reverse-Proxy mit Auto-HTTPS + Basic-Auth (öffentliche Node-RED-
+  #     Editor-URL MUSS geschützt sein).
+  #
+  # Build-Fakten (verifiziert):
+  #   • Nodes laden Workspace-Pakete über RELATIVE Pfade, z.B. nodes/webapp.js:12
+  #     require("../packages/renderer/dist/index.js"); einzige Runtime-Dep: zod.
+  #   • Lokales Vorbild: package.json script example:start legt ein node-red-userDir
+  #     an, kopiert examples/customers-crud/flow.json → flows.json und SYMLINKT das
+  #     ganze Repo als node_modules/node-red-contrib-webapp.
+  #   • Daher im Image NICHT pnpm pack (spiegelt den files-Whitelist-Stand, dem
+  #     packages/renderer/dist fehlt → kaputt), sondern den GEBAUTEN Repo-Stand
+  #     kopieren (nodes/, resources/, packages/*/dist, package.json) + zod
+  #     installieren. (files-Whitelist-Lücke wird separat vor dem ersten Publish
+  #     gefixt — nicht Teil dieser Phase.)
+  #
+  # Umfang (alles unter deploy/ + EINE Workflow-Datei → spätere Extraktion billig):
+  #   • deploy/Dockerfile: multi-stage. Stage 1 (node + corepack pnpm):
+  #     pnpm install --frozen-lockfile && pnpm build. Stage 2 (nodered/node-red):
+  #     gebauten Repo-Stand nach /data/node_modules/node-red-contrib-webapp kopieren,
+  #     zod installieren, examples/customers-crud/flow.json → /data/flows.json seeden.
+  #   • deploy/settings.js: FRISCH erstellen. .node-red-dev/settings.js ist owner-
+  #     privat und OFF-LIMITS — nicht kopieren/lesen. Demo-taugliche settings ohne
+  #     Credential-Leak.
+  #   • deploy/docker-compose.yml: services node-red (GHCR-Image) + caddy
+  #     (reverse_proxy node-red:1880, basicauth, Auto-TLS). Node-RED-Daten EPHEMER
+  #     → jeder Deploy reseedet den Beispiel-Flow (immer sauberer Stand für Reviewer).
+  #   • deploy/Caddyfile: Domain, reverse_proxy :1880, basicauth (gehashtes Passwort
+  #     aus Env/Secret).
+  #   • .github/workflows/deploy-demo.yml: Trigger NUR workflow_dispatch + push auf
+  #     develop (NIE pull_request_target / Fork-PRs → Secrets sicher). Job: Image
+  #     bauen + nach GHCR pushen (GITHUB_TOKEN, packages:write), dann SSH →
+  #     docker compose pull && up -d. Secrets im GitHub-Environment "demo":
+  #     HETZNER_SSH_HOST/USER/KEY, DEMO_DOMAIN, DEMO_BASIC_AUTH_HASH.
+  #   • deploy/README.md: (a) einmalige Server-Voraussetzungen (Docker + compose,
+  #     DNS-A-Record, CI-SSH-User/Key, compose+Caddyfile auf dem Server) und
+  #     (b) EXTRAKTIONS-Anleitung für den Publish-Zeitpunkt: deploy/ + Workflow in
+  #     privates Repo verschieben, Workflow auf actions/checkout@ref dieses Repos +
+  #     repository_dispatch-Trigger umstellen.
+  #
+  # Risiken/Notes: Basic-Auth zwingend (sonst offener Node-RED-Editor); Workflow-
+  # Trigger streng gaten; Base-Images möglichst per Digest pinnen; linux/amd64
+  # genügt (Hetzner x86); pnpm-Workspace-Build VOR dem Kopieren; Verifikation, dass
+  # das Image in nacktem node-red wirklich lädt (relative require-Pfade auflösbar).
+  # ════════════════════════════════════════════════════════════════════════
+
+  - { id: P65, title: "Demo-Deployment des Beispiel-Apps (Docker + GHCR + SSH/Caddy auf Hetzner, in-repo, extraktionsbereit) für Remote-Reviews", status: pending, dependencies: [P7] }
+
+  # ════════════════════════════════════════════════════════════════════════
+  # ui-action / ui-route Navigation — zwei Szenarien + Validierung (P66)
+  #
+  # Owner-Report (2026-06-07): Navigation via ui-action/ui-route ist noch nicht
+  # fertig konzipiert. Heute muss in ui-action ein roher Pfad (`to`) eingegeben
+  # werden, der obsolet/redundant ist, sobald man per Verknüpfung zu einer
+  # ui-route navigiert (der Pfad steht schon in ui-route.path → driftet still,
+  # wenn die Route umbenannt wird). (URL-)Parameter sind aber in beiden Fällen
+  # relevant.
+  #
+  # Ist-Stand (verifiziert):
+  #   • ui-action: actionType "navigate" + rohes Pfad-Feld `to` (contracts.ts:217,
+  #     node-definitions.ts:280); mapConfig webapp.js:3025; actionInputHandler
+  #     webapp.js:2535; buildActionCommand webapp.js:1882. Navigation ist heute
+  #     REIN PFADBASIERT, nicht route-ID-basiert.
+  #   • "navigate" ist app-globales Verb (webapp.js:2424) → wird an die zugehörige
+  #     ui-app/ui-route geroutet; ui-route nutzt interactionInputHandler
+  #     (passThrough) (webapp.js:2675) und führt heute selbst KEINE Navigation
+  #     anhand des eigenen path aus.
+  #   • ui-route: path mit :param-Platzhaltern + events ["onEnter","onLeave"]
+  #     (node-definitions.ts:167/173).
+  #   • Renderer: matchRoute (renderer.ts:259) löst Route-Params per Regex;
+  #     resolveNavigationTarget (renderer.ts:370) füllt :platzhalter aus
+  #     payload.params u.a.; binding kind "routeParam" (renderer.ts:212).
+  #   • KEINE Cross-Validierung: dass `to` zu einer existierenden Route passt,
+  #     wird nicht geprüft.
+  #
+  # Owner-Entscheidungen (2026-06-07):
+  #   Zwei Usage-Szenarien für actionType "navigate":
+  #   • SZENARIO 1 — ui-action ist per OUTPUT-PORT-WIRE mit einer ui-route
+  #     verknüpft (Link = Verdrahtung, KEIN routeId-Referenzfeld). Die Message
+  #     enthält action.params (benamste Key/Values → URL-Params). KEIN Pfad an der
+  #     Action nötig. Die verdrahtete ui-route baut die Location aus IHREM EIGENEN
+  #     path + den params und navigiert.
+  #   • SZENARIO 2 — ui-action ist NICHT mit einer ui-route verdrahtet. Dann muss
+  #     `to` ausgefüllt sein (Pfad-Template inkl. Params); geht app-global an die
+  #     ui-app, die die Location auflöst und navigiert.
+  #   • onEnter wird IMMER bei Routen-Eintritt emittiert — in BEIDEN Szenarien,
+  #     entkoppelt vom Navigations-Mechanismus (onEnter = Folge des Ankommens).
+  #   • GLEICHES VERHALTEN FÜR DEN IMPLIZITEN ROOT-PFAD "/" DER ui-app
+  #     (Owner 2026-06-07): ui-app besitzt die implizite Root-Route
+  #     (createAppRootRoute, id===appId, path "/"); Home-Content mountet direkt in
+  #     die ui-app-Slots OHNE eigene ui-route. ui-app muss daher eine an sie
+  #     verdrahtete navigate-Action GENAUSO behandeln wie eine ui-route (zur Root
+  #     navigieren, params) UND onEnter/onLeave beim Root-Eintritt emittieren.
+  #     Heute hat ui-app nur events ["clientConnected","clientDisconnected"]
+  #     (node-definitions.ts:142) — onEnter/onLeave müssen ergänzt werden.
+  #   • `to` wird ein typedInput mit mehreren Typen (str / msg / flow / global /
+  #     JSONATA), damit der Pfad statisch, per Input-Message ODER dynamisch
+  #     (JSONata) geliefert werden kann. Params im Pfad-Modus stecken im Pfad.
+  #   • Validierung (Fehler bei Mehrdeutigkeit/Ungültigkeit):
+  #       - navigate verdrahtet-zu-Route UND `to` gesetzt → Fehler (mehrdeutig).
+  #       - navigate ohne Wire-zu-Route UND ohne `to` → Fehler (kein Ziel).
+  #       - navigate mit STATISCHEM `to`, das zu KEINER ui-route passt → Fehler
+  #         (toter Link; jeder navigierbare Pfad muss eine ui-route haben).
+  #       - dynamischer `to` (msg/JSONata) ist zur Edit-Zeit nicht prüfbar →
+  #         Laufzeitfehler bei No-Match.
+  #
+  # Design-Konsequenz: Da der Link per WIRE läuft (für die per-Node-Editor-
+  # Validierung unsichtbar), müssen die Cross-Checks (wire-zu-Route, `to`-
+  # Mehrdeutigkeit, statischer-Pfad-zu-Route, geforderte :params) zur COMPILE-/
+  # DEPLOY-ZEIT in webapp.js laufen (voller Flow-Graph + Routen verfügbar), nicht
+  # in packages/editor (per-Node, isoliert).
+  #
+  # Umfang (Dateien):
+  #   • schema: ui-action `to` behält Feld, neue Semantik; `to`/`toType` (Node-RED
+  #     typedInput speichert Wert+Typ); neues params-Feld (Objekt/Key-Value) für
+  #     Szenario 1; Validierungsverfeinerung (contracts.ts/node-definitions.ts).
+  #   • nodes/behavior/ui-action.html: `to` als typedInput (str/msg/flow/global/
+  #     jsonata); params Key/Value-Editor; konditionale UI je actionType=navigate.
+  #   • ui-route Runtime (webapp.js): bei Empfang einer navigate-Action die
+  #     Location aus eigenem path + action.params auflösen und Navigation treiben
+  #     (Szenario 1). app-globales navigate löst `to`-Template (+ params) an der
+  #     ui-app auf (Szenario 2). Compile-Zeit-Validierung (s.o.).
+  #   • ui-app (schema + node + runtime): events-Enum um onEnter/onLeave erweitern
+  #     (node-definitions.ts:142 + ui-app.html registerNodeTypeWithEvents-Liste);
+  #     ui-app behandelt eine an sie verdrahtete navigate-Action wie ui-route —
+  #     zur impliziten Root-Route "/" (createAppRootRoute) navigieren — und
+  #     emittiert onEnter/onLeave beim Root-Eintritt. Dieselben Validierungsregeln
+  #     gelten für wire-zu-ui-app (Mehrdeutigkeit etc.). Gemeinsame Handler-Logik
+  #     von ui-route und ui-app faktorisieren (DRY), nicht duplizieren.
+  #   • renderer: Pfad-Template-Füllung aus params vereinheitlichen
+  #     (resolveNavigationTarget wiederverwenden); onEnter einheitlich emittieren.
+  #   • packages/editor: per-Node-Validierung navigate (z.B. dynamischer vs.
+  #     statischer `to`); Cross-Checks bleiben Runtime.
+  #   • JSONata: Auswertungskontext definieren (welche Daten sieht der Ausdruck —
+  #     msg?).
+  #   • ui-navigation: Deprecation fortführen (ui-action navigate ist der Weg).
+  #   • examples nur via scripts/gen-example.js, falls Action-Felder sich ändern.
+  #   • Tests: schema; renderer (Param-Füllung, onEnter); runtime (S1 wired-route-
+  #     Navigation, S2 app-global); Validierungsfehler-Fälle; E2E Navigation mit
+  #     Params. Extends ADR 0007 (action-message contract) — ADR-Update prüfen.
+  #
+  # Risiken: Wire-Link für Editor unsichtbar → Cross-Validierung muss Runtime;
+  # dynamischer `to` nicht edit-zeit-validierbar; typedInput braucht `to`+`toType`
+  # in Schema/mapConfig; onEnter darf pro Eintritt genau einmal feuern (kein
+  # Doppel-Fire bei direkter Route-Navigation); JSONata-Kontext sauber definieren.
+  # ════════════════════════════════════════════════════════════════════════
+
+  - { id: P66, title: "ui-action/ui-route Navigation — 2 Szenarien (wired-route mit params / pfad-typedInput mit JSONata) + onEnter immer + Mehrdeutigkeits-Validierung + ui-app implizite Root-Route (gleiches Verhalten)", status: pending, dependencies: [P60] }
 
   # Deferred — only when a concrete need appears (see ADR 0002):
   #   - ui-custom escape-hatch node for framework-specific components (opt-in, non-portable)
