@@ -1,6 +1,6 @@
 import type { LayoutDefinition, RouteDefinition } from "./contracts";
 
-export const standardLayoutPresetIds = ["horizontal", "vertical", "app", "grid", "absolute", "dialog"] as const;
+export const standardLayoutPresetIds = ["horizontal", "vertical", "app", "grid", "absolute", "dialog", "breadcrumb"] as const;
 
 export type StandardLayoutPresetId = (typeof standardLayoutPresetIds)[number];
 
@@ -39,6 +39,16 @@ const standardLayoutPresets: Record<StandardLayoutPresetId, LayoutDefinition> = 
         id: "dialog",
         title: "Dialog",
         slots: [{ name: "header" }, { name: "header-actions" }, { name: "content" }, { name: "footer" }]
+    },
+    // P95: breadcrumb layout preset — allows child nodes to be used as breadcrumb
+    // items (slot "default") or as a custom separator (slot "separator").
+    //   default   → each child becomes a <sl-breadcrumb-item> wrapper; click emits
+    //               the child node's id as params.action
+    //   separator → child(ren) rendered into the sl-breadcrumb separator slot
+    breadcrumb: {
+        id: "breadcrumb",
+        title: "Breadcrumb",
+        slots: [{ name: "default" }, { name: "separator" }]
     }
 };
 

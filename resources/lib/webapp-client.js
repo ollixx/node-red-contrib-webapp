@@ -443,11 +443,23 @@
             return;
         }
 
-        // P75: breadcrumb / menu navigable items carry data-webapp-navigate-path
-        // with the target route. The browser REPORTS the click as a `navigate`
-        // event (params.path) — it takes NO navigation action itself. The wired
-        // flow (typically a ui-action navigate) decides the route change. This
-        // mirrors the events.md contract: the client reports WHAT HAPPENED.
+        // P95: breadcrumb items carry data-webapp-breadcrumb-action with the
+        // item's action value (a string the flow can use for routing decisions).
+        // ALL breadcrumb items — including active ones — emit a `click` event.
+        // The browser takes NO navigation action; the wired flow decides.
+        if (trigger.hasAttribute("data-webapp-breadcrumb-action")) {
+            eventObject.preventDefault();
+            const action = trigger.getAttribute("data-webapp-breadcrumb-action");
+            dispatch({
+                source: trigger.getAttribute("data-webapp-source"),
+                event: "click",
+                params: { action: action }
+            });
+            return;
+        }
+
+        // P75 (back-compat): breadcrumb / menu navigable items may carry
+        // data-webapp-navigate-path for older-format items still in production.
         if (trigger.hasAttribute("data-webapp-navigate-path")) {
             eventObject.preventDefault();
             const path = trigger.getAttribute("data-webapp-navigate-path");

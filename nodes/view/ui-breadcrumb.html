@@ -2,21 +2,44 @@
 <script type="text/javascript">
     (function () {
         const common = window.WebappEditorCommon;
+
+        // P95: breadcrumb typedInput binding helpers (mirrors ui-text / ui-alert pattern).
+        // Items can be a literal JSON array or a dynamic binding.
+        function makeItemsTypes() {
+            return [
+                { value: "literal", label: "Items (JSON)", icon: "fa fa-list", hasValue: true },
+                { value: "state",   label: "State",        icon: "fa fa-database", hasValue: true },
+                { value: "store",   label: "Store",        icon: "fa fa-archive",  hasValue: true },
+                { value: "query",   label: "Query",        icon: "fa fa-search",   hasValue: true,
+                  validate: function (v) { return v && /^[a-zA-Z_$][a-zA-Z0-9_$]*(\.[a-zA-Z_$][a-zA-Z0-9_$]*|\[\d+\])*$/.test(v.trim()); }
+                },
+                { value: "routeParam", label: "Route Param", icon: "fa fa-map-signs", hasValue: true },
+                "msg", "flow", "global", "jsonata", "env"
+            ];
+        }
+
         common.registerNodeType("ui-breadcrumb", {
             category: "webapp view",
             color: "#f4efcf",
             defaults: {
-                name: { value: "" },
-                parent: { value: "" },
-                mount: { value: "", required: true },
+                name:      { value: "" },
+                parent:    { value: "" },
+                mount:     { value: "", required: true },
+                // P95: items as a binding object or stored as JSON literal in 'itemsJson'.
+                itemsJson: { value: "[]" },      // literal JSON (items array as string)
+                items:     { value: undefined },  // binding object (when not literal)
+                // P95: optional layout for child-node slot mode (value = "breadcrumb")
+                layout:    { value: "" },
+                separator: { value: "" },
+                // Legacy P75 field — kept for back-compat read; replaced by items binding.
                 itemsPath: { value: "" },
-                order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
-                row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
-                col: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
-                colSize: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
-                rowSize: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
-                layoutX: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
-                layoutY: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } }
+                order:     { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
+                row:       { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
+                col:       { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
+                colSize:   { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
+                rowSize:   { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
+                layoutX:   { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
+                layoutY:   { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } }
             },
             inputs: 1,
             outputs: 1,
@@ -30,6 +53,53 @@
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
                 common.installLayoutChildPropRows().call(this);
+
+                // Determine current typedInput state from stored node properties.
+                // Priority: items binding object → literal JSON from itemsJson → legacy itemsPath.
+                let editorType = "literal";
+                let editorValue = this.itemsJson || "[]";
+                if (this.items && typeof this.items === "object" && typeof this.items.kind === "string") {
+                    editorType = this.items.kind;
+                    editorValue = this.items.path || this.items.value || "";
+                } else if (this.itemsPath) {
+                    // Legacy P75 state-path shorthand.
+                    editorType = "state";
+                    editorValue = this.itemsPath;
+                }
+
+                const itemsInput = $("#node-input-items");
+                itemsInput.typedInput({
+                    default: editorType,
+                    types: makeItemsTypes()
+                });
+                itemsInput.typedInput("type", editorType);
+                itemsInput.typedInput("value", editorValue);
+
+                // Layout select: "" (items/binding mode) vs "breadcrumb" (child slot mode).
+                const layoutSelect = $("#node-input-layout");
+                layoutSelect.val(this.layout || "");
+                layoutSelect.on("change", function () {
+                    const isSlotMode = $(this).val() === "breadcrumb";
+                    $("#breadcrumb-items-row").toggle(!isSlotMode);
+                });
+                // Initial visibility
+                const isSlotMode = (this.layout === "breadcrumb");
+                $("#breadcrumb-items-row").toggle(!isSlotMode);
+            },
+            oneditsave: function () {
+                const itemsInput = $("#node-input-items");
+                const bindingType = itemsInput.typedInput("type");
+                const bindingValue = itemsInput.typedInput("value");
+
+                if (bindingType === "literal") {
+                    this.itemsJson = bindingValue;
+                    this.items = undefined;
+                } else {
+                    this.itemsJson = "";
+                    this.items = { kind: bindingType, path: bindingValue };
+                }
+                this.layout = $("#node-input-layout").val() || "";
+                this.separator = $("#node-input-separator").val() || "";
             }
         });
     })();
@@ -38,6 +108,34 @@
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
-    <div class="form-row"><label for="node-input-itemsPath">Items State Path</label><input type="text" id="node-input-itemsPath" placeholder="e.g. nav.breadcrumb"></div>
+    <div class="form-row">
+        <label for="node-input-layout">Mode</label>
+        <select id="node-input-layout">
+            <option value="">Items / Binding</option>
+            <option value="breadcrumb">Child Nodes (Slots)</option>
+        </select>
+    </div>
+    <div class="form-row" id="breadcrumb-items-row">
+        <label for="node-input-items">Items</label>
+        <input type="text" id="node-input-items">
+    </div>
+    <div class="form-row"><label for="node-input-separator">Separator</label><input type="text" id="node-input-separator" placeholder="e.g. /"></div>
 </script>
-<script type="text/html" data-help-name="ui-breadcrumb"><p>Path display with optional route bindings for hierarchical navigation.</p></script>
+<script type="text/html" data-help-name="ui-breadcrumb">
+<p>Renders a horizontal navigation breadcrumb trail. All items emit a <code>click</code> event (output port) with <code>msg.ui.params.action</code>.</p>
+<h3>Items</h3>
+<p>Items can be configured as a JSON array or as a dynamic binding (State, Store, msg, …).</p>
+<p><b>String items:</b> <code>["Home", "Customers", "Details"]</code> — the string is both the label and the click parameter.</p>
+<p><b>Object items:</b> <code>[{"label": "Home", "action": "/"}, {"label": "Current", "active": true}]</code></p>
+<ul>
+  <li><code>label</code> — display text (required)</li>
+  <li><code>action</code> — click parameter sent via <code>params.action</code> (defaults to label)</li>
+  <li><code>active</code> — marks the current-page item (different rendering); item stays clickable</li>
+</ul>
+<h3>Child Node Mode</h3>
+<p>Set Mode to "Child Nodes (Slots)" to use child nodes as breadcrumb items (mount into slot <code>default</code>).
+Each child's node ID is sent as <code>params.action</code> when clicked. A custom separator can be provided in the <code>separator</code> slot.</p>
+<h3>Output Events</h3>
+<p>Every item click triggers an output message: <code>msg.ui.event = "click"</code>, <code>msg.ui.params.action</code> = item's action value.</p>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/navigation/ui-breadcrumb.md" target="_blank">Full documentation</a></p>
+</script>

@@ -721,15 +721,28 @@ describe("P16c navigation and structure nodes", () => {
         expect(result.success).toBe(false);
     });
 
-    it("compiles ui-breadcrumb with static items", () => {
+    // P95: breadcrumb item model redesign — {label, action?, active?} + string arrays.
+    it("compiles ui-breadcrumb with static object items (P95 model)", () => {
         const result = validateUiNodeDefinition({
             type: "ui-breadcrumb",
             id: "bc1",
             mount: "route:/customers/header",
             items: [
-                { label: "Home", path: "/" },
-                { label: "Customers", path: "/customers" }
+                { label: "Home", action: "/", active: false },
+                { label: "Customers", action: "/customers" },
+                { label: "Details", active: true }
             ]
+        });
+
+        expect(result.success).toBe(true);
+    });
+
+    it("compiles ui-breadcrumb with static string items (P95 model)", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-breadcrumb",
+            id: "bc2",
+            mount: "route:/customers/header",
+            items: ["Home", "Customers", "Details"]
         });
 
         expect(result.success).toBe(true);
@@ -738,9 +751,20 @@ describe("P16c navigation and structure nodes", () => {
     it("compiles ui-breadcrumb with binding", () => {
         const result = validateUiNodeDefinition({
             type: "ui-breadcrumb",
-            id: "bc1",
+            id: "bc3",
             mount: "route:/customers/header",
             items: { kind: "state", path: "nav.breadcrumb" }
+        });
+
+        expect(result.success).toBe(true);
+    });
+
+    it("compiles ui-breadcrumb with breadcrumb layout (child slots mode)", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-breadcrumb",
+            id: "bc4",
+            mount: "route:/customers/header",
+            layout: "breadcrumb"
         });
 
         expect(result.success).toBe(true);
@@ -761,30 +785,42 @@ describe("P16c navigation and structure nodes", () => {
         expect(result.success).toBe(true);
     });
 
-    // P75: ui-breadcrumb / ui-menu declare a `navigate` output event so the
-    // dispatch can route item clicks onto the node's output port.
-    it("accepts ui-breadcrumb with events: ['navigate']", () => {
+    // P95: ui-breadcrumb emits 'click' events (all items clickable).
+    // P75 legacy: 'navigate' is also accepted for back-compat.
+    it("accepts ui-breadcrumb with events: ['click'] (P95)", () => {
         const result = validateUiNodeDefinition({
             type: "ui-breadcrumb",
             id: "bcNav",
             mount: "route:/customers/header",
-            items: [{ label: "Home", path: "/" }, { label: "Customers" }],
-            events: ["navigate"]
+            items: [{ label: "Home", action: "/" }, { label: "Customers" }],
+            events: ["click"]
         });
 
         expect(result.success).toBe(true);
         if (result.success && result.data.type === "ui-breadcrumb") {
-            expect(result.data.events).toEqual(["navigate"]);
+            expect(result.data.events).toEqual(["click"]);
         }
     });
 
-    it("rejects an unknown event name on ui-breadcrumb", () => {
+    it("accepts ui-breadcrumb with events: ['navigate'] (P75 back-compat)", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-breadcrumb",
+            id: "bcNav2",
+            mount: "route:/customers/header",
+            items: [{ label: "Home", action: "/" }],
+            events: ["navigate"]
+        });
+
+        expect(result.success).toBe(true);
+    });
+
+    it("rejects a truly unknown event name on ui-breadcrumb", () => {
         const result = validateUiNodeDefinition({
             type: "ui-breadcrumb",
             id: "bcBad",
             mount: "route:/customers/header",
-            items: [{ label: "Home", path: "/" }],
-            events: ["click"]
+            items: [{ label: "Home" }],
+            events: ["unknownEvent"]
         });
 
         expect(result.success).toBe(false);

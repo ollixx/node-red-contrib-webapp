@@ -7,7 +7,9 @@
         { value: "app", label: "App" },
         { value: "grid", label: "Grid" },
         { value: "absolute", label: "Absolute" },
-        { value: "dialog", label: "Dialog" }
+        { value: "dialog", label: "Dialog" },
+        // P95: breadcrumb layout — child nodes as items (default slot) + separator (separator slot).
+        { value: "breadcrumb", label: "Breadcrumb" }
     ];
     const standardLayoutPresetSlots = {
         vertical: ["content"],
@@ -16,7 +18,9 @@
         grid: ["content"],
         absolute: ["content"],
         // P64: maps onto native <sl-dialog> slots (label / header-actions / default / footer).
-        dialog: ["header", "header-actions", "content", "footer"]
+        dialog: ["header", "header-actions", "content", "footer"],
+        // P95: breadcrumb layout — items go into "default" slot, separator into "separator" slot.
+        breadcrumb: ["default", "separator"]
     };
     const layoutChildFieldsByVariant = {
         horizontal: ["order"],

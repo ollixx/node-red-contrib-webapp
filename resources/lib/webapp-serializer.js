@@ -304,7 +304,7 @@
     }
 
     function getLayoutVariant(layoutId) {
-        return ["horizontal", "vertical", "app", "grid", "absolute", "dialog"].indexOf(layoutId) !== -1 ? layoutId : "custom";
+        return ["horizontal", "vertical", "app", "grid", "absolute", "dialog", "breadcrumb"].indexOf(layoutId) !== -1 ? layoutId : "custom";
     }
 
     function getComponentLayoutProps(component) {
@@ -739,19 +739,52 @@
         }
 
         if (component.kind === "breadcrumb") {
-            const items = Array.isArray(component.props.items) ? component.props.items : (Array.isArray(component.value) ? component.value : []);
             const src = escapeAttribute(component.id);
-            const itemHtml = items.map(function (item, idx) {
-                const label = escapeHtml(String(item.label !== undefined ? item.label : item));
-                const href = item.href ? " href=\"" + escapeAttribute(item.href) + "\"" : "";
-                // P75: a navigable item is one with a `path`, except the last item
-                // (the current page is never clickable). Clicking it dispatches a
-                // `navigate` event carrying params.path on the breadcrumb's port.
-                const isLast = idx === items.length - 1;
-                const navAttr = (!isLast && item.path)
-                    ? " data-webapp-source=\"" + src + "\" data-webapp-navigate-path=\"" + escapeAttribute(String(item.path)) + "\""
+
+            // P95: mode (c) — layout="breadcrumb" with child nodes in "default" slot.
+            // Each child in the "default" region becomes a <sl-breadcrumb-item>;
+            // clicking it emits a `click` event with params.action = child node id.
+            // The "separator" region's content is slotted into the breadcrumb separator.
+            if (component.layoutId === "breadcrumb" && Array.isArray(component.regions)) {
+                const defaultRegion = component.regions.find(function (r) { return r.name === "default"; });
+                const separatorRegion = component.regions.find(function (r) { return r.name === "separator"; });
+
+                const separatorHtml = separatorRegion && separatorRegion.components && separatorRegion.components.length > 0
+                    ? "<span slot=\"separator\">" + separatorRegion.components.map(function (c) {
+                        return renderComponentHtml(c, "breadcrumb", ctx);
+                    }).join("") + "</span>"
                     : "";
-                return "<sl-breadcrumb-item" + href + navAttr + ">" + label + "</sl-breadcrumb-item>";
+
+                const itemHtml = defaultRegion && defaultRegion.components ? defaultRegion.components.map(function (child) {
+                    const childSrc = escapeAttribute(component.id);
+                    const action = escapeAttribute(String(child.id));
+                    const clickAttr = " data-webapp-source=\"" + childSrc + "\" data-webapp-breadcrumb-action=\"" + action + "\"";
+                    return "<sl-breadcrumb-item" + clickAttr + ">" + renderComponentHtml(child, "breadcrumb", ctx) + "</sl-breadcrumb-item>";
+                }).join("") : "";
+
+                return wrapRenderedComponentHtml(component, layoutId, "<sl-breadcrumb>" + separatorHtml + itemHtml + "</sl-breadcrumb>");
+            }
+
+            // P95: modes (a) & (b) — static items array.
+            // (a) string item  → label = string, action = string
+            // (b) object item  → { label, action?, active? }
+            //   active=true: item marks the current page (Shoelace renders it
+            //   differently); item remains clickable.
+            //   ALL items emit a `click` event via data-webapp-breadcrumb-action.
+            const rawItems = Array.isArray(component.props.items) ? component.props.items : (Array.isArray(component.value) ? component.value : []);
+            const itemHtml = rawItems.map(function (item) {
+                // Normalise to { label, action, active }
+                const isStr = typeof item === "string";
+                const label = escapeHtml(isStr ? item : String(item.label !== undefined ? item.label : ""));
+                const action = isStr ? item : (item.action !== undefined ? item.action : item.label);
+                const active = !isStr && item.active === true;
+
+                // All items: click emits { event:"click", params:{ action } }
+                const clickAttr = " data-webapp-source=\"" + src + "\" data-webapp-breadcrumb-action=\"" + escapeAttribute(String(action)) + "\"";
+                // Shoelace renders an active breadcrumb item differently (last-segment style);
+                // we pass aria-current="page" which Shoelace honours for the active state.
+                const activeAttr = active ? " aria-current=\"page\"" : "";
+                return "<sl-breadcrumb-item" + clickAttr + activeAttr + ">" + label + "</sl-breadcrumb-item>";
             }).join("");
             return wrapRenderedComponentHtml(component, layoutId, "<sl-breadcrumb>" + itemHtml + "</sl-breadcrumb>");
         }
