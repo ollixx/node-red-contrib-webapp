@@ -48,6 +48,7 @@ interface WebappTestSurface {
     runtimeNodeRegistry: Record<string, NodeRegistration>;
     runtimeState: RuntimeState;
     addStreamClient: (appId: string, clientId: string, res: unknown, location: string) => void;
+    removeStreamClient: (appId: string, clientId: string) => void;
     interactionInputHandler: (ownedVerbs: string[], next?: InputHandler) => InputHandler;
     INTERACTION_VERBS_BY_TYPE: Record<string, string[]>;
     dispatchClientEvent: (
