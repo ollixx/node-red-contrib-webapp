@@ -38,6 +38,7 @@ typedInput, Variant-SelectBox, Mount-Baum, Layout-Child-Props).
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
 | `label` | „Label" | Textfeld | **ja** | Beschriftung des Buttons. Darf nicht leer sein. Statischer String; kein typedInput. |
+| `icon` | „Icon" | Textfeld + Icon-Picker (P69) | optional | Backend-neutraler Icon-Wert `{ library, name }` (bzw. `library:name`, Default-Library bei nacktem Namen), gerendert im Prefix-Slot des Buttons. Bindbar (literal via Picker ODER dynamisch). Details: [ui-icon.md](./ui-icon.md). |
 | `disabled` | „Deaktiviert" | typedInput (alle Binding-Arten) | optional | Bindbare boolesche Bedingung. Ist der aufgelöste Wert `true`, ist der Button deaktiviert und emittiert keine Click-Events. |
 
 ### Gruppe „Darstellung"
@@ -125,6 +126,8 @@ konkret aussehen. Weitere Backends folgen demselben semantischen Contract ohne
 
 ## Offene Punkte
 
-- **Größe (`size`), Outline-Modus, Icon-Integration und Link-Ziel (`href`)** sind
-  konzeptionell vorgesehen, aber noch nicht als commitierte Schema-Felder
-  modelliert. Sie erscheinen erst im Schema, wenn der Contract festgelegt ist.
+- **Größe (`size`), Outline-Modus und Link-Ziel (`href`)** sind konzeptionell
+  vorgesehen, aber noch nicht als commitierte Schema-Felder modelliert. Sie
+  erscheinen erst im Schema, wenn der Contract festgelegt ist.
+- **Icon-Integration** ist seit P69 umgesetzt (Feld `icon`, Prefix-Slot,
+  Backend-neutral `{ library, name }`, bindbar — siehe oben).

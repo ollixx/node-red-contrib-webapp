@@ -37,7 +37,8 @@ typedInput, Mount-Baum, Layout-Child-Props).
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
 | `src` | „Bild-URL" | typedInput (alle Binding-Arten) | optional | Bindbare URL des Avatar-Bilds. Wird aufgelöst und als `<img>`-Quelle genutzt. Schlägt der Ladevorgang fehl oder ist `src` nicht gesetzt, greift die Fallback-Kette (→ `initials`). |
-| `initials` | „Initialen (Fallback)" | typedInput (alle Binding-Arten) | optional | Bindbare Zeichenkette, die als Initialen-Platzhalter angezeigt wird, wenn kein Bild verfügbar ist (z. B. `"JD"`). Ist auch kein Initialen-Wert vorhanden, zeigt der Renderer ein generisches Nutzer-Icon. |
+| `initials` | „Initialen (Fallback)" | typedInput (alle Binding-Arten) | optional | Bindbare Zeichenkette, die als Initialen-Platzhalter angezeigt wird, wenn kein Bild verfügbar ist (z. B. `"JD"`). Ist auch kein Initialen-Wert vorhanden, greift der Icon-Fallback (`icon`). |
+| `icon` | „Fallback Icon" | Textfeld + Icon-Picker (P69) | optional | Backend-neutraler Icon-Wert `{ library, name }` (bzw. `library:name`), angezeigt wenn weder `src` noch `initials` aufgelöst werden. Bindbar. Details: [ui-icon.md](./ui-icon.md). |
 | `alt` | „Alt-Text" | Textfeld | optional | Alternativtext für Barrierefreiheit (Screenreader). |
 
 ### Gruppe „Darstellung"
@@ -97,7 +98,7 @@ semantischen Contract. Details: [theming.md](../concepts/theming.md).
 
 1. `src` ist gesetzt und das Bild lädt erfolgreich → Bild anzeigen.
 2. `src` fehlt oder der Ladevorgang schlägt fehl → `initials` anzeigen (falls gesetzt).
-3. Kein `initials`-Wert verfügbar → generisches Nutzer-Icon anzeigen.
+3. Kein `initials`-Wert verfügbar → `icon`-Fallback anzeigen (falls gesetzt), backend-neutral `{ library, name }` (P69).
 
 ## Referenzen
 
@@ -110,4 +111,5 @@ semantischen Contract. Details: [theming.md](../concepts/theming.md).
 ## Offene Punkte
 
 - Klick-Interaktion (z. B. Profilbild-Upload, User-Menü öffnen) ist noch nicht modelliert.
-- Icon-Set für den generischen Nutzer-Fallback ist vom Renderer-Backend abhängig; eine backend-neutrale Spezifikation fehlt noch.
+- Der Icon-Fallback ist seit P69 backend-neutral spezifiziert (`{ library, name }`);
+  ohne gesetztes `icon` zeigt das Backend weiterhin sein generisches Standard-Icon.
