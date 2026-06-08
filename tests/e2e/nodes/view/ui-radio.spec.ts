@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { deployFlow, injectMessage, resetFlow } from "../../../helpers/admin-api";
+import { deployFlow, resetFlow } from "../../../helpers/admin-api";
 import { FlowBuilder } from "../../../helpers/flow-builder";
 import { WebappPage } from "../../../helpers/webapp-page";
 
@@ -10,7 +10,9 @@ import { WebappPage } from "../../../helpers/webapp-page";
  * Covers:
  *   - rendering: sl-radio-group is visible with label and sl-radio options.
  *   - events: sl-change → POST /event { event:"change", params:{ value: string } }.
- *   - input port: inject { value: "b" } → radio group updates its value attribute.
+ *
+ * P82: inject → value update behaviour is covered by classic unit tests
+ * (packages/runtime/test/p82-input-nodes-behaviour.test.ts).
  */
 
 test.describe("ui-radio (P44)", () => {
@@ -78,31 +80,4 @@ test.describe("ui-radio (P44)", () => {
         expect((body.params as Record<string, unknown>).value).toBe("blue");
     });
 
-    // ─── input port — state update ────────────────────────────────────────────
-
-    test("inject 'l' → sl-radio-group value updates after navigate", async ({ page, request }) => {
-        const flow = new FlowBuilder()
-            .app({ id: "rdApp3", root: "rdApp3" })
-            .node("ui-radio", {
-                id: "rdNode3",
-                label: "Size",
-                optionsJson: JSON.stringify([
-                    { label: "Small", value: "s" },
-                    { label: "Large", value: "l" }
-                ])
-            })
-            .withInjectNode("rdInj3", "rdNode3", "l")
-            .build();
-
-        await deployFlow(request, flow);
-
-        const webapp = new WebappPage(page, "rdApp3");
-        await webapp.navigate("/");
-
-        await injectMessage(request, "rdInj3");
-
-        // Re-navigate picks up the now-patched in-memory definition.
-        await webapp.navigate("/");
-        await expect(page.locator("sl-radio-group")).toHaveAttribute("value", "l");
-    });
 });

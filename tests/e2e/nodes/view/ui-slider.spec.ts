@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { deployFlow, injectMessage, resetFlow } from "../../../helpers/admin-api";
+import { deployFlow, resetFlow } from "../../../helpers/admin-api";
 import { FlowBuilder } from "../../../helpers/flow-builder";
 import { WebappPage } from "../../../helpers/webapp-page";
 
@@ -10,7 +10,9 @@ import { WebappPage } from "../../../helpers/webapp-page";
  * Covers:
  *   - rendering: sl-range is visible with min, max, step attributes.
  *   - events: sl-change → POST /event { event:"change", params:{ value: number } }.
- *   - input port: inject { value: 75 } → sl-range value attribute updates.
+ *
+ * P82: inject → value update behaviour is covered by classic unit tests
+ * (packages/runtime/test/p82-input-nodes-behaviour.test.ts).
  */
 
 test.describe("ui-slider (P44)", () => {
@@ -67,24 +69,4 @@ test.describe("ui-slider (P44)", () => {
         expect(Number(val)).toBe(42);
     });
 
-    // ─── input port — state update ────────────────────────────────────────────
-
-    test("inject 75 → sl-range value updates after navigate", async ({ page, request }) => {
-        const flow = new FlowBuilder()
-            .app({ id: "slApp3", root: "slApp3" })
-            .node("ui-slider", { id: "slNode3", min: 0, max: 100, step: 1 })
-            .withInjectNode("slInj3", "slNode3", 75)
-            .build();
-
-        await deployFlow(request, flow);
-
-        const webapp = new WebappPage(page, "slApp3");
-        await webapp.navigate("/");
-
-        await injectMessage(request, "slInj3");
-
-        // Re-navigate picks up the now-patched in-memory definition.
-        await webapp.navigate("/");
-        await expect(page.locator("sl-range")).toHaveAttribute("value", "75");
-    });
 });

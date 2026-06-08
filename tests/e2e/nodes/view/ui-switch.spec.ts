@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { deployFlow, injectMessage, resetFlow } from "../../../helpers/admin-api";
+import { deployFlow, resetFlow } from "../../../helpers/admin-api";
 import { FlowBuilder } from "../../../helpers/flow-builder";
 import { WebappPage } from "../../../helpers/webapp-page";
 
@@ -11,7 +11,9 @@ import { WebappPage } from "../../../helpers/webapp-page";
  *   - rendering: sl-switch is visible with label text.
  *   - disabled renders sl-switch[disabled].
  *   - events: sl-change → POST /event { event:"change", params:{ checked: bool } }.
- *   - input port: inject { value: true } → sl-switch[checked].
+ *
+ * P82: inject → value update behaviour is covered by classic unit tests
+ * (packages/runtime/test/p82-input-nodes-behaviour.test.ts).
  */
 
 test.describe("ui-switch (P44)", () => {
@@ -80,24 +82,4 @@ test.describe("ui-switch (P44)", () => {
         expect((body.params as Record<string, unknown>).checked).toBe(true);
     });
 
-    // ─── input port — state update ────────────────────────────────────────────
-
-    test("inject true → sl-switch renders checked after navigate", async ({ page, request }) => {
-        const flow = new FlowBuilder()
-            .app({ id: "swApp4", root: "swApp4" })
-            .node("ui-switch", { id: "swNode4", label: "Active" })
-            .withInjectNode("swInj4", "swNode4", true)
-            .build();
-
-        await deployFlow(request, flow);
-
-        const webapp = new WebappPage(page, "swApp4");
-        await webapp.navigate("/");
-
-        await injectMessage(request, "swInj4");
-
-        // Re-navigate picks up the now-patched in-memory definition.
-        await webapp.navigate("/");
-        await expect(page.locator("sl-switch[checked]")).toBeVisible();
-    });
 });

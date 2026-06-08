@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { deployFlow, injectMessage, resetFlow } from "../../../helpers/admin-api";
+import { deployFlow, resetFlow } from "../../../helpers/admin-api";
 import { FlowBuilder } from "../../../helpers/flow-builder";
 import { WebappPage } from "../../../helpers/webapp-page";
 
@@ -10,7 +10,9 @@ import { WebappPage } from "../../../helpers/webapp-page";
  * Covers:
  *   - rendering: sl-input is visible, label and placeholder attributes.
  *   - events: sl-change on sl-input → POST /event { event:"change", params:{ value: string } }.
- *   - input port: inject message → SSE snapshot → rendered value updates.
+ *
+ * P82: inject → value update behaviour is covered by classic unit tests
+ * (packages/runtime/test/p82-input-nodes-behaviour.test.ts).
  */
 
 test.describe("ui-input (P44)", () => {
@@ -91,24 +93,4 @@ test.describe("ui-input (P44)", () => {
         expect((body.params as Record<string, unknown>).value).toBe("Berlin");
     });
 
-    // ─── input port — state update ────────────────────────────────────────────
-
-    test("inject 'alice' → sl-input value updates after navigate", async ({ page, request }) => {
-        const flow = new FlowBuilder()
-            .app({ id: "inpApp5", root: "inpApp5" })
-            .node("ui-input", { id: "inpNode5", label: "Username" })
-            .withInjectNode("inpInj5", "inpNode5", "alice")
-            .build();
-
-        await deployFlow(request, flow);
-
-        const webapp = new WebappPage(page, "inpApp5");
-        await webapp.navigate("/");
-
-        await injectMessage(request, "inpInj5");
-
-        // Re-navigate picks up the now-patched in-memory definition.
-        await webapp.navigate("/");
-        await expect(page.locator("sl-input")).toHaveAttribute("value", "alice");
-    });
 });
