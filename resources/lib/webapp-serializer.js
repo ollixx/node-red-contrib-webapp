@@ -615,8 +615,11 @@
             const name = String(component.props.path || component.id);
             const checked = component.value ? " checked" : "";
             const disabled = component.disabled ? " disabled" : "";
+            // P73: render labelOn/labelOff as Shoelace sl-switch attributes
+            const labelOn = component.props.labelOn ? " label-on=\"" + escapeAttribute(String(component.props.labelOn)) + "\"" : "";
+            const labelOff = component.props.labelOff ? " label-off=\"" + escapeAttribute(String(component.props.labelOff)) + "\"" : "";
             const attrs = shoelaceAttrs(mapComponentToShoelace("switch", component.props || {}).attributes);
-            return wrapRenderedComponentHtml(component, layoutId, "<sl-switch" + attrs + " name=\"" + escapeAttribute(name) + "\"" + checked + disabled + ">" + escapeHtml(label) + "</sl-switch>");
+            return wrapRenderedComponentHtml(component, layoutId, "<sl-switch" + attrs + " name=\"" + escapeAttribute(name) + "\"" + checked + disabled + labelOn + labelOff + ">" + escapeHtml(label) + "</sl-switch>");
         }
 
         if (component.kind === "textarea") {
@@ -635,8 +638,12 @@
             const name = String(component.props.path || component.id);
             const value = component.value === undefined || component.value === null ? "" : String(component.value);
             const disabled = component.disabled ? " disabled" : "";
+            // P73: map mode to the correct HTML input type.
+            // mode=datetime → type="datetime-local", mode=time → type="time", default → type="date"
+            const mode = component.props.mode;
+            const inputType = mode === "datetime" ? "datetime-local" : mode === "time" ? "time" : "date";
             const attrs = shoelaceAttrs(mapComponentToShoelace("datepicker", component.props || {}).attributes);
-            return wrapRenderedComponentHtml(component, layoutId, "<sl-input" + attrs + " type=\"date\" label=\"" + escapeAttribute(label)
+            return wrapRenderedComponentHtml(component, layoutId, "<sl-input" + attrs + " type=\"" + inputType + "\" label=\"" + escapeAttribute(label)
                 + "\" name=\"" + escapeAttribute(name) + "\" value=\"" + escapeAttribute(value) + "\"" + disabled + "></sl-input>");
         }
 
@@ -647,9 +654,11 @@
             const min = component.props.min !== undefined ? " min=\"" + escapeAttribute(String(component.props.min)) + "\"" : "";
             const max = component.props.max !== undefined ? " max=\"" + escapeAttribute(String(component.props.max)) + "\"" : "";
             const step = component.props.step !== undefined ? " step=\"" + escapeAttribute(String(component.props.step)) + "\"" : "";
+            // P73: render showValue as Shoelace sl-range label-value attribute (bare boolean)
+            const labelValue = component.props.showValue ? " label-value" : "";
             const attrs = shoelaceAttrs(mapComponentToShoelace("slider", component.props || {}).attributes);
             return wrapRenderedComponentHtml(component, layoutId, "<sl-range" + attrs + " label=\"" + escapeAttribute(label)
-                + "\" name=\"" + escapeAttribute(name) + "\"" + min + max + step + " value=\"" + escapeAttribute(value) + "\"></sl-range>");
+                + "\" name=\"" + escapeAttribute(name) + "\"" + min + max + step + " value=\"" + escapeAttribute(value) + "\"" + labelValue + "></sl-range>");
         }
 
         if (component.kind === "alert") {
