@@ -2248,3 +2248,13 @@ phases:
       stats: "9 files changed; 16 unit tests (mapConfig + serializer); 11 E2E outcome tests replacing P43 presence-only tests; 1 test catalogue .md added"
       notes: "Chose Option 1 (simpler, self-contained) over Option 2 (slot infrastructure would touch mount/child architecture). Default when field absent = no icon (backward-compat)."
       cost: "session afe669c9a7b58ab32, 13m"
+
+  - id: P91
+    title: "ui-alert Duration + Countdown — Feld „Duration\" (positive Integer) + Checkbox „Countdown\" daneben (Shoelace nativ). Backends ohne native Unterstützung: Function-Fallback (Bootstrap-Doku-Beispiel). Gut dokumentieren (backend-neutral, offen für weitere Backends)"
+    status: done
+    dependencies: [P16b]
+    summary:
+      delivered: "Added `duration` (positive integer, ms) and `countdown` (boolean) fields to ui-alert — schema, mapConfig, serializer emits Shoelace-native `duration` and `countdown=\"ltr\"` attrs, editor fields (number input + checkbox), and spec doc updated with backend-neutral documentation and fallback guidance."
+      stats: "8 files changed, 300 insertions (+5 deletions); 15 new unit tests in p91-alert-duration-countdown.test.ts; 3 new schema tests; test catalogue .md updated; all 860 tests green"
+      notes: "Shoelace natively supports both attrs on <sl-alert>; for other backends the doc and help text describe the JS-timeout + CSS-animation fallback (Bootstrap pattern). The `duration` schema uses z.number().int().positive() (>= 1)."
+      cost: "session a8de0000c6723703b, 8m"
