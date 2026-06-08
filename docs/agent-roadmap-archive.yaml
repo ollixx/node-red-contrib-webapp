@@ -2288,3 +2288,13 @@ phases:
       stats: "10 files changed; 665 unit tests; 20 new E2E avatar tests; 342 E2E total green"
       notes: "Variant is emitted as data-variant (not native variant=) because sl-avatar has no native variant support in Shoelace; editor shows info tooltip. Back-compat: old srcPath (plain state path) migrated to state binding; plain-string initials promoted to literal binding. Also fixed pre-existing: pulsating prop was assembled in mapConfig but never added to props block in toComponentDefinitions."
       cost: "session claude-sonnet-4-6, 39m"
+
+  - id: P95
+    title: "ui-breadcrumb Definitionsmodell + Click-Events (Redesign)"
+    status: done
+    dependencies: [P16c]
+    summary:
+      delivered: "Redesigned ui-breadcrumb definition model and click-event contract: new item formats ({label,action?,active?} objects and string arrays), all items clickable via data-webapp-breadcrumb-action attribute (no positional exclusion), active items get aria-current=page, optional layout=breadcrumb preset enables child-node slot mode (slots: default/separator)."
+      stats: "13 files changed; 19 new unit tests (p95-breadcrumb-redesign.test.ts); 7 fresh E2E tests; test catalogue .md; 686 total unit tests passing."
+      notes: "Schema: breadcrumbItemSchema (string|{label,action?,active?}), events enum extended to include 'click', layout field optional. Layout presets: 'breadcrumb' added to standardLayoutPresetIds (schema + editor-common.js + serializer getLayoutVariant). Runtime: mapConfig updated with itemsJson/array/JSON-string/binding/itemsPath resolution chain; show/hide added to INTERACTION_VERBS_BY_TYPE. Client: new data-webapp-breadcrumb-action handler."
+      cost: "session ad71353aafe83f9c0, 20m"
