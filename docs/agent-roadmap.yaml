@@ -1193,6 +1193,11 @@ phases:
   # ════════════════════════════════════════════════════════════════════════
   # Human-Review-Findings (2026-06-08, P87–P94)
   #
+  # TESTS (gilt für JEDE knotenbezogene Phase P87–P99): Die Tests des betroffenen
+  # Knotens werden KOMPLETT NEU nach .ai/agents/node-testing.md geschrieben; die
+  # bestehenden Knoten-Tests werden VERWORFEN (Unit + Playwright, outcome-basiert,
+  # eigener Test-Flow + Katalog-.md). Gilt NICHT für übergreifende Feature-Tests.
+  #
   # Aus manuellem Review von ui-app / ui-alert / ui-route / ui-badge / ui-avatar.
   # In Knoten-/Themen-Häppchen geplant. Querschnittliche Prinzipien:
   #   • Backend-Feature-mit-Warnung: Features, die nicht jedes Backend nativ kann
@@ -1225,6 +1230,9 @@ phases:
 
   # ════════════════════════════════════════════════════════════════════════
   # Human-Review-Findings, Runde 2 (2026-06-08, P95–P99)
+  #
+  # TESTS: wie im P87–P94-Block — Knoten-Tests KOMPLETT NEU nach
+  # .ai/agents/node-testing.md, alte Knoten-Tests verwerfen (nicht übergreifende).
   #
   # Aus weiterem manuellem Review. 🔴 = KRITISCH: Knoten rendert gar nichts —
   # vermutlich dieselbe Render-Pipeline-Ursache wie der P83-divider-/P77-icon-Bug

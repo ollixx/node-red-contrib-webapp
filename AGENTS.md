@@ -10,6 +10,7 @@ Read this file first. Then read only what your current task requires.
 | `docs/agent-roadmap.yaml` | Always — find the current phase (first with status `pending` and all dependencies `done`) |
 | `.ai/agents/architecture.md` | Before any implementation — know the package boundaries and stop conditions |
 | `.ai/agents/validation.md` | Before marking any phase done — three-step self-validation protocol |
+| `.ai/agents/node-testing.md` | Before writing tests for any `ui-*` node — the mandatory Node-RED node testing standard (unit + Playwright; per-node fresh tests; outcome-based; per-node test catalogue `.md`) |
 | `.ai/agents/context-budget.md` | Before reading any file — know the minimum file set for your role |
 
 Do not read `prd.md` or `docs/implementation-plan.md` unless explicitly instructed. The roadmap is the source of truth.
@@ -24,6 +25,7 @@ Do not read `prd.md` or `docs/implementation-plan.md` unless explicitly instruct
    **`.node-red-dev/flows.json` is the owner's personal dev environment and is completely off-limits for agents.** Never read, write, or regenerate it — not even via `pnpm gen:example`. Changes to the dev flows are the owner's responsibility alone.
 6. Before any new code: commit existing uncommitted changes with a meaningful message.
 7. Before marking a phase done: run `pnpm test` and `pnpm exec playwright test`. Both must pass.
+7a. **Node tests follow `.ai/agents/node-testing.md`.** For any phase that builds or changes a `ui-*` node, the node's tests are written **fresh** to that standard (unit + Playwright, outcome-based) and the node's **old tests are discarded** — this does **not** apply to cross-cutting/feature tests. A "renders without crashing" / DOM-presence-only test is never acceptable, and a per-node test-catalogue `.md` is kept current.
 8. When marking a phase done: write a `summary` to `docs/agent-roadmap-archive.yaml` and replace the full entry in `docs/agent-roadmap.yaml` with a slim archive reference. Format see `.ai/prompts/run-next-phase.prompt.md`. **Under the orchestrator these roadmap writes are done by the orchestrator, not the sub-agent** — the sub-agent works in a git worktree, commits only code to its `phase/<id>` branch, and *reports* the summary back. See the orchestrated division of labour below.
 9. If a phase uncovers an unresolved architecture decision: write it down in `docs/agent-roadmap.yaml` under the phase as a `blocker` and stop. Resolving it is a separate task — see the roadmap-evolution role below.
 10. **Result accounting — every agent, every run.** Token usage is captured **automatically**: a `SessionEnd` + `SubagentStop` hook (`.ai/hooks/record-run-cost.js`, wired in `.claude/settings.json`) reads the run's transcript and appends the real token totals + duration to `.ai/agent-runs.jsonl`, keyed by `session_id`. You do not estimate tokens. Your job in your result (a phase `summary`, an orchestrator return line, a bug-fix or validation report) is to make your run **correlatable and time-stamped**:

@@ -29,6 +29,8 @@ Everything else in this prompt (green baseline, test-first, the validation proto
 
 If the phase adds new node types (P16a, P16b, P16c, P16d or similar): invoke the `/node-red-node` skill before reading any source files. It contains the complete four-file pattern and checklist — do not derive the pattern from existing nodes, that wastes context.
 
+If the phase **builds or changes a `ui-*` node**: its tests follow `.ai/agents/node-testing.md` — write the node's tests **fresh** to that standard (unit + Playwright, outcome-based, per-node test-flow + catalogue `.md`) and **discard the node's old tests**. This does NOT apply to cross-cutting/feature tests.
+
 ## Execute
 
 1. Set the phase status to `in_progress` in `docs/agent-roadmap.yaml`. Commit. **At this moment capture your start timestamp** (`date -u +%FT%TZ`) — you need it for the `cost.duration` field at the end (AGENTS.md rule 10). *(Orchestrated mode: the orchestrator already set `in_progress` — skip the status write and commit, but still capture the timestamp.)*
