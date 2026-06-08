@@ -2063,3 +2063,13 @@ phases:
         One-liner removal plus clarifying comment. Chose 'remove handler' over 'add inputs:1' because the spec is
         unambiguous — ui-divider is a static leaf node with no input/output port.
       cost: "session a5fc165d115ab618a, 3m"
+
+  - id: P78
+    title: "Bugfix: ui-query totes Editor-Feld `previewData` — in P32 aus Schema+Runtime entfernt, aber ui-query.html zeigt es weiterhin (Drei-Wege-Mismatch). Feld aus dem Editor entfernen + Round-Trip-Test"
+    status: done
+    dependencies: [P32]
+    summary:
+      delivered: "Removed dead `previewData` editor field from ui-query.html (defaults object + template textarea) that lingered after P32 deleted it from schema and runtime; added E2E round-trip test asserting the field is absent and queryPath persists across save/reopen."
+      stats: "2 files changed (+29/-3); 1 new E2E test; 297 E2E, 374 unit passing."
+      notes: "Pure editor-only fix — no schema or runtime changes needed. The three-way contract (schema/runtime/editor) is now consistent for ui-query."
+      cost: "session a80760e613787006c, 8m"

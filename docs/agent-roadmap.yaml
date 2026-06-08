@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P78  # next to implement: bugfix — ui-query dead editor field `previewData` (removed from schema+runtime in P32, still in HTML)
+  current_phase: P79  # next to implement: bugfix/decision — targetId discrepancy (runtime accepts msg.ui.action.targetId, but actionMessageCommandSchema is .strict() and only knows `target`)
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -1143,7 +1143,7 @@ phases:
 
   - { id: P77, title: "Bugfix: ui-icon wird nicht gerendert — aus components-Filter ausgeschlossen (webapp.js ~1654), erzeugt kein DOM. Rendering aktivieren (Adapter kind \"icon\"); mit P69 koordinieren (Icon-System baut darauf auf)", status: done, dependencies: [P63], archive: "docs/agent-roadmap-archive.yaml#P77" }
 
-  - { id: P78, title: "Bugfix: ui-query totes Editor-Feld `previewData` — in P32 aus Schema+Runtime entfernt, aber ui-query.html zeigt es weiterhin (Drei-Wege-Mismatch). Feld aus dem Editor entfernen + Round-Trip-Test", status: in_progress, dependencies: [P32] }
+  - { id: P78, title: "Bugfix: ui-query totes Editor-Feld `previewData` — in P32 aus Schema+Runtime entfernt, aber ui-query.html zeigt es weiterhin (Drei-Wege-Mismatch). Feld aus dem Editor entfernen + Round-Trip-Test", status: done, dependencies: [P32], archive: "docs/agent-roadmap-archive.yaml#P78" }
 
   - { id: P79, title: "Bugfix/Decision: `targetId`-Diskrepanz — Runtime-Handler akzeptieren `msg.ui.action.targetId`, aber `actionMessageCommandSchema` ist `.strict()` und kennt nur `target` → targetId fällt durch die Validierung. Entscheiden: targetId ins Schema aufnehmen ODER Runtime-Alias entfernen; Doku (actions.md) angleichen", status: pending, dependencies: [P60] }
 
