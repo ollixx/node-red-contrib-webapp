@@ -873,6 +873,8 @@ function toComponentDefinitions(components) {
             "ui-accordion": "accordion",
             "ui-menu": "menu",
             "ui-avatar": "avatar",
+            // P70: ui-image renders as a native <img> (kind "image").
+            "ui-image": "image",
             // P69: ui-icon is a rendered component (kind "icon").
             "ui-icon": "icon",
             // P45: composite and layout nodes
@@ -896,7 +898,7 @@ function toComponentDefinitions(components) {
             // through bind.title so the renderer resolves it to a string in
             // resolvedProps.title (the serializer reads component.props.title).
             const titleBinding = p16Kind === "alert" ? getBinding(component.title, undefined) : undefined;
-            const srcBinding = !valueBinding && p16Kind === "avatar" ? getBinding(component.src, undefined) : undefined;
+            const srcBinding = !valueBinding && (p16Kind === "avatar" || p16Kind === "image") ? getBinding(component.src, undefined) : undefined;
             // P45: pagination uses `page` as its primary binding; stepper uses `activeStep`; list uses `items`.
             const pageBinding = !valueBinding && p16Kind === "pagination" ? getBinding(component.page, component.pagePath ? stateBinding(component.pagePath) : undefined) : undefined;
             const activeStepBinding = !valueBinding && p16Kind === "stepper" ? getBinding(component.activeStep, component.activeStepPath ? stateBinding(component.activeStepPath) : undefined) : undefined;
@@ -979,7 +981,16 @@ function toComponentDefinitions(components) {
                     // P69: icon literal + ui-icon display props (size/color).
                     ...(component.icon !== undefined && !iconBinding ? { icon: component.icon } : {}),
                     ...(component.size !== undefined ? { size: component.size } : {}),
-                    ...(component.color !== undefined ? { color: component.color } : {})
+                    ...(component.color !== undefined ? { color: component.color } : {}),
+                    // P70: ui-image display props. A raw (unresolved) src binding
+                    // is kept in props.src so the serializer can fall back to it
+                    // when no value binding resolved (mirrors avatar).
+                    ...(component.src !== undefined && !srcBinding ? { src: component.src } : {}),
+                    ...(component.alt !== undefined ? { alt: component.alt } : {}),
+                    ...(component.fit !== undefined ? { fit: component.fit } : {}),
+                    ...(component.width !== undefined ? { width: component.width } : {}),
+                    ...(component.height !== undefined ? { height: component.height } : {}),
+                    ...(component.fallbackSrc !== undefined ? { fallbackSrc: component.fallbackSrc } : {})
                 },
                 events: []
             };
@@ -1323,6 +1334,9 @@ function buildAppSnapshot(appId, location, dialogId, definitions, clientId) {
         layout,
         appLayout: buckets.app ? buckets.app.layout : undefined,
         tokens: parseTokens(buckets.app && buckets.app.tokens),
+        // P70: app-level media store URL (used only to gate asset:<id> rewriting;
+        // the URL itself stays server-side).
+        mediaStoreUrl: buckets.app ? buckets.app.mediaStoreUrl : undefined,
         snapshot: rendererApp.render()
     };
 }
@@ -1355,7 +1369,10 @@ function renderAppPage(appId, location, dialogId, definitions) {
         appId: model.id,
         location: snapshot.location,
         params: snapshot.params,
-        formId: undefined
+        formId: undefined,
+        // P70: presence of a media store enables `asset:<id>` src rewriting to the
+        // app-scoped backend proxy URL. The real store URL is never exposed here.
+        mediaStoreUrl: built.mediaStoreUrl
     };
 
     // P26: dialogs are serialized through the shared module so the server and the
@@ -1723,7 +1740,7 @@ function getDefinitionBuckets(appId, definitions) {
         app: matchingApp,
         routes: matchingDefinitions.filter((entry) => entry.type === "ui-route"),
         dialogs: matchingDefinitions.filter((entry) => entry.type === "ui-dialog"),
-        components: matchingDefinitions.filter((entry) => ["ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select", "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider", "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state", "ui-tabs", "ui-accordion", "ui-breadcrumb", "ui-menu", "ui-pagination", "ui-stepper", "ui-avatar", "ui-icon", "ui-list", "ui-log"].includes(entry.type)),
+        components: matchingDefinitions.filter((entry) => ["ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select", "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider", "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state", "ui-tabs", "ui-accordion", "ui-breadcrumb", "ui-menu", "ui-pagination", "ui-stepper", "ui-avatar", "ui-image", "ui-icon", "ui-list", "ui-log"].includes(entry.type)),
         stores: matchingDefinitions.filter((entry) => entry.type === "ui-store"),
         queries: matchingDefinitions.filter((entry) => entry.type === "ui-query"),
         actions: matchingDefinitions.filter((entry) => entry.type === "ui-action"),
@@ -3155,7 +3172,9 @@ const runtimeNodeRegistry = {
             // Absent/false = OFF (secure default). minSeverity gates which errors
             // are forwarded; absent falls back to "error" at the read site.
             forwardErrorsToClient: config.forwardErrorsToClient === true || config.forwardErrorsToClient === "true",
-            forwardErrorMinSeverity: blankToUndefined(config.forwardErrorMinSeverity)
+            forwardErrorMinSeverity: blankToUndefined(config.forwardErrorMinSeverity),
+            // P70: optional media-store base URL for asset:<id> resolution.
+            mediaStoreUrl: blankToUndefined(config.mediaStoreUrl)
         }),
         options: {
             // P59 / ADR 0007 §4: ui-app owns the app-global verbs navigate / reset.
@@ -3789,6 +3808,8 @@ const runtimeNodeRegistry = {
             fallbackSrc: config.fallback || undefined,
             width: config.width || undefined,
             height: config.height || undefined,
+            // P70: object-fit mode (contain/cover/fill/none).
+            fit: config.fit || undefined,
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
