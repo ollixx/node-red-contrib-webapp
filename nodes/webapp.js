@@ -973,6 +973,11 @@ function toComponentDefinitions(components) {
                     ...(component.max !== undefined ? { max: component.max } : {}),
                     ...(component.step !== undefined ? { step: component.step } : {}),
                     ...(component.showValue !== undefined ? { showValue: component.showValue } : {}),
+                    // P73: ui-switch labelOn/labelOff and ui-datepicker mode were in mapConfig
+                    // but omitted from the props block, so the serializer never received them.
+                    ...(component.labelOn !== undefined ? { labelOn: component.labelOn } : {}),
+                    ...(component.labelOff !== undefined ? { labelOff: component.labelOff } : {}),
+                    ...(component.mode !== undefined ? { mode: component.mode } : {}),
                     ...(component.severity !== undefined ? { severity: component.severity } : {}),
                     // P67: ui-alert title is a binding routed through bind.title;
                     // other nodes may still carry a plain-string title prop.
