@@ -976,7 +976,7 @@ phases:
   # Freitext-Icons; registerIconLibrary-Client-Wiring + Base-Path (P63).
   # ════════════════════════════════════════════════════════════════════════
 
-  - { id: P69, title: "Icon-System — backend-neutraler {library,name}-Wert + global registrierbare Icon-Libraries (lokal) + Icon-Picker-Dialog (Vorschau/Suche/Lib-Filter); Icon-Felder für ui-button/ui-avatar (+ui-icon), bindbar", status: pending, dependencies: [P63, P68] }
+  - { id: P69, title: "Icon-System — backend-neutraler {library,name}-Wert + global registrierbare Icon-Libraries (lokal) + Icon-Picker-Dialog (Vorschau/Suche/Lib-Filter); Icon-Felder für ui-button/ui-avatar (+ui-icon), bindbar", status: in_progress, dependencies: [P63, P68] }
 
   # ════════════════════════════════════════════════════════════════════════
   # ui-image / Bildverwaltung — Rendering + URL + msg/Buffer + Media-Store (P70)
