@@ -476,7 +476,17 @@ export const uiAlertNodeDefinitionSchema = mountableNodeSchema.extend({
         z.literal("auto"),
         z.literal("none"),
         iconFieldSchema
-    ]).optional()
+    ]).optional(),
+    // P91: duration + countdown — auto-hide and countdown progress bar.
+    //   duration  → positive integer (ms); when set the alert auto-hides after
+    //               that many milliseconds. Shoelace renders `duration` attribute
+    //               on <sl-alert>; other backends use a JS timeout fallback.
+    //               Absent / 0 = never auto-hide.
+    //   countdown → when true and duration is set, a progress bar shows remaining
+    //               time. Shoelace renders `countdown="ltr"` on <sl-alert>; other
+    //               backends can use a CSS/JS animation (Bootstrap example pattern).
+    duration: z.number().int().positive().optional(),
+    countdown: z.boolean().optional()
 });
 
 export type UiAlertNodeDefinition = z.infer<typeof uiAlertNodeDefinitionSchema>;

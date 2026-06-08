@@ -697,7 +697,14 @@
                     : iconValue;
                 iconHtml = renderIconHtml(resolvedIcon, { slot: "icon" });
             }
-            return wrapRenderedComponentHtml(component, layoutId, "<sl-alert" + attrs + " variant=\"" + escapeAttribute(shoelaceVariant) + "\" open" + dismissible + ">" + iconHtml + title + escapeHtml(message) + "</sl-alert>");
+            // P91: duration + countdown — Shoelace native attributes.
+            // duration: emitted as `duration="<ms>"` (Shoelace auto-hides after ms).
+            // countdown: emitted as `countdown="ltr"` (Shoelace progress bar).
+            // For backends without native support, the client-side JS fallback in
+            // webapp-client.js handles auto-hide (timeout) and countdown (CSS animation).
+            const durationAttr = component.props.duration ? " duration=\"" + escapeAttribute(String(Number(component.props.duration))) + "\"" : "";
+            const countdownAttr = component.props.countdown ? " countdown=\"ltr\"" : "";
+            return wrapRenderedComponentHtml(component, layoutId, "<sl-alert" + attrs + " variant=\"" + escapeAttribute(shoelaceVariant) + "\" open" + dismissible + durationAttr + countdownAttr + ">" + iconHtml + title + escapeHtml(message) + "</sl-alert>");
         }
 
         if (component.kind === "badge") {

@@ -502,6 +502,44 @@ describe("P16b feedback and status nodes", () => {
         expect(result.success).toBe(false);
     });
 
+    // P91: duration + countdown fields
+    it("compiles ui-alert with duration and countdown", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-alert",
+            id: "alert1",
+            mount: "route:/dashboard/content",
+            message: { kind: "literal", value: "Hinweis" },
+            duration: 5000,
+            countdown: true
+        });
+
+        expect(result.success).toBe(true);
+    });
+
+    it("rejects ui-alert with duration=0 (must be positive)", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-alert",
+            id: "alert1",
+            mount: "route:/dashboard/content",
+            message: { kind: "literal", value: "Hinweis" },
+            duration: 0
+        });
+
+        expect(result.success).toBe(false);
+    });
+
+    it("rejects ui-alert with negative duration", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-alert",
+            id: "alert1",
+            mount: "route:/dashboard/content",
+            message: { kind: "literal", value: "Hinweis" },
+            duration: -500
+        });
+
+        expect(result.success).toBe(false);
+    });
+
     it("compiles ui-toast to a valid definition", () => {
         const result = validateUiNodeDefinition({
             type: "ui-toast",
