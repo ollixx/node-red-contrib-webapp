@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P82  # next to implement: classic behaviour tests — input nodes (checkbox/datepicker/input/radio/select/slider/switch/textarea)
+  current_phase: P83  # next to implement: classic behaviour tests — display nodes (text/button/table/container/avatar/image/icon/list/divider)
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -1180,7 +1180,7 @@ phases:
 
   - { id: P81, title: "Test-Infra: geteilter klassischer Knoten-Verhaltens-Test-Harness — Fixture, das einen registrierten Knoten-inputHandler treibt (msg-in), Output-Messages (send) UND SSE-Pushes erfasst; extrahiert aus den p59/p56/p30/p38-Mustern; + kurze Test-Konventionen-Doc (Verhalten=klassisch, E2E=Editor+Render)", status: done, dependencies: [P47], archive: "docs/agent-roadmap-archive.yaml#P81" }
 
-  - { id: P82, title: "Klassische Verhaltens-Tests Input-Knoten (checkbox/datepicker/input/radio/select/slider/switch/textarea): msg.payload→value+Push, Interaktions-Verben (show/hide/enable/disable/focus/reset), submit-Event (input/textarea), select multiple→Array, datepicker mode→type, Pass-Through; E2E auf Editor+Render eindampfen", status: in_progress, dependencies: [P81] }
+  - { id: P82, title: "Klassische Verhaltens-Tests Input-Knoten (checkbox/datepicker/input/radio/select/slider/switch/textarea): msg.payload→value+Push, Interaktions-Verben (show/hide/enable/disable/focus/reset), submit-Event (input/textarea), select multiple→Array, datepicker mode→type, Pass-Through; E2E auf Editor+Render eindampfen", status: done, dependencies: [P81], archive: "docs/agent-roadmap-archive.yaml#P82" }
 
   - { id: P83, title: "Klassische Verhaltens-Tests Display-Knoten (text/button/table/container/avatar/image/icon/list/divider): msg.payload→Primärfeld+Push, Interaktions-Verb→SSE-Push, Event-Config (button click, table rowSelect/rowAction/checkboxChange, list itemClick/itemSelect), Pass-Through; fehlende Render-E2E (ui-icon, ui-divider) ergänzen; E2E sonst auf Editor+Render eindampfen", status: pending, dependencies: [P81] }
 
