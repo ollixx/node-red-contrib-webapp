@@ -1223,6 +1223,28 @@ phases:
 
   - { id: P94, title: "ui-avatar Feld-Erweiterung — „src path\" → „image\" als typedInput mit Typen „Media\" (Pfad auf Media-Server, wenn mediaStoreUrl gesetzt) und „Store\" (Bildpfad aus Store-Pfad); „Fallback Initials\" als typedInput mit allen sinnvollen Typen; „variant\" (Bootstrap) mit Shoelace-Warnung; Docs anpassen", status: pending, dependencies: [P67, P70] }
 
+  # ════════════════════════════════════════════════════════════════════════
+  # Human-Review-Findings, Runde 2 (2026-06-08, P95–P99)
+  #
+  # Aus weiterem manuellem Review. 🔴 = KRITISCH: Knoten rendert gar nichts —
+  # vermutlich dieselbe Render-Pipeline-Ursache wie der P83-divider-/P77-icon-Bug
+  # (components-Filter / P16X_KIND_MAP / componentKindSchema / renderer.ts /
+  # webapp-serializer.js) — beim Fix als erstes diese Kette prüfen.
+  # WICHTIG: Tests werden nach dem noch zu definierenden Owner-Standard NEU
+  # geschrieben — bestehende „no crash"/Präsenz-Tests NICHT als Nachweis nehmen;
+  # je Fix einen Outcome-Test (gerendertes Attribut/DOM), der ohne das Feature rot wird.
+  # ════════════════════════════════════════════════════════════════════════
+
+  - { id: P95, title: "ui-breadcrumb Definitionsmodell + Click-Events (Redesign) — alle Pfad-Elemente emittieren ein Click-Event (sourceId = breadcrumb-Knoten). Definition über: (a) Array von Strings (String = Label UND Click-Parameter); (b) Array von Objekten {label, action, active} (active = kein Link/Bootstrap; Shoelace rendert letztes Element anders, bleibt klickbar); (c) Slot „default\" → Kindknoten = Elemente, Click-Param = Kind-ID; (d) Slot „separator\" → Kindknoten als Trenner (z. B. ui-icon). Docs anpassen (geht über P75 hinaus)", status: pending, dependencies: [P16c] }
+
+  - { id: P96, title: "🔴 Bugfix: ui-button rendert NICHTS — Render-Pipeline-Ursache finden (components-Filter/KIND_MAP/componentKindSchema/renderer/serializer, vgl. P83-divider) und fixen + Outcome-Test (sl-button mit Label im DOM)", status: pending, dependencies: [P26] }
+
+  - { id: P97, title: "ui-checkbox — disabling hat keinen Effekt (im Beispiel) → fixen; size-Feld ergänzen; „Value Path\" und „Label\" als typedInput mit allen sinnvollen Binding-Typen. Docs anpassen", status: pending, dependencies: [P16a, P67] }
+
+  - { id: P98, title: "ui-datepicker — 🔴 rendert NICHTS (Render-Pipeline prüfen, vgl. P96) + „Value Path\" und „Label\" als typedInput mit allen sinnvollen Binding-Typen. Übrige Felder vorerst unverändert (dynamisch später). Docs anpassen", status: pending, dependencies: [P16a, P67] }
+
+  - { id: P99, title: "🔴 Bugfix: ui-image rendert NICHTS — obwohl P70 das Rendering aktivieren sollte. Render-Pipeline-Ursache finden (components-Filter/KIND_MAP/renderer/serializer) und fixen + Outcome-Test (<img> mit src im DOM)", status: pending, dependencies: [P70] }
+
   # Deferred — only when a concrete need appears (see ADR 0002):
   #   - ui-custom escape-hatch node for framework-specific components (opt-in, non-portable)
   #   - SSR / hydration adapter for any public, search-indexed surface
