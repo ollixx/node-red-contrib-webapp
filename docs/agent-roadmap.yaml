@@ -1141,7 +1141,7 @@ phases:
 
   - { id: P76, title: "Bugfix: ui-divider `inputs: 0`, aber show/hide-Component-State-Messages werden dokumentiert/verdrahtet (componentStateInputHandler unerreichbar). Input-Port aktivieren oder Verhalten konsistent machen", status: pending, dependencies: [P16c] }
 
-  - { id: P77, title: "Bugfix: ui-icon wird nicht gerendert — aus components-Filter ausgeschlossen (webapp.js ~1654), erzeugt kein DOM. Rendering aktivieren (Adapter kind \"icon\"); mit P69 koordinieren (Icon-System baut darauf auf)", status: pending, dependencies: [P63] }
+  - { id: P77, title: "Bugfix: ui-icon wird nicht gerendert — aus components-Filter ausgeschlossen (webapp.js ~1654), erzeugt kein DOM. Rendering aktivieren (Adapter kind \"icon\"); mit P69 koordinieren (Icon-System baut darauf auf)", status: done, dependencies: [P63], archive: "docs/agent-roadmap-archive.yaml#P77" }
 
   - { id: P78, title: "Bugfix: ui-query totes Editor-Feld `previewData` — in P32 aus Schema+Runtime entfernt, aber ui-query.html zeigt es weiterhin (Drei-Wege-Mismatch). Feld aus dem Editor entfernen + Round-Trip-Test", status: pending, dependencies: [P32] }
 
