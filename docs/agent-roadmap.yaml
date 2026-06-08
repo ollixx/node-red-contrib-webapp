@@ -1247,7 +1247,7 @@ phases:
 
   - { id: P96, title: "🔴 Bugfix: ui-button rendert NICHTS — Render-Pipeline-Ursache finden (components-Filter/KIND_MAP/componentKindSchema/renderer/serializer, vgl. P83-divider) und fixen + Outcome-Test (sl-button mit Label im DOM)", status: done, dependencies: [P26], archive: "docs/agent-roadmap-archive.yaml#P96" }
 
-  - { id: P97, title: "ui-checkbox — disabling hat keinen Effekt (im Beispiel) → fixen; size-Feld ergänzen; „Value Path\" und „Label\" als typedInput mit allen sinnvollen Binding-Typen. Docs anpassen", status: pending, dependencies: [P16a, P67] }
+  - { id: P97, title: "ui-checkbox — disabling hat keinen Effekt (im Beispiel) → fixen; size-Feld ergänzen; „Value Path\" und „Label\" als typedInput mit allen sinnvollen Binding-Typen. Docs anpassen", status: in_progress, dependencies: [P16a, P67] }
 
   - { id: P98, title: "ui-datepicker — 🔴 rendert NICHTS (Render-Pipeline prüfen, vgl. P96) + „Value Path\" und „Label\" als typedInput mit allen sinnvollen Binding-Typen. Übrige Felder vorerst unverändert (dynamisch später). Docs anpassen", status: pending, dependencies: [P16a, P67] }
 
