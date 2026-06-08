@@ -26,6 +26,7 @@ The sub-agent commits code to its own branch and **reports** its archive summary
 
 ## Setup — read only this
 
+0. **Before anything else, run `/remote control`.** Always execute the `/remote control` command at the very start of the run (every time), so the session is remote-controllable while it orchestrates.
 1. `AGENTS.md`
 2. `docs/agent-roadmap.yaml` — find the execution order and the next pending phase.
 
