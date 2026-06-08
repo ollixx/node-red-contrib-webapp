@@ -2278,3 +2278,13 @@ phases:
       stats: "8 files changed; 2 new files (unit test + E2E test catalogue); 20 unit tests + 12 E2E tests; 649 unit tests total pass"
       notes: "initials was missing from the p16Kind props block in toComponentDefinitions so it never reached the serializer. sl-avatar size requires CSS --size custom property not a native size attr; data-size approach mirrors P92 badge."
       cost: "session a1b9d5c6-8aba-419a-92c5-2a9a194639c4, 13m"
+
+  - id: P94
+    title: "ui-avatar Feld-Erweiterung — „src path\" → „image\" als typedInput mit Typen „Media\" (Pfad auf Media-Server, wenn mediaStoreUrl gesetzt) und „Store\" (Bildpfad aus Store-Pfad); „Fallback Initials\" als typedInput mit allen sinnvollen Typen; „variant\" (Bootstrap) mit Shoelace-Warnung; Docs anpassen"
+    status: done
+    dependencies: [P67, P70]
+    summary:
+      delivered: "ui-avatar field extension: `image` typedInput (all binding kinds incl. Asset + Store, back-compat srcPath), `initials` as full typedInput binding (literal/store/state/…, back-compat plain string), `variant` → `data-variant` attribute (Shoelace warning in editor), docs updated."
+      stats: "10 files changed; 665 unit tests; 20 new E2E avatar tests; 342 E2E total green"
+      notes: "Variant is emitted as data-variant (not native variant=) because sl-avatar has no native variant support in Shoelace; editor shows info tooltip. Back-compat: old srcPath (plain state path) migrated to state binding; plain-string initials promoted to literal binding. Also fixed pre-existing: pulsating prop was assembled in mapConfig but never added to props block in toComponentDefinitions."
+      cost: "session claude-sonnet-4-6, 39m"
