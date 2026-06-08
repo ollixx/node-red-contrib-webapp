@@ -13,7 +13,7 @@ Die Einzeldokumente pro Knoten sowie übergreifende Konzepte sind unter [docs/no
 → [Actions / Interaktions-Verben](nodes/concepts/actions.md)
 → [Events (Client → Backend)](nodes/concepts/events.md)
 → [Inputs (Werte zurück in den State)](nodes/concepts/inputs.md)
-→ [Fehler-Handling und Logging](nodes/concepts/errors.md)
+→ [Logging und Fehler-Handling](nodes/concepts/logs-errors.md)
 → [Multi-User und Client-Persistenz](nodes/concepts/multi-user.md)
 
 ## Strukturknoten

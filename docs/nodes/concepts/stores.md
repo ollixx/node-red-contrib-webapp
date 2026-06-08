@@ -114,7 +114,7 @@ Spezifikation.
 
 Laufzeitfehler des Stores werden über `reportRuntimeError(node, …)` als
 **strukturierter Fehler** erzeugt — `{ severity, code, message, context, clientId }`
-(siehe [errors.md](errors.md)). Dieser wird:
+(siehe [logs-errors.md](logs-errors.md)). Dieser wird:
 
 1. im Node-RED-Runtime geloggt,
 2. **opt-in** an den/die Client(s) weitergeleitet (pro `ui-app` konfigurierbar, severity-geschwellt) und dort u. a. über [`ui-log`](../feedback/ui-log.md) sichtbar,

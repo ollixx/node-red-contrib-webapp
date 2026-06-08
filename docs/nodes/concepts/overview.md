@@ -17,7 +17,7 @@ wider.
 Querschnittliche Konzepte sind in eigenen Dateien zentral dokumentiert:
 [layout.md](layout.md), [stores.md](stores.md), [actions.md](actions.md),
 [events.md](events.md), [messages.md](messages.md), [inputs.md](inputs.md),
-[errors.md](errors.md), [theming.md](theming.md), [editor.md](editor.md),
+[logs-errors.md](logs-errors.md), [theming.md](theming.md), [editor.md](editor.md),
 [multi-user.md](multi-user.md).
 
 ## Kategorien
@@ -54,7 +54,7 @@ Abgrenzung:
 
 - **Rendering-Backend:** ein Web-Component-Adapter auf Basis von **Shoelace** (ADR 0002), dessen Assets lokal vendored sind (ADR 0008). Das Modell ist backend-agnostisch (semantische Props + Varianten); der Adapter mappt auf das Framework — siehe [theming.md](theming.md).
 - **Keine Framework-Logik in der Runtime:** `nodes/webapp.js` enthält keine beispiel-/domänenspezifische Logik (ADR 0003). Fachliche Logik lebt im verdrahteten Flow.
-- **Fehlermodell:** strukturierte Fehler mit Severity, opt-in Backend→Frontend-Weiterleitung und ein `ui-log`-Knoten (ADR 0006) — siehe [errors.md](errors.md).
+- **Logging & Fehlermodell:** strukturierte Logs/Fehler mit Severity, Message-Tracing, opt-in Backend→Frontend-Weiterleitung und ein `ui-log`-Knoten (ADR 0006) — siehe [logs-errors.md](logs-errors.md).
 
 ## Offene Punkte (Auswahl)
 

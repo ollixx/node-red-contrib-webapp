@@ -40,7 +40,7 @@ Aktuelles Verhalten:
   - Default: `error`.
   - Die weitergeleitete `message` wird **redigiert** (Dateipfade/Stacktraces
     entfernt); nur `code` + Framework-IDs (`appId`/`nodeId`/`op`) reisen mit.
-  - Siehe [errors.md](../concepts/errors.md) für das Fehler-/Log-Modell.
+  - Siehe [logs-errors.md](../concepts/logs-errors.md) für das Logging-/Fehler-Modell.
 
 ## Input
 
