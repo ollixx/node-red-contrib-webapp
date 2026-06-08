@@ -185,7 +185,12 @@ export const uiRouteNodeDefinitionSchema = identifiedNodeSchema.extend({
     type: z.literal("ui-route"),
     parent: identifierSchema.optional(),
     path: routeNodePathSchema,
-    title: z.string().min(1, "Route titles must not be empty.").optional(),
+    // P89: title is now a bindable field (literal/state/store/query/routeParam/msg/
+    // flow/global/jsonata/env). A plain string is accepted as back-compat (treated as
+    // a literal binding). The compiled AppModel resolves literal bindings to a plain
+    // string; dynamic bindings resolve to undefined at the <title> element (server
+    // render time).
+    title: z.union([bindingSchema, z.string().min(1, "Route titles must not be empty.")]).optional(),
     layout: standardLayoutPresetSchema,
     events: z.array(z.enum(["onEnter", "onLeave"])).optional()
 });

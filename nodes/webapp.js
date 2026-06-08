@@ -3474,15 +3474,38 @@ const runtimeNodeRegistry = {
         }
     },
     "ui-route": {
-        mapConfig: (config) => ({
-            type: "ui-route",
-            id: getUiId(config),
-            parent: config.parent || undefined,
-            path: config.path,
-            title: config.title || undefined,
-            layout: config.layoutId,
-            events: parseJsonList(config.events).length > 0 ? parseJsonList(config.events) : undefined
-        }),
+        mapConfig: (config) => {
+            // P89: title is a bindable field. A plain string or a literal binding
+            // resolves to a string; dynamic bindings (state/store/msg/…) resolve to
+            // undefined at compile time — the <title> element is server-rendered once
+            // and cannot be updated at runtime for now.
+            let resolvedTitle;
+            if (config.title && typeof config.title === "object") {
+                if (config.title.kind === "literal") {
+                    // Literal binding → extract the value string.
+                    resolvedTitle = typeof config.title.value === "string" && config.title.value.trim()
+                        ? config.title.value
+                        : undefined;
+                } else if (typeof config.title.kind === "string") {
+                    // Any other binding kind (state/store/msg/…) → not resolvable at
+                    // compile time; fall back to undefined.
+                    resolvedTitle = undefined;
+                } else {
+                    resolvedTitle = undefined;
+                }
+            } else {
+                resolvedTitle = blankToUndefined(config.title);
+            }
+            return {
+                type: "ui-route",
+                id: getUiId(config),
+                parent: config.parent || undefined,
+                path: config.path,
+                title: resolvedTitle,
+                layout: config.layoutId,
+                events: parseJsonList(config.events).length > 0 ? parseJsonList(config.events) : undefined
+            };
+        },
         options: {
             // P59 / ADR 0007 §4: ui-route gains an input handler (and inputs:1 in
             // its HTML) for the app-global verbs navigate / reset.

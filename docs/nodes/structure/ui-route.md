@@ -31,7 +31,7 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 | `name` | „Name" | Textfeld | optional | Anzeigename im Editor und in Auswahllisten. Default: fortlaufend `Route N`; ist er leer, dient der `path` als Fallback-Anzeige. |
 | `parent` | „App" | Node-Picker-Dialog (Preset Apps) | **ja** | Die Parent-`ui-app`. Auswahl aus einer filter- und scrollbaren Liste der Apps. |
 | `path` | „Pfad" | Textfeld | **ja** | Das URL-Segment der Route (`/<root>/<path>`), Parameter via `:name`. Eindeutig **innerhalb derselben App**. Darf **nicht leer** und **nicht `/`** sein — `/` ist der impliziten Root-Route vorbehalten. |
-| `title` | „Titel" | Textfeld | optional | Sprechender Titel der Route (z. B. für Navigations-/Breadcrumb-Beschriftung). |
+| `title` | „Titel" | typedInput (literal/state/store/query/routeParam/msg/flow/global/jsonata/env) | optional | Sprechender Titel der Route (z. B. für Navigations-/Breadcrumb-Beschriftung). Literal-Bindungen erscheinen im Browser-Tab; dynamische Bindungen werden zur Render-Zeit nicht aufgelöst (Browser-Tab zeigt Routen-ID als Fallback). |
 
 ### Gruppe „Layout"
 
@@ -47,11 +47,15 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 
 ### Inline-Hilfe (HTML)
 
-Der `data-help-name="ui-route"`-Hilfetext soll **knapp, aber ausreichend** sein:
-Zweck (Unterseite/Route), die Pfad-Regeln (Parameter `:id`, `/` verboten,
-App-weit eindeutig), ein Hinweis auf `onEnter`/`onLeave` und ein Link auf die
-ausführliche Doku. Empfohlener Link (später ggf. Wiki):
-`https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/structure/ui-route.md`.
+Der `data-help-name="ui-route"`-Hilfetext ist seit P89 vollständig: Zweck
+(Unterseite/Route), Pfad-Regeln (Parameter `:id`, `/` verboten, App-weit
+eindeutig), Titel-Bindung (alle Typen + Fallback-Verhalten), `onEnter`/`onLeave`
+und Link auf die ausführliche Doku.
+
+### Pfad-Info-Button (P89)
+
+Das Pfad-Feld besitzt einen Info-Button (ⓘ), der einen jQuery-UI-Dialog mit den
+Pfad-Regeln und einem Doku-Link öffnet — analog zum Logging-Info-Button in `ui-app`.
 
 ## Input
 
