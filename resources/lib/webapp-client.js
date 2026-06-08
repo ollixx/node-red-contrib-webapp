@@ -422,6 +422,25 @@
             return;
         }
 
+        // P71: a button in "navigate" link mode carries data-webapp-navigate with
+        // the target route. The client performs the in-app navigation AND still
+        // reports the click to the flow (so the flow can react), mirroring the
+        // navigate ui-action verb (applyCommand "navigate").
+        if (trigger.hasAttribute("data-webapp-navigate")) {
+            eventObject.preventDefault();
+            const route = trigger.getAttribute("data-webapp-navigate");
+            dispatch({
+                source: trigger.getAttribute("data-webapp-source"),
+                event: "click",
+                params: {}
+            });
+            if (route) {
+                location = String(route);
+                window.location.assign(base() + "/" + String(route).replace(/^\//, ""));
+            }
+            return;
+        }
+
         // P45: list items carry data-webapp-item — dispatch as an `itemClick`
         // event with params.value = item id so the flow receives the documented shape.
         if (trigger.hasAttribute("data-webapp-item")) {

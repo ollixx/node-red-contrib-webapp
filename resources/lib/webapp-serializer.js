@@ -219,6 +219,12 @@
             if (size) {
                 attributes.size = size;
             }
+            // P71: explicit outline flag → Shoelace boolean `outline` attribute.
+            // Marked as a boolean attr (true) so it renders as bare ` outline`,
+            // not outline="". The variant-derived look is untouched (no double-apply).
+            if (props.outline === true) {
+                attributes.outline = true;
+            }
         }
         else if (typeof props.size === "string") {
             const size = mapSize(props.size);
@@ -240,7 +246,14 @@
 
     function shoelaceAttrs(attributes) {
         return Object.keys(attributes || {})
-            .map(function (key) { return " " + key + "=\"" + escapeAttribute(String(attributes[key])) + "\""; })
+            .map(function (key) {
+                // P71: a boolean attribute (value === true) renders bare (e.g.
+                // ` outline`) rather than as outline="".
+                if (attributes[key] === true) {
+                    return " " + key;
+                }
+                return " " + key + "=\"" + escapeAttribute(String(attributes[key])) + "\"";
+            })
             .join("");
     }
 
@@ -417,11 +430,33 @@
             // a dynamic icon binding is resolved by the renderer into the same
             // props.icon slot (bind.icon → resolvedProps.icon), so reading
             // props.icon covers both cases.
+            // P69: optional prefix icon (default = label, prefix = icon). A literal
+            // icon value sits in props.icon; a dynamic icon binding is resolved by
+            // the renderer into the same props.icon slot, so reading props.icon
+            // covers both cases. The label is the button's default slot.
             const iconHtml = renderIconHtml(component.props && component.props.icon, { slot: "prefix" });
             const labelContent = iconHtml + label;
 
+            // P71: link mode. "button" (default) = event source; "url" = real
+            // hyperlink via sl-button href (renders an <a>); "navigate" = in-app
+            // navigation (data-webapp-navigate carries the route; the client
+            // intercepts the click, navigates, and still reports the click).
+            // href is binding-capable: a literal sits in props.href; a dynamic
+            // binding is resolved by the renderer into the same props.href slot
+            // (bind.href → resolvedProps.href), so reading props.href covers both.
+            const linkMode = (component.props && component.props.linkMode) || "button";
+            const href = component.props && component.props.href;
+            const hrefStr = (href === undefined || href === null) ? "" : String(href);
+
             if (component.disabled) {
                 return wrapRenderedComponentHtml(component, layoutId, "<sl-button" + attrs + " disabled>" + labelContent + "</sl-button>");
+            }
+
+            // "url" mode: a real hyperlink. sl-button[href] renders an <a>; it is
+            // NOT a click-dispatch event source (navigation is the browser's job).
+            if (linkMode === "url" && hrefStr) {
+                const hrefAttr = " href=\"" + escapeAttribute(hrefStr) + "\"";
+                return wrapRenderedComponentHtml(component, layoutId, "<sl-button" + attrs + hrefAttr + ">" + labelContent + "</sl-button>");
             }
 
             // P30: EVERY enabled button is interactive and reports its click as an
@@ -435,6 +470,12 @@
                 " data-webapp-source=\"" + escapeAttribute(component.id) + "\"",
                 " data-webapp-event=\"" + (inForm ? "submit" : "click") + "\""
             ];
+
+            // P71: "navigate" mode — the client intercepts the click and performs an
+            // in-app navigation to the carried route, while still informing the flow.
+            if (linkMode === "navigate" && hrefStr) {
+                dataAttrs.push(" data-webapp-navigate=\"" + escapeAttribute(hrefStr) + "\"");
+            }
 
             if (action) {
                 dataAttrs.push(" data-webapp-action=\"" + escapeAttribute(action) + "\"");

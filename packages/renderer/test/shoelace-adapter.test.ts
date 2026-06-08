@@ -35,6 +35,20 @@ describe("P23 Shoelace adapter", () => {
         expect(mapSize(undefined)).toBeUndefined();
     });
 
+    it("P71: emits the outline attribute on a button when outline is true", () => {
+        const descriptor = mapComponentToShoelace("button", { outline: true });
+        expect(descriptor.attributes.outline).toBe("");
+    });
+
+    it("P71: omits the outline attribute when outline is falsey", () => {
+        expect(mapComponentToShoelace("button", { outline: false }).attributes.outline).toBeUndefined();
+        expect(mapComponentToShoelace("button", {}).attributes.outline).toBeUndefined();
+    });
+
+    it("P71: outline is button-specific (not applied to other kinds)", () => {
+        expect(mapComponentToShoelace("input", { outline: true }).attributes.outline).toBeUndefined();
+    });
+
     it("produces a defined fallback rendering for a kind without a 1:1 Shoelace element (stepper)", () => {
         const descriptor = mapComponentToShoelace("stepper", {});
 
