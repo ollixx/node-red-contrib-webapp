@@ -1137,7 +1137,7 @@ phases:
 
   - { id: P74, title: "Bugfix: ui-accordion Feldname-Mismatch — Schema-Feld `sections` (accordionSectionSchema) vs. Editor/mapConfig `items` (webapp.js ~3613). Auf einen Namen vereinheitlichen + Validierung/Tests", status: done, dependencies: [P16c], archive: "docs/agent-roadmap-archive.yaml#P74" }
 
-  - { id: P75, title: "Bugfix: ui-breadcrumb/ui-menu `navigate`-Output-Event nicht emittierbar — kein `events`-Array im Schema, kein Output-Port. Events-Contract + Dispatch ergänzen (oder Doku-Erwartung klären) + E2E", status: pending, dependencies: [P16c] }
+  - { id: P75, title: "Bugfix: ui-breadcrumb/ui-menu `navigate`-Output-Event nicht emittierbar — kein `events`-Array im Schema, kein Output-Port. Events-Contract + Dispatch ergänzen (oder Doku-Erwartung klären) + E2E", status: in_progress, dependencies: [P16c] }
 
   - { id: P76, title: "Bugfix: ui-divider `inputs: 0`, aber show/hide-Component-State-Messages werden dokumentiert/verdrahtet (componentStateInputHandler unerreichbar). Input-Port aktivieren oder Verhalten konsistent machen", status: pending, dependencies: [P16c] }
 
