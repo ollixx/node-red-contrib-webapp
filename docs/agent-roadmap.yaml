@@ -1118,6 +1118,37 @@ phases:
 
   - { id: P71, title: "Komponenten-Felder — size (SelectBox, pro Knoten), outline (Flag wo unterstützt), Button-Link-Modus (Button/URL/Navigate) + Button-Slots (default=Label, prefix, suffix)", status: pending, dependencies: [P66] }
 
+  # ════════════════════════════════════════════════════════════════════════
+  # Bugfixes aus dem Doc-vs-Implementierung-Audit (2026-06-08, P72–P79)
+  #
+  # Herkunft: Beim Spec-Abgleich der Node-Docs wurden Implementierungs-Bugs
+  # gefunden (nicht nur Doku-Drift). Jede Phase nennt Symptom + verdächtige
+  # Fundstelle aus dem Audit. WICHTIG: Der umsetzende Agent muss den Bug ZUERST
+  # reproduzieren/verifizieren (Audit-Befunde können falsch sein), dann test-first
+  # fixen. Reihenfolge frei; alle hängen nur an bereits erledigten Phasen.
+  #
+  # Separat bereits in Arbeit (NICHT hier als Phase doppeln):
+  #   • Store-Operationen werden zur Laufzeit nicht gegen storeOperationSchema
+  #     validiert → keine sprechenden Fehlermeldungen (task_127fcca0, eigene
+  #     Session). Siehe docs/nodes/concepts/stores.md „Bekannte Lücke".
+  # ════════════════════════════════════════════════════════════════════════
+
+  - { id: P72, title: "Bugfix: ui-pagination `page`-Binding wird nie aufgelöst — Editor speichert `currentPagePath`, Runtime liest `config.pagePath` (webapp.js ~3664) → immer leer. Editor/Runtime-Feldnamen angleichen + E2E", status: pending, dependencies: [P16c] }
+
+  - { id: P73, title: "Bugfix: Serializer rendert gemappte Felder nicht — ui-switch `labelOn`/`labelOff`, ui-slider `showValue` (in Schema+mapConfig, aber nicht im webapp-serializer.js), ui-datepicker `mode` datetime/time degradiert still zu type=date. Rendering ergänzen + E2E", status: pending, dependencies: [P26] }
+
+  - { id: P74, title: "Bugfix: ui-accordion Feldname-Mismatch — Schema-Feld `sections` (accordionSectionSchema) vs. Editor/mapConfig `items` (webapp.js ~3613). Auf einen Namen vereinheitlichen + Validierung/Tests", status: pending, dependencies: [P16c] }
+
+  - { id: P75, title: "Bugfix: ui-breadcrumb/ui-menu `navigate`-Output-Event nicht emittierbar — kein `events`-Array im Schema, kein Output-Port. Events-Contract + Dispatch ergänzen (oder Doku-Erwartung klären) + E2E", status: pending, dependencies: [P16c] }
+
+  - { id: P76, title: "Bugfix: ui-divider `inputs: 0`, aber show/hide-Component-State-Messages werden dokumentiert/verdrahtet (componentStateInputHandler unerreichbar). Input-Port aktivieren oder Verhalten konsistent machen", status: pending, dependencies: [P16c] }
+
+  - { id: P77, title: "Bugfix: ui-icon wird nicht gerendert — aus components-Filter ausgeschlossen (webapp.js ~1654), erzeugt kein DOM. Rendering aktivieren (Adapter kind \"icon\"); mit P69 koordinieren (Icon-System baut darauf auf)", status: pending, dependencies: [P63] }
+
+  - { id: P78, title: "Bugfix: ui-query totes Editor-Feld `previewData` — in P32 aus Schema+Runtime entfernt, aber ui-query.html zeigt es weiterhin (Drei-Wege-Mismatch). Feld aus dem Editor entfernen + Round-Trip-Test", status: pending, dependencies: [P32] }
+
+  - { id: P79, title: "Bugfix/Decision: `targetId`-Diskrepanz — Runtime-Handler akzeptieren `msg.ui.action.targetId`, aber `actionMessageCommandSchema` ist `.strict()` und kennt nur `target` → targetId fällt durch die Validierung. Entscheiden: targetId ins Schema aufnehmen ODER Runtime-Alias entfernen; Doku (actions.md) angleichen", status: pending, dependencies: [P60] }
+
   # Deferred — only when a concrete need appears (see ADR 0002):
   #   - ui-custom escape-hatch node for framework-specific components (opt-in, non-portable)
   #   - SSR / hydration adapter for any public, search-indexed surface
