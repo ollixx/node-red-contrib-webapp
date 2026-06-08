@@ -2258,3 +2258,13 @@ phases:
       stats: "8 files changed, 300 insertions (+5 deletions); 15 new unit tests in p91-alert-duration-countdown.test.ts; 3 new schema tests; test catalogue .md updated; all 860 tests green"
       notes: "Shoelace natively supports both attrs on <sl-alert>; for other backends the doc and help text describe the JS-timeout + CSS-animation fallback (Bootstrap pattern). The `duration` schema uses z.number().int().positive() (>= 1)."
       cost: "session a8de0000c6723703b, 8m"
+
+  - id: P92
+    title: "ui-badge Felder-Rework — displayType-Werte square/rounded/pill; „Max\"-Feld ENTFERNEN (kein Countdown); „pulsating\"-Checkbox + Warnung wenn Backend es nicht unterstützt; size-Feld ergänzen; „severity\" in „variant\" umbenennen. Docs (ui-badge.md, theming.md) anpassen"
+    status: done
+    dependencies: [P49]
+    summary:
+      delivered: "ui-badge Felder-Rework: displayType changed to square/rounded/pill (shape vocabulary), `severity` renamed to `variant`, `max` field removed, `pulsating` (→ Shoelace `pulse`) and `size` (→ `data-size`) fields added; serializer, mapConfig, editor HTML, schema, runtime node-set, fixtures, editor package all updated; docs (ui-badge.md, theming.md) updated."
+      stats: "16 files changed; 32 new unit tests (p92-badge-fields-rework.test.ts), 14 E2E tests (ui-badge.spec.ts rewritten), test catalogue ui-badge.tests.md added; total 892 unit tests pass; back-compat for old severity/count/dot/status fields via mapConfig migration."
+      notes: "sl-badge has no native `size` attribute in Shoelace 2.x — size is emitted as data-size for CSS targeting (documented in node help and spec). `severity` kept as back-compat field in mapConfig for old flows."
+      cost: "session a1b9d5c6-8aba-419a-92c5-2a9a194639c4, 13m"
