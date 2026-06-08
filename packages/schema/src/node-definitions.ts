@@ -465,7 +465,18 @@ export const uiAlertNodeDefinitionSchema = mountableNodeSchema.extend({
     // wrap a static title as { kind: "literal", value }.
     title: bindingSchema.optional(),
     dismissible: z.boolean().optional(),
-    visible: bindingSchema.optional()
+    visible: bindingSchema.optional(),
+    // P90: icon field — controls what appears in the Shoelace `icon` slot.
+    //   "auto"   → severity-derived icon (default when field is set; omitting the
+    //              field entirely means no icon is shown).
+    //   "none"   → no icon, even if severity is set.
+    //   <name>   → any icon name (plain string) or { library, name } object.
+    //   binding  → dynamic binding resolved at runtime to one of the above.
+    icon: z.union([
+        z.literal("auto"),
+        z.literal("none"),
+        iconFieldSchema
+    ]).optional()
 });
 
 export type UiAlertNodeDefinition = z.infer<typeof uiAlertNodeDefinitionSchema>;

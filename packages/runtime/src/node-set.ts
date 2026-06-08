@@ -166,7 +166,9 @@ function toAlertComponent(node: UiAlertNodeDefinition): ComponentDefinition {
         props: {
             severity: node.severity,
             title: node.title,
-            dismissible: node.dismissible
+            dismissible: node.dismissible,
+            // P90: icon field — "auto" / "none" / icon name / binding.
+            ...(node.icon !== undefined ? { icon: node.icon } : {})
         },
         events: []
     };

@@ -3946,6 +3946,9 @@ const runtimeNodeRegistry = {
             title: getBinding(config.title, typeof config.title === "string" && config.title.length > 0 ? literalBinding(config.title) : undefined),
             dismissible: config.dismissible === true || config.dismissible === "true" || undefined,
             visible: getBinding(config.visible, undefined),
+            // P90: icon field — "auto" / "none" / icon name / binding.
+            // Absent (undefined) means no icon (default when not configured).
+            ...(config.icon !== undefined && config.icon !== null && config.icon !== "" ? { icon: config.icon } : {}),
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {

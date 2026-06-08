@@ -679,7 +679,25 @@
             const dismissible = component.props.dismissible ? " closable" : "";
             const title = component.props.title ? "<strong>" + escapeHtml(String(component.props.title)) + "</strong><br>" : "";
             const attrs = shoelaceAttrs(mapComponentToShoelace("alert", component.props || {}).attributes);
-            return wrapRenderedComponentHtml(component, layoutId, "<sl-alert" + attrs + " variant=\"" + escapeAttribute(shoelaceVariant) + "\" open" + dismissible + ">" + title + escapeHtml(message) + "</sl-alert>");
+            // P90: icon field — "auto" resolves to a severity-appropriate Bootstrap icon;
+            // "none" (or absent) suppresses the icon slot; any other value is an icon name.
+            const iconValue = component.props.icon;
+            let iconHtml = "";
+            if (iconValue !== undefined && iconValue !== null && iconValue !== "none") {
+                const SEVERITY_ICON_MAP = {
+                    primary: "info-circle",
+                    info: "info-circle",
+                    success: "check-circle",
+                    warning: "exclamation-triangle",
+                    danger: "x-circle",
+                    neutral: "circle"
+                };
+                const resolvedIcon = (iconValue === "auto")
+                    ? (SEVERITY_ICON_MAP[severity] || SEVERITY_ICON_MAP.primary)
+                    : iconValue;
+                iconHtml = renderIconHtml(resolvedIcon, { slot: "icon" });
+            }
+            return wrapRenderedComponentHtml(component, layoutId, "<sl-alert" + attrs + " variant=\"" + escapeAttribute(shoelaceVariant) + "\" open" + dismissible + ">" + iconHtml + title + escapeHtml(message) + "</sl-alert>");
         }
 
         if (component.kind === "badge") {

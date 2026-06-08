@@ -53,6 +53,10 @@
                 // loaded into oneditprepare for the messagePath→state back-compat.
                 messagePath: { value: "" },
                 severity: { value: "info" },
+                // P90: icon — "auto" (severity-derived), "none" (no icon), or a
+                // plain icon name string. Default "" means the field is absent
+                // (no icon shown), matching the legacy behaviour before P90.
+                icon: { value: "" },
                 title: { value: null },
                 titleBinding: { value: "" },
                 dismissible: { value: false },
@@ -123,15 +127,34 @@
             <option value="neutral">Neutral</option>
         </select>
     </div>
+    <div class="form-row"><label for="node-input-icon">Icon</label>
+        <select id="node-input-icon">
+            <option value="">Kein Icon</option>
+            <option value="auto">Automatisch (nach Severity)</option>
+            <option value="none">Kein Icon (explizit)</option>
+            <option value="info-circle">info-circle</option>
+            <option value="check-circle">check-circle</option>
+            <option value="exclamation-triangle">exclamation-triangle</option>
+            <option value="x-circle">x-circle</option>
+            <option value="circle">circle</option>
+            <option value="bell">bell</option>
+            <option value="star">star</option>
+        </select>
+    </div>
     <div class="form-row"><label for="node-input-titleBinding">Title</label><input type="text" id="node-input-titleBinding"></div>
     <div class="form-row"><label for="node-input-dismissible">Dismissible</label><input type="checkbox" id="node-input-dismissible" style="width:auto"></div>
 </script>
 <script type="text/html" data-help-name="ui-alert">
-<p>Farbige Hinweisleiste für Info-, Warn-, Fehler- oder Erfolgsmeldungen.</p>
+<p>Farbige Hinweisleiste für Info-, Warn-, Fehler- oder Erfolgsmeldungen. Message und Title sind vollständig bindbar; der Knoten hat einen Input-Port für Push-Updates und einen Output-Port für das Dismiss-Ereignis.</p>
 <h3>Message- und Title-Bindung</h3>
 <p>Message und Title sind voll bindbar (wie ui-text): literal/state/query/routeParam/msg/flow/global/jsonata/env sowie <b>Store</b>.</p>
 <ul>
-  <li><b>Store</b> — referenziert einen ui-store-Knoten derselben App; der Wert wird zur Laufzeit über dessen statePath aufgelöst (robust gegen statePath-Umbenennungen). Über die Liste filter-/durchsuchbar auswählen.</li>
+  <li><b>Store</b> — referenziert einen ui-store-Knoten derselben App; der Wert wird zur Laufzeit über dessen statePath aufgelöst. Über die Liste filter-/durchsuchbar auswählen.</li>
   <li><b>msg</b> — Text kommt aus der eingehenden Node-RED-Message (wiring-first).</li>
 </ul>
+<h3>Icon</h3>
+<p><b>Automatisch (nach Severity)</b> — wählt passend zur Severity ein Bootstrap-Icon: info-circle (primary/info), check-circle (success), exclamation-triangle (warning), x-circle (danger), circle (neutral).</p>
+<p><b>Kein Icon</b> (leer oder explizit) — die Alert wird ohne Icon gerendert.</p>
+<p>Ein beliebiger Icon-Name aus dem registrierten Shoelace-Icon-Set kann eingetragen werden.</p>
+<p>Ausführliche Dokumentation: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/feedback/ui-alert.md" target="_blank">ui-alert.md</a></p>
 </script>
