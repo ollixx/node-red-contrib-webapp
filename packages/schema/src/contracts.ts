@@ -439,6 +439,8 @@ export const componentKindSchema = z.enum([
     "accordion",
     "menu",
     "avatar",
+    // P70: image display node (native <img>)
+    "image",
     // P45: composite and layout nodes
     "list",
     "pagination",

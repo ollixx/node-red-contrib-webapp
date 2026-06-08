@@ -155,7 +155,12 @@ export const uiAppNodeDefinitionSchema = z.object({
     // .default() so existing fixtures/configs stay valid; the runtime applies the
     // secure fallbacks (false / "error") when the fields are absent.
     forwardErrorsToClient: z.boolean().optional(),
-    forwardErrorMinSeverity: errorSeveritySchema.optional()
+    forwardErrorMinSeverity: errorSeveritySchema.optional(),
+    // P70: optional media-store base URL. When set, `ui-image` src values of the
+    // form `asset:<id>` are resolved by the runtime through a Node-RED backend
+    // proxy that fetches `<mediaStoreUrl>/<id>` and streams it — the real store
+    // URL never reaches the client (obfuscation). Absent = no asset references.
+    mediaStoreUrl: z.string().optional()
 });
 
 export type UiAppNodeDefinition = z.infer<typeof uiAppNodeDefinitionSchema>;

@@ -6,6 +6,7 @@ import {
     actionMessageSchema,
     actionMessageCommandSchema,
     actionTypeSchema,
+    componentKindSchema,
     uiActionNodeDefinitionSchema,
     uiAppNodeDefinitionSchema,
     bindingSchema,
@@ -1323,6 +1324,67 @@ describe("P66: ui-action navigation — typedInput `to` + params; ui-app onEnter
             events: ["clientConnected", "onEnter", "onLeave"]
         });
         expect(result.success).toBe(true);
+    });
+});
+
+describe("P70: ui-image media + ui-app media store", () => {
+    it("ui-app accepts an optional mediaStoreUrl", () => {
+        const result = uiAppNodeDefinitionSchema.safeParse({
+            type: "ui-app",
+            id: "app1",
+            title: "App",
+            layout: "vertical",
+            mediaStoreUrl: "https://cdn.example.com/assets"
+        });
+        expect(result.success).toBe(true);
+        if (result.success) {
+            expect(result.data.mediaStoreUrl).toBe("https://cdn.example.com/assets");
+        }
+    });
+
+    it("ui-app stays valid with no mediaStoreUrl (optional)", () => {
+        const result = uiAppNodeDefinitionSchema.safeParse({
+            type: "ui-app",
+            id: "app1",
+            title: "App",
+            layout: "vertical"
+        });
+        expect(result.success).toBe(true);
+        if (result.success) {
+            expect(result.data.mediaStoreUrl).toBeUndefined();
+        }
+    });
+
+    it("ui-image accepts a literal URL src and fit/width/height", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-image",
+            id: "img1",
+            mount: "route:/customers/content",
+            src: { kind: "literal", value: "https://example.com/p.png" },
+            fit: "cover",
+            width: "100%",
+            height: 150
+        });
+        expect(result.success).toBe(true);
+        if (result.success && result.data.type === "ui-image") {
+            expect(result.data.fit).toBe("cover");
+            expect(result.data.width).toBe("100%");
+            expect(result.data.height).toBe(150);
+        }
+    });
+
+    it("ui-image accepts an asset:<id> literal src (managed asset reference)", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-image",
+            id: "img1",
+            mount: "route:/customers/content",
+            src: { kind: "literal", value: "asset:logo-2024" }
+        });
+        expect(result.success).toBe(true);
+    });
+
+    it("image is a recognised component kind", () => {
+        expect(componentKindSchema.safeParse("image").success).toBe(true);
     });
 });
 
