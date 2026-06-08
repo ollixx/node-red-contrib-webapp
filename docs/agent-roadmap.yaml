@@ -1178,7 +1178,7 @@ phases:
   #   • (überlappt teils mit den Bug-Phasen P72–P80 — dort referenzieren.)
   # ════════════════════════════════════════════════════════════════════════
 
-  - { id: P81, title: "Test-Infra: geteilter klassischer Knoten-Verhaltens-Test-Harness — Fixture, das einen registrierten Knoten-inputHandler treibt (msg-in), Output-Messages (send) UND SSE-Pushes erfasst; extrahiert aus den p59/p56/p30/p38-Mustern; + kurze Test-Konventionen-Doc (Verhalten=klassisch, E2E=Editor+Render)", status: pending, dependencies: [P47] }
+  - { id: P81, title: "Test-Infra: geteilter klassischer Knoten-Verhaltens-Test-Harness — Fixture, das einen registrierten Knoten-inputHandler treibt (msg-in), Output-Messages (send) UND SSE-Pushes erfasst; extrahiert aus den p59/p56/p30/p38-Mustern; + kurze Test-Konventionen-Doc (Verhalten=klassisch, E2E=Editor+Render)", status: in_progress, dependencies: [P47] }
 
   - { id: P82, title: "Klassische Verhaltens-Tests Input-Knoten (checkbox/datepicker/input/radio/select/slider/switch/textarea): msg.payload→value+Push, Interaktions-Verben (show/hide/enable/disable/focus/reset), submit-Event (input/textarea), select multiple→Array, datepicker mode→type, Pass-Through; E2E auf Editor+Render eindampfen", status: pending, dependencies: [P81] }
 
