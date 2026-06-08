@@ -23,7 +23,8 @@ msg.ui = {
   clientId?: string,         // Ziel-Client; fehlt = Broadcast an alle Clients
   action: {
     type:    <verb>,         // Verbset siehe unten (ADR 0005)
-    to?:     string,         // navigate-Ziel (Route-Pfad)
+    to?:     string,         // navigate-Ziel (Route-Pfad oder Template, P66)
+    params?: { [k]: string },// navigate: benannte URL-Parameter (P66)
     part?:   string,         // Sub-ID für open/close/select (Sektion/Branch/Tab)
     target?: string          // OPTIONALE explizite Component-/Node-ID (Override)
   }
@@ -117,8 +118,13 @@ Wenn das Ziel erst zur Laufzeit bekannt ist — z.B. weil es aus den Daten des a
 
 `target` überschreibt die Default-Auflösung des Zielknotens (der sonst seine
 eigene Node-ID als Ziel setzt). Typischer Anwendungsfall: Das Event enthält eine
-`sourceId`, die als Ziel der Reaktion genutzt wird. `targetId` ist ein Alias für
-`target` und mit ihm vereinheitlicht.
+`sourceId`, die als Ziel der Reaktion genutzt wird.
+
+> **`target` ist das kanonische (Schema-)Feld.** Die Runtime-Handler akzeptieren
+> zusätzlich `targetId` als Back-Compat-Alias, aber `actionMessageCommandSchema`
+> ist `.strict()` und kennt nur `type/to/params/part/target` — ein
+> `msg.ui.action.targetId` fällt also durch die Schema-Validierung. Im Zweifel
+> `target` verwenden. (Die Schema/Runtime-Diskrepanz ist bekannt.)
 
 > **Zustellung via `receive()` (P60 / ADR 0007 §3):** Ein `target`/`targetId`-Override
 > in der `msg` adressiert genau diesen Knoten; `ui-action` stellt die Aktion an
@@ -159,20 +165,27 @@ Eine Action ist ein typisiertes Kommando. Der Typ bestimmt, was der Client tut.
 
 ### `navigate`
 
-Navigiert den Client zu einer Route.
+Navigiert den Client zu einer Route. Zwei Szenarien (ADR 0007, P66-Amendment) —
+ausführlich in [messages.md](messages.md#navigation):
+
+- **Szenario 1 — verdrahtet:** Out-Port von `ui-action` an eine `ui-route`/`ui-app`. Die Ziel-Route baut ihren Pfad aus dem **eigenen** `path` und den `params` (`:placeholder` → Wert). Kein `to`.
+- **Szenario 2 — `to`:** `to` ist im Editor ein **typedInput** (`toType`: `str`/`msg`/`flow`/`global`/`jsonata`), das app-global aufgelöst wird; `params` können zusätzlich gesetzt werden.
 
 ```json
 {
   "ui": {
     "action": {
       "type": "navigate",
-      "to":   "/customers/42"
+      "to":   "/customers/:id",
+      "params": { "id": "42" }
     }
   }
 }
 ```
 
-`to` ist ein absoluter Pfad innerhalb der App. Route-Parameter werden inline aufgelöst.
+`to` ist ein absoluter Pfad bzw. ein Template innerhalb der App; `:placeholder`
+werden aus `params` gefüllt. `onEnter`/`onLeave` der betroffenen Route(n) werden in
+beiden Szenarien emittiert (siehe [events.md](events.md)). `ui-navigation` ist deprecated.
 
 ---
 

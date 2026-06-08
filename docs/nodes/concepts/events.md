@@ -72,14 +72,21 @@ Zusätzliche Felder je nach Event-Typ:
 | `rowSelect` | `ui-table` | `rowId`, `row` |
 | `rowAction` | `ui-table` | `rowId`, `row`, `actionLabel` |
 | `checkboxChange` | `ui-table`, `ui-checkbox` | `checked`, `rowId` (Tabelle) |
-| `change` | `ui-input`, `ui-select`, `ui-slider`, `ui-radio`, `ui-switch` | `value` |
+| `change` | `ui-input`, `ui-select`, `ui-slider`, `ui-radio`, `ui-switch` | `value` (bei `ui-switch`/`ui-checkbox`: `checked`) |
 | `submit` | `ui-input` (Enter/Submit) | `value` |
-| `onEnter` | `ui-route` | `path`, `params` |
-| `onLeave` | `ui-route` | `path` |
+| `onEnter` | `ui-route`, `ui-app` (Root) | `route`*, `params` |
+| `onLeave` | `ui-route`, `ui-app` (Root) | `route`*, `params` |
 | `onOpen` | `ui-dialog` | `dialogId` |
 | `onClose` | `ui-dialog` | `dialogId` |
 | `onShow` | `ui-container` | — |
 | `onHide` | `ui-container` | — |
+
+> \* Bei `onEnter`/`onLeave` liegt die Route **nicht** unter `params`, sondern als
+> eigenes Feld `msg.ui.route` (Geschwister von `msg.ui.params`). Beide Lifecycle-Events
+> tragen `params` (die Routen-Parameter); es gibt kein Feld `path`.
+>
+> Knoten mit mehreren aktiven Events haben **mehrere Output-Ports**; der Port-Index
+> entspricht der Position des Events in der konfigurierten Events-Liste.
 
 ---
 
