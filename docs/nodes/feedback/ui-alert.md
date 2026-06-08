@@ -40,6 +40,7 @@ Binding-Arten, Node-Picker-Dialog, SelectBox).
 | `title` | „Title" | typedInput (alle Binding-Arten inkl. `store`) | optional | Optionaler Titel über dem Meldungstext. Gleiche Binding-Arten wie `message`. Leer gelassen → kein Titel-Bereich gerendert. |
 | `severity` | „Severity" | SelectBox | optional | Semantische Farbrolle der Alert. Werte aus `SEVERITY_VARIANTS`: `primary` (Default), `success`, `warning`, `danger`, `neutral`, `info`. `info` ist ein eigenständiger Wert. Bestimmt gemeinsam mit den Design-Tokens des `ui-app` die Darstellungsfarbe. |
 | `dismissible` | „Dismissible" | Checkbox | optional | Wenn aktiv, zeigt die Alert ein Schließen-Icon; der Nutzer kann die Alert wegklicken. Das Dismiss-Ereignis wird auf dem Output-Port emittiert. Default: `false`. |
+| `icon` | „Icon" | SelectBox / Freitext | optional | Steuert das Icon im Shoelace-`icon`-Slot. `"auto"` → Severity-abhängiges Bootstrap-Icon: `primary`/`info` → `info-circle`, `success` → `check-circle`, `warning` → `exclamation-triangle`, `danger` → `x-circle`, `neutral` → `circle`. `"none"` oder leer (Default) → kein Icon. Jeder andere Wert wird als Icon-Name (z. B. `"bell"`) oder `{ library, name }`-Objekt interpretiert. Das Feld ist binding-fähig (alle Binding-Arten, wie `message`). |
 
 ### Inline-Hilfe (HTML)
 
