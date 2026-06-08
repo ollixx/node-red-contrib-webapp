@@ -2051,3 +2051,15 @@ phases:
         (params.path) — it performs no navigation itself; the wired flow drives the route change, matching
         events.md. No doc changes needed (impl now matches spec).
       cost: "session 31698b98-558f-4ac6-81ff-e78df58084f6, 16m"
+
+  - id: P76
+    title: "Bugfix: ui-divider `inputs: 0`, aber show/hide-Component-State-Messages werden dokumentiert/verdrahtet (componentStateInputHandler unerreichbar). Input-Port aktivieren oder Verhalten konsistent machen"
+    status: done
+    dependencies: [P16c]
+    summary:
+      delivered: "Removed the unreachable componentStateInputHandler from the ui-divider entry in runtimeNodeRegistry (nodes/webapp.js) — the node declares inputs:0 so Node-RED never delivers messages; the handler was dead code. Added p76-divider-no-input-handler.test.ts (2 tests) asserting the registry entry carries no inputHandler. Runtime now consistent with spec (ui-divider.md §Input: no input port, no handler)."
+      stats: "2 files changed (+46/-3); 372→374 unit tests."
+      notes: >
+        One-liner removal plus clarifying comment. Chose 'remove handler' over 'add inputs:1' because the spec is
+        unambiguous — ui-divider is a static leaf node with no input/output port.
+      cost: "session a5fc165d115ab618a, 3m"
