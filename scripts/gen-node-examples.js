@@ -680,21 +680,22 @@ examples.push(inputNodeExample({
             tab(T, "ui-breadcrumb example"),
             uiApp(A, T, { name: "Breadcrumb App" }),
 
-            // Output: "navigate" event when a crumb is clicked
+            // Output: "click" event (params.action) when a crumb is clicked.
+            // P95: items use {label, action?, active?}; all items are clickable.
             { ...viewNode("ui-breadcrumb", NODE, A, R, T, {
                 name: "breadcrumb",
                 items: JSON.stringify([
-                    { label: "Home", href: "/" },
-                    { label: "Products", href: "/products" },
-                    { label: "Widget 42" }
+                    { label: "Home", action: "/" },
+                    { label: "Products", action: "/products" },
+                    { label: "Widget 42", active: true }
                 ])
             }), wires: [[DBG]] },
 
-            debugNode(DBG, T, "navigate events", 280),
+            debugNode(DBG, T, "click events", 280),
 
             // Inject: update breadcrumb items at runtime
             injectPayload("inj-items", T, "Update breadcrumb",
-                JSON.stringify([{ label: "Home", href: "/" }, { label: "Settings" }]), "json", NODE, 480)
+                JSON.stringify([{ label: "Home", action: "/" }, { label: "Settings", active: true }]), "json", NODE, 480)
         ]
     });
 }

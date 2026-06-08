@@ -35,12 +35,12 @@
         "breadDbg"
       ]
     ],
-    "items": "[{\"label\":\"Home\",\"href\":\"/\"},{\"label\":\"Products\",\"href\":\"/products\"},{\"label\":\"Widget 42\"}]"
+    "items": "[{\"label\":\"Home\",\"action\":\"/\"},{\"label\":\"Products\",\"action\":\"/products\"},{\"label\":\"Widget 42\",\"active\":true}]"
   },
   {
     "id": "breadDbg",
     "type": "debug",
-    "name": "navigate events",
+    "name": "click events",
     "z": "ex-ui-breadcrumb",
     "x": 700,
     "y": 280,
@@ -59,7 +59,7 @@
     "z": "ex-ui-breadcrumb",
     "x": 120,
     "y": 480,
-    "payload": "[{\"label\":\"Home\",\"href\":\"/\"},{\"label\":\"Settings\"}]",
+    "payload": "[{\"label\":\"Home\",\"action\":\"/\"},{\"label\":\"Settings\",\"active\":true}]",
     "payloadType": "json",
     "repeat": "",
     "crontab": "",
