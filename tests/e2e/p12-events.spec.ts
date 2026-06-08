@@ -3,6 +3,8 @@ import path from "node:path";
 
 import { expect, test } from "@playwright/test";
 
+import { gotoEditor } from "../helpers/editor-ready";
+
 type FlowNode = Record<string, unknown>;
 
 async function loadFlowFixture(relativePath: string): Promise<FlowNode[]> {
@@ -50,8 +52,7 @@ test.describe("P12: configurable event system — editor", () => {
     });
 
     test("ui-app registered type has outputLabels and event defaults", async ({ page }) => {
-        await page.goto("/");
-        await page.waitForLoadState("networkidle");
+        await gotoEditor(page);
 
         const result = await page.evaluate(() => {
             const typeDef = (RED.nodes as unknown as {
@@ -78,8 +79,7 @@ test.describe("P12: configurable event system — editor", () => {
     });
 
     test("ui-app outputLabels returns clientConnected and clientDisconnected for enabled events", async ({ page }) => {
-        await page.goto("/");
-        await page.waitForLoadState("networkidle");
+        await gotoEditor(page);
 
         const result = await page.evaluate(() => {
             const typeDef = (RED.nodes as unknown as {
@@ -106,8 +106,7 @@ test.describe("P12: configurable event system — editor", () => {
     });
 
     test("ui-route registered type has event defaults for onEnter and onLeave", async ({ page }) => {
-        await page.goto("/");
-        await page.waitForLoadState("networkidle");
+        await gotoEditor(page);
 
         const result = await page.evaluate(() => {
             const typeDef = (RED.nodes as unknown as {
@@ -133,8 +132,7 @@ test.describe("P12: configurable event system — editor", () => {
     });
 
     test("ui-container registered type has event defaults for onShow and onHide", async ({ page }) => {
-        await page.goto("/");
-        await page.waitForLoadState("networkidle");
+        await gotoEditor(page);
 
         await openEditor(page, "mountContainerNode");
 
@@ -148,8 +146,7 @@ test.describe("P12: configurable event system — editor", () => {
     });
 
     test("enabling onEnter on a ui-route node updates outputs count via oneditsave logic", async ({ page }) => {
-        await page.goto("/");
-        await page.waitForLoadState("networkidle");
+        await gotoEditor(page);
 
         const result = await page.evaluate(() => {
             const typeDef = (RED.nodes as unknown as {

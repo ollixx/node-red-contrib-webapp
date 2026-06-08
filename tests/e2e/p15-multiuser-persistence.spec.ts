@@ -1,9 +1,10 @@
 import { expect, test } from "@playwright/test";
 
+import { gotoEditor } from "../helpers/editor-ready";
+
 test.describe("P15: Multi-user and client persistence — editor", () => {
     test("ui-store registered type has persist default set to false", async ({ page }) => {
-        await page.goto("/");
-        await page.waitForLoadState("networkidle");
+        await gotoEditor(page);
 
         const result = await page.evaluate(() => {
             const typeDef = (RED.nodes as unknown as {
@@ -25,8 +26,7 @@ test.describe("P15: Multi-user and client persistence — editor", () => {
     });
 
     test("ui-store editor HTML contains persist checkbox", async ({ page }) => {
-        await page.goto("/");
-        await page.waitForLoadState("networkidle");
+        await gotoEditor(page);
 
         const html = await page.evaluate(() => {
             const template = document.querySelector("script[data-template-name='ui-store']");

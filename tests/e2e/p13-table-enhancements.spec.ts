@@ -3,6 +3,8 @@ import path from "node:path";
 
 import { expect, test } from "@playwright/test";
 
+import { gotoEditor } from "../helpers/editor-ready";
+
 type FlowNode = Record<string, unknown>;
 
 async function loadFlowFixture(relativePath: string): Promise<FlowNode[]> {
@@ -28,8 +30,7 @@ test.describe("P13: ui-table enhancements — editor", () => {
     });
 
     test("ui-table registered type has events and footer defaults", async ({ page }) => {
-        await page.goto("/");
-        await page.waitForLoadState("networkidle");
+        await gotoEditor(page);
 
         const result = await page.evaluate(() => {
             const typeDef = (RED.nodes as unknown as {
@@ -58,8 +59,7 @@ test.describe("P13: ui-table enhancements — editor", () => {
     });
 
     test("ui-table outputLabels returns row event names for enabled events", async ({ page }) => {
-        await page.goto("/");
-        await page.waitForLoadState("networkidle");
+        await gotoEditor(page);
 
         const result = await page.evaluate(() => {
             const typeDef = (RED.nodes as unknown as {
@@ -89,13 +89,7 @@ test.describe("P13: ui-table enhancements — editor", () => {
         const mountFlow = await loadFlowFixture("tests/e2e/fixtures/editor-mount-options.flow.json");
         await deployFlow(request, mountFlow);
 
-        await page.goto("/");
-        await page.waitForLoadState("networkidle");
-
-        await page.waitForFunction(() => {
-            const nodeApi = (window as typeof window & { RED?: { nodes?: { node: (nodeId: string) => unknown } } }).RED?.nodes;
-            return typeof nodeApi?.node === "function";
-        });
+        await gotoEditor(page);
 
         // Verify the template script content contains expected markup
         const result = await page.evaluate(() => {

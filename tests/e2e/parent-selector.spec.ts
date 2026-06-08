@@ -3,6 +3,8 @@ import path from "node:path";
 
 import { expect, test } from "@playwright/test";
 
+import { gotoEditor } from "../helpers/editor-ready";
+
 type FlowNode = Record<string, unknown>;
 
 async function loadFlowFixture(relativePath: string): Promise<FlowNode[]> {
@@ -50,8 +52,7 @@ test.describe("P11b: parent SelectBox in editors", () => {
     });
 
     test("ui-route editor shows populated parent app SelectBox", async ({ page }) => {
-        await page.goto("/");
-        await page.waitForLoadState("networkidle");
+        await gotoEditor(page);
 
         // ui-route node is not in the mount fixture; use a ui-store which has a parent select
         // Instead, verify via the ui-store node (app-scoped)
@@ -68,8 +69,7 @@ test.describe("P11b: parent SelectBox in editors", () => {
     });
 
     test("ui-button editor parent slot selector shows route entries", async ({ page }) => {
-        await page.goto("/");
-        await page.waitForLoadState("networkidle");
+        await gotoEditor(page);
         await openEditor(page, "mountButtonNode");
 
         const mountOptionValues = await page.evaluate(() => {
@@ -88,8 +88,7 @@ test.describe("P11b: parent SelectBox in editors", () => {
     });
 
     test("ui-button registered type has onadd that produces a name default", async ({ page }) => {
-        await page.goto("/");
-        await page.waitForLoadState("networkidle");
+        await gotoEditor(page);
 
         const result = await page.evaluate(() => {
             // Get the registered node type definition

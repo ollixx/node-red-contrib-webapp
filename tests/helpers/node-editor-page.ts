@@ -1,5 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 
+import { waitForNodeTypes } from "./editor-ready";
+
 /**
  * NodeEditorPage — page-object for driving the Node-RED EDITOR (canvas) at
  * port 1882 (P47). This is the only helper that interacts with the editor UI
@@ -59,6 +61,9 @@ export class NodeEditorPage {
             const red = (window as unknown as { RED?: REDGlobal }).RED;
             return Boolean(red?.nodes?.node && red?.editor?.edit);
         });
+        // The API existing does not mean node-type definitions are registered;
+        // wait for the registry to settle so getType()/editor defaults are stable.
+        await waitForNodeTypes(this.page);
         await this.dismissWelcomeTour();
     }
 
