@@ -26,7 +26,7 @@ test.describe("ui-accordion (P45)", () => {
 
         const flow = new FlowBuilder()
             .app({ id: "accApp1", root: "accApp1" })
-            .node("ui-accordion", { id: "accNode1", items })
+            .node("ui-accordion", { id: "accNode1", sections: items })
             .build();
 
         await deployFlow(request, flow);
@@ -46,7 +46,7 @@ test.describe("ui-accordion (P45)", () => {
 
         const flow = new FlowBuilder()
             .app({ id: "accApp2", root: "accApp2" })
-            .node("ui-accordion", { id: "accNode2", items })
+            .node("ui-accordion", { id: "accNode2", sections: items })
             .build();
 
         await deployFlow(request, flow);
@@ -61,7 +61,7 @@ test.describe("ui-accordion (P45)", () => {
     test("empty items renders accordion container without crashing", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "accApp3", root: "accApp3" })
-            .node("ui-accordion", { id: "accNode3", items: "" })
+            .node("ui-accordion", { id: "accNode3", sections: "" })
             .build();
 
         await deployFlow(request, flow);

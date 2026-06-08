@@ -988,6 +988,7 @@ function toComponentDefinitions(components) {
                     // P49: display type (progress/skeleton/badge/menu/list render mode).
                     ...(component.displayType !== undefined ? { displayType: component.displayType } : {}),
                     ...(component.items !== undefined ? { items: component.items } : {}),
+                    ...(component.sections !== undefined ? { sections: component.sections } : {}),
                     ...(component.tabs !== undefined ? { tabs: component.tabs } : {}),
                     ...(component.orientation !== undefined ? { orientation: component.orientation } : {}),
                     // P45: composite and layout node props
@@ -3962,7 +3963,7 @@ const runtimeNodeRegistry = {
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
-            items: (parseJsonList(config.items).length > 0 ? parseJsonList(config.items) : parseList(config.items)).map((t) => {
+            sections: (parseJsonList(config.sections).length > 0 ? parseJsonList(config.sections) : parseList(config.sections)).map((t) => {
                 if (typeof t === "string") {
                     try { return JSON.parse(t); } catch { return { id: t, label: t }; }
                 }
