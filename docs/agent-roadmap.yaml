@@ -1243,7 +1243,7 @@ phases:
   # je Fix einen Outcome-Test (gerendertes Attribut/DOM), der ohne das Feature rot wird.
   # ════════════════════════════════════════════════════════════════════════
 
-  - { id: P95, title: "ui-breadcrumb Definitionsmodell + Click-Events (Redesign) — alle Pfad-Elemente emittieren ein Click-Event (sourceId = breadcrumb-Knoten). Definition über: (a) Array von Strings (String = Label UND Click-Parameter); (b) Array von Objekten {label, action, active} (active = kein Link/Bootstrap; Shoelace rendert letztes Element anders, bleibt klickbar); (c) Slot „default\" → Kindknoten = Elemente, Click-Param = Kind-ID; (d) Slot „separator\" → Kindknoten als Trenner (z. B. ui-icon). Docs anpassen (geht über P75 hinaus)", status: pending, dependencies: [P16c] }
+  - { id: P95, title: "ui-breadcrumb Definitionsmodell + Click-Events (Redesign) — alle Pfad-Elemente emittieren ein Click-Event (sourceId = breadcrumb-Knoten). Definition über: (a) Array von Strings (String = Label UND Click-Parameter); (b) Array von Objekten {label, action, active} (active = kein Link/Bootstrap; Shoelace rendert letztes Element anders, bleibt klickbar); (c) Slot „default\" → Kindknoten = Elemente, Click-Param = Kind-ID; (d) Slot „separator\" → Kindknoten als Trenner (z. B. ui-icon). Docs anpassen (geht über P75 hinaus)", status: in_progress, dependencies: [P16c] }
 
   - { id: P96, title: "🔴 Bugfix: ui-button rendert NICHTS — Render-Pipeline-Ursache finden (components-Filter/KIND_MAP/componentKindSchema/renderer/serializer, vgl. P83-divider) und fixen + Outcome-Test (sl-button mit Label im DOM)", status: pending, dependencies: [P26] }
 
