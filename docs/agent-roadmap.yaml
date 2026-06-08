@@ -1184,7 +1184,7 @@ phases:
 
   - { id: P83, title: "Klassische Verhaltens-Tests Display-Knoten (text/button/table/container/avatar/image/icon/list/divider): msg.payload→Primärfeld+Push, Interaktions-Verb→SSE-Push, Event-Config (button click, table rowSelect/rowAction/checkboxChange, list itemClick/itemSelect), Pass-Through; fehlende Render-E2E (ui-icon, ui-divider) ergänzen; E2E sonst auf Editor+Render eindampfen", status: done, dependencies: [P81], archive: "docs/agent-roadmap-archive.yaml#P83" }
 
-  - { id: P84, title: "Klassische Verhaltens-Tests Feedback-Knoten (alert/badge/empty-state/log/progress/skeleton/toast): msg.payload-Patch+Push, Pass-Through, dismiss-Event (alert), toast (override/clientId/fehlende message), skeleton/empty-state op-Handling, ui-log minSeverity/maxEntries (Client-JS); E2E auf Render eindampfen", status: pending, dependencies: [P81] }
+  - { id: P84, title: "Klassische Verhaltens-Tests Feedback-Knoten (alert/badge/empty-state/log/progress/skeleton/toast): msg.payload-Patch+Push, Pass-Through, dismiss-Event (alert), toast (override/clientId/fehlende message), skeleton/empty-state op-Handling, ui-log minSeverity/maxEntries (Client-JS); E2E auf Render eindampfen", status: in_progress, dependencies: [P81] }
 
   - { id: P85, title: "Klassische Verhaltens-Tests Navigation-Knoten (accordion/breadcrumb/menu/pagination/stepper/tabs): select-Verb→SSE-Push (tabs/stepper/menu), Output-Event-Dispatch (pageChange/tabChange/stepChange/sectionOpen-close/navigate), msg.payload/patch, accordion multiple/defaultOpen, stepper complete + stepId-Contract, Pass-Through; fehlende Editor-E2E pro Knoten ergänzen", status: pending, dependencies: [P81] }
 
