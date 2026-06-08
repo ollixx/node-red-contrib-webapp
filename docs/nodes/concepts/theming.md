@@ -2,158 +2,127 @@
 
 ## Grundprinzip: Drei Ebenen
 
-Theming und Komponenten sind zwei separate Konzepte die oft vermischt werden. Diese Lib trennt sie sauber in drei unabhängige Ebenen:
+Theming und Komponenten sind zwei separate Konzepte, die oft vermischt werden.
+Diese Lib trennt sie in drei Ebenen:
 
 ```
-Ebene 1: Design-Tokens        ← Farben, Abstände, Typographie, Radii
-Ebene 2: Komponenten-Variants ← semantische Varianten (primary, danger, ghost...)
-Ebene 3: Renderer-Backend     ← optional: Material / Bootstrap / eigenes CSS
+Ebene 1: Design-Tokens        ← Farben, Abstände, Typographie, Radii (als CSS Custom Properties)
+Ebene 2: Komponenten-Variants ← semantische Varianten (primary, danger, ghost, …)
+Ebene 3: Renderer-Adapter     ← Web-Component-Adapter (Shoelace) — backend-agnostisches Modell
 ```
 
 ---
 
 ## Ebene 1: Design-Tokens
 
-Ein Theme ist zunächst ein Satz benannter Variablen — keine festen CSS-Klassen, keine hart codierten Farben. Die Tokens werden als CSS Custom Properties ins Dokument injiziert.
+Ein Theme ist ein Satz benannter Variablen — keine festen CSS-Klassen, keine
+hart codierten Farben. Die Tokens werden als **CSS Custom Properties** (`--wa-*`)
+in ein `:root { }`-Block injiziert (`buildDesignTokenCss`). Alle Komponenten
+konsumieren ausschließlich diese Tokens.
 
-Beispiel-Token-Set:
+Das Token-Set ist ein **flaches** Objekt (`designTokensSchema` in
+`packages/schema/src/node-definitions.ts`); jeder Schlüssel mappt 1:1 auf eine
+CSS-Variable (`DESIGN_TOKEN_CSS_VARS`):
 
-```yaml
-colors:
-  primary:    "#2563eb"
-  secondary:  "#64748b"
-  danger:     "#dc2626"
-  success:    "#16a34a"
-  surface:    "#ffffff"
-  background: "#f8fafc"
-  text:       "#0f172a"
-  textMuted:  "#64748b"
-  border:     "#e2e8f0"
+| Token-Feld | CSS-Variable |
+|---|---|
+| `colorPrimary` / `colorPrimaryFg` | `--wa-color-primary` / `--wa-color-primary-fg` |
+| `colorSuccess` / `colorSuccessFg` | `--wa-color-success` / `--wa-color-success-fg` |
+| `colorWarning` / `colorWarningFg` | `--wa-color-warning` / `--wa-color-warning-fg` |
+| `colorDanger` / `colorDangerFg` | `--wa-color-danger` / `--wa-color-danger-fg` |
+| `colorNeutral` / `colorNeutralFg` | `--wa-color-neutral` / `--wa-color-neutral-fg` |
+| `colorBackground`, `colorSurface`, `colorBorder` | `--wa-color-background`, `--wa-color-surface`, `--wa-color-border` |
+| `colorText`, `colorTextMuted` | `--wa-color-text`, `--wa-color-text-muted` |
+| `fontFamily`, `fontSizeBase` | `--wa-font-family`, `--wa-font-size-base` |
+| `fontWeightNormal`, `fontWeightBold`, `lineHeightBase` | `--wa-font-weight-normal`, `--wa-font-weight-bold`, `--wa-line-height-base` |
+| `spacingUnit` | `--wa-spacing-unit` |
+| `radiusSm`, `radiusMd`, `radiusLg`, `radiusFull` | `--wa-radius-sm`, `--wa-radius-md`, `--wa-radius-lg`, `--wa-radius-full` |
 
-typography:
-  fontFamily: "Inter, system-ui, sans-serif"
-  fontSize:   "14px"
-  lineHeight: "1.5"
-
-spacing:
-  base: "4px"   # alle Abstände sind Vielfache davon
-
-radii:
-  sm: "4px"
-  md: "8px"
-  lg: "16px"
-```
-
-Der App-Autor konfiguriert das Theme am `ui-app`-Knoten. Alle Komponenten konsumieren ausschließlich diese Tokens — keine direkten Farbwerte.
+Der App-Autor konfiguriert die Tokens am `ui-app`-Knoten im Feld `tokens`
+(visueller Token-Editor-Dialog, P40). Nicht gesetzte Tokens fallen auf die
+System-Defaults zurück; das Theme ist additiv — man überschreibt nur, was man
+ändern will.
 
 ---
 
 ## Ebene 2: Komponenten-Variants
 
-Variants sind semantische Rollen die ein Component einnehmen kann. Sie sind vom Theme unabhängig — das Theme entscheidet wie `primary` aussieht, der Variant entscheidet welche Rolle ein Element spielt.
+Variants sind semantische Rollen, die ein Component einnimmt. Sie sind vom Theme
+unabhängig — das Theme entscheidet, *wie* `primary` aussieht; der Variant
+entscheidet, welche *Rolle* ein Element spielt.
 
-**Single Source of Truth.** Das Vokabular pro Knoten ist im Schema als exportierte Konstante festgeschrieben (`BUTTON_VARIANTS`, `TEXT_VARIANTS`, `CONTAINER_VARIANTS`, `INPUT_VARIANTS`, `SEVERITY_VARIANTS` in `packages/schema/src/contracts.ts`). Editor-SelectBox und Serializer importieren dieselben Konstanten — die folgenden Listen spiegeln sie nur wider und sind nicht die Quelle.
+**Single Source of Truth.** Das Vokabular pro Knoten ist im Schema als
+exportierte Konstante festgeschrieben (`BUTTON_VARIANTS`, `TEXT_VARIANTS`,
+`CONTAINER_VARIANTS`, `INPUT_VARIANTS`, `SEVERITY_VARIANTS` in
+`packages/schema/src/contracts.ts`, gebündelt in `COMPONENT_VARIANT_VOCABULARY`).
+Editor-SelectBox und Serializer importieren dieselben Konstanten — die folgenden
+Listen spiegeln sie nur wider.
 
 **`ui-button`** (`BUTTON_VARIANTS`, Default `neutral`):
-- `primary` — Hauptaktion (Submit, Speichern)
-- `secondary` — Nebenaktion (Abbrechen, Zurück)
-- `success` — bestätigende Aktion
-- `danger` — destruktive Aktion (Löschen)
-- `warning` — warnende Aktion
-- `neutral` — neutrale Standardaktion
-- `ghost` — dezente Aktion (Icons, Links)
-- `link` — rein textuelle Aktion
+- `primary`, `secondary`, `success`, `danger`, `warning`, `neutral`, `ghost`, `link`
 
 **`ui-text`** (`TEXT_VARIANTS`, Default `body`):
-- `heading-1`, `heading-2`, `heading-3`
-- `body`, `caption`, `label`
-- `code`, `muted`
+- `heading-1`, `heading-2`, `heading-3`, `body`, `caption`, `label`, `code`, `muted`
 
 **`ui-container`** (`CONTAINER_VARIANTS`, Default `card`):
-- `card` — erhöhte Fläche mit Shadow
-- `panel` — flache abgegrenzte Fläche
-- `section` — Seitenabschnitt mit Padding
-- `transparent` — kein visueller Rahmen
+- `card`, `panel`, `section`, `transparent`
 
 **`ui-input`** (`INPUT_VARIANTS`, Default `default`):
 - `default`, `filled`, `outlined`
 
 **`ui-badge` / `ui-alert`** (`SEVERITY_VARIANTS`; Badge-Default `neutral`, Alert-Default `primary`):
-- `primary`, `success`, `warning`, `danger`, `neutral`
-- `info` — akzeptierter **Alias** von `primary` (mappt auf den primary-Look)
+- `primary`, `success`, `warning`, `danger`, `neutral`, `info` — `info` ist ein **eigenständiger** Wert (kein Alias).
 
 > Diese Knoten tragen ihre semantische Variante im Feld `severity` (nicht `variant`).
 
 ### Variant vs. displayType
 
-Einige Knoten haben ein HTML-Feld namens `variant`, das in Wahrheit ein **Darstellungstyp** ist, keine Ebene-2-Rolle. Diese gehören **nicht** ins Variant-Vokabular und erscheinen nicht in der Variant-SelectBox — sie liegen im Feld `displayType`:
+Einige Knoten haben ein Feld, das in Wahrheit ein **Darstellungstyp** ist, keine
+Ebene-2-Rolle. Diese gehören **nicht** ins Variant-Vokabular und liegen im Feld
+`displayType`:
 
 | Knoten | `displayType`-Werte |
 |---|---|
 | `ui-progress` | `bar`, `spinner`, `circular` |
-| `ui-avatar` | `text`, `avatar`, `card`, `table` |
+| `ui-skeleton` | `text`, `avatar`, `card`, `table` |
 | `ui-badge` (Form) | `count`, `dot`, `status` |
 | `ui-menu` | `sidebar`, `topbar`, `dropdown` |
+| `ui-list` | `default`, `divided`, `compact` |
 
-### Regeln für Backends (Ebene 3)
+### Regeln für den Adapter (Ebene 3)
 
-Das Vokabular ist **fest und portabel** — es gehört zum Komponenten-Contract, nicht zum aktiven Backend. Daraus folgen drei harte Regeln:
+Das Vokabular ist **fest und portabel** — es gehört zum Komponenten-Contract,
+nicht zum Adapter. Daraus folgen drei harte Regeln:
 
-1. **Many-to-one ist erlaubt.** Ein Backend darf mehrere Varianten auf dasselbe konkrete Ausgabe-Token abbilden (z.B. Shoelace: `ghost` → `default`, `link`/`text` → `text`; `secondary` + `neutral` → `neutral`).
-2. **Graceful degradation, kein Pass-through.** Ein unbekannter Wert fällt auf den dokumentierten Default des Knotens zurück — niemals ein Crash und niemals rohes Durchreichen eines nicht gemappten Tokens.
-3. **Backends erweitern das Vokabular NIE.** Ein Backend darf keine eigenen Varianten hinzufügen. Wenn ein Element vom Theme abweichen muss, ist das ein Signal, dass im Schema-Vokabular eine Variante fehlt — nicht im Backend.
-
-Das Variant-System verhindert so direkte Style-Overrides und hält Flows über Backends hinweg portabel.
+1. **Many-to-one ist erlaubt.** Der Adapter darf mehrere Varianten auf dasselbe Ausgabe-Token abbilden (z. B. Shoelace: `ghost` → `default`, `link` → `text`; `secondary` + `neutral` → `neutral`).
+2. **Graceful degradation, kein Pass-through.** Ein unbekannter Wert fällt auf den dokumentierten Default des Knotens zurück — nie ein Crash, nie rohes Durchreichen.
+3. **Der Adapter erweitert das Vokabular NIE.** Fehlt eine Rolle, gehört sie ins Schema-Vokabular, nicht in den Adapter.
 
 ---
 
-## Ebene 3: Renderer-Backend (optional)
+## Ebene 3: Renderer-Adapter (Shoelace)
 
-Das Renderer-Backend bestimmt welche HTML-Strukturen und CSS-Klassen für Komponenten erzeugt werden. Es ist der einzige Punkt wo externe Frameworks eingehängt werden können.
-
-### Eingebautes Backend: `webapp-default`
-
-Die Lib liefert ein eigenes schlankes Backend mit. Es implementiert alle Komponenten gegen die Design-Tokens aus Ebene 1. Kein externes Framework, keine Abhängigkeit.
-
-### Austauschbare Backends (Community / später)
-
-Ein Backend ist ein npm-Paket das das Backend-Interface implementiert. Beispiele:
-
-| Backend-Paket | Basis | Status |
-|---|---|---|
-| `webapp-backend-default` | eigenes CSS | eingebaut |
-| `webapp-backend-material` | Material Design | geplant |
-| `webapp-backend-bootstrap` | Bootstrap 5 | geplant |
-| `webapp-backend-ant` | Ant Design | Community |
-| `webapp-backend-shadcn` | shadcn/ui | Community |
-
-Das Backend wird am `ui-app`-Knoten konfiguriert:
-
-```
-ui-app:
-  theme: { ... }         ← Ebene 1: Tokens
-  backend: "material"    ← Ebene 3: Renderer-Backend
-```
-
-Wenn kein Backend angegeben ist, greift `webapp-default`.
-
-### Was ein Backend implementiert
-
-Ein Backend übersetzt das interne Komponenten-Modell in konkrete HTML-Strukturen:
+Der Adapter übersetzt das interne, backend-agnostische Komponenten-Modell in
+konkrete Web-Components. Aktuell gibt es **einen** Adapter: **Shoelace**
+(`packages/renderer/src/shoelace-adapter.ts`, ADR 0002). Die Shoelace-Assets sind
+lokal vendored — kein CDN (ADR 0008).
 
 ```
 ui-button { variant: "primary", label: "Speichern" }
-  ↓ webapp-default
-<button class="wb-btn wb-btn--primary">Speichern</button>
-
-  ↓ webapp-backend-material
-<button class="mdc-button mdc-button--raised"><span>Speichern</span></button>
-
-  ↓ webapp-backend-bootstrap
-<button class="btn btn-primary">Speichern</button>
+  ↓ Shoelace-Adapter
+<sl-button variant="primary">Speichern</sl-button>
 ```
 
-Design-Tokens aus Ebene 1 fließen immer ein — auch Material- und Bootstrap-Backends nutzen die konfigurierten Primärfarben.
+**Token-Bridge.** Damit das in Ebene 1 konfigurierte Theme auch die
+Shoelace-Komponenten erreicht, mappt eine Bridge die `--wa-*`-Tokens auf die
+`--sl-*`-Custom-Properties von Shoelace (P62). So steuert ein einziges
+Token-Set sowohl die eigenen als auch die Shoelace-Stile.
+
+> Hinweis: Das Modell ist bewusst backend-agnostisch gehalten (semantische Props
+> + Varianten), damit ein anderer Adapter prinzipiell möglich bleibt. Ein
+> austauschbares Backend (Material/Bootstrap/…) ist heute aber **nicht**
+> implementiert — Shoelace ist der einzige Adapter, und es gibt kein
+> `backend`-Konfigurationsfeld.
 
 ---
 
@@ -163,33 +132,29 @@ Design-Tokens aus Ebene 1 fließen immer ein — auch Material- und Bootstrap-Ba
 ui-app:
   root: myapp
   layout: app
-  theme:
-    colors:
-      primary: "#7c3aed"
-      danger:  "#dc2626"
-    typography:
-      fontFamily: "Geist, sans-serif"
-    radii:
-      md: "12px"
-  backend: webapp-default   # optional, default wenn weggelassen
+  tokens:
+    colorPrimary: "#7c3aed"
+    colorPrimaryFg: "#ffffff"
+    colorDanger: "#dc2626"
+    fontFamily: "Geist, system-ui, sans-serif"
+    radiusMd: "12px"
 ```
 
-Nicht angegebene Tokens fallen auf die System-Defaults zurück. Das Theme ist additiv — man überschreibt nur was man ändern will.
+Nicht angegebene Tokens fallen auf die System-Defaults zurück.
 
 ---
 
-## `ui-style` als Escape-Hatch
+## `ui-style` als Escape-Hatch (geplant)
 
-Wenn ein einzelnes Element vom Theme abweichen muss ohne dass dafür ein neues Variant sinnvoll ist, gibt es den `ui-style`-Knoten (spätere Version). Er erlaubt direkte Token-Overrides oder zusätzliche CSS-Klassen für ein einzelnes Element.
-
-**Faustregel:** Wer `ui-style` häufig braucht, hat wahrscheinlich ein fehlendes Variant oder einen fehlenden Token. `ui-style` ist der Ausnahmefall, nicht der Normalweg.
+Für den Ausnahmefall, dass ein einzelnes Element vom Theme abweichen muss, ohne
+dass ein neues Variant sinnvoll ist, ist ein `ui-style`-Knoten angedacht
+(spätere Version, **noch nicht implementiert**). **Faustregel:** Wer ihn häufig
+bräuchte, hat wahrscheinlich ein fehlendes Variant oder einen fehlenden Token.
 
 ---
 
 ## Offene Punkte
 
-- Wie werden Tokens an das Node-RED-Editor-UI weitergegeben, damit die Vorschau im Editor das richtige Theme zeigt?
 - Dark Mode: eigenes Token-Set oder automatische Invertierung?
-- Animationen und Transitions als eigene Token-Kategorie?
-- Backend-Interface-Spezifikation: was muss ein Community-Backend implementieren?
-- Token-Vererbung: kann eine Route ein Teil-Theme überschreiben das nur für ihre Kinder gilt?
+- Animationen/Transitions als eigene Token-Kategorie?
+- Token-Vererbung: kann eine Route ein Teil-Theme nur für ihre Kinder überschreiben?

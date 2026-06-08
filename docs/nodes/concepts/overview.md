@@ -2,95 +2,62 @@
 
 ## Zweck
 
-Dieser Ordner beschreibt die aktuell vorhandenen Node-RED-Knoten des Projekts in ihrem heutigen Zustand. Er trennt dabei bewusst zwischen:
+Dieser Ordner beschreibt die Node-RED-Knoten des Projekts in ihrem heutigen
+Zustand. Er trennt dabei zwischen:
 
 - dem deklarativen Vertrag, den ein Knoten ins gemeinsame Modell einbringt
-- dem aktuellen Laufzeitverhalten im MVP
-- den offenen Punkten, die vor einer schärferen Produktspezifikation geklärt werden sollten
+- dem tatsächlichen Laufzeitverhalten
+- den noch offenen Punkten
 
-Die Dokumente sind damit keine reinen Benutzerleitfäden, sondern die Arbeitsgrundlage für die nächste Spezifikationsrunde.
+Die Dokumente sind Arbeitsgrundlage *und* Referenz. Maßgeblich („source of
+truth") sind im Zweifel das Schema (`packages/schema/src/contracts.ts`,
+`node-definitions.ts`) und die ADRs unter `docs/adr/`; diese Doku spiegelt sie
+wider.
 
-Das mehrfach genutzte Layout-Feature ist zusätzlich zentral in [layout.md](layout.md) dokumentiert.
+Querschnittliche Konzepte sind in eigenen Dateien zentral dokumentiert:
+[layout.md](layout.md), [stores.md](stores.md), [actions.md](actions.md),
+[events.md](events.md), [messages.md](messages.md), [inputs.md](inputs.md),
+[errors.md](errors.md), [theming.md](theming.md), [multi-user.md](multi-user.md).
 
 ## Kategorien
 
 - Struktur: [`ui-app`](../structure/ui-app.md), [`ui-route`](../structure/ui-route.md), [`ui-dialog`](../structure/ui-dialog.md)
-- View: [`ui-text`](../display/ui-text.md), [`ui-button`](../display/ui-button.md), [`ui-table`](../display/ui-table.md), [`ui-container`](../display/ui-container.md), [`ui-input`](../input/ui-input.md)
+- View (Display / Input / Feedback / Navigation): u. a. [`ui-text`](../display/ui-text.md), [`ui-button`](../display/ui-button.md), [`ui-table`](../display/ui-table.md), [`ui-container`](../display/ui-container.md), [`ui-input`](../input/ui-input.md), [`ui-alert`](../feedback/ui-alert.md), [`ui-tabs`](../navigation/ui-tabs.md) — vollständige Liste in den jeweiligen Unterordnern.
 - State: [`ui-store`](../state/ui-store.md), [`ui-query`](../state/ui-query.md)
-- Verhalten: [`ui-action`](../behavior/ui-action.md), [`ui-navigation`](../behavior/ui-navigation.md)
+- Verhalten: [`ui-action`](../behavior/ui-action.md), [`ui-navigation`](../behavior/ui-navigation.md) *(deprecated — `ui-action` mit `navigate` ist der Weg, siehe ADR 0007)*
 
 ## Gemeinsame Modellregeln
 
-- Eine App wird heute fachlich über `uiId` bzw. im gemeinsamen Modell über `id` identifiziert. Dieser Wert muss eindeutig sein.
-- ~~Die Node-RED-interne Knoten-ID reicht nicht als fachliche ID für das gemeinsame UI-Modell~~. Doch, die IDs reichen aus, um Knoten zu referenzieren
-- View-Knoten werden über `mount` an Route-, Dialog- oder Preset-Layout-Slots gebunden.
-- Die Editor-Oberfläche bietet für gängige Referenzen wie `layoutId`, `routeId`, `mount`, `action` und `storeId` vorbelegte Auswahllisten aus den vorhandenen Webapp-Knoten.
-- Strukturgeführte Parent- oder Baum-Selektoren existieren weiterhin nicht; die Auswahl bleibt feldbasiert und arbeitet auf den fachlichen IDs bzw. Mount-Strings.
-- Das gemeinsame Schema validiert heute vor allem Feldpräsenz und Grundform, nicht die vollständige fachliche Semantik.
+- Eine App wird über ihre `id` identifiziert; dieser Wert muss eindeutig sein.
+- Knoten werden über ihre Node-RED-Knoten-IDs referenziert (eine separate fachliche ID ist nicht nötig).
+- View-Knoten werden über `mount` an Route-, Dialog- oder Preset-Layout-Slots gebunden. Die UI-Hierarchie ergibt sich aus `parent`/`mount`, **nie** aus Wires — Wires tragen Daten-/Event-Fluss.
+- Mount-Pfade folgen dem Muster `<type>:<id>/<slot>` (z. B. `route:/customers/content`).
+- Für Referenzen wie `parent`, `mount`, `routeId`, `action`, `storeId` bietet der Editor durchsuchbare Auswahllisten aus den vorhandenen Webapp-Knoten an (einheitlicher Node-Picker-Dialog, P68).
+- Das gemeinsame Schema validiert Feldpräsenz, Grundform und zunehmend fachliche Constraints (z. B. Routen-Pfad `/` verboten, Grid-Platzierung positive Integer, Mehrdeutigkeit bei Navigation).
 
 ## Ereignis- und Zustandsmodell
 
-- UI-Zustand und UI-Verhalten sind getrennte Konzepte.
-- Fachlicher oder eingabebezogener Datenzustand läuft ausschließlich über `ui-store`.
-- Veränderungen am Verhalten oder am Interaktionszustand von UI-Elementen laufen über `ui-action`.
-- `ui-event` bezeichnet ausschließlich Ereignisse vom Client zum Backend.
-- Fachliche Events sind davon getrennt. Sie können im Client explizit ausgelöst oder vom Backend an den Client weitergeleitet werden, wenn nicht direkt eine `ui-action` ausgeführt werden soll.
+UI-Zustand und UI-Verhalten sind getrennte Konzepte:
+
+- **Zustand** (fachliche/eingabebezogene Daten) läuft ausschließlich über `ui-store` — siehe [stores.md](stores.md).
+- **Verhalten** (Navigation, Sichtbarkeit, Offenlegung, Fokus, …) läuft über `ui-action` als schema-validierte Action-Message — siehe [actions.md](actions.md).
+- **Events** sind Meldungen vom Client zum Backend (Click, Change, Submit, Select, Route-onEnter/onLeave …). Sie reisen als `msg.ui`-Event-Message und werden vom Ursprungsknoten auf dessen Out-Port emittiert; der Flow entscheidet, was passiert — siehe [events.md](events.md). Es gibt **keinen** eigenen `ui-event`-Knoten; jeder interaktive Knoten emittiert seine Events selbst.
+- **Live-Transport:** Die gerenderte Oberfläche wird als framework-neutraler `RenderSnapshot` über einen SSE-Kanal an den Browser geliefert; Store-Updates und Interaktionsbefehle werden live nachgeschoben (P30/P31) — siehe [messages.md](messages.md).
 
 Abgrenzung:
-- `ui-action`: beschreibt, was die UI tun soll
-- `ui-store`: beschreibt, welcher Zustand gehalten und geändert wird
-- `ui-event`: beschreibt, was der Client dem Backend meldet
-- fachliches Event: beschreibt eine fachliche Nachricht zwischen Frontend und Backend ohne unmittelbare UI-Aktionssemantik
+- `ui-action`: beschreibt, was die UI tun soll (Interaktionszustand)
+- `ui-store`: beschreibt, welcher Datenzustand gehalten und geändert wird
+- Event (`msg.ui` mit `event`): beschreibt, was der Client dem Backend meldet
 
-## UI-Events und fachliche Events
+## Architektur-Eckpfeiler
 
-### `ui-event`
+- **Rendering-Backend:** ein Web-Component-Adapter auf Basis von **Shoelace** (ADR 0002), dessen Assets lokal vendored sind (ADR 0008). Das Modell ist backend-agnostisch (semantische Props + Varianten); der Adapter mappt auf das Framework — siehe [theming.md](theming.md).
+- **Keine Framework-Logik in der Runtime:** `nodes/webapp.js` enthält keine beispiel-/domänenspezifische Logik (ADR 0003). Fachliche Logik lebt im verdrahteten Flow.
+- **Fehlermodell:** strukturierte Fehler mit Severity, opt-in Backend→Frontend-Weiterleitung und ein `ui-log`-Knoten (ADR 0006) — siehe [errors.md](errors.md).
 
-Zweck:
-Beschreibt ausschließlich Ereignisse, die vom Client zum Backend gemeldet werden.
+## Offene Punkte (Auswahl)
 
-Typische Beispiele:
-- `click`
-- gemeldete UI-Statusänderungen wie Sichtbarkeit, Enabled-State oder ähnliche Zustandswechsel
-
-Regel:
-- `ui-events` laufen nur vom Client zum Backend, nie in die andere Richtung.
-
-### Fachliche Events
-
-Zweck:
-Beschreibt fachliche Nachrichten außerhalb der direkten UI-Aktionssemantik.
-
-Anwendung:
-- können explizit im Client ausgelöst werden
-- können vom Backend an den Client weitergeleitet werden
-- sind sinnvoll, wenn nicht unmittelbar eine `ui-action` ausgeführt werden soll, sondern ein fachlicher Event-Handler reagieren soll
-
-Offene Spezifikation:
-- Es ist noch offen, ob dafür ein eigener Knotentyp nötig ist oder ob dies über ein allgemeines Event-Handler-Konzept im Client modelliert wird.
-- Idee:
-  - Der ui-app Knoten emitted alle diese Events, so dass sie in node-red verarbeitet werden können.
-  - Genauso können messages an den ui-app Knoten gehen, die dann an den/die clients gesendet werden. Hier ist aber unklar, wie diese Events im Client verarbeitet werden.
-
-## Querschnittliche Designlücken
-
-### 1. Verhalten ist noch nicht ausreichend modelliert
-
-Das MVP zeigt erfolgreich, dass Struktur, Rendering und UI-Ereignisse zusammenarbeiten. Die Verhaltensschicht muss aber klar entlang von `ui-action` für UI-Verhalten, `ui-store` für Zustand und getrennten UI-/fachlichen Events geschnitten werden. Besonders `ui-navigation` sollte in diesem Modell als Spezialfall von `ui-action` verstanden werden.
-
-### 2. Inputs und Tabellen sind semantisch zu flach
-
-`ui-input` und `ui-table` funktionieren für das CRUD-Beispiel, tragen aber noch nicht genug Struktur für reale Anwendungen. Beide Knoten brauchen wahrscheinlich reichhaltigere Untermodelle oder zusätzliche spezialisierte Knoten.
-
-### 3. Preview und Produktmodell sind noch enger gekoppelt als gewünscht
-
-Die Preview-Laufzeit enthält beispielspezifische Sonderfälle für den Customer-CRUD-Flow. Das ist als MVP-Hardening legitim, darf aber nicht mit der langfristigen Knotenspezifikation verwechselt werden.
-
-## Empfohlene Nächste Schritte für die Spezifikation
-
-1. `ui-action` formal typisieren: mindestens `navigate`, `disable`, `enable`, `show`, `hide`, `trigger`.
-2. `ui-navigation` auf einen klaren Platz festlegen: eigener Komfort-Knoten oder Alias für `ui-action:navigate`.
-3. `ui-store` als alleinigen Pfad für Zustandsänderungen modellieren: set, patch, delete, Output-Semantik.
-4. UI-Events und fachliche Events explizit trennen und entscheiden, ob dafür ein eigener Event-Handler-Knoten oder ein Client-Event-Modell gebraucht wird.
-5. Danach die Input-Familie schärfen: Feldtypen, Labels, Validierung, Bindings und eventuelle Spezialisierungen wie Select oder Checkbox.
-6. Anschließend die Tabellen- und Listenmodelle erweitern: Spaltendefinitionen, Formatierung, Selektion, Pagination.
+- Reichere Untermodelle für `ui-input`/`ui-table` (Feldtypen, Validierung, strukturierte Spalten im Editor).
+- Vereinheitlichung des typedInput inkl. `store`-Typ über weitere Binding-Felder (Folge von P67).
+- Icon-System mit registrierbaren Libraries und Picker (geplant).
+- Clientseitige Store-Persistenz/Resynchronisierung (`persist`) — heute nur als Flag getragen, Verhalten noch nicht aktiv.

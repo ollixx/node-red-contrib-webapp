@@ -4,10 +4,15 @@ Die Einzeldokumente pro Knoten sowie übergreifende Konzepte sind unter [docs/no
 
 ## Übergeordnete Konzepte
 
-→ [Übersicht, gemeinsame Modellregeln, Ereignis- und Zustandsmodell, Designlücken](nodes/concepts/overview.md)
+→ [Übersicht, gemeinsame Modellregeln, Ereignis- und Zustandsmodell](nodes/concepts/overview.md)
 → [Layout-Feature (mehrfach genutztes Konzept)](nodes/concepts/layout.md)
-→ [Theming: Design-Tokens, Variants, Renderer-Backends](nodes/concepts/theming.md)
+→ [Stores und das `store`-Binding](nodes/concepts/stores.md)
+→ [Theming: Design-Tokens, Variants, Shoelace-Adapter](nodes/concepts/theming.md)
 → [Message-Formate](nodes/concepts/messages.md)
+→ [Actions / Interaktions-Verben](nodes/concepts/actions.md)
+→ [Events (Client → Backend)](nodes/concepts/events.md)
+→ [Inputs (Werte zurück in den State)](nodes/concepts/inputs.md)
+→ [Fehler-Handling und Logging](nodes/concepts/errors.md)
 → [Multi-User und Client-Persistenz](nodes/concepts/multi-user.md)
 
 ## Strukturknoten

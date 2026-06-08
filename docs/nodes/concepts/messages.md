@@ -19,6 +19,7 @@ Fokus, Reset) reisen einheitlich als **`msg.ui.action`**. Das ist ein
 ```
 msg.ui.action.type   = <verb>              ← siehe Verbset in actions.md
 msg.ui.action.to     = "/route/path"       ← nur navigate (optional)
+msg.ui.action.params = { id: "42" }        ← nur navigate: benannte URL-Parameter (optional)
 msg.ui.action.part   = "<sub-id>"          ← open/close/select (optional)
 msg.ui.action.target = "<node-/component-id>"  ← optionaler Override
 msg.ui.clientId      = <optional: nur für diesen Client>
@@ -50,29 +51,29 @@ Das vollständige Verbset und die Zieladressierung stehen in
 
 ---
 
-## Navigation-Messages
+## Navigation
 
-Erzeugt von `ui-action` mit `actionType: navigate` oder von `ui-navigation`.
+Navigation ist **kein eigenes Message-Format** — sie reist als Action-Message
+mit `type: "navigate"` (siehe oben). Zwei Szenarien (ADR 0007, P66-Amendment):
 
-```
-msg.ui.navigate.to        = "/customers/:id"
-msg.ui.navigate.params    = { id: "42" }
-msg.ui.clientId           = <optional>
-```
+- **Szenario 1 — verdrahtet:** Der Out-Port von `ui-action` ist mit einer `ui-route`/`ui-app` verbunden. Die Ziel-Route baut ihren Pfad aus dem **eigenen** `path` und den `msg.ui.action.params` (`:placeholder` → Parameter). Kein `to` nötig.
+- **Szenario 2 — `to`:** `ui-action` setzt `to` (typedInput: `str`/`msg`/`flow`/`global`/`jsonata`), das app-global aufgelöst wird; zusätzliche `params` sind möglich.
 
-`ui-route` empfängt diese Message intern über die Runtime. Der App-Autor muss sie nicht explizit verdrahten.
+`onEnter`/`onLeave` der betroffenen Route(n) werden in **beiden** Szenarien
+emittiert (siehe [events.md](events.md)). Der frühere `msg.ui.navigate`-Pfad und
+der Knoten `ui-navigation` sind **deprecated**.
 
 ---
 
-## Dialog-Messages
+## Dialog öffnen/schließen
 
-Öffnen und Schließen eines Dialogs direkt per Message (alternativ zu Store-State):
+Dialoge werden über die **Action-Verben `open`/`close`** offengelegt — also eine
+Action-Message mit `type: "open"`/`"close"`, deren `part`/`target` den Dialog
+adressiert. Kein eigenes Format nötig.
 
-```
-msg.ui.dialog.id     = <nodeId des ui-dialog>
-msg.ui.dialog.op     = "open" | "close" | "toggle"
-msg.ui.clientId      = <optional>
-```
+> Legacy: Ein `msg.ui.dialog`-Handler (`{ id, op }`) existiert noch, validiert
+> die Operation und reicht sie durch, ist aber kein aktiver Push-Mechanismus
+> mehr. Bevorzugt sind die `open`/`close`-Verben.
 
 ---
 
@@ -91,7 +92,9 @@ msg.ui.query.refresh     = true             ← Refresh ohne neue Daten (optiona
 
 ## Store-Messages
 
-Siehe [ui-store.md](../state/ui-store.md) für das vollständige Format.
+Schreiben (`msg.ui.store` mit `set`/`patch`/`delete`/`replace`/`reset`) und die
+Änderungs-Notification sind in [stores.md](stores.md) konzeptionell und in
+[ui-store.md](../state/ui-store.md) als Knoten-Referenz beschrieben.
 
 ---
 

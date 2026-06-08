@@ -12,14 +12,18 @@ Sie fasst die bestehenden Aussagen aus den Knoten-Dokumenten zusammen.
 
 ## Presets
 
-Aktuell verfügbare Presets sind:
-- `horizontal`
-- `vertical`
+Es gibt **ein** gemeinsames Preset-Set (`standardLayoutPresetIds`), das alle
+strukturellen Knoten (App, Route, Dialog, Container) teilen:
+
+- `horizontal` mit dem Slot `content`
+- `vertical` mit dem Slot `content`
 - `app` mit den Slots `header`, `navbar`, `content`, `footer`
 - `grid` mit dem Slot `content`
 - `absolute` mit dem Slot `content`
+- `dialog` mit den Slots `header`, `header-actions`, `content`, `footer` — sie mappen auf die nativen `<sl-dialog>`-Slots (`header`→`label`, `header-actions`, Default-Slot→`content`, `footer`); eingeführt mit `ui-dialog` (P64)
 
-Weitere spätere Standard-Layouts sind weiterhin möglich.
+Das `dialog`-Preset ist nicht auf `ui-dialog` beschränkt — es liegt im
+gemeinsamen Set. Weitere spätere Standard-Layouts bleiben möglich.
 
 ## Layout-injizierte Child-Props
 
@@ -54,7 +58,7 @@ Im Editor erzwingen die Eingabefelder für `row`, `col`, `colSize` und `rowSize`
 
 ## Offene Spezifikation
 
-- Es fehlen explizite Layout-Typen wie Shell, Dialog-Shell oder Tabs-Container.
+- Die Dialog-Shell ist mit dem `dialog`-Preset abgedeckt; weitere explizite Layout-Typen (z. B. Tabs-Container) fehlen noch.
 - Es gibt noch keine deklarativen Layout-Varianten für Responsiveness oder Breakpoints.
 - Es ist noch offen, ob Container später eigene Layout- oder Stylingvarianten tragen sollen.
 - Child-Layouts brauchen mittelfristig bessere Editor-Unterstützung für Parent-Auswahl und Visualisierung.
