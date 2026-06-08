@@ -1135,7 +1135,7 @@ phases:
 
   - { id: P73, title: "Bugfix: Serializer rendert gemappte Felder nicht — ui-switch `labelOn`/`labelOff`, ui-slider `showValue` (in Schema+mapConfig, aber nicht im webapp-serializer.js), ui-datepicker `mode` datetime/time degradiert still zu type=date. Rendering ergänzen + E2E", status: done, dependencies: [P26], archive: "docs/agent-roadmap-archive.yaml#P73" }
 
-  - { id: P74, title: "Bugfix: ui-accordion Feldname-Mismatch — Schema-Feld `sections` (accordionSectionSchema) vs. Editor/mapConfig `items` (webapp.js ~3613). Auf einen Namen vereinheitlichen + Validierung/Tests", status: pending, dependencies: [P16c] }
+  - { id: P74, title: "Bugfix: ui-accordion Feldname-Mismatch — Schema-Feld `sections` (accordionSectionSchema) vs. Editor/mapConfig `items` (webapp.js ~3613). Auf einen Namen vereinheitlichen + Validierung/Tests", status: in_progress, dependencies: [P16c] }
 
   - { id: P75, title: "Bugfix: ui-breadcrumb/ui-menu `navigate`-Output-Event nicht emittierbar — kein `events`-Array im Schema, kein Output-Port. Events-Contract + Dispatch ergänzen (oder Doku-Erwartung klären) + E2E", status: pending, dependencies: [P16c] }
 
