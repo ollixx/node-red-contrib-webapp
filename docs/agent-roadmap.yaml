@@ -1222,7 +1222,7 @@ phases:
 
   - { id: P91, title: "ui-alert Duration + Countdown — Feld „Duration\" (positive Integer) + Checkbox „Countdown\" daneben (Shoelace nativ). Backends ohne native Unterstützung: Function-Fallback (Bootstrap-Doku-Beispiel). Gut dokumentieren (backend-neutral, offen für weitere Backends)", status: done, dependencies: [P16b], archive: "docs/agent-roadmap-archive.yaml#P91" }
 
-  - { id: P92, title: "ui-badge Felder-Rework — displayType-Werte square/rounded/pill; „Max\"-Feld ENTFERNEN (kein Countdown); „pulsating\"-Checkbox + Warnung wenn Backend es nicht unterstützt; size-Feld ergänzen; „severity\" in „variant\" umbenennen. Docs (ui-badge.md, theming.md) anpassen", status: pending, dependencies: [P49] }
+  - { id: P92, title: "ui-badge Felder-Rework — displayType-Werte square/rounded/pill; „Max\"-Feld ENTFERNEN (kein Countdown); „pulsating\"-Checkbox + Warnung wenn Backend es nicht unterstützt; size-Feld ergänzen; „severity\" in „variant\" umbenennen. Docs (ui-badge.md, theming.md) anpassen", status: in_progress, dependencies: [P49] }
 
   - { id: P93, title: "ui-avatar Rendering-Bugfixes — size wird nicht gerendert (+ Default „small\" ergänzen); square/round wird nicht gerendert; Fallback-Initials werden nicht gerendert (statt „Objekt erwartet\"-Fehler); „Alt Text\" wird nicht unterstützt → entfernen", status: pending, dependencies: [P16d] }
 
