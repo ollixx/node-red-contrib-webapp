@@ -2213,3 +2213,13 @@ phases:
         server-driven overrides. No schema/runtime change needed — this is client-only. E2E tests (Playwright)
         must be run by the orchestrator from the main checkout.
       cost: "session a1b9d5c6-8aba-419a-92c5-2a9a194639c4, 12m"
+
+  - id: P88
+    title: "ui-app Editor-Layout-Politur — App-URL-Link hinter das Label rücken, bündig mit den anderen Feldern (2. Spalte); Logging-Select bündig in die 2. Spalte; Info-Button HINTER die SelectBox"
+    status: done
+    dependencies: [P61]
+    summary:
+      delivered: "Polished the ui-app editor HTML layout: App URL link placed directly in the second column (no padding-top wrapper div); Logging select moved to a plain label with the info button placed AFTER the select instead of inside the label markup."
+      stats: "1 HTML file changed (nodes/structure/ui-app.html), 1 test catalogue note updated (ui-app.tests.md); 558 unit tests pass; no schema/runtime changes"
+      notes: "Pure editor HTML layout polish — no fields, no runtime behaviour, no schema changes."
+      cost: "session ae07df7, 5m"
