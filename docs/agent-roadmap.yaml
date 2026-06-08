@@ -1147,7 +1147,7 @@ phases:
 
   - { id: P79, title: "Bugfix/Decision: `targetId`-Diskrepanz — Runtime-Handler akzeptieren `msg.ui.action.targetId`, aber `actionMessageCommandSchema` ist `.strict()` und kennt nur `target` → targetId fällt durch die Validierung. Entscheiden: targetId ins Schema aufnehmen ODER Runtime-Alias entfernen; Doku (actions.md) angleichen", status: done, dependencies: [P60], archive: "docs/agent-roadmap-archive.yaml#P79" }
 
-  - { id: P80, title: "Bugfix: Store-Operationen zur Laufzeit gegen storeOperationSchema validieren — vor applyStoreOperation safeParse, bei Fehler strukturierter Fehler `server.store.invalid-operation` mit sprechender Schema-Meldung (set/patch/delete ohne path, set/patch/replace ohne value); Pass-Through für fremde Messages unverändert. Tests + Doc-Update (stores.md „Bekannte Lücke\", ui-store.md)", status: pending, dependencies: [P15] }
+  - { id: P80, title: "Bugfix: Store-Operationen zur Laufzeit gegen storeOperationSchema validieren — vor applyStoreOperation safeParse, bei Fehler strukturierter Fehler `server.store.invalid-operation` mit sprechender Schema-Meldung (set/patch/delete ohne path, set/patch/replace ohne value); Pass-Through für fremde Messages unverändert. Tests + Doc-Update (stores.md „Bekannte Lücke\", ui-store.md)", status: in_progress, dependencies: [P15] }
 
   # ════════════════════════════════════════════════════════════════════════
   # Test-Strategie: Knoten-Verhalten in klassische Tests, E2E nur Editor+Render
