@@ -1214,7 +1214,7 @@ phases:
 
   - { id: P87, title: "ui-app: persistente clientId — die clientId wird heute bei Browser-Reload neu generiert, wodurch per-Client-State verloren geht. Erste clientId im localStorage persistieren und bei Reload/Reconnect wiederverwenden", status: done, dependencies: [P15], archive: "docs/agent-roadmap-archive.yaml#P87" }
 
-  - { id: P88, title: "ui-app Editor-Layout-Politur — App-URL-Link hinter das Label rücken, bündig mit den anderen Feldern (2. Spalte); Logging-Select bündig in die 2. Spalte; Info-Button HINTER die SelectBox", status: pending, dependencies: [P61] }
+  - { id: P88, title: "ui-app Editor-Layout-Politur — App-URL-Link hinter das Label rücken, bündig mit den anderen Feldern (2. Spalte); Logging-Select bündig in die 2. Spalte; Info-Button HINTER die SelectBox", status: in_progress, dependencies: [P61] }
 
   - { id: P89, title: "ui-route: (a) Pfad-Feld bekommt Info-Button + Doku-Dialog (analog ui-app.logging); (b) Title wird Value-Feld als typedInput mit allen sinnvollen Binding-Typen (literal/state/store/query/routeParam/msg/flow/global/jsonata/env); ui-route.md anpassen", status: pending, dependencies: [P67] }
 
