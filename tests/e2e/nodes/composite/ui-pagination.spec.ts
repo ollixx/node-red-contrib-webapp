@@ -14,6 +14,52 @@ import { WebappPage } from "../../../helpers/webapp-page";
  *   - Disabled state on first page (prev disabled) and last page (next disabled).
  */
 
+test.describe("ui-pagination (P72 — page binding field-name fix)", () => {
+    test.afterEach(async ({ request }) => {
+        await resetFlow(request);
+    });
+
+    test("currentPagePath (editor field name) resolves to a state binding and renders the page label", async ({ page, request }) => {
+        /**
+         * P72: The editor saves the current-page state path as `currentPagePath`.
+         * Before the fix, mapConfig read config.pagePath → always undefined →
+         * the page binding fell back to undefined → the page label rendered as
+         * "1" (the default fallback in the serializer) regardless of the store.
+         *
+         * After the fix the state binding is created from `currentPagePath`, the
+         * renderer resolves it from the store (initialValue currentPage = 4),
+         * and the rendered label shows "4 / 5".
+         *
+         * We simulate what the Node-RED editor persists: `currentPagePath` as a
+         * plain string path rather than a pre-built binding object.  The runtime
+         * must coerce it into stateBinding("app.currentPage").
+         *
+         * totalPages is passed as a pre-built literal binding to isolate the P72
+         * fix from the separate unresolved-state-binding-for-totalPages concern.
+         */
+        const flow = new FlowBuilder()
+            .app({ id: "pgP72App1", root: "pgP72App1" })
+            .node("ui-store", { id: "pgP72Store1", statePath: "app", initialValue: JSON.stringify({ currentPage: 4 }) })
+            .node("ui-pagination", {
+                id: "pgP72Node1",
+                // Simulate raw editor output: plain string path, not a binding object.
+                currentPagePath: "app.currentPage",
+                totalPages: { kind: "literal", value: 5 }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "pgP72App1");
+        await webapp.navigate("/");
+
+        // Pagination renders — the page label shows "4 / 5" because the
+        // currentPagePath state binding was resolved to the store value (4).
+        await expect(page.locator(".webapp-pagination")).toBeVisible();
+        await expect(page.locator(".webapp-pagination-page")).toContainText("4 / 5");
+    });
+});
+
 test.describe("ui-pagination (P45)", () => {
     test.afterEach(async ({ request }) => {
         await resetFlow(request);
