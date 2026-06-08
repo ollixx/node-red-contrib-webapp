@@ -31,6 +31,8 @@ The sub-agent commits code to its own branch and **reports** its archive summary
 
 Do **not** read architecture.md, context-budget.md, validation.md, or any source files. Those are the sub-agent's job.
 
+**Integration branch = `develop`.** Everywhere this prompt says "the main branch" it means **`develop`** — the repo's integration branch (full E2E is validated there; the archive history uses `git reset --hard develop`). Before the loop, `git checkout develop` so your roadmap writes and all `git merge --no-ff phase/<id>` merges land on `develop`. Do **not** invent or reuse a side branch like `phase/<id>-work` as the integration branch — that drift has happened and leaves `develop` stale. When the run ends, HEAD must be on `develop` and `develop` must contain every phase you marked done (a clean fast-forward over `origin/develop`). Pushing `develop` is the owner's call unless they ask.
+
 ## Loop
 
 Repeat until a stop condition is met:
