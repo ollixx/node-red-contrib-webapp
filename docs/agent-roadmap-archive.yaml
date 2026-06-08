@@ -2169,3 +2169,17 @@ phases:
         interactionInputHandler wrapper, which these nodes don't use. Tests corrected after inspecting the handler.
         No E2E trimming needed: existing feedback-node E2E specs (P43/P57) are already render-only.
       cost: "session ae879a9df4735c22d, 25m"
+
+  - id: P85
+    title: "Klassische Verhaltens-Tests Navigation-Knoten (accordion/breadcrumb/menu/pagination/stepper/tabs): select-Verb→SSE-Push (tabs/stepper/menu), Output-Event-Dispatch (pageChange/tabChange/stepChange/sectionOpen-close/navigate), msg.payload/patch, accordion multiple/defaultOpen, stepper complete + stepId-Contract, Pass-Through; fehlende Editor-E2E pro Knoten ergänzen"
+    status: done
+    dependencies: [P81]
+    summary:
+      delivered: "Classic behaviour tests for 6 navigation nodes (accordion/breadcrumb/menu/pagination/stepper/tabs) via NodeBehaviourHarness, plus per-node editor E2E specs (navigation-nodes.spec.ts)."
+      stats: "2 files; 49 unit tests (p85-navigation-nodes-behaviour.test.ts) + 9 E2E tests; suite 536 unit + 305 E2E; 0 source changes."
+      notes: >
+        Navigation nodes use interactionInputHandler(INTERACTION_VERBS_BY_TYPE[type], componentStateInputHandler)
+        — no viewNodePatchInputHandler, so msg.payload does not update definitions for these nodes (pass-through
+        only). Editor output-label tests adjusted: accordion/tabs/stepper have static outputs:1 with no dynamic
+        outputLabels function, unlike ui-table.
+      cost: "session a0a16884126e8bac7, 18m"
