@@ -14,6 +14,46 @@ import { WebappPage } from "../../../helpers/webapp-page";
  *   - Disabled state on first page (prev disabled) and last page (next disabled).
  */
 
+test.describe("ui-pagination (P72 — page binding field-name fix)", () => {
+    test.afterEach(async ({ request }) => {
+        await resetFlow(request);
+    });
+
+    test("currentPagePath (editor field name) resolves to a state binding and renders the page label", async ({ page, request }) => {
+        /**
+         * P72: The editor saves the current-page state path as `currentPagePath`.
+         * Before the fix, mapConfig read config.pagePath → always undefined →
+         * page binding was empty → page label showed nothing / fell back to a
+         * falsy value.  After the fix the state binding is resolved and the
+         * rendered label shows "1 / 3".
+         *
+         * We simulate what the Node-RED editor persists: `currentPagePath` (a
+         * plain string) rather than a pre-built binding object.  The runtime
+         * must coerce this into stateBinding("app.currentPage").
+         */
+        const flow = new FlowBuilder()
+            .app({ id: "pgP72App1", root: "pgP72App1" })
+            .node("ui-store", { id: "pgP72Store1", statePath: "app", initialValue: JSON.stringify({ currentPage: 1, totalPages: 3 }) })
+            .node("ui-pagination", {
+                id: "pgP72Node1",
+                // Simulate raw editor output: plain string path, not a binding object.
+                currentPagePath: "app.currentPage",
+                totalPath: "app.totalPages"
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "pgP72App1");
+        await webapp.navigate("/");
+
+        // Pagination renders — the page label shows "1 / 3" because the
+        // currentPagePath binding was resolved to the store value.
+        await expect(page.locator(".webapp-pagination")).toBeVisible();
+        await expect(page.locator(".webapp-pagination-page")).toContainText("1 / 3");
+    });
+});
+
 test.describe("ui-pagination (P45)", () => {
     test.afterEach(async ({ request }) => {
         await resetFlow(request);

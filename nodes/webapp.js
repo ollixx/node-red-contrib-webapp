@@ -919,7 +919,7 @@ function toComponentDefinitions(components) {
             const titleBinding = p16Kind === "alert" ? getBinding(component.title, undefined) : undefined;
             const srcBinding = !valueBinding && (p16Kind === "avatar" || p16Kind === "image") ? getBinding(component.src, undefined) : undefined;
             // P45: pagination uses `page` as its primary binding; stepper uses `activeStep`; list uses `items`.
-            const pageBinding = !valueBinding && p16Kind === "pagination" ? getBinding(component.page, component.pagePath ? stateBinding(component.pagePath) : undefined) : undefined;
+            const pageBinding = !valueBinding && p16Kind === "pagination" ? getBinding(component.page, component.currentPagePath ? stateBinding(component.currentPagePath) : undefined) : undefined;
             const activeStepBinding = !valueBinding && p16Kind === "stepper" ? getBinding(component.activeStep, component.activeStepPath ? stateBinding(component.activeStepPath) : undefined) : undefined;
             const itemsBinding = !valueBinding && p16Kind === "list" ? getBinding(component.items, component.itemsPath ? stateBinding(component.itemsPath) : undefined) : undefined;
             const bind = {};
@@ -4008,7 +4008,7 @@ const runtimeNodeRegistry = {
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
-            page: getBinding(config.page, config.pagePath ? stateBinding(config.pagePath) : undefined),
+            page: getBinding(config.page, config.currentPagePath ? stateBinding(config.currentPagePath) : undefined),
             pageSize: config.pageSize ? stateBinding(config.pageSize) : undefined,
             totalPages: getBinding(config.totalPages, config.totalPath ? stateBinding(config.totalPath) : undefined),
             events: parseJsonList(config.events),
