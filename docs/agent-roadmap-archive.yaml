@@ -2103,4 +2103,11 @@ phases:
         op:'replace'. The p56 'explode' op test now expects server.store.invalid-operation instead of
         server.store.operation-failed because the schema rejects unknown ops first. storeOperationSchema uses
         .issues (ZodError) not .errors. ui-store.md was already spec-ahead and required no changes.
-      cost: "session a8f6eae606a35d9c3, 8m"
+        ORCHESTRATOR INTERVENTION: the sub-agent updated unit tests but missed two E2E specs the new validation
+        broke (it cannot reliably run Playwright in its worktree). The orchestrator's full-E2E pass on develop
+        caught them and fixed directly: (1) tests/e2e/fixtures/p31-live-transport.flow.json emitted op:'set' with
+        no path (now rejected) → changed to op:'replace'; (2) tests/e2e/p56-error-forwarding.spec.ts asserted the
+        old 'ui-store operation failed' console message for an unknown op, which is now rejected earlier with the
+        Zod message 'Invalid option: expected one of "set"|"patch"|"delete"|"replace"|"reset"' (code
+        server.store.invalid-operation) → assertion updated. Full E2E 297 passed after the fix.
+      cost: "session a8f6eae606a35d9c3, 8m + orchestrator E2E fix"
