@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P93  # human-review findings P87–P94 (ui-app/alert/route/badge/avatar) added 2026-06-08
+  current_phase: P94  # human-review findings P87–P94 (ui-app/alert/route/badge/avatar) added 2026-06-08
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -1224,7 +1224,7 @@ phases:
 
   - { id: P92, title: "ui-badge Felder-Rework — displayType-Werte square/rounded/pill; „Max\"-Feld ENTFERNEN (kein Countdown); „pulsating\"-Checkbox + Warnung wenn Backend es nicht unterstützt; size-Feld ergänzen; „severity\" in „variant\" umbenennen. Docs (ui-badge.md, theming.md) anpassen", status: done, dependencies: [P49], archive: "docs/agent-roadmap-archive.yaml#P92" }
 
-  - { id: P93, title: "ui-avatar Rendering-Bugfixes — size wird nicht gerendert (+ Default „small\" ergänzen); square/round wird nicht gerendert; Fallback-Initials werden nicht gerendert (statt „Objekt erwartet\"-Fehler); „Alt Text\" wird nicht unterstützt → entfernen", status: in_progress, dependencies: [P16d] }
+  - { id: P93, title: "ui-avatar Rendering-Bugfixes — size wird nicht gerendert (+ Default „small\" ergänzen); square/round wird nicht gerendert; Fallback-Initials werden nicht gerendert (statt „Objekt erwartet\"-Fehler); „Alt Text\" wird nicht unterstützt → entfernen", status: done, dependencies: [P16d], archive: "docs/agent-roadmap-archive.yaml#P93" }
 
   - { id: P94, title: "ui-avatar Feld-Erweiterung — „src path\" → „image\" als typedInput mit Typen „Media\" (Pfad auf Media-Server, wenn mediaStoreUrl gesetzt) und „Store\" (Bildpfad aus Store-Pfad); „Fallback Initials\" als typedInput mit allen sinnvollen Typen; „variant\" (Bootstrap) mit Shoelace-Warnung; Docs anpassen", status: pending, dependencies: [P67, P70] }
 
