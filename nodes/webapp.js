@@ -6,6 +6,7 @@ const {
     appModelSchema,
     collectMissingStandardLayouts,
     createAppRootRoute,
+    storeOperationSchema,
     uiEventMessageSchema,
     validateUiNodeDefinition
 } = require("../packages/schema/dist/index.js");
@@ -3705,6 +3706,27 @@ const runtimeNodeRegistry = {
 
                 // P15: clientId routing — per-client state when clientId is present
                 const clientId = msg && msg.ui && msg.ui.clientId ? String(msg.ui.clientId) : undefined;
+
+                // P80: validate the operation against storeOperationSchema before
+                // attempting to apply it. This surfaces the schema's descriptive
+                // per-operation messages (e.g. "Store operation 'set' requires a value.")
+                // as structured runtime errors instead of silently running with undefined
+                // path/value — or worse, having applyStoreOperation throw a generic error.
+                const parseResult = storeOperationSchema.safeParse(operation);
+                if (!parseResult.success) {
+                    const firstMessage = parseResult.error.issues[0]?.message || "Invalid store operation.";
+                    reportRuntimeError(node, {
+                        severity: "error",
+                        code: "server.store.invalid-operation",
+                        message: firstMessage,
+                        context: { appId: activeAppId || undefined, nodeId: node.id, op: `store:${operation.op}` },
+                        clientId
+                    });
+                    if (done) {
+                        done(new Error(firstMessage));
+                    }
+                    return;
+                }
 
                 if (!activeAppId) {
                     reportRuntimeError(node, {

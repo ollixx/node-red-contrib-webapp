@@ -296,7 +296,9 @@ describe("P56: store handler emits a structured error on a bad operation", () =>
         const node = { ...fakeNode(), webappDefinition: storeDef };
 
         const doneErr = vi.fn();
-        // An explicit unknown store operation triggers applyStoreOperation to throw.
+        // An unknown store operation op is caught by storeOperationSchema validation
+        // (P80). Before P80 it reached applyStoreOperation and threw; now it is
+        // rejected earlier with server.store.invalid-operation.
         runtimeNodeRegistry["ui-store"].options.inputHandler(
             node,
             { ui: { store: { id: "store1", op: "explode" } } },
@@ -305,7 +307,8 @@ describe("P56: store handler emits a structured error on a bad operation", () =>
         );
 
         // The failure was reported as a structured node.error (not a bare throw).
-        expect(node.errors.some((e) => e.includes("ui-store operation failed") && e.includes("server.store.operation-failed"))).toBe(true);
+        // P80: invalid op is caught by schema validation → server.store.invalid-operation.
+        expect(node.errors.some((e) => e.includes("server.store.invalid-operation"))).toBe(true);
         // done() received the error (Node-RED catch-node contract), no uncaught throw.
         expect(doneErr).toHaveBeenCalledWith(expect.any(Error));
         // And, forwarding being ON, the client received an SSE error frame.
