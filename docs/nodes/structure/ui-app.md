@@ -50,6 +50,12 @@ Node-Picker-Dialog, typedInput, Token-Editor, Event-Checkboxen).
 |---|---|---|---|---|
 | `forwardErrorsToClient` / `forwardErrorMinSeverity` | „Logging" (+ Info-Icon-Dialog) | **eine** SelectBox: `aus` / `debug` / `info` / `warn` / `error` | optional | Steuert die opt-in Weiterleitung von **Framework-Fehlern** des Backends an verbundene Clients. `aus` (Default) = keine Weiterleitung. Eine Severity schaltet die Weiterleitung ein und setzt zugleich die Mindeststufe. Weitergeleitete Meldungen werden redigiert. Mapping und Sicherheitsbegründung: [logs-errors.md](../concepts/logs-errors.md). |
 
+### Gruppe „Medien"
+
+| Feld | Label | Editor-Typ | Pflicht | Beschreibung |
+|---|---|---|---|---|
+| `mediaStoreUrl` | „Media Store URL" | Textfeld | optional | Basis-URL eines Medien-Speichers. Ist sie gesetzt, können Bilder als `asset:<id>` referenziert werden (z. B. in `ui-image.src`). Der Client greift **nie** direkt auf den Store zu — die Auflösung läuft über einen app-skopierten Node-RED-Backend-Proxy (`/webapp/<appId>/asset/<id>`), der die echte Store-URL serverseitig hält und das Asset streamt (Obfuskation). Leer = keine `asset:`-Referenzen. |
+
 ### Gruppe „Events"
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |

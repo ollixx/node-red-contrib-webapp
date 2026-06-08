@@ -40,7 +40,7 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `src` | „Src" | typedInput (Binding) | **ja** | URL des Bildes. Bindbar über alle Standard-Binding-Arten: `literal` (statische URL), `state` (State-Pfad), `query` (Query-Pfad), `routeParam` (Routenparameter-Name), `store` (Store-Picker), `msg`/`flow`/`global`/`jsonata`/`env`. Binding-Arten: [stores.md](../concepts/stores.md). |
+| `src` | „Src" | typedInput (Binding) | **ja** | URL des Bildes. Bindbar über alle Standard-Binding-Arten: `literal` (statische URL), `state` (State-Pfad), `query` (Query-Pfad), `routeParam` (Routenparameter-Name), `store` (Store-Picker), `msg`/`flow`/`global`/`jsonata`/`env` sowie **`asset`** (verwaltetes Medium). Der `asset`-Typ öffnet den Media-Picker (Durchsuchen/Upload) und speichert die Auswahl als `literal` `asset:<id>`; sie wird zur Laufzeit über den Backend-Proxy der App aufgelöst (`ui-app.mediaStoreUrl`). Binding-Arten: [stores.md](../concepts/stores.md). |
 | `alt` | „Alt Text" | Textfeld | optional | Alternativer Text für Barrierefreiheit (`alt`-Attribut). Sollte bei inhaltlich relevanten Bildern gesetzt sein; für rein dekorative Bilder leer lassen. |
 | `fallbackSrc` | „Fallback URL" | Textfeld | optional | Statische URL, die angezeigt wird, wenn das Laden der `src` fehlschlägt. Kein Binding — muss eine zur Deploy-Zeit bekannte URL sein. |
 | `width` | „Width" | Textfeld | optional | Breite der Bildkomponente. Ganzzahl (Pixel) oder CSS-String (z. B. `"100%"`, `"12rem"`). Fehlt das Feld, bestimmt das Parent-Layout die Breite. |
@@ -73,6 +73,15 @@ aktualisieren.
 - **`msg.payload` (primäres Feld):** Enthält `msg.payload` einen nicht-`null`-Wert,
   wird `src` auf diesen Wert gesetzt und ein frischer SSE-Snapshot an alle
   verbundenen Clients der Parent-App gesendet. Primäres Feld: `src` (Bild-URL).
+  - **String** (URL, `asset:<id>` oder fertige `data:`-URL) wird unverändert
+    übernommen.
+  - **Buffer** (wiring-first, z. B. aus HTTP-Request oder Datei-Read) wird in eine
+    `data:`-URL konvertiert. Der Content-Type stammt aus `msg.contentType`
+    (bzw. `msg.headers["content-type"]`) oder wird aus den Magic-Bytes ermittelt
+    (PNG/JPEG/GIF/WEBP/SVG; Fallback `image/png`). **Caveat:** eine `data:`-/Base64-
+    Quelle landet im Snapshot/State und wird bei **jedem** Render mitgeschickt —
+    nur für kleine/seltene Bilder geeignet; große/häufige Bilder via URL/Asset.
+
   Details: [inputs.md](../concepts/inputs.md).
 - **`msg.ui.patch`:** Überschreibt beliebige Felder der Knotendefinition (z. B.
   `src`, `alt`, `fit`, `width`, `height`). Binding-Felder (`src`) müssen als
