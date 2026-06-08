@@ -2691,6 +2691,57 @@ const VIEW_NODE_BINDING_FIELDS = new Set([
     "value", "src", "message", "rows", "items"
 ]);
 
+// P70 Ebene 2 (wiring-first): sniff the image content-type from the leading
+// magic bytes of a Buffer. Returns a MIME type, or undefined when unrecognised.
+function sniffImageContentType(buffer) {
+    if (!buffer || buffer.length < 4) {
+        return undefined;
+    }
+    // PNG: 89 50 4E 47
+    if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47) {
+        return "image/png";
+    }
+    // JPEG: FF D8 FF
+    if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+        return "image/jpeg";
+    }
+    // GIF: "GIF8"
+    if (buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x38) {
+        return "image/gif";
+    }
+    // WEBP: "RIFF"...."WEBP"
+    if (buffer.length >= 12 && buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46
+        && buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50) {
+        return "image/webp";
+    }
+    // SVG (text): leading "<?xml" or "<svg"
+    const head = buffer.slice(0, 5).toString("utf8").toLowerCase();
+    if (head.startsWith("<?xml") || head.startsWith("<svg")) {
+        return "image/svg+xml";
+    }
+    return undefined;
+}
+
+// P70 Ebene 2: turn a ui-image msg.payload into a usable src string.
+//   - Buffer            → data:<type>;base64,<…>  (type from msg hint or sniff)
+//   - string            → passed through (URL, asset:<id>, or existing data: URL)
+//   - anything else     → String(payload)
+// CAVEAT (documented): a data:/Base64 src lands in the snapshot/state and is
+// re-sent on every render — fine for small/rare images; prefer URL/asset for
+// large or frequently-updated images.
+function payloadToImageSrc(payload, msg) {
+    if (Buffer.isBuffer(payload)) {
+        const hint = msg && (msg.contentType || (msg.headers && msg.headers["content-type"]));
+        const contentType = (typeof hint === "string" && hint.trim()) ? hint.split(";")[0].trim()
+            : (sniffImageContentType(payload) || "image/png");
+        return `data:${contentType};base64,${payload.toString("base64")}`;
+    }
+    if (typeof payload === "string") {
+        return payload;
+    }
+    return String(payload);
+}
+
 // P39: handle incoming msg.payload / msg.ui.patch on view nodes.
 // Patches the in-memory definition and pushes a fresh snapshot to all
 // connected clients of the parent app.
@@ -2725,9 +2776,14 @@ function viewNodePatchInputHandler(node, msg, send, done) {
         const nodeType = registration.definition.type;
         const field = VIEW_NODE_PRIMARY_FIELD[nodeType];
         if (field) {
-            const newValue = VIEW_NODE_BINDING_FIELDS.has(field)
-                ? literalBinding(msg.payload)
+            // P70 Ebene 2: ui-image accepts a Buffer / Base64 / data: payload —
+            // convert it to a usable src string before it is wrapped in a binding.
+            const rawPayload = (nodeType === "ui-image" && field === "src")
+                ? payloadToImageSrc(msg.payload, msg)
                 : msg.payload;
+            const newValue = VIEW_NODE_BINDING_FIELDS.has(field)
+                ? literalBinding(rawPayload)
+                : rawPayload;
             registration.definition = Object.assign({}, registration.definition, { [field]: newValue });
             node.webappDefinition = registration.definition;
             patched = true;
@@ -4020,6 +4076,9 @@ registerWebappNodes.__test__ = {
     // P39 / P52: view-node input patch handler + deploy-definition reader
     viewNodePatchInputHandler,
     readDeployDefinitions,
+    // P70 Ebene 2: ui-image msg.payload → src (Buffer/Base64 → data:)
+    payloadToImageSrc,
+    sniffImageContentType,
     // P15
     getClientState,
     setClientState,
