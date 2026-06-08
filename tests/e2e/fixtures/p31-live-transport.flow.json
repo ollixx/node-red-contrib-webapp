@@ -61,7 +61,7 @@
     "type": "function",
     "id": "toStoreFn",
     "name": "Build store update",
-    "func": "msg.ui = { store: { id: 'greetingStore', op: 'set', value: 'pushed-live' } };\nreturn msg;",
+    "func": "msg.ui = { store: { id: 'greetingStore', op: 'replace', value: 'pushed-live' } };\nreturn msg;",
     "outputs": 1,
     "noerr": 0,
     "z": "p31flow",

@@ -91,14 +91,16 @@ test.describe("P56 — backend→frontend error forwarding", () => {
         await webapp.navigate("/");
 
         // Fire the inject → function → ui-store(explode) pipeline. The runtime
-        // rejects the unknown op with server.store.operation-failed and — because
-        // forwarding is ON — pushes it over the SSE "error" channel.
+        // rejects the unknown op with server.store.invalid-operation (P80: schema
+        // validation runs before applyStoreOperation) and — because forwarding is
+        // ON — pushes it over the SSE "error" channel.
         await injectMessage(request, `${appId}Inject`);
 
         // The P55 client logs forwarded server errors at console.error with a
-        // "[server]" prefix and the structured message.
+        // "[server]" prefix and the structured message (the Zod validation message
+        // for the invalid op).
         await expect.poll(
-            () => errorMessages.some((m) => m.includes("[server]") && m.includes("ui-store operation failed")),
+            () => errorMessages.some((m) => m.includes("[server]") && m.includes("Invalid option")),
             { timeout: 8000, message: "Expected a forwarded backend error in the browser console" }
         ).toBe(true);
     });
