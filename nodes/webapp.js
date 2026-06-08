@@ -4137,9 +4137,10 @@ const runtimeNodeRegistry = {
             label: config.label || undefined,
             ...collectNodeConfigLayoutProps(config)
         }),
-        options: {
-            inputHandler: componentStateInputHandler
-        }
+        // P76: ui-divider is a static display node with no input port (inputs:0 in
+        // the editor). The previous componentStateInputHandler was unreachable dead
+        // code. Removing it makes the runtime consistent with the spec and the editor.
+        options: {}
     },
     // P57: ui-log — persistent error/log display, subscribes to SSE "error" channel
     "ui-log": {
