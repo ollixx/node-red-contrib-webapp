@@ -39,7 +39,7 @@ typedInput, Mount-Baum, Layout-Child-Props).
 | `src` | „Bild-URL" | typedInput (alle Binding-Arten) | optional | Bindbare URL des Avatar-Bilds. Wird aufgelöst und als `<img>`-Quelle genutzt. Schlägt der Ladevorgang fehl oder ist `src` nicht gesetzt, greift die Fallback-Kette (→ `initials`). |
 | `initials` | „Initialen (Fallback)" | typedInput (alle Binding-Arten) | optional | Bindbare Zeichenkette, die als Initialen-Platzhalter angezeigt wird, wenn kein Bild verfügbar ist (z. B. `"JD"`). Ist auch kein Initialen-Wert vorhanden, greift der Icon-Fallback (`icon`). |
 | `icon` | „Fallback Icon" | Textfeld + Icon-Picker (P69) | optional | Backend-neutraler Icon-Wert `{ library, name }` (bzw. `library:name`), angezeigt wenn weder `src` noch `initials` aufgelöst werden. Bindbar. Details: [ui-icon.md](./ui-icon.md). |
-| `alt` | „Alt-Text" | Textfeld | optional | Alternativtext für Barrierefreiheit (Screenreader). |
+| ~~`alt`~~ | ~~„Alt-Text"~~ | – | – | *Entfernt in P93.* `sl-avatar` nutzt das `label`-Attribut für Barrierefreiheit; ein separates `alt`-Feld wird nicht unterstützt. |
 
 ### Gruppe „Darstellung"
 

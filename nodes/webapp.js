@@ -1010,10 +1010,18 @@ function toComponentDefinitions(components) {
                     ...(component.icon !== undefined && !iconBinding ? { icon: component.icon } : {}),
                     ...(component.size !== undefined ? { size: component.size } : {}),
                     ...(component.color !== undefined ? { color: component.color } : {}),
+                    // P93: ui-avatar shape and initials props.
+                    // initials must be a plain string (the serializer guards against binding objects).
+                    // shape is passed directly (circle|square).
+                    ...(component.shape !== undefined ? { shape: component.shape } : {}),
+                    ...(typeof component.initials === "string" && component.initials ? { initials: component.initials } : {}),
                     // P70: ui-image display props. A raw (unresolved) src binding
                     // is kept in props.src so the serializer can fall back to it
                     // when no value binding resolved (mirrors avatar).
                     ...(component.src !== undefined && !srcBinding ? { src: component.src } : {}),
+                    // alt is used by ui-image; for ui-avatar it was removed in P93
+                    // (sl-avatar uses `label` for a11y). The avatar serializer block
+                    // never emits alt= even when this prop is set.
                     ...(component.alt !== undefined ? { alt: component.alt } : {}),
                     ...(component.fit !== undefined ? { fit: component.fit } : {}),
                     ...(component.width !== undefined ? { width: component.width } : {}),
@@ -4239,9 +4247,11 @@ const runtimeNodeRegistry = {
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
             src: getBinding(config.src, config.srcPath ? stateBinding(config.srcPath) : undefined),
-            initials: config.initials || undefined,
+            // P93: initials is a plain string (editor stores it as text). Guard against
+            // binding objects that would render as "[object Object]" in the serializer.
+            initials: typeof config.initials === "string" ? config.initials || undefined : undefined,
             icon: mapIconField(config.icon),
-            alt: config.alt || undefined,
+            // P93: alt attribute removed — sl-avatar uses the `label` attr for a11y.
             size: config.size || undefined,
             shape: config.shape || undefined,
             ...collectNodeConfigLayoutProps(config)

@@ -336,7 +336,7 @@ export interface UiListEditorConfig extends MountableEditorConfig {
 export interface UiAvatarEditorConfig extends MountableEditorConfig {
     srcPath?: string;
     initials?: string;
-    alt?: string;
+    // P93: alt removed — sl-avatar uses `label` attr for a11y, not `alt`.
     size?: "sm" | "md" | "lg";
     shape?: "circle" | "square";
 }
@@ -1268,7 +1268,7 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         mount: config.mount ?? "",
         src: config.srcPath ? stateBinding(config.srcPath) : undefined,
         initials: config.initials ? { kind: "literal" as const, value: config.initials } : undefined,
-        alt: config.alt || undefined,
+        // P93: alt field removed — sl-avatar uses `label` for a11y, not `alt`.
         size: config.size as "xs" | "sm" | "md" | "lg" | "xl" | undefined,
         shape: config.shape,
         ...collectLayoutChildConfig(config)

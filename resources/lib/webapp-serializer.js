@@ -820,15 +820,29 @@
             const src = (component.value !== undefined && component.value !== null) ? component.value
                 : (typeof rawSrc === "string" ? rawSrc : undefined);
             const label = String(component.props.label || component.id);
-            const initials = String(component.props.initials || "");
+            // P93: initials must be a plain string (from props.initials). Guard against
+            // accidental binding objects (they would produce "[object Object]" via String()).
+            const rawInitials = component.props.initials;
+            const initials = typeof rawInitials === "string" ? rawInitials : "";
             const srcAttr = src ? " image=\"" + escapeAttribute(String(src)) + "\"" : "";
             const initialsAttr = !src && initials ? " initials=\"" + escapeAttribute(initials) + "\"" : "";
-            const attrs = shoelaceAttrs(mapComponentToShoelace("avatar", component.props || {}).attributes);
+            // P93: shape → native sl-avatar shape attribute (circle|square|rounded).
+            // Only emit when explicitly set (circle is sl-avatar default, omitting is fine).
+            const shapeAttr = component.props.shape ? " shape=\"" + escapeAttribute(String(component.props.shape)) + "\"" : "";
+            // P93: size → data-size attribute (sl-avatar has no native size attr;
+            // it uses the --size CSS custom property instead). The adapter generic
+            // path would emit size="small/medium/large" which sl-avatar ignores;
+            // we bypass the adapter and emit data-size so CSS can target it.
+            const sizeAttr = component.props.size ? " data-size=\"" + escapeAttribute(String(component.props.size)) + "\"" : "";
+            // P93: do NOT pass avatar through the shoelace adapter for size — the
+            // adapter maps "sm" → "small" which sl-avatar ignores. We emit size via
+            // data-size above. Pass an empty props so attrs contains only fallback
+            // data-wa-kind when no native tag is found (none expected here).
             // P69: icon fallback — only when no src and no initials resolve.
             const iconHtml = (!src && !initials)
                 ? renderIconHtml(component.props && component.props.icon, { slot: "icon" })
                 : "";
-            return wrapRenderedComponentHtml(component, layoutId, "<sl-avatar" + attrs + srcAttr + initialsAttr + " label=\"" + escapeAttribute(label) + "\">" + iconHtml + "</sl-avatar>");
+            return wrapRenderedComponentHtml(component, layoutId, "<sl-avatar" + srcAttr + initialsAttr + shapeAttr + sizeAttr + " label=\"" + escapeAttribute(label) + "\">" + iconHtml + "</sl-avatar>");
         }
 
         // P70: image — renders a native <img>. The src binding is resolved by the
