@@ -2,6 +2,59 @@
 <script type="text/javascript">
     (function () {
         const common = window.WebappEditorCommon;
+
+        // P94: `image` is a full typedInput binding (mirrors ui-image src).
+        // Beyond the standard binding kinds it offers the `asset` type (managed media-store)
+        // and `store` (image path read from a ui-store). On edit-prepare the persisted
+        // `src` binding object is restored; back-compat: old `srcPath` (plain state path)
+        // is migrated to a state binding on first open.
+        function applyImageTypedInput(selector, binding) {
+            const input = $(selector);
+            const types = common.bindingTypedInputTypes({ literalLabel: "URL", includeAsset: true });
+            input.typedInput({ default: "literal", types: types });
+            if (binding && binding.kind === "literal" && typeof binding.value === "string" && binding.value.indexOf("asset:") === 0) {
+                input.typedInput("type", "asset");
+                input.typedInput("value", binding.value.slice("asset:".length));
+            } else {
+                const editor = common.bindingValueForEditor(binding, "");
+                input.typedInput("type", editor.type);
+                input.typedInput("value", editor.value);
+            }
+        }
+
+        function readImageBinding(selector) {
+            const input = $(selector);
+            const type = input.typedInput("type");
+            const value = input.typedInput("value");
+            if (type === "asset") {
+                return { kind: "literal", value: value ? "asset:" + value : "" };
+            }
+            if (type === "literal") {
+                return { kind: "literal", value: value };
+            }
+            return { kind: type, path: value };
+        }
+
+        // P94: `initials` is a full typedInput binding (all meaningful kinds).
+        function applyInitialsTypedInput(selector, binding) {
+            const input = $(selector);
+            const types = common.bindingTypedInputTypes({ literalLabel: "Text" });
+            input.typedInput({ default: "literal", types: types });
+            const editor = common.bindingValueForEditor(binding, "");
+            input.typedInput("type", editor.type);
+            input.typedInput("value", editor.value);
+        }
+
+        function readInitialsBinding(selector) {
+            const input = $(selector);
+            const type = input.typedInput("type");
+            const value = input.typedInput("value");
+            if (type === "literal") {
+                return { kind: "literal", value: value };
+            }
+            return { kind: type, path: value };
+        }
+
         common.registerNodeType("ui-avatar", {
             category: "webapp view",
             color: "#f4efcf",
@@ -9,13 +62,23 @@
                 name: { value: "" },
                 parent: { value: "" },
                 mount: { value: "", required: true },
+                // P94: `src` persists the binding OBJECT (renamed to `image` in UI).
+                // DOM-less; the typedInput widget lives on `imageBinding`.
+                src: { value: { kind: "literal", value: "" } },
+                imageBinding: { value: "" },
+                // Legacy field (pre-P94 plain state path) — DOM-less, read for back-compat.
                 srcPath: { value: "" },
-                src: { value: null },
-                initials: { value: "" },
+                // P94: `initials` persists the binding OBJECT.
+                // DOM-less; the typedInput widget lives on `initialsBinding`.
+                initials: { value: null },
+                initialsBinding: { value: "" },
                 icon: { value: "" },
                 // P93: alt removed — sl-avatar uses label attr for a11y, not alt.
                 size: { value: "md" },
                 shape: { value: "circle" },
+                // P94: semantic colour role. Shoelace sl-avatar has no native variant;
+                // the serializer emits data-variant instead.
+                variant: { value: "" },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
                 col: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
@@ -37,6 +100,31 @@
                 common.installReferenceSelectors({ mount: true }).call(this);
                 common.installLayoutChildPropRows().call(this);
                 common.installIconField("#node-input-icon", { title: "Avatar-Icon auswählen" });
+
+                // P94: Image typedInput — restore persisted binding; back-compat: legacy srcPath.
+                const parsedSrc = common.parseBindingValue(this.src);
+                const srcIsEmptyLiteral = !!parsedSrc && parsedSrc.kind === "literal"
+                    && (parsedSrc.value === undefined || parsedSrc.value === null || parsedSrc.value === "");
+                const imageBinding = (parsedSrc && !srcIsEmptyLiteral)
+                    ? parsedSrc
+                    : (this.srcPath ? { kind: "state", path: this.srcPath } : parsedSrc);
+                applyImageTypedInput("#node-input-imageBinding", imageBinding);
+
+                // P94: Initials typedInput — restore persisted binding; back-compat: plain string.
+                let initialsBinding;
+                if (this.initials && typeof this.initials === "object" && typeof this.initials.kind === "string") {
+                    initialsBinding = common.parseBindingValue(this.initials);
+                } else if (typeof this.initials === "string" && this.initials.trim().length > 0) {
+                    initialsBinding = { kind: "literal", value: this.initials };
+                } else {
+                    initialsBinding = undefined;
+                }
+                applyInitialsTypedInput("#node-input-initialsBinding", initialsBinding);
+            },
+            oneditsave: function () {
+                this.src = readImageBinding("#node-input-imageBinding");
+                this.srcPath = "";
+                this.initials = readInitialsBinding("#node-input-initialsBinding");
             }
         });
     })();
@@ -45,21 +133,50 @@
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
-    <div class="form-row"><label for="node-input-srcPath">Src Path</label><input type="text" id="node-input-srcPath" placeholder="state.path.to.avatarUrl"></div>
-    <div class="form-row"><label for="node-input-initials">Fallback Initials</label><input type="text" id="node-input-initials" placeholder="e.g. JD"></div>
+    <div class="form-row"><label for="node-input-imageBinding">Image</label><input type="text" id="node-input-imageBinding"></div>
+    <div class="form-row"><label for="node-input-initialsBinding">Fallback Initials</label><input type="text" id="node-input-initialsBinding"></div>
     <div class="form-row"><label for="node-input-icon">Fallback Icon</label><input type="text" id="node-input-icon" placeholder="z. B. person oder lucide:user"></div>
     <div class="form-row"><label for="node-input-size">Size</label>
         <select id="node-input-size">
+            <option value="xs">XSmall</option>
             <option value="sm">Small</option>
-            <option value="md">Medium</option>
+            <option value="md">Medium (Default)</option>
             <option value="lg">Large</option>
+            <option value="xl">XLarge</option>
         </select>
     </div>
     <div class="form-row"><label for="node-input-shape">Shape</label>
         <select id="node-input-shape">
-            <option value="circle">Circle</option>
+            <option value="circle">Circle (Default)</option>
             <option value="square">Square</option>
         </select>
     </div>
+    <div class="form-row">
+        <label for="node-input-variant">Variant</label>
+        <select id="node-input-variant">
+            <option value="">None (Default)</option>
+            <option value="primary">Primary</option>
+            <option value="neutral">Neutral</option>
+            <option value="success">Success</option>
+            <option value="info">Info</option>
+            <option value="warning">Warning</option>
+            <option value="danger">Danger</option>
+        </select>
+        <span style="margin-left:8px; color:#888; font-size:0.85em;" title="Das Shoelace-Backend unterstützt Variant bei sl-avatar nicht nativ; der Wert wird als data-variant-Attribut ausgegeben (Bootstrap-Adapter oder eigenes CSS).">ℹ</span>
+    </div>
 </script>
-<script type="text/html" data-help-name="ui-avatar"><p>Zeigt ein Benutzer-Bild oder Initialen mit Fallback.</p></script>
+<script type="text/html" data-help-name="ui-avatar">
+<p>Zeigt ein Benutzer-Bild oder Initialen mit Fallback.</p>
+<h3>Image (Bild)</h3>
+<p>Das Avatar-Bild (<code>Image</code>) ist voll bindbar: <b>URL</b> (literal), state/query/routeParam/msg/flow/global/jsonata/env, <b>Store</b> sowie <b>Asset</b> (verwaltetes Medium aus dem Media-Store, wenn <code>ui-app.mediaStoreUrl</code> konfiguriert ist).</p>
+<h3>Fallback-Kette</h3>
+<ol>
+  <li><b>Image</b> gesetzt und lädt erfolgreich → Bild anzeigen.</li>
+  <li><b>Fallback Initials</b> gesetzt → Initialen anzeigen (z.B. <code>JD</code>).</li>
+  <li>Sonst: <b>Fallback Icon</b> (falls gesetzt), andernfalls Standard-Nutzer-Icon.</li>
+</ol>
+<h3>Variant</h3>
+<p>Semantische Farbrolle: <code>primary</code>, <code>neutral</code>, <code>success</code>, <code>info</code>, <code>warning</code>, <code>danger</code>.</p>
+<p><em>Hinweis:</em> Das Shoelace-Backend (<code>sl-avatar</code>) unterstützt Variant nicht nativ — der Wert wird als <code>data-variant</code>-Attribut ausgegeben. Bootstrap-Adapter oder eigenes CSS können dieses Attribut auswerten.</p>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/display/ui-avatar.md">Ausführliche Dokumentation</a></p>
+</script>

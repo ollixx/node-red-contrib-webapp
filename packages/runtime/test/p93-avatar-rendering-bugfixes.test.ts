@@ -48,9 +48,10 @@ describe("P93: ui-avatar — mapConfig", () => {
         expect(def.shape).toBe("circle");
     });
 
-    it("plain-string initials are stored in mapConfig result", () => {
+    it("plain-string initials (pre-P94 back-compat) are promoted to literal binding in mapConfig result", () => {
+        // P94: mapConfig now wraps plain-string initials as a literal binding for full typedInput support.
         const def = reg.mapConfig({ ...base, initials: "JD" }) as Record<string, unknown>;
-        expect(def.initials).toBe("JD");
+        expect(def.initials).toEqual({ kind: "literal", value: "JD" });
     });
 
     it("alt field is NOT emitted by mapConfig (removed in P93)", () => {

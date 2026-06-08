@@ -921,6 +921,9 @@ function toComponentDefinitions(components) {
             // resolvedProps.title (the serializer reads component.props.title).
             const titleBinding = p16Kind === "alert" ? getBinding(component.title, undefined) : undefined;
             const srcBinding = !valueBinding && (p16Kind === "avatar" || p16Kind === "image") ? getBinding(component.src, undefined) : undefined;
+            // P94: initials binding for ui-avatar — routed through bind.initials so the
+            // renderer resolves it to a string in resolvedProps.initials → component.props.initials.
+            const initialsBinding = p16Kind === "avatar" ? getBinding(component.initials, undefined) : undefined;
             // P45: pagination uses `page` as its primary binding; stepper uses `activeStep`; list uses `items`.
             const pageBinding = !valueBinding && p16Kind === "pagination" ? getBinding(component.page, component.currentPagePath ? stateBinding(component.currentPagePath) : undefined) : undefined;
             const activeStepBinding = !valueBinding && p16Kind === "stepper" ? getBinding(component.activeStep, component.activeStepPath ? stateBinding(component.activeStepPath) : undefined) : undefined;
@@ -949,6 +952,11 @@ function toComponentDefinitions(components) {
             }
             if (titleBinding) {
                 bind.title = titleBinding;
+            }
+            // P94: initials binding for ui-avatar — resolved by renderer into
+            // resolvedProps.initials → component.props.initials (used by serializer).
+            if (initialsBinding) {
+                bind.initials = initialsBinding;
             }
             // P69: icon field on ui-icon / ui-avatar (and any p16 kind that
             // carries one). A binding (has .kind) is resolved by the renderer
@@ -988,6 +996,8 @@ function toComponentDefinitions(components) {
                     ...(component.dismissible !== undefined ? { dismissible: component.dismissible } : {}),
                     ...(component.message !== undefined ? { message: component.message } : {}),
                     ...(component.variant !== undefined ? { variant: component.variant } : {}),
+                    // P92: pulsating → Shoelace `pulse` boolean attribute on sl-badge.
+                    ...(component.pulsating !== undefined ? { pulsating: component.pulsating } : {}),
                     // P49: display type (progress/skeleton/badge/menu/list render mode).
                     ...(component.displayType !== undefined ? { displayType: component.displayType } : {}),
                     ...(component.items !== undefined ? { items: component.items } : {}),
@@ -1011,10 +1021,12 @@ function toComponentDefinitions(components) {
                     ...(component.size !== undefined ? { size: component.size } : {}),
                     ...(component.color !== undefined ? { color: component.color } : {}),
                     // P93: ui-avatar shape and initials props.
-                    // initials must be a plain string (the serializer guards against binding objects).
+                    // P94: initials is now a binding — routed through bind.initials so the
+                    // renderer resolves it. A plain string (back-compat pre-P94) is passed
+                    // directly only when no binding was found (initialsBinding would be falsy).
                     // shape is passed directly (circle|square).
                     ...(component.shape !== undefined ? { shape: component.shape } : {}),
-                    ...(typeof component.initials === "string" && component.initials ? { initials: component.initials } : {}),
+                    ...(!initialsBinding && typeof component.initials === "string" && component.initials ? { initials: component.initials } : {}),
                     // P70: ui-image display props. A raw (unresolved) src binding
                     // is kept in props.src so the serializer can fall back to it
                     // when no value binding resolved (mirrors avatar).
@@ -4246,14 +4258,20 @@ const runtimeNodeRegistry = {
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
+            // P94: `src` is now a full binding (image typedInput). Back-compat: old
+            // `srcPath` (plain state path, pre-P94) is still accepted.
             src: getBinding(config.src, config.srcPath ? stateBinding(config.srcPath) : undefined),
-            // P93: initials is a plain string (editor stores it as text). Guard against
-            // binding objects that would render as "[object Object]" in the serializer.
-            initials: typeof config.initials === "string" ? config.initials || undefined : undefined,
+            // P94: initials is now a full binding. Back-compat: plain string from
+            // pre-P94 flows is accepted by passing it as a literal binding.
+            initials: (config.initials && typeof config.initials === "object" && typeof config.initials.kind === "string")
+                ? getBinding(config.initials, undefined)
+                : (typeof config.initials === "string" && config.initials ? { kind: "literal", value: config.initials } : undefined),
             icon: mapIconField(config.icon),
             // P93: alt attribute removed — sl-avatar uses the `label` attr for a11y.
             size: config.size || undefined,
             shape: config.shape || undefined,
+            // P94: variant (semantic colour role). Shoelace emits data-variant instead.
+            variant: config.variant || undefined,
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
