@@ -613,16 +613,17 @@ describe("P16b feedback and status nodes", () => {
     });
 
     it("compiles ui-badge to a valid definition", () => {
+        // P92: displayType is now shape (rounded/pill/square); variant replaces severity;
+        // max field removed; pulsating + size fields added.
         const result = validateUiNodeDefinition({
             type: "ui-badge",
             id: "badge1",
             mount: "route:/customers/content",
             value: { kind: "state", path:"notifications.count" },
-            variant: "count",
-            // P49b: "error" was a legacy value removed from the severity enum;
-            // the canonical value is "danger" (maps to the same Shoelace output).
-            severity: "danger",
-            max: 99
+            displayType: "pill",
+            variant: "danger",
+            pulsating: true,
+            size: "md"
         });
 
         expect(result.success).toBe(true);

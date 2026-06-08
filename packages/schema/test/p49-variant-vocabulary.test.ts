@@ -134,61 +134,65 @@ describe("P49: node schemas constrain variant to the vocabulary", () => {
 });
 
 /**
- * P49b — severity field on ui-badge / ui-alert uses exactly the SEVERITY_VARIANTS set.
+ * P49b — variant / severity field on ui-badge / ui-alert uses exactly the
+ * SEVERITY_VARIANTS set.
  *
  * Asserts that:
  *   1. Every value in SEVERITY_VARIANTS is accepted by both schemas.
  *   2. Legacy-only values removed from SEVERITY_VARIANTS ("error", "default") are rejected.
  *   3. A completely unknown value is rejected.
+ *
+ * P92 update: ui-badge now uses the field `variant` (renamed from `severity`).
+ * ui-alert still uses `severity`. Tests for ui-badge updated accordingly.
  */
 describe("P49b: ui-badge / ui-alert severity field uses SEVERITY_VARIANTS", () => {
     const base = { mount: "app1.content" };
 
-    it("ui-badge accepts every SEVERITY_VARIANTS value", () => {
+    it("ui-badge accepts every SEVERITY_VARIANTS value (via `variant` field, P92)", () => {
         for (const sev of SEVERITY_VARIANTS) {
             const result = uiBadgeNodeDefinitionSchema.safeParse({
                 ...base,
                 type: "ui-badge",
                 id: "b1",
                 value: { kind: "literal", value: "42" },
-                severity: sev
+                variant: sev
             });
-            expect(result.success, `ui-badge should accept severity "${sev}"`).toBe(true);
+            expect(result.success, `ui-badge should accept variant "${sev}"`).toBe(true);
         }
     });
 
-    it("ui-badge rejects the legacy-only value 'error'", () => {
+    it("ui-badge rejects the legacy-only value 'error' in `variant`", () => {
         expect(
             uiBadgeNodeDefinitionSchema.safeParse({
                 ...base,
                 type: "ui-badge",
                 id: "b1",
                 value: { kind: "literal", value: "42" },
-                severity: "error"
+                variant: "error"
             }).success
         ).toBe(false);
     });
 
-    it("ui-badge rejects the legacy-only value 'default'", () => {
+    it("ui-badge rejects the legacy-only value 'default' in `variant`", () => {
         expect(
             uiBadgeNodeDefinitionSchema.safeParse({
                 ...base,
                 type: "ui-badge",
                 id: "b1",
                 value: { kind: "literal", value: "42" },
-                severity: "default"
+                variant: "default"
             }).success
         ).toBe(false);
     });
 
-    it("ui-badge rejects a completely unknown severity", () => {
+    it("ui-badge rejects a completely unknown `variant` value", () => {
         expect(
             uiBadgeNodeDefinitionSchema.safeParse({
                 ...base,
                 type: "ui-badge",
                 id: "b1",
                 value: { kind: "literal", value: "42" },
-                severity: "bogus"
+                variant: "bogus"
             }).success
         ).toBe(false);
     });

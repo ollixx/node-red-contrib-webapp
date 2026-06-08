@@ -709,12 +709,26 @@
 
         if (component.kind === "badge") {
             const value = component.value === undefined || component.value === null ? "" : String(component.value);
-            // P49: badge's semantic variant is `severity`. `variant`/`displayType`
-            // (count/dot/status) is a display type and is NOT a severity.
-            const severity = component.props.severity ? String(component.props.severity) : undefined;
-            const shoelaceVariant = mapVariant("badge", severity);
+            // P92: badge uses `variant` for its semantic colour role (renamed from
+            // `severity`). Back-compat: also accept `severity` on the component props
+            // in case old snapshot data is still in flight.
+            const badgeVariant = component.props.variant
+                ? String(component.props.variant)
+                : (component.props.severity ? String(component.props.severity) : undefined);
+            const shoelaceVariant = mapVariant("badge", badgeVariant);
+            // P92: displayType maps to Shoelace `pill` attribute.
+            //   "pill"    → pill attribute present
+            //   "square"  → data-display-type="square" (custom CSS required)
+            //   "rounded" → default (no extra attribute)
+            const displayType = component.props.displayType ? String(component.props.displayType) : undefined;
+            const pillAttr = displayType === "pill" ? " pill" : "";
+            const squareAttr = displayType === "square" ? " data-display-type=\"square\"" : "";
+            // P92: pulsating → Shoelace `pulse` boolean attribute.
+            const pulseAttr = component.props.pulsating === true ? " pulse" : "";
+            // P92: size → data-size attribute (sl-badge has no native size attr).
+            const sizeAttr = component.props.size ? " data-size=\"" + escapeAttribute(String(component.props.size)) + "\"" : "";
             const attrs = shoelaceAttrs(mapComponentToShoelace("badge", component.props || {}).attributes);
-            return wrapRenderedComponentHtml(component, layoutId, "<sl-badge" + attrs + " variant=\"" + escapeAttribute(shoelaceVariant) + "\">" + escapeHtml(value) + "</sl-badge>");
+            return wrapRenderedComponentHtml(component, layoutId, "<sl-badge" + attrs + " variant=\"" + escapeAttribute(shoelaceVariant) + "\"" + pillAttr + squareAttr + pulseAttr + sizeAttr + ">" + escapeHtml(value) + "</sl-badge>");
         }
 
         if (component.kind === "progress") {
