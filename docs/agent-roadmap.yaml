@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P71  # next to implement: component fields — size, outline, button link-modes + button slots
+  current_phase: P72  # next to implement: bugfix — ui-pagination page-binding field-name mismatch (currentPagePath vs pagePath)
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -1116,7 +1116,7 @@ phases:
   # koppelt an P66.
   # ════════════════════════════════════════════════════════════════════════
 
-  - { id: P71, title: "Komponenten-Felder — size (SelectBox, pro Knoten), outline (Flag wo unterstützt), Button-Link-Modus (Button/URL/Navigate) + Button-Slots (default=Label, prefix, suffix)", status: in_progress, dependencies: [P66] }
+  - { id: P71, title: "Komponenten-Felder — size (SelectBox, pro Knoten), outline (Flag wo unterstützt), Button-Link-Modus (Button/URL/Navigate) + Button-Slots (default=Label, prefix, suffix)", status: done, dependencies: [P66], archive: "docs/agent-roadmap-archive.yaml#P71" }
 
   # ════════════════════════════════════════════════════════════════════════
   # Bugfixes aus dem Doc-vs-Implementierung-Audit (2026-06-08, P72–P80)
