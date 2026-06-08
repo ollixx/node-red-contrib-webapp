@@ -21,6 +21,10 @@ import {
     customersCrudNodeSetFixture,
     customersCrudRuntimeIntegrationFixture,
     fixtureAppModels,
+    iconValueSchema,
+    iconFieldSchema,
+    normalizeIconValue,
+    DEFAULT_ICON_LIBRARY,
     navigationDefinitionSchema,
     parseMountReference,
     resolveMountReference,
@@ -1411,5 +1415,144 @@ describe("P64: generated example uses a native closable dialog (no closeCustomer
             (n) => typeof n === "object" && n !== null && (n as Record<string, unknown>).uiId === "closeCustomerEditor"
         );
         expect(hasCloseAction).toBe(false);
+    });
+});
+
+describe("P69: backend-neutral icon value { library, name }", () => {
+    it("accepts a { name } object without a library (default library applies)", () => {
+        const result = iconValueSchema.safeParse({ name: "home" });
+        expect(result.success).toBe(true);
+    });
+
+    it("accepts a { library, name } object", () => {
+        const result = iconValueSchema.safeParse({ library: "lucide", name: "user" });
+        expect(result.success).toBe(true);
+    });
+
+    it("rejects an icon value with an empty name", () => {
+        const result = iconValueSchema.safeParse({ name: "" });
+        expect(result.success).toBe(false);
+    });
+
+    it("exposes a default icon library constant (the vendored bootstrap set)", () => {
+        expect(typeof DEFAULT_ICON_LIBRARY).toBe("string");
+        expect(DEFAULT_ICON_LIBRARY.length).toBeGreaterThan(0);
+    });
+
+    describe("normalizeIconValue (back-compat)", () => {
+        it("maps a bare string to { library: default, name }", () => {
+            expect(normalizeIconValue("home")).toEqual({ library: DEFAULT_ICON_LIBRARY, name: "home" });
+        });
+
+        it("supports the 'library:name' shorthand string", () => {
+            expect(normalizeIconValue("lucide:user")).toEqual({ library: "lucide", name: "user" });
+        });
+
+        it("fills the default library when an object omits it", () => {
+            expect(normalizeIconValue({ name: "check" })).toEqual({ library: DEFAULT_ICON_LIBRARY, name: "check" });
+        });
+
+        it("preserves an explicit library on an object", () => {
+            expect(normalizeIconValue({ library: "lucide", name: "x" })).toEqual({ library: "lucide", name: "x" });
+        });
+
+        it("returns undefined for empty / nullish input", () => {
+            expect(normalizeIconValue("")).toBeUndefined();
+            expect(normalizeIconValue(undefined)).toBeUndefined();
+            expect(normalizeIconValue(null)).toBeUndefined();
+        });
+    });
+
+    describe("iconFieldSchema (binding-capable)", () => {
+        it("accepts a bare string (literal back-compat)", () => {
+            expect(iconFieldSchema.safeParse("home").success).toBe(true);
+        });
+
+        it("accepts a literal { library, name } object", () => {
+            expect(iconFieldSchema.safeParse({ library: "lucide", name: "user" }).success).toBe(true);
+        });
+
+        it("accepts a dynamic binding object", () => {
+            expect(iconFieldSchema.safeParse({ kind: "state", path: "ui.icon" }).success).toBe(true);
+        });
+
+        it("rejects an object that is neither an icon value nor a binding", () => {
+            expect(iconFieldSchema.safeParse({ foo: "bar" }).success).toBe(false);
+        });
+    });
+
+    describe("icon fields on nodes", () => {
+        it("ui-button accepts an icon field ({library,name})", () => {
+            const result = validateUiNodeDefinition({
+                type: "ui-button",
+                id: "btn1",
+                mount: "route:/customers/content",
+                label: "Add",
+                icon: { library: "default", name: "plus" }
+            });
+            expect(result.success).toBe(true);
+        });
+
+        it("ui-button accepts a bare-string icon (back-compat)", () => {
+            const result = validateUiNodeDefinition({
+                type: "ui-button",
+                id: "btn2",
+                mount: "route:/customers/content",
+                label: "Add",
+                icon: "plus"
+            });
+            expect(result.success).toBe(true);
+        });
+
+        it("ui-button accepts a dynamic icon binding", () => {
+            const result = validateUiNodeDefinition({
+                type: "ui-button",
+                id: "btn3",
+                mount: "route:/customers/content",
+                label: "Add",
+                icon: { kind: "state", path: "ui.btnIcon" }
+            });
+            expect(result.success).toBe(true);
+        });
+
+        it("ui-avatar accepts an icon fallback field", () => {
+            const result = validateUiNodeDefinition({
+                type: "ui-avatar",
+                id: "av1",
+                mount: "route:/customers/content",
+                icon: { library: "default", name: "person" }
+            });
+            expect(result.success).toBe(true);
+        });
+
+        it("ui-icon accepts an { library, name } icon value", () => {
+            const result = validateUiNodeDefinition({
+                type: "ui-icon",
+                id: "icon3",
+                mount: "route:/customers/content",
+                icon: { library: "lucide", name: "home" }
+            });
+            expect(result.success).toBe(true);
+        });
+
+        it("ui-icon still accepts a bare-string icon name (back-compat)", () => {
+            const result = validateUiNodeDefinition({
+                type: "ui-icon",
+                id: "icon4",
+                mount: "route:/customers/content",
+                icon: "home"
+            });
+            expect(result.success).toBe(true);
+        });
+
+        it("ui-icon rejects an empty icon name in object form", () => {
+            const result = validateUiNodeDefinition({
+                type: "ui-icon",
+                id: "icon5",
+                mount: "route:/customers/content",
+                icon: { library: "lucide", name: "" }
+            });
+            expect(result.success).toBe(false);
+        });
     });
 });
