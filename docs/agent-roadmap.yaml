@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P69  # next to implement: icon system (backend-neutral {library,name}, registrable libs, icon-picker dialog via P68)
+  current_phase: P70  # next to implement: ui-image / Bildverwaltung (rendering + src URL + msg/Buffer + media-store + editor media-picker)
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -976,7 +976,7 @@ phases:
   # Freitext-Icons; registerIconLibrary-Client-Wiring + Base-Path (P63).
   # ════════════════════════════════════════════════════════════════════════
 
-  - { id: P69, title: "Icon-System — backend-neutraler {library,name}-Wert + global registrierbare Icon-Libraries (lokal) + Icon-Picker-Dialog (Vorschau/Suche/Lib-Filter); Icon-Felder für ui-button/ui-avatar (+ui-icon), bindbar", status: in_progress, dependencies: [P63, P68] }
+  - { id: P69, title: "Icon-System — backend-neutraler {library,name}-Wert + global registrierbare Icon-Libraries (lokal) + Icon-Picker-Dialog (Vorschau/Suche/Lib-Filter); Icon-Felder für ui-button/ui-avatar (+ui-icon), bindbar", status: done, dependencies: [P63, P68], archive: "docs/agent-roadmap-archive.yaml#P69" }
 
   # ════════════════════════════════════════════════════════════════════════
   # ui-image / Bildverwaltung — Rendering + URL + msg/Buffer + Media-Store (P70)
