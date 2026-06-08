@@ -1,0 +1,18 @@
+# ui-app — test catalogue
+
+Location: `tests/e2e/nodes/structure/ui-app.spec.ts`
+
+Written fresh for P87 per `.ai/agents/node-testing.md`.
+
+## Tests
+
+| Test | Goal |
+|---|---|
+| minimal config — app-bar visible with title | `.webapp-app-bar` and `.webapp-app-bar-title` render the node's `name` when `layout: "app"`. |
+| tokens.colorPrimary — CSS custom property applied to app bar background | Setting `tokens.colorPrimary` to `#7c3aed` causes `--wa-color-primary` to be applied and the app-bar background renders in that colour. |
+| missing root — /webapp/:id returns 404 | Accessing `/webapp/noSuchApp/` when no `ui-app` node is deployed returns HTTP 404. |
+| layout preset 'app' — app-bar and slot chrome render | `layout: "app"` renders `.webapp-app-bar` and `.webapp-layout--app`. |
+| layout preset 'plain' — no app-bar rendered | `layout: "vertical"` does NOT render `.webapp-app-bar`; the client root is still visible. |
+| app-bar persists on routes with non-'app' layoutId | App-bar is driven by `ui-app.layout`, not the active route's `layoutId` — navigating to a `vertical` sub-route must still show the `app` app-bar. |
+| P87: clientId is persisted in localStorage — reload reuses the same id | After first load, `localStorage["webapp:clientId:<appId>"]` is set with a `client-` prefixed value. After reload, the stored value is unchanged (same clientId reused). |
+| P87: clientId key is scoped per appId — two apps get distinct keys | Two apps on the same origin store their clientIds under different keys and get different values; visiting one app does not change the other's key. |

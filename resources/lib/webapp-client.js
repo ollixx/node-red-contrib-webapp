@@ -77,8 +77,29 @@
 
     // P30: a per-tab client id so the flow can address actions back to this
     // browser (events.md / actions.md clientId targeting; the live channel is P31).
-    const clientId = root.getAttribute("data-webapp-client-id")
-        || ("client-" + Math.random().toString(36).slice(2) + Date.now().toString(36));
+    //
+    // P87: the clientId is persisted in localStorage under
+    // "webapp:clientId:<appId>" so a page reload or reconnect reuses the same
+    // id. Per-client state stored on the server (clientStateMap, P15) therefore
+    // survives browser reloads. The key is scoped by appId so multiple apps on
+    // the same origin do not collide.
+    // If localStorage is unavailable (private browsing with storage blocked, etc.)
+    // we fall back silently to an ephemeral in-memory id — no error thrown.
+    const LS_KEY = "webapp:clientId:" + appId;
+    const clientId = (function () {
+        var fromAttr = root.getAttribute("data-webapp-client-id");
+        if (fromAttr) { return fromAttr; }
+        try {
+            var stored = localStorage.getItem(LS_KEY);
+            if (stored) { return stored; }
+            var fresh = "client-" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+            localStorage.setItem(LS_KEY, fresh);
+            return fresh;
+        } catch (_e) {
+            // localStorage not available (e.g. blocked in private browsing).
+            return "client-" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+        }
+    }());
 
     // P26: render through the shared serializer (window.WebappSerializer) so the
     // markup the client morphs in is byte-identical to what the server emitted.
