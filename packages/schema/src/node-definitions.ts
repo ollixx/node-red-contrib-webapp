@@ -5,8 +5,10 @@ import {
     actionTargetModeSchema,
     actionToTypeSchema,
     actionTypeSchema,
+    BUTTON_LINK_MODES,
     BUTTON_VARIANTS,
     bindingSchema,
+    COMPONENT_SIZES,
     CONTAINER_VARIANTS,
     errorSeveritySchema,
     iconFieldSchema,
@@ -21,6 +23,10 @@ import { standardLayoutPresetIds } from "./layout-presets";
 import { formatValidationIssues } from "./validation";
 
 const standardLayoutPresetSchema = z.enum(standardLayoutPresetIds);
+
+// P71: three-step size token (sm/md/lg) for nodes backed by a natively-sized
+// Shoelace element. ui-avatar / ui-badge / ui-icon keep their own xs..xl scale.
+const componentSizeSchema = z.enum(COMPONENT_SIZES);
 
 const identifiedNodeSchema = z.object({
     id: identifierSchema
@@ -206,7 +212,9 @@ export const uiTextNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-text"),
     value: bindingSchema,
     // P49: constrained to the portable text vocabulary. Default "body".
-    variant: z.enum(TEXT_VARIANTS).optional()
+    variant: z.enum(TEXT_VARIANTS).optional(),
+    // P71: three-step size (sm/md/lg).
+    size: componentSizeSchema.optional()
 });
 
 export type UiTextNodeDefinition = z.infer<typeof uiTextNodeDefinitionSchema>;
@@ -222,6 +230,17 @@ export const uiButtonNodeDefinitionSchema = mountableNodeSchema.extend({
     // P69: optional icon shown in the button's prefix slot. Backend-neutral
     // { library, name }; binding-capable (literal value or dynamic binding).
     icon: iconFieldSchema.optional(),
+    // P71: three-step size (sm/md/lg). The adapter maps it onto Shoelace's
+    // small/medium/large.
+    size: componentSizeSchema.optional(),
+    // P71: explicit outline flag. When true the button renders with an outlined
+    // (transparent-fill) treatment, independent of the semantic variant.
+    outline: z.boolean().optional(),
+    // P71: link mode. "button" (default) = event source; "url" = real hyperlink
+    // via href; "navigate" = emit an in-app navigate action against the href
+    // route. href is binding-capable and only meaningful for url/navigate.
+    linkMode: z.enum(BUTTON_LINK_MODES).optional(),
+    href: bindingSchema.optional(),
     disabled: bindingSchema.optional()
 });
 
@@ -261,6 +280,8 @@ export const uiInputNodeDefinitionSchema = mountableNodeSchema.extend({
     inputType: z.enum(["text", "email", "number"]).default("text"),
     // P49: true Ebene-2 variant (field style). Default "default".
     variant: z.enum(INPUT_VARIANTS).optional(),
+    // P71: three-step size (sm/md/lg).
+    size: componentSizeSchema.optional(),
     placeholder: z.string().min(1, "Input placeholders must not be empty.").optional(),
     disabled: bindingSchema.optional()
 }).superRefine((input, context) => {
@@ -347,6 +368,8 @@ export const uiSelectNodeDefinitionSchema = mountableNodeSchema.extend({
     placeholder: z.string().optional(),
     multiple: z.boolean().optional(),
     searchable: z.boolean().optional(),
+    // P71: three-step size (sm/md/lg).
+    size: componentSizeSchema.optional(),
     disabled: bindingSchema.optional()
 });
 
@@ -390,6 +413,8 @@ export const uiTextareaNodeDefinitionSchema = mountableNodeSchema.extend({
     placeholder: z.string().optional(),
     rows: z.number().int().positive().optional(),
     maxLength: z.number().int().positive().optional(),
+    // P71: three-step size (sm/md/lg).
+    size: componentSizeSchema.optional(),
     disabled: bindingSchema.optional()
 });
 
