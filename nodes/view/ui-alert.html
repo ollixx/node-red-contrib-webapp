@@ -43,9 +43,18 @@
                 name: { value: "" },
                 parent: { value: "" },
                 mount: { value: "", required: true },
+                // `message`/`title` persist the binding OBJECT and have NO matching
+                // `#node-input-*` element, so Node-RED's post-oneditsave defaults
+                // auto-read cannot clobber them (mirrors ui-text's text/value split).
+                // The typedInput widgets live on the separate *Binding fields below.
                 message: { value: { kind: "literal", value: "" } },
+                messageBinding: { value: "" },
+                // Legacy field — declared (DOM-less) so a pre-P67 node's value is
+                // loaded into oneditprepare for the messagePath→state back-compat.
+                messagePath: { value: "" },
                 severity: { value: "info" },
                 title: { value: null },
+                titleBinding: { value: "" },
                 dismissible: { value: false },
                 visible: { value: null },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
@@ -69,21 +78,29 @@
                 common.installReferenceSelectors({ mount: true }).call(this);
                 common.installLayoutChildPropRows().call(this);
 
-                // Back-compat: a legacy messagePath maps to a state binding.
-                const messageBinding = common.parseBindingValue(this.message)
-                    || (this.messagePath ? { kind: "state", path: this.messagePath } : undefined);
-                applyBindingTypedInput("#node-input-message", messageBinding, "Message", "Store für Message auswählen");
+                // Back-compat: a legacy messagePath maps to a state binding. A node
+                // saved before P67 has no `message` binding, so Node-RED fills the
+                // default empty literal { kind:"literal", value:"" } — that must NOT
+                // mask the messagePath fallback, so prefer messagePath when the stored
+                // message is an empty literal.
+                const parsedMessage = common.parseBindingValue(this.message);
+                const messageIsEmptyLiteral = !!parsedMessage && parsedMessage.kind === "literal"
+                    && (parsedMessage.value === undefined || parsedMessage.value === null || parsedMessage.value === "");
+                const messageBinding = (parsedMessage && !messageIsEmptyLiteral)
+                    ? parsedMessage
+                    : (this.messagePath ? { kind: "state", path: this.messagePath } : parsedMessage);
+                applyBindingTypedInput("#node-input-messageBinding", messageBinding, "Message", "Store für Message auswählen");
 
                 const titleBinding = typeof this.title === "string"
                     ? (this.title.length > 0 ? { kind: "literal", value: this.title } : undefined)
                     : common.parseBindingValue(this.title);
-                applyBindingTypedInput("#node-input-title", titleBinding, "Title", "Store für Title auswählen");
+                applyBindingTypedInput("#node-input-titleBinding", titleBinding, "Title", "Store für Title auswählen");
             },
             oneditsave: function () {
-                this.message = readBinding("#node-input-message");
+                this.message = readBinding("#node-input-messageBinding");
                 this.messagePath = "";
 
-                const titleBinding = readBinding("#node-input-title");
+                const titleBinding = readBinding("#node-input-titleBinding");
                 const isEmptyLiteral = titleBinding.kind === "literal"
                     && (titleBinding.value === undefined || titleBinding.value === null || titleBinding.value === "");
                 this.title = isEmptyLiteral ? null : titleBinding;
@@ -95,7 +112,7 @@
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
-    <div class="form-row"><label for="node-input-message">Message</label><input type="text" id="node-input-message"></div>
+    <div class="form-row"><label for="node-input-messageBinding">Message</label><input type="text" id="node-input-messageBinding"></div>
     <div class="form-row"><label for="node-input-severity">Severity</label>
         <select id="node-input-severity">
             <option value="primary">Primary</option>
@@ -106,7 +123,7 @@
             <option value="neutral">Neutral</option>
         </select>
     </div>
-    <div class="form-row"><label for="node-input-title">Title</label><input type="text" id="node-input-title"></div>
+    <div class="form-row"><label for="node-input-titleBinding">Title</label><input type="text" id="node-input-titleBinding"></div>
     <div class="form-row"><label for="node-input-dismissible">Dismissible</label><input type="checkbox" id="node-input-dismissible" style="width:auto"></div>
 </script>
 <script type="text/html" data-help-name="ui-alert">

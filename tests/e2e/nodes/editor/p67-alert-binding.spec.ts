@@ -40,7 +40,10 @@ test.describe("editor panel — ui-alert message/title typedInput (P67)", () => 
 
         // The legacy plain-text "Message Path" field is gone; message + title are
         // bindable typedInputs.
-        await editor.expectFields(["message", "title"]);
+        // The typedInput widgets live on the `*Binding` fields (the `message`/
+        // `title` defaults persist the binding OBJECT and have no DOM element, so
+        // Node-RED's defaults auto-read cannot clobber them — see ui-alert.html).
+        await editor.expectFields(["messageBinding", "titleBinding"]);
 
         // Both widgets expose the new `store` type alongside the literal/dynamic
         // kinds. Node-RED's `typedInput("types")` is a SETTER only (it calls
@@ -59,7 +62,7 @@ test.describe("editor panel — ui-alert message/title typedInput (P67)", () => 
                     data: ((e: Element, key: string) => unknown) & ((e: Element) => Record<string, unknown>);
                 };
             }).$;
-            const el = ($("#node-input-message") as unknown as { get: (i: number) => Element }).get(0);
+            const el = ($("#node-input-messageBinding") as unknown as { get: (i: number) => Element }).get(0);
             type Inst = { typeList?: Array<{ value?: string } | string> };
             const direct = $.data(el, "nodered-typedInput") as Inst | undefined;
             const userData = $.data(el) as Record<string, unknown>;
@@ -88,9 +91,9 @@ test.describe("editor panel — ui-alert message/title typedInput (P67)", () => 
         await editor.openNode("alertEd");
 
         // Choose the store kind and point it at the ui-store node id.
-        await editor.fillTypedInput("message", "draftStore", "store");
+        await editor.fillTypedInput("messageBinding", "draftStore", "store");
         // Title from the incoming message (wiring-first).
-        await editor.fillTypedInput("title", "payload.heading", "msg");
+        await editor.fillTypedInput("titleBinding", "payload.heading", "msg");
         await editor.save();
 
         const config = await readAlertConfig(page, "alertEd");
@@ -112,7 +115,7 @@ test.describe("editor panel — ui-alert message/title typedInput (P67)", () => 
         await editor.open();
         await editor.openNode("legacyAlert");
 
-        expect(await editor.readTypedInputType("message")).toBe("state");
-        expect(await editor.readTypedInput("message")).toBe("alerts.current");
+        expect(await editor.readTypedInputType("messageBinding")).toBe("state");
+        expect(await editor.readTypedInput("messageBinding")).toBe("alerts.current");
     });
 });
