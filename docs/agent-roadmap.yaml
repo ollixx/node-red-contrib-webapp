@@ -1116,7 +1116,7 @@ phases:
   # koppelt an P66.
   # ════════════════════════════════════════════════════════════════════════
 
-  - { id: P71, title: "Komponenten-Felder — size (SelectBox, pro Knoten), outline (Flag wo unterstützt), Button-Link-Modus (Button/URL/Navigate) + Button-Slots (default=Label, prefix, suffix)", status: pending, dependencies: [P66] }
+  - { id: P71, title: "Komponenten-Felder — size (SelectBox, pro Knoten), outline (Flag wo unterstützt), Button-Link-Modus (Button/URL/Navigate) + Button-Slots (default=Label, prefix, suffix)", status: in_progress, dependencies: [P66] }
 
   # ════════════════════════════════════════════════════════════════════════
   # Bugfixes aus dem Doc-vs-Implementierung-Audit (2026-06-08, P72–P80)
