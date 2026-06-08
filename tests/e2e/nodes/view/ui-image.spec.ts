@@ -5,65 +5,85 @@ import { FlowBuilder } from "../../../helpers/flow-builder";
 import { WebappPage } from "../../../helpers/webapp-page";
 
 /**
- * P43 — per-node E2E specs for ui-image (stateless view node).
- *
- * ui-image is a registered node type but is currently NOT included in the
- * component filter that populates the rendered snapshot (getDefinitionBuckets,
- * line ~1312 in nodes/webapp.js). It therefore produces no visible DOM output.
- * These specs verify the node does not crash the app when present in a flow.
- *
- * When ui-image is added to the components filter in a future phase, these
- * tests should be updated to assert on the rendered <img> or equivalent
- * Shoelace element.
+ * P70 — ui-image now renders as a native <img> (it was previously excluded from
+ * the component filter). These specs verify:
+ *   - a literal URL src renders an <img> with the URL, alt, object-fit and dims,
+ *   - an `asset:<id>` src is rewritten to the app-scoped backend proxy URL and
+ *     the real mediaStoreUrl is never present in the served HTML (obfuscation),
+ *   - the asset proxy endpoint guards against missing store / bad ids.
  */
 
-test.describe("ui-image (P43)", () => {
+test.describe("ui-image render (P70)", () => {
     test.afterEach(async ({ request }) => {
         await resetFlow(request);
     });
 
-    test("app with ui-image node deploys and serves (no crash)", async ({ page, request }) => {
+    test("renders a native <img> with literal URL, alt, fit and dimensions", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "imgApp1", root: "imgApp1" })
-            .node("ui-image", { id: "imgNode1", src: "https://example.com/photo.jpg", alt: "Photo" })
-            .build();
-
-        await deployFlow(request, flow);
-
-        // The app must serve a 200 — the node not rendering is acceptable at
-        // this phase, but it must not crash the server.
-        const res = await request.get("/webapp/imgApp1/");
-        expect(res.ok()).toBeTruthy();
-    });
-
-    test("app with ui-image renders root without crashing", async ({ page, request }) => {
-        const flow = new FlowBuilder()
-            .app({ id: "imgApp2", root: "imgApp2" })
-            .node("ui-image", { id: "imgNode2", src: "https://example.com/avatar.png" })
-            .node("ui-text", { id: "imgText2", text: "Caption" })
-            .build();
-
-        await deployFlow(request, flow);
-
-        const webapp = new WebappPage(page, "imgApp2");
-        await webapp.navigate("/");
-        // ui-image is not yet in the component filter — only the text node renders.
-        await expect(webapp.root()).toContainText("Caption");
-    });
-
-    test("ui-image with fallbackSrc — app still serves without error", async ({ request }) => {
-        const flow = new FlowBuilder()
-            .app({ id: "imgApp3", root: "imgApp3" })
             .node("ui-image", {
-                id: "imgNode3",
-                src: "https://example.com/broken.jpg",
-                fallback: "https://example.com/placeholder.png"
+                id: "imgNode1",
+                src: { kind: "literal", value: "https://example.com/photo.jpg" },
+                alt: "Photo",
+                fit: "cover",
+                width: "100%",
+                height: 150
             })
             .build();
 
         await deployFlow(request, flow);
 
-        const res = await request.get("/webapp/imgApp3/");
+        const res = await request.get("/webapp/imgApp1/");
         expect(res.ok()).toBeTruthy();
+        const html = await res.text();
+        expect(html).toContain("<img");
+        expect(html).toContain("src=\"https://example.com/photo.jpg\"");
+        expect(html).toContain("alt=\"Photo\"");
+        expect(html).toContain("object-fit: cover");
+        expect(html).toContain("width: 100%");
+        expect(html).toContain("height: 150px");
+
+        const webapp = new WebappPage(page, "imgApp1");
+        await webapp.navigate("/");
+        await expect(webapp.root().locator("img")).toHaveCount(1);
+    });
+
+    test("rewrites asset:<id> to the backend proxy; the store URL stays hidden", async ({ request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "imgApp2", root: "imgApp2", mediaStoreUrl: "https://store.internal/secret-media" })
+            .node("ui-image", { id: "imgNode2", src: { kind: "literal", value: "asset:logo-2024" } })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const res = await request.get("/webapp/imgApp2/");
+        const html = await res.text();
+        expect(html).toContain("/webapp/imgApp2/asset/logo-2024");
+        // Obfuscation: the real store URL must never appear in the served page.
+        expect(html).not.toContain("store.internal");
+        expect(html).not.toContain("secret-media");
+    });
+
+    test("the asset proxy returns 404 when no media store is configured", async ({ request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "imgApp3", root: "imgApp3" })
+            .node("ui-image", { id: "imgNode3", src: { kind: "literal", value: "asset:x" } })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const res = await request.get("/webapp/imgApp3/asset/x");
+        expect(res.status()).toBe(404);
+    });
+
+    test("the asset proxy rejects a path-traversal id with 400", async ({ request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "imgApp4", root: "imgApp4", mediaStoreUrl: "https://store.internal/media" })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const res = await request.get("/webapp/imgApp4/asset/..%2f..%2fetc%2fpasswd");
+        expect([400, 404]).toContain(res.status());
     });
 });
