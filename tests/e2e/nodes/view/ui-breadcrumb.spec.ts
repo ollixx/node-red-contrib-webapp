@@ -5,30 +5,36 @@ import { FlowBuilder } from "../../../helpers/flow-builder";
 import { WebappPage } from "../../../helpers/webapp-page";
 
 /**
- * P43 — per-node E2E specs for ui-breadcrumb (stateless view node).
+ * P95 — ui-breadcrumb redesign: fresh E2E tests per node-testing.md.
  *
- * Covers:
- *   1. Renders the correct Shoelace element (sl-breadcrumb).
- *   2. items array → correct number of <sl-breadcrumb-item> elements.
- *   3. Each breadcrumb item label renders as text content.
- *   4. Empty items array renders without crashing.
+ * Covers (outcome-based, not mere DOM presence):
+ *  1. Renders sl-breadcrumb with correct item count (object items).
+ *  2. String items render correctly (label visible + click dispatches action).
+ *  3. Object items: label renders, action dispatched on click.
+ *  4. Active item has aria-current="page" and is still clickable.
+ *  5. Item without explicit action defaults action to label.
+ *  6. All items emit click event (no positional selectivity — last item clickable too).
+ *  7. Empty items array renders without crashing.
  *
- * Items must be passed as an actual array of objects (not a JSON string).
- * The mapConfig fix in P43 ensures Array.isArray(config.items) is checked
- * before parseList, so static item arrays survive the validation chain.
+ * See tests/e2e/nodes/view/ui-breadcrumb.tests.md for the test catalogue.
  */
 
-test.describe("ui-breadcrumb (P43)", () => {
+test.describe("ui-breadcrumb (P95)", () => {
     test.afterEach(async ({ request }) => {
         await resetFlow(request);
     });
 
-    test("renders sl-breadcrumb element", async ({ page, request }) => {
+    // ── 1. Basic rendering ──────────────────────────────────────────────────
+    test("renders sl-breadcrumb with correct number of items (object items)", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "bcApp1", root: "bcApp1" })
             .node("ui-breadcrumb", {
                 id: "bcNode1",
-                items: [{ label: "Home" }, { label: "Products" }]
+                items: [
+                    { label: "Home", action: "/" },
+                    { label: "Customers", action: "/customers" },
+                    { label: "Details", active: true }
+                ]
             })
             .build();
 
@@ -37,93 +43,157 @@ test.describe("ui-breadcrumb (P43)", () => {
         const webapp = new WebappPage(page, "bcApp1");
         await webapp.navigate("/");
         await expect(page.locator("sl-breadcrumb")).toBeVisible();
-    });
-
-    test("items array — correct number of sl-breadcrumb-item elements", async ({ page, request }) => {
-        const flow = new FlowBuilder()
-            .app({ id: "bcApp2", root: "bcApp2" })
-            .node("ui-breadcrumb", {
-                id: "bcNode2",
-                items: [
-                    { label: "Home" },
-                    { label: "Customers" },
-                    { label: "Details" }
-                ]
-            })
-            .build();
-
-        await deployFlow(request, flow);
-
-        const webapp = new WebappPage(page, "bcApp2");
-        await webapp.navigate("/");
         await expect(page.locator("sl-breadcrumb-item")).toHaveCount(3);
     });
 
-    test("breadcrumb item labels render as text content", async ({ page, request }) => {
+    // ── 2. String items ─────────────────────────────────────────────────────
+    test("string items: renders label text and dispatches string as action on click", async ({ page, request }) => {
         const flow = new FlowBuilder()
-            .app({ id: "bcApp3", root: "bcApp3" })
+            .app({ id: "bcStr1", root: "bcStr1" })
             .node("ui-breadcrumb", {
-                id: "bcNode3",
-                items: [{ label: "Start" }, { label: "Middle" }, { label: "End" }]
+                id: "bcStrNode1",
+                items: ["Home", "Customers", "Details"]
             })
             .build();
 
         await deployFlow(request, flow);
 
-        const webapp = new WebappPage(page, "bcApp3");
+        const webapp = new WebappPage(page, "bcStr1");
         await webapp.navigate("/");
-        await expect(page.locator("sl-breadcrumb")).toContainText("Start");
-        await expect(page.locator("sl-breadcrumb")).toContainText("Middle");
-        await expect(page.locator("sl-breadcrumb")).toContainText("End");
+
+        await expect(page.locator("sl-breadcrumb")).toContainText("Home");
+        await expect(page.locator("sl-breadcrumb")).toContainText("Customers");
+
+        // Click first item — action value should equal the string "Home"
+        const eventPromise = webapp.interceptNextEvent();
+        await page.locator("sl-breadcrumb-item[data-webapp-breadcrumb-action='Home']").click();
+        const body = await eventPromise;
+        expect(body.event).toBe("click");
+        expect(body.sourceId).toBe("bcStrNode1");
+        expect((body.params as Record<string, unknown>).action).toBe("Home");
     });
 
-    // P75 — clicking a navigable breadcrumb item (one with `path`, not the last)
-    // dispatches a `navigate` event to the node's output port with params.path.
-    test("click on a navigable item POSTs /event { event:'navigate', params:{ path } }", async ({ page, request }) => {
+    // ── 3. Object items — action dispatched ────────────────────────────────
+    test("object items: click dispatches {event:click, params:{action}}", async ({ page, request }) => {
         const flow = new FlowBuilder()
-            .app({ id: "bcNav1", root: "bcNav1" })
+            .app({ id: "bcObj1", root: "bcObj1" })
             .node("ui-breadcrumb", {
-                id: "bcNavNode1",
+                id: "bcObjNode1",
                 items: [
-                    { label: "Home", path: "/" },
-                    { label: "Customers", path: "/customers" },
-                    { label: "Details" }
+                    { label: "Home", action: "/" },
+                    { label: "Customers", action: "/customers" }
                 ]
             })
             .build();
 
         await deployFlow(request, flow);
 
-        const webapp = new WebappPage(page, "bcNav1");
+        const webapp = new WebappPage(page, "bcObj1");
         await webapp.navigate("/");
 
         const eventPromise = webapp.interceptNextEvent();
-        // Click the first navigable item (Home → "/").
-        await page.locator("sl-breadcrumb-item[data-webapp-navigate-path]").first().click();
-
+        await page.locator("sl-breadcrumb-item[data-webapp-breadcrumb-action='/customers']").click();
         const body = await eventPromise;
-        expect(body.event).toBe("navigate");
-        expect(body.sourceId).toBe("bcNavNode1");
-        expect((body.params as Record<string, unknown>).path).toBe("/");
+        expect(body.event).toBe("click");
+        expect(body.sourceId).toBe("bcObjNode1");
+        expect((body.params as Record<string, unknown>).action).toBe("/customers");
     });
 
-    test("empty items array renders without crashing", async ({ page, request }) => {
+    // ── 4. Active item ─────────────────────────────────────────────────────
+    test("active item has aria-current=page in DOM and is still clickable", async ({ page, request }) => {
         const flow = new FlowBuilder()
-            .app({ id: "bcApp4", root: "bcApp4" })
+            .app({ id: "bcAct1", root: "bcAct1" })
             .node("ui-breadcrumb", {
-                id: "bcNode4",
-                items: []
+                id: "bcActNode1",
+                items: [
+                    { label: "Home", action: "/" },
+                    { label: "Current", action: "/cur", active: true }
+                ]
             })
-            .node("ui-text", { id: "bcText4", text: "Sibling" })
             .build();
 
         await deployFlow(request, flow);
 
-        const webapp = new WebappPage(page, "bcApp4");
+        const webapp = new WebappPage(page, "bcAct1");
         await webapp.navigate("/");
-        // The app must serve and render siblings without crashing.
-        // An empty sl-breadcrumb may be hidden by Shoelace; the sibling text
-        // confirms the layout renders.
+
+        // Active item carries aria-current=page
+        const activeItem = page.locator("sl-breadcrumb-item[aria-current='page']");
+        await expect(activeItem).toHaveCount(1);
+        await expect(activeItem).toContainText("Current");
+
+        // Active item still clickable (P95 design — no positional exclusion)
+        const eventPromise = webapp.interceptNextEvent();
+        await activeItem.click();
+        const body = await eventPromise;
+        expect(body.event).toBe("click");
+        expect((body.params as Record<string, unknown>).action).toBe("/cur");
+    });
+
+    // ── 5. Item without action defaults to label ───────────────────────────
+    test("item without explicit action: label is used as action", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "bcDef1", root: "bcDef1" })
+            .node("ui-breadcrumb", {
+                id: "bcDefNode1",
+                items: [{ label: "Section" }, { label: "Detail" }]
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "bcDef1");
+        await webapp.navigate("/");
+
+        const firstItem = page.locator("sl-breadcrumb-item[data-webapp-breadcrumb-action='Section']");
+        await expect(firstItem).toHaveCount(1);
+
+        const eventPromise = webapp.interceptNextEvent();
+        await firstItem.click();
+        const body = await eventPromise;
+        expect((body.params as Record<string, unknown>).action).toBe("Section");
+    });
+
+    // ── 6. All items clickable — no positional exclusion ───────────────────
+    test("last item is also clickable (no positional selectivity in P95)", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "bcLast1", root: "bcLast1" })
+            .node("ui-breadcrumb", {
+                id: "bcLastNode1",
+                items: [
+                    { label: "First", action: "first" },
+                    { label: "Last", action: "last" }
+                ]
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "bcLast1");
+        await webapp.navigate("/");
+
+        const lastItem = page.locator("sl-breadcrumb-item[data-webapp-breadcrumb-action='last']");
+        await expect(lastItem).toHaveCount(1);
+
+        const eventPromise = webapp.interceptNextEvent();
+        await lastItem.click();
+        const body = await eventPromise;
+        expect(body.event).toBe("click");
+        expect((body.params as Record<string, unknown>).action).toBe("last");
+    });
+
+    // ── 7. Empty items ──────────────────────────────────────────────────────
+    test("empty items array renders without crashing", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "bcEmp1", root: "bcEmp1" })
+            .node("ui-breadcrumb", { id: "bcEmpNode1", items: [] })
+            .node("ui-text", { id: "bcSib1", text: "Sibling" })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "bcEmp1");
+        await webapp.navigate("/");
         await expect(webapp.root()).toBeVisible();
         await expect(page.locator("sl-breadcrumb")).toHaveCount(1);
     });

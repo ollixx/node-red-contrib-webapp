@@ -34,51 +34,57 @@ function makeComponent(kind: string, id: string, extra: Record<string, unknown> 
     return { kind, id, value: undefined, props: {}, events: [], ...extra };
 }
 
-describe("P75: breadcrumb navigate-event hooks", () => {
-    it("navigable item (has path, not last) carries data-webapp-source + data-webapp-navigate-path", () => {
+// P95: breadcrumb redesign — all items carry data-webapp-breadcrumb-action; no
+// path-based selectivity; all items clickable (including "active" ones).
+describe("P95: breadcrumb click-event hooks (replaces P75 navigate-path model)", () => {
+    it("object item {label, action} carries data-webapp-breadcrumb-action", () => {
         const component = makeComponent("breadcrumb", "bc-1", {
             props: {
                 items: [
-                    { label: "Home", path: "/" },
-                    { label: "Customers", path: "/customers" },
+                    { label: "Home", action: "/" },
+                    { label: "Customers", action: "/customers" },
                     { label: "Details" }
                 ]
             }
         });
         const html = serializer.renderComponentHtml(component, "app", { appId: "app" });
         expect(html).toContain("data-webapp-source=\"bc-1\"");
-        expect(html).toContain("data-webapp-navigate-path=\"/\"");
-        expect(html).toContain("data-webapp-navigate-path=\"/customers\"");
+        expect(html).toContain("data-webapp-breadcrumb-action=\"/\"");
+        expect(html).toContain("data-webapp-breadcrumb-action=\"/customers\"");
     });
 
-    it("the last item is not navigable even if it has a path", () => {
-        const component = makeComponent("breadcrumb", "bc-2", {
+    it("string items carry data-webapp-breadcrumb-action equal to the string", () => {
+        const component = makeComponent("breadcrumb", "bc-str", {
+            props: { items: ["Home", "Customers", "Details"] }
+        });
+        const html = serializer.renderComponentHtml(component, "app", { appId: "app" });
+        expect(html).toContain("data-webapp-breadcrumb-action=\"Home\"");
+        expect(html).toContain("data-webapp-breadcrumb-action=\"Customers\"");
+        expect(html).toContain("data-webapp-breadcrumb-action=\"Details\"");
+    });
+
+    it("active item still carries data-webapp-breadcrumb-action and aria-current=page", () => {
+        const component = makeComponent("breadcrumb", "bc-active", {
             props: {
                 items: [
-                    { label: "Home", path: "/" },
-                    { label: "Current", path: "/current" }
+                    { label: "Home", action: "/" },
+                    { label: "Current", action: "/current", active: true }
                 ]
             }
         });
         const html = serializer.renderComponentHtml(component, "app", { appId: "app" });
-        // First item is navigable, last is not.
-        expect(html).toContain("data-webapp-navigate-path=\"/\"");
-        expect(html).not.toContain("data-webapp-navigate-path=\"/current\"");
+        // active item is still clickable (P95 design)
+        expect(html).toContain("data-webapp-breadcrumb-action=\"/current\"");
+        expect(html).toContain("aria-current=\"page\"");
     });
 
-    it("an item without a path is not navigable", () => {
-        const component = makeComponent("breadcrumb", "bc-3", {
-            props: {
-                items: [
-                    { label: "Home" },
-                    { label: "Customers", path: "/customers" }
-                ]
-            }
+    it("item without explicit action defaults to label as action", () => {
+        const component = makeComponent("breadcrumb", "bc-noa", {
+            props: { items: [{ label: "Home" }, { label: "Customers" }] }
         });
         const html = serializer.renderComponentHtml(component, "app", { appId: "app" });
-        // "Home" has no path → no navigate hook for its label region.
-        const homeSegment = html.split("Customers")[0];
-        expect(homeSegment).not.toContain("data-webapp-navigate-path");
+        expect(html).toContain("data-webapp-breadcrumb-action=\"Home\"");
+        expect(html).toContain("data-webapp-breadcrumb-action=\"Customers\"");
     });
 });
 
@@ -111,8 +117,14 @@ describe("P75: menu navigate-event hooks", () => {
     });
 });
 
-describe("P75: client dispatches navigate from data-webapp-navigate-path", () => {
-    it("the click handler reads data-webapp-navigate-path and dispatches a navigate event with params.path", () => {
+describe("P95: client dispatches click from data-webapp-breadcrumb-action", () => {
+    it("the click handler reads data-webapp-breadcrumb-action and dispatches a click event with params.action", () => {
+        expect(clientSource).toContain("data-webapp-breadcrumb-action");
+        expect(clientSource).toContain("event: \"click\"");
+        expect(clientSource).toContain("action:");
+    });
+    // P75 back-compat: the menu still uses navigate-path; keep handler for it.
+    it("back-compat: data-webapp-navigate-path handler still present for menu items", () => {
         expect(clientSource).toContain("data-webapp-navigate-path");
         expect(clientSource).toContain("event: \"navigate\"");
     });
@@ -152,31 +164,31 @@ function makeRED(defs: Array<Record<string, unknown>>) {
     return { emitted, RED: { nodes: { getNode: (id: string) => nodes.get(id) || undefined } } };
 }
 
-describe("P75: navigate event routes onto the node output port", () => {
-    it("breadcrumb navigate event emits msg.ui {event:'navigate', params:{path}} on its port", () => {
+describe("P95: click event routes onto the breadcrumb node output port", () => {
+    it("breadcrumb click event emits msg.ui {event:'click', params:{action}} on its port", () => {
         const def = runtimeNodeRegistry["ui-breadcrumb"].mapConfig({
             type: "ui-breadcrumb",
             id: "bcDispatch",
             mount: "bcApp.content",
-            items: [{ label: "Home", path: "/" }, { label: "Here" }]
+            items: [{ label: "Home", action: "/" }, { label: "Here" }]
         });
-        // P75 contract: the events array is declared so dispatch can route the port.
-        expect(def.events).toEqual(["navigate"]);
+        // P95 contract: events array is ["click"] so dispatch routes onto port 0.
+        expect(def.events).toEqual(["click"]);
 
         const { emitted, RED } = makeRED([def]);
         const result = dispatchClientEvent(
             RED,
             "bcApp",
-            { clientId: "c1", event: "navigate", sourceId: "bcDispatch", params: { path: "/" } },
+            { clientId: "c1", event: "click", sourceId: "bcDispatch", params: { action: "/" } },
             [def]
         );
 
         expect(result.success).toBe(true);
         const out = emitted.get("bcDispatch")!;
         expect(out).toHaveLength(1);
-        expect(out[0].ui.event).toBe("navigate");
+        expect(out[0].ui.event).toBe("click");
         expect(out[0].ui.sourceId).toBe("bcDispatch");
-        expect((out[0].ui.params as { path: string }).path).toBe("/");
+        expect((out[0].ui.params as { action: string }).action).toBe("/");
     });
 
     it("menu declares events:['navigate'] in its mapped definition", () => {

@@ -3055,7 +3055,9 @@ const INTERACTION_VERBS_BY_TYPE = {
     "ui-tabs": ["show", "hide", "select"],
     "ui-stepper": ["show", "hide", "select"],
     "ui-menu": ["show", "hide", "select"],
-    "ui-accordion": ["show", "hide", "open", "close"]
+    "ui-accordion": ["show", "hide", "open", "close"],
+    // P95: breadcrumb supports show/hide visibility control
+    "ui-breadcrumb": ["show", "hide"]
 };
 
 // Build the interaction command for a target node from msg.ui.action. The target
@@ -4122,22 +4124,59 @@ const runtimeNodeRegistry = {
         }
     },
     "ui-breadcrumb": {
-        mapConfig: (config) => ({
-            type: "ui-breadcrumb",
-            id: getUiId(config),
-            parent: config.parent || undefined,
-            mount: config.mount || config.parent,
-            order: toOptionalNumber(config.order),
-            items: getBinding(config.items, config.itemsPath ? stateBinding(config.itemsPath) : undefined) || (Array.isArray(config.items) ? config.items : parseList(config.items)),
-            // P75: ui-breadcrumb always exposes a single navigate output port; a
-            // click on a navigable item emits a `navigate` event. The events
-            // contract is what dispatchClientEvent reads for port routing and what
-            // the serializer surfaces as componentEvents.
-            events: ["navigate"],
-            ...collectNodeConfigLayoutProps(config)
-        }),
+        mapConfig: (config) => {
+            // P95: normalise static breadcrumb items from the editor.
+            // Priority resolution:
+            //   1. config.items is a binding object ({kind,...}) → use directly
+            //   2. config.items is an already-parsed array → use directly
+            //   3. config.itemsJson is a JSON string (new editor format) → parse
+            //   4. config.items is a JSON string (legacy) → parse
+            //   5. config.itemsPath (legacy P75 state-path shorthand) → stateBinding
+            function normaliseItems() {
+                const rawItems = config.items;
+                // Dynamic binding object
+                const binding = getBinding(rawItems, undefined);
+                if (binding) return binding;
+                // Already an array (from flow.json or tests)
+                if (Array.isArray(rawItems)) return rawItems;
+                // New editor format: itemsJson holds the JSON literal
+                if (config.itemsJson && typeof config.itemsJson === "string" && config.itemsJson.trim()) {
+                    try {
+                        const parsed = JSON.parse(config.itemsJson);
+                        if (Array.isArray(parsed)) return parsed;
+                    } catch (_) { /* fall through */ }
+                }
+                // Legacy: items as JSON string
+                if (rawItems && typeof rawItems === "string" && rawItems.trim()) {
+                    try {
+                        const parsed = JSON.parse(rawItems);
+                        if (Array.isArray(parsed)) return parsed;
+                    } catch (_) { /* fall through */ }
+                }
+                return undefined;
+            }
+            const resolvedItems = normaliseItems()
+                || (config.itemsPath ? stateBinding(config.itemsPath) : undefined);
+
+            return {
+                type: "ui-breadcrumb",
+                id: getUiId(config),
+                parent: config.parent || undefined,
+                mount: config.mount || config.parent,
+                order: toOptionalNumber(config.order),
+                // P95: layout="breadcrumb" activates child-node slot mode (c & d).
+                layout: config.layout === "breadcrumb" ? "breadcrumb" : undefined,
+                items: resolvedItems,
+                separator: config.separator || undefined,
+                // P95: ALL items emit a `click` event (sourceId = breadcrumb node id,
+                // params.action = item's action value or label).
+                // `navigate` kept as back-compat alias for consumers pinned to P75.
+                events: ["click"],
+                ...collectNodeConfigLayoutProps(config)
+            };
+        },
         options: {
-            inputHandler: componentStateInputHandler
+            inputHandler: interactionInputHandler(INTERACTION_VERBS_BY_TYPE["ui-breadcrumb"], componentStateInputHandler)
         }
     },
     "ui-menu": {

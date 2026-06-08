@@ -594,18 +594,38 @@ export const uiAccordionNodeDefinitionSchema = mountableNodeSchema.extend({
 
 export type UiAccordionNodeDefinition = z.infer<typeof uiAccordionNodeDefinitionSchema>;
 
+// P95: breadcrumb item schema — supports three static forms:
+//   (a) a string         → label = string, action = string (click param)
+//   (b) an object        → { label, action?, active? }
+//       action: click parameter sent with the event (defaults to label if omitted)
+//       active: marks the current-page item (different rendering); item stays clickable
+//   (c) child-node slots → set layout: "breadcrumb"; items field is then a binding or omitted;
+//       children in the "default" slot are rendered as breadcrumb items, click-param = child id
+export const breadcrumbItemSchema = z.union([
+    z.string().min(1),
+    z.object({
+        label: z.string().min(1),
+        action: z.string().optional(),
+        active: z.boolean().optional()
+    })
+]);
+
+export type BreadcrumbItem = z.infer<typeof breadcrumbItemSchema>;
+
 export const uiBreadcrumbNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-breadcrumb"),
+    // Optional layout field: set to "breadcrumb" to enable child-node slots (modes c & d).
+    layout: standardLayoutPresetSchema.optional(),
+    // items: static array of string/object breadcrumb items, OR a binding.
+    // Optional when layout="breadcrumb" (child nodes via slot take over).
     items: z.union([
-        z.array(z.object({ label: z.string().min(1), path: z.string().optional() })),
+        z.array(breadcrumbItemSchema),
         bindingSchema
-    ]),
+    ]).optional(),
     separator: z.string().optional(),
-    // P75: clicking a navigable item (one with `path`, not the last item) emits a
-    // `navigate` event on the node's output port. The events contract is what the
-    // runtime dispatch reads to route the event onto the port, and what the
-    // serializer reads to wire the click hooks on each navigable item.
-    events: z.array(z.enum(["navigate"])).optional()
+    // P95: ALL items emit a `click` event on the node's output port.
+    // P75 legacy: `navigate` is kept for back-compat during migration.
+    events: z.array(z.enum(["click", "navigate"])).optional()
 });
 
 export type UiBreadcrumbNodeDefinition = z.infer<typeof uiBreadcrumbNodeDefinitionSchema>;
