@@ -1186,7 +1186,7 @@ phases:
 
   - { id: P84, title: "Klassische Verhaltens-Tests Feedback-Knoten (alert/badge/empty-state/log/progress/skeleton/toast): msg.payload-Patch+Push, Pass-Through, dismiss-Event (alert), toast (override/clientId/fehlende message), skeleton/empty-state op-Handling, ui-log minSeverity/maxEntries (Client-JS); E2E auf Render eindampfen", status: done, dependencies: [P81], archive: "docs/agent-roadmap-archive.yaml#P84" }
 
-  - { id: P85, title: "Klassische Verhaltens-Tests Navigation-Knoten (accordion/breadcrumb/menu/pagination/stepper/tabs): select-Verb→SSE-Push (tabs/stepper/menu), Output-Event-Dispatch (pageChange/tabChange/stepChange/sectionOpen-close/navigate), msg.payload/patch, accordion multiple/defaultOpen, stepper complete + stepId-Contract, Pass-Through; fehlende Editor-E2E pro Knoten ergänzen", status: pending, dependencies: [P81] }
+  - { id: P85, title: "Klassische Verhaltens-Tests Navigation-Knoten (accordion/breadcrumb/menu/pagination/stepper/tabs): select-Verb→SSE-Push (tabs/stepper/menu), Output-Event-Dispatch (pageChange/tabChange/stepChange/sectionOpen-close/navigate), msg.payload/patch, accordion multiple/defaultOpen, stepper complete + stepId-Contract, Pass-Through; fehlende Editor-E2E pro Knoten ergänzen", status: in_progress, dependencies: [P81] }
 
   - { id: P86, title: "Klassische Verhaltens-Tests Structure/State/Behavior-Knoten: ui-app clientConnected/clientDisconnected-Emission+clientId, ui-query clientId-Routing + Pass-Through/No-Crash, ui-navigation Alias-Äquivalenz zu ui-action(navigate)+Schema-`to`; redundante Behavior-E2E (z.B. ui-action „navigate does NOT update store\") eindampfen", status: pending, dependencies: [P81] }
 
