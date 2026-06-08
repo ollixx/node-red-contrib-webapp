@@ -253,6 +253,42 @@
             .replace(/^-+|-+$/g, "") || "default";
     }
 
+    // P70: a numeric dimension is treated as pixels; a CSS string passes through.
+    function cssDimension(value) {
+        if (typeof value === "number") {
+            return value + "px";
+        }
+        const text = String(value);
+        return /^\d+$/.test(text) ? text + "px" : text;
+    }
+
+    // P70: defensive — strip characters that could break out of a style value.
+    function sanitizeStyleValue(value) {
+        return String(value === undefined || value === null ? "" : value).replace(/[<>"';{}]/g, "");
+    }
+
+    // P70: rewrite an `asset:<id>` reference to the app-scoped backend proxy URL.
+    // The real media-store URL lives only on the server; the client only ever sees
+    // /webapp/<appId>/asset/<id>. Non-asset values (http(s)/data:/relative) pass
+    // through unchanged. Path-traversal characters in the id are rejected.
+    function resolveAssetSrc(src, ctx) {
+        if (typeof src !== "string") {
+            return src;
+        }
+        const prefix = "asset:";
+        if (src.indexOf(prefix) !== 0) {
+            return src;
+        }
+        const id = src.slice(prefix.length);
+        const appId = ctx && ctx.appId ? String(ctx.appId) : "";
+        // Reject ids that could escape the proxy's lookup (defence in depth; the
+        // server endpoint validates again).
+        if (!appId || !/^[A-Za-z0-9._-]+$/.test(id)) {
+            return "";
+        }
+        return "/webapp/" + encodeURIComponent(appId) + "/asset/" + encodeURIComponent(id);
+    }
+
     function getLayoutVariant(layoutId) {
         return ["horizontal", "vertical", "app", "grid", "absolute", "dialog"].indexOf(layoutId) !== -1 ? layoutId : "custom";
     }
@@ -684,6 +720,42 @@
                 ? renderIconHtml(component.props && component.props.icon, { slot: "icon" })
                 : "";
             return wrapRenderedComponentHtml(component, layoutId, "<sl-avatar" + attrs + srcAttr + initialsAttr + " label=\"" + escapeAttribute(label) + "\">" + iconHtml + "</sl-avatar>");
+        }
+
+        // P70: image — renders a native <img>. The src binding is resolved by the
+        // renderer into component.value (routed through bind.value, as for avatar);
+        // an unresolved raw src binding falls back to component.props.src. An
+        // `asset:<id>` value is rewritten to the app-scoped backend proxy URL so
+        // the real media-store URL is never exposed to the client (obfuscation).
+        if (component.kind === "image") {
+            const rawSrc = component.props && component.props.src;
+            let src = (component.value !== undefined && component.value !== null) ? component.value
+                : (typeof rawSrc === "string" ? rawSrc : undefined);
+            src = resolveAssetSrc(src, ctx);
+            const alt = component.props && component.props.alt !== undefined ? String(component.props.alt) : "";
+            const fit = component.props && component.props.fit;
+            const width = component.props && component.props.width;
+            const height = component.props && component.props.height;
+            const fallbackSrc = component.props && component.props.fallbackSrc;
+            const styles = [];
+            if (fit) {
+                styles.push("object-fit: " + sanitizeStyleValue(String(fit)));
+            }
+            if (width !== undefined && width !== null && width !== "") {
+                styles.push("width: " + cssDimension(width));
+            }
+            if (height !== undefined && height !== null && height !== "") {
+                styles.push("height: " + cssDimension(height));
+            }
+            const styleAttr = styles.length > 0 ? " style=\"" + escapeAttribute(styles.join("; ")) + "\"" : "";
+            const srcAttr = src ? " src=\"" + escapeAttribute(String(src)) + "\"" : "";
+            // P70: a static fallback URL via the native onerror handler — swaps to
+            // fallbackSrc once on load failure (guarded so it cannot loop).
+            const onErrorAttr = fallbackSrc
+                ? " onerror=\"this.onerror=null;this.src='" + escapeAttribute(String(fallbackSrc)) + "'\""
+                : "";
+            return wrapRenderedComponentHtml(component, layoutId,
+                "<img" + srcAttr + " alt=\"" + escapeAttribute(alt) + "\"" + styleAttr + onErrorAttr + ">");
         }
 
         // P38: pagination — renders prev/next buttons. Each button carries

@@ -2,6 +2,40 @@
 <script type="text/javascript">
     (function () {
         const common = window.WebappEditorCommon;
+
+        // P70: `src` is a binding driven by a typedInput (mirrors ui-alert/ui-text).
+        // Beyond the standard binding kinds it offers the new `Asset` type — a
+        // managed media-store reference, serialized as a literal `asset:<id>` and
+        // chosen via the media picker (browse/upload).
+        function applyBindingTypedInput(selector, binding) {
+            const input = $(selector);
+            const types = common.bindingTypedInputTypes({ literalLabel: "URL", includeAsset: true });
+            input.typedInput({ default: "literal", types: types });
+            // An asset:<id> literal is surfaced as the dedicated Asset type.
+            if (binding && binding.kind === "literal" && typeof binding.value === "string" && binding.value.indexOf("asset:") === 0) {
+                input.typedInput("type", "asset");
+                input.typedInput("value", binding.value.slice("asset:".length));
+            }
+            else {
+                const editor = common.bindingValueForEditor(binding, "");
+                input.typedInput("type", editor.type);
+                input.typedInput("value", editor.value);
+            }
+        }
+
+        function readBinding(selector) {
+            const input = $(selector);
+            const type = input.typedInput("type");
+            const value = input.typedInput("value");
+            if (type === "asset") {
+                return { kind: "literal", value: value ? "asset:" + value : "" };
+            }
+            if (type === "literal") {
+                return { kind: "literal", value: value };
+            }
+            return { kind: type, path: value };
+        }
+
         common.registerNodeType("ui-image", {
             category: "webapp view",
             color: "#f4efcf",
@@ -9,12 +43,17 @@
                 name: { value: "" },
                 parent: { value: "" },
                 mount: { value: "", required: true },
+                // `src` persists the binding OBJECT and has NO matching
+                // `#node-input-*` element (the typedInput lives on srcBinding).
+                src: { value: { kind: "literal", value: "" } },
+                srcBinding: { value: "" },
+                // Legacy field (pre-P70 plain state path) — DOM-less, read for back-compat.
                 srcPath: { value: "" },
-                src: { value: null },
                 alt: { value: "" },
                 fallback: { value: "" },
                 width: { value: "" },
                 height: { value: "" },
+                fit: { value: "" },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
                 col: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
@@ -35,6 +74,20 @@
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
                 common.installLayoutChildPropRows().call(this);
+
+                // Back-compat: a legacy srcPath maps to a state binding when no
+                // src binding is stored (a pre-P70 node has only srcPath).
+                const parsedSrc = common.parseBindingValue(this.src);
+                const srcIsEmptyLiteral = !!parsedSrc && parsedSrc.kind === "literal"
+                    && (parsedSrc.value === undefined || parsedSrc.value === null || parsedSrc.value === "");
+                const srcBinding = (parsedSrc && !srcIsEmptyLiteral)
+                    ? parsedSrc
+                    : (this.srcPath ? { kind: "state", path: this.srcPath } : parsedSrc);
+                applyBindingTypedInput("#node-input-srcBinding", srcBinding);
+            },
+            oneditsave: function () {
+                this.src = readBinding("#node-input-srcBinding");
+                this.srcPath = "";
             }
         });
     })();
@@ -43,10 +96,30 @@
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
-    <div class="form-row"><label for="node-input-srcPath">Src Path</label><input type="text" id="node-input-srcPath" placeholder="state.path.to.src"></div>
+    <div class="form-row"><label for="node-input-srcBinding">Src</label><input type="text" id="node-input-srcBinding"></div>
     <div class="form-row"><label for="node-input-alt">Alt Text</label><input type="text" id="node-input-alt"></div>
     <div class="form-row"><label for="node-input-fallback">Fallback URL</label><input type="text" id="node-input-fallback" placeholder="https://..."></div>
     <div class="form-row"><label for="node-input-width">Width</label><input type="text" id="node-input-width" placeholder="e.g. 200 or 100%"></div>
     <div class="form-row"><label for="node-input-height">Height</label><input type="text" id="node-input-height" placeholder="e.g. 150"></div>
+    <div class="form-row"><label for="node-input-fit">Fit</label>
+        <select id="node-input-fit">
+            <option value="">(Browser-Default)</option>
+            <option value="contain">Contain</option>
+            <option value="cover">Cover</option>
+            <option value="fill">Fill</option>
+            <option value="none">None</option>
+        </select>
+    </div>
 </script>
-<script type="text/html" data-help-name="ui-image"><p>Zeigt ein Bild mit optionaler Src-Bindung, Alt-Text und Fallback-URL.</p></script>
+<script type="text/html" data-help-name="ui-image">
+<p>Zeigt ein Bild an einem Mount-Ziel.</p>
+<h3>Src-Bindung</h3>
+<p>Die Bild-URL (<code>Src</code>) ist voll bindbar: <b>URL</b> (literal), state/query/routeParam/msg/flow/global/jsonata/env, <b>Store</b> sowie <b>Asset</b>.</p>
+<ul>
+  <li><b>URL</b> — statische oder dynamisch gebundene Bild-URL.</li>
+  <li><b>Asset</b> — verwaltetes Medium aus dem Media-Store der App (in <code>ui-app.mediaStoreUrl</code> konfiguriert). Auswahl/Upload über den Media-Picker; gespeichert als <code>asset:&lt;id&gt;</code> und zur Laufzeit über einen Backend-Proxy aufgelöst (die echte Store-URL bleibt verborgen).</li>
+  <li><b>msg</b> — wiring-first: <code>msg.payload</code> setzt die Quelle. Ein Buffer wird zu einer <code>data:</code>-URL konvertiert (Content-Type via <code>msg.contentType</code> oder Magic-Bytes). Hinweis: <code>data:</code>/Base64 landet im Snapshot und wird bei jedem Render mitgeschickt — fuer kleine/seltene Bilder geeignet, grosse/haeufige Bilder besser via URL/Asset.</li>
+</ul>
+<p><code>Fallback URL</code> wird angezeigt, wenn das Laden fehlschlaegt. <code>Fit</code> steuert object-fit.</p>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/display/ui-image.md">Doku</a></p>
+</script>

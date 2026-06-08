@@ -667,13 +667,42 @@
         };
     }
 
+    // P70: a custom typedInput type for a managed media asset. Its stored value is
+    // a bare asset id; the serialized binding is a literal `asset:<id>`. The expand
+    // button opens the media-picker dialog (browse/upload). Used on ui-image src.
+    function assetTypedInputType(options) {
+        const opts = options || {};
+        return {
+            value: "asset",
+            label: opts.label || "Asset",
+            icon: "fa fa-image",
+            hasValue: true,
+            expand: function () {
+                const that = this;
+                openMediaPickerDialog({
+                    title: opts.pickerTitle || "Asset auswählen",
+                    appId: typeof opts.appId === "function" ? opts.appId() : opts.appId,
+                    value: String(that.value() || ""),
+                    onSelect: function (value) {
+                        that.value(value);
+                    }
+                });
+            }
+        };
+    }
+
     // P67: the full typedInput `types` array for a bindable value field — the
     // canonical ui-text type set PLUS the `store` type. literal label is
-    // configurable (e.g. "Text", "Message", "Title").
+    // configurable (e.g. "Text", "Message", "Title"). P70: pass
+    // `includeAsset: true` (and optionally `appId`) to add the media-asset type.
     function bindingTypedInputTypes(options) {
         const opts = options || {};
+        const assetTypes = opts.includeAsset
+            ? [assetTypedInputType({ appId: opts.appId })]
+            : [];
         return [
             { value: "literal", label: opts.literalLabel || "Text", icon: "fa fa-font", hasValue: true },
+            ...assetTypes,
             { value: "state", label: "State", icon: "fa fa-database", hasValue: true },
             {
                 value: "query",
@@ -1631,7 +1660,162 @@
         refreshPreview();
     }
 
+    // ── P70: Media (asset) picker ─────────────────────────────────────────────
+    // Browse + upload assets from the app's configured media store. Reuses the
+    // P68/P69 dialog chrome. The store URL is never exposed to the editor — the
+    // admin endpoint /webapp/<appId>/assets proxies the listing, and previews/
+    // uploads go through the same app-scoped backend. Stores a bare asset id; the
+    // asset typedInput serializes it as a literal `asset:<id>`.
+    function mediaAssetsUrl(appId) {
+        return "webapp/" + encodeURIComponent(appId || "") + "/assets";
+    }
+
+    function assetPreviewUrl(appId, id) {
+        return "webapp/" + encodeURIComponent(appId || "") + "/asset/" + encodeURIComponent(id);
+    }
+
+    function openMediaPickerDialog(options) {
+        const opts = options || {};
+        const appId = opts.appId || "";
+        const current = String(opts.value || "");
+
+        const $overlay = $("<div>")
+            .addClass("webapp-media-picker-overlay webapp-node-picker-overlay")
+            .css({ position: "fixed", inset: "0", background: "rgba(0,0,0,0.4)", "z-index": "2000", display: "flex", "align-items": "center", "justify-content": "center" });
+
+        const $dialog = $("<div>")
+            .addClass("webapp-media-picker-dialog webapp-node-picker-dialog")
+            .css({ background: "var(--red-ui-primary-background, #fff)", color: "var(--red-ui-primary-text-color, #333)", border: "1px solid var(--red-ui-secondary-border-color, #ccc)", "border-radius": "4px", "box-shadow": "0 4px 24px rgba(0,0,0,0.3)", width: "560px", "max-width": "92vw", "max-height": "82vh", display: "flex", "flex-direction": "column", overflow: "hidden" })
+            .appendTo($overlay);
+
+        $("<div>")
+            .css({ padding: "10px 12px", "font-weight": "bold", "border-bottom": "1px solid var(--red-ui-secondary-border-color, #ddd)" })
+            .text(opts.title || "Asset auswählen")
+            .appendTo($dialog);
+
+        const $controls = $("<div>").css({ display: "flex", gap: "8px", margin: "10px 12px", "align-items": "center" }).appendTo($dialog);
+        const $search = $("<input type=\"text\">")
+            .attr("placeholder", "Suche (Asset-Name)…")
+            .addClass("webapp-media-picker-search")
+            .css({ flex: "1 1 auto" })
+            .appendTo($controls);
+        const $uploadBtn = $("<button type=\"button\" class=\"red-ui-button\">").text("Hochladen…").appendTo($controls);
+        const $uploadInput = $("<input type=\"file\" accept=\"image/*\">").css({ display: "none" }).appendTo($controls);
+
+        const $grid = $("<div>")
+            .addClass("webapp-media-picker-grid")
+            .css({ flex: "1 1 auto", "overflow-y": "auto", "min-height": "160px", padding: "6px", display: "grid", "grid-template-columns": "repeat(auto-fill, minmax(96px, 1fr))", gap: "6px" })
+            .appendTo($dialog);
+
+        const $status = $("<div>").css({ padding: "4px 12px", "font-size": "0.8em", color: "#999" }).appendTo($dialog);
+
+        const $footer = $("<div>").css({ padding: "8px 12px", "border-top": "1px solid var(--red-ui-secondary-border-color, #ddd)", "text-align": "right" }).appendTo($dialog);
+
+        function close() {
+            $overlay.remove();
+            $(document).off("keydown.webappMediaPicker");
+        }
+        function confirm(id) {
+            close();
+            if (typeof opts.onSelect === "function") {
+                opts.onSelect(id ? "asset:" + id : "");
+            }
+        }
+
+        $("<button type=\"button\" class=\"red-ui-button\">").text("Leeren").css({ "margin-right": "6px" }).on("click", function (e) { e.preventDefault(); confirm(""); }).appendTo($footer);
+        $("<button type=\"button\" class=\"red-ui-button\">").text("Abbrechen").on("click", function (e) { e.preventDefault(); close(); }).appendTo($footer);
+
+        let assets = [];
+
+        function renderGrid() {
+            const query = String($search.val() || "").toLowerCase();
+            $grid.empty();
+            const matches = assets.filter(function (a) {
+                const name = String(a.name || a.id || "");
+                return !query || name.toLowerCase().indexOf(query) !== -1;
+            });
+            if (matches.length === 0) {
+                $("<div>").css({ color: "#999", "font-style": "italic", padding: "8px", "grid-column": "1 / -1" }).text("Keine Assets.").appendTo($grid);
+                return;
+            }
+            matches.forEach(function (a) {
+                const id = String(a.id);
+                const name = String(a.name || id);
+                const isSelected = current === ("asset:" + id) || current === id;
+                const $tile = $("<div>")
+                    .addClass("webapp-media-picker-tile")
+                    .attr("data-asset-id", id)
+                    .attr("title", name)
+                    .css({ display: "flex", "flex-direction": "column", "align-items": "center", "justify-content": "center", padding: "6px 2px", cursor: "pointer", "border-radius": "3px", "text-align": "center", border: isSelected ? "2px solid var(--red-ui-text-color-link, #4a8)" : "1px solid var(--red-ui-secondary-border-color, #ddd)" });
+                $("<img>").attr("src", assetPreviewUrl(appId, id)).attr("alt", name).css({ width: "64px", height: "64px", "object-fit": "cover" }).appendTo($tile);
+                $("<div>").css({ "font-size": "0.7em", "margin-top": "3px", "word-break": "break-all" }).text(name).appendTo($tile);
+                $tile.on("click", function () { confirm(id); });
+                $grid.append($tile);
+            });
+        }
+
+        function loadAssets() {
+            $status.text("Lade Assets…");
+            $.getJSON(mediaAssetsUrl(appId)).done(function (data) {
+                assets = (data && Array.isArray(data.assets)) ? data.assets : [];
+                if (data && data.mediaStoreConfigured === false) {
+                    $status.text("Kein Media-Store an der App (ui-app.mediaStoreUrl) konfiguriert.");
+                }
+                else {
+                    $status.text(assets.length + " Asset(s)");
+                }
+                renderGrid();
+            }).fail(function () {
+                $status.text("Asset-Liste konnte nicht geladen werden.");
+                assets = [];
+                renderGrid();
+            });
+        }
+
+        $uploadBtn.on("click", function (e) { e.preventDefault(); $uploadInput.trigger("click"); });
+        $uploadInput.on("change", function () {
+            const file = this.files && this.files[0];
+            if (!file) {
+                return;
+            }
+            $status.text("Lade hoch: " + file.name + "…");
+            // P70: raw binary upload — Node-RED proxies it to the store without a
+            // multipart parser. Filename travels in X-Asset-Name.
+            $.ajax({
+                url: mediaAssetsUrl(appId),
+                method: "POST",
+                data: file,
+                processData: false,
+                contentType: file.type || "application/octet-stream",
+                headers: { "X-Asset-Name": file.name }
+            })
+                .done(function (res) {
+                    const id = res && res.id ? String(res.id) : "";
+                    if (id) {
+                        confirm(id);
+                    }
+                    else {
+                        $status.text("Upload fehlgeschlagen (keine Asset-ID zurück).");
+                        loadAssets();
+                    }
+                })
+                .fail(function () {
+                    $status.text("Upload fehlgeschlagen.");
+                });
+        });
+
+        $search.on("input", renderGrid);
+        $overlay.on("click", function (e) { if (e.target === $overlay[0]) { close(); } });
+        $(document).on("keydown.webappMediaPicker", function (e) { if (e.key === "Escape") { close(); } });
+
+        $("body").append($overlay);
+        loadAssets();
+        $search.trigger("focus");
+        return { close: close };
+    }
+
     global.WebappEditorCommon = {
+        assetTypedInputType,
         bindingTypedInputTypes,
         bindingValueForEditor,
         buildMountOptionsTree,
@@ -1647,6 +1831,7 @@
         installNodePicker,
         installParentAppSelector,
         openIconPickerDialog,
+        openMediaPickerDialog,
         parseIconValue,
         formatIconValue,
         installReferenceSelectors,

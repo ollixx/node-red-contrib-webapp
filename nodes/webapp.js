@@ -873,6 +873,8 @@ function toComponentDefinitions(components) {
             "ui-accordion": "accordion",
             "ui-menu": "menu",
             "ui-avatar": "avatar",
+            // P70: ui-image renders as a native <img> (kind "image").
+            "ui-image": "image",
             // P69: ui-icon is a rendered component (kind "icon").
             "ui-icon": "icon",
             // P45: composite and layout nodes
@@ -896,7 +898,7 @@ function toComponentDefinitions(components) {
             // through bind.title so the renderer resolves it to a string in
             // resolvedProps.title (the serializer reads component.props.title).
             const titleBinding = p16Kind === "alert" ? getBinding(component.title, undefined) : undefined;
-            const srcBinding = !valueBinding && p16Kind === "avatar" ? getBinding(component.src, undefined) : undefined;
+            const srcBinding = !valueBinding && (p16Kind === "avatar" || p16Kind === "image") ? getBinding(component.src, undefined) : undefined;
             // P45: pagination uses `page` as its primary binding; stepper uses `activeStep`; list uses `items`.
             const pageBinding = !valueBinding && p16Kind === "pagination" ? getBinding(component.page, component.pagePath ? stateBinding(component.pagePath) : undefined) : undefined;
             const activeStepBinding = !valueBinding && p16Kind === "stepper" ? getBinding(component.activeStep, component.activeStepPath ? stateBinding(component.activeStepPath) : undefined) : undefined;
@@ -979,7 +981,16 @@ function toComponentDefinitions(components) {
                     // P69: icon literal + ui-icon display props (size/color).
                     ...(component.icon !== undefined && !iconBinding ? { icon: component.icon } : {}),
                     ...(component.size !== undefined ? { size: component.size } : {}),
-                    ...(component.color !== undefined ? { color: component.color } : {})
+                    ...(component.color !== undefined ? { color: component.color } : {}),
+                    // P70: ui-image display props. A raw (unresolved) src binding
+                    // is kept in props.src so the serializer can fall back to it
+                    // when no value binding resolved (mirrors avatar).
+                    ...(component.src !== undefined && !srcBinding ? { src: component.src } : {}),
+                    ...(component.alt !== undefined ? { alt: component.alt } : {}),
+                    ...(component.fit !== undefined ? { fit: component.fit } : {}),
+                    ...(component.width !== undefined ? { width: component.width } : {}),
+                    ...(component.height !== undefined ? { height: component.height } : {}),
+                    ...(component.fallbackSrc !== undefined ? { fallbackSrc: component.fallbackSrc } : {})
                 },
                 events: []
             };
@@ -1323,6 +1334,9 @@ function buildAppSnapshot(appId, location, dialogId, definitions, clientId) {
         layout,
         appLayout: buckets.app ? buckets.app.layout : undefined,
         tokens: parseTokens(buckets.app && buckets.app.tokens),
+        // P70: app-level media store URL (used only to gate asset:<id> rewriting;
+        // the URL itself stays server-side).
+        mediaStoreUrl: buckets.app ? buckets.app.mediaStoreUrl : undefined,
         snapshot: rendererApp.render()
     };
 }
@@ -1355,7 +1369,10 @@ function renderAppPage(appId, location, dialogId, definitions) {
         appId: model.id,
         location: snapshot.location,
         params: snapshot.params,
-        formId: undefined
+        formId: undefined,
+        // P70: presence of a media store enables `asset:<id>` src rewriting to the
+        // app-scoped backend proxy URL. The real store URL is never exposed here.
+        mediaStoreUrl: built.mediaStoreUrl
     };
 
     // P26: dialogs are serialized through the shared module so the server and the
@@ -1723,7 +1740,7 @@ function getDefinitionBuckets(appId, definitions) {
         app: matchingApp,
         routes: matchingDefinitions.filter((entry) => entry.type === "ui-route"),
         dialogs: matchingDefinitions.filter((entry) => entry.type === "ui-dialog"),
-        components: matchingDefinitions.filter((entry) => ["ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select", "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider", "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state", "ui-tabs", "ui-accordion", "ui-breadcrumb", "ui-menu", "ui-pagination", "ui-stepper", "ui-avatar", "ui-icon", "ui-list", "ui-log"].includes(entry.type)),
+        components: matchingDefinitions.filter((entry) => ["ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select", "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider", "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state", "ui-tabs", "ui-accordion", "ui-breadcrumb", "ui-menu", "ui-pagination", "ui-stepper", "ui-avatar", "ui-image", "ui-icon", "ui-list", "ui-log"].includes(entry.type)),
         stores: matchingDefinitions.filter((entry) => entry.type === "ui-store"),
         queries: matchingDefinitions.filter((entry) => entry.type === "ui-query"),
         actions: matchingDefinitions.filter((entry) => entry.type === "ui-action"),
@@ -1760,6 +1777,34 @@ function getDefinitionTypeById(id) {
 // P22: a self-contained JSON body reader so the event endpoint does not depend on
 // Node-RED's optional httpNode body-parser configuration. If a body parser already
 // ran (req.body present), it is reused.
+// P70 Ebene 3: collect a raw binary request body (image upload). Capped to guard
+// against unbounded memory use; the cap is generous for typical UI imagery.
+function readRawBody(req, res, next) {
+    if (Buffer.isBuffer(req.rawBody)) {
+        next();
+        return;
+    }
+    const chunks = [];
+    let size = 0;
+    const MAX = 10 * 1024 * 1024; // 10 MB
+    req.on("data", (chunk) => {
+        size += chunk.length;
+        if (size > MAX) {
+            req.destroy();
+            return;
+        }
+        chunks.push(chunk);
+    });
+    req.on("end", () => {
+        req.rawBody = Buffer.concat(chunks);
+        next();
+    });
+    req.on("error", () => {
+        req.rawBody = Buffer.alloc(0);
+        next();
+    });
+}
+
 function readJsonBody(req, res, next) {
     if (req.body && typeof req.body === "object") {
         next();
@@ -2219,6 +2264,29 @@ function buildActionCommand(actionDefinition, msg, node) {
     };
 }
 
+// P70 Ebene 3: validate an asset id and resolve the absolute store URL to fetch.
+// The real media-store URL is taken from the app's mediaStoreUrl config and NEVER
+// leaves the server — the client only ever sees /webapp/<appId>/asset/<id>.
+// Returns { ok:true, url } or { ok:false, status, error }. The id is constrained
+// to a safe charset so it cannot traverse out of the store base path.
+const ASSET_ID_PATTERN = /^[A-Za-z0-9._-]+$/;
+
+function resolveAssetStoreUrl(appId, id, definitions) {
+    if (typeof id !== "string" || !ASSET_ID_PATTERN.test(id) || id === "." || id === "..") {
+        return { ok: false, status: 400, error: "Invalid asset id." };
+    }
+    const buckets = getDefinitionBuckets(appId, definitions);
+    if (!buckets.app) {
+        return { ok: false, status: 404, error: `Unknown app '${appId}'.` };
+    }
+    const storeUrl = buckets.app.mediaStoreUrl;
+    if (!storeUrl || typeof storeUrl !== "string" || storeUrl.trim() === "") {
+        return { ok: false, status: 404, error: "No media store is configured for this app." };
+    }
+    const base = storeUrl.replace(/\/+$/, "");
+    return { ok: true, url: `${base}/${encodeURIComponent(id)}` };
+}
+
 function registerEndpoints(RED) {
     if (runtimeState.endpointsRegistered) {
         return;
@@ -2358,6 +2426,111 @@ function registerEndpoints(RED) {
             location,
             snapshot: built.snapshot
         });
+    });
+
+    // P70 Ebene 3: app-scoped media proxy. A ui-image src of `asset:<id>` is
+    // rendered as /webapp/<appId>/asset/<id>; this endpoint resolves the app's
+    // configured mediaStoreUrl server-side, fetches the asset, and streams it back
+    // with the upstream content-type. The store URL is never disclosed to the
+    // client (obfuscation), and the id is charset-validated (no path traversal).
+    // MUST be registered before the catch-all `/webapp/:appId/*` page route.
+    RED.httpNode.get("/webapp/:appId/asset/:id", (req, res) => {
+        const { appId, id } = req.params;
+        const resolved = resolveAssetStoreUrl(appId, id, readDeployDefinitions(RED));
+        if (!resolved.ok) {
+            res.status(resolved.status).json({ error: resolved.error });
+            return;
+        }
+        fetch(resolved.url)
+            .then((upstream) => {
+                if (!upstream.ok) {
+                    // Do not leak the upstream URL or body — only the status class.
+                    res.status(upstream.status === 404 ? 404 : 502).json({ error: "Asset not available." });
+                    return;
+                }
+                const contentType = upstream.headers.get("content-type") || "application/octet-stream";
+                res.set("Content-Type", contentType);
+                res.set("Cache-Control", "public, max-age=300");
+                return upstream.arrayBuffer().then((buf) => {
+                    res.status(200).send(Buffer.from(buf));
+                });
+            })
+            .catch(() => {
+                res.status(502).json({ error: "Asset fetch failed." });
+            });
+    });
+
+    // P70 Ebene 3: editor media picker — list assets available in the store.
+    // Proxies the store's listing endpoint (the store owns the catalogue); the
+    // store URL stays server-side. Returns { assets: [{ id, name?, contentType? }] }.
+    RED.httpAdmin.get("/webapp/:appId/assets", (req, res) => {
+        const { appId } = req.params;
+        const buckets = getDefinitionBuckets(appId, readDeployDefinitions(RED));
+        if (!buckets.app) {
+            res.status(404).json({ error: `Unknown app '${appId}'.` });
+            return;
+        }
+        const storeUrl = buckets.app.mediaStoreUrl;
+        if (!storeUrl || String(storeUrl).trim() === "") {
+            res.json({ assets: [], mediaStoreConfigured: false });
+            return;
+        }
+        const base = String(storeUrl).replace(/\/+$/, "");
+        fetch(`${base}/`)
+            .then((upstream) => upstream.ok ? upstream.json() : { assets: [] })
+            .then((data) => {
+                const assets = Array.isArray(data) ? data : (Array.isArray(data && data.assets) ? data.assets : []);
+                res.json({ assets, mediaStoreConfigured: true });
+            })
+            .catch(() => {
+                res.json({ assets: [], mediaStoreConfigured: true, error: "store-unreachable" });
+            });
+    });
+
+    // P70 Ebene 3: editor media upload. The store owns persistence (open design
+    // point: folder vs. service) — Node-RED stays a thin proxy. The editor sends
+    // the raw image bytes (Content-Type = the image type, X-Asset-Name = filename);
+    // the server POSTs them to the store and returns the assigned id. Requires a
+    // configured mediaStoreUrl.
+    RED.httpAdmin.post("/webapp/:appId/assets", readRawBody, (req, res) => {
+        const { appId } = req.params;
+        const buckets = getDefinitionBuckets(appId, readDeployDefinitions(RED));
+        if (!buckets.app) {
+            res.status(404).json({ error: `Unknown app '${appId}'.` });
+            return;
+        }
+        const storeUrl = buckets.app.mediaStoreUrl;
+        if (!storeUrl || String(storeUrl).trim() === "") {
+            res.status(409).json({ error: "No media store is configured for this app." });
+            return;
+        }
+        const body = Buffer.isBuffer(req.rawBody) ? req.rawBody : Buffer.alloc(0);
+        if (body.length === 0) {
+            res.status(400).json({ error: "Empty upload." });
+            return;
+        }
+        const base = String(storeUrl).replace(/\/+$/, "");
+        const contentType = req.headers["content-type"] || "application/octet-stream";
+        const name = req.headers["x-asset-name"] ? String(req.headers["x-asset-name"]) : undefined;
+        fetch(base + "/", {
+            method: "POST",
+            headers: name
+                ? { "Content-Type": contentType, "X-Asset-Name": name }
+                : { "Content-Type": contentType },
+            body
+        })
+            .then((upstream) => upstream.ok ? upstream.json().catch(() => ({})) : Promise.reject(new Error("store rejected")))
+            .then((data) => {
+                const id = data && (data.id || data.assetId);
+                if (!id) {
+                    res.status(502).json({ error: "Store did not return an asset id." });
+                    return;
+                }
+                res.json({ id: String(id), name: name });
+            })
+            .catch(() => {
+                res.status(502).json({ error: "Upload to media store failed." });
+            });
     });
 
     RED.httpNode.get("/webapp/:appId/*", (req, res) => {
@@ -2674,6 +2847,57 @@ const VIEW_NODE_BINDING_FIELDS = new Set([
     "value", "src", "message", "rows", "items"
 ]);
 
+// P70 Ebene 2 (wiring-first): sniff the image content-type from the leading
+// magic bytes of a Buffer. Returns a MIME type, or undefined when unrecognised.
+function sniffImageContentType(buffer) {
+    if (!buffer || buffer.length < 4) {
+        return undefined;
+    }
+    // PNG: 89 50 4E 47
+    if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47) {
+        return "image/png";
+    }
+    // JPEG: FF D8 FF
+    if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+        return "image/jpeg";
+    }
+    // GIF: "GIF8"
+    if (buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x38) {
+        return "image/gif";
+    }
+    // WEBP: "RIFF"...."WEBP"
+    if (buffer.length >= 12 && buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46
+        && buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50) {
+        return "image/webp";
+    }
+    // SVG (text): leading "<?xml" or "<svg"
+    const head = buffer.slice(0, 5).toString("utf8").toLowerCase();
+    if (head.startsWith("<?xml") || head.startsWith("<svg")) {
+        return "image/svg+xml";
+    }
+    return undefined;
+}
+
+// P70 Ebene 2: turn a ui-image msg.payload into a usable src string.
+//   - Buffer            → data:<type>;base64,<…>  (type from msg hint or sniff)
+//   - string            → passed through (URL, asset:<id>, or existing data: URL)
+//   - anything else     → String(payload)
+// CAVEAT (documented): a data:/Base64 src lands in the snapshot/state and is
+// re-sent on every render — fine for small/rare images; prefer URL/asset for
+// large or frequently-updated images.
+function payloadToImageSrc(payload, msg) {
+    if (Buffer.isBuffer(payload)) {
+        const hint = msg && (msg.contentType || (msg.headers && msg.headers["content-type"]));
+        const contentType = (typeof hint === "string" && hint.trim()) ? hint.split(";")[0].trim()
+            : (sniffImageContentType(payload) || "image/png");
+        return `data:${contentType};base64,${payload.toString("base64")}`;
+    }
+    if (typeof payload === "string") {
+        return payload;
+    }
+    return String(payload);
+}
+
 // P39: handle incoming msg.payload / msg.ui.patch on view nodes.
 // Patches the in-memory definition and pushes a fresh snapshot to all
 // connected clients of the parent app.
@@ -2708,9 +2932,14 @@ function viewNodePatchInputHandler(node, msg, send, done) {
         const nodeType = registration.definition.type;
         const field = VIEW_NODE_PRIMARY_FIELD[nodeType];
         if (field) {
-            const newValue = VIEW_NODE_BINDING_FIELDS.has(field)
-                ? literalBinding(msg.payload)
+            // P70 Ebene 2: ui-image accepts a Buffer / Base64 / data: payload —
+            // convert it to a usable src string before it is wrapped in a binding.
+            const rawPayload = (nodeType === "ui-image" && field === "src")
+                ? payloadToImageSrc(msg.payload, msg)
                 : msg.payload;
+            const newValue = VIEW_NODE_BINDING_FIELDS.has(field)
+                ? literalBinding(rawPayload)
+                : rawPayload;
             registration.definition = Object.assign({}, registration.definition, { [field]: newValue });
             node.webappDefinition = registration.definition;
             patched = true;
@@ -3155,7 +3384,9 @@ const runtimeNodeRegistry = {
             // Absent/false = OFF (secure default). minSeverity gates which errors
             // are forwarded; absent falls back to "error" at the read site.
             forwardErrorsToClient: config.forwardErrorsToClient === true || config.forwardErrorsToClient === "true",
-            forwardErrorMinSeverity: blankToUndefined(config.forwardErrorMinSeverity)
+            forwardErrorMinSeverity: blankToUndefined(config.forwardErrorMinSeverity),
+            // P70: optional media-store base URL for asset:<id> resolution.
+            mediaStoreUrl: blankToUndefined(config.mediaStoreUrl)
         }),
         options: {
             // P59 / ADR 0007 §4: ui-app owns the app-global verbs navigate / reset.
@@ -3789,6 +4020,8 @@ const runtimeNodeRegistry = {
             fallbackSrc: config.fallback || undefined,
             width: config.width || undefined,
             height: config.height || undefined,
+            // P70: object-fit mode (contain/cover/fill/none).
+            fit: config.fit || undefined,
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
@@ -3999,6 +4232,11 @@ registerWebappNodes.__test__ = {
     // P39 / P52: view-node input patch handler + deploy-definition reader
     viewNodePatchInputHandler,
     readDeployDefinitions,
+    // P70 Ebene 2: ui-image msg.payload → src (Buffer/Base64 → data:)
+    payloadToImageSrc,
+    sniffImageContentType,
+    // P70 Ebene 3: media-store asset proxy resolution + path-traversal guard
+    resolveAssetStoreUrl,
     // P15
     getClientState,
     setClientState,

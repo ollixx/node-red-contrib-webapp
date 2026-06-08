@@ -17,6 +17,7 @@ export {
     COMPONENT_VARIANT_VOCABULARY,
     componentDefinitionSchema,
     componentEventHandlerSchema,
+    componentKindSchema,
     CONTAINER_VARIANTS,
     DEFAULT_ICON_LIBRARY,
     iconValueSchema,
