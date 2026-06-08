@@ -1897,6 +1897,8 @@ function addStreamClient(appId, clientId, res, location) {
         res.socket.on("error", noop);
     }
     getStreamSubscribers(appId).set(clientId, { res, location: location || "/", connectedAt: Date.now() });
+    // P86: emit clientConnected on the ui-app node if the event is declared.
+    emitAppClientEvent(appId, "clientConnected", clientId);
 }
 
 function removeStreamClient(appId, clientId) {
@@ -1907,6 +1909,8 @@ function removeStreamClient(appId, clientId) {
             runtimeState.streamClients.delete(appId);
         }
     }
+    // P86: emit clientDisconnected on the ui-app node if the event is declared.
+    emitAppClientEvent(appId, "clientDisconnected", clientId);
 }
 
 // Serialise a single SSE message frame. A named event lets the browser
@@ -3096,6 +3100,56 @@ function findRouteNodeForLocation(RED, appId, location) {
         }
     }
     return { routeId, node: undefined, params: match.params || {} };
+}
+
+// P86: Emit a clientConnected / clientDisconnected event on the ui-app node
+// when a browser client connects or disconnects. The ui-app must declare the
+// event (events array in its definition); absent → no-op. Positional out-port
+// routing mirrors the generic dispatchClientEvent logic.
+function emitAppClientEvent(appId, eventName, clientId) {
+    const RED = runtimeState.RED;
+    if (!RED) {
+        return;
+    }
+    // Find the ui-app definition and its Node-RED node id.
+    let appNodeId;
+    let appDefinition;
+    for (const registration of runtimeState.definitions.values()) {
+        const def = registration.definition;
+        if (def && def.type === "ui-app" && def.id === appId && registration.nodeId) {
+            appNodeId = registration.nodeId;
+            appDefinition = def;
+            break;
+        }
+    }
+    if (!appNodeId || !appDefinition) {
+        return;
+    }
+    const events = Array.isArray(appDefinition.events) ? appDefinition.events : undefined;
+    if (!events || events.indexOf(eventName) === -1) {
+        return;
+    }
+    const appNode = RED.nodes.getNode(appNodeId);
+    if (!appNode || typeof appNode.send !== "function") {
+        return;
+    }
+    const message = {
+        ui: {
+            appId,
+            clientId,
+            event: eventName,
+            sourceId: appId
+        }
+    };
+    const portIndex = events.indexOf(eventName);
+    if (portIndex > 0) {
+        const outputs = new Array(portIndex + 1).fill(null);
+        outputs[portIndex] = message;
+        appNode.send(outputs);
+    }
+    else {
+        appNode.send(message);
+    }
 }
 
 // Emit an onEnter / onLeave event on a route/app node IF that node declares the
@@ -4324,7 +4378,9 @@ registerWebappNodes.__test__ = {
     reportRuntimeError,
     resolveAppForwardConfig,
     redactErrorMessage,
-    makeStructuredError
+    makeStructuredError,
+    // P86: ui-app clientConnected/clientDisconnected emission
+    emitAppClientEvent
 };
 
 registerWebappNodes.registerNodeType = registerNodeType;

@@ -299,49 +299,9 @@ test.describe("ui-action (P46)", () => {
         await expect(page.locator(".webapp-dialog")).not.toBeVisible({ timeout: 5000 });
     });
 
-    // ─── no store mutation ────────────────────────────────────────────────────
-
-    test("navigate action command does NOT update any store value", async ({ page, request }) => {
-        // Verify that firing a ui-action never mutates the store. We fire a navigate
-        // action and check that the store's state value remains unchanged.
-        const flow = new FlowBuilder()
-            .app({ id: "actionApp4", root: "actionApp4" })
-            .node("ui-store", {
-                id: "actionStore4",
-                statePath: "counter",
-                initialValue: "0"
-            })
-            .node("ui-text", {
-                id: "actionTxt4",
-                value: { kind: "state", path: "counter" }
-            })
-            .node("ui-action", {
-                id: "actionNode4",
-                actionType: "navigate",
-                to: "/",
-                // P59: wire to the app so the navigate command is actually pushed.
-                wires: [["actionApp4"]]
-            })
-            .route({ id: "actionRoute4b", path: "/other" })
-            .node("ui-text", { id: "actionTxt4b", text: "Other page" })
-            .withInjectNode("actionInj4", "actionNode4")
-            .build();
-
-        await deployFlow(request, flow);
-
-        const webapp = new WebappPage(page, "actionApp4");
-        await webapp.navigate("/");
-        // Store initial value "0" renders.
-        await expect(webapp.root()).toContainText("0");
-
-        // Fire the navigate action → sends command, does NOT update store.
-        await injectMessage(request, "actionInj4");
-
-        // Wait for navigation to resolve (navigate to "/" which is the same page).
-        await page.waitForTimeout(500);
-
-        // The store value must still be "0" — no mutation from the action.
-        await webapp.navigate("/");
-        await expect(webapp.root()).toContainText("0");
-    });
 });
+// NOTE (P86): "navigate does NOT update store" was a behaviour-layer E2E test.
+// It is now covered by the classic handler tests in
+// packages/runtime/test/p86-structure-state-behavior-nodes-behaviour.test.ts
+// (ui-app navigate verb → SSE command push, no applyStoreOperation call).
+// Per test-conventions.md: handler behaviour belongs in fast classic tests, not E2E.
