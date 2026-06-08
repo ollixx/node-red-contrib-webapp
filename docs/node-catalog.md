@@ -7,6 +7,7 @@ Die Einzeldokumente pro Knoten sowie übergreifende Konzepte sind unter [docs/no
 → [Übersicht, gemeinsame Modellregeln, Ereignis- und Zustandsmodell](nodes/concepts/overview.md)
 → [Layout-Feature (mehrfach genutztes Konzept)](nodes/concepts/layout.md)
 → [Stores und das `store`-Binding](nodes/concepts/stores.md)
+→ [Editor-Features (Node-Picker, typedInput-Typen, Varianten)](nodes/concepts/editor.md)
 → [Theming: Design-Tokens, Variants, Shoelace-Adapter](nodes/concepts/theming.md)
 → [Message-Formate](nodes/concepts/messages.md)
 → [Actions / Interaktions-Verben](nodes/concepts/actions.md)
