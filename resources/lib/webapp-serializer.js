@@ -21,6 +21,11 @@
  * Loadable both in Node (CommonJS) and in the browser (global
  * `window.WebappSerializer`) — the resources/ dir is served statically by
  * Node-RED, so this file must not depend on a bundler or any import.
+ *
+ * P96: verified that ui-button kind="button" is rendered as <sl-button> with
+ * the component label as the default slot. The render pipeline was confirmed
+ * correct (components-filter, kind mapping, renderer, serializer all handle
+ * "button" consistently).
  */
 (function (root, factory) {
     "use strict";
