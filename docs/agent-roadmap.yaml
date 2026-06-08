@@ -1149,6 +1149,47 @@ phases:
 
   - { id: P80, title: "Bugfix: Store-Operationen zur Laufzeit gegen storeOperationSchema validieren — vor applyStoreOperation safeParse, bei Fehler strukturierter Fehler `server.store.invalid-operation` mit sprechender Schema-Meldung (set/patch/delete ohne path, set/patch/replace ohne value); Pass-Through für fremde Messages unverändert. Tests + Doc-Update (stores.md „Bekannte Lücke\", ui-store.md)", status: pending, dependencies: [P15] }
 
+  # ════════════════════════════════════════════════════════════════════════
+  # Test-Strategie: Knoten-Verhalten in klassische Tests, E2E nur Editor+Render
+  # (Audit 2026-06-08, P81–P86)
+  #
+  # Policy (Owner): Jedes Knoten-FEATURE (Input-Message-Handling, Validierung,
+  # Output/Event-Emission, Store/Query/Action/Navigation, Interaktions-Verben,
+  # Pass-Through) gehört möglichst vollständig in SCHNELLE klassische Tests
+  # (vitest in packages/*/test/*, die die registrierten Handler aus webapp.js
+  # über die runtimeNodeRegistry treiben + SSE-Pushes/Output-Messages prüfen —
+  # Muster wie p59/p56/p30/p38). E2E (Playwright) deckt NUR das Editor-Panel und
+  # das korrekte Client-Rendering ab.
+  #
+  # Audit-Befund: Verhaltens-Abdeckung ist heute großflächig E2E-only oder fehlt
+  # (msg.payload→Primärfeld, Interaktions-Verb→SSE-Push, Output-Event-Dispatch,
+  # Pass-Through). Es fehlt ein GETEILTER klassischer Verhaltens-Test-Harness.
+  #
+  # WICHTIG: Beim Schreiben der klassischen Tests treten voraussichtlich echte
+  # Bugs zutage (verifizieren, dann fixen oder als Bug-Phase abspalten), u.a.:
+  #   • ui-empty-state: Handler ist componentStateInputHandler, Spec verlangt
+  #     msg.ui.patch-Feld-Updates → vermutlicher Handler-Mismatch.
+  #   • ui-breadcrumb / ui-pagination: kein Eintrag in INTERACTION_VERBS_BY_TYPE
+  #     → dokumentiertes show/hide nicht registriert.
+  #   • ui-icon: show/hide erzeugt keinen SSE-Push; kein Rendering-Test vorhanden.
+  #   • ui-divider: msg.ui.patch wird nicht angewandt (componentStateInputHandler).
+  #   • ui-stepper: stepChange-Payload — E2E prüft params.value (Index), Spec sagt
+  #     params.stepId (+previousStepId); `complete`-Event ungetestet.
+  #   • (überlappt teils mit den Bug-Phasen P72–P80 — dort referenzieren.)
+  # ════════════════════════════════════════════════════════════════════════
+
+  - { id: P81, title: "Test-Infra: geteilter klassischer Knoten-Verhaltens-Test-Harness — Fixture, das einen registrierten Knoten-inputHandler treibt (msg-in), Output-Messages (send) UND SSE-Pushes erfasst; extrahiert aus den p59/p56/p30/p38-Mustern; + kurze Test-Konventionen-Doc (Verhalten=klassisch, E2E=Editor+Render)", status: pending, dependencies: [P47] }
+
+  - { id: P82, title: "Klassische Verhaltens-Tests Input-Knoten (checkbox/datepicker/input/radio/select/slider/switch/textarea): msg.payload→value+Push, Interaktions-Verben (show/hide/enable/disable/focus/reset), submit-Event (input/textarea), select multiple→Array, datepicker mode→type, Pass-Through; E2E auf Editor+Render eindampfen", status: pending, dependencies: [P81] }
+
+  - { id: P83, title: "Klassische Verhaltens-Tests Display-Knoten (text/button/table/container/avatar/image/icon/list/divider): msg.payload→Primärfeld+Push, Interaktions-Verb→SSE-Push, Event-Config (button click, table rowSelect/rowAction/checkboxChange, list itemClick/itemSelect), Pass-Through; fehlende Render-E2E (ui-icon, ui-divider) ergänzen; E2E sonst auf Editor+Render eindampfen", status: pending, dependencies: [P81] }
+
+  - { id: P84, title: "Klassische Verhaltens-Tests Feedback-Knoten (alert/badge/empty-state/log/progress/skeleton/toast): msg.payload-Patch+Push, Pass-Through, dismiss-Event (alert), toast (override/clientId/fehlende message), skeleton/empty-state op-Handling, ui-log minSeverity/maxEntries (Client-JS); E2E auf Render eindampfen", status: pending, dependencies: [P81] }
+
+  - { id: P85, title: "Klassische Verhaltens-Tests Navigation-Knoten (accordion/breadcrumb/menu/pagination/stepper/tabs): select-Verb→SSE-Push (tabs/stepper/menu), Output-Event-Dispatch (pageChange/tabChange/stepChange/sectionOpen-close/navigate), msg.payload/patch, accordion multiple/defaultOpen, stepper complete + stepId-Contract, Pass-Through; fehlende Editor-E2E pro Knoten ergänzen", status: pending, dependencies: [P81] }
+
+  - { id: P86, title: "Klassische Verhaltens-Tests Structure/State/Behavior-Knoten: ui-app clientConnected/clientDisconnected-Emission+clientId, ui-query clientId-Routing + Pass-Through/No-Crash, ui-navigation Alias-Äquivalenz zu ui-action(navigate)+Schema-`to`; redundante Behavior-E2E (z.B. ui-action „navigate does NOT update store\") eindampfen", status: pending, dependencies: [P81] }
+
   # Deferred — only when a concrete need appears (see ADR 0002):
   #   - ui-custom escape-hatch node for framework-specific components (opt-in, non-portable)
   #   - SSR / hydration adapter for any public, search-indexed surface
