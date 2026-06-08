@@ -13,7 +13,7 @@ test.describe("ui-slider P73 — showValue rendered", () => {
         await resetFlow(request);
     });
 
-    test("renders sl-range with label-value when showValue=true", async ({ page, request }) => {
+    test("renders sl-range without tooltip=none when showValue=true (tooltip visible)", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "sl73App", root: "sl73App" })
             .node("ui-slider", {
@@ -33,11 +33,12 @@ test.describe("ui-slider P73 — showValue rendered", () => {
 
         const sl = page.locator("sl-range");
         await expect(sl).toBeVisible();
-        // label-value is a Shoelace boolean attribute (presence = enabled)
-        await expect(sl).toHaveAttribute("label-value", "");
+        // showValue=true → no tooltip="none" suppression (Shoelace default tooltip is visible)
+        const tooltipAttr = await sl.getAttribute("tooltip");
+        expect(tooltipAttr).not.toBe("none");
     });
 
-    test("renders sl-range without label-value when showValue is not set", async ({ page, request }) => {
+    test("renders sl-range with tooltip=none when showValue is not set (default hidden)", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "sl73App2", root: "sl73App2" })
             .node("ui-slider", { id: "sl73Node2", min: 0, max: 100, step: 1 })
@@ -50,6 +51,6 @@ test.describe("ui-slider P73 — showValue rendered", () => {
 
         const sl = page.locator("sl-range");
         await expect(sl).toBeVisible();
-        await expect(sl).not.toHaveAttribute("label-value");
+        await expect(sl).toHaveAttribute("tooltip", "none");
     });
 });

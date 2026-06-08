@@ -86,24 +86,23 @@ describe("P73 — ui-switch: labelOn/labelOff rendered in HTML", () => {
 });
 
 // ─── Bug 2: ui-slider showValue ─────────────────────────────────────────────
+// Shoelace sl-range shows the tooltip by default (tooltip="top"). The spec default
+// for showValue is false, so we suppress the tooltip with tooltip="none" when not set.
 
-describe("P73 — ui-slider: showValue rendered as attribute", () => {
-    it("renders <sl-range> without label-value when showValue is false/absent", () => {
+describe("P73 — ui-slider: showValue controls the Shoelace tooltip attribute", () => {
+    it("renders <sl-range tooltip=none> when showValue is absent (default hidden)", () => {
         const html = serializer.renderComponentHtml(makeSlider(), "vertical", CTX);
         expect(html).toContain("<sl-range");
-        // No label-value or show-value attr when not set
-        expect(html).not.toContain("label-value");
-        expect(html).not.toContain("show-value");
+        expect(html).toContain('tooltip="none"');
     });
 
-    it("renders <sl-range label-value> when showValue is true", () => {
+    it("renders <sl-range> without tooltip=none when showValue is true (tooltip visible)", () => {
         const html = serializer.renderComponentHtml(
             makeSlider({ showValue: true }),
             "vertical",
             CTX
         );
-        // sl-range uses label-value attribute to show current value
-        expect(html).toContain("label-value");
+        expect(html).not.toContain('tooltip="none"');
     });
 });
 

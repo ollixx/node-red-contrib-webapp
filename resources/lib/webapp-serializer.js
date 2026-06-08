@@ -654,11 +654,13 @@
             const min = component.props.min !== undefined ? " min=\"" + escapeAttribute(String(component.props.min)) + "\"" : "";
             const max = component.props.max !== undefined ? " max=\"" + escapeAttribute(String(component.props.max)) + "\"" : "";
             const step = component.props.step !== undefined ? " step=\"" + escapeAttribute(String(component.props.step)) + "\"" : "";
-            // P73: render showValue as Shoelace sl-range label-value attribute (bare boolean)
-            const labelValue = component.props.showValue ? " label-value" : "";
+            // P73: Shoelace sl-range shows its value tooltip by default (tooltip="top").
+            // The spec default for showValue is false — suppress the tooltip unless explicitly
+            // enabled by setting tooltip="none" when showValue is absent or false.
+            const tooltip = component.props.showValue ? "" : " tooltip=\"none\"";
             const attrs = shoelaceAttrs(mapComponentToShoelace("slider", component.props || {}).attributes);
             return wrapRenderedComponentHtml(component, layoutId, "<sl-range" + attrs + " label=\"" + escapeAttribute(label)
-                + "\" name=\"" + escapeAttribute(name) + "\"" + min + max + step + " value=\"" + escapeAttribute(value) + "\"" + labelValue + "></sl-range>");
+                + "\" name=\"" + escapeAttribute(name) + "\"" + min + max + step + " value=\"" + escapeAttribute(value) + "\"" + tooltip + "></sl-range>");
         }
 
         if (component.kind === "alert") {
