@@ -46,6 +46,15 @@ typedInput, Variant-SelectBox, Mount-Baum, Layout-Child-Props).
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
 | `variant` | „Variante" | Variant-SelectBox (`BUTTON_VARIANTS`) | optional | Semantische Rolle des Buttons: `primary`, `secondary`, `success`, `danger`, `warning`, `neutral`, `ghost`, `link`. Default: `neutral`. Das Rendering-Backend bildet die Variante auf die passende visuelle Darstellung ab (Farbe, Kontur, Stil). Details: [theming.md](../concepts/theming.md). |
+| `size` | „Size" | Size-SelectBox (`sm`/`md`/`lg`) | optional | Dreistufige Größe. Leer = Standardgröße des Backends. Das Backend (heute Shoelace) bildet `sm`/`md`/`lg` auf `small`/`medium`/`large` ab. |
+| `outline` | „Outline" | Checkbox | optional | Zeichnet den Button mit Kontur statt Füllung. Unabhängig von der `variant`-abgeleiteten Darstellung (kein Doppel-Apply). |
+
+### Gruppe „Link-Modus"
+
+| Feld | Label | Editor-Typ | Pflicht | Beschreibung |
+|---|---|---|---|---|
+| `linkMode` | „Link Mode" | SelectBox (`button`/`url`/`navigate`) | optional | `button` (Default) = Ereignis-Quelle (Click-Event auf Output-Port); `url` = echter Hyperlink (rendert ein `<a>` via Backend-`href`); `navigate` = clientseitige In-App-Navigation zur Route in `href`, der Klick wird zusätzlich an den Flow gemeldet. |
+| `href` | „URL / Route" | typedInput (bindbar) | optional | Ziel für `url`/`navigate`. Bindbar (literal ODER dynamisch). Wird im Editor nur in den Modi `url`/`navigate` eingeblendet. |
 
 ### Gruppe „Platzierung"
 
@@ -126,8 +135,14 @@ konkret aussehen. Weitere Backends folgen demselben semantischen Contract ohne
 
 ## Offene Punkte
 
-- **Größe (`size`), Outline-Modus und Link-Ziel (`href`)** sind konzeptionell
-  vorgesehen, aber noch nicht als commitierte Schema-Felder modelliert. Sie
-  erscheinen erst im Schema, wenn der Contract festgelegt ist.
+- **Größe (`size`), Outline-Flag (`outline`) und Link-Modus (`linkMode` + `href`)**
+  sind seit P71 als commitierte Schema-Felder modelliert (siehe Gruppen
+  „Darstellung" und „Link-Modus" oben).
 - **Icon-Integration** ist seit P69 umgesetzt (Feld `icon`, Prefix-Slot,
   Backend-neutral `{ library, name }`, bindbar — siehe oben).
+- **Beliebige Kind-Knoten in Button-Slots (prefix/suffix).** Heute belegt nur das
+  `icon`-Feld den Prefix-Slot. Das Mounten *beliebiger* Knoten in `prefix`/`suffix`
+  (Button als Mini-Container) bleibt offen — es erfordert, den Button zum
+  Layout-Host mit eigenen Slots zu machen (feste Slots vs. Layout-Preset). P71 hat
+  diesen Entwurfspunkt bewusst zurückgestellt; der gängige Fall (Icon vor dem
+  Label) ist abgedeckt.

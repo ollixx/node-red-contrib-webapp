@@ -505,6 +505,27 @@ export const SEVERITY_VARIANTS = ["primary", "success", "warning", "danger", "ne
 export const BADGE_VARIANTS = SEVERITY_VARIANTS;
 export const ALERT_VARIANTS = SEVERITY_VARIANTS;
 
+/**
+ * P71 — component size vocabulary.
+ *
+ * Shoelace exposes only three native sizes (small / medium / large). Nodes whose
+ * underlying Shoelace element is sized that way (button, text, input, select,
+ * textarea …) use this 3-step token set. The richer 5-step `xs..xl` scale stays
+ * on ui-avatar / ui-badge / ui-icon, where it maps to CSS sizing rather than a
+ * native `size` attribute. The adapter's `mapSize` already accepts both scales.
+ */
+export const COMPONENT_SIZES = ["sm", "md", "lg"] as const;
+export type ComponentSize = (typeof COMPONENT_SIZES)[number];
+
+/**
+ * P71 — ui-button link mode. A button is, by default, an event source (its click
+ * is reported on the output port). It can instead act as a hyperlink ("url",
+ * renders a real `<a>` via sl-button `href`) or as an in-app navigation trigger
+ * ("navigate", emits a navigate action against a route target).
+ */
+export const BUTTON_LINK_MODES = ["button", "url", "navigate"] as const;
+export type ButtonLinkMode = (typeof BUTTON_LINK_MODES)[number];
+
 export type ButtonVariant = (typeof BUTTON_VARIANTS)[number];
 export type TextVariant = (typeof TEXT_VARIANTS)[number];
 export type ContainerVariant = (typeof CONTAINER_VARIANTS)[number];

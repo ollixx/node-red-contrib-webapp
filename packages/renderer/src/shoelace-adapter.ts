@@ -130,6 +130,13 @@ export function mapComponentToShoelace(
         if (size) {
             attributes.size = size;
         }
+
+        // P71: explicit outline flag → Shoelace boolean `outline` attribute.
+        // sl-button accepts it on any variant; the variant-derived look is
+        // unaffected (no double-apply — the adapter never derives outline itself).
+        if (props.outline === true) {
+            attributes.outline = "";
+        }
     }
     else if (typeof props.size === "string") {
         const size = mapSize(props.size);

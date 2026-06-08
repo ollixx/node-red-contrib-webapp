@@ -6,6 +6,8 @@ import {
     actionMessageSchema,
     actionMessageCommandSchema,
     actionTypeSchema,
+    BUTTON_LINK_MODES,
+    COMPONENT_SIZES,
     componentKindSchema,
     uiActionNodeDefinitionSchema,
     uiAppNodeDefinitionSchema,
@@ -1615,6 +1617,88 @@ describe("P69: backend-neutral icon value { library, name }", () => {
                 icon: { library: "lucide", name: "" }
             });
             expect(result.success).toBe(false);
+        });
+    });
+});
+
+describe("P71: component fields — size, outline, button link mode + slots", () => {
+    const mount = "route:/customers/content";
+
+    describe("size (sm/md/lg) on the three-size nodes", () => {
+        const sizedCases: Array<[string, Record<string, unknown>]> = [
+            ["ui-button", { type: "ui-button", id: "b", mount, label: "Save" }],
+            ["ui-text", { type: "ui-text", id: "t", mount, value: { kind: "literal", value: "Hi" } }],
+            ["ui-input", { type: "ui-input", id: "i", mount, label: "Name", value: { kind: "literal", value: "" } }],
+            ["ui-select", { type: "ui-select", id: "s", mount, label: "Pick", value: { kind: "literal", value: "" } }],
+            ["ui-textarea", { type: "ui-textarea", id: "ta", mount, label: "Notes", value: { kind: "literal", value: "" } }]
+        ];
+
+        for (const [type, base] of sizedCases) {
+            it(`${type} accepts size "md"`, () => {
+                expect(validateUiNodeDefinition({ ...base, size: "md" }).success).toBe(true);
+            });
+            it(`${type} rejects an out-of-vocabulary size ("xl")`, () => {
+                expect(validateUiNodeDefinition({ ...base, size: "xl" }).success).toBe(false);
+            });
+            it(`${type} is valid without a size (optional)`, () => {
+                expect(validateUiNodeDefinition(base).success).toBe(true);
+            });
+        }
+
+        it("ui-avatar keeps the richer xs..xl scale", () => {
+            expect(validateUiNodeDefinition({
+                type: "ui-avatar", id: "av", mount, size: "xl"
+            }).success).toBe(true);
+        });
+
+        it("exposes the three-size vocabulary as a constant", () => {
+            expect(COMPONENT_SIZES).toEqual(["sm", "md", "lg"]);
+        });
+    });
+
+    describe("outline flag on ui-button", () => {
+        it("accepts outline: true", () => {
+            expect(validateUiNodeDefinition({
+                type: "ui-button", id: "b1", mount, label: "Save", outline: true
+            }).success).toBe(true);
+        });
+        it("accepts outline: false", () => {
+            expect(validateUiNodeDefinition({
+                type: "ui-button", id: "b2", mount, label: "Save", outline: false
+            }).success).toBe(true);
+        });
+        it("rejects a non-boolean outline", () => {
+            expect(validateUiNodeDefinition({
+                type: "ui-button", id: "b3", mount, label: "Save", outline: "yes"
+            }).success).toBe(false);
+        });
+    });
+
+    describe("button link mode + href", () => {
+        it("exposes the link-mode vocabulary as a constant", () => {
+            expect(BUTTON_LINK_MODES).toEqual(["button", "url", "navigate"]);
+        });
+        it('accepts linkMode "button" with no href (default behaviour)', () => {
+            expect(validateUiNodeDefinition({
+                type: "ui-button", id: "lb1", mount, label: "Go", linkMode: "button"
+            }).success).toBe(true);
+        });
+        it('accepts linkMode "url" with an href binding', () => {
+            expect(validateUiNodeDefinition({
+                type: "ui-button", id: "lb2", mount, label: "Docs",
+                linkMode: "url", href: { kind: "literal", value: "https://example.com" }
+            }).success).toBe(true);
+        });
+        it('accepts linkMode "navigate" with a route href', () => {
+            expect(validateUiNodeDefinition({
+                type: "ui-button", id: "lb3", mount, label: "Home",
+                linkMode: "navigate", href: { kind: "literal", value: "/customers" }
+            }).success).toBe(true);
+        });
+        it("rejects an unknown link mode", () => {
+            expect(validateUiNodeDefinition({
+                type: "ui-button", id: "lb4", mount, label: "Go", linkMode: "popup"
+            }).success).toBe(false);
         });
     });
 });

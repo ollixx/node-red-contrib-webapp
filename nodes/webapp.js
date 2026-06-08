@@ -751,6 +751,7 @@ function toComponentDefinitions(components) {
                 },
                 props: {
                     ...(blankToUndefined(component.variant) ? { variant: component.variant } : {}),
+                    ...(blankToUndefined(component.size) ? { size: component.size } : {}),
                     ...(Object.keys(layoutProps).length > 0 ? { layout: layoutProps } : {})
                 },
                 events: []
@@ -772,6 +773,18 @@ function toComponentDefinitions(components) {
             if (iconBinding) {
                 buttonBind.icon = iconBinding;
             }
+            // P71: href is a binding (mapConfig already normalised a literal string
+            // into a literal binding). A dynamic binding routes through bind.href so
+            // the renderer resolves it into resolvedProps.href; a literal binding's
+            // value goes straight into props.href. Only used in url/navigate modes.
+            const hrefDef = component.href;
+            const hrefIsBinding = hrefDef && typeof hrefDef === "object" && typeof hrefDef.kind === "string";
+            const hrefLiteral = (hrefIsBinding && hrefDef.kind === "literal" && hrefDef.value !== undefined && hrefDef.value !== null && hrefDef.value !== "")
+                ? hrefDef.value
+                : undefined;
+            if (hrefIsBinding && hrefDef.kind !== "literal") {
+                buttonBind.href = hrefDef;
+            }
             return {
                 id: component.id,
                 kind: "button",
@@ -782,6 +795,11 @@ function toComponentDefinitions(components) {
                     label: component.label,
                     ...(component.icon !== undefined && !iconBinding ? { icon: component.icon } : {}),
                     ...(blankToUndefined(component.variant) ? { variant: component.variant } : {}),
+                    // P71: size (sm/md/lg), explicit outline flag, link mode + href.
+                    ...(blankToUndefined(component.size) ? { size: component.size } : {}),
+                    ...(component.outline === true ? { outline: true } : {}),
+                    ...(blankToUndefined(component.linkMode) && component.linkMode !== "button" ? { linkMode: component.linkMode } : {}),
+                    ...(hrefLiteral !== undefined ? { href: hrefLiteral } : {}),
                     ...(Object.keys(layoutProps).length > 0 ? { layout: layoutProps } : {})
                 },
                 events: [{ event: "click", action: clickAction }]
@@ -848,6 +866,7 @@ function toComponentDefinitions(components) {
                     path: component.path,
                     inputType: component.inputType,
                     ...(blankToUndefined(component.variant) ? { variant: component.variant } : {}),
+                    ...(blankToUndefined(component.size) ? { size: component.size } : {}),
                     ...(Object.keys(layoutProps).length > 0 ? { layout: layoutProps } : {})
                 },
                 events: []
@@ -3435,6 +3454,7 @@ const runtimeNodeRegistry = {
             order: toOptionalNumber(config.order),
             value: getBinding(config.value, literalBinding(config.text || "")),
             variant: config.variant || undefined,
+            size: blankToUndefined(config.size),
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
@@ -3452,6 +3472,15 @@ const runtimeNodeRegistry = {
             variant: config.variant || undefined,
             action: blankToUndefined(config.action),
             icon: mapIconField(config.icon),
+            size: blankToUndefined(config.size),
+            outline: config.outline === true || config.outline === "true" ? true : undefined,
+            linkMode: blankToUndefined(config.linkMode),
+            // P71: href is binding-capable. A dynamic binding object passes through;
+            // a non-blank literal string becomes a literal binding; blank → undefined.
+            href: getBinding(
+                config.href,
+                blankToUndefined(config.href) ? literalBinding(config.href) : undefined
+            ),
             disabled: getBinding(config.disabled, config.disabledPath ? stateBinding(config.disabledPath) : undefined),
             ...collectNodeConfigLayoutProps(config)
         }),
@@ -3506,6 +3535,7 @@ const runtimeNodeRegistry = {
             path: config.path || undefined,
             inputType: config.inputType || undefined,
             variant: config.variant || undefined,
+            size: blankToUndefined(config.size),
             disabled: getBinding(config.disabled, config.disabledPath ? stateBinding(config.disabledPath) : undefined),
             ...collectNodeConfigLayoutProps(config)
         }),
@@ -3526,6 +3556,7 @@ const runtimeNodeRegistry = {
             placeholder: config.placeholder || undefined,
             multiple: config.multiple === true || config.multiple === "true" || undefined,
             searchable: config.searchable === true || config.searchable === "true" || undefined,
+            size: blankToUndefined(config.size),
             disabled: getBinding(config.disabled, undefined),
             ...collectNodeConfigLayoutProps(config)
         }),
@@ -3597,6 +3628,7 @@ const runtimeNodeRegistry = {
             placeholder: config.placeholder || undefined,
             rows: toOptionalNumber(config.rows),
             maxLength: toOptionalNumber(config.maxLength),
+            size: blankToUndefined(config.size),
             disabled: getBinding(config.disabled, undefined),
             ...collectNodeConfigLayoutProps(config)
         }),
