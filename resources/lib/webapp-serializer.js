@@ -50,6 +50,62 @@
         return escapeHtml(input);
     }
 
+    // --- P69: backend-neutral icon rendering --------------------------------
+    // An icon value is { library?, name }. A bare string is a plain icon name
+    // ("home") or the "library:name" shorthand. The default library renders as
+    // a plain <sl-icon name> (no library attr) so it resolves against Shoelace's
+    // built-in / default-registered set. A named library surfaces as the
+    // `library` attribute; the client must have registered it via
+    // registerIconLibrary(). Kept inline so the browser thin client can use it
+    // without a bundler (mirrors normalizeIconValue in packages/schema).
+    const DEFAULT_ICON_LIBRARY = "default";
+
+    function normalizeIcon(input) {
+        if (input === undefined || input === null) {
+            return undefined;
+        }
+        if (typeof input === "string") {
+            const trimmed = input.trim();
+            if (trimmed.length === 0) {
+                return undefined;
+            }
+            const sep = trimmed.indexOf(":");
+            if (sep > 0 && sep < trimmed.length - 1) {
+                return { library: trimmed.slice(0, sep), name: trimmed.slice(sep + 1) };
+            }
+            return { library: DEFAULT_ICON_LIBRARY, name: trimmed };
+        }
+        if (typeof input === "object" && typeof input.name === "string" && input.name.length > 0) {
+            const library = (typeof input.library === "string" && input.library.length > 0)
+                ? input.library
+                : DEFAULT_ICON_LIBRARY;
+            return { library: library, name: input.name };
+        }
+        return undefined;
+    }
+
+    // Render an icon value as an <sl-icon> element. opts: { size, color, slot }.
+    // Returns "" for an empty/undefined icon.
+    function renderIconHtml(icon, opts) {
+        const value = normalizeIcon(icon);
+        if (!value) {
+            return "";
+        }
+        const options = opts || {};
+        const libraryAttr = (value.library && value.library !== DEFAULT_ICON_LIBRARY)
+            ? " library=\"" + escapeAttribute(value.library) + "\""
+            : "";
+        const slotAttr = options.slot ? " slot=\"" + escapeAttribute(options.slot) + "\"" : "";
+        const classAttr = options.size
+            ? " class=\"webapp-icon webapp-icon--" + sanitizeClassSuffix(String(options.size)) + "\""
+            : " class=\"webapp-icon\"";
+        const styleAttr = options.color
+            ? " style=\"color:" + escapeAttribute(String(options.color)) + "\""
+            : "";
+        return "<sl-icon" + slotAttr + classAttr + " name=\"" + escapeAttribute(value.name) + "\""
+            + libraryAttr + styleAttr + "></sl-icon>";
+    }
+
     // --- Shoelace adapter mapping (mirrors packages/renderer shoelace-adapter) --
     // Kept inline so this module is browser-loadable without a bundler. A unit
     // test (p26-render-parity) asserts this mapping stays in sync with the
@@ -301,14 +357,35 @@
             return wrapRenderedComponentHtml(component, layoutId, "<div class=\"webapp-text" + variantClass + "\">" + escapeHtml(component.text) + "</div>");
         }
 
+        // P69: ui-icon — renders an <sl-icon> from a backend-neutral
+        // { library, name } value (or a bare string). The resolved icon value
+        // lives in component.props.icon (literal) or component.value (resolved
+        // dynamic binding). size/color come from props.
+        if (component.kind === "icon") {
+            const iconValue = (component.value !== undefined && component.value !== null)
+                ? component.value
+                : (component.props && component.props.icon);
+            const iconHtml = renderIconHtml(iconValue, {
+                size: component.props && component.props.size,
+                color: component.props && component.props.color
+            });
+            return wrapRenderedComponentHtml(component, layoutId, iconHtml);
+        }
+
         if (component.kind === "button") {
             const label = escapeHtml(component.label);
             const action = component.events && component.events[0] ? component.events[0].action : undefined;
             const inForm = Boolean(ctx.formId);
             const attrs = shoelaceAttrs(mapComponentToShoelace("button", component.props || {}).attributes);
+            // P69: optional prefix icon. A literal icon value sits in props.icon;
+            // a dynamic icon binding is resolved by the renderer into the same
+            // props.icon slot (bind.icon → resolvedProps.icon), so reading
+            // props.icon covers both cases.
+            const iconHtml = renderIconHtml(component.props && component.props.icon, { slot: "prefix" });
+            const labelContent = iconHtml + label;
 
             if (component.disabled) {
-                return wrapRenderedComponentHtml(component, layoutId, "<sl-button" + attrs + " disabled>" + label + "</sl-button>");
+                return wrapRenderedComponentHtml(component, layoutId, "<sl-button" + attrs + " disabled>" + labelContent + "</sl-button>");
             }
 
             // P30: EVERY enabled button is interactive and reports its click as an
@@ -331,7 +408,7 @@
                 dataAttrs.push(" data-webapp-form=\"" + escapeAttribute(ctx.formId) + "\"");
             }
 
-            return wrapRenderedComponentHtml(component, layoutId, "<sl-button" + attrs + dataAttrs.join("") + ">" + label + "</sl-button>");
+            return wrapRenderedComponentHtml(component, layoutId, "<sl-button" + attrs + dataAttrs.join("") + ">" + labelContent + "</sl-button>");
         }
 
         if (component.kind === "table") {
@@ -602,7 +679,11 @@
             const srcAttr = src ? " image=\"" + escapeAttribute(String(src)) + "\"" : "";
             const initialsAttr = !src && initials ? " initials=\"" + escapeAttribute(initials) + "\"" : "";
             const attrs = shoelaceAttrs(mapComponentToShoelace("avatar", component.props || {}).attributes);
-            return wrapRenderedComponentHtml(component, layoutId, "<sl-avatar" + attrs + srcAttr + initialsAttr + " label=\"" + escapeAttribute(label) + "\"></sl-avatar>");
+            // P69: icon fallback — only when no src and no initials resolve.
+            const iconHtml = (!src && !initials)
+                ? renderIconHtml(component.props && component.props.icon, { slot: "icon" })
+                : "";
+            return wrapRenderedComponentHtml(component, layoutId, "<sl-avatar" + attrs + srcAttr + initialsAttr + " label=\"" + escapeAttribute(label) + "\">" + iconHtml + "</sl-avatar>");
         }
 
         // P38: pagination — renders prev/next buttons. Each button carries
@@ -763,6 +844,8 @@
         sanitizeClassSuffix: sanitizeClassSuffix,
         getLayoutVariant: getLayoutVariant,
         regionContainsInput: regionContainsInput,
+        normalizeIcon: normalizeIcon,
+        renderIconHtml: renderIconHtml,
         renderComponentHtml: renderComponentHtml,
         renderRegionHtml: renderRegionHtml,
         renderLayoutHtml: renderLayoutHtml,

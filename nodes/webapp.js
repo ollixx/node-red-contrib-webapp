@@ -722,14 +722,25 @@ function toComponentDefinitions(components) {
             // P20a: click events are emitted on the button's own output port.
             // The button node's id is used as the action target for the /event endpoint.
             const clickAction = component.action || component.id;
+            // P69: icon is binding-capable. A binding (has .kind) is routed via
+            // bind.icon so the renderer resolves it into resolvedProps.icon; a
+            // literal value ({library,name} or bare string) stays in props.icon.
+            const iconBinding = getBinding(component.icon, undefined);
+            const buttonBind = component.disabled || component.disabledPath
+                ? { disabled: getBinding(component.disabled, stateBinding(component.disabledPath || "")) }
+                : {};
+            if (iconBinding) {
+                buttonBind.icon = iconBinding;
+            }
             return {
                 id: component.id,
                 kind: "button",
                 mount: component.mount || component.parent,
                 order: toOptionalNumber(component.order),
-                bind: component.disabled || component.disabledPath ? { disabled: getBinding(component.disabled, stateBinding(component.disabledPath || "")) } : {},
+                bind: buttonBind,
                 props: {
                     label: component.label,
+                    ...(component.icon !== undefined && !iconBinding ? { icon: component.icon } : {}),
                     ...(blankToUndefined(component.variant) ? { variant: component.variant } : {}),
                     ...(Object.keys(layoutProps).length > 0 ? { layout: layoutProps } : {})
                 },
@@ -822,6 +833,8 @@ function toComponentDefinitions(components) {
             "ui-accordion": "accordion",
             "ui-menu": "menu",
             "ui-avatar": "avatar",
+            // P69: ui-icon is a rendered component (kind "icon").
+            "ui-icon": "icon",
             // P45: composite and layout nodes
             "ui-list": "list",
             "ui-pagination": "pagination",
@@ -873,6 +886,13 @@ function toComponentDefinitions(components) {
             if (titleBinding) {
                 bind.title = titleBinding;
             }
+            // P69: icon field on ui-icon / ui-avatar (and any p16 kind that
+            // carries one). A binding (has .kind) is resolved by the renderer
+            // into resolvedProps.icon; a literal value stays in props.icon.
+            const iconBinding = getBinding(component.icon, undefined);
+            if (iconBinding) {
+                bind.icon = iconBinding;
+            }
 
             return {
                 id: component.id,
@@ -915,7 +935,11 @@ function toComponentDefinitions(components) {
                     // P57: ui-log config props
                     ...(component.minSeverity !== undefined ? { minSeverity: component.minSeverity } : {}),
                     ...(component.maxEntries !== undefined ? { maxEntries: component.maxEntries } : {}),
-                    ...(component.collapsed !== undefined ? { collapsed: component.collapsed } : {})
+                    ...(component.collapsed !== undefined ? { collapsed: component.collapsed } : {}),
+                    // P69: icon literal + ui-icon display props (size/color).
+                    ...(component.icon !== undefined && !iconBinding ? { icon: component.icon } : {}),
+                    ...(component.size !== undefined ? { size: component.size } : {}),
+                    ...(component.color !== undefined ? { color: component.color } : {})
                 },
                 events: []
             };
@@ -1651,7 +1675,7 @@ function getDefinitionBuckets(appId, definitions) {
         app: matchingApp,
         routes: matchingDefinitions.filter((entry) => entry.type === "ui-route"),
         dialogs: matchingDefinitions.filter((entry) => entry.type === "ui-dialog"),
-        components: matchingDefinitions.filter((entry) => ["ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select", "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider", "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state", "ui-tabs", "ui-accordion", "ui-breadcrumb", "ui-menu", "ui-pagination", "ui-stepper", "ui-avatar", "ui-list", "ui-log"].includes(entry.type)),
+        components: matchingDefinitions.filter((entry) => ["ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select", "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider", "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state", "ui-tabs", "ui-accordion", "ui-breadcrumb", "ui-menu", "ui-pagination", "ui-stepper", "ui-avatar", "ui-icon", "ui-list", "ui-log"].includes(entry.type)),
         stores: matchingDefinitions.filter((entry) => entry.type === "ui-store"),
         queries: matchingDefinitions.filter((entry) => entry.type === "ui-query"),
         actions: matchingDefinitions.filter((entry) => entry.type === "ui-action"),

@@ -444,7 +444,9 @@ export const componentKindSchema = z.enum([
     "pagination",
     "stepper",
     // P57: log display node
-    "log"
+    "log",
+    // P69: icon display node
+    "icon"
 ]);
 
 /**
