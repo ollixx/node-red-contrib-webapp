@@ -1127,8 +1127,8 @@ phases:
   # reproduzieren/verifizieren (Audit-Befunde können falsch sein), dann test-first
   # fixen. Reihenfolge frei; alle hängen nur an bereits erledigten Phasen.
   #
-  # Hinweis: P80 (Store-Op-Validierung) wurde evtl. parallel als Hintergrund-Task
-  # `task_127fcca0` gestartet — vor Beginn prüfen, um Doppelarbeit zu vermeiden.
+  # (P80 war kurz als Hintergrund-Task `task_127fcca0` angelegt; es läuft dazu
+  # KEINE Session — P80 ist eine normale pending-Phase.)
   # ════════════════════════════════════════════════════════════════════════
 
   - { id: P72, title: "Bugfix: ui-pagination `page`-Binding wird nie aufgelöst — Editor speichert `currentPagePath`, Runtime liest `config.pagePath` (webapp.js ~3664) → immer leer. Editor/Runtime-Feldnamen angleichen + E2E", status: pending, dependencies: [P16c] }
