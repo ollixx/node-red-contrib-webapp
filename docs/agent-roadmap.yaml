@@ -1218,7 +1218,7 @@ phases:
 
   - { id: P89, title: "ui-route: (a) Pfad-Feld bekommt Info-Button + Doku-Dialog (analog ui-app.logging); (b) Title wird Value-Feld als typedInput mit allen sinnvollen Binding-Typen (literal/state/store/query/routeParam/msg/flow/global/jsonata/env); ui-route.md anpassen", status: done, dependencies: [P67], archive: "docs/agent-roadmap-archive.yaml#P89" }
 
-  - { id: P90, title: "ui-alert Icon-Feld + Icon-Logik (VORGEHENSENTSCHEIDUNG) — Option 1: Icon-Auswahl nach Severity + „ohne Icon\", Default = Severity-Wert. Option 2: Alert mit 4 Slots (Title/Content/Icon/Dismiss); Slot mit >=1 Kindknoten hat Vorrang vor den Value-Feldern Title/Message, Editor erkennt das + zeigt Warnhinweis; nicht jedes Backend supportet alle Slots. Entscheiden, umsetzen, Docs", status: pending, dependencies: [P69] }
+  - { id: P90, title: "ui-alert Icon-Feld + Icon-Logik (VORGEHENSENTSCHEIDUNG) — Option 1: Icon-Auswahl nach Severity + „ohne Icon\", Default = Severity-Wert. Option 2: Alert mit 4 Slots (Title/Content/Icon/Dismiss); Slot mit >=1 Kindknoten hat Vorrang vor den Value-Feldern Title/Message, Editor erkennt das + zeigt Warnhinweis; nicht jedes Backend supportet alle Slots. Entscheiden, umsetzen, Docs", status: in_progress, dependencies: [P69] }
 
   - { id: P91, title: "ui-alert Duration + Countdown — Feld „Duration\" (positive Integer) + Checkbox „Countdown\" daneben (Shoelace nativ). Backends ohne native Unterstützung: Function-Fallback (Bootstrap-Doku-Beispiel). Gut dokumentieren (backend-neutral, offen für weitere Backends)", status: pending, dependencies: [P16b] }
 
