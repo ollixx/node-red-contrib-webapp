@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P70  # next to implement: ui-image / Bildverwaltung (rendering + src URL + msg/Buffer + media-store + editor media-picker)
+  current_phase: P71  # next to implement: component fields — size, outline, button link-modes + button slots
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -1049,7 +1049,7 @@ phases:
   # NIE); Upload-Security; Aktivieren von ui-image darf nichts brechen.
   # ════════════════════════════════════════════════════════════════════════
 
-  - { id: P70, title: "ui-image / Bildverwaltung — Rendering aktivieren + src-URL (typedInput, bindbar) + wiring-first msg/Buffer→data: + Media-Store (mediaStoreUrl in ui-app, asset:<id>, Backend-Proxy/Obfuskation) + Editor-Media-Picker", status: in_progress, dependencies: [P20b, P68] }
+  - { id: P70, title: "ui-image / Bildverwaltung — Rendering aktivieren + src-URL (typedInput, bindbar) + wiring-first msg/Buffer→data: + Media-Store (mediaStoreUrl in ui-app, asset:<id>, Backend-Proxy/Obfuskation) + Editor-Media-Picker", status: done, dependencies: [P20b, P68], archive: "docs/agent-roadmap-archive.yaml#P70" }
 
   # ════════════════════════════════════════════════════════════════════════
   # Komponenten-Felder — size, outline, Button-Link-Modus, Button-Slots (P71)
