@@ -1245,7 +1245,7 @@ phases:
 
   - { id: P95, title: "ui-breadcrumb Definitionsmodell + Click-Events (Redesign) — alle Pfad-Elemente emittieren ein Click-Event (sourceId = breadcrumb-Knoten). Definition über: (a) Array von Strings (String = Label UND Click-Parameter); (b) Array von Objekten {label, action, active} (active = kein Link/Bootstrap; Shoelace rendert letztes Element anders, bleibt klickbar); (c) Slot „default\" → Kindknoten = Elemente, Click-Param = Kind-ID; (d) Slot „separator\" → Kindknoten als Trenner (z. B. ui-icon). Docs anpassen (geht über P75 hinaus)", status: done, dependencies: [P16c], archive: "docs/agent-roadmap-archive.yaml#P95" }
 
-  - { id: P96, title: "🔴 Bugfix: ui-button rendert NICHTS — Render-Pipeline-Ursache finden (components-Filter/KIND_MAP/componentKindSchema/renderer/serializer, vgl. P83-divider) und fixen + Outcome-Test (sl-button mit Label im DOM)", status: pending, dependencies: [P26] }
+  - { id: P96, title: "🔴 Bugfix: ui-button rendert NICHTS — Render-Pipeline-Ursache finden (components-Filter/KIND_MAP/componentKindSchema/renderer/serializer, vgl. P83-divider) und fixen + Outcome-Test (sl-button mit Label im DOM)", status: in_progress, dependencies: [P26] }
 
   - { id: P97, title: "ui-checkbox — disabling hat keinen Effekt (im Beispiel) → fixen; size-Feld ergänzen; „Value Path\" und „Label\" als typedInput mit allen sinnvollen Binding-Typen. Docs anpassen", status: pending, dependencies: [P16a, P67] }
 
