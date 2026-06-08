@@ -704,11 +704,14 @@ export type UiListNodeDefinition = z.infer<typeof uiListNodeDefinitionSchema>;
 export const uiAvatarNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-avatar"),
     src: bindingSchema.optional(),
+    // P93: initials is stored as a plain string (editor input); the schema is kept as
+    // bindingSchema for forward-compat (P94 will add full typedInput), but mapConfig
+    // and the serializer only handle plain strings safely today.
     initials: bindingSchema.optional(),
     // P69: optional icon fallback (shown when no src/initials resolve).
     // Backend-neutral { library, name }; binding-capable.
     icon: iconFieldSchema.optional(),
-    alt: z.string().optional(),
+    // P93: alt attribute removed — sl-avatar uses the `label` attr for a11y, not `alt`.
     size: z.enum(["xs", "sm", "md", "lg", "xl"]).optional(),
     shape: z.enum(["circle", "square"]).optional()
 });
