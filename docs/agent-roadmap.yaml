@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P75  # next to implement: bugfix — ui-breadcrumb/ui-menu navigate output-event not emittable (no events array / output port)
+  current_phase: P76  # next to implement: bugfix — ui-divider inputs:0 vs documented show/hide component-state messages
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -1137,7 +1137,7 @@ phases:
 
   - { id: P74, title: "Bugfix: ui-accordion Feldname-Mismatch — Schema-Feld `sections` (accordionSectionSchema) vs. Editor/mapConfig `items` (webapp.js ~3613). Auf einen Namen vereinheitlichen + Validierung/Tests", status: done, dependencies: [P16c], archive: "docs/agent-roadmap-archive.yaml#P74" }
 
-  - { id: P75, title: "Bugfix: ui-breadcrumb/ui-menu `navigate`-Output-Event nicht emittierbar — kein `events`-Array im Schema, kein Output-Port. Events-Contract + Dispatch ergänzen (oder Doku-Erwartung klären) + E2E", status: in_progress, dependencies: [P16c] }
+  - { id: P75, title: "Bugfix: ui-breadcrumb/ui-menu `navigate`-Output-Event nicht emittierbar — kein `events`-Array im Schema, kein Output-Port. Events-Contract + Dispatch ergänzen (oder Doku-Erwartung klären) + E2E", status: done, dependencies: [P16c], archive: "docs/agent-roadmap-archive.yaml#P75" }
 
   - { id: P76, title: "Bugfix: ui-divider `inputs: 0`, aber show/hide-Component-State-Messages werden dokumentiert/verdrahtet (componentStateInputHandler unerreichbar). Input-Port aktivieren oder Verhalten konsistent machen", status: pending, dependencies: [P16c] }
 
