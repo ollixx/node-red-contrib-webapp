@@ -1139,7 +1139,7 @@ phases:
 
   - { id: P75, title: "Bugfix: ui-breadcrumb/ui-menu `navigate`-Output-Event nicht emittierbar — kein `events`-Array im Schema, kein Output-Port. Events-Contract + Dispatch ergänzen (oder Doku-Erwartung klären) + E2E", status: done, dependencies: [P16c], archive: "docs/agent-roadmap-archive.yaml#P75" }
 
-  - { id: P76, title: "Bugfix: ui-divider `inputs: 0`, aber show/hide-Component-State-Messages werden dokumentiert/verdrahtet (componentStateInputHandler unerreichbar). Input-Port aktivieren oder Verhalten konsistent machen", status: pending, dependencies: [P16c] }
+  - { id: P76, title: "Bugfix: ui-divider `inputs: 0`, aber show/hide-Component-State-Messages werden dokumentiert/verdrahtet (componentStateInputHandler unerreichbar). Input-Port aktivieren oder Verhalten konsistent machen", status: in_progress, dependencies: [P16c] }
 
   - { id: P77, title: "Bugfix: ui-icon wird nicht gerendert — aus components-Filter ausgeschlossen (webapp.js ~1654), erzeugt kein DOM. Rendering aktivieren (Adapter kind \"icon\"); mit P69 koordinieren (Icon-System baut darauf auf)", status: done, dependencies: [P63], archive: "docs/agent-roadmap-archive.yaml#P77" }
 
