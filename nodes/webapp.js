@@ -14,6 +14,8 @@ const { buildDesignTokenCss } = require("../packages/schema/dist/index.js");
 // P26: the snapshot → Shoelace markup serializer is shared with the thin client
 // (resources/lib/webapp-serializer.js) so server and browser cannot drift apart.
 const sharedSerializer = require("../resources/lib/webapp-serializer.js");
+// P69: icon library registry + manifest (backend-neutral { library, name }).
+const iconLibrary = require("./icon-library.js");
 
 // P22: the thin client runtime is served statically from resources/. Node-RED
 // exposes a plugin's resources/ dir under resources/<module-name>/.
@@ -42,6 +44,10 @@ const SHOELACE_VERSION = "2.20.1";
 const SHOELACE_LOCAL_BASE = "/resources/node-red-contrib-webapp/shoelace";
 const SHOELACE_THEME_HREF = `${SHOELACE_LOCAL_BASE}/themes/light.css`;
 const SHOELACE_AUTOLOADER_SRC = `${SHOELACE_LOCAL_BASE}/shoelace-autoloader.js`;
+// P69: on-disk path of the vendored default (Bootstrap-Icons) SVG set, used to
+// enumerate icon names for the picker manifest. The matching URL base is
+// `${SHOELACE_LOCAL_BASE}/assets/icons`.
+const SHOELACE_ICONS_DIR = path.join(__dirname, "..", "resources", "shoelace", "assets", "icons");
 
 const runtimeState = {
     definitions: new Map(),
@@ -1304,6 +1310,13 @@ function renderAppPage(appId, location, dialogId, definitions) {
     // per-token translation. Unset tokens fall back to the defaults below.
     const tokenCss = buildDesignTokenCss(tokens);
     const shoelaceBridgeCss = buildShoelaceTokenBridgeCss();
+    // P69: register any additional (non-default) icon libraries on the client via
+    // Shoelace's registerIconLibrary(). The %AUTOLOADER_DIR% placeholder resolves
+    // to the vendored Shoelace utilities path so registerIconLibrary imports
+    // locally (no CDN — ADR 0008). Empty when only the default library exists.
+    const iconLibraryRegistrationHtml = iconLibrary
+        .buildIconLibraryRegistrationScript()
+        .replace(/%AUTOLOADER_DIR%/g, SHOELACE_LOCAL_BASE);
     const serializerContext = {
         appId: model.id,
         location: snapshot.location,
@@ -1342,6 +1355,7 @@ function renderAppPage(appId, location, dialogId, definitions) {
   <title>${escapeHtml(model.title)} - ${escapeHtml(routeMatch.route.title || routeMatch.route.id)}</title>
   <link rel="stylesheet" href="${SHOELACE_THEME_HREF}">
   <script type="module" src="${SHOELACE_AUTOLOADER_SRC}"></script>
+${iconLibraryRegistrationHtml}
   <style>
     /* P24: webapp-default design tokens. User tokens on ui-app (below) override
        these; the Web Components consume them natively as CSS custom properties. */
@@ -2175,6 +2189,17 @@ function registerEndpoints(RED) {
     if (runtimeState.endpointsRegistered) {
         return;
     }
+
+    // P69: seed additional icon libraries from RED settings (global / module
+    // level) once, before any page render or manifest request.
+    iconLibrary.seedFromSettings(RED.settings || {});
+
+    // P69: icon manifest for the editor picker — the default (vendored Bootstrap)
+    // set plus any registered libraries, each with its icon names. Served on the
+    // admin endpoint because the picker runs in the Node-RED editor.
+    RED.httpAdmin.get("/webapp/icons/manifest", (req, res) => {
+        res.json(iconLibrary.buildIconManifest({ iconsDir: SHOELACE_ICONS_DIR }));
+    });
 
     RED.httpAdmin.get("/webapp/apps", (req, res) => {
         const apps = readDeployDefinitions(RED)
