@@ -1145,7 +1145,7 @@ phases:
 
   - { id: P78, title: "Bugfix: ui-query totes Editor-Feld `previewData` — in P32 aus Schema+Runtime entfernt, aber ui-query.html zeigt es weiterhin (Drei-Wege-Mismatch). Feld aus dem Editor entfernen + Round-Trip-Test", status: done, dependencies: [P32], archive: "docs/agent-roadmap-archive.yaml#P78" }
 
-  - { id: P79, title: "Bugfix/Decision: `targetId`-Diskrepanz — Runtime-Handler akzeptieren `msg.ui.action.targetId`, aber `actionMessageCommandSchema` ist `.strict()` und kennt nur `target` → targetId fällt durch die Validierung. Entscheiden: targetId ins Schema aufnehmen ODER Runtime-Alias entfernen; Doku (actions.md) angleichen", status: pending, dependencies: [P60] }
+  - { id: P79, title: "Bugfix/Decision: `targetId`-Diskrepanz — Runtime-Handler akzeptieren `msg.ui.action.targetId`, aber `actionMessageCommandSchema` ist `.strict()` und kennt nur `target` → targetId fällt durch die Validierung. Entscheiden: targetId ins Schema aufnehmen ODER Runtime-Alias entfernen; Doku (actions.md) angleichen", status: in_progress, dependencies: [P60] }
 
   - { id: P80, title: "Bugfix: Store-Operationen zur Laufzeit gegen storeOperationSchema validieren — vor applyStoreOperation safeParse, bei Fehler strukturierter Fehler `server.store.invalid-operation` mit sprechender Schema-Meldung (set/patch/delete ohne path, set/patch/replace ohne value); Pass-Through für fremde Messages unverändert. Tests + Doc-Update (stores.md „Bekannte Lücke\", ui-store.md)", status: pending, dependencies: [P15] }
 
