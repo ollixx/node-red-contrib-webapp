@@ -1777,6 +1777,34 @@ function getDefinitionTypeById(id) {
 // P22: a self-contained JSON body reader so the event endpoint does not depend on
 // Node-RED's optional httpNode body-parser configuration. If a body parser already
 // ran (req.body present), it is reused.
+// P70 Ebene 3: collect a raw binary request body (image upload). Capped to guard
+// against unbounded memory use; the cap is generous for typical UI imagery.
+function readRawBody(req, res, next) {
+    if (Buffer.isBuffer(req.rawBody)) {
+        next();
+        return;
+    }
+    const chunks = [];
+    let size = 0;
+    const MAX = 10 * 1024 * 1024; // 10 MB
+    req.on("data", (chunk) => {
+        size += chunk.length;
+        if (size > MAX) {
+            req.destroy();
+            return;
+        }
+        chunks.push(chunk);
+    });
+    req.on("end", () => {
+        req.rawBody = Buffer.concat(chunks);
+        next();
+    });
+    req.on("error", () => {
+        req.rawBody = Buffer.alloc(0);
+        next();
+    });
+}
+
 function readJsonBody(req, res, next) {
     if (req.body && typeof req.body === "object") {
         next();
@@ -2236,6 +2264,29 @@ function buildActionCommand(actionDefinition, msg, node) {
     };
 }
 
+// P70 Ebene 3: validate an asset id and resolve the absolute store URL to fetch.
+// The real media-store URL is taken from the app's mediaStoreUrl config and NEVER
+// leaves the server — the client only ever sees /webapp/<appId>/asset/<id>.
+// Returns { ok:true, url } or { ok:false, status, error }. The id is constrained
+// to a safe charset so it cannot traverse out of the store base path.
+const ASSET_ID_PATTERN = /^[A-Za-z0-9._-]+$/;
+
+function resolveAssetStoreUrl(appId, id, definitions) {
+    if (typeof id !== "string" || !ASSET_ID_PATTERN.test(id) || id === "." || id === "..") {
+        return { ok: false, status: 400, error: "Invalid asset id." };
+    }
+    const buckets = getDefinitionBuckets(appId, definitions);
+    if (!buckets.app) {
+        return { ok: false, status: 404, error: `Unknown app '${appId}'.` };
+    }
+    const storeUrl = buckets.app.mediaStoreUrl;
+    if (!storeUrl || typeof storeUrl !== "string" || storeUrl.trim() === "") {
+        return { ok: false, status: 404, error: "No media store is configured for this app." };
+    }
+    const base = storeUrl.replace(/\/+$/, "");
+    return { ok: true, url: `${base}/${encodeURIComponent(id)}` };
+}
+
 function registerEndpoints(RED) {
     if (runtimeState.endpointsRegistered) {
         return;
@@ -2375,6 +2426,111 @@ function registerEndpoints(RED) {
             location,
             snapshot: built.snapshot
         });
+    });
+
+    // P70 Ebene 3: app-scoped media proxy. A ui-image src of `asset:<id>` is
+    // rendered as /webapp/<appId>/asset/<id>; this endpoint resolves the app's
+    // configured mediaStoreUrl server-side, fetches the asset, and streams it back
+    // with the upstream content-type. The store URL is never disclosed to the
+    // client (obfuscation), and the id is charset-validated (no path traversal).
+    // MUST be registered before the catch-all `/webapp/:appId/*` page route.
+    RED.httpNode.get("/webapp/:appId/asset/:id", (req, res) => {
+        const { appId, id } = req.params;
+        const resolved = resolveAssetStoreUrl(appId, id, readDeployDefinitions(RED));
+        if (!resolved.ok) {
+            res.status(resolved.status).json({ error: resolved.error });
+            return;
+        }
+        fetch(resolved.url)
+            .then((upstream) => {
+                if (!upstream.ok) {
+                    // Do not leak the upstream URL or body — only the status class.
+                    res.status(upstream.status === 404 ? 404 : 502).json({ error: "Asset not available." });
+                    return;
+                }
+                const contentType = upstream.headers.get("content-type") || "application/octet-stream";
+                res.set("Content-Type", contentType);
+                res.set("Cache-Control", "public, max-age=300");
+                return upstream.arrayBuffer().then((buf) => {
+                    res.status(200).send(Buffer.from(buf));
+                });
+            })
+            .catch(() => {
+                res.status(502).json({ error: "Asset fetch failed." });
+            });
+    });
+
+    // P70 Ebene 3: editor media picker — list assets available in the store.
+    // Proxies the store's listing endpoint (the store owns the catalogue); the
+    // store URL stays server-side. Returns { assets: [{ id, name?, contentType? }] }.
+    RED.httpAdmin.get("/webapp/:appId/assets", (req, res) => {
+        const { appId } = req.params;
+        const buckets = getDefinitionBuckets(appId, readDeployDefinitions(RED));
+        if (!buckets.app) {
+            res.status(404).json({ error: `Unknown app '${appId}'.` });
+            return;
+        }
+        const storeUrl = buckets.app.mediaStoreUrl;
+        if (!storeUrl || String(storeUrl).trim() === "") {
+            res.json({ assets: [], mediaStoreConfigured: false });
+            return;
+        }
+        const base = String(storeUrl).replace(/\/+$/, "");
+        fetch(`${base}/`)
+            .then((upstream) => upstream.ok ? upstream.json() : { assets: [] })
+            .then((data) => {
+                const assets = Array.isArray(data) ? data : (Array.isArray(data && data.assets) ? data.assets : []);
+                res.json({ assets, mediaStoreConfigured: true });
+            })
+            .catch(() => {
+                res.json({ assets: [], mediaStoreConfigured: true, error: "store-unreachable" });
+            });
+    });
+
+    // P70 Ebene 3: editor media upload. The store owns persistence (open design
+    // point: folder vs. service) — Node-RED stays a thin proxy. The editor sends
+    // the raw image bytes (Content-Type = the image type, X-Asset-Name = filename);
+    // the server POSTs them to the store and returns the assigned id. Requires a
+    // configured mediaStoreUrl.
+    RED.httpAdmin.post("/webapp/:appId/assets", readRawBody, (req, res) => {
+        const { appId } = req.params;
+        const buckets = getDefinitionBuckets(appId, readDeployDefinitions(RED));
+        if (!buckets.app) {
+            res.status(404).json({ error: `Unknown app '${appId}'.` });
+            return;
+        }
+        const storeUrl = buckets.app.mediaStoreUrl;
+        if (!storeUrl || String(storeUrl).trim() === "") {
+            res.status(409).json({ error: "No media store is configured for this app." });
+            return;
+        }
+        const body = Buffer.isBuffer(req.rawBody) ? req.rawBody : Buffer.alloc(0);
+        if (body.length === 0) {
+            res.status(400).json({ error: "Empty upload." });
+            return;
+        }
+        const base = String(storeUrl).replace(/\/+$/, "");
+        const contentType = req.headers["content-type"] || "application/octet-stream";
+        const name = req.headers["x-asset-name"] ? String(req.headers["x-asset-name"]) : undefined;
+        fetch(base + "/", {
+            method: "POST",
+            headers: name
+                ? { "Content-Type": contentType, "X-Asset-Name": name }
+                : { "Content-Type": contentType },
+            body
+        })
+            .then((upstream) => upstream.ok ? upstream.json().catch(() => ({})) : Promise.reject(new Error("store rejected")))
+            .then((data) => {
+                const id = data && (data.id || data.assetId);
+                if (!id) {
+                    res.status(502).json({ error: "Store did not return an asset id." });
+                    return;
+                }
+                res.json({ id: String(id), name: name });
+            })
+            .catch(() => {
+                res.status(502).json({ error: "Upload to media store failed." });
+            });
     });
 
     RED.httpNode.get("/webapp/:appId/*", (req, res) => {
@@ -4079,6 +4235,8 @@ registerWebappNodes.__test__ = {
     // P70 Ebene 2: ui-image msg.payload → src (Buffer/Base64 → data:)
     payloadToImageSrc,
     sniffImageContentType,
+    // P70 Ebene 3: media-store asset proxy resolution + path-traversal guard
+    resolveAssetStoreUrl,
     // P15
     getClientState,
     setClientState,

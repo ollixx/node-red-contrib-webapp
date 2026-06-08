@@ -157,7 +157,10 @@
                 // P61: these fields are now managed via the Logging select in the
                 // editor; they remain as the underlying stored config fields.
                 forwardErrorsToClient: { value: false },
-                forwardErrorMinSeverity: { value: "error" }
+                forwardErrorMinSeverity: { value: "error" },
+                // P70: optional media-store base URL. Enables `asset:<id>` image
+                // references resolved via the app-scoped backend proxy.
+                mediaStoreUrl: { value: "" }
             },
             // P59 / ADR 0007 §4: ui-app accepts an input port so app-global verbs
             // navigate / reset can be wired (or picked) to it like any other target.
@@ -346,6 +349,11 @@
             <option value="warn">warn</option>
             <option value="error">error</option>
         </select>
+    </div>
+    <hr style="margin: 8px 0;">
+    <div class="form-row">
+        <label for="node-input-mediaStoreUrl">Media Store URL</label>
+        <input type="text" id="node-input-mediaStoreUrl" placeholder="https://store.example/media (optional)">
     </div>
     <hr style="margin: 8px 0;">
     <div class="form-row"><label>Events</label></div>

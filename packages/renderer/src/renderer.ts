@@ -512,6 +512,7 @@ function toRenderedComponent(component: ComponentDefinition, context: ComponentR
         case "avatar":
         // P70: image — src binding resolved into resolvedProps.value (routed
         // through bind.value like avatar); the serializer reads component.value.
+        // falls through
         case "image":
         // falls through — P45: composite and layout nodes
         case "list":
