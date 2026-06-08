@@ -1049,7 +1049,7 @@ phases:
   # NIE); Upload-Security; Aktivieren von ui-image darf nichts brechen.
   # ════════════════════════════════════════════════════════════════════════
 
-  - { id: P70, title: "ui-image / Bildverwaltung — Rendering aktivieren + src-URL (typedInput, bindbar) + wiring-first msg/Buffer→data: + Media-Store (mediaStoreUrl in ui-app, asset:<id>, Backend-Proxy/Obfuskation) + Editor-Media-Picker", status: pending, dependencies: [P20b, P68] }
+  - { id: P70, title: "ui-image / Bildverwaltung — Rendering aktivieren + src-URL (typedInput, bindbar) + wiring-first msg/Buffer→data: + Media-Store (mediaStoreUrl in ui-app, asset:<id>, Backend-Proxy/Obfuskation) + Editor-Media-Picker", status: in_progress, dependencies: [P20b, P68] }
 
   # ════════════════════════════════════════════════════════════════════════
   # Komponenten-Felder — size, outline, Button-Link-Modus, Button-Slots (P71)
