@@ -77,6 +77,36 @@ test.describe("ui-breadcrumb (P43)", () => {
         await expect(page.locator("sl-breadcrumb")).toContainText("End");
     });
 
+    // P75 — clicking a navigable breadcrumb item (one with `path`, not the last)
+    // dispatches a `navigate` event to the node's output port with params.path.
+    test("click on a navigable item POSTs /event { event:'navigate', params:{ path } }", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "bcNav1", root: "bcNav1" })
+            .node("ui-breadcrumb", {
+                id: "bcNavNode1",
+                items: [
+                    { label: "Home", path: "/" },
+                    { label: "Customers", path: "/customers" },
+                    { label: "Details" }
+                ]
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "bcNav1");
+        await webapp.navigate("/");
+
+        const eventPromise = webapp.interceptNextEvent();
+        // Click the first navigable item (Home → "/").
+        await page.locator("sl-breadcrumb-item[data-webapp-navigate-path]").first().click();
+
+        const body = await eventPromise;
+        expect(body.event).toBe("navigate");
+        expect(body.sourceId).toBe("bcNavNode1");
+        expect((body.params as Record<string, unknown>).path).toBe("/");
+    });
+
     test("empty items array renders without crashing", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "bcApp4", root: "bcApp4" })

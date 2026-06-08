@@ -3985,6 +3985,11 @@ const runtimeNodeRegistry = {
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
             items: getBinding(config.items, config.itemsPath ? stateBinding(config.itemsPath) : undefined) || (Array.isArray(config.items) ? config.items : parseList(config.items)),
+            // P75: ui-breadcrumb always exposes a single navigate output port; a
+            // click on a navigable item emits a `navigate` event. The events
+            // contract is what dispatchClientEvent reads for port routing and what
+            // the serializer surfaces as componentEvents.
+            events: ["navigate"],
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
@@ -4001,6 +4006,10 @@ const runtimeNodeRegistry = {
             displayType: config.displayType || config.variant || undefined,
             items: getBinding(config.items, config.itemsPath ? stateBinding(config.itemsPath) : undefined) || parseJsonList(config.items),
             activeItem: getBinding(config.activeRoute, config.activeRoutePath ? stateBinding(config.activeRoutePath) : undefined),
+            // P75: ui-menu always exposes a single navigate output port; a click on
+            // a navigable item (route/path, not external href) emits a `navigate`
+            // event. See the ui-breadcrumb note above.
+            events: ["navigate"],
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
