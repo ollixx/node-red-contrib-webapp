@@ -77,7 +77,8 @@ test.describe("editor panels — structure nodes (P47)", () => {
         await editor.openNode("routeEd");
 
         // Fields documented for ui-route.
-        await editor.expectFields(["name", "parent", "path", "title", "layout-preset"]);
+        // P89: title is a typedInput that uses `titleBinding` as the DOM field id.
+        await editor.expectFields(["name", "parent", "path", "titleBinding", "layout-preset"]);
 
         // Parent SelectBox lists the app.
         const parentOptions = await editor.selectOptionValues("parent");

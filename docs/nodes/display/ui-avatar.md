@@ -36,8 +36,8 @@ typedInput, Mount-Baum, Layout-Child-Props).
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `src` | „Bild-URL" | typedInput (alle Binding-Arten) | optional | Bindbare URL des Avatar-Bilds. Wird aufgelöst und als `<img>`-Quelle genutzt. Schlägt der Ladevorgang fehl oder ist `src` nicht gesetzt, greift die Fallback-Kette (→ `initials`). |
-| `initials` | „Initialen (Fallback)" | typedInput (alle Binding-Arten) | optional | Bindbare Zeichenkette, die als Initialen-Platzhalter angezeigt wird, wenn kein Bild verfügbar ist (z. B. `"JD"`). Ist auch kein Initialen-Wert vorhanden, greift der Icon-Fallback (`icon`). |
+| `src` | „Image" | typedInput (URL / Asset / Store / alle Binding-Arten) | optional | Bindbare Quelle des Avatar-Bilds. `URL` (literal), `Asset` (verwaltetes Medium aus dem Media-Store, wenn `ui-app.mediaStoreUrl` konfiguriert), `Store` (Bildpfad aus einem `ui-store`-Wert), oder alle anderen Binding-Arten. Wird aufgelöst und als `image`-Attribut von `sl-avatar` gesetzt. Schlägt der Ladevorgang fehl oder ist das Feld nicht gesetzt, greift die Fallback-Kette (→ `initials`). Früher als „Src Path" bezeichnet (Plain-Text-Feld, pre-P94); alte Flows werden automatisch migriert. |
+| `initials` | „Fallback Initials" | typedInput (alle Binding-Arten) | optional | Bindbare Zeichenkette für den Initialen-Platzhalter (z. B. `"JD"`). Wird angezeigt, wenn kein Bild verfügbar ist. Ist auch kein Initialen-Wert vorhanden, greift der Icon-Fallback (`icon`). Alle Binding-Arten werden unterstützt: literal, state, store, query, routeParam, msg, flow, global, jsonata, env. |
 | `icon` | „Fallback Icon" | Textfeld + Icon-Picker (P69) | optional | Backend-neutraler Icon-Wert `{ library, name }` (bzw. `library:name`), angezeigt wenn weder `src` noch `initials` aufgelöst werden. Bindbar. Details: [ui-icon.md](./ui-icon.md). |
 | ~~`alt`~~ | ~~„Alt-Text"~~ | – | – | *Entfernt in P93.* `sl-avatar` nutzt das `label`-Attribut für Barrierefreiheit; ein separates `alt`-Feld wird nicht unterstützt. |
 
@@ -47,6 +47,7 @@ typedInput, Mount-Baum, Layout-Child-Props).
 |---|---|---|---|---|
 | `size` | „Größe" | SelectBox (`xs` / `sm` / `md` / `lg` / `xl`) | optional | Größe des Avatars. Default: `md`. |
 | `shape` | „Form" | SelectBox (`circle` / `square`) | optional | Form des Avatars. Default: `circle`. |
+| `variant` | „Variant" | SelectBox (`primary` / `neutral` / `success` / `info` / `warning` / `danger`) | optional | Semantische Farbrolle des Avatars (P94). Bootstrap und ähnliche Frameworks unterstützen dies nativ über CSS-Klassen. **Hinweis Shoelace:** `sl-avatar` unterstützt kein natives `variant`-Attribut; der Wert wird als `data-variant`-Attribut am Element ausgegeben, das per CSS oder einem Backend-Adapter ausgewertet werden kann. |
 
 ### Gruppe „Platzierung"
 
@@ -88,11 +89,12 @@ die ausführliche Doku:
 
 ## Theming
 
-`ui-avatar` trägt kein eigenes `variant`-Feld — Form und Größe werden über
-`shape` und `size` gesteuert. Farben und Radii erbt der Avatar vom App-weiten
-Theme (Design-Tokens). Das Rendering-Backend (heute Shoelace) bildet `shape` und
-`size` auf seine Web-Component-Props ab; weitere Backends folgen demselben
-semantischen Contract. Details: [theming.md](../concepts/theming.md).
+`ui-avatar` trägt ein `variant`-Feld für die semantische Farbrolle (P94). Farben
+und Radii erben vom App-weiten Theme (Design-Tokens). Das Rendering-Backend (heute
+Shoelace) bildet `shape` und `size` auf Web-Component-Props ab; `variant` wird als
+`data-variant`-Attribut ausgegeben, da `sl-avatar` kein natives Pendant hat.
+Bootstrap-Adapter und eigenes CSS können `data-variant` auswerten (z. B.
+`sl-avatar[data-variant="danger"] { … }`). Details: [theming.md](../concepts/theming.md).
 
 ## Fallback-Reihenfolge
 

@@ -703,17 +703,23 @@ export type UiListNodeDefinition = z.infer<typeof uiListNodeDefinitionSchema>;
 
 export const uiAvatarNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-avatar"),
+    // P94: `src` (runtime field name) is a full binding. In the editor it is labelled
+    // "Image" and accepts all binding kinds including "store" and "literal asset:<id>".
+    // Back-compat: old `srcPath` (plain state path) is still accepted in mapConfig.
     src: bindingSchema.optional(),
-    // P93: initials is stored as a plain string (editor input); the schema is kept as
-    // bindingSchema for forward-compat (P94 will add full typedInput), but mapConfig
-    // and the serializer only handle plain strings safely today.
-    initials: bindingSchema.optional(),
+    // P94: initials is a full binding (literal/state/store/…). P93 stored it as a plain
+    // string; the schema now accepts both. mapConfig and the serializer handle both.
+    initials: z.union([z.string(), bindingSchema]).optional(),
     // P69: optional icon fallback (shown when no src/initials resolve).
     // Backend-neutral { library, name }; binding-capable.
     icon: iconFieldSchema.optional(),
     // P93: alt attribute removed — sl-avatar uses the `label` attr for a11y, not `alt`.
     size: z.enum(["xs", "sm", "md", "lg", "xl"]).optional(),
-    shape: z.enum(["circle", "square"]).optional()
+    shape: z.enum(["circle", "square"]).optional(),
+    // P94: semantic colour role. Bootstrap supports this natively via CSS classes.
+    // Shoelace sl-avatar has no native variant attr; the serializer emits data-variant
+    // so CSS (or a Bootstrap adapter) can style it. Editor shows a Shoelace warning.
+    variant: z.enum(SEVERITY_VARIANTS).optional()
 });
 
 export type UiAvatarNodeDefinition = z.infer<typeof uiAvatarNodeDefinitionSchema>;
