@@ -448,7 +448,9 @@ export const componentKindSchema = z.enum([
     // P57: log display node
     "log",
     // P69: icon display node
-    "icon"
+    "icon",
+    // P83: divider — static visual separator (sl-divider)
+    "divider"
 ]);
 
 /**

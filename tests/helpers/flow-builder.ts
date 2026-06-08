@@ -100,6 +100,9 @@ function defaultsFor(type: string, ctx: { appId: string; routeId?: string; id: s
         case "ui-log":
             // P57: log display node — mounts like a view node, no inputs/outputs.
             return { ...base, minSeverity: "debug", maxEntries: 50, collapsed: false, wires: [] };
+        case "ui-divider":
+            // P83: static display node — no input/output ports.
+            return { ...base, wires: [] };
         default:
             return base;
     }

@@ -132,7 +132,8 @@
         menu: "sl-menu",
         avatar: "sl-avatar",
         toast: "sl-alert",
-        pagination: "sl-button-group"
+        pagination: "sl-button-group",
+        divider: "sl-divider"
     };
 
     const BUTTON_VARIANT_TO_SHOELACE = {
@@ -894,6 +895,17 @@
                 return "<li class=\"webapp-list-item\">" + label + "</li>";
             }).join("");
             return wrapRenderedComponentHtml(component, layoutId, "<ul class=\"webapp-list\">" + itemHtml + "</ul>");
+        }
+
+        // P83: ui-divider — static horizontal/vertical separator (sl-divider or webapp-divider fallback).
+        if (component.kind === "divider") {
+            const orientation = (component.props && component.props.orientation) ? String(component.props.orientation) : "horizontal";
+            const label = (component.props && component.props.label) ? String(component.props.label) : "";
+            const orientationAttr = orientation === "vertical" ? " vertical" : "";
+            const inner = label
+                ? "<sl-divider" + orientationAttr + ">" + escapeHtml(label) + "</sl-divider>"
+                : "<sl-divider" + orientationAttr + "></sl-divider>";
+            return wrapRenderedComponentHtml(component, layoutId, inner);
         }
 
         // P57: ui-log — persistent error/log display that updates live via SSE "error" events.
