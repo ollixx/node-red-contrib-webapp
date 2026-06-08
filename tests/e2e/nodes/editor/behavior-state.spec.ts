@@ -105,6 +105,34 @@ test.describe("editor panels — behavior & state nodes (P47)", () => {
         expect(await editor.selectOptionValues("parent")).toContain("qApp");
     });
 
+    test("ui-query — P78: previewData field absent from editor (removed in P32); queryPath round-trips", async ({ page, request }) => {
+        // previewData was removed from schema+runtime in P32 but lingered in the
+        // editor HTML. P78 removes it from the editor so the three-way contract
+        // (schema / runtime / editor) is consistent.
+        const flow = new FlowBuilder()
+            .app({ id: "qP78App", root: "qP78App", name: "Query P78 App" })
+            .node("ui-query", { id: "qP78Ed", queryPath: "items.list" })
+            .build();
+        await deployFlow(request, flow);
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode("qP78Ed");
+
+        // previewData must NOT appear in the editor panel.
+        expect(await editor.hasField("previewData")).toBe(false);
+
+        // The real fields must still be present and editable.
+        await editor.expectFields(["name", "parent", "queryPath"]);
+
+        // queryPath value round-trips across save/reopen.
+        expect(await editor.readField("queryPath")).toBe("items.list");
+        await editor.fillField("queryPath", "products.list");
+        await editor.save();
+        await editor.openNode("qP78Ed");
+        expect(await editor.readField("queryPath")).toBe("products.list");
+    });
+
     test("ui-navigation — opens without crash, parent SelectBox lists app", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "navApp", root: "navApp", name: "Nav App" })
