@@ -84,4 +84,52 @@ test.describe("ui-menu (P45)", () => {
         const html = await page.locator("sl-menu").innerHTML();
         expect(html).toContain("https://example.com");
     });
+
+    // P75 — clicking a route/path menu item dispatches a `navigate` event to the
+    // node's output port with params.path. The client preventDefaults, so the
+    // wired flow (not the browser) drives the route change.
+    test("click on a route item POSTs /event { event:'navigate', params:{ path } }", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "menuNav1", root: "menuNav1" })
+            .node("ui-menu", {
+                id: "menuNavNode1",
+                items: JSON.stringify([
+                    { label: "Dashboard", route: "/dashboard" },
+                    { label: "Customers", route: "/customers" }
+                ])
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "menuNav1");
+        await webapp.navigate("/");
+
+        const eventPromise = webapp.interceptNextEvent();
+        await page.locator("sl-menu-item[data-webapp-navigate-path]").first().click();
+
+        const body = await eventPromise;
+        expect(body.event).toBe("navigate");
+        expect(body.sourceId).toBe("menuNavNode1");
+        expect((body.params as Record<string, unknown>).path).toBe("/dashboard");
+    });
+
+    // P75 — external href items must NOT carry the navigate hook (the browser
+    // opens the link; no `navigate` event is emitted).
+    test("external href item carries no navigate hook", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "menuNav2", root: "menuNav2" })
+            .node("ui-menu", {
+                id: "menuNavNode2",
+                items: JSON.stringify([{ label: "External", href: "https://example.com" }])
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "menuNav2");
+        await webapp.navigate("/");
+
+        await expect(page.locator("sl-menu-item[data-webapp-navigate-path]")).toHaveCount(0);
+    });
 });

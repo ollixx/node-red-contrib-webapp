@@ -722,6 +722,50 @@ describe("P16c navigation and structure nodes", () => {
         expect(result.success).toBe(true);
     });
 
+    // P75: ui-breadcrumb / ui-menu declare a `navigate` output event so the
+    // dispatch can route item clicks onto the node's output port.
+    it("accepts ui-breadcrumb with events: ['navigate']", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-breadcrumb",
+            id: "bcNav",
+            mount: "route:/customers/header",
+            items: [{ label: "Home", path: "/" }, { label: "Customers" }],
+            events: ["navigate"]
+        });
+
+        expect(result.success).toBe(true);
+        if (result.success && result.data.type === "ui-breadcrumb") {
+            expect(result.data.events).toEqual(["navigate"]);
+        }
+    });
+
+    it("rejects an unknown event name on ui-breadcrumb", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-breadcrumb",
+            id: "bcBad",
+            mount: "route:/customers/header",
+            items: [{ label: "Home", path: "/" }],
+            events: ["click"]
+        });
+
+        expect(result.success).toBe(false);
+    });
+
+    it("accepts ui-menu with events: ['navigate']", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-menu",
+            id: "menuNav",
+            mount: "app:myapp/sidebar",
+            items: [{ label: "Dashboard", route: "/dashboard" }],
+            events: ["navigate"]
+        });
+
+        expect(result.success).toBe(true);
+        if (result.success && result.data.type === "ui-menu") {
+            expect(result.data.events).toEqual(["navigate"]);
+        }
+    });
+
     it("compiles ui-pagination with page and totalPages bindings", () => {
         const result = validateUiNodeDefinition({
             type: "ui-pagination",

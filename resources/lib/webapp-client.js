@@ -422,6 +422,22 @@
             return;
         }
 
+        // P75: breadcrumb / menu navigable items carry data-webapp-navigate-path
+        // with the target route. The browser REPORTS the click as a `navigate`
+        // event (params.path) — it takes NO navigation action itself. The wired
+        // flow (typically a ui-action navigate) decides the route change. This
+        // mirrors the events.md contract: the client reports WHAT HAPPENED.
+        if (trigger.hasAttribute("data-webapp-navigate-path")) {
+            eventObject.preventDefault();
+            const path = trigger.getAttribute("data-webapp-navigate-path");
+            dispatch({
+                source: trigger.getAttribute("data-webapp-source"),
+                event: "navigate",
+                params: { path: path }
+            });
+            return;
+        }
+
         // P71: a button in "navigate" link mode carries data-webapp-navigate with
         // the target route. The client performs the in-app navigation AND still
         // reports the click to the flow (so the flow can react), mirroring the

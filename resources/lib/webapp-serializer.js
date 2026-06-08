@@ -700,10 +700,18 @@
 
         if (component.kind === "breadcrumb") {
             const items = Array.isArray(component.props.items) ? component.props.items : (Array.isArray(component.value) ? component.value : []);
-            const itemHtml = items.map(function (item) {
+            const src = escapeAttribute(component.id);
+            const itemHtml = items.map(function (item, idx) {
                 const label = escapeHtml(String(item.label !== undefined ? item.label : item));
                 const href = item.href ? " href=\"" + escapeAttribute(item.href) + "\"" : "";
-                return "<sl-breadcrumb-item" + href + ">" + label + "</sl-breadcrumb-item>";
+                // P75: a navigable item is one with a `path`, except the last item
+                // (the current page is never clickable). Clicking it dispatches a
+                // `navigate` event carrying params.path on the breadcrumb's port.
+                const isLast = idx === items.length - 1;
+                const navAttr = (!isLast && item.path)
+                    ? " data-webapp-source=\"" + src + "\" data-webapp-navigate-path=\"" + escapeAttribute(String(item.path)) + "\""
+                    : "";
+                return "<sl-breadcrumb-item" + href + navAttr + ">" + label + "</sl-breadcrumb-item>";
             }).join("");
             return wrapRenderedComponentHtml(component, layoutId, "<sl-breadcrumb>" + itemHtml + "</sl-breadcrumb>");
         }
@@ -743,6 +751,7 @@
         if (component.kind === "menu") {
             const appId = ctx.appId;
             const items = Array.isArray(component.props.items) ? component.props.items : (Array.isArray(component.value) ? component.value : []);
+            const src = escapeAttribute(component.id);
             const itemHtml = items.map(function (item) {
                 const label = escapeHtml(String(item.label !== undefined ? item.label : item));
                 const href = item.href
@@ -750,7 +759,15 @@
                     : item.route
                         ? " href=\"/webapp/" + encodeURIComponent(appId) + item.route + "\""
                         : "";
-                return "<sl-menu-item" + href + ">" + label + "</sl-menu-item>";
+                // P75: an internal item (no external `href`, has `route`/`path`) is
+                // navigable: clicking it dispatches a `navigate` event carrying
+                // params.path on the menu's port. External href items open in the
+                // browser and emit nothing.
+                const navPath = item.href ? undefined : (item.route || item.path);
+                const navAttr = navPath
+                    ? " data-webapp-source=\"" + src + "\" data-webapp-navigate-path=\"" + escapeAttribute(String(navPath)) + "\""
+                    : "";
+                return "<sl-menu-item" + href + navAttr + ">" + label + "</sl-menu-item>";
             }).join("");
             return wrapRenderedComponentHtml(component, layoutId, "<sl-menu>" + itemHtml + "</sl-menu>");
         }

@@ -563,7 +563,12 @@ export const uiBreadcrumbNodeDefinitionSchema = mountableNodeSchema.extend({
         z.array(z.object({ label: z.string().min(1), path: z.string().optional() })),
         bindingSchema
     ]),
-    separator: z.string().optional()
+    separator: z.string().optional(),
+    // P75: clicking a navigable item (one with `path`, not the last item) emits a
+    // `navigate` event on the node's output port. The events contract is what the
+    // runtime dispatch reads to route the event onto the port, and what the
+    // serializer reads to wire the click hooks on each navigable item.
+    events: z.array(z.enum(["navigate"])).optional()
 });
 
 export type UiBreadcrumbNodeDefinition = z.infer<typeof uiBreadcrumbNodeDefinitionSchema>;
@@ -584,7 +589,11 @@ export const uiMenuNodeDefinitionSchema = mountableNodeSchema.extend({
     displayType: z.enum(["sidebar", "topbar", "dropdown"]).optional(),
     items: z.union([z.array(menuItemSchema), bindingSchema]),
     activeItem: bindingSchema.optional(),
-    collapsed: bindingSchema.optional()
+    collapsed: bindingSchema.optional(),
+    // P75: clicking a navigable item (one with `route`/`path`, not an external
+    // `href`) emits a `navigate` event on the node's output port. See the
+    // ui-breadcrumb note above for the dispatch/serializer roles of this contract.
+    events: z.array(z.enum(["navigate"])).optional()
 });
 
 export type UiMenuNodeDefinition = z.infer<typeof uiMenuNodeDefinitionSchema>;
