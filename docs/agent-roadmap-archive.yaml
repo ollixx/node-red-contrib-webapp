@@ -1879,3 +1879,48 @@ phases:
       - "pnpm validate green (294 unit tests, lint + build clean)."
       - "node-picker.spec.ts 3/3 pass; the 4 editor-registration specs pass 13/13 in isolation and 16/16 after the picker spec (no pollution)."
       - "Full-suite editor-registration failures confirmed pre-existing flakiness (baseline 14 > P68 9-10), not introduced by P68 (per P66 archive note)."
+
+  - id: P67
+    title: "ui-alert — 'Message Path' durch typedInput (alle Typen + neue Binding-Art 'store' mit Store-Picker via P68) ersetzen; title ebenfalls typedInput"
+    status: done
+    dependencies: [P20b, P68]
+    summary:
+      delivered: "ui-alert's plain-text messagePath editor field replaced by typedInputs on message and title supporting all binding kinds (literal/state/query/routeParam/msg/flow/global/jsonata/env) plus a NEW reusable `store` binding kind that references a ui-store by id and resolves at runtime via its statePath (robust to statePath renames); the store typedInput type reuses the P68 node-picker (stores preset); legacy messagePath stays back-compat (→ state binding)."
+      stats: "16 source/doc files + 2 generated examples + 1 new E2E spec (3 tests); +14 unit tests (schema 4, renderer 3, editor 7); full E2E 273 passed / 0 failed."
+      notes: >
+        Schema: `store` added to bindingSchema kind enum (path = ui-store id; superRefine already requires a
+        path for non-literal kinds); ui-alert.title string→bindingSchema.optional(). Renderer: storePaths map
+        (id→statePath) built once from integration.stores; resolveBinding `store` case → state value. webapp.js
+        mapConfig: getBinding for message+title; messagePath→state back-compat fallback kept. packages/editor:
+        findUnknownStoreBindings() structure-view diagnostic (store binding must reference an existing ui-store);
+        added storeIds to CompiledRegistrySnapshot. editor-common.js: storeTypedInputType()/bindingTypedInputTypes()
+        helpers; store type expand button opens the existing P68 openNodePickerDialog("stores").
+        ORCHESTRATOR INTERVENTION: the implementation sub-agent could not run Playwright in its worktree and TWO
+        successive blind fix sub-agents misdiagnosed the resulting E2E-only failures as test-only (they were not).
+        Real bugs found and fixed by the orchestrator directly on the integration branch (fix commit on
+        phase/P65-work): (1) message/title typedInputs were bound to #node-input-message/-title while the binding
+        OBJECT was stored in the SAME message/title defaults — Node-RED's post-oneditsave defaults auto-read
+        overwrote node.message with the raw typedInput value (e.g. "draftStore" instead of {kind:"store",
+        path:"draftStore"}); fixed by mirroring ui-text's split — typedInputs moved to messageBinding/titleBinding
+        fields, message/title kept as object-storage defaults with NO #node-input-* element so the auto-read can't
+        clobber them (mapConfig still reads message/title). (2) legacy messagePath read back as "literal" not
+        "state": the empty-literal message default masked the messagePath fallback AND messagePath was not in
+        defaults so it never loaded into oneditprepare; fixed by preferring messagePath when message is an empty
+        literal and declaring messagePath as a DOM-less default. The P67 E2E spec was updated to drive the
+        *Binding typedInput fields while still asserting the stored message/title objects. gen:example unaffected
+        by the editor-only fix; .node-red-dev/flows.json never touched.
+      cost: "session <orchestrator>, impl sub-agent ~23m + 2 blind fix sub-agents (~14m each) + orchestrator diagnosis/fix/verify; token totals auto-logged to .ai/agent-runs.jsonl"
+    goals:
+      - "ui-alert.message and .title become bindable typedInputs (mirror ui-text) with all kinds plus a new reusable `store` kind."
+      - "`store` binding references a ui-store by id and resolves via its statePath at runtime (cross-cutting binding-model addition)."
+      - "Legacy messagePath remains back-compat (read back as a state binding; mapConfig fallback retained)."
+    deliverables:
+      - "schema: bindingSchema kind enum += store; ui-alert.title → bindingSchema.optional() (contracts.ts/node-definitions.ts)."
+      - "renderer: resolveBinding `store` case via storePaths(id→statePath) from integration.stores."
+      - "nodes/view/ui-alert.html: message/title typedInputs (store type uses P68 picker); messageBinding/titleBinding DOM fields split from message/title object storage; messagePath back-compat in oneditprepare."
+      - "webapp.js mapConfig getBinding(message)/getBinding(title) + messagePath→state fallback; packages/editor unknown-store-binding diagnostic (+storeIds in CompiledRegistrySnapshot)."
+      - "Tests: schema/renderer/editor unit (+14); E2E tests/e2e/nodes/editor/p67-alert-binding.spec.ts (types incl. store, store round-trip, legacy messagePath→state)."
+    validation:
+      - "pnpm validate green (schema 162 / renderer 17 / editor 17 / runtime 294, lint + build clean)."
+      - "Full E2E on integration branch: 273 passed / 0 failed (incl. p67-alert-binding 3/3 and all previously-flaky editor-registration specs green)."
+      - "store binding resolves via statePath; legacy messagePath round-trips as a state binding in the editor."

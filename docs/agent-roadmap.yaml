@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P67  # in_progress: ui-alert Message Path/title → typedInput (incl. new 'store' binding via P68 store-picker)
+  current_phase: P69  # next to implement: icon system (backend-neutral {library,name}, registrable libs, icon-picker dialog via P68)
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -833,7 +833,7 @@ phases:
   # braucht Zugriff auf statePath im Renderer-Kontext.
   # ════════════════════════════════════════════════════════════════════════
 
-  - { id: P67, title: "ui-alert — 'Message Path' durch typedInput (alle Typen + neue Binding-Art 'store' mit Store-Picker via P68) ersetzen; title ebenfalls typedInput", status: in_progress, dependencies: [P20b, P68] }
+  - { id: P67, title: "ui-alert — 'Message Path' durch typedInput (alle Typen + neue Binding-Art 'store' mit Store-Picker via P68) ersetzen; title ebenfalls typedInput", status: done, dependencies: [P20b, P68], archive: "docs/agent-roadmap-archive.yaml#P67" }
 
   # ════════════════════════════════════════════════════════════════════════
   # Einheitlicher Node-Picker-Dialog für ALLE ui-*-Knoten-Auswahlen (P68)
