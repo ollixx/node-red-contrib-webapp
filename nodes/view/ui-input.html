@@ -16,6 +16,7 @@
                 path: { value: "" },
                 inputType: { value: "text", required: true },
                 variant: { value: "default" },
+                size: { value: "" },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
                 col: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
@@ -37,6 +38,7 @@
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true, store: true }).call(this);
                 common.installVariantSelectBox("input").call(this);
+                common.installSizeSelectBox().call(this);
                 common.installLayoutChildPropRows().call(this);
             }
         });

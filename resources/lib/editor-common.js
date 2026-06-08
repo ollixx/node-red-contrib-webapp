@@ -220,6 +220,87 @@
         };
     }
 
+    // ── Size SelectBox (P71) ─────────────────────────────────────────────────
+    // installSizeSelectBox() injects a "Size" select with the three-step token
+    // set (sm/md/lg) for nodes backed by a natively-sized Shoelace element
+    // (button/text/input/select/textarea). An empty option leaves size unset
+    // (the backend's default size applies). Idempotent like the variant box.
+    const SIZE_OPTIONS = [
+        { value: "", label: "(default)" },
+        { value: "sm", label: "Small" },
+        { value: "md", label: "Medium" },
+        { value: "lg", label: "Large" }
+    ];
+
+    function installSizeSelectBox() {
+        return function () {
+            const self = this;
+            injectFieldGroup({
+                groupId: "size-select",
+                separator: false,
+                fields: [
+                    { id: "size", label: "Size", type: "select", options: SIZE_OPTIONS }
+                ]
+            });
+            const select = $("#node-input-size");
+            if (select.length) {
+                select.val(self.size || "");
+            }
+        };
+    }
+
+    // ── Button link mode + outline (P71) ─────────────────────────────────────
+    // installButtonLinkFields() injects:
+    //   • an "Outline" checkbox (boolean outline flag),
+    //   • a "Link Mode" select (button | url | navigate),
+    //   • an "URL / Route" text field, shown only for url/navigate modes.
+    // The href field's visibility tracks the selected mode live.
+    const BUTTON_LINK_MODE_OPTIONS = [
+        { value: "button", label: "Button (no link)" },
+        { value: "url", label: "URL (hyperlink)" },
+        { value: "navigate", label: "Navigate (in-app route)" }
+    ];
+
+    function installButtonLinkFields() {
+        return function () {
+            const self = this;
+            injectFieldGroup({
+                groupId: "button-link",
+                separator: false,
+                fields: [
+                    { id: "outline", label: "Outline", type: "checkbox" },
+                    { id: "linkMode", label: "Link Mode", type: "select", options: BUTTON_LINK_MODE_OPTIONS },
+                    { id: "href", label: "URL / Route", type: "text", rowAttrs: { "data-button-href-row": "href" } }
+                ]
+            });
+
+            const outline = $("#node-input-outline");
+            if (outline.length) {
+                outline.prop("checked", self.outline === true || self.outline === "true");
+            }
+            const mode = $("#node-input-linkMode");
+            if (mode.length) {
+                mode.val(self.linkMode || "button");
+            }
+            const href = $("#node-input-href");
+            if (href.length) {
+                href.val(self.href || "");
+            }
+
+            function syncHrefVisibility() {
+                const value = $("#node-input-linkMode").val() || "button";
+                const row = $('[data-button-href-row="href"]');
+                if (value === "button") {
+                    row.hide();
+                } else {
+                    row.show();
+                }
+            }
+            mode.off("change.webappLinkMode").on("change.webappLinkMode", syncHrefVisibility);
+            syncHrefVisibility();
+        };
+    }
+
     function labelWithName(fallback) {
         return function () {
             return this.name || this.id || fallback;
@@ -1835,6 +1916,8 @@
         parseIconValue,
         formatIconValue,
         installReferenceSelectors,
+        installSizeSelectBox,
+        installButtonLinkFields,
         installVariantSelectBox,
         isStandardLayoutPreset,
         labelWithName,

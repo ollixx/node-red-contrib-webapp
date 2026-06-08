@@ -12,6 +12,7 @@
                 text: { value: "", required: true },
                 value: { value: { kind: "literal", value: "" } },
                 variant: { value: "body" },
+                size: { value: "" },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
                 col: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
@@ -32,6 +33,7 @@
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
                 common.installVariantSelectBox("text").call(this);
+                common.installSizeSelectBox().call(this);
                 common.installLayoutChildPropRows().call(this);
                 const binding = common.bindingValueForEditor(common.parseBindingValue(this.value), this.text || "");
                 const textInput = $("#node-input-text");

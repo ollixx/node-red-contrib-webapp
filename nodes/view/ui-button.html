@@ -11,6 +11,10 @@
                 mount: { value: "", required: true },
                 label: { value: "", required: true },
                 variant: { value: "neutral" },
+                size: { value: "" },
+                outline: { value: false },
+                linkMode: { value: "button" },
+                href: { value: "" },
                 icon: { value: "" },
                 disabledPath: { value: "" },
                 disabled: { value: null },
@@ -34,6 +38,8 @@
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
                 common.installVariantSelectBox("button").call(this);
+                common.installSizeSelectBox().call(this);
+                common.installButtonLinkFields().call(this);
                 common.installLayoutChildPropRows().call(this);
                 common.installIconField("#node-input-icon", { title: "Button-Icon auswählen" });
             }
@@ -48,5 +54,24 @@
     <div class="form-row"><label for="node-input-icon">Icon</label><input type="text" id="node-input-icon" placeholder="z. B. plus oder lucide:user"></div>
     <div class="form-row"><label for="node-input-disabledPath">Disabled Path</label><input type="text" id="node-input-disabledPath"></div>
 </script>
-<script type="text/html"
-    data-help-name="ui-button"><p>Mountet einen Button, der UI-Ereignisse in den Flow geben kann.</p></script>
+<script type="text/html" data-help-name="ui-button">
+    <p>Mountet einen klickbaren Button. Jeder Klick erzeugt ein <code>click</code>-Event
+    auf dem Output-Port; verdrahte ihn z. B. mit einem <code>ui-action</code>.</p>
+    <h4>Darstellung</h4>
+    <ul>
+        <li><b>Variante</b> — semantische Rolle (primary, danger …).</li>
+        <li><b>Size</b> — Small / Medium / Large (leer = Standardgröße).</li>
+        <li><b>Outline</b> — zeichnet den Button mit Kontur statt Füllung.</li>
+    </ul>
+    <h4>Link-Modus</h4>
+    <ul>
+        <li><b>Button (kein Link)</b> — normaler Button; Aktion läuft über den
+        Output-Port (Standardverhalten).</li>
+        <li><b>URL (Hyperlink)</b> — rendert einen echten Link; das Feld
+        „URL / Route" gibt das Ziel an (externe oder interne Adresse).</li>
+        <li><b>Navigate (In-App-Route)</b> — navigiert clientseitig zur angegebenen
+        Route und meldet den Klick zusätzlich an den Flow.</li>
+    </ul>
+    <p>Das Feld „URL / Route" erscheint nur in den Modi <i>URL</i> und <i>Navigate</i>.</p>
+    <p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/display/ui-button.md">Ausführliche Doku</a></p>
+</script>
