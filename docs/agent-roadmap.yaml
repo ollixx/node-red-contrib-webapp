@@ -1212,7 +1212,7 @@ phases:
   # Docs mitziehen.
   # ════════════════════════════════════════════════════════════════════════
 
-  - { id: P87, title: "ui-app: persistente clientId — die clientId wird heute bei Browser-Reload neu generiert, wodurch per-Client-State verloren geht. Erste clientId im localStorage persistieren und bei Reload/Reconnect wiederverwenden", status: pending, dependencies: [P15] }
+  - { id: P87, title: "ui-app: persistente clientId — die clientId wird heute bei Browser-Reload neu generiert, wodurch per-Client-State verloren geht. Erste clientId im localStorage persistieren und bei Reload/Reconnect wiederverwenden", status: in_progress, dependencies: [P15] }
 
   - { id: P88, title: "ui-app Editor-Layout-Politur — App-URL-Link hinter das Label rücken, bündig mit den anderen Feldern (2. Spalte); Logging-Select bündig in die 2. Spalte; Info-Button HINTER die SelectBox", status: pending, dependencies: [P61] }
 
