@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P80  # next to implement: bugfix — validate store operations at runtime against storeOperationSchema
+  current_phase: P81  # next to implement: test-infra — shared classic node behaviour test harness
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -1147,7 +1147,7 @@ phases:
 
   - { id: P79, title: "Bugfix/Decision: `targetId`-Diskrepanz — Runtime-Handler akzeptieren `msg.ui.action.targetId`, aber `actionMessageCommandSchema` ist `.strict()` und kennt nur `target` → targetId fällt durch die Validierung. Entscheiden: targetId ins Schema aufnehmen ODER Runtime-Alias entfernen; Doku (actions.md) angleichen", status: done, dependencies: [P60], archive: "docs/agent-roadmap-archive.yaml#P79" }
 
-  - { id: P80, title: "Bugfix: Store-Operationen zur Laufzeit gegen storeOperationSchema validieren — vor applyStoreOperation safeParse, bei Fehler strukturierter Fehler `server.store.invalid-operation` mit sprechender Schema-Meldung (set/patch/delete ohne path, set/patch/replace ohne value); Pass-Through für fremde Messages unverändert. Tests + Doc-Update (stores.md „Bekannte Lücke\", ui-store.md)", status: in_progress, dependencies: [P15] }
+  - { id: P80, title: "Bugfix: Store-Operationen zur Laufzeit gegen storeOperationSchema validieren — vor applyStoreOperation safeParse, bei Fehler strukturierter Fehler `server.store.invalid-operation` mit sprechender Schema-Meldung (set/patch/delete ohne path, set/patch/replace ohne value); Pass-Through für fremde Messages unverändert. Tests + Doc-Update (stores.md „Bekannte Lücke\", ui-store.md)", status: done, dependencies: [P15], archive: "docs/agent-roadmap-archive.yaml#P80" }
 
   # ════════════════════════════════════════════════════════════════════════
   # Test-Strategie: Knoten-Verhalten in klassische Tests, E2E nur Editor+Render
