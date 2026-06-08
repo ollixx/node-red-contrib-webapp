@@ -1,44 +1,130 @@
 # `ui-button`
 
-## Zusammenfassung
+> **Anforderungs-Dokument.** Es beschreibt das *gewünschte* Verhalten des Knotens
+> (den Vertrag), nicht den jeweils aktuellen Implementierungsstand. Abweichungen
+> der Implementierung gehören **nicht** hierher — sie werden im Code/Test
+> aufgedeckt und behoben.
 
-Rendert einen klickbaren Button. Ab P20a emittiert der Button Klick-Events direkt auf seinem Output-Port — die Weiterleitung an `ui-action` oder andere Knoten erfolgt durch Wiring im Flow.
+## Zweck
 
-## Abhängigkeiten
+`ui-button` rendert einen **klickbaren Button**. Jeder Klick des Nutzers erzeugt
+ein `click`-Event auf dem Output-Port des Knotens. Der Flow-Autor verdrahtet
+diesen Port mit beliebigen Folgeknoten — z. B. einem `ui-action` (Navigation),
+einem `function`-Knoten (Validierung) oder einem `ui-store` (Zustandsänderung).
+Der Button hat keine eigene Logik; er ist ausschließlich Ereignis-Quelle.
 
-**Parent-Knoten:**
-- `ui-app`, `ui-route`, `ui-dialog` oder `ui-container`: Pflicht. Der Knoten wird in einen Slot des gewählten Parent-Knotens eingehängt. `ui-app` fungiert dabei als implizite Route `"/"` und kann direkt als Parent verwendet werden.
+## Einordnung
 
-**Gemeinsam genutzte Services und Komponenten:**
-- Binding-Modell: `disabled`-Zustand über State-Binding
+- **Parent:** `ui-app`, `ui-route`, `ui-dialog` oder `ui-container` — genau
+  einer; gemountet über `mount` in einen Slot des Parents.
+- **Kinder:** keine — `ui-button` ist ein Blatt-Knoten.
+- **Rolle zur Laufzeit:** der Renderer stellt den Button dar; Klicks werden als
+  Event an den Node-RED-Flow gemeldet.
 
-## Editor
+## Felder
 
-**Pflichtfelder:**
-- `parent`: Auswahl eines Slots aus allen `ui-app`-, `ui-route`-, `ui-dialog`- und `ui-container`-Knoten. Die Einträge werden hierarchisch (App → Route/Dialog → Container) aufgelistet. Wird als SelectBox angezeigt; bei mehr als 20 Einträgen als filterbarer Dialog.
-- `label`: aktuell ein einfacher String, kein Binding-Ausdruck
+Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt (Node-Picker-Dialog,
+typedInput, Variant-SelectBox, Mount-Baum, Layout-Child-Props).
 
-**Optionale Felder:**
-- `name`: Node-RED-Anzeigefeld. Wird bei der Darstellung des Knotens und in Auswahlfeldern angezeigt.
-  - Default: `"Button N"` (fortlaufende Nummer aller ui-button-Knoten, startend bei 1)
-- `variant`: semantische Rolle (`BUTTON_VARIANTS`): `primary | secondary | success | danger | warning | neutral | ghost | link`. Default: `neutral`. Vokabular siehe [theming.md](../concepts/theming.md).
-- `disabled`
-- `order`
-- layoutabhängige Child-Props: sichtbar abhängig vom Layout-Preset des gewählten Parent — `row`, `col`, `colSize`, `rowSize` (grid) bzw. `layoutX`, `layoutY` (absolute). Details in [layout.md](../concepts/layout.md).
+### Gruppe „Allgemein"
+
+| Feld | Label | Editor-Typ | Pflicht | Beschreibung |
+|---|---|---|---|---|
+| `name` | „Name" | Textfeld | optional | Anzeigename im Editor und in Auswahllisten. Default: fortlaufend `Button N`. |
+| `mount` | „Parent Slot" | Mount-Baum (Node-Picker-Dialog) | **ja** | Slot-Pfad des Parents (`<type>:<id>/<slot>`). Bestimmt die sichtbaren Layout-Child-Props (Gruppe „Platzierung"). |
+
+### Gruppe „Inhalt"
+
+| Feld | Label | Editor-Typ | Pflicht | Beschreibung |
+|---|---|---|---|---|
+| `label` | „Label" | Textfeld | **ja** | Beschriftung des Buttons. Darf nicht leer sein. Statischer String; kein typedInput. |
+| `disabled` | „Deaktiviert" | typedInput (alle Binding-Arten) | optional | Bindbare boolesche Bedingung. Ist der aufgelöste Wert `true`, ist der Button deaktiviert und emittiert keine Click-Events. |
+
+### Gruppe „Darstellung"
+
+| Feld | Label | Editor-Typ | Pflicht | Beschreibung |
+|---|---|---|---|---|
+| `variant` | „Variante" | Variant-SelectBox (`BUTTON_VARIANTS`) | optional | Semantische Rolle des Buttons: `primary`, `secondary`, `success`, `danger`, `warning`, `neutral`, `ghost`, `link`. Default: `neutral`. Das Rendering-Backend bildet die Variante auf die passende visuelle Darstellung ab (Farbe, Kontur, Stil). Details: [theming.md](../concepts/theming.md). |
+
+### Gruppe „Platzierung"
+
+Die Felder dieser Gruppe werden vom Editor **abhängig vom gewählten Mount** eingeblendet:
+
+| Feld | Label | Editor-Typ | Pflicht | Beschreibung |
+|---|---|---|---|---|
+| `order` | „Reihenfolge" | Zahlenfeld | optional | Position innerhalb von `horizontal`- und `vertical`-Layouts. |
+| `row` / `col` | „Zeile" / „Spalte" | Zahlenfeld (min 1) | optional | Grid-Position (1-basiert). Nur sichtbar bei `grid`-Layout. |
+| `colSize` / `rowSize` | „Spaltenbreite" / „Zeilenhöhe" | Zahlenfeld (min 1) | optional | Grid-Spannweite. Nur sichtbar bei `grid`-Layout. |
+| `layoutX` / `layoutY` | „X" / „Y" | Zahlenfeld | optional | Absolute Koordinaten. Nur sichtbar bei `absolute`-Layout. |
+
+### Inline-Hilfe (HTML)
+
+Der `data-help-name="ui-button"`-Hilfetext soll **knapp, aber ausreichend** sein:
+Zweck (klickbarer Button, Click-Event auf Output-Port), Hinweis auf `variant` und
+`disabled`-Binding, Hinweis auf das Wiring-Muster (`ui-action`) und ein Link auf
+die ausführliche Doku:
+`https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/display/ui-button.md`.
 
 ## Input
 
-Akzeptiert Component-State-Messages (`show`, `hide`, `enable`, `disable`). Format siehe [messages.md](../concepts/messages.md).
+`ui-button` hat einen **Eingangs-Port**, der folgende Messages akzeptiert:
+
+- **`msg.payload`** (nicht-null): überschreibt das `label`-Feld sofort und pusht
+  einen aktualisierten Snapshot an alle verbundenen Clients.
+  Details: [inputs.md](../concepts/inputs.md).
+- **`msg.ui.component.op`** (`show` / `hide` / `enable` / `disable`): blendet
+  den Button ein/aus oder schaltet ihn aktiv/inaktiv, ohne das Binding zu verändern.
+- **`msg.ui.patch`**: überschreibt beliebige Felder der Knoten-Definition.
+- **Nicht erkannte / fachfremde Messages:** werden **unverändert durchgereicht**
+  (Pass-Through), ohne Fehlerausgabe.
 
 ## Output
 
-| Event | `msg.ui`-Felder |
-|---|---|
-| `click` | `event: "click"`, `sourceId`, `clientId` |
+`ui-button` hat **einen Output-Port**. Sobald der Nutzer den Button klickt (und
+der Button nicht deaktiviert ist), emittiert der Knoten:
 
-Der Output-Port wird typischerweise mit einem `ui-action`-Knoten verdrahtet, der die gewünschte UI-Aktion ausführt.
+| Event | Wann | Erzeugte `msg.ui`-Felder | Intention |
+|---|---|---|---|
+| `click` | Nutzer klickt den Button | `event: "click"`, `sourceId`, `appId`, `clientId` | den Flow über die Nutzeraktion informieren; Folgeknoten entscheiden über die Reaktion |
+
+`msg.ui.params` ist bei `click` leer — der Button transportiert keine
+event-eigenen Nutzlast-Daten. Weitere Daten (z. B. den aktuellen Formularstand)
+liefert der Flow-Autor über verdrahtete `ui-store`- oder `ui-query`-Knoten.
+
+**Antizipierte Wiring-Szenarien:**
+
+- `click` → `ui-action` (Navigate zu einer Route).
+- `click` → `function` → HTTP-Request → `ui-store` (Daten speichern).
+- `click` → `ui-action` (Dialog öffnen).
+
+## Theming
+
+`ui-button` trägt eine echte **Ebene-2-Variante** (`variant`). Die Variante
+beschreibt die semantische Rolle des Buttons; das Rendering-Backend (heute
+Shoelace) bildet sie auf seine Web-Component-Props ab. Das App-weite Theme
+(Design-Tokens am `ui-app`-Knoten) bestimmt, wie `primary`, `danger` usw.
+konkret aussehen. Weitere Backends folgen demselben semantischen Contract ohne
+Änderung am Knoten-Modell. Details: [theming.md](../concepts/theming.md).
 
 ## Besonderheiten
 
-- Vor P20a referenzierte der Button eine Action-ID über das `action`-Feld. Dieses Feld ist deprecated, wird aber noch für bestehende Flows akzeptiert.
-- Welche Layout-Child-Props sichtbar sind, hängt vom gewählten Mount ab. Details dazu stehen in [layout.md](../concepts/layout.md).
+- **`action`-Feld (deprecated).** In früheren Versionen referenzierte der Button
+  eine Action-ID direkt über das `action`-Feld. Dieses Feld wird vom Schema noch
+  akzeptiert (Abwärtskompatibilität mit bestehenden Flows), gilt aber als
+  veraltet. Neue Flows verdrahten stattdessen den Output-Port mit dem
+  gewünschten `ui-action`-Knoten.
+
+## Referenzen
+
+- [layout.md](../concepts/layout.md) — Presets und Child-Platzierungs-Felder
+- [theming.md](../concepts/theming.md) — Variant-Vokabular (`BUTTON_VARIANTS`) und Backends
+- [events.md](../concepts/events.md) — Event-Format und Output-Ports
+- [inputs.md](../concepts/inputs.md) — `msg.payload` / `msg.ui.patch` / Component-Ops
+- [editor.md](../concepts/editor.md) — Editor-Typen (Variant-SelectBox, Mount-Baum)
+- [`ui-action`](../behavior/ui-action.md) — typische Folgeknoten nach einem Click
+
+## Offene Punkte
+
+- **Größe (`size`), Outline-Modus, Icon-Integration und Link-Ziel (`href`)** sind
+  konzeptionell vorgesehen, aber noch nicht als commitierte Schema-Felder
+  modelliert. Sie erscheinen erst im Schema, wenn der Contract festgelegt ist.

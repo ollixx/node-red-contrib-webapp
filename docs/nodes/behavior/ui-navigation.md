@@ -1,48 +1,50 @@
 # `ui-navigation`
 
-**Deprecated**
+> **Anforderungs-Dokument.** Es beschreibt das *gewünschte* Verhalten des Knotens
+> (den Vertrag), nicht den jeweils aktuellen Implementierungsstand. Abweichungen
+> der Implementierung gehören **nicht** hierher — sie werden im Code/Test
+> aufgedeckt und behoben.
 
-## Zusammenfassung
+## Zweck
 
-Repräsentiert im aktuellen MVP eine benannte Navigation zu einer Zielroute. Fachlich ist Navigation jedoch ein Spezialfall von `ui-action`.
+**Deprecated.** `ui-navigation` ist ein **Alias für [`ui-action`](ui-action.md)
+vom Typ `navigate`**. Navigation ist fachlich ein Spezialfall einer Action und
+kein eigenständiges Verhaltenskonzept — der Knoten besteht nur aus
+Abwärtskompatibilität für bestehende Flows weiter.
 
-Aktuelles MVP-Verhalten:
-- Der Preview-Pfad kann Routenparameter in `to` einsetzen.
-- Bei Navigation wird ein `msg.ui`-Ereignis mit Navigationsmetadaten emittiert.
+**Für neue Flows: [`ui-action`](ui-action.md) mit `actionType: navigate`
+verwenden.** Dort sind die zwei Navigations-Szenarien (verdrahtet mit einer
+`ui-route` vs. `to`-typedInput), das `params`-Modell und die Zieladressierung
+ausführlich beschrieben.
 
-## Abhängigkeiten
+## Einordnung
 
-**Parent-Knoten:**
-- `ui-app`: Pflicht. Die App ist der Routing-Kontext für Navigation-Events.
+- **Parent:** genau eine `ui-app`. Die App ist der Routing-Kontext für die Navigation.
+- **Kinder:** keine.
+- **Rolle zur Laufzeit:** verhält sich wie eine `ui-action` vom Typ `navigate`.
 
-**Gemeinsam genutzte Services und Komponenten:**
-- Spezialfall von `ui-action` vom Typ `navigate`
+## Felder
 
-## Editor
+| Feld | Label | Editor-Typ | Pflicht | Beschreibung |
+|---|---|---|---|---|
+| `name` | „Name" | Textfeld | optional | Anzeigename im Editor und in Auswahllisten. Default: fortlaufend `Navigation N`. |
+| `parent` | „App" | Node-Picker-Dialog (Preset Apps) | **ja** | Die Parent-`ui-app`. |
+| `to` | „Zielpfad" | Textfeld | **ja** | Der Ziel-Routenpfad (entspricht `to` einer `navigate`-Action). |
 
-**Pflichtfelder:**
-- `parent`: Auswahl einer `ui-app`. Wird als SelectBox angezeigt; bei mehr als 20 Einträgen als filterbarer Dialog.
-- `to`
+## Input / Output
 
-**Optionale Felder:**
-- `name`: Node-RED-Anzeigefeld. Wird bei der Darstellung des Knotens und in Auswahlfeldern angezeigt.
-  - Default: `"Navigation N"` (fortlaufende Nummer aller ui-navigation-Knoten, startend bei 1)
+Format und Verhalten identisch mit [`ui-action`](ui-action.md) vom Typ
+`navigate`. Nicht erkannte / fachfremde Messages werden **unverändert
+durchgereicht** (Pass-Through), Framework-Fehler gemäß
+[logs-errors.md](../concepts/logs-errors.md) gemeldet.
 
-## Input
+## Referenzen
 
-Wird von der Runtime ausgelöst wenn ein Client-Event diese Navigation referenziert. Format identisch mit `ui-action` Input.
+- [`ui-action`](ui-action.md) — der kanonische Knoten (Typ `navigate`)
+- [actions.md](../concepts/actions.md) — Navigation als Action
+- [messages.md](../concepts/messages.md) — Navigations-Format
 
-## Output
+## Offene Punkte
 
-```
-msg.ui.event       = "navigate"
-msg.ui.navigate.to = "/customers/42"
-msg.ui.params      = { id: "42" }
-msg.ui.clientId    = <auslösender Client>
-```
-
-## Besonderheiten
-
-- Navigation sollte langfristig nicht als eigenständiges Verhaltenskonzept neben `ui-action` bestehen bleiben.
-- Sinnvoller ist, `ui-navigation` als MVP-kompatiblen Alias oder Editor-Helfer für `ui-action` vom Typ `navigate` zu behandeln.
-- Offen ist nur noch, ob dafür weiterhin ein eigener Komfort-Knoten im Editor sinnvoll ist oder ob der Knoten ganz in `ui-action` aufgeht.
+- Offen ist nur noch, ob langfristig ein eigener Komfort-Knoten im Editor sinnvoll
+  bleibt oder ob `ui-navigation` ganz in `ui-action` aufgeht.
