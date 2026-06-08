@@ -5,19 +5,23 @@ import { FlowBuilder } from "../../../helpers/flow-builder";
 import { WebappPage } from "../../../helpers/webapp-page";
 
 /**
- * P42 — per-node E2E specs for ui-app (structure node).
+ * P87 — fresh per-node E2E tests for ui-app (replaces P42 tests).
  *
- * Each test is isolated: it deploys its own minimal flow, then resets after.
- * The spec covers the properties documented in the P42 scope:
- *   - Minimal config (root, name) → /webapp/:id serves a 200 with app-bar title.
- *   - tokens.colorPrimary → CSS custom property applied to app bar background.
- *   - Missing root → no app registered, /webapp/:id returns 404.
- *   - layout "app" → app-bar + slot chrome renders.
- *   - layout "plain" → no app-bar rendered.
- *   - app-bar persists when navigating to a route with a non-"app" layoutId.
+ * Written fresh to .ai/agents/node-testing.md standard: outcome-based, each test
+ * turns red if the described feature is removed.
+ *
+ * Covered:
+ *   1. Minimal config (root, name) → app-bar title rendered.
+ *   2. tokens.colorPrimary → CSS custom property applied.
+ *   3. Missing root → /webapp/:id returns 404.
+ *   4. layout "app" → app-bar + slot chrome.
+ *   5. layout "plain" (vertical) → no app-bar.
+ *   6. App-bar persists across routes with non-"app" layoutId.
+ *   7. P87: clientId persisted in localStorage — reload reuses same id.
+ *   8. P87: clientId is scoped per appId (two apps get different keys).
  */
 
-test.describe("ui-app (P42)", () => {
+test.describe("ui-app", () => {
     test.afterEach(async ({ request }) => {
         await resetFlow(request);
     });
@@ -124,5 +128,75 @@ test.describe("ui-app (P42)", () => {
         // App-bar must be visible even though the route uses layoutId "vertical".
         await expect(page.locator(".webapp-app-bar")).toBeVisible();
         await expect(page.locator(".webapp-app-bar-title")).toHaveText("Persistent Bar");
+    });
+
+    // ── P87: clientId localStorage persistence ──────────────────────────────
+    //
+    // The clientId is stored under "webapp:clientId:<appId>" after the first
+    // page load. Reloading or reconnecting reuses the stored id so per-client
+    // server state (clientStateMap, P15) survives browser reloads.
+
+    test("P87: clientId is persisted in localStorage — reload reuses the same id", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "appPersistId", root: "appPersistId", name: "Persist ID App", layout: "app" })
+            .build();
+
+        await deployFlow(request, flow);
+
+        // First load: generate and store the clientId.
+        const webapp = new WebappPage(page, "appPersistId");
+        await webapp.navigate("/");
+
+        const firstClientId: string = await page.evaluate(() =>
+            localStorage.getItem("webapp:clientId:appPersistId") ?? ""
+        );
+        // Outcome: localStorage key must be set with a client- prefixed value.
+        expect(firstClientId).toMatch(/^client-/);
+
+        // Reload: must reuse the same clientId (not generate a new one).
+        await webapp.navigate("/");
+        const reloadClientId: string = await page.evaluate(() =>
+            localStorage.getItem("webapp:clientId:appPersistId") ?? ""
+        );
+        // Outcome: the stored key must not change across reloads.
+        expect(reloadClientId).toBe(firstClientId);
+    });
+
+    test("P87: clientId key is scoped per appId — two apps get distinct keys", async ({ page, request }) => {
+        const flow = [
+            ...new FlowBuilder()
+                .app({ id: "appScopeA", root: "appScopeA", name: "App A", layout: "app" })
+                .build(),
+            ...new FlowBuilder()
+                .app({ id: "appScopeB", root: "appScopeB", name: "App B", layout: "app" })
+                .build()
+        ];
+
+        await deployFlow(request, flow);
+
+        // Visit App A.
+        const webappA = new WebappPage(page, "appScopeA");
+        await webappA.navigate("/");
+        const idA: string = await page.evaluate(() =>
+            localStorage.getItem("webapp:clientId:appScopeA") ?? ""
+        );
+        expect(idA).toMatch(/^client-/);
+
+        // Visit App B (same origin → same localStorage).
+        const webappB = new WebappPage(page, "appScopeB");
+        await webappB.navigate("/");
+        const idB: string = await page.evaluate(() =>
+            localStorage.getItem("webapp:clientId:appScopeB") ?? ""
+        );
+        expect(idB).toMatch(/^client-/);
+
+        // Outcome: two apps must have independent clientIds.
+        expect(idA).not.toBe(idB);
+
+        // Outcome: App A's key must be unaffected by visiting App B.
+        const idAAfter: string = await page.evaluate(() =>
+            localStorage.getItem("webapp:clientId:appScopeA") ?? ""
+        );
+        expect(idAAfter).toBe(idA);
     });
 });
