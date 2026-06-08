@@ -2238,3 +2238,13 @@ phases:
         the compiled AppModel always holds a resolved string; only the node-definition schema and
         editor accept bindings. Node-testing.md fresh-test rule applied: old P42 spec replaced.
       cost: "session a836ad36b0c5a3a7d, 14m"
+
+  - id: P90
+    title: "ui-alert Icon-Feld + Icon-Logik (VORGEHENSENTSCHEIDUNG) — Option 1: Icon-Auswahl nach Severity + „ohne Icon\", Default = Severity-Wert. Option 2: Alert mit 4 Slots"
+    status: done
+    dependencies: [P69]
+    summary:
+      delivered: "Added `icon` field to ui-alert (Option 1: severity-derived auto icon + explicit override); rendered via Shoelace `icon` slot in webapp-serializer; wired through schema, mapConfig, node-set, and editor SelectBox."
+      stats: "9 files changed; 16 unit tests (mapConfig + serializer); 11 E2E outcome tests replacing P43 presence-only tests; 1 test catalogue .md added"
+      notes: "Chose Option 1 (simpler, self-contained) over Option 2 (slot infrastructure would touch mount/child architecture). Default when field absent = no icon (backward-compat)."
+      cost: "session afe669c9a7b58ab32, 13m"
