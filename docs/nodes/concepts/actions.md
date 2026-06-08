@@ -120,13 +120,13 @@ Wenn das Ziel erst zur Laufzeit bekannt ist — z.B. weil es aus den Daten des a
 eigene Node-ID als Ziel setzt). Typischer Anwendungsfall: Das Event enthält eine
 `sourceId`, die als Ziel der Reaktion genutzt wird.
 
-> **`target` ist das kanonische (Schema-)Feld.** Die Runtime-Handler akzeptieren
-> zusätzlich `targetId` als Back-Compat-Alias, aber `actionMessageCommandSchema`
-> ist `.strict()` und kennt nur `type/to/params/part/target` — ein
-> `msg.ui.action.targetId` fällt also durch die Schema-Validierung. Im Zweifel
-> `target` verwenden. (Die Schema/Runtime-Diskrepanz ist bekannt.)
+> **`target` ist das einzige kanonische Feld (P79).** `actionMessageCommandSchema`
+> ist `.strict()` und kennt nur `type/to/params/part/target`. Die Runtime-Handler
+> lesen ausschließlich `target` — der frühere `targetId`-Alias wurde entfernt,
+> damit Schema und Runtime denselben Vertrag teilen. Ein `msg.ui.action.targetId`
+> wird ignoriert und fällt durch die Schema-Validierung; immer `target` verwenden.
 
-> **Zustellung via `receive()` (P60 / ADR 0007 §3):** Ein `target`/`targetId`-Override
+> **Zustellung via `receive()` (P60 / ADR 0007 §3):** Ein `target`-Override
 > in der `msg` adressiert genau diesen Knoten; `ui-action` stellt die Aktion an
 > dessen **Input** via `targetNode.receive()` zu (nicht `send()`, das am Output
 > injizierte — der ADR 0007 §Context-3-Bug). Damit ist der Override-Pfad mit dem

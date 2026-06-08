@@ -298,9 +298,18 @@ describe("P53: ui-action interaction verb vocabulary", () => {
     it("msg.ui.action overrides win for type / target / part", () => {
         const command = buildActionCommand(
             { type: "ui-action", id: "a", actionType: "show", target: "static" },
-            { ui: { action: { type: "hide", targetId: "dynamic", part: "branchX" } } }
+            { ui: { action: { type: "hide", target: "dynamic", part: "branchX" } } }
         );
         expect(command).toEqual({ type: "hide", to: undefined, target: "dynamic", part: "branchX" });
+    });
+
+    it("P79: a bare msg.ui.action.targetId does NOT override target (alias removed; falls back to config target)", () => {
+        const command = buildActionCommand(
+            { type: "ui-action", id: "a", actionType: "show", target: "static" },
+            { ui: { action: { type: "hide", targetId: "dynamic", part: "branchX" } } }
+        );
+        // `targetId` is ignored — `target` stays the config value "static".
+        expect(command).toEqual({ type: "hide", to: undefined, target: "static", part: "branchX" });
     });
 
     it("an open command with target+part is pushed verbatim to the client", () => {

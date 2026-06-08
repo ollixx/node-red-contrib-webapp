@@ -2284,7 +2284,7 @@ function buildActionCommand(actionDefinition, msg, node) {
         type: String(type),
         to,
         params: mergedParams && Object.keys(mergedParams).length > 0 ? mergedParams : undefined,
-        target: override.target || override.targetId || (actionDefinition && actionDefinition.target) || undefined,
+        target: override.target || (actionDefinition && actionDefinition.target) || undefined,
         part: override.part || (actionDefinition && actionDefinition.part) || undefined
     };
 }
@@ -2996,7 +2996,7 @@ function viewNodePatchInputHandler(node, msg, send, done) {
 //
 // Resolution rules (ADR 0007 §2):
 //   - command.target resolves to THE NODE'S OWN id (the wire/selection is the
-//     addressing). An explicit msg.ui.action.target / .targetId OVERRIDES it.
+//     addressing). An explicit msg.ui.action.target OVERRIDES it.
 //   - `to` / `part` ride along from msg.ui.action.
 //   - A verb the node does NOT own → pure pass-through (no push, no swallow),
 //     so a chain of wired targets each handle the verbs they own (ADR 0007 §2,
@@ -3032,12 +3032,12 @@ const INTERACTION_VERBS_BY_TYPE = {
 };
 
 // Build the interaction command for a target node from msg.ui.action. The target
-// defaults to the node's own id; an explicit msg.ui.action.target / .targetId wins.
+// defaults to the node's own id; an explicit msg.ui.action.target wins.
 function buildInteractionCommand(node, uiAction) {
     const type = String(uiAction.type);
     const explicitTarget = typeof uiAction.target === "string" && uiAction.target
         ? uiAction.target
-        : (typeof uiAction.targetId === "string" && uiAction.targetId ? uiAction.targetId : undefined);
+        : undefined;
     return {
         type,
         target: explicitTarget || node.id,
@@ -3284,7 +3284,7 @@ function collectConfiguredTargetIds(definition) {
 //     picker stores a LIST of target ids in `targets`; on input ui-action
 //     delivers the enriched message to EACH selected target via receive().
 //
-// An explicit msg.ui.action.target / .targetId override is unified with the
+// An explicit msg.ui.action.target override is unified with the
 // picker path: it too is delivered via receive() to exactly that node id.
 //
 // Backward-compat: old flows relying on the singular `target` config field with
@@ -3310,14 +3310,12 @@ function actionInputHandler(node, msg, send, done) {
         })
         : msg;
 
-    // Explicit msg-level override (ADR 0007 §3, unified): msg.ui.action.target /
-    // .targetId names a single node id and is delivered via receive() to exactly
+    // Explicit msg-level override (ADR 0007 §3, unified): msg.ui.action.target
+    // names a single node id and is delivered via receive() to exactly
     // that node — NOT via send() (the ADR 0007 §Context-3 bug).
     const override = uiMsg && uiMsg.action && typeof uiMsg.action === "object" ? uiMsg.action : undefined;
     const overrideTargetId = override
-        ? (typeof override.targetId === "string" && override.targetId
-            ? override.targetId
-            : (typeof override.target === "string" && override.target ? override.target : undefined))
+        ? (typeof override.target === "string" && override.target ? override.target : undefined)
         : undefined;
 
     // Wireless picker (+ legacy singular `target`) → deliver to each selected
