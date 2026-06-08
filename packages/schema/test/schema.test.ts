@@ -1746,3 +1746,100 @@ describe("P71: component fields — size, outline, button link mode + slots", ()
         });
     });
 });
+
+describe("P89: ui-route title as bindable field", () => {
+    it("accepts a plain string title (back-compat)", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-route",
+            id: "r1",
+            uiId: "r1",
+            path: "/customers",
+            layout: "vertical",
+            title: "Customers"
+        });
+        expect(result.success).toBe(true);
+    });
+
+    it("accepts a literal binding for title", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-route",
+            id: "r2",
+            uiId: "r2",
+            path: "/customers",
+            layout: "vertical",
+            title: { kind: "literal", value: "Customers" }
+        });
+        expect(result.success).toBe(true);
+    });
+
+    it("accepts a state binding for title", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-route",
+            id: "r3",
+            uiId: "r3",
+            path: "/customers",
+            layout: "vertical",
+            title: { kind: "state", path: "app.title" }
+        });
+        expect(result.success).toBe(true);
+    });
+
+    it("accepts a store binding for title", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-route",
+            id: "r4",
+            uiId: "r4",
+            path: "/customers",
+            layout: "vertical",
+            title: { kind: "store", path: "myStoreId" }
+        });
+        expect(result.success).toBe(true);
+    });
+
+    it("accepts a routeParam binding for title", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-route",
+            id: "r5",
+            uiId: "r5",
+            path: "/items/:id",
+            layout: "vertical",
+            title: { kind: "routeParam", path: "id" }
+        });
+        expect(result.success).toBe(true);
+    });
+
+    it("accepts a msg binding for title", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-route",
+            id: "r6",
+            uiId: "r6",
+            path: "/customers",
+            layout: "vertical",
+            title: { kind: "msg", path: "payload.title" }
+        });
+        expect(result.success).toBe(true);
+    });
+
+    it("accepts no title (optional)", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-route",
+            id: "r7",
+            uiId: "r7",
+            path: "/customers",
+            layout: "vertical"
+        });
+        expect(result.success).toBe(true);
+    });
+
+    it("rejects a binding with no path (dynamic kind without path)", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-route",
+            id: "r8",
+            uiId: "r8",
+            path: "/customers",
+            layout: "vertical",
+            title: { kind: "state" }
+        });
+        expect(result.success).toBe(false);
+    });
+});
