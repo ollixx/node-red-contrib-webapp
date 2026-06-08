@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { deployFlow, injectMessage, resetFlow } from "../../../helpers/admin-api";
+import { deployFlow, resetFlow } from "../../../helpers/admin-api";
 import { FlowBuilder } from "../../../helpers/flow-builder";
 import { WebappPage } from "../../../helpers/webapp-page";
 
@@ -10,7 +10,9 @@ import { WebappPage } from "../../../helpers/webapp-page";
  * Covers:
  *   - rendering: sl-textarea is visible with label attribute.
  *   - events: sl-change → POST /event { event:"change", params:{ value: string } }.
- *   - input port: inject { value: "hello" } → sl-textarea value attribute updates.
+ *
+ * P82: inject → value update behaviour is covered by classic unit tests
+ * (packages/runtime/test/p82-input-nodes-behaviour.test.ts).
  */
 
 test.describe("ui-textarea (P44)", () => {
@@ -79,24 +81,4 @@ test.describe("ui-textarea (P44)", () => {
         expect((body.params as Record<string, unknown>).value).toBe("My text");
     });
 
-    // ─── input port — state update ────────────────────────────────────────────
-
-    test("inject 'Updated notes' → sl-textarea value updates after navigate", async ({ page, request }) => {
-        const flow = new FlowBuilder()
-            .app({ id: "taApp4", root: "taApp4" })
-            .node("ui-textarea", { id: "taNode4", label: "Notes" })
-            .withInjectNode("taInj4", "taNode4", "Updated notes")
-            .build();
-
-        await deployFlow(request, flow);
-
-        const webapp = new WebappPage(page, "taApp4");
-        await webapp.navigate("/");
-
-        await injectMessage(request, "taInj4");
-
-        // Re-navigate picks up the now-patched in-memory definition.
-        await webapp.navigate("/");
-        await expect(page.locator("sl-textarea")).toHaveAttribute("value", "Updated notes");
-    });
 });

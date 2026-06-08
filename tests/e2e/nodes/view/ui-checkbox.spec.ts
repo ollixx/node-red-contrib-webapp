@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { deployFlow, injectMessage, resetFlow } from "../../../helpers/admin-api";
+import { deployFlow, resetFlow } from "../../../helpers/admin-api";
 import { FlowBuilder } from "../../../helpers/flow-builder";
 import { WebappPage } from "../../../helpers/webapp-page";
 
@@ -11,7 +11,9 @@ import { WebappPage } from "../../../helpers/webapp-page";
  *   - rendering: sl-checkbox is visible with label text.
  *   - disabled renders sl-checkbox[disabled].
  *   - events: sl-change → POST /event { event:"change", params:{ checked: bool } }.
- *   - input port: inject { value: true } → sl-checkbox[checked].
+ *
+ * P82: inject → value update behaviour is covered by classic unit tests
+ * (packages/runtime/test/p82-input-nodes-behaviour.test.ts).
  */
 
 test.describe("ui-checkbox (P44)", () => {
@@ -80,25 +82,4 @@ test.describe("ui-checkbox (P44)", () => {
         expect((body.params as Record<string, unknown>).checked).toBe(true);
     });
 
-    // ─── input port — state update ────────────────────────────────────────────
-
-    test("inject true → sl-checkbox renders checked after SSE snapshot", async ({ page, request }) => {
-        const flow = new FlowBuilder()
-            .app({ id: "cbApp4", root: "cbApp4" })
-            .node("ui-checkbox", { id: "cbNode4", label: "Agreed" })
-            .withInjectNode("cbInj4", "cbNode4", true)
-            .build();
-
-        await deployFlow(request, flow);
-
-        const webapp = new WebappPage(page, "cbApp4");
-        await webapp.navigate("/");
-
-        // Fire the inject and then re-navigate so the snapshot reflects the patched value.
-        await injectMessage(request, "cbInj4");
-
-        // Re-navigate picks up the now-patched in-memory definition (no SSE needed).
-        await webapp.navigate("/");
-        await expect(page.locator("sl-checkbox[checked]")).toBeVisible();
-    });
 });

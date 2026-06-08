@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { deployFlow, injectMessage, resetFlow } from "../../../helpers/admin-api";
+import { deployFlow, resetFlow } from "../../../helpers/admin-api";
 import { FlowBuilder } from "../../../helpers/flow-builder";
 import { WebappPage } from "../../../helpers/webapp-page";
 
@@ -12,7 +12,9 @@ import { WebappPage } from "../../../helpers/webapp-page";
  * Covers:
  *   - rendering: sl-input[type=date] is visible with label attribute.
  *   - events: sl-change → POST /event { event:"change", params:{ value: string } }.
- *   - input port: inject { value: "2024-06-01" } → sl-input value attribute updates.
+ *
+ * P82: inject → value update behaviour is covered by classic unit tests
+ * (packages/runtime/test/p82-input-nodes-behaviour.test.ts).
  */
 
 test.describe("ui-datepicker (P44)", () => {
@@ -81,24 +83,4 @@ test.describe("ui-datepicker (P44)", () => {
         expect((body.params as Record<string, unknown>).value).toBe("2024-06-01");
     });
 
-    // ─── input port — state update ────────────────────────────────────────────
-
-    test("inject '2025-12-31' → sl-input[type=date] value updates after navigate", async ({ page, request }) => {
-        const flow = new FlowBuilder()
-            .app({ id: "dpApp4", root: "dpApp4" })
-            .node("ui-datepicker", { id: "dpNode4", label: "Due date" })
-            .withInjectNode("dpInj4", "dpNode4", "2025-12-31")
-            .build();
-
-        await deployFlow(request, flow);
-
-        const webapp = new WebappPage(page, "dpApp4");
-        await webapp.navigate("/");
-
-        await injectMessage(request, "dpInj4");
-
-        // Re-navigate picks up the now-patched in-memory definition.
-        await webapp.navigate("/");
-        await expect(page.locator("sl-input[type=date]")).toHaveAttribute("value", "2025-12-31");
-    });
 });
