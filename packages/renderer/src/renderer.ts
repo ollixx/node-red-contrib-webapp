@@ -74,7 +74,7 @@ export interface RenderedInputComponent extends RenderedComponentBase {
 
 /** Generic rendered component for P16x kinds (select, checkbox, radio, etc.). */
 export interface RenderedGenericComponent extends RenderedComponentBase {
-    kind: "select" | "checkbox" | "radio" | "switch" | "textarea" | "datepicker" | "slider" | "alert" | "badge" | "progress" | "breadcrumb" | "tabs" | "accordion" | "menu" | "avatar" | "image" | "list" | "pagination" | "stepper" | "log" | "icon";
+    kind: "select" | "checkbox" | "radio" | "switch" | "textarea" | "datepicker" | "slider" | "alert" | "badge" | "progress" | "breadcrumb" | "tabs" | "accordion" | "menu" | "avatar" | "image" | "list" | "pagination" | "stepper" | "log" | "icon" | "divider";
     value: unknown;
 }
 
@@ -539,6 +539,14 @@ function toRenderedComponent(component: ComponentDefinition, context: ComponentR
                 ...baseComponent,
                 kind: "icon",
                 value: resolvedProps.icon
+            } as RenderedGenericComponent;
+        // P83: divider — static separator, no value binding. Props (orientation,
+        // label) pass through via baseComponent.props.
+        case "divider":
+            return {
+                ...baseComponent,
+                kind: "divider",
+                value: undefined
             } as RenderedGenericComponent;
     }
 }

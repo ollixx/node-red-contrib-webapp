@@ -902,7 +902,9 @@ function toComponentDefinitions(components) {
             "ui-pagination": "pagination",
             "ui-stepper": "stepper",
             // P57: log display node
-            "ui-log": "log"
+            "ui-log": "log",
+            // P83: ui-divider — static separator; renders as sl-divider.
+            "ui-divider": "divider"
         };
         const p16Kind = P16X_KIND_MAP[component.type];
 
@@ -1766,7 +1768,7 @@ function getDefinitionBuckets(appId, definitions) {
         app: matchingApp,
         routes: matchingDefinitions.filter((entry) => entry.type === "ui-route"),
         dialogs: matchingDefinitions.filter((entry) => entry.type === "ui-dialog"),
-        components: matchingDefinitions.filter((entry) => ["ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select", "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider", "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state", "ui-tabs", "ui-accordion", "ui-breadcrumb", "ui-menu", "ui-pagination", "ui-stepper", "ui-avatar", "ui-image", "ui-icon", "ui-list", "ui-log"].includes(entry.type)),
+        components: matchingDefinitions.filter((entry) => ["ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select", "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider", "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state", "ui-tabs", "ui-accordion", "ui-breadcrumb", "ui-menu", "ui-pagination", "ui-stepper", "ui-avatar", "ui-image", "ui-icon", "ui-list", "ui-log", "ui-divider"].includes(entry.type)),
         stores: matchingDefinitions.filter((entry) => entry.type === "ui-store"),
         queries: matchingDefinitions.filter((entry) => entry.type === "ui-query"),
         actions: matchingDefinitions.filter((entry) => entry.type === "ui-action"),
