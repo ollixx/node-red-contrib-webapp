@@ -91,18 +91,13 @@ gültig, wenn:
 | `set` / `patch` / `replace` haben einen `value` | `Store operation '<op>' requires a value.` |
 | ein gesetzter `path` ist nicht leer | `Store operation paths must not be empty.` |
 
-> **Wichtig (Stand heute):** `storeOperationSchema` wird **nur in den Schema-Tests**
-> ausgewertet. Der Runtime-Eingangs-Handler ruft es **nicht** auf — die obigen
-> sprechenden Per-Op-Meldungen werden zur Laufzeit also derzeit **nicht** erzeugt.
-> Siehe „Bekannte Lücke" unten.
-
 **2. Laufzeit-Ebene — Store-Eingangs-Handler (`nodes/webapp.js`).** Was beim
 Empfang einer `msg.ui.store` real passiert:
 
 - `normalizeStoreOperationMessage` akzeptiert die Message nur, wenn `msg.ui.store` ein Objekt ist, `id` zu **diesem** Store passt und `op` ein String ist. Andernfalls gilt sie als „nicht für diesen Store" und wird **unverändert durchgereicht** (kein Fehler).
+- **P80 (implementiert):** Vor `applyStoreOperation` läuft `storeOperationSchema.safeParse(operation)`. Bei Misserfolg → strukturierter Fehler `server.store.invalid-operation` mit der ersten Zod-Meldung (z. B. `Store operation 'set' requires a value.`), `done(err)` — kein Weiterleiten.
 - Fehlt eine aktive `ui-app` → strukturierter Fehler `server.store.no-active-app`, Meldung **„No active ui-app is registered for ui-store updates."** (severity `error`) und `done(err)`.
-- Wirft `applyStoreOperation` (z. B. unbekannte Operation) → `server.store.operation-failed`, Meldung **„ui-store operation failed: \<Ursache\>"** und `done(err)`.
-- `applyStoreOperation` selbst prüft **nicht**, ob `path`/`value` zur Operation passen — eine `set`-Operation ohne `value` läuft heute mit `undefined` durch, statt eine sprechende Meldung zu erzeugen.
+- Wirft `applyStoreOperation` (unerwarteter Fehler nach bestandener Schema-Prüfung) → `server.store.operation-failed`, Meldung **„ui-store operation failed: \<Ursache\>"** und `done(err)`.
 
 **3. Editor-Ebene — `statePath`.** Das Schema verlangt einen nicht-leeren
 `statePath` (`Stores must declare a state path.`); das Editor-Feld ist
@@ -120,26 +115,13 @@ Laufzeitfehler des Stores werden über `reportRuntimeError(node, …)` als
 2. **opt-in** an den/die Client(s) weitergeleitet (pro `ui-app` konfigurierbar, severity-geschwellt) und dort u. a. über [`ui-log`](../feedback/ui-log.md) sichtbar,
 3. zusätzlich über `done(err)` an einen verdrahteten `catch`-Knoten gemeldet.
 
-### Bekannte Lücke
+### Fehler-Codes im Überblick
 
-Die sprechenden Per-Op-Meldungen aus `storeOperationSchema` (`requires a path.`
-/ `requires a value.`) erreichen die Laufzeit nicht. **Empfohlene Verdrahtung:**
-im Store-Eingangs-Handler vor `applyStoreOperation` ein
-`storeOperationSchema.safeParse(operation)` ausführen und bei Misserfolg einen
-strukturierten Fehler melden, z. B.:
-
-```
-reportRuntimeError(node, {
-  severity: "error",
-  code: "server.store.invalid-operation",
-  message: <erste Zod-Fehlermeldung, z.B. "Store operation 'set' requires a value.">,
-  context: { nodeId: node.id, op: `store:${operation.op}` },
-  clientId
-});
-```
-
-So würde dieselbe sprechende Meldung, die heute schon im Contract steht, auch
-zur Laufzeit über den ADR-0006-Pfad sichtbar. (Eingeplant als Roadmap-Phase P80.)
+| Code | Auslöser | Meldung (Beispiel) |
+|---|---|---|
+| `server.store.invalid-operation` | Operation besteht `storeOperationSchema` nicht (fehlendes `path`/`value`, unbekanntes `op`) | `Store operation 'set' requires a value.` |
+| `server.store.no-active-app` | Kein `ui-app`-Knoten registriert | `No active ui-app is registered for ui-store updates.` |
+| `server.store.operation-failed` | `applyStoreOperation` wirft nach bestandener Schema-Prüfung (unerwarteter Fehler) | `ui-store operation failed: <Ursache>` |
 
 ## Lesen, Variante A: `state`-Binding (roher Pfad)
 

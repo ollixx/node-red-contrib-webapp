@@ -113,7 +113,9 @@ describe("P15: clientId routing — store input handler", () => {
         const node = makeStoreNode("store1", "draft");
         const send = vi.fn();
         const done = vi.fn();
-        const msg = makeMsg("store1", "set", { name: "Alice" }, "c1");
+        // P80: use "replace" (replaces whole store root, no path required) so the
+        // operation passes storeOperationSchema validation.
+        const msg = makeMsg("store1", "replace", { name: "Alice" }, "c1");
 
         runtimeNodeRegistry["ui-store"].options.inputHandler(node, msg, send, done);
 
@@ -136,7 +138,8 @@ describe("P15: clientId routing — store input handler", () => {
 
         const node = makeStoreNode("store1", "draft");
         const send = vi.fn();
-        const msg = makeMsg("store1", "set", { name: "Alice" }, "c1");
+        // P80: use "replace" so the operation passes storeOperationSchema validation.
+        const msg = makeMsg("store1", "replace", { name: "Alice" }, "c1");
 
         runtimeNodeRegistry["ui-store"].options.inputHandler(node, msg, send, vi.fn());
 
@@ -155,7 +158,8 @@ describe("P15: clientId routing — store input handler", () => {
 
         const node = makeStoreNode("store1", "draft");
         const send = vi.fn();
-        const msg = makeMsg("store1", "set", { name: "Bob" });
+        // P80: use "replace" so the operation passes storeOperationSchema validation.
+        const msg = makeMsg("store1", "replace", { name: "Bob" });
 
         runtimeNodeRegistry["ui-store"].options.inputHandler(node, msg, send, vi.fn());
 
@@ -178,8 +182,9 @@ describe("P15: clientId routing — store input handler", () => {
 
         const node = makeStoreNode("store1", "draft");
 
-        runtimeNodeRegistry["ui-store"].options.inputHandler(node, makeMsg("store1", "set", { name: "Alice" }, "c1"), vi.fn(), vi.fn());
-        runtimeNodeRegistry["ui-store"].options.inputHandler(node, makeMsg("store1", "set", { name: "Bob" }, "c2"), vi.fn(), vi.fn());
+        // P80: use "replace" so the operation passes storeOperationSchema validation.
+        runtimeNodeRegistry["ui-store"].options.inputHandler(node, makeMsg("store1", "replace", { name: "Alice" }, "c1"), vi.fn(), vi.fn());
+        runtimeNodeRegistry["ui-store"].options.inputHandler(node, makeMsg("store1", "replace", { name: "Bob" }, "c2"), vi.fn(), vi.fn());
 
         const c1 = getClientState(appId, "c1");
         const c2 = getClientState(appId, "c2");

@@ -168,9 +168,11 @@ describe("P31: a flow ui-store update pushes a re-render to the subscribed clien
         const send = vi.fn();
         const done = vi.fn();
 
+        // P80: use "replace" (replaces whole store root, no path required) so the
+        // operation passes storeOperationSchema validation.
         runtimeNodeRegistry["ui-store"].options.inputHandler(
             storeNode(),
-            { ui: { store: { id: "greetingStore", op: "set", value: "Hello live" }, clientId: "c1" } },
+            { ui: { store: { id: "greetingStore", op: "replace", value: "Hello live" }, clientId: "c1" } },
             send,
             done
         );
@@ -190,9 +192,10 @@ describe("P31: a flow ui-store update pushes a re-render to the subscribed clien
         addStreamClient(APP_ID, "ca", a, "/");
         addStreamClient(APP_ID, "cb", b, "/");
 
+        // P80: use "replace" so the operation passes storeOperationSchema validation.
         runtimeNodeRegistry["ui-store"].options.inputHandler(
             storeNode(),
-            { ui: { store: { id: "greetingStore", op: "set", value: "Broadcast" } } },
+            { ui: { store: { id: "greetingStore", op: "replace", value: "Broadcast" } } },
             vi.fn(),
             vi.fn()
         );
@@ -359,9 +362,10 @@ describe("P31: clientId targeting — a push to one client does not reach anothe
         addStreamClient(APP_ID, "c1", r1, "/");
         addStreamClient(APP_ID, "c2", r2, "/");
 
+        // P80: use "replace" so the operation passes storeOperationSchema validation.
         runtimeNodeRegistry["ui-store"].options.inputHandler(
             storeNode(),
-            { ui: { store: { id: "greetingStore", op: "set", value: "OnlyForC1" }, clientId: "c1" } },
+            { ui: { store: { id: "greetingStore", op: "replace", value: "OnlyForC1" }, clientId: "c1" } },
             vi.fn(),
             vi.fn()
         );
