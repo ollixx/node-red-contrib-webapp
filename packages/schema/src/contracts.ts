@@ -66,6 +66,89 @@ export const bindingSchema = z
 
 export type BindingDefinition = z.infer<typeof bindingSchema>;
 
+/**
+ * P69 — Icon system.
+ *
+ * Icon values are backend-neutral: an icon is identified by a `name` within an
+ * optional `library`. When the library is omitted, the renderer falls back to
+ * {@link DEFAULT_ICON_LIBRARY} — the vendored Bootstrap-Icons set that ships with
+ * the Shoelace assets (ADR 0008). A backend other than Shoelace is free to map
+ * the same `{ library, name }` pair onto its own icon mechanism (ADR 0002).
+ */
+export const DEFAULT_ICON_LIBRARY = "default";
+
+/** A literal icon value: `{ library?, name }`. */
+export const iconValueSchema = z.object({
+    library: z.string().min(1, "Icon library names must not be empty.").optional(),
+    name: z.string().min(1, "Icon names must not be empty.")
+});
+
+export type IconValue = z.infer<typeof iconValueSchema>;
+
+/**
+ * The shape stored on a node's icon field. It is binding-capable (P67): it may be
+ *  - a bare string (back-compat: a plain icon name, or the `library:name`
+ *    shorthand),
+ *  - a literal `{ library?, name }` icon value, or
+ *  - a dynamic {@link bindingSchema} binding (state/query/msg/store/…), so the
+ *    icon can be driven at runtime.
+ *
+ * A literal icon value is distinguished from a binding by the presence of a
+ * `name` field (icon value) vs. a `kind` field (binding).
+ */
+export const iconFieldSchema = z.union([
+    z.string().min(1, "Icon names must not be empty."),
+    iconValueSchema,
+    bindingSchema
+]);
+
+export type IconField = z.infer<typeof iconFieldSchema>;
+
+/**
+ * Normalise any accepted *literal* icon representation into a canonical
+ * `{ library, name }` value with the library always present. Returns `undefined`
+ * for empty/nullish input. Dynamic bindings (objects carrying `kind`) are not
+ * literal values and are returned as `undefined` here; callers resolve the
+ * binding first, then normalise the result.
+ *
+ * Accepts:
+ *  - `"home"`               → `{ library: DEFAULT_ICON_LIBRARY, name: "home" }`
+ *  - `"lucide:user"`        → `{ library: "lucide", name: "user" }`
+ *  - `{ name: "check" }`    → `{ library: DEFAULT_ICON_LIBRARY, name: "check" }`
+ *  - `{ library, name }`    → unchanged
+ */
+export function normalizeIconValue(input: unknown): IconValue | undefined {
+    if (input === undefined || input === null) {
+        return undefined;
+    }
+
+    if (typeof input === "string") {
+        const trimmed = input.trim();
+        if (trimmed.length === 0) {
+            return undefined;
+        }
+
+        const sep = trimmed.indexOf(":");
+        if (sep > 0 && sep < trimmed.length - 1) {
+            return { library: trimmed.slice(0, sep), name: trimmed.slice(sep + 1) };
+        }
+
+        return { library: DEFAULT_ICON_LIBRARY, name: trimmed };
+    }
+
+    if (typeof input === "object") {
+        const obj = input as Record<string, unknown>;
+        if (typeof obj.name === "string" && obj.name.length > 0) {
+            const library = typeof obj.library === "string" && obj.library.length > 0
+                ? obj.library
+                : DEFAULT_ICON_LIBRARY;
+            return { library, name: obj.name };
+        }
+    }
+
+    return undefined;
+}
+
 export const slotDefinitionSchema = z.object({
     name: regionNameSchema,
     title: z.string().min(1, "Slot titles must not be empty.").optional()
@@ -361,7 +444,9 @@ export const componentKindSchema = z.enum([
     "pagination",
     "stepper",
     // P57: log display node
-    "log"
+    "log",
+    // P69: icon display node
+    "icon"
 ]);
 
 /**

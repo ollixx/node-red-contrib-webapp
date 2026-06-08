@@ -12,6 +12,7 @@
                 srcPath: { value: "" },
                 src: { value: null },
                 initials: { value: "" },
+                icon: { value: "" },
                 alt: { value: "" },
                 size: { value: "md" },
                 shape: { value: "circle" },
@@ -35,6 +36,7 @@
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
                 common.installLayoutChildPropRows().call(this);
+                common.installIconField("#node-input-icon", { title: "Avatar-Icon auswählen" });
             }
         });
     })();
@@ -45,6 +47,7 @@
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <div class="form-row"><label for="node-input-srcPath">Src Path</label><input type="text" id="node-input-srcPath" placeholder="state.path.to.avatarUrl"></div>
     <div class="form-row"><label for="node-input-initials">Fallback Initials</label><input type="text" id="node-input-initials" placeholder="e.g. JD"></div>
+    <div class="form-row"><label for="node-input-icon">Fallback Icon</label><input type="text" id="node-input-icon" placeholder="z. B. person oder lucide:user"></div>
     <div class="form-row"><label for="node-input-alt">Alt Text</label><input type="text" id="node-input-alt"></div>
     <div class="form-row"><label for="node-input-size">Size</label>
         <select id="node-input-size">

@@ -74,7 +74,7 @@ export interface RenderedInputComponent extends RenderedComponentBase {
 
 /** Generic rendered component for P16x kinds (select, checkbox, radio, etc.). */
 export interface RenderedGenericComponent extends RenderedComponentBase {
-    kind: "select" | "checkbox" | "radio" | "switch" | "textarea" | "datepicker" | "slider" | "alert" | "badge" | "progress" | "breadcrumb" | "tabs" | "accordion" | "menu" | "avatar" | "list" | "pagination" | "stepper" | "log";
+    kind: "select" | "checkbox" | "radio" | "switch" | "textarea" | "datepicker" | "slider" | "alert" | "badge" | "progress" | "breadcrumb" | "tabs" | "accordion" | "menu" | "avatar" | "list" | "pagination" | "stepper" | "log" | "icon";
     value: unknown;
 }
 
@@ -527,6 +527,14 @@ function toRenderedComponent(component: ComponentDefinition, context: ComponentR
                 ...baseComponent,
                 kind: "log",
                 value: undefined
+            } as RenderedGenericComponent;
+        // P69: icon — the icon value (literal or resolved binding) is carried in
+        // resolvedProps.icon; the serializer renders it as <sl-icon>.
+        case "icon":
+            return {
+                ...baseComponent,
+                kind: "icon",
+                value: resolvedProps.icon
             } as RenderedGenericComponent;
     }
 }

@@ -1398,6 +1398,239 @@
         RED.nodes.registerType(type, withEventOutputs(definition, availableEvents));
     }
 
+    // ── P69: Icon picker ────────────────────────────────────────────────────
+    // The icon field stores a backend-neutral value as a string: a bare icon
+    // name (default library) or the "library:name" shorthand. The picker reuses
+    // the P68 dialog chrome and adds an icon preview grid, a contains-search over
+    // the icon name, and a library filter. Default-library previews use the
+    // vendored Bootstrap SVGs served statically; other libraries fall back to a
+    // name-only tile when no basePath is known.
+
+    const ICON_DEFAULT_LIBRARY = "default";
+    const ICON_MANIFEST_URL = "webapp/icons/manifest";
+    const ICON_DEFAULT_BASE_PATH = "resources/node-red-contrib-webapp/shoelace/assets/icons";
+    let iconManifestCache = null;
+
+    // Parse a stored icon string into { library, name }. Empty → null.
+    function parseIconValue(value) {
+        if (value === undefined || value === null) {
+            return null;
+        }
+        const text = String(value).trim();
+        if (text.length === 0) {
+            return null;
+        }
+        const sep = text.indexOf(":");
+        if (sep > 0 && sep < text.length - 1) {
+            return { library: text.slice(0, sep), name: text.slice(sep + 1) };
+        }
+        return { library: ICON_DEFAULT_LIBRARY, name: text };
+    }
+
+    // Serialise { library, name } back to the stored string form.
+    function formatIconValue(parsed) {
+        if (!parsed || !parsed.name) {
+            return "";
+        }
+        if (!parsed.library || parsed.library === ICON_DEFAULT_LIBRARY) {
+            return parsed.name;
+        }
+        return parsed.library + ":" + parsed.name;
+    }
+
+    function iconPreviewUrl(library, name, basePaths) {
+        const base = (library && basePaths && basePaths[library])
+            ? basePaths[library]
+            : (library === ICON_DEFAULT_LIBRARY || !library ? ICON_DEFAULT_BASE_PATH : null);
+        return base ? (base + "/" + name + ".svg") : null;
+    }
+
+    function loadIconManifest(callback) {
+        if (iconManifestCache) {
+            callback(iconManifestCache);
+            return;
+        }
+        $.getJSON(ICON_MANIFEST_URL).done(function (data) {
+            iconManifestCache = (data && Array.isArray(data.libraries)) ? data : { libraries: [] };
+            callback(iconManifestCache);
+        }).fail(function () {
+            callback({ libraries: [] });
+        });
+    }
+
+    function openIconPickerDialog(options) {
+        const opts = options || {};
+        const current = parseIconValue(opts.value);
+
+        const $overlay = $("<div>")
+            .addClass("webapp-icon-picker-overlay webapp-node-picker-overlay")
+            .css({ position: "fixed", inset: "0", background: "rgba(0,0,0,0.4)", "z-index": "2000", display: "flex", "align-items": "center", "justify-content": "center" });
+
+        const $dialog = $("<div>")
+            .addClass("webapp-icon-picker-dialog webapp-node-picker-dialog")
+            .css({ background: "var(--red-ui-primary-background, #fff)", color: "var(--red-ui-primary-text-color, #333)", border: "1px solid var(--red-ui-secondary-border-color, #ccc)", "border-radius": "4px", "box-shadow": "0 4px 24px rgba(0,0,0,0.3)", width: "520px", "max-width": "92vw", "max-height": "82vh", display: "flex", "flex-direction": "column", overflow: "hidden" })
+            .appendTo($overlay);
+
+        $("<div>")
+            .css({ padding: "10px 12px", "font-weight": "bold", "border-bottom": "1px solid var(--red-ui-secondary-border-color, #ddd)" })
+            .text(opts.title || "Icon auswählen")
+            .appendTo($dialog);
+
+        const $controls = $("<div>")
+            .css({ display: "flex", gap: "8px", margin: "10px 12px" })
+            .appendTo($dialog);
+        const $libFilter = $("<select>").addClass("webapp-icon-picker-lib").css({ "flex": "0 0 auto" }).appendTo($controls);
+        const $search = $("<input type=\"text\">")
+            .attr("placeholder", "Suche (Icon-Name)…")
+            .addClass("webapp-icon-picker-search")
+            .css({ flex: "1 1 auto" })
+            .appendTo($controls);
+
+        const $grid = $("<div>")
+            .addClass("webapp-icon-picker-grid")
+            .css({ flex: "1 1 auto", "overflow-y": "auto", "min-height": "160px", padding: "6px", display: "grid", "grid-template-columns": "repeat(auto-fill, minmax(72px, 1fr))", gap: "4px" })
+            .appendTo($dialog);
+
+        const $footer = $("<div>")
+            .css({ padding: "8px 12px", "border-top": "1px solid var(--red-ui-secondary-border-color, #ddd)", "text-align": "right" })
+            .appendTo($dialog);
+
+        function close() {
+            $overlay.remove();
+            $(document).off("keydown.webappIconPicker");
+        }
+        function confirm(value) {
+            close();
+            if (typeof opts.onSelect === "function") {
+                opts.onSelect(value);
+            }
+        }
+
+        const $clearBtn = $("<button type=\"button\" class=\"red-ui-button\">").text("Leeren").css({ "margin-right": "6px" }).on("click", function (e) { e.preventDefault(); confirm(""); });
+        const $cancelBtn = $("<button type=\"button\" class=\"red-ui-button\">").text("Abbrechen").on("click", function (e) { e.preventDefault(); close(); });
+        $footer.append($clearBtn).append($cancelBtn);
+
+        let manifest = { libraries: [] };
+        const basePaths = {};
+
+        function renderGrid() {
+            const lib = String($libFilter.val() || "");
+            const query = String($search.val() || "").toLowerCase();
+            $grid.empty();
+            const libs = manifest.libraries.filter(function (l) { return !lib || l.name === lib; });
+            let shown = 0;
+            const MAX = 600; // cap rendered tiles for performance with 2000+ icons
+            for (let li = 0; li < libs.length && shown < MAX; li++) {
+                const libEntry = libs[li];
+                const names = Array.isArray(libEntry.icons) ? libEntry.icons : [];
+                for (let ni = 0; ni < names.length && shown < MAX; ni++) {
+                    const name = names[ni];
+                    if (query && name.toLowerCase().indexOf(query) === -1) {
+                        continue;
+                    }
+                    shown++;
+                    const isSelected = current && current.library === libEntry.name && current.name === name;
+                    const $tile = $("<div>")
+                        .addClass("webapp-icon-picker-tile")
+                        .attr("data-icon-name", name)
+                        .attr("data-icon-library", libEntry.name)
+                        .attr("title", libEntry.name + ":" + name)
+                        .css({ display: "flex", "flex-direction": "column", "align-items": "center", "justify-content": "center", padding: "6px 2px", cursor: "pointer", "border-radius": "3px", "text-align": "center", background: isSelected ? "var(--red-ui-list-item-background-selected, #efe)" : "transparent" });
+                    const url = iconPreviewUrl(libEntry.name, name, basePaths);
+                    if (url) {
+                        $("<img>").attr("src", url).attr("alt", name).css({ width: "22px", height: "22px" }).appendTo($tile);
+                    }
+                    else {
+                        $("<div>").css({ width: "22px", height: "22px", "line-height": "22px" }).text("?").appendTo($tile);
+                    }
+                    $("<div>").css({ "font-size": "0.66em", "margin-top": "2px", "word-break": "break-all", color: "#888" }).text(name).appendTo($tile);
+                    $tile.on("click", function () {
+                        confirm(formatIconValue({ library: libEntry.name, name: name }));
+                    });
+                    $grid.append($tile);
+                }
+            }
+            if (shown === 0) {
+                $("<div>").css({ color: "#999", "font-style": "italic", padding: "8px", "grid-column": "1 / -1" }).text("Keine Treffer.").appendTo($grid);
+            }
+            else if (shown >= MAX) {
+                $("<div>").css({ color: "#999", "font-size": "0.8em", padding: "6px", "grid-column": "1 / -1" }).text("… weiter eingrenzen (Suche), um mehr zu sehen.").appendTo($grid);
+            }
+        }
+
+        loadIconManifest(function (data) {
+            manifest = data;
+            $libFilter.append($("<option>").attr("value", "").text("Alle Libraries"));
+            manifest.libraries.forEach(function (l) {
+                $libFilter.append($("<option>").attr("value", l.name).text(l.name));
+                if (l.basePath) {
+                    basePaths[l.name] = l.basePath;
+                }
+            });
+            if (current) {
+                $libFilter.val(current.library);
+                $search.val(current.name);
+            }
+            renderGrid();
+        });
+
+        $libFilter.on("change", renderGrid);
+        $search.on("input", renderGrid);
+        $overlay.on("click", function (e) { if (e.target === $overlay[0]) { close(); } });
+        $(document).on("keydown.webappIconPicker", function (e) { if (e.key === "Escape") { close(); } });
+
+        $("body").append($overlay);
+        $search.trigger("focus");
+        return { close: close };
+    }
+
+    // Enhance a text input (#node-input-<field>) with an "Icon wählen…" button +
+    // a small live preview. Stores the chosen value ("name" or "library:name")
+    // back into the input and fires change.
+    function installIconField(fieldSelector, config) {
+        const cfg = config || {};
+        const $input = $(fieldSelector);
+        if ($input.length === 0 || $input.data("webappIconFieldEnhanced")) {
+            return;
+        }
+        $input.data("webappIconFieldEnhanced", true);
+
+        const $preview = $("<img class=\"webapp-icon-field-preview\">").css({ width: "20px", height: "20px", "vertical-align": "middle", "margin-right": "6px" }).hide();
+        const $button = $("<button type=\"button\" class=\"red-ui-button webapp-icon-field-button\">").text("Icon wählen…").css({ "margin-left": "6px" });
+
+        $input.before($preview);
+        $input.after($button);
+
+        function refreshPreview() {
+            const parsed = parseIconValue($input.val());
+            if (!parsed) {
+                $preview.hide();
+                return;
+            }
+            const url = iconPreviewUrl(parsed.library, parsed.name, {});
+            if (url) {
+                $preview.attr("src", url).attr("alt", parsed.name).show();
+            }
+            else {
+                $preview.hide();
+            }
+        }
+
+        $button.on("click", function (e) {
+            e.preventDefault();
+            openIconPickerDialog({
+                title: cfg.title || "Icon auswählen",
+                value: $input.val(),
+                onSelect: function (value) {
+                    $input.val(value).trigger("change");
+                    refreshPreview();
+                }
+            });
+        });
+        $input.on("change input", refreshPreview);
+        refreshPreview();
+    }
+
     global.WebappEditorCommon = {
         bindingTypedInputTypes,
         bindingValueForEditor,
@@ -1409,9 +1642,13 @@
         getStandardLayoutPresetOptions,
         installEventCheckboxes,
         installLayoutChildPropRows,
+        installIconField,
         installLayoutSelector,
         installNodePicker,
         installParentAppSelector,
+        openIconPickerDialog,
+        parseIconValue,
+        formatIconValue,
         installReferenceSelectors,
         installVariantSelectBox,
         isStandardLayoutPreset,

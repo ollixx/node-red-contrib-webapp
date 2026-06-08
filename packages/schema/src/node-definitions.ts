@@ -9,6 +9,7 @@ import {
     bindingSchema,
     CONTAINER_VARIANTS,
     errorSeveritySchema,
+    iconFieldSchema,
     identifierSchema,
     INPUT_VARIANTS,
     routeNodePathSchema,
@@ -213,6 +214,9 @@ export const uiButtonNodeDefinitionSchema = mountableNodeSchema.extend({
     // action is deprecated — click events are now emitted on the output port.
     // Kept for backward compatibility with existing flows.
     action: z.string().min(1, "Buttons must reference an action.").optional(),
+    // P69: optional icon shown in the button's prefix slot. Backend-neutral
+    // { library, name }; binding-capable (literal value or dynamic binding).
+    icon: iconFieldSchema.optional(),
     disabled: bindingSchema.optional()
 });
 
@@ -595,7 +599,9 @@ export type UiImageNodeDefinition = z.infer<typeof uiImageNodeDefinitionSchema>;
 
 export const uiIconNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-icon"),
-    icon: z.string().min(1, "Icon names must not be empty."),
+    // P69: backend-neutral { library, name } icon value; binding-capable. A bare
+    // string is still accepted (back-compat — maps to the default library).
+    icon: iconFieldSchema,
     size: z.enum(["xs", "sm", "md", "lg", "xl"]).optional(),
     color: z.string().optional()
 });
@@ -623,6 +629,9 @@ export const uiAvatarNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-avatar"),
     src: bindingSchema.optional(),
     initials: bindingSchema.optional(),
+    // P69: optional icon fallback (shown when no src/initials resolve).
+    // Backend-neutral { library, name }; binding-capable.
+    icon: iconFieldSchema.optional(),
     alt: z.string().optional(),
     size: z.enum(["xs", "sm", "md", "lg", "xl"]).optional(),
     shape: z.enum(["circle", "square"]).optional()

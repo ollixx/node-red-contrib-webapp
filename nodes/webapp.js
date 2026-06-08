@@ -14,6 +14,8 @@ const { buildDesignTokenCss } = require("../packages/schema/dist/index.js");
 // P26: the snapshot → Shoelace markup serializer is shared with the thin client
 // (resources/lib/webapp-serializer.js) so server and browser cannot drift apart.
 const sharedSerializer = require("../resources/lib/webapp-serializer.js");
+// P69: icon library registry + manifest (backend-neutral { library, name }).
+const iconLibrary = require("./icon-library.js");
 
 // P22: the thin client runtime is served statically from resources/. Node-RED
 // exposes a plugin's resources/ dir under resources/<module-name>/.
@@ -42,6 +44,10 @@ const SHOELACE_VERSION = "2.20.1";
 const SHOELACE_LOCAL_BASE = "/resources/node-red-contrib-webapp/shoelace";
 const SHOELACE_THEME_HREF = `${SHOELACE_LOCAL_BASE}/themes/light.css`;
 const SHOELACE_AUTOLOADER_SRC = `${SHOELACE_LOCAL_BASE}/shoelace-autoloader.js`;
+// P69: on-disk path of the vendored default (Bootstrap-Icons) SVG set, used to
+// enumerate icon names for the picker manifest. The matching URL base is
+// `${SHOELACE_LOCAL_BASE}/assets/icons`.
+const SHOELACE_ICONS_DIR = path.join(__dirname, "..", "resources", "shoelace", "assets", "icons");
 
 const runtimeState = {
     definitions: new Map(),
@@ -589,6 +595,40 @@ function getBinding(bindingCandidate, fallbackBinding) {
     return fallbackBinding;
 }
 
+// P69: normalise an icon field config value into the schema-accepted shape.
+//  - a dynamic binding ({ kind, … }) → passed through unchanged
+//  - a literal { library, name } object → passed through unchanged
+//  - a string "name" or "library:name" → parsed into { library, name } (the
+//    default library stays implicit: a bare "name" is returned as-is so the
+//    renderer/normalizer applies the default)
+//  - empty/blank → undefined
+function mapIconField(value) {
+    if (value === undefined || value === null) {
+        return undefined;
+    }
+    if (typeof value === "object") {
+        if (typeof value.kind === "string") {
+            return value; // dynamic binding
+        }
+        if (typeof value.name === "string" && value.name.length > 0) {
+            return value; // literal { library, name }
+        }
+        return undefined;
+    }
+    if (typeof value === "string") {
+        const trimmed = value.trim();
+        if (trimmed.length === 0) {
+            return undefined;
+        }
+        const sep = trimmed.indexOf(":");
+        if (sep > 0 && sep < trimmed.length - 1) {
+            return { library: trimmed.slice(0, sep), name: trimmed.slice(sep + 1) };
+        }
+        return trimmed; // bare name → default library applied downstream
+    }
+    return undefined;
+}
+
 function initializeState(stores, queries, appId) {
     let state = {
         ui: {
@@ -722,14 +762,25 @@ function toComponentDefinitions(components) {
             // P20a: click events are emitted on the button's own output port.
             // The button node's id is used as the action target for the /event endpoint.
             const clickAction = component.action || component.id;
+            // P69: icon is binding-capable. A binding (has .kind) is routed via
+            // bind.icon so the renderer resolves it into resolvedProps.icon; a
+            // literal value ({library,name} or bare string) stays in props.icon.
+            const iconBinding = getBinding(component.icon, undefined);
+            const buttonBind = component.disabled || component.disabledPath
+                ? { disabled: getBinding(component.disabled, stateBinding(component.disabledPath || "")) }
+                : {};
+            if (iconBinding) {
+                buttonBind.icon = iconBinding;
+            }
             return {
                 id: component.id,
                 kind: "button",
                 mount: component.mount || component.parent,
                 order: toOptionalNumber(component.order),
-                bind: component.disabled || component.disabledPath ? { disabled: getBinding(component.disabled, stateBinding(component.disabledPath || "")) } : {},
+                bind: buttonBind,
                 props: {
                     label: component.label,
+                    ...(component.icon !== undefined && !iconBinding ? { icon: component.icon } : {}),
                     ...(blankToUndefined(component.variant) ? { variant: component.variant } : {}),
                     ...(Object.keys(layoutProps).length > 0 ? { layout: layoutProps } : {})
                 },
@@ -822,6 +873,8 @@ function toComponentDefinitions(components) {
             "ui-accordion": "accordion",
             "ui-menu": "menu",
             "ui-avatar": "avatar",
+            // P69: ui-icon is a rendered component (kind "icon").
+            "ui-icon": "icon",
             // P45: composite and layout nodes
             "ui-list": "list",
             "ui-pagination": "pagination",
@@ -873,6 +926,13 @@ function toComponentDefinitions(components) {
             if (titleBinding) {
                 bind.title = titleBinding;
             }
+            // P69: icon field on ui-icon / ui-avatar (and any p16 kind that
+            // carries one). A binding (has .kind) is resolved by the renderer
+            // into resolvedProps.icon; a literal value stays in props.icon.
+            const iconBinding = getBinding(component.icon, undefined);
+            if (iconBinding) {
+                bind.icon = iconBinding;
+            }
 
             return {
                 id: component.id,
@@ -915,7 +975,11 @@ function toComponentDefinitions(components) {
                     // P57: ui-log config props
                     ...(component.minSeverity !== undefined ? { minSeverity: component.minSeverity } : {}),
                     ...(component.maxEntries !== undefined ? { maxEntries: component.maxEntries } : {}),
-                    ...(component.collapsed !== undefined ? { collapsed: component.collapsed } : {})
+                    ...(component.collapsed !== undefined ? { collapsed: component.collapsed } : {}),
+                    // P69: icon literal + ui-icon display props (size/color).
+                    ...(component.icon !== undefined && !iconBinding ? { icon: component.icon } : {}),
+                    ...(component.size !== undefined ? { size: component.size } : {}),
+                    ...(component.color !== undefined ? { color: component.color } : {})
                 },
                 events: []
             };
@@ -1280,6 +1344,13 @@ function renderAppPage(appId, location, dialogId, definitions) {
     // per-token translation. Unset tokens fall back to the defaults below.
     const tokenCss = buildDesignTokenCss(tokens);
     const shoelaceBridgeCss = buildShoelaceTokenBridgeCss();
+    // P69: register any additional (non-default) icon libraries on the client via
+    // Shoelace's registerIconLibrary(). The %AUTOLOADER_DIR% placeholder resolves
+    // to the vendored Shoelace utilities path so registerIconLibrary imports
+    // locally (no CDN — ADR 0008). Empty when only the default library exists.
+    const iconLibraryRegistrationHtml = iconLibrary
+        .buildIconLibraryRegistrationScript()
+        .replace(/%AUTOLOADER_DIR%/g, SHOELACE_LOCAL_BASE);
     const serializerContext = {
         appId: model.id,
         location: snapshot.location,
@@ -1318,6 +1389,7 @@ function renderAppPage(appId, location, dialogId, definitions) {
   <title>${escapeHtml(model.title)} - ${escapeHtml(routeMatch.route.title || routeMatch.route.id)}</title>
   <link rel="stylesheet" href="${SHOELACE_THEME_HREF}">
   <script type="module" src="${SHOELACE_AUTOLOADER_SRC}"></script>
+${iconLibraryRegistrationHtml}
   <style>
     /* P24: webapp-default design tokens. User tokens on ui-app (below) override
        these; the Web Components consume them natively as CSS custom properties. */
@@ -1651,7 +1723,7 @@ function getDefinitionBuckets(appId, definitions) {
         app: matchingApp,
         routes: matchingDefinitions.filter((entry) => entry.type === "ui-route"),
         dialogs: matchingDefinitions.filter((entry) => entry.type === "ui-dialog"),
-        components: matchingDefinitions.filter((entry) => ["ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select", "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider", "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state", "ui-tabs", "ui-accordion", "ui-breadcrumb", "ui-menu", "ui-pagination", "ui-stepper", "ui-avatar", "ui-list", "ui-log"].includes(entry.type)),
+        components: matchingDefinitions.filter((entry) => ["ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select", "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider", "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state", "ui-tabs", "ui-accordion", "ui-breadcrumb", "ui-menu", "ui-pagination", "ui-stepper", "ui-avatar", "ui-icon", "ui-list", "ui-log"].includes(entry.type)),
         stores: matchingDefinitions.filter((entry) => entry.type === "ui-store"),
         queries: matchingDefinitions.filter((entry) => entry.type === "ui-query"),
         actions: matchingDefinitions.filter((entry) => entry.type === "ui-action"),
@@ -2151,6 +2223,17 @@ function registerEndpoints(RED) {
     if (runtimeState.endpointsRegistered) {
         return;
     }
+
+    // P69: seed additional icon libraries from RED settings (global / module
+    // level) once, before any page render or manifest request.
+    iconLibrary.seedFromSettings(RED.settings || {});
+
+    // P69: icon manifest for the editor picker — the default (vendored Bootstrap)
+    // set plus any registered libraries, each with its icon names. Served on the
+    // admin endpoint because the picker runs in the Node-RED editor.
+    RED.httpAdmin.get("/webapp/icons/manifest", (req, res) => {
+        res.json(iconLibrary.buildIconManifest({ iconsDir: SHOELACE_ICONS_DIR }));
+    });
 
     RED.httpAdmin.get("/webapp/apps", (req, res) => {
         const apps = readDeployDefinitions(RED)
@@ -3137,6 +3220,7 @@ const runtimeNodeRegistry = {
             label: config.label,
             variant: config.variant || undefined,
             action: blankToUndefined(config.action),
+            icon: mapIconField(config.icon),
             disabled: getBinding(config.disabled, config.disabledPath ? stateBinding(config.disabledPath) : undefined),
             ...collectNodeConfigLayoutProps(config)
         }),
@@ -3718,7 +3802,7 @@ const runtimeNodeRegistry = {
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
-            icon: config.icon || "",
+            icon: mapIconField(config.icon) || "",
             size: config.size || undefined,
             color: config.color || undefined,
             ...collectNodeConfigLayoutProps(config)
@@ -3752,6 +3836,7 @@ const runtimeNodeRegistry = {
             order: toOptionalNumber(config.order),
             src: getBinding(config.src, config.srcPath ? stateBinding(config.srcPath) : undefined),
             initials: config.initials || undefined,
+            icon: mapIconField(config.icon),
             alt: config.alt || undefined,
             size: config.size || undefined,
             shape: config.shape || undefined,

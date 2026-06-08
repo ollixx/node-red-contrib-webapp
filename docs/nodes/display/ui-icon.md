@@ -36,7 +36,7 @@ Layout-Child-Props).
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `icon` | „Icon Name" | Textfeld | **ja** | Symbolischer Name des Icons (z. B. `home`, `user`, `check`, `trash`). Darf nicht leer sein. Das Renderer-Backend löst den Namen gegen das aktive Icon-Set auf. |
+| `icon` | „Icon" | Textfeld + Icon-Picker (P69) | **ja** | Backend-neutraler Icon-Wert `{ library, name }`. Im Editor als Textfeld mit „Icon wählen…"-Button gespeichert: ein nackter Name (`home`) nutzt die Default-Library (das vendorte Bootstrap-Set), die Kurzform `library:name` (`lucide:user`) wählt eine registrierte Zusatz-Library. Darf nicht leer sein. Bindbar (literal via Picker ODER dynamisch via state/msg/store/…). Das Renderer-Backend löst `{ library, name }` gegen sein Icon-Set auf (`<sl-icon library name>`). |
 
 ### Gruppe „Darstellung"
 
@@ -92,11 +92,17 @@ Backends folgen demselben semantischen Contract.
 
 ## Besonderheiten
 
-- **Icon-Set-Agnostizität.** Der `icon`-Name gehört zu einem semantischen
-  Vokabular, das unabhängig vom verwendeten Icon-Set ist. Das Renderer-Backend
-  ist dafür verantwortlich, den Namen auf das konkrete Icon seiner Bibliothek
-  abzubilden. Flow-Autoren sollen Icon-Namen aus einem abgestimmten Vokabular
-  wählen, damit ein späterer Backend-Wechsel keine Flow-Änderungen erfordert.
+- **Backend-neutraler Icon-Wert (P69).** Der Icon-Wert ist `{ library, name }`
+  (bzw. die String-Kurzform `library:name`, mit Default-Library wenn die Library
+  weggelassen wird). Der Renderer bildet ihn aufs Backend ab (Shoelace:
+  `<sl-icon library name>`); ein anderes Backend kann dasselbe Paar auf seinen
+  eigenen Icon-Mechanismus mappen (ADR 0002). Portabilität von `{ library, name }`
+  setzt voraus, dass die Library im Ziel-Backend registriert ist.
+- **Global registrierbare Icon-Libraries (P69).** Zusätzlich zur Default-Library
+  (vendortes Bootstrap-Set) lassen sich weitere Libraries auf Modul-/globaler
+  Ebene registrieren (`RED.settings.webappIconLibraries`, lokal ausgeliefert,
+  client-seitig via Shoelace `registerIconLibrary()`). Der Editor-Picker liest die
+  verfügbaren Icons aus einem Server-Manifest (`GET /webapp/icons/manifest`).
 
 ## Referenzen
 
