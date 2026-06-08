@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P73  # next to implement: bugfix — serializer ignores mapped fields (ui-switch labelOn/Off, ui-slider showValue, ui-datepicker mode)
+  current_phase: P74  # next to implement: bugfix — ui-accordion field-name mismatch (schema `sections` vs editor/mapConfig `items`)
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -1133,7 +1133,7 @@ phases:
 
   - { id: P72, title: "Bugfix: ui-pagination `page`-Binding wird nie aufgelöst — Editor speichert `currentPagePath`, Runtime liest `config.pagePath` (webapp.js ~3664) → immer leer. Editor/Runtime-Feldnamen angleichen + E2E", status: done, dependencies: [P16c], archive: "docs/agent-roadmap-archive.yaml#P72" }
 
-  - { id: P73, title: "Bugfix: Serializer rendert gemappte Felder nicht — ui-switch `labelOn`/`labelOff`, ui-slider `showValue` (in Schema+mapConfig, aber nicht im webapp-serializer.js), ui-datepicker `mode` datetime/time degradiert still zu type=date. Rendering ergänzen + E2E", status: in_progress, dependencies: [P26] }
+  - { id: P73, title: "Bugfix: Serializer rendert gemappte Felder nicht — ui-switch `labelOn`/`labelOff`, ui-slider `showValue` (in Schema+mapConfig, aber nicht im webapp-serializer.js), ui-datepicker `mode` datetime/time degradiert still zu type=date. Rendering ergänzen + E2E", status: done, dependencies: [P26], archive: "docs/agent-roadmap-archive.yaml#P73" }
 
   - { id: P74, title: "Bugfix: ui-accordion Feldname-Mismatch — Schema-Feld `sections` (accordionSectionSchema) vs. Editor/mapConfig `items` (webapp.js ~3613). Auf einen Namen vereinheitlichen + Validierung/Tests", status: pending, dependencies: [P16c] }
 
