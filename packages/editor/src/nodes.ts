@@ -254,10 +254,17 @@ export interface UiSkeletonEditorConfig extends MountableEditorConfig {
 
 export interface UiBadgeEditorConfig extends MountableEditorConfig {
     valuePath?: string;
-    displayType?: "count" | "dot" | "status";
-    // P49b: unified with SEVERITY_VARIANTS — primary|success|warning|danger|neutral|info
+    // P92: displayType is now shape (square/rounded/pill).
+    displayType?: "square" | "rounded" | "pill";
+    // P92: variant (renamed from severity).
+    variant?: "primary" | "success" | "warning" | "danger" | "neutral" | "info";
+    // P92: severity kept for back-compat with old flows.
     severity?: "primary" | "success" | "warning" | "danger" | "neutral" | "info";
-    max?: number;
+    // P92: pulsating — maps to Shoelace `pulse` attribute.
+    pulsating?: boolean;
+    // P92: size (sm/md/lg).
+    size?: "sm" | "md" | "lg";
+    // P92: max field removed (was for count truncation).
 }
 
 export interface UiEmptyStateEditorConfig extends MountableEditorConfig {
@@ -1116,9 +1123,12 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         id: config.id ?? "",
         mount: config.mount ?? "",
         value: stateBinding(config.valuePath ?? ""),
+        // P92: displayType now shape (square/rounded/pill); variant replaces severity.
         displayType: config.displayType,
-        severity: config.severity,
-        max: config.max,
+        variant: config.variant ?? (config.severity as UiBadgeNodeDefinition["variant"] | undefined),
+        pulsating: config.pulsating,
+        size: config.size,
+        // P92: max field removed.
         ...collectLayoutChildConfig(config)
     })),
     "ui-empty-state": createDefinition("ui-empty-state", "view", {

@@ -462,15 +462,17 @@ const flowNodes = [
         value:  { kind: "routeParam", path: "id" }
     }),
     node("ui-badge", "customerStatusBadge", "viewDetail", 5, {
-        name:      "Status badge",
-        uiId:      "customerStatusBadge",
-        parent:    APP,
-        mount:     "route:/customers/:id/content",
-        order:     5,
-        valuePath: "customers.current.status",
-        value:     { kind: "state", path: "customers.current.status" },
-        variant:   "status",
-        severity:  "info"
+        name:        "Status badge",
+        uiId:        "customerStatusBadge",
+        parent:      APP,
+        mount:       "route:/customers/:id/content",
+        order:       5,
+        valuePath:   "customers.current.status",
+        value:       { kind: "state", path: "customers.current.status" },
+        // P92: displayType is now shape (rounded/pill/square), not count/dot/status.
+        // variant replaces severity.
+        displayType: "rounded",
+        variant:     "info"
     }),
 
     // ── View – dialog ────────────────────────────────────────────────────────

@@ -679,8 +679,9 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
             kind: "query",
             path: "customers.current.status"
         },
-        displayType: "status",
-        severity: "info"
+        // P92: displayType is now shape (rounded/pill/square), variant replaces severity
+        displayType: "rounded",
+        variant: "info"
     },
     {
         type: "ui-container",

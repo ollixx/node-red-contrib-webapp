@@ -528,13 +528,24 @@ export type UiSkeletonNodeDefinition = z.infer<typeof uiSkeletonNodeDefinitionSc
 export const uiBadgeNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-badge"),
     value: bindingSchema,
-    // P49: count/dot/status is a DISPLAY TYPE, not a semantic variant. The
-    // semantic Ebene-2 variant for a badge is `severity`.
-    displayType: z.enum(["count", "dot", "status"]).optional(),
-    // P49b: unified with SEVERITY_VARIANTS — the single source of truth.
-    // Legacy values "error" and "default" are no longer accepted here.
-    severity: z.enum(SEVERITY_VARIANTS).optional(),
-    max: z.number().int().positive().optional()
+    // P92: displayType = shape of the badge (square/rounded/pill). This is a
+    // DISPLAY TYPE (Darstellungstyp), NOT a semantic Ebene-2 variant. "pill"
+    // maps to Shoelace `pill` attribute; "rounded" is the default rounded badge;
+    // "square" maps to a square-cornered variant (custom CSS or data-attr).
+    displayType: z.enum(["square", "rounded", "pill"]).optional(),
+    // P92: variant (renamed from `severity` in P49/P49b). Semantic Ebene-2
+    // colour role for the badge. Uses SEVERITY_VARIANTS as the badge vocabulary.
+    // (VARIANT_BY_KIND["badge"] = BADGE_VARIANTS = SEVERITY_VARIANTS.)
+    variant: z.enum(SEVERITY_VARIANTS).optional(),
+    // P92: pulsating — makes the badge pulse to draw attention. Maps to the
+    // Shoelace `pulse` boolean attribute on <sl-badge>. Other backends without
+    // native support can apply a CSS animation fallback.
+    pulsating: z.boolean().optional(),
+    // P92: size — three-step size token (sm/md/lg). Shoelace sl-badge has no
+    // native `size` attribute; the adapter emits data-size for CSS targeting.
+    size: componentSizeSchema.optional()
+    // P92: `max` field removed (was for count truncation — no longer relevant
+    // as displayType is now shape-only, not a count/dot/status distinction).
 });
 
 export type UiBadgeNodeDefinition = z.infer<typeof uiBadgeNodeDefinitionSchema>;

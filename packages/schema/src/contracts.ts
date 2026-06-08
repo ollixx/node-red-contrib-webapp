@@ -468,9 +468,10 @@ export const componentKindSchema = z.enum([
  * `variant` that is really a DISPLAY TYPE, not an Ebene-2 semantic role
  * (ui-progress bar/spinner/circular, ui-list unordered/ordered/description,
  * ui-menu sidebar/topbar, ui-skeleton text/avatar/card/table, ui-badge
- * count/dot/status). Those are NOT part of the variant vocabulary and must not
+ * square/rounded/pill). Those are NOT part of the variant vocabulary and must not
  * appear in the variant SelectBox — they are display types. The semantic
- * variant for those nodes lives elsewhere (ui-badge/ui-alert use `severity`).
+ * variant for those nodes lives in the `variant` field (ui-badge uses `variant`
+ * with BADGE_VARIANTS = SEVERITY_VARIANTS; ui-alert uses `severity`).
  */
 export const BUTTON_VARIANTS = [
     "primary",
@@ -513,8 +514,10 @@ export const ALERT_VARIANTS = SEVERITY_VARIANTS;
  * Shoelace exposes only three native sizes (small / medium / large). Nodes whose
  * underlying Shoelace element is sized that way (button, text, input, select,
  * textarea …) use this 3-step token set. The richer 5-step `xs..xl` scale stays
- * on ui-avatar / ui-badge / ui-icon, where it maps to CSS sizing rather than a
- * native `size` attribute. The adapter's `mapSize` already accepts both scales.
+ * on ui-avatar / ui-icon, where it maps to CSS sizing rather than a
+ * native `size` attribute. ui-badge uses the sm/md/lg scale (P92; sl-badge has
+ * no native size attr; the adapter emits data-size for CSS targeting).
+ * The adapter's `mapSize` already accepts both scales.
  */
 export const COMPONENT_SIZES = ["sm", "md", "lg"] as const;
 export type ComponentSize = (typeof COMPONENT_SIZES)[number];

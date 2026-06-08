@@ -182,9 +182,12 @@ function toBadgeComponent(node: UiBadgeNodeDefinition): ComponentDefinition {
         order: node.order,
         bind: { value: node.value },
         props: {
+            // P92: variant (renamed from severity), pulsating, size fields added;
+            // max field removed; displayType values changed to square/rounded/pill.
             displayType: node.displayType,
-            severity: node.severity,
-            max: node.max
+            variant: node.variant,
+            pulsating: node.pulsating,
+            size: node.size
         },
         events: []
     };

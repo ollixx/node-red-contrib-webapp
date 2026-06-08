@@ -4014,9 +4014,26 @@ const runtimeNodeRegistry = {
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
             value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
-            displayType: config.displayType || config.variant || undefined,
-            severity: config.severity || undefined,
-            max: toOptionalNumber(config.max),
+            // P92: displayType is now shape (square/rounded/pill). Back-compat:
+            // map old count/dot/status display type values to new shape values.
+            displayType: (() => {
+                const dt = config.displayType || config.variant || undefined;
+                if (!dt) return undefined;
+                // Legacy count/dot/status → map to new shape vocabulary
+                if (dt === "count" || dt === "status") return "rounded";
+                if (dt === "dot") return "rounded";
+                return dt;
+            })(),
+            // P92: variant (renamed from severity). Back-compat: accept legacy
+            // `severity` field too.
+            variant: config.variant && !["count", "dot", "status", "square", "rounded", "pill"].includes(config.variant)
+                ? config.variant
+                : config.severity || undefined,
+            // P92: pulsating maps to Shoelace `pulse` attribute.
+            pulsating: config.pulsating === true || config.pulsating === "true" ? true : undefined,
+            // P92: size (sm/md/lg).
+            size: config.size || undefined,
+            // P92: max field removed — not passed through any more.
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {

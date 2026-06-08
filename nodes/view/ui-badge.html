@@ -11,9 +11,16 @@
                 mount: { value: "", required: true },
                 valuePath: { value: "", required: true },
                 value: { value: null },
-                displayType: { value: "count" },
-                severity: { value: "neutral" },
-                max: { value: 99, validate: function (value) { return value === "" || RED.validators.number()(value); } },
+                // P92: displayType is now shape (square/rounded/pill).
+                displayType: { value: "rounded" },
+                // P92: variant (renamed from severity).
+                variant: { value: "neutral" },
+                // P92: severity kept as back-compat for old flows that saved it.
+                severity: { value: "" },
+                // P92: pulsating (maps to Shoelace `pulse` attr).
+                pulsating: { value: false },
+                // P92: size (sm/md/lg).
+                size: { value: "" },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
                 col: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
@@ -43,16 +50,18 @@
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <div class="form-row"><label for="node-input-valuePath">Value Path</label><input type="text" id="node-input-valuePath"></div>
-    <div class="form-row"><label for="node-input-displayType">Display Type</label>
+    <div class="form-row">
+        <label for="node-input-displayType">Display Type</label>
         <select id="node-input-displayType">
-            <option value="count">Count</option>
-            <option value="dot">Dot</option>
-            <option value="status">Status</option>
+            <option value="rounded">Rounded (Default)</option>
+            <option value="pill">Pill</option>
+            <option value="square">Square</option>
         </select>
     </div>
-    <div class="form-row"><label for="node-input-severity">Severity</label>
-        <select id="node-input-severity">
-            <option value="neutral">Neutral</option>
+    <div class="form-row">
+        <label for="node-input-variant">Variant</label>
+        <select id="node-input-variant">
+            <option value="neutral">Neutral (Default)</option>
             <option value="primary">Primary</option>
             <option value="info">Info</option>
             <option value="success">Success</option>
@@ -60,6 +69,27 @@
             <option value="danger">Danger</option>
         </select>
     </div>
-    <div class="form-row"><label for="node-input-max">Max</label><input type="number" id="node-input-max" min="1"></div>
+    <div class="form-row">
+        <label for="node-input-size">Size</label>
+        <select id="node-input-size">
+            <option value="">Default</option>
+            <option value="sm">Small</option>
+            <option value="md">Medium</option>
+            <option value="lg">Large</option>
+        </select>
+    </div>
+    <div class="form-row">
+        <label>&nbsp;</label>
+        <input type="checkbox" id="node-input-pulsating" style="width:auto; margin-right:8px;">
+        <label for="node-input-pulsating" style="width:auto; font-weight:normal;">Pulsating</label>
+        <span style="margin-left:8px; color:#888; font-size:0.85em;" title="Das Shoelace-Backend unterstützt Pulsieren nativ (pulse-Attribut). Andere Backends können einen CSS-Animationsfallback einsetzen.">ℹ</span>
+    </div>
 </script>
-<script type="text/html" data-help-name="ui-badge"><p>Kleiner Zähler oder Status-Indikator, typischerweise an einem anderen Element.</p></script>
+<script type="text/html" data-help-name="ui-badge">
+<p>Kleiner Zähler oder Status-Indikator, typischerweise an einem anderen Element.</p>
+<p><strong>Display Type</strong> bestimmt die <em>Form</em> des Badge: <code>rounded</code> (Standard), <code>pill</code> (abgerundete Enden) oder <code>square</code> (eckig).</p>
+<p><strong>Variant</strong> bestimmt die semantische <em>Farbrolle</em>: <code>neutral</code>, <code>primary</code>, <code>info</code>, <code>success</code>, <code>warning</code>, <code>danger</code>.</p>
+<p><em>Hinweis (backend-neutral):</em> Das Shoelace-Backend unterstützt <strong>Pulsating</strong> nativ über das <code>pulse</code>-Attribut von <code>sl-badge</code>. Andere Backends ohne native Unterstützung können einen CSS-Animations-Fallback einsetzen. Das Feld ist bewusst offen für weitere Backends definiert.</p>
+<p><em>Hinweis:</em> <code>sl-badge</code> (Shoelace) hat kein natives <code>size</code>-Attribut; die Größe wird über ein <code>data-size</code>-Attribut gesetzt und kann per CSS angepasst werden.</p>
+<a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/feedback/ui-badge.md" target="_blank">Ausführliche Dokumentation</a>
+</script>

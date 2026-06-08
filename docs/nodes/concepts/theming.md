@@ -70,10 +70,14 @@ Listen spiegeln sie nur wider.
 **`ui-input`** (`INPUT_VARIANTS`, Default `default`):
 - `default`, `filled`, `outlined`
 
-**`ui-badge` / `ui-alert`** (`SEVERITY_VARIANTS`; Badge-Default `neutral`, Alert-Default `primary`):
-- `primary`, `success`, `warning`, `danger`, `neutral`, `info` — `info` ist ein **eigenständiger** Wert (kein Alias).
+**`ui-badge`** (`BADGE_VARIANTS = SEVERITY_VARIANTS`; Default `neutral`):
+- `primary`, `success`, `warning`, `danger`, `neutral`, `info` — im Feld **`variant`**.
 
-> Diese Knoten tragen ihre semantische Variante im Feld `severity` (nicht `variant`).
+**`ui-alert`** (`ALERT_VARIANTS = SEVERITY_VARIANTS`; Default `primary`):
+- `primary`, `success`, `warning`, `danger`, `neutral`, `info` — im Feld **`severity`**.
+
+> `info` ist in beiden Fällen ein **eigenständiger** Wert (kein Alias von `primary`).
+> `ui-badge` trägt die semantische Farbrolle seit P92 im Feld `variant` (früher `severity`).
 
 ### Variant vs. displayType
 
@@ -85,7 +89,7 @@ Ebene-2-Rolle. Diese gehören **nicht** ins Variant-Vokabular und liegen im Feld
 |---|---|
 | `ui-progress` | `bar`, `spinner`, `circular` |
 | `ui-skeleton` | `text`, `avatar`, `card`, `table` |
-| `ui-badge` (Form) | `count`, `dot`, `status` |
+| `ui-badge` (Form) | `rounded` (Default), `pill`, `square` |
 | `ui-menu` | `sidebar`, `topbar`, `dropdown` |
 | `ui-list` | `default`, `divided`, `compact` |
 
