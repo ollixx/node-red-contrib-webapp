@@ -1,8 +1,8 @@
 # ui-alert — Test Catalogue
 
-Phase: **P90** (icon field + icon logic). Replaces the P43 presence-only tests.
+Phase: **P91** (duration + countdown fields). Extends P90 (icon field + icon logic). Replaces the P43 presence-only tests.
 
-All tests are in `ui-alert.spec.ts` (E2E, Playwright) and `packages/runtime/test/p90-alert-icon.test.ts` (unit).
+All tests are in `ui-alert.spec.ts` (E2E, Playwright), `packages/runtime/test/p90-alert-icon.test.ts` (unit), and `packages/runtime/test/p91-alert-duration-countdown.test.ts` (unit).
 
 ## Unit tests (`p90-alert-icon.test.ts`)
 
@@ -24,6 +24,26 @@ All tests are in `ui-alert.spec.ts` (E2E, Playwright) and `packages/runtime/test
 | explicit icon='bell' → name='bell' in slot='icon' | Custom icon name passed through |
 | icon={library,name} → name in slot='icon' | Icon value object (library + name) passed through |
 | sl-alert still contains message text | Message rendering is not broken by icon changes |
+
+## Unit tests (`p91-alert-duration-countdown.test.ts`)
+
+| Test | Goal |
+|---|---|
+| duration absent → no `duration` property in mapConfig | No duration prop when field is empty/absent |
+| countdown absent → no `countdown` property in mapConfig | No countdown prop when field is absent |
+| duration=5000 → mapConfig result.duration === 5000 | Number value preserved as number |
+| duration='3000' (string) → coerced to 3000 | String from editor number input is coerced |
+| countdown=true → mapConfig result.countdown === true | Boolean value preserved |
+| countdown='true' (string) → coerced to true | String from editor checkbox is coerced |
+| countdown=false → falsy in mapConfig result | False/absent values are not serialized |
+| duration=5000 → sl-alert has duration='5000' attribute | Shoelace duration attribute emitted |
+| duration=3000 → sl-alert has duration='3000' attribute | Correct value emitted |
+| duration absent → NO duration attribute | No attribute emitted when field is absent |
+| countdown=true + duration → countdown='ltr' attribute | Shoelace countdown attribute emitted |
+| countdown=true without duration → countdown still emitted | Edge case does not crash |
+| countdown absent → NO countdown attribute | No attribute when countdown not set |
+| countdown=false → NO countdown attribute | False value does not emit attribute |
+| duration+countdown → sl-alert still present and open | Core rendering unaffected by new attrs |
 
 ## E2E tests (`ui-alert.spec.ts`)
 

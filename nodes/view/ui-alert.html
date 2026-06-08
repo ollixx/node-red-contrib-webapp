@@ -60,6 +60,10 @@
                 title: { value: null },
                 titleBinding: { value: "" },
                 dismissible: { value: false },
+                // P91: duration (positive integer, ms) and countdown (boolean).
+                // duration "" means no auto-hide (absent). Must be >= 1 if set.
+                duration: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
+                countdown: { value: false },
                 visible: { value: null },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
@@ -143,6 +147,11 @@
     </div>
     <div class="form-row"><label for="node-input-titleBinding">Title</label><input type="text" id="node-input-titleBinding"></div>
     <div class="form-row"><label for="node-input-dismissible">Dismissible</label><input type="checkbox" id="node-input-dismissible" style="width:auto"></div>
+    <div class="form-row">
+        <label for="node-input-duration">Duration (ms)</label>
+        <input type="number" id="node-input-duration" placeholder="leer = kein Auto-Hide" min="1" step="1" style="width:120px;">
+        <input type="checkbox" id="node-input-countdown" style="width:auto; margin-left:8px;"> <label for="node-input-countdown" style="width:auto; margin-left:2px; font-weight:normal;">Countdown</label>
+    </div>
 </script>
 <script type="text/html" data-help-name="ui-alert">
 <p>Farbige Hinweisleiste für Info-, Warn-, Fehler- oder Erfolgsmeldungen. Message und Title sind vollständig bindbar; der Knoten hat einen Input-Port für Push-Updates und einen Output-Port für das Dismiss-Ereignis.</p>
@@ -156,5 +165,9 @@
 <p><b>Automatisch (nach Severity)</b> — wählt passend zur Severity ein Bootstrap-Icon: info-circle (primary/info), check-circle (success), exclamation-triangle (warning), x-circle (danger), circle (neutral).</p>
 <p><b>Kein Icon</b> (leer oder explizit) — die Alert wird ohne Icon gerendert.</p>
 <p>Ein beliebiger Icon-Name aus dem registrierten Shoelace-Icon-Set kann eingetragen werden.</p>
+<h3>Duration und Countdown</h3>
+<p><b>Duration</b> (positiver Integer, Millisekunden) — die Alert blendet sich nach der angegebenen Zeit automatisch aus. Leer lassen = kein Auto-Hide.</p>
+<p><b>Countdown</b> — zeigt einen Fortschrittsbalken, der die verbleibende Zeit anzeigt. Nur sinnvoll in Kombination mit einer Duration.</p>
+<p><em>Hinweis (backend-neutral):</em> Das Shoelace-Backend unterstützt Duration und Countdown nativ über die <code>duration</code>- und <code>countdown="ltr"</code>-Attribute. Andere Backends ohne native Unterstützung können einen JavaScript-Fallback einsetzen (Timeout-basiertes Auto-Hide; CSS-Animation für den Countdown — analog dem Bootstrap-Doku-Beispiel). Das Feld ist bewusst offen für weitere Backends definiert.</p>
 <p>Ausführliche Dokumentation: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/feedback/ui-alert.md" target="_blank">ui-alert.md</a></p>
 </script>

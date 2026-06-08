@@ -41,6 +41,8 @@ Binding-Arten, Node-Picker-Dialog, SelectBox).
 | `severity` | „Severity" | SelectBox | optional | Semantische Farbrolle der Alert. Werte aus `SEVERITY_VARIANTS`: `primary` (Default), `success`, `warning`, `danger`, `neutral`, `info`. `info` ist ein eigenständiger Wert. Bestimmt gemeinsam mit den Design-Tokens des `ui-app` die Darstellungsfarbe. |
 | `dismissible` | „Dismissible" | Checkbox | optional | Wenn aktiv, zeigt die Alert ein Schließen-Icon; der Nutzer kann die Alert wegklicken. Das Dismiss-Ereignis wird auf dem Output-Port emittiert. Default: `false`. |
 | `icon` | „Icon" | SelectBox / Freitext | optional | Steuert das Icon im Shoelace-`icon`-Slot. `"auto"` → Severity-abhängiges Bootstrap-Icon: `primary`/`info` → `info-circle`, `success` → `check-circle`, `warning` → `exclamation-triangle`, `danger` → `x-circle`, `neutral` → `circle`. `"none"` oder leer (Default) → kein Icon. Jeder andere Wert wird als Icon-Name (z. B. `"bell"`) oder `{ library, name }`-Objekt interpretiert. Das Feld ist binding-fähig (alle Binding-Arten, wie `message`). |
+| `duration` | „Duration (ms)" | Zahlfeld (positiver Integer) | optional | Blendet die Alert nach der angegebenen Anzahl Millisekunden automatisch aus. Leer lassen = kein Auto-Hide. Shoelace-Backend: natives `duration`-Attribut auf `<sl-alert>`. Andere Backends ohne native Unterstützung nutzen einen JS-Timeout-Fallback. Backend-neutral und offen für weitere Backends. |
+| `countdown` | „Countdown" | Checkbox | optional | Zeigt einen Fortschrittsbalken, der die verbleibende Zeit anzeigt. Nur sinnvoll in Kombination mit `duration`. Shoelace-Backend: natives `countdown="ltr"`-Attribut auf `<sl-alert>`. Andere Backends nutzen einen JS/CSS-Animationsfallback (Bootstrap-Doku-Muster). Default: `false`. |
 
 ### Inline-Hilfe (HTML)
 
@@ -100,6 +102,14 @@ da Alerts eine Status-/Schweregrad-Semantik tragen.
   `ui-text`).
 - **`visible`-Binding.** Steuert die Sichtbarkeit deklarativ über den State oder
   einen Store, ohne explizite `show`/`hide`-Actions zu benötigen.
+- **Duration/Countdown — backend-neutral.** Das `duration`-Feld und `countdown`
+  sind backend-agnostisch spezifiziert. Das Shoelace-Backend unterstützt beide
+  nativ über die Attribute `duration` und `countdown="ltr"` auf `<sl-alert>`.
+  Backends ohne native Unterstützung können einen Fallback implementieren:
+  JS-Timeout für Auto-Hide + CSS/JS-Animation für den Countdown — analog dem
+  [Bootstrap-Alert-Doku-Beispiel](https://getbootstrap.com/docs/5.3/components/alerts/#dismissing).
+  Das Feld ist bewusst offen gehalten, damit zukünftige Backends sich einklinken
+  können.
 
 ## Referenzen
 
@@ -111,5 +121,4 @@ da Alerts eine Status-/Schweregrad-Semantik tragen.
 
 ## Offene Punkte
 
-- Auto-Hide nach konfigurierbarer Dauer (analog `ui-toast`) ist noch nicht modelliert.
 - Das `visible`-Binding hat kein eigenes Editor-Feld; es wird ausschließlich via `msg.ui.patch` oder Store-gesteuertem Wert gesetzt.

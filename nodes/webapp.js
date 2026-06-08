@@ -3949,6 +3949,11 @@ const runtimeNodeRegistry = {
             // P90: icon field — "auto" / "none" / icon name / binding.
             // Absent (undefined) means no icon (default when not configured).
             ...(config.icon !== undefined && config.icon !== null && config.icon !== "" ? { icon: config.icon } : {}),
+            // P91: duration (positive integer, ms) + countdown (boolean).
+            // duration: auto-hide the alert after this many ms; absent = never.
+            // countdown: show a progress bar for remaining time (Shoelace native).
+            ...(config.duration ? { duration: toOptionalNumber(config.duration) } : {}),
+            ...(config.countdown === true || config.countdown === "true" ? { countdown: true } : {}),
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
