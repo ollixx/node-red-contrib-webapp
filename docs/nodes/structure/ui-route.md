@@ -1,65 +1,118 @@
 # `ui-route`
 
-## Zusammenfassung
+> **Anforderungs-Dokument.** Es beschreibt das *gewünschte* Verhalten des Knotens
+> (den Vertrag), nicht den jeweils aktuellen Implementierungsstand. Abweichungen
+> der Implementierung gehören **nicht** hierher — sie werden im Code/Test
+> aufgedeckt und behoben.
 
-Definiert eine URL-Route und bindet sie an ein Layout. Aka "Page".
+## Zweck
 
-Aktuelles MVP-Verhalten:
-- Pfade mit Parametern wie `/customers/:id` werden aufgelöst.
-- Der Renderer ermittelt daraus die aktive Route und Route-Parameter.
+`ui-route` definiert eine **Unterseite** der App: eine URL-Route mit eigenem
+Layout. Pfade können Parameter tragen (`/customers/:id`); die aufgelösten
+Parameter stehen im Binding-Modell als `routeParam`-Bindings zur Verfügung. Die
+Startseite `/` ist **nicht** Sache von `ui-route`, sondern der impliziten
+Root-Route des [`ui-app`](ui-app.md).
 
-## Abhängigkeiten
+## Einordnung
 
-**Parent-Knoten:**
-- `ui-app`
+- **Parent:** genau eine `ui-app`.
+- **Kinder:** View-Knoten mounten über `mount` in die Slots der Route (`route:<id>/content`, je nach Preset weitere Slots).
+- **Erreichbarkeit:** `/<root>/<path>` der Parent-App.
+- **Rolle zur Laufzeit:** der Renderer ermittelt aus dem Pfad die aktive Route und ihre Parameter; Root- und `ui-route`-Routing verhalten sich gleich.
 
-**Gemeinsam genutzte Services und Komponenten:**
-- Referenziert ein Layout-Preset über `layoutId`
-- Route-Parameter werden im Binding-Modell als `routeParam`-Bindings verfügbar gemacht
+## Felder
 
-## Editor
+Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 
-**Pflichtfelder:**
-- `parent`: Auswahl gültiger Parents, d.h. hier einer App (ui-app). Wenn es mehr als X (20?) mögliche Einträge gibt, wird stattdessen ein kleiner Dialog angezeigt, der eine scrollbare Liste von Apps zeigt und gefiltert werden kann.
-- `path`: Das URL-Element, das die Route definiert (Beispiel: /webapp/appName/<path>)
-  - Validierung: innerhalb einer App (selbes Parent) muss der path eindeutig sein
-  - **`path` darf nicht leer und nicht `"/"` sein.** Der Pfad `"/"` ist für die
-    implizite Root-Route reserviert (siehe Besonderheiten). Schema und Editor
-    lehnen einen `ui-route`-Knoten mit `path: "/"` ab.
-- `layout`: Layout-Preset
-  - Default: `vertical` (Kinder werden untereinander dargestellt)
-  - Presets: `vertical`, `horizontal`, `app`, `grid`, `absolute`
+### Gruppe „Allgemein"
 
+| Feld | Label | Editor-Typ | Pflicht | Beschreibung |
+|---|---|---|---|---|
+| `name` | „Name" | Textfeld | optional | Anzeigename im Editor und in Auswahllisten. Default: fortlaufend `Route N`; ist er leer, dient der `path` als Fallback-Anzeige. |
+| `parent` | „App" | Node-Picker-Dialog (Preset Apps) | **ja** | Die Parent-`ui-app`. Auswahl aus einer filter- und scrollbaren Liste der Apps. |
+| `path` | „Pfad" | Textfeld | **ja** | Das URL-Segment der Route (`/<root>/<path>`), Parameter via `:name`. Eindeutig **innerhalb derselben App**. Darf **nicht leer** und **nicht `/`** sein — `/` ist der impliziten Root-Route vorbehalten. |
+| `title` | „Titel" | Textfeld | optional | Sprechender Titel der Route (z. B. für Navigations-/Breadcrumb-Beschriftung). |
 
-**Optionale Felder:**
-- `name`: Node-RED-Anzeigefeld. Wird bei der Darstellung des Knotens und in Auswahlfeldern angezeigt.
-  - Default: `"Route N"` (fortlaufende Nummer aller ui-route-Knoten, startend bei 1)
-  - Fallback wenn leer: `path`-Feld
+### Gruppe „Layout"
+
+| Feld | Label | Editor-Typ | Pflicht | Beschreibung |
+|---|---|---|---|---|
+| `layout` | „Layout" | SelectBox (Layout-Preset) | **ja** | Layout der Route. Auswahl aus den Standard-Presets (`vertical`, `horizontal`, `app`, `grid`, `absolute`). Default: `vertical`. Bestimmt die Slots und die Child-Platzierungs-Felder direkter Kinder — siehe [layout.md](../concepts/layout.md). |
+
+### Gruppe „Events"
+
+| Feld | Label | Editor-Typ | Pflicht | Beschreibung |
+|---|---|---|---|---|
+| `events` | „Events" | Event-Checkboxen → Output-Ports | optional | Aktivierbare Ausgangs-Events: `onEnter`, `onLeave`. Jedes aktive Event erzeugt einen Output-Port (Reihenfolge = Listenreihenfolge). Siehe Abschnitt „Output". |
+
+### Inline-Hilfe (HTML)
+
+Der `data-help-name="ui-route"`-Hilfetext soll **knapp, aber ausreichend** sein:
+Zweck (Unterseite/Route), die Pfad-Regeln (Parameter `:id`, `/` verboten,
+App-weit eindeutig), ein Hinweis auf `onEnter`/`onLeave` und ein Link auf die
+ausführliche Doku. Empfohlener Link (später ggf. Wiki):
+`https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/structure/ui-route.md`.
 
 ## Input
 
-Navigation-Messages werden von der Runtime intern zugestellt — keine explizite Flow-Verdrahtung nötig. `ui-action` mit `actionType: navigate` erzeugt diese Messages. Format siehe [messages.md](../concepts/messages.md).
+`ui-route` wird zur Laufzeit von der Runtime bedient — der Flow-Autor muss dafür
+in der Regel nichts verdrahten.
 
-Zusätzlich akzeptiert `ui-route` Component-State-Messages für seine Kind-Elemente (show/hide etc.) — ebenfalls über die Runtime geroutet.
+- **Akzeptiert (intern zugestellt):**
+  - **Navigation** zu dieser Route. Sie entsteht aus einer `navigate`-Action
+    ([`ui-action`](../behavior/ui-action.md)) — entweder durch eine an die Route
+    **verdrahtete** Action (Szenario 1, Pfad aus dem eigenen `path` + `params`)
+    oder über ein app-global aufgelöstes `to` (Szenario 2). Format: [messages.md](../concepts/messages.md).
+  - **Component-State-Messages** für ihre Kind-Elemente (`show`/`hide` etc.),
+    ebenfalls über die Runtime geroutet.
+- **Validierung:** der Pfad `/` ist verboten und Pfade müssen je App eindeutig
+  sein — geprüft zur Deploy-Zeit (die Eindeutigkeit ist per-Knoten im Editor nicht
+  sichtbar, daher Compile-/Deploy-Validierung).
+- **Nicht erkannte / fachfremde Messages:** werden **unverändert durchgereicht**
+  (Pass-Through), ohne Fehlerausgabe.
 
 ## Output
 
-Konfigurierbare Events — im Editor per Checkbox aktivierbar. Pro aktivem Event ein Out-Port:
+Pro aktivem Event ein Output-Port. Emittiert wird beim Eintritt/Austritt der Route:
 
-| Event | Beschreibung | `msg.ui`-Felder |
-|---|---|---|
-| `onEnter` | Route wurde betreten | `event: "onEnter"`, `path`, `params`, `clientId` |
-| `onLeave` | Route wurde verlassen | `event: "onLeave"`, `path`, `params`, `clientId` |
+| Event | Wann | Erzeugte `msg.ui`-Felder | Intention |
+|---|---|---|---|
+| `onEnter` | die Route wird betreten | `event: "onEnter"`, `route`, `params`, `clientId` | Seiten-Daten laden (z. B. Datensatz zu `params.id`) |
+| `onLeave` | die Route wird verlassen | `event: "onLeave"`, `route`, `params`, `clientId` | Aufräumen / Verwerfen von Seiten-Zustand |
 
-`params` enthält aufgelöste Routenparameter, z.B. `{ id: "42" }` für `/customers/:id`.
+`route` trägt die betretene/verlassene Location; `params` die aufgelösten
+Routenparameter (z. B. `{ id: "42" }` für `/customers/:id`). Feld-Details:
+[events.md](../concepts/events.md).
+
+**Antizipierte Wiring-Szenarien:**
+- `onEnter` → `ui-query`/`function`, das die Daten der Seite lädt und in einen
+  `ui-store` schreibt; gezielt per `msg.ui.clientId`, falls nur der navigierende
+  Client betroffen ist.
+- `onLeave` → Aufräumen (Entwurf verwerfen, Auswahl zurücksetzen).
+
+## Theming
+
+`ui-route` rendert selbst keine sichtbare Chrome — es ordnet über sein
+Layout-Preset nur die Slots an. Das Theme wird von der Parent-App geerbt; es gibt
+hier keine eigenen Theming-Felder. Siehe [theming.md](../concepts/theming.md).
 
 ## Besonderheiten
 
-- **Die Root-Route `"/"` gehört dem `ui-app`-Knoten.** `ui-app` ist gleichzeitig die implizite Route `"/"`. Inhalte für die Startseite werden direkt in die Slots des `ui-app`-Layouts eingehängt (z.B. `appId.content`, beim `app`-Preset auch `appId.header` / `appId.navbar` / `appId.footer`). Ein `ui-route`-Knoten mit `path: "/"` würde mit dieser impliziten Route kollidieren und ist deshalb verboten — `ui-route` wird nur für Unterseiten verwendet (`/customers`, `/customers/:id`). `ui-app` unterstützt damit alles, was `ui-route` für die Startseite bietet; hier wird gemeinsamer Code genutzt.
+- **Die Root-Route `/` gehört `ui-app`.** `ui-route` ist nur für Unterseiten; ein
+  `path: "/"` ist verboten (Kollision mit der impliziten Root-Route).
+- **Route-Parameter** (`:name`) werden als `routeParam`-Bindings für die
+  gemounteten View-Knoten verfügbar gemacht (siehe [stores.md](../concepts/stores.md)
+  für die Binding-Arten).
 
-Siehe für das mehrfach genutzte Layout-Konzept auch [layout.md](../concepts/layout.md).
+## Referenzen
 
-- Knoten, die ein Layout referenzieren, verwenden eines der vorhandenen Presets.
-- Direkte Kinder der Route-Slots erhalten je nach Preset zusätzliche Layout-Felder im Editor. Details dazu stehen in [layout.md](../concepts/layout.md).
-- Route Guards, Loader, Titelauflösung und verschachtelte Routen fehlen.
-- Die Beziehung zwischen Route und Query-Lebenszyklus ist noch nicht explizit modelliert.
+- [`ui-app`](ui-app.md) — Parent und implizite Root-Route
+- [layout.md](../concepts/layout.md) — Presets und Slots
+- [events.md](../concepts/events.md) — Event-Format und Output-Ports
+- [messages.md](../concepts/messages.md) — Navigation
+- [`ui-action`](../behavior/ui-action.md) — Navigation auslösen
+
+## Offene Punkte
+
+- Route-Guards, Loader, Titelauflösung und verschachtelte Routen sind noch nicht modelliert.
+- Die Beziehung zwischen Route- und Query-Lebenszyklus ist noch nicht explizit modelliert.

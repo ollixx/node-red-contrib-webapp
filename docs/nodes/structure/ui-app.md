@@ -1,81 +1,133 @@
 # `ui-app`
 
-## Zusammenfassung
+> **Anforderungs-Dokument.** Es beschreibt das *gewünschte* Verhalten des Knotens
+> (den Vertrag), nicht den jeweils aktuellen Implementierungsstand. Abweichungen
+> der Implementierung gehören **nicht** hierher — sie werden im Code/Test
+> aufgedeckt und behoben.
 
-Definiert die Wurzel einer deklarativen Web-App.
+## Zweck
 
-Aktuelles Verhalten:
-- Es kann mehrere `ui-app` geben.
-- Dient als Einstieg für Runtime-API, Renderer und Editor-Strukturansicht.
-- Die App ist unter `/webapp/<root>` erreichbar
+`ui-app` ist die **Wurzel** einer deklarativen Web-App. Der Knoten definiert die
+Basis-URL, das Basis-Layout, das Theme (Design-Tokens) und das Logging-Verhalten
+der App. Er ist zugleich die **implizite Root-Route `/`**: Startseiten-Inhalte
+werden direkt in seine Layout-Slots gehängt — eine einfache App braucht keinen
+einzigen `ui-route`-Knoten.
 
-## Abhängigkeiten
+## Einordnung
 
-**Parent-Knoten:**
-- Keiner. `ui-app` ist der Root-Knoten einer Anwendung.
+- **Parent:** keiner — `ui-app` ist der Root-Knoten.
+- **Kinder:** View-Knoten mounten über `mount` in die App-Slots (`<appId>/content`, beim `app`-Preset zusätzlich `header`/`navbar`/`footer`). `ui-route`-Knoten referenzieren die App als Parent.
+- **Erreichbarkeit:** die App wird unter `/<root>` ausgeliefert (eindeutiger URL-Einstieg).
+- **Rolle zur Laufzeit:** Einstiegspunkt für Runtime-API, Renderer und Editor-Strukturansicht; SSE-Hub für den Live-Transport (siehe [messages.md](../concepts/messages.md)).
 
-**Gemeinsam genutzte Services und Komponenten:**
-- Runtime-API: stellt den Einstiegspunkt `/webapp/<root>` bereit
-- Editor-Strukturansicht: App ist Wurzel der Knotenhierarchie
+## Felder
 
-## Editor
+Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt (SelectBox,
+Node-Picker-Dialog, typedInput, Token-Editor, Event-Checkboxen).
 
-**Pflichtfelder:**
-- `root`: der erste URL-Teil der app hinter /webapp, root für diese Anwendung.
-  - Validierung: unique über alle ui-app Knoten, valider URL part
-- `layout`: Layout-Preset
-  - Default: `vertical` (Kinder werden untereinander dargestellt)
-  - Presets: `vertical`, `horizontal`, `app`, `grid`, `absolute`
+### Gruppe „Allgemein"
 
-**Optionale Felder:**
-- `name`: Node-RED-Anzeigefeld. Wird bei der Darstellung des Knotens und in Auswahlfeldern angezeigt.
-  - Default: `"App N"` (fortlaufende Nummer aller ui-app-Knoten, startend bei 1)
-- `forwardErrorsToClient` (Checkbox): leitet Framework-Fehler des Backends an
-  verbundene Clients weiter (SSE-`error`-Event), wo sie geloggt werden (P55).
-  - Default: **aus** (Sicherheit — siehe [ADR 0006](../../adr/0006-error-handling-and-logging.md) §4).
-    Anonyme `httpNode`-Besucher erhalten ohne dieses Opt-in keine Server-Interna.
-- `forwardErrorMinSeverity` (Auswahl `debug` | `info` | `warn` | `error`): nur
-  Fehler ab dieser Stufe werden weitergeleitet. Nur sichtbar/aktiv, wenn
-  `forwardErrorsToClient` an ist.
-  - Default: `error`.
-  - Die weitergeleitete `message` wird **redigiert** (Dateipfade/Stacktraces
-    entfernt); nur `code` + Framework-IDs (`appId`/`nodeId`/`op`) reisen mit.
-  - Siehe [logs-errors.md](../concepts/logs-errors.md) für das Logging-/Fehler-Modell.
+| Feld | Label | Editor-Typ | Pflicht | Beschreibung |
+|---|---|---|---|---|
+| `name` | „Name" | Textfeld | optional | Anzeigename im Editor und in Auswahllisten. Default: fortlaufend `App N`. |
+| `root` | „Root" | Textfeld + URL-Vorschau | **ja** | Erster URL-Abschnitt der App (`/<root>`). Eindeutig über alle `ui-app`-Knoten; nur valide URL-Path-Zeichen. Eine Live-Vorschau zeigt die resultierende App-URL. |
+
+### Gruppe „Layout"
+
+| Feld | Label | Editor-Typ | Pflicht | Beschreibung |
+|---|---|---|---|---|
+| `layout` | „Layout" | SelectBox (Layout-Preset) | **ja** | Basis-Layout der App. Auswahl aus den Standard-Presets (`vertical`, `horizontal`, `app`, `grid`, `absolute`). Default: `vertical`. Bestimmt die verfügbaren Slots und die Child-Platzierungs-Felder direkter Kinder — siehe [layout.md](../concepts/layout.md). |
+
+### Gruppe „Theming"
+
+| Feld | Label | Editor-Typ | Pflicht | Beschreibung |
+|---|---|---|---|---|
+| `tokens` | „Styles anpassen" | Button → Token-Editor-Dialog | optional | App-weite Design-Tokens (Farben, Typografie, Abstände, Radii). Nicht gesetzte Tokens fallen auf System-Defaults zurück; das Theme ist additiv. Details und Token-Liste: [theming.md](../concepts/theming.md). |
+
+### Gruppe „Logging"
+
+| Feld | Label | Editor-Typ | Pflicht | Beschreibung |
+|---|---|---|---|---|
+| `forwardErrorsToClient` / `forwardErrorMinSeverity` | „Logging" (+ Info-Icon-Dialog) | **eine** SelectBox: `aus` / `debug` / `info` / `warn` / `error` | optional | Steuert die opt-in Weiterleitung von **Framework-Fehlern** des Backends an verbundene Clients. `aus` (Default) = keine Weiterleitung. Eine Severity schaltet die Weiterleitung ein und setzt zugleich die Mindeststufe. Weitergeleitete Meldungen werden redigiert. Mapping und Sicherheitsbegründung: [logs-errors.md](../concepts/logs-errors.md). |
+
+### Gruppe „Events"
+
+| Feld | Label | Editor-Typ | Pflicht | Beschreibung |
+|---|---|---|---|---|
+| `events` | „Events" | Event-Checkboxen → Output-Ports | optional | Aktivierbare Ausgangs-Events: `clientConnected`, `clientDisconnected`, `onEnter`, `onLeave`. Jedes aktive Event erzeugt einen Output-Port (Reihenfolge = Listenreihenfolge). Siehe Abschnitt „Output". |
+
+### Inline-Hilfe (HTML)
+
+Der `data-help-name="ui-app"`-Hilfetext im Editor soll **knapp, aber
+ausreichend** sein: Zweck in 1–2 Sätzen, die Rolle als Root + implizite
+Root-Route, ein Hinweis pro Feldgruppe (Root/Layout/Theming/Logging/Events) und
+ein Link auf die ausführliche Doku. Empfohlener Link (später ggf. Wiki):
+`https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/structure/ui-app.md`.
 
 ## Input
 
+`ui-app` konsumiert **keine fachlichen** Eingangs-Messages — es ist primär eine
+Ereignis-Quelle und der SSE-Hub der App.
+
+- **Akzeptiert:** keine speziellen `msg.ui.*`-Verben.
+- **Validierung:** keine (keine fachlichen Verben zu prüfen).
+- **Nicht erkannte / fachfremde Messages:** werden **unverändert durchgereicht**
+  (Pass-Through), ohne Fehlerausgabe. Es gilt die Framework-Regel: kein stilles
+  Schlucken, aber auch keine Fehlermeldung für irrelevante Eingaben.
+- **Framework-Fehler** (z. B. fehlgeschlagener Snapshot-Aufbau) werden gemäß
+  [logs-errors.md](../concepts/logs-errors.md) als strukturierter Fehler gemeldet,
+  nicht als gewöhnliche Eingabe behandelt.
+
 ## Output
 
-Konfigurierbare Events — im Editor per Checkbox aktivierbar. Pro aktivem Event ein Out-Port:
+Pro aktivem Event ein Output-Port. Emittiert wird, wenn das jeweilige Ereignis
+zur Laufzeit eintritt:
 
-| Event | Beschreibung | `msg.ui`-Felder |
-|---|---|---|
-| `clientConnected` | Ein Client hat die App geöffnet | `event: "clientConnected"`, `clientId` |
-| `clientDisconnected` | Ein Client hat die App geschlossen / Verbindung verloren | `event: "clientDisconnected"`, `clientId` |
-| `onEnter` | Die implizite Root-Route `/` wurde betreten | `event: "onEnter"`, `route`, `params`, `clientId` |
-| `onLeave` | Die implizite Root-Route `/` wurde verlassen | `event: "onLeave"`, `route`, `params`, `clientId` |
+| Event | Wann | Erzeugte `msg.ui`-Felder | Intention |
+|---|---|---|---|
+| `clientConnected` | ein Client öffnet die App (neue Session) | `event: "clientConnected"`, `clientId` | initiale Daten für genau diesen Client laden und per `clientId` gezielt zustellen |
+| `clientDisconnected` | ein Client schließt die App / verliert die Verbindung | `event: "clientDisconnected"`, `clientId` | Aufräumen / Sitzungs-Ende verbuchen |
+| `onEnter` | die implizite Root-Route `/` wird betreten | `event: "onEnter"`, `route`, `params`, `clientId` | Startseiten-Daten laden |
+| `onLeave` | die implizite Root-Route `/` wird verlassen | `event: "onLeave"`, `route`, `params`, `clientId` | Aufräumen beim Verlassen der Startseite |
 
-Typischer Anwendungsfall für `clientConnected`: initiale Daten für den neuen Client laden und per `clientId` gezielt an ihn senden.
+Feldsemantik der Lifecycle-Events (`route`/`params`) wie bei `ui-route` —
+siehe [events.md](../concepts/events.md).
 
-`onEnter` / `onLeave` (P66 / ADR 0007 Amendment): Die `ui-app` besitzt die
-implizite Root-Route `/` (Home-Content mountet direkt in die App-Slots, ohne
-eigene `ui-route`). Eine an die `ui-app` verdrahtete `navigate`-Action wird daher
-wie bei einer `ui-route` behandelt — zur Root navigieren — und emittiert
-`onEnter` / `onLeave` beim Root-Eintritt/-Austritt, genau wie eine `ui-route`.
+**Antizipierte Wiring-Szenarien:**
+- `clientConnected` → `function`/`ui-query`/`ui-store`, das den initialen
+  Zustand baut, mit `msg.ui.clientId` **gezielt** an den neuen Client (nicht
+  Broadcast) — siehe [multi-user.md](../concepts/multi-user.md).
+- `onEnter` der Root → Laden der Startseiten-Daten in einen `ui-store`/`ui-query`.
+- Eine an `ui-app` verdrahtete `navigate`-Action navigiert zur Root `/` und löst
+  `onEnter`/`onLeave` aus (ADR 0007 Amendment).
+
+## Theming
+
+`ui-app` ist der Ort, an dem das **App-weite Theme** (Design-Tokens) gesetzt wird;
+es gilt für alle gerenderten Komponenten. Die Tokens sind backend-neutral und
+werden vom aktiven Renderer-Backend auf dessen Variablen abgebildet (heute
+Shoelace; weitere Backends wie Material o. ä. sind vorgesehen und bilden dieselben
+semantischen Tokens auf ihr jeweiliges System ab). Details: [theming.md](../concepts/theming.md).
 
 ## Besonderheiten
 
-- `ui-app` fungiert als implizite Route `"/"`. View-Knoten (`ui-button`, `ui-text`, `ui-input`, `ui-table`, `ui-container`) können direkt in die Slots der App gehängt werden, ohne dass ein `ui-route`-Knoten dazwischen nötig ist. Einfache Apps ohne Routing brauchen deshalb gar keine `ui-route`-Knoten.
-- Das Routing nach `/webapp/<root>` verhält sich ansonsten exakt wie bei `ui-route`. Hier sollte ggf. gemeinsamer Code genutzt werden.
+- **Implizite Root-Route `/`.** `ui-app` ist zugleich die Route `/`. View-Knoten
+  können direkt in die App-Slots gehängt werden; ein `ui-route` mit `path: "/"` ist
+  **verboten** (Kollision) — siehe [`ui-route`](ui-route.md). Root-Routing und
+  `ui-route`-Routing verhalten sich gleich (gemeinsamer Pfad).
+- **Mehrere Apps** pro Node-RED-Instanz sind zulässig; jede hat eine eindeutige
+  `root`.
 
-Siehe für das mehrfach genutzte Layout-Konzept auch [layout.md](../concepts/layout.md).
+## Referenzen
 
-Eine App braucht ein Basis-Layout aus den vorhandenen Standard-Presets.
-- Direkte Kinder der App-Slots erhalten je nach Preset zusätzliche Layout-Felder im Editor. Details dazu stehen in [layout.md](../concepts/layout.md).
+- [overview.md](../concepts/overview.md) — gemeinsame Modellregeln
+- [layout.md](../concepts/layout.md) — Presets und Slots
+- [theming.md](../concepts/theming.md) — Design-Tokens und Backends
+- [logs-errors.md](../concepts/logs-errors.md) — Logging/Fehler-Weiterleitung
+- [events.md](../concepts/events.md) — Event-Format und Output-Ports
+- [multi-user.md](../concepts/multi-user.md) — `clientId`-Routing
+- [`ui-route`](ui-route.md) — Unterseiten
 
-Offene Spezifikation:
-- Soll eine App künftig globale Metadaten wie Theme, Basisroute oder Berechtigungen tragen?
-  - Später: Themeauswahl. Erfordert ein Theme-Konzept
-  - Authorization ist ein offener Punkt, könnte aber eine Auswahl aus verfügbaren Lösungen sein (OAuth2, OICD, ...)
-- Ist genau eine App pro Flow gewollt oder nur genau eine pro zusammenhängendem Deploy-Slice?
-  - Es gibt ein Repository pro node-red instanz. Die Knoten sind unabhängig von flows.
+## Offene Punkte
+
+- App-weite Metadaten wie Authentifizierung/Autorisierung (z. B. OAuth2/OIDC) sind noch nicht modelliert.
