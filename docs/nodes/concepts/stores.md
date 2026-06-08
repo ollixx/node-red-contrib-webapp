@@ -139,7 +139,7 @@ reportRuntimeError(node, {
 ```
 
 So würde dieselbe sprechende Meldung, die heute schon im Contract steht, auch
-zur Laufzeit über den ADR-0006-Pfad sichtbar.
+zur Laufzeit über den ADR-0006-Pfad sichtbar. (Eingeplant als Roadmap-Phase P80.)
 
 ## Lesen, Variante A: `state`-Binding (roher Pfad)
 
