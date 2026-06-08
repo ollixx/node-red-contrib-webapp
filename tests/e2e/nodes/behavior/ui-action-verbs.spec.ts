@@ -161,7 +161,7 @@ test.describe("ui-action interaction verbs (P53)", () => {
         ]);
         const flow = new FlowBuilder()
             .app({ id: "verbApp4", root: "verbApp4" })
-            .node("ui-accordion", { id: "verbAcc4", items })
+            .node("ui-accordion", { id: "verbAcc4", sections: items })
             .node("ui-action", { id: "verbOpenSec4", actionType: "open", target: "verbAcc4", part: "secB" })
             .withInjectNode("verbOpenSecInj4", "verbOpenSec4")
             .build();

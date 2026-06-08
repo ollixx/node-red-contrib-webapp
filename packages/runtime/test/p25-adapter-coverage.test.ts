@@ -58,7 +58,7 @@ const allKindsDefinitions = build([
     { type: "ui-progress", id: "prg1", mount: "app1.content", z: "f1" },
     { type: "ui-breadcrumb", id: "brd1", mount: "app1.content", z: "f1" },
     { type: "ui-tabs", id: "tabs1", mount: "app1.content", tabs: "[]", z: "f1" },
-    { type: "ui-accordion", id: "acc1", mount: "app1.content", items: "[]", z: "f1" },
+    { type: "ui-accordion", id: "acc1", mount: "app1.content", sections: "[]", z: "f1" },
     { type: "ui-menu", id: "mn1", mount: "app1.content", z: "f1" },
     { type: "ui-avatar", id: "av1", mount: "app1.content", z: "f1" }
 ]);

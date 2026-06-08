@@ -729,7 +729,7 @@
         }
 
         if (component.kind === "accordion") {
-            const items = Array.isArray(component.props.items) ? component.props.items : [];
+            const items = Array.isArray(component.props.sections) ? component.props.sections : [];
             const detailsHtml = items.map(function (item) {
                 // P53: each section carries a stable data-webapp-part hook (its id,
                 // falling back to the label) so a ui-action open/close command can
