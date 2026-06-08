@@ -11,6 +11,7 @@
                 mount: { value: "", required: true },
                 label: { value: "", required: true },
                 variant: { value: "neutral" },
+                icon: { value: "" },
                 disabledPath: { value: "" },
                 disabled: { value: null },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
@@ -34,6 +35,7 @@
                 common.installReferenceSelectors({ mount: true }).call(this);
                 common.installVariantSelectBox("button").call(this);
                 common.installLayoutChildPropRows().call(this);
+                common.installIconField("#node-input-icon", { title: "Button-Icon auswählen" });
             }
         });
     })();
@@ -43,6 +45,7 @@
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <div class="form-row"><label for="node-input-label">Label</label><input type="text" id="node-input-label"></div>
+    <div class="form-row"><label for="node-input-icon">Icon</label><input type="text" id="node-input-icon" placeholder="z. B. plus oder lucide:user"></div>
     <div class="form-row"><label for="node-input-disabledPath">Disabled Path</label><input type="text" id="node-input-disabledPath"></div>
 </script>
 <script type="text/html"

@@ -595,6 +595,40 @@ function getBinding(bindingCandidate, fallbackBinding) {
     return fallbackBinding;
 }
 
+// P69: normalise an icon field config value into the schema-accepted shape.
+//  - a dynamic binding ({ kind, … }) → passed through unchanged
+//  - a literal { library, name } object → passed through unchanged
+//  - a string "name" or "library:name" → parsed into { library, name } (the
+//    default library stays implicit: a bare "name" is returned as-is so the
+//    renderer/normalizer applies the default)
+//  - empty/blank → undefined
+function mapIconField(value) {
+    if (value === undefined || value === null) {
+        return undefined;
+    }
+    if (typeof value === "object") {
+        if (typeof value.kind === "string") {
+            return value; // dynamic binding
+        }
+        if (typeof value.name === "string" && value.name.length > 0) {
+            return value; // literal { library, name }
+        }
+        return undefined;
+    }
+    if (typeof value === "string") {
+        const trimmed = value.trim();
+        if (trimmed.length === 0) {
+            return undefined;
+        }
+        const sep = trimmed.indexOf(":");
+        if (sep > 0 && sep < trimmed.length - 1) {
+            return { library: trimmed.slice(0, sep), name: trimmed.slice(sep + 1) };
+        }
+        return trimmed; // bare name → default library applied downstream
+    }
+    return undefined;
+}
+
 function initializeState(stores, queries, appId) {
     let state = {
         ui: {
@@ -3186,6 +3220,7 @@ const runtimeNodeRegistry = {
             label: config.label,
             variant: config.variant || undefined,
             action: blankToUndefined(config.action),
+            icon: mapIconField(config.icon),
             disabled: getBinding(config.disabled, config.disabledPath ? stateBinding(config.disabledPath) : undefined),
             ...collectNodeConfigLayoutProps(config)
         }),
@@ -3767,7 +3802,7 @@ const runtimeNodeRegistry = {
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
-            icon: config.icon || "",
+            icon: mapIconField(config.icon) || "",
             size: config.size || undefined,
             color: config.color || undefined,
             ...collectNodeConfigLayoutProps(config)
@@ -3801,6 +3836,7 @@ const runtimeNodeRegistry = {
             order: toOptionalNumber(config.order),
             src: getBinding(config.src, config.srcPath ? stateBinding(config.srcPath) : undefined),
             initials: config.initials || undefined,
+            icon: mapIconField(config.icon),
             alt: config.alt || undefined,
             size: config.size || undefined,
             shape: config.shape || undefined,
