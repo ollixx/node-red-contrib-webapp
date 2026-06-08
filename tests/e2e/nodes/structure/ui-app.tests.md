@@ -2,7 +2,7 @@
 
 Location: `tests/e2e/nodes/structure/ui-app.spec.ts`
 
-Written fresh for P87 per `.ai/agents/node-testing.md`.
+Written fresh for P87 per `.ai/agents/node-testing.md`. Reviewed for P88 — no new tests needed (P88 is a pure editor HTML layout polish: no new fields, no new runtime behaviour).
 
 ## Tests
 

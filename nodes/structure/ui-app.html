@@ -310,10 +310,8 @@
     <div class="form-row"><label for="node-input-layout-preset">Layout</label><select id="node-input-layout-preset"></select></div>
     <div class="form-row">
         <label>App URL</label>
-        <div style="padding-top: 6px;">
-            <a id="node-ui-app-url" href="#" target="_blank" rel="noopener" style="display: none;"></a>
-            <span id="node-ui-app-url-empty" style="color: #777;">Bitte zuerst Root setzen</span>
-        </div>
+        <a id="node-ui-app-url" href="#" target="_blank" rel="noopener" style="display: none;"></a>
+        <span id="node-ui-app-url-empty" style="color: #777;">Bitte zuerst Root setzen</span>
     </div>
     <div class="form-row">
         <label>&nbsp;</label>
@@ -332,23 +330,22 @@
     <input type="hidden" id="node-input-forwardErrorMinSeverity">
     <hr style="margin: 8px 0;">
     <!-- P61: single Logging select replaces the old checkbox + tips + severity row -->
+    <!-- P88: info button moved AFTER the select, bündig in 2. Spalte -->
     <div class="form-row">
-        <label for="node-ui-app-logging" style="display: inline;">
-            Logging
-            <button type="button" id="node-ui-app-logging-info-btn"
-                    class="red-ui-button"
-                    style="width: auto; padding: 0 4px; margin-left: 4px; line-height: 1; font-size: 12px; vertical-align: middle;"
-                    title="Informationen zur Fehler-Weiterleitung">
-                <i class="fa fa-info-circle"></i>
-            </button>
-        </label>
-        <select id="node-ui-app-logging" style="width: 70%;">
+        <label for="node-ui-app-logging">Logging</label>
+        <select id="node-ui-app-logging" style="width: calc(70% - 30px);">
             <option value="aus">aus</option>
             <option value="debug">debug</option>
             <option value="info">info</option>
             <option value="warn">warn</option>
             <option value="error">error</option>
         </select>
+        <button type="button" id="node-ui-app-logging-info-btn"
+                class="red-ui-button"
+                style="width: auto; padding: 0 4px; margin-left: 4px; line-height: 1; font-size: 12px; vertical-align: middle;"
+                title="Informationen zur Fehler-Weiterleitung">
+            <i class="fa fa-info-circle"></i>
+        </button>
     </div>
     <hr style="margin: 8px 0;">
     <div class="form-row">
