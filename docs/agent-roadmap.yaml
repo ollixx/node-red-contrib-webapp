@@ -1226,7 +1226,7 @@ phases:
 
   - { id: P93, title: "ui-avatar Rendering-Bugfixes — size wird nicht gerendert (+ Default „small\" ergänzen); square/round wird nicht gerendert; Fallback-Initials werden nicht gerendert (statt „Objekt erwartet\"-Fehler); „Alt Text\" wird nicht unterstützt → entfernen", status: done, dependencies: [P16d], archive: "docs/agent-roadmap-archive.yaml#P93" }
 
-  - { id: P94, title: "ui-avatar Feld-Erweiterung — „src path\" → „image\" als typedInput mit Typen „Media\" (Pfad auf Media-Server, wenn mediaStoreUrl gesetzt) und „Store\" (Bildpfad aus Store-Pfad); „Fallback Initials\" als typedInput mit allen sinnvollen Typen; „variant\" (Bootstrap) mit Shoelace-Warnung; Docs anpassen", status: pending, dependencies: [P67, P70] }
+  - { id: P94, title: "ui-avatar Feld-Erweiterung — „src path\" → „image\" als typedInput mit Typen „Media\" (Pfad auf Media-Server, wenn mediaStoreUrl gesetzt) und „Store\" (Bildpfad aus Store-Pfad); „Fallback Initials\" als typedInput mit allen sinnvollen Typen; „variant\" (Bootstrap) mit Shoelace-Warnung; Docs anpassen", status: in_progress, dependencies: [P67, P70] }
 
   # ════════════════════════════════════════════════════════════════════════
   # Human-Review-Findings, Runde 2 (2026-06-08, P95–P99)
