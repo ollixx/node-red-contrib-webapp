@@ -5,7 +5,7 @@ project:
   execution_rule: Pick the first phase whose dependencies are done and whose status is pending.
   review_rule: Every phase must pass its validation checks before status can become done.
   stop_rule: Stop for human input on unresolved architecture decisions or repeated validation failure.
-  current_phase: P86  # next to implement: classic behaviour tests — structure/state/behavior nodes (ui-app/ui-query/ui-navigation)
+  current_phase: none  # all roadmap phases complete (P0–P86, P77 superseded by P69); no pending phases remain
   # current_phase is the next phase to implement. Update it whenever a phase starts or completes.
 
 phases:
@@ -1188,7 +1188,7 @@ phases:
 
   - { id: P85, title: "Klassische Verhaltens-Tests Navigation-Knoten (accordion/breadcrumb/menu/pagination/stepper/tabs): select-Verb→SSE-Push (tabs/stepper/menu), Output-Event-Dispatch (pageChange/tabChange/stepChange/sectionOpen-close/navigate), msg.payload/patch, accordion multiple/defaultOpen, stepper complete + stepId-Contract, Pass-Through; fehlende Editor-E2E pro Knoten ergänzen", status: done, dependencies: [P81], archive: "docs/agent-roadmap-archive.yaml#P85" }
 
-  - { id: P86, title: "Klassische Verhaltens-Tests Structure/State/Behavior-Knoten: ui-app clientConnected/clientDisconnected-Emission+clientId, ui-query clientId-Routing + Pass-Through/No-Crash, ui-navigation Alias-Äquivalenz zu ui-action(navigate)+Schema-`to`; redundante Behavior-E2E (z.B. ui-action „navigate does NOT update store\") eindampfen", status: in_progress, dependencies: [P81] }
+  - { id: P86, title: "Klassische Verhaltens-Tests Structure/State/Behavior-Knoten: ui-app clientConnected/clientDisconnected-Emission+clientId, ui-query clientId-Routing + Pass-Through/No-Crash, ui-navigation Alias-Äquivalenz zu ui-action(navigate)+Schema-`to`; redundante Behavior-E2E (z.B. ui-action „navigate does NOT update store\") eindampfen", status: done, dependencies: [P81], archive: "docs/agent-roadmap-archive.yaml#P86" }
 
   # Deferred — only when a concrete need appears (see ADR 0002):
   #   - ui-custom escape-hatch node for framework-specific components (opt-in, non-portable)
