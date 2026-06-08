@@ -54,7 +54,7 @@ Node-Picker-Dialog, typedInput, Canvas-Knoten-Picker).
 
 > Das Altfeld `target` (Einzel-String) wird aus pre-P60-Flows weiter akzeptiert
 > und wie ein einzelnes gewähltes Ziel behandelt; im Editor ersetzt der Picker es.
-> Zur Laufzeit ist `msg.ui.action.target` der kanonische Override (`targetId` als Alias).
+> Zur Laufzeit ist `msg.ui.action.target` der einzige kanonische Override (P79); ein `targetId` wird ignoriert.
 
 ### Kanonisches Verb-Set (ADR 0005)
 
@@ -94,7 +94,7 @@ Der In-Port empfängt eine `msg`. Relevante Felder:
 
 ```
 msg.ui.action.type   = "navigate" | "show" | "hide" | "open" | "close" | "select" | "enable" | "disable" | "focus" | "reset"
-msg.ui.action.target = <node-id>  ← optionaler Ziel-Override (sonst löst der Zielknoten auf sich selbst auf); `targetId` als Alias
+msg.ui.action.target = <node-id>  ← optionaler Ziel-Override (sonst löst der Zielknoten auf sich selbst auf); einziges kanonisches Feld (P79)
 msg.ui.action.part   = <sub-id>   ← Granularität für open / close / select
 msg.ui.action.to     = <pfad>     ← Navigationsziel für navigate (Szenario 2; leer bei Verdrahtung zu einer ui-route)
 msg.ui.action.params = { k: v }   ← benannte URL-Parameter für navigate

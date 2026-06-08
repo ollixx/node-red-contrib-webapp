@@ -265,9 +265,46 @@ describe("P20a: ui-button click and ui-action wiring", () => {
         registerWebappNodes.__test__.runtimeState.RED = savedRED;
     });
 
-    it("P60: msg.ui.action.targetId override delivers via receive() to EXACTLY that node (unified with target)", () => {
-        // A configured `targets` list is present, but the msg-level targetId
+    it("P60/P79: msg.ui.action.target override delivers via receive() to EXACTLY that node (unified with target)", () => {
+        // A configured `targets` list is present, but the msg-level `target`
         // override wins and addresses exactly one node — delivered via receive().
+        const node = {
+            id: "dynAction",
+            wires: [["wired"]],
+            webappDefinition: { type: "ui-action", id: "dynAction", actionType: "disable", targets: ["panelA"] }
+        };
+        const chosen = { id: "chosenBtn", send: vi.fn(), receive: vi.fn() };
+        const panelA = { id: "panelA", send: vi.fn(), receive: vi.fn() };
+        const send = vi.fn();
+        const done = vi.fn();
+
+        const savedRED = registerWebappNodes.__test__.runtimeState.RED;
+        registerWebappNodes.__test__.runtimeState.RED = {
+            nodes: {
+                getNode: (id: string) => (id === "chosenBtn" ? chosen : id === "panelA" ? panelA : undefined)
+            }
+        };
+
+        registerWebappNodes.__test__.actionInputHandler(node, { ui: { action: { target: "chosenBtn" } } }, send, done);
+
+        // Only the override target receives; the configured `targets` list is
+        // ignored when an explicit override is supplied. receive(), not send().
+        expect(send).not.toHaveBeenCalled();
+        expect(panelA.receive).not.toHaveBeenCalled();
+        expect(chosen.send).not.toHaveBeenCalled();
+        expect(chosen.receive).toHaveBeenCalledTimes(1);
+        const injected = chosen.receive.mock.calls[0][0] as { ui: { action: { type: string; target: string } } };
+        expect(injected.ui.action).toMatchObject({ type: "disable", target: "chosenBtn" });
+        expect(done).toHaveBeenCalledTimes(1);
+
+        registerWebappNodes.__test__.runtimeState.RED = savedRED;
+    });
+
+    it("P79: msg.ui.action.targetId is NOT an override alias — `target` is the single canonical field", () => {
+        // P79 decision: the runtime `targetId` alias was removed so the handler
+        // matches the strict `actionMessageCommandSchema` (which only knows
+        // `target`). A bare `targetId` therefore does NOT address a node; the
+        // configured `targets` list governs delivery instead.
         const node = {
             id: "dynAction",
             wires: [["wired"]],
@@ -287,14 +324,10 @@ describe("P20a: ui-button click and ui-action wiring", () => {
 
         registerWebappNodes.__test__.actionInputHandler(node, { ui: { action: { targetId: "chosenBtn" } } }, send, done);
 
-        // Only the override target receives; the configured `targets` list is
-        // ignored when an explicit override is supplied. receive(), not send().
-        expect(send).not.toHaveBeenCalled();
-        expect(panelA.receive).not.toHaveBeenCalled();
-        expect(chosen.send).not.toHaveBeenCalled();
-        expect(chosen.receive).toHaveBeenCalledTimes(1);
-        const injected = chosen.receive.mock.calls[0][0] as { ui: { action: { type: string; target: string } } };
-        expect(injected.ui.action).toMatchObject({ type: "disable", target: "chosenBtn" });
+        // `targetId` is ignored: the configured target (panelA) receives, the
+        // node named by `targetId` (chosenBtn) does not.
+        expect(chosen.receive).not.toHaveBeenCalled();
+        expect(panelA.receive).toHaveBeenCalledTimes(1);
         expect(done).toHaveBeenCalledTimes(1);
 
         registerWebappNodes.__test__.runtimeState.RED = savedRED;
