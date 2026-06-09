@@ -708,7 +708,11 @@
             // For backends without native support, the client-side JS fallback in
             // webapp-client.js handles auto-hide (timeout) and countdown (CSS animation).
             const durationAttr = component.props.duration ? " duration=\"" + escapeAttribute(String(Number(component.props.duration))) + "\"" : "";
-            const countdownAttr = component.props.countdown ? " countdown=\"ltr\"" : "";
+            // P100 regression workaround: emit countdown as data-webapp-countdown instead of the
+            // Shoelace attribute. Shoelace's @watch("countdown") fires before the shadow DOM
+            // is ready, causing animate() to throw on a null reference. webapp-client.js
+            // sets el.countdown = "ltr" after the element upgrades. See bug fix notes.
+            const countdownAttr = component.props.countdown ? " data-webapp-countdown=\"ltr\"" : "";
             return wrapRenderedComponentHtml(component, layoutId, "<sl-alert" + attrs + " variant=\"" + escapeAttribute(shoelaceVariant) + "\" open" + dismissible + durationAttr + countdownAttr + ">" + iconHtml + title + escapeHtml(message) + "</sl-alert>");
         }
 

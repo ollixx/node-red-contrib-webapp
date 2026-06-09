@@ -1059,7 +1059,12 @@ function toComponentDefinitions(components) {
                     ...(component.fit !== undefined ? { fit: component.fit } : {}),
                     ...(component.width !== undefined ? { width: component.width } : {}),
                     ...(component.height !== undefined ? { height: component.height } : {}),
-                    ...(component.fallbackSrc !== undefined ? { fallbackSrc: component.fallbackSrc } : {})
+                    ...(component.fallbackSrc !== undefined ? { fallbackSrc: component.fallbackSrc } : {}),
+                    // P91: ui-alert duration + countdown — auto-hide and countdown
+                    // progress bar. These are mapped by mapConfig but were missing from
+                    // the props block, so the serializer never received them.
+                    ...(component.duration !== undefined ? { duration: component.duration } : {}),
+                    ...(component.countdown !== undefined ? { countdown: component.countdown } : {})
                 },
                 events: []
             };

@@ -102,21 +102,27 @@
                 // duration "" means no auto-hide (absent). Must be >= 1 if set.
                 duration: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
                 // P100: countdown requires duration to be set (cross-field validation).
+                // Use this.duration (stored node value) as primary source so the
+                // validator works both during deploy (no DOM panel open) and in the
+                // live editor (where #node-input-duration may or may not be rendered yet).
                 countdown: { value: false, validate: function (value) {
                     if (value === true || value === "true") {
-                        const dur = $("#node-input-duration").val();
+                        // Prefer the live DOM value (editor panel open); fall back to
+                        // the stored node property (deploy / out-of-panel validation).
+                        const domEl = document.getElementById("node-input-duration");
+                        const dur = domEl ? domEl.value : (this.duration !== undefined ? String(this.duration) : "");
                         return dur !== "" && dur !== null && dur !== undefined && Number(dur) >= 1;
                     }
                     return true;
                 } },
                 visible: { value: null },
-                order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
-                row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
-                col: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
-                colSize: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
-                rowSize: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
-                layoutX: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
-                layoutY: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } }
+                order: { value: "", validate: function (value) { return value == null || value === "" || RED.validators.number()(value); } },
+                row: { value: "", validate: function (value) { return value == null || value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
+                col: { value: "", validate: function (value) { return value == null || value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
+                colSize: { value: "", validate: function (value) { return value == null || value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
+                rowSize: { value: "", validate: function (value) { return value == null || value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
+                layoutX: { value: "", validate: function (value) { return value == null || value === "" || RED.validators.number()(value); } },
+                layoutY: { value: "", validate: function (value) { return value == null || value === "" || RED.validators.number()(value); } }
             },
             inputs: 1,
             outputs: 1,

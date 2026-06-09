@@ -346,6 +346,35 @@
         // P53: re-stamp interaction state on the freshly rendered markup so a
         // store-driven re-render does not wipe a prior show/hide/enable/disable.
         applyInteractionOverlay();
+
+        // P100 regression workaround: apply countdown="ltr" to sl-alert elements after
+        // their custom element's first LitElement render completes. The Shoelace sl-alert
+        // @watch("countdown") fires before the shadow DOM is ready during upgrade, causing
+        // animate() to crash on a null reference (.alert__countdown-elapsed not yet in DOM).
+        // We emit data-webapp-countdown="ltr" in the SSR/client HTML and set the Shoelace
+        // property here, after el.updateComplete (LitElement's first render Promise).
+        var countdownAlerts = Array.prototype.slice.call(root.querySelectorAll("sl-alert[data-webapp-countdown]"));
+        if (countdownAlerts.length > 0) {
+            customElements.whenDefined("sl-alert").then(function () {
+                countdownAlerts.forEach(function (el) {
+                    var countdownVal = el.getAttribute("data-webapp-countdown");
+                    if (!countdownVal) { return; }
+                    // el.updateComplete resolves after LitElement's first render — shadow DOM
+                    // is then fully populated and .alert__countdown-elapsed exists.
+                    var updatePromise = el.updateComplete;
+                    if (updatePromise && typeof updatePromise.then === "function") {
+                        updatePromise.then(function () {
+                            el.countdown = countdownVal;
+                            el.removeAttribute("data-webapp-countdown");
+                        });
+                    } else {
+                        // Fallback for non-LitElement custom elements.
+                        el.countdown = countdownVal;
+                        el.removeAttribute("data-webapp-countdown");
+                    }
+                });
+            });
+        }
     }
 
     function collectFormValues(formId) {

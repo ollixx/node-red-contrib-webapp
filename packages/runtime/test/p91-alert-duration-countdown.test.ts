@@ -150,35 +150,43 @@ describe("P91: ui-alert duration/countdown — serializer", () => {
         expect(html).not.toContain("duration=");
     });
 
-    // countdown attribute on sl-alert
-    it("countdown=true + duration → sl-alert has countdown='ltr' attribute", () => {
+    // countdown handling — P100 regression fix:
+    // The serializer emits data-webapp-countdown="ltr" (not countdown="ltr") to avoid
+    // a Shoelace timing bug where @watch("countdown") fires before the shadow DOM is
+    // ready, crashing animate() on a null countdownElement. webapp-client.js sets
+    // el.countdown = "ltr" after the element upgrades.
+    it("countdown=true + duration → sl-alert has data-webapp-countdown='ltr' data attribute", () => {
         const html = renderComponentHtml(
             makeAlert({ duration: 5000, countdown: true }), "main", {}
         );
-        expect(html).toContain("countdown=\"ltr\"");
+        expect(html).toContain("data-webapp-countdown=\"ltr\"");
+        // Must NOT emit the raw Shoelace attribute (would crash upgrade)
+        expect(html).not.toContain(" countdown=\"ltr\"");
     });
 
-    it("countdown=true without duration → countdown attribute still emitted", () => {
+    it("countdown=true without duration → data-webapp-countdown still emitted", () => {
         // countdown without duration is an edge case but should not crash;
-        // we emit the attribute — Shoelace just won't animate without a finite duration.
+        // we emit the data attribute — webapp-client.js will set it after upgrade.
         const html = renderComponentHtml(
             makeAlert({ countdown: true }), "main", {}
         );
-        expect(html).toContain("countdown=\"ltr\"");
+        expect(html).toContain("data-webapp-countdown=\"ltr\"");
     });
 
-    it("countdown absent → sl-alert has NO countdown attribute", () => {
+    it("countdown absent → sl-alert has NO countdown-related attribute", () => {
         const html = renderComponentHtml(
             makeAlert({ duration: 5000 }), "main", {}
         );
         expect(html).not.toContain("countdown=");
+        expect(html).not.toContain("data-webapp-countdown=");
     });
 
-    it("countdown=false → sl-alert has NO countdown attribute", () => {
+    it("countdown=false → sl-alert has NO countdown-related attribute", () => {
         const html = renderComponentHtml(
             makeAlert({ duration: 5000, countdown: false }), "main", {}
         );
         expect(html).not.toContain("countdown=");
+        expect(html).not.toContain("data-webapp-countdown=");
     });
 
     // sl-alert is still well-formed
