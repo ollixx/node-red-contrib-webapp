@@ -29,8 +29,6 @@ their blocker clears.
 
 
 
-### aspects/rendering
-- **P104** — in_progress — Wert-Rendering zentralisieren: Normalisierung (`""`→leer, `null`/Nicht-Skalar→`"?"`), alle wertbindenden Knoten scannen + Doc-Rollout — deps: [P3, P67] ✅ ready — [P104](aspects/rendering/P104-central-value-rendering.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -62,9 +60,10 @@ open the folder for the full history.
 | aspects/misc | 16 |
 | aspects/runtime | 7 |
 | aspects/state | 8 |
-| aspects/editor · rendering · schema | 5 each |
+| aspects/editor · schema | 5 each |
+| aspects/rendering | 6 |
 | aspects/foundation | 5 |
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 113 done, 1 open, 4 deferred.**
+**Total: 114 done, 0 open, 4 deferred.**
