@@ -32,10 +32,6 @@ their blocker clears.
 ### aspects/rendering
 - **P104** — pending — Wert-Rendering zentralisieren: Normalisierung (`""`→leer, `null`/Nicht-Skalar→`"?"`), alle wertbindenden Knoten scannen + Doc-Rollout — deps: [P3, P67] ✅ ready — [P104](aspects/rendering/P104-central-value-rendering.md)
 
-### aspects/state
-- **P106** — pending — Live-Modell-Auslieferung beim Deploy: In-Place via SSE-Snapshot, Reload nur als Shell-/Topologie-Fallback (+ Bugfix: Deploy liefert aktuell nichts) — deps: [P15, P31, P37] ✅ ready — [P106](aspects/state/P106-live-model-delivery-on-deploy.md)
-
-
 
 ## Deferred (parked, not abandoned)
 
@@ -64,10 +60,11 @@ open the folder for the full history.
 | nodes/ui-accordion · ui-breadcrumb · ui-button · ui-checkbox · ui-datepicker · ui-dialog · ui-divider · ui-icon · ui-image · ui-pagination · ui-route · ui-table · ui-text | 1 each |
 | aspects/test-infra | 21 |
 | aspects/misc | 16 |
-| aspects/runtime · state | 7 each |
+| aspects/runtime | 7 |
+| aspects/state | 8 |
 | aspects/editor · rendering · schema | 5 each |
 | aspects/foundation | 5 |
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 112 done, 2 open, 4 deferred.**
+**Total: 113 done, 1 open, 4 deferred.**

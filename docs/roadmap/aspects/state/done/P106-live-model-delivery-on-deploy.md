@@ -2,14 +2,14 @@
 id: P106
 title: "Live-Modell-Auslieferung beim Deploy: In-Place-Update via SSE-Snapshot-Push, Reload nur als Shell-/Topologie-Fallback (+ Bugfix: Deploy liefert aktuell gar nichts an verbundene Clients)"
 epic: aspects/state
-status: in_progress
+status: done
 dependencies: [P15, P31, P37]
 verify: browser
 spec: docs/nodes/concepts/live-deploy-update.md
 ---
 # P106 — Live-Modell-Auslieferung beim Deploy
 
-> Setzt das Konzept [live-deploy-update.md](../../../nodes/concepts/live-deploy-update.md)
+> Setzt das Konzept [live-deploy-update.md](../../../../nodes/concepts/live-deploy-update.md)
 > um. Mechanismus = Option 2 (In-Place, Reload als Fallback). Owner-Entscheidung 2026-06-09.
 
 ## Findings
@@ -17,7 +17,7 @@ spec: docs/nodes/concepts/live-deploy-update.md
 
 - Das Ändern von Knoten im Editor wird mit einem Deploy in Node-RED bestätigt. Danach sollen die Modell-Änderungen **direkt an alle Clients** ausgeliefert werden, so dass sich die UI **automatisch aktualisiert**.
 - **Beobachteter Ist-Zustand: beim Deploy passiert bei verbundenen Clients gar nichts** — der vorhandene P37-`redeploy`-Reload feuert nicht. Das ist ein latenter Bug, der unabhängig vom Zielmechanismus zuerst zu finden/fixen ist.
-- **Hinweis Owner: tritt bei einem *verdeckten* (nicht fokussierten) Browser-Tab auf.** Code-Analyse bestätigt die Ursachenkette: (a) der Deploy-Pfab sendet nur `redeploy`, keinen Snapshot ([webapp.js:4408](../../../../nodes/webapp.js)); (b) der SSE-Endpoint hängt an `RED.httpNode` und überlebt den Deploy → **kein Reconnect** → der `/stream`-Reconnect-Snapshot ([webapp.js:2460](../../../../nodes/webapp.js)) greift nicht; (c) Chrome **friert verdeckte Tabs ein** → der `redeploy`-Handler ([webapp-client.js:1031](../../../../resources/lib/webapp-client.js)) läuft nicht; (d) es gibt **kein `visibilitychange`-Handling** im Client → beim Zurückkehren zum Tab wird nichts nachgezogen. Ergebnis: stehende Seite bis zum manuellen Reload.
+- **Hinweis Owner: tritt bei einem *verdeckten* (nicht fokussierten) Browser-Tab auf.** Code-Analyse bestätigt die Ursachenkette: (a) der Deploy-Pfab sendet nur `redeploy`, keinen Snapshot ([webapp.js:4408](../../../../../nodes/webapp.js)); (b) der SSE-Endpoint hängt an `RED.httpNode` und überlebt den Deploy → **kein Reconnect** → der `/stream`-Reconnect-Snapshot ([webapp.js:2460](../../../../../nodes/webapp.js)) greift nicht; (c) Chrome **friert verdeckte Tabs ein** → der `redeploy`-Handler ([webapp-client.js:1031](../../../../../resources/lib/webapp-client.js)) läuft nicht; (d) es gibt **kein `visibilitychange`-Handling** im Client → beim Zurückkehren zum Tab wird nichts nachgezogen. Ergebnis: stehende Seite bis zum manuellen Reload.
 - Gewählter Mechanismus: **In-Place-Update** über den vorhandenen SSE-Snapshot-Kanal; **voller Reload nur als Fallback**, wenn sich die App-Shell oder die Routen-Topologie ändert (Kriterium = Shell-/Topologie-Signatur, nicht Snapshot-Größe).
 
 ## Acceptance
@@ -42,3 +42,10 @@ spec: docs/nodes/concepts/live-deploy-update.md
 - Das `status`-Feld am `ui-app` ist die einzige neue Konfiguration; der Produktions-Zweig ersetzt den Auto-Update-Pfad durch den Versions-Alert.
 - Der `redeploy`-Reload aus P37 wird zum **Fallback-Zweig**; der Default-Pfad wird der Snapshot-Push.
 - Server-Pfad: `flows:started` → frisches `readDeployDefinitions(RED)` kompilieren → `pushSnapshotToClients(appId, undefined, …)` (Broadcast) inkl. Signatur. Client-Pfad: `snapshot`-Handler bzw. ein neuer Deploy-Push-Handler entscheidet In-Place vs. Reload.
+
+## Result
+
+delivered: Live model delivery on deploy — server pushes a `deploy` SSE frame `{ snapshot, signature, mode }` on every `flows:started` (fixing latent "deploy delivers nothing" bug); client decides in-place `applySnapshot` vs full reload by shell/topology signature, pulls `/snapshot` on tab re-focus (`visibilitychange`), and shows a sticky version alert in production mode; `ui-app` gains a `deployMode` (Entwicklung/Produktion) field. `registerDeployHook` refactoring subsumes P37 redeploy broadcast; P108 root-uniqueness check preserved in merged deploy hook.
+stats: 11 files (5 impl/doc modified, 2 unit-test files +18 tests, 2 E2E specs, 1 E2E fixture, 1 node-spec doc); 821 unit tests green; pnpm validate clean. Merge conflict in `nodes/webapp.js` resolved by orchestrator (P108 root-uniqueness check reintegrated into P106's `registerDeployHook`).
+notes: E2E (verify:browser) to be run by orchestrator on develop after all merges complete.
+cost: session aba12f850e8b7a763 + af95b3fc1c9dfdc26, ~44m total
