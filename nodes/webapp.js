@@ -1621,6 +1621,15 @@ function readDeployDefinitions(RED) {
                     if (liveDef.items !== undefined && liveDef.items !== baseDefinition.items) {
                         patch.items = liveDef.items;
                     }
+                    // src (ui-image, ui-avatar) and message (ui-alert) are binding
+                    // fields listed in VIEW_NODE_BINDING_FIELDS — carry live patches
+                    // so msg.payload → src/message updates reach the pushed snapshot.
+                    if (liveDef.src !== undefined && liveDef.src !== baseDefinition.src) {
+                        patch.src = liveDef.src;
+                    }
+                    if (liveDef.message !== undefined && liveDef.message !== baseDefinition.message) {
+                        patch.message = liveDef.message;
+                    }
                     // P52 / ADR 0004: carry a live placement patch (row/col/colSize/
                     // rowSize/layoutX/layoutY) into the pushed snapshot so a runtime
                     // re-placement actually reaches the client and the element reflows.

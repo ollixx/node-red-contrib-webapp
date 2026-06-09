@@ -33,7 +33,7 @@ const VIEW_CASES: Case[] = [
     { type: "ui-textarea", fields: ["name", "mount", "label"], inputs: 1 },
     { type: "ui-radio", fields: ["name", "mount", "label"], inputs: 1 },
     { type: "ui-switch", fields: ["name", "mount", "label"], inputs: 1 },
-    { type: "ui-datepicker", fields: ["name", "mount", "label"], inputs: 1 },
+    { type: "ui-datepicker", fields: ["name", "mount", "labelBinding"], inputs: 1 },
     { type: "ui-slider", fields: ["name", "mount", "label"], inputs: 1 },
     { type: "ui-alert", fields: ["name", "mount"], inputs: 1 },
     { type: "ui-avatar", fields: ["name", "mount"], inputs: 1 },
