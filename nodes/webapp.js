@@ -4119,8 +4119,7 @@ const runtimeNodeRegistry = {
                 : config.severity || undefined,
             // P92: pulsating maps to Shoelace `pulse` attribute.
             pulsating: config.pulsating === true || config.pulsating === "true" ? true : undefined,
-            // P92: size (sm/md/lg).
-            size: config.size || undefined,
+            // P103: size field removed — not passed through any more.
             // P92: max field removed — not passed through any more.
             ...collectNodeConfigLayoutProps(config)
         }),

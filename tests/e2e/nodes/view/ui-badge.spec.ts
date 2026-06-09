@@ -6,19 +6,20 @@ import { WebappPage } from "../../../helpers/webapp-page";
 
 /**
  * P92 — ui-badge Felder-Rework (fresh tests per node-testing.md; replaces P43).
+ * P103 — size-Feld entfernt: size-Tests durch "kein data-size" ersetzt.
  *
- * Covers all P92 deliverables:
+ * Covers all current deliverables:
  *   - displayType: square / rounded (default) / pill → correct Shoelace attrs
  *   - variant (renamed from severity): SEVERITY_VARIANTS → sl-badge variant attr
  *   - pulsating: true → sl-badge pulse attr
- *   - size (sm/md/lg) → data-size attr on sl-badge
+ *   - size removed (P103): no data-size attr ever emitted
  *   - value binding renders inside sl-badge
  *   - default rendering without explicit fields
  *
  * See: tests/e2e/nodes/view/ui-badge.tests.md
  */
 
-test.describe("ui-badge (P92)", () => {
+test.describe("ui-badge (P92/P103)", () => {
     test.afterEach(async ({ request }) => {
         await resetFlow(request);
     });
@@ -165,39 +166,15 @@ test.describe("ui-badge (P92)", () => {
         expect(hasPulse).toBe(false);
     });
 
-    // ── size ─────────────────────────────────────────────────────────────────
+    // ── size removed (P103) ───────────────────────────────────────────────────
 
-    test("size 'sm' → sl-badge has data-size='sm'", async ({ page, request }) => {
+    test("no size field → sl-badge has no data-size attribute (P103)", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "badgeApp11", root: "badgeApp11" })
-            .node("ui-badge", { id: "badge11", value: { kind: "literal", value: "S" }, size: "sm" })
+            .node("ui-badge", { id: "badge11", value: { kind: "literal", value: "x" } })
             .build();
         await deployFlow(request, flow);
         const webapp = new WebappPage(page, "badgeApp11");
-        await webapp.navigate("/");
-        const size = await page.locator("sl-badge").getAttribute("data-size");
-        expect(size).toBe("sm");
-    });
-
-    test("size 'lg' → sl-badge has data-size='lg'", async ({ page, request }) => {
-        const flow = new FlowBuilder()
-            .app({ id: "badgeApp12", root: "badgeApp12" })
-            .node("ui-badge", { id: "badge12", value: { kind: "literal", value: "L" }, size: "lg" })
-            .build();
-        await deployFlow(request, flow);
-        const webapp = new WebappPage(page, "badgeApp12");
-        await webapp.navigate("/");
-        const size = await page.locator("sl-badge").getAttribute("data-size");
-        expect(size).toBe("lg");
-    });
-
-    test("no size → sl-badge has no data-size attribute", async ({ page, request }) => {
-        const flow = new FlowBuilder()
-            .app({ id: "badgeApp13", root: "badgeApp13" })
-            .node("ui-badge", { id: "badge13", value: { kind: "literal", value: "x" } })
-            .build();
-        await deployFlow(request, flow);
-        const webapp = new WebappPage(page, "badgeApp13");
         await webapp.navigate("/");
         const size = await page.locator("sl-badge").getAttribute("data-size");
         expect(size).toBeNull();
@@ -205,20 +182,19 @@ test.describe("ui-badge (P92)", () => {
 
     // ── combined: pill + pulsating + variant ─────────────────────────────────
 
-    test("pill + pulsating + variant 'primary' combined", async ({ page, request }) => {
+    test("pill + pulsating + variant 'primary' combined (no data-size, P103)", async ({ page, request }) => {
         const flow = new FlowBuilder()
-            .app({ id: "badgeApp14", root: "badgeApp14" })
+            .app({ id: "badgeApp12", root: "badgeApp12" })
             .node("ui-badge", {
-                id: "badge14",
+                id: "badge12",
                 value: { kind: "literal", value: "NEW" },
                 displayType: "pill",
                 variant: "primary",
-                pulsating: true,
-                size: "md"
+                pulsating: true
             })
             .build();
         await deployFlow(request, flow);
-        const webapp = new WebappPage(page, "badgeApp14");
+        const webapp = new WebappPage(page, "badgeApp12");
         await webapp.navigate("/");
         await expect(page.locator("sl-badge")).toContainText("NEW");
         const hasPill = await page.locator("sl-badge").evaluate((el) => el.hasAttribute("pill") || (el as any).pill === true);
@@ -228,6 +204,6 @@ test.describe("ui-badge (P92)", () => {
         expect(hasPill).toBe(true);
         expect(hasPulse).toBe(true);
         expect(variant).toBe("primary");
-        expect(size).toBe("md");
+        expect(size).toBeNull();
     });
 });

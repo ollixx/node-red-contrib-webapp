@@ -1,8 +1,8 @@
 # ui-badge — Test Catalogue
 
-Phase: **P92** (Felder-Rework: displayType square/rounded/pill, variant rename, pulsating, size, max removed). Replaces P43 presence-only tests.
+Phase: **P103** (size-Feld entfernt). Built on P92 (Felder-Rework: displayType square/rounded/pill, variant rename, pulsating, max removed). Size tests replaced with "no data-size" assertions.
 
-All tests are in `ui-badge.spec.ts` (E2E, Playwright) and `packages/runtime/test/p92-badge-fields-rework.test.ts` (unit).
+All tests are in `ui-badge.spec.ts` (E2E, Playwright) and `packages/runtime/test/p92-badge-fields-rework.test.ts` + `packages/runtime/test/p103-badge-remove-size.test.ts` (unit).
 
 ## Unit tests (`p92-badge-fields-rework.test.ts`)
 
@@ -21,9 +21,7 @@ All tests are in `ui-badge.spec.ts` (E2E, Playwright) and `packages/runtime/test
 | pulsating: true → preserved | Pulsating boolean passes through mapConfig |
 | pulsating: 'true' (string) → coerced to true | Editor checkbox string coerced |
 | pulsating absent → falsy | Default: no pulsating |
-| size 'sm' → preserved | Small size passes through mapConfig |
-| size 'lg' → preserved | Large size passes through mapConfig |
-| size absent → falsy | Default: no size |
+| size field removed — not emitted by mapConfig (P103) | size gone; old config with size → no size in result |
 | max field removed — not emitted | max is a removed field, must not appear |
 
 ### Serializer
@@ -40,13 +38,32 @@ All tests are in `ui-badge.spec.ts` (E2E, Playwright) and `packages/runtime/test
 | displayType absent → no pill attribute | Default rendering |
 | pulsating: true → sl-badge has pulse attribute | Shoelace pulse attribute emitted |
 | pulsating absent → no pulse attribute | Default: no pulse |
-| size 'sm' → data-size='sm' | Size data attribute emitted |
-| size 'md' → data-size='md' | Size data attribute emitted |
-| size 'lg' → data-size='lg' | Size data attribute emitted |
-| size absent → no data-size attribute | Default: no size attr |
+| size removed — no data-size attribute (P103) | Size field gone; no data-size ever emitted |
+| old size in props → no data-size (P103 back-compat) | Old snapshots still render correctly |
 | value is rendered inside sl-badge | Value binding passes to content |
 | max field not present in output | Removed field does not appear in markup |
-| pill + pulsating + variant combined | All attributes are independent and compose correctly |
+| pill + pulsating + variant combined, no data-size (P103) | All attributes are independent and compose correctly |
+
+## Unit tests (`p103-badge-remove-size.test.ts`)
+
+### mapConfig — size removed
+
+| Test | Goal |
+|---|---|
+| size field NOT emitted (old config with size='sm') | Back-compat: old flows load without size flowing through |
+| size 'md' in old config → not in result | Covers md value |
+| size 'lg' in old config → not in result | Covers lg value |
+| other fields unaffected when size present in old config | No regression on variant/displayType/pulsating |
+
+### Serializer — no data-size
+
+| Test | Goal |
+|---|---|
+| no size in props → no data-size | Default rendering has no data-size |
+| size 'sm' in props (old snapshot) → no data-size | Old snapshots do not emit data-size |
+| size 'lg' in props (old snapshot) → no data-size | Old snapshots do not emit data-size |
+| sl-badge rendered correctly without size | Core badge rendering intact |
+| pill + pulse + variant, no data-size | All retained attrs compose; no spurious data-size |
 
 ## E2E tests (`ui-badge.spec.ts`)
 
@@ -62,7 +79,5 @@ All tests are in `ui-badge.spec.ts` (E2E, Playwright) and `packages/runtime/test
 | variant 'warning' → sl-badge variant='warning' | Colour role attribute in browser DOM |
 | pulsating: true → sl-badge has pulse attribute | Shoelace pulse attribute in browser |
 | pulsating omitted → no pulse attribute | Default: no pulse in browser |
-| size 'sm' → data-size='sm' | Size data attribute in browser |
-| size 'lg' → data-size='lg' | Size data attribute in browser |
-| no size → no data-size attribute | Default: no size in browser |
-| pill + pulsating + variant 'primary' + size 'md' combined | All attributes compose correctly in browser |
+| no size field → no data-size attribute (P103) | Size removed: no data-size in browser DOM |
+| pill + pulsating + variant 'primary' combined, no data-size (P103) | All attributes compose correctly; no data-size |
