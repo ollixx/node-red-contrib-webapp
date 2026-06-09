@@ -20,7 +20,8 @@ interface RuntimeContributionBase {
 export interface AppContribution extends RuntimeContributionBase {
     kind: "app";
     // P109: `name` replaces `title` in AppModel.
-    definition: Pick<AppModel, "id" | "name">;
+    // P108: `root` carried so the registry can enforce cross-app root-uniqueness.
+    definition: Pick<AppModel, "id" | "name"> & { root?: string };
 }
 
 export interface LayoutContribution extends RuntimeContributionBase {
@@ -59,6 +60,7 @@ export interface RuntimeDiagnostic {
     code:
     | "missing-app"
     | "duplicate-app"
+    | "duplicate-app-root"
     | "duplicate-id"
     | "duplicate-route-path"
     | "unknown-layout"
@@ -282,6 +284,29 @@ export class RuntimeRegistry {
                 appId,
                 diagnostics
             };
+        }
+
+        // P108: cross-app root-uniqueness check. Two ui-app nodes with different ids
+        // but the same `root` collide on the URL and cause nondeterministic routing —
+        // surface a structured diagnostic so the conflict is visible at deploy time.
+        if (appDefinition.root) {
+            const allAppContributions = [...this.contributions.values()]
+                .filter((c): c is AppContribution => c.kind === "app");
+            const conflicting = allAppContributions.filter(
+                (c) => c.definition.root === appDefinition.root && c.definition.id !== appDefinition.id
+            );
+            if (conflicting.length > 0) {
+                const allInvolved = allAppContributions.filter(
+                    (c) => c.definition.root === appDefinition.root
+                ).sort(compareRegistrationIds);
+                diagnostics.push({
+                    severity: "error",
+                    code: "duplicate-app-root",
+                    message: `App root '${appDefinition.root}' is used by more than one app (${allInvolved.map((c) => `'${c.definition.id}'`).join(", ")}). Each app must have a unique root path.`,
+                    appId,
+                    registrationIds: allInvolved.map((c) => c.registrationId)
+                });
+            }
         }
 
         const rawLayouts = contributions.filter((contribution): contribution is LayoutContribution => contribution.kind === "layout");
