@@ -1251,7 +1251,7 @@ phases:
 
   - { id: P98, title: "ui-datepicker — 🔴 rendert NICHTS (Render-Pipeline prüfen, vgl. P96) + „Value Path\" und „Label\" als typedInput mit allen sinnvollen Binding-Typen. Übrige Felder vorerst unverändert (dynamisch später). Docs anpassen", status: done, dependencies: [P16a, P67], archive: "docs/agent-roadmap-archive.yaml#P98" }
 
-  - { id: P99, title: "🔴 Bugfix: ui-image rendert NICHTS — obwohl P70 das Rendering aktivieren sollte. Render-Pipeline-Ursache finden (components-Filter/KIND_MAP/renderer/serializer) und fixen + Outcome-Test (<img> mit src im DOM)", status: pending, dependencies: [P70] }
+  - { id: P99, title: "🔴 Bugfix: ui-image rendert NICHTS — obwohl P70 das Rendering aktivieren sollte. Render-Pipeline-Ursache finden (components-Filter/KIND_MAP/renderer/serializer) und fixen + Outcome-Test (<img> mit src im DOM)", status: in_progress, dependencies: [P70] }
 
   # Deferred — only when a concrete need appears (see ADR 0002):
   #   - ui-custom escape-hatch node for framework-specific components (opt-in, non-portable)
