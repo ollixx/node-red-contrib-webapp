@@ -1249,7 +1249,7 @@ phases:
 
   - { id: P97, title: "ui-checkbox — disabling hat keinen Effekt (im Beispiel) → fixen; size-Feld ergänzen; „Value Path\" und „Label\" als typedInput mit allen sinnvollen Binding-Typen. Docs anpassen", status: done, dependencies: [P16a, P67], archive: "docs/agent-roadmap-archive.yaml#P97" }
 
-  - { id: P98, title: "ui-datepicker — 🔴 rendert NICHTS (Render-Pipeline prüfen, vgl. P96) + „Value Path\" und „Label\" als typedInput mit allen sinnvollen Binding-Typen. Übrige Felder vorerst unverändert (dynamisch später). Docs anpassen", status: pending, dependencies: [P16a, P67] }
+  - { id: P98, title: "ui-datepicker — 🔴 rendert NICHTS (Render-Pipeline prüfen, vgl. P96) + „Value Path\" und „Label\" als typedInput mit allen sinnvollen Binding-Typen. Übrige Felder vorerst unverändert (dynamisch später). Docs anpassen", status: in_progress, dependencies: [P16a, P67] }
 
   - { id: P99, title: "🔴 Bugfix: ui-image rendert NICHTS — obwohl P70 das Rendering aktivieren sollte. Render-Pipeline-Ursache finden (components-Filter/KIND_MAP/renderer/serializer) und fixen + Outcome-Test (<img> mit src im DOM)", status: pending, dependencies: [P70] }
 
