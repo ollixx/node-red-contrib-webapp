@@ -515,8 +515,8 @@ export const ALERT_VARIANTS = SEVERITY_VARIANTS;
  * underlying Shoelace element is sized that way (button, text, input, select,
  * textarea …) use this 3-step token set. The richer 5-step `xs..xl` scale stays
  * on ui-avatar / ui-icon, where it maps to CSS sizing rather than a
- * native `size` attribute. ui-badge uses the sm/md/lg scale (P92; sl-badge has
- * no native size attr; the adapter emits data-size for CSS targeting).
+ * native `size` attribute. ui-badge no longer uses this scale (P103: size field
+ * removed; sizing is handled via Theme/CSS at the use site).
  * The adapter's `mapSize` already accepts both scales.
  */
 export const COMPONENT_SIZES = ["sm", "md", "lg"] as const;
