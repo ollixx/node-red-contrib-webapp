@@ -528,10 +528,10 @@ function toRenderedComponent(component: ComponentDefinition, context: ComponentR
                 kind: "input",
                 value: resolvedProps.value
             };
-        // P104: ui-badge binds a pure display value — route it through the one
-        // central normalization (0 → "0", "" → empty, null/object/array → "?").
-        // It is split out of the generic fall-through below because the other
-        // generic kinds carry structural values (image/avatar src URLs, the
+        // P104: ui-badge binds a pure display value — always route it through the
+        // one central normalization (0 → "0", "" → empty, null/undefined/object/
+        // array → "?"). Split out of the generic fall-through below because the
+        // other generic kinds carry structural values (image/avatar src URLs, the
         // pagination page object, breadcrumb/tabs/menu item arrays) that must NOT
         // be coerced to "?".
         case "badge":
@@ -539,6 +539,15 @@ function toRenderedComponent(component: ComponentDefinition, context: ComponentR
                 ...baseComponent,
                 kind: "badge",
                 value: normalizeDisplayValue(resolvedProps.value)
+            } as RenderedGenericComponent;
+        // P104: ui-alert's message is also a display value. It is normalized when
+        // actually bound; an unbound message (resolvedProps.value === undefined) is
+        // left undefined so the serializer applies its static props.message fallback.
+        case "alert":
+            return {
+                ...baseComponent,
+                kind: "alert",
+                value: resolvedProps.value === undefined ? undefined : normalizeDisplayValue(resolvedProps.value)
             } as RenderedGenericComponent;
         // P25: P16x interactive kinds — rendered generically with value + all props.
         case "select":
@@ -548,7 +557,6 @@ function toRenderedComponent(component: ComponentDefinition, context: ComponentR
         case "textarea":
         case "datepicker":
         case "slider":
-        case "alert":
         case "progress":
         case "breadcrumb":
         case "tabs":
