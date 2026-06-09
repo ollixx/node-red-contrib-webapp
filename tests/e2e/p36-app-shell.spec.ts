@@ -78,7 +78,11 @@ test.describe("P36: app shell chrome", () => {
 
         await page.goto("/webapp/layoutAppShellDemo");
         await expect(page.locator(".webapp-app-bar")).toBeVisible();
-        await expect(page.locator(".webapp-app-bar-title")).toContainText("App Layout Demo");
+        // P109: when the header slot has >=1 mounted component, the app name is
+        // NOT shown as a .webapp-app-bar-title element — the slot content takes
+        // precedence. The fixture mounts "App header" text in the header slot, so
+        // no title element is emitted; instead the header slot itself is visible.
+        await expect(page.locator(".webapp-app-bar-title")).toHaveCount(0);
         await expect(page.locator(".webapp-slot--header")).toBeVisible();
         await expect(page.locator(".webapp-slot--navbar")).toBeVisible();
         await expect(page.locator(".webapp-slot--content")).toBeVisible();
