@@ -382,8 +382,11 @@ export type UiSelectNodeDefinition = z.infer<typeof uiSelectNodeDefinitionSchema
 
 export const uiCheckboxNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-checkbox"),
-    label: z.string().min(1, "Checkbox labels must not be empty."),
+    // P97: label is now a full binding (literal string or dynamic binding).
+    label: z.union([bindingSchema, z.string().min(1, "Checkbox labels must not be empty.")]),
     value: bindingSchema,
+    // P97: size — xs / sm / md (default) / lg / xl (Shoelace size tokens).
+    size: z.enum(["xs", "sm", "md", "lg", "xl"]).optional(),
     disabled: bindingSchema.optional()
 });
 

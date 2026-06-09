@@ -38,9 +38,10 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `label` | „Label" | Textfeld | **ja** | Beschriftung der Checkbox. Wird neben dem Häkchen-Element angezeigt. |
+| `label` | „Label" | typedInput (alle Binding-Arten) | **ja** | Beschriftung der Checkbox (bindbar). Unterstützt alle Binding-Arten: `literal`, `state`, `store`, `query`, `routeParam`, `msg`, `flow`, `global`, `jsonata`, `env`. |
 | `value` | „Value Path" | typedInput (alle Binding-Arten) | **ja** | Bindbare Boolean-Quelle des Checked-Zustands. Unterstützt alle Binding-Arten: `literal`, `state`, `store`, `query`, `routeParam`, `msg`, `flow`, `global`, `jsonata`, `env`. Details: [stores.md](../concepts/stores.md). |
 | `disabled` | „Disabled" | typedInput (alle Binding-Arten) | optional | Bindbare Bedingung, die die Checkbox deaktiviert (Nutzerinteraktion gesperrt). |
+| `size` | „Size" | Auswahlliste | optional | Größe der Checkbox: `xs`, `sm`, `md` (Standard), `lg`, `xl`. Wird als Shoelace-`size`-Attribut ausgegeben. |
 
 ### Gruppe „Platzierung"
 

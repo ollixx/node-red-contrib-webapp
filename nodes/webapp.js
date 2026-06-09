@@ -965,6 +965,13 @@ function toComponentDefinitions(components) {
             if (iconBinding) {
                 bind.icon = iconBinding;
             }
+            // P97: label binding for ui-checkbox — when label is a binding object,
+            // route it through bind.label so the renderer resolves it to a string
+            // in resolvedProps.label → component.props.label (used by serializer).
+            const labelBinding = p16Kind === "checkbox" ? getBinding(component.label, undefined) : undefined;
+            if (labelBinding) {
+                bind.label = labelBinding;
+            }
 
             return {
                 id: component.id,
@@ -973,7 +980,9 @@ function toComponentDefinitions(components) {
                 order: toOptionalNumber(component.order),
                 bind,
                 props: {
-                    ...(component.label !== undefined ? { label: component.label } : {}),
+                    // P97: For checkbox, label may be a binding object — when so it goes through
+                    // bind.label; only put it in props when it is a plain string (or for other nodes).
+                    ...(component.label !== undefined && !(labelBinding) ? { label: component.label } : {}),
                     ...(component.placeholder !== undefined ? { placeholder: component.placeholder } : {}),
                     ...(component.options !== undefined ? { options: component.options } : {}),
                     ...(component.multiple !== undefined ? { multiple: component.multiple } : {}),
@@ -3677,8 +3686,11 @@ const runtimeNodeRegistry = {
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
+            // P97: label is now a binding object when set via typedInput; legacy plain string is preserved.
             label: config.label,
             value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
+            // P97: size field (xs/sm/md/lg/xl).
+            size: config.size || undefined,
             disabled: getBinding(config.disabled, undefined),
             ...collectNodeConfigLayoutProps(config)
         }),
