@@ -36,6 +36,44 @@
             return { kind: type, path: value };
         }
 
+        // P100: icon select value → stored icon field value.
+        // "custom" in the select is a sentinel that means "use the custom icon
+        // name in #node-input-icon-custom-name". All well-known sentinel values
+        // ("", "none", "auto") are preserved as-is. Any other value stored in the
+        // node's `icon` field (i.e. a plain icon name like "bell") maps to "custom"
+        // in the select + the name in the text input.
+        // Sentinel values that are NOT custom icon names.
+        const ICON_KNOWN_SELECT_VALUES = ["", "none", "auto", "custom"];
+
+        function iconSelectValueFromStored(stored) {
+            // Both "" (legacy default) and "none" (explicit no-icon) map to the
+            // "Kein Icon" select option (value "none"). "auto" passes through.
+            // Anything else is a custom icon name → "custom" sentinel in the select.
+            if (!stored || stored === "" || stored === "none") {
+                return "none";
+            }
+            if (stored === "auto") {
+                return "auto";
+            }
+            return "custom";
+        }
+
+        function iconCustomNameFromStored(stored) {
+            if (!stored || ICON_KNOWN_SELECT_VALUES.indexOf(stored) !== -1) {
+                return "";
+            }
+            return stored;
+        }
+
+        function updateIconCustomRow() {
+            const val = $("#node-input-icon").val();
+            if (val === "custom") {
+                $("#node-input-icon-custom-row").show();
+            } else {
+                $("#node-input-icon-custom-row").hide();
+            }
+        }
+
         common.registerNodeType("ui-alert", {
             category: "webapp view",
             color: "#f4efcf",
@@ -63,7 +101,14 @@
                 // P91: duration (positive integer, ms) and countdown (boolean).
                 // duration "" means no auto-hide (absent). Must be >= 1 if set.
                 duration: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
-                countdown: { value: false },
+                // P100: countdown requires duration to be set (cross-field validation).
+                countdown: { value: false, validate: function (value) {
+                    if (value === true || value === "true") {
+                        const dur = $("#node-input-duration").val();
+                        return dur !== "" && dur !== null && dur !== undefined && Number(dur) >= 1;
+                    }
+                    return true;
+                } },
                 visible: { value: null },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
@@ -103,6 +148,28 @@
                     ? (this.title.length > 0 ? { kind: "literal", value: this.title } : undefined)
                     : common.parseBindingValue(this.title);
                 applyBindingTypedInput("#node-input-titleBinding", titleBinding, "Title", "Store für Title auswählen");
+
+                // P100: icon select — "custom" is the sentinel for a user-supplied icon name.
+                // Populate the select and custom-name text input from the stored icon value.
+                const storedIcon = this.icon || "";
+                const selectVal = iconSelectValueFromStored(storedIcon);
+                const customName = iconCustomNameFromStored(storedIcon);
+                $("#node-input-icon").val(selectVal);
+                $("#node-input-icon-custom-name").val(customName);
+                updateIconCustomRow();
+                $("#node-input-icon").on("change", updateIconCustomRow);
+
+                // Wire the "Icon auswählen" button to the icon picker dialog.
+                $("#node-input-icon-custom-btn").on("click", function (e) {
+                    e.preventDefault();
+                    common.openIconPickerDialog({
+                        title: "Icon auswählen",
+                        value: $("#node-input-icon-custom-name").val(),
+                        onSelect: function (value) {
+                            $("#node-input-icon-custom-name").val(value).trigger("change");
+                        }
+                    });
+                });
             },
             oneditsave: function () {
                 this.message = readBinding("#node-input-messageBinding");
@@ -112,6 +179,15 @@
                 const isEmptyLiteral = titleBinding.kind === "literal"
                     && (titleBinding.value === undefined || titleBinding.value === null || titleBinding.value === "");
                 this.title = isEmptyLiteral ? null : titleBinding;
+
+                // P100: icon — resolve select value + optional custom name back to the
+                // stored `icon` field. "custom" + name → name; otherwise use select value.
+                const iconSelectVal = $("#node-input-icon").val() || "";
+                if (iconSelectVal === "custom") {
+                    this.icon = String($("#node-input-icon-custom-name").val() || "");
+                } else {
+                    this.icon = iconSelectVal;
+                }
             }
         });
     })();
@@ -120,7 +196,11 @@
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <!-- P100: Title above Message (acceptance #4) -->
+    <div class="form-row"><label for="node-input-titleBinding">Title</label><input type="text" id="node-input-titleBinding"></div>
     <div class="form-row"><label for="node-input-messageBinding">Message</label><input type="text" id="node-input-messageBinding"></div>
+    <!-- P100: separator after Message (acceptance #4) -->
+    <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-severity">Severity</label>
         <select id="node-input-severity">
             <option value="primary">Primary</option>
@@ -131,21 +211,21 @@
             <option value="neutral">Neutral</option>
         </select>
     </div>
+    <!-- P100: icon select — "custom" replaces the nonsensical double empty/"none" options (acceptance #5).
+         selectOptionValues() filters empty-string options, so the visible sentinel for "no icon" uses "none".
+         "custom" is the sentinel that reveals the icon-picker row. -->
     <div class="form-row"><label for="node-input-icon">Icon</label>
         <select id="node-input-icon">
-            <option value="">Kein Icon</option>
+            <option value="none">Kein Icon</option>
             <option value="auto">Automatisch (nach Severity)</option>
-            <option value="none">Kein Icon (explizit)</option>
-            <option value="info-circle">info-circle</option>
-            <option value="check-circle">check-circle</option>
-            <option value="exclamation-triangle">exclamation-triangle</option>
-            <option value="x-circle">x-circle</option>
-            <option value="circle">circle</option>
-            <option value="bell">bell</option>
-            <option value="star">star</option>
+            <option value="custom">Custom …</option>
         </select>
     </div>
-    <div class="form-row"><label for="node-input-titleBinding">Title</label><input type="text" id="node-input-titleBinding"></div>
+    <!-- P100: custom icon row — shown only when "Custom" is selected (acceptance #5) -->
+    <div class="form-row" id="node-input-icon-custom-row" style="display:none; margin-left:105px;">
+        <input type="text" id="node-input-icon-custom-name" placeholder="Icon-Name, z. B. bell" style="width:140px;">
+        <button type="button" id="node-input-icon-custom-btn" class="red-ui-button" style="margin-left:6px;">Icon auswählen</button>
+    </div>
     <div class="form-row"><label for="node-input-dismissible">Dismissible</label><input type="checkbox" id="node-input-dismissible" style="width:auto"></div>
     <div class="form-row">
         <label for="node-input-duration">Duration (ms)</label>
@@ -163,8 +243,8 @@
 </ul>
 <h3>Icon</h3>
 <p><b>Automatisch (nach Severity)</b> — wählt passend zur Severity ein Bootstrap-Icon: info-circle (primary/info), check-circle (success), exclamation-triangle (warning), x-circle (danger), circle (neutral).</p>
-<p><b>Kein Icon</b> (leer oder explizit) — die Alert wird ohne Icon gerendert.</p>
-<p>Ein beliebiger Icon-Name aus dem registrierten Shoelace-Icon-Set kann eingetragen werden.</p>
+<p><b>Kein Icon</b> — die Alert wird ohne Icon gerendert.</p>
+<p><b>Custom</b> — beliebiger Icon-Name aus dem registrierten Shoelace-Icon-Set. „Icon auswählen" öffnet den Auswahl-Dialog; die gewählte Icon-Auswahl wird übernommen.</p>
 <h3>Duration und Countdown</h3>
 <p><b>Duration</b> (positiver Integer, Millisekunden) — die Alert blendet sich nach der angegebenen Zeit automatisch aus. Leer lassen = kein Auto-Hide.</p>
 <p><b>Countdown</b> — zeigt einen Fortschrittsbalken, der die verbleibende Zeit anzeigt. Nur sinnvoll in Kombination mit einer Duration.</p>

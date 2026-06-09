@@ -68,11 +68,14 @@
     //   open:        "<target>" or "<target>#<part>" -> true (disclosed)
     //   selected:    "<target>" -> "<part>" (active sub-part of a single-active
     //                set: tabs / stepper / menu — survives a snapshot re-render)
+    //   autoDismissed: nodeId -> true (alert auto-hid via duration; must not be
+    //                re-opened by morph — P100)
     const interaction = {
         hidden: Object.create(null),
         disabled: Object.create(null),
         open: Object.create(null),
-        selected: Object.create(null)
+        selected: Object.create(null),
+        autoDismissed: Object.create(null)
     };
 
     // P30: a per-tab client id so the flow can address actions back to this
@@ -213,6 +216,19 @@
             }
             if (interaction.disabled[id]) {
                 applyDisabledState(element, true);
+            }
+            // P100: alert auto-dismiss — a duration-based auto-hide must survive a
+            // snapshot morph. The serializer always emits `open` on sl-alert; after
+            // the morph replaces the element we set open=false again so Shoelace does
+            // not restart the timer and the alert stays visually hidden.
+            if (interaction.autoDismissed[id]) {
+                const slAlert = element.tagName && element.tagName.toLowerCase() === "sl-alert"
+                    ? element
+                    : element.querySelector("sl-alert");
+                if (slAlert) {
+                    slAlert.removeAttribute("open");
+                    slAlert.open = false;
+                }
             }
         });
 
@@ -587,26 +603,48 @@
     // false) arrives. Guard against bubbled sl-after-hide from nested Shoelace
     // components (e.g. an sl-details inside the dialog body).
     root.addEventListener("sl-after-hide", function (eventObject) {
-        const dialogEl = eventObject.target;
+        const target = eventObject.target;
 
-        if (!dialogEl || !dialogEl.hasAttribute || !dialogEl.hasAttribute("data-webapp-dialog")) {
+        if (!target || !target.hasAttribute) {
             return;
         }
 
-        if (!root.contains(dialogEl)) {
+        // ── dialog dismissal (P64) ─────────────────────────────────────────
+        if (target.hasAttribute("data-webapp-dialog")) {
+            if (!root.contains(target)) {
+                return;
+            }
+            const dialogNodeId = target.getAttribute("data-webapp-dialog");
+            dispatch({
+                source: dialogNodeId,
+                event: "onClose",
+                params: {}
+            });
+            // Optimistic local close; the server snapshot will reconcile.
+            target.remove();
             return;
         }
 
-        const dialogNodeId = dialogEl.getAttribute("data-webapp-dialog");
-
-        dispatch({
-            source: dialogNodeId,
-            event: "onClose",
-            params: {}
-        });
-
-        // Optimistic local close; the server snapshot will reconcile.
-        dialogEl.remove();
+        // ── alert auto-hide via duration (P100) ───────────────────────────
+        // When sl-alert hides because its `duration` timer expired, we record
+        // the owning node id in interaction.autoDismissed so applyInteractionOverlay
+        // can suppress the `open` attribute after every subsequent snapshot morph.
+        // We only track duration-driven hides (the alert has a duration attribute);
+        // user-initiated dismiss (closable click) is handled by the dismiss event.
+        if (target.tagName && target.tagName.toLowerCase() === "sl-alert" && target.hasAttribute("duration")) {
+            // Walk up to find the data-webapp-node wrapper (the serializer wraps sl-alert in a div).
+            let nodeEl = target.closest("[data-webapp-node]");
+            if (!nodeEl) {
+                // The sl-alert itself may carry data-webapp-node in some configurations.
+                nodeEl = target.hasAttribute("data-webapp-node") ? target : null;
+            }
+            if (nodeEl && root.contains(nodeEl)) {
+                const nodeId = nodeEl.getAttribute("data-webapp-node");
+                if (nodeId) {
+                    interaction.autoDismissed[nodeId] = true;
+                }
+            }
+        }
     });
 
     // P37: set to true after initial hydration; redeploy reloads are ignored
