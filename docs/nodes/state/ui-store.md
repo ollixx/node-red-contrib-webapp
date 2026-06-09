@@ -41,6 +41,26 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 | `initialValue` | „Initial Value JSON" | Textfeld (JSON) | optional | Startwert des Slice. Wird beim Aufbau des Client-State unter `statePath` gesetzt und ist das Ziel der `reset`-Operation. |
 | `persist` | „Persist" | Checkbox | optional | Ob der Slice clientseitig (`localStorage`) persistiert wird — ermöglicht Offline-Resilienz und Resynchronisation bei Wiederverbindung. Default: `false`. Details: [multi-user.md](../concepts/multi-user.md). |
 
+### Gruppe „Guard"
+
+| Feld | Label | Editor-Typ | Pflicht | Beschreibung |
+|---|---|---|---|---|
+| `scope` | „Scope" | SelectBox | optional | Deklarierter Schreib-Ziel-Typ des Stores. Verhindert, dass versehentlich falsche Messages den Store überbügeln. Drei Werte — Details siehe [Scope-Guard](#scope-guard). Default: `any`. |
+
+### Scope-Guard
+
+Das `scope`-Feld deklariert den **gewollten** Write-Typ des Stores und weist verletzende Messages mit einem strukturierten Fehler `server.store.scope-violation` ab.
+
+| Wert | Verhalten | Fehler wenn… |
+|---|---|---|
+| `any` | Keine Prüfung — heutiges Verhalten, rückwärtskompatibel. Messages mit und ohne `clientId` werden akzeptiert. | — |
+| `broadcast-only` | Nur Broadcast-Messages (ohne `msg.ui.clientId`). Per-Client-Messages werden abgelehnt. | Message **hat** `clientId` → `server.store.scope-violation` „ClientID auf Broadcast-Only-Store nicht erlaubt." |
+| `client-only` | Nur Per-Client-Messages (mit `msg.ui.clientId`). Broadcast-Messages werden abgelehnt. | Message **hat kein** `clientId` → `server.store.scope-violation` „Broadcast nicht erlaubt: Store ist Client Only." |
+
+Der Guard wird **vor** dem Anwenden der Operation ausgeführt. Pass-Through-Messages (kein `msg.ui.store` oder falsche `id`) werden wie bisher unverändert durchgereicht — der Guard greift nicht.
+
+Fehler werden gemäß [logs-errors.md](../concepts/logs-errors.md) als `reportRuntimeError` gemeldet und über `done(err)` an einen verdrahteten `catch`-Knoten weitergeleitet.
+
 ### Inline-Hilfe (HTML)
 
 Der `data-help-name="ui-store"`-Hilfetext im Editor soll **knapp, aber
