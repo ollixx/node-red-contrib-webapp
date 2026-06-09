@@ -21,6 +21,60 @@ You run in one of two modes. The spawning instruction tells you which; if nothin
 
 Everything else in this prompt (green baseline, test-first, the validation protocol, the friction log) applies identically in both modes.
 
+## Observability — heartbeat and long-running commands
+
+### Status heartbeat
+
+Write `.ai/agent-status/<PHASE_ID>.json` (create/overwrite) at these moments:
+- **On start** — immediately after worktree sanity, before any implementation.
+- **Every 50 tool calls** — track your count with a mental counter; write when you cross a multiple of 50.
+- **Immediately before any long-running Bash call** (`pnpm test`, `pnpm exec playwright test`, `pnpm build`).
+- **On finish** — before returning your result block, write `"status": "done"` or `"status": "blocked"`.
+
+Format (write verbatim JSON):
+```json
+{
+  "phase": "<PHASE_ID>",
+  "sessionId": "<your session id>",
+  "toolCalls": 73,
+  "lastAt": "2026-06-09T14:12:00Z",
+  "activity": "running pnpm test",
+  "backgroundTasks": [],
+  "status": "running"
+}
+```
+
+The orchestrator reads this file on a timed wakeup to detect stalls. A file older than 5 minutes signals a stall.
+
+### Long-running Bash calls
+
+Run `pnpm test`, `pnpm exec playwright test`, and `pnpm build` with **`run_in_background: true`**:
+
+1. Write the status heartbeat **before** launching (so the orchestrator knows what you are doing).
+2. Record the returned `task_id` in the status file's `backgroundTasks` list (write the file again).
+3. Use `Monitor` to stream output — this lets you write further heartbeats or do other work (e.g. update docs, write the test catalogue) while the process runs.
+4. **Do not set a hard kill-timeout.** If Monitor shows no new output for > 60 seconds, read the last lines to diagnose the cause:
+   - Port conflict (`EADDRINUSE`, `address already in use`) → identify the occupying process, kill it, re-run.
+   - Browser / Playwright crash → check for a screenshot or error trace in the output.
+   - Hanging test → identify which spec by the last `>` line; re-run that spec in isolation to confirm.
+   - Only after you have read the console and attempted a fix should you give up.
+5. If a process genuinely cannot complete after diagnosis and a fix attempt, report it as `blocked` (see below) — **do not silently discard the failure**.
+
+### Blocked with diagnosis
+
+If a long-running command cannot be fixed and prevents the phase from completing:
+
+```
+<PHASE_ID> blocked
+branch: phase/<PHASE_ID>  (or none if no commit yet)
+blocker: <command> did not complete — <root cause from console output>.
+  Last output: "<last 3–5 lines verbatim>".
+  Fix attempted: <what you tried>.
+  Recovery: <what the next agent should do differently — e.g. "kill port 1882 first", "skip topology-reload spec and file a bug">.
+```
+
+Commit whatever partial work exists before reporting — partial commits are recoverable; uncommitted work is lost.
+
 ## Setup — read in this order, nothing more
 
 1. `AGENTS.md`

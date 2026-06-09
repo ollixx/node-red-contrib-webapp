@@ -60,6 +60,8 @@ Repeat until a stop condition is met:
    > - lines 4+: a `result:` block with `delivered`, `stats`, `notes`, `cost: session <id>, MMm` (your session id + measured wall-clock) — exactly the fields the package's `## Result` needs. If blocked: a `blocker:` line instead, stating the decision needed.
    > Do not return implementation detail beyond that block.
 
+5a. **Schedule a stall-check wakeup.** Immediately after spawning (single or batch), call `ScheduleWakeup(300s, "<same /loop prompt>")` so you wake up if no task-notification arrives. On each wakeup, run the stall-detection procedure in **§ Stall detection** below for every phase still `in_progress`. If all expected agents have already reported (notifications arrived before the wakeup fired), skip the check and do not reschedule. If any are still running, reschedule at 300 s intervals until all report.
+
 6. Read the sub-agent's result block. **Do not read the diff.**
 
 7. **If `done`:** as the sole roadmap writer, on the main branch:
@@ -70,6 +72,26 @@ Repeat until a stop condition is met:
    Then continue to the next phase.
 
 8. **If `blocked`:** set the phase `status: blocked`, add a `blocker` field from the sub-agent's report, commit, and stop the loop. (Merge any partial branch only if the sub-agent says it is safe; otherwise leave it.)
+
+## Stall detection
+
+Triggered by a `ScheduleWakeup` firing while one or more phases are still `in_progress`.
+
+For each such phase:
+
+1. **Read `.ai/agent-status/<PHASE_ID>.json`.**
+   - File missing AND phase has been `in_progress` for > 10 minutes → hard stall (agent never wrote a heartbeat).
+   - File present but `lastAt` is more than 5 minutes ago → probable stall.
+   - File present, `lastAt` recent, `backgroundTasks` is non-empty → agent is legitimately waiting on a long-running process (not a stall); reschedule and wait.
+
+2. **Check git for partial work:** `git log phase/<PHASE_ID> ^develop` — note whether any commits exist.
+
+3. **If stalled:**
+   a. If `backgroundTasks` lists a task_id, attempt `Monitor(task_id, block=false)` to read its current output before concluding it is truly hung.
+   b. Spawn a recovery agent directed at the existing worktree path (read from the status file's `worktreePath` if present, else derive from the standard path `<repo>/.claude/worktrees/agent-<original-id>`). Pass the status file content and the last Monitor output as context so the recovery agent knows exactly where work was interrupted and what was running.
+   c. The recovery agent follows the same sub-agent contract (no roadmap edits; commit to `phase/<PHASE_ID>`; return the result block).
+
+4. **Clean up** `.ai/agent-status/<PHASE_ID>.json` after merging a phase (whether done or blocked). A stale status file from a completed phase misleads future stall checks.
 
 ## Stop conditions
 
