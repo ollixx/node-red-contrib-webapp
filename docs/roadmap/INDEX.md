@@ -39,6 +39,9 @@ their blocker clears.
 ### aspects/state
 - **P106** — pending — Live-Modell-Auslieferung beim Deploy: In-Place via SSE-Snapshot, Reload nur als Shell-/Topologie-Fallback (+ Bugfix: Deploy liefert aktuell nichts) — deps: [P15, P31, P37] ✅ ready — [P106](aspects/state/P106-live-model-delivery-on-deploy.md)
 
+### nodes/ui-app
+- **P108** — pending — root-Eindeutigkeit beim Deploy validieren (heute nur id, nicht root) — deps: [P2] ✅ ready — [P108](nodes/ui-app/P108-root-uniqueness-validation.md)
+
 ## Deferred (parked, not abandoned)
 
 Reason in each package's `deferred_reason`. Picked up once the blocker clears.
@@ -46,6 +49,7 @@ Reason in each package's `deferred_reason`. Picked up once the blocker clears.
 - **P102** — aspects/editor — Backend-Support-Helfer + Capability-Map + Rollout — *braucht ein zweites, real renderndes Backend (eigenes Epic)* — [P102](aspects/editor/deferred/P102-backend-support-helper-and-rollout.md)
 - **P101** — nodes/ui-avatar — size/variant Backend-Warnung + Render-Garantie — *hängt an P102 + zweitem Backend* — [P101](nodes/ui-avatar/deferred/P101-size-variant-backend-warning.md)
 - **P105** — aspects/rendering — nicht-darstellbarer Wert: Achtung-Icon + Alert/Dialog statt nacktem `"?"` — *Stufe 2 über P104* — [P105](aspects/rendering/deferred/P105-invalid-value-warning-affordance.md)
+- **P107** — nodes/ui-app — App-weite Auth/Authz (OAuth2/OIDC) modellieren — *eigenes Epic, ADR + Owner-Entscheidung nötig* — [P107](nodes/ui-app/deferred/P107-auth-authz.md)
 
 ## Done (rollup — history lives in the epic folders)
 
@@ -69,4 +73,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 107 done, 4 open, 3 deferred.**
+**Total: 107 done, 5 open, 4 deferred.**
