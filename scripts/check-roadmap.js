@@ -120,6 +120,31 @@ function main() {
         }
     }
 
+    // link hygiene: every relative markdown link in any docs/roadmap/**.md must
+    // resolve. This is what makes moving a package (open → done/ → deferred/)
+    // safe: a move that breaks a body link turns the tripwire red before commit.
+    const allMd = [];
+    (function walkAll(dir) {
+        for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+            const p = path.join(dir, e.name);
+            if (e.isDirectory()) walkAll(p);
+            else if (e.name.endsWith(".md")) allMd.push(p);
+        }
+    })(ROADMAP);
+    const linkRe = /\]\(([^)]+)\)/g;
+    for (const file of allMd) {
+        const text = fs.readFileSync(file, "utf8");
+        let lm;
+        while ((lm = linkRe.exec(text)) !== null) {
+            const raw = lm[1].trim();
+            if (/^(https?:|mailto:|tel:|#)/i.test(raw)) continue; // external / anchor-only
+            const target = raw.split("#")[0].trim();
+            if (!target) continue;
+            const resolved = path.resolve(path.dirname(file), target);
+            if (!fs.existsSync(resolved)) errors.push(`${path.relative(ROOT, file)}: broken relative link → ${raw}`);
+        }
+    }
+
     for (const w of warnings) console.warn("  warn: " + w);
 
     if (errors.length > 0) {

@@ -64,9 +64,9 @@ Repeat until a stop condition is met:
 
 7. **If `done`:** as the sole roadmap writer, on the main branch:
    a. Merge the sub-agent's branch: `git merge --no-ff phase/<PHASE_ID>`. If the merge conflicts (only possible when a concurrent phase touched the same source files), resolve trivially or, if unsure, mark the phase `blocked` with the conflict as the blocker and stop.
-   b. Append the package's `## Result` by transcribing the sub-agent's `result:` block (format in `.ai/prompts/run-next-phase.prompt.md`) and flip its frontmatter `status: done`.
+   b. Append the package's `## Result` by transcribing the sub-agent's `result:` block (format in `.ai/prompts/run-next-phase.prompt.md`), flip its frontmatter `status: done`, then `git mv` it into the epic's `done/` subfolder and fix its relative body links for the new depth.
    c. Update `docs/roadmap/INDEX.md`: remove the package from "Open work", bump its epic's done rollup.
-   d. Run `pnpm check:roadmap`. Commit the bookkeeping. Append the result to your running log.
+   d. Run `pnpm check:roadmap` (validates links + the move). Commit the bookkeeping. Append the result to your running log.
    Then continue to the next phase.
 
 8. **If `blocked`:** set the phase `status: blocked`, add a `blocker` field from the sub-agent's report, commit, and stop the loop. (Merge any partial branch only if the sub-agent says it is safe; otherwise leave it.)

@@ -10,7 +10,7 @@ spec: docs/nodes/concepts/backend-support.md
 ---
 # P102 — Backend-Support: Capability-Map + Editor-Helfer + Doc-Rollout
 
-> Setzt das Konzept [backend-support.md](../../../nodes/concepts/backend-support.md)
+> Setzt das Konzept [backend-support.md](../../../../nodes/concepts/backend-support.md)
 > um. Querschnitt für **alle** Knoten mit backend-bedingten Feldern
 > (`size`, `variant`, `pulsating`, `displayType=square`, …).
 
@@ -29,7 +29,7 @@ spec: docs/nodes/concepts/backend-support.md
 - Editor (Beweis an ui-avatar): `size` und `variant` stehen unter einer Trennlinie mit Warnung „vom aktiven Backend (Shoelace) nicht nativ unterstützt"; das einzelne „i"-Icon ist weg.
 - Editor (Beweis an ui-badge): `size`, `pulsating`, `displayType=square` analog.
 - Das Feld bleibt **bedienbar** (nicht deaktiviert) und wird zur Laufzeit weiterhin als `data-*` emittiert (Laufzeitregel des Konzepts).
-- Doc-Rollout: **jede** Node-Doc mit mindestens einem backend-bedingten Feld referenziert [backend-support.md](../../../nodes/concepts/backend-support.md) an der Feldzeile + in „Referenzen". (ui-badge, ui-avatar sind bereits verdrahtet; übrige Knoten mit `size`/`variant`/`pulsating` ergänzen — Liste per `grep` der Feldnamen in `docs/nodes/**` ermitteln.)
+- Doc-Rollout: **jede** Node-Doc mit mindestens einem backend-bedingten Feld referenziert [backend-support.md](../../../../nodes/concepts/backend-support.md) an der Feldzeile + in „Referenzen". (ui-badge, ui-avatar sind bereits verdrahtet; übrige Knoten mit `size`/`variant`/`pulsating` ergänzen — Liste per `grep` der Feldnamen in `docs/nodes/**` ermitteln.)
 
 ## Notes
 - Reihenfolge: Capability-Map zuerst (Contract), dann Helfer (liest die Map), dann ui-avatar/ui-badge umstellen, dann Doc-Rollout.

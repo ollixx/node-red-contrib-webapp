@@ -27,6 +27,34 @@ A phase is a **contract**, not a hint. The contract has three jobs:
 | `status` | yes | `pending` \| `in_progress` \| `done` \| `deferred` \| `blocked`. `deferred` = consciously parked (not abandoned); requires a `deferred_reason` and is listed under INDEX "Deferred", not "Open work". |
 | `deferred_reason` | if `deferred` | One line: why it is parked and what unblocks it. |
 
+## Folder layout — status maps to location
+
+A package's **status determines where its file lives** inside its epic folder, so
+a human can scan an epic at a glance (`ls`) without opening anything:
+
+```
+docs/roadmap/<epic>/
+  epic.md
+  P###-<slug>.md          ← pending / in_progress  (open work, at the epic root)
+  deferred/
+    P###-<slug>.md        ← deferred  (only created when the epic has any)
+  done/
+    P###-<slug>.md        ← done  (archived history; stays in its epic)
+```
+
+**On every status transition, `git mv` the file to its new location** and fix the
+two things a move can break:
+1. the package's own **relative body links** (the directory depth changes by one
+   between the epic root and a `done/` / `deferred/` subfolder — bump `../` by one
+   level), and
+2. the **INDEX link** to it (orchestrator).
+
+`pnpm check:roadmap` **validates every relative link** in `docs/roadmap/**.md` and
+fails on a broken one — so a move that leaves a dangling link cannot be committed.
+You never have to trust that links are clean; the tripwire proves it. Prefer the
+frontmatter `spec:`/`tests:` fields (repo-root paths, move-invariant) over body
+links where you can.
+
 ## Detail bar (AGENTS.md rule 11)
 
 A package must be **buildable from its own text without interpretation**. If you

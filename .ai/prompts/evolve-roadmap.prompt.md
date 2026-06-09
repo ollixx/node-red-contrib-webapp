@@ -26,11 +26,11 @@ Add `docs/adr/NNNN-<slug>.md` (next number in sequence) following the existing A
 
 Break the decision into **packages** that match the existing grain — each independently shippable, test-validatable, and small enough for one fresh sub-agent, scoped to one node or aspect. Write each as a package file per `.ai/agents/roadmap-phase-schema.md`: `findings` (the decision/requirement in concrete terms), `acceptance` (observable criteria), `verify`, `spec`, `tests`. Meet the detail bar (AGENTS.md rule 11) — buildable without interpretation. Chain with `dependencies`. Sequence so that foundational/contract work precedes work that builds on it.
 
-Park genuinely-deferred work as packages with `status: deferred` + a `deferred_reason` (not `pending`), so INDEX "Open work" only holds what is actually next.
+Park genuinely-deferred work as packages with `status: deferred` + a `deferred_reason` (not `pending`), placed in the epic's `deferred/` subfolder, so INDEX "Open work" only holds what is actually next.
 
 ## Step 3 — Wire it in
 
-- Create the new package files under `docs/roadmap/<epic>/` (the right `nodes/ui-*` or `aspects/*` folder; add an `epic.md` if the epic is new).
+- Create the new package files under `docs/roadmap/<epic>/` (the right `nodes/ui-*` or `aspects/*` folder; add an `epic.md` if the epic is new). Open (`pending`) packages live at the epic root; `deferred` ones in `<epic>/deferred/` (status maps to folder — see `.ai/agents/roadmap-phase-schema.md`).
 - Add each new `pending` package to `docs/roadmap/INDEX.md` under "Open work".
 - Reference the ADR from each package (e.g. a line under the title) so an implementing agent knows the rationale.
 - Run `pnpm check:roadmap` before finishing — it must pass.

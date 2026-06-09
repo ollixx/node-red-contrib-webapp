@@ -10,7 +10,7 @@ spec: docs/nodes/concepts/value-rendering.md
 ---
 # P105 — Nicht-darstellbarer Wert: elegante Warn-Affordance
 
-> Setzt §2a von [value-rendering.md](../../../nodes/concepts/value-rendering.md) um.
+> Setzt §2a von [value-rendering.md](../../../../nodes/concepts/value-rendering.md) um.
 > Ersetzt das nackte `"?"` aus P104 durch ein erklärendes Signal.
 
 ## Findings

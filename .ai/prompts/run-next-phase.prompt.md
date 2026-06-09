@@ -42,8 +42,9 @@ If the phase **builds or changes a `ui-*` node**: its tests follow `.ai/agents/n
 5. If all three validation steps pass:
    - **Standalone:**
      a. Append a `## Result` section to the package file (see format below) and flip its frontmatter to `status: done`.
-     b. Update `docs/roadmap/INDEX.md`: remove the package from "Open work" and bump its epic's done rollup.
-     c. Commit everything, then report the next ready phase.
+     b. `git mv` the package into its epic's `done/` subfolder (status maps to folder) and fix its relative body links for the new depth (`../` bumps by one level).
+     c. Update `docs/roadmap/INDEX.md`: remove the package from "Open work" and bump its epic's done rollup.
+     d. Run `pnpm check:roadmap` (validates links + the move), then commit everything and report the next ready phase.
    - **Orchestrated:** do NOT touch any `docs/roadmap/**` file. Commit your code to `phase/<PHASE_ID>`, then return the result block (the `result:` fields, branch name, next pending phase) for the orchestrator to write and merge.
 6. If a stop condition from `.ai/agents/architecture.md` is hit: **standalone** — set the package `status: blocked`, add a `blocker:` line to the package file, commit, and stop. **Orchestrated** — do not edit any `docs/roadmap/**` file; report `blocked` + a `blocker:` line to the orchestrator and stop.
 
@@ -62,9 +63,9 @@ When marking a package done, append this to the **package file** (keep the contr
 
 `Cost` = your `session_id` + measured wall-clock; token totals are auto-logged to `.ai/agent-runs.jsonl` keyed by `session_id` (AGENTS.md rule 10).
 
-Then update `docs/roadmap/INDEX.md` (drop the package from "Open work", bump the epic's done count).
+Then `git mv` the file into the epic's `done/` subfolder (fix its relative body links for the new depth — see `.ai/agents/roadmap-phase-schema.md`) and update `docs/roadmap/INDEX.md` (drop from "Open work", bump the epic's done count).
 
-**After editing any `docs/roadmap/**` file, run the read-only tripwire before you commit** — drift is silent otherwise:
+**After editing/moving any `docs/roadmap/**` file, run the read-only tripwire before you commit** — it validates frontmatter, dependency resolution, INDEX sync, AND every relative link (so a move that breaks a link fails here):
 
 ```
 pnpm check:roadmap

@@ -1,7 +1,8 @@
 <!-- The ONLY "Always-read" roadmap file. Keep it slim.
      Lists open work only (pending / in_progress). Done packages live in their
-     epic folder with status: done and are NOT listed here — that is the whole
-     point of the split: the open surface stays small.
+     epic's done/ subfolder (deferred ones in deferred/) and are NOT listed here
+     individually — that is the whole point of the split: the open surface stays
+     small, and `ls <epic>/` shows open work at the root, archived work in done/.
 
      This file is MAINTAINED BY THE ORCHESTRATOR, not by a generator script.
      - At phase close-out: drop the just-finished package from "Open work" and
@@ -42,9 +43,9 @@ their blocker clears.
 
 Reason in each package's `deferred_reason`. Picked up once the blocker clears.
 
-- **P102** — aspects/editor — Backend-Support-Helfer + Capability-Map + Rollout — *braucht ein zweites, real renderndes Backend (eigenes Epic)* — [P102](aspects/editor/P102-backend-support-helper-and-rollout.md)
-- **P101** — nodes/ui-avatar — size/variant Backend-Warnung + Render-Garantie — *hängt an P102 + zweitem Backend* — [P101](nodes/ui-avatar/P101-size-variant-backend-warning.md)
-- **P105** — aspects/rendering — nicht-darstellbarer Wert: Achtung-Icon + Alert/Dialog statt nacktem `"?"` — *Stufe 2 über P104* — [P105](aspects/rendering/P105-invalid-value-warning-affordance.md)
+- **P102** — aspects/editor — Backend-Support-Helfer + Capability-Map + Rollout — *braucht ein zweites, real renderndes Backend (eigenes Epic)* — [P102](aspects/editor/deferred/P102-backend-support-helper-and-rollout.md)
+- **P101** — nodes/ui-avatar — size/variant Backend-Warnung + Render-Garantie — *hängt an P102 + zweitem Backend* — [P101](nodes/ui-avatar/deferred/P101-size-variant-backend-warning.md)
+- **P105** — aspects/rendering — nicht-darstellbarer Wert: Achtung-Icon + Alert/Dialog statt nacktem `"?"` — *Stufe 2 über P104* — [P105](aspects/rendering/deferred/P105-invalid-value-warning-affordance.md)
 
 ## Done (rollup — history lives in the epic folders)
 

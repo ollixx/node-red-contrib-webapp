@@ -21,9 +21,9 @@ Repeat until a stop condition is met:
 3. Implement all deliverables (its `acceptance` list). One commit per logical change.
 4. Run the full validation protocol from `.ai/agents/validation.md`.
 5. If validation passes:
-   - Append a `## Result` to the package file (format in `run-next-phase.prompt.md`) and flip `status: done`.
+   - Append a `## Result` to the package file (format in `run-next-phase.prompt.md`), flip `status: done`, `git mv` it into the epic's `done/` subfolder, and fix its relative body links for the new depth.
    - Update `docs/roadmap/INDEX.md` (drop from "Open work", bump the epic's done rollup).
-   - Run `pnpm check:roadmap`. Commit, continue to next phase.
+   - Run `pnpm check:roadmap` (validates links + the move). Commit, continue to next phase.
 6. If a stop condition is hit: set the package `status: blocked`, add a `blocker:` line, commit, stop.
 
 ## Stop conditions (from `.ai/agents/architecture.md`)
