@@ -43,8 +43,6 @@ their blocker clears.
 - **P109** — pending — name + root ins Schema, title raus; Render-Semantik (HTML-title=name; Header-Slot leer→name, sonst nur Slot) — deps: [P1, P3] ✅ ready — [P109](nodes/ui-app/P109-name-root-title-rework.md)
 - **P108** — pending — root-Eindeutigkeit beim Deploy validieren (heute nur id, nicht root) — deps: [P109] ⛔ blocked on P109 — [P108](nodes/ui-app/P108-root-uniqueness-validation.md)
 
-### nodes/ui-store
-- **P110** — pending — scope-Guard (Any / Broadcast Only / Client Only): verhindert versehentliches Überbügeln per falscher Message — deps: [P15, P80] ✅ ready — [P110](nodes/ui-store/P110-scope-guard.md)
 
 ## Deferred (parked, not abandoned)
 
@@ -68,7 +66,8 @@ open the folder for the full history.
 | nodes/ui-avatar | 2 |
 | nodes/ui-log | 2 |
 | nodes/ui-query | 2 |
-| nodes/ui-accordion · ui-badge · ui-breadcrumb · ui-button · ui-checkbox · ui-datepicker · ui-dialog · ui-divider · ui-icon · ui-image · ui-pagination · ui-route · ui-store · ui-table · ui-text | 1 each |
+| nodes/ui-store | 2 |
+| nodes/ui-accordion · ui-badge · ui-breadcrumb · ui-button · ui-checkbox · ui-datepicker · ui-dialog · ui-divider · ui-icon · ui-image · ui-pagination · ui-route · ui-table · ui-text | 1 each |
 | aspects/test-infra | 21 |
 | aspects/misc | 16 |
 | aspects/runtime · state | 7 each |
@@ -77,4 +76,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 107 done, 7 open, 4 deferred.**
+**Total: 108 done, 6 open, 4 deferred.**

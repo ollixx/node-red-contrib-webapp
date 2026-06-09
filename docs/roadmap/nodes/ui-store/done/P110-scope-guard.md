@@ -2,7 +2,7 @@
 id: P110
 title: "ui-store: scope-Guard (Any / Broadcast Only / Client Only) — verhindert versehentliches Überbügeln per falscher Message"
 epic: nodes/ui-store
-status: in_progress
+status: done
 dependencies: [P15, P80]
 node: ui-store
 verify: browser
@@ -17,7 +17,7 @@ tests: tests/e2e/nodes/state/ui-store.tests.md
 > stille, destruktive „aus Versehen alle Daten überbügelt" zu einem lauten
 > Fehler macht.
 
-- Broadcast-vs-Per-Client wird heute pro Message über `msg.ui.clientId` on/off entschieden ([webapp.js Per-Client-Write/Read](../../../../nodes/webapp.js)). Ein `scope`-Feld am `ui-store` deklariert den **gewollten** Typ und weist verletzende Messages ab. Nebeneffekt: weil die Misch-Nutzung verboten wird, kann die alte Read-Kollision (Per-Client-Client sieht keine Broadcasts) gar nicht mehr entstehen.
+- Broadcast-vs-Per-Client wird heute pro Message über `msg.ui.clientId` on/off entschieden ([webapp.js Per-Client-Write/Read](../../../../../nodes/webapp.js)). Ein `scope`-Feld am `ui-store` deklariert den **gewollten** Typ und weist verletzende Messages ab. Nebeneffekt: weil die Misch-Nutzung verboten wird, kann die alte Read-Kollision (Per-Client-Client sieht keine Broadcasts) gar nicht mehr entstehen.
 
 ## Acceptance
 > `verify: browser` — Editor-Feld + Message-Round-Trip im laufenden Node-RED.
@@ -33,3 +33,17 @@ tests: tests/e2e/nodes/state/ui-store.tests.md
 ## Notes
 - Begleitend ein **kurzer ADR** „Store state model: write-clientId-driven; `scope` as an optional guard; per-client-merge & true per-client stores deferred" — hält fest, *warum* wir **keine** Per-Store-State-Architektur / keinen Read-Merge gebaut haben (verhindert Re-Litigation). Klein, kein Epic.
 - Echte per-client-Stores als produktives Feature (Fan-out-Semantik, Lebensdauer) bleiben **deferred**, bis ein konkreter Multi-User-Privat-Bedarf auftaucht.
+
+## Result
+
+delivered:
+- scope field (any/broadcast-only/client-only) added to ui-store schema (node-definitions.ts)
+- scope guard in nodes/webapp.js fires before applyStoreOperation; emits server.store.scope-violation error on violation
+- editor SelectBox for scope in nodes/state/ui-store.html
+- docs/nodes/state/ui-store.md updated with scope field + guard semantics
+- 13 unit tests in packages/runtime/test/p110-store-scope-guard.test.ts (all passing)
+- test catalogue tests/e2e/nodes/state/ui-store.tests.md created
+
+stats: 63 test files, 794 tests — all pass; build+lint+roadmap+links checks all green
+notes: E2E (verify:browser) to be run by orchestrator on develop after merge
+cost: session agent-a2b82e22aaf493f40, 5m
