@@ -2,7 +2,7 @@
 id: P104
 title: "Wert-Rendering zentralisieren: einheitliche Normalisierung (leer→leer, null/undefined/Nicht-Skalar→\"?\") in der Binding-Auflösung; alle wertbindenden Knoten scannen, schärfen und Doc-Rollout"
 epic: aspects/rendering
-status: pending
+status: in_progress
 dependencies: [P3, P67]
 verify: browser
 spec: docs/nodes/concepts/value-rendering.md
