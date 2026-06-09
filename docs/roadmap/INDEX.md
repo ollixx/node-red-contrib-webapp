@@ -35,8 +35,6 @@ their blocker clears.
 ### aspects/state
 - **P106** — pending — Live-Modell-Auslieferung beim Deploy: In-Place via SSE-Snapshot, Reload nur als Shell-/Topologie-Fallback (+ Bugfix: Deploy liefert aktuell nichts) — deps: [P15, P31, P37] ✅ ready — [P106](aspects/state/P106-live-model-delivery-on-deploy.md)
 
-### nodes/ui-app
-- **P108** — in_progress — root-Eindeutigkeit beim Deploy validieren (heute nur id, nicht root) — deps: [P109] ✅ ready — [P108](nodes/ui-app/P108-root-uniqueness-validation.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -56,7 +54,7 @@ open the folder for the full history.
 | Epic | done |
 |---|---|
 | nodes/ui-action | 4 |
-| nodes/ui-app | 5 |
+| nodes/ui-app | 6 |
 | nodes/ui-alert | 4 |
 | nodes/ui-avatar | 2 |
 | nodes/ui-log | 2 |
@@ -72,4 +70,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 111 done, 3 open, 4 deferred.**
+**Total: 112 done, 2 open, 4 deferred.**
