@@ -96,9 +96,17 @@ test.describe("live model delivery on deploy (P106)", () => {
         await streamRequested;
         await page.waitForTimeout(1200);
 
+        // Stamp a marker on the CURRENT document. A full reload (new document)
+        // discards it; an in-place apply keeps it. We watch for the marker to
+        // disappear, which only a real reload causes.
         await page.evaluate(() => {
             (window as unknown as { __noReload?: boolean }).__noReload = true;
         });
+
+        // A reload is a real navigation; arm a next-load-event wait BEFORE
+        // deploying so we deterministically observe the reload rather than polling
+        // a flag that races with the navigation tearing down the JS context.
+        const reloaded = page.waitForEvent("load");
 
         // Deploy with an ADDED route → the route-path set (signature) changes →
         // the client cannot apply in place and does a full reload.
@@ -121,13 +129,14 @@ test.describe("live model delivery on deploy (P106)", () => {
         const deployResp = await request.post("/flows", { data: withRoute });
         expect(deployResp.ok()).toBeTruthy();
 
-        // A reload discards the __noReload marker. Poll until it is gone.
+        // The reload fires; afterwards the marker is gone (fresh document).
+        await reloaded;
         await expect
             .poll(
-                () => page.evaluate(() => (window as unknown as { __noReload?: boolean }).__noReload === true),
+                () => page.evaluate(() => (window as unknown as { __noReload?: boolean }).__noReload !== true),
                 { timeout: 10000 }
             )
-            .toBe(false);
+            .toBe(true);
         await expect(root).toContainText("before-deploy");
     });
 
