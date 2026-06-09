@@ -28,8 +28,6 @@ their blocker clears.
 ## Open work (pending / in_progress)
 
 
-### nodes/ui-badge
-- **P103** — pending — size-Feld komplett entfernen (Schema, mapConfig, Serializer, Editor, Fixtures, Tests, Docs) — deps: [P92] ✅ ready — [P103](nodes/ui-badge/P103-remove-size-field.md)
 
 ### aspects/rendering
 - **P104** — pending — Wert-Rendering zentralisieren: Normalisierung (`""`→leer, `null`/Nicht-Skalar→`"?"`), alle wertbindenden Knoten scannen + Doc-Rollout — deps: [P3, P67] ✅ ready — [P104](aspects/rendering/P104-central-value-rendering.md)
@@ -65,7 +63,8 @@ open the folder for the full history.
 | nodes/ui-log | 2 |
 | nodes/ui-query | 2 |
 | nodes/ui-store | 2 |
-| nodes/ui-accordion · ui-badge · ui-breadcrumb · ui-button · ui-checkbox · ui-datepicker · ui-dialog · ui-divider · ui-icon · ui-image · ui-pagination · ui-route · ui-table · ui-text | 1 each |
+| nodes/ui-badge | 2 |
+| nodes/ui-accordion · ui-breadcrumb · ui-button · ui-checkbox · ui-datepicker · ui-dialog · ui-divider · ui-icon · ui-image · ui-pagination · ui-route · ui-table · ui-text | 1 each |
 | aspects/test-infra | 21 |
 | aspects/misc | 16 |
 | aspects/runtime · state | 7 each |
@@ -74,4 +73,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 109 done, 5 open, 4 deferred.**
+**Total: 110 done, 4 open, 4 deferred.**

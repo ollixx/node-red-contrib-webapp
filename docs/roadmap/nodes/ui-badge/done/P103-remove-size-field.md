@@ -2,7 +2,7 @@
 id: P103
 title: "ui-badge: size-Feld komplett entfernen (Schema, mapConfig, Serializer, Editor, Fixtures, Tests, Docs)"
 epic: nodes/ui-badge
-status: in_progress
+status: done
 dependencies: [P92]
 node: ui-badge
 verify: browser
@@ -24,8 +24,15 @@ tests: tests/e2e/nodes/view/ui-badge.tests.md
 - Laufzeit: `nodes/webapp.js` (mapConfig) assembliert `size` für badge nicht mehr; der Serializer/Adapter emittiert **kein** `data-size` mehr auf dem gerenderten Badge — im DOM ist kein `data-size`-Attribut vorhanden (Outcome-Test).
 - Fixtures: `packages/schema/src/fixtures.ts` setzt für das Badge-Fixture kein `size` mehr (falls vorhanden).
 - Tests: die badge-Unit-Tests (p92) und der E2E-/Test-Katalog sind aktualisiert — alle `size`/`data-size`-Assertions entfernt bzw. in „kein data-size"-Assertions gedreht; Katalog `ui-badge.tests.md` aktuell.
-- Docs: [ui-badge.md](../../../nodes/feedback/ui-badge.md) ist bereits angepasst (kein `size`-Feld, „Kein size"-Hinweis) — Konsistenz prüfen.
+- Docs: [ui-badge.md](../../../../nodes/feedback/ui-badge.md) ist bereits angepasst (kein `size`-Feld, „Kein size"-Hinweis) — Konsistenz prüfen.
 
 ## Notes
 - `componentSizeSchema`/`COMPONENT_SIZES` bleiben bestehen (andere Knoten nutzen sie) — nur die badge-Verwendung entfällt.
 - Reines Entfernen, kein Ersatz. Die Cross-Backend-Warnung (P102) ist hiervon unabhängig und derzeit zurückgestellt.
+
+## Result
+
+delivered: Removed `size` field completely from ui-badge — schema (`uiBadgeNodeDefinitionSchema`), `mapConfig` in `nodes/webapp.js`, badge HTML serializer in `webapp-serializer.js`, editor panel (`ui-badge.html`), runtime node-set assembly (`node-set.ts`), editor package interface (`nodes.ts`). Old flows with `size` load cleanly (Zod strips unknown fields; `mapConfig` does not forward it; no `data-size` ever emitted on `<sl-badge>`).
+stats: 11 files changed; 9 new unit tests in `p103-badge-remove-size.test.ts`; 786 unit tests pass; 365 E2E tests pass; `pnpm validate` + `pnpm check:roadmap` clean
+notes: TypeScript compilation errors caught at build time in `node-set.ts` and `nodes.ts` — fixed cleanly. Back-compat automatic via Zod strip-unknown. `componentSizeSchema`/`COMPONENT_SIZES` left intact (used by other nodes).
+cost: session 493f653c-558d-4cae-bc8b-ebafefde8585, 15m
