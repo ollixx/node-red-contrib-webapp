@@ -84,19 +84,10 @@ describe("P92: ui-badge — mapConfig", () => {
         expect(def.pulsating).toBeFalsy();
     });
 
-    it("size 'sm' → preserved in mapConfig result", () => {
+    // P103: size removed — old config with size must NOT produce a size field
+    it("size field removed — not emitted by mapConfig (P103)", () => {
         const def = reg.mapConfig({ ...base, size: "sm" }) as Record<string, unknown>;
-        expect(def.size).toBe("sm");
-    });
-
-    it("size 'lg' → preserved in mapConfig result", () => {
-        const def = reg.mapConfig({ ...base, size: "lg" }) as Record<string, unknown>;
-        expect(def.size).toBe("lg");
-    });
-
-    it("size absent → not set in mapConfig result", () => {
-        const def = reg.mapConfig({ ...base }) as Record<string, unknown>;
-        expect(def.size).toBeFalsy();
+        expect(def).not.toHaveProperty("size");
     });
 
     it("max field is removed — not emitted by mapConfig", () => {
@@ -177,24 +168,14 @@ describe("P92: ui-badge — serializer", () => {
         expect(html).not.toContain(" pulse");
     });
 
-    // size → data-size
-    it("size 'sm' → sl-badge has data-size='sm'", () => {
-        const html = renderComponentHtml(makeBadge({ size: "sm" }), "main", {});
-        expect(html).toContain("data-size=\"sm\"");
-    });
-
-    it("size 'md' → sl-badge has data-size='md'", () => {
-        const html = renderComponentHtml(makeBadge({ size: "md" }), "main", {});
-        expect(html).toContain("data-size=\"md\"");
-    });
-
-    it("size 'lg' → sl-badge has data-size='lg'", () => {
-        const html = renderComponentHtml(makeBadge({ size: "lg" }), "main", {});
-        expect(html).toContain("data-size=\"lg\"");
-    });
-
-    it("size absent → sl-badge has no data-size attribute", () => {
+    // P103: size removed — no data-size ever emitted
+    it("size removed — sl-badge never has data-size attribute (P103)", () => {
         const html = renderComponentHtml(makeBadge(), "main", {});
+        expect(html).not.toContain("data-size=");
+    });
+
+    it("old size in props — sl-badge still has no data-size attribute (P103 back-compat)", () => {
+        const html = renderComponentHtml(makeBadge({ size: "md" }), "main", {});
         expect(html).not.toContain("data-size=");
     });
 
@@ -211,15 +192,15 @@ describe("P92: ui-badge — serializer", () => {
     });
 
     // combined
-    it("pill + pulsating + variant renders all correct attributes together", () => {
+    it("pill + pulsating + variant renders all correct attributes together (no data-size, P103)", () => {
         const html = renderComponentHtml(
-            makeBadge({ displayType: "pill", variant: "primary", pulsating: true, size: "md" }),
+            makeBadge({ displayType: "pill", variant: "primary", pulsating: true }),
             "main",
             {}
         );
         expect(html).toContain(" pill");
         expect(html).toContain(" pulse");
         expect(html).toContain("variant=\"primary\"");
-        expect(html).toContain("data-size=\"md\"");
+        expect(html).not.toContain("data-size=");
     });
 });

@@ -544,12 +544,12 @@ export const uiBadgeNodeDefinitionSchema = mountableNodeSchema.extend({
     // P92: pulsating — makes the badge pulse to draw attention. Maps to the
     // Shoelace `pulse` boolean attribute on <sl-badge>. Other backends without
     // native support can apply a CSS animation fallback.
-    pulsating: z.boolean().optional(),
-    // P92: size — three-step size token (sm/md/lg). Shoelace sl-badge has no
-    // native `size` attribute; the adapter emits data-size for CSS targeting.
-    size: componentSizeSchema.optional()
+    pulsating: z.boolean().optional()
     // P92: `max` field removed (was for count truncation — no longer relevant
     // as displayType is now shape-only, not a count/dot/status distinction).
+    // P103: `size` field removed — Shoelace has no native badge sizing; a pure
+    // data-size attr without a backend that evaluates it is dead weight.
+    // Size differences are handled via Theme/CSS at the use site, not a node field.
 });
 
 export type UiBadgeNodeDefinition = z.infer<typeof uiBadgeNodeDefinitionSchema>;

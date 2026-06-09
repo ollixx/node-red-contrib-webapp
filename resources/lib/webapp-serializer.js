@@ -730,10 +730,9 @@
             const squareAttr = displayType === "square" ? " data-display-type=\"square\"" : "";
             // P92: pulsating → Shoelace `pulse` boolean attribute.
             const pulseAttr = component.props.pulsating === true ? " pulse" : "";
-            // P92: size → data-size attribute (sl-badge has no native size attr).
-            const sizeAttr = component.props.size ? " data-size=\"" + escapeAttribute(String(component.props.size)) + "\"" : "";
+            // P103: size field removed — no data-size attribute emitted any more.
             const attrs = shoelaceAttrs(mapComponentToShoelace("badge", component.props || {}).attributes);
-            return wrapRenderedComponentHtml(component, layoutId, "<sl-badge" + attrs + " variant=\"" + escapeAttribute(shoelaceVariant) + "\"" + pillAttr + squareAttr + pulseAttr + sizeAttr + ">" + escapeHtml(value) + "</sl-badge>");
+            return wrapRenderedComponentHtml(component, layoutId, "<sl-badge" + attrs + " variant=\"" + escapeAttribute(shoelaceVariant) + "\"" + pillAttr + squareAttr + pulseAttr + ">" + escapeHtml(value) + "</sl-badge>");
         }
 
         if (component.kind === "progress") {

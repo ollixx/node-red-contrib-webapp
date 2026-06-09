@@ -262,8 +262,7 @@ export interface UiBadgeEditorConfig extends MountableEditorConfig {
     severity?: "primary" | "success" | "warning" | "danger" | "neutral" | "info";
     // P92: pulsating — maps to Shoelace `pulse` attribute.
     pulsating?: boolean;
-    // P92: size (sm/md/lg).
-    size?: "sm" | "md" | "lg";
+    // P103: size field removed.
     // P92: max field removed (was for count truncation).
 }
 
@@ -1124,10 +1123,10 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         mount: config.mount ?? "",
         value: stateBinding(config.valuePath ?? ""),
         // P92: displayType now shape (square/rounded/pill); variant replaces severity.
+        // P103: size field removed.
         displayType: config.displayType,
         variant: config.variant ?? (config.severity as UiBadgeNodeDefinition["variant"] | undefined),
         pulsating: config.pulsating,
-        size: config.size,
         // P92: max field removed.
         ...collectLayoutChildConfig(config)
     })),
