@@ -126,7 +126,13 @@ Token-Set sowohl die eigenen als auch die Shoelace-Stile.
 > + Varianten), damit ein anderer Adapter prinzipiell möglich bleibt. Ein
 > austauschbares Backend (Material/Bootstrap/…) ist heute aber **nicht**
 > implementiert — Shoelace ist der einzige Adapter, und es gibt kein
-> `backend`-Konfigurationsfeld.
+> `adapter`/`backend`-Konfigurationsfeld.
+>
+> **Achsen-Abgrenzung.** „Theme" meint im engen Sinn **Ebene 1 (Tokens)** —
+> Farbe/Typografie/Radii. Der **Adapter/Backend** (Ebene 3, das GUI-*Framework*)
+> ist eine eigene Achse; seine Fähigkeits-Unterschiede und das Verhalten bei nicht
+> nativ unterstützten Feldern sind in [backend-support.md](backend-support.md)
+> beschrieben. Ein Framework-Wechsel ist **kein** Theme.
 
 ---
 

@@ -1,0 +1,99 @@
+# Live-Modell-Auslieferung beim Deploy
+
+> **Anforderungs-Dokument.** Beschreibt den *gewünschten* Vertrag, nicht den
+> aktuellen Implementierungsstand. Teile sind noch **nicht implementiert** und
+> unten markiert.
+
+## Ziel
+
+Wird eine Webapp im Node-RED-Editor geändert und **deployed**, soll das neu
+kompilierte Modell **direkt an alle verbundenen Clients** ausgeliefert werden, so
+dass sich die UI **automatisch aktualisiert** — ohne dass der Anwender die Seite
+manuell neu lädt.
+
+## Bestehende Bausteine
+
+- **P31** — Live Server→Client-Transport (SSE): `snapshot`-Event + clientseitiges
+  `applySnapshot()`, das den Region-/Layout-Baum **in-place** re-rendert (inkl.
+  Interaktions-Overlay und Formular-Status-Erhalt).
+- **P37** — beim Deploy (`flows:started`) broadcastet der Server ein
+  `redeploy`-Event; der Client macht heute `window.location.reload()` (voller
+  Reload).
+
+## Mechanismus (gewünscht): In-Place, Reload nur als Fallback
+
+Beim Deploy wird der **frisch kompilierte Snapshot** über den bestehenden
+SSE-`snapshot`-Kanal an alle Clients gepusht und per `applySnapshot()` in-place
+übernommen — **kein** Reload. Client-State (aktuelle Route, Scroll,
+Interaktions-Overlay `show/hide/enable/disable`, laufende Formulareingaben) bleibt
+erhalten.
+
+Ein voller Reload ist nur der **Fallback** für Änderungen, die ein In-Place-
+Re-Render strukturell nicht ausdrücken kann (siehe Signatur unten).
+
+## Wann Reload statt In-Place? — die Shell-/Topologie-Signatur
+
+> **Nicht die Größe des Snapshots entscheidet, sondern *was* sich geändert hat.**
+
+`applySnapshot` re-rendert den Baum der **aktuellen Route**. Sicher in-place:
+Props/Werte, Komponenten innerhalb der sichtbaren Route hinzufügen/entfernen,
+Layout-Inhalt. Außerhalb dieses Baums liegt die App-Shell und die Routen-Topologie
+— die braucht einen Reload.
+
+Dafür trägt jeder Deploy-Push eine **Signatur** aus genau den nicht-in-place-
+fähigen Teilen:
+
+1. **App-Shell** — Layout-Preset des `ui-app` + Theme-Tokens (alles, was in die
+   server-gerenderte Seiten-Hülle gebacken ist).
+2. **Routen-Topologie** — die Menge der Routen-Pfade (+ Param-Struktur).
+3. **Transport-/Serializer-Version** — falls der Client-Code-Vertrag selbst sich
+   ändert (Paket-Upgrade, nicht Flow-Deploy).
+
+**Entscheidungsregel auf dem Client** bei jedem Deploy-Push:
+
+| Bedingung | Aktion |
+|---|---|
+| Signatur **gleich** UND aktuelle Route existiert noch | **In-Place** `applySnapshot` |
+| Signatur **ungleich** ODER aktuelle Route ist weg | **voller Reload** |
+
+Beispiele: Label ändern / Button auf der aktuellen Seite hinzufügen / Variant
+wechseln → in-place. Navigation umbauen / Theme- oder Layout-Preset wechseln /
+Route entfernen, auf der man steht → Reload.
+
+> **Noch nicht implementiert:** der Snapshot-Push beim Deploy (statt nur
+> `redeploy`-Reload), die Signatur-Berechnung server- und clientseitig, und die
+> Fallback-Logik. Erste Umsetzung siehe Paket P106.
+
+## Verdeckte / inaktive Tabs
+
+Ein auf SSE-Events getriggerter Reload (oder In-Place-Push) ist **fragil für
+verdeckte Tabs**: Browser drosseln Hintergrund-Tabs, und Chrome **friert** sie
+ein (Tab Freezing) → der Event-Handler läuft nicht. Da der SSE-Endpoint den
+Deploy überlebt (kein Reconnect → kein Reconnect-Snapshot), gibt es ohne weitere
+Maßnahme **keine Erholung**: der Tab bleibt stehen, bis manuell neu geladen wird.
+
+**Robustheits-Regel:** ein **`visibilitychange`-Handler** zieht beim
+**Sichtbarwerden** des Tabs das aktuelle Modell aktiv von `/snapshot` und wendet
+die In-Place-vs-Reload-Regel (Signatur) an. Damit ist das Update unabhängig davon,
+ob im Hintergrund ein Push verpasst wurde — beim Refokus gilt immer der Server-
+Zustand.
+
+> **Noch nicht implementiert:** im Client gibt es heute **kein**
+> `visibilitychange`-Handling.
+
+## Mehr-Client / Mehr-Nutzer
+
+Der Push geht als **Broadcast** an alle Subscriber der App (kein `clientId`).
+Per-Client-State (P15) bleibt dabei erhalten — der Snapshot trägt nur die
+Modell-Struktur, nicht den per-Client-Zustand. Siehe [multi-user.md](multi-user.md).
+
+## Siehe auch
+
+- [multi-user.md](multi-user.md) — per-Client vs. Broadcast, clientId-Modell
+- [messages.md](messages.md) — `msg.ui`-Event-Format / Snapshot-Inhalt
+
+## Offene Punkte
+
+- Genaue Felder der Shell-Signatur (welche Token-Teilmenge zählt als „Shell"?).
+- Verhalten, wenn die aktuelle Route entfernt wurde: harter Reload vs. Navigation
+  auf eine Fallback-Route.

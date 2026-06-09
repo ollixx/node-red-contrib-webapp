@@ -34,17 +34,22 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `value` | „Value Path" | typedInput (Binding-Arten) | **ja** | Der angezeigte Wert (Zahl oder String). Unterstützt alle Binding-Arten (`literal`, `state`, `store`, `query`, `routeParam`, `msg`, `flow`, `global`, `jsonata`, `env`). |
+| `value` | „Value Path" | typedInput (Binding-Arten) | **ja** | Der angezeigte Wert (Zahl oder String). Unterstützt alle Binding-Arten (`literal`, `state`, `store`, `query`, `routeParam`, `msg`, `flow`, `global`, `jsonata`, `env`). Leer-/`null`-/Non-Skalar-Verhalten (`""` → leeres Badge; `null`/`undefined`/Objekt/Array → `"?"`; `0`/`false` sind gültig): siehe [value-rendering.md](../concepts/value-rendering.md). |
 | `displayType` | „Display Type" | SelectBox | optional | Form des Badge — dies ist ein **Darstellungstyp**, kein semantischer Variant (vgl. [theming.md](../concepts/theming.md)). Werte: `rounded` (Default), `pill`, `square`. `pill` → Shoelace `pill`-Attribut (stark abgerundete Enden); `square` → eckiges Badge (via `data-display-type`-CSS). |
 | `variant` | „Variant" | SelectBox | optional | Semantische Farbrolle des Badge (Ebene-2-Variant). Werte aus `BADGE_VARIANTS` (`SEVERITY_VARIANTS`): `primary`, `success`, `warning`, `danger`, `neutral` (Default), `info`. Bestimmt gemeinsam mit den Design-Tokens des `ui-app` die Hintergrundfarbe. |
-| `pulsating` | „Pulsating" | Checkbox | optional | Lässt das Badge pulsieren, um Aufmerksamkeit zu erzeugen. Shoelace-Backend: natives `pulse`-Attribut auf `sl-badge`. Andere Backends ohne native Unterstützung können einen CSS-Animations-Fallback einsetzen (analog Bootstrap-Beispiel). Das Feld ist bewusst backend-neutral gehalten. |
-| `size` | „Size" | SelectBox | optional | Größe des Badge: `sm`, `md`, `lg`. Shoelace-Backend: kein natives `size`-Attribut auf `sl-badge`; die Größe wird als `data-size`-Attribut gesetzt und per CSS gesteuert. Andere Backends können das native Sizing-System nutzen. |
+| `pulsating` | „Pulsating" | Checkbox | optional | Lässt das Badge pulsieren, um Aufmerksamkeit zu erzeugen. Shoelace bildet das nativ auf `pulse` (`sl-badge`) ab. |
+
+> **Kein `size`-Feld.** `ui-badge` trägt **bewusst kein** `size`-Feld. Shoelace
+> hat kein natives Badge-Sizing; ein reines `data-size`-Attribut ohne ein Backend,
+> das es auswertet, wäre totes Gewicht. Größenunterschiede werden – falls nötig –
+> über das Theme/CSS am Einsatzort gelöst, nicht über ein Knotenfeld. (Das Feld
+> wurde in P92 eingeführt und wird wieder entfernt, siehe geplantes Paket.)
 
 ### Inline-Hilfe (HTML)
 
 Der `data-help-name="ui-badge"`-Hilfetext soll **knapp, aber ausreichend** sein:
 Zweck in 1–2 Sätzen, Hinweis auf `displayType` vs. `variant` (Form vs. Farbrolle),
-Hinweis auf Backend-Neutralität von `pulsating` und `size`, sowie ein Link auf
+Hinweis auf das native `pulsating`/`pulse`-Verhalten, sowie ein Link auf
 die ausführliche Doku. Empfohlener Link:
 `https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/feedback/ui-badge.md`.
 
@@ -56,7 +61,7 @@ die ausführliche Doku. Empfohlener Link:
   neuen SSE-Snapshot. Weitere Felder bleiben unverändert.
   Details: [inputs.md](../concepts/inputs.md).
 - **`msg.ui.patch`** — überschreibt beliebige Felder der Knoten-Definition
-  (`value`, `displayType`, `variant`, `pulsating`, `size`).
+  (`value`, `displayType`, `variant`, `pulsating`).
 - **`msg.ui.component.op`** (`show`, `hide`, …) — steuert Sichtbarkeit und
   Interaktionszustand.
 - **Nicht erkannte / fachfremde Messages:** werden **unverändert durchgereicht**
@@ -77,14 +82,17 @@ Nutzer-Events.
 - **`variant`** (`BADGE_VARIANTS = SEVERITY_VARIANTS`) — semantische Farbrolle (Ebene 2).
   Das Theme des `ui-app` bildet den Variant über Design-Tokens auf konkrete Farben ab.
   Das Modell ist backend-neutral.
-- **`pulsating`** — Aufmerksamkeits-Signal. Backend-neutral; Shoelace unterstützt
-  es nativ (`pulse`), andere Backends können einen CSS-Fallback einsetzen.
-- **`size`** — Größentoken (sm/md/lg). Backend-neutral; Shoelace emittiert `data-size`.
+- **`pulsating`** — Aufmerksamkeits-Signal. Shoelace unterstützt es nativ (`pulse`).
+- **`displayType=square`** — eckiges Badge ohne natives Shoelace-Pendant; gerendert
+  über `data-display-type="square"` + eigenes CSS (kein zweites Backend nötig).
+- **Kein `size`.** Siehe Feld-Tabelle oben — bewusst entfernt.
 
 ## Referenzen
 
 - [editor.md](../concepts/editor.md) — Binding-Typen, typedInput
 - [theming.md](../concepts/theming.md) — `SEVERITY_VARIANTS`, `displayType` vs. `variant`
+- [backend-support.md](../concepts/backend-support.md) — Cross-Backend-Modell (`data-*`-Emission; Editor-Warnungen folgen später, derzeit nur Shoelace)
+- [value-rendering.md](../concepts/value-rendering.md) — Verhalten bei leerem/`null`/nicht-skalarem Wert
 - [inputs.md](../concepts/inputs.md) — `msg.payload` Push-Updates
 
 ## Test-Katalog

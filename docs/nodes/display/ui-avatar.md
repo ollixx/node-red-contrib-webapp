@@ -45,9 +45,9 @@ typedInput, Mount-Baum, Layout-Child-Props).
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `size` | „Größe" | SelectBox (`xs` / `sm` / `md` / `lg` / `xl`) | optional | Größe des Avatars. Default: `md`. |
-| `shape` | „Form" | SelectBox (`circle` / `square`) | optional | Form des Avatars. Default: `circle`. |
-| `variant` | „Variant" | SelectBox (`primary` / `neutral` / `success` / `info` / `warning` / `danger`) | optional | Semantische Farbrolle des Avatars (P94). Bootstrap und ähnliche Frameworks unterstützen dies nativ über CSS-Klassen. **Hinweis Shoelace:** `sl-avatar` unterstützt kein natives `variant`-Attribut; der Wert wird als `data-variant`-Attribut am Element ausgegeben, das per CSS oder einem Backend-Adapter ausgewertet werden kann. |
+| `size` | „Größe" | SelectBox (`xs` / `sm` / `md` / `lg` / `xl`) | optional | Größe des Avatars. Default: `md`. `sl-avatar` hat kein natives `size`-Attribut → backend-bedingt: [backend-support.md](../concepts/backend-support.md). |
+| `shape` | „Form" | SelectBox (`circle` / `square`) | optional | Form des Avatars. Default: `circle`. Nativ von `sl-avatar` unterstützt. |
+| `variant` | „Variant" | SelectBox (`primary` / `neutral` / `success` / `info` / `warning` / `danger`) | optional | Semantische Farbrolle des Avatars (P94). `sl-avatar` unterstützt kein natives `variant` → backend-bedingt (Emission als `data-variant`, Editor-Warnung unter Trennlinie): [backend-support.md](../concepts/backend-support.md). |
 
 ### Gruppe „Platzierung"
 
@@ -91,10 +91,11 @@ die ausführliche Doku:
 
 `ui-avatar` trägt ein `variant`-Feld für die semantische Farbrolle (P94). Farben
 und Radii erben vom App-weiten Theme (Design-Tokens). Das Rendering-Backend (heute
-Shoelace) bildet `shape` und `size` auf Web-Component-Props ab; `variant` wird als
-`data-variant`-Attribut ausgegeben, da `sl-avatar` kein natives Pendant hat.
-Bootstrap-Adapter und eigenes CSS können `data-variant` auswerten (z. B.
-`sl-avatar[data-variant="danger"] { … }`). Details: [theming.md](../concepts/theming.md).
+Shoelace) bildet `shape` nativ ab; `size` und `variant` haben **kein** natives
+`sl-avatar`-Pendant und sind backend-bedingt (`data-size` / `data-variant` +
+Editor-Warnung). Das Verhalten ist zentral beschrieben in
+[backend-support.md](../concepts/backend-support.md); Tokens/Vokabular in
+[theming.md](../concepts/theming.md).
 
 ## Fallback-Reihenfolge
 
@@ -106,6 +107,7 @@ Bootstrap-Adapter und eigenes CSS können `data-variant` auswerten (z. B.
 
 - [layout.md](../concepts/layout.md) — Presets und Child-Platzierungs-Felder
 - [theming.md](../concepts/theming.md) — Design-Tokens und Backends
+- [backend-support.md](../concepts/backend-support.md) — nicht nativ unterstützte Felder (`size`, `variant`): `data-*`-Emission + Editor-Warnung
 - [inputs.md](../concepts/inputs.md) — `msg.payload` / `msg.ui.patch` / Component-Ops
 - [editor.md](../concepts/editor.md) — Editor-Typen (typedInput, Mount-Baum)
 - [stores.md](../concepts/stores.md) — Binding-Arten

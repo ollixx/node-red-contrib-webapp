@@ -161,4 +161,5 @@ sind nur interaktionsfähige `ui-*`-Knoten wählbar (nicht `ui-action`/
 - [stores.md](stores.md) — Semantik des `store`-Bindings (Auflösung, Robustheit)
 - [layout.md](layout.md) — Presets und Child-Platzierungs-Felder
 - [theming.md](theming.md) — Variant-Vokabular (Quelle der Variant-SelectBox)
+- [backend-support.md](backend-support.md) — nicht nativ unterstützte Felder: Trennlinie + Warnung (gemeinsamer Editor-Helfer)
 - [actions.md](actions.md) — `ui-action`-Ziele (Out-Port vs. Canvas-Picker `targets`)
