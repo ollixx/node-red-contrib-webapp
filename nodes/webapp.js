@@ -1792,6 +1792,46 @@ function validateNavigationFlow(RED) {
     return issues;
 }
 
+// P108: cross-validate that no two ui-app nodes share the same root path.
+// Two apps with the same root collide on the URL and cause non-deterministic
+// routing — surface this as a structured error at deploy time.
+// Returns a list of { nodeId, appId, root, message }.
+function validateAppRootUniqueness(RED) {
+    const issues = [];
+    let nodes;
+    try {
+        const flowFilePath = getFlowFilePath(RED);
+        if (!fs.existsSync(flowFilePath)) { return issues; }
+        const parsed = JSON.parse(fs.readFileSync(flowFilePath, 'utf8'));
+        nodes = Array.isArray(parsed) ? parsed : [];
+    }
+    catch { return issues; }
+
+    const appNodes = nodes.filter((n) => n && n.type === 'ui-app');
+    const byRoot = new Map();
+    for (const n of appNodes) {
+        const root = (n.root || '').trim();
+        if (!root) { continue; }
+        const existing = byRoot.get(root);
+        if (existing) { existing.push(n); }
+        else { byRoot.set(root, [n]); }
+    }
+
+    for (const [root, group] of byRoot.entries()) {
+        if (group.length < 2) { continue; }
+        const appIds = group.map((n) => n.uiId || n.id).join(', ');
+        for (const n of group) {
+            issues.push({
+                nodeId: n.id,
+                appId: n.uiId || n.id,
+                root,
+                message: `ui-app root '${root}' is shared by multiple apps (${appIds}). Each app must have a unique root path.`
+            });
+        }
+    }
+    return issues;
+}
+
 function getDefinitionBuckets(appId, definitions) {
     const matchingApp = definitions.find((entry) => entry.type === "ui-app" && (entry.id === appId || entry.root === appId));
 
@@ -4480,6 +4520,22 @@ function registerWebappNodes(RED) {
             // Never let validation crash the deploy.
         }
 
+        // P108: cross-validate that all ui-app nodes have unique root paths.
+        try {
+            const rootIssues = validateAppRootUniqueness(RED);
+            for (const issue of rootIssues) {
+                reportRuntimeError(undefined, {
+                    severity: 'error',
+                    code: 'duplicate-app-root',
+                    message: issue.message,
+                    context: { nodeId: issue.nodeId, appId: issue.appId, root: issue.root, op: 'deploy' }
+                });
+            }
+        }
+        catch (_e2) {
+            // Never let validation crash the deploy.
+        }
+
         const deployedAt = Date.now();
         // Defer by one event-loop tick so pending connection-close callbacks
         // (req.on("close") → removeStreamClient) fire first. This avoids sending
@@ -4546,6 +4602,7 @@ registerWebappNodes.__test__ = {
     resolveNavigateLocation,
     performTargetNavigate,
     validateNavigationFlow,
+    validateAppRootUniqueness,
     parseParamsObject,
     runtimeNodeRegistry,
     runtimeState,
