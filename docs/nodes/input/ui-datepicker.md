@@ -38,7 +38,7 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `label` | „Label" | Textfeld | **ja** | Beschriftung des Datumseingabefeldes. Wird als Feld-Label über dem Datepicker angezeigt. |
+| `label` | „Label" | typedInput (alle Binding-Arten) | **ja** | Beschriftung des Datumseingabefeldes. Wird als Feld-Label über dem Datepicker angezeigt. Unterstützt alle Binding-Arten: `literal`, `state`, `store`, `query`, `routeParam`, `msg`, `flow`, `global`, `jsonata`, `env`. |
 | `value` | „Value Path" | typedInput (alle Binding-Arten) | **ja** | Bindbare Quelle des Datumswerts als ISO-8601-String (`YYYY-MM-DD`, `YYYY-MM-DDTHH:mm` oder `HH:mm` je nach Modus). Unterstützt alle Binding-Arten: `literal`, `state`, `store`, `query`, `routeParam`, `msg`, `flow`, `global`, `jsonata`, `env`. Details: [stores.md](../concepts/stores.md). |
 | `mode` | „Mode" | SelectBox (`date` / `datetime` / `time`) | optional | Eingabe-Modus. `date` = nur Datum; `datetime` = Datum und Uhrzeit; `time` = nur Uhrzeit. Default: `date`. |
 | `min` | „Min" | Textfeld (`YYYY-MM-DD`) | optional | Frühestes erlaubtes Datum. Tage vor diesem Datum werden im Kalender deaktiviert und können nicht gewählt werden. |

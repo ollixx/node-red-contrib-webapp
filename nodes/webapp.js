@@ -965,10 +965,10 @@ function toComponentDefinitions(components) {
             if (iconBinding) {
                 bind.icon = iconBinding;
             }
-            // P97: label binding for ui-checkbox — when label is a binding object,
-            // route it through bind.label so the renderer resolves it to a string
-            // in resolvedProps.label → component.props.label (used by serializer).
-            const labelBinding = p16Kind === "checkbox" ? getBinding(component.label, undefined) : undefined;
+            // P97/P98: label binding for ui-checkbox and ui-datepicker — when label is a
+            // binding object, route it through bind.label so the renderer resolves it to a
+            // string in resolvedProps.label → component.props.label (used by serializer).
+            const labelBinding = (p16Kind === "checkbox" || p16Kind === "datepicker") ? getBinding(component.label, undefined) : undefined;
             if (labelBinding) {
                 bind.label = labelBinding;
             }
@@ -980,8 +980,9 @@ function toComponentDefinitions(components) {
                 order: toOptionalNumber(component.order),
                 bind,
                 props: {
-                    // P97: For checkbox, label may be a binding object — when so it goes through
-                    // bind.label; only put it in props when it is a plain string (or for other nodes).
+                    // P97/P98: For checkbox and datepicker, label may be a binding object — when so
+                    // it goes through bind.label; only put it in props when it is a plain string
+                    // (or for other nodes that don't support label bindings).
                     ...(component.label !== undefined && !(labelBinding) ? { label: component.label } : {}),
                     ...(component.placeholder !== undefined ? { placeholder: component.placeholder } : {}),
                     ...(component.options !== undefined ? { options: component.options } : {}),
@@ -3761,6 +3762,10 @@ const runtimeNodeRegistry = {
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
+            // P98: label is now a full binding (literal/state/store/…) or a plain string (legacy).
+            // getBinding handles both: if config.label is a binding object it is returned as-is;
+            // if it is a plain string a literal binding is NOT needed — the P16X handler already
+            // puts plain strings into props.label directly and the renderer reads props.label.
             label: config.label,
             value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
             mode: config.mode || undefined,
