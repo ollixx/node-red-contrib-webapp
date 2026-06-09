@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { customersCrudAppModelFixture, customersCrudRuntimeIntegrationFixture, uiEventMessageSchema } from "@node-red-contrib-webapp/schema";
 
-import { createRendererApp, findComponentInSnapshot, matchRouteLocation } from "../src";
+import { createRendererApp, findComponentInSnapshot, matchRouteLocation, normalizeDisplayValue } from "../src";
 
 describe("renderer MVP", () => {
     it("renders the customers fixture across routes, slots, and dialogs", () => {
@@ -390,7 +390,7 @@ describe("P67: store bindings", () => {
         expect(text && "text" in text ? text.text : undefined).toBe("Grace Hopper");
     });
 
-    it("resolves to undefined (empty text) when the store id is unknown", () => {
+    it("renders the non-displayable sentinel \"?\" when the store id is unknown (value resolves to undefined)", () => {
         const app = createRendererApp(textBoundToStore("noSuchStore"), {
             integration: customersCrudRuntimeIntegrationFixture,
             location: "/",
@@ -399,6 +399,101 @@ describe("P67: store bindings", () => {
 
         const text = findComponentInSnapshot(app.render(), "storeBoundText");
 
-        expect(text && "text" in text ? text.text : undefined).toBe("");
+        // P104: undefined is "cannot be displayed" → "?", not silent empty.
+        expect(text && "text" in text ? text.text : undefined).toBe("?");
     });
+});
+
+// P104: a single central normalization governs how every bound display value is
+// rendered. `""` stays empty; null/undefined/non-scalar become the visible "?"
+// sentinel; 0/false are valid values rendered as their string form.
+describe("P104: central display-value normalization", () => {
+    describe("normalizeDisplayValue (the one canonical function)", () => {
+        it("passes a non-empty string through unchanged", () => {
+            expect(normalizeDisplayValue("hello")).toBe("hello");
+        });
+
+        it("stringifies number / boolean / bigint — including the falsy-but-valid 0 and false", () => {
+            expect(normalizeDisplayValue(0)).toBe("0");
+            expect(normalizeDisplayValue(42)).toBe("42");
+            expect(normalizeDisplayValue(false)).toBe("false");
+            expect(normalizeDisplayValue(true)).toBe("true");
+            expect(normalizeDisplayValue(10n)).toBe("10");
+        });
+
+        it("keeps a real empty string as empty (deliberate \"nothing\")", () => {
+            expect(normalizeDisplayValue("")).toBe("");
+        });
+
+        it("maps null and undefined to the \"?\" sentinel", () => {
+            expect(normalizeDisplayValue(null)).toBe("?");
+            expect(normalizeDisplayValue(undefined)).toBe("?");
+        });
+
+        it("maps non-scalars (object / array / function / symbol) to \"?\" — never [object Object] or a JSON dump", () => {
+            expect(normalizeDisplayValue({})).toBe("?");
+            expect(normalizeDisplayValue({ a: 1 })).toBe("?");
+            expect(normalizeDisplayValue([])).toBe("?");
+            expect(normalizeDisplayValue([1, 2, 3])).toBe("?");
+            expect(normalizeDisplayValue(() => undefined)).toBe("?");
+            expect(normalizeDisplayValue(Symbol("x"))).toBe("?");
+        });
+    });
+
+    function displayComponent(kind: "text" | "badge", value: unknown) {
+        return {
+            ...customersCrudAppModelFixture,
+            components: [
+                ...customersCrudAppModelFixture.components,
+                {
+                    id: "probe",
+                    kind: kind as "text",
+                    mount: "layout:app/footer",
+                    bind: {
+                        value: { kind: "literal" as const, value }
+                    },
+                    props: {},
+                    events: []
+                }
+            ]
+        };
+    }
+
+    function renderProbe(kind: "text" | "badge", value: unknown): string {
+        const app = createRendererApp(displayComponent(kind, value), {
+            integration: customersCrudRuntimeIntegrationFixture,
+            location: "/"
+        });
+        const probe = findComponentInSnapshot(app.render(), "probe");
+
+        if (!probe) {
+            return "<<missing>>";
+        }
+
+        if ("text" in probe) {
+            return probe.text;
+        }
+
+        return String((probe as { value: unknown }).value);
+    }
+
+    const cases: Array<[string, unknown, string]> = [
+        ["0", 0, "0"],
+        ["false", false, "false"],
+        ["empty string", "", ""],
+        ["null", null, "?"],
+        ["undefined", undefined, "?"],
+        ["object", { foo: "bar" }, "?"],
+        ["array", [1, 2], "?"]
+    ];
+
+    for (const [label, raw, expected] of cases) {
+        it(`text node with ${label} → "${expected}"`, () => {
+            expect(renderProbe("text", raw)).toBe(expected);
+        });
+
+        it(`badge node with ${label} → "${expected}"`, () => {
+            expect(renderProbe("badge", raw)).toBe(expected);
+        });
+    }
 });
