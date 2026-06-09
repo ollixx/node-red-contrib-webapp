@@ -146,7 +146,14 @@ export function buildDesignTokenCss(tokens: DesignTokens): string {
 export const uiAppNodeDefinitionSchema = z.object({
     type: z.literal("ui-app"),
     id: identifierSchema,
-    title: z.string().min(1, "App titles must not be empty."),
+    // P109: `name` replaces the old `title` field. `name` is the display name shown
+    // in the Editor and used as the HTML <title> / app-bar heading at runtime.
+    // `title` is no longer a schema field — Zod strips it silently (back-compat:
+    // old configs with `title` are still accepted; mapConfig migrates title → name).
+    name: z.string().optional(),
+    // P109: `root` is now in the schema (it was only in mapConfig before).
+    // The URL root segment for the app (e.g. "myapp" → served at /webapp/myapp/).
+    root: z.string().optional(),
     layout: standardLayoutPresetSchema,
     // P66 (ADR 0007): ui-app owns the implicit root route "/", so a navigate
     // action wired to it enters/leaves the root — it emits onEnter / onLeave just

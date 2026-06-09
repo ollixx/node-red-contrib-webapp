@@ -12,7 +12,8 @@ describe("runtime registry", () => {
         const secondAppFixture = {
             ...customersCrudAppModelFixture,
             id: "ordersApp",
-            title: "Orders CRM"
+            // P109: `name` replaces `title` in AppModel.
+            name: "Orders CRM"
         };
 
         registry.registerMany(createContributionsFromAppModel(customersCrudAppModelFixture, "customers-fixture"));
@@ -141,7 +142,8 @@ describe("runtime api", () => {
         const secondAppFixture = {
             ...customersCrudAppModelFixture,
             id: "ordersApp",
-            title: "Orders CRM"
+            // P109: `name` replaces `title` in AppModel.
+            name: "Orders CRM"
         };
 
         registry.registerMany(createContributionsFromAppModel(customersCrudAppModelFixture, "customers-fixture"));
@@ -168,8 +170,9 @@ describe("runtime api", () => {
         expect(ordersResponse.body.diagnostics).toEqual([]);
         expect(customersResponse.body.model?.id).toBe("customersApp");
         expect(ordersResponse.body.model?.id).toBe("ordersApp");
-        expect(customersResponse.body.model?.title).toBe("Customers CRM");
-        expect(ordersResponse.body.model?.title).toBe("Orders CRM");
+        // P109: `name` replaces `title` in AppModel.
+        expect(customersResponse.body.model?.name).toBe("Customers CRM");
+        expect(ordersResponse.body.model?.name).toBe("Orders CRM");
     });
 
     it("exposes compiled app models through the runtime API surface", () => {

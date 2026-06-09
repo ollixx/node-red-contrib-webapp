@@ -199,4 +199,62 @@ test.describe("ui-app", () => {
         );
         expect(idAAfter).toBe(idA);
     });
+
+    // ── P109: name/root/title rework ────────────────────────────────────────
+
+    test("P109: HTML <title> element shows the app's name", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "appTitle109", root: "appTitle109", name: "My App Name", layout: "app" })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "appTitle109");
+        await webapp.navigate("/");
+
+        // Outcome: <title> starts with the app's name field.
+        const pageTitle = await page.title();
+        expect(pageTitle).toContain("My App Name");
+    });
+
+    test("P109: header-slot empty → name shown as title in app-bar", async ({ page, request }) => {
+        // When no children are mounted in the header slot, the app-bar must show
+        // the app's `name` as its title text.
+        const flow = new FlowBuilder()
+            .app({ id: "appNoHeader", root: "appNoHeader", name: "No Header App", layout: "app" })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "appNoHeader");
+        await webapp.navigate("/");
+
+        await expect(page.locator(".webapp-app-bar")).toBeVisible();
+        // Outcome: the app-bar shows the name.
+        await expect(page.locator(".webapp-app-bar-title")).toHaveText("No Header App");
+    });
+
+    test("P109: header-slot has children → no name title in app-bar, only slot content", async ({ page, request }) => {
+        // When ≥1 child is mounted in the header slot, the app-bar must NOT
+        // show the app's `name` — only the slot children are rendered.
+        const flow = new FlowBuilder()
+            .app({ id: "appWithHeader", root: "appWithHeader", name: "Header Slot App", layout: "app" })
+            .node("ui-text", {
+                id: "hdrContent",
+                text: "Custom Header Content",
+                mount: "appWithHeader.header"
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "appWithHeader");
+        await webapp.navigate("/");
+
+        await expect(page.locator(".webapp-app-bar")).toBeVisible();
+        // Outcome: the app-bar-title span must NOT be present (no name shown).
+        await expect(page.locator(".webapp-app-bar-title")).not.toBeVisible();
+        // Outcome: the header slot content is rendered.
+        await expect(page.locator(".webapp-slot--header")).toContainText("Custom Header Content");
+    });
 });

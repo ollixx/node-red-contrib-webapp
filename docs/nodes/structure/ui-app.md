@@ -115,6 +115,25 @@ werden vom aktiven Renderer-Backend auf dessen Variablen abgebildet (heute
 Shoelace; weitere Backends wie Material o. ä. sind vorgesehen und bilden dieselben
 semantischen Tokens auf ihr jeweiliges System ab). Details: [theming.md](../concepts/theming.md).
 
+## Render-Semantik (P109)
+
+### HTML-`<title>`
+Das `<title>`-Element im Browser-Tab wird immer aus dem `name`-Feld der App
+gesetzt (Format: `<name> — <Routen-Titel>`).
+
+### Header-Slot und App-Bar
+Bei Verwendung des `app`-Layouts zeigt die App-Bar oben im Fenster:
+
+- **Header-Slot leer** (kein Kind im `header`-Slot der App): Der `name` der App
+  erscheint als Titeltext in der App-Bar.
+- **Header-Slot belegt** (≥1 Kind im `header`-Slot): Die Slot-Kinder werden
+  gerendert; die App-Bar zeigt **keinen** eigenen `name`-Titel — der Slot
+  übernimmt vollständig die Kontrolle über den Header-Bereich.
+
+**Hinweis:** Soll der HTML-`<title>` vom `name` abweichen (z. B. für SEO), wäre
+ein eigenes `title`-Feld nötig — das ist bewusst **nicht** in P109 enthalten und
+bleibt ein optionaler späterer Ausbauschritt.
+
 ## Besonderheiten
 
 - **Implizite Root-Route `/`.** `ui-app` ist zugleich die Route `/`. View-Knoten

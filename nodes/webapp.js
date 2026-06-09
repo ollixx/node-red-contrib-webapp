@@ -1092,12 +1092,14 @@ function getAppModelResult(appId, definitions) {
     const routes = buckets.routes.slice();
 
     if (!routes.some((route) => route.path === "/") && !routes.some((route) => route.id === buckets.app.id)) {
-        routes.push(createAppRootRoute(buckets.app.id, blankToUndefined(buckets.app.title), buckets.app.layout));
+        // P109: use `name` (was `title`) for the implicit root route's title.
+        routes.push(createAppRootRoute(buckets.app.id, blankToUndefined(buckets.app.name), buckets.app.layout));
     }
 
     const modelCandidate = {
         id: buckets.app.id,
-        title: buckets.app.title,
+        // P109: `name` replaces `title` in the AppModel.
+        name: buckets.app.name,
         layouts: [...standardLayouts]
             .map((layout) => ({
                 id: layout.id,
@@ -1447,11 +1449,19 @@ function renderAppPage(appId, location, dialogId, definitions) {
     const isAppLayout = appLayout === "app";
     const pageBody = renderLayoutHtml(snapshot.layout.id, snapshot.regions, serializerContext);
 
-    // P36: for the `app` layout preset, prepend a branded top app bar showing
-    // the ui-app title. The app bar is a shell concern (not a mounted component)
-    // styled entirely via --wa-color-primary / --wa-color-primary-fg tokens.
+    // P36: for the `app` layout preset, prepend a branded top app bar.
+    // P109: Header-Slot semantics — if the `header` slot has ≥1 mounted component,
+    // the slot content (already in pageBody) takes precedence and no `name` title
+    // is shown in the app-bar. If the header slot is empty, the app's `name` is
+    // rendered as the title inside the app-bar.
+    const headerRegion = isAppLayout
+        ? snapshot.regions.find((region) => region.name === "header")
+        : undefined;
+    const headerHasChildren = headerRegion && headerRegion.components.length > 0;
     const appBarHtml = isAppLayout
-        ? `<header class="webapp-app-bar"><span class="webapp-app-bar-title">${escapeHtml(model.title || model.id)}</span></header>`
+        ? headerHasChildren
+            ? `<header class="webapp-app-bar"></header>`
+            : `<header class="webapp-app-bar"><span class="webapp-app-bar-title">${escapeHtml(model.name || model.id)}</span></header>`
         : "";
 
     return {
@@ -1461,7 +1471,7 @@ function renderAppPage(appId, location, dialogId, definitions) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${escapeHtml(model.title)} - ${escapeHtml(routeMatch.route.title || routeMatch.route.id)}</title>
+  <title>${escapeHtml(model.name)} - ${escapeHtml(routeMatch.route.title || routeMatch.route.id)}</title>
   <link rel="stylesheet" href="${SHOELACE_THEME_HREF}">
   <script type="module" src="${SHOELACE_AUTOLOADER_SRC}"></script>
 ${iconLibraryRegistrationHtml}
@@ -2379,7 +2389,10 @@ function registerEndpoints(RED) {
             .filter((entry) => entry.type === "ui-app")
             .map((entry) => ({
                 id: entry.id,
-                title: entry.title
+                // P109: `name` replaces `title`. Keep both for back-compat with
+                // external callers that may still read `title`.
+                name: entry.name,
+                title: entry.name
             }))
             .sort((left, right) => left.id.localeCompare(right.id));
 
@@ -3494,8 +3507,11 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-app",
             id: getUiId(config) || "",
+            // P109: `root` is now an explicit schema field.
             root: config.root || "",
-            title: config.name || config.title || config.root || getUiId(config) || "App",
+            // P109: `name` replaces `title`. Back-compat shim: old configs that
+            // only have `title` (no `name`) are migrated transparently here.
+            name: config.name || config.title || config.root || getUiId(config) || "App",
             layout: config.layout || "vertical",
             events: parseJsonList(config.events).length > 0 ? parseJsonList(config.events) : undefined,
             // P23: design tokens drive the Web Component theme via CSS custom

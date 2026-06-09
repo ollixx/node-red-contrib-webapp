@@ -19,7 +19,8 @@ interface RuntimeContributionBase {
 
 export interface AppContribution extends RuntimeContributionBase {
     kind: "app";
-    definition: Pick<AppModel, "id" | "title">;
+    // P109: `name` replaces `title` in AppModel.
+    definition: Pick<AppModel, "id" | "name">;
 }
 
 export interface LayoutContribution extends RuntimeContributionBase {
@@ -185,7 +186,8 @@ export function createContributionsFromAppModel(appModel: AppModel, registration
             registrationId: `${registrationPrefix}:app`,
             definition: {
                 id: appModel.id,
-                title: appModel.title
+                // P109: `name` replaces `title`.
+                name: appModel.name
             }
         },
         ...appModel.layouts.map<LayoutContribution>((layout) => ({
@@ -389,7 +391,8 @@ export class RuntimeRegistry {
 
         const candidateModel: AppModel = {
             id: appDefinition.id,
-            title: appDefinition.title,
+            // P109: `name` replaces `title`.
+            name: appDefinition.name,
             layouts,
             routes,
             dialogs,

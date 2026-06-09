@@ -678,7 +678,9 @@ export type StructuredError = z.infer<typeof structuredErrorSchema>;
 
 export const appModelSchema = z.object({
     id: identifierSchema,
-    title: z.string().min(1, "App titles must not be empty."),
+    // P109: `name` replaces `title` in the compiled AppModel. The name is the
+    // display name of the app (HTML <title>, app-bar heading).
+    name: z.string().min(1, "App names must not be empty."),
     layouts: z.array(layoutDefinitionSchema).min(1, "Apps must declare at least one layout."),
     routes: z.array(routeDefinitionSchema).min(1, "Apps must declare at least one route."),
     dialogs: z.array(dialogDefinitionSchema).default([]),

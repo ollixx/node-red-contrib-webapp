@@ -288,10 +288,12 @@ describe("editor node set", () => {
             return;
         }
 
+        // P109: `name` + `root` replace `title` in the emitted definition.
         expect(emitted.data).toEqual({
             type: "ui-app",
             id: "customersApp",
-            title: "Customers CRM",
+            name: "Customers CRM",
+            root: "customersApp",
             layout: "vertical"
         });
     });
