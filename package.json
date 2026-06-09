@@ -76,7 +76,8 @@
         "gen:example": "node scripts/gen-example.js",
         "gen:node-examples": "node scripts/gen-node-examples.js",
         "check:roadmap": "node scripts/check-roadmap.js",
-        "validate": "pnpm check:roadmap && pnpm lint && pnpm test && pnpm build"
+        "check:links": "node scripts/check-doc-links.js",
+        "validate": "pnpm check:roadmap && pnpm check:links && pnpm lint && pnpm test && pnpm build"
     },
     "devDependencies": {
         "@eslint/js": "^9.36.0",

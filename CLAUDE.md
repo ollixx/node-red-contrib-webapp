@@ -25,7 +25,15 @@ pnpm vitest run packages/schema/test/schema.test.ts
 pnpm lint
 
 # Build + lint + test in one step (required before marking a phase done)
+# (also runs the two read-only tripwires below)
 pnpm validate
+
+# Roadmap tripwire: package frontmatter, deps, INDEX sync, roadmap link hygiene
+pnpm check:roadmap
+
+# Doc-link tripwire: every markdown link in docs/ + .ai/ AND every docs/*.md
+# path referenced from source code must resolve
+pnpm check:links
 
 # Run E2E tests (requires Playwright and auto-starts Node-RED on port 1882)
 pnpm exec playwright test

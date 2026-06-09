@@ -10,7 +10,7 @@ import { type Page } from "@playwright/test";
  * type scripts have finished executing. Late in the ~6-minute sequential E2E run
  * the shared server is slower, so registration races past `networkidle` and
  * `getType("ui-app")` intermittently returns `undefined` (the historical
- * "found:false" flakiness documented in docs/roadmap/aspects/test-infra/P66-ui-action-ui-route-navigation-2.md).
+ * "found:false" flakiness documented in docs/roadmap/aspects/test-infra/done/P66-ui-action-ui-route-navigation-2.md).
  *
  * `gotoEditor` / `waitForNodeTypes` poll the registry itself until the requested
  * first-party types are present, which is the real readiness signal. Use them in
