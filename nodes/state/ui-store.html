@@ -10,7 +10,8 @@
                 parent: { value: "" },
                 statePath: { value: "", required: true },
                 initialValue: { value: "" },
-                persist: { value: false }
+                persist: { value: false },
+                scope: { value: "any" }
             },
             inputs: 1,
             outputs: 1,
@@ -32,5 +33,31 @@
     <div class="form-row"><label for="node-input-statePath">State Path</label><input type="text" id="node-input-statePath"></div>
     <div class="form-row"><label for="node-input-initialValue">Initial Value JSON</label><input type="text" id="node-input-initialValue"></div>
     <div class="form-row"><label for="node-input-persist">Persist</label><input type="checkbox" id="node-input-persist" style="width:auto;margin-top:6px;"></div>
+    <hr style="margin: 8px 0;">
+    <div class="form-row">
+        <label for="node-input-scope">Scope</label>
+        <select id="node-input-scope">
+            <option value="any">Any (default)</option>
+            <option value="broadcast-only">Broadcast Only</option>
+            <option value="client-only">Client Only</option>
+        </select>
+    </div>
 </script>
-<script type="text/html" data-help-name="ui-store"><p>Beschreibt einen zentralen UI-Store.</p></script>
+<script type="text/html" data-help-name="ui-store">
+    <p>Declares a named state slice in the app's client state. Use <strong>Scope</strong> to guard
+    the allowed write target:</p>
+    <ul>
+        <li><strong>Any</strong> (default) — accepts both broadcast and per-client messages.
+            Back-compatible with existing flows.</li>
+        <li><strong>Broadcast Only</strong> — rejects messages that carry a <code>msg.ui.clientId</code>.
+            Prevents accidentally overwriting shared state with a client-specific message.</li>
+        <li><strong>Client Only</strong> — rejects messages that have no <code>msg.ui.clientId</code>.
+            Prevents accidentally broadcasting a per-client value to all connected clients.</li>
+    </ul>
+    <p>State is written via <code>msg.ui.store</code> operations (<code>set</code>, <code>patch</code>,
+    <code>delete</code>, <code>replace</code>, <code>reset</code>). Scope violations are reported as
+    a structured <code>server.store.scope-violation</code> error and wired to any connected
+    <em>catch</em> node.</p>
+    <p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/state/ui-store.md"
+        target="_blank">Full documentation</a></p>
+</script>

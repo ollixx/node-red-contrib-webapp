@@ -301,12 +301,16 @@ export const uiInputNodeDefinitionSchema = mountableNodeSchema.extend({
 
 export type UiInputNodeDefinition = z.infer<typeof uiInputNodeDefinitionSchema>;
 
+export const uiStoreScopeSchema = z.enum(["any", "broadcast-only", "client-only"]);
+export type UiStoreScope = z.infer<typeof uiStoreScopeSchema>;
+
 export const uiStoreNodeDefinitionSchema = identifiedNodeSchema.extend({
     type: z.literal("ui-store"),
     parent: identifierSchema.optional(),
     statePath: z.string().min(1, "Stores must declare a state path."),
     initialValue: z.unknown().optional(),
-    persist: z.boolean().optional()
+    persist: z.boolean().optional(),
+    scope: uiStoreScopeSchema.optional()
 });
 
 export type UiStoreNodeDefinition = z.infer<typeof uiStoreNodeDefinitionSchema>;

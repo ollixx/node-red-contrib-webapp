@@ -3809,14 +3809,22 @@ const runtimeNodeRegistry = {
         }
     },
     "ui-store": {
-        mapConfig: (config) => ({
-            type: "ui-store",
-            id: getUiId(config),
-            parent: config.parent || undefined,
-            statePath: config.statePath,
-            initialValue: parseJson(config.initialValue),
-            persist: config.persist === true || config.persist === "true"
-        }),
+        mapConfig: (config) => {
+            const VALID_SCOPES = ["any", "broadcast-only", "client-only"];
+            const rawScope = config.scope;
+            const scope = typeof rawScope === "string" && VALID_SCOPES.includes(rawScope) && rawScope !== "any"
+                ? rawScope
+                : undefined;
+            return {
+                type: "ui-store",
+                id: getUiId(config),
+                parent: config.parent || undefined,
+                statePath: config.statePath,
+                initialValue: parseJson(config.initialValue),
+                persist: config.persist === true || config.persist === "true",
+                ...(scope ? { scope } : {})
+            };
+        },
         options: {
             inputHandler(node, msg, send, done) {
                 const storeDefinition = node.webappDefinition;
@@ -3833,6 +3841,38 @@ const runtimeNodeRegistry = {
 
                 // P15: clientId routing — per-client state when clientId is present
                 const clientId = msg && msg.ui && msg.ui.clientId ? String(msg.ui.clientId) : undefined;
+
+                // P110: scope guard — enforce the declared write-target policy before
+                // any state mutation. "any" (default / undefined) never rejects.
+                const scope = storeDefinition.scope;
+                if (scope === "broadcast-only" && clientId) {
+                    const errMsg = "ClientID auf Broadcast-Only-Store nicht erlaubt. Broadcast Only store does not accept per-client messages.";
+                    reportRuntimeError(node, {
+                        severity: "error",
+                        code: "server.store.scope-violation",
+                        message: errMsg,
+                        context: { appId: activeAppId || undefined, nodeId: node.id, op: `store:${operation.op}` },
+                        clientId
+                    });
+                    if (done) {
+                        done(new Error(errMsg));
+                    }
+                    return;
+                }
+                if (scope === "client-only" && !clientId) {
+                    const errMsg = "Broadcast nicht erlaubt: Store ist Client Only. Client Only store requires a clientId.";
+                    reportRuntimeError(node, {
+                        severity: "error",
+                        code: "server.store.scope-violation",
+                        message: errMsg,
+                        context: { appId: activeAppId || undefined, nodeId: node.id, op: `store:${operation.op}` },
+                        clientId: undefined
+                    });
+                    if (done) {
+                        done(new Error(errMsg));
+                    }
+                    return;
+                }
 
                 // P80: validate the operation against storeOperationSchema before
                 // attempting to apply it. This surfaces the schema's descriptive
