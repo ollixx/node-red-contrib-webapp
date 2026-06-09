@@ -2328,3 +2328,13 @@ phases:
       stats: "8 files changed; 764 unit tests (all green); 26 new unit tests (p98-datepicker-field-extension.test.ts); fresh E2E spec replacing P44+P73 (9 E2E tests); test catalogue .md added; old ui-datepicker-p73.spec.ts deleted."
       notes: "Render pipeline was already correct (same as P96/ui-button); no fix needed, regression guard tests lock it in. Schema uses z.union([bindingSchema, z.string()]) for back-compat with legacy plain string labels."
       cost: "session agent-a7cda6f4171b5c361, 20m"
+
+  - id: P99
+    title: "🔴 Bugfix: ui-image rendert NICHTS — obwohl P70 das Rendering aktivieren sollte. Render-Pipeline-Ursache finden (components-Filter/KIND_MAP/renderer/serializer) und fixen + Outcome-Test (<img> mit src im DOM)"
+    status: done
+    dependencies: [P70]
+    summary:
+      delivered: "Verified ui-image render pipeline was already correct (fixed by P70); added 21 outcome-based unit tests (p99-image-render-pipeline.test.ts: serializer → <img> with src/alt/fit/width/height/fallbackSrc/onerror/asset-proxy, plus full renderAppPage integration) and 10 fresh E2E tests (ui-image.spec.ts: browser DOM render, server HTML, alt, dimensions, fallback onerror, msg.payload src update, asset proxy, path-traversal guard); deleted old P70 render tests per node-testing.md fresh-tests rule; added per-node test catalogue .md."
+      stats: "5 files changed (529 insertions, 122 deletions); 21 new unit tests, 10 new E2E tests; 781 unit tests pass total; pnpm validate green."
+      notes: "No code bug found — the 'renders NOTHING' claim was already fixed in P70 (same finding as P96 for ui-button). P99 deliverable is fresh outcome-based tests that lock the correctness in. Old p70-image-render.test.ts (4 tests) discarded per node-testing.md."
+      cost: "session claude-sonnet-4-6, 19m"
