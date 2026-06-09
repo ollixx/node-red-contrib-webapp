@@ -56,6 +56,17 @@
     let dialogId = root.getAttribute("data-webapp-dialog") || undefined;
     let currentSnapshot = null;
 
+    // P106: live-deploy-update.md. The server bakes a shell/topology SIGNATURE and
+    // the app's deploy MODE into the page. On a later deploy push (or a re-focus
+    // /snapshot pull) the client compares the incoming signature against this
+    // hydrated baseline to decide IN-PLACE apply vs full RELOAD, and reads the
+    // mode to decide auto-update (development) vs a version alert (production).
+    let shellSignature = root.getAttribute("data-webapp-signature") || "";
+    const deployMode = root.getAttribute("data-webapp-mode") || "development";
+    // Set once a production-mode version alert is shown so it is not stacked on
+    // every subsequent deploy while the user has not yet reloaded.
+    let versionAlertShown = false;
+
     // P53: per-client interaction-state overlay (ADR 0005). A ui-action verb
     // (show/hide/enable/disable/open/close) mutates this overlay, and the overlay
     // is RE-APPLIED after every snapshot render so a flow-driven snapshot push
@@ -640,6 +651,11 @@
                 log.debug("hydrate", "← snapshot received (location: " + (result.snapshot.location || location) + ")");
                 applySnapshot(result.snapshot);
             }
+            // P106: adopt the server's signature as the hydrated baseline so the
+            // first deploy comparison is against the true current model.
+            if (result && typeof result.signature === "string") {
+                shellSignature = result.signature;
+            }
         }
         catch (error) {
             // P55: log instead of silently swallowing. Server-rendered fallback stays.
@@ -649,6 +665,102 @@
         }
         hydrated = true;
     }
+
+    // P106: show the production-mode version alert. Production apps never auto-
+    // update a connected client; the user must reload manually so no running
+    // state is lost. The alert is sticky (no auto-dismiss) and shown at most once
+    // until the user reloads. Uses sl-alert when available, else a plain banner.
+    function showVersionAlert() {
+        if (versionAlertShown) {
+            return;
+        }
+        versionAlertShown = true;
+        var message = "Die Anwendung hat eine neue Version. "
+            + "Speichern Sie alle Daten und laden Sie diese Website neu.";
+        var doc = root.ownerDocument;
+        var el = doc.createElement("sl-alert");
+        el.setAttribute("variant", "warning");
+        el.setAttribute("open", "");
+        el.setAttribute("closable", "");
+        el.className = "webapp-version-alert";
+        el.style.cssText = "position:fixed;z-index:10000;top:1rem;left:50%;"
+            + "transform:translateX(-50%);max-width:480px;";
+        el.textContent = message;
+        doc.body.appendChild(el);
+        log.info("deploy", "Production version alert shown — manual reload required");
+    }
+
+    // P106: apply a deploy update (from the SSE `deploy` push or a re-focus
+    // /snapshot pull). The decision table (live-deploy-update.md):
+    //   production            → never auto-update; show the version alert.
+    //   development, sig same  → IN-PLACE applySnapshot (client state survives).
+    //   development, sig diff  → full RELOAD (shell/topology changed, or the
+    //                            current route is gone → cannot apply in place).
+    // `nextSignature` undefined is treated as a change (safe: reload).
+    function applyDeployUpdate(snapshot, nextSignature) {
+        if (deployMode === "production") {
+            showVersionAlert();
+            return;
+        }
+
+        var changed = typeof nextSignature !== "string" || nextSignature !== shellSignature;
+        if (changed) {
+            log.info("deploy", "Shell/topology changed (signature) — full reload");
+            window.location.reload();
+            return;
+        }
+
+        // Signature unchanged → safe to re-render in place. Adopt the new model;
+        // the interaction overlay is re-stamped by applySnapshot so prior
+        // show/hide/disable and in-flight unbound input survive.
+        if (snapshot) {
+            log.info("deploy", "Content-only deploy — applying snapshot in place");
+            applySnapshot(snapshot);
+        }
+        else {
+            // No snapshot in the frame (server build failed) but signature matched —
+            // reload as a safe fallback rather than stay on a stale page.
+            log.warn("deploy", "Deploy frame had no snapshot — reloading");
+            window.location.reload();
+        }
+    }
+
+    // P106: on tab RE-FOCUS pull the current model from /snapshot and apply the
+    // same rule. Robust against a deploy push missed while the tab was frozen /
+    // backgrounded (Chrome tab freezing): the SSE endpoint survives the deploy so
+    // there is no reconnect-snapshot, and a frozen tab never ran the push handler.
+    async function pullOnRefocus() {
+        var query = "?location=" + encodeURIComponent(location)
+            + (dialogId ? "&dialog=" + encodeURIComponent(dialogId) : "")
+            + "&clientId=" + encodeURIComponent(clientId);
+        try {
+            var response = await fetch(base() + "/snapshot" + query);
+            if (!response.ok) {
+                log.warn("visibility", "GET /snapshot on refocus returned " + response.status);
+                return;
+            }
+            var result = await response.json();
+            // The current route may have been removed → 404 handled above; a
+            // changed signature here triggers the reload branch.
+            applyDeployUpdate(
+                result && result.snapshot ? result.snapshot : null,
+                result && typeof result.signature === "string" ? result.signature : undefined
+            );
+        }
+        catch (error) {
+            log.warn("visibility", "GET /snapshot on refocus failed", {
+                error: error && error.message ? error.message : String(error)
+            });
+        }
+    }
+
+    // Only pull on the rising edge (hidden → visible) and only after the page has
+    // hydrated, so the initial load is not double-fetched.
+    root.ownerDocument.addEventListener("visibilitychange", function () {
+        if (root.ownerDocument.visibilityState === "visible" && hydrated) {
+            pullOnRefocus();
+        }
+    });
 
     // P53 (ADR 0005): apply an interaction command pushed by a ui-action in the
     // flow. These change INTERACTION state only (actions.md) — never business
@@ -1021,16 +1133,40 @@
             }
         });
 
-        // P37: reload the page when the server signals a flow redeploy so the
-        // browser always shows the current flow state without a manual refresh.
-        // Guard: only reload once the initial hydration is done AND the SSE
-        // connection has been open long enough that the triggering deploy
-        // pre-dates this page load. This prevents a spurious reload when the
-        // browser connects to SSE shortly after a deploy fires flows:started.
+        // P106: a flow deploy pushes a `deploy` frame carrying the freshly-compiled
+        // snapshot + shell signature + deploy mode. The client decides in-place vs
+        // reload (development) or shows the version alert (production) — see
+        // applyDeployUpdate. This SUBSUMES the old P37 unconditional reload AND
+        // fixes the latent bug where a deploy delivered NO fresh model.
+        // Guard: only act once initial hydration is done AND the SSE connection
+        // has been open long enough that the triggering deploy pre-dates this page
+        // load (else a connect-race deploy would spuriously update a fresh page).
         var subscribeTime = Date.now();
+        source.addEventListener("deploy", function (messageEvent) {
+            if (!(hydrated && (Date.now() - subscribeTime) > 1000)) {
+                return;
+            }
+            try {
+                var payload = JSON.parse(messageEvent.data);
+                log.debug("sse/deploy", "← deploy (mode: " + (payload && payload.mode) + ")");
+                applyDeployUpdate(
+                    payload && payload.snapshot ? payload.snapshot : null,
+                    payload && typeof payload.signature === "string" ? payload.signature : undefined
+                );
+            }
+            catch (error) {
+                log.warn("sse/deploy", "Failed to parse deploy frame — reloading as fallback", {
+                    error: error && error.message ? error.message : String(error)
+                });
+                window.location.reload();
+            }
+        });
+
+        // P37 (back-compat): a bare `redeploy` frame (no snapshot/signature) still
+        // triggers a full reload. The server now sends `deploy` instead, but a
+        // mixed-version server or a future fallback path may emit this.
         source.addEventListener("redeploy", function () {
             if (hydrated && (Date.now() - subscribeTime) > 1000) {
-                // P55: log reload trigger at INFO.
                 log.info("sse/redeploy", "Flow redeployed — reloading page");
                 window.location.reload();
             }
@@ -1046,6 +1182,9 @@
     if (root.ownerDocument.defaultView && root.ownerDocument.defaultView.__webappClientTestHooks) {
         root.ownerDocument.defaultView.__webappClientTestHooks.applySnapshot = applySnapshot;
         root.ownerDocument.defaultView.__webappClientTestHooks.applyCommand = applyCommand;
+        // P106: expose the deploy-decision entry point so a jsdom test can drive
+        // the in-place-vs-reload-vs-version-alert table without an EventSource.
+        root.ownerDocument.defaultView.__webappClientTestHooks.applyDeployUpdate = applyDeployUpdate;
         root.ownerDocument.defaultView.__webappClientTestHooks.handleServerError = function (errorPayload) {
             // Simulate receiving a backend-forwarded "error" SSE frame (ADR 0006 §4).
             var err = errorPayload || {};

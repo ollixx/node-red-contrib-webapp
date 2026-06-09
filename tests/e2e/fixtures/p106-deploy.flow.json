@@ -1,0 +1,53 @@
+[
+  {
+    "type": "tab",
+    "id": "p106flow",
+    "label": "P106"
+  },
+  {
+    "type": "ui-app",
+    "id": "p106App",
+    "name": "P106 App",
+    "root": "p106App",
+    "layout": "app",
+    "title": "P106",
+    "deployMode": "development",
+    "z": "p106flow",
+    "wires": [],
+    "x": 200,
+    "y": 120
+  },
+  {
+    "type": "ui-text",
+    "id": "p106Label",
+    "name": "Label",
+    "parent": "p106App",
+    "mount": "p106App.content",
+    "order": 0,
+    "value": {
+      "kind": "literal",
+      "value": "before-deploy"
+    },
+    "z": "p106flow",
+    "wires": [],
+    "x": 200,
+    "y": 240
+  },
+  {
+    "type": "ui-input",
+    "id": "p106Input",
+    "name": "Scratch",
+    "parent": "p106App",
+    "mount": "p106App.content",
+    "order": 1,
+    "label": "Scratch",
+    "value": {
+      "kind": "literal",
+      "value": ""
+    },
+    "z": "p106flow",
+    "wires": [],
+    "x": 200,
+    "y": 300
+  }
+]

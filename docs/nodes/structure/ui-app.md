@@ -62,6 +62,12 @@ Node-Picker-Dialog, typedInput, Token-Editor, Event-Checkboxen).
 |---|---|---|---|---|
 | `events` | „Events" | Event-Checkboxen → Output-Ports | optional | Aktivierbare Ausgangs-Events: `clientConnected`, `clientDisconnected`, `onEnter`, `onLeave`. Jedes aktive Event erzeugt einen Output-Port (Reihenfolge = Listenreihenfolge). Siehe Abschnitt „Output". |
 
+### Gruppe „Deploy"
+
+| Feld | Label | Editor-Typ | Pflicht | Beschreibung |
+|---|---|---|---|---|
+| `deployMode` | „Status" | SelectBox: `Entwicklung` / `Produktion` | optional | Steuert die Auslieferung des Modells an verbundene Clients beim Deploy. `Entwicklung` (Default, Enum-Wert `development`) liefert das frisch kompilierte Modell automatisch aus — In-Place via Snapshot, voller Reload nur bei Shell-/Topologie-Änderung. `Produktion` (Enum-Wert `production`) aktualisiert verbundene Clients **nicht** automatisch, sondern zeigt einen Versions-Alert; erst der manuelle Reload des Users übernimmt das neue Modell. Der Config-Key ist `deployMode` — `status` ist eine reservierte Node-RED-Knoteneigenschaft. Mapping und Mechanik: [live-deploy-update.md](../concepts/live-deploy-update.md). |
+
 ### Inline-Hilfe (HTML)
 
 Der `data-help-name="ui-app"`-Hilfetext im Editor soll **knapp, aber
