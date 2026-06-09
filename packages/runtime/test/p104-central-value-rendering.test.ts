@@ -79,8 +79,8 @@ function renderToDom(kind: "text" | "badge", value: unknown): string {
 /**
  * Extract the rendered display text from the produced HTML. The serializer wraps
  * each component in a `webapp-item` div; we read the content of the actual
- * display element (the inner <div class="webapp-text…"> for text, the <sl-badge>
- * for badge), not the wrapper.
+ * display element (the inner webapp-text element — P111: a semantic tag such as
+ * <p>/<h1>/<code> — for text, the <sl-badge> for badge), not the wrapper.
  */
 function innerText(kind: "text" | "badge", html: string): string {
     if (kind === "badge") {
@@ -88,8 +88,10 @@ function innerText(kind: "text" | "badge", html: string): string {
         return match ? match[1] : "<<no sl-badge>>";
     }
 
-    const match = /<div class="webapp-text[^"]*">([\s\S]*?)<\/div>/i.exec(html);
-    return match ? match[1] : "<<no webapp-text>>";
+    // P111: the text element tag varies by `style` (defaults to <p>); capture the
+    // tag name and use a backreference so any role's element is matched.
+    const match = /<([a-z0-9]+) class="webapp-text[^"]*">([\s\S]*?)<\/\1>/i.exec(html);
+    return match ? match[2] : "<<no webapp-text>>";
 }
 
 const TABLE: Array<[label: string, raw: unknown, expected: string]> = [

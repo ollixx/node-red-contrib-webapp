@@ -11,8 +11,10 @@
                 mount: { value: "", required: true },
                 text: { value: "", required: true },
                 value: { value: { kind: "literal", value: "" } },
-                variant: { value: "body" },
-                size: { value: "" },
+                // P111: `style` = typographic role (→ HTML tag); `variant` = colour.
+                // The old `size` field was removed (sizing is governed by style).
+                style: { value: "body" },
+                variant: { value: "default" },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
                 col: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
@@ -32,17 +34,24 @@
             },
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
+                // P111: Style (typographic role) first, then Variant (semantic colour).
+                common.installTextStyleSelectBox().call(this);
                 common.installVariantSelectBox("text").call(this);
-                common.installSizeSelectBox().call(this);
                 common.installLayoutChildPropRows().call(this);
                 const binding = common.bindingValueForEditor(common.parseBindingValue(this.value), this.text || "");
                 const textInput = $("#node-input-text");
 
+                // P111: sharpened value sources. Reactive bindings (store/query/
+                // routeParam) + server-resolved one-shot values (flow/global/env) +
+                // the standard Node-RED `msg` binding. Removed: `jsonata` (never
+                // resolved → "?") and `state` (too low-level / not clearly delimited
+                // next to `store` — the renderer/schema still support it for other
+                // nodes, it is just no longer authorable on ui-text). Added: `store`.
                 textInput.typedInput({
                     default: binding.type,
                     types: [
                         { value: "literal", label: "Text", icon: "fa fa-font", hasValue: true },
-                        { value: "state", label: "State", icon: "fa fa-database", hasValue: true },
+                        common.storeTypedInputType({ label: "Store" }),
                         {
                             value: "query",
                             label: "Query",
@@ -57,10 +66,13 @@
                             }
                         },
                         { value: "routeParam", label: "Route Param", icon: "fa fa-map-signs", hasValue: true },
+                        // Standard Node-RED `msg` binding: the value is read from
+                        // the configured message property (e.g. payload, payload.label,
+                        // topic) of messages sent to this node; held backend-side and
+                        // renders empty until the first matching message arrives.
                         "msg",
                         "flow",
                         "global",
-                        "jsonata",
                         "env"
                     ]
                 });
@@ -86,8 +98,10 @@
                     kind: bindingType,
                     path: bindingValue
                 };
-                // All dynamic binding types (state, query, routeParam, msg, flow, global, jsonata, env)
-                // serialise as { kind, path } — the path is the typed-input value string.
+                // All dynamic kinds serialise as { kind, path }: reactive
+                // (state/store/query/routeParam), server-resolved (flow/global/env),
+                // and the standard Node-RED `msg` binding (path = message property,
+                // e.g. payload / payload.label). For `store` the path is the ui-store id.
             }
         });
     })();
@@ -99,18 +113,22 @@
     <div class="form-row"><label for="node-input-text">Text</label><input type="text" id="node-input-text"></div>
 </script>
 <script type="text/html" data-help-name="ui-text">
-<p>Displays text at a mount point. The text content can be a static literal or a dynamic binding.</p>
-<h3>Text binding types</h3>
+<p>Displays text at a mount point. The value comes from one of three kinds of source.</p>
+<h3>Reactive bindings (live, re-render on change)</h3>
 <ul>
-  <li><b>Text</b> — static literal string.</li>
-  <li><b>State</b> — read from the app's reactive state store using a dot-separated path (e.g. <code>user.name</code>).</li>
+  <li><b>Store</b> — bind to a ui-store; the text updates whenever the store changes.</li>
   <li><b>Query</b> — read from a query result using a dot-bracket path (see below).</li>
   <li><b>Route Param</b> — read from the current URL route parameter by name.</li>
-  <li><b>msg</b> — read from the incoming Node-RED message (e.g. <code>payload</code> or <code>payload.label</code>).</li>
-  <li><b>flow</b> — read from a flow context variable.</li>
-  <li><b>global</b> — read from a global context variable.</li>
-  <li><b>jsonata</b> — evaluate a JSONata expression against the incoming message.</li>
-  <li><b>env</b> — read from an environment variable by name.</li>
+</ul>
+<h3>Static / server-resolved (read once per render)</h3>
+<ul>
+  <li><b>Text</b> — a static literal string.</li>
+  <li><b>flow</b> / <b>global</b> — read once from a flow/global context variable (resolved on the server; not reactive).</li>
+  <li><b>env</b> — read once from an environment variable by name.</li>
+</ul>
+<h3>Message (msg — standard Node-RED binding)</h3>
+<ul>
+  <li><b>msg</b> — the text is read from the configured message property (e.g. <code>payload</code>, <code>payload.label</code>, <code>topic</code>) of messages sent to this node. It renders empty until the first matching message arrives; the last value is held on the server and shared with all clients.</li>
 </ul>
 <h3>Query path syntax</h3>
 <p>Query paths use dot-bracket notation to address nested data:</p>

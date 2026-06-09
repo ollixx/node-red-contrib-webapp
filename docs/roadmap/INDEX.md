@@ -27,8 +27,7 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-
-
+- **P111** — nodes/ui-text — `variant`→`style` (typografische Rolle) + neue Farb-`variant`, `size` entfernen — *erste Tranche geliefert; Sammelpaket aus dem ui-text-Review, weitere Findings folgen* — [P111](nodes/ui-text/P111-text-style-color-axes.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -66,4 +65,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 114 done, 0 open, 4 deferred.**
+**Total: 114 done, 1 open, 4 deferred.**

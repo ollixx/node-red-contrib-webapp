@@ -65,14 +65,26 @@ describe("P49: serializer variant mapping", () => {
 });
 
 describe("P49: non-button variants render the mapped Shoelace output", () => {
-    it("a ui-text variant 'heading-2' renders a heading-level class/element", () => {
+    it("a ui-text style 'heading-2' renders an <h2> with the role class", () => {
         const html = serializer.renderComponentHtml(
-            { kind: "text", id: "t1", text: "Title", props: { variant: "heading-2" } },
+            // P111: typographic role lives in props.style now (variant = colour).
+            { kind: "text", id: "t1", text: "Title", props: { style: "heading-2" } },
             "vertical",
             { appId: "app1", location: "/" }
         );
-        // text has no Shoelace element — the variant must surface as a data/class hook.
-        expect(html).toContain("heading-2");
+        // style maps onto a semantic element + a webapp-text--<role> class.
+        expect(html).toContain("<h2");
+        expect(html).toContain("webapp-text--heading-2");
+    });
+
+    it("a ui-text colour variant 'danger' adds the colour class", () => {
+        const html = serializer.renderComponentHtml(
+            { kind: "text", id: "t2", text: "Oops", props: { style: "body", variant: "danger" } },
+            "vertical",
+            { appId: "app1", location: "/" }
+        );
+        expect(html).toContain("<p");
+        expect(html).toContain("webapp-text--color-danger");
     });
 
     it("a ui-container variant 'card' renders an sl-card (panel/transparent differ)", () => {

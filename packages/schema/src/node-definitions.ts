@@ -17,7 +17,8 @@ import {
     routeNodePathSchema,
     routePathSchema,
     SEVERITY_VARIANTS,
-    TEXT_VARIANTS
+    TEXT_COLOR_VARIANTS,
+    TEXT_STYLES
 } from "./contracts";
 import { standardLayoutPresetIds } from "./layout-presets";
 import { formatValidationIssues } from "./validation";
@@ -231,10 +232,14 @@ export type UiDialogNodeDefinition = z.infer<typeof uiDialogNodeDefinitionSchema
 export const uiTextNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-text"),
     value: bindingSchema,
-    // P49: constrained to the portable text vocabulary. Default "body".
-    variant: z.enum(TEXT_VARIANTS).optional(),
-    // P71: three-step size (sm/md/lg).
-    size: componentSizeSchema.optional()
+    // P111: `style` is the typographic ROLE (maps to an HTML element). Default
+    // "body". Legacy configs that stored the role in `variant` are migrated in
+    // the ui-text mapConfig before validation.
+    style: z.enum(TEXT_STYLES).optional(),
+    // P111: `variant` is the semantic COLOUR (aligned with ui-button/badge/alert
+    // and Shoelace/Bootstrap-Vue). Default "default" (inherit). The old size
+    // field (P71) was removed — typographic sizing is governed by `style`.
+    variant: z.enum(TEXT_COLOR_VARIANTS).optional()
 });
 
 export type UiTextNodeDefinition = z.infer<typeof uiTextNodeDefinitionSchema>;

@@ -109,7 +109,9 @@ interface MountableEditorConfig extends IdentifiedEditorConfig {
 export interface UiTextEditorConfig extends MountableEditorConfig {
     text?: string;
     value?: BindingDefinition;
-    variant?: "heading-1" | "heading-2" | "heading-3" | "body" | "caption" | "label" | "code" | "muted";
+    // P111: `style` = typographic role (→ HTML tag), `variant` = semantic colour.
+    style?: "heading-1" | "heading-2" | "heading-3" | "body" | "caption" | "label" | "code";
+    variant?: "default" | "muted" | "primary" | "success" | "warning" | "danger" | "neutral";
 }
 
 export interface UiButtonEditorConfig extends MountableEditorConfig {
@@ -671,6 +673,8 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         id: config.id ?? "",
         mount: config.mount ?? "",
         value: config.value ?? literalBinding(config.text ?? ""),
+        // P111: style (typographic role) + variant (semantic colour).
+        style: config.style,
         variant: config.variant,
         ...collectLayoutChildConfig(config)
     })),

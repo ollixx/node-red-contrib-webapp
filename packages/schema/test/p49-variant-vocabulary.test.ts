@@ -9,7 +9,8 @@ import {
     CONTAINER_VARIANTS,
     INPUT_VARIANTS,
     SEVERITY_VARIANTS,
-    TEXT_VARIANTS,
+    TEXT_STYLES,
+    TEXT_COLOR_VARIANTS,
     uiAlertNodeDefinitionSchema,
     uiBadgeNodeDefinitionSchema,
     uiButtonNodeDefinitionSchema,
@@ -31,7 +32,8 @@ describe("P49: variant vocabularies", () => {
     it("each vocabulary is non-empty", () => {
         for (const vocab of [
             BUTTON_VARIANTS,
-            TEXT_VARIANTS,
+            TEXT_STYLES,
+            TEXT_COLOR_VARIANTS,
             CONTAINER_VARIANTS,
             INPUT_VARIANTS,
             BADGE_VARIANTS,
@@ -50,11 +52,18 @@ describe("P49: variant vocabularies", () => {
         expect(BUTTON_VARIANTS).toContain("ghost");
         expect(BUTTON_VARIANTS).toContain("link");
 
-        // text — the heading hierarchy + body roles.
-        expect(TEXT_VARIANTS).toContain("heading-1");
-        expect(TEXT_VARIANTS).toContain("heading-2");
-        expect(TEXT_VARIANTS).toContain("body");
-        expect(TEXT_VARIANTS).toContain("muted");
+        // text style — the heading hierarchy + body roles (P111: `muted` is now
+        // a colour, not a role, so it lives on TEXT_COLOR_VARIANTS).
+        expect(TEXT_STYLES).toContain("heading-1");
+        expect(TEXT_STYLES).toContain("heading-2");
+        expect(TEXT_STYLES).toContain("body");
+        expect(TEXT_STYLES).toContain("code");
+        expect(TEXT_STYLES).not.toContain("muted");
+
+        // text colour — the semantic palette (P111).
+        expect(TEXT_COLOR_VARIANTS).toContain("default");
+        expect(TEXT_COLOR_VARIANTS).toContain("muted");
+        expect(TEXT_COLOR_VARIANTS).toContain("danger");
 
         // container — the surface roles.
         expect(CONTAINER_VARIANTS).toContain("card");
@@ -73,7 +82,8 @@ describe("P49: variant vocabularies", () => {
 
     it("the per-kind lookup resolves to the matching vocabulary", () => {
         expect(COMPONENT_VARIANT_VOCABULARY.button).toBe(BUTTON_VARIANTS);
-        expect(COMPONENT_VARIANT_VOCABULARY.text).toBe(TEXT_VARIANTS);
+        // P111: ui-text `variant` is the colour axis now.
+        expect(COMPONENT_VARIANT_VOCABULARY.text).toBe(TEXT_COLOR_VARIANTS);
         expect(COMPONENT_VARIANT_VOCABULARY.container).toBe(CONTAINER_VARIANTS);
         expect(COMPONENT_VARIANT_VOCABULARY.input).toBe(INPUT_VARIANTS);
         expect(COMPONENT_VARIANT_VOCABULARY.badge).toBe(BADGE_VARIANTS);
@@ -108,12 +118,17 @@ describe("P49: node schemas constrain variant to the vocabulary", () => {
         ).toBe(false);
     });
 
-    it("ui-text accepts a text variant and rejects an unknown one", () => {
+    it("ui-text accepts a style role + colour variant and rejects unknown ones", () => {
+        // P111: `style` = typographic role, `variant` = semantic colour.
+        expect(
+            uiTextNodeDefinitionSchema.safeParse({ ...base, type: "ui-text", id: "t", value: { kind: "literal", value: "Hi" }, style: "heading-2", variant: "danger" }).success
+        ).toBe(true);
+        // A legacy role value is no longer valid in `variant` (it moved to `style`).
         expect(
             uiTextNodeDefinitionSchema.safeParse({ ...base, type: "ui-text", id: "t", value: { kind: "literal", value: "Hi" }, variant: "heading-2" }).success
-        ).toBe(true);
+        ).toBe(false);
         expect(
-            uiTextNodeDefinitionSchema.safeParse({ ...base, type: "ui-text", id: "t", value: { kind: "literal", value: "Hi" }, variant: "bogus" }).success
+            uiTextNodeDefinitionSchema.safeParse({ ...base, type: "ui-text", id: "t", value: { kind: "literal", value: "Hi" }, style: "bogus" }).success
         ).toBe(false);
     });
 

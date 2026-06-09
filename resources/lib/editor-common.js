@@ -39,7 +39,9 @@
     // IMPORTANT: when updating the schema vocabulary, update this table too.
     const COMPONENT_VARIANT_VOCABULARY = {
         button: ["primary", "secondary", "success", "danger", "warning", "neutral", "ghost", "link"],
-        text: ["heading-1", "heading-2", "heading-3", "body", "caption", "label", "code", "muted"],
+        // P111: ui-text `variant` is the semantic COLOUR axis (the typographic
+        // role moved to the separate `style` field → TEXT_STYLE_OPTIONS below).
+        text: ["default", "muted", "primary", "success", "warning", "danger", "neutral"],
         container: ["card", "panel", "section", "transparent"],
         card: ["card", "panel", "section", "transparent"],
         input: ["default", "filled", "outlined"],
@@ -48,7 +50,8 @@
     };
     const COMPONENT_VARIANT_DEFAULT = {
         button: "neutral",
-        text: "body",
+        // P111: ui-text colour default — `default` inherits the text colour.
+        text: "default",
         container: "card",
         card: "card",
         input: "default",
@@ -249,6 +252,38 @@
             const select = $("#node-input-size");
             if (select.length) {
                 select.val(self.size || "");
+            }
+        };
+    }
+
+    // ── Text style SelectBox (P111) ──────────────────────────────────────────
+    // installTextStyleSelectBox() injects the ui-text "Style" select — the
+    // typographic ROLE axis (heading-1…/body/caption/label/code), distinct from
+    // the colour `variant` select. Each value maps onto a semantic HTML element
+    // at render time. Idempotent like the variant box.
+    const TEXT_STYLE_OPTIONS = [
+        { value: "heading-1", label: "Heading 1" },
+        { value: "heading-2", label: "Heading 2" },
+        { value: "heading-3", label: "Heading 3" },
+        { value: "body", label: "Body" },
+        { value: "caption", label: "Caption" },
+        { value: "label", label: "Label" },
+        { value: "code", label: "Code" }
+    ];
+
+    function installTextStyleSelectBox() {
+        return function () {
+            const self = this;
+            injectFieldGroup({
+                groupId: "text-style-select",
+                separator: false,
+                fields: [
+                    { id: "style", label: "Style", type: "select", options: TEXT_STYLE_OPTIONS }
+                ]
+            });
+            const select = $("#node-input-style");
+            if (select.length) {
+                select.val(self.style || "body");
             }
         };
     }
@@ -1921,6 +1956,7 @@
         formatIconValue,
         installReferenceSelectors,
         installSizeSelectBox,
+        installTextStyleSelectBox,
         installButtonLinkFields,
         installVariantSelectBox,
         isStandardLayoutPreset,

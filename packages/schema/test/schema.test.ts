@@ -1744,9 +1744,10 @@ describe("P71: component fields — size, outline, button link mode + slots", ()
     const mount = "route:/customers/content";
 
     describe("size (sm/md/lg) on the three-size nodes", () => {
+        // P111: ui-text no longer has a `size` field (typographic sizing is
+        // governed by `style`), so it is no longer one of the three-size nodes.
         const sizedCases: Array<[string, Record<string, unknown>]> = [
             ["ui-button", { type: "ui-button", id: "b", mount, label: "Save" }],
-            ["ui-text", { type: "ui-text", id: "t", mount, value: { kind: "literal", value: "Hi" } }],
             ["ui-input", { type: "ui-input", id: "i", mount, label: "Name", value: { kind: "literal", value: "" } }],
             ["ui-select", { type: "ui-select", id: "s", mount, label: "Pick", value: { kind: "literal", value: "" } }],
             ["ui-textarea", { type: "ui-textarea", id: "ta", mount, label: "Notes", value: { kind: "literal", value: "" } }]

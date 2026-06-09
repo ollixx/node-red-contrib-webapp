@@ -67,7 +67,7 @@ export const customersCrudAppModelFixture: AppModel = {
                 }
             },
             props: {
-                variant: "heading-1"
+                style: "heading-1"
             },
             events: []
         },
@@ -146,7 +146,7 @@ export const customersCrudAppModelFixture: AppModel = {
                 }
             },
             props: {
-                variant: "heading-1"
+                style: "heading-1"
             },
             events: []
         },
@@ -360,7 +360,7 @@ export const operationsConsoleAppModelFixture: AppModel = {
                 }
             },
             props: {
-                variant: "heading-1"
+                style: "heading-1"
             },
             events: []
         },
@@ -531,7 +531,7 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
             kind: "literal",
             value: "Customers"
         },
-        variant: "heading-1"
+        style: "heading-1"
     },
     // ── Home route content ────────────────────────────────────────────────────
     {
@@ -543,7 +543,7 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
             kind: "literal",
             value: "Welcome to Customers CRM"
         },
-        variant: "heading-1"
+        style: "heading-1"
     },
     {
         type: "ui-text",
@@ -630,7 +630,7 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
             kind: "literal",
             value: "Customer detail"
         },
-        variant: "heading-1"
+        style: "heading-1"
     },
     {
         type: "ui-button",

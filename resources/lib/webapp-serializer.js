@@ -141,6 +141,18 @@
         divider: "sl-divider"
     };
 
+    // P111: ui-text typographic role → semantic HTML element. The `style` field
+    // maps 1:1 onto a tag; an unknown/absent style falls back to <p> (body).
+    const TEXT_STYLE_TAG = {
+        "heading-1": "h1",
+        "heading-2": "h2",
+        "heading-3": "h3",
+        "body": "p",
+        "caption": "small",
+        "label": "span",
+        "code": "code"
+    };
+
     const BUTTON_VARIANT_TO_SHOELACE = {
         primary: "primary",
         secondary: "neutral",
@@ -402,14 +414,21 @@
         ctx = ctx || {};
 
         if (component.kind === "text") {
-            // P49: text has no Shoelace element. Its semantic Ebene-2 variant
-            // (heading-1…/body/muted/…) surfaces as a class modifier so a backend
-            // / theme can style it. Default "body" when absent.
-            const textVariant = (component.props && typeof component.props.variant === "string" && component.props.variant)
-                ? component.props.variant
-                : "body";
-            const variantClass = " webapp-text--" + sanitizeClassSuffix(textVariant);
-            return wrapRenderedComponentHtml(component, layoutId, "<div class=\"webapp-text" + variantClass + "\">" + escapeHtml(component.text) + "</div>");
+            // P111: two orthogonal axes. `style` (typographic role) selects a
+            // semantic HTML element AND a webapp-text--<role> class; `variant`
+            // (semantic colour) adds a webapp-text--color-<c> class. Defaults:
+            // style → "body" (<p>); colour → "default" (inherit, no colour class).
+            const props = component.props || {};
+            const textStyle = (typeof props.style === "string" && props.style) ? props.style : "body";
+            const tag = TEXT_STYLE_TAG[textStyle] || "p";
+            let classes = "webapp-text webapp-text--" + sanitizeClassSuffix(textStyle);
+            const colour = (typeof props.variant === "string" && props.variant && props.variant !== "default")
+                ? props.variant
+                : "";
+            if (colour) {
+                classes += " webapp-text--color-" + sanitizeClassSuffix(colour);
+            }
+            return wrapRenderedComponentHtml(component, layoutId, "<" + tag + " class=\"" + classes + "\">" + escapeHtml(component.text) + "</" + tag + ">");
         }
 
         // P69: ui-icon — renders an <sl-icon> from a backend-neutral

@@ -229,6 +229,13 @@ function resolveBinding(binding: BindingDefinition | undefined, sources: Binding
             resolvedValue = getValueAtPath(sources.state, statePath);
             break;
         }
+        case "msg":
+            // P111: Message mode. The value is pushed at runtime via msg.payload
+            // and held backend-side in the live definition (where it becomes a
+            // literal). There is no message context at render time, so until a
+            // payload arrives the field renders EMPTY — never "?".
+            resolvedValue = binding.fallback ?? "";
+            break;
     }
 
     return resolvedValue === undefined ? binding.fallback : resolvedValue;

@@ -484,15 +484,38 @@ export const BUTTON_VARIANTS = [
     "link"
 ] as const;
 
-export const TEXT_VARIANTS = [
+/**
+ * ui-text typographic role ("style" field). Each value maps 1:1 onto a semantic
+ * HTML element (heading-1/2/3 → h1/h2/h3, body → p, caption → small, label →
+ * span, code → code) and drives size/weight/font-family — NOT colour. Colour is
+ * an orthogonal axis (`variant`, see TEXT_COLOR_VARIANTS). `muted` was previously
+ * part of this list but is a colour, not a role, so it now lives on the colour
+ * axis; legacy configs are migrated in the ui-text mapConfig.
+ */
+export const TEXT_STYLES = [
     "heading-1",
     "heading-2",
     "heading-3",
     "body",
     "caption",
     "label",
-    "code",
-    "muted"
+    "code"
+] as const;
+
+/**
+ * ui-text semantic colour ("variant" field). Aligns with the project's
+ * SEVERITY_VARIANTS palette (and Bootstrap-Vue / Shoelace colour tokens) so
+ * `variant` means the SAME thing on ui-text as it does on ui-button/badge/alert.
+ * `default` inherits the surrounding text colour; `muted` dims it.
+ */
+export const TEXT_COLOR_VARIANTS = [
+    "default",
+    "muted",
+    "primary",
+    "success",
+    "warning",
+    "danger",
+    "neutral"
 ] as const;
 
 export const CONTAINER_VARIANTS = ["card", "panel", "section", "transparent"] as const;
@@ -532,7 +555,8 @@ export const BUTTON_LINK_MODES = ["button", "url", "navigate"] as const;
 export type ButtonLinkMode = (typeof BUTTON_LINK_MODES)[number];
 
 export type ButtonVariant = (typeof BUTTON_VARIANTS)[number];
-export type TextVariant = (typeof TEXT_VARIANTS)[number];
+export type TextStyle = (typeof TEXT_STYLES)[number];
+export type TextColorVariant = (typeof TEXT_COLOR_VARIANTS)[number];
 export type ContainerVariant = (typeof CONTAINER_VARIANTS)[number];
 export type InputVariant = (typeof INPUT_VARIANTS)[number];
 export type SeverityVariant = (typeof SEVERITY_VARIANTS)[number];
@@ -548,7 +572,9 @@ export type SeverityVariant = (typeof SEVERITY_VARIANTS)[number];
  */
 export const COMPONENT_VARIANT_VOCABULARY: Readonly<Record<string, readonly string[]>> = {
     button: BUTTON_VARIANTS,
-    text: TEXT_VARIANTS,
+    // P111: ui-text `variant` is now the semantic COLOUR axis (the typographic
+    // role moved to the separate `style` field → TEXT_STYLES).
+    text: TEXT_COLOR_VARIANTS,
     container: CONTAINER_VARIANTS,
     card: CONTAINER_VARIANTS,
     input: INPUT_VARIANTS,
@@ -563,7 +589,8 @@ export const COMPONENT_VARIANT_VOCABULARY: Readonly<Record<string, readonly stri
  */
 export const COMPONENT_VARIANT_DEFAULT: Readonly<Record<string, string>> = {
     button: "neutral",
-    text: "body",
+    // P111: ui-text colour default — `default` inherits the surrounding text colour.
+    text: "default",
     container: "card",
     card: "card",
     input: "default",

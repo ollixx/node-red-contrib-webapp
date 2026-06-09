@@ -641,6 +641,29 @@ function mapIconField(value) {
     return undefined;
 }
 
+// P111: ui-text split the old `variant` field into two orthogonal axes:
+//   • `style`   — typographic ROLE (heading-1/…/code), maps to an HTML element
+//   • `variant` — semantic COLOUR (default/muted/primary/…), like ui-button
+// Legacy flows stored the typographic role in `variant`; this migrates them so
+// the node still validates and renders. `muted` was a role pre-P111 but is a
+// colour, so it crosses over to the colour axis.
+const TEXT_ROLE_VALUES = new Set(["heading-1", "heading-2", "heading-3", "body", "caption", "label", "code"]);
+function mapTextStyleAndVariant(config) {
+    const styleCfg = blankToUndefined(config.style);
+    const variantCfg = blankToUndefined(config.variant);
+    // New-schema config: `style` is present → trust both fields as authored.
+    if (styleCfg) {
+        return { style: styleCfg, variant: variantCfg };
+    }
+    // Legacy config: only `variant` existed and held the typographic role.
+    if (variantCfg && TEXT_ROLE_VALUES.has(variantCfg)) {
+        return { style: variantCfg, variant: undefined };
+    }
+    // Legacy `muted` role → colour "muted"; any other value is already a colour
+    // (or undefined). `style` falls back to its "body" default downstream.
+    return { style: undefined, variant: variantCfg };
+}
+
 function initializeState(stores, queries, appId) {
     let state = {
         ui: {
@@ -762,8 +785,10 @@ function toComponentDefinitions(components) {
                     value: getBinding(component.value, literalBinding(component.text || ""))
                 },
                 props: {
+                    // P111: `style` (typographic role → HTML tag) and `variant`
+                    // (semantic colour) are distinct axes. `size` was removed.
+                    ...(blankToUndefined(component.style) ? { style: component.style } : {}),
                     ...(blankToUndefined(component.variant) ? { variant: component.variant } : {}),
-                    ...(blankToUndefined(component.size) ? { size: component.size } : {}),
                     ...(Object.keys(layoutProps).length > 0 ? { layout: layoutProps } : {})
                 },
                 events: []
@@ -1560,7 +1585,24 @@ ${tokenCss ? tokenCss.split("\n").map((line) => `    ${line}`).join("\n") : "   
     .webapp-slot--navbar sl-button::part(base) { border:none; background:transparent; border-radius:0; width:100%; justify-content:flex-start; padding:10px 20px; font-size:0.95rem; font-weight:500; color:var(--wa-color-text); box-shadow:none; }
     .webapp-slot--navbar sl-button::part(base):hover { color:var(--wa-color-primary); background:color-mix(in srgb, var(--wa-color-primary) 8%, transparent); }
     .webapp-slot--navbar .webapp-item { width:100%; }
-    .webapp-text { font-size:1.05rem; }
+    /* P111: ui-text typography. The 'style' (role) drives size/weight/family via
+       the webapp-text--<role> class; 'variant' (colour) via webapp-text--color-<c>.
+       Margins are reset so headings don't disturb the slot layout. */
+    .webapp-text { margin:0; font-size:1rem; line-height:1.5; }
+    .webapp-text--heading-1 { font-size:1.875rem; font-weight:700; line-height:1.2; }
+    .webapp-text--heading-2 { font-size:1.5rem; font-weight:600; line-height:1.25; }
+    .webapp-text--heading-3 { font-size:1.25rem; font-weight:600; line-height:1.3; }
+    .webapp-text--body { font-size:1rem; }
+    .webapp-text--caption { font-size:0.8125rem; color:var(--wa-color-text-muted); }
+    .webapp-text--label { font-size:0.875rem; font-weight:600; }
+    .webapp-text--code { font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:0.875rem; background:var(--wa-color-surface); padding:0.1em 0.35em; border-radius:var(--wa-radius-sm, 4px); }
+    /* P111: semantic colour variants (default inherits --wa-color-text) */
+    .webapp-text--color-muted { color:var(--wa-color-text-muted); }
+    .webapp-text--color-primary { color:var(--wa-color-primary); }
+    .webapp-text--color-success { color:var(--wa-color-success); }
+    .webapp-text--color-warning { color:var(--wa-color-warning); }
+    .webapp-text--color-danger { color:var(--wa-color-danger); }
+    .webapp-text--color-neutral { color:var(--wa-color-neutral); }
     .webapp-table { width:100%; border-collapse:collapse; background:var(--wa-color-surface); border-radius:var(--wa-radius-md); overflow:hidden; }
     .webapp-table th, .webapp-table td { padding:10px 12px; border-bottom:1px solid var(--wa-color-border); text-align:left; }
     .webapp-form { display:grid; gap:10px; }
@@ -1679,11 +1721,70 @@ function readDeployDefinitions(RED) {
                 }
 
                 return baseDefinition;
-            });
+            })
+            // P111: resolve flow/global/env value bindings server-side into
+            // literals (non-reactive, one-shot at render). The renderer is
+            // backend-neutral and cannot read Node-RED context; this is the only
+            // place with RED + the live node, so it happens here.
+            .map((def) => resolveContextBindingsForDef(def, RED));
     }
     catch {
         return [];
     }
+}
+
+// P111: binding kinds that are resolved SERVER-SIDE (from the Node-RED node's
+// flow/global context or the environment) into a literal at render time. They
+// are intentionally NOT reactive — the value is read once per render. `msg`
+// (Message mode) is deliberately excluded: it is driven by the input handler.
+const CONTEXT_BINDING_KINDS = new Set(["flow", "global", "env"]);
+
+function resolveContextValue(node, kind, path, RED) {
+    try {
+        if (kind === "flow") {
+            return node ? node.context().flow.get(path) : undefined;
+        }
+        if (kind === "global") {
+            return node ? node.context().global.get(path) : undefined;
+        }
+        if (kind === "env") {
+            // env is resolved relative to the node's environment (flow/group/global).
+            return RED && RED.util && typeof RED.util.evaluateNodeProperty === "function"
+                ? RED.util.evaluateNodeProperty(path, "env", node || {}, undefined)
+                : undefined;
+        }
+    }
+    catch (_e) {
+        return undefined;
+    }
+    return undefined;
+}
+
+// Replace any flow/global/env binding on a definition's binding fields with a
+// literal carrying the resolved value. Returns a fresh object only when a field
+// was rewritten; otherwise the input is returned unchanged.
+function resolveContextBindingsForDef(def, RED) {
+    if (!def || !RED) {
+        return def;
+    }
+    let node;
+    let out = def;
+    VIEW_NODE_BINDING_FIELDS.forEach((field) => {
+        const binding = def[field];
+        if (!binding || typeof binding !== "object" || !CONTEXT_BINDING_KINDS.has(binding.kind) || typeof binding.path !== "string") {
+            return;
+        }
+        if (node === undefined) {
+            node = (RED.nodes && typeof RED.nodes.getNode === "function" ? RED.nodes.getNode(def.id) : undefined) || null;
+        }
+        const resolved = resolveContextValue(node, binding.kind, binding.path, RED);
+        const value = resolved === undefined ? binding.fallback : resolved;
+        if (out === def) {
+            out = Object.assign({}, def);
+        }
+        out[field] = literalBinding(value);
+    });
+    return out;
 }
 
 // P66 (ADR 0007): compile-/deploy-time cross-validation of navigate actions.
@@ -2917,7 +3018,11 @@ function registerDeployHook(RED) {
         try {
             const rootIssues = validateAppRootUniqueness(RED);
             for (const issue of rootIssues) {
-                reportRuntimeError(undefined, {
+                const issueNode = RED.nodes.getNode(issue.nodeId);
+                if (issueNode) {
+                    issueNode.status({ fill: "red", shape: "ring", text: "duplicate root" });
+                }
+                reportRuntimeError(issueNode || undefined, {
                     severity: 'error',
                     code: 'duplicate-app-root',
                     message: issue.message,
@@ -3347,22 +3452,57 @@ function viewNodePatchInputHandler(node, msg, send, done) {
         registration.definition = Object.assign({}, registration.definition, cleanPatch);
         node.webappDefinition = registration.definition;
         patched = true;
-    } else if (msg.payload !== undefined && msg.payload !== null) {
-        // msg.payload — sets the primary mutable field for this node type.
+    } else {
+        // Incoming message → update the primary mutable field for this node type.
         const nodeType = registration.definition.type;
         const field = VIEW_NODE_PRIMARY_FIELD[nodeType];
         if (field) {
-            // P70 Ebene 2: ui-image accepts a Buffer / Base64 / data: payload —
-            // convert it to a usable src string before it is wrapped in a binding.
-            const rawPayload = (nodeType === "ui-image" && field === "src")
-                ? payloadToImageSrc(msg.payload, msg)
-                : msg.payload;
-            const newValue = VIEW_NODE_BINDING_FIELDS.has(field)
-                ? literalBinding(rawPayload)
-                : rawPayload;
-            registration.definition = Object.assign({}, registration.definition, { [field]: newValue });
-            node.webappDefinition = registration.definition;
-            patched = true;
+            // P111: capture the field's msg source path ONCE. A standard Node-RED
+            // `msg` typedInput stores { kind:"msg", path:"payload"|"payload.x"|… };
+            // read that property from the incoming message. The first update
+            // overwrites the live binding with a literal, so the path is captured
+            // up front. `null` means the field is NOT msg-bound.
+            if (registration.msgSourcePath === undefined) {
+                const savedBinding = registration.definition[field];
+                registration.msgSourcePath = (savedBinding && typeof savedBinding === "object" && savedBinding.kind === "msg")
+                    ? (typeof savedBinding.path === "string" && savedBinding.path ? savedBinding.path : "payload")
+                    : null;
+            }
+
+            const RED = runtimeState.RED;
+            let rawValue;
+            let hasValue = false;
+            if (registration.msgSourcePath) {
+                // msg-bound: read the configured message property (standard binding).
+                try {
+                    rawValue = RED && RED.util && typeof RED.util.evaluateNodeProperty === "function"
+                        ? RED.util.evaluateNodeProperty(registration.msgSourcePath, "msg", node, msg)
+                        : getValueAtPath(msg, registration.msgSourcePath);
+                }
+                catch (_e) {
+                    rawValue = undefined;
+                }
+                hasValue = rawValue !== undefined && rawValue !== null;
+            }
+            else if (msg.payload !== undefined && msg.payload !== null) {
+                // Not msg-bound: legacy behaviour — any payload updates the value.
+                rawValue = msg.payload;
+                hasValue = true;
+            }
+
+            if (hasValue) {
+                // P70 Ebene 2: ui-image accepts a Buffer / Base64 / data: payload —
+                // convert it to a usable src string before it is wrapped in a binding.
+                const resolved = (nodeType === "ui-image" && field === "src")
+                    ? payloadToImageSrc(rawValue, msg)
+                    : rawValue;
+                const newValue = VIEW_NODE_BINDING_FIELDS.has(field)
+                    ? literalBinding(resolved)
+                    : resolved;
+                registration.definition = Object.assign({}, registration.definition, { [field]: newValue });
+                node.webappDefinition = registration.definition;
+                patched = true;
+            }
         }
     }
 
@@ -3929,17 +4069,22 @@ const runtimeNodeRegistry = {
         }
     },
     "ui-text": {
-        mapConfig: (config) => ({
-            type: "ui-text",
-            id: getUiId(config),
-            parent: config.parent || undefined,
-            mount: config.mount || config.parent,
-            order: toOptionalNumber(config.order),
-            value: getBinding(config.value, literalBinding(config.text || "")),
-            variant: config.variant || undefined,
-            size: blankToUndefined(config.size),
-            ...collectNodeConfigLayoutProps(config)
-        }),
+        mapConfig: (config) => {
+            // P111: `style` (typographic role) + `variant` (semantic colour),
+            // with transparent migration of legacy role-in-variant configs.
+            const text = mapTextStyleAndVariant(config);
+            return {
+                type: "ui-text",
+                id: getUiId(config),
+                parent: config.parent || undefined,
+                mount: config.mount || config.parent,
+                order: toOptionalNumber(config.order),
+                value: getBinding(config.value, literalBinding(config.text || "")),
+                style: text.style,
+                variant: text.variant,
+                ...collectNodeConfigLayoutProps(config)
+            };
+        },
         options: {
             inputHandler: interactionInputHandler(INTERACTION_VERBS_BY_TYPE["ui-text"], viewNodePatchInputHandler)
         }
@@ -4833,6 +4978,8 @@ registerWebappNodes.__test__ = {
     // P39 / P52: view-node input patch handler + deploy-definition reader
     viewNodePatchInputHandler,
     readDeployDefinitions,
+    // P111: server-side resolution of flow/global/env value bindings → literal
+    resolveContextBindingsForDef,
     // P70 Ebene 2: ui-image msg.payload → src (Buffer/Base64 → data:)
     payloadToImageSrc,
     sniffImageContentType,

@@ -496,4 +496,30 @@ describe("P104: central display-value normalization", () => {
             expect(renderProbe("badge", raw)).toBe(expected);
         });
     }
+
+    // P111: Message mode — a `msg` value binding has no render-time context, so it
+    // renders EMPTY (never "?") until a payload is pushed (which turns it into a
+    // literal on the server side).
+    it("text node with a msg binding → '' (empty, not '?')", () => {
+        const model = {
+            ...customersCrudAppModelFixture,
+            components: [
+                ...customersCrudAppModelFixture.components,
+                {
+                    id: "probe",
+                    kind: "text" as const,
+                    mount: "layout:app/footer",
+                    bind: { value: { kind: "msg" as const, path: "payload" } },
+                    props: {},
+                    events: []
+                }
+            ]
+        };
+        const app = createRendererApp(model, {
+            integration: customersCrudRuntimeIntegrationFixture,
+            location: "/"
+        });
+        const probe = findComponentInSnapshot(app.render(), "probe");
+        expect(probe && "text" in probe ? probe.text : "<<missing>>").toBe("");
+    });
 });
