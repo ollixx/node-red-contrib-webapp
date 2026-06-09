@@ -30,7 +30,15 @@ spec: docs/nodes/concepts/live-deploy-update.md
 - **Signatur:** Server berechnet eine Shell-/Topologie-Signatur (App-Shell-Layout + Theme-Tokens + Routen-Pfad-Menge + Serializer-Version) und sendet sie mit dem Deploy-Push; der Client vergleicht gegen seine hydrierte Signatur und entscheidet In-Place vs. Reload nach der Tabelle im Konzept. Unit-Test: gleiche Struktur → gleiche Signatur; geänderte Route-Menge/Shell → andere Signatur.
 - **Multi-Client:** mehrere verbundene Browser derselben App erhalten den Deploy-Push alle (Broadcast); per-Client-State (P15) bleibt erhalten.
 
+## Acceptance (ergänzt — Dev/Prod-Mode, Owner-Entscheidung 2026-06-09)
+
+- `ui-app` bekommt ein Feld `status` = `Entwicklung` (Default) / `Produktion`.
+- **Entwicklung:** Deploy-Verhalten wie oben (In-Place via Snapshot, Reload-Fallback bei Shell-/Topologie-Änderung) — bequem beim Bauen.
+- **Produktion:** beim Deploy wird **nicht** automatisch in-place aktualisiert oder neu geladen. Stattdessen zeigt der Client einen **Alert**: „Die Anwendung hat eine neue Version. Speichern Sie alle Daten und laden Sie diese Website neu." Erst der **manuelle Reload** des Users übernimmt das neue Modell — so geht kein laufender Nutzer-Zustand ungefragt verloren.
+- Beweis (Browser): App auf `Produktion`, im Editor deployen → verbundener Client zeigt den Versions-Alert, lädt **nicht** automatisch; nach manuellem Reload ist das neue Modell aktiv.
+
 ## Notes
 - Baut auf P31 (`applySnapshot`/`snapshot`-Event), P37 (Deploy-Hook `flows:started` + `redeploy`-Broadcast) und P15 (per-Client vs. Broadcast) auf — keine neue Transport-Schicht, sondern die vorhandene nutzen/erweitern.
+- Das `status`-Feld am `ui-app` ist die einzige neue Konfiguration; der Produktions-Zweig ersetzt den Auto-Update-Pfad durch den Versions-Alert.
 - Der `redeploy`-Reload aus P37 wird zum **Fallback-Zweig**; der Default-Pfad wird der Snapshot-Push.
 - Server-Pfad: `flows:started` → frisches `readDeployDefinitions(RED)` kompilieren → `pushSnapshotToClients(appId, undefined, …)` (Broadcast) inkl. Signatur. Client-Pfad: `snapshot`-Handler bzw. ein neuer Deploy-Push-Handler entscheidet In-Place vs. Reload.

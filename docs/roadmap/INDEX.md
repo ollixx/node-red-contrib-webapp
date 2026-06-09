@@ -40,7 +40,11 @@ their blocker clears.
 - **P106** — pending — Live-Modell-Auslieferung beim Deploy: In-Place via SSE-Snapshot, Reload nur als Shell-/Topologie-Fallback (+ Bugfix: Deploy liefert aktuell nichts) — deps: [P15, P31, P37] ✅ ready — [P106](aspects/state/P106-live-model-delivery-on-deploy.md)
 
 ### nodes/ui-app
-- **P108** — pending — root-Eindeutigkeit beim Deploy validieren (heute nur id, nicht root) — deps: [P2] ✅ ready — [P108](nodes/ui-app/P108-root-uniqueness-validation.md)
+- **P109** — pending — name + root ins Schema, title raus; Render-Semantik (HTML-title=name; Header-Slot leer→name, sonst nur Slot) — deps: [P1, P3] ✅ ready — [P109](nodes/ui-app/P109-name-root-title-rework.md)
+- **P108** — pending — root-Eindeutigkeit beim Deploy validieren (heute nur id, nicht root) — deps: [P109] ⛔ blocked on P109 — [P108](nodes/ui-app/P108-root-uniqueness-validation.md)
+
+### nodes/ui-store
+- **P110** — pending — scope-Guard (Any / Broadcast Only / Client Only): verhindert versehentliches Überbügeln per falscher Message — deps: [P15, P80] ✅ ready — [P110](nodes/ui-store/P110-scope-guard.md)
 
 ## Deferred (parked, not abandoned)
 
@@ -73,4 +77,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 107 done, 5 open, 4 deferred.**
+**Total: 107 done, 7 open, 4 deferred.**

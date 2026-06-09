@@ -3,7 +3,7 @@ id: P108
 title: "ui-app: root-Eindeutigkeit beim Deploy validieren (heute nur id-Eindeutigkeit, nicht root)"
 epic: nodes/ui-app
 status: pending
-dependencies: [P2]
+dependencies: [P109]
 node: ui-app
 verify: browser
 spec: docs/nodes/structure/ui-app.md
@@ -24,5 +24,5 @@ spec: docs/nodes/structure/ui-app.md
 - Doc: ui-app.md bleibt korrekt (root eindeutig) — jetzt auch durchgesetzt.
 
 ## Notes
-- `root` muss dafür im Modell verlässlich vorhanden sein — hängt an Gap 2 (P-tbd: `root` ins `uiAppNodeDefinitionSchema`). Deshalb Dependency auf den Schema-Fix (hier vorläufig P2; final auf das Gap-2-Paket umhängen, sobald es existiert).
+- `root` muss dafür im Modell verlässlich vorhanden sein — daher Dependency auf **P109** (Gap 2: `root` ins `uiAppNodeDefinitionSchema`).
 - Bestehende Diagnostics als Vorlage: `duplicate-app`, `duplicate-id`, `duplicate-route-path` ([registry.ts:60-62](../../../../packages/runtime/src/registry.ts)).
