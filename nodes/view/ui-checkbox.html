@@ -2,6 +2,76 @@
 <script type="text/javascript">
     (function () {
         const common = window.WebappEditorCommon;
+
+        // P97: `value` is a full typedInput binding (all meaningful binding kinds).
+        // The persisted `value` field holds the binding object; legacy `valuePath`
+        // (plain state path) is migrated to a state binding on first open.
+        function applyValueTypedInput(selector, binding) {
+            const input = $(selector);
+            const types = common.bindingTypedInputTypes({ literalLabel: "Boolean" });
+            input.typedInput({ default: "literal", types: types });
+            const editor = common.bindingValueForEditor(binding, "false");
+            input.typedInput("type", editor.type);
+            input.typedInput("value", editor.value);
+        }
+
+        function readValueBinding(selector) {
+            const input = $(selector);
+            const type = input.typedInput("type");
+            const value = input.typedInput("value");
+            if (type === "literal") {
+                // Coerce to boolean: "true" → true, anything else → false.
+                return { kind: "literal", value: value === "true" || value === true };
+            }
+            return { kind: type, path: value };
+        }
+
+        // P97: `label` is a full typedInput binding (all meaningful binding kinds).
+        function applyLabelTypedInput(selector, binding) {
+            const input = $(selector);
+            const types = common.bindingTypedInputTypes({ literalLabel: "Text" });
+            input.typedInput({ default: "literal", types: types });
+            const editor = common.bindingValueForEditor(binding, "");
+            input.typedInput("type", editor.type);
+            input.typedInput("value", editor.value);
+        }
+
+        function readLabelBinding(selector) {
+            const input = $(selector);
+            const type = input.typedInput("type");
+            const value = input.typedInput("value");
+            if (type === "literal") {
+                return { kind: "literal", value: value };
+            }
+            return { kind: type, path: value };
+        }
+
+        // P97: `disabled` is a full typedInput binding (all meaningful binding kinds).
+        function applyDisabledTypedInput(selector, binding) {
+            const input = $(selector);
+            const types = common.bindingTypedInputTypes({ literalLabel: "Boolean" });
+            input.typedInput({ default: "literal", types: types });
+            if (binding && typeof binding === "object" && typeof binding.kind === "string") {
+                const editor = common.bindingValueForEditor(binding, "false");
+                input.typedInput("type", editor.type);
+                input.typedInput("value", editor.value);
+            } else {
+                input.typedInput("type", "literal");
+                input.typedInput("value", "false");
+            }
+        }
+
+        function readDisabledBinding(selector) {
+            const input = $(selector);
+            const type = input.typedInput("type");
+            const value = input.typedInput("value");
+            if (type === "literal") {
+                // Coerce to boolean
+                return { kind: "literal", value: value === "true" || value === true };
+            }
+            return { kind: type, path: value };
+        }
+
         common.registerNodeType("ui-checkbox", {
             category: "webapp view",
             color: "#f4efcf",
@@ -9,9 +79,19 @@
                 name: { value: "" },
                 parent: { value: "" },
                 mount: { value: "", required: true },
-                label: { value: "", required: true },
-                valuePath: { value: "", required: true },
+                // P97: `label` persists the binding OBJECT; DOM-less widget lives on `labelBinding`.
+                label: { value: { kind: "literal", value: "" } },
+                labelBinding: { value: "" },
+                // P97: `value` persists the binding OBJECT; DOM-less widget on `valueBinding`.
+                // Legacy `valuePath` (pre-P97 plain state path) is migrated on first open.
                 value: { value: null },
+                valueBinding: { value: "" },
+                valuePath: { value: "" },
+                // P97: `disabled` persists the binding OBJECT; DOM-less widget on `disabledBinding`.
+                disabled: { value: null },
+                disabledBinding: { value: "" },
+                // P97: size field.
+                size: { value: "" },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
                 col: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
@@ -33,6 +113,43 @@
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
                 common.installLayoutChildPropRows().call(this);
+
+                // P97: Label typedInput — restore persisted binding; back-compat: plain string label.
+                let labelBinding;
+                if (this.label && typeof this.label === "object" && typeof this.label.kind === "string") {
+                    labelBinding = common.parseBindingValue(this.label);
+                } else if (typeof this.label === "string" && this.label.trim().length > 0) {
+                    labelBinding = { kind: "literal", value: this.label };
+                } else {
+                    labelBinding = undefined;
+                }
+                applyLabelTypedInput("#node-input-labelBinding", labelBinding);
+
+                // P97: Value typedInput — restore persisted binding; back-compat: legacy valuePath.
+                let valueBinding;
+                if (this.value && typeof this.value === "object" && typeof this.value.kind === "string") {
+                    valueBinding = common.parseBindingValue(this.value);
+                } else if (this.valuePath && typeof this.valuePath === "string" && this.valuePath.trim().length > 0) {
+                    valueBinding = { kind: "state", path: this.valuePath };
+                } else {
+                    valueBinding = undefined;
+                }
+                applyValueTypedInput("#node-input-valueBinding", valueBinding);
+
+                // P97: Disabled typedInput — restore persisted binding.
+                let disabledBinding;
+                if (this.disabled && typeof this.disabled === "object" && typeof this.disabled.kind === "string") {
+                    disabledBinding = common.parseBindingValue(this.disabled);
+                } else {
+                    disabledBinding = undefined;
+                }
+                applyDisabledTypedInput("#node-input-disabledBinding", disabledBinding);
+            },
+            oneditsave: function () {
+                this.label = readLabelBinding("#node-input-labelBinding");
+                this.value = readValueBinding("#node-input-valueBinding");
+                this.valuePath = "";
+                this.disabled = readDisabledBinding("#node-input-disabledBinding");
             }
         });
     })();
@@ -41,8 +158,31 @@
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
-    <div class="form-row"><label for="node-input-label">Label</label><input type="text" id="node-input-label"></div>
-    <div class="form-row"><label for="node-input-valuePath">Value Path</label><input type="text" id="node-input-valuePath"></div>
+    <div class="form-row"><label for="node-input-labelBinding">Label</label><input type="text" id="node-input-labelBinding"></div>
+    <div class="form-row"><label for="node-input-valueBinding">Value Path</label><input type="text" id="node-input-valueBinding"></div>
+    <div class="form-row"><label for="node-input-disabledBinding">Disabled</label><input type="text" id="node-input-disabledBinding"></div>
+    <div class="form-row"><label for="node-input-size">Size</label>
+        <select id="node-input-size">
+            <option value="">Default</option>
+            <option value="xs">XSmall</option>
+            <option value="sm">Small</option>
+            <option value="md">Medium</option>
+            <option value="lg">Large</option>
+            <option value="xl">XLarge</option>
+        </select>
+    </div>
 </script>
-<script type="text/html"
-    data-help-name="ui-checkbox"><p>Einzelne Checkbox mit Boolean-Binding.</p></script>
+<script type="text/html" data-help-name="ui-checkbox">
+<p>Einzelne Checkbox mit Boolean-Binding. Rendert ein <code>sl-checkbox</code>-Element.</p>
+<h3>Label</h3>
+<p>Beschriftung der Checkbox — bindbar: <b>Text</b> (literal), state, query, routeParam, msg, flow, global, jsonata, env, Store.</p>
+<h3>Value Path</h3>
+<p>Bindbare Boolean-Quelle des Checked-Zustands — alle Binding-Arten werden unterstützt.</p>
+<h3>Disabled</h3>
+<p>Bindbare Bedingung zum Deaktivieren der Checkbox (sperrt Nutzerinteraktion).</p>
+<h3>Size</h3>
+<p>Größe der Checkbox: XSmall, Small, Medium (Default), Large, XLarge.</p>
+<h3>Events</h3>
+<p>Bei Nutzerinteraktion sendet der Knoten <code>{ event: "change", params: { checked: boolean } }</code> auf dem Output-Port.</p>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/input/ui-checkbox.md">Ausführliche Dokumentation</a></p>
+</script>

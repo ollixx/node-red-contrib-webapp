@@ -62,9 +62,10 @@ test.describe("editor panels — view nodes (P47)", () => {
         expect(await editor.inputPortCount("inputEd2")).toBe(1);
     });
 
-    test("ui-checkbox — label + valuePath fields, required valuePath validation", async ({ page, request }) => {
+    test("ui-checkbox — P97: labelBinding + valueBinding + disabledBinding + size fields present", async ({ page, request }) => {
+        // P97: label/valuePath are now typedInput bindings; size field added.
         const flow = appWithRoute(new FlowBuilder(), "cbApp")
-            .node("ui-checkbox", { id: "cbEd", label: "Agree", valuePath: "" })
+            .node("ui-checkbox", { id: "cbEd", label: { kind: "literal", value: "Agree" }, value: { kind: "literal", value: false } })
             .build();
         await deployFlow(request, flow);
 
@@ -72,12 +73,11 @@ test.describe("editor panels — view nodes (P47)", () => {
         await editor.open();
         await editor.openNode("cbEd");
 
-        await editor.expectFields(["name", "mount", "label", "valuePath"]);
-        expect(await editor.getValidationState("cbEd")).toBe("invalid");
-
-        await editor.fillField("valuePath", "form.agree");
-        await editor.save();
-        expect(await editor.getValidationState("cbEd")).toBe("valid");
+        // The new editor exposes labelBinding, valueBinding, disabledBinding and size widgets.
+        await editor.expectFields(["name", "mount", "labelBinding", "valueBinding", "disabledBinding", "size"]);
+        // size select must contain the expected options.
+        const sizeOptions = await editor.selectOptionValues("size");
+        expect(sizeOptions).toEqual(expect.arrayContaining(["xs", "sm", "md", "lg", "xl"]));
     });
 
     test("ui-select — value binding + options fields present, required valuePath validation", async ({ page, request }) => {
