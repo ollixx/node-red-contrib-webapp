@@ -173,7 +173,15 @@ export const uiAppNodeDefinitionSchema = z.object({
     // form `asset:<id>` are resolved by the runtime through a Node-RED backend
     // proxy that fetches `<mediaStoreUrl>/<id>` and streams it — the real store
     // URL never reaches the client (obfuscation). Absent = no asset references.
-    mediaStoreUrl: z.string().optional()
+    mediaStoreUrl: z.string().optional(),
+    // P106: deploy MODE. "development" (default) auto-delivers a freshly-compiled
+    // model to connected clients on every deploy (in-place via snapshot, full
+    // reload only on a shell/topology change). "production" never auto-updates a
+    // connected client; instead the client shows a version alert and only the
+    // user's manual reload adopts the new model, so no running user state is lost.
+    // The editor field is labelled status (Entwicklung / Produktion); mapConfig
+    // normalises it to this enum and defaults to "development".
+    mode: z.enum(["development", "production"]).optional()
 });
 
 export type UiAppNodeDefinition = z.infer<typeof uiAppNodeDefinitionSchema>;

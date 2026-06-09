@@ -160,7 +160,13 @@
                 forwardErrorMinSeverity: { value: "error" },
                 // P70: optional media-store base URL. Enables `asset:<id>` image
                 // references resolved via the app-scoped backend proxy.
-                mediaStoreUrl: { value: "" }
+                mediaStoreUrl: { value: "" },
+                // P106: deploy mode — "development" (default) auto-delivers the
+                // freshly-compiled model to connected clients on deploy; "production"
+                // shows a version alert instead and waits for a manual reload.
+                // NB: the config key is `deployMode`, NOT `status` — `status` is a
+                // RESERVED Node-RED node property (the runtime status indicator).
+                deployMode: { value: "development" }
             },
             // P59 / ADR 0007 §4: ui-app accepts an input port so app-global verbs
             // navigate / reset can be wired (or picked) to it like any other target.
@@ -180,6 +186,11 @@
                 const rootInput = $("#node-input-root");
                 const link = $("#node-ui-app-url");
                 const emptyHint = $("#node-ui-app-url-empty");
+
+                // P106: deploy mode. Older nodes have no `deployMode`; show the
+                // default "development" rather than a blank select. The backing
+                // #node-input-deployMode select then round-trips on save.
+                $("#node-input-deployMode").val(this.deployMode || "development");
 
                 common.installLayoutSelector({
                     valueSelector: "#node-input-layout",
@@ -308,6 +319,17 @@
     <div class="form-row"><label for="node-input-root">Root</label><input type="text" id="node-input-root"></div>
     <input type="hidden" id="node-input-layout">
     <div class="form-row"><label for="node-input-layout-preset">Layout</label><select id="node-input-layout-preset"></select></div>
+    <!-- P106: deploy mode. Entwicklung = auto-deliver the new model on deploy
+         (in-place via snapshot, reload only on a shell/topology change).
+         Produktion = no auto-update; the client shows a version alert and the
+         user's manual reload adopts the new model (no running state lost). -->
+    <div class="form-row">
+        <label for="node-input-deployMode">Status</label>
+        <select id="node-input-deployMode" style="width: 70%;">
+            <option value="development">Entwicklung</option>
+            <option value="production">Produktion</option>
+        </select>
+    </div>
     <div class="form-row">
         <label>App URL</label>
         <a id="node-ui-app-url" href="#" target="_blank" rel="noopener" style="display: none;"></a>

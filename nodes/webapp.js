@@ -26,6 +26,13 @@ const CLIENT_RUNTIME_PATH = "/resources/node-red-contrib-webapp/lib/webapp-clien
 // server. Loaded before the client runtime.
 const CLIENT_SERIALIZER_PATH = "/resources/node-red-contrib-webapp/lib/webapp-serializer.js";
 
+// P106: snapshot/transport contract version. Baked into the shell signature so a
+// client whose code-contract predates a server upgrade falls back to a full
+// reload rather than an in-place apply that its serializer may not understand.
+// Bump this only when the snapshot shape or serializer markup changes (a package
+// upgrade), never for an ordinary flow deploy.
+const SNAPSHOT_SERIALIZER_VERSION = "1";
+
 // P23: the default rendering target is Web Components (Shoelace, MIT) — see
 // ADR 0002. Shoelace is loaded as an ES module / static resource (no bundler);
 // the autoloader registers each custom element on first use. Components are
@@ -63,7 +70,11 @@ const runtimeState = {
     // Each connected EventSource registers here; flow-driven store/action updates
     // are pushed to the targeted client (msg.ui.clientId) or broadcast to all.
     streamClients: new Map(),
-    endpointsRegistered: false
+    endpointsRegistered: false,
+    // P106: guard so the flows:started deploy hook is wired exactly once across
+    // all node-type registrations (each node calls registerNodeType, which calls
+    // registerEndpoints; the hook must not stack one listener per node type).
+    deployHookRegistered: false
 };
 
 const WEBAPP_NODE_TYPES = new Set([
@@ -1413,6 +1424,13 @@ function renderAppPage(appId, location, dialogId, definitions) {
     }
 
     const { model, routeMatch, snapshot, tokens, appLayout } = built;
+    // P106: bake the shell/topology signature + deploy mode into the page so the
+    // hydrated client knows its baseline. On a later deploy push (or a /snapshot
+    // re-focus pull) the client compares the incoming signature against this one
+    // to decide in-place apply vs full reload, and reads the mode to decide
+    // auto-update (development) vs version-alert (production).
+    const shellSignature = computeShellSignature(appId, definitions);
+    const deployMode = resolveAppMode(appId, definitions);
     // P23: design tokens → CSS custom properties (consumed natively by the Web
     // Components) plus the --wa-* → --sl-* bridge so Shoelace is themed without
     // per-token translation. Unset tokens fall back to the defaults below.
@@ -1563,7 +1581,9 @@ ${tokenCss ? tokenCss.split("\n").map((line) => `    ${line}`).join("\n") : "   
   ${appBarHtml}
   <div id="webapp-client-root"${isAppLayout ? " class=\"webapp-is-app-layout\"" : ""}
        data-webapp-app-id="${escapeAttribute(model.id)}"
-       data-webapp-location="${escapeAttribute(snapshot.location)}"${dialogId ? ` data-webapp-dialog="${escapeAttribute(dialogId)}"` : ""}>
+       data-webapp-location="${escapeAttribute(snapshot.location)}"
+       data-webapp-signature="${escapeAttribute(shellSignature)}"
+       data-webapp-mode="${escapeAttribute(deployMode)}"${dialogId ? ` data-webapp-dialog="${escapeAttribute(dialogId)}"` : ""}>
     <div class="webapp-grid">${pageBody}</div>
     ${dialogHtml}
   </div>
@@ -2051,6 +2071,154 @@ function pushSnapshotToClients(appId, clientId, definitions) {
                 code: "server.snapshot.build-failed",
                 message: `Snapshot build failed for '${entry.location || "/"}' (status ${built.status}): ${built.message || "unknown error"}`,
                 context: { appId, op: "buildAppSnapshot" },
+                clientId: targetClientId
+            });
+        }
+    }
+}
+
+// P106: normalise the ui-app `status` config field onto the deploy-mode enum.
+// The editor offers Entwicklung / Produktion; accept the German labels, the
+// English tokens, and the already-normalised enum. Anything else (incl. absent)
+// falls back to "development" so existing apps keep the convenient auto-update.
+function normalizeAppMode(status) {
+    const raw = String(status === undefined || status === null ? "" : status).trim().toLowerCase();
+    if (raw === "production" || raw === "produktion" || raw === "prod") {
+        return "production";
+    }
+    return "development";
+}
+
+// P106: resolve an app's deploy mode from a set of definitions (the ui-app's
+// `mode`, already normalised by mapConfig, with a defensive re-normalise so a
+// raw `status` on the definition is honoured too).
+function resolveAppMode(appId, definitions) {
+    const buckets = getDefinitionBuckets(appId, definitions);
+    const app = buckets.app;
+    if (!app) {
+        return "development";
+    }
+    if (app.mode === "production" || app.mode === "development") {
+        return app.mode;
+    }
+    return normalizeAppMode(app.status);
+}
+
+// P106: a small, stable, non-cryptographic string hash (FNV-1a, 32-bit). The
+// signature only needs to be deterministic and collision-resistant enough to
+// tell "same shell/topology" from "different" — never a security boundary, so a
+// crypto digest would be overkill.
+function fnv1aHash(input) {
+    let hash = 0x811c9dc5;
+    for (let i = 0; i < input.length; i++) {
+        hash ^= input.charCodeAt(i);
+        hash = (hash + ((hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24))) >>> 0;
+    }
+    return ("0000000" + hash.toString(16)).slice(-8);
+}
+
+// P106: compute the shell/topology signature (live-deploy-update.md). It captures
+// exactly the parts a client-side in-place `applySnapshot` CANNOT express — so a
+// change here forces a full reload, while a pure content change leaves it stable:
+//   1. App-shell — the ui-app layout preset + theme tokens (baked into the
+//      server-rendered page hull).
+//   2. Routen-Topologie — the SET of route paths (sorted; param structure rides
+//      along in the path string).
+//   3. Serializer/transport version — the client code-contract itself.
+// Returns a short hex digest. Deterministic for equal inputs.
+function computeShellSignature(appId, definitions) {
+    const buckets = getDefinitionBuckets(appId, definitions);
+    const app = buckets.app;
+
+    const appLayout = app ? (app.layout || "") : "";
+    // Tokens are an object on the compiled definition; serialise with sorted keys
+    // so key order in the flow file never perturbs the signature.
+    const tokens = app && app.tokens && typeof app.tokens === "object" ? app.tokens : {};
+    const tokenKeys = Object.keys(tokens).sort();
+    const tokenSig = tokenKeys.map((k) => `${k}=${tokens[k]}`).join("&");
+
+    // The route-path SET (incl. the implicit app-root "/"). Sorted + de-duped so
+    // a reorder in the flow file is NOT a topology change.
+    const routePaths = new Set(["/"]);
+    for (const route of buckets.routes) {
+        if (route && route.path) {
+            routePaths.add(String(route.path));
+        }
+    }
+    const routeSig = Array.from(routePaths).sort().join(",");
+
+    const material = [
+        `v=${SNAPSHOT_SERIALIZER_VERSION}`,
+        `layout=${appLayout}`,
+        `tokens=${tokenSig}`,
+        `routes=${routeSig}`
+    ].join("|");
+
+    return fnv1aHash(material);
+}
+
+// P106: on deploy, push the freshly-compiled model to every subscriber of the app
+// as a `deploy` SSE frame carrying { snapshot, signature, mode }. The client
+// decides what to do (live-deploy-update.md):
+//   development → signature unchanged + route still present ? in-place applySnapshot
+//                 : full reload.
+//   production  → never auto-update; show a version alert; the user's manual
+//                 reload adopts the new model.
+// Always a BROADCAST (no clientId) — each subscriber is rendered at ITS OWN
+// location with ITS OWN per-client state (P15), so per-client state survives.
+//
+// `options.connectedBefore` (a timestamp): skip clients that connected at/after
+// it — they are already loading the fresh flow (the P37 connect-race guard).
+// `options.requireLiveSocket`: only write to a connection whose socket is still
+// fully writable (avoids EPIPE to a browser tab that closed mid-deploy).
+function pushDeployToClients(appId, definitions, options) {
+    const subscribers = runtimeState.streamClients.get(appId);
+    if (!subscribers || subscribers.size === 0) {
+        return;
+    }
+
+    const opts = options || {};
+    const signature = computeShellSignature(appId, definitions);
+    const mode = resolveAppMode(appId, definitions);
+
+    for (const [targetClientId, entry] of subscribers.entries()) {
+        // P37 connect-race guard: a client that connected at/after the deploy is
+        // already loading the new flow — sending it a deploy push would cause a
+        // spurious extra in-place apply / reload.
+        if (typeof opts.connectedBefore === "number"
+                && typeof entry.connectedAt === "number"
+                && !(entry.connectedAt < opts.connectedBefore)) {
+            continue;
+        }
+
+        // Live-socket guard: skip half-closed / destroyed connections.
+        if (opts.requireLiveSocket) {
+            const res = entry.res;
+            const socket = res && res.socket;
+            const isLive = res && !res.writableEnded && !res.destroyed
+                && socket && !socket.destroyed && !socket.writableEnded && socket.readable;
+            if (!isLive) {
+                continue;
+            }
+        }
+
+        const built = buildAppSnapshot(appId, entry.location || "/", undefined, definitions, targetClientId);
+        if (built.success) {
+            writeStreamEvent(entry.res, "deploy", {
+                snapshot: built.snapshot,
+                signature,
+                mode
+            });
+        }
+        else {
+            // A failed build still emits a deploy frame WITHOUT a snapshot so the
+            // client can fall back to a reload (it cannot stay on a stale page).
+            writeStreamEvent(entry.res, "deploy", { snapshot: null, signature, mode });
+            reportRuntimeError(undefined, {
+                severity: "warn",
+                code: "server.deploy.snapshot-build-failed",
+                message: `Deploy snapshot build failed for '${entry.location || "/"}' (status ${built.status}): ${built.message || "unknown error"}`,
+                context: { appId, op: "pushDeployToClients" },
                 clientId: targetClientId
             });
         }
@@ -2657,6 +2825,32 @@ function registerEndpoints(RED) {
             });
     });
 
+    // P106: JSON snapshot endpoint. The client polls this on tab re-focus
+    // (visibilitychange) to pull the CURRENT model after a deploy it may have
+    // missed while the tab was frozen/backgrounded, and on initial hydration.
+    // Returns { snapshot, signature, mode } so the client can apply the same
+    // in-place-vs-reload rule used for a live deploy push. MUST be registered
+    // before the catch-all `/webapp/:appId/*` page route.
+    RED.httpNode.get("/webapp/:appId/snapshot", (req, res) => {
+        const { appId } = req.params;
+        const location = req.query.location ? String(req.query.location) : "/";
+        const dialogId = req.query.dialog ? String(req.query.dialog) : undefined;
+        const clientId = req.query.clientId ? String(req.query.clientId) : undefined;
+        const definitions = readDeployDefinitions(RED);
+
+        const built = buildAppSnapshot(appId, location, dialogId, definitions, clientId);
+        if (!built.success) {
+            res.status(built.status).json({ error: built.message });
+            return;
+        }
+
+        res.json({
+            snapshot: built.snapshot,
+            signature: computeShellSignature(appId, definitions),
+            mode: resolveAppMode(appId, definitions)
+        });
+    });
+
     RED.httpNode.get("/webapp/:appId/*", (req, res) => {
         const suffix = req.params[0] ? `/${req.params[0]}` : "/";
         const dialogId = req.query.dialog ? String(req.query.dialog) : undefined;
@@ -2671,6 +2865,103 @@ function registerEndpoints(RED) {
     });
 
     runtimeState.endpointsRegistered = true;
+
+    // P106: wire the deploy hook here (the path Node-RED actually runs). Each
+    // node self-registers via registerNodeType → registerEndpoints; the legacy
+    // registerWebappNodes() factory (which also called this) is NOT invoked by
+    // Node-RED, so the old P37 flows:started listener never fired — the latent
+    // "deploy delivers nothing to connected clients" bug. Wiring it once here
+    // (guarded) is the fix.
+    registerDeployHook(RED);
+}
+
+// P106: on every flow deploy, push the freshly-compiled model to every connected
+// client so the UI auto-updates. The push carries a shell/topology signature +
+// the app's deploy mode; the client decides in-place vs full reload (development)
+// or shows a version alert (production) — see live-deploy-update.md. This
+// SUBSUMES the old P37 `redeploy`-only broadcast (which reloaded unconditionally
+// and pushed NO fresh model). Registered exactly once across all node-type
+// registrations via the deployHookRegistered guard.
+function registerDeployHook(RED) {
+    if (runtimeState.deployHookRegistered) {
+        return;
+    }
+    runtimeState.deployHookRegistered = true;
+
+    RED.events.on("flows:started", function () {
+        // P66 (ADR 0007): cross-validate navigate actions against the full flow
+        // graph (ambiguous / no-destination / dead-link). These can only be seen
+        // with the whole flow, not in per-node editor validation. Surface each as
+        // a structured runtime error so it is visible in the Node-RED log.
+        try {
+            const navIssues = validateNavigationFlow(RED);
+            for (const issue of navIssues) {
+                reportRuntimeError(undefined, {
+                    severity: "error",
+                    code: "navigate-validation",
+                    message: issue.message,
+                    context: { nodeId: issue.nodeId, op: "deploy" }
+                });
+            }
+        }
+        catch (_e) {
+            // Never let validation crash the deploy.
+        }
+
+        // P108: cross-validate that all ui-app nodes have unique root paths.
+        try {
+            const rootIssues = validateAppRootUniqueness(RED);
+            for (const issue of rootIssues) {
+                reportRuntimeError(undefined, {
+                    severity: 'error',
+                    code: 'duplicate-app-root',
+                    message: issue.message,
+                    context: { nodeId: issue.nodeId, appId: issue.appId, root: issue.root, op: 'deploy' }
+                });
+            }
+        }
+        catch (_e2) {
+            // Never let validation crash the deploy.
+        }
+
+        const deployedAt = Date.now();
+        // Defer by one event-loop tick so pending connection-close callbacks
+        // (req.on("close") → removeStreamClient) fire first. This avoids writing
+        // the deploy frame to connections already closed by the browser.
+        setImmediate(function () {
+            let definitions;
+            try {
+                definitions = readDeployDefinitions(RED);
+            }
+            catch (_e) {
+                // If the fresh definitions cannot be read, there is nothing safe to
+                // push — leave connected clients on their current page.
+                return;
+            }
+
+            // One deploy push per app: each app has its own signature, mode, and
+            // its subscribers render at their own location with their own state.
+            const appIds = new Set();
+            for (const def of definitions) {
+                if (def && def.type === "ui-app") {
+                    if (def.root) { appIds.add(def.root); }
+                    if (def.id) { appIds.add(def.id); }
+                }
+            }
+
+            for (const appId of appIds) {
+                try {
+                    pushDeployToClients(appId, definitions, {
+                        connectedBefore: deployedAt - 500,
+                        requireLiveSocket: true
+                    });
+                }
+                catch (_) {
+                    // Never let one app's push failure abort the others.
+                }
+            }
+        });
+    });
 }
 
 function createNodeConstructor(RED, type, mapConfig, options = {}) {
@@ -3563,7 +3854,13 @@ const runtimeNodeRegistry = {
             forwardErrorsToClient: config.forwardErrorsToClient === true || config.forwardErrorsToClient === "true",
             forwardErrorMinSeverity: blankToUndefined(config.forwardErrorMinSeverity),
             // P70: optional media-store base URL for asset:<id> resolution.
-            mediaStoreUrl: blankToUndefined(config.mediaStoreUrl)
+            mediaStoreUrl: blankToUndefined(config.mediaStoreUrl),
+            // P106: deploy mode. The editor stores `deployMode` (config key — NOT
+            // `status`, which is a reserved Node-RED node property). Accept the
+            // Entwicklung / Produktion labels and the normalised development /
+            // production tokens; default to "development" so existing apps keep the
+            // convenient auto-update. `config.status` is honoured as a legacy alias.
+            mode: normalizeAppMode(config.deployMode !== undefined ? config.deployMode : config.status)
         }),
         options: {
             // P59 / ADR 0007 §4: ui-app owns the app-global verbs navigate / reset.
@@ -4493,85 +4790,7 @@ function registerWebappNodes(RED) {
     Object.keys(runtimeNodeRegistry).forEach((type) => {
         registerNodeType(RED, type);
     });
-
-    // P37: broadcast a "redeploy" SSE event to every connected client after a
-    // flow deploy so browsers automatically reload and pick up the new flow state.
-    // Guard: only notify clients that were connected BEFORE this deploy started
-    // (i.e. connectedAt is more than 500 ms in the past). Clients that connected
-    // during or just after the deploy are loading the new flow already; sending
-    // them a redeploy immediately would cause a spurious extra reload.
-    RED.events.on("flows:started", function () {
-        // P66 (ADR 0007): cross-validate navigate actions against the full flow
-        // graph (ambiguous / no-destination / dead-link). These can only be seen
-        // with the whole flow, not in per-node editor validation. Surface each as
-        // a structured runtime error so it is visible in the Node-RED log.
-        try {
-            const navIssues = validateNavigationFlow(RED);
-            for (const issue of navIssues) {
-                reportRuntimeError(undefined, {
-                    severity: "error",
-                    code: "navigate-validation",
-                    message: issue.message,
-                    context: { nodeId: issue.nodeId, op: "deploy" }
-                });
-            }
-        }
-        catch (_e) {
-            // Never let validation crash the deploy.
-        }
-
-        // P108: cross-validate that all ui-app nodes have unique root paths.
-        try {
-            const rootIssues = validateAppRootUniqueness(RED);
-            for (const issue of rootIssues) {
-                reportRuntimeError(undefined, {
-                    severity: 'error',
-                    code: 'duplicate-app-root',
-                    message: issue.message,
-                    context: { nodeId: issue.nodeId, appId: issue.appId, root: issue.root, op: 'deploy' }
-                });
-            }
-        }
-        catch (_e2) {
-            // Never let validation crash the deploy.
-        }
-
-        const deployedAt = Date.now();
-        // Defer by one event-loop tick so pending connection-close callbacks
-        // (req.on("close") → removeStreamClient) fire first. This avoids sending
-        // the redeploy event to connections already closed by the browser.
-        setImmediate(function () {
-            for (const [, subscribers] of runtimeState.streamClients) {
-                for (const [, entry] of subscribers) {
-                    // Only notify clients that were connected well before this
-                    // deploy — clients that connected AFTER the deploy are
-                    // already loading the fresh flow state.
-                    if (entry.connectedAt < deployedAt - 500) {
-                        try {
-                            const res = entry.res;
-                            const socket = res.socket;
-                            // Only write to connections that are definitely still alive:
-                            // the socket must exist, not be destroyed, and not yet
-                            // have sent its half-close (FIN). This prevents EPIPE writes
-                            // to browser connections that closed between the test page
-                            // ending and the TCP FIN propagating to Node.js.
-                            const isLive = !res.writableEnded
-                                && !res.destroyed
-                                && socket
-                                && !socket.destroyed
-                                && !socket.writableEnded
-                                && socket.readable;
-                            if (isLive) {
-                                writeStreamEvent(res, "redeploy", {});
-                            }
-                        } catch (_) {
-                            // Ignore write errors on stale connections.
-                        }
-                    }
-                }
-            }
-        });
-    });
+    registerDeployHook(RED);
 }
 
 registerWebappNodes.__test__ = {
@@ -4618,6 +4837,11 @@ registerWebappNodes.__test__ = {
     getClientState,
     setClientState,
     resolveReconnectState,
+    // P106: live model delivery on deploy — shell signature + deploy push + mode
+    computeShellSignature,
+    pushDeployToClients,
+    resolveAppMode,
+    normalizeAppMode,
     // P31: live Server→Client push transport (SSE)
     addStreamClient,
     removeStreamClient,

@@ -60,9 +60,11 @@ Beispiele: Label ändern / Button auf der aktuellen Seite hinzufügen / Variant
 wechseln → in-place. Navigation umbauen / Theme- oder Layout-Preset wechseln /
 Route entfernen, auf der man steht → Reload.
 
-> **Noch nicht implementiert:** der Snapshot-Push beim Deploy (statt nur
-> `redeploy`-Reload), die Signatur-Berechnung server- und clientseitig, und die
-> Fallback-Logik. Erste Umsetzung siehe Paket P106.
+> **Implementiert (P106).** Der Deploy-Push sendet ein `deploy`-SSE-Frame mit
+> `{ snapshot, signature, mode }`; der Server berechnet die Signatur aus
+> App-Layout-Preset + Theme-Tokens + Routen-Pfad-Menge + Serializer-Version
+> (`computeShellSignature`), der Client vergleicht sie gegen die in die Seite
+> gebackene `data-webapp-signature` und entscheidet In-Place vs. Reload.
 
 ## Verdeckte / inaktive Tabs
 
@@ -78,14 +80,32 @@ die In-Place-vs-Reload-Regel (Signatur) an. Damit ist das Update unabhängig dav
 ob im Hintergrund ein Push verpasst wurde — beim Refokus gilt immer der Server-
 Zustand.
 
-> **Noch nicht implementiert:** im Client gibt es heute **kein**
-> `visibilitychange`-Handling.
+> **Implementiert (P106).** Der Client registriert einen
+> `visibilitychange`-Handler, der beim Sichtbarwerden des Tabs `/snapshot`
+> (jetzt ein echter JSON-Endpoint mit `{ snapshot, signature, mode }`) zieht und
+> dieselbe In-Place-vs-Reload-Regel anwendet — robust gegen verpasste Pushes.
 
 ## Mehr-Client / Mehr-Nutzer
 
 Der Push geht als **Broadcast** an alle Subscriber der App (kein `clientId`).
 Per-Client-State (P15) bleibt dabei erhalten — der Snapshot trägt nur die
 Modell-Struktur, nicht den per-Client-Zustand. Siehe [multi-user.md](multi-user.md).
+
+## Entwicklung vs. Produktion (Deploy-Mode)
+
+Das `ui-app` trägt ein Feld **Status** (config-Key `deployMode` — `status` ist ein
+reservierter Node-RED-Knotenname) mit zwei Werten:
+
+- **Entwicklung** (Default): Verhalten wie oben — In-Place via Snapshot, Reload
+  nur bei Shell-/Topologie-Änderung. Bequem beim Bauen.
+- **Produktion**: beim Deploy wird **nicht** automatisch aktualisiert oder neu
+  geladen. Der Client zeigt stattdessen einen **Versions-Alert** („Die Anwendung
+  hat eine neue Version. Speichern Sie alle Daten und laden Sie diese Website
+  neu."). Erst der **manuelle Reload** des Users übernimmt das neue Modell — so
+  geht kein laufender Nutzer-Zustand ungefragt verloren.
+
+Das `mode`-Feld reist im `deploy`-Frame mit; der Client liest es (bzw. die in die
+Seite gebackene `data-webapp-mode`) und wählt den Produktions-Zweig.
 
 ## Siehe auch
 
