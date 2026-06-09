@@ -27,8 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-### nodes/ui-alert
-- **P100** — pending — Duration/Countdown im Frontend, Icon-Custom-Option, Editor-Reihenfolge + Validierung — deps: [P90, P91] ✅ ready — [P100](nodes/ui-alert/P100-duration-countdown-icon-editor.md)
 
 ### nodes/ui-badge
 - **P103** — pending — size-Feld komplett entfernen (Schema, mapConfig, Serializer, Editor, Fixtures, Tests, Docs) — deps: [P92] ✅ ready — [P103](nodes/ui-badge/P103-remove-size-field.md)
@@ -62,7 +60,7 @@ open the folder for the full history.
 |---|---|
 | nodes/ui-action | 4 |
 | nodes/ui-app | 4 |
-| nodes/ui-alert | 3 |
+| nodes/ui-alert | 4 |
 | nodes/ui-avatar | 2 |
 | nodes/ui-log | 2 |
 | nodes/ui-query | 2 |
@@ -76,4 +74,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 108 done, 6 open, 4 deferred.**
+**Total: 109 done, 5 open, 4 deferred.**

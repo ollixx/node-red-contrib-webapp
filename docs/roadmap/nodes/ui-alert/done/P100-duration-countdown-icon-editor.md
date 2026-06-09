@@ -2,7 +2,7 @@
 id: P100
 title: "ui-alert: Duration/Countdown im Frontend, Icon-Custom-Option, Editor-Reihenfolge + Validierung"
 epic: nodes/ui-alert
-status: in_progress
+status: done
 dependencies: [P90, P91]
 node: ui-alert
 verify: browser
@@ -32,3 +32,14 @@ tests: tests/e2e/nodes/view/ui-alert.tests.md
 
 ## Notes
 - Backend-neutral halten: Shoelace nativ (`sl-alert` countdown/duration), Backends ohne native Unterstützung über dokumentierten Fallback (vgl. P91).
+
+## Result
+
+delivered:
+- webapp-client.js: split sl-after-hide handler into dialog (P64) and alert (P100) branches; autoDismissed map prevents duration-expired alerts from reopening on snapshot morph
+- ui-alert.html: countdown cross-field validator (countdown=true requires duration >= 1); icon select simplified to none/auto/custom with custom sentinel revealing icon-name input + icon picker button; Title moved above Message with hr separator after Message
+- tests/e2e/nodes/view/ui-alert.spec.ts: full P100 suite (19 tests) covering duration auto-hide, countdown attr, editor validation, field order, separator, and icon Custom option
+
+stats: 781 unit tests passed; build+lint+validate clean; 3 files changed
+notes: E2E (verify:browser) to be run by orchestrator on develop after merge
+cost: session aedcb56862d2f6d51, 4m
