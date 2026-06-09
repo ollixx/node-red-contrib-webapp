@@ -61,12 +61,15 @@ for (const file of mdFiles) {
     }
 }
 
-// --- Tier 2: code -> doc path references ------------------------------------
+// --- Tier 2: code/command -> doc path references ----------------------------
+// Source comments AND .claude/commands launchers reference docs/prompts by path;
+// a rename/removal must not orphan them (e.g. a command pointing at a deleted prompt).
 const codeRoots = ["nodes", "packages", "resources", "scripts", "tests"];
 const codeFiles = [];
 for (const r of codeRoots) {
     walk(path.join(ROOT, r), (p) => /\.(js|ts|json)$/.test(p), codeFiles);
 }
+walk(path.join(ROOT, ".claude", "commands"), (p) => p.endsWith(".md"), codeFiles);
 // concrete repo-doc paths only (no globs/templates): docs/...md or .ai/...md
 const docRefRe = /(?:docs|\.ai)\/[A-Za-z0-9/_.-]+\.md/g;
 const seen = new Set();
