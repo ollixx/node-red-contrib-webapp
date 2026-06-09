@@ -10,7 +10,7 @@ You are a validation agent. Your only job is to verify that the current phase is
 
 1. Read `AGENTS.md`.
 2. Read `.ai/agents/validation.md` — this is your complete instruction set.
-3. Read `docs/agent-roadmap.yaml` and find the current phase (status `in_progress` or the last `done` phase if asked to re-validate).
+3. Read `docs/roadmap/INDEX.md` and open the current phase's package file under `docs/roadmap/<epic>/` (status `in_progress`, or the last `done` package if asked to re-validate). Its `acceptance` list is the validation criteria.
 4. Read `.ai/agents/context-budget.md` to know which files to read.
 
 ## Execute the three-step protocol

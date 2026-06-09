@@ -5,7 +5,7 @@ Token cost is real. Do not read files speculatively.
 
 ## General rules
 
-1. Read `AGENTS.md` and the **current phase entry only** from `docs/agent-roadmap.yaml` — not the whole file.
+1. Read `AGENTS.md` and `docs/roadmap/INDEX.md` (slim, open work only), then **only the one package file** for your phase under `docs/roadmap/<epic>/`. Do not read other packages or the whole tree.
 2. For each deliverable, identify the minimum file set: the relevant `docs/nodes/<category>/<node>.md` (categories: concepts, structure, input, display, feedback, navigation, state, behavior), the corresponding editor HTML, schema type, and runtime handler. Read those. Do not read unrelated nodes.
 3. When writing tests, read one existing test file in the target package first to match conventions. Do not read all test files.
 4. Do not re-read a file you already read in this session unless you need a specific line.

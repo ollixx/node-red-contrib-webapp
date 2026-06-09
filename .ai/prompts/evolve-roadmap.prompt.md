@@ -13,7 +13,7 @@ Use this role when:
 ## Setup — read only this
 
 1. `AGENTS.md`
-2. `docs/agent-roadmap.yaml` — current phases, format, dependency style, `current_phase`.
+2. `docs/roadmap/INDEX.md` — current open work + epic structure; and `.ai/agents/roadmap-phase-schema.md` — the package format you must produce.
 3. `docs/adr/` — read the latest ADR for format and to know what is already decided/superseded.
 
 Do not read source files. You are planning, not implementing.
@@ -24,16 +24,16 @@ Add `docs/adr/NNNN-<slug>.md` (next number in sequence) following the existing A
 
 ## Step 2 — Derive phases
 
-Break the decision into phases that match the existing roadmap's grain — each phase independently shippable, test-validatable, and small enough for one fresh sub-agent. For each phase write `goals`, `deliverables`, and a concrete `validation` list (unit / Playwright / docs-check criteria phrased as assertions, exactly like existing phases). Chain them with `dependencies`. Sequence so that foundational/contract work (e.g. consolidating a seam) precedes work that builds on it.
+Break the decision into **packages** that match the existing grain — each independently shippable, test-validatable, and small enough for one fresh sub-agent, scoped to one node or aspect. Write each as a package file per `.ai/agents/roadmap-phase-schema.md`: `findings` (the decision/requirement in concrete terms), `acceptance` (observable criteria), `verify`, `spec`, `tests`. Meet the detail bar (AGENTS.md rule 11) — buildable without interpretation. Chain with `dependencies`. Sequence so that foundational/contract work precedes work that builds on it.
 
-Park genuinely-deferred work as a comment block at the end rather than as `pending` phases, so the active list only holds what is actually next.
+Park genuinely-deferred work as packages with `status: deferred` + a `deferred_reason` (not `pending`), so INDEX "Open work" only holds what is actually next.
 
 ## Step 3 — Wire it in
 
-- Append the new phases to `docs/agent-roadmap.yaml`.
-- Update `current_phase` to the first new phase if it is now the next ready one.
-- Reference the ADR from the phases (a comment header pointing at the ADR file) so an implementing agent knows the rationale.
-- Validate the YAML parses before finishing.
+- Create the new package files under `docs/roadmap/<epic>/` (the right `nodes/ui-*` or `aspects/*` folder; add an `epic.md` if the epic is new).
+- Add each new `pending` package to `docs/roadmap/INDEX.md` under "Open work".
+- Reference the ADR from each package (e.g. a line under the title) so an implementing agent knows the rationale.
+- Run `pnpm check:roadmap` before finishing — it must pass.
 
 ## Step 4 — Commit and hand off
 

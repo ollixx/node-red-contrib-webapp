@@ -97,7 +97,7 @@ Nodes are grouped under `nodes/` by **four** runtime categories:
 This repo uses a phased roadmap. Before any implementation work, read:
 
 1. `AGENTS.md` — entry point, roles, non-negotiable rules
-2. `docs/agent-roadmap.yaml` — current phase (first entry with `status: pending`)
+2. `docs/roadmap/INDEX.md` — current phase (first `pending` package under "Open work" whose deps are done); then the package file under `docs/roadmap/<epic>/`
 3. `.ai/agents/architecture.md` — stop conditions and package invariants
 4. `.ai/agents/validation.md` — three-step self-validation protocol (tests → validation criteria → spec cross-check)
 5. `.ai/agents/context-budget.md` — minimum file set per role; do not read speculatively

@@ -16,7 +16,7 @@ Your job is to find where the OS has drifted from reality and propose the smalle
 4. `.ai/instructions/*.md`
 5. `.ai/friction-log.md` — the recorded friction since the last review. This is your richest signal; weight it heavily.
 6. `docs/adr/` — the latest ADRs, so you know what is decided and what supersedes what.
-7. `docs/agent-roadmap.yaml` — current state and `current_phase`.
+7. `docs/roadmap/INDEX.md` — current open work; `.ai/agents/roadmap-phase-schema.md` — the package contract.
 
 ## Method — verify, do not trust
 

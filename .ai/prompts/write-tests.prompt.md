@@ -9,7 +9,7 @@ You are a test-writing agent. You write tests. You do not change implementation 
 ## Setup
 
 1. Read `AGENTS.md`.
-2. Read `docs/agent-roadmap.yaml` — find the current phase.
+2. Read `docs/roadmap/INDEX.md` — find the current phase, then open its package file under `docs/roadmap/<epic>/` (the `acceptance` list drives the tests).
 3. Read `.ai/agents/context-budget.md` — load only the test files for the relevant package.
 
 ## Instructions

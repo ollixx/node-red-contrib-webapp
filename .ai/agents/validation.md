@@ -22,7 +22,7 @@ real, fix it. The only acceptable exit state is zero failures.
 
 ## Step 2: Write and verify tests for every validation criterion
 
-Open `docs/agent-roadmap.yaml` and find the `validation` list for the current phase. For each criterion, **write the test first if it does not exist**, then verify it passes:
+Open the phase's package file under `docs/roadmap/<epic>/` and use its **`acceptance`** list (and `verify:` mode) as the validation criteria. For each criterion, **write the test first if it does not exist**, then verify it passes. For `verify: browser`, the criterion must additionally be proven in the running app (preview/Playwright), not just by a unit test:
 
 - **unit test**: write the test in the appropriate `test/` directory, then run it. The test must assert the exact behavior described — not a weaker proxy.
 - **Playwright**: write an E2E test in `tests/e2e/` that exercises the described scenario end to end in a real browser against a running Node-RED instance, then run it.
@@ -43,4 +43,4 @@ If the doc is ahead of the implementation (speculative feature not in this phase
 
 ## Only after all three steps pass
 
-Update `docs/agent-roadmap.yaml` status to `done`. Then commit.
+Append the `## Result` section to the package file, flip its frontmatter `status: done`, update `docs/roadmap/INDEX.md` (remove from "Open work", bump the epic's done rollup), and run `pnpm check:roadmap`. Then commit. (Orchestrated: report the result back; the orchestrator does these roadmap writes.)
