@@ -2,6 +2,74 @@
 <script type="text/javascript">
     (function () {
         const common = window.WebappEditorCommon;
+
+        // P98: `label` is a full typedInput binding (all meaningful binding kinds).
+        function applyLabelTypedInput(selector, binding) {
+            const input = $(selector);
+            const types = common.bindingTypedInputTypes({ literalLabel: "Text" });
+            input.typedInput({ default: "literal", types: types });
+            const editor = common.bindingValueForEditor(binding, "");
+            input.typedInput("type", editor.type);
+            input.typedInput("value", editor.value);
+        }
+
+        function readLabelBinding(selector) {
+            const input = $(selector);
+            const type = input.typedInput("type");
+            const value = input.typedInput("value");
+            if (type === "literal") {
+                return { kind: "literal", value: value };
+            }
+            return { kind: type, path: value };
+        }
+
+        // P98: `value` is a full typedInput binding (all meaningful binding kinds).
+        // The persisted `value` field holds the binding object; legacy `valuePath`
+        // (plain state path) is migrated to a state binding on first open.
+        function applyValueTypedInput(selector, binding) {
+            const input = $(selector);
+            const types = common.bindingTypedInputTypes({ literalLabel: "Date (ISO-8601)" });
+            input.typedInput({ default: "literal", types: types });
+            const editor = common.bindingValueForEditor(binding, "");
+            input.typedInput("type", editor.type);
+            input.typedInput("value", editor.value);
+        }
+
+        function readValueBinding(selector) {
+            const input = $(selector);
+            const type = input.typedInput("type");
+            const value = input.typedInput("value");
+            if (type === "literal") {
+                return { kind: "literal", value: value };
+            }
+            return { kind: type, path: value };
+        }
+
+        // `disabled` typedInput (all meaningful binding kinds).
+        function applyDisabledTypedInput(selector, binding) {
+            const input = $(selector);
+            const types = common.bindingTypedInputTypes({ literalLabel: "Boolean" });
+            input.typedInput({ default: "literal", types: types });
+            if (binding && typeof binding === "object" && typeof binding.kind === "string") {
+                const editor = common.bindingValueForEditor(binding, "false");
+                input.typedInput("type", editor.type);
+                input.typedInput("value", editor.value);
+            } else {
+                input.typedInput("type", "literal");
+                input.typedInput("value", "false");
+            }
+        }
+
+        function readDisabledBinding(selector) {
+            const input = $(selector);
+            const type = input.typedInput("type");
+            const value = input.typedInput("value");
+            if (type === "literal") {
+                return { kind: "literal", value: value === "true" || value === true };
+            }
+            return { kind: type, path: value };
+        }
+
         common.registerNodeType("ui-datepicker", {
             category: "webapp view",
             color: "#f4efcf",
@@ -9,9 +77,17 @@
                 name: { value: "" },
                 parent: { value: "" },
                 mount: { value: "", required: true },
-                label: { value: "", required: true },
-                valuePath: { value: "", required: true },
+                // P98: `label` persists the binding OBJECT; DOM-less widget lives on `labelBinding`.
+                label: { value: { kind: "literal", value: "" } },
+                labelBinding: { value: "" },
+                // P98: `value` persists the binding OBJECT; DOM-less widget on `valueBinding`.
+                // Legacy `valuePath` (pre-P98 plain state path) is migrated on first open.
                 value: { value: null },
+                valueBinding: { value: "" },
+                valuePath: { value: "" },
+                // P98: `disabled` persists the binding OBJECT; DOM-less widget on `disabledBinding`.
+                disabled: { value: null },
+                disabledBinding: { value: "" },
                 mode: { value: "date" },
                 min: { value: "" },
                 max: { value: "" },
@@ -37,6 +113,43 @@
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
                 common.installLayoutChildPropRows().call(this);
+
+                // P98: Label typedInput — restore persisted binding; back-compat: plain string label.
+                let labelBinding;
+                if (this.label && typeof this.label === "object" && typeof this.label.kind === "string") {
+                    labelBinding = common.parseBindingValue(this.label);
+                } else if (typeof this.label === "string" && this.label.trim().length > 0) {
+                    labelBinding = { kind: "literal", value: this.label };
+                } else {
+                    labelBinding = undefined;
+                }
+                applyLabelTypedInput("#node-input-labelBinding", labelBinding);
+
+                // P98: Value typedInput — restore persisted binding; back-compat: legacy valuePath.
+                let valueBinding;
+                if (this.value && typeof this.value === "object" && typeof this.value.kind === "string") {
+                    valueBinding = common.parseBindingValue(this.value);
+                } else if (this.valuePath && typeof this.valuePath === "string" && this.valuePath.trim().length > 0) {
+                    valueBinding = { kind: "state", path: this.valuePath };
+                } else {
+                    valueBinding = undefined;
+                }
+                applyValueTypedInput("#node-input-valueBinding", valueBinding);
+
+                // P98: Disabled typedInput — restore persisted binding.
+                let disabledBinding;
+                if (this.disabled && typeof this.disabled === "object" && typeof this.disabled.kind === "string") {
+                    disabledBinding = common.parseBindingValue(this.disabled);
+                } else {
+                    disabledBinding = undefined;
+                }
+                applyDisabledTypedInput("#node-input-disabledBinding", disabledBinding);
+            },
+            oneditsave: function () {
+                this.label = readLabelBinding("#node-input-labelBinding");
+                this.value = readValueBinding("#node-input-valueBinding");
+                this.valuePath = "";
+                this.disabled = readDisabledBinding("#node-input-disabledBinding");
             }
         });
     })();
@@ -45,8 +158,9 @@
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
-    <div class="form-row"><label for="node-input-label">Label</label><input type="text" id="node-input-label"></div>
-    <div class="form-row"><label for="node-input-valuePath">Value Path</label><input type="text" id="node-input-valuePath"></div>
+    <div class="form-row"><label for="node-input-labelBinding">Label</label><input type="text" id="node-input-labelBinding"></div>
+    <div class="form-row"><label for="node-input-valueBinding">Value Path</label><input type="text" id="node-input-valueBinding"></div>
+    <div class="form-row"><label for="node-input-disabledBinding">Disabled</label><input type="text" id="node-input-disabledBinding"></div>
     <div class="form-row">
         <label for="node-input-mode">Mode</label>
         <select id="node-input-mode">
@@ -59,5 +173,17 @@
     <div class="form-row"><label for="node-input-max">Max</label><input type="text" id="node-input-max" placeholder="YYYY-MM-DD"></div>
     <div class="form-row"><label for="node-input-placeholder">Placeholder</label><input type="text" id="node-input-placeholder"></div>
 </script>
-<script type="text/html"
-    data-help-name="ui-datepicker"><p>Datums- und Uhrzeiteingabe mit konfigurierbarem Modus (date, datetime, time).</p></script>
+<script type="text/html" data-help-name="ui-datepicker">
+<p>Datums- und Uhrzeiteingabe mit konfigurierbarem Modus (date, datetime, time). Rendert ein <code>sl-input</code>-Element (type="date", "datetime-local" oder "time").</p>
+<h3>Label</h3>
+<p>Beschriftung des Datepickers — bindbar: <b>Text</b> (literal), state, query, routeParam, msg, flow, global, jsonata, env, Store.</p>
+<h3>Value Path</h3>
+<p>Bindbare Quelle des Datumswerts als ISO-8601-String — alle Binding-Arten werden unterstützt.</p>
+<h3>Disabled</h3>
+<p>Bindbare Bedingung zum Deaktivieren des Datepickers (sperrt Nutzerinteraktion).</p>
+<h3>Mode</h3>
+<p>Eingabe-Modus: <b>Date</b> = nur Datum (YYYY-MM-DD), <b>Date &amp; Time</b> = Datum und Uhrzeit (YYYY-MM-DDTHH:mm), <b>Time</b> = nur Uhrzeit (HH:mm).</p>
+<h3>Events</h3>
+<p>Bei Nutzerinteraktion sendet der Knoten <code>{ event: "change", params: { value: string } }</code> auf dem Output-Port (ISO-8601-String je nach Modus).</p>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/input/ui-datepicker.md">Ausführliche Dokumentation</a></p>
+</script>

@@ -430,7 +430,8 @@ export type UiTextareaNodeDefinition = z.infer<typeof uiTextareaNodeDefinitionSc
 
 export const uiDatepickerNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-datepicker"),
-    label: z.string().min(1, "Datepicker labels must not be empty."),
+    // P98: label is now a full binding (literal string or dynamic binding).
+    label: z.union([bindingSchema, z.string().min(1, "Datepicker labels must not be empty.")]),
     value: bindingSchema,
     mode: z.enum(["date", "datetime", "time"]).optional(),
     min: z.string().optional(),
