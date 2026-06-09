@@ -2,7 +2,7 @@
 id: P100
 title: "ui-alert: Duration/Countdown im Frontend, Icon-Custom-Option, Editor-Reihenfolge + Validierung"
 epic: nodes/ui-alert
-status: pending
+status: in_progress
 dependencies: [P90, P91]
 node: ui-alert
 verify: browser

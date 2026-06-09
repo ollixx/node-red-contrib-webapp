@@ -2,7 +2,7 @@
 id: P109
 title: "ui-app: name + root ins Schema, title raus; Render-Semantik (HTML-title = name; Header-Slot leer → name als Titel, sonst nur Slot)"
 epic: nodes/ui-app
-status: pending
+status: in_progress
 dependencies: [P1, P3]
 node: ui-app
 verify: browser

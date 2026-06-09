@@ -2,7 +2,7 @@
 id: P103
 title: "ui-badge: size-Feld komplett entfernen (Schema, mapConfig, Serializer, Editor, Fixtures, Tests, Docs)"
 epic: nodes/ui-badge
-status: pending
+status: in_progress
 dependencies: [P92]
 node: ui-badge
 verify: browser

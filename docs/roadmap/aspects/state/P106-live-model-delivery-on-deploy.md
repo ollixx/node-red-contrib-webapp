@@ -2,7 +2,7 @@
 id: P106
 title: "Live-Modell-Auslieferung beim Deploy: In-Place-Update via SSE-Snapshot-Push, Reload nur als Shell-/Topologie-Fallback (+ Bugfix: Deploy liefert aktuell gar nichts an verbundene Clients)"
 epic: aspects/state
-status: pending
+status: in_progress
 dependencies: [P15, P31, P37]
 verify: browser
 spec: docs/nodes/concepts/live-deploy-update.md

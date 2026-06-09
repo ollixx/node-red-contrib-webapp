@@ -2,7 +2,7 @@
 id: P110
 title: "ui-store: scope-Guard (Any / Broadcast Only / Client Only) — verhindert versehentliches Überbügeln per falscher Message"
 epic: nodes/ui-store
-status: pending
+status: in_progress
 dependencies: [P15, P80]
 node: ui-store
 verify: browser
