@@ -2,7 +2,7 @@
 id: P108
 title: "ui-app: root-Eindeutigkeit beim Deploy validieren (heute nur id-Eindeutigkeit, nicht root)"
 epic: nodes/ui-app
-status: pending
+status: in_progress
 dependencies: [P109]
 node: ui-app
 verify: browser
