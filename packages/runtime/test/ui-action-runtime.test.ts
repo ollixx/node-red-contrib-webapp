@@ -64,7 +64,8 @@ describe("renderAppPage: layout rendering", () => {
             {
                 type: "ui-app",
                 id: "ordersApp",
-                title: "Orders",
+                name: "Orders",
+                root: "ordersApp",
                 layout: "app"
             },
             {
@@ -100,7 +101,8 @@ describe("renderAppPage: layout rendering", () => {
             {
                 type: "ui-app",
                 id: "layoutApp",
-                title: "Layout demo",
+                name: "Layout demo",
+                root: "layoutApp",
                 layout: "vertical"
             },
             {

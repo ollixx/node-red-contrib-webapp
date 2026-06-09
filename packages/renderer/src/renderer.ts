@@ -113,7 +113,8 @@ export interface RouteMatch {
 
 export interface RenderSnapshot {
     appId: string;
-    title: string;
+    // P109: renamed from `title` to `name` to match AppModel.name.
+    name: string;
     location: string;
     route: RouteDefinition;
     params: Record<string, string>;
@@ -732,7 +733,7 @@ export function createRendererApp(appModel: AppModel, options: RendererAppOption
 
         return {
             appId: appModel.id,
-            title: appModel.title,
+            name: appModel.name,
             location,
             route: routeMatch.route,
             params: routeMatch.params,

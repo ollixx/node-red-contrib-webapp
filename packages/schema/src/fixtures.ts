@@ -3,7 +3,7 @@ import type { UiNodeDefinition } from "./node-definitions";
 
 export const customersCrudAppModelFixture: AppModel = {
     id: "customersApp",
-    title: "Customers CRM",
+    name: "Customers CRM",
     layouts: [
         {
             id: "app",
@@ -326,7 +326,7 @@ export const customersCrudAppModelFixture: AppModel = {
 
 export const operationsConsoleAppModelFixture: AppModel = {
     id: "operationsConsole",
-    title: "Operations Console",
+    name: "Operations Console",
     layouts: [
         {
             id: "consoleShell",
@@ -494,7 +494,8 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
     {
         type: "ui-app",
         id: "customersApp",
-        title: "Customers CRM",
+        name: "Customers CRM",
+        root: "customersApp",
         layout: "app"
     },
     {

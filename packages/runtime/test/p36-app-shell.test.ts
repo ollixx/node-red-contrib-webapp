@@ -34,7 +34,7 @@ function build(rawNodes: Record<string, unknown>[]) {
 // ── Base definitions with all four app-layout slots populated ─────────────────
 
 const fullShellDefs = build([
-    { type: "ui-app", id: "shellApp", name: "My App", title: "My App", root: "shellApp", layout: "app", z: "f1" },
+    { type: "ui-app", id: "shellApp", name: "My App", root: "shellApp", layout: "app", z: "f1" },
     { type: "ui-text", id: "hdrText", mount: "shellApp.header", text: "Header content", value: { kind: "literal", value: "Header content" }, z: "f1" },
     { type: "ui-text", id: "navText", mount: "shellApp.navbar", text: "Nav content", value: { kind: "literal", value: "Nav content" }, z: "f1" },
     { type: "ui-text", id: "mainText", mount: "shellApp.content", text: "Main content", value: { kind: "literal", value: "Main content" }, z: "f1" },

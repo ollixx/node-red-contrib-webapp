@@ -438,7 +438,8 @@ export function assembleNodeSet(input: unknown[]): Result<AssembledNodeSet> {
             registrationId: makeRegistrationId(appNode.type, appId, appNode.id),
             definition: {
                 id: appNode.id,
-                title: appNode.title
+                // P109: AppModel uses `name` (was `title`).
+                name: appNode.name ?? appNode.id
             }
         } satisfies AppContribution
     ];
@@ -516,7 +517,8 @@ export function assembleNodeSet(input: unknown[]): Result<AssembledNodeSet> {
             {
                 id: appId,
                 path: "/",
-                title: appNode.title,
+                // P109: use appNode.name (was appNode.title).
+                title: appNode.name ?? undefined,
                 layout: appNode.layout as StandardLayoutPresetId
             }
         );

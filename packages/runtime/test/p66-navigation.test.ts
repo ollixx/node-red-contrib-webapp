@@ -132,7 +132,7 @@ describe("P66: resolveNavigateLocation", () => {
 describe("P66 Scenario 1: ui-route navigate handler (own path + params + onEnter)", () => {
     it("a navigate wired to a ui-route builds the location from the route path and pushes navigate", () => {
         const res = makeFakeRes();
-        registerDef(APP_ID, { type: "ui-app", id: APP_ID, title: "Nav", layout: "vertical" });
+        registerDef(APP_ID, { type: "ui-app", id: APP_ID, name: "Nav", root: APP_ID, layout: "vertical" });
         const routeNode: any = { id: "routeNode", send: vi.fn(), webappDefinition: { type: "ui-route", id: "customerDetail", path: "/customers/:id", layout: "vertical", events: ["onEnter"] } };
         registerDef("routeNode", routeNode.webappDefinition, routeNode);
         t.runtimeState.RED = { nodes: { getNode: (id: string) => (id === "routeNode" ? routeNode : undefined) } };
@@ -163,7 +163,7 @@ describe("P66 Scenario 1: ui-route navigate handler (own path + params + onEnter
 describe("P66 Scenario 2: ui-app app-global navigate with a `to` template", () => {
     it("ui-app receiving navigate with `to` resolves the location and pushes navigate + onEnter on the target route", () => {
         const res = makeFakeRes();
-        const appNode: any = { id: "appNode", send: vi.fn(), webappDefinition: { type: "ui-app", id: APP_ID, title: "Nav", layout: "vertical" } };
+        const appNode: any = { id: "appNode", send: vi.fn(), webappDefinition: { type: "ui-app", id: APP_ID, name: "Nav", root: APP_ID, layout: "vertical" } };
         registerDef(APP_ID, appNode.webappDefinition, appNode);
         const routeNode: any = { id: "routeNode", send: vi.fn(), webappDefinition: { type: "ui-route", id: "orders", path: "/orders/:oid", layout: "vertical", events: ["onEnter"] } };
         registerDef("routeNode", routeNode.webappDefinition, routeNode);

@@ -618,7 +618,9 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
     }, (config: UiAppEditorConfig): UiAppNodeDefinition => ({
         type: "ui-app",
         id: config.root ?? "",
-        title: config.name ?? config.root ?? "",
+        // P109: `name` replaces `title` in the schema.
+        name: config.name ?? undefined,
+        root: config.root ?? undefined,
         layout: config.layout ?? "vertical"
     })),
     "ui-route": createDefinition("ui-route", "structure", {

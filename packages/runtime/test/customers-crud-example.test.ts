@@ -122,6 +122,7 @@ describe("customers CRUD example flow", () => {
         }
 
         expect(response.body.diagnostics).toEqual([]);
-        expect(response.body.model?.title).toBe("Customers CRM");
+        // P109: `name` replaces `title` in AppModel.
+        expect(response.body.model?.name).toBe("Customers CRM");
     });
 });

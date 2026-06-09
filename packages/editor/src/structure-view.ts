@@ -509,7 +509,8 @@ export function buildEditorStructureView(
     const root = registerItem(structureIndex, {
         id: `app:${snapshot.model.id}`,
         kind: "app",
-        label: snapshot.model.title,
+        // P109: `name` replaces `title` in AppModel.
+        label: snapshot.model.name,
         canvasNodeId: lookup.app?.id ?? snapshot.model.id,
         children: [...routeItems, ...globalDialogItems]
     });

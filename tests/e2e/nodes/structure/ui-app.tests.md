@@ -2,7 +2,7 @@
 
 Location: `tests/e2e/nodes/structure/ui-app.spec.ts`
 
-Written fresh for P87 per `.ai/agents/node-testing.md`. Reviewed for P88 — no new tests needed (P88 is a pure editor HTML layout polish: no new fields, no new runtime behaviour).
+Written fresh for P87 per `.ai/agents/node-testing.md`. Reviewed for P88 — no new tests needed (P88 is a pure editor HTML layout polish: no new fields, no new runtime behaviour). Extended for P109 (name/root/title rework: schema changes + header-slot render semantics).
 
 ## Tests
 
@@ -16,3 +16,6 @@ Written fresh for P87 per `.ai/agents/node-testing.md`. Reviewed for P88 — no 
 | app-bar persists on routes with non-'app' layoutId | App-bar is driven by `ui-app.layout`, not the active route's `layoutId` — navigating to a `vertical` sub-route must still show the `app` app-bar. |
 | P87: clientId is persisted in localStorage — reload reuses the same id | After first load, `localStorage["webapp:clientId:<appId>"]` is set with a `client-` prefixed value. After reload, the stored value is unchanged (same clientId reused). |
 | P87: clientId key is scoped per appId — two apps get distinct keys | Two apps on the same origin store their clientIds under different keys and get different values; visiting one app does not change the other's key. |
+| P109: HTML `<title>` element shows the app's name | The browser-tab `<title>` contains the app's `name` field value. |
+| P109: header-slot empty → name shown as title in app-bar | When no children are in the header slot, `.webapp-app-bar-title` shows the app's `name`. |
+| P109: header-slot has children → no name title in app-bar | When ≥1 child is mounted in the header slot, `.webapp-app-bar-title` is absent and only the slot content is rendered. |
