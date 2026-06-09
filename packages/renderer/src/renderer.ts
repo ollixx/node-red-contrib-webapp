@@ -234,6 +234,36 @@ function resolveBinding(binding: BindingDefinition | undefined, sources: Binding
     return resolvedValue === undefined ? binding.fallback : resolvedValue;
 }
 
+/**
+ * P104 — the single, central normalization of a bound display value.
+ *
+ * Every node that binds a *display* value (ui-text `value`, ui-badge `value`,
+ * the resolved value of ui-avatar's initials fallback chain, …) routes its raw
+ * resolved value through here exactly once, so the empty/null/non-scalar
+ * behaviour lives in one place instead of being re-derived per node.
+ *
+ * Contract (see docs/nodes/concepts/value-rendering.md §1):
+ * - non-empty string → unchanged
+ * - number / boolean / bigint → `String(value)` (so 0 → "0", false → "false";
+ *   0 and false are VALID values, never treated as empty)
+ * - "" (a real empty string) → "" (rendered, but no content)
+ * - null / undefined / object / array / function / symbol → "?" (a visible
+ *   "cannot be displayed" signal — never `[object Object]`, a JSON dump, or a crash)
+ */
+export function normalizeDisplayValue(raw: unknown): string {
+    switch (typeof raw) {
+        case "string":
+            return raw;
+        case "number":
+        case "boolean":
+        case "bigint":
+            return String(raw);
+        default:
+            // null, undefined, object, array, function, symbol → not displayable.
+            return "?";
+    }
+}
+
 function matchesCondition(binding: BindingDefinition | undefined, sources: BindingSources, defaultValue: boolean): boolean {
     const resolvedValue = resolveBinding(binding, sources);
 
@@ -445,7 +475,10 @@ function toRenderedComponent(component: ComponentDefinition, context: ComponentR
             return {
                 ...baseComponent,
                 kind: "text",
-                text: String(resolvedProps.value ?? resolvedProps.text ?? "")
+                // P104: the display value runs through the one central normalization.
+                // `value` is the bound display value; `text` is the static fallback
+                // when no value is bound (value undefined). null/non-scalar → "?".
+                text: normalizeDisplayValue(resolvedProps.value ?? resolvedProps.text)
             };
         case "button":
             return {
@@ -495,6 +528,27 @@ function toRenderedComponent(component: ComponentDefinition, context: ComponentR
                 kind: "input",
                 value: resolvedProps.value
             };
+        // P104: ui-badge binds a pure display value — always route it through the
+        // one central normalization (0 → "0", "" → empty, null/undefined/object/
+        // array → "?"). Split out of the generic fall-through below because the
+        // other generic kinds carry structural values (image/avatar src URLs, the
+        // pagination page object, breadcrumb/tabs/menu item arrays) that must NOT
+        // be coerced to "?".
+        case "badge":
+            return {
+                ...baseComponent,
+                kind: "badge",
+                value: normalizeDisplayValue(resolvedProps.value)
+            } as RenderedGenericComponent;
+        // P104: ui-alert's message is also a display value. It is normalized when
+        // actually bound; an unbound message (resolvedProps.value === undefined) is
+        // left undefined so the serializer applies its static props.message fallback.
+        case "alert":
+            return {
+                ...baseComponent,
+                kind: "alert",
+                value: resolvedProps.value === undefined ? undefined : normalizeDisplayValue(resolvedProps.value)
+            } as RenderedGenericComponent;
         // P25: P16x interactive kinds — rendered generically with value + all props.
         case "select":
         case "checkbox":
@@ -503,8 +557,6 @@ function toRenderedComponent(component: ComponentDefinition, context: ComponentR
         case "textarea":
         case "datepicker":
         case "slider":
-        case "alert":
-        case "badge":
         case "progress":
         case "breadcrumb":
         case "tabs":

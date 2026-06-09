@@ -1,8 +1,8 @@
 # Wert-Rendering: leere, null/undefined und nicht-skalare Werte
 
-> **Anforderungs-Dokument.** Beschreibt den *gewünschten* Vertrag, nicht den
-> aktuellen Implementierungsstand. Teile sind noch **nicht implementiert** und
-> unten markiert.
+> **Anforderungs-Dokument.** §1 (zentrale Normalisierung) ist seit P104
+> implementiert; §2a (elegantere Signalisierung) ist noch **deferred** (P105).
+> Der Implementierungsstand ist unten zusammengefasst.
 
 Dieses Konzept gilt für **alle** Knoten mit einem gebundenen Anzeige-Wert
 (`ui-badge` `value`, `ui-text` `value`, `ui-avatar` `initials`, …). Es legt
@@ -82,7 +82,16 @@ Beispiel: „Leer-/Non-Skalar-Verhalten: siehe
 - [inputs.md](inputs.md) — `msg.payload` Push-Updates auf den Wert
 - [backend-support.md](backend-support.md) — orthogonal: native Backend-Fähigkeiten
 
+## Implementierungsstand
+
+- **§1 zentrale Normalisierung — implementiert (P104).** Die eine kanonische Funktion
+  ist `normalizeDisplayValue` in `packages/renderer/src/renderer.ts`; sie wird auf den
+  aufgelösten Anzeige-Wert von `ui-text`, `ui-badge` und `ui-alert` (Message) angewandt.
+  `ui-avatar`-Initialen durchlaufen erst die serializer-seitige Fallback-Kette, der
+  Ergebniswert dann dieselbe Regel.
+- **§2a elegantere Signalisierung** (Achtung-Icon + Alert/Dialog statt nacktem `"?"`) —
+  **deferred**, eigenes Paket (P105).
+
 ## Offene Punkte
 
-- Ort/Form der zentralen Normalisierung im Code (Renderer-Binding-Auflösung).
-- Elegantere Signalisierung des „kann nicht dargestellt werden"-Falls (§2a) — deferred, eigenes Paket.
+- Elegantere Signalisierung des „kann nicht dargestellt werden"-Falls (§2a) — deferred, eigenes Paket (P105).

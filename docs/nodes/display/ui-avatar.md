@@ -37,7 +37,7 @@ typedInput, Mount-Baum, Layout-Child-Props).
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
 | `src` | „Image" | typedInput (URL / Asset / Store / alle Binding-Arten) | optional | Bindbare Quelle des Avatar-Bilds. `URL` (literal), `Asset` (verwaltetes Medium aus dem Media-Store, wenn `ui-app.mediaStoreUrl` konfiguriert), `Store` (Bildpfad aus einem `ui-store`-Wert), oder alle anderen Binding-Arten. Wird aufgelöst und als `image`-Attribut von `sl-avatar` gesetzt. Schlägt der Ladevorgang fehl oder ist das Feld nicht gesetzt, greift die Fallback-Kette (→ `initials`). Früher als „Src Path" bezeichnet (Plain-Text-Feld, pre-P94); alte Flows werden automatisch migriert. |
-| `initials` | „Fallback Initials" | typedInput (alle Binding-Arten) | optional | Bindbare Zeichenkette für den Initialen-Platzhalter (z. B. `"JD"`). Wird angezeigt, wenn kein Bild verfügbar ist. Ist auch kein Initialen-Wert vorhanden, greift der Icon-Fallback (`icon`). Alle Binding-Arten werden unterstützt: literal, state, store, query, routeParam, msg, flow, global, jsonata, env. |
+| `initials` | „Fallback Initials" | typedInput (alle Binding-Arten) | optional | Bindbare Zeichenkette für den Initialen-Platzhalter (z. B. `"JD"`). Wird angezeigt, wenn kein Bild verfügbar ist. Ist auch kein Initialen-Wert vorhanden, greift der Icon-Fallback (`icon`). Alle Binding-Arten werden unterstützt: literal, state, store, query, routeParam, msg, flow, global, jsonata, env. Der aufgelöste Wert durchläuft **zuerst** die Fallback-Kette (Bild → Initialen → Icon), das Ergebnis dann die zentrale Normalisierung — siehe [value-rendering.md](../concepts/value-rendering.md) (§2-Ausnahme). |
 | `icon` | „Fallback Icon" | Textfeld + Icon-Picker (P69) | optional | Backend-neutraler Icon-Wert `{ library, name }` (bzw. `library:name`), angezeigt wenn weder `src` noch `initials` aufgelöst werden. Bindbar. Details: [ui-icon.md](./ui-icon.md). |
 | ~~`alt`~~ | ~~„Alt-Text"~~ | – | – | *Entfernt in P93.* `sl-avatar` nutzt das `label`-Attribut für Barrierefreiheit; ein separates `alt`-Feld wird nicht unterstützt. |
 
@@ -111,6 +111,7 @@ Editor-Warnung). Das Verhalten ist zentral beschrieben in
 - [inputs.md](../concepts/inputs.md) — `msg.payload` / `msg.ui.patch` / Component-Ops
 - [editor.md](../concepts/editor.md) — Editor-Typen (typedInput, Mount-Baum)
 - [stores.md](../concepts/stores.md) — Binding-Arten
+- [value-rendering.md](../concepts/value-rendering.md) — Verhalten bei leerem/`null`/nicht-skalarem Wert (Initialen nach der Fallback-Kette)
 
 ## Offene Punkte
 

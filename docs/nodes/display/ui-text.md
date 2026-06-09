@@ -40,7 +40,7 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `value` | „Text" | typedInput (Binding) | **ja** | Der anzuzeigende Text. Bindbar über alle Standard-Binding-Arten: `literal` (statischer Text), `state` (State-Pfad), `query` (Query-Pfad in Dot-Bracket-Notation), `routeParam` (Routenparameter-Name), `store` (Store-Picker), `msg`/`flow`/`global`/`jsonata`/`env`. Binding-Arten und Serialisierung: [stores.md](../concepts/stores.md), [editor.md](../concepts/editor.md). |
+| `value` | „Text" | typedInput (Binding) | **ja** | Der anzuzeigende Text. Bindbar über alle Standard-Binding-Arten: `literal` (statischer Text), `state` (State-Pfad), `query` (Query-Pfad in Dot-Bracket-Notation), `routeParam` (Routenparameter-Name), `store` (Store-Picker), `msg`/`flow`/`global`/`jsonata`/`env`. Binding-Arten und Serialisierung: [stores.md](../concepts/stores.md), [editor.md](../concepts/editor.md). Leer-/`null`-/Non-Skalar-Verhalten (`""` → leerer Text; `null`/`undefined`/Objekt/Array → `"?"`; `0`/`false` sind gültig): siehe [value-rendering.md](../concepts/value-rendering.md). |
 | `variant` | „Variante" | Variant-SelectBox (`TEXT_VARIANTS`) | optional | Typografische Rolle des Textes. Werte: `heading-1`, `heading-2`, `heading-3`, `body`, `caption`, `label`, `code`, `muted`. Default: `body`. Das Vokabular ist backend-neutral und im Schema als `TEXT_VARIANTS` festgeschrieben — Details: [theming.md](../concepts/theming.md). |
 
 ### Gruppe „Platzierung"
@@ -106,6 +106,7 @@ System-Defaults zurück. Details: [theming.md](../concepts/theming.md).
 - [theming.md](../concepts/theming.md) — `TEXT_VARIANTS`, Design-Tokens
 - [inputs.md](../concepts/inputs.md) — `msg.payload`-Verhalten und `msg.ui.patch`
 - [layout.md](../concepts/layout.md) — Platzierungsfelder und Layout-Presets
+- [value-rendering.md](../concepts/value-rendering.md) — Verhalten bei leerem/`null`/nicht-skalarem Wert
 
 ## Offene Punkte
 

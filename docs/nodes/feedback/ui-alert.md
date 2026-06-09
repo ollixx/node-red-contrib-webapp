@@ -36,7 +36,7 @@ Binding-Arten, Node-Picker-Dialog, SelectBox).
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `message` | „Message" | typedInput (alle Binding-Arten inkl. `store`) | **ja** | Anzeigetext der Alert. Unterstützt `literal`, `state`, `store`, `query`, `routeParam`, `msg`, `flow`, `global`, `jsonata`, `env`. Der `store`-Typ referenziert einen `ui-store`-Knoten per Picker (P68); der Renderer löst ihn über dessen `statePath` auf. |
+| `message` | „Message" | typedInput (alle Binding-Arten inkl. `store`) | **ja** | Anzeigetext der Alert. Unterstützt `literal`, `state`, `store`, `query`, `routeParam`, `msg`, `flow`, `global`, `jsonata`, `env`. Der `store`-Typ referenziert einen `ui-store`-Knoten per Picker (P68); der Renderer löst ihn über dessen `statePath` auf. Leer-/`null`-/Non-Skalar-Verhalten des aufgelösten Werts (`""` → leer; `null`/`undefined`/Objekt/Array → `"?"`; `0`/`false` sind gültig): siehe [value-rendering.md](../concepts/value-rendering.md). |
 | `title` | „Title" | typedInput (alle Binding-Arten inkl. `store`) | optional | Optionaler Titel über dem Meldungstext. Gleiche Binding-Arten wie `message`. Leer gelassen → kein Titel-Bereich gerendert. |
 | `severity` | „Severity" | SelectBox | optional | Semantische Farbrolle der Alert. Werte aus `SEVERITY_VARIANTS`: `primary` (Default), `success`, `warning`, `danger`, `neutral`, `info`. `info` ist ein eigenständiger Wert. Bestimmt gemeinsam mit den Design-Tokens des `ui-app` die Darstellungsfarbe. |
 | `dismissible` | „Dismissible" | Checkbox | optional | Wenn aktiv, zeigt die Alert ein Schließen-Icon; der Nutzer kann die Alert wegklicken. Das Dismiss-Ereignis wird auf dem Output-Port emittiert. Default: `false`. |
@@ -118,6 +118,7 @@ da Alerts eine Status-/Schweregrad-Semantik tragen.
 - [theming.md](../concepts/theming.md) — `SEVERITY_VARIANTS`, Ebene-2-Rollen
 - [inputs.md](../concepts/inputs.md) — `msg.payload` / `msg.ui.patch` Push-Updates
 - [events.md](../concepts/events.md) — Output-Port und Event-Format
+- [value-rendering.md](../concepts/value-rendering.md) — Verhalten bei leerem/`null`/nicht-skalarem Wert
 
 ## Offene Punkte
 
