@@ -12,6 +12,7 @@ You run in one of two modes. The spawning instruction tells you which; if nothin
 
 - **Standalone** (default): you own the roadmap for this phase. You do the full `Execute` sequence below, including every package-file / `INDEX.md` write.
 - **Orchestrated**: an orchestrator owns the roadmap and works in the main checkout; you are in your own git worktree on branch `phase/<PHASE_ID>`. The division of labour is strict:
+  - **Worktree sanity FIRST (do this before anything else).** Worktree provisioning has repeatedly handed sub-agents a HEAD at an ancient orphan base (`db4f4ff "initial checkin"`) instead of `develop` — logged 15+ times in the friction log. Verify and self-heal: `git rev-parse HEAD` must match `develop`'s tip; if the tree is missing `packages/` or sits at the orphan base, run `git switch -C phase/<PHASE_ID> develop`. Then ensure the tree builds: `corepack pnpm install && pnpm build` (a fresh worktree has no `node_modules`/`dist`, so Execute step 2's green-baseline check fails until you do this). Only then proceed.
   - The orchestrator has ALREADY set this phase `in_progress` — **do not** set it (skip Execute step 1's status write; still capture your start timestamp for the cost figure).
   - You **never** edit any `docs/roadmap/**` file (package files or `INDEX.md`). Skip Execute step 5's roadmap writes entirely.
   - You implement, validate, and **commit only code** to your `phase/<PHASE_ID>` branch.

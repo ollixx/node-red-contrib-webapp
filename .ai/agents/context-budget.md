@@ -47,10 +47,11 @@ Minimum additional reads:
 - **`parseList` vs `parseJsonList`:** fields holding a JSON array string (columns, tabs, menu/accordion/stepper items, …) must use `parseJsonList` in `mapConfig`; `parseList` comma-splits the JSON into garbage.
 - **Zod strips unknown fields silently:** if a rendered field goes missing, check the item schema actually declares it — Zod drops unknown props with no warning.
 - **Serializer per-control attributes:** form-control attributes (e.g. `disabled`) must be emitted in *each* control's serializer branch; it is easy to add one to `sl-checkbox` and forget `sl-input`/`select`/`textarea`.
+- **New node kind — FOUR places must stay in sync:** (1) `uiComponentKindSchema` in `packages/schema/src/contracts.ts`, (2) the node-definition union in `node-definitions.ts`, (3) `P16X_KIND_MAP` + `runtimeNodeRegistry` in `nodes/webapp.js`, (4) the `switch` + `RenderedGenericComponent.kind` union in `packages/renderer/src/renderer.ts`. Miss (1) or (4) and the renderer silently drops the component (schema still validates) — a render loop that looks like a client bug. The `/node-red-node` skill does not call out (1)/(4).
 
 ## What never needs reading unless explicitly relevant
 - `prd.md` (read once at project start, not per phase)
-- `docs/implementation-plan.md` (roadmap.yaml is the source of truth for phases)
+- `docs/implementation-plan.md` (`docs/roadmap/` per-package files are the source of truth for phases)
 - Unrelated node HTML files
 - `packages/renderer/` (unless the phase explicitly touches rendering)
 - `tests/e2e/fixtures/` (unless writing a new fixture)

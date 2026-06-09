@@ -49,7 +49,7 @@ Repeat until a stop condition is met:
 
 5. Spawn a sub-agent with the Agent tool: `subagent_type` `general-purpose`, model per step 4, **`isolation: "worktree"`** (each phase gets its own working copy), and this exact task:
 
-   > Implement roadmap phase `<PHASE_ID>` for node-red-contrib-webapp in ORCHESTRATED mode. Follow `.ai/prompts/run-next-phase.prompt.md` exactly, including its "Orchestrated mode" section. You are in a git worktree: create and work on branch `phase/<PHASE_ID>`. If this phase adds new node types, invoke the `/node-red-node` skill before reading source files. Implement only this phase's deliverables; run the full validation protocol in `.ai/agents/validation.md`; commit your CODE changes to `phase/<PHASE_ID>`.
+   > Implement roadmap phase `<PHASE_ID>` for node-red-contrib-webapp in ORCHESTRATED mode. Follow `.ai/prompts/run-next-phase.prompt.md` exactly, including its "Orchestrated mode" section. You are in a git worktree: **first run the worktree-sanity step** from run-next-phase's Orchestrated section (verify HEAD == develop, else `git switch -C phase/<PHASE_ID> develop`, then `corepack pnpm install && pnpm build`), then create/work on branch `phase/<PHASE_ID>`. If this phase adds new node types, invoke the `/node-red-node` skill before reading source files. Implement only this phase's deliverables; run the full validation protocol in `.ai/agents/validation.md`; commit your CODE changes to `phase/<PHASE_ID>`.
    >
    > **Do NOT edit any `docs/roadmap/**` file (package files or `INDEX.md`) — the orchestrator owns those. Do NOT set status, write the `## Result`, or update INDEX.**
    >
