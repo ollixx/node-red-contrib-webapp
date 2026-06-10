@@ -5,8 +5,8 @@ import { FlowBuilder } from "../../../helpers/flow-builder";
 import { WebappPage } from "../../../helpers/webapp-page";
 
 /**
- * P98 — ui-datepicker fresh E2E tests (per .ai/agents/node-testing.md).
- * Replaces the P44 presence-only tests and P73 mode-mapping tests.
+ * P98/P130 — ui-datepicker E2E tests (per .ai/agents/node-testing.md).
+ * P130 adds canonical P113 disabled typedInput (Boolean-state, incl. Store).
  *
  * Each test asserts an observable OUTCOME (rendered attribute / DOM structure /
  * emitted event / action applied). A test turns RED if the feature is removed.
@@ -17,6 +17,8 @@ import { WebappPage } from "../../../helpers/webapp-page";
  *   - Value binding (literal date string): sl-input value attribute rendered
  *   - Disabled (literal true): sl-input[disabled] attribute present
  *   - Disabled (absent): no [disabled] attribute
+ *   - Disabled (store binding truthy): sl-input[disabled] via ui-store   [P130]
+ *   - Disabled (store binding falsy): sl-input is active                 [P130]
  *   - Label binding (literal): label attribute matches literal value
  *   - change event: POST /event with { event:"change", params:{ value: string } }
  *
@@ -27,7 +29,7 @@ import { WebappPage } from "../../../helpers/webapp-page";
  * See: tests/e2e/nodes/view/ui-datepicker.tests.md
  */
 
-test.describe("ui-datepicker (P98)", () => {
+test.describe("ui-datepicker (P98/P130)", () => {
     test.afterEach(async ({ request }) => {
         await resetFlow(request);
     });
@@ -138,6 +140,47 @@ test.describe("ui-datepicker (P98)", () => {
         await expect(page.locator('sl-input[type="date"]')).toBeVisible();
         // Must NOT have disabled attribute
         await expect(page.locator('sl-input[type="date"][disabled]')).not.toBeVisible();
+    });
+
+    // P130 (ADR 0012): disabled via store binding
+    test("disabled: store binding (truthy initial value) → sl-input[disabled]", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "dpApp10", root: "dpApp10" })
+            .node("ui-store", { id: "dpStore10", statePath: "isLocked", initialValue: "true" })
+            .node("ui-datepicker", {
+                id: "dpNode10",
+                label: "Locked date",
+                disabled: { kind: "store", path: "dpStore10" }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+        const webapp = new WebappPage(page, "dpApp10");
+        await webapp.navigate("/");
+
+        // Outcome: sl-input is disabled because the store's initial value is truthy.
+        await expect(page.locator('sl-input[type="date"][disabled]')).toBeVisible();
+    });
+
+    test("disabled: store binding (falsy initial value) → sl-input is active", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "dpApp11", root: "dpApp11" })
+            .node("ui-store", { id: "dpStore11", statePath: "editMode", initialValue: "false" })
+            .node("ui-datepicker", {
+                id: "dpNode11",
+                label: "Active date",
+                disabled: { kind: "store", path: "dpStore11" }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+        const webapp = new WebappPage(page, "dpApp11");
+        await webapp.navigate("/");
+
+        const dp = page.locator('sl-input[type="date"]');
+        await expect(dp).toBeVisible();
+        // Falsy store value → no disabled attribute.
+        await expect(dp).not.toHaveAttribute("disabled");
     });
 
     // ── Label binding ────────────────────────────────────────────────────────

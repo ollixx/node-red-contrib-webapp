@@ -1,6 +1,7 @@
 # ui-datepicker test catalogue
 
 Fresh tests written in P98 per `.ai/agents/node-testing.md`.
+P130 adds store-binding disabled tests.
 Replaces P44 (presence-only) and P73 (mode-mapping-only) tests.
 
 ## Unit tests (`packages/runtime/test/p98-datepicker-field-extension.test.ts`)
@@ -33,6 +34,8 @@ Replaces P44 (presence-only) and P73 (mode-mapping-only) tests.
 | value literal binding renders as value attribute | Literal date string appears as value attr on sl-input |
 | disabled literal true → sl-input[disabled] | Disabled attribute present in browser DOM |
 | disabled absent → no [disabled] attribute | No disabled attribute when not set |
+| disabled: store binding (truthy) → sl-input[disabled] | P130 — store binding disables datepicker when truthy |
+| disabled: store binding (falsy) → sl-input is active | P130 — falsy store binding keeps datepicker enabled |
 | label as literal binding → sl-input label attribute matches | Label binding resolves to correct label attribute |
 | sl-change → POST /event with value param | change event dispatched with ISO-8601 date string |
 

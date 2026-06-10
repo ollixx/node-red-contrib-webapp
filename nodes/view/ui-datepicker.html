@@ -3,73 +3,6 @@
     (function () {
         const common = window.WebappEditorCommon;
 
-        // P98: `label` is a full typedInput binding (all meaningful binding kinds).
-        function applyLabelTypedInput(selector, binding) {
-            const input = $(selector);
-            const types = common.bindingTypedInputTypes({ literalLabel: "Text" });
-            input.typedInput({ default: "literal", types: types });
-            const editor = common.bindingValueForEditor(binding, "");
-            input.typedInput("type", editor.type);
-            input.typedInput("value", editor.value);
-        }
-
-        function readLabelBinding(selector) {
-            const input = $(selector);
-            const type = input.typedInput("type");
-            const value = input.typedInput("value");
-            if (type === "literal") {
-                return { kind: "literal", value: value };
-            }
-            return { kind: type, path: value };
-        }
-
-        // P98: `value` is a full typedInput binding (all meaningful binding kinds).
-        // The persisted `value` field holds the binding object; legacy `valuePath`
-        // (plain state path) is migrated to a state binding on first open.
-        function applyValueTypedInput(selector, binding) {
-            const input = $(selector);
-            const types = common.bindingTypedInputTypes({ literalLabel: "Date (ISO-8601)" });
-            input.typedInput({ default: "literal", types: types });
-            const editor = common.bindingValueForEditor(binding, "");
-            input.typedInput("type", editor.type);
-            input.typedInput("value", editor.value);
-        }
-
-        function readValueBinding(selector) {
-            const input = $(selector);
-            const type = input.typedInput("type");
-            const value = input.typedInput("value");
-            if (type === "literal") {
-                return { kind: "literal", value: value };
-            }
-            return { kind: type, path: value };
-        }
-
-        // `disabled` typedInput (all meaningful binding kinds).
-        function applyDisabledTypedInput(selector, binding) {
-            const input = $(selector);
-            const types = common.bindingTypedInputTypes({ literalLabel: "Boolean" });
-            input.typedInput({ default: "literal", types: types });
-            if (binding && typeof binding === "object" && typeof binding.kind === "string") {
-                const editor = common.bindingValueForEditor(binding, "false");
-                input.typedInput("type", editor.type);
-                input.typedInput("value", editor.value);
-            } else {
-                input.typedInput("type", "literal");
-                input.typedInput("value", "false");
-            }
-        }
-
-        function readDisabledBinding(selector) {
-            const input = $(selector);
-            const type = input.typedInput("type");
-            const value = input.typedInput("value");
-            if (type === "literal") {
-                return { kind: "literal", value: value === "true" || value === true };
-            }
-            return { kind: type, path: value };
-        }
-
         common.registerNodeType("ui-datepicker", {
             category: "webapp view",
             color: "#f4efcf",
@@ -85,7 +18,9 @@
                 value: { value: null },
                 valueBinding: { value: "" },
                 valuePath: { value: "" },
-                // P98: `disabled` persists the binding OBJECT; DOM-less widget on `disabledBinding`.
+                // P130 (ADR 0012): `disabled` persists the binding OBJECT; there is no
+                // matching #node-input-disabled element so Node-RED auto-save cannot
+                // clobber it. The typedInput lives on #node-input-disabledBinding.
                 disabled: { value: null },
                 disabledBinding: { value: "" },
                 mode: { value: "date" },
@@ -114,42 +49,70 @@
                 common.installReferenceSelectors({ mount: true }).call(this);
                 common.installLayoutChildPropRows().call(this);
 
-                // P98: Label typedInput — restore persisted binding; back-compat: plain string label.
-                let labelBinding;
-                if (this.label && typeof this.label === "object" && typeof this.label.kind === "string") {
-                    labelBinding = common.parseBindingValue(this.label);
-                } else if (typeof this.label === "string" && this.label.trim().length > 0) {
-                    labelBinding = { kind: "literal", value: this.label };
-                } else {
-                    labelBinding = undefined;
-                }
-                applyLabelTypedInput("#node-input-labelBinding", labelBinding);
+                // P98 / P130: Label typedInput — canonical P113 helper.
+                // Back-compat: stored label may be a plain string (pre-P98) or a binding object.
+                var labelStored = common.parseBindingValue(this.label);
+                var labelBinding = labelStored
+                    ? labelStored
+                    : (this.label && typeof this.label === "string" && this.label.trim().length > 0
+                        ? { kind: "literal", value: this.label }
+                        : undefined);
+                var labelEditor = common.readValueBinding(labelBinding, "");
+                var labelInput = $("#node-input-labelBinding");
+                labelInput.typedInput({
+                    default: labelEditor.type,
+                    types: common.valueBindingTypes({ category: "value" })
+                });
+                labelInput.typedInput("type", labelEditor.type);
+                labelInput.typedInput("value", labelEditor.value);
 
-                // P98: Value typedInput — restore persisted binding; back-compat: legacy valuePath.
-                let valueBinding;
-                if (this.value && typeof this.value === "object" && typeof this.value.kind === "string") {
-                    valueBinding = common.parseBindingValue(this.value);
-                } else if (this.valuePath && typeof this.valuePath === "string" && this.valuePath.trim().length > 0) {
-                    valueBinding = { kind: "state", path: this.valuePath };
-                } else {
-                    valueBinding = undefined;
-                }
-                applyValueTypedInput("#node-input-valueBinding", valueBinding);
+                // P98 / P130: Value typedInput — canonical P113 helper.
+                // Migration: a legacy `valuePath` plain state path becomes a state binding.
+                var storedValue = common.parseBindingValue(this.value);
+                var valueBinding = storedValue
+                    ? storedValue
+                    : (this.valuePath ? { kind: "state", path: this.valuePath } : undefined);
+                var valueEditor = common.readValueBinding(valueBinding, "");
+                var valueInput = $("#node-input-valueBinding");
+                valueInput.typedInput({
+                    default: valueEditor.type,
+                    types: common.valueBindingTypes({ category: "value" })
+                });
+                valueInput.typedInput("type", valueEditor.type);
+                valueInput.typedInput("value", valueEditor.value);
 
-                // P98: Disabled typedInput — restore persisted binding.
-                let disabledBinding;
-                if (this.disabled && typeof this.disabled === "object" && typeof this.disabled.kind === "string") {
-                    disabledBinding = common.parseBindingValue(this.disabled);
-                } else {
-                    disabledBinding = undefined;
-                }
-                applyDisabledTypedInput("#node-input-disabledBinding", disabledBinding);
+                // P130 (ADR 0012 / boolean category): `disabled` typedInput — canonical P113 helper.
+                // No legacy field to migrate (ui-datepicker had no dedicated disabled typedInput before P130).
+                var storedDisabled = common.parseBindingValue(this.disabled);
+                var disabledBinding = storedDisabled ? storedDisabled : undefined;
+                var disabledEditor = common.readValueBinding(disabledBinding, "");
+                var disabledInput = $("#node-input-disabledBinding");
+                disabledInput.typedInput({
+                    default: disabledEditor.type,
+                    types: common.valueBindingTypes({ category: "boolean" })
+                });
+                disabledInput.typedInput("type", disabledEditor.type);
+                disabledInput.typedInput("value", disabledEditor.value);
             },
             oneditsave: function () {
-                this.label = readLabelBinding("#node-input-labelBinding");
-                this.value = readValueBinding("#node-input-valueBinding");
+                // P130: persist label as binding object.
+                this.label = common.applyValueBinding(
+                    $("#node-input-labelBinding").typedInput("type"),
+                    $("#node-input-labelBinding").typedInput("value")
+                );
+
+                // P130: persist value as binding object; clear legacy valuePath.
+                this.value = common.applyValueBinding(
+                    $("#node-input-valueBinding").typedInput("type"),
+                    $("#node-input-valueBinding").typedInput("value")
+                );
                 this.valuePath = "";
-                this.disabled = readDisabledBinding("#node-input-disabledBinding");
+
+                // P130: persist disabled as binding object.
+                this.disabled = common.applyValueBinding(
+                    $("#node-input-disabledBinding").typedInput("type"),
+                    $("#node-input-disabledBinding").typedInput("value")
+                );
             }
         });
     })();
@@ -158,8 +121,11 @@
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <!-- P98 / P130: Label binding — typedInput managed in oneditprepare/oneditsave. -->
     <div class="form-row"><label for="node-input-labelBinding">Label</label><input type="text" id="node-input-labelBinding"></div>
+    <!-- P98 / P130: Value binding — typedInput managed in oneditprepare/oneditsave. -->
     <div class="form-row"><label for="node-input-valueBinding">Value Path</label><input type="text" id="node-input-valueBinding"></div>
+    <!-- P130 (ADR 0012 / boolean category): Disabled binding — typedInput managed in oneditprepare/oneditsave. -->
     <div class="form-row"><label for="node-input-disabledBinding">Disabled</label><input type="text" id="node-input-disabledBinding"></div>
     <div class="form-row">
         <label for="node-input-mode">Mode</label>
@@ -176,11 +142,15 @@
 <script type="text/html" data-help-name="ui-datepicker">
 <p>Datums- und Uhrzeiteingabe mit konfigurierbarem Modus (date, datetime, time). Rendert ein <code>sl-input</code>-Element (type="date", "datetime-local" oder "time").</p>
 <h3>Label</h3>
-<p>Beschriftung des Datepickers — bindbar: <b>Text</b> (literal), state, query, routeParam, msg, flow, global, jsonata, env, Store.</p>
+<p>Beschriftung des Datepickers — bindbar: alle Binding-Arten (ADR 0012): Store, Query,
+Route-Param, Reactive, msg, JSONata, string/boolean/number/json/timestamp,
+Flow, Global, Env.</p>
 <h3>Value Path</h3>
 <p>Bindbare Quelle des Datumswerts als ISO-8601-String — alle Binding-Arten werden unterstützt.</p>
-<h3>Disabled</h3>
-<p>Bindbare Bedingung zum Deaktivieren des Datepickers (sperrt Nutzerinteraktion).</p>
+<h3>Disabled (P130)</h3>
+<p>Bindbare Bedingung zum Deaktivieren des Datepickers (sperrt Nutzerinteraktion).
+Boolean-Zustand-Satz (ADR 0012): Store, Query, Route-Param, Reactive, msg,
+JSONata, boolean, Flow, Global, Env.</p>
 <h3>Mode</h3>
 <p>Eingabe-Modus: <b>Date</b> = nur Datum (YYYY-MM-DD), <b>Date &amp; Time</b> = Datum und Uhrzeit (YYYY-MM-DDTHH:mm), <b>Time</b> = nur Uhrzeit (HH:mm).</p>
 <h3>Events</h3>
