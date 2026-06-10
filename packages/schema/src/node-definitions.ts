@@ -444,7 +444,11 @@ export type UiActionNodeDefinition = z.infer<typeof uiActionNodeDefinitionSchema
 export const uiNavigationNodeDefinitionSchema = identifiedNodeSchema.extend({
     type: z.literal("ui-navigation"),
     parent: identifierSchema.optional(),
-    to: routePathSchema
+    // P119 (ADR 0011 §5): ui-navigation aligns to the ui-action navigate model —
+    // the editor offers the same wire | route | url switcher. The runtime still
+    // treats ui-navigation as a `url` target via `to` (P118 node-set mapping), so
+    // `to` is now OPTIONAL (a route-mode ui-navigation carries routeId, no `to`).
+    to: routePathSchema.optional()
 });
 
 export type UiNavigationNodeDefinition = z.infer<typeof uiNavigationNodeDefinitionSchema>;

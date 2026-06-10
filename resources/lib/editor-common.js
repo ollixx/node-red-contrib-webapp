@@ -1152,6 +1152,579 @@
         });
     }
 
+    // ── P119: navigate target-source mode UI (ADR 0011) ─────────────────────
+    // The navigate verb gets an explicit, stored target SOURCE — wire | route |
+    // url — surfaced as a three-segment switch. The switch carries icon + label
+    // per segment; the active segment colours the WHOLE panel (blue for wire,
+    // purple for route, neutral for url) using the P120 dual-path tokens. There
+    // is no separate badge inside the panel (ADR 0011 §4 cosmetic decision).
+    //
+    // The helpers below are central and reusable: ui-action AND ui-navigation
+    // wire the same installNavigateTargetMode() — no second implementation.
+
+    /**
+     * Parse the `:placeholder` segments out of a route path. Returns the ordered
+     * list of placeholder names (without the leading colon), de-duplicated.
+     *
+     *   parseRoutePlaceholders("/customers/:id")        → ["id"]
+     *   parseRoutePlaceholders("/orders/:id/:tab")      → ["id", "tab"]
+     *   parseRoutePlaceholders("/static")               → []
+     *
+     * @param {string} path
+     * @returns {string[]}
+     */
+    function parseRoutePlaceholders(path) {
+        if (!path || typeof path !== "string") {
+            return [];
+        }
+        var out = [];
+        var seen = {};
+        var re = /:([A-Za-z_][A-Za-z0-9_]*)/g;
+        var m;
+        while ((m = re.exec(path)) !== null) {
+            var name = m[1];
+            if (!Object.prototype.hasOwnProperty.call(seen, name)) {
+                seen[name] = true;
+                out.push(name);
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Transitive wire-scan from the edited node (ADR 0011 §2). BFS over OUTGOING
+     * wires, hopping through intermediate nodes (function, switch, …), collecting
+     * every reachable `ui-route` / `ui-app`. This is ASSISTANCE only — it never
+     * produces a validation error (a heuristic must not block a deploy).
+     *
+     * Limitations (documented, not followed): link-out/link-in nodes and subflow
+     * instances are NOT traversed — targets behind them are not detected.
+     *
+     * @param {string} nodeId  — id of the node whose outgoing wires to scan
+     * @returns {Array<{id:string,type:string,path:string,title:string,placeholders:string[]}>}
+     *          de-duplicated reached navigation targets (a SET; branching ⇒ >1).
+     */
+    function scanWiredNavigationTargets(nodeId) {
+        var results = [];
+        if (typeof RED === "undefined" || !RED.nodes || typeof nodeId !== "string" || !nodeId) {
+            return results;
+        }
+        var DEPTH_LIMIT = 50;
+        var visited = {};
+        var foundIds = {};
+        var queue = [nodeId];
+        visited[nodeId] = true;
+        var hops = 0;
+
+        // Collect the outgoing-link targets of a node id. RED.nodes.eachLink walks
+        // every wire in the workspace; we keep the ones whose source is `id`.
+        function outgoing(id) {
+            var targets = [];
+            if (typeof RED.nodes.eachLink === "function") {
+                RED.nodes.eachLink(function (link) {
+                    if (link && link.source && link.source.id === id && link.target && link.target.id) {
+                        targets.push(link.target.id);
+                    }
+                });
+                return targets;
+            }
+            // Fallback: read the node's own wires array.
+            var node = RED.nodes.node(id);
+            if (node && Array.isArray(node.wires)) {
+                node.wires.forEach(function (port) {
+                    (port || []).forEach(function (t) { if (t) { targets.push(t); } });
+                });
+            }
+            return targets;
+        }
+
+        while (queue.length > 0 && hops < DEPTH_LIMIT) {
+            var current = queue.shift();
+            hops += 1;
+            var nexts = outgoing(current);
+            for (var i = 0; i < nexts.length; i++) {
+                var tid = nexts[i];
+                if (visited[tid]) {
+                    continue;
+                }
+                visited[tid] = true;
+                var tnode = RED.nodes.node(tid);
+                if (!tnode) {
+                    continue;
+                }
+                // Do not traverse link nodes / subflow instances — documented gap.
+                if (tnode.type === "link out" || tnode.type === "link in" ||
+                    (typeof tnode.type === "string" && tnode.type.indexOf("subflow:") === 0)) {
+                    continue;
+                }
+                if ((tnode.type === "ui-route" || tnode.type === "ui-app") && !foundIds[tid]) {
+                    foundIds[tid] = true;
+                    var path = tnode.type === "ui-route" ? (tnode.path || "") : "/";
+                    results.push({
+                        id: tid,
+                        type: tnode.type,
+                        path: path,
+                        title: tnode.title || tnode.name || tid,
+                        placeholders: parseRoutePlaceholders(path)
+                    });
+                    // A route/app is a terminal target; do not scan past it.
+                    continue;
+                }
+                queue.push(tid);
+            }
+        }
+        return results;
+    }
+
+    /**
+     * installNavigateTargetMode(config) — turn a node panel's hidden mode/route/
+     * params fields into the three-mode navigate UI. Returns a controller object
+     * with { refresh(), oneditsave(), isValid() }.
+     *
+     * Required hidden fields in the template (carriers Node-RED binds + saves):
+     *   #node-input-targetMode   (str: wire|route|url)
+     *   #node-input-routeId      (str: referenced ui-route id)
+     *   #node-input-params       (str: JSON array of {name,value,valueType})
+     *   #node-input-to / #node-input-toType  (url typedInput)
+     * Required container in the template:
+     *   .webapp-navigate-target-mode  (empty div this builds into)
+     *
+     * config:
+     *   nodeId      — id of the edited node (for the wire-scan)
+     *   getAppId    — optional () → appId (route picker app-scope)
+     *   onChange    — optional () called when a value changes (re-validate)
+     */
+    function installNavigateTargetMode(config) {
+        ensureDualPathStylesheet();
+        var cfg = config || {};
+        var $host = $(".webapp-navigate-target-mode");
+        if ($host.length === 0) {
+            return { refresh: function () {}, oneditsave: function () {}, isValid: function () { return true; } };
+        }
+
+        var $modeField = $("#node-input-targetMode");
+        var $routeField = $("#node-input-routeId");
+        var $paramsField = $("#node-input-params");
+
+        // The initial mode: a stored value wins absolutely (ADR 0011 §1 — once
+        // saved, later canvas-wire changes never switch the mode). Only when
+        // nothing was ever stored do we pre-select via the wire-scan.
+        var stored = String($modeField.val() || "").trim();
+        var initialTargets = scanWiredNavigationTargets(cfg.nodeId);
+        var mode;
+        if (stored === "wire" || stored === "route" || stored === "url") {
+            mode = stored;
+        } else if ($routeField.val()) {
+            mode = "route";
+        } else if ($("#node-input-to").val()) {
+            mode = "url";
+        } else {
+            mode = initialTargets.length >= 1 ? "wire" : "route";
+        }
+        $modeField.val(mode);
+
+        // ── Build the static structure ──
+        $host.empty();
+
+        var $switch = $("<div>").addClass("webapp-nav-mode-switch")
+            .css({ display: "inline-flex", border: "1px solid var(--red-ui-form-input-border-color,#ccc)", "border-radius": "4px", overflow: "hidden", "margin-bottom": "8px" });
+        var SEGMENTS = [
+            { mode: "wire", icon: "fa-plug", label: "via Wire" },
+            { mode: "route", icon: "fa-link", label: "Route" },
+            { mode: "url", icon: "fa-globe", label: "URL" }
+        ];
+        var $segs = {};
+        SEGMENTS.forEach(function (seg) {
+            var $b = $("<button type='button'>")
+                .addClass("webapp-nav-mode-seg webapp-nav-mode-seg--" + seg.mode)
+                .attr("data-mode", seg.mode)
+                .css({ border: "none", background: "transparent", cursor: "pointer", padding: "5px 12px", "font-size": "12px", "border-right": "1px solid var(--red-ui-form-input-border-color,#ccc)" });
+            $("<i>").addClass("fa " + seg.icon).css({ "margin-right": "5px" }).appendTo($b);
+            $("<span>").text(seg.label).appendTo($b);
+            $b.on("click", function (e) { e.preventDefault(); setMode(seg.mode); });
+            $segs[seg.mode] = $b;
+            $switch.append($b);
+        });
+        $host.append($switch);
+
+        // The coloured panel body (background = mode colour) with insets inside.
+        var $panel = $("<div>").addClass("webapp-nav-mode-panel")
+            .css({ padding: "10px", "border-radius": "4px" });
+        $host.append($panel);
+
+        // Plain heading (no badge — ADR 0011 §4).
+        var $heading = $("<div>").addClass("webapp-nav-mode-heading")
+            .css({ "font-weight": "600", "margin-bottom": "6px" });
+        $panel.append($heading);
+
+        // Info line (neutral; e.g. "Wire vorhanden — dient als Transport").
+        var $info = $("<div>").addClass("webapp-nav-mode-info")
+            .css({ "font-size": "11px", "margin-bottom": "8px", opacity: "0.92" });
+        $panel.append($info);
+
+        // ── wire-mode body: scan result + grouped placeholder table ──
+        var $wireBody = $("<div>").addClass("webapp-nav-wire-body").appendTo($panel);
+        // ── route-mode body: route picker + mapping table ──
+        var $routeBody = $("<div>").addClass("webapp-nav-route-body").appendTo($panel);
+        // ── url-mode body: the `to` typedInput row is relocated here at build
+        //    time so $urlBody.toggle() alone controls its visibility ──
+        var $urlBody = $("<div>").addClass("webapp-nav-url-body").appendTo($panel);
+        (function relocateToRow() {
+            var $toRow = $("#node-input-to").closest(".form-row");
+            $toRow.addClass("webapp-path-field-inset").appendTo($urlBody);
+        })();
+        var $urlWarn = $("<div>").addClass("webapp-nav-url-warn")
+            .css({ "font-size": "11px", "margin-top": "6px", color: "#b8860b" });
+        $urlBody.append($urlWarn);
+
+        // The mapping table model: { name → {value, valueType} } persisted to
+        // #node-input-params as a JSON array on save. Seed from stored params.
+        var paramValues = {};
+        (function seed() {
+            var raw = String($paramsField.val() || "").trim();
+            if (raw.startsWith("[")) {
+                try {
+                    JSON.parse(raw).forEach(function (e) {
+                        if (e && e.name) {
+                            paramValues[e.name] = { value: e.value == null ? "" : String(e.value), valueType: e.valueType || "str" };
+                        }
+                    });
+                } catch (_e) { /* ignore */ }
+            }
+        })();
+
+        var PARAM_TYPES = ["str", "msg", "jsonata", "flow", "global", "env"];
+
+        // Track which placeholders the active mode requires a value for.
+        var requiredNames = [];
+
+        function serializeParams() {
+            var list = [];
+            requiredNames.forEach(function (n) {
+                var v = paramValues[n] || { value: "", valueType: "str" };
+                list.push({ name: n, value: v.value || "", valueType: v.valueType || "str" });
+            });
+            $paramsField.val(list.length > 0 ? JSON.stringify(list) : "");
+        }
+
+        function refreshValidity() {
+            serializeParams();
+            if (typeof cfg.onChange === "function") {
+                cfg.onChange();
+            }
+        }
+
+        // Build one mapping row (placeholder name fixed + typedInput value).
+        function buildMappingRow($container, name) {
+            var $row = $("<div>").addClass("webapp-nav-param-row webapp-path-field-inset")
+                .css({ display: "flex", "align-items": "center", gap: "8px", "margin-bottom": "6px" });
+            $("<code>").addClass("webapp-nav-param-name").text(":" + name)
+                .css({ "flex": "0 0 30%", "font-weight": "600" }).appendTo($row);
+            var $val = $("<input type='text'>").addClass("webapp-nav-param-value")
+                .attr("data-name", name).css({ flex: "1 1 auto" });
+            $row.append($val);
+            $container.append($row);
+            var existing = paramValues[name] || { value: "", valueType: "str" };
+            $val.typedInput({ default: "str", types: PARAM_TYPES });
+            $val.typedInput("type", existing.valueType || "str");
+            $val.typedInput("value", existing.value || "");
+            $val.on("change", function () {
+                paramValues[name] = { value: $val.typedInput("value"), valueType: $val.typedInput("type") };
+                refreshValidity();
+            });
+            paramValues[name] = { value: existing.value || "", valueType: existing.valueType || "str" };
+            return $val;
+        }
+
+        // ── Route mode: picker + mapping table ──
+        var routePickerInstalled = false;
+        function ensureRoutePicker() {
+            if (routePickerInstalled) {
+                return;
+            }
+            routePickerInstalled = true;
+            installPickerField("#node-input-routeId", {
+                filterPreset: "routes",
+                title: "Ziel-Route auswählen",
+                placeholder: "Route auswählen…",
+                getAppId: cfg.getAppId
+            });
+            $routeField.on("change.webappNavMode", function () { rebuildRouteTable(); });
+        }
+
+        function routePathById(routeId) {
+            if (!routeId) {
+                return null;
+            }
+            var refs = collectReferenceNodes();
+            var match = refs.routes.find(function (r) { return r.id === routeId; });
+            return match ? (match.path || "") : null;
+        }
+
+        function rebuildRouteTable() {
+            var $table = $routeBody.find(".webapp-nav-route-table");
+            $table.empty();
+            var routeId = String($routeField.val() || "");
+            var path = routePathById(routeId);
+            if (routeId && path === null) {
+                $table.append($("<div>").addClass("webapp-nav-route-missing")
+                    .text("Die referenzierte Route existiert nicht mehr — bitte neu wählen.")
+                    .css({ "font-size": "11px" }));
+                requiredNames = [];
+                serializeParams();
+                refreshValidity();
+                return;
+            }
+            var names = parseRoutePlaceholders(path || "");
+            requiredNames = names.slice();
+            if (names.length === 0) {
+                $table.append($("<div>").addClass("webapp-nav-route-noparams")
+                    .text("Diese Route hat keine :platzhalter — keine Parameter nötig.")
+                    .css({ "font-size": "11px" }));
+            } else {
+                $("<div>").addClass("webapp-nav-param-caption").text("Parameter der Ziel-Route")
+                    .css({ "font-weight": "600", "margin-bottom": "6px" }).appendTo($table);
+                names.forEach(function (n) { buildMappingRow($table, n); });
+            }
+            serializeParams();
+            refreshValidity();
+        }
+
+        // ── Wire mode: scan result, grouped placeholders ──
+        function rebuildWireBody() {
+            $wireBody.empty();
+            var targets = scanWiredNavigationTargets(cfg.nodeId);
+            if (targets.length === 0) {
+                $("<div>").text("Kein verdrahtetes Ziel erkannt. Parameter werden zur Laufzeit über msg.ui.action.params versorgt. (Ziele hinter Link-Nodes werden nicht erkannt.)")
+                    .css({ "font-size": "11px" }).appendTo($wireBody);
+                requiredNames = [];
+                serializeParams();
+                return;
+            }
+            if (targets.length === 1) {
+                var t = targets[0];
+                $("<div>").addClass("webapp-nav-wire-single").text("via Wire → " + (t.path || "/"))
+                    .css({ "font-weight": "600", "margin-bottom": "6px" }).appendTo($wireBody);
+                requiredNames = t.placeholders.slice();
+                if (t.placeholders.length === 0) {
+                    $("<div>").text("Diese Route hat keine :platzhalter.").css({ "font-size": "11px" }).appendTo($wireBody);
+                } else {
+                    t.placeholders.forEach(function (n) { buildMappingRow($wireBody, n); });
+                }
+            } else {
+                $("<div>").addClass("webapp-nav-wire-multi").text("via Wire → " + targets.length + " mögliche Ziele")
+                    .css({ "font-weight": "600", "margin-bottom": "6px" }).appendTo($wireBody);
+                // Branching: placeholders grouped per target. The union is NOT
+                // hard-required (each branch is conditional); leave requiredNames
+                // empty so the scan never blocks a deploy (ADR 0011 §2).
+                requiredNames = [];
+                targets.forEach(function (t) {
+                    var $g = $("<div>").css({ "margin-bottom": "8px" }).appendTo($wireBody);
+                    $("<div>").text(t.path || "/").css({ "font-weight": "600" }).appendTo($g);
+                    if (t.placeholders.length === 0) {
+                        $("<div>").text("(keine :platzhalter)").css({ "font-size": "11px" }).appendTo($g);
+                    } else {
+                        $("<div>").text(":" + t.placeholders.join(", :")).css({ "font-size": "11px" }).appendTo($g);
+                    }
+                });
+                $("<div>").addClass("webapp-nav-wire-runtime-hint")
+                    .text("Verzweigung erkannt — die Versorgung aller Zweige mit Parametern ist Laufzeitverantwortung (msg.ui.action.params).")
+                    .css({ "font-size": "11px", "margin-top": "4px" }).appendTo($wireBody);
+            }
+            serializeParams();
+        }
+
+        // ── url mode: the `to` row + warning were relocated at build time;
+        //    here we just (re)bind the live warning + ensure the row is shown ──
+        function rebuildUrlBody() {
+            $("#node-input-to").closest(".form-row").show();
+            updateUrlWarn();
+            $("#node-input-to").off("change.webappNavUrl").on("change.webappNavUrl", updateUrlWarn);
+        }
+        function updateUrlWarn() {
+            if (!$urlWarn) {
+                return;
+            }
+            var type = "str";
+            try { type = $("#node-input-to").typedInput("type"); } catch (_e) { /* not yet */ }
+            var val = "";
+            try { val = String($("#node-input-to").typedInput("value") || ""); } catch (_e) { val = String($("#node-input-to").val() || ""); }
+            if (type === "str" && /:[A-Za-z_]/.test(val)) {
+                $urlWarn.text("Hinweis: Der Pfad enthält :platzhalter ohne Werte — im URL-Modus wird die URL komplett gebaut. Vermutlich ein Fehler.");
+            } else {
+                $urlWarn.text("");
+            }
+        }
+
+        // ── mode switching ──
+        function setMode(next) {
+            mode = next;
+            $modeField.val(mode).trigger("change");
+            render();
+            refreshValidity();
+        }
+
+        var $routeRowMoved = false;
+
+        function render() {
+            // Highlight the active segment.
+            SEGMENTS.forEach(function (seg) {
+                var active = seg.mode === mode;
+                $segs[seg.mode].css({
+                    background: active ? "var(--red-ui-secondary-background-selected,#efefef)" : "transparent",
+                    "font-weight": active ? "700" : "400"
+                });
+            });
+            // Panel colour: wire → blue, route → purple, url → neutral.
+            $panel.removeClass("webapp-path-panel--wire webapp-path-panel--ref");
+            if (mode === "wire") {
+                $panel.addClass("webapp-path-panel--wire");
+                $heading.text("via Wire");
+            } else if (mode === "route") {
+                $panel.addClass("webapp-path-panel--ref");
+                $heading.text("Route (Referenz)");
+            } else {
+                $heading.text("URL");
+            }
+            $wireBody.toggle(mode === "wire");
+            $routeBody.toggle(mode === "route");
+            $urlBody.toggle(mode === "url");
+
+            // Neutral info when switching to a non-wire mode while wires exist.
+            $info.text("");
+            if (mode !== "wire") {
+                var existingTargets = scanWiredNavigationTargets(cfg.nodeId);
+                if (existingTargets.length >= 1) {
+                    var first = existingTargets[0].path || "/";
+                    $info.text("Wire zu " + first + " vorhanden — dient als Transport, das Ziel ist hier explizit gewählt.");
+                }
+            }
+
+            if (mode === "wire") {
+                rebuildWireBody();
+            } else if (mode === "route") {
+                ensureRoutePicker();
+                if (!$routeRowMoved) {
+                    $routeRowMoved = true;
+                    var $routeRow = $("#node-input-routeId").closest(".form-row");
+                    $routeRow.addClass("webapp-path-field-inset").show().appendTo($routeBody);
+                    $("<div>").addClass("webapp-nav-route-table").css({ "margin-top": "8px" }).appendTo($routeBody);
+                }
+                rebuildRouteTable();
+            } else {
+                rebuildUrlBody();
+            }
+        }
+
+        render();
+
+        return {
+            refresh: function () { render(); },
+            oneditsave: function () {
+                // Persist mode + only the active mode's carriers (exclusivity).
+                $modeField.val(mode);
+                if (mode === "route") {
+                    serializeParams();
+                } else if (mode === "wire") {
+                    serializeParams();
+                    $routeField.val("");
+                } else {
+                    // url mode: no params, no routeId.
+                    $paramsField.val("");
+                    $routeField.val("");
+                }
+                if (mode !== "url") {
+                    $("#node-input-to").val("");
+                }
+            },
+            // For the node's validate() function: in route mode every placeholder
+            // must have a non-empty value; a missing/unknown routeId is invalid.
+            isValid: function () {
+                if (mode !== "route") {
+                    return true;
+                }
+                var routeId = String($routeField.val() || "");
+                if (!routeId) {
+                    return false;
+                }
+                var path = routePathById(routeId);
+                if (path === null) {
+                    return false;
+                }
+                var names = parseRoutePlaceholders(path);
+                for (var i = 0; i < names.length; i++) {
+                    var v = paramValues[names[i]];
+                    if (!v || String(v.value || "").trim().length === 0) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        };
+    }
+
+    /**
+     * Field-level validator for a navigate node (ADR 0011 §3). Works whether the
+     * panel is open (delegates to the live controller via node.__navMode) or
+     * closed (reads the stored fields directly, so deploy-time validation works).
+     *
+     * Rules: only `navigate` is checked; only `route` mode is hard-validated —
+     * the referenced routeId must resolve AND every `:placeholder` of its path
+     * must have a non-empty value. wire/url never block (heuristic / dynamic).
+     *
+     * @param {object} node — the Node-RED node being validated (`this` in validate)
+     * @returns {boolean}
+     */
+    function validateNavigateConfig(node) {
+        // ui-action: only the `navigate` verb navigates. ui-navigation always does.
+        if (!node || (node.type !== "ui-navigation" && node.actionType !== "navigate")) {
+            return true;
+        }
+        // Panel open: the controller knows the live picker + param state.
+        if (node.__navMode && typeof node.__navMode.isValid === "function") {
+            return node.__navMode.isValid();
+        }
+        // Panel closed / deploy time: derive the mode + check stored fields.
+        var mode = node.targetMode;
+        if (mode !== "wire" && mode !== "route" && mode !== "url") {
+            // Legacy migration mirror of deriveNavigateTargetMode().
+            mode = node.routeId ? "route" : (node.to ? "url" : "wire");
+        }
+        if (mode !== "route") {
+            return true;
+        }
+        var routeId = node.routeId ? String(node.routeId) : "";
+        if (!routeId) {
+            return false;
+        }
+        var refs = collectReferenceNodes();
+        var match = refs.routes.find(function (r) { return r.id === routeId; });
+        if (!match) {
+            return false;
+        }
+        var names = parseRoutePlaceholders(match.path || "");
+        if (names.length === 0) {
+            return true;
+        }
+        var values = {};
+        try {
+            var raw = node.params ? String(node.params).trim() : "";
+            if (raw.startsWith("[")) {
+                JSON.parse(raw).forEach(function (e) {
+                    if (e && e.name) {
+                        values[e.name] = e.value == null ? "" : String(e.value);
+                    }
+                });
+            }
+        } catch (_e) { /* treat as no values */ }
+        for (var i = 0; i < names.length; i++) {
+            if (!values[names[i]] || String(values[names[i]]).trim().length === 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     // Open the modal picker. options:
     //   title      — dialog heading
     //   value      — currently-selected id (highlighted, pre-scrolled)
@@ -2586,6 +3159,10 @@
         parseBindingValue,
         pathBadge,
         installDualPathUserSettings,
+        parseRoutePlaceholders,
+        scanWiredNavigationTargets,
+        installNavigateTargetMode,
+        validateNavigateConfig,
         registerNodeType,
         registerNodeTypeWithEvents,
         required,

@@ -42,8 +42,9 @@ Node-Picker-Dialog, typedInput, Canvas-Knoten-Picker).
 
 Die Zielquelle ist ein **expliziter Modus** (`targetMode`); pro Modus sind nur
 die zugehörigen Felder gesetzt — eine Doppel-Konfiguration ist technisch
-ausgeschlossen (Verstöße sind Compile-Validierungsfehler). Die UI-Umschaltung
-(Modus-Toggle, Wire-Scan, Mapping-Tabelle) liefert **P119**; hier das Datenmodell.
+ausgeschlossen (Verstöße sind Compile-Validierungsfehler). Das Datenmodell kommt
+aus **P118**; die UI-Umschaltung (Modus-Toggle, Wire-Scan, Mapping-Tabelle) ist
+seit **P119** umgesetzt (siehe „Editor-UX" unten).
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
@@ -55,6 +56,38 @@ ausgeschlossen (Verstöße sind Compile-Validierungsfehler). Die UI-Umschaltung
 > **Migration (Lade-Shim).** Bestands-Configs ohne `targetMode`: `to` gesetzt →
 > `url`; `routeId` gesetzt → `route`; sonst → `wire`. Ein Legacy-`params`-Objekt
 > `{k:"v"}` wird verlustfrei in eine Liste mit `valueType: "str"` migriert.
+
+#### Editor-UX (P119, ADR 0011)
+
+Die Gruppe „Ziel" zeigt einen **Segment-Schalter** mit drei Modi (je Icon +
+Label): **via Wire** (Stecker) · **Route** (Kette) · **URL** (Globus). Genau ein
+Modus ist aktiv; die Felder der anderen Modi sind ausgeblendet und werden beim
+Speichern **nicht serialisiert** (Modus-Exklusivität). Der **Hintergrund des
+Panels** trägt die Modus-Farbe (blau für Wire, lila für Route, neutral für URL;
+Tokens aus P120); Formfelder sitzen als helle Insets darauf. Ein separates Badge
+im Panel entfällt — nur eine schlichte Überschrift (ADR 0011 §4).
+
+- **Initiale Vorbelegung** (nur wenn `targetMode` noch nie gespeichert wurde):
+  Ein transitiver **Wire-Scan** (BFS über ausgehende Wires, durch
+  Zwischenknoten, Zyklus-/Tiefenschutz; Link-Nodes/Subflows werden nicht
+  verfolgt) findet erreichte `ui-route`/`ui-app`. ≥1 Treffer → Modus `wire`
+  vorgewählt; sonst `route`. Ab dem ersten Speichern gilt ausschließlich die
+  gespeicherte Absicht — spätere Wire-Änderungen schalten den Modus **nicht** um.
+- **Wire-Scan-Assistenz (nie Validierung):** genau 1 Treffer → „via Wire →
+  `<path>`" + Mapping-Tabelle aus dessen `:platzhaltern`; mehrere Treffer →
+  „via Wire → n mögliche Ziele" + Platzhalter pro Ziel gruppiert + Hinweis, dass
+  die Versorgung aller Zweige Laufzeitverantwortung ist (`msg.ui.action.params`);
+  keine Treffer → freie Parameter-Liste. **In keinem Fall** ein
+  Validierungsfehler aus dem Scan.
+- **Route-Modus (hart validiert):** Picker-Feld (Preset `routes`, app-gescoped)
+  + Mapping-Tabelle, deren linke Spalte fix die `:platzhalter` der gewählten
+  Route trägt (aus dem `path` geparst), rechte Spalte je ein typedInput
+  (`str`/`msg`/`jsonata`/`flow`/`global`/`env`). Routen-Wechsel baut die Tabelle
+  neu auf; gleichnamige Werte bleiben erhalten. **Validierung:** Platzhalter ohne
+  Wert oder eine gelöschte/unbekannte `routeId` → Knoten ungültig vor Deploy.
+- **URL-Modus:** nur das `to`-typedInput, **keine** Parameter-Sektion. Ein
+  `str`-Pfad mit `:platzhaltern` ohne Werte erzeugt eine **sanfte Warnung**
+  (keine Blockade).
 
 ### Gruppe „Ziel"
 

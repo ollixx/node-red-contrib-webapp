@@ -241,6 +241,41 @@ describe("runtime node set assembly", () => {
         ]);
     });
 
+    it("P119: a route-mode ui-navigation (no `to`) assembles and is excluded from the to-keyed navigations list", () => {
+        // ADR 0011 §5: ui-navigation aligns to the navigate target-mode model.
+        // A route-mode ui-navigation addresses via routeId and carries no `to`,
+        // so the schema accepts `to`-absent and the url-`to`-keyed navigations
+        // list must not include it (it has no concrete URL).
+        const assembly = assembleNodeSet([
+            {
+                type: "ui-app",
+                id: "customersApp",
+                name: "Customers CRM",
+                root: "customersApp",
+                layout: "vertical"
+            },
+            {
+                type: "ui-navigation",
+                id: "goToDetail"
+                // no `to`: route-mode intent (the editor stores routeId; the
+                // runtime ui-navigation mapping ignores it, leaving `to` unset).
+            }
+        ]);
+
+        expect(assembly.success).toBe(true);
+
+        if (!assembly.success) {
+            return;
+        }
+
+        // It still mirrors into a navigate action (url mode by the node-set rule)…
+        expect(assembly.data.integration.actions).toContainEqual(
+            expect.objectContaining({ id: "goToDetail", actionType: "navigate" })
+        );
+        // …but with no concrete `to`, it is NOT a url-target navigation.
+        expect(assembly.data.integration.navigations).toEqual([]);
+    });
+
     it("keeps typed navigate ui-actions in legacy navigation integration for compatibility", () => {
         const assembly = assembleNodeSet([
             {

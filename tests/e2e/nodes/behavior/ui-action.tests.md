@@ -25,7 +25,26 @@ Unit-Belege (nicht-Browser):
   Adressierungs-Vorrang in `resolveNavigateLocation`:
   `packages/runtime/test/p118-navigate-target-modes.test.ts`.
 
-## Geplante Testziele (P119 — Editor-UX)
+## P119 — Navigate-Editor: Modus-UI, Wire-Scan, Mapping-Tabelle (ADR 0011)
 
-- Editor: Modus-Umschalter, Wire-Scan-Badges (1/n/0 Treffer), Mapping-Tabelle,
-  Validierung fehlender Platzhalter-Werte, Migration von Legacy-Configs.
+Browser-E2E: `tests/e2e/nodes/editor/navigate-target-modes.spec.ts`.
+
+| Ziel | Spec / Test | Beobachtung |
+|---|---|---|
+| Transitiver Wire-Scan (1 Treffer) | „scanWiredNavigationTargets finds a transitively-wired route…" | Action → function → `ui-route` `/customers/:id`: Scan liefert genau 1 Ziel, Platzhalter `["id"]`. |
+| Wire-Scan-Menge bei Verzweigung | „returns a SET for a branching flow…" | Action → switch → zwei Routen: Scan liefert `["/alpha/:a", "/beta/:b"]`. |
+| Initialer Modus = Wire (Scan ≥1) | „opens in WIRE mode with the route path" | Frische Action öffnet im `wire`-Modus; Panel zeigt „via Wire → /customers/:id", `:id`-Zeile, blaue Panel-Klasse `webapp-path-panel--wire`. |
+| Verzweigung = Badge n + Laufzeit-Hinweis, KEIN Fehler | „branching wire opens with the multi-target badge…" | Badge „2 mögliche Ziele", Laufzeit-Hinweis sichtbar, `node.valid === true`. |
+| Modus-Wechsel auf Route bleibt nach Speichern | „switching to ROUTE mode shows the transport info, persists across reopen" | Lila Panel `--ref`, Info „dient als Transport"; nach Deploy+Reopen `targetMode === "route"` (kein Zurückspringen trotz Wire). |
+| Route-Modus: Pflicht-Platzhalter | „route mode: empty :placeholder value makes the node invalid…" | Leerer `:id`-Wert → Knoten ungültig (Deploy blockiert); gefüllt → gültig. |
+| Route-Wechsel baut Tabelle neu | „route mode: changing the route rebuilds the table…" | `/customers/:id` → `/orders/:id/:tab`: Zeilen `[:id, :tab]`, `:id`-Wert bleibt erhalten. |
+| URL-Modus: keine Parameter-Sektion + sanfte Warnung | „url mode shows the `to` typedInput and NO parameter section…" | `to`-Zeile sichtbar, 0 Mapping-Zeilen, `:platzhalter`-Warnung sichtbar, `node.valid === true`. |
+| ui-navigation angeglichen | (in `navigate-target-modes.spec.ts`) „ui-navigation shows the same three-mode switcher" | Drei Segmente sichtbar; Legacy-`to`-Config öffnet im `url`-Modus. |
+| Legacy `to`-Round-Trip im URL-Modus | `behavior-state.spec.ts` → „ui-action — actionType selector…" | Segment URL → `to` = `/customers/:id` → Speichern/Reopen behält `targetMode==="url"` + `to`. |
+
+Unit-Belege (nicht-Browser):
+- Route-Modus-`ui-navigation` ohne `to` assembliert + bleibt aus der `to`-Liste:
+  `packages/runtime/test/node-set-runtime.test.ts` („P119: a route-mode
+  ui-navigation (no `to`)…").
+- Zentrale Editor-Helfer (`parseRoutePlaceholders`, `scanWiredNavigationTargets`)
+  sind browser-only und werden über `page.evaluate` in der Editor-Spec geprüft.

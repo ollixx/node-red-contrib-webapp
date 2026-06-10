@@ -28,7 +28,9 @@ test.describe("editor panels — behavior & state nodes (P47)", () => {
         // P60 / ADR 0007 §3: the free-text `target` field is replaced by a canvas
         // node picker. `targets` (JSON list) is the new config field; legacy
         // `target` survives as a hidden input for backward-compat.
-        await editor.expectFields(["name", "parent", "actionType", "to", "targets", "part", "description"]);
+        // P119 (ADR 0011): the navigate `to` is now the URL-mode carrier; the
+        // targetMode/routeId hidden carriers join the field set.
+        await editor.expectFields(["name", "parent", "actionType", "to", "targetMode", "routeId", "targets", "part", "description"]);
 
         // The wireless picker exposes a "pick on canvas" button.
         await expect(page.locator("#node-input-targets-pick")).toHaveCount(1);
@@ -47,12 +49,15 @@ test.describe("editor panels — behavior & state nodes (P47)", () => {
         // parent SelectBox lists the app.
         expect(await editor.pickerPresetValues("apps")).toContain("actApp");
 
-        // P66 (ADR 0007): `to` is now a typedInput (str / msg / flow / global /
-        // jsonata) — driven via the widget API, not a plain visible <input>. The
-        // literal-path (str) value must round-trip across save/reopen.
+        // P66/P119 (ADR 0011): `to` is the URL-mode typedInput (str / msg / flow /
+        // global / jsonata). Select URL mode, then the literal-path (str) value
+        // must round-trip across save/reopen. (Without a stored mode this action
+        // pre-selects `route`, so we switch to `url` first.)
+        await page.locator(".webapp-nav-mode-seg--url").click();
         await editor.fillTypedInput("to", "/customers/:id", "str");
         await editor.save();
         await editor.openNode("actEd");
+        expect(await editor.readField("targetMode")).toBe("url");
         expect(await editor.readTypedInput("to")).toBe("/customers/:id");
         expect(await editor.readTypedInputType("to")).toBe("str");
 

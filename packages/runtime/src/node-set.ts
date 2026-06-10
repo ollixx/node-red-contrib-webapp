@@ -345,7 +345,12 @@ function assembleRuntimeIntegration(
         .sort((left, right) => left.id.localeCompare(right.id));
 
     const navigations = passiveDefinitions
-        .filter((definition): definition is UiNavigationNodeDefinition | UiActionNodeDefinition => definition.type === "ui-navigation" || definition.type === "ui-action" && definition.actionType === "navigate" && typeof definition.to === "string")
+        // P119 (ADR 0011 §5): only navigations that carry a concrete `to` URL are
+        // url-target navigations. A route-mode ui-navigation/ui-action has no `to`
+        // (it addresses via routeId) and is excluded from this `to`-keyed list.
+        .filter((definition): definition is UiNavigationNodeDefinition | UiActionNodeDefinition =>
+            (definition.type === "ui-navigation" || (definition.type === "ui-action" && definition.actionType === "navigate"))
+            && typeof definition.to === "string")
         .map((definition) => ({
             id: definition.id,
             to: definition.to

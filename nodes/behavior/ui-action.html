@@ -9,13 +9,21 @@
                 name: { value: "" },
                 parent: { value: "" },
                 actionType: { value: "" },
+                // P118/P119 (ADR 0011): the navigate target SOURCE mode (wire | route
+                // | url). Empty until the panel resolves it (wire-scan pre-select).
+                targetMode: { value: "" },
+                // P118/P119: referenced ui-route id (route mode). Its validator
+                // back-stops the whole navigate config (ADR 0011 §3): route mode
+                // requires a resolvable routeId + a value for each :placeholder.
+                routeId: { value: "", validate: function () { return window.WebappEditorCommon.validateNavigateConfig(this); } },
                 // P66 (ADR 0007): navigate `to` is a typedInput — `to` holds the
                 // value, `toType` the type (str = literal path, or msg/flow/global/
-                // jsonata). Empty for Scenario 1 (wired to a ui-route).
+                // jsonata). Only meaningful in url mode (the URL is built whole).
                 to: { value: "" },
                 toType: { value: "str" },
-                // P66: named URL params (Scenario 1: wired to a ui-route). Stored as
-                // a JSON object string (key/value rows).
+                // P118/P119: typed navigate params — a JSON array string of
+                // { name, value, valueType } rows (route mode; wire mode where the
+                // scan detected a single route). Migrates from the legacy object form.
                 params: { value: "" },
                 // P60 / ADR 0007 §3: list of picked target node ids (JSON array)
                 // — the optional "wireless" path. Legacy singular `target` kept
@@ -42,47 +50,58 @@
                     buttonId: "node-input-targets-pick"
                 }).call(this);
 
-                // P66: `to` as a typedInput (str / msg / flow / global / jsonata).
-                const toInput = $("#node-input-to");
-                toInput.typedInput({
+                const nodeId = this.id;
+
+                // P119 (ADR 0011): legacy params migration — an old `{k: "v"}` object
+                // string becomes a typed-row JSON array so installNavigateTargetMode
+                // can seed its mapping table from it.
+                try {
+                    const raw = this.params ? String(this.params).trim() : "";
+                    if (raw && !raw.startsWith("[")) {
+                        const obj = JSON.parse(raw);
+                        if (obj && typeof obj === "object" && !Array.isArray(obj)) {
+                            const rows = Object.keys(obj).map(function (k) {
+                                return { name: k, value: String(obj[k]), valueType: "str" };
+                            });
+                            $("#node-input-params").val(rows.length > 0 ? JSON.stringify(rows) : "");
+                        }
+                    }
+                } catch (_e) { /* leave as-is on parse error */ }
+
+                // P66/P119: `to` as a typedInput (url mode — str / msg / flow / global
+                // / jsonata). The mode UI relocates its form-row into the panel.
+                $("#node-input-to").typedInput({
                     default: "str",
                     typeField: $("#node-input-toType"),
                     types: ["str", "msg", "flow", "global", "jsonata"]
                 });
 
-                // P66: params key/value editor (editableList). Serialised to the
-                // hidden #node-input-params field as a JSON object on save.
-                const paramsList = $("#node-input-params-list");
-                paramsList.editableList({
-                    addButton: "Parameter hinzufügen",
-                    header: $("<div>").css({ "padding-left": "8px" }).append($("<span>").text("URL-Parameter (Name → Wert)")),
-                    addItem: function (row, _index, data) {
-                        const entry = data || {};
-                        const keyInput = $("<input type='text' class='node-input-param-key' placeholder='Name'>")
-                            .css({ width: "40%", "margin-right": "6px" }).val(entry.key || "");
-                        const valInput = $("<input type='text' class='node-input-param-value' placeholder='Wert'>")
-                            .css({ width: "50%" }).val(entry.value || "");
-                        $(row).append(keyInput).append(valInput);
-                    }
-                });
-                let initialParams = {};
-                try {
-                    initialParams = this.params ? JSON.parse(this.params) : {};
+                // P119 (ADR 0011): the three-mode navigate target switch + wire-scan
+                // assistance + parameter-mapping table. Central helper; ui-navigation
+                // wires the same one.
+                let navMode = null;
+                this.__navMode = null;
+                const self = this;
+                function buildNavMode() {
+                    navMode = common.installNavigateTargetMode({
+                        nodeId: nodeId,
+                        onChange: function () { RED.editor.validateNode && RED.editor.validateNode(self); }
+                    });
+                    self.__navMode = navMode;
                 }
-                catch (_e) {
-                    initialParams = {};
-                }
-                Object.keys(initialParams).forEach(function (key) {
-                    paramsList.editableList("addItem", { key: key, value: String(initialParams[key]) });
-                });
 
-                // P66: only show navigation fields when actionType === navigate, and
-                // only show "Teil" for the granularity verbs.
+                // P66/P119: only show navigation fields when actionType === navigate,
+                // and only show "Teil" for the granularity verbs.
                 const actionTypeSelect = $("#node-input-actionType");
                 function updateConditionalFields() {
                     const type = actionTypeSelect.val();
                     const isNavigate = type === "navigate";
                     $(".ui-action-navigate-field").toggle(isNavigate);
+                    if (isNavigate && !navMode) {
+                        buildNavMode();
+                    }
+                    // The `to` row is relocated into the URL-mode panel by the
+                    // controller; for non-navigate verbs it stays hidden there.
                     const isPartVerb = type === "open" || type === "close" || type === "select";
                     $(".ui-action-part-field").toggle(isPartVerb);
                 }
@@ -90,16 +109,14 @@
                 updateConditionalFields();
             },
             oneditsave: function () {
-                // P66: serialise the params key/value rows into a JSON object string.
-                const params = {};
-                $("#node-input-params-list").editableList("items").each(function () {
-                    const key = $(this).find(".node-input-param-key").val();
-                    const value = $(this).find(".node-input-param-value").val();
-                    if (key && String(key).trim().length > 0) {
-                        params[String(key).trim()] = value === undefined || value === null ? "" : String(value);
-                    }
-                });
-                $("#node-input-params").val(Object.keys(params).length > 0 ? JSON.stringify(params) : "");
+                // P119: let the navigate mode controller persist mode + exclusive
+                // carriers (route/params XOR to). No-op for non-navigate verbs.
+                if (this.__navMode && $("#node-input-actionType").val() === "navigate") {
+                    this.__navMode.oneditsave();
+                } else if ($("#node-input-actionType").val() !== "navigate") {
+                    // Non-navigate: clear navigate-only carriers so they never leak.
+                    $("#node-input-targetMode").val("");
+                }
             }
         });
     })();
@@ -109,9 +126,18 @@
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-parent">App</label><select id="node-input-parent"></select></div>
     <div class="form-row"><label for="node-input-actionType">Action-Typ</label><select id="node-input-actionType"><option value="">unspezifiziert</option><option value="navigate">navigate</option><option value="show">show</option><option value="hide">hide</option><option value="open">open</option><option value="close">close</option><option value="select">select</option><option value="enable">enable</option><option value="disable">disable</option><option value="focus">focus</option><option value="reset">reset</option></select></div>
-    <div class="form-row ui-action-navigate-field"><label for="node-input-to">Navigation zu</label><input type="text" id="node-input-to" style="width: 70%;" placeholder="z.B. /customers/:id"><input type="hidden" id="node-input-toType"></div>
-    <div class="form-row ui-action-navigate-field" style="margin-bottom: 0;"><label style="width: auto; vertical-align: top;">Parameter</label></div>
-    <div class="form-row ui-action-navigate-field"><ol id="node-input-params-list"></ol><input type="hidden" id="node-input-params"><small class="form-tips" style="display: block; margin-top: 4px;">Bei Verdrahtung mit einer ui-route: das "Navigation zu" leer lassen — die Route liefert den Pfad; die Parameter füllen ihre <code>:platzhalter</code>.</small></div>
+    <!-- P119 (ADR 0011): navigate target-source mode UI (built by
+         installNavigateTargetMode into .webapp-navigate-target-mode). The `to`
+         row is relocated into the URL-mode body; routeId/params/targetMode are
+         hidden carriers Node-RED binds + saves. -->
+    <div class="form-row ui-action-navigate-field" style="display:block;">
+        <label style="display:block; margin-bottom:6px;">Ziel</label>
+        <div class="webapp-navigate-target-mode"></div>
+    </div>
+    <div class="form-row" id="node-input-to-row" style="display:none;"><label for="node-input-to">Navigation zu</label><input type="text" id="node-input-to" style="width: 70%;" placeholder="z.B. /customers/:id"><input type="hidden" id="node-input-toType"></div>
+    <div class="form-row" id="node-input-routeId-row" style="display:none;"><label for="node-input-routeId">Ziel-Route</label><input type="text" id="node-input-routeId"></div>
+    <input type="hidden" id="node-input-targetMode">
+    <input type="hidden" id="node-input-params">
     <div class="form-row">
         <label style="width: auto; vertical-align: top;">Ziel-Knoten (optional)</label>
         <button type="button" id="node-input-targets-pick" class="red-ui-button"><i class="fa fa-crosshairs"></i> Auf Canvas wählen</button>
