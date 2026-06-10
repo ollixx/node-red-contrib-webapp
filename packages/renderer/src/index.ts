@@ -1,6 +1,9 @@
 export const packageName = "@node-red-contrib-webapp/renderer";
 
-export { createRendererApp, findComponentInSnapshot, matchRouteLocation, normalizeDisplayValue } from "./renderer";
+export { buildStoreNamePaths, createRendererApp, evaluateReactiveExpression, findComponentInSnapshot, matchRouteLocation, normalizeDisplayValue } from "./renderer";
+export { __getReactiveCompileCount, __resetReactiveCache, AMBIGUOUS_STORE } from "./reactive-expression";
+export type { ReactiveError, ReactiveEvalResult, ReactiveSources } from "./reactive-expression";
+export type { ReactiveErrorReporter } from "./renderer";
 export {
     buildShoelaceTokenBridgeCss,
     collectSnapshotKinds,

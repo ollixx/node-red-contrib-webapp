@@ -1,0 +1,47 @@
+[
+  {
+    "type": "tab",
+    "id": "reactiveFlow",
+    "label": "P115 Reactive"
+  },
+  {
+    "type": "ui-app",
+    "id": "reactiveApp",
+    "name": "Reactive App",
+    "root": "reactiveApp",
+    "layout": "app",
+    "title": "Reactive",
+    "z": "reactiveFlow",
+    "wires": [],
+    "x": 200,
+    "y": 140
+  },
+  {
+    "type": "ui-route",
+    "id": "r-customer-detail",
+    "name": "Customer detail",
+    "parent": "reactiveApp",
+    "path": "/customers/:id",
+    "title": "Customer",
+    "layoutId": "vertical",
+    "z": "reactiveFlow",
+    "wires": [],
+    "x": 200,
+    "y": 200
+  },
+  {
+    "type": "ui-text",
+    "id": "reactiveTitle",
+    "uiId": "reactiveTitle",
+    "name": "Reactive title",
+    "mount": "route:/customers/:id/content",
+    "value": {
+      "kind": "reactive",
+      "value": "`Kunde ${routeParam.id}`"
+    },
+    "z": "reactiveFlow",
+    "wires": [],
+    "x": 200,
+    "y": 260
+  }
+]
