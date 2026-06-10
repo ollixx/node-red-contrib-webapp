@@ -624,6 +624,43 @@
     root.addEventListener("change", handleChangeEvent);
     root.addEventListener("sl-change", handleChangeEvent);
 
+    // ui-input submit gesture: a confirmed field value (Enter key, or Shoelace's
+    // forwarded `sl-input-submit` custom event) reports a `submit` event on the
+    // originating node with params.value = the field's current value. Like change,
+    // this rides on the change-wrapper hook (data-webapp-source + change marker);
+    // text inputs are the only controls that carry a submit gesture.
+    function handleSubmitEvent(eventObject) {
+        const wrapper = eventObject.target.closest("[data-webapp-source][data-webapp-event=\"change\"]");
+
+        if (!wrapper || !root.contains(wrapper)) {
+            return;
+        }
+
+        const field = eventObject.target;
+        const tag = field.tagName ? field.tagName.toLowerCase() : "";
+
+        // Only text-style inputs confirm via submit; toggles/selects do not.
+        if (tag !== "sl-input" && !(tag === "input" && field.type !== "checkbox")) {
+            return;
+        }
+
+        dispatch({
+            source: wrapper.getAttribute("data-webapp-source"),
+            event: "submit",
+            params: { value: field.value }
+        });
+    }
+
+    // Real-user gesture: Enter inside a text input → submit.
+    root.addEventListener("keydown", function (eventObject) {
+        if (eventObject.key !== "Enter") {
+            return;
+        }
+        handleSubmitEvent(eventObject);
+    });
+    // Shoelace forwards a confirmed value as the `sl-input-submit` custom event.
+    root.addEventListener("sl-input-submit", handleSubmitEvent);
+
     // P38: tabs — sl-tab-group fires `sl-tab-show` (Shoelace custom event) when a
     // tab is activated. Find the closest [data-webapp-event="sl-tab-show"] ancestor
     // and dispatch a `change` event with params.value = the newly-active tab id.

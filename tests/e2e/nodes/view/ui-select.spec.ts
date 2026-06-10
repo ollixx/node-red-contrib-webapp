@@ -190,15 +190,21 @@ test.describe("ui-select (P44 + P124)", () => {
     });
 
     test("P124: disabled store-binding truthy → sl-select[disabled]", async ({ page, request }) => {
-        // A ui-store initialised to { isLocked: true } → disabled binding resolves
-        // truthy from the store → sl-select renders with [disabled].
+        // A ui-store initialised truthy → disabled binding (path = store node id)
+        // resolves truthy from the store → sl-select renders with [disabled].
+        // NOTE: a `store` binding's `path` is the ui-store NODE id (resolved to its
+        // statePath, then read live), NOT a key inside the store value object.
         const flow = new FlowBuilder()
             .app({ id: "selDisApp3", root: "selDisApp3" })
-            .store({ id: "selStore3", initial: JSON.stringify({ isLocked: true }) })
+            .node("ui-store", {
+                id: "selStore3",
+                statePath: "isLocked",
+                initialValue: JSON.stringify(true)
+            })
             .node("ui-select", {
                 id: "selDisNode3",
                 label: "Store Locked",
-                disabled: { kind: "store", path: "isLocked" },
+                disabled: { kind: "store", path: "selStore3" },
                 optionsJson: JSON.stringify([{ label: "A", value: "a" }])
             })
             .build();
