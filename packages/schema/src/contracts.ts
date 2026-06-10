@@ -39,7 +39,7 @@ export const DYNAMIC_BINDING_KINDS = ["state", "query", "routeParam", "msg", "fl
 
 export const bindingSchema = z
     .object({
-        kind: z.enum(["state", "query", "routeParam", "literal", "msg", "flow", "global", "jsonata", "env", "store"]),
+        kind: z.enum(["state", "query", "routeParam", "literal", "msg", "flow", "global", "jsonata", "env", "store", "reactive"]),
         path: z.string().min(1, "Binding paths must not be empty.").optional(),
         value: z.unknown().optional(),
         fallback: z.unknown().optional()
@@ -50,6 +50,20 @@ export const bindingSchema = z
                 context.addIssue({
                     code: z.ZodIssueCode.custom,
                     message: "Literal bindings require a value."
+                });
+            }
+
+            return;
+        }
+
+        // P115 (ADR 0010): a `reactive` binding carries the expression SOURCE in
+        // `value` (a non-empty string), not a `path`. The renderer compiles and
+        // evaluates it per snapshot.
+        if (binding.kind === "reactive") {
+            if (typeof binding.value !== "string" || binding.value.trim().length === 0) {
+                context.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: "Reactive bindings require a non-empty expression in 'value'."
                 });
             }
 
@@ -211,6 +225,12 @@ export type DialogDefinition = z.infer<typeof dialogDefinitionSchema>;
 
 export const storeDefinitionSchema = z.object({
     id: identifierSchema,
+    // P115 (ADR 0010): the store's authoring NAME. The `store` binding kind
+    // references a store by id (rename-robust); a `reactive` expression instead
+    // resolves `store("<name>")` by this human-facing name, so it is carried
+    // through to the renderer. Optional for back-compat; empty/absent is a valid
+    // (unnamed) store and simply won't be reachable via store("…").
+    name: z.string().optional(),
     statePath: z.string().min(1, "Stores must declare a state path."),
     initialValue: z.unknown().optional()
 });

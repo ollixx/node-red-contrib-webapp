@@ -13,6 +13,18 @@ import {
     type UiEventMessage
 } from "@node-red-contrib-webapp/schema";
 
+import { buildStoreNamePaths, evaluateReactiveExpression, type ReactiveError } from "./reactive-expression";
+
+export { evaluateReactiveExpression, buildStoreNamePaths } from "./reactive-expression";
+
+/**
+ * P115 (ADR 0010): a sink the host can supply to receive distinct reactive-
+ * expression failures, so they flow into the existing error-forwarding/logging
+ * pipeline (webapp.js `reportRuntimeError`). Called at most once per distinct
+ * error (deduped by source+message) across the app instance's lifetime.
+ */
+export type ReactiveErrorReporter = (error: ReactiveError) => void;
+
 type UiEventName = UiEventMessage["ui"]["event"];
 
 export interface RendererAppOptions {
@@ -20,6 +32,10 @@ export interface RendererAppOptions {
     location?: string;
     state?: Record<string, unknown>;
     queries?: Record<string, unknown>;
+    // P115: optional sink for distinct `reactive` expression failures. Deduped
+    // per app instance so a broken expression is reported once, not on every
+    // re-render. The host wires this to the error-forwarding pipeline.
+    onReactiveError?: ReactiveErrorReporter;
 }
 
 export interface RenderedEventBinding {
@@ -136,6 +152,12 @@ export interface RendererApp {
     dispatchEvent(componentId: string, event: UiEventName, payload?: Record<string, unknown>): DispatchResult;
 }
 
+// P115: a unique marker returned for a reactive expression that failed to
+// compile/evaluate. It is distinct from `undefined` (which means "no value,
+// apply fallback"), so a failed reactive value renders the invalid-value marker
+// per P104 and is NOT replaced by binding.fallback.
+const REACTIVE_INVALID = Symbol("reactive-invalid");
+
 interface BindingSources {
     state: Record<string, unknown>;
     queries: Record<string, unknown>;
@@ -144,6 +166,11 @@ interface BindingSources {
     // current value via state. Referencing by id (not statePath) stays robust
     // against later statePath renames.
     storePaths: Record<string, string>;
+    // P115: store NAME → statePath, the lookup `store("<name>")` uses inside a
+    // reactive expression. Built alongside storePaths.
+    storeNamePaths: Record<string, string>;
+    // P115: invoked with a distinct reactive failure (already deduped upstream).
+    reportReactiveError?: ReactiveErrorReporter;
 }
 
 interface ComponentRenderContext {
@@ -236,6 +263,29 @@ function resolveBinding(binding: BindingDefinition | undefined, sources: Binding
             // payload arrives the field renders EMPTY — never "?".
             resolvedValue = binding.fallback ?? "";
             break;
+        case "reactive": {
+            // P115 (ADR 0010): compile-once/evaluate-often client expression.
+            // value carries the source. A failure (compile, throw, or thenable
+            // return) never breaks the snapshot: it resolves to the invalid-value
+            // marker (P104) and is reported once per distinct error.
+            const source = typeof binding.value === "string" ? binding.value : "";
+            const result = evaluateReactiveExpression(source, {
+                state: sources.state,
+                queries: sources.queries,
+                params: sources.params,
+                storeNamePaths: sources.storeNamePaths
+            });
+
+            if (result.error) {
+                sources.reportReactiveError?.(result.error);
+                // Bypass the fallback substitution below — a failed reactive value
+                // is an explicit invalid-value, not an absent one.
+                return REACTIVE_INVALID;
+            }
+
+            resolvedValue = result.value;
+            break;
+        }
     }
 
     return resolvedValue === undefined ? binding.fallback : resolvedValue;
@@ -754,6 +804,23 @@ export function createRendererApp(appModel: AppModel, options: RendererAppOption
         paths[store.id] = store.statePath;
         return paths;
     }, {});
+    // P115: store NAME → statePath, the lookup `store("<name>")` uses inside a
+    // reactive expression. Duplicate names are marked ambiguous (not last-wins).
+    const storeNamePaths = buildStoreNamePaths(integration.stores);
+    // P115: dedup distinct reactive failures per app instance, so a broken
+    // expression is reported once — not on every re-render. The set persists
+    // across render()/navigate()/replaceState()/replaceQueries() calls.
+    const reportedReactiveErrors = new Set<string>();
+    const reportReactiveError: ReactiveErrorReporter | undefined = options.onReactiveError
+        ? (error) => {
+            if (reportedReactiveErrors.has(error.key)) {
+                return;
+            }
+
+            reportedReactiveErrors.add(error.key);
+            options.onReactiveError?.(error);
+        }
+        : undefined;
     let location = options.location ?? appModel.routes[0]?.path ?? "/";
     let queries = options.queries ?? {};
     let state = initializeState(options.state ?? {}, queries, integration);
@@ -766,7 +833,9 @@ export function createRendererApp(appModel: AppModel, options: RendererAppOption
                 state,
                 queries,
                 params: routeMatch.params,
-                storePaths
+                storePaths,
+                storeNamePaths,
+                reportReactiveError
             }
         };
         const dialogs = appModel.dialogs

@@ -1,4 +1,4 @@
-import type { AppModel, RuntimeIntegrationModel } from "./contracts";
+import type { AppModel, BindingDefinition, RuntimeIntegrationModel } from "./contracts";
 import type { UiNodeDefinition } from "./node-definitions";
 
 export const customersCrudAppModelFixture: AppModel = {
@@ -406,6 +406,9 @@ export const customersCrudRuntimeIntegrationFixture: RuntimeIntegrationModel = {
     stores: [
         {
             id: "draftStore",
+            // P115: the authoring name a `reactive` expression resolves via
+            // `store("customer")` → this store's statePath → live value.
+            name: "customer",
             statePath: "draft.customer",
             initialValue: {
                 name: "",
@@ -488,6 +491,17 @@ export const customersCrudRuntimeIntegrationFixture: RuntimeIntegrationModel = {
             to: "/customers"
         }
     ]
+};
+
+/**
+ * P115 (ADR 0010) — canonical `reactive` binding fixture. The motivating
+ * example: a ui-text on `/customers/:id` whose displayed value composes the
+ * route param into a string. `value` carries the expression SOURCE (a template
+ * literal), not a path. Downstream packages reuse this as the reference shape.
+ */
+export const reactiveBindingFixture: BindingDefinition = {
+    kind: "reactive",
+    value: "`Kunde ${routeParam.id}`"
 };
 
 export const customersCrudNodeSetFixture: UiNodeDefinition[] = [

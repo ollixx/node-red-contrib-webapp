@@ -1431,7 +1431,19 @@ function buildAppSnapshot(appId, location, dialogId, definitions, clientId) {
         integration,
         location,
         state: effectiveState,
-        queries
+        queries,
+        // P115 (ADR 0010): a failed `reactive` expression never breaks the
+        // snapshot; it is reported once per distinct error through the existing
+        // error-forwarding/logging pipeline (ADR 0006 / P55–P56).
+        onReactiveError: (error) => {
+            reportRuntimeError(undefined, {
+                severity: "error",
+                code: "reactive_expression_failed",
+                message: `Reactive expression failed: ${error.message}`,
+                context: { appId, expression: error.source },
+                clientId
+            });
+        }
     });
 
     return {
@@ -4414,6 +4426,9 @@ const runtimeNodeRegistry = {
                 type: "ui-store",
                 id: getUiId(config),
                 parent: config.parent || undefined,
+                // P115 (ADR 0010): carry the store's authoring name through so a
+                // `reactive` expression can resolve store("<name>") → statePath.
+                name: typeof config.name === "string" ? config.name : undefined,
                 statePath: config.statePath,
                 initialValue: parseJson(config.initialValue),
                 persist: config.persist === true || config.persist === "true",

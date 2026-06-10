@@ -201,5 +201,6 @@ export {
     customersCrudNodeSetFixture,
     customersCrudRuntimeIntegrationFixture,
     fixtureAppModels,
-    operationsConsoleAppModelFixture
+    operationsConsoleAppModelFixture,
+    reactiveBindingFixture
 } from "./fixtures";
