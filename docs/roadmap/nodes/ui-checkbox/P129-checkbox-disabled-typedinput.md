@@ -9,7 +9,7 @@ verify: browser
 spec: docs/nodes/input/ui-checkbox.md
 tests: tests/e2e/nodes/view/ui-checkbox.tests.md
 dependencies: [P113]
-status: pending
+status: in_progress
 ---
 # P129 — ui-checkbox: bindbares disabled
 
