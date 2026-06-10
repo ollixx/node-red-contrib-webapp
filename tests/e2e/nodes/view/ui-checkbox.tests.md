@@ -1,6 +1,6 @@
-# ui-checkbox — Test Catalogue (P97)
+# ui-checkbox — Test Catalogue (P97 / P129)
 
-Per `.ai/agents/node-testing.md`: outcome-based tests only. Updated by P97.
+Per `.ai/agents/node-testing.md`: outcome-based tests only. Updated by P97, P129.
 
 ## E2E Tests (`tests/e2e/nodes/view/ui-checkbox.spec.ts`)
 
@@ -10,13 +10,15 @@ Per `.ai/agents/node-testing.md`: outcome-based tests only. Updated by P97.
 | 2 | label as literal binding renders label text in sl-checkbox | label typedInput (literal binding) resolved to text in DOM |
 | 3 | disabled literal true → sl-checkbox[disabled] in browser DOM | disabled binding (literal true) produces [disabled] attribute on element |
 | 4 | disabled absent → no [disabled] attribute on sl-checkbox | No spurious disabled attribute when disabled field not set |
-| 5 | value literal true → sl-checkbox[checked] attribute present | value binding (literal true) → [checked] attribute on element |
-| 6 | value literal false → no [checked] attribute | value binding (literal false) → no [checked] attribute |
-| 7 | size='sm' → sl-checkbox[size=small] in browser DOM | size field 'sm' maps to Shoelace size="small" |
-| 8 | size='lg' → sl-checkbox[size=large] in browser DOM | size field 'lg' maps to Shoelace size="large" |
-| 9 | size 'md' → sl-checkbox[size=medium] in browser DOM | size field 'md' maps to Shoelace size="medium" |
-| 10 | sl-change → POST /event with { event:'change', params:{ checked: bool } } | Change event emitted on user interaction (check) |
-| 11 | sl-change unchecking → POST /event with checked: false | Change event emitted on user interaction (uncheck) |
+| 5 | disabled: store binding (truthy initial value) → sl-checkbox[disabled] | P129: store binding (truthy) disables the checkbox |
+| 6 | disabled: store binding (falsy initial value) → sl-checkbox is active | P129: store binding (falsy) leaves checkbox enabled |
+| 7 | value literal true → sl-checkbox[checked] attribute present | value binding (literal true) → [checked] attribute on element |
+| 8 | value literal false → no [checked] attribute | value binding (literal false) → no [checked] attribute |
+| 9 | size='sm' → sl-checkbox[size=small] in browser DOM | size field 'sm' maps to Shoelace size="small" |
+| 10 | size='lg' → sl-checkbox[size=large] in browser DOM | size field 'lg' maps to Shoelace size="large" |
+| 11 | size 'md' → sl-checkbox[size=medium] in browser DOM | size field 'md' maps to Shoelace size="medium" |
+| 12 | sl-change → POST /event with { event:'change', params:{ checked: bool } } | Change event emitted on user interaction (check) |
+| 13 | sl-change unchecking → POST /event with checked: false | Change event emitted on user interaction (uncheck) |
 
 ## Unit Tests (`packages/runtime/test/p97-checkbox-field-extension.test.ts`)
 

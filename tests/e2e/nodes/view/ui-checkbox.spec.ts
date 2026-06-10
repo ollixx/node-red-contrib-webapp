@@ -5,8 +5,8 @@ import { FlowBuilder } from "../../../helpers/flow-builder";
 import { WebappPage } from "../../../helpers/webapp-page";
 
 /**
- * P97 — ui-checkbox fresh E2E tests (per .ai/agents/node-testing.md).
- * Replaces the P44 presence-only tests.
+ * P97/P129 — ui-checkbox E2E tests (per .ai/agents/node-testing.md).
+ * Replaces the P44 presence-only tests. P129 adds store-binding for disabled.
  *
  * Each test asserts an observable OUTCOME (rendered attribute / DOM structure /
  * emitted event / action applied). A test turns RED if the feature is removed.
@@ -14,7 +14,7 @@ import { WebappPage } from "../../../helpers/webapp-page";
  * Covers (see docs/nodes/input/ui-checkbox.md):
  *   - Rendering: sl-checkbox with label text in DOM
  *   - Disabled (literal true): sl-checkbox[disabled] attribute present
- *   - Disabled (state binding): sl-checkbox[disabled] when state = true
+ *   - Disabled (store binding truthy): sl-checkbox[disabled] via ui-store
  *   - Disabled (absent): no [disabled] attribute
  *   - Value binding (literal true): sl-checkbox[checked] attribute present
  *   - Value binding (literal false): no [checked] attribute
@@ -95,6 +95,49 @@ test.describe("ui-checkbox (P97)", () => {
         await expect(page.locator("sl-checkbox")).toBeVisible();
         // Must NOT have disabled attribute
         await expect(page.locator("sl-checkbox[disabled]")).not.toBeVisible();
+    });
+
+    // P129 (ADR 0012): disabled via store binding
+    test("disabled: store binding (truthy initial value) → sl-checkbox[disabled]", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "cbApp12", root: "cbApp12" })
+            .node("ui-store", { id: "cbStore12", statePath: "isLocked", initialValue: "true" })
+            .node("ui-checkbox", {
+                id: "cbNode12",
+                label: "Locked by store",
+                value: { kind: "literal", value: false },
+                disabled: { kind: "store", path: "cbStore12" }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+        const webapp = new WebappPage(page, "cbApp12");
+        await webapp.navigate("/");
+
+        // Outcome: sl-checkbox is disabled because the store's initial value is truthy.
+        await expect(page.locator("sl-checkbox[disabled]")).toBeVisible();
+    });
+
+    test("disabled: store binding (falsy initial value) → sl-checkbox is active", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "cbApp13", root: "cbApp13" })
+            .node("ui-store", { id: "cbStore13", statePath: "editMode", initialValue: "false" })
+            .node("ui-checkbox", {
+                id: "cbNode13",
+                label: "Active via store",
+                value: { kind: "literal", value: false },
+                disabled: { kind: "store", path: "cbStore13" }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+        const webapp = new WebappPage(page, "cbApp13");
+        await webapp.navigate("/");
+
+        const cb = page.locator("sl-checkbox");
+        await expect(cb).toBeVisible();
+        // Falsy store value → no disabled attribute.
+        await expect(cb).not.toHaveAttribute("disabled");
     });
 
     // ── Value / checked state ────────────────────────────────────────────────
