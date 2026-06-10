@@ -116,6 +116,12 @@ reads as validation error in the admin UI; color alone fails accessibility).
 First consumer is the ui-action target-mode badge; the tokens are central so
 later consumers (structure sidebar, other panels with both ways) reuse them.
 
+The color must carry the meaning at a glance, so it is a **strong, saturated
+fill** (the badge/segment background is the full color with white text/icon),
+**not a pale pastel tint** (owner decision, 2026-06-10: pastel variants are not
+distinct enough). The active mode-switch segment is likewise a solid filled
+segment, not just a tinted one. The sketches in §6 show the intended weight.
+
 **Where the color configuration lives — decided: editor-global, per user, NOT
 `ui-app`.** The coding is pure editor presentation (like theme or grid), not
 an app property; per-app colors would show the same person different codings
@@ -136,6 +142,25 @@ follow-up package.
   the source.
 - *Red for references:* rejected — collides with error semantics.
 - *Colors per `ui-app`:* rejected — editor UX is not app state.
+
+### 6. Concept sketches
+
+These are non-normative illustrations of the decisions above (strong fills,
+not pastel). The binding contract is the prose in §1–§4.
+
+**The three target modes** (one active at a time; strong-filled mode switch):
+
+![Die drei Zielquellen-Modi: via Wire (blau), Route (lila), URL (neutral)](assets/0011-target-modes.svg)
+
+**Initial mode pre-selection** (only when nothing was saved yet; afterwards the
+stored intent wins and a later canvas-wire change does not switch the mode):
+
+![Voreinstellung des Modus über gespeicherten Wert bzw. Wire-Scan](assets/0011-mode-preselection.svg)
+
+**Runtime addressing precedence** (wire mode: the receiving route wins;
+route/url mode: the addressed navigation is passed through, not hijacked):
+
+![Laufzeit-Vorrang von Wire- gegenüber adressierter Navigation](assets/0011-runtime-precedence.svg)
 
 ## Consequences
 

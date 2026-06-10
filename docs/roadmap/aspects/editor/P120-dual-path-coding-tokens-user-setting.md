@@ -23,19 +23,32 @@ dependencies: []
   Fehler-Semantik der Admin-UI); immer Farbe **+ Icon + Label**
   (Barrierefreiheit); Konfiguration **editor-global pro User**, NICHT in
   `ui-app` (reine Editor-Darstellung, keine App-Eigenschaft).
+- Nachschärfung (Owner, 2026-06-10): "Ich finde die Pastell-Varianten der
+  Farben nicht sehr eindeutig. Ich dachte eher, dass wir die Background-Farbe
+  deutlich dahinterlegen. Die Modus-Switches könnten dann passend auch
+  kräftiger sein." → **kräftige Vollflächen** (Badge-/Segment-Hintergrund ist
+  die volle Farbe mit **weißer** Schrift/Icon), KEIN heller Tint; das aktive
+  Modus-Switch-Segment ist eine gefüllte Vollfläche.
+
+> Zielbild der Codierung (kräftig, nicht pastell) in den Skizzen zu ADR 0011:
+> [Modi](../../../adr/assets/0011-target-modes.svg) ·
+> [Voreinstellung](../../../adr/assets/0011-mode-preselection.svg) ·
+> [Laufzeit-Vorrang](../../../adr/assets/0011-runtime-precedence.svg).
 
 ## Zielmodell
 
 Alles in `resources/lib/editor-common.js` + dem geteilten Stylesheet (P117):
 
 1. **Tokens:** zwei CSS-Custom-Properties am Editor-Root (Vorschlag
-   `--webapp-path-wire-color`, Default Blau, z. B. `#3485e2` an
-   Node-REDs Blautöne angelehnt; `--webapp-path-ref-color`, Default Lila,
-   z. B. `#8f5bbd`). Alle Konsumenten nutzen NUR die Variablen — nie
-   Hex-Werte inline.
+   `--webapp-path-wire-color`, Default kräftiges Blau, z. B. `#185FA5`;
+   `--webapp-path-ref-color`, Default kräftiges Lila, z. B. `#534AB7`). Die
+   Töne sind **Vollflächen-tauglich** (weiße Schrift darauf lesbar), nicht als
+   Tint gedacht. Alle Konsumenten nutzen NUR die Variablen — nie Hex-Werte
+   inline.
 2. **Badge-Helfer** (Vorschlag `pathBadge(kind, label)` mit `kind` ∈
-   `wire | ref`): erzeugt das Badge-Element — Farbfläche (Token, dezent als
-   Hintergrund-Tint), Icon (Stecker für Wire, Kette für Referenz, FontAwesome
+   `wire | ref`): erzeugt das Badge-Element — **kräftige Farbvollfläche**
+   (Token als Hintergrund, **weiße** Schrift + Icon), Icon (Stecker für Wire,
+   Kette für Referenz, FontAwesome
    wie im Editor üblich) und Text-Label. Farbe ist nie der einzige Träger:
    Icon + Label sind immer dabei.
 3. **User-Setting:** eine Webapp-Sektion in den Editor-User-Settings
@@ -58,8 +71,9 @@ zweite Präferenz real wird, nicht auf Vorrat.
 - In den Editor-User-Settings existiert die Webapp-Sektion mit zwei
   Farbwählern (Screenshot).
 - Ein per `pathBadge("wire", "via Wire")` / `pathBadge("ref", "Referenz")`
-  erzeugtes Badge zeigt Default-Blau bzw. -Lila, je mit Icon + Label
-  (Screenshot beider Badges).
+  erzeugtes Badge zeigt Default-Blau bzw. -Lila als **kräftige Vollfläche mit
+  weißer Schrift** (kein heller Tint), je mit Icon + Label (Screenshot beider
+  Badges); Kontrast Schrift/Hintergrund WCAG-AA.
 - Farbänderung im Setting wirkt ohne Editor-Reload auf sichtbare Badges;
   nach Browser-Reload bleibt sie erhalten (Persistenz). „Zurücksetzen"
   stellt die Defaults wieder her.
