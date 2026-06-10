@@ -2,12 +2,12 @@
 id: P114
 title: "Picker-Dialog als EINZIGE Auswahl für alle Referenzfelder (parent, route, action, store, mount) + mounts-Preset"
 epic: aspects/editor
-status: done
+status: in_progress
 dependencies: []
 ---
 # P114 — Picker-Dialog als einzige Referenzauswahl
 
-> Rationale & Entscheidung: [ADR 0009](../../../../adr/0009-picker-dialog-as-sole-reference-selection.md).
+> Rationale & Entscheidung: [ADR 0009](../../../adr/0009-picker-dialog-as-sole-reference-selection.md).
 > Zielzustand bereits dokumentiert in `docs/nodes/concepts/editor.md` (Abschnitte
 > „Knoten-Auswahl" + „Referenz-Selektoren") — die Implementierung zieht den Code
 > auf diesen Stand.
@@ -122,9 +122,3 @@ verify: browser
   versteckt es und rendert Anzeige+Button daneben; kein Massen-Edit der
   Templates nötig, sofern die Installer zentral greifen.
 
-## Result
-
-- **delivered:** Picker-Dialog ist die EINZIGE Referenz-Auswahl (ADR 0009). `resources/lib/editor-common.js`: neues `mounts`-Picker-Preset (flacht `buildMountOptionsTree` zu selbstbeschreibenden Breadcrumb-Eintraegen, Wert = Mount-String) und neues `installPickerField(selector,{filterPreset,title,placeholder,clearable,seedValue})` — versteckter Value-Carrier + Read-only-Anzeige + "Auswaehlen…"-Button + optionales "×"-Clear; `installParentAppSelector`/`installReferenceSelectors` nutzen nur noch dieses fuer parent/route/action/store/mount — kein sichtbares Referenz-`<select>` mehr. Entfernt: `enhanceSelectWithPicker`, UI-Rolle von `setSelectOptionsTree`, totes `buildMountOptions`.
-- **stats:** 13 Dateien (Merge da26015), +719/−310 nach Merge; 1 Impl, 1 neue Unit-Spec (3 Tests, `picker-mounts-preset.test.ts`), 1 neuer E2E-Helper (`tests/helpers/picker-dialog.ts`), 6 E2E-Specs auf den Dialog-only-Kontrakt umgeschrieben; ~150 gezielte E2E-Tests gruen im Worktree; volle Suite vom Orchestrator auf develop verifiziert.
-- **notes:** Option-lose `<select>`-Carrier halten keinen Wert, den Node-RED nicht binden koennte — `installPickerField` verwaltet die Optionen selbst (Empty-Option fuer Clear, appended Option fuer unbekannte/seeded Werte); Installer reichen `seedValue` aus der Node-Config. Breadcrumbs in `buildMountOptionsTree` selbstbeschreibend gemacht (einziger verbliebener Consumer ist das `mounts`-Preset). Worktree-Provisionierung lieferte erneut die Orphan-Base db4f4ff — Self-Heal via `git switch -C phase/P114 develop` (Friction-Log).
-- **cost:** session 984cc39b-3c90-4613-8fc8-379ebc7ab8fb (Tokens in `.ai/agent-runs.jsonl`), ~27m wall-clock, Modell opus.

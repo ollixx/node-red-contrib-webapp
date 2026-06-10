@@ -13,11 +13,11 @@ verify: browser
 spec: docs/nodes/behavior/ui-action.md
 tests: tests/e2e/nodes/behavior/ui-action.tests.md
 dependencies: []
-status: done
+status: in_progress
 ---
 # P118 — Navigate-Zielquelle: Schema + Laufzeit
 
-> Entscheidung & Begründung: [ADR 0011](../../../../adr/0011-ui-action-navigation-target-modes-and-dual-path-coding.md).
+> Entscheidung & Begründung: [ADR 0011](../../../adr/0011-ui-action-navigation-target-modes-and-dual-path-coding.md).
 > Dieses Paket liefert die **Unterbau-Semantik** (Schema, Runtime, Migration).
 > Die Editor-UI (Modus-Umschalter, Wire-Scan, Mapping-Tabelle, Badges) ist
 > **P119** — hier nur so viel Editor-Anpassung, dass Bestands-Panels nicht
@@ -104,9 +104,3 @@ dokumentieren.
 - Testkataloge `tests/e2e/nodes/behavior/ui-action.tests.md` (und der
   ui-navigation-Katalog) um die obigen Fälle erweitern.
 
-## Result
-
-- **delivered:** ADR 0011, Schema+Runtime-Haelfte fuer Navigate-Zielmodi. Schema: `navigateTargetModeSchema` (wire|route|url), typisierte Param-Liste `[{name,value,valueType∈str|msg|jsonata|flow|global|env}]`, `superRefine` fuer Per-Modus-Feldexklusivitaet (route⇒routeId/kein `to`; url⇒`to`/kein routeId; wire⇒keins). Runtime (webapp.js): Load-Shim-Migration (legacy `to`→url, routeId→route, sonst→wire; Params-Objekt→str-typed Liste), route-Modus `routeId`→Pfad mit msg-evaluierten Params, ADR-§3-Adressierungsvorrang (eine bereits adressierte Navigation wird durchgereicht statt vom ui-route ueberschrieben), Entfernung der obsoleten P66-Scan-Validierung. Editor minimal schema-valide gehalten (UX kommt in P119). Specs (ui-action, ui-navigation, ui-route, messages) + Test-Katalog aktualisiert.
-- **stats:** 19 Dateien im Merge (+1150/−460): +18 Schema-Assertions, +18 Runtime-Unit-Tests, +4 E2E (route/precedence/wire-branching/url), 2 neue Testdateien. Unit gesamt 1196 gruen, Lint/check:links/customers-crud gruen; 4 neue + 38 verwandte Navigation/Structure-E2E gruen im Worktree. Volle Suite vom Orchestrator auf develop verifiziert.
-- **notes:** Deprecated `targetMode`-Enum (out-port|path) auf wire|route|url umfunktioniert; Back-Compat-Fixtures migriert. `validateNavigationFlow` komplett entfernt (kein scan-basierter Deploy-Check mehr, Owner-Entscheidung). **Known Limitation (Friction-Log + spawned task):** Port-1882-NR (v3+) macht `RED.util.evaluateJSONataExpression` async-only → ein `jsonata`-typed Navigate-`to`/Param resolved synchron zu undefined (vorbestehender P66-Bug). P118 behaelt jsonata-Support im Code (funktioniert auf aelteren NR, unit-getestet mit Mock) und nutzt fuer den url-Modus-E2E ein `msg`-typed `to`; der Async-Refactor ist out-of-scope.
-- **cost:** session-id nicht eindeutig gemeldet (SubagentStop-Zeile ~2026-06-10T12:00Z in `.ai/agent-runs.jsonl`, cwd agent-a2b7c03044efeed9a), ~64m wall-clock, Modell opus.
