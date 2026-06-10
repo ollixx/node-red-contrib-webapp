@@ -2,12 +2,12 @@
 id: P115
 title: "reactive-Binding: Schema-Kind + Renderer-Auswertung (kompilierte JS-Expression, Fehler-Containment, Re-Evaluation pro Snapshot)"
 epic: aspects/rendering
-status: in_progress
+status: done
 dependencies: []
 ---
 # P115 — `reactive`-Binding: Schema + Renderer
 
-> Rationale & Entscheidung: [ADR 0010](../../../adr/0010-reactive-binding-client-expressions.md).
+> Rationale & Entscheidung: [ADR 0010](../../../../adr/0010-reactive-binding-client-expressions.md).
 > Durable Spec (Zielzustand, bereits geschrieben): `docs/nodes/concepts/reactive-expressions.md`.
 > Editor-Seite (typedInput, Monaco-Dialog, Completion): **P116** — NICHT Teil dieses Pakets.
 
@@ -187,3 +187,10 @@ verify: browser
   einer Umgebung ohne `new Function` laufen (CSP o. Ä.), ist das ein Blocker
   laut Schema-Regel 9 — dokumentieren und stoppen, nicht improvisieren.
   (Erwartung: Node-Prozess, kein Problem.)
+
+## Result
+
+- **delivered:** ADR 0010, Renderer-Haelfte — das `reactive`-Binding-Kind end-to-end unterhalb des Editors. Schema: `reactive` im Binding-Kind-Enum (non-empty-string `value`, kein `path`), optionales `name` auf `storeDefinitionSchema`, kanonische `reactiveBindingFixture`. Renderer: neues `reactive-expression.ts` mit `evaluateReactiveExpression` (compile-once Cache, `routeParam`/`store(name)`/`query(path)`-Globals, strict-mode read-only, sync-only, never-throws Containment) + `buildStoreNamePaths` (name→statePath, Duplikate als ambiguous markiert); `resolveBinding` liefert bei Fehlern ein `REACTIVE_INVALID`-Sentinel (→ P104 `"?"`), per-App-Instanz dedupliziertes Error-Reporting via neuem `onReactiveError`. webapp.js: ui-store `mapConfig` erfasst `config.name`; `onReactiveError` an die bestehende `reportRuntimeError`-Pipeline (ADR 0006) angebunden.
+- **stats:** 11 Dateien im Merge dd76327 (+553/−6): 1 Renderer-Modul, 2 neue Unit-Suiten (Schema +8, Renderer +15), 1 E2E-Fixture + 1 E2E-Spec (3/3 gruen im Worktree: Deep-Link, Navigation, Reload). Unit gesamt: schema 243, renderer 55, editor 20, runtime 859 — alle gruen; `pnpm validate` gruen inkl. Tripwires. Volle E2E-Suite vom Orchestrator auf develop verifiziert.
+- **notes:** Runtime ist Pass-through (kein Binding-Kind-Whitelist-Filter); das `resolveBinding` in webapp.js (~1201) ist totes Code ohne Call-Sites und bekam absichtlich keinen reactive-Zweig. Kein SPA-Route-Swap in der App — "Navigation ohne Reload" wird als echte Browser-Navigation exerziert. **Orchestrator-Nacharbeit:** Der Agent schrieb literale NUL-Bytes (0x00) in zwei String-Literale — Datei galt als binaer; post-merge durch `\u0000`-Escapes ersetzt (Commit 76ed919, Friction-Log-Eintrag).
+- **cost:** session-id nicht gemeldet (SubagentStop-Zeile 2026-06-10T11:00Z in `.ai/agent-runs.jsonl`, cwd agent-ab0aa9cd46140970d), ~14m wall-clock, Modell opus.
