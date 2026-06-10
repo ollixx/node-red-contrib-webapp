@@ -14,7 +14,7 @@ status: done
 ---
 # P122 — ui-button: bindbares disabled + href
 
-> Prinzip & Matrix: [ADR 0012](../../../adr/0012-binding-ubiquity-every-value-field-offers-bindings.md).
+> Prinzip & Matrix: [ADR 0012](../../../../adr/0012-binding-ubiquity-every-value-field-offers-bindings.md).
 > Fundament (Kategorie-Typsätze im Helfer): **P113** (vorausgesetzt). Reines
 > Editor-Paket — Runtime kann beides bereits (Renderer löst `bind.disabled`,
 > webapp.js/Renderer lösen `bind.href` seit P71). `label` ist via P113 erledigt.
