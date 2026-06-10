@@ -1016,12 +1016,22 @@
     function pathBadge(kind, label) {
         ensureDualPathStylesheet();
         var icon = (kind === "wire") ? "fa-plug" : "fa-link";
-        var $badge = $("<span>")
-            .addClass("webapp-path-badge")
-            .addClass("webapp-path-badge--" + (kind === "wire" ? "wire" : "ref"));
-        $("<i>").addClass("fa " + icon).appendTo($badge);
-        $("<span>").text(label || (kind === "wire" ? "Wire" : "Ref")).appendTo($badge);
-        return $badge;
+        // Return a raw DOM <span> so consumers may use either jQuery
+        // (`$row.append(badge)`) or native DOM APIs
+        // (`document.body.appendChild(badge)`, `badge.classList`, …).
+        var badge = document.createElement("span");
+        badge.className =
+            "webapp-path-badge webapp-path-badge--" + (kind === "wire" ? "wire" : "ref");
+
+        var iconEl = document.createElement("i");
+        iconEl.className = "fa " + icon;
+        badge.appendChild(iconEl);
+
+        var labelEl = document.createElement("span");
+        labelEl.textContent = label || (kind === "wire" ? "Wire" : "Ref");
+        badge.appendChild(labelEl);
+
+        return badge;
     }
 
     /**
@@ -1035,15 +1045,21 @@
      * page reload) and are persisted via RED.settings.
      */
     function installDualPathUserSettings() {
-        if (typeof RED === "undefined" || typeof RED.userSettings === "undefined") {
+        if (typeof RED === "undefined" || typeof RED.userSettings === "undefined" ||
+            typeof RED.userSettings.add !== "function") {
             return;
         }
-        // Guard — RED.userSettings.add is idempotent by section id in Node-RED,
-        // but we add our own gate to be safe.
-        if (installDualPathUserSettings._registered) {
+        // Guard against duplicate registration. editor-common.js is loaded once
+        // per node HTML file (37+ <script> tags), so this IIFE — and therefore
+        // this function — runs many times, each in a fresh closure. RED.userSettings.add
+        // is NOT idempotent (it just pushes the pane), so without a *persistent*
+        // gate we would register 37 identical "Webapp" panes, yielding 37 colour
+        // inputs sharing one id. Pin the flag on the global so it survives across
+        // every script-execution closure.
+        if (global.__webappDualPathSettingsRegistered) {
             return;
         }
-        installDualPathUserSettings._registered = true;
+        global.__webappDualPathSettingsRegistered = true;
 
         RED.userSettings.add({
             id: "webapp",
@@ -1053,7 +1069,12 @@
                 var wireColor = stored.wire || DUAL_PATH_DEFAULTS.wire;
                 var refColor  = stored.ref  || DUAL_PATH_DEFAULTS.ref;
 
-                var $section = $("<div>").css({
+                // The root element MUST carry id "red-ui-settings-tab-<paneId>".
+                // Node-RED's user-settings tray shows the active pane via
+                // `$("#red-ui-settings-tab-webapp").show()` after hiding all
+                // siblings; without this id our pane is hidden once another tab
+                // (or the initial activation) toggles visibility.
+                var $section = $("<div>").attr("id", "red-ui-settings-tab-webapp").css({
                     fontFamily: "var(--red-ui-primary-font, 'Helvetica Neue', Arial, sans-serif)",
                     fontSize: "13px"
                 });
@@ -1082,7 +1103,7 @@
                     .css({ cursor: "pointer" });
                 $wireRow.append($wireInput);
                 // Live preview badge
-                var $wirePreview = pathBadge("wire", "via Wire").css({ marginLeft: "6px" });
+                var $wirePreview = $(pathBadge("wire", "via Wire")).css({ marginLeft: "6px" });
                 $wireRow.append($wirePreview);
                 $section.append($wireRow);
 
@@ -1094,7 +1115,7 @@
                     .val(refColor)
                     .css({ cursor: "pointer" });
                 $refRow.append($refInput);
-                var $refPreview = pathBadge("ref", "Referenz").css({ marginLeft: "6px" });
+                var $refPreview = $(pathBadge("ref", "Referenz")).css({ marginLeft: "6px" });
                 $refRow.append($refPreview);
                 $section.append($refRow);
 
@@ -1121,9 +1142,12 @@
 
                 return $section;
             },
-            set: function ($el) {
-                var wireColor = $el.find("#webapp-setting-wire-color").val() || DUAL_PATH_DEFAULTS.wire;
-                var refColor  = $el.find("#webapp-setting-ref-color").val()  || DUAL_PATH_DEFAULTS.ref;
+            // Node-RED calls pane.close() when the user-settings tray is closed.
+            // Persist the current picker values and re-apply the tokens so the
+            // CSS variables survive a reload.
+            close: function () {
+                var wireColor = $("#webapp-setting-wire-color").val() || DUAL_PATH_DEFAULTS.wire;
+                var refColor  = $("#webapp-setting-ref-color").val()  || DUAL_PATH_DEFAULTS.ref;
                 RED.settings.set("webapp.dualPath", { wire: wireColor, ref: refColor });
                 applyDualPathTokens(wireColor, refColor);
             }
@@ -2502,22 +2526,30 @@
     }
 
     // ── P120: install dual-path user setting on load (idempotent) ────────────
-    // RED.userSettings may not exist yet at parse time (editor JS loads before
-    // the NR runtime fires). We defer to RED.events if available, otherwise we
-    // try immediately and guard with the _registered flag.
+    // RED.userSettings is the return value of an IIFE in red.min.js, so the
+    // object (with .add) exists as soon as RED itself is defined — well before
+    // any node HTML script runs. We therefore register synchronously on load.
+    // The registration is globally de-duplicated (see installDualPathUserSettings)
+    // because this IIFE runs once per node HTML <script> tag. As a fallback for
+    // any environment where RED is not yet ready at parse time, retry once on
+    // the first node-edit event.
     (function () {
-        if (typeof RED !== "undefined" && RED.userSettings) {
+        if (typeof RED === "undefined") {
+            return;
+        }
+        if (RED.userSettings) {
             installDualPathUserSettings();
-        } else if (typeof RED !== "undefined" && RED.events) {
+        } else if (RED.events) {
             RED.events.on("editor:open", function () {
                 installDualPathUserSettings();
             });
         }
-        // Also apply stored tokens so the CSS variables reflect saved prefs
-        // before any badge is rendered (the stylesheet will re-read them on
-        // first ensureDualPathStylesheet() call, but applyDualPathTokens is
-        // safe to call early and is a no-op on cold load when :root already
-        // has the defaults from ensureDualPathStylesheet).
+        // Ensure the stylesheet (and thus the :root CSS custom properties) is
+        // injected on load, reflecting any persisted user preference, before any
+        // badge or panel is rendered. ensureDualPathStylesheet() is idempotent.
+        if (typeof document !== "undefined" && document.head) {
+            ensureDualPathStylesheet();
+        }
     }());
 
     global.WebappEditorCommon = {
