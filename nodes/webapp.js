@@ -70,6 +70,13 @@ const runtimeState = {
     // Each connected EventSource registers here; flow-driven store/action updates
     // are pushed to the targeted client (msg.ui.clientId) or broadcast to all.
     streamClients: new Map(),
+    // P112: per-client arrival tracking for the connect-based route lifecycle.
+    // clientArrival: appId → Map<clientId, { loadId, location, leaveTimer }>
+    // A fresh page load carries a new loadId; the connect handler compares it to
+    // the previous one to tell a real arrival (→ onEnter/onLeave) from a transient
+    // EventSource reconnect (same loadId → no event). leaveTimer holds a pending,
+    // grace-debounced onLeave when a client disconnects.
+    clientArrival: new Map(),
     endpointsRegistered: false,
     // P106: guard so the flows:started deploy hook is wired exactly once across
     // all node-type registrations (each node calls registerNodeType, which calls
@@ -2097,7 +2104,7 @@ function getStreamSubscribers(appId) {
     return subscribers;
 }
 
-function addStreamClient(appId, clientId, res, location) {
+function addStreamClient(appId, clientId, res, location, loadId) {
     // P37: record the connect time so the redeploy broadcast can skip clients
     // that just connected (the deploy that triggered flows:started fired BEFORE
     // this client connected — reloading them immediately would be a false positive).
@@ -2111,9 +2118,13 @@ function addStreamClient(appId, clientId, res, location) {
     if (res.socket && typeof res.socket.on === "function") {
         res.socket.on("error", noop);
     }
-    getStreamSubscribers(appId).set(clientId, { res, location: location || "/", connectedAt: Date.now() });
+    const resolvedLocation = location || "/";
+    getStreamSubscribers(appId).set(clientId, { res, location: resolvedLocation, connectedAt: Date.now() });
     // P86: emit clientConnected on the ui-app node if the event is declared.
     emitAppClientEvent(appId, "clientConnected", clientId);
+    // P112: connect-based route lifecycle. Every arrival (deep-link, refresh,
+    // navigate) ends in a fresh page-load + SSE connect carrying a new loadId.
+    handleClientArrival(appId, clientId, resolvedLocation, loadId);
 }
 
 function removeStreamClient(appId, clientId) {
@@ -2126,6 +2137,107 @@ function removeStreamClient(appId, clientId) {
     }
     // P86: emit clientDisconnected on the ui-app node if the event is declared.
     emitAppClientEvent(appId, "clientDisconnected", clientId);
+    // P112: schedule a grace-debounced onLeave on the route the client was on.
+    // A reconnect of the same clientId within the grace cancels it (transient
+    // network blip / reload). Without a reconnect it fires onLeave on expiry.
+    scheduleArrivalLeave(appId, clientId);
+}
+
+// P112: grace period (ms) before a disconnect is treated as a real route leave.
+// A transient EventSource drop reconnects well within this window; a closed tab
+// does not. Tunable — long enough to survive a reload/network blip, short enough
+// that a genuine leave is observed promptly.
+const ARRIVAL_LEAVE_GRACE_MS = 3000;
+
+function getClientArrivalMap(appId) {
+    let map = runtimeState.clientArrival.get(appId);
+    if (!map) {
+        map = new Map();
+        runtimeState.clientArrival.set(appId, map);
+    }
+    return map;
+}
+
+// P112: emit onLeave / onEnter on the route node owning a location, if it
+// declares the event. Resolves the node via findRouteNodeForLocation (shared
+// with the navigate path) so deep-link, refresh and navigate all route alike.
+function emitArrivalLifecycle(appId, clientId, eventName, location) {
+    const RED = runtimeState.RED;
+    // Need a RED runtime with a node registry to resolve and send on the route
+    // node. Absent (minimal test doubles, pre-init) → nothing to emit on.
+    if (!RED || !RED.nodes || typeof RED.nodes.getNode !== "function" || !location) {
+        return;
+    }
+    const target = findRouteNodeForLocation(RED, appId, location);
+    if (target && target.node) {
+        emitRouteLifecycleEvent(target.node, eventName, appId, clientId, location, target.params);
+    }
+}
+
+// P112: process a fresh SSE connect for a client. Compares the page-load nonce
+// (loadId) to the previously recorded one:
+//   • same loadId  → transient EventSource reconnect → no lifecycle event.
+//   • new loadId   → real page-load arrival:
+//       - prev location differs → onLeave(prev) then onEnter(new) (A→B switch).
+//       - prev location equal   → onEnter only (refresh, no spurious leave).
+//       - no prev                → onEnter only (deep-link / first arrival).
+// Always cancels any pending grace-debounced leave (the reconnect proves the
+// client is still alive) and records the new {loadId, location}.
+function handleClientArrival(appId, clientId, location, loadId) {
+    const arrivals = getClientArrivalMap(appId);
+    const prev = arrivals.get(clientId);
+
+    // A reconnect (any connect) cancels a pending leave from a prior disconnect.
+    if (prev && prev.leaveTimer) {
+        clearTimeout(prev.leaveTimer);
+        prev.leaveTimer = undefined;
+    }
+
+    const sameLoad = prev && loadId !== undefined && loadId !== null && prev.loadId === loadId;
+    if (sameLoad) {
+        // Transient reconnect of the same document — keep the record current but
+        // emit nothing. (Location can only change via a new page-load, so it is
+        // unchanged here; refresh the entry defensively.)
+        prev.location = location;
+        return;
+    }
+
+    // New page-load (or first arrival): emit the lifecycle.
+    if (prev && prev.location && prev.location !== location) {
+        emitArrivalLifecycle(appId, clientId, "onLeave", prev.location);
+    }
+    emitArrivalLifecycle(appId, clientId, "onEnter", location);
+    arrivals.set(clientId, { loadId, location, leaveTimer: undefined });
+}
+
+// P112: schedule a grace-debounced onLeave for a disconnecting client. If no
+// reconnect arrives within ARRIVAL_LEAVE_GRACE_MS the client is considered gone
+// for good: emit onLeave on its current route and forget it. A reconnect clears
+// this timer in handleClientArrival.
+function scheduleArrivalLeave(appId, clientId) {
+    const arrivals = runtimeState.clientArrival.get(appId);
+    const entry = arrivals && arrivals.get(clientId);
+    if (!entry) {
+        return;
+    }
+    if (entry.leaveTimer) {
+        clearTimeout(entry.leaveTimer);
+    }
+    const location = entry.location;
+    entry.leaveTimer = setTimeout(() => {
+        emitArrivalLifecycle(appId, clientId, "onLeave", location);
+        const map = runtimeState.clientArrival.get(appId);
+        if (map) {
+            map.delete(clientId);
+            if (map.size === 0) {
+                runtimeState.clientArrival.delete(appId);
+            }
+        }
+    }, ARRIVAL_LEAVE_GRACE_MS);
+    // Do not keep the Node process alive solely for a pending leave timer.
+    if (entry.leaveTimer && typeof entry.leaveTimer.unref === "function") {
+        entry.leaveTimer.unref();
+    }
 }
 
 // Serialise a single SSE message frame. A named event lets the browser
@@ -2753,6 +2865,9 @@ function registerEndpoints(RED) {
         // The client passes the initial dialogId so the first snapshot mirrors the
         // server-rendered page (e.g. when ?dialog=<id> was in the page URL).
         const initialDialogId = req.query.dialog ? String(req.query.dialog) : undefined;
+        // P112: per-page-load nonce — distinguishes a real arrival (new loadId →
+        // onEnter/onLeave) from a transient EventSource reconnect (same loadId).
+        const loadId = req.query.load ? String(req.query.load) : undefined;
 
         if (!clientId) {
             res.status(400).json({ error: "A clientId query parameter is required to subscribe." });
@@ -2777,7 +2892,7 @@ function registerEndpoints(RED) {
         // Open the SSE comment line so proxies do not buffer the stream.
         res.write(":ok\n\n");
 
-        addStreamClient(appId, clientId, res, location);
+        addStreamClient(appId, clientId, res, location, loadId);
 
         // Initial sync: push the current live snapshot for this client immediately.
         // Pass the initialDialogId so the first push matches the server-rendered HTML
@@ -3738,9 +3853,14 @@ function resolveNavigateLocation(node, uiAction) {
     return resolveNavigationTarget(template, params, {});
 }
 
-// Perform a navigate for a ui-route / ui-app target: resolve the new location,
-// emit onLeave on the route being left and onEnter on the route being entered
-// (in BOTH scenarios), then push the navigate command (which moves the client).
+// Perform a navigate for a ui-route / ui-app target: resolve the new location
+// and push the navigate command (which moves the client via a full reload).
+//
+// P112: this NO LONGER emits onEnter/onLeave. The client navigates by full
+// page-reload (window.location.assign), so every navigate ends in a fresh SSE
+// connect at the destination carrying a new loadId — the connect-based lifecycle
+// (handleClientArrival) owns onEnter/onLeave for ALL arrival paths (deep-link,
+// refresh, navigate) uniformly. Emitting here as well would double-fire onEnter.
 function performTargetNavigate(node, msg, send, done) {
     const RED = runtimeState.RED;
     const uiMsg = msg && msg.ui && typeof msg.ui === "object" ? msg.ui : undefined;
@@ -3751,40 +3871,12 @@ function performTargetNavigate(node, msg, send, done) {
     const newLocation = resolveNavigateLocation(node, uiAction);
 
     if (RED && appId && newLocation) {
-        // onLeave on the route(s) the targeted client(s) are currently on, before
-        // the location changes. Then push (updates entry.location), then onEnter.
-        const subscribers = runtimeState.streamClients.get(appId);
-        const oldLocations = new Set();
-        if (subscribers) {
-            for (const [cid, entry] of subscribers.entries()) {
-                if (!clientId || cid === clientId) {
-                    oldLocations.add(entry.location || "/");
-                }
-            }
-        }
-        for (const oldLocation of oldLocations) {
-            if (oldLocation !== newLocation) {
-                const leaving = findRouteNodeForLocation(RED, appId, oldLocation);
-                if (leaving && leaving.node) {
-                    emitRouteLifecycleEvent(leaving.node, "onLeave", appId, clientId, oldLocation, leaving.params);
-                }
-            }
-        }
-
         const command = {
             type: "navigate",
             target: node.id,
             to: newLocation
         };
         pushActionCommandToClients(appId, clientId, command);
-
-        // onEnter on the route now entered. The targeted route node is usually
-        // `node` itself (Scenario 1), but resolve by location so ui-app→sub-route
-        // and `to`-template navigations emit on the correct route.
-        const entering = findRouteNodeForLocation(RED, appId, newLocation);
-        if (entering && entering.node) {
-            emitRouteLifecycleEvent(entering.node, "onEnter", appId, clientId, newLocation, entering.params);
-        }
     }
 
     send(msg);
@@ -4998,6 +5090,11 @@ registerWebappNodes.__test__ = {
     addStreamClient,
     removeStreamClient,
     getStreamSubscribers,
+    // P112: connect-based route lifecycle (onEnter/onLeave on every arrival)
+    handleClientArrival,
+    scheduleArrivalLeave,
+    emitArrivalLifecycle,
+    ARRIVAL_LEAVE_GRACE_MS,
     pushSnapshotToClients,
     pushActionCommandToClients,
     buildActionCommand,

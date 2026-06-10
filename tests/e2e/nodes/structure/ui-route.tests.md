@@ -17,3 +17,19 @@ Written fresh for P89 per `.ai/agents/node-testing.md`. Replaces the P42 spec.
 | title as literal binding { kind: 'literal', value } — appears in page `<title>` | P89: a literal binding object resolves to its `value` string in the `<title>` element. |
 | title as state binding — `<title>` falls back to route id | P89: a dynamic binding (state/store/msg/…) that cannot be resolved server-side causes the `<title>` to fall back to the route's id. |
 | no title — `<title>` shows route id as fallback | When no title is set, the `<title>` element shows the route id as a fallback identifier. |
+
+## Route lifecycle on arrival (P112)
+
+Location: `tests/e2e/nodes/structure/p112-route-lifecycle-on-arrival.spec.ts` —
+connect-based `onEnter`/`onLeave` (deep-link / refresh / navigate).
+
+| Test | Goal |
+|---|---|
+| deep-link to /customers/123 fires onEnter on the route with params {id:'123'} | A direct page-load (no prior navigate) at a parameterised route fires `onEnter` on the route node with the resolved params — proven by an onEnter→store→bound-text round-trip rendered in the browser. |
+| refresh of the same route re-fires onEnter (fresh loadId) | Reloading the same route is a new page-load (new load-nonce) and re-fires `onEnter`. |
+
+Unit coverage (Vitest): `packages/runtime/test/p112-route-lifecycle-on-arrival.test.ts`
+pins the full matrix — deep-link, root-'/'-on-ui-app, transient reconnect
+(same loadId → no event), refresh, A→B switch (onLeave A then onEnter B),
+grace-debounced leave on disconnect (+ reconnect cancels it), and that
+`performTargetNavigate` no longer emits the lifecycle.

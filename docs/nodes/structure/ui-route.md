@@ -88,6 +88,35 @@ Pro aktivem Event ein Output-Port. Emittiert wird beim Eintritt/Austritt der Rou
 Routenparameter (z. B. `{ id: "42" }` für `/customers/:id`). Feld-Details:
 [events.md](../concepts/events.md).
 
+### Lebenszyklus an JEDER Ankunft (Connect-basiert, P112)
+
+`onEnter`/`onLeave` feuern bei **jeder** Ankunft an der Route — Deep-Link,
+Refresh und (Reload-basierter) In-App-Navigate gleichermaßen, nicht nur beim
+programmatischen Navigate. Der Client navigiert immer per Full-Reload, also endet
+jede Ankunft in einem neuen Page-Load + neuem SSE-Connect an der Ziel-Location;
+der Server feuert den Lebenszyklus **am Connect**.
+
+- **Betreten:** Sobald ein Client per Page-Load an der Location der Route ankommt.
+  Für die implizite Wurzel `/` feuert `onEnter` auf der [`ui-app`](ui-app.md), wenn
+  diese das Event deklariert.
+- **Verlassen:** Wenn der Client zu einer anderen Location wechselt (Full-Reload →
+  `onLeave` der alten Route, dann `onEnter` der neuen) **oder** den Client
+  endgültig schließt (Disconnect ohne Reconnect innerhalb einer kurzen
+  Grace-Periode).
+- **Reconnect-sicher (Load-Nonce):** Der Client schickt pro Page-Load eine frische,
+  nicht persistierte Nonce (`load`) am Stream-Connect mit. Gleiche Nonce =
+  transienter `EventSource`-Reconnect → **kein** Lebenszyklus-Event; neue Nonce =
+  echter Page-Load → `onEnter` (und ggf. `onLeave` der vorherigen Location).
+- **Refresh:** Neuladen derselben Route (neue Nonce, gleiche Location) feuert
+  `onEnter` erneut, **ohne** `onLeave`.
+- Der programmatische `navigate` löst nur den Reload aus; den Lebenszyklus besitzt
+  ausschließlich der Connect-Pfad (kein Doppel-`onEnter`).
+
+**Bestehende Limitierung (Multi-Tab):** Die `clientId` liegt pro App in
+localStorage und wird über alle Tabs derselben App geteilt; Per-Client-
+Location-Tracking kollidiert daher zwischen mehreren Tabs derselben App. Noch
+nicht gelöst (ggf. eigenes Paket: per-Tab-Id).
+
 **Antizipierte Wiring-Szenarien:**
 - `onEnter` → `ui-query`/`function`, das die Daten der Seite lädt und in einen
   `ui-store` schreibt; gezielt per `msg.ui.clientId`, falls nur der navigierende

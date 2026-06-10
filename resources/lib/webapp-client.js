@@ -115,6 +115,15 @@
         }
     }());
 
+    // P112: a per-page-load nonce (loadId). Generated fresh on every document
+    // boot and deliberately NOT persisted — a reload, deep-link or navigate (all
+    // full page-reloads in this client) produces a new document and thus a new
+    // loadId, while the native EventSource auto-reconnect reuses the same document
+    // and therefore the same loadId. The server keys the route lifecycle on it:
+    // new loadId = real arrival (→ onEnter/onLeave), same loadId = transient
+    // reconnect (→ no event). Module-const for this document's lifetime.
+    const loadId = "load-" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+
     // P26: render through the shared serializer (window.WebappSerializer) so the
     // markup the client morphs in is byte-identical to what the server emitted.
     // No local renderer remains — that divergence is what previously downgraded
@@ -1046,6 +1055,7 @@
         // that was opened via the ?dialog=<id> URL param on initial load).
         const streamUrl = base() + "/stream?clientId=" + encodeURIComponent(clientId)
             + "&location=" + encodeURIComponent(location)
+            + "&load=" + encodeURIComponent(loadId)
             + (dialogId ? "&dialog=" + encodeURIComponent(dialogId) : "");
 
         const source = new EventSource(streamUrl);

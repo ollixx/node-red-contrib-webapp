@@ -38,11 +38,12 @@ const webapp = require("../../../nodes/webapp.js") as {
             liveState: Map<string, unknown>;
             clientStateMap: Map<string, unknown>;
             streamClients: Map<string, Map<string, { res: unknown; location: string }>>;
+            clientArrival: Map<string, Map<string, { loadId?: string; location: string; leaveTimer?: unknown }>>;
             definitions: Map<string, { nodeId: string; appId?: string; definition: Record<string, unknown> }>;
             RED: unknown;
             endpointsRegistered: boolean;
         };
-        addStreamClient: (appId: string, clientId: string, res: unknown, location: string) => void;
+        addStreamClient: (appId: string, clientId: string, res: unknown, location: string, loadId?: string) => void;
         pushSnapshotToClients: (appId: string, clientId: string | undefined, definitions: unknown[]) => void;
         pushActionCommandToClients: (
             appId: string,
@@ -128,6 +129,7 @@ beforeEach(() => {
     runtimeState.liveState.clear();
     runtimeState.clientStateMap.clear();
     runtimeState.streamClients.clear();
+    runtimeState.clientArrival.clear();
     runtimeState.definitions.clear();
 
     // Register the app so getActiveRuntimeAppId() resolves.
