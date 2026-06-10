@@ -98,25 +98,29 @@ test.describe("P71: editor fields", () => {
         await expect(page.locator("#node-input-linkMode")).toHaveCount(1);
 
         // href row is hidden in the default "button" mode…
-        const hrefRow = page.locator('[data-button-href-row="href"]');
+        // P122: href is now a canonical value-binding typedInput (#node-input-hrefBinding,
+        // row attr data-button-href-row="hrefBinding"); the href value round-trip is
+        // covered by the dedicated ui-button editor spec. Here we only smoke the
+        // structural field set + conditional visibility.
+        const hrefRow = page.locator('[data-button-href-row="hrefBinding"]');
         await expect(hrefRow).toBeHidden();
 
-        // …and shown once the mode is switched to "url".
+        // …and shown once the mode is switched to "url", exposing the href typedInput.
         await page.locator("#node-input-linkMode").selectOption("url");
         await expect(hrefRow).toBeVisible();
+        await expect(page.locator("#node-input-hrefBinding")).toHaveCount(1);
 
-        // Set values and save — they round-trip onto the node config.
+        // size still round-trips onto the node config.
         await page.locator("#node-input-size").selectOption("lg");
-        await page.locator("#node-input-href").fill("https://example.com");
         await editor.save();
 
         const saved = await page.evaluate(() => {
             const n = (window as unknown as {
                 RED: { nodes: { node: (id: string) => Record<string, unknown> | null } };
             }).RED.nodes.node("p71EditBtn");
-            return n ? { size: n.size, linkMode: n.linkMode, href: n.href } : null;
+            return n ? { size: n.size, linkMode: n.linkMode } : null;
         });
-        expect(saved).toMatchObject({ size: "lg", linkMode: "url", href: "https://example.com" });
+        expect(saved).toMatchObject({ size: "lg", linkMode: "url" });
     });
 
     // P111 removed `size` and split the old `variant` (role) into two axes:
