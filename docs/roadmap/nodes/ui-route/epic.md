@@ -7,3 +7,8 @@ Work packages for the `ui-route` node.
 - Tests: [tests/e2e/nodes/structure/ui-route.tests.md](../../../../tests/e2e/nodes/structure/ui-route.tests.md)
 
 > Goal: _TODO — fill in the shared goal for this epic._
+
+## Open
+
+- **P112** — onEnter/onLeave bei jeder Ankunft (Deep-Link/Refresh/Navigate),
+  Connect-basiert mit Load-Nonce — [P112](P112-route-lifecycle-on-arrival.md)

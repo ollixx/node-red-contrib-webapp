@@ -1,0 +1,112 @@
+---
+id: P113
+title: "EIN kanonischer Value-Binding-Typ-Satz (Reihenfolge + Semantik) für alle Display-Wert-Inputs"
+epic: aspects/editor
+status: pending
+dependencies: [P111]
+---
+# P113 — Kanonischer Value-Binding-Typ-Satz
+
+## findings (Nutzer-Wortlaut)
+
+- "ui-text braucht zusätzlich noch den Type 'Jsonata' im input. eigentlich brauchen
+  wir immer die selben types, wenn es um values geht."
+- Gewünschte vollständige Liste **in dieser Reihenfolge** (an der richtigen Stelle auch
+  in die Docs):
+  `Store, Query, Route-Param, msg, JSONata, string, number, boolean, json, timestamp,
+  Flow, Global, Env`
+- jsonata-Semantik: **message-getrieben** (gegen die eingehende `msg` ausgewertet).
+- `state` bleibt **draußen** (frühere Owner-Entscheidung: zu mächtig / nicht klar
+  abgegrenzt).
+
+## Befund (heute)
+
+- **Zwei divergierende Quellen:** der geteilte Helfer `bindingTypedInputTypes`
+  (`resources/lib/editor-common.js`, genutzt von ui-datepicker/-checkbox/-alert/
+  -avatar/-image/-route) **und** hartcodierte Listen (ui-text, ui-breadcrumb, …).
+  Zudem liegt die **Save-Logik** (Typ+Wert → `{kind,…}`) je Knoten dupliziert
+  (`oneditsave`/`readBinding`).
+- Der alte Satz bot `state`/`msg`(Pfad)/`jsonata`/`flow`/`global`/`env` an, von denen
+  der Renderer nur 5 auflöste — Quelle der `"?"`-Probleme (siehe P111).
+
+## Zielmodell — EIN Satz, EINE Stelle
+
+Ein neuer Helfer (Vorschlag `valueBindingTypes()` + `readValueBinding()` /
+`applyValueBinding()`) ist die **einzige** Quelle für Typen **und** Serialisierung.
+Jeder Display-Wert-Input ruft nur noch diese Helfer. Reihenfolge + Mapping:
+
+| # | Editor-Typ | kind | Kategorie / Auflösung |
+|---|---|---|---|
+| 1 | Store | `store` | reaktiv (ui-store-Picker) |
+| 2 | Query | `query` | reaktiv (Query-Ergebnis) |
+| 3 | Route-Param | `routeParam` | aus der URL |
+| 4 | msg | `msg` | message-getrieben (Pfad, Standard-Node-RED) |
+| 5 | JSONata | `jsonata` | message-getrieben (Ausdruck gegen `msg`) |
+| 6 | string | `literal` (string) | statisch |
+| 7 | number | `literal` (number) | statisch |
+| 8 | boolean | `literal` (boolean) | statisch |
+| 9 | json | `literal` (JSON-Wert) | statisch |
+| 10 | timestamp | `literal` (Epoch-ms) | statisch |
+| 11 | Flow | `flow` | serverseitig einmalig pro Render |
+| 12 | Global | `global` | serverseitig einmalig pro Render |
+| 13 | Env | `env` | serverseitig einmalig pro Render |
+
+- **Default-Typ:** `string` (ersetzt das frühere einzelne „Text"/literal).
+- Die fünf Literaltypen sind Node-REDs Primitive (`str`/`num`/`bool`/`json`/`date`).
+  Alle serialisieren als `{kind:"literal", value:<typisierter Wert>}`. Anzeige folgt
+  `value-rendering.md`: number/boolean → `String(…)`; `json` (Objekt/Array) → `"?"`;
+  `timestamp` → Epoch-ms-String (Formatierung ist separates Thema).
+- **`state` ist NICHT im Satz** (bleibt schema-/renderer-seitig für interne/Alt-Nutzung
+  bestehen, ist nur kein Editor-Angebot mehr).
+
+## jsonata — message-getrieben (Runtime)
+
+- **Input-Handler** (`viewNodePatchInputHandler`, P111 bereits pfad-bewusst):
+  zusätzlich `kind:"jsonata"` behandeln — Ausdruck einmalig captured, beim
+  Nachrichteneingang via `RED.util.prepareJSONataExpression` +
+  `evaluateJSONataExpression` gegen die `msg` auswerten, Ergebnis als Literal in die
+  Live-Definition (backend-gehalten), Snapshot-Push.
+- **Renderer:** `kind:"jsonata"` rendert **leer** bis zur ersten Message (analog `msg`,
+  P111 — gemeinsamer Case).
+
+## Scope — welche Knoten
+
+- **In Scope (Display-Wert):** ui-text (`value`), ui-alert (`message`/`title`),
+  ui-badge (`value`), ui-breadcrumb, ui-image (`src`), ui-avatar (`src`/`initials`),
+  ui-button (`label`) — alle, die einen anzuzeigenden Wert binden.
+- **NICHT in Scope:** Input-Controls (ui-input/-select/-checkbox/-switch/-slider/
+  -datepicker/-textarea) — deren `value` ist eine **zweiseitige** Bindung an
+  State/Store (der Control schreibt zurück). `msg`/`jsonata`/`flow`/`env` ergeben dort
+  als Ziel keinen Sinn. Eigene Behandlung; hier nur erwähnt, nicht geändert.
+
+## acceptance (observierbar, browser/unit)
+
+- Jeder In-Scope-Knoten bietet **exakt** die 13 Typen in der obigen Reihenfolge;
+  Default `string`. Kein `state`, kein altes pfadloses „Message".
+- **JSONata (browser):** ui-text mit `JSONata`-Ausdruck `payload.user.name` → leer bis
+  Message; nach `msg={payload:{user:{name:"Ada"}}}` zeigt „Ada".
+- **Literaltypen:** `number 42` → „42"; `boolean false` → „false"; `json {a:1}` → `"?"`;
+  `timestamp` → Epoch-ms-String.
+- **Konsistenz:** Editor-Typsatz kommt aus EINEM Helfer; ein neuer Typ/Reihenfolge-
+  Wechsel ist genau eine Änderung an einer Stelle (Test, der die Knoten gegen den
+  Helfer prüft).
+- **Beispiel-Migration:** `examples/customers-crud/flow.json` enthält keine
+  `state`-Bindings mehr auf Display-Knoten (auf store/query umgestellt); E2E grün.
+
+## Migration / Risiken
+
+- **Beispiel:** state-Bindings liegen auf ui-button(3)/ui-table(1)/ui-badge(1)/
+  ui-input(3). Display-Knoten (ui-button label, ui-badge value, ggf. ui-table) auf
+  store/query migrieren; ui-input bleibt (Input-Control, out of scope). Danach
+  `pnpm gen:example` bzw. Owner-Regenerierung — `flow.json` ist generiert.
+- **Save-Logik zentralisieren** (`applyValueBinding`) ist der größere Teil — pro
+  Knoten `oneditsave` auf den Helfer umstellen, sonst bleibt die Duplikation.
+- **ui-text (P111):** dessen Wert-Typen werden von diesem Satz **abgelöst** — P111
+  Tranche 2 und P113 hier konsolidieren; beim Umsetzen P111 entsprechend schließen.
+
+## Docs (an der richtigen Stelle)
+
+- `docs/nodes/concepts/stores.md` — Binding-Arten: kanonische Liste + Reihenfolge +
+  je-Typ-Semantik (reaktiv / statisch / message-getrieben / server-resolved).
+- `docs/nodes/concepts/editor.md` — der gemeinsame Value-typedInput.
+- Je Knoten die `value`-Feldzeile auf „nutzt den kanonischen Satz" verweisen lassen.
