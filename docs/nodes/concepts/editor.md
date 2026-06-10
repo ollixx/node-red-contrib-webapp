@@ -177,20 +177,49 @@ Kategorie → Wert/Anzeige-Vollsatz.
 > „Page-Param" entspricht dem Typ **„Route Param"** (`routeParam`): er liest einen
 > Parameter aus dem Pfad der aktuell angezeigten Route.
 
-Der **Store-Typ** (`storeTypedInputType`) ist eine Sonderform: sein Expand-Button
-öffnet **denselben** Node-Picker-Dialog (Preset `stores`) — kein zweiter Picker.
-Gespeichert wird die Store-ID; zur Laufzeit löst der Renderer sie über den
-`statePath` des Stores auf (Details und Begründung in [stores.md](stores.md)).
+### Der Store-Typ: Button-erst, Name statt ID, Pfad-typedInput (P132, ADR 0013)
+
+Der **Store-Typ** (`storeTypedInputType`) ist eine Sonderform mit eigener
+Wert-Spalten-Darstellung (`valueLabel`). Das Feld-Label bleibt in der **linken**
+Panel-Label-Spalte; das gesamte Store-UI sitzt in der **Wert-Spalte**:
+
+- **Vor Auswahl:** nur ein Button **„Store auswählen"** mit Store-Icon
+  (`fa fa-database`). Er öffnet **denselben** app-gescopten Node-Picker-Dialog
+  (Preset `stores`, P68/P117) — kein zweiter Picker. **Kein** Pfad-Feld.
+- **Nach Auswahl:** der Button wird **„Store ändern"** (gleiches Icon); daneben
+  erscheint der **Name** des Stores (aus der ID über `collectReferenceNodes`
+  aufgelöst, app-gescoped) — **nicht** die rohe ID. Eine nicht auflösbare ID
+  (gelöschter Store) fällt auf `<id> (bestehend)` zurück. Gespeichert wird stets
+  die **ID**.
+- **Pfad-typedInput (`subPath`).** Unter dem Button ein typedInput für einen
+  optionalen **Ein-Level-Pfad** in den Slice (leer = ganzer Slice). Quellen über
+  die Helfer-Kategorie `valueBindingTypes({ category: "storePath" })`: `string`
+  (Default), `number`, `routeParam`, `query`, `store`, `reactive`, `jsonata`,
+  `msg`, `flow`, `global`, `env`. Der innere `store` ist ein **Blatt** (kein
+  geschachtelter Sub-Pfad — Ein-Level-Regel, ADR 0013 §3).
+- **Default-Slice-Autocomplete (weich).** Beim Typ `string` werden die
+  **Keys/Indizes** des Default-Slice-Werts des gewählten Stores (aus dessen
+  `initialValue` geparst) als Vorschläge angeboten. **Kein Zwang, kein
+  Verstecken, keine Typ-Einschränkung** — der Editor ist permissiv, die Laufzeit
+  (P131) validiert. Reine Ableitung: `defaultSliceKeySuggestions(value)`.
+
+Zur Laufzeit löst der Renderer die Store-ID über den `statePath` des Stores auf
+und wendet danach den `subPath` an (Details und Begründung in
+[stores.md](stores.md)).
 
 **Serialisierung.** `readValueBinding(binding, fallback)` füllt das typedInput
 aus einem gespeicherten Binding-Objekt (Literal → primitive Sub-Type
-`str`/`num`/`bool`/`json`/`date`; `reactive` → aus `value`; alle übrigen aus
-`path`); `applyValueBinding(type, value)` baut beim Speichern das Binding-Objekt
-wieder zusammen (`{ kind:"literal", value:<typisiert> }` / `{ kind:"reactive",
-value }` / `{ kind, path }`). Wichtig: Das typedInput-Element und das Feld, das
-das **Binding-Objekt** persistiert, sind getrennt (Muster von `ui-text` — sonst
-überschreibt die Node-RED-Defaults-Auto-Übernahme das Objekt mit dem rohen
-typedInput-Wert).
+`str`/`num`/`bool`/`json`/`date`; `reactive` → aus `value`; `store` → ID plus
+optionalem `subPath`; alle übrigen aus `path`); `applyValueBinding(type, value,
+subPath?)` baut beim Speichern das Binding-Objekt wieder zusammen
+(`{ kind:"literal", value:<typisiert> }` / `{ kind:"reactive", value }` /
+`{ kind:"store", path, subPath? }` / `{ kind, path }`). Den Store-Wert + Sub-Pfad
+trägt das typedInput intern als JSON-Hülle `{path, subPath}`, sodass die
+kanonischen Helfer ihre 2-Argument-Form behalten und jeder bestehende
+Store-Konsument den Sub-Pfad ohne Änderung mit-roundtrippt. Wichtig: Das
+typedInput-Element und das Feld, das das **Binding-Objekt** persistiert, sind
+getrennt (Muster von `ui-text` — sonst überschreibt die
+Node-RED-Defaults-Auto-Übernahme das Objekt mit dem rohen typedInput-Wert).
 
 ---
 
