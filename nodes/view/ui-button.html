@@ -14,10 +14,19 @@
                 size: { value: "" },
                 outline: { value: false },
                 linkMode: { value: "button" },
-                href: { value: "" },
+                // P122 (ADR 0012): `href` persists the binding OBJECT; there is no
+                // matching #node-input-href element so Node-RED auto-save cannot
+                // clobber it. The typedInput lives on #node-input-hrefBinding.
+                href: { value: null },
+                hrefBinding: { value: "" },
                 icon: { value: "" },
+                // P122 (ADR 0012): `disabled` persists the binding OBJECT; there is
+                // no matching #node-input-disabled element so Node-RED auto-save
+                // cannot clobber it. The typedInput lives on #node-input-disabledBinding.
+                // Legacy: `disabledPath` (plain state path) is kept for migration only.
                 disabledPath: { value: "" },
                 disabled: { value: null },
+                disabledBinding: { value: "" },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
                 col: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
@@ -39,9 +48,64 @@
                 common.installReferenceSelectors({ mount: true }).call(this);
                 common.installVariantSelectBox("button").call(this);
                 common.installSizeSelectBox().call(this);
+                // P122: installButtonLinkFields injects outline + linkMode and
+                // wires visibility of data-button-href-row="hrefBinding".
                 common.installButtonLinkFields().call(this);
                 common.installLayoutChildPropRows().call(this);
                 common.installIconField("#node-input-icon", { title: "Button-Icon auswählen" });
+
+                // P122 (ADR 0012 / boolean category): `disabled` typedInput.
+                // Migration: a legacy `disabledPath` plain string becomes a
+                // state binding; a stored `disabled` binding object takes
+                // precedence.
+                const storedDisabled = common.parseBindingValue(this.disabled);
+                const disabledBinding = storedDisabled
+                    ? storedDisabled
+                    : (this.disabledPath ? { kind: "state", path: this.disabledPath } : undefined);
+                const disabledEditor = common.readValueBinding(disabledBinding, "");
+                const disabledInput = $("#node-input-disabledBinding");
+                disabledInput.typedInput({
+                    default: disabledEditor.type,
+                    types: common.valueBindingTypes({ category: "boolean" })
+                });
+                disabledInput.typedInput("type", disabledEditor.type);
+                disabledInput.typedInput("value", disabledEditor.value);
+
+                // P122 (ADR 0012 / url category): `href` typedInput.
+                // Migration: a legacy literal string `href` becomes
+                // { kind:"literal", value:<href> }.
+                const storedHref = common.parseBindingValue(this.href);
+                const hrefBinding = storedHref
+                    ? storedHref
+                    : (this.href && typeof this.href === "string" && this.href.length > 0
+                        ? { kind: "literal", value: this.href }
+                        : undefined);
+                const hrefEditor = common.readValueBinding(hrefBinding, "");
+                const hrefInput = $("#node-input-hrefBinding");
+                hrefInput.typedInput({
+                    default: hrefEditor.type,
+                    types: common.valueBindingTypes({ category: "url" })
+                });
+                hrefInput.typedInput("type", hrefEditor.type);
+                hrefInput.typedInput("value", hrefEditor.value);
+            },
+            oneditsave: function () {
+                // P122: persist disabled as binding object; clear legacy disabledPath.
+                this.disabled = common.applyValueBinding(
+                    $("#node-input-disabledBinding").typedInput("type"),
+                    $("#node-input-disabledBinding").typedInput("value")
+                );
+                this.disabledPath = "";
+
+                // P122: persist href as binding object.
+                const hrefBinding = common.applyValueBinding(
+                    $("#node-input-hrefBinding").typedInput("type"),
+                    $("#node-input-hrefBinding").typedInput("value")
+                );
+                // Only store a non-empty literal as href; null for empty.
+                const isEmptyLiteral = hrefBinding.kind === "literal"
+                    && (hrefBinding.value === undefined || hrefBinding.value === null || hrefBinding.value === "");
+                this.href = isEmptyLiteral ? null : hrefBinding;
             }
         });
     })();
@@ -52,7 +116,11 @@
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <div class="form-row"><label for="node-input-label">Label</label><input type="text" id="node-input-label"></div>
     <div class="form-row"><label for="node-input-icon">Icon</label><input type="text" id="node-input-icon" placeholder="z. B. plus oder lucide:user"></div>
-    <div class="form-row"><label for="node-input-disabledPath">Disabled Path</label><input type="text" id="node-input-disabledPath"></div>
+    <!-- P122 (ADR 0012 / boolean category): Disabled binding — typedInput managed in oneditprepare/oneditsave. -->
+    <div class="form-row"><label for="node-input-disabledBinding">Disabled</label><input type="text" id="node-input-disabledBinding"></div>
+    <!-- P122 (ADR 0012 / url category): href binding — typedInput managed in oneditprepare/oneditsave.
+         data-button-href-row is used by installButtonLinkFields to sync visibility with linkMode. -->
+    <div class="form-row" data-button-href-row="hrefBinding"><label for="node-input-hrefBinding">URL / Route</label><input type="text" id="node-input-hrefBinding"></div>
 </script>
 <script type="text/html" data-help-name="ui-button">
     <p>Mountet einen klickbaren Button. Jeder Klick erzeugt ein <code>click</code>-Event
@@ -63,6 +131,10 @@
         <li><b>Size</b> — Small / Medium / Large (leer = Standardgröße).</li>
         <li><b>Outline</b> — zeichnet den Button mit Kontur statt Füllung.</li>
     </ul>
+    <h4>Disabled (P122)</h4>
+    <p>Bindbar über den Boolean-Zustand-Satz (ADR 0012): Store, Query, Route-Param,
+    Reactive, msg, JSONata, boolean, Flow, Global, Env. Ein bestehender
+    <code>disabledPath</code> wird automatisch als <code>state</code>-Binding übernommen.</p>
     <h4>Link-Modus</h4>
     <ul>
         <li><b>Button (kein Link)</b> — normaler Button; Aktion läuft über den
@@ -72,6 +144,7 @@
         <li><b>Navigate (In-App-Route)</b> — navigiert clientseitig zur angegebenen
         Route und meldet den Klick zusätzlich an den Flow.</li>
     </ul>
-    <p>Das Feld „URL / Route" erscheint nur in den Modi <i>URL</i> und <i>Navigate</i>.</p>
+    <p>Das Feld „URL / Route" (P122: URL/Pfad-Binding, ADR 0012) erscheint nur in
+    den Modi <i>URL</i> und <i>Navigate</i>.</p>
     <p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/display/ui-button.md">Ausführliche Doku</a></p>
 </script>
