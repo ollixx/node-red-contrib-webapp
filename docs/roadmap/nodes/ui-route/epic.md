@@ -10,5 +10,4 @@ Work packages for the `ui-route` node.
 
 ## Open
 
-- **P112** — onEnter/onLeave bei jeder Ankunft (Deep-Link/Refresh/Navigate),
-  Connect-basiert mit Load-Nonce — [P112](P112-route-lifecycle-on-arrival.md)
+_(keine offenen Pakete)_

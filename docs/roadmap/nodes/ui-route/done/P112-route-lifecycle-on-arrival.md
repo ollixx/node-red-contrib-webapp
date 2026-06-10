@@ -3,7 +3,7 @@ id: P112
 title: "ui-route/ui-app: onEnter/onLeave bei JEDER Ankunft (Deep-Link, Refresh, Navigate) — Connect-basiert"
 epic: nodes/ui-route
 node: ui-route
-status: in_progress
+status: done
 dependencies: [P38, P66, P86]
 verify: browser
 spec: docs/nodes/structure/ui-route.md
@@ -110,3 +110,10 @@ tests: tests/e2e/nodes/structure/ui-route.tests.md
 - Spec `docs/nodes/structure/ui-route.md` + Tests-Katalog
   `tests/e2e/nodes/structure/ui-route.tests.md` mit dem Connect-basierten Lifecycle-
   Modell aktualisieren.
+
+## Result
+
+- **delivered:** Connect-basierter Route-Lifecycle — `onEnter`/`onLeave` feuern bei JEDER Ankunft (Deep-Link, Refresh, Reload-basierter Navigate) am SSE-Connect, dedupliziert über eine pro-Page-Load-Nonce (`loadId`); `performTargetNavigate` emittiert den Lifecycle nicht mehr (Doppel-`onEnter` beseitigt), Disconnect ist grace-entprellt (3 s) mit Reconnect-Cancel, der Client sendet eine frische, nicht persistierte `loadId` auf der Stream-URL.
+- **stats:** 11 Dateien geändert (3 Commits, Merge 6875a9a). Impl: `nodes/webapp.js` (clientArrival-Map + `handleClientArrival`/`scheduleArrivalLeave`/`emitArrivalLifecycle`; `addStreamClient`/`removeStreamClient` + `/stream`-Endpoint mit `loadId`; Lifecycle aus `performTargetNavigate` entfernt), `resources/lib/webapp-client.js` (module-const `loadId` → `&load=`). Tests: 1 neue Unit-Spec (8 Tests) + 1 neue E2E-Spec (2 Tests), P66-Unit (2 Tests) + P31/Harness an den neuen Kontrakt angepasst; Unit-Suite 1151 grün, Lint/Build/check:links OK. Docs: `ui-route.md` Output-Sektion + Test-Katalog um das Load-Nonce-Modell und die dokumentierte Multi-Tab-Limitierung ergänzt.
+- **notes:** P66s Navigate-Lifecycle-Assertions auf den neuen Kontrakt umgezogen (Navigate = nur Push; onEnter kommt aus dem Reload→Connect-Pfad). Gezielte E2E im Worktree grün (P112 ×2, P66-Navigation ×3, ui-route ×9, ui-app ×11, p12-events ×5); volle Suite vom Orchestrator auf develop nach dem Merge verifiziert. Multi-Tab (geteilte `clientId` pro App) bleibt bekannte Limitierung — ggf. eigenes Paket (per-Tab-Id).
+- **cost:** session 7f4bf0e0-bc28-455e-b94f-44a1d9c633ca (SubagentStop 2026-06-10T10:00:25Z, `.ai/agent-runs.jsonl`), 16m wall-clock (09:45Z–10:01Z), Modell opus.
