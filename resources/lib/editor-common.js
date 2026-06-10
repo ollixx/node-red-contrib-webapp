@@ -456,7 +456,8 @@
                     id,
                     label: node.name || id,
                     type: node.type,
-                    to: node.to || ""
+                    to: node.to || "",
+                    parent: node.parent || ""
                 });
                 return;
             }
@@ -465,12 +466,108 @@
                 references.stores.push({
                     id,
                     name: node.name || "",
-                    statePath: node.statePath || ""
+                    statePath: node.statePath || "",
+                    parent: node.parent || ""
                 });
             }
         });
 
         return references;
+    }
+
+    // ── P117: App-scope helpers ──────────────────────────────────────────────
+    // resolveEditedNodeApp(node, references) — determine the ui-app id that the
+    // currently-edited node belongs to. Three cases:
+    //   1. The node has a `parent` that is a known ui-app id → that app.
+    //   2. The node has a `mount` → walk the mount chain upward to find the app.
+    //   3. Neither known → return null (fallback: show all candidates).
+    //
+    // "Currently edited" means we look at the live panel values (#node-input-parent
+    // / #node-input-mount) first, then fall back to the node object's fields, so
+    // that changing the app in an open panel immediately scopes the picker.
+    function resolveEditedNodeApp(node, references) {
+        if (!node || !references) {
+            return null;
+        }
+
+        const appIds = new Set(references.apps.map(function (a) { return a.id; }));
+
+        // Read live panel value if the node is currently being edited.
+        function liveVal(fieldId) {
+            const el = $("#node-input-" + fieldId);
+            return el.length ? (String(el.val() || "")) : null;
+        }
+
+        // Case 1: direct parent field.
+        const parentVal = liveVal("parent") || (node.parent ? String(node.parent) : "");
+        if (parentVal && appIds.has(parentVal)) {
+            return parentVal;
+        }
+
+        // Case 2: mount chain.
+        const mountVal = liveVal("mount") || (node.mount ? String(node.mount) : "");
+        if (mountVal) {
+            return resolveAppFromMount(mountVal, references, appIds);
+        }
+
+        return null;
+    }
+
+    // Walk a mount value upward through the hierarchy to find the app id.
+    // Returns null if not resolvable. Pure — unit-testable without a DOM.
+    function resolveAppFromMount(mountValue, references, appIds) {
+        if (!mountValue) {
+            return null;
+        }
+        const seen = new Set();
+        let current = mountValue;
+        while (current && !seen.has(current)) {
+            seen.add(current);
+
+            // Direct app slot: "<appId>.<slot>"
+            const dotIdx = current.indexOf(".");
+            if (dotIdx > 0 && !current.startsWith("route:") && !current.startsWith("dialog:") && !current.startsWith("container:")) {
+                const candidateApp = current.slice(0, dotIdx);
+                if (appIds.has(candidateApp)) {
+                    return candidateApp;
+                }
+            }
+
+            if (current.startsWith("route:")) {
+                // route:<path>/<slot> → find the route by path, then its parent app.
+                const sepIdx = current.lastIndexOf("/");
+                const routePath = sepIdx >= 0 ? current.slice("route:".length, sepIdx) : current.slice("route:".length);
+                const route = references.routes.find(function (r) { return r.path === routePath; });
+                if (route && route.parent && appIds.has(route.parent)) {
+                    return route.parent;
+                }
+                return null;
+            }
+
+            if (current.startsWith("dialog:")) {
+                const sepIdx = current.lastIndexOf("/");
+                const dialogId = sepIdx >= 0 ? current.slice("dialog:".length, sepIdx) : current.slice("dialog:".length);
+                const dialog = references.dialogs.find(function (d) { return d.id === dialogId; });
+                if (dialog && dialog.parent && appIds.has(dialog.parent)) {
+                    return dialog.parent;
+                }
+                return null;
+            }
+
+            if (current.startsWith("container:")) {
+                const sepIdx = current.lastIndexOf("/");
+                const containerId = sepIdx >= 0 ? current.slice("container:".length, sepIdx) : current.slice("container:".length);
+                const container = references.containers.find(function (c) { return c.id === containerId; });
+                if (container && container.mount) {
+                    current = container.mount;
+                    continue;
+                }
+                return null;
+            }
+
+            break;
+        }
+        return null;
     }
 
     function sortOptions(options) {
@@ -507,8 +604,24 @@
         return haystack.indexOf(q) !== -1;
     }
 
+    // ── App-label lookup (used in fallback secondary lines) ──────────────────
+    // Returns the title of a ui-app for a given id, or "" when not found.
+    function appTitleById(references, appId) {
+        if (!appId) {
+            return "";
+        }
+        const app = references.apps.find(function (a) { return a.id === appId; });
+        return app ? (app.title || app.id) : appId;
+    }
+
     // Filter presets: references → candidate entries. Pure functions; keyed by a
     // stable preset id so callers select by name and the set stays extensible.
+    //
+    // P117: Each preset now accepts a second `context` argument: { appId? }.
+    // When `appId` is set the candidates are scoped to that app only.
+    // When `appId` is null/undefined, all candidates are returned but entries
+    // for `stores`, `actions` and `routes` include the app title in their
+    // secondary line so origin is visible.
     const nodePickerPresets = {
         apps: function (references) {
             return references.apps.map(function (app) {
@@ -516,32 +629,48 @@
                 return { value: app.id, label: name, name: name, id: app.id, type: "ui-app" };
             });
         },
-        routes: function (references) {
-            return references.routes.map(function (route) {
+        routes: function (references, context) {
+            const appId = context && context.appId ? context.appId : null;
+            const candidates = appId
+                ? references.routes.filter(function (r) { return r.parent === appId; })
+                : references.routes;
+            return candidates.map(function (route) {
                 const name = route.title || route.path || route.id;
                 const label = route.path ? name + " (" + route.path + ")" : name;
-                return { value: route.id, label: label, name: name, id: route.id, type: "ui-route" };
+                const secondary = !appId && route.parent ? appTitleById(references, route.parent) : "";
+                return { value: route.id, label: label, name: name, id: route.id, type: "ui-route", secondary: secondary };
             });
         },
-        actions: function (references) {
-            return references.actions.map(function (action) {
+        actions: function (references, context) {
+            const appId = context && context.appId ? context.appId : null;
+            const candidates = appId
+                ? references.actions.filter(function (a) { return a.parent === appId; })
+                : references.actions;
+            return candidates.map(function (action) {
                 const name = action.label || action.id;
                 const suffix = action.type === "ui-navigation" && action.to ? " -> " + action.to : "";
+                const secondary = !appId && action.parent ? appTitleById(references, action.parent) : "";
                 return {
                     value: action.id,
                     label: name + suffix,
                     name: name,
                     id: action.id,
-                    type: action.type || "ui-action"
+                    type: action.type || "ui-action",
+                    secondary: secondary
                 };
             });
         },
-        stores: function (references) {
-            return references.stores.map(function (store) {
+        stores: function (references, context) {
+            const appId = context && context.appId ? context.appId : null;
+            const candidates = appId
+                ? references.stores.filter(function (s) { return s.parent === appId; })
+                : references.stores;
+            return candidates.map(function (store) {
                 const name = store.name || store.id;
                 const detail = store.statePath ? store.id + " (" + store.statePath + ")" : store.id;
                 const label = store.name ? store.name + " — " + detail : detail;
-                return { value: store.id, label: label, name: name, id: store.id, type: "ui-store" };
+                const secondary = !appId && store.parent ? appTitleById(references, store.parent) : "";
+                return { value: store.id, label: label, name: name, id: store.id, type: "ui-store", secondary: secondary };
             });
         },
         // P114 / ADR 0009: the mount (parent-slot) preset. The hierarchical
@@ -552,10 +681,28 @@
         // `name`, so nodePickerMatch searches both breadcrumb AND mount value
         // without any preset-specific match logic. The dialog needs no group
         // headers — the breadcrumb carries the hierarchy.
-        mounts: function (references) {
-            return flattenMountOptionTree(buildMountOptionsTree(references));
+        // P117: With appId context, only mount slots belonging to that app are offered.
+        mounts: function (references, context) {
+            const appId = context && context.appId ? context.appId : null;
+            const all = flattenMountOptionTree(buildMountOptionsTree(references));
+            if (!appId) {
+                return all;
+            }
+            // Filter by appId: the breadcrumb starts with the app title, or
+            // the value starts with the appId (direct app slots) or belongs to
+            // a route/dialog/container under that app.
+            return all.filter(function (entry) {
+                return isMountUnderApp(entry.value, references, appId);
+            });
         }
     };
+
+    // P117: Check whether a mount value belongs to a given app.
+    // Pure — unit-testable. Works by resolving the mount chain upward.
+    function isMountUnderApp(mountValue, references, appId) {
+        const appIds = new Set(references.apps.map(function (a) { return a.id; }));
+        return resolveAppFromMount(mountValue, references, appIds) === appId;
+    }
 
     // Flatten the grouped/optgroup mount option tree into a flat list of picker
     // entries. Disabled group-header rows (no `value`) are dropped; each real
@@ -595,69 +742,184 @@
     }
 
     // Produce the candidate entries for a preset against the live editor graph.
-    function nodePickerOptionsForPreset(preset) {
+    // P117: accepts an optional `context` object { appId? } to scope candidates.
+    function nodePickerOptionsForPreset(preset, context) {
         const references = collectReferenceNodes();
-        return sortOptions(getNodePickerPreset(preset)(references));
+        return sortOptions(getNodePickerPreset(preset)(references, context || {}));
+    }
+
+    // ── P117: Shared picker stylesheet (injected once, idempotent) ───────────
+    // All three picker dialogs (node/icon/media) share `.webapp-node-picker-*`
+    // class names. This stylesheet replaces inline css({}) calls and applies the
+    // Node-RED admin-UI look (sans-serif font, red-ui-* token colours, NR-style
+    // header/search/rows/footer). Injected lazily on first open; safe to call
+    // multiple times (guarded by <style> id).
+    function ensurePickerStylesheet() {
+        if (document.getElementById("webapp-picker-styles")) {
+            return;
+        }
+        const css = [
+            /* overlay backdrop */
+            ".webapp-node-picker-overlay {",
+            "  position: fixed; inset: 0;",
+            "  background: rgba(0,0,0,0.4);",
+            "  z-index: 2000;",
+            "  display: flex; align-items: center; justify-content: center;",
+            "}",
+
+            /* dialog box — sans-serif editor font throughout */
+            ".webapp-node-picker-dialog {",
+            "  font-family: var(--red-ui-primary-font, 'Helvetica Neue', Arial, sans-serif);",
+            "  font-size: 13px;",
+            "  background: var(--red-ui-primary-background, #fff);",
+            "  color: var(--red-ui-primary-text-color, #333);",
+            "  border: 1px solid var(--red-ui-secondary-border-color, #ccc);",
+            "  border-radius: 4px;",
+            "  box-shadow: 0 4px 24px rgba(0,0,0,0.3);",
+            "  width: 420px; max-width: 90vw; max-height: 80vh;",
+            "  display: flex; flex-direction: column;",
+            "  overflow: hidden;",
+            "}",
+
+            /* header bar — matches NR tray/dialog header style */
+            ".webapp-node-picker-header {",
+            "  padding: 8px 12px;",
+            "  font-size: 14px;",
+            "  font-weight: 500;",
+            "  font-family: var(--red-ui-primary-font, 'Helvetica Neue', Arial, sans-serif);",
+            "  background: var(--red-ui-secondary-background, #f3f3f3);",
+            "  color: var(--red-ui-primary-text-color, #333);",
+            "  border-bottom: 1px solid var(--red-ui-secondary-border-color, #ccc);",
+            "  flex: 0 0 auto;",
+            "}",
+
+            /* search field wrapper */
+            ".webapp-node-picker-search-wrap {",
+            "  padding: 8px 10px;",
+            "  flex: 0 0 auto;",
+            "  border-bottom: 1px solid var(--red-ui-secondary-border-color, #eee);",
+            "  display: flex; align-items: center;",
+            "  gap: 6px;",
+            "}",
+            ".webapp-node-picker-search-wrap .fa-search {",
+            "  color: var(--red-ui-secondary-text-color, #888);",
+            "  font-size: 12px;",
+            "}",
+
+            /* search input — NR-like, no border boxing */
+            ".webapp-node-picker-search {",
+            "  flex: 1 1 auto;",
+            "  min-width: 0;",
+            "  font-family: var(--red-ui-primary-font, 'Helvetica Neue', Arial, sans-serif);",
+            "  font-size: 13px;",
+            "  border: 1px solid var(--red-ui-form-input-border-color, #ccc);",
+            "  border-radius: 3px;",
+            "  padding: 4px 7px;",
+            "  background: var(--red-ui-primary-background, #fff);",
+            "  color: var(--red-ui-primary-text-color, #333);",
+            "  outline: none;",
+            "}",
+            ".webapp-node-picker-search:focus {",
+            "  border-color: var(--red-ui-text-color-link, #4a90d9);",
+            "  box-shadow: 0 0 0 2px rgba(74,144,217,0.2);",
+            "}",
+
+            /* scrollable list */
+            ".webapp-node-picker-list {",
+            "  flex: 1 1 auto;",
+            "  overflow-y: auto;",
+            "  min-height: 120px;",
+            "  padding: 4px 6px 6px;",
+            "}",
+
+            /* individual row */
+            ".webapp-node-picker-row {",
+            "  padding: 6px 8px;",
+            "  cursor: pointer;",
+            "  border-radius: 3px;",
+            "  margin-bottom: 1px;",
+            "  background: transparent;",
+            "}",
+            ".webapp-node-picker-row:hover {",
+            "  background: var(--red-ui-list-item-background-hover, #f3f3f3);",
+            "}",
+            ".webapp-node-picker-row.selected {",
+            "  background: var(--red-ui-list-item-background-selected, #e6f0f8);",
+            "}",
+
+            /* primary label */
+            ".webapp-node-picker-row-primary {",
+            "  font-family: var(--red-ui-primary-font, 'Helvetica Neue', Arial, sans-serif);",
+            "  font-size: 13px;",
+            "  font-weight: 500;",
+            "  color: var(--red-ui-primary-text-color, #333);",
+            "}",
+
+            /* secondary meta line (id · type · app) */
+            ".webapp-node-picker-row-secondary {",
+            "  font-family: var(--red-ui-primary-font, 'Helvetica Neue', Arial, sans-serif);",
+            "  font-size: 11px;",
+            "  color: var(--red-ui-secondary-text-color, #666);",
+            "}",
+
+            /* empty / no-match notice */
+            ".webapp-node-picker-empty {",
+            "  font-family: var(--red-ui-primary-font, 'Helvetica Neue', Arial, sans-serif);",
+            "  font-size: 13px;",
+            "  font-style: italic;",
+            "  color: var(--red-ui-secondary-text-color, #666);",
+            "  padding: 8px;",
+            "}",
+
+            /* footer */
+            ".webapp-node-picker-footer {",
+            "  padding: 8px 12px;",
+            "  border-top: 1px solid var(--red-ui-secondary-border-color, #ccc);",
+            "  text-align: right;",
+            "  flex: 0 0 auto;",
+            "  display: flex; align-items: center; justify-content: flex-end; gap: 6px;",
+            "}"
+        ].join("\n");
+
+        const style = document.createElement("style");
+        style.id = "webapp-picker-styles";
+        style.textContent = css;
+        document.head.appendChild(style);
     }
 
     // Open the modal picker. options:
     //   title      — dialog heading
     //   value      — currently-selected id (highlighted, pre-scrolled)
-    //   entries    — array of { value, label, name, id, type }
+    //   entries    — array of { value, label, name, id, type, secondary? }
     //   onSelect   — function(value) called with the chosen id when confirmed
     function openNodePickerDialog(options) {
+        ensurePickerStylesheet();
+
         const opts = options || {};
         const entries = Array.isArray(opts.entries) ? opts.entries : [];
         const currentValue = opts.value ? String(opts.value) : "";
 
-        const $overlay = $("<div>")
-            .addClass("webapp-node-picker-overlay")
-            .css({
-                position: "fixed",
-                inset: "0",
-                background: "rgba(0,0,0,0.4)",
-                "z-index": "2000",
-                display: "flex",
-                "align-items": "center",
-                "justify-content": "center"
-            });
+        const $overlay = $("<div>").addClass("webapp-node-picker-overlay");
 
-        const $dialog = $("<div>")
-            .addClass("webapp-node-picker-dialog")
-            .css({
-                background: "var(--red-ui-primary-background, #fff)",
-                color: "var(--red-ui-primary-text-color, #333)",
-                border: "1px solid var(--red-ui-secondary-border-color, #ccc)",
-                "border-radius": "4px",
-                "box-shadow": "0 4px 24px rgba(0,0,0,0.3)",
-                width: "420px",
-                "max-width": "90vw",
-                "max-height": "80vh",
-                display: "flex",
-                "flex-direction": "column",
-                overflow: "hidden"
-            })
-            .appendTo($overlay);
+        const $dialog = $("<div>").addClass("webapp-node-picker-dialog").appendTo($overlay);
 
+        // Header
         $("<div>")
-            .css({ padding: "10px 12px", "font-weight": "bold", "border-bottom": "1px solid var(--red-ui-secondary-border-color, #ddd)" })
+            .addClass("webapp-node-picker-header")
             .text(opts.title || "Knoten auswählen")
             .appendTo($dialog);
 
+        // Search bar with magnifier icon
+        const $searchWrap = $("<div>").addClass("webapp-node-picker-search-wrap").appendTo($dialog);
+        $("<i>").addClass("fa fa-search").appendTo($searchWrap);
         const $search = $("<input type=\"text\">")
             .attr("placeholder", "Suche (Name, ID, Typ)…")
             .addClass("webapp-node-picker-search")
-            .css({ margin: "10px 12px", width: "calc(100% - 24px)" })
-            .appendTo($dialog);
+            .appendTo($searchWrap);
 
-        const $list = $("<div>")
-            .addClass("webapp-node-picker-list")
-            .css({ flex: "1 1 auto", "overflow-y": "auto", "min-height": "120px", padding: "0 6px 6px" })
-            .appendTo($dialog);
+        const $list = $("<div>").addClass("webapp-node-picker-list").appendTo($dialog);
 
-        const $footer = $("<div>")
-            .css({ padding: "8px 12px", "border-top": "1px solid var(--red-ui-secondary-border-color, #ddd)", "text-align": "right" })
-            .appendTo($dialog);
+        const $footer = $("<div>").addClass("webapp-node-picker-footer").appendTo($dialog);
 
         let selectedValue = currentValue;
 
@@ -679,10 +941,7 @@
             const matches = entries.filter(function (entry) { return nodePickerMatch(entry, query); });
 
             if (matches.length === 0) {
-                $("<div>")
-                    .css({ color: "#999", "font-style": "italic", padding: "8px" })
-                    .text("Keine Treffer.")
-                    .appendTo($list);
+                $("<div>").addClass("webapp-node-picker-empty").text("Keine Treffer.").appendTo($list);
                 return;
             }
 
@@ -690,52 +949,39 @@
                 const isSelected = entry.value === selectedValue;
                 const $row = $("<div>")
                     .addClass("webapp-node-picker-row")
-                    .attr("data-value", entry.value)
-                    .css({
-                        padding: "6px 8px",
-                        cursor: "pointer",
-                        "border-radius": "3px",
-                        background: isSelected ? "var(--red-ui-list-item-background-selected, #efe)" : "transparent"
-                    });
+                    .attr("data-value", entry.value);
                 if (isSelected) {
                     $row.addClass("selected");
                 }
 
                 $("<div>")
-                    .css({ "font-weight": "bold" })
+                    .addClass("webapp-node-picker-row-primary")
                     .text(entry.label || entry.name || entry.id)
                     .appendTo($row);
+
+                // Secondary line: id · type [· app (fallback mode)]
+                const secondaryParts = [entry.id + "  ·  " + entry.type];
+                if (entry.secondary) {
+                    secondaryParts.push(entry.secondary);
+                }
                 $("<div>")
-                    .css({ "font-size": "0.8em", color: "#888" })
-                    .text(entry.id + "  ·  " + entry.type)
+                    .addClass("webapp-node-picker-row-secondary")
+                    .text(secondaryParts.join("  ·  "))
                     .appendTo($row);
 
                 $row.on("click", function () { confirm(entry.value); });
-                $row.on("mouseenter", function () {
-                    if (entry.value !== selectedValue) {
-                        $row.css("background", "var(--red-ui-list-item-background-hover, #f3f3f3)");
-                    }
-                });
-                $row.on("mouseleave", function () {
-                    $row.css("background", entry.value === selectedValue
-                        ? "var(--red-ui-list-item-background-selected, #efe)"
-                        : "transparent");
-                });
-
                 $list.append($row);
             });
         }
 
         const $clearBtn = $("<button type=\"button\" class=\"red-ui-button\">")
             .text("Leeren")
-            .css({ "margin-right": "6px" })
             .on("click", function (event) {
                 event.preventDefault();
                 confirm("");
             });
         const $cancelBtn = $("<button type=\"button\" class=\"red-ui-button\">")
             .text("Abbrechen")
-            .css({ "margin-right": "6px" })
             .on("click", function (event) {
                 event.preventDefault();
                 close();
@@ -776,13 +1022,16 @@
     // there is no visible, fully-populated reference <select> anywhere anymore.
     //
     // config:
-    //   filterPreset — picker preset id (apps|routes|actions|stores|mounts)
-    //   title        — dialog heading
-    //   placeholder  — display text when the field is empty
-    //   clearable    — show the "×" clear control (optional fields)
-    //   seedValue    — value to seed into the carrier if it is currently empty
-    //                  (the node's stored value; needed for <select> carriers
-    //                  that Node-RED could not bind because they have no options)
+    //   filterPreset  — picker preset id (apps|routes|actions|stores|mounts)
+    //   title         — dialog heading
+    //   placeholder   — display text when the field is empty
+    //   clearable     — show the "×" clear control (optional fields)
+    //   seedValue     — value to seed into the carrier if it is currently empty
+    //                   (the node's stored value; needed for <select> carriers
+    //                   that Node-RED could not bind because they have no options)
+    //   getAppId      — P117: optional function() → appId for scoping candidates
+    //                   to the app of the edited node. When omitted, installPickerField
+    //                   derives the app automatically from the live panel state.
     function installPickerField(selector, config) {
         const cfg = config || {};
         const $field = $(selector);
@@ -849,15 +1098,41 @@
             $wrap.append($clear);
         }
 
+        // Resolve the app context for scoping — either the explicit getter or
+        // derived automatically from the live panel (P117 app-scope).
+        // Returns null for the `apps` preset (never scoped).
+        function resolveAppContext() {
+            if (cfg.filterPreset === "apps") {
+                return null;
+            }
+            if (typeof cfg.getAppId === "function") {
+                return cfg.getAppId();
+            }
+            // Auto-derive: look at the live #node-input-parent or #node-input-mount
+            // values to find the current app. We pass a minimal node proxy.
+            const references = collectReferenceNodes();
+            const nodeProxy = {};
+            return resolveEditedNodeApp(nodeProxy, references);
+        }
+
         // Resolve the current value's display label from the live preset entries.
         // Returns null when the value is non-empty but not present in the graph
         // (a deleted/non-resolvable reference) so the caller can mark it.
+        // When app-scoped, fall back to unscoped lookup so existing values are
+        // always displayable even if they're from another app.
         function labelForValue(value) {
             if (!value) {
                 return "";
             }
-            const entries = nodePickerOptionsForPreset(cfg.filterPreset);
-            const match = entries.find(function (entry) { return entry.value === value; });
+            const appId = resolveAppContext();
+            const context = appId ? { appId } : {};
+            const scopedEntries = nodePickerOptionsForPreset(cfg.filterPreset, context);
+            let match = scopedEntries.find(function (entry) { return entry.value === value; });
+            if (!match && appId) {
+                // Value not in scoped set — try unscoped so we can still display it.
+                const allEntries = nodePickerOptionsForPreset(cfg.filterPreset);
+                match = allEntries.find(function (entry) { return entry.value === value; });
+            }
             return match ? (match.label || match.name || match.id) : null;
         }
 
@@ -885,10 +1160,12 @@
 
         $button.on("click", function (event) {
             event.preventDefault();
+            const appId = resolveAppContext();
+            const context = appId ? { appId: appId } : {};
             openNodePickerDialog({
                 title: cfg.title || "Knoten auswählen",
                 value: String($field.val() || ""),
-                entries: nodePickerOptionsForPreset(cfg.filterPreset),
+                entries: nodePickerOptionsForPreset(cfg.filterPreset, context),
                 onSelect: function (value) {
                     setFieldValue(value);
                     $field.trigger("change");
@@ -921,12 +1198,17 @@
             icon: "fa fa-database",
             hasValue: true,
             // Render the store id; the picker is the primary way to choose one.
+            // P117: resolve the app context from the live panel so the dialog
+            // scopes to the stores of the currently-selected app.
             expand: function () {
                 const that = this;
+                const references = collectReferenceNodes();
+                const appId = resolveEditedNodeApp({}, references);
+                const context = appId ? { appId: appId } : {};
                 openNodePickerDialog({
                     title: opts.pickerTitle || "Store auswählen",
                     value: String(that.value() || ""),
-                    entries: nodePickerOptionsForPreset("stores"),
+                    entries: nodePickerOptionsForPreset("stores", context),
                     onSelect: function (value) {
                         that.value(value);
                     }
@@ -1282,6 +1564,13 @@
             // element stays as the hidden value carrier; we seed it from any
             // legacy alias the field still uses before installing the picker.
 
+            // P117: derive app context lazily so it reflects the live panel state
+            // at the moment the picker opens (not at installPickerField time).
+            function getAppId() {
+                const references = collectReferenceNodes();
+                return resolveEditedNodeApp(self, references);
+            }
+
             if (config.layout) {
                 installPickerField("#node-input-layoutId", {
                     filterPreset: "layouts",
@@ -1297,7 +1586,8 @@
                     title: "Route auswählen",
                     placeholder: "Optional: Parent-Route auswählen",
                     clearable: true,
-                    seedValue: self.routeId || ""
+                    seedValue: self.routeId || "",
+                    getAppId: getAppId
                 });
             }
 
@@ -1306,7 +1596,8 @@
                     filterPreset: "mounts",
                     title: "Parent-Slot auswählen",
                     placeholder: "Parent-Slot auswählen",
-                    seedValue: self.mount || ""
+                    seedValue: self.mount || "",
+                    getAppId: getAppId
                 });
             }
 
@@ -1315,7 +1606,8 @@
                     filterPreset: "actions",
                     title: "Action auswählen",
                     placeholder: "Action auswählen",
-                    seedValue: self.action || self.selectAction || self.refreshAction || ""
+                    seedValue: self.action || self.selectAction || self.refreshAction || "",
+                    getAppId: getAppId
                 });
             }
 
@@ -1328,7 +1620,8 @@
                     title: "Store auswählen",
                     placeholder: "Optional: Store auswählen",
                     clearable: true,
-                    seedValue: self.storeId || self.params || ""
+                    seedValue: self.storeId || self.params || "",
+                    getAppId: getAppId
                 });
             }
         };
@@ -1637,30 +1930,31 @@
     }
 
     function openIconPickerDialog(options) {
+        ensurePickerStylesheet();
+
         const opts = options || {};
         const current = parseIconValue(opts.value);
 
         const $overlay = $("<div>")
-            .addClass("webapp-icon-picker-overlay webapp-node-picker-overlay")
-            .css({ position: "fixed", inset: "0", background: "rgba(0,0,0,0.4)", "z-index": "2000", display: "flex", "align-items": "center", "justify-content": "center" });
+            .addClass("webapp-icon-picker-overlay webapp-node-picker-overlay");
 
         const $dialog = $("<div>")
             .addClass("webapp-icon-picker-dialog webapp-node-picker-dialog")
-            .css({ background: "var(--red-ui-primary-background, #fff)", color: "var(--red-ui-primary-text-color, #333)", border: "1px solid var(--red-ui-secondary-border-color, #ccc)", "border-radius": "4px", "box-shadow": "0 4px 24px rgba(0,0,0,0.3)", width: "520px", "max-width": "92vw", "max-height": "82vh", display: "flex", "flex-direction": "column", overflow: "hidden" })
+            .css({ width: "520px", "max-width": "92vw", "max-height": "82vh" })
             .appendTo($overlay);
 
         $("<div>")
-            .css({ padding: "10px 12px", "font-weight": "bold", "border-bottom": "1px solid var(--red-ui-secondary-border-color, #ddd)" })
+            .addClass("webapp-node-picker-header")
             .text(opts.title || "Icon auswählen")
             .appendTo($dialog);
 
         const $controls = $("<div>")
-            .css({ display: "flex", gap: "8px", margin: "10px 12px" })
+            .addClass("webapp-node-picker-search-wrap")
             .appendTo($dialog);
         const $libFilter = $("<select>").addClass("webapp-icon-picker-lib").css({ "flex": "0 0 auto" }).appendTo($controls);
         const $search = $("<input type=\"text\">")
             .attr("placeholder", "Suche (Icon-Name)…")
-            .addClass("webapp-icon-picker-search")
+            .addClass("webapp-icon-picker-search webapp-node-picker-search")
             .css({ flex: "1 1 auto" })
             .appendTo($controls);
 
@@ -1670,7 +1964,7 @@
             .appendTo($dialog);
 
         const $footer = $("<div>")
-            .css({ padding: "8px 12px", "border-top": "1px solid var(--red-ui-secondary-border-color, #ddd)", "text-align": "right" })
+            .addClass("webapp-node-picker-footer")
             .appendTo($dialog);
 
         function close() {
@@ -1721,7 +2015,7 @@
                     else {
                         $("<div>").css({ width: "22px", height: "22px", "line-height": "22px" }).text("?").appendTo($tile);
                     }
-                    $("<div>").css({ "font-size": "0.66em", "margin-top": "2px", "word-break": "break-all", color: "#888" }).text(name).appendTo($tile);
+                    $("<div>").addClass("webapp-node-picker-row-secondary").css({ "font-size": "0.66em", "margin-top": "2px", "word-break": "break-all" }).text(name).appendTo($tile);
                     $tile.on("click", function () {
                         confirm(formatIconValue({ library: libEntry.name, name: name }));
                     });
@@ -1729,10 +2023,10 @@
                 }
             }
             if (shown === 0) {
-                $("<div>").css({ color: "#999", "font-style": "italic", padding: "8px", "grid-column": "1 / -1" }).text("Keine Treffer.").appendTo($grid);
+                $("<div>").addClass("webapp-node-picker-empty").css({ "grid-column": "1 / -1" }).text("Keine Treffer.").appendTo($grid);
             }
             else if (shown >= MAX) {
-                $("<div>").css({ color: "#999", "font-size": "0.8em", padding: "6px", "grid-column": "1 / -1" }).text("… weiter eingrenzen (Suche), um mehr zu sehen.").appendTo($grid);
+                $("<div>").addClass("webapp-node-picker-row-secondary").css({ padding: "6px", "grid-column": "1 / -1" }).text("… weiter eingrenzen (Suche), um mehr zu sehen.").appendTo($grid);
             }
         }
 
@@ -1824,28 +2118,29 @@
     }
 
     function openMediaPickerDialog(options) {
+        ensurePickerStylesheet();
+
         const opts = options || {};
         const appId = opts.appId || "";
         const current = String(opts.value || "");
 
         const $overlay = $("<div>")
-            .addClass("webapp-media-picker-overlay webapp-node-picker-overlay")
-            .css({ position: "fixed", inset: "0", background: "rgba(0,0,0,0.4)", "z-index": "2000", display: "flex", "align-items": "center", "justify-content": "center" });
+            .addClass("webapp-media-picker-overlay webapp-node-picker-overlay");
 
         const $dialog = $("<div>")
             .addClass("webapp-media-picker-dialog webapp-node-picker-dialog")
-            .css({ background: "var(--red-ui-primary-background, #fff)", color: "var(--red-ui-primary-text-color, #333)", border: "1px solid var(--red-ui-secondary-border-color, #ccc)", "border-radius": "4px", "box-shadow": "0 4px 24px rgba(0,0,0,0.3)", width: "560px", "max-width": "92vw", "max-height": "82vh", display: "flex", "flex-direction": "column", overflow: "hidden" })
+            .css({ width: "560px", "max-width": "92vw", "max-height": "82vh" })
             .appendTo($overlay);
 
         $("<div>")
-            .css({ padding: "10px 12px", "font-weight": "bold", "border-bottom": "1px solid var(--red-ui-secondary-border-color, #ddd)" })
+            .addClass("webapp-node-picker-header")
             .text(opts.title || "Asset auswählen")
             .appendTo($dialog);
 
-        const $controls = $("<div>").css({ display: "flex", gap: "8px", margin: "10px 12px", "align-items": "center" }).appendTo($dialog);
+        const $controls = $("<div>").addClass("webapp-node-picker-search-wrap").appendTo($dialog);
         const $search = $("<input type=\"text\">")
             .attr("placeholder", "Suche (Asset-Name)…")
-            .addClass("webapp-media-picker-search")
+            .addClass("webapp-media-picker-search webapp-node-picker-search")
             .css({ flex: "1 1 auto" })
             .appendTo($controls);
         const $uploadBtn = $("<button type=\"button\" class=\"red-ui-button\">").text("Hochladen…").appendTo($controls);
@@ -1856,9 +2151,9 @@
             .css({ flex: "1 1 auto", "overflow-y": "auto", "min-height": "160px", padding: "6px", display: "grid", "grid-template-columns": "repeat(auto-fill, minmax(96px, 1fr))", gap: "6px" })
             .appendTo($dialog);
 
-        const $status = $("<div>").css({ padding: "4px 12px", "font-size": "0.8em", color: "#999" }).appendTo($dialog);
+        const $status = $("<div>").addClass("webapp-node-picker-row-secondary").css({ padding: "4px 12px" }).appendTo($dialog);
 
-        const $footer = $("<div>").css({ padding: "8px 12px", "border-top": "1px solid var(--red-ui-secondary-border-color, #ddd)", "text-align": "right" }).appendTo($dialog);
+        const $footer = $("<div>").addClass("webapp-node-picker-footer").appendTo($dialog);
 
         function close() {
             $overlay.remove();
@@ -1884,7 +2179,7 @@
                 return !query || name.toLowerCase().indexOf(query) !== -1;
             });
             if (matches.length === 0) {
-                $("<div>").css({ color: "#999", "font-style": "italic", padding: "8px", "grid-column": "1 / -1" }).text("Keine Assets.").appendTo($grid);
+                $("<div>").addClass("webapp-node-picker-empty").css({ "grid-column": "1 / -1" }).text("Keine Assets.").appendTo($grid);
                 return;
             }
             matches.forEach(function (a) {
@@ -1897,7 +2192,7 @@
                     .attr("title", name)
                     .css({ display: "flex", "flex-direction": "column", "align-items": "center", "justify-content": "center", padding: "6px 2px", cursor: "pointer", "border-radius": "3px", "text-align": "center", border: isSelected ? "2px solid var(--red-ui-text-color-link, #4a8)" : "1px solid var(--red-ui-secondary-border-color, #ddd)" });
                 $("<img>").attr("src", assetPreviewUrl(appId, id)).attr("alt", name).css({ width: "64px", height: "64px", "object-fit": "cover" }).appendTo($tile);
-                $("<div>").css({ "font-size": "0.7em", "margin-top": "3px", "word-break": "break-all" }).text(name).appendTo($tile);
+                $("<div>").addClass("webapp-node-picker-row-secondary").css({ "font-size": "0.7em", "margin-top": "3px", "word-break": "break-all" }).text(name).appendTo($tile);
                 $tile.on("click", function () { confirm(id); });
                 $grid.append($tile);
             });
@@ -1980,6 +2275,7 @@
         installNodePicker,
         installParentAppSelector,
         installPickerField,
+        isMountUnderApp,
         openIconPickerDialog,
         openMediaPickerDialog,
         parseIconValue,
@@ -1999,6 +2295,8 @@
         registerNodeType,
         registerNodeTypeWithEvents,
         required,
+        resolveEditedNodeApp,
+        resolveAppFromMount,
         storeTypedInputType
     };
 })(window);
