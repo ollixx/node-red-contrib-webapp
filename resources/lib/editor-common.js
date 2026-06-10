@@ -463,6 +463,9 @@
                     id,
                     name: node.name || "",
                     statePath: node.statePath || "",
+                    // P132: the JSON default-slice source — used (parsed) for the
+                    // soft sub-path autocomplete (keys/indices), never to restrict.
+                    initialValue: node.initialValue || "",
                     parent: node.parent || ""
                 });
             }
@@ -2020,32 +2023,168 @@
         refreshDisplay();
     }
 
-    // P67: a custom Node-RED typedInput type for the new `store` binding kind.
-    // Its `value` is the referenced ui-store node id; the expand button opens the
-    // SAME P68 node-picker dialog (stores preset) used everywhere else — no second
-    // picker. Reusable on every binding field (ui-alert message/title, …).
+    // ── P132 (ADR 0013): store-name + default-slice lookups (app-scoped) ──────
+    // Resolve a ui-store node id to its human NAME (never the raw id). App-scoped
+    // via the same picker preset used everywhere; an unresolvable id (deleted
+    // store) falls back to "<id> (bestehend)", matching installPickerField.
+    function resolveStoreReference(storeId) {
+        if (!storeId) {
+            return null;
+        }
+        var references = collectReferenceNodes();
+        var match = null;
+        for (var i = 0; i < references.stores.length; i++) {
+            if (references.stores[i].id === storeId) {
+                match = references.stores[i];
+                break;
+            }
+        }
+        return match;
+    }
+    function resolveStoreName(storeId) {
+        if (!storeId) {
+            return "";
+        }
+        var ref = resolveStoreReference(storeId);
+        if (ref) {
+            return ref.name || ref.statePath || ref.id;
+        }
+        return String(storeId) + " (bestehend)";
+    }
+    // The soft sub-path autocomplete entries for a store id: the keys/indices of
+    // its parsed default-slice value, mapped to Node-RED autoComplete records.
+    function storeSubPathSuggestions(storeId) {
+        var ref = resolveStoreReference(storeId);
+        if (!ref) {
+            return [];
+        }
+        var slice = parseStoreDefaultSlice(ref.initialValue);
+        return defaultSliceKeySuggestions(slice).map(function (key) {
+            return { value: key, label: key };
+        });
+    }
+
+    // P67/P132: the custom Node-RED typedInput type for the `store` binding kind.
+    // Button-first, name-not-id rendering (ADR 0013 §4):
+    //   - the typedInput value carries the store id, optionally as a JSON envelope
+    //     `{path, subPath}` (encodeStoreFieldValue) so a one-level sub-path
+    //     round-trips through the canonical apply/read helpers unchanged.
+    //   - `valueLabel` paints the value column: a button ("Store auswählen" before
+    //     a pick, "Store ändern" after — both with the `fa fa-database` icon) plus
+    //     the resolved NAME beside it; and, unless `leaf:true`, the optional
+    //     sub-path typedInput (the `storePath` source set) below it.
+    //   - the leaf form (`leaf:true`, used as the inner source inside a sub-path)
+    //     renders name + button only — NO nested sub-path (one-level rule).
+    // The expand button mirrors the picker so keyboard/expand still works.
     function storeTypedInputType(options) {
         const opts = options || {};
+        const isLeaf = !!opts.leaf;
+
+        function openStorePicker(that, onPicked) {
+            const references = collectReferenceNodes();
+            const appId = resolveEditedNodeApp({}, references);
+            const context = appId ? { appId: appId } : {};
+            openNodePickerDialog({
+                title: opts.pickerTitle || "Store auswählen",
+                value: decodeStoreFieldValue(that.value()).path,
+                entries: nodePickerOptionsForPreset("stores", context),
+                onSelect: onPicked
+            });
+        }
+
         return {
             value: "store",
             label: opts.label || "Store",
             icon: "fa fa-database",
             hasValue: true,
-            // Render the store id; the picker is the primary way to choose one.
+            valueLabel: function (container, value) {
+                const that = this;
+                const decoded = decodeStoreFieldValue(value);
+                container.css({ padding: "0" });
+
+                const $wrap = $("<span>")
+                    .addClass("webapp-store-field")
+                    .css({ display: "inline-flex", "flex-direction": "column", gap: "6px", width: "100%", padding: "2px 0" });
+
+                // Row 1: button (with store icon) + resolved name.
+                const $row = $("<span>")
+                    .css({ display: "inline-flex", "align-items": "center", gap: "8px", "min-width": "0" });
+                const hasStore = !!decoded.path;
+                const $btn = $("<button type=\"button\" class=\"red-ui-button webapp-store-field-button\">")
+                    .css({ "flex": "0 0 auto" })
+                    .html("<i class=\"fa fa-database\" style=\"margin-right:5px;\"></i>" + (hasStore ? "Store ändern" : "Store auswählen"));
+                const $name = $("<span>")
+                    .addClass("webapp-store-field-name")
+                    .css({ "min-width": "0", overflow: "hidden", "text-overflow": "ellipsis", "white-space": "nowrap" });
+                if (hasStore) {
+                    const name = resolveStoreName(decoded.path);
+                    $name.text(name).attr("title", name)
+                        .css({ color: "var(--red-ui-primary-text-color, #333)", "font-style": "normal" });
+                }
+                $row.append($btn).append($name);
+                $wrap.append($row);
+
+                $btn.on("click", function (event) {
+                    event.preventDefault();
+                    openStorePicker(that, function (picked) {
+                        // Keep any existing sub-path when the store changes.
+                        const prior = decodeStoreFieldValue(that.value());
+                        that.value(encodeStoreFieldValue(picked, isLeaf ? null : prior.subPath));
+                    });
+                });
+
+                // Row 2: the optional sub-path typedInput (skipped for leaf form
+                // and until a store is chosen — button-first, ADR 0013 §4).
+                if (!isLeaf && hasStore) {
+                    const $pathRow = $("<span>")
+                        .addClass("webapp-store-field-subpath")
+                        .css({ display: "inline-flex", "align-items": "center", gap: "6px", width: "100%" });
+                    const $pathInput = $("<input type=\"text\">")
+                        .addClass("webapp-store-subpath-input")
+                        .css({ width: "100%" });
+                    $pathRow.append($pathInput);
+                    $wrap.append($pathRow);
+
+                    const sub = readValueBinding(decoded.subPath || { kind: "literal", value: "" }, "");
+                    $pathInput.typedInput({
+                        default: sub.type || "str",
+                        types: valueBindingTypes({ category: "storePath" }),
+                        // Soft default-slice autocomplete on the `str` type only.
+                        autoComplete: function (val) {
+                            if ($pathInput.typedInput("type") !== "str") {
+                                return [];
+                            }
+                            const all = storeSubPathSuggestions(decodeStoreFieldValue(that.value()).path);
+                            const q = String(val || "").toLowerCase();
+                            return all.filter(function (e) {
+                                return e.value.toLowerCase().indexOf(q) !== -1;
+                            });
+                        }
+                    });
+                    $pathInput.typedInput("type", sub.type || "str");
+                    $pathInput.typedInput("value", sub.value || "");
+
+                    function syncSubPath() {
+                        const subBinding = applyValueBinding(
+                            $pathInput.typedInput("type"),
+                            $pathInput.typedInput("value")
+                        );
+                        const cur = decodeStoreFieldValue(that.value());
+                        that.value(encodeStoreFieldValue(cur.path, subBinding));
+                    }
+                    $pathInput.on("change", syncSubPath);
+                    $pathInput.typedInput("width", "100%");
+                }
+
+                container.append($wrap);
+            },
             // P117: resolve the app context from the live panel so the dialog
             // scopes to the stores of the currently-selected app.
             expand: function () {
                 const that = this;
-                const references = collectReferenceNodes();
-                const appId = resolveEditedNodeApp({}, references);
-                const context = appId ? { appId: appId } : {};
-                openNodePickerDialog({
-                    title: opts.pickerTitle || "Store auswählen",
-                    value: String(that.value() || ""),
-                    entries: nodePickerOptionsForPreset("stores", context),
-                    onSelect: function (value) {
-                        that.value(value);
-                    }
+                openStorePicker(that, function (picked) {
+                    const prior = decodeStoreFieldValue(that.value());
+                    that.value(encodeStoreFieldValue(picked, isLeaf ? null : prior.subPath));
                 });
             }
         };
@@ -2591,6 +2730,49 @@
             .text("Vollständige Doku öffnen ↗").appendTo($doc);
     }
 
+    // ── P132 (ADR 0013): default-slice autocomplete derivation (pure) ─────────
+    // Given a store's parsed default-slice value, return the SOFT autocomplete
+    // suggestions for a literal sub-path: the top-level keys of a plain object,
+    // or the indices ("0".."n-1") of an array. Scalars / null / undefined have no
+    // navigable sub-paths → []. This is advisory only (ADR 0013 §4): the editor
+    // never hides/restricts the path field from the default shape — the runtime
+    // (P131) validates. Pure — unit-testable without a DOM.
+    function defaultSliceKeySuggestions(sliceValue) {
+        if (Array.isArray(sliceValue)) {
+            var indices = [];
+            for (var i = 0; i < sliceValue.length; i++) {
+                indices.push(String(i));
+            }
+            return indices;
+        }
+        if (sliceValue !== null && typeof sliceValue === "object") {
+            return Object.keys(sliceValue);
+        }
+        return [];
+    }
+
+    // Parse a ui-store `initialValue`/`default` field (a JSON source string, or an
+    // already-parsed value) into the value used for autocomplete derivation. A
+    // non-JSON string is treated as a scalar string (no suggestions). Pure.
+    function parseStoreDefaultSlice(rawDefault) {
+        if (rawDefault === undefined || rawDefault === null) {
+            return undefined;
+        }
+        if (typeof rawDefault !== "string") {
+            return rawDefault;
+        }
+        var trimmed = rawDefault.trim();
+        if (trimmed.length === 0) {
+            return undefined;
+        }
+        try {
+            return JSON.parse(trimmed);
+        }
+        catch (_e) {
+            return trimmed;
+        }
+    }
+
     function valueBindingTypes(options) {
         var opts = options || {};
         var category = opts.category || "value";
@@ -2646,6 +2828,36 @@
             ];
         }
 
+        // ── P132 (ADR 0013): the `storePath` category — the source set for a
+        // store binding's optional one-level `subPath` (a value binding that
+        // resolves to a path string / numeric index into the store slice).
+        //
+        //   string[default], number, routeParam, query, store, reactive,
+        //   jsonata, msg, flow, global, env.
+        //
+        // `string` is the DEFAULT (a literal path like "c" or "b.label"). The
+        // inner `store` source here is a LEAF (ADR 0013 §3, one-level rule): it is
+        // the plain Node-RED-id store type WITHOUT its own subPath rendering, so a
+        // sub-path can never nest inside a sub-path. The default-slice autocomplete
+        // (keys/indices) is wired by the consuming store field onto the `str` type
+        // via the typedInput `autoComplete` option, not baked into the type here.
+        if (category === "storePath") {
+            return [
+                "str",
+                "num",
+                routeParamType,
+                queryType,
+                // Leaf store source — the plain id type, no nested subPath UI.
+                storeTypedInputType({ label: "Store", leaf: true }),
+                reactiveType,
+                "jsonata",
+                "msg",
+                "flow",
+                "global",
+                "env"
+            ];
+        }
+
         // Default — value/display full set (14 kinds).
         return [
             storeType,
@@ -2671,7 +2883,13 @@
     //   - reactive → { kind:"reactive", value:<expression source> }   (value, not path)
     //   - every other kind (store/query/routeParam/msg/jsonata/flow/global/env)
     //     → { kind, path:<value> }   (jsonata's path holds the expression source)
-    function applyValueBinding(type, value) {
+    //
+    // P132 (ADR 0013): the optional 3rd argument `subPath` carries a one-level
+    // leaf value binding for the `store` kind only. A present, non-empty subPath
+    // is attached as `{ kind:"store", path, subPath }`; an empty/omitted subPath
+    // (whole slice) leaves the binding as the bare `{ kind:"store", path }`. The
+    // subPath is ignored for every non-store kind (it has no meaning there).
+    function applyValueBinding(type, value, subPath) {
         var raw = value === undefined || value === null ? "" : String(value);
 
         if (VALUE_BINDING_LITERAL_TYPES.indexOf(type) !== -1) {
@@ -2682,7 +2900,74 @@
             return { kind: "reactive", value: raw };
         }
 
+        if (type === "store") {
+            // The store typedInput value carries the store id, OPTIONALLY as a
+            // JSON envelope `{"path":<id>,"subPath":<leaf binding>}` written by the
+            // rich store field's valueLabel (P132). Decode it so existing consumers
+            // that just pass through `typedInput("value")` need no change. An
+            // explicit `subPath` argument (used by a dedicated store field) wins.
+            var decoded = decodeStoreFieldValue(raw);
+            var storeBinding = { kind: "store", path: decoded.path };
+            var effectiveSubPath = isMeaningfulSubPath(subPath) ? subPath : decoded.subPath;
+            if (isMeaningfulSubPath(effectiveSubPath)) {
+                storeBinding.subPath = effectiveSubPath;
+            }
+            return storeBinding;
+        }
+
         return { kind: type, path: raw };
+    }
+
+    // ── P132: store typedInput value <-> {path, subPath} envelope ─────────────
+    // The rich store field encodes both halves of the binding into the single
+    // typedInput string value so the canonical apply/read helpers keep their
+    // 2-arg shape and every existing store consumer round-trips a subPath for free.
+    //   - a bare id (no subPath)        → the id string itself ("draftStore")
+    //   - id + subPath                  → JSON `{"path":"draftStore","subPath":{…}}`
+    // decodeStoreFieldValue tolerates either form (and a half-typed non-JSON id).
+    var STORE_FIELD_ENVELOPE_PREFIX = "{";
+    function encodeStoreFieldValue(path, subPath) {
+        var id = path === undefined || path === null ? "" : String(path);
+        if (!isMeaningfulSubPath(subPath)) {
+            return id;
+        }
+        return JSON.stringify({ path: id, subPath: subPath });
+    }
+    function decodeStoreFieldValue(raw) {
+        var str = raw === undefined || raw === null ? "" : String(raw);
+        if (str.charAt(0) === STORE_FIELD_ENVELOPE_PREFIX) {
+            try {
+                var obj = JSON.parse(str);
+                if (obj && typeof obj === "object" && typeof obj.path === "string") {
+                    return {
+                        path: obj.path,
+                        subPath: (obj.subPath && typeof obj.subPath === "object" && typeof obj.subPath.kind === "string")
+                            ? obj.subPath
+                            : null
+                    };
+                }
+            }
+            catch (_e) {
+                // Not a valid envelope — treat the whole string as a bare id.
+            }
+        }
+        return { path: str, subPath: null };
+    }
+
+    // A subPath is "meaningful" (worth persisting) when it is a binding object
+    // that resolves to a non-empty value. An empty literal ({kind:"literal",
+    // value:""}) or an empty-path dynamic kind means "whole slice" → omitted.
+    function isMeaningfulSubPath(subPath) {
+        if (!subPath || typeof subPath !== "object" || typeof subPath.kind !== "string") {
+            return false;
+        }
+        if (subPath.kind === "literal") {
+            return subPath.value !== undefined && subPath.value !== null && String(subPath.value) !== "";
+        }
+        if (subPath.kind === "reactive") {
+            return typeof subPath.value === "string" && subPath.value.trim().length > 0;
+        }
+        return typeof subPath.path === "string" && subPath.path.length > 0;
     }
 
     // Convert a typedInput string value into the typed JS literal for its sub-type.
@@ -2727,7 +3012,25 @@
             return { type: "reactive", value: typeof parsed.value === "string" ? parsed.value : "" };
         }
 
-        // All remaining kinds (store/query/routeParam/msg/jsonata/flow/global/env
+        // P132 (ADR 0013): a store binding carries its store-node id in `path` and
+        // an optional one-level leaf `subPath`. Surface the subPath so the store
+        // field can restore its path typedInput; a parsed object subPath wins, an
+        // absent one is omitted (whole slice).
+        if (parsed.kind === "store") {
+            var storePath = parsed.path || "";
+            var subPath = parsed.subPath ? (parseBindingValue(parsed.subPath) || parsed.subPath) : null;
+            var hasSubPath = subPath && typeof subPath === "object" && typeof subPath.kind === "string";
+            // `value` is the envelope the store typedInput consumes (id, or
+            // JSON {path,subPath}); `subPath` is the structured form for dedicated
+            // store fields that drive a separate path typedInput.
+            var read = { type: "store", value: encodeStoreFieldValue(storePath, hasSubPath ? subPath : null) };
+            if (hasSubPath) {
+                read.subPath = subPath;
+            }
+            return read;
+        }
+
+        // All remaining kinds (query/routeParam/msg/jsonata/flow/global/env
         // and legacy `state`) carry their reference/expression in `path`.
         return { type: parsed.kind, value: parsed.path || "" };
     }
@@ -3821,6 +4124,10 @@
         resolveAppFromMount,
         resolveRouteFromMount,
         storeTypedInputType,
+        defaultSliceKeySuggestions,
+        parseStoreDefaultSlice,
+        encodeStoreFieldValue,
+        decodeStoreFieldValue,
         validateReactiveSyntax,
         scanReactiveStoreLiterals,
         validateReactiveReferences,

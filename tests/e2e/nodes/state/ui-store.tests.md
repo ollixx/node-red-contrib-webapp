@@ -78,3 +78,19 @@ Spec: `tests/e2e/nodes/behavior/ui-store.spec.ts` (describe block `ui-store subP
 | replacing the store slice updates the subPath-bound text via SSE | A flow-driven `replace` re-resolves the `subPath` and pushes the new value live |
 
 Unit coverage: `packages/schema/test/p131-store-subpath.test.ts` (schema: `subPath` validates; `subPath.subPath` and `subPath` on non-store rejected) and `packages/renderer/test/p131-store-subpath.test.ts` (resolution: literal/numeric/dotted/dynamic paths, empty vs object slice, unresolvable → marker + one speaking error, recursion-guard backstop).
+
+## E2E tests — store-binding editor (P132, ADR 0013)
+
+Spec: `tests/e2e/nodes/editor/store-binding-subpath.spec.ts`. Drives the value
+typedInput's `store` source in a ui-text panel.
+
+| Test | Goal |
+|---|---|
+| button-first: before a store is chosen, only the 'Store auswählen' button (no path field) | Button-first rendering with the `fa fa-database` icon; the sub-path typedInput is absent until a store is picked (ADR 0013 §4) |
+| after selecting a store the button becomes 'Store ändern' and the NAME (not id) shows | The resolved store **name** ("monster") shows beside the button — never the raw node id ("monsterStore"); the sub-path typedInput appears |
+| the sub-path typedInput offers exactly the 11 storePath sources, string default | `valueBindingTypes({category:"storePath"})` → `str, num, routeParam, query, store, reactive, jsonata, msg, flow, global, env`, string default |
+| string-type autocomplete suggests the default-slice keys (a, b, c) | Soft autocomplete derives the slice keys from the store's `initialValue` `{a,b,c}` for the `str` type |
+| selecting 'c' saves subPath {kind:'literal', value:'c'} and round-trips showing the NAME | `{kind:"store", path:"monsterStore", subPath:{kind:"literal", value:"c"}}` saves and survives close/reopen; the **name** is shown on reopen |
+| an unresolvable store id falls back to '<id> (bestehend)' | A deleted/unknown store id shows the `<id> (bestehend)` fallback, consistent with the other reference fields |
+
+Unit coverage: `packages/editor/test/p132-store-subpath.test.ts` (pure default-slice key/index derivation `defaultSliceKeySuggestions` + `parseStoreDefaultSlice`; the `storePath` category 11-source set; `applyValueBinding`/`readValueBinding` carrying an optional one-level `subPath` and round-tripping it via the store-field envelope; bare-store P113 compatibility preserved).
