@@ -38,6 +38,18 @@ Graphen nicht mehr auflösbar ist, bleibt erhalten und wird als
 `<wert> (bestehend)` angezeigt.
 
 **Verhalten des Dialogs:**
+- **App-Scope (P117):** Die Kandidaten sind auf die **App des editierten
+  Knotens** gefiltert (bestimmt über dessen `parent` bzw. die Mount-Kette,
+  jeweils nach dem aktuellen Stand des offenen Panels). Ist keine App
+  bestimmbar (neuer Knoten ohne parent/mount), werden alle Kandidaten gezeigt
+  und jede Zeile nennt zusätzlich ihre App. Das `apps`-Preset ist naturgemäß
+  ungefiltert.
+- **Optik (P117):** Der Dialog folgt dem Stil der übrigen Node-RED-Admin-
+  Dialoge — Editor-Sans-Serif-Schrift (niemals Serife), NR-konforme Kopfzeile,
+  Standard-Suchfeld, Listen-Hover/-Selected und `red-ui-button`-Buttons; alle
+  Farben über `--red-ui-*`-Variablen (theme-/darkmode-fähig). Die Styles
+  liegen in einem geteilten Stylesheet der `webapp-node-picker-*`-Klassen,
+  das auch Icon-Picker (P69) und Media-Picker (P70) erben.
 - Scrollbare Kandidatenliste; jede Zeile zeigt **Name + ID + Knotentyp** (beim
   `mounts`-Preset: Breadcrumb + Mount-Wert).
 - **Contains-Suche** (case-insensitive) über Name, ID **und** Typ (`nodePickerMatch`);
