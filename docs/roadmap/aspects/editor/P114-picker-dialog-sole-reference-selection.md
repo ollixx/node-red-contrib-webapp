@@ -2,7 +2,7 @@
 id: P114
 title: "Picker-Dialog als EINZIGE Auswahl für alle Referenzfelder (parent, route, action, store, mount) + mounts-Preset"
 epic: aspects/editor
-status: pending
+status: in_progress
 dependencies: []
 ---
 # P114 — Picker-Dialog als einzige Referenzauswahl
