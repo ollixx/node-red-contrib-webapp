@@ -5,13 +5,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 /**
  * P66 (ADR 0007) — ui-action / ui-route / ui-app navigation.
  *
- * Two navigate scenarios:
- *   1. wired-to-route: the action carries params; the wired ui-route builds the
- *      location from its OWN path + params (no `to` on the action).
- *   2. path typedInput: the action carries a `to` (str/msg/flow/global/jsonata);
- *      app-global navigate resolves the template at the ui-app.
- * onEnter is emitted on route entry in BOTH scenarios. Cross-validation
- * (ambiguity / no-destination / dead-link) is a runtime/compile check.
+ * Two navigate scenarios (P118 reframes these as target modes — see
+ * p118-navigate-target-modes.test.ts):
+ *   1. wire mode: the action carries params, no `to`; the receiving ui-route
+ *      builds the location from its OWN path + params.
+ *   2. url mode: the action carries a `to` (str/msg/flow/global/jsonata);
+ *      the receiving route/app passes the addressed location through.
+ * P118 removed the old ambiguity / no-destination / dead-link cross-validation.
  */
 
 const require = createRequire(import.meta.url);
@@ -184,122 +184,21 @@ describe("P66 Scenario 2: ui-app app-global navigate with a `to` template", () =
     });
 });
 
-describe("P66: validateNavigationFlow cross-checks (full flow graph)", () => {
-    function withFlow(nodes: unknown[], run: () => void) {
-        const fs = require("node:fs");
-        const os = require("node:os");
-        const pathMod = require("node:path");
-        const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), "p66-"));
-        const flowFile = pathMod.join(dir, "flows.json");
-        fs.writeFileSync(flowFile, JSON.stringify(nodes));
-        t.runtimeState.RED = { settings: { flowFile, userDir: dir } };
-        try {
-            run();
-        }
-        finally {
-            fs.rmSync(dir, { recursive: true, force: true });
-        }
-    }
+// P118 (ADR 0011 §3): the old P66 validateNavigationFlow cross-checks
+// (ambiguous / no-destination / dead-link) are REMOVED — the explicit
+// target-source mode stores the intent, so the scan-based ambiguity rule is
+// gegenstandslos and there is no scan-based deploy check. (See p118-navigate-
+// target-modes.test.ts for the new mode behaviour.)
 
-    it("flags a navigate action wired to a ui-route AND carrying `to` (ambiguous)", () => {
-        withFlow(
-            [
-                { id: "app1", type: "ui-app", uiId: "navApp", root: "navApp" },
-                { id: "rt1", type: "ui-route", uiId: "customers", path: "/customers" },
-                { id: "act1", type: "ui-action", uiId: "go", actionType: "navigate", to: "/customers", toType: "str", wires: [["rt1"]] }
-            ],
-            () => {
-                const issues = t.validateNavigationFlow(t.runtimeState.RED);
-                expect(issues.some((i: any) => /ambiguous/i.test(i.message))).toBe(true);
-            }
-        );
-    });
-
-    it("flags a navigate action with neither a wire-to-route nor a `to` (no destination)", () => {
-        withFlow(
-            [
-                { id: "app1", type: "ui-app", uiId: "navApp", root: "navApp" },
-                { id: "act1", type: "ui-action", uiId: "go", actionType: "navigate", wires: [[]] }
-            ],
-            () => {
-                const issues = t.validateNavigationFlow(t.runtimeState.RED);
-                expect(issues.some((i: any) => /no destination/i.test(i.message))).toBe(true);
-            }
-        );
-    });
-
-    it("flags a navigate with a STATIC `to` matching no ui-route (dead link)", () => {
-        withFlow(
-            [
-                { id: "app1", type: "ui-app", uiId: "navApp", root: "navApp" },
-                { id: "rt1", type: "ui-route", uiId: "customers", path: "/customers" },
-                { id: "act1", type: "ui-action", uiId: "go", actionType: "navigate", to: "/nowhere", toType: "str", wires: [[]] }
-            ],
-            () => {
-                const issues = t.validateNavigationFlow(t.runtimeState.RED);
-                expect(issues.some((i: any) => /dead link/i.test(i.message))).toBe(true);
-            }
-        );
-    });
-
-    it("does NOT flag a dynamic `to` (msg/jsonata) — not edit-time checkable", () => {
-        withFlow(
-            [
-                { id: "app1", type: "ui-app", uiId: "navApp", root: "navApp" },
-                { id: "act1", type: "ui-action", uiId: "go", actionType: "navigate", to: "dest", toType: "msg", wires: [[]] }
-            ],
-            () => {
-                const issues = t.validateNavigationFlow(t.runtimeState.RED);
-                expect(issues).toHaveLength(0);
-            }
-        );
-    });
-
-    it("accepts a valid Scenario 1 (wired to a route, no `to`) with no issues", () => {
-        withFlow(
-            [
-                { id: "app1", type: "ui-app", uiId: "navApp", root: "navApp" },
-                { id: "rt1", type: "ui-route", uiId: "customers", path: "/customers/:id" },
-                { id: "act1", type: "ui-action", uiId: "go", actionType: "navigate", params: { id: "rowId" }, wires: [["rt1"]] }
-            ],
-            () => {
-                const issues = t.validateNavigationFlow(t.runtimeState.RED);
-                expect(issues).toHaveLength(0);
-            }
-        );
-    });
-
-    it("accepts a matching static `to` against a parameterised route", () => {
-        withFlow(
-            [
-                { id: "app1", type: "ui-app", uiId: "navApp", root: "navApp" },
-                { id: "rt1", type: "ui-route", uiId: "customers", path: "/customers/:id" },
-                { id: "act1", type: "ui-action", uiId: "go", actionType: "navigate", to: "/customers/42", toType: "str", wires: [[]] }
-            ],
-            () => {
-                const issues = t.validateNavigationFlow(t.runtimeState.RED);
-                expect(issues).toHaveLength(0);
-            }
-        );
-    });
-});
-
-describe("P66: buildActionCommand resolves typedInput `to` + merges params", () => {
-    it("a navigate ui-action with toType=msg resolves the destination from the message", () => {
+describe("P66: buildActionCommand resolves url-mode typedInput `to`", () => {
+    it("a url-mode navigate with toType=msg resolves the destination from the message", () => {
         t.runtimeState.RED = {
             util: {
                 evaluateNodeProperty: (value: string, _type: string, _node: unknown, msg: any) => msg[value]
             }
         };
-        const node = { id: "act", webappDefinition: { type: "ui-action", id: "go", actionType: "navigate", to: "dest", toType: "msg" } };
+        const node = { id: "act", webappDefinition: { type: "ui-action", id: "go", actionType: "navigate", targetMode: "url", to: "dest", toType: "msg" } };
         const command = t.buildActionCommand(node.webappDefinition, { dest: "/x/1" }, node);
         expect(command).toMatchObject({ type: "navigate", to: "/x/1" });
-    });
-
-    it("merges config params with msg.ui.action.params (msg wins per key)", () => {
-        t.runtimeState.RED = { util: {} };
-        const node = { id: "act", webappDefinition: { type: "ui-action", id: "go", actionType: "navigate", params: { a: "1", b: "2" } } };
-        const command = t.buildActionCommand(node.webappDefinition, { ui: { action: { params: { b: "9" } } } }, node);
-        expect(command.params).toEqual({ a: "1", b: "9" });
     });
 });

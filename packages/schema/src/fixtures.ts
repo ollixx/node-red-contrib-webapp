@@ -434,46 +434,39 @@ export const customersCrudRuntimeIntegrationFixture: RuntimeIntegrationModel = {
         {
             id: "openCustomerEditor",
             actionType: "trigger",
-            targetMode: "out-port",
             description: "Open the shared customer editor dialog."
         },
         {
             id: "closeCustomerEditor",
             actionType: "trigger",
-            targetMode: "out-port",
             description: "Close the shared customer editor dialog."
         },
         {
             id: "saveCustomer",
             actionType: "trigger",
-            targetMode: "out-port",
             description: "Persist the current customer draft."
         },
         {
             id: "refreshCustomers",
             actionType: "trigger",
-            targetMode: "out-port",
             description: "Refresh the customer list query."
         },
         {
             id: "openCustomerDetail",
             actionType: "navigate",
-            targetMode: "path",
-            target: "app",
+            targetMode: "url",
             to: "/customers/:id"
         },
         {
             id: "goToCustomers",
             actionType: "navigate",
-            targetMode: "path",
-            target: "app",
+            targetMode: "url",
             to: "/customers"
         },
         {
             id: "deleteCustomer",
             actionType: "navigate",
-            targetMode: "path",
-            target: "app",
+            targetMode: "url",
             to: "/customers"
         }
     ],
@@ -802,7 +795,6 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
         type: "ui-action",
         id: "openCustomerEditor",
         actionType: "show",
-        targetMode: "path",
         target: "dialog:customerEditor",
         description: "Open the shared customer editor dialog."
     },
@@ -810,7 +802,6 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
         type: "ui-action",
         id: "closeCustomerEditor",
         actionType: "hide",
-        targetMode: "path",
         target: "dialog:customerEditor",
         description: "Close the shared customer editor dialog."
     },
@@ -818,7 +809,6 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
         type: "ui-action",
         id: "saveCustomer",
         actionType: "hide",
-        targetMode: "path",
         target: "dialog:customerEditor",
         description: "Close the editor dialog after the wired flow has persisted the customer."
     },
@@ -826,31 +816,27 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
         type: "ui-action",
         id: "refreshCustomers",
         actionType: "trigger",
-        targetMode: "out-port",
         description: "Refresh the customer list query."
     },
     {
         type: "ui-action",
         id: "openCustomerDetail",
         actionType: "navigate",
-        targetMode: "path",
-        target: "app",
+        targetMode: "url",
         to: "/customers/:id"
     },
     {
         type: "ui-action",
         id: "goToCustomers",
         actionType: "navigate",
-        targetMode: "path",
-        target: "app",
+        targetMode: "url",
         to: "/customers"
     },
     {
         type: "ui-action",
         id: "deleteCustomer",
         actionType: "navigate",
-        targetMode: "path",
-        target: "app",
+        targetMode: "url",
         to: "/customers"
     },
     {

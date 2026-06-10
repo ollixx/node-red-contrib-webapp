@@ -38,12 +38,23 @@ Node-Picker-Dialog, typedInput, Canvas-Knoten-Picker).
 | `actionType` | „Action-Typ" | SelectBox (Verb-Set) | optional | Das voreingestellte Interaktions-Verb. Auswahl aus dem kanonischen Verb-Set (siehe unten). Überschreibbar via `msg.ui.action.type`. Leer = unspezifiziert (Typ kommt dann aus der `msg`). |
 | `description` | „Beschreibung" | Textfeld | optional | Freitext-Beschreibung der Aktion (Dokumentation im Editor). |
 
-### Gruppe „Navigation" (nur bei `actionType: navigate`)
+### Gruppe „Navigation" (nur bei `actionType: navigate`) — ADR 0011 (P118)
+
+Die Zielquelle ist ein **expliziter Modus** (`targetMode`); pro Modus sind nur
+die zugehörigen Felder gesetzt — eine Doppel-Konfiguration ist technisch
+ausgeschlossen (Verstöße sind Compile-Validierungsfehler). Die UI-Umschaltung
+(Modus-Toggle, Wire-Scan, Mapping-Tabelle) liefert **P119**; hier das Datenmodell.
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `to` / `toType` | „Navigation zu" | typedInput (`str` \| `msg` \| `flow` \| `global` \| `jsonata`) | optional | Navigationsziel. `str` = literaler Pfad (ggf. mit `:platzhaltern`); `msg`/`flow`/`global` lesen den Pfad zur Laufzeit aus Kontext; `jsonata` berechnet ihn aus der Nachricht. **Leer lassen, wenn der Knoten mit einer `ui-route` verdrahtet ist** (Szenario 1) — die Route liefert den Pfad aus ihrem eigenen `path`. Default-Typ: `str`. |
-| `params` | „Parameter" | Key/Value-Liste | optional | Benannte URL-Parameter. Füllen die `:platzhalter` der Ziel-Route. Hauptsächlich für Szenario 1, aber auch zusätzlich zu einem `to`-Template nutzbar. |
+| `targetMode` | „Zielquelle" | `wire` \| `route` \| `url` | optional (Default per Migration) | Gespeicherte Absicht. `wire` = Ziel kommt über die Verdrahtung; `route` = per Referenz gewählte `ui-route`; `url` = ganze URL als `to`. |
+| `routeId` | „Ziel-Route" | Referenz auf eine `ui-route` (Picker, P119) | nur Modus `route` | App-global zur Routen-`path` aufgelöst. Im Modus `route` **kein** `to`. |
+| `params` | „Parameter" | typisierte Liste `[{ name, value, valueType }]` | optional (Modus `route`/`wire`) | Benannte Parameter, die die `:platzhalter` der Ziel-Route füllen. `valueType` ∈ `str` \| `msg` \| `jsonata` \| `flow` \| `global` \| `env`; jeder Wert wird **zur Action-Zeit gegen die auslösende msg** ausgewertet. Im Modus `url` ignoriert (die URL trägt ihre Werte selbst). |
+| `to` / `toType` | „Navigation zu" | typedInput (`str` \| `msg` \| `flow` \| `global` \| `jsonata`) | nur Modus `url` | Ganze URL/Pfad. `str` = literaler Pfad (ggf. mit `:platzhaltern`); `msg`/`flow`/`global` lesen ihn aus Kontext; `jsonata` berechnet ihn. Im Modus `url` **kein** `routeId`. Default-Typ: `str`. |
+
+> **Migration (Lade-Shim).** Bestands-Configs ohne `targetMode`: `to` gesetzt →
+> `url`; `routeId` gesetzt → `route`; sonst → `wire`. Ein Legacy-`params`-Objekt
+> `{k:"v"}` wird verlustfrei in eine Liste mit `valueType: "str"` migriert.
 
 ### Gruppe „Ziel"
 
@@ -72,7 +83,7 @@ Legacy-Pass-Through-Verb erhalten.) Es gibt **keine** CRUD-Verben — die frühe
 
 Der `data-help-name="ui-action"`-Hilfetext im Editor soll **knapp, aber
 ausreichend** sein: Zweck (typisierter Emitter des Action-Contracts, nur
-Interaktionszustand), das Verb-Set, die zwei Navigations-Szenarien, der Hinweis
+Interaktionszustand), das Verb-Set, die drei Navigations-Modi (wire/route/url), der Hinweis
 dass der **Zielknoten** den Push ausführt und die Zieladressierung primär über das
 Wiring läuft — plus ein Link auf die ausführliche Doku. Empfohlener Link (später
 ggf. Wiki): `https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/behavior/ui-action.md`.
@@ -96,8 +107,8 @@ Der In-Port empfängt eine `msg`. Relevante Felder:
 msg.ui.action.type   = "navigate" | "show" | "hide" | "open" | "close" | "select" | "enable" | "disable" | "focus" | "reset"
 msg.ui.action.target = <node-id>  ← optionaler Ziel-Override (sonst löst der Zielknoten auf sich selbst auf); einziges kanonisches Feld (P79)
 msg.ui.action.part   = <sub-id>   ← Granularität für open / close / select
-msg.ui.action.to     = <pfad>     ← Navigationsziel für navigate (Szenario 2; leer bei Verdrahtung zu einer ui-route)
-msg.ui.action.params = { k: v }   ← benannte URL-Parameter für navigate
+msg.ui.action.to     = <pfad>     ← explizites Navigationsziel (Modus route/url; leer im Modus wire). Override hat Vorrang.
+msg.ui.action.params = { k: v }   ← benannte URL-Parameter für navigate (Laufzeit-Override, ergänzt die konfigurierten)
 msg.ui.clientId      = <client>   ← schränkt die Action auf einen bestimmten Client ein (sonst Broadcast)
 ```
 
@@ -105,14 +116,26 @@ msg.ui.clientId      = <client>   ← schränkt die Action auf einen bestimmten 
   schema-valide `msg.ui.action` und reicht die **angereicherte** `msg` am Out-Port
   weiter (anreichern, nicht ersetzen — ADR 0007 §1). Fremde `msg.*`- und
   `msg.ui.*`-Felder reisen unverändert mit.
-- **Navigation, zwei Szenarien:** Szenario 1 — verdrahtet mit einer `ui-route`
-  (oder der `ui-app` für die Root `/`): `to` leer, optionale `params`; die Route
-  baut die Location aus ihrem eigenen `path`. Szenario 2 — nicht verdrahtet: `to`
-  (typedInput) gesetzt, app-global aufgelöst. `onEnter`/`onLeave` werden in beiden
-  Szenarien emittiert.
-- **Validierung:** Mehrdeutigkeit (verdrahtet **und** `to`), fehlendes Ziel oder
-  ein statischer toter Link werden zur Deploy-Zeit geprüft (der Wire ist für die
-  per-Node-Editor-Validierung unsichtbar).
+- **Navigation, drei Modi (ADR 0011 / P118):**
+  - `wire` — kein explizites Ziel in der msg; die empfangende `ui-route` baut die
+    Location aus ihrem eigenen `path` (heutiges Verhalten). Macht Verzweigung
+    wohldefiniert: die Route, die die msg empfängt, gewinnt.
+  - `route` — `routeId` wird app-global zur Routen-`path` aufgelöst, die
+    typisierten `params` werden gegen die auslösende msg ausgewertet, daraus die
+    Location gebaut und als **explizites Ziel** in `msg.ui.action.to` getragen.
+  - `url` — `to`/`toType` liefern die ganze URL; `params` entfällt.
+  `onEnter`/`onLeave` werden in allen Modi emittiert (über den Connect-basierten
+  Lifecycle nach dem Full-Reload, P112).
+- **Adressierungs-Vorrang (ADR 0011 §3):** Trägt eine eingehende navigate-msg
+  bereits ein explizites Ziel (Modus `route`/`url` oder `msg.ui.action.to`), so
+  reicht eine empfangende `ui-route` sie **unverändert durch** — sie setzt NICHT
+  ihren eigenen Pfad darauf. Eine verdrahtete Route kapert also keine adressierte
+  Navigation.
+- **Keine Mehrdeutigkeits-Validierung mehr:** Die frühere P66-Regel „verdrahtet
+  **und** `to` = Deploy-Fehler" (samt fehlendes-Ziel- und toter-Link-Scan)
+  entfällt ersatzlos — der Modus speichert die Absicht. Eine unsinnige
+  Verdrahtung ist per Owner-Entscheid Nutzer-Verantwortung; es gibt **keine**
+  scan-basierte Laufzeit-/Deploy-Prüfung.
 - **Nicht erkannte / fachfremde Messages:** werden **unverändert durchgereicht**
   (Pass-Through), ohne Fehlerausgabe.
 - **Framework-Fehler** werden gemäß [logs-errors.md](../concepts/logs-errors.md)
@@ -128,7 +151,7 @@ aus; ein Verb, das der Knoten nicht besitzt, wird unverändert durchgereicht.
 
 **Antizipierte Wiring-Szenarien:**
 - `ui-button` (Klick) → `function` → `ui-action (open)` → `ui-dialog`.
-- `ui-action (navigate)` → `ui-route` (Szenario 1) — die Route baut die Location.
+- `ui-action (navigate, Modus wire)` → `ui-route` — die empfangende Route baut die Location.
 - `ui-action (disable)` → `ui-button` während eines laufenden Requests.
 
 ## Besonderheiten

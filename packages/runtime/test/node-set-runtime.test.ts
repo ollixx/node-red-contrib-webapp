@@ -143,15 +143,19 @@ describe("runtime node set assembly", () => {
                     actionType: "navigate",
                     description: undefined,
                     id: "goToCustomers",
+                    routeId: undefined,
                     target: undefined,
-                    targetMode: "out-port",
+                    targetMode: "url",
+                    params: undefined,
                     to: "/customers"
                 },
                 {
                     actionType: undefined,
                     id: "saveCustomer",
+                    routeId: undefined,
                     target: undefined,
                     targetMode: undefined,
+                    params: undefined,
                     to: undefined,
                     description: undefined
                 }
@@ -221,9 +225,11 @@ describe("runtime node set assembly", () => {
             {
                 id: "goToCustomers",
                 actionType: "navigate",
-                targetMode: "out-port",
+                targetMode: "url",
+                routeId: undefined,
                 target: undefined,
                 to: "/customers",
+                params: undefined,
                 description: undefined
             }
         ]);
@@ -248,8 +254,7 @@ describe("runtime node set assembly", () => {
                 type: "ui-action",
                 id: "goToCustomers",
                 actionType: "navigate",
-                targetMode: "path",
-                target: "app",
+                targetMode: "url",
                 to: "/customers"
             }
         ]);
@@ -264,9 +269,11 @@ describe("runtime node set assembly", () => {
             {
                 id: "goToCustomers",
                 actionType: "navigate",
-                targetMode: "path",
-                target: "app",
+                targetMode: "url",
+                routeId: undefined,
+                target: undefined,
                 to: "/customers",
+                params: undefined,
                 description: undefined
             }
         ]);

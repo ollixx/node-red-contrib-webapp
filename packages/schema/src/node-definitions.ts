@@ -1,10 +1,10 @@
 import { z } from "zod";
 
 import {
-    actionParamsSchema,
-    actionTargetModeSchema,
+    actionParamListSchema,
     actionToTypeSchema,
     actionTypeSchema,
+    navigateTargetModeSchema,
     BUTTON_LINK_MODES,
     BUTTON_VARIANTS,
     bindingSchema,
@@ -345,6 +345,65 @@ export const uiQueryNodeDefinitionSchema = identifiedNodeSchema.extend({
 
 export type UiQueryNodeDefinition = z.infer<typeof uiQueryNodeDefinitionSchema>;
 
+// P118 (ADR 0011 §1): navigate target-mode exclusivity. The stored `targetMode`
+// declares the single intent; only that mode's fields may be set so a config can
+// never carry a double configuration:
+//   • route ⇒ routeId set; `to` must NOT be set.
+//   • url   ⇒ `to` set; routeId must NOT be set.
+//   • wire  ⇒ neither routeId nor `to`.
+// Violations are validation (compile-time) errors. Only enforced for navigate
+// actions (other verbs ignore targetMode). Absent targetMode skips the check
+// (legacy configs are migrated to a mode on load before they reach here).
+function applyNavigateTargetModeExclusivity(
+    def: {
+        actionType?: string;
+        targetMode?: string;
+        routeId?: string;
+        to?: string;
+    },
+    ctx: z.RefinementCtx
+): void {
+    if (def.actionType !== "navigate" || !def.targetMode) {
+        return;
+    }
+    const hasTo = typeof def.to === "string" && def.to.length > 0;
+    const hasRouteId = typeof def.routeId === "string" && def.routeId.length > 0;
+    if (def.targetMode === "route") {
+        if (hasTo) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["to"],
+                message: "targetMode 'route' must not set `to` — the route reference supplies the path."
+            });
+        }
+    }
+    else if (def.targetMode === "url") {
+        if (hasRouteId) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["routeId"],
+                message: "targetMode 'url' must not set `routeId` — the `to` URL is built whole."
+            });
+        }
+    }
+    else if (def.targetMode === "wire") {
+        if (hasTo) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["to"],
+                message: "targetMode 'wire' must not set `to` — the wired route supplies the path."
+            });
+        }
+        if (hasRouteId) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["routeId"],
+                message: "targetMode 'wire' must not set `routeId` — the wired route is the target."
+            });
+        }
+    }
+}
+
 export const uiActionNodeDefinitionSchema = identifiedNodeSchema.extend({
     type: z.literal("ui-action"),
     parent: identifierSchema.optional(),
@@ -355,21 +414,29 @@ export const uiActionNodeDefinitionSchema = identifiedNodeSchema.extend({
     targets: z.array(identifierSchema).optional(),
     // targetMode and target are kept for backward compatibility but deprecated.
     // The preferred model is wiring the output port to the target node.
-    targetMode: actionTargetModeSchema.optional(),
+    // P118 (ADR 0011 §1): `targetMode` is REPURPOSED for navigate as the explicit
+    // target SOURCE — wire | route | url. (The old out-port/path enum is dropped;
+    // legacy values migrate to a navigate mode on load.)
+    targetMode: navigateTargetModeSchema.optional(),
+    // P118: the referenced ui-route id (navigate `route` mode only). Resolved
+    // app-globally to the route's `path` at action time.
+    routeId: identifierSchema.optional(),
     target: z.string().min(1, "Action targets must not be empty.").optional(),
     // P53 (ADR 0005): sub-id within the target for open / close / select
     // granularity (accordion section, tree branch, tab name).
     part: z.string().min(1, "Action parts must not be empty.").optional(),
     // P66 (ADR 0007): navigate destination as a typedInput. `to` holds the value
     // (a path template, a msg/flow/global reference, or a JSONata expression),
-    // `toType` its type (default "str"). Both optional: Scenario 1 (wired to a
-    // ui-route) carries NO `to` — the route supplies the path. The dead-link /
-    // ambiguity cross-checks are RUNTIME checks (the wire is invisible here).
+    // `toType` its type (default "str"). P118: only meaningful in `url` mode.
     to: z.string().min(1, "Navigate actions must declare a destination.").optional(),
     toType: actionToTypeSchema.optional(),
-    // P66: named URL params (Scenario 1 wired-route; or extra params with a `to`).
-    params: actionParamsSchema.optional(),
+    // P118 (ADR 0011 §1): typed navigate params — an ordered LIST of
+    // { name, value, valueType } entries (route mode). Supersedes the P66
+    // literal-only `{k: "v"}` object (migrated to str-typed rows on load).
+    params: actionParamListSchema.optional(),
     description: z.string().min(1, "Action descriptions must not be empty.").optional()
+}).superRefine((def, ctx) => {
+    applyNavigateTargetModeExclusivity(def, ctx);
 });
 
 export type UiActionNodeDefinition = z.infer<typeof uiActionNodeDefinitionSchema>;

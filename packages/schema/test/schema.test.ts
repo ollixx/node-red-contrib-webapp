@@ -365,28 +365,20 @@ describe("app validation", () => {
         }).success).toBe(true);
     });
 
-    it("accepts ui-action with deprecated targetMode/target fields (backward compat)", () => {
+    it("accepts ui-action with deprecated `target` field (backward compat)", () => {
+        // P118 (ADR 0011): the old out-port/path `targetMode` enum is dropped;
+        // `target` (the deprecated wireless addressing field) is still accepted.
         expect(validateUiNodeDefinition({
             type: "ui-action",
             id: "hideToolbar",
             actionType: "hide",
-            targetMode: "path",
             target: "route:/customers/content/toolbar"
         }).success).toBe(true);
 
         expect(validateUiNodeDefinition({
             type: "ui-action",
             id: "triggerRefresh",
-            actionType: "trigger",
-            targetMode: "out-port"
-        }).success).toBe(true);
-
-        expect(validateUiNodeDefinition({
-            type: "ui-action",
-            id: "goToCustomers",
-            actionType: "navigate",
-            targetMode: "out-port",
-            to: "/customers"
+            actionType: "trigger"
         }).success).toBe(true);
     });
 
@@ -1398,30 +1390,29 @@ describe("P66: ui-action navigation — typedInput `to` + params; ui-app onEnter
         expect(result.success).toBe(false);
     });
 
-    it("ui-action node accepts `to` + `toType` (typedInput) + params (Scenario 1)", () => {
+    it("ui-action node accepts a url-mode navigate with `to` + `toType` (P118)", () => {
         const result = uiActionNodeDefinitionSchema.safeParse({
             type: "ui-action",
             id: "goCustomer",
             actionType: "navigate",
+            targetMode: "url",
             to: "msg.dest",
-            toType: "msg",
-            params: { id: "rowId" }
+            toType: "msg"
         });
         expect(result.success).toBe(true);
         if (result.success) {
             expect(result.data.toType).toBe("msg");
-            expect(result.data.params).toEqual({ id: "rowId" });
         }
     });
 
-    it("ui-action node accepts a navigate action with NO `to` (Scenario 1: wired to a ui-route)", () => {
+    it("ui-action node accepts a navigate action with NO `to` (wire mode)", () => {
         const result = uiActionNodeDefinitionSchema.safeParse({
             type: "ui-action",
             id: "goWired",
-            actionType: "navigate"
+            actionType: "navigate",
+            targetMode: "wire"
         });
-        // The schema no longer forces a `to`; ambiguity/dead-link checks are
-        // runtime cross-checks (the wire is invisible to per-node validation).
+        // The schema no longer forces a `to`; the wired route supplies the path.
         expect(result.success).toBe(true);
     });
 
@@ -1443,6 +1434,119 @@ describe("P66: ui-action navigation — typedInput `to` + params; ui-app onEnter
             title: "App",
             layout: "vertical",
             events: ["clientConnected", "onEnter", "onLeave"]
+        });
+        expect(result.success).toBe(true);
+    });
+});
+
+describe("P118 (ADR 0011): navigate target modes — schema (wire | route | url)", () => {
+    it("accepts route mode: routeId + typed param list, no `to`", () => {
+        const result = uiActionNodeDefinitionSchema.safeParse({
+            type: "ui-action",
+            id: "goDetail",
+            actionType: "navigate",
+            targetMode: "route",
+            routeId: "customerDetail",
+            params: [{ name: "id", value: "payload.id", valueType: "msg" }]
+        });
+        expect(result.success).toBe(true);
+        if (result.success) {
+            expect(result.data.routeId).toBe("customerDetail");
+            expect(result.data.params).toEqual([{ name: "id", value: "payload.id", valueType: "msg" }]);
+        }
+    });
+
+    it("accepts every param valueType (str | msg | jsonata | flow | global | env)", () => {
+        const result = uiActionNodeDefinitionSchema.safeParse({
+            type: "ui-action",
+            id: "goAllTypes",
+            actionType: "navigate",
+            targetMode: "route",
+            routeId: "r1",
+            params: [
+                { name: "a", value: "lit", valueType: "str" },
+                { name: "b", value: "payload.x", valueType: "msg" },
+                { name: "c", value: "payload.x & '!'", valueType: "jsonata" },
+                { name: "d", value: "f", valueType: "flow" },
+                { name: "e", value: "g", valueType: "global" },
+                { name: "f", value: "HOME", valueType: "env" }
+            ]
+        });
+        expect(result.success).toBe(true);
+    });
+
+    it("rejects an unknown param valueType", () => {
+        const result = uiActionNodeDefinitionSchema.safeParse({
+            type: "ui-action",
+            id: "badParam",
+            actionType: "navigate",
+            targetMode: "route",
+            routeId: "r1",
+            params: [{ name: "id", value: "x", valueType: "bogus" }]
+        });
+        expect(result.success).toBe(false);
+    });
+
+    it("rejects double-config: targetMode 'route' AND `to` set", () => {
+        const result = uiActionNodeDefinitionSchema.safeParse({
+            type: "ui-action",
+            id: "dbl1",
+            actionType: "navigate",
+            targetMode: "route",
+            routeId: "r1",
+            to: "/customers/42"
+        });
+        expect(result.success).toBe(false);
+    });
+
+    it("rejects double-config: targetMode 'url' AND routeId set", () => {
+        const result = uiActionNodeDefinitionSchema.safeParse({
+            type: "ui-action",
+            id: "dbl2",
+            actionType: "navigate",
+            targetMode: "url",
+            to: "/customers/42",
+            routeId: "r1"
+        });
+        expect(result.success).toBe(false);
+    });
+
+    it("rejects double-config: targetMode 'wire' with `to` or routeId set", () => {
+        expect(uiActionNodeDefinitionSchema.safeParse({
+            type: "ui-action",
+            id: "dbl3a",
+            actionType: "navigate",
+            targetMode: "wire",
+            to: "/x"
+        }).success).toBe(false);
+        expect(uiActionNodeDefinitionSchema.safeParse({
+            type: "ui-action",
+            id: "dbl3b",
+            actionType: "navigate",
+            targetMode: "wire",
+            routeId: "r1"
+        }).success).toBe(false);
+    });
+
+    it("accepts url mode: `to` set, no routeId", () => {
+        const result = uiActionNodeDefinitionSchema.safeParse({
+            type: "ui-action",
+            id: "urlGo",
+            actionType: "navigate",
+            targetMode: "url",
+            to: "/customers/42",
+            toType: "str"
+        });
+        expect(result.success).toBe(true);
+    });
+
+    it("mode-exclusivity is navigate-only — a show action ignores targetMode rules", () => {
+        // A non-navigate verb never trips the route/url/wire field checks.
+        const result = uiActionNodeDefinitionSchema.safeParse({
+            type: "ui-action",
+            id: "showToolbar",
+            actionType: "show",
+            target: "toolbar"
         });
         expect(result.success).toBe(true);
     });

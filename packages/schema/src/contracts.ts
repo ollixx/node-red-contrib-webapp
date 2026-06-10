@@ -326,6 +326,43 @@ export const actionTargetModeSchema = z.enum(["out-port", "path"]);
 
 export type ActionTargetMode = z.infer<typeof actionTargetModeSchema>;
 
+// P118 (ADR 0011 §1): the explicit target-SOURCE mode for a navigate action.
+// The stored intent — wire (the target route is reached over Node-RED wires),
+// route (a ui-route chosen by reference), or url (a `to` typedInput URL built
+// whole). The mode technically excludes double configuration: per mode only the
+// matching fields may be set (route ⇒ routeId, no `to`; url ⇒ `to`, no routeId;
+// wire ⇒ neither). Distinct from the deprecated `actionTargetModeSchema`
+// (out-port/path) which addressed a different, vestigial concern.
+export const navigateTargetModeSchema = z.enum(["wire", "route", "url"]);
+
+export type NavigateTargetMode = z.infer<typeof navigateTargetModeSchema>;
+
+// P118 (ADR 0011 §1): the typedInput value-type for a single navigate param.
+// Each param value is evaluated against the triggering message server-side at
+// action time (str = literal; msg/flow/global/env via evaluateNodeProperty;
+// jsonata against the msg). Replaces the literal-only free-text key/value list.
+export const actionParamValueTypeSchema = z.enum(["str", "msg", "jsonata", "flow", "global", "env"]);
+
+export type ActionParamValueType = z.infer<typeof actionParamValueTypeSchema>;
+
+// P118 (ADR 0011 §1): a single typed navigate param row. `name` fills a
+// `:placeholder` segment of the target route's path; `value` + `valueType` form
+// the typedInput that is resolved at action time.
+export const actionParamEntrySchema = z.object({
+    name: z.string().min(1, "Param names must not be empty."),
+    value: z.string(),
+    valueType: actionParamValueTypeSchema
+});
+
+export type ActionParamEntry = z.infer<typeof actionParamEntrySchema>;
+
+// P118: the navigate params as an ordered list of typed entries (route mode, and
+// wire mode where detected). Supersedes the literal-only `{k: "v"}` object form
+// (which migrates to a list of str-typed entries on load).
+export const actionParamListSchema = z.array(actionParamEntrySchema);
+
+export type ActionParamList = z.infer<typeof actionParamListSchema>;
+
 // P66 (ADR 0007): the navigate `to` destination is a Node-RED typedInput — the
 // path can be a static string ("str"), taken from the message ("msg"), a flow /
 // global context value, or computed by a JSONata expression. `to` holds the
@@ -344,19 +381,22 @@ export type ActionParams = z.infer<typeof actionParamsSchema>;
 export const actionDefinitionSchema = z.object({
     id: identifierSchema,
     actionType: actionTypeSchema.optional(),
-    // targetMode and target are deprecated — wiring the output port is the preferred model.
-    targetMode: actionTargetModeSchema.optional(),
+    // P118 (ADR 0011 §1): `targetMode` is the navigate target SOURCE (wire | route
+    // | url). `target` stays for the deprecated wireless addressing path.
+    targetMode: navigateTargetModeSchema.optional(),
+    // P118: referenced ui-route id (navigate `route` mode).
+    routeId: identifierSchema.optional(),
     target: z.string().min(1, "Action targets must not be empty.").optional(),
     // P53: open / close / select granularity — a sub-id within the target element
     // (accordion section, tree branch, tab name).
     part: z.string().min(1, "Action parts must not be empty.").optional(),
     // P66: `to` is a navigate destination typedInput; `toType` is its type.
-    // Optional everywhere because Scenario 1 (wired to a ui-route) carries no
-    // `to` at all — the wired route supplies the path from its own definition.
+    // P118: only meaningful in `url` mode (the URL is built whole).
     to: z.string().min(1, "Navigate actions must declare a destination.").optional(),
     toType: actionToTypeSchema.optional(),
-    // P66: named URL params (Scenario 1, and extra params alongside a `to`).
-    params: actionParamsSchema.optional(),
+    // P118 (ADR 0011 §1): typed navigate params as an ordered list of
+    // { name, value, valueType } entries (route mode).
+    params: actionParamListSchema.optional(),
     description: z.string().min(1, "Action descriptions must not be empty.").optional()
 });
 

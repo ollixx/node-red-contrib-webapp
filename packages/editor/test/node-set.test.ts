@@ -65,28 +65,28 @@ describe("editor node set", () => {
     });
 
     it("blocks invalid typed ui-action combinations before emit", () => {
+        // P118 (ADR 0011 §1): an unknown navigate target mode is a per-node error.
         const issues = validateEditorNodeConfig("ui-action", {
-            id: "hideToolbar",
-            actionType: "hide",
-            targetMode: "path"
+            id: "badMode",
+            actionType: "navigate",
+            targetMode: "bogus" as never
         });
 
         expect(issues).toEqual(
             expect.arrayContaining([
                 expect.objectContaining({
-                    field: "target"
+                    field: "targetMode"
                 })
             ])
         );
 
-        // P66 (ADR 0007): a navigate action wired (out-port) to a ui-route needs
-        // NO `to` — the route supplies the path (Scenario 1). The per-node editor
-        // validator cannot see the wire, so it no longer flags a missing `to`;
-        // the dead-link / ambiguity cross-checks are RUNTIME checks.
+        // P118: a wire-mode navigate carries NO `to` — the wired route supplies
+        // the path. The per-node validator cannot see the wire, so it never flags
+        // a missing `to` (no scan-based deploy check remains).
         const navigateIssues = validateEditorNodeConfig("ui-action", {
             id: "goToCustomers",
             actionType: "navigate",
-            targetMode: "out-port"
+            targetMode: "wire"
         });
 
         expect(navigateIssues).not.toEqual(
@@ -189,20 +189,26 @@ describe("editor node set", () => {
             emitNodeDefinition("ui-action", {
                 id: "hideToolbar",
                 actionType: "hide",
-                targetMode: "path",
                 target: "route:/customers/content/toolbar"
             }),
             emitNodeDefinition("ui-action", {
                 id: "triggerRefresh",
-                actionType: "trigger",
-                targetMode: "out-port"
+                actionType: "trigger"
             }),
+            // P118: navigate in url mode (a `to` URL built whole).
             emitNodeDefinition("ui-action", {
                 id: "goToCustomersAction",
                 actionType: "navigate",
-                targetMode: "path",
-                target: "app",
+                targetMode: "url",
                 to: "/customers"
+            }),
+            // P118: navigate in route mode (routeId + typed params list).
+            emitNodeDefinition("ui-action", {
+                id: "goToCustomerDetail",
+                actionType: "navigate",
+                targetMode: "route",
+                routeId: "customerDetail",
+                params: JSON.stringify([{ name: "id", value: "payload.id", valueType: "msg" }])
             }),
             emitNodeDefinition("ui-navigation", {
                 id: "goToCustomers",
