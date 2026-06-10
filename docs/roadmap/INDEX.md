@@ -30,6 +30,9 @@ their blocker clears.
 - **P111** — nodes/ui-text — `variant`→`style` (typografische Rolle) + neue Farb-`variant`, `size` entfernen — *erste Tranche geliefert; Sammelpaket aus dem ui-text-Review, weitere Findings folgen* — [P111](nodes/ui-text/P111-text-style-color-axes.md)
 - **P113** — aspects/editor — EIN kanonischer Value-Binding-Typ-Satz (Reihenfolge + Semantik, jsonata message-getrieben, ohne state) für alle Display-Wert-Inputs — *geplant, nicht umgesetzt* — [P113](aspects/editor/P113-canonical-value-binding-types.md)
 - **P116** — aspects/editor — `Reactive`-typedInput: Expression-Editor-Dialog mit Completion, zweistufiger Validierung + Doku-Panel; Typ #4 im kanonischen Satz (ADR 0010) — *geplant; braucht P113 + P115* — [P116](aspects/editor/P116-reactive-typedinput-expression-editor.md)
+- **P118** — nodes/ui-action — Navigate-Zielquelle (wire | route | url) im Schema + Laufzeit-Adressierungs-Vorrang (ADR 0011) — *geplant, nicht umgesetzt* — [P118](nodes/ui-action/P118-navigate-target-modes-runtime.md)
+- **P119** — nodes/ui-action — Navigate-Editor: Modus-Umschalter mit Zwei-Wege-Badges, transitiver Wire-Scan (Assistenz), Parameter-Mapping-Tabelle (ADR 0011) — *geplant; braucht P118 + P120* — [P119](nodes/ui-action/P119-navigate-editor-modes-wire-scan.md)
+- **P120** — aspects/editor — Zwei-Wege-Farbcodierung: Tokens (Blau=Wire, Lila=Referenz) + Badge-Helfer + Editor-User-Setting (ADR 0011) — *geplant, nicht umgesetzt* — [P120](aspects/editor/P120-dual-path-coding-tokens-user-setting.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -40,6 +43,7 @@ Reason in each package's `deferred_reason`. Picked up once the blocker clears.
 - **P101** — nodes/ui-avatar — size/variant Backend-Warnung + Render-Garantie — *hängt an P102 + zweitem Backend* — [P101](nodes/ui-avatar/deferred/P101-size-variant-backend-warning.md)
 - **P105** — aspects/rendering — nicht-darstellbarer Wert: Achtung-Icon + Alert/Dialog statt nacktem `"?"` — *Stufe 2 über P104* — [P105](aspects/rendering/deferred/P105-invalid-value-warning-affordance.md)
 - **P107** — nodes/ui-app — App-weite Auth/Authz (OAuth2/OIDC) modellieren — *eigenes Epic, ADR + Owner-Entscheidung nötig* — [P107](nodes/ui-app/deferred/P107-auth-authz.md)
+- **P121** — aspects/docs — Konzept Nutzer-Doku: Wo/Wie die zwei Wege (Wire vs. Referenz) mit Beispielen dokumentieren — *Owner-Entscheidung zu Ort + Form nötig* — [P121](aspects/docs/deferred/P121-user-docs-concept-two-ways.md)
 
 ## Done (rollup — history lives in the epic folders)
 
@@ -69,4 +73,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 118 done, 3 open, 4 deferred.**
+**Total: 118 done, 6 open, 5 deferred.**
