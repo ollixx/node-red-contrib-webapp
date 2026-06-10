@@ -10,7 +10,7 @@ verify: browser
 spec: docs/nodes/input/ui-radio.md
 tests: tests/e2e/nodes/view/ui-radio.tests.md
 dependencies: [P113]
-status: pending
+status: in_progress
 ---
 # P127 — ui-radio: value + disabled auf typedInput
 
