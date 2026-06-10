@@ -2,7 +2,7 @@
 id: P120
 title: "Zwei-Wege-Farbcodierung: zentrale Tokens (Blau=Wire, Lila=Referenz) + Badge-Helfer + Editor-User-Setting für die Farben"
 epic: aspects/editor
-status: pending
+status: in_progress
 dependencies: []
 ---
 # P120 — Zwei-Wege-Codierung: Tokens, Badge, User-Setting
