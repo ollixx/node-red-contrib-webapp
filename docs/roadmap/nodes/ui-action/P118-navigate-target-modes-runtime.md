@@ -13,7 +13,7 @@ verify: browser
 spec: docs/nodes/behavior/ui-action.md
 tests: tests/e2e/nodes/behavior/ui-action.tests.md
 dependencies: []
-status: pending
+status: in_progress
 ---
 # P118 — Navigate-Zielquelle: Schema + Laufzeit
 
