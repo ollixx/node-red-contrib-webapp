@@ -2,7 +2,7 @@
 id: P116
 title: "reactive-typedInput: Expression-Editor-Dialog mit Completion, zweistufiger Validierung und Doku-Panel; Aufnahme in den kanonischen Typsatz"
 epic: aspects/editor
-status: pending
+status: in_progress
 dependencies: [P113, P115]
 ---
 # P116 — `Reactive` im Editor: typedInput + Expression-Editor
