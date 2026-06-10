@@ -10,11 +10,22 @@
                 parent: { value: "" },
                 mount: { value: "", required: true },
                 label: { value: "", required: true },
-                valuePath: { value: "", required: true },
+                // P127 (ADR 0012): `value` persists the binding OBJECT; there is no
+                // matching #node-input-value element so Node-RED auto-save cannot
+                // clobber it. The typedInput lives on #node-input-valueBinding.
+                // Legacy `valuePath` (pre-P127 plain state path) is kept for migration only.
+                valuePath: { value: "" },
                 value: { value: null },
+                valueBinding: { value: "" },
                 optionsJson: { value: "" },
                 optionsBinding: { value: "" },
                 orientation: { value: "vertical" },
+                // P127 (ADR 0012 / boolean category): `disabled` persists the binding
+                // OBJECT; there is no matching #node-input-disabled element so
+                // Node-RED auto-save cannot clobber it. The typedInput lives on
+                // #node-input-disabledBinding.
+                disabled: { value: null },
+                disabledBinding: { value: "" },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
                 col: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
@@ -36,6 +47,49 @@
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
                 common.installLayoutChildPropRows().call(this);
+
+                // P127 (ADR 0012 / value/display category): `value` typedInput — full
+                // canonical set. Migration: a legacy `valuePath` plain string becomes a
+                // state binding; a stored `value` binding object takes precedence.
+                const storedValue = common.parseBindingValue(this.value);
+                const valueBinding = storedValue
+                    ? storedValue
+                    : (this.valuePath ? { kind: "state", path: this.valuePath } : undefined);
+                const valueEditor = common.readValueBinding(valueBinding, "");
+                const valueInput = $("#node-input-valueBinding");
+                valueInput.typedInput({
+                    default: valueEditor.type,
+                    types: common.valueBindingTypes({ category: "value" })
+                });
+                valueInput.typedInput("type", valueEditor.type);
+                valueInput.typedInput("value", valueEditor.value);
+
+                // P127 (ADR 0012 / boolean category): `disabled` typedInput.
+                // No legacy to migrate (new field).
+                const storedDisabled = common.parseBindingValue(this.disabled);
+                const disabledBinding = storedDisabled ? storedDisabled : undefined;
+                const disabledEditor = common.readValueBinding(disabledBinding, "");
+                const disabledInput = $("#node-input-disabledBinding");
+                disabledInput.typedInput({
+                    default: disabledEditor.type,
+                    types: common.valueBindingTypes({ category: "boolean" })
+                });
+                disabledInput.typedInput("type", disabledEditor.type);
+                disabledInput.typedInput("value", disabledEditor.value);
+            },
+            oneditsave: function () {
+                // P127: persist value as binding object; clear legacy valuePath.
+                this.value = common.applyValueBinding(
+                    $("#node-input-valueBinding").typedInput("type"),
+                    $("#node-input-valueBinding").typedInput("value")
+                );
+                this.valuePath = "";
+
+                // P127: persist disabled as binding object.
+                this.disabled = common.applyValueBinding(
+                    $("#node-input-disabledBinding").typedInput("type"),
+                    $("#node-input-disabledBinding").typedInput("value")
+                );
             }
         });
     })();
@@ -45,7 +99,8 @@
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <div class="form-row"><label for="node-input-label">Label</label><input type="text" id="node-input-label"></div>
-    <div class="form-row"><label for="node-input-valuePath">Value Path</label><input type="text" id="node-input-valuePath"></div>
+    <!-- P127 (ADR 0012 / value/display category): Value binding — typedInput managed in oneditprepare/oneditsave. -->
+    <div class="form-row"><label for="node-input-valueBinding">Value</label><input type="text" id="node-input-valueBinding"></div>
     <div class="form-row"><label for="node-input-optionsJson">Options (JSON)</label><input type="text" id="node-input-optionsJson" placeholder='[{"label":"A","value":"a"}]'></div>
     <div class="form-row"><label for="node-input-optionsBinding">Options Binding</label><input type="text" id="node-input-optionsBinding" placeholder="store path"></div>
     <div class="form-row"><label for="node-input-orientation">Orientation</label>
@@ -54,6 +109,21 @@
             <option value="horizontal">horizontal</option>
         </select>
     </div>
+    <!-- P127 (ADR 0012 / boolean category): Disabled binding — typedInput managed in oneditprepare/oneditsave. -->
+    <div class="form-row"><label for="node-input-disabledBinding">Disabled</label><input type="text" id="node-input-disabledBinding"></div>
 </script>
-<script type="text/html"
-    data-help-name="ui-radio"><p>Radio-Gruppe — genau eine Option waehlbar.</p></script>
+<script type="text/html" data-help-name="ui-radio">
+    <p>Radio-Gruppe — genau eine Option waehlbar.</p>
+    <h4>Value (P127)</h4>
+    <p>Bindbare Quelle des ausgewählten Werts (Anzeige/Initialwert) — voller kanonischer Satz (ADR 0012):
+    Store, Query, Route-Param, Reactive, msg, JSONata, string, number, boolean, json, timestamp,
+    Flow, Global, Env. Ein bestehender <code>valuePath</code> wird automatisch als
+    <code>state</code>-Binding übernommen. Auswahl durch den Nutzer schreibt weiterhin zurück.</p>
+    <h4>Disabled (P127)</h4>
+    <p>Bindbar über den Boolean-Zustand-Satz (ADR 0012): Store, Query, Route-Param, Reactive,
+    msg, JSONata, boolean, Flow, Global, Env. Ein Store-Binding deaktiviert die Radiogruppe live,
+    sobald der Wert truthy ist.</p>
+    <h4>Events</h4>
+    <p>Emittiert <code>{ event: "change", params: { value } }</code> wenn der Nutzer eine Option wählt.</p>
+    <p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/input/ui-radio.md">Ausführliche Doku</a></p>
+</script>
