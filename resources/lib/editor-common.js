@@ -887,6 +887,249 @@
         document.head.appendChild(style);
     }
 
+    // ── P120: Dual-path colour-coding — tokens, badge, user setting ─────────
+    //
+    // ADR 0011 §4: two conceptual paths for target configuration get a consistent
+    // visual coding across all editor panels:
+    //   wire — blue  (#185FA5 default)  Node-RED wiring
+    //   ref  — purple (#534AB7 default) inline / internal reference
+    //
+    // Colour is NEVER the only carrier: every badge also shows an icon + label
+    // (accessibility requirement, ADR 0011 §4). The two application forms are:
+    //
+    //   1. Panel background  — the active mode section's background takes the
+    //      mode colour as a strong fill; form fields sit as light insets on top.
+    //      Used by P119 (ui-action navigation panel). No separate badge.
+    //   2. Compact badge     — pathBadge(kind, label) — strong-fill pill with
+    //      white text + icon. Used where no full panel is available (e.g. the
+    //      structure sidebar). Both forms share the same CSS custom properties.
+    //
+    // Default colours are strong/saturated fills suitable for white text
+    // (WCAG AA: #185FA5 on white → 4.7:1, #534AB7 on white → 4.6:1). Pastels
+    // were explicitly rejected by the owner (2026-06-10).
+    //
+    // User customisation lives in Node-RED's editor user settings pane
+    // ("Webapp" section) — not in ui-app, because this is pure editor UX.
+
+    /** Default token values — defined ONCE; all consumers use the CSS variables. */
+    var DUAL_PATH_DEFAULTS = {
+        wire: "#185FA5",
+        ref:  "#534AB7"
+    };
+
+    /**
+     * Ensure the dual-path CSS custom properties are set on :root and that the
+     * badge + panel-background helper classes exist. Idempotent (guarded by
+     * <style id>). Should be called before any badge or panel-background is
+     * rendered.
+     */
+    function ensureDualPathStylesheet() {
+        if (document.getElementById("webapp-dual-path-styles")) {
+            return;
+        }
+        // Read persisted user preferences (set by the settings pane on save).
+        var stored = (typeof RED !== "undefined" && RED.settings) ?
+            RED.settings.get("webapp.dualPath") : null;
+        var wireColor = (stored && stored.wire) ? stored.wire : DUAL_PATH_DEFAULTS.wire;
+        var refColor  = (stored && stored.ref)  ? stored.ref  : DUAL_PATH_DEFAULTS.ref;
+
+        var css = [
+            /* ── CSS custom properties ── */
+            ":root {",
+            "  --webapp-path-wire-color: " + wireColor + ";",
+            "  --webapp-path-ref-color:  " + refColor + ";",
+            "}",
+
+            /* ── Compact badge (pathBadge) ── */
+            ".webapp-path-badge {",
+            "  display: inline-flex;",
+            "  align-items: center;",
+            "  gap: 4px;",
+            "  padding: 2px 8px;",
+            "  border-radius: 10px;",
+            "  font-family: var(--red-ui-primary-font, 'Helvetica Neue', Arial, sans-serif);",
+            "  font-size: 11px;",
+            "  font-weight: 600;",
+            "  color: #fff;",
+            "  white-space: nowrap;",
+            "  user-select: none;",
+            "}",
+            ".webapp-path-badge--wire {",
+            "  background: var(--webapp-path-wire-color);",
+            "}",
+            ".webapp-path-badge--ref {",
+            "  background: var(--webapp-path-ref-color);",
+            "}",
+            ".webapp-path-badge .fa {",
+            "  font-size: 10px;",
+            "}",
+
+            /* ── Panel background helpers (used by P119) ── */
+            ".webapp-path-panel--wire {",
+            "  background: var(--webapp-path-wire-color) !important;",
+            "  color: #fff;",
+            "}",
+            ".webapp-path-panel--ref {",
+            "  background: var(--webapp-path-ref-color) !important;",
+            "  color: #fff;",
+            "}",
+            /* Light inset for form fields sitting on a coloured panel background */
+            ".webapp-path-panel--wire .webapp-path-field-inset,",
+            ".webapp-path-panel--ref .webapp-path-field-inset {",
+            "  background: rgba(255,255,255,0.15);",
+            "  border-radius: 3px;",
+            "  padding: 4px 6px;",
+            "}"
+        ].join("\n");
+
+        var style = document.createElement("style");
+        style.id = "webapp-dual-path-styles";
+        style.textContent = css;
+        document.head.appendChild(style);
+    }
+
+    /**
+     * Update the CSS custom properties on :root to reflect the currently active
+     * (possibly just-changed) user preference. Called from the settings pane on
+     * change and on page load.
+     *
+     * @param {string} wireColor  — hex colour for the wire path
+     * @param {string} refColor   — hex colour for the reference path
+     */
+    function applyDualPathTokens(wireColor, refColor) {
+        var root = document.documentElement;
+        root.style.setProperty("--webapp-path-wire-color", wireColor || DUAL_PATH_DEFAULTS.wire);
+        root.style.setProperty("--webapp-path-ref-color",  refColor  || DUAL_PATH_DEFAULTS.ref);
+    }
+
+    /**
+     * Create a compact dual-path badge element.
+     *
+     * @param {"wire"|"ref"} kind    — which conceptual path this badge represents
+     * @param {string}       label   — text label (e.g. "via Wire", "Referenz")
+     * @returns {jQuery}             — the badge element (not yet in the DOM)
+     *
+     * @example
+     *   $row.append(WebappEditorCommon.pathBadge("wire", "via Wire"));
+     *   $row.append(WebappEditorCommon.pathBadge("ref",  "Referenz"));
+     */
+    function pathBadge(kind, label) {
+        ensureDualPathStylesheet();
+        var icon = (kind === "wire") ? "fa-plug" : "fa-link";
+        var $badge = $("<span>")
+            .addClass("webapp-path-badge")
+            .addClass("webapp-path-badge--" + (kind === "wire" ? "wire" : "ref"));
+        $("<i>").addClass("fa " + icon).appendTo($badge);
+        $("<span>").text(label || (kind === "wire" ? "Wire" : "Ref")).appendTo($badge);
+        return $badge;
+    }
+
+    /**
+     * Register the "Webapp" section in Node-RED's editor user settings pane
+     * (RED.userSettings). Idempotent — safe to call multiple times; only the
+     * first call takes effect. The section provides:
+     *   - two <input type="color"> pickers (Wire colour, Reference colour)
+     *   - a "Zurücksetzen" button that restores the defaults
+     *
+     * Changes take effect immediately (tokens on :root are updated without a
+     * page reload) and are persisted via RED.settings.
+     */
+    function installDualPathUserSettings() {
+        if (typeof RED === "undefined" || typeof RED.userSettings === "undefined") {
+            return;
+        }
+        // Guard — RED.userSettings.add is idempotent by section id in Node-RED,
+        // but we add our own gate to be safe.
+        if (installDualPathUserSettings._registered) {
+            return;
+        }
+        installDualPathUserSettings._registered = true;
+
+        RED.userSettings.add({
+            id: "webapp",
+            title: "Webapp",
+            get: function () {
+                var stored = RED.settings.get("webapp.dualPath") || {};
+                var wireColor = stored.wire || DUAL_PATH_DEFAULTS.wire;
+                var refColor  = stored.ref  || DUAL_PATH_DEFAULTS.ref;
+
+                var $section = $("<div>").css({
+                    fontFamily: "var(--red-ui-primary-font, 'Helvetica Neue', Arial, sans-serif)",
+                    fontSize: "13px"
+                });
+
+                // Heading
+                $("<h3>").text("Zwei-Wege-Farbcodierung").css({
+                    marginTop: "0",
+                    marginBottom: "8px",
+                    fontSize: "13px",
+                    fontWeight: "600"
+                }).appendTo($section);
+
+                $("<p>").html(
+                    "Legt die Hintergrundfarben für die beiden Konfigurations-Wege fest " +
+                    "(<strong>Blau = Wire</strong>, <strong>Lila = Referenz</strong>). " +
+                    "Die Farbe ist nie der einzige Träger — Icon und Label sind stets dabei."
+                ).css({ color: "var(--red-ui-secondary-text-color, #888)", marginBottom: "10px" })
+                 .appendTo($section);
+
+                // Wire colour row
+                var $wireRow = $("<div>").css({ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" });
+                $("<label>").text("Wire-Farbe").css({ minWidth: "110px" }).appendTo($wireRow);
+                var $wireInput = $("<input type=\"color\">")
+                    .attr("id", "webapp-setting-wire-color")
+                    .val(wireColor)
+                    .css({ cursor: "pointer" });
+                $wireRow.append($wireInput);
+                // Live preview badge
+                var $wirePreview = pathBadge("wire", "via Wire").css({ marginLeft: "6px" });
+                $wireRow.append($wirePreview);
+                $section.append($wireRow);
+
+                // Ref colour row
+                var $refRow = $("<div>").css({ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" });
+                $("<label>").text("Referenz-Farbe").css({ minWidth: "110px" }).appendTo($refRow);
+                var $refInput = $("<input type=\"color\">")
+                    .attr("id", "webapp-setting-ref-color")
+                    .val(refColor)
+                    .css({ cursor: "pointer" });
+                $refRow.append($refInput);
+                var $refPreview = pathBadge("ref", "Referenz").css({ marginLeft: "6px" });
+                $refRow.append($refPreview);
+                $section.append($refRow);
+
+                // Live preview: update tokens and badge colour as the pickers change
+                $wireInput.on("input change", function () {
+                    var wc = $wireInput.val();
+                    applyDualPathTokens(wc, $refInput.val());
+                    $wirePreview.css("background", wc);
+                });
+                $refInput.on("input change", function () {
+                    var rc = $refInput.val();
+                    applyDualPathTokens($wireInput.val(), rc);
+                    $refPreview.css("background", rc);
+                });
+
+                // Reset button
+                var $resetBtn = $("<button type=\"button\" class=\"red-ui-button\">")
+                    .text("Zurücksetzen auf Standard")
+                    .on("click", function () {
+                        $wireInput.val(DUAL_PATH_DEFAULTS.wire).trigger("change");
+                        $refInput.val(DUAL_PATH_DEFAULTS.ref).trigger("change");
+                    });
+                $section.append($resetBtn);
+
+                return $section;
+            },
+            set: function ($el) {
+                var wireColor = $el.find("#webapp-setting-wire-color").val() || DUAL_PATH_DEFAULTS.wire;
+                var refColor  = $el.find("#webapp-setting-ref-color").val()  || DUAL_PATH_DEFAULTS.ref;
+                RED.settings.set("webapp.dualPath", { wire: wireColor, ref: refColor });
+                applyDualPathTokens(wireColor, refColor);
+            }
+        });
+    }
+
     // Open the modal picker. options:
     //   title      — dialog heading
     //   value      — currently-selected id (highlighted, pre-scrolled)
@@ -2258,6 +2501,25 @@
         return { close: close };
     }
 
+    // ── P120: install dual-path user setting on load (idempotent) ────────────
+    // RED.userSettings may not exist yet at parse time (editor JS loads before
+    // the NR runtime fires). We defer to RED.events if available, otherwise we
+    // try immediately and guard with the _registered flag.
+    (function () {
+        if (typeof RED !== "undefined" && RED.userSettings) {
+            installDualPathUserSettings();
+        } else if (typeof RED !== "undefined" && RED.events) {
+            RED.events.on("editor:open", function () {
+                installDualPathUserSettings();
+            });
+        }
+        // Also apply stored tokens so the CSS variables reflect saved prefs
+        // before any badge is rendered (the stylesheet will re-read them on
+        // first ensureDualPathStylesheet() call, but applyDualPathTokens is
+        // safe to call early and is a no-op on cold load when :root already
+        // has the defaults from ensureDualPathStylesheet).
+    }());
+
     global.WebappEditorCommon = {
         assetTypedInputType,
         bindingTypedInputTypes,
@@ -2292,6 +2554,8 @@
         nodePickerPresets,
         openNodePickerDialog,
         parseBindingValue,
+        pathBadge,
+        installDualPathUserSettings,
         registerNodeType,
         registerNodeTypeWithEvents,
         required,

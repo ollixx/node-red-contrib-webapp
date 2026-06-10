@@ -212,6 +212,64 @@ sind nur interaktionsfähige `ui-*`-Knoten wählbar (nicht `ui-action`/
 
 ---
 
+## Zwei-Wege-Farbcodierung (P120, ADR 0011 §4)
+
+Überall im Editor, wo beide Konfigurations-Wege (Verdrahtung vs. interne
+Referenz) gleichzeitig erscheinen können, wird eine einheitliche visuelle
+Codierung eingesetzt:
+
+| Weg | Farbe (Default) | Icon | Semantik |
+|---|---|---|---|
+| **Wire** — Node-RED-Verdrahtung | Blau `#185FA5` | `fa-plug` | Ziel kommt über den Output-Port |
+| **Referenz** — interne Auswahl | Lila `#534AB7` | `fa-link` | Ziel als direkte Knoten-Referenz im Panel |
+
+Die Farben sind **kräftige Vollflächen** (weiße Schrift darauf, WCAG-AA-Kontrast)
+— keine hellen Tints. Farbe ist **nie der einzige Träger**: Icon + Label sind
+stets dabei (Barrierefreiheit).
+
+Entscheidung und Begründung: [ADR 0011 §4](../../adr/0011-ui-action-navigation-target-modes-and-dual-path-coding.md).
+
+### Zwei Anwendungsformen
+
+**1. Panel-Hintergrund** (bevorzugt, wo ein ganzes Panel den Weg trägt):
+Der aktive Modus-Abschnitt nimmt die Modus-Farbe als kräftigen
+Vollflächenhintergrund. Formfelder sitzen als helle Insets (`webapp-path-field-inset`)
+darauf. Kein Pill-Badge, nur eine schlichte Abschnittsüberschrift.
+CSS-Klassen: `webapp-path-panel--wire` / `webapp-path-panel--ref`.
+Erster Konsument: das Navigations-Panel von `ui-action` (P119).
+
+**2. Kompaktes Badge** (für Kontexte ohne färbbares Panel, z. B. Struktur-Sidebar):
+`pathBadge(kind, label)` erzeugt ein `<span>`-Element mit kräftiger Farbvollfläche,
+Icon und Label. `kind` ∈ `"wire" | "ref"`.
+
+```js
+$row.append(WebappEditorCommon.pathBadge("wire", "via Wire"));
+$row.append(WebappEditorCommon.pathBadge("ref",  "Referenz"));
+```
+
+Beide Formen teilen dieselben CSS Custom Properties:
+
+```css
+--webapp-path-wire-color   /* Default: #185FA5 */
+--webapp-path-ref-color    /* Default: #534AB7 */
+```
+
+### Konfiguration: Editor-User-Setting
+
+Die Farben sind **editor-global pro User** konfigurierbar — nicht in `ui-app`,
+weil es sich um reine Editor-Darstellung handelt (kein App-Zustand). Die
+Einstellungen leben in Node-REDs Editor-User-Settings-Bereich ("Webapp"-Sektion)
+mit zwei Farbwählern und einem "Zurücksetzen auf Standard"-Button.
+
+Änderungen wirken **sofort** (die CSS-Variablen am `:root` werden ohne Reload
+aktualisiert) und werden über `RED.settings` persistiert.
+
+`installDualPathUserSettings()` ist idempotent und wird automatisch beim Laden
+von `editor-common.js` registriert; P119 und spätere Konsumenten müssen sie
+nicht selbst aufrufen.
+
+---
+
 ## Weitere gemeinsame Helfer
 
 - `registerNodeType(type, definition)` — Registrierung inkl. uiId-Migrations-Shim.
