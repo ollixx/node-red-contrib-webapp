@@ -32,6 +32,15 @@ their blocker clears.
 - **P116** — aspects/editor — `Reactive`-typedInput: Expression-Editor-Dialog mit Completion, zweistufiger Validierung + Doku-Panel; Typ #4 im kanonischen Satz (ADR 0010) — *geplant; braucht P113 + P115* — [P116](aspects/editor/P116-reactive-typedinput-expression-editor.md)
 - **P119** — nodes/ui-action — Navigate-Editor: Modus-Umschalter mit Zwei-Wege-Badges, transitiver Wire-Scan (Assistenz), Parameter-Mapping-Tabelle (ADR 0011) — *geplant; braucht P118 + P120* — [P119](nodes/ui-action/P119-navigate-editor-modes-wire-scan.md)
 - **P120** — aspects/editor — Zwei-Wege-Farbcodierung: Tokens (Blau=Wire, Lila=Referenz) + Badge-Helfer + Editor-User-Setting (ADR 0011) — *Code gemerged, aber 5 E2E rot (Aktivierung im Editor zündet nicht) — Fix läuft* — [P120](aspects/editor/P120-dual-path-coding-tokens-user-setting.md)
+- **P122** — nodes/ui-button — `disabledPath`→Boolean-Zustand-typedInput (inkl. Store) + `href`→URL/Pfad-typedInput (ADR 0012) — *geplant; braucht P113* — [P122](nodes/ui-button/P122-button-disabled-href-typedinput.md)
+- **P123** — nodes/ui-input — `value`→kanonischer typedInput + valuePath-Migration; bindbares `disabled` (ADR 0012) — *geplant; braucht P113* — [P123](nodes/ui-input/P123-input-value-disabled-typedinput.md)
+- **P124** — nodes/ui-select — `value`→kanonischer typedInput + valuePath-Migration; bindbares `disabled` (ADR 0012) — *geplant; braucht P113* — [P124](nodes/ui-select/P124-select-value-disabled-typedinput.md)
+- **P125** — nodes/ui-switch — `value`→kanonischer typedInput + valuePath-Migration; bindbares `disabled` (ADR 0012) — *geplant; braucht P113* — [P125](nodes/ui-switch/P125-switch-value-disabled-typedinput.md)
+- **P126** — nodes/ui-slider — `value`→kanonischer typedInput + valuePath-Migration; bindbares `disabled` (ADR 0012) — *geplant; braucht P113* — [P126](nodes/ui-slider/P126-slider-value-disabled-typedinput.md)
+- **P127** — nodes/ui-radio — `value`→kanonischer typedInput + valuePath-Migration; bindbares `disabled` (ADR 0012) — *geplant; braucht P113* — [P127](nodes/ui-radio/P127-radio-value-disabled-typedinput.md)
+- **P128** — nodes/ui-textarea — `value`→kanonischer typedInput + valuePath-Migration; bindbares `disabled` (ADR 0012) — *geplant; braucht P113* — [P128](nodes/ui-textarea/P128-textarea-value-disabled-typedinput.md)
+- **P129** — nodes/ui-checkbox — bindbares `disabled` (Boolean-Zustand, inkl. Store) (ADR 0012) — *geplant; braucht P113* — [P129](nodes/ui-checkbox/P129-checkbox-disabled-typedinput.md)
+- **P130** — nodes/ui-datepicker — bindbares `disabled` (Boolean-Zustand, inkl. Store) (ADR 0012) — *geplant; braucht P113* — [P130](nodes/ui-datepicker/P130-datepicker-disabled-typedinput.md)
 
 
 ## Deferred (parked, not abandoned)

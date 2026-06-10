@@ -49,13 +49,31 @@ msg, JSONata, string, number, boolean, json, timestamp, Flow, Global, Env.
 
 | Category | Examples | Offered kinds | Removed — and why |
 |---|---|---|---|
-| **Display value** | `label`, `message`, `value` (badge), `src`, `text`, `initials` | **full set** | — (this is P113) |
+| **Value / display** | `label`, `message`, `value` (badge **and** the input-control `value`), `src`, `text`, `initials` | **full set** | — (this is P113) |
 | **Boolean state** | `disabled` (and later `hidden`/`readonly`) | Store, Query, Route-Param, Reactive, msg, JSONata, **boolean**, Flow, Global, Env | string / number / json / timestamp — a boolean can't hold them |
-| **Input-control value** (two-way) | `value` of ui-input/-select/-checkbox/-switch/-slider/-datepicker/-textarea | Store, State, + a literal default in the control's own type | msg / JSONata / Reactive / Flow / Global / Env — they are read-only sources and a control must *write back*; only a bidirectional binding (store/state) is a valid target |
 | **URL / path** | `href` (ui-button link mode), `to` (ui-action) | str, msg, JSONata, Store, Reactive, Flow, Global, Env | number / boolean / json / timestamp — not a URL |
 
+**Correction (2026-06-10) — the input-control `value` is *not* a reduced
+category.** An earlier draft listed it separately as "two-way → Store/State
+only". That conflated two different things: the **write-back target** (where a
+control persists what the user types — a separate field, `valuePath`/`storeId`,
+which is and stays a state/store target) versus the `value` **binding** itself,
+which is the *display / initial* value and legitimately takes the **full value
+set**. The shipped nodes confirm this: ui-checkbox (P97) and ui-datepicker
+(P98) already bind `value` with the full meaningful set. So input-control
+`value` belongs to the **Value/display** row; the reduced row is removed.
+
 `disabled` specifically **must** offer the Store binding (owner: "unbedingt
-nötig") — driving a button's enabled state from app state is a core use case.
+nötig") — driving a control's enabled state from app state is a core use case.
+
+**Runtime already supports this (discovered 2026-06-10).** The renderer already
+resolves `disabled` as a binding (`resolveBinding(component.bind.disabled)`) and
+`href` as a binding (P71: webapp.js normalises a literal and routes a dynamic
+`bind.href`; the renderer resolves it). The binding-object schema is generic
+(P97 bound `value`). **So the gap is purely in the editor** — the node HTMLs do
+not yet offer `value`/`disabled`/`href` as typedInputs. No schema/runtime
+foundation package is needed; the foundation is just the editor helper's
+category type-sets (P113).
 
 ### 3. Reductions are declared, not implicit
 
@@ -71,17 +89,25 @@ to be a conscious, reviewable choice in code.
 - The principle is now durable (this ADR + `docs/nodes/concepts/editor.md`),
   not a P113 footnote. P113 is reframed as the **first application** (the
   display-value category) of a broader rule, not the whole rule.
-- The `disabledPath` raw-text pattern across many nodes is now officially
-  legacy: it should become a category-`boolean` typedInput with a Store binding.
-- **Future packages to cut (not created here, owner decision):**
-  1. *Field-category support in the canonical helper* — extend P113's helper
-     with the matrix above (foundation for the rest).
-  2. *Bindable `disabled` (cross-cutting)* — replace `disabledPath` on every
-     node that has it with the boolean-state typedInput (Store included);
-     migration of stored configs.
-  3. *ui-button `href` as typedInput* — the URL/path category (aligns with the
-     ui-action `to` work, ADR 0011 / P118-P119).
-  4. *Input-control `value` binding* — give the two-way `value` fields the
-     Store/State binding + literal default, per the matrix.
+- The `disabledPath` raw-text pattern (today only ui-button) is now officially
+  legacy: it becomes a boolean-state typedInput with a Store binding. `disabled`
+  is planned across **all interactive nodes** (the input controls + ui-button),
+  greenfield where the node has no disabled field yet; static display nodes
+  (ui-text/-badge/-image/…) do not get `disabled` (no interaction to disable).
+- **Decomposition (owner: "Fundament + 1 Paket pro Knoten", parallel):**
+  - *Tier 0 — foundation (folded into P113):* the editor helper delivers the
+    category type-sets — Value/display (full set), boolean-state, url-path. No
+    separate schema/runtime package (runtime already resolves disabled & href
+    bindings; the value-as-binding shape is generic and proven by P97/P98).
+  - *Tier 2 — one editor-only package per node, parallel-safe* (each touches
+    only its own `nodes/<x>.html` + spec + test catalogue; depends on P113):
+    - **ui-button** — `disabledPath`→boolean-state typedInput + `href`→url-path
+      typedInput (label already P113).
+    - **ui-input / -select / -switch / -slider / -radio / -textarea** —
+      `value`→canonical typedInput (full set; `valuePath`→state-binding
+      migration as in P97/P98; write-back target `valuePath`/`storeId`
+      unchanged) **and** a new bindable `disabled` (boolean-state).
+    - **ui-checkbox / -datepicker** — `value` already done (P97/P98); add
+      bindable `disabled` only.
 - No reduction may be added silently: a field that offers fewer than the full
   set must reference its category (and thereby this ADR) in code and spec.

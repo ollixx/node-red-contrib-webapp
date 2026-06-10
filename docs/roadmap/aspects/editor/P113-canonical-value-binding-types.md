@@ -7,13 +7,20 @@ dependencies: [P111]
 ---
 # P113 — Kanonischer Value-Binding-Typ-Satz
 
-> **Einordnung (ADR 0012):** Dieses Paket ist die **erste Anwendung** des
-> breiteren Prinzips „Binding-Ubiquität" — *jedes* wertführende Feld bietet
-> standardmäßig Bindings; reduziert wird nur bewusst pro Feld-Kategorie. P113
-> liefert die **Display-Wert-Kategorie** (voller Satz) und sollte den Helfer so
-> bauen, dass eine **Feld-Kategorie** deklarierbar ist (Default = Display-Wert-
-> Vollsatz). Boolean-Zustand (`disabled`), URL/Pfad (`href`) und Input-Control-
-> `value` sind eigene, später zu schneidende Pakete (siehe ADR 0012).
+> **Einordnung (ADR 0012) — dieses Paket ist das Fundament der Binding-Ubiquität.**
+> P113 baut den kanonischen Helfer **kategorie-fähig** und liefert **alle drei
+> Feld-Kategorie-Typsätze** (nicht nur den Display-Satz):
+> 1. **Wert/Anzeige** — der volle 14er-Satz (Default; auch der Input-Control-`value`),
+> 2. **Boolean-Zustand** — für `disabled`: Store, Query, Route-Param, Reactive, msg,
+>    JSONata, **boolean**, Flow, Global, Env (ohne string/number/json/timestamp),
+> 3. **URL/Pfad** — für `href`/`to`: str, msg, JSONata, Store, Reactive, Flow,
+>    Global, Env.
+>
+> Ein Feld ohne deklarierte Kategorie → Wert/Anzeige-Vollsatz (sicherer Default).
+> **Kein** Schema/Runtime-Fundament nötig: der Renderer löst `disabled` und `href`
+> bereits als Bindings auf (P71 für href), die Binding-Shape ist generisch (P97).
+> Die **Anwendung pro Knoten** (value/disabled/href auf typedInput heben) sind
+> eigene, parallele Editor-Pakete je Knoten (siehe ADR 0012 „Decomposition").
 
 ## findings (Nutzer-Wortlaut)
 
