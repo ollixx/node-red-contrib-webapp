@@ -61,6 +61,7 @@ beforeEach(() => {
     t.runtimeState.liveState.clear();
     t.runtimeState.clientStateMap.clear();
     t.runtimeState.streamClients.clear();
+    t.runtimeState.clientArrival.clear();
     t.runtimeState.definitions.clear();
 });
 
@@ -129,14 +130,14 @@ describe("P66: resolveNavigateLocation", () => {
     });
 });
 
-describe("P66 Scenario 1: ui-route navigate handler (own path + params + onEnter)", () => {
-    it("a navigate wired to a ui-route builds the location from the route path and pushes navigate", () => {
+describe("P66 Scenario 1: ui-route navigate handler (own path + params)", () => {
+    it("a navigate wired to a ui-route builds the location from the route path and pushes navigate (P112: NO onEnter from the navigate path)", () => {
         const res = makeFakeRes();
         registerDef(APP_ID, { type: "ui-app", id: APP_ID, name: "Nav", root: APP_ID, layout: "vertical" });
         const routeNode: any = { id: "routeNode", send: vi.fn(), webappDefinition: { type: "ui-route", id: "customerDetail", path: "/customers/:id", layout: "vertical", events: ["onEnter"] } };
         registerDef("routeNode", routeNode.webappDefinition, routeNode);
         t.runtimeState.RED = { nodes: { getNode: (id: string) => (id === "routeNode" ? routeNode : undefined) } };
-        t.addStreamClient(APP_ID, "c1", res, "/");
+        t.addStreamClient(APP_ID, "c1", res, "/", "load-nav1");
 
         const routeHandler = t.runtimeNodeRegistry["ui-route"].options.inputHandler;
         const send = vi.fn();
@@ -146,14 +147,12 @@ describe("P66 Scenario 1: ui-route navigate handler (own path + params + onEnter
         const commands = res.events().filter((e) => e.event === "command");
         expect(commands).toHaveLength(1);
         expect(commands[0].data.command).toMatchObject({ type: "navigate", to: "/customers/42" });
-        // The server remembered the new location for the client.
+        // The push still updates the server's remembered location for the client.
         expect(t.runtimeState.streamClients.get(APP_ID).get("c1").location).toBe("/customers/42");
-        // onEnter emitted on the route node (it declares the event).
-        expect(routeNode.send).toHaveBeenCalled();
-        const emitted = routeNode.send.mock.calls[routeNode.send.mock.calls.length - 1][0];
-        expect(emitted.ui.event).toBe("onEnter");
-        expect(emitted.ui.route).toBe("/customers/42");
-        expect(emitted.ui.params).toMatchObject({ id: "42" });
+        // P112: the navigate path no longer emits onEnter — the full-reload →
+        // connect path (handleClientArrival) owns the route lifecycle now.
+        const enters = routeNode.send.mock.calls.map((c: any[]) => c[0]).filter((m: any) => m && m.ui && m.ui.event === "onEnter");
+        expect(enters).toHaveLength(0);
         // The incoming msg is still passed through the output port.
         expect(send).toHaveBeenCalledTimes(1);
         expect(done).toHaveBeenCalledTimes(1);
@@ -161,7 +160,7 @@ describe("P66 Scenario 1: ui-route navigate handler (own path + params + onEnter
 });
 
 describe("P66 Scenario 2: ui-app app-global navigate with a `to` template", () => {
-    it("ui-app receiving navigate with `to` resolves the location and pushes navigate + onEnter on the target route", () => {
+    it("ui-app receiving navigate with `to` resolves the location and pushes navigate (P112: NO onEnter from the navigate path)", () => {
         const res = makeFakeRes();
         const appNode: any = { id: "appNode", send: vi.fn(), webappDefinition: { type: "ui-app", id: APP_ID, name: "Nav", root: APP_ID, layout: "vertical" } };
         registerDef(APP_ID, appNode.webappDefinition, appNode);
@@ -171,7 +170,7 @@ describe("P66 Scenario 2: ui-app app-global navigate with a `to` template", () =
             nodes: { getNode: (id: string) => (id === "routeNode" ? routeNode : id === "appNode" ? appNode : undefined) },
             util: {}
         };
-        t.addStreamClient(APP_ID, "c1", res, "/");
+        t.addStreamClient(APP_ID, "c1", res, "/", "load-nav2");
 
         const appHandler = t.runtimeNodeRegistry["ui-app"].options.inputHandler;
         appHandler(appNode, { ui: { clientId: "c1", action: { type: "navigate", to: "/orders/:oid", params: { oid: "5" } } } }, vi.fn(), vi.fn());
@@ -179,11 +178,9 @@ describe("P66 Scenario 2: ui-app app-global navigate with a `to` template", () =
         const commands = res.events().filter((e) => e.event === "command");
         expect(commands).toHaveLength(1);
         expect(commands[0].data.command).toMatchObject({ type: "navigate", to: "/orders/5" });
-        // onEnter fires on the entered route (resolved by location), not the app.
-        expect(routeNode.send).toHaveBeenCalled();
-        const emitted = routeNode.send.mock.calls[routeNode.send.mock.calls.length - 1][0];
-        expect(emitted.ui.event).toBe("onEnter");
-        expect(emitted.ui.route).toBe("/orders/5");
+        // P112: no onEnter emitted from the navigate path on the entered route.
+        const routeEnters = routeNode.send.mock.calls.map((c: any[]) => c[0]).filter((m: any) => m && m.ui && m.ui.event === "onEnter");
+        expect(routeEnters).toHaveLength(0);
     });
 });
 

@@ -40,6 +40,8 @@ interface RuntimeState {
     liveState: Map<string, unknown>;
     clientStateMap: Map<string, unknown>;
     streamClients: Map<string, Map<string, { res: unknown; location: string }>>;
+    // P112: per-client arrival tracking for the connect-based route lifecycle.
+    clientArrival: Map<string, Map<string, { loadId?: string; location: string; leaveTimer?: unknown }>>;
     definitions: Map<string, { nodeId: string; appId?: string; definition: Record<string, unknown> }>;
     RED: unknown;
 }
@@ -205,6 +207,9 @@ export class NodeBehaviourHarness {
         this.state.liveState.clear();
         this.state.clientStateMap.clear();
         this.state.streamClients.clear();
+        if (this.state.clientArrival && typeof this.state.clientArrival.clear === "function") {
+            this.state.clientArrival.clear();
+        }
         this.state.definitions.clear();
         this.state.RED = { nodes: { getNode: () => undefined } };
         this.registerApp(appConfig);
