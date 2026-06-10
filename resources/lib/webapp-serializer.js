@@ -633,9 +633,11 @@
                 const lbl = escapeHtml(String(opt.label !== undefined ? opt.label : (opt.value !== undefined ? opt.value : opt)));
                 return "<sl-radio value=\"" + val + "\">" + lbl + "</sl-radio>";
             }).join("");
+            // P127: disabled binding — mirror pattern from other input nodes.
+            const disabled = component.disabled ? " disabled" : "";
             const attrs = shoelaceAttrs(mapComponentToShoelace("radio", component.props || {}).attributes);
             return wrapRenderedComponentHtml(component, layoutId, "<sl-radio-group" + attrs + " label=\"" + escapeAttribute(label)
-                + "\" name=\"" + escapeAttribute(name) + "\" value=\"" + escapeAttribute(value) + "\">" + radioHtml + "</sl-radio-group>");
+                + "\" name=\"" + escapeAttribute(name) + "\" value=\"" + escapeAttribute(value) + "\"" + disabled + ">" + radioHtml + "</sl-radio-group>");
         }
 
         if (component.kind === "switch") {
