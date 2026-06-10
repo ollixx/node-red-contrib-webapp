@@ -543,8 +543,46 @@
                 const label = store.name ? store.name + " — " + detail : detail;
                 return { value: store.id, label: label, name: name, id: store.id, type: "ui-store" };
             });
+        },
+        // P114 / ADR 0009: the mount (parent-slot) preset. The hierarchical
+        // option tree (apps → routes/dialogs → containers → slots) built by
+        // buildMountOptionsTree is FLATTENED into picker entries whose label is
+        // the full breadcrumb (e.g. "Shop > /customers > content"). The mount
+        // value travels in `value` and `id`, the breadcrumb in `label` and
+        // `name`, so nodePickerMatch searches both breadcrumb AND mount value
+        // without any preset-specific match logic. The dialog needs no group
+        // headers — the breadcrumb carries the hierarchy.
+        mounts: function (references) {
+            return flattenMountOptionTree(buildMountOptionsTree(references));
         }
     };
+
+    // Flatten the grouped/optgroup mount option tree into a flat list of picker
+    // entries. Disabled group-header rows (no `value`) are dropped; each real
+    // mount option becomes { value, label(breadcrumb), name, id, type }.
+    // Duplicate mount values are de-duplicated (the tree can repeat a slot via
+    // nested containers). Pure — unit-testable without a DOM.
+    function flattenMountOptionTree(groups) {
+        const entries = [];
+        const seen = new Set();
+        (groups || []).forEach(function (group) {
+            (group.options || []).forEach(function (option) {
+                if (option.disabled || !option.value || seen.has(option.value)) {
+                    return;
+                }
+                seen.add(option.value);
+                const breadcrumb = option.label || option.value;
+                entries.push({
+                    value: option.value,
+                    label: breadcrumb,
+                    name: breadcrumb,
+                    id: option.value,
+                    type: "mount"
+                });
+            });
+        });
+        return entries;
+    }
 
     function getNodePickerPreset(preset) {
         if (typeof preset === "function") {
@@ -723,42 +761,125 @@
         return { close: close };
     }
 
-    // Enhance an existing <select> (already populated as the bound, round-trip
-    // field) with a "Auswählen…" button that opens the unified picker dialog.
-    // Selecting in the dialog writes the chosen id back into the <select> (it is
-    // appended as an option if missing) and fires `change`, so the existing
-    // round-trip / save path is unchanged. Idempotent per select.
-    function enhanceSelectWithPicker(selectSelector, config) {
+    // ── Picker field (P114 / ADR 0009) ──────────────────────────────────────
+    // installPickerField(selector, config) turns a bound reference field
+    // (#node-input-*) into the dialog-only selection pattern: the original
+    // control is HIDDEN (it stays in the DOM as the value carrier so Node-RED's
+    // defaults binding, change events, validation and the save round-trip are
+    // unchanged) and a read-only display + an "Auswählen…" button are rendered
+    // next to it. The display shows the human-readable label of the current
+    // selection (for mounts the full breadcrumb), or a placeholder when empty.
+    // A non-resolvable stored value survives and is shown as "<value> (bestehend)".
+    // Optional fields (clearable) get a "×" that writes "" and fires change.
+    //
+    // This SUPERSEDES enhanceSelectWithPicker (dropdown + button) per ADR 0009 —
+    // there is no visible, fully-populated reference <select> anywhere anymore.
+    //
+    // config:
+    //   filterPreset — picker preset id (apps|routes|actions|stores|mounts)
+    //   title        — dialog heading
+    //   placeholder  — display text when the field is empty
+    //   clearable    — show the "×" clear control (optional fields)
+    function installPickerField(selector, config) {
         const cfg = config || {};
-        const $select = $(selectSelector);
-        if ($select.length === 0 || $select.data("webappPickerEnhanced")) {
+        const $field = $(selector);
+        if ($field.length === 0 || $field.data("webappPickerField")) {
             return;
         }
-        $select.data("webappPickerEnhanced", true);
+        $field.data("webappPickerField", true);
 
-        const $button = $("<button type=\"button\" class=\"red-ui-button\">")
-            .addClass("webapp-node-picker-button")
-            .attr("title", "Aus Liste auswählen (Suche/Filter)")
-            .html("<i class=\"fa fa-list\"></i>")
-            .css({ "margin-left": "6px", "vertical-align": "middle" });
+        // Hide the bound value carrier (a <select> or <input>) but keep it in the
+        // DOM — it remains the single source of truth for save/round-trip.
+        $field.hide();
 
-        $select.after($button);
+        const $wrap = $("<span>")
+            .addClass("webapp-picker-field")
+            .css({ display: "inline-flex", "align-items": "center", gap: "6px", "max-width": "70%" });
+
+        const $display = $("<span>")
+            .addClass("webapp-picker-field-display")
+            .css({
+                flex: "1 1 auto",
+                "min-width": "0",
+                overflow: "hidden",
+                "text-overflow": "ellipsis",
+                "white-space": "nowrap",
+                color: "var(--red-ui-primary-text-color, #333)"
+            });
+
+        const $button = $("<button type=\"button\" class=\"red-ui-button webapp-picker-field-button\">")
+            .text("Auswählen…")
+            .css({ "flex": "0 0 auto" });
+
+        const $clear = $("<button type=\"button\" class=\"red-ui-button webapp-picker-field-clear\">")
+            .attr("title", "Auswahl entfernen")
+            .html("<i class=\"fa fa-times\"></i>")
+            .css({ "flex": "0 0 auto" });
+
+        $field.after($wrap);
+        $wrap.append($display).append($button);
+        if (cfg.clearable) {
+            $wrap.append($clear);
+        }
+
+        // Resolve the current value's display label from the live preset entries.
+        // Returns null when the value is non-empty but not present in the graph
+        // (a deleted/non-resolvable reference) so the caller can mark it.
+        function labelForValue(value) {
+            if (!value) {
+                return "";
+            }
+            const entries = nodePickerOptionsForPreset(cfg.filterPreset);
+            const match = entries.find(function (entry) { return entry.value === value; });
+            return match ? (match.label || match.name || match.id) : null;
+        }
+
+        function refreshDisplay() {
+            const value = String($field.val() || "");
+            if (!value) {
+                $display
+                    .text(cfg.placeholder || "Auswählen…")
+                    .css({ color: "var(--red-ui-secondary-text-color, #999)", "font-style": "italic" });
+                if (cfg.clearable) {
+                    $clear.hide();
+                }
+                return;
+            }
+            const label = labelForValue(value);
+            const text = label === null ? value + " (bestehend)" : label;
+            $display
+                .text(text)
+                .css({ color: "var(--red-ui-primary-text-color, #333)", "font-style": "normal" })
+                .attr("title", text);
+            if (cfg.clearable) {
+                $clear.show();
+            }
+        }
 
         $button.on("click", function (event) {
             event.preventDefault();
             openNodePickerDialog({
                 title: cfg.title || "Knoten auswählen",
-                value: String($select.val() || ""),
+                value: String($field.val() || ""),
                 entries: nodePickerOptionsForPreset(cfg.filterPreset),
                 onSelect: function (value) {
-                    if (value && $select.find("option[value='" + value + "']").length === 0) {
-                        $select.append($("<option></option>").attr("value", value).text(value));
-                    }
-                    $select.val(value);
-                    $select.trigger("change");
+                    $field.val(value);
+                    $field.trigger("change");
+                    refreshDisplay();
                 }
             });
         });
+
+        $clear.on("click", function (event) {
+            event.preventDefault();
+            $field.val("");
+            $field.trigger("change");
+            refreshDisplay();
+        });
+
+        // Keep the display in sync if the value changes by other means.
+        $field.on("change.webappPickerField", refreshDisplay);
+        refreshDisplay();
     }
 
     // P67: a custom Node-RED typedInput type for the new `store` binding kind.
@@ -1009,107 +1130,6 @@
         return groups;
     }
 
-    function setSelectOptionsTree(selector, groups, currentValue) {
-        const input = $(selector);
-
-        if (!input.length) return;
-
-        const normalizedCurrentValue = currentValue ? String(currentValue) : "";
-        const seenValues = new Set();
-
-        input.empty();
-        input.append($("<option></option>").attr("value", "").text("Parent-Slot auswaehlen"));
-
-        for (const group of groups) {
-            const optgroup = $("<optgroup></optgroup>").attr("label", group.label);
-
-            for (const option of group.options) {
-                if (option.disabled) {
-                    optgroup.append(
-                        $("<option></option>").attr("disabled", true).text(option.label)
-                    );
-                } else {
-                    if (seenValues.has(option.value)) continue;
-                    seenValues.add(option.value);
-                    optgroup.append(
-                        $("<option></option>").attr("value", option.value).text(option.label)
-                    );
-                }
-            }
-
-            input.append(optgroup);
-        }
-
-        if (normalizedCurrentValue && !seenValues.has(normalizedCurrentValue)) {
-            input.append(
-                $("<option></option>")
-                    .attr("value", normalizedCurrentValue)
-                    .text(`${normalizedCurrentValue} (bestehend)`)
-            );
-        }
-
-        input.val(normalizedCurrentValue);
-    }
-
-    function buildMountOptions(references) {
-        const apps = references.apps;
-        const routes = references.routes;
-        const dialogs = references.dialogs;
-        const containers = references.containers;
-
-        const options = [];
-
-        for (const app of apps) {
-            const slotNames = getSlotNamesForLayout(app.layoutId);
-            const appLabel = app.title || app.id;
-
-            for (const slotName of slotNames) {
-                options.push({
-                    value: `${app.id}.${slotName}`,
-                    label: `${appLabel} -> ${slotName}`
-                });
-            }
-        }
-
-        for (const route of routes) {
-            const slotNames = getSlotNamesForLayout(route.layoutId);
-            const routeLabel = route.title || route.path || route.id;
-
-            for (const slotName of slotNames) {
-                options.push({
-                    value: `route:${route.path}/${slotName}`,
-                    label: `${routeLabel} -> ${slotName}`
-                });
-            }
-        }
-
-        for (const dialog of dialogs) {
-            const slotNames = getSlotNamesForLayout(dialog.layoutId);
-            const dialogLabel = dialog.title || dialog.id;
-
-            for (const slotName of slotNames) {
-                options.push({
-                    value: `dialog:${dialog.id}/${slotName}`,
-                    label: `${dialogLabel} -> ${slotName}`
-                });
-            }
-        }
-
-        for (const container of containers) {
-            const slotNames = getSlotNamesForLayout(container.layoutId);
-            const containerLabel = container.title || container.id;
-
-            for (const slotName of slotNames) {
-                options.push({
-                    value: `container:${container.id}/${slotName}`,
-                    label: `${containerLabel} -> ${slotName}`
-                });
-            }
-        }
-
-        return options;
-    }
-
     function getMountLayoutId(mountValue, references) {
         if (!mountValue) {
             return "";
@@ -1208,16 +1228,18 @@
     function installParentAppSelector() {
         return function () {
             const self = this;
-            const references = collectReferenceNodes();
-            setSelectOptions(
-                "#node-input-parent",
-                references.apps.map(function (app) {
-                    return { value: app.id, label: app.title || app.id };
-                }),
-                self.parent || self.id,
-                "App auswaehlen"
-            );
-            enhanceSelectWithPicker("#node-input-parent", { filterPreset: "apps", title: "App auswählen" });
+            // The bound #node-input-parent stays the value carrier; Node-RED has
+            // already bound its default. If unset, fall back to the node's own id
+            // (legacy default), then render the dialog-only picker over it.
+            const $parent = $("#node-input-parent");
+            if ($parent.length && !$parent.val()) {
+                $parent.val(self.parent || self.id || "");
+            }
+            installPickerField("#node-input-parent", {
+                filterPreset: "apps",
+                title: "App auswählen",
+                placeholder: "App auswählen"
+            });
         };
     }
 
@@ -1225,83 +1247,71 @@
         return function () {
             const self = this;
 
-            function refreshSelectors() {
-                const references = collectReferenceNodes();
+            // ADR 0009: every reference field is the dialog-only picker pattern
+            // (read-only display + "Auswählen…" button). The bound #node-input-*
+            // element stays as the hidden value carrier; we seed it from any
+            // legacy alias the field still uses before installing the picker.
 
-                if (config.layout) {
-                    setSelectOptions(
-                        "#node-input-layoutId",
-                        references.layouts.map(function (layout) {
-                            return {
-                                value: layout.id,
-                                label: layout.title || layout.id
-                            };
-                        }),
-                        self.layoutId,
-                        "Parent-Layout auswaehlen"
-                    );
-                }
-
-                if (config.route) {
-                    setSelectOptions(
-                        "#node-input-routeId",
-                        references.routes.map(function (route) {
-                            return {
-                                value: route.id,
-                                label: route.title || route.path || route.id
-                            };
-                        }),
-                        self.routeId,
-                        "Optional: Parent-Route auswaehlen"
-                    );
-                    enhanceSelectWithPicker("#node-input-routeId", { filterPreset: "routes", title: "Route auswählen" });
-                }
-
-                if (config.mount) {
-                    setSelectOptionsTree(
-                        "#node-input-mount",
-                        buildMountOptionsTree(references),
-                        self.mount
-                    );
-                }
-
-                if (config.action) {
-                    setSelectOptions(
-                        config.action,
-                        references.actions.map(function (action) {
-                            const suffix = action.type === "ui-navigation" && action.to ? ` -> ${action.to}` : "";
-                            return {
-                                value: action.id,
-                                label: `${action.label || action.id}${suffix}`
-                            };
-                        }),
-                        $(config.action).val() || self.action || self.selectAction || self.refreshAction,
-                        "Action auswaehlen"
-                    );
-                    enhanceSelectWithPicker(config.action, { filterPreset: "actions", title: "Action auswählen" });
-                }
-
-                if (config.store) {
-                    const storeSelector = typeof config.store === "string" && config.store.startsWith("#")
-                        ? config.store
-                        : "#node-input-storeId";
-                    const currentStoreVal = $(storeSelector).val() || self.storeId || self.params;
-                    setSelectOptions(
-                        storeSelector,
-                        references.stores.map(function (store) {
-                            return {
-                                value: store.id,
-                                label: store.id
-                            };
-                        }),
-                        currentStoreVal,
-                        "Optional: Store auswaehlen"
-                    );
-                    enhanceSelectWithPicker(storeSelector, { filterPreset: "stores", title: "Store auswählen" });
-                }
+            if (config.layout) {
+                installPickerField("#node-input-layoutId", {
+                    filterPreset: "layouts",
+                    title: "Layout auswählen",
+                    placeholder: "Parent-Layout auswählen"
+                });
             }
 
-            refreshSelectors();
+            if (config.route) {
+                const $route = $("#node-input-routeId");
+                if ($route.length && !$route.val()) {
+                    $route.val(self.routeId || "");
+                }
+                installPickerField("#node-input-routeId", {
+                    filterPreset: "routes",
+                    title: "Route auswählen",
+                    placeholder: "Optional: Parent-Route auswählen",
+                    clearable: true
+                });
+            }
+
+            if (config.mount) {
+                const $mount = $("#node-input-mount");
+                if ($mount.length && !$mount.val()) {
+                    $mount.val(self.mount || "");
+                }
+                installPickerField("#node-input-mount", {
+                    filterPreset: "mounts",
+                    title: "Parent-Slot auswählen",
+                    placeholder: "Parent-Slot auswählen"
+                });
+            }
+
+            if (config.action) {
+                const $action = $(config.action);
+                if ($action.length && !$action.val()) {
+                    $action.val(self.action || self.selectAction || self.refreshAction || "");
+                }
+                installPickerField(config.action, {
+                    filterPreset: "actions",
+                    title: "Action auswählen",
+                    placeholder: "Action auswählen"
+                });
+            }
+
+            if (config.store) {
+                const storeSelector = typeof config.store === "string" && config.store.startsWith("#")
+                    ? config.store
+                    : "#node-input-storeId";
+                const $store = $(storeSelector);
+                if ($store.length && !$store.val()) {
+                    $store.val(self.storeId || self.params || "");
+                }
+                installPickerField(storeSelector, {
+                    filterPreset: "stores",
+                    title: "Store auswählen",
+                    placeholder: "Optional: Store auswählen",
+                    clearable: true
+                });
+            }
         };
     }
 
@@ -1939,8 +1949,8 @@
         bindingTypedInputTypes,
         bindingValueForEditor,
         buildMountOptionsTree,
+        flattenMountOptionTree,
         collectEventCheckboxValues,
-        enhanceSelectWithPicker,
         injectFieldGroup,
         getNextNameDefault,
         getStandardLayoutPresetOptions,
@@ -1950,6 +1960,7 @@
         installLayoutSelector,
         installNodePicker,
         installParentAppSelector,
+        installPickerField,
         openIconPickerDialog,
         openMediaPickerDialog,
         parseIconValue,
@@ -1969,7 +1980,6 @@
         registerNodeType,
         registerNodeTypeWithEvents,
         required,
-        setSelectOptionsTree,
         storeTypedInputType
     };
 })(window);
