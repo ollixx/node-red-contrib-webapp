@@ -106,6 +106,26 @@ Alle gespeicherten Werte sind **IDs** (bzw. Mount-Strings `<type>:<id>/<slot>`).
 
 ## Bindbare Werte: die typedInput-Binding-Typen (P67)
 
+> **Prinzip — Binding-Ubiquität (ADR 0012):** **Jedes wertführende Feld jedes
+> `ui-*`-Knotens bietet standardmäßig Bindings** (als typedInput). Reduziert
+> wird nur, wo eine Binding-Art **unmöglich** (nicht zurückschreibbar / nicht
+> auswertbar) oder **sinnlos** (ein Literaltyp, den das Feld nie tragen kann)
+> ist — und das muss bewusst deklariert sein, nicht der Default. Die reaktiven
+> Quellen **Store, Query, Route-Param, Reactive** sind praktisch **immer**
+> verfügbar. Insbesondere `disabled` braucht zwingend ein **Store**-Binding.
+>
+> **Feld-Kategorien** (voller Satz = die 14 Typen unten):
+>
+> | Kategorie | Beispiele | Angebotene Typen | Entfernt — warum |
+> |---|---|---|---|
+> | Display-Wert | `label`, `message`, `value`, `src` | voller Satz | — (P113) |
+> | Boolean-Zustand | `disabled` (später `hidden`/`readonly`) | Store, Query, Route-Param, Reactive, msg, JSONata, **boolean**, Flow, Global, Env | string/number/json/timestamp — ein Boolean trägt sie nicht |
+> | Input-Control-`value` (zweiseitig) | ui-input/-select/-checkbox/-switch/-slider/-datepicker/-textarea | Store, State + literaler Startwert | msg/JSONata/Reactive/Flow/Global/Env — read-only-Quellen, ein Control muss zurückschreiben |
+> | URL/Pfad | `href`, ui-action `to` | str, msg, JSONata, Store, Reactive, Flow, Global, Env | number/boolean/json/timestamp — keine URL |
+>
+> Ein Feld ohne deklarierte Kategorie fällt auf den **Display-Wert-Vollsatz**
+> zurück (sicherer, maximaler Default). Details: [ADR 0012](../../adr/0012-binding-ubiquity-every-value-field-offers-bindings.md).
+
 Bindbare Felder (z. B. `ui-text` `value`, `ui-alert` `message`/`title`) nutzen
 ein Node-RED-**typedInput**, dessen Typ-Auswahl die Binding-Art bestimmt. Der
 gemeinsame Typsatz kommt aus `bindingTypedInputTypes({ literalLabel })`:
