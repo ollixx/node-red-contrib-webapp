@@ -681,19 +681,17 @@
         // `name`, so nodePickerMatch searches both breadcrumb AND mount value
         // without any preset-specific match logic. The dialog needs no group
         // headers — the breadcrumb carries the hierarchy.
-        // P117: With appId context, only mount slots belonging to that app are offered.
-        mounts: function (references, context) {
-            const appId = context && context.appId ? context.appId : null;
-            const all = flattenMountOptionTree(buildMountOptionsTree(references));
-            if (!appId) {
-                return all;
-            }
-            // Filter by appId: the breadcrumb starts with the app title, or
-            // the value starts with the appId (direct app slots) or belongs to
-            // a route/dialog/container under that app.
-            return all.filter(function (entry) {
-                return isMountUnderApp(entry.value, references, appId);
-            });
+        // P117 / P114-P117 fix: the mount picker is intentionally NOT app-scoped.
+        // The `mount` field is what *establishes* which app a node belongs to, so
+        // scoping its candidates to the already-resolved app would make it
+        // impossible to move a node to a slot in another app (and yields an empty
+        // list when the edited node is currently mounted elsewhere). The flattened
+        // breadcrumbs are self-describing — each starts with the owning app title
+        // (e.g. "Shop > /customers > content") — so cross-app origin stays visible
+        // without a filter. The `context` argument is accepted for a uniform
+        // preset signature but deliberately ignored here.
+        mounts: function (references) {
+            return flattenMountOptionTree(buildMountOptionsTree(references));
         }
     };
 
