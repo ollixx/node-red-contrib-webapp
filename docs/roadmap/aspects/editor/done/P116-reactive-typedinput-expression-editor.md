@@ -2,12 +2,12 @@
 id: P116
 title: "reactive-typedInput: Expression-Editor-Dialog mit Completion, zweistufiger Validierung und Doku-Panel; Aufnahme in den kanonischen Typsatz"
 epic: aspects/editor
-status: in_progress
+status: done
 dependencies: [P113, P115]
 ---
 # P116 — `Reactive` im Editor: typedInput + Expression-Editor
 
-> Rationale & Entscheidung: [ADR 0010](../../../adr/0010-reactive-binding-client-expressions.md).
+> Rationale & Entscheidung: [ADR 0010](../../../../adr/0010-reactive-binding-client-expressions.md).
 > Durable Spec (Zielzustand, bereits geschrieben): `docs/nodes/concepts/reactive-expressions.md`,
 > Abschnitt „Editor-Erlebnis". Renderer/Schema-Seite: **P115** (muss `done` sein).
 > Kanonischer Typsatz: **P113** (muss `done` sein — `Reactive` ist dort Typ #4).
@@ -185,3 +185,10 @@ verify: browser
 - **Zwei Wahrheiten vermeiden:** Beispiel-Snippets existieren dann an drei
   Orten (Doku-Seite, Doku-Panel, Tests). Die Doku-Seite ist die Quelle; Panel
   und Tests zitieren sie. Im Result bestätigen, dass alle drei übereinstimmen.
+
+## Result
+
+- **delivered:** `Reactive` als typedInput-Typ #4 im kanonischen P113-Satz (Helfer konsumiert, nie redefiniert) — `fa fa-bolt`, serialisiert `{kind:"reactive", value}`, `expand` öffnet den Expression-Editor, `validate` führt Stufe-1-Syntax + Stufe-2-Referenz aus (kaputter/unbekannter-Store-Ausdruck → Knoten ungültig, Deploy blockiert). Expression-Editor-Dialog (`openReactiveExpressionDialog`) im Admin-UI (P68/P69-Chrome) via `RED.editor.createEditor`; Monaco-feature-detected Completion-Provider (3 Globals + Live-`routeParam`-Namen aus der umschließenden Route via `resolveRouteFromMount`/`parseRoutePlaceholders` + echte Store-Namen aus `collectReferenceNodes().stores`); sauberer Ace-Fallback ohne Konsolen-Fehler; Live-Syntax-Validierung am OK-Button; Referenz-Validierung beim Übernehmen mit Namensnennung; Doku-Panel mit den 3 Globals + verbatim-Beispielen aus `reactive-expressions.md`. Pure Helfer exportiert (`validateReactiveSyntax`, `scanReactiveStoreLiterals`, `validateReactiveReferences`, `resolveRouteFromMount`, `reactiveCompletionContext`). ui-text-Hilfe + Test-Katalog ergänzt.
+- **stats:** 1 in-scope-Commit (Merge), editor-common.js +454/−6 (Dialog+Completion+Validierung; Helfer unberührt). **Maßgebliche volle E2E auf gebautem develop: 486 passed, exit=0, 0 failed** — `reactive-expression.spec.ts` (7 Fälle inkl. Ende-zu-Ende editor-getrieben `Kunde ${routeParam.id}` → /42 → /7), P115 reactive-binding (3), view.spec.ts (11). Unit +17 (`p116-reactive-expression.test.ts`).
+- **notes:** P113 (cde6f93) + P115 (d4c7c80) als Ancestors verifiziert; keine renderer/schema-Änderung (P115-Eigentum). Ace-Fallback verifiziert (öffnet+validiert, null Konsolen-Fehler). Doku-Beispiele über alle 3 Orte konsistent (Doku-Seite = Quelle). Monaco-Completion ist headless nicht-deterministisch → E2E prüft die Live-Datenquelle via `reactiveCompletionContext()` + den Ace-Pfad end-to-end. Harness-Notiz: der einzeilige NR-typedInput kollabiert Newlines → Knoten-Round-Trip einzeilig, Mehrzeilen-Treue über `onSelect` des Dialogs asserted.
+- **cost:** session (opus), ~14m.

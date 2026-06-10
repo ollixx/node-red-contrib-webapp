@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P116** — aspects/editor — `Reactive`-typedInput: Expression-Editor-Dialog mit Completion, zweistufiger Validierung + Doku-Panel; Typ #4 im kanonischen Satz (ADR 0010) — *geplant; braucht P113 + P115* — [P116](aspects/editor/P116-reactive-typedinput-expression-editor.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -71,11 +70,11 @@ open the folder for the full history.
 | aspects/misc | 16 |
 | aspects/runtime | 7 |
 | aspects/state | 8 |
-| aspects/editor | 9 |
+| aspects/editor | 10 |
 | schema | 5 |
 | aspects/rendering | 7 |
 | aspects/foundation | 5 |
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 132 done, 1 open, 5 deferred.**
+**Total: 133 done, 0 open, 5 deferred.**
