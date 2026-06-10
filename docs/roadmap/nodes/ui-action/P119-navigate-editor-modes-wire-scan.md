@@ -13,7 +13,7 @@ verify: browser
 spec: docs/nodes/behavior/ui-action.md
 tests: tests/e2e/nodes/behavior/ui-action.tests.md
 dependencies: [P118, P120]
-status: pending
+status: in_progress
 ---
 # P119 — Navigate-Editor: Modus-UI, Wire-Scan, Mapping-Tabelle
 
