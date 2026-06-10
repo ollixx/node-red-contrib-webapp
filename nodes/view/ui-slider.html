@@ -9,13 +9,24 @@
                 name: { value: "" },
                 parent: { value: "" },
                 mount: { value: "", required: true },
-                valuePath: { value: "", required: true },
+                // P126 (ADR 0012): `value` persists the binding OBJECT; there is no
+                // matching #node-input-value element so Node-RED auto-save cannot
+                // clobber it. The typedInput lives on #node-input-valueBinding.
+                // Legacy `valuePath` (pre-P126 plain state path) is kept for migration only.
+                valuePath: { value: "" },
                 value: { value: null },
+                valueBinding: { value: "" },
                 label: { value: "" },
                 min: { value: "" },
                 max: { value: "" },
                 step: { value: "" },
                 showValue: { value: false },
+                // P126 (ADR 0012 / boolean category): `disabled` persists the binding
+                // OBJECT; there is no matching #node-input-disabled element so
+                // Node-RED auto-save cannot clobber it. The typedInput lives on
+                // #node-input-disabledBinding.
+                disabled: { value: null },
+                disabledBinding: { value: "" },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
                 col: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
@@ -37,6 +48,52 @@
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
                 common.installLayoutChildPropRows().call(this);
+
+                // P126 (ADR 0012 / value/display category): `value` typedInput — full
+                // canonical set with literal default type `num` (slider is numeric).
+                // Migration: a legacy `valuePath` plain string becomes a state binding;
+                // a stored `value` binding object takes precedence.
+                const storedValue = common.parseBindingValue(this.value);
+                const valueBinding = storedValue
+                    ? storedValue
+                    : (this.valuePath ? { kind: "state", path: this.valuePath } : undefined);
+                const valueEditor = common.readValueBinding(valueBinding, "");
+                // Use "num" as the default type for a numeric slider.
+                const valueDefaultType = valueEditor.type !== "str" ? valueEditor.type : "num";
+                const valueInput = $("#node-input-valueBinding");
+                valueInput.typedInput({
+                    default: valueDefaultType,
+                    types: common.valueBindingTypes({ category: "value" })
+                });
+                valueInput.typedInput("type", valueEditor.type !== "str" || valueBinding ? valueEditor.type : "num");
+                valueInput.typedInput("value", valueEditor.value);
+
+                // P126 (ADR 0012 / boolean category): `disabled` typedInput.
+                // No legacy to migrate (new field).
+                const storedDisabled = common.parseBindingValue(this.disabled);
+                const disabledBinding = storedDisabled ? storedDisabled : undefined;
+                const disabledEditor = common.readValueBinding(disabledBinding, "");
+                const disabledInput = $("#node-input-disabledBinding");
+                disabledInput.typedInput({
+                    default: disabledEditor.type,
+                    types: common.valueBindingTypes({ category: "boolean" })
+                });
+                disabledInput.typedInput("type", disabledEditor.type);
+                disabledInput.typedInput("value", disabledEditor.value);
+            },
+            oneditsave: function () {
+                // P126: persist value as binding object; clear legacy valuePath.
+                this.value = common.applyValueBinding(
+                    $("#node-input-valueBinding").typedInput("type"),
+                    $("#node-input-valueBinding").typedInput("value")
+                );
+                this.valuePath = "";
+
+                // P126: persist disabled as binding object.
+                this.disabled = common.applyValueBinding(
+                    $("#node-input-disabledBinding").typedInput("type"),
+                    $("#node-input-disabledBinding").typedInput("value")
+                );
             }
         });
     })();
@@ -46,11 +103,27 @@
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <div class="form-row"><label for="node-input-label">Label</label><input type="text" id="node-input-label"></div>
-    <div class="form-row"><label for="node-input-valuePath">Value Path</label><input type="text" id="node-input-valuePath"></div>
+    <!-- P126 (ADR 0012 / value/display category): Value binding — typedInput managed in oneditprepare/oneditsave. -->
+    <div class="form-row"><label for="node-input-valueBinding">Value</label><input type="text" id="node-input-valueBinding"></div>
     <div class="form-row"><label for="node-input-min">Min</label><input type="number" id="node-input-min"></div>
     <div class="form-row"><label for="node-input-max">Max</label><input type="number" id="node-input-max"></div>
     <div class="form-row"><label for="node-input-step">Step</label><input type="number" id="node-input-step" min="0.001"></div>
     <div class="form-row"><label for="node-input-showValue">Show Value</label><input type="checkbox" id="node-input-showValue" style="width:auto"></div>
+    <!-- P126 (ADR 0012 / boolean category): Disabled binding — typedInput managed in oneditprepare/oneditsave. -->
+    <div class="form-row"><label for="node-input-disabledBinding">Disabled</label><input type="text" id="node-input-disabledBinding"></div>
 </script>
-<script type="text/html"
-    data-help-name="ui-slider"><p>Numerischer Schieberegler mit konfigurierbaren Grenzen und Schrittweite.</p></script>
+<script type="text/html" data-help-name="ui-slider">
+    <p>Numerischer Schieberegler mit konfigurierbaren Grenzen und Schrittweite.</p>
+    <h4>Value (P126)</h4>
+    <p>Bindbare numerische Quelle des Slider-Werts (Anzeige/Initialwert) — voller kanonischer Satz (ADR 0012):
+    Store, Query, Route-Param, Reactive, msg, JSONata, string, number, boolean, json, timestamp,
+    Flow, Global, Env. Ein bestehender <code>valuePath</code> wird automatisch als
+    <code>state</code>-Binding übernommen. Literaler Default-Typ: <code>number</code>.</p>
+    <h4>Disabled (P126)</h4>
+    <p>Bindbar über den Boolean-Zustand-Satz (ADR 0012): Store, Query, Route-Param, Reactive,
+    msg, JSONata, boolean, Flow, Global, Env. Ein Store-Binding deaktiviert den Slider live,
+    sobald der Wert truthy ist.</p>
+    <h4>Events</h4>
+    <p>Emittiert <code>{ event: "change", params: { value } }</code> wenn der Nutzer den Regler bewegt.</p>
+    <p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/input/ui-slider.md">Ausführliche Doku</a></p>
+</script>

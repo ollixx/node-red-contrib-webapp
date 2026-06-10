@@ -686,9 +686,11 @@
             // The spec default for showValue is false — suppress the tooltip unless explicitly
             // enabled by setting tooltip="none" when showValue is absent or false.
             const tooltip = component.props.showValue ? "" : " tooltip=\"none\"";
+            // P126: disabled binding — mirror pattern from other input nodes.
+            const disabled = component.disabled ? " disabled" : "";
             const attrs = shoelaceAttrs(mapComponentToShoelace("slider", component.props || {}).attributes);
             return wrapRenderedComponentHtml(component, layoutId, "<sl-range" + attrs + " label=\"" + escapeAttribute(label)
-                + "\" name=\"" + escapeAttribute(name) + "\"" + min + max + step + " value=\"" + escapeAttribute(value) + "\"" + tooltip + "></sl-range>");
+                + "\" name=\"" + escapeAttribute(name) + "\"" + min + max + step + " value=\"" + escapeAttribute(value) + "\"" + tooltip + disabled + "></sl-range>");
         }
 
         if (component.kind === "alert") {
