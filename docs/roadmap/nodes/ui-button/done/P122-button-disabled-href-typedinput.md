@@ -10,7 +10,7 @@ verify: browser
 spec: docs/nodes/display/ui-button.md
 tests: tests/e2e/nodes/view/ui-button.tests.md
 dependencies: [P113]
-status: in_progress
+status: done
 ---
 # P122 — ui-button: bindbares disabled + href
 
@@ -56,3 +56,10 @@ status: in_progress
   (Kategorie + Sätze + Migration) umschreiben; auf ADR 0012 verweisen.
 - `tests/e2e/nodes/view/ui-button.tests.md`: Fälle disabled-Store-Binding,
   disabledPath-Migration, href-Binding ergänzen.
+
+## Result
+
+- **delivered:** ui-button `disabled`→Boolean-Zustand-typedInput und `href`→URL/Pfad-typedInput (ADR 0012), beide über den kanonischen P113-Helfer. `nodes/view/ui-button.html`: `disabledBinding`/`hrefBinding` Dummy-Defaults; `disabled` als `valueBindingTypes({category:"boolean"})`, `href` als `valueBindingTypes({category:"url"})`; `oneditprepare` initialisiert beide typedInputs mit Migration aus Legacy `disabledPath`/Literal-`href`; `oneditsave` persistiert als Binding-Objekte und löscht `disabledPath`. `editor-common.js`: href-Feld-Injection aus `installButtonLinkFields` entfernt (href ist jetzt typedInput), Sichtbarkeits-Attribut `data-button-href-row="hrefBinding"`. **Helfer aus P113 konsumiert, nicht neu definiert** (editor-common-Delta +5/−9).
+- **stats:** Merge (+84/−15); 12 neue Unit-Tests (Binding-Round-Trips + Legacy-Migration). Maßgebliche volle E2E auf gebautem develop: 433 passed + der eine veraltete P71-Cross-Cutting-Spec (href-Feld) auf den typedInput-Kontrakt nachgezogen und grün (16/16 p71+ui-button) → effektiv alle grün. Unit 871.
+- **notes:** Runtime/Schema unverändert nötig (webapp.js `mapConfig` war seit P71/P97 binding-objekt-fähig für href + disabled) — reine Editor-Änderung. **Muster für P123–P130.** Erster Spawn musste verworfen werden (Worktree von stale develop pre-P113 → Helfer reimplementiert); Neuversuch mit gepinnter SHA + Ancestry-Gate sauber.
+- **cost:** Re-Spawn session ca7d046, ~8m, Modell sonnet (erster Versuch verworfen).

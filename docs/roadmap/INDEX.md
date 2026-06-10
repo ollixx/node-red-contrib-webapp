@@ -28,7 +28,6 @@ their blocker clears.
 ## Open work (pending / in_progress)
 
 - **P116** — aspects/editor — `Reactive`-typedInput: Expression-Editor-Dialog mit Completion, zweistufiger Validierung + Doku-Panel; Typ #4 im kanonischen Satz (ADR 0010) — *geplant; braucht P113 + P115* — [P116](aspects/editor/P116-reactive-typedinput-expression-editor.md)
-- **P122** — nodes/ui-button — `disabledPath`→Boolean-Zustand-typedInput (inkl. Store) + `href`→URL/Pfad-typedInput (ADR 0012) — *geplant; braucht P113* — [P122](nodes/ui-button/P122-button-disabled-href-typedinput.md)
 - **P123** — nodes/ui-input — `value`→kanonischer typedInput + valuePath-Migration; bindbares `disabled` (ADR 0012) — *geplant; braucht P113* — [P123](nodes/ui-input/P123-input-value-disabled-typedinput.md)
 - **P124** — nodes/ui-select — `value`→kanonischer typedInput + valuePath-Migration; bindbares `disabled` (ADR 0012) — *geplant; braucht P113* — [P124](nodes/ui-select/P124-select-value-disabled-typedinput.md)
 - **P125** — nodes/ui-switch — `value`→kanonischer typedInput + valuePath-Migration; bindbares `disabled` (ADR 0012) — *geplant; braucht P113* — [P125](nodes/ui-switch/P125-switch-value-disabled-typedinput.md)
@@ -66,7 +65,8 @@ open the folder for the full history.
 | nodes/ui-badge | 2 |
 | nodes/ui-route | 2 |
 | nodes/ui-text | 2 |
-| nodes/ui-accordion · ui-breadcrumb · ui-button · ui-checkbox · ui-datepicker · ui-dialog · ui-divider · ui-icon · ui-image · ui-pagination · ui-table | 1 each |
+| nodes/ui-button | 2 |
+| nodes/ui-accordion · ui-breadcrumb · ui-checkbox · ui-datepicker · ui-dialog · ui-divider · ui-icon · ui-image · ui-pagination · ui-table | 1 each |
 | aspects/test-infra | 21 |
 | aspects/misc | 16 |
 | aspects/runtime | 7 |
@@ -78,4 +78,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 123 done, 10 open, 5 deferred.**
+**Total: 124 done, 9 open, 5 deferred.**
