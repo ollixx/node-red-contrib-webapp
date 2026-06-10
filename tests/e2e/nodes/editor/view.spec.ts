@@ -23,9 +23,13 @@ test.describe("editor panels — view nodes (P47)", () => {
         return builder.app({ id: appId, root: appId, name: appId });
     }
 
-    test("ui-input — fields present, required valuePath drives validity, persists", async ({ page, request }) => {
+    test("ui-input — P123 canonical fields present, required label drives validity, persists", async ({ page, request }) => {
+        // P123 (ADR 0012): the plain `valuePath` field was removed; `value` is now a
+        // canonical typedInput on #node-input-valueBinding (value bindings are covered
+        // by the dedicated ui-input spec). Validity is driven by the required `label`
+        // and `mount` fields, so we exercise it on `label`.
         const flow = appWithRoute(new FlowBuilder(), "inputApp")
-            .node("ui-input", { id: "inputEd", label: "Email", valuePath: "" })
+            .node("ui-input", { id: "inputEd", label: "" })
             .build();
         await deployFlow(request, flow);
 
@@ -33,18 +37,18 @@ test.describe("editor panels — view nodes (P47)", () => {
         await editor.open();
         await editor.openNode("inputEd");
 
-        await editor.expectFields(["name", "mount", "label", "valuePath", "inputType"]);
+        await editor.expectFields(["name", "mount", "label", "valueBinding", "inputType", "disabledBinding"]);
 
-        // label is filled, but required valuePath is empty → invalid.
+        // mount is auto-set but required label is empty → invalid.
         expect(await editor.getValidationState("inputEd")).toBe("invalid");
 
-        // Fill valuePath → valid; value persists across re-open.
-        await editor.fillField("valuePath", "form.email");
+        // Fill label → valid; value persists across re-open.
+        await editor.fillField("label", "Email");
         await editor.save();
         expect(await editor.getValidationState("inputEd")).toBe("valid");
 
         await editor.openNode("inputEd");
-        expect(await editor.readField("valuePath")).toBe("form.email");
+        expect(await editor.readField("label")).toBe("Email");
 
         // inputType is a select with the documented options.
         const inputTypes = await editor.selectOptionValues("inputType");
@@ -80,9 +84,12 @@ test.describe("editor panels — view nodes (P47)", () => {
         expect(sizeOptions).toEqual(expect.arrayContaining(["xs", "sm", "md", "lg", "xl"]));
     });
 
-    test("ui-select — value binding + options fields present, required valuePath validation", async ({ page, request }) => {
+    test("ui-select — P124 value binding + options fields present, required label validation", async ({ page, request }) => {
+        // P124 (ADR 0012): the plain `valuePath` field was removed; `value` is now a
+        // canonical typedInput on #node-input-valueBinding. Validity is driven by the
+        // required `label` and `mount` fields, so we exercise it on `label`.
         const flow = appWithRoute(new FlowBuilder(), "selApp")
-            .node("ui-select", { id: "selEd", label: "Country", valuePath: "" })
+            .node("ui-select", { id: "selEd", label: "" })
             .build();
         await deployFlow(request, flow);
 
@@ -90,10 +97,10 @@ test.describe("editor panels — view nodes (P47)", () => {
         await editor.open();
         await editor.openNode("selEd");
 
-        await editor.expectFields(["name", "mount", "label", "valuePath", "optionsJson", "optionsBinding"]);
+        await editor.expectFields(["name", "mount", "label", "valueBinding", "optionsJson", "optionsBinding"]);
         expect(await editor.getValidationState("selEd")).toBe("invalid");
 
-        await editor.fillField("valuePath", "form.country");
+        await editor.fillField("label", "Country");
         await editor.save();
         expect(await editor.getValidationState("selEd")).toBe("valid");
     });

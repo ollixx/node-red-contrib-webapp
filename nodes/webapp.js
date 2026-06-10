@@ -979,6 +979,7 @@ function toComponentDefinitions(components) {
                     storeId: component.storeId,
                     path: component.path,
                     inputType: component.inputType,
+                    ...(blankToUndefined(component.placeholder) ? { placeholder: component.placeholder } : {}),
                     ...(blankToUndefined(component.variant) ? { variant: component.variant } : {}),
                     ...(blankToUndefined(component.size) ? { size: component.size } : {}),
                     ...(Object.keys(layoutProps).length > 0 ? { layout: layoutProps } : {})
@@ -4394,6 +4395,7 @@ const runtimeNodeRegistry = {
             order: toOptionalNumber(config.order),
             label: config.label,
             value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
+            placeholder: config.placeholder || undefined,
             storeId: config.storeId || undefined,
             path: config.path || undefined,
             inputType: config.inputType || undefined,

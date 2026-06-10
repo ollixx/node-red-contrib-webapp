@@ -567,9 +567,12 @@
             const inputType = String(component.props.inputType || "text");
             const value = component.value === undefined || component.value === null ? "" : String(component.value);
             const disabled = component.disabled ? " disabled" : "";
+            const placeholder = component.props.placeholder
+                ? " placeholder=\"" + escapeAttribute(String(component.props.placeholder)) + "\""
+                : "";
             const attrs = shoelaceAttrs(mapComponentToShoelace("input", component.props || {}).attributes);
             return wrapRenderedComponentHtml(component, layoutId, "<sl-input" + attrs + " label=\"" + escapeAttribute(label)
-                + "\" type=\"" + escapeAttribute(inputType) + "\" name=\"" + escapeAttribute(name) + "\" value=\"" + escapeAttribute(value) + "\"" + disabled + "></sl-input>");
+                + "\" type=\"" + escapeAttribute(inputType) + "\" name=\"" + escapeAttribute(name) + "\" value=\"" + escapeAttribute(value) + "\"" + placeholder + disabled + "></sl-input>");
         }
 
         if (component.kind === "container") {
