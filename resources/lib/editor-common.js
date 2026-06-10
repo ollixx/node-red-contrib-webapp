@@ -2136,17 +2136,459 @@
     // serialises as { kind:"literal", value:<typed value> }.
     var VALUE_BINDING_LITERAL_TYPES = ["str", "num", "bool", "json", "date"];
 
+    // ─── P116 (ADR 0010): the `reactive` typedInput + expression-editor dialog ──
+    //
+    // Type #4 of the canonical set (after Route-Param, before msg). It carries the
+    // expression source in the binding `value` (handled by apply/readValueBinding
+    // above). The expand button opens the expression editor dialog with code
+    // completion (Monaco, with a clean ace-fallback), live syntax validation and
+    // a doc panel; the typedInput `validate` runs syntax + reference checks so a
+    // broken/unknown-store expression marks the node invalid and blocks deploy.
+    //
+    // The contract the dialog teaches and validates is the renderer's (P115):
+    // docs/nodes/concepts/reactive-expressions.md — a single synchronous ES2020
+    // expression over the three globals `routeParam`, `store(name)`, `query(path)`.
+
+    // The three globals offered as completion + shown in the doc panel. The
+    // example snippets are quoted verbatim from reactive-expressions.md (the
+    // single source of truth); if these diverge, fix the doc page, not here.
+    var REACTIVE_GLOBALS = [
+        {
+            name: "routeParam",
+            insert: "routeParam",
+            detail: "Objekt — Parameter der aktiven Route",
+            doc: "Aufgelöste Parameter der aktuell aktiven Route. Fehlender Parameter → undefined.",
+            example: "`Kunde ${routeParam.id}`"
+        },
+        {
+            name: "store",
+            insert: "store(\"\")",
+            detail: "Funktion — Live-Wert eines ui-store per Name",
+            doc: "store(name) — Live-Wert des ui-store der Parent-App, dessen Name (getrimmt, exakt) übergeben wird.",
+            example: "store(\"customer\").name"
+        },
+        {
+            name: "query",
+            insert: "query(\"\")",
+            detail: "Funktion — Wert aus den Query-Ergebnissen",
+            doc: "query(pfad) — Wert am Pfad innerhalb der Query-Ergebnisse (gleiches Lookup wie das query-Binding).",
+            example: "query(\"customers.total\")"
+        }
+    ];
+
+    // GitHub doc link, same pattern as the inline node helps.
+    var REACTIVE_DOC_URL =
+        "https://github.com/ollix/node-red-contrib-webapp/blob/master/docs/nodes/concepts/reactive-expressions.md";
+
+    // ── Stage-1: syntax validation (pure) ────────────────────────────────────
+    // The renderer compiles the source as `return ( <src> );` in strict mode, so
+    // the editor parses it the same way. Empty source is invalid (a reactive
+    // binding must produce a value). Pure — unit-testable without a DOM.
+    function validateReactiveSyntax(src) {
+        var source = src == null ? "" : String(src);
+        if (source.trim().length === 0) {
+            return { ok: false, error: "Ausdruck darf nicht leer sein." };
+        }
+        try {
+            // eslint-disable-next-line no-new-func
+            new Function("\"use strict\"; return ( " + source + " );");
+            return { ok: true };
+        }
+        catch (e) {
+            return { ok: false, error: (e && e.message) ? String(e.message) : "Ungültiger Ausdruck." };
+        }
+    }
+
+    // ── Stage-2: reference validation — store("…") literal scan (pure) ────────
+    // Extract the string literals passed to store(...) — single- or double-quoted,
+    // optionally whitespace-padded — so they can be checked against the app's
+    // store names. Dynamic names (store(x), template literals) are not statically
+    // resolvable and are deliberately skipped. Pure — unit-testable without a DOM.
+    function scanReactiveStoreLiterals(src) {
+        var source = src == null ? "" : String(src);
+        var out = [];
+        // store ( "name" )  or  store ( 'name' )
+        var re = /store\s*\(\s*(["'])((?:\\.|(?!\1).)*)\1\s*\)/g;
+        var m;
+        while ((m = re.exec(source)) !== null) {
+            // Unescape \\ and \" / \' so the literal matches the trimmed store name.
+            var raw = m[2].replace(/\\(["'\\])/g, "$1");
+            out.push(raw);
+        }
+        return out;
+    }
+
+    // Validate every static store("…") literal in the source against the app's
+    // store names. Unknown name → error naming it; ambiguous name (two stores of
+    // the same name in the app) → error. `storeNames` is the trimmed-name list of
+    // the parent app's stores. Pure — unit-testable without a DOM.
+    function validateReactiveReferences(src, storeNames) {
+        var names = Array.isArray(storeNames) ? storeNames.map(function (n) { return String(n == null ? "" : n).trim(); }) : [];
+        var literals = scanReactiveStoreLiterals(src);
+        for (var i = 0; i < literals.length; i++) {
+            var lit = literals[i].trim();
+            if (lit.length === 0) {
+                continue;
+            }
+            var count = 0;
+            for (var j = 0; j < names.length; j++) {
+                if (names[j] === lit) {
+                    count++;
+                }
+            }
+            if (count === 0) {
+                return { ok: false, error: "Store „" + lit + "“ existiert nicht in dieser App." };
+            }
+            if (count > 1) {
+                return { ok: false, error: "Store „" + lit + "“ ist in dieser App mehrdeutig (mehrere gleichnamige Stores)." };
+            }
+        }
+        return { ok: true };
+    }
+
+    // Resolve the enclosing route record of a mount value by walking the mount
+    // chain upward (container → … → route). Returns the route reference object or
+    // null when the node is not mounted under a route (e.g. an app slot). Reuses
+    // the same chain-walking shape as resolveAppFromMount. Pure.
+    function resolveRouteFromMount(mountValue, references) {
+        if (!mountValue || !references) {
+            return null;
+        }
+        var seen = {};
+        var current = String(mountValue);
+        while (current && !seen[current]) {
+            seen[current] = true;
+
+            if (current.indexOf("route:") === 0) {
+                var rSep = current.lastIndexOf("/");
+                var routePath = rSep >= 0 ? current.slice("route:".length, rSep) : current.slice("route:".length);
+                return references.routes.find(function (r) { return r.path === routePath; }) || null;
+            }
+
+            if (current.indexOf("container:") === 0) {
+                var cSep = current.lastIndexOf("/");
+                var containerId = cSep >= 0 ? current.slice("container:".length, cSep) : current.slice("container:".length);
+                var container = references.containers.find(function (c) { return c.id === containerId; });
+                if (container && container.mount) {
+                    current = container.mount;
+                    continue;
+                }
+                return null;
+            }
+
+            // dialog: or app-slot (".") → no enclosing route.
+            return null;
+        }
+        return null;
+    }
+
+    // The completion context for a node being edited: the route-param names of the
+    // enclosing route (from the live mount value), the store names of the parent
+    // app, and whether the node sits under a route at all. Reads the live panel
+    // (#node-input-mount) so it follows the currently-open editor.
+    function reactiveCompletionContext() {
+        var references = collectReferenceNodes();
+        var mountEl = (typeof $ === "function") ? $("#node-input-mount") : null;
+        var mountVal = mountEl && mountEl.length ? String(mountEl.val() || "") : "";
+        var route = resolveRouteFromMount(mountVal, references);
+        var routeParams = route ? parseRoutePlaceholders(route.path || "") : [];
+
+        var appId = resolveEditedNodeApp({}, references);
+        var storeNames = references.stores
+            .filter(function (s) { return !appId || s.parent === appId; })
+            .map(function (s) { return String(s.name || "").trim(); })
+            .filter(function (n) { return n.length > 0; });
+
+        return { routeParams: routeParams, storeNames: storeNames, underRoute: Boolean(route) };
+    }
+
     function reactiveTypedInputType() {
-        // P116 delivers the full editor experience (expression dialog, completion,
-        // validation). Here we only reserve the slot + carry the source string in
-        // `value`. A bare typedInput type renders a text field — enough to author
-        // and round-trip a reactive expression until P116 enriches it.
         return {
             value: "reactive",
             label: "Reactive",
             icon: "fa fa-bolt",
-            hasValue: true
+            hasValue: true,
+            // Syntax + reference validation also runs here (not only in the
+            // dialog) so a broken/unknown-store expression marks the node invalid
+            // and blocks deploy even when the dialog was never opened.
+            validate: function (value) {
+                var syntax = validateReactiveSyntax(value);
+                if (!syntax.ok) {
+                    return false;
+                }
+                var ctx = reactiveCompletionContext();
+                return validateReactiveReferences(value, ctx.storeNames).ok;
+            },
+            expand: function () {
+                var that = this;
+                openReactiveExpressionDialog({
+                    value: String(that.value() || ""),
+                    onSelect: function (value) {
+                        that.value(value);
+                    }
+                });
+            }
         };
+    }
+
+    // ── P116: the expression-editor dialog ───────────────────────────────────
+    // Built from Node-RED admin-UI DOM (jQuery, no Shoelace) — same chrome family
+    // as the P68 node picker / P69 icon picker. Uses RED.editor.createEditor (the
+    // bundled code editor: Monaco on NR 2.x+, ace-compatible API). Completion is
+    // registered only when Monaco is feature-detected; the ace-fallback path opens
+    // and validates with NO console error (acceptance criterion).
+    function openReactiveExpressionDialog(options) {
+        ensurePickerStylesheet();
+        var opts = options || {};
+        var ctx = reactiveCompletionContext();
+
+        var $overlay = $("<div>").addClass("webapp-reactive-dialog-overlay webapp-node-picker-overlay");
+        var $dialog = $("<div>")
+            .addClass("webapp-reactive-dialog webapp-node-picker-dialog")
+            .css({ width: "720px", "max-width": "94vw", "max-height": "86vh", display: "flex", "flex-direction": "column" })
+            .appendTo($overlay);
+
+        $("<div>").addClass("webapp-node-picker-header").text(opts.title || "Reactive Expression").appendTo($dialog);
+
+        var $body = $("<div>")
+            .css({ display: "flex", flex: "1 1 auto", "min-height": "0", gap: "10px", padding: "8px" })
+            .appendTo($dialog);
+
+        // Left: editor + status line.
+        var $left = $("<div>").css({ display: "flex", "flex-direction": "column", flex: "1 1 60%", "min-width": "0" }).appendTo($body);
+        var editorHostId = "webapp-reactive-editor-" + Date.now();
+        var $editorHost = $("<div>")
+            .attr("id", editorHostId)
+            .addClass("webapp-reactive-editor")
+            .css({ flex: "1 1 auto", "min-height": "180px", border: "1px solid var(--red-ui-form-input-border-color, #ccc)", "border-radius": "3px" })
+            .appendTo($left);
+        var $status = $("<div>")
+            .addClass("webapp-reactive-status")
+            .css({ "min-height": "20px", "margin-top": "6px", "font-size": "0.85em", "white-space": "pre-wrap" })
+            .appendTo($left);
+
+        // Right: doc panel.
+        var $doc = $("<div>")
+            .addClass("webapp-reactive-doc")
+            .css({ flex: "1 1 40%", "min-width": "0", "overflow-y": "auto", "font-size": "0.85em", "line-height": "1.45", padding: "2px 4px" })
+            .appendTo($body);
+        buildReactiveDocPanel($doc, ctx);
+
+        var $footer = $("<div>").addClass("webapp-node-picker-footer").appendTo($dialog);
+        var $okBtn = $("<button type=\"button\" class=\"red-ui-button\">").text("Übernehmen").css({ "margin-right": "6px" });
+        var $cancelBtn = $("<button type=\"button\" class=\"red-ui-button\">").text("Abbrechen");
+        $footer.append($okBtn).append($cancelBtn);
+
+        var editor = null;
+
+        function readSource() {
+            if (editor && typeof editor.getValue === "function") {
+                return String(editor.getValue() || "");
+            }
+            return "";
+        }
+
+        function setStatus(kind, message) {
+            // kind: "ok" | "error"
+            $status.attr("data-state", kind);
+            if (kind === "error") {
+                $status.css({ color: "var(--red-ui-text-color-error, #d33)" }).text(message || "");
+            }
+            else {
+                $status.css({ color: "var(--red-ui-secondary-text-color, #888)" }).text(message || "Gültiger Ausdruck.");
+            }
+        }
+
+        // Live stage-1 syntax validation; gate the OK button.
+        function revalidate() {
+            var syntax = validateReactiveSyntax(readSource());
+            if (!syntax.ok) {
+                setStatus("error", syntax.error);
+                $okBtn.prop("disabled", true).addClass("disabled");
+                return false;
+            }
+            setStatus("ok", "Gültiger Ausdruck.");
+            $okBtn.prop("disabled", false).removeClass("disabled");
+            return true;
+        }
+
+        function close() {
+            try {
+                if (editor && typeof editor.destroy === "function") {
+                    editor.destroy();
+                }
+            }
+            catch (_e) { /* ignore */ }
+            $overlay.remove();
+            $(document).off("keydown.webappReactiveDialog");
+        }
+
+        function confirm() {
+            var src = readSource();
+            // Stage-1 (syntax) — must hold to apply.
+            var syntax = validateReactiveSyntax(src);
+            if (!syntax.ok) {
+                setStatus("error", syntax.error);
+                return;
+            }
+            // Stage-2 (references) — store("…") literals against the app stores.
+            var refs = validateReactiveReferences(src, ctx.storeNames);
+            if (!refs.ok) {
+                setStatus("error", refs.error);
+                return;
+            }
+            close();
+            if (typeof opts.onSelect === "function") {
+                opts.onSelect(src);
+            }
+        }
+
+        $okBtn.on("click", function (e) { e.preventDefault(); confirm(); });
+        $cancelBtn.on("click", function (e) { e.preventDefault(); close(); });
+        $overlay.on("click", function (e) { if (e.target === $overlay[0]) { close(); } });
+        $(document).on("keydown.webappReactiveDialog", function (e) { if (e.key === "Escape") { close(); } });
+
+        $("body").append($overlay);
+
+        // Create the bundled editor. RED.editor.createEditor returns an
+        // ace-compatible session object on both the Monaco and ace builds.
+        var initial = opts.value || "";
+        var created = false;
+        if (typeof RED !== "undefined" && RED.editor && typeof RED.editor.createEditor === "function") {
+            try {
+                editor = RED.editor.createEditor({
+                    id: editorHostId,
+                    mode: "ace/mode/javascript",
+                    value: initial,
+                    options: { lineNumbers: false }
+                });
+                created = Boolean(editor);
+            }
+            catch (_e) {
+                created = false;
+            }
+        }
+
+        if (!created) {
+            // Fallback when no bundled editor is available: a plain textarea. The
+            // dialog still opens and validates — only completion is missing. No
+            // console error (the createEditor call is guarded above).
+            var $ta = $("<textarea>")
+                .addClass("webapp-reactive-editor-fallback")
+                .css({ width: "100%", height: "100%", "min-height": "180px", "box-sizing": "border-box", "font-family": "monospace", resize: "vertical" })
+                .val(initial)
+                .appendTo($editorHost.empty());
+            editor = {
+                getValue: function () { return String($ta.val() || ""); },
+                setValue: function (v) { $ta.val(v == null ? "" : String(v)); },
+                on: function (evt, cb) { if (evt === "change") { $ta.on("input", cb); } },
+                destroy: function () { $ta.remove(); }
+            };
+        }
+
+        // Register the completion provider only when Monaco is feature-detected.
+        // On the ace build (or any non-Monaco editor) we silently skip it — the
+        // ace-fallback path is an acceptance criterion, not an error case.
+        registerReactiveCompletionProvider(ctx);
+
+        if (editor && typeof editor.on === "function") {
+            editor.on("change", revalidate);
+        }
+        revalidate();
+
+        return { close: close, revalidate: revalidate };
+    }
+
+    // Feature-detect Monaco and register a one-shot JavaScript completion provider
+    // offering the three globals plus the live route-param / store names. No-op
+    // (and no error) when Monaco is absent (ace build). Idempotent within a page.
+    var reactiveCompletionRegistered = false;
+    function registerReactiveCompletionProvider(ctx) {
+        var monaco = (typeof window !== "undefined") ? window.monaco : undefined;
+        if (!monaco || !monaco.languages || typeof monaco.languages.registerCompletionItemProvider !== "function") {
+            // Ace build / no Monaco → completion not available. Clean skip.
+            return false;
+        }
+        // The provider reads the latest context via a module-level holder so a new
+        // dialog refreshes the suggestions without stacking providers.
+        reactiveCompletionContextHolder = ctx;
+        if (reactiveCompletionRegistered) {
+            return true;
+        }
+        reactiveCompletionRegistered = true;
+        try {
+            monaco.languages.registerCompletionItemProvider("javascript", {
+                triggerCharacters: [".", "\"", "("],
+                provideCompletionItems: function (model, position) {
+                    var live = reactiveCompletionContextHolder || { routeParams: [], storeNames: [], underRoute: false };
+                    var textBefore = model.getValueInRange({
+                        startLineNumber: position.lineNumber,
+                        startColumn: 1,
+                        endLineNumber: position.lineNumber,
+                        endColumn: position.column
+                    });
+                    var Kind = monaco.languages.CompletionItemKind;
+                    var suggestions = [];
+
+                    if (/routeParam\.$/.test(textBefore)) {
+                        live.routeParams.forEach(function (name) {
+                            suggestions.push({ label: name, kind: Kind.Property, insertText: name, detail: "Route-Parameter" });
+                        });
+                        return { suggestions: suggestions };
+                    }
+                    if (/store\(\s*["']$/.test(textBefore)) {
+                        live.storeNames.forEach(function (name) {
+                            suggestions.push({ label: name, kind: Kind.Value, insertText: name, detail: "Store-Name" });
+                        });
+                        return { suggestions: suggestions };
+                    }
+
+                    REACTIVE_GLOBALS.forEach(function (g) {
+                        suggestions.push({ label: g.name, kind: Kind.Function, insertText: g.insert, detail: g.detail });
+                    });
+                    return { suggestions: suggestions };
+                }
+            });
+        }
+        catch (_e) {
+            // Registration failed → behave like ace-fallback. No throw.
+            return false;
+        }
+        return true;
+    }
+    var reactiveCompletionContextHolder = null;
+
+    // Build the doc panel: the three globals (table form) with one example each,
+    // the two ground rules, an out-of-route note when relevant, and a link to the
+    // doc page. The examples are quoted from reactive-expressions.md verbatim.
+    function buildReactiveDocPanel($doc, ctx) {
+        $doc.empty();
+        $("<div>").css({ "font-weight": "bold", "margin-bottom": "4px" }).text("Reactive-Expression").appendTo($doc);
+        $("<div>").css({ "margin-bottom": "8px" }).text("Eine einzelne JavaScript-Expression über den Client-Zustand. Nur lesen, kein Statement.").appendTo($doc);
+
+        var $table = $("<table>").css({ width: "100%", "border-collapse": "collapse", "margin-bottom": "8px" }).appendTo($doc);
+        REACTIVE_GLOBALS.forEach(function (g) {
+            var $tr = $("<tr>").appendTo($table);
+            $("<td>").css({ "vertical-align": "top", padding: "3px 6px 3px 0", "white-space": "nowrap" })
+                .append($("<code>").text(g.name)).appendTo($tr);
+            var $cell = $("<td>").css({ "vertical-align": "top", padding: "3px 0" }).appendTo($tr);
+            $("<div>").text(g.doc).appendTo($cell);
+            $("<code>").css({ display: "block", "margin-top": "2px", color: "var(--red-ui-secondary-text-color, #888)" }).text(g.example).appendTo($cell);
+        });
+
+        var $rules = $("<ul>").css({ margin: "0 0 8px 0", "padding-left": "18px" }).appendTo($doc);
+        $("<li>").text("Genau eine Expression — kein Statement, keine Zuweisung.").appendTo($rules);
+        $("<li>").text("Nur lesen — Zustand schreiben über Stores.").appendTo($rules);
+
+        if (ctx && !ctx.underRoute) {
+            $("<div>")
+                .css({ color: "var(--red-ui-text-color-warning, #a60)", "margin-bottom": "8px" })
+                .text("Hinweis: Dieser Knoten ist nicht unter einer Route gemountet — routeParam kann zur Laufzeit leer sein.")
+                .appendTo($doc);
+        }
+
+        $("<a>").attr("href", REACTIVE_DOC_URL).attr("target", "_blank").attr("rel", "noopener")
+            .text("Vollständige Doku öffnen ↗").appendTo($doc);
     }
 
     function valueBindingTypes(options) {
@@ -3377,6 +3819,12 @@
         required,
         resolveEditedNodeApp,
         resolveAppFromMount,
-        storeTypedInputType
+        resolveRouteFromMount,
+        storeTypedInputType,
+        validateReactiveSyntax,
+        scanReactiveStoreLiterals,
+        validateReactiveReferences,
+        reactiveCompletionContext,
+        openReactiveExpressionDialog
     };
 })(window);
