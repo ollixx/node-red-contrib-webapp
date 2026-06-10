@@ -3,7 +3,7 @@ id: P112
 title: "ui-route/ui-app: onEnter/onLeave bei JEDER Ankunft (Deep-Link, Refresh, Navigate) — Connect-basiert"
 epic: nodes/ui-route
 node: ui-route
-status: pending
+status: in_progress
 dependencies: [P38, P66, P86]
 verify: browser
 spec: docs/nodes/structure/ui-route.md
