@@ -201,6 +201,22 @@ export class NodeEditorPage {
     }
 
     /**
+     * The candidate VALUES a picker preset offers for the live editor graph
+     * (P114 / ADR 0009). Reference fields no longer carry their candidates as
+     * `<option>`s — the picker dialog renders them from
+     * `nodePickerOptionsForPreset(preset)`. Specs that used to read a reference
+     * `<select>`'s options assert against this instead.
+     */
+    async pickerPresetValues(preset: string): Promise<string[]> {
+        return this.page.evaluate((p) => {
+            const C = (window as unknown as {
+                WebappEditorCommon: { nodePickerOptionsForPreset: (preset: string) => Array<{ value: string }> };
+            }).WebappEditorCommon;
+            return C.nodePickerOptionsForPreset(p).map((o) => o.value);
+        }, preset);
+    }
+
+    /**
      * Return "valid" | "invalid" for the node currently being edited, based on
      * Node-RED's own validity flag (the same signal that drives the red node
      * badge). Saves the open panel first so pending field edits are validated.

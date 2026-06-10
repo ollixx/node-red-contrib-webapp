@@ -45,7 +45,7 @@ test.describe("editor panels — behavior & state nodes (P47)", () => {
         expect(actionTypes).not.toContain("remove");
 
         // parent SelectBox lists the app.
-        expect(await editor.selectOptionValues("parent")).toContain("actApp");
+        expect(await editor.pickerPresetValues("apps")).toContain("actApp");
 
         // P66 (ADR 0007): `to` is now a typedInput (str / msg / flow / global /
         // jsonata) — driven via the widget API, not a plain visible <input>. The
@@ -87,7 +87,7 @@ test.describe("editor panels — behavior & state nodes (P47)", () => {
         expect(await editor.readField("initialValue")).toBe("[]");
 
         // parent SelectBox lists the app.
-        expect(await editor.selectOptionValues("parent")).toContain("storeApp");
+        expect(await editor.pickerPresetValues("apps")).toContain("storeApp");
     });
 
     test("ui-query — fields present, required queryPath drives validity", async ({ page, request }) => {
@@ -102,7 +102,7 @@ test.describe("editor panels — behavior & state nodes (P47)", () => {
         await editor.openNode("qEd");
 
         await editor.expectFields(["name", "parent"]);
-        expect(await editor.selectOptionValues("parent")).toContain("qApp");
+        expect(await editor.pickerPresetValues("apps")).toContain("qApp");
     });
 
     test("ui-query — P78: previewData field absent from editor (removed in P32); queryPath round-trips", async ({ page, request }) => {
@@ -145,7 +145,7 @@ test.describe("editor panels — behavior & state nodes (P47)", () => {
         await editor.openNode("navEd");
 
         await editor.expectFields(["name", "parent"]);
-        expect(await editor.selectOptionValues("parent")).toContain("navApp");
+        expect(await editor.pickerPresetValues("apps")).toContain("navApp");
         expect(await editor.inputPortCount("navEd")).toBe(1);
     });
 });
