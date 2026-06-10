@@ -174,6 +174,45 @@ test.describe("ui-text (P43)", () => {
         await expect(text).toHaveText("Pushed value");
     });
 
+    // P113: JSONata binding — message-driven. The expression is evaluated against
+    // the incoming msg; renders empty until the first message, then shows the
+    // result. `payload.user.name` against { user: { name: "Ada" } } → "Ada".
+    test("jsonata binding (payload.user.name): empty until a message, then the evaluated value", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "textApp11", root: "textApp11" })
+            .node("ui-text", { id: "textNode11", value: { kind: "jsonata", path: "payload.user.name" } })
+            .withInjectNode("inj11", "textNode11", { user: { name: "Ada" } })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "textApp11");
+        await webapp.navigate("/");
+
+        // Before any message: the text element renders but is empty (NOT "?").
+        const text = webapp.root().locator(".webapp-text");
+        await expect(text).toHaveText("");
+
+        // Push a message → the JSONata expression evaluates against msg and the
+        // result is held server-side and shared via SSE.
+        await injectMessage(request, "inj11");
+        await expect(text).toHaveText("Ada");
+    });
+
+    // P113: a `number` literal sub-type renders its String() form ("42").
+    test("number literal binding renders its stringified value", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "textApp12", root: "textApp12" })
+            .node("ui-text", { id: "textNode12", value: { kind: "literal", value: 42 } })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "textApp12");
+        await webapp.navigate("/");
+        await expect(webapp.root().locator(".webapp-text")).toHaveText("42");
+    });
+
     // P111: the msg binding respects its PATH — a nested property (payload.label)
     // is read from the incoming message, not just the whole payload.
     test("msg binding respects a nested path (payload.label)", async ({ page, request }) => {

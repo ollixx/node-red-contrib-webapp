@@ -3580,6 +3580,70 @@ function payloadToImageSrc(payload, msg) {
     return String(payload);
 }
 
+// P113: evaluate a JSONata-bound view field against the incoming msg, write the
+// result as a literal into the live definition, push a snapshot, then forward.
+//
+// JSONata is message-driven: the expression (captured once on registration as
+// `jsonataSource`) is prepared and evaluated against `msg`. On Node-RED v3+ the
+// runtime's evaluateJSONataExpression is ASYNC-ONLY — a synchronous call returns
+// undefined — so the async callback form is mandatory. The patch + snapshot push
+// + send/done all happen inside the callback; the caller returns immediately
+// after invoking this so the synchronous tail does not double-fire.
+function applyJsonataBinding(node, registration, field, msg, send, done) {
+    const RED = runtimeState.RED;
+    const source = registration.jsonataSource;
+
+    const finish = (resolved) => {
+        if (resolved !== undefined && resolved !== null) {
+            const newValue = VIEW_NODE_BINDING_FIELDS.has(field)
+                ? literalBinding(resolved)
+                : resolved;
+            registration.definition = Object.assign({}, registration.definition, { [field]: newValue });
+            node.webappDefinition = registration.definition;
+
+            const appId = findAppIdForNode(node);
+            if (RED && appId) {
+                pushSnapshotToClients(appId, undefined, readDeployDefinitions(RED));
+            }
+        }
+        send(msg);
+        if (done) { done(); }
+    };
+
+    if (!RED || !RED.util || typeof RED.util.prepareJSONataExpression !== "function"
+        || typeof RED.util.evaluateJSONataExpression !== "function") {
+        // No JSONata engine available — forward unchanged (never crash the flow).
+        finish(undefined);
+        return;
+    }
+
+    let expr;
+    try {
+        expr = RED.util.prepareJSONataExpression(source, node);
+    }
+    catch (err) {
+        if (done) { done(err); } else { node.error(err, msg); }
+        return;
+    }
+
+    // Async callback form (Node-RED v3+: evaluateJSONataExpression is async-only).
+    try {
+        RED.util.evaluateJSONataExpression(expr, msg, (err, result) => {
+            if (err) {
+                // A bad expression must not crash the flow; report once and forward.
+                node.error(err, msg);
+                finish(undefined);
+                return;
+            }
+            finish(result);
+        });
+    }
+    catch (err) {
+        node.error(err, msg);
+        finish(undefined);
+    }
+}
+
 // P39: handle incoming msg.payload / msg.ui.patch on view nodes.
 // Patches the in-memory definition and pushes a fresh snapshot to all
 // connected clients of the parent app.
@@ -3626,7 +3690,31 @@ function viewNodePatchInputHandler(node, msg, send, done) {
                     : null;
             }
 
+            // P113: capture the field's JSONata expression source ONCE (same
+            // capture-up-front rationale as msgSourcePath: the first update
+            // overwrites the live binding with a literal). `null` means the field
+            // is NOT jsonata-bound. JSONata is message-driven — the prepared
+            // expression is evaluated against the incoming `msg`.
+            if (registration.jsonataSource === undefined) {
+                const savedBinding = registration.definition[field];
+                registration.jsonataSource = (savedBinding && typeof savedBinding === "object"
+                    && savedBinding.kind === "jsonata" && typeof savedBinding.path === "string" && savedBinding.path)
+                    ? savedBinding.path
+                    : null;
+            }
+
             const RED = runtimeState.RED;
+
+            // P113: jsonata-bound field. Evaluate the prepared expression against
+            // the incoming msg, then patch + push from the async callback. On the
+            // E2E Node-RED (v3+) evaluateJSONataExpression is async-only — calling
+            // it synchronously returns undefined — so the callback form is used.
+            // We return early so the synchronous tail below does not double-fire
+            // send()/done().
+            if (registration.jsonataSource) {
+                return applyJsonataBinding(node, registration, field, msg, send, done);
+            }
+
             let rawValue;
             let hasValue = false;
             if (registration.msgSourcePath) {

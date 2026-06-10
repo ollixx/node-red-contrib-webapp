@@ -129,25 +129,39 @@ Alle gespeicherten Werte sind **IDs** (bzw. Mount-Strings `<type>:<id>/<slot>`).
 > fällt auf den **Wert/Anzeige-Vollsatz** zurück (sicherer, maximaler Default).
 > Details: [ADR 0012](../../adr/0012-binding-ubiquity-every-value-field-offers-bindings.md).
 
-Bindbare Felder (z. B. `ui-text` `value`, `ui-alert` `message`/`title`) nutzen
-ein Node-RED-**typedInput**, dessen Typ-Auswahl die Binding-Art bestimmt. Der
-gemeinsame Typsatz kommt aus `bindingTypedInputTypes({ literalLabel })`:
+Bindbare Display-Wert-Felder (z. B. `ui-text` `value`, `ui-alert`
+`message`/`title`, `ui-image`/`ui-avatar` `src`) nutzen ein
+Node-RED-**typedInput**, dessen Typ-Auswahl die Binding-Art bestimmt. Der
+gemeinsame Typsatz **und** die Serialisierung kommen seit **P113 (ADR 0012 /
+ADR 0010)** aus genau **einer** Quelle — den Helfern `valueBindingTypes()`,
+`readValueBinding()` und `applyValueBinding()` (`resources/lib/editor-common.js`).
+Ein neuer Typ oder eine Reihenfolge-Änderung ist damit genau **eine** Änderung an
+einer Stelle.
 
-| typedInput-Typ | Label | Binding-`kind` | Wert |
+Der kanonische **Wert/Anzeige-Vollsatz** (14 Typen, feste Reihenfolge,
+Default-Typ `string`):
+
+| # | typedInput-Typ | Binding-`kind` | Wert |
 |---|---|---|---|
-| literal | konfigurierbar (z. B. „Text", „Message") | `literal` | der Wert selbst |
-| state | „State" | `state` | State-Pfad |
-| query | „Query" | `query` | Query-Pfad (mit Pfad-Validierung) |
-| routeParam | „Route Param" | `routeParam` | Name des Routen-/Seiten-Parameters der aktuellen Route |
-| **store** | „Store" | `store` | **referenzierter `ui-store` (per Picker gewählt)** |
-| **reactive** | „Reactive" | `reactive` | **JavaScript-Expression gegen die Client-Quellen (`routeParam`, `store(…)`, `query(…)`); Expand öffnet den Expression-Editor mit Completion + Validierung — [reactive-expressions.md](reactive-expressions.md), ADR 0010** |
-| msg / flow / global / jsonata / env | (Node-RED-Standard) | `msg`/`flow`/`global`/`jsonata`/`env` | je nach Quelle |
+| 1 | store | `store` | referenzierter `ui-store` (per Picker gewählt) |
+| 2 | query | `query` | Query-Pfad (mit Pfad-Validierung) |
+| 3 | routeParam | `routeParam` | Name des Routen-Parameters der aktuellen Route |
+| 4 | reactive | `reactive` | JavaScript-Expression gegen die Client-Quellen (`routeParam`, `store(…)`, `query(…)`) — [reactive-expressions.md](reactive-expressions.md), ADR 0010; Editor-Dialog liefert P116 |
+| 5 | msg | `msg` | Message-Property (Pfad, Standard-Node-RED) |
+| 6 | jsonata | `jsonata` | JSONata-Ausdruck **gegen die eingehende Message** (message-getrieben) |
+| 7 | str | `literal` (string) | der Wert selbst |
+| 8 | num | `literal` (number) | typisierte Zahl |
+| 9 | bool | `literal` (boolean) | typisierter Boolean |
+| 10 | json | `literal` (JSON-Wert) | geparstes JSON |
+| 11 | date | `literal` (Epoch-ms) | Zeitstempel (Epoch-ms) |
+| 12–14 | flow / global / env | `flow`/`global`/`env` | serverseitig einmalig pro Render |
 
-> **Hinweis (P113/ADR 0010):** Dieser Typsatz wird durch den **kanonischen
-> Value-Binding-Typ-Satz** abgelöst (14 Typen in fester Reihenfolge: Store,
-> Query, Route-Param, **Reactive**, msg, JSONata, string, number, boolean,
-> json, timestamp, Flow, Global, Env — ohne `state`). Details: P113 +
-> [reactive-expressions.md](reactive-expressions.md).
+`state` ist **nicht** mehr im Editor-Angebot (bleibt schema-/renderer-seitig für
+Altbestände bestehen). Reduzierte Kategorien:
+`valueBindingTypes({ category: "boolean" })` (für `disabled`: ohne
+string/number/json/timestamp) und `{ category: "url" }` (für `href`/`to`: nur
+str + msg/JSONata + Store/Reactive + Flow/Global/Env). Ein Feld ohne deklarierte
+Kategorie → Wert/Anzeige-Vollsatz.
 
 > „Page-Param" entspricht dem Typ **„Route Param"** (`routeParam`): er liest einen
 > Parameter aus dem Pfad der aktuell angezeigten Route.
@@ -157,10 +171,13 @@ Der **Store-Typ** (`storeTypedInputType`) ist eine Sonderform: sein Expand-Butto
 Gespeichert wird die Store-ID; zur Laufzeit löst der Renderer sie über den
 `statePath` des Stores auf (Details und Begründung in [stores.md](stores.md)).
 
-**Serialisierung.** `bindingValueForEditor(binding)` füllt das typedInput aus
-einem `{ kind, path/value }`-Binding-Objekt; beim Speichern baut das Panel das
-Objekt wieder zusammen. Wichtig: Das typedInput-Element und das Feld, das das
-**Binding-Objekt** persistiert, sind getrennt (Muster von `ui-text` — sonst
+**Serialisierung.** `readValueBinding(binding, fallback)` füllt das typedInput
+aus einem gespeicherten Binding-Objekt (Literal → primitive Sub-Type
+`str`/`num`/`bool`/`json`/`date`; `reactive` → aus `value`; alle übrigen aus
+`path`); `applyValueBinding(type, value)` baut beim Speichern das Binding-Objekt
+wieder zusammen (`{ kind:"literal", value:<typisiert> }` / `{ kind:"reactive",
+value }` / `{ kind, path }`). Wichtig: Das typedInput-Element und das Feld, das
+das **Binding-Objekt** persistiert, sind getrennt (Muster von `ui-text` — sonst
 überschreibt die Node-RED-Defaults-Auto-Übernahme das Objekt mit dem rohen
 typedInput-Wert).
 

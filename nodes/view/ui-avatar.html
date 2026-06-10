@@ -3,20 +3,21 @@
     (function () {
         const common = window.WebappEditorCommon;
 
-        // P94: `image` is a full typedInput binding (mirrors ui-image src).
-        // Beyond the standard binding kinds it offers the `asset` type (managed media-store)
-        // and `store` (image path read from a ui-store). On edit-prepare the persisted
-        // `src` binding object is restored; back-compat: old `srcPath` (plain state path)
-        // is migrated to a state binding on first open.
+        // P113 (ADR 0012 / ADR 0010): `image` and `initials` are display-value
+        // bindings driven by the ONE canonical value-binding type set (Store, Query,
+        // Route-Param, Reactive, msg, JSONata, str, num, bool, json, date, Flow,
+        // Global, Env). `image` additionally offers the `asset` type (managed
+        // media-store), serialized as a literal `asset:<id>`. Back-compat: an old
+        // `srcPath` (plain state path) is migrated to a state binding on first open.
         function applyImageTypedInput(selector, binding) {
             const input = $(selector);
-            const types = common.bindingTypedInputTypes({ literalLabel: "URL", includeAsset: true });
-            input.typedInput({ default: "literal", types: types });
+            const types = common.valueBindingTypes({ includeAsset: true });
+            input.typedInput({ default: "str", types: types });
             if (binding && binding.kind === "literal" && typeof binding.value === "string" && binding.value.indexOf("asset:") === 0) {
                 input.typedInput("type", "asset");
                 input.typedInput("value", binding.value.slice("asset:".length));
             } else {
-                const editor = common.bindingValueForEditor(binding, "");
+                const editor = common.readValueBinding(binding, "");
                 input.typedInput("type", editor.type);
                 input.typedInput("value", editor.value);
             }
@@ -29,30 +30,20 @@
             if (type === "asset") {
                 return { kind: "literal", value: value ? "asset:" + value : "" };
             }
-            if (type === "literal") {
-                return { kind: "literal", value: value };
-            }
-            return { kind: type, path: value };
+            return common.applyValueBinding(type, value);
         }
 
-        // P94: `initials` is a full typedInput binding (all meaningful kinds).
         function applyInitialsTypedInput(selector, binding) {
             const input = $(selector);
-            const types = common.bindingTypedInputTypes({ literalLabel: "Text" });
-            input.typedInput({ default: "literal", types: types });
-            const editor = common.bindingValueForEditor(binding, "");
+            const editor = common.readValueBinding(binding, "");
+            input.typedInput({ default: "str", types: common.valueBindingTypes() });
             input.typedInput("type", editor.type);
             input.typedInput("value", editor.value);
         }
 
         function readInitialsBinding(selector) {
             const input = $(selector);
-            const type = input.typedInput("type");
-            const value = input.typedInput("value");
-            if (type === "literal") {
-                return { kind: "literal", value: value };
-            }
-            return { kind: type, path: value };
+            return common.applyValueBinding(input.typedInput("type"), input.typedInput("value"));
         }
 
         common.registerNodeType("ui-avatar", {

@@ -42,7 +42,7 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `value` | „Text" | typedInput (Binding) | **ja** | Der anzuzeigende Text. Die Wert-Quelle gehört zu **einer von drei** Kategorien (siehe „Wert-Quellen" unten): **reaktive Bindung** — `store` (Store-Picker, ui-store-gebunden), `query` (Query-Pfad in Dot-Bracket-Notation), `routeParam` (Routenparameter-Name); **statisch / serverseitig einmalig aufgelöst** — `literal` (statischer Text), `flow`/`global` (Kontext-Variable), `env` (Umgebungsvariable); **gepusht** — `msg` (Standard-Node-RED-Binding; Wert aus der konfigurierten Message-Property, z. B. `payload` oder `payload.label`). Binding-Serialisierung: [stores.md](../concepts/stores.md), [editor.md](../concepts/editor.md). Leer-/`null`-/Non-Skalar-Verhalten (`""` → leerer Text; `null`/`undefined`/Objekt/Array → `"?"`; `0`/`false` sind gültig): siehe [value-rendering.md](../concepts/value-rendering.md). |
+| `value` | (typedInput, Default `string`) | typedInput (Binding) | **ja** | Der anzuzeigende Wert. Nutzt den **kanonischen Value-Binding-Typ-Satz** (P113 / ADR 0012 / ADR 0010): Store, Query, Route-Param, Reactive, msg, JSONata, string, number, boolean, json, timestamp, Flow, Global, Env — Reihenfolge + Semantik in [editor.md](../concepts/editor.md) und [stores.md](../concepts/stores.md), Kategorien unter „Wert-Quellen" unten. Binding-Serialisierung kommt aus dem gemeinsamen Helfer (`valueBindingTypes`/`readValueBinding`/`applyValueBinding`). Leer-/`null`-/Non-Skalar-Verhalten (`""` → leerer Text; `null`/`undefined`/Objekt/Array → `"?"`; `0`/`false` sind gültig): siehe [value-rendering.md](../concepts/value-rendering.md). |
 | `style` | „Style" | SelectBox (`TEXT_STYLES`) | optional | Typografische **Rolle** des Textes; mappt 1:1 auf ein semantisches HTML-Element. Werte: `heading-1` (`<h1>`), `heading-2` (`<h2>`), `heading-3` (`<h3>`), `body` (`<p>`), `caption` (`<small>`), `label` (`<span>`), `code` (`<code>`). Default: `body`. Bestimmt Größe/Gewicht/Schriftfamilie, **nicht** die Farbe. |
 | `variant` | „Variante" | Variant-SelectBox (`TEXT_COLOR_VARIANTS`) | optional | Semantische **Farbe** des Textes — gleiches Vokabular-Prinzip wie `ui-button`/`ui-badge`/`ui-alert`. Werte: `default` (erbt die Textfarbe), `muted`, `primary`, `success`, `warning`, `danger`, `neutral`. Default: `default`. Mappt auf die `--wa-color-*` Tokens — Details: [theming.md](../concepts/theming.md). |
 
@@ -66,28 +66,33 @@ ein Link auf die ausführliche Doku. Empfohlener Link:
 
 ## Wert-Quellen
 
-Die `value`-Quelle fällt in genau **eine von drei Kategorien**, die konzeptionell
-unterschiedlich sind:
+Seit **P113 (ADR 0012 / ADR 0010)** nutzt `value` den **kanonischen
+Value-Binding-Typ-Satz** (14 Typen in fester Reihenfolge; Default `string`) —
+siehe [editor.md](../concepts/editor.md) und [stores.md](../concepts/stores.md).
+Die Quellen fallen konzeptionell in **vier Kategorien**:
 
-1. **Reaktive Bindung** (`store`, `query`, `routeParam`) — der Text ist an einen
-   *lebenden* Frontend-Wert gebunden und re-rendert, sobald sich dieser ändert.
-   `store` bindet an einen `ui-store` (backend-synchron, reaktiv).
-2. **Statisch / serverseitig einmalig** (`literal`, `flow`, `global`, `env`) — ein
-   konkreter Wert. `flow`/`global`/`env` werden **serverseitig pro Render einmalig**
-   aus dem Node-RED-Kontext bzw. der Umgebung aufgelöst und als Literal in den
-   Snapshot geschrieben — **nicht reaktiv** (eine reine Kontextänderung ohne
-   Re-Render aktualisiert den Text nicht).
-3. **Gepusht** (`msg` — Standard-Node-RED-Binding) — der Text wird aus der
-   konfigurierten Message-Property (z. B. `payload`, `payload.label`, `topic`) der
-   an den Knoten gesendeten Nachrichten gelesen (siehe „Input"). Vor der ersten
-   passenden Message rendert das Feld **leer** (nicht `"?"`). Der zuletzt gelesene
-   Wert wird **backend-seitig** in der Live-Definition gehalten, von allen Clients
-   geteilt und geht bei Redeploy/Neustart verloren — es wird **kein** `ui-store`
-   benötigt.
+1. **Reaktive Bindung** (`store`, `query`, `routeParam`, `reactive`) — der Text ist
+   an einen *lebenden* Frontend-Wert gebunden und re-rendert, sobald sich dieser
+   ändert. `store` bindet an einen `ui-store` (backend-synchron, reaktiv);
+   `reactive` ist ein clientseitiger JS-Ausdruck über `routeParam`/`store(…)`/
+   `query(…)` (z. B. `` `Kunde ${routeParam.id}` ``) — [reactive-expressions.md](../concepts/reactive-expressions.md).
+2. **Statisch** (`string`, `number`, `boolean`, `json`, `timestamp`) — ein konkreter
+   Literalwert. Anzeige nach [value-rendering.md](../concepts/value-rendering.md).
+3. **Serverseitig einmalig** (`flow`, `global`, `env`) — pro Render einmalig aus dem
+   Node-RED-Kontext bzw. der Umgebung aufgelöst, als Literal in den Snapshot
+   geschrieben — **nicht reaktiv**.
+4. **Message-getrieben** (`msg`, `jsonata`) — der Text wird aus der eingehenden
+   Message gelesen: `msg` aus der konfigurierten Property (z. B. `payload`,
+   `payload.label`), `jsonata` als **Ausdruck gegen die `msg`** (z. B.
+   `payload.user.name`). Vor der ersten passenden Message rendert das Feld **leer**
+   (nicht `"?"`); der zuletzt gelesene/ausgewertete Wert wird **backend-seitig** in
+   der Live-Definition gehalten und von allen Clients geteilt.
 
-> Die frühere Editor-Option `jsonata` wurde entfernt: der Renderer konnte sie nie
-> auflösen (Ergebnis `"?"`). `msg` ist das normale Node-RED-Binding mit Pfad-Feld;
-> der Wert wird über den Input-Handler aus der gewählten Message-Property gelesen.
+> **P113-Umkehr:** Die Editor-Option `jsonata` war mit P111 entfernt worden (damals
+> nicht auflösbar) und **kehrt mit P113 zurück** — nun **message-getrieben** (gegen
+> die eingehende `msg` ausgewertet, via `RED.util.prepareJSONataExpression` +
+> asynchronem `evaluateJSONataExpression`). Neu hinzu kommt `reactive`. `state`
+> bleibt **draußen** (renderer-/schema-seitig für Altbestände weiter unterstützt).
 
 ## Input
 

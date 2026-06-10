@@ -201,16 +201,40 @@ Der vollständige Satz der Binding-`kind`s (`bindingSchema`,
 | `store` | Client-State per Store-ID → `statePath` | Renderer |
 | `query` | Query-State per `queryPath` | Renderer |
 | `routeParam` | Routen-Parameter der aktuellen Route | Renderer |
-| `msg` | eingehender Node-RED-Message | Runtime (Node-RED-Schicht) |
+| `reactive` | clientseitiger JS-Ausdruck (`routeParam`/`store(…)`/`query(…)`) | Renderer (kompiliert einmal, wertet je Snapshot aus — ADR 0010, P115) |
+| `msg` | eingehender Node-RED-Message (Pfad) | Runtime (Node-RED-Schicht) |
 | `flow` | Flow-Context | Runtime |
 | `global` | Global-Context | Runtime |
-| `jsonata` | JSONata-Ausdruck über die Message | Runtime |
+| `jsonata` | JSONata-Ausdruck **gegen die eingehende Message** | Runtime (Input-Handler, message-getrieben) |
 | `env` | Environment-Variable | Runtime |
 
-`literal/state/store/query/routeParam` werden im Renderer aufgelöst;
-`msg/flow/global/jsonata/env` werden an der Node-RED-Laufzeitschicht (webapp.js)
-aufgelöst, bevor der Wert ins Modell fließt. Jedes Binding kann zusätzlich einen
-`fallback` tragen, der greift, wenn der aufgelöste Wert `undefined` ist.
+`literal/state/store/query/routeParam/reactive` werden im Renderer aufgelöst;
+`flow/global/env` werden an der Node-RED-Laufzeitschicht (webapp.js) einmalig pro
+Render aufgelöst. `msg` und `jsonata` sind **message-getrieben**: sie rendern leer,
+bis eine passende Message eintrifft; der Input-Handler wertet sie gegen die `msg`
+aus (JSONata via `RED.util.prepareJSONataExpression` + asynchroner
+`evaluateJSONataExpression`) und schreibt das Ergebnis als Literal in die
+Live-Definition. Jedes Binding kann zusätzlich einen `fallback` tragen, der greift,
+wenn der aufgelöste Wert `undefined` ist.
+
+### Der kanonische Value-Binding-Typ-Satz (Editor) — ADR 0012 / ADR 0010
+
+Jedes Display-Wert-Feld (z. B. `ui-text` `value`, `ui-alert` `message`/`title`,
+`ui-image`/`ui-avatar` `src`) bietet im Editor **EINEN** kanonischen Typsatz in
+**dieser Reihenfolge** — aus genau einer Quelle
+(`valueBindingTypes()`/`readValueBinding()`/`applyValueBinding()` in
+`resources/lib/editor-common.js`):
+
+> **Store, Query, Route-Param, Reactive, msg, JSONata, string, number, boolean,
+> json, timestamp, Flow, Global, Env** (Default-Typ: `string`).
+
+Die fünf Literaltypen (`str`/`num`/`bool`/`json`/`date`) serialisieren als
+`{ kind: "literal", value: <typisierter Wert> }`; `reactive` als
+`{ kind: "reactive", value: <Ausdruck> }`; alle übrigen als `{ kind, path }`.
+`state` ist **kein** Editor-Angebot mehr (bleibt aber schema-/renderer-seitig für
+Altbestände bestehen). Reduzierte Feld-Kategorien (Boolean-Zustand für `disabled`,
+URL/Pfad für `href`/`to`) deklarieren ihre Kategorie und erhalten eine Teilmenge —
+siehe ADR 0012.
 
 ## Siehe auch
 

@@ -263,6 +263,13 @@ function resolveBinding(binding: BindingDefinition | undefined, sources: Binding
             // payload arrives the field renders EMPTY — never "?".
             resolvedValue = binding.fallback ?? "";
             break;
+        case "jsonata":
+            // P113: JSONata mode is message-driven — the expression is evaluated
+            // against the incoming msg in the input-handler, which overwrites the
+            // live binding with a literal. There is no message context at render
+            // time, so until a message arrives the field renders EMPTY (like msg).
+            resolvedValue = binding.fallback ?? "";
+            break;
         case "reactive": {
             // P115 (ADR 0010): compile-once/evaluate-often client expression.
             // value carries the source. A failure (compile, throw, or thenable

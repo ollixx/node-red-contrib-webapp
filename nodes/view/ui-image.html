@@ -3,21 +3,22 @@
     (function () {
         const common = window.WebappEditorCommon;
 
-        // P70: `src` is a binding driven by a typedInput (mirrors ui-alert/ui-text).
-        // Beyond the standard binding kinds it offers the new `Asset` type — a
-        // managed media-store reference, serialized as a literal `asset:<id>` and
-        // chosen via the media picker (browse/upload).
+        // P113 (ADR 0012 / ADR 0010): `src` is a display-value binding driven by the
+        // ONE canonical value-binding type set (Store, Query, Route-Param, Reactive,
+        // msg, JSONata, str, num, bool, json, date, Flow, Global, Env). Beyond those
+        // it offers the `Asset` type — a managed media-store reference, serialized as
+        // a literal `asset:<id>` and chosen via the media picker (browse/upload).
         function applyBindingTypedInput(selector, binding) {
             const input = $(selector);
-            const types = common.bindingTypedInputTypes({ literalLabel: "URL", includeAsset: true });
-            input.typedInput({ default: "literal", types: types });
+            const types = common.valueBindingTypes({ includeAsset: true });
+            input.typedInput({ default: "str", types: types });
             // An asset:<id> literal is surfaced as the dedicated Asset type.
             if (binding && binding.kind === "literal" && typeof binding.value === "string" && binding.value.indexOf("asset:") === 0) {
                 input.typedInput("type", "asset");
                 input.typedInput("value", binding.value.slice("asset:".length));
             }
             else {
-                const editor = common.bindingValueForEditor(binding, "");
+                const editor = common.readValueBinding(binding, "");
                 input.typedInput("type", editor.type);
                 input.typedInput("value", editor.value);
             }
@@ -30,10 +31,7 @@
             if (type === "asset") {
                 return { kind: "literal", value: value ? "asset:" + value : "" };
             }
-            if (type === "literal") {
-                return { kind: "literal", value: value };
-            }
-            return { kind: type, path: value };
+            return common.applyValueBinding(type, value);
         }
 
         common.registerNodeType("ui-image", {

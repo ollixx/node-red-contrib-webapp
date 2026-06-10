@@ -3,37 +3,21 @@
     (function () {
         const common = window.WebappEditorCommon;
 
-        // P67: message and title are bindings driven by a typedInput (mirrors
-        // ui-text). Both support literal/state/query/routeParam/msg/flow/global/
-        // jsonata/env PLUS the new `store` type (filterable picker via P68).
-        function applyBindingTypedInput(selector, binding, literalLabel, pickerTitle) {
-            const editor = common.bindingValueForEditor(binding, "");
+        // P113 (ADR 0012 / ADR 0010): message and title are display-value bindings
+        // driven by the ONE canonical value-binding type set. Type list AND
+        // (de)serialisation come from the shared helper — Store, Query, Route-Param,
+        // Reactive, msg, JSONata, str, num, bool, json, date, Flow, Global, Env.
+        function applyBindingTypedInput(selector, binding, _literalLabel, _pickerTitle) {
+            const editor = common.readValueBinding(binding, "");
             const input = $(selector);
-            const types = common.bindingTypedInputTypes({ literalLabel: literalLabel });
-            // Override the store type's picker title for this field.
-            for (let i = 0; i < types.length; i += 1) {
-                if (types[i] && types[i].value === "store") {
-                    types[i] = common.storeTypedInputType({ label: "Store", pickerTitle: pickerTitle });
-                }
-            }
-            input.typedInput({ default: editor.type, types: types });
+            input.typedInput({ default: editor.type, types: common.valueBindingTypes() });
             input.typedInput("type", editor.type);
             input.typedInput("value", editor.value);
         }
 
         function readBinding(selector) {
             const input = $(selector);
-            const type = input.typedInput("type");
-            const value = input.typedInput("value");
-
-            if (type === "literal") {
-                return { kind: "literal", value: value };
-            }
-
-            // All dynamic types (state/query/routeParam/msg/flow/global/jsonata/
-            // env/store) serialise as { kind, path }. For `store`, path is the
-            // referenced ui-store id.
-            return { kind: type, path: value };
+            return common.applyValueBinding(input.typedInput("type"), input.typedInput("value"));
         }
 
         // P100: icon select value → stored icon field value.
