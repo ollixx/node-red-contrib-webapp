@@ -28,8 +28,6 @@ their blocker clears.
 ## Open work (pending / in_progress)
 
 - **P116** — aspects/editor — `Reactive`-typedInput: Expression-Editor-Dialog mit Completion, zweistufiger Validierung + Doku-Panel; Typ #4 im kanonischen Satz (ADR 0010) — *geplant; braucht P113 + P115* — [P116](aspects/editor/P116-reactive-typedinput-expression-editor.md)
-- **P129** — nodes/ui-checkbox — bindbares `disabled` (Boolean-Zustand, inkl. Store) (ADR 0012) — *geplant; braucht P113* — [P129](nodes/ui-checkbox/P129-checkbox-disabled-typedinput.md)
-- **P130** — nodes/ui-datepicker — bindbares `disabled` (Boolean-Zustand, inkl. Store) (ADR 0012) — *geplant; braucht P113* — [P130](nodes/ui-datepicker/P130-datepicker-disabled-typedinput.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -66,7 +64,9 @@ open the folder for the full history.
 | nodes/ui-slider | 2 |
 | nodes/ui-radio | 2 |
 | nodes/ui-textarea | 2 |
-| nodes/ui-accordion · ui-breadcrumb · ui-checkbox · ui-datepicker · ui-dialog · ui-divider · ui-icon · ui-image · ui-pagination · ui-table | 1 each |
+| nodes/ui-checkbox | 2 |
+| nodes/ui-datepicker | 2 |
+| nodes/ui-accordion · ui-breadcrumb · ui-dialog · ui-divider · ui-icon · ui-image · ui-pagination · ui-table | 1 each |
 | aspects/test-infra | 21 |
 | aspects/misc | 16 |
 | aspects/runtime | 7 |
@@ -78,4 +78,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 130 done, 3 open, 5 deferred.**
+**Total: 132 done, 1 open, 5 deferred.**

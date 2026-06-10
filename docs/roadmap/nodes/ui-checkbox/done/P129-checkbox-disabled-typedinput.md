@@ -9,11 +9,11 @@ verify: browser
 spec: docs/nodes/input/ui-checkbox.md
 tests: tests/e2e/nodes/view/ui-checkbox.tests.md
 dependencies: [P113]
-status: in_progress
+status: done
 ---
 # P129 — ui-checkbox: bindbares disabled
 
-> Prinzip & Matrix: [ADR 0012](../../../adr/0012-binding-ubiquity-every-value-field-offers-bindings.md).
+> Prinzip & Matrix: [ADR 0012](../../../../adr/0012-binding-ubiquity-every-value-field-offers-bindings.md).
 > Fundament: **P113**. `value` ist bereits typedInput (P97) — dieses Paket
 > ergänzt **nur** ein bindbares `disabled`. Reines Editor-Paket (Runtime löst
 > `bind.disabled` bereits auf).
@@ -38,3 +38,10 @@ status: in_progress
 - `docs/nodes/input/ui-checkbox.md`: Feld `disabled` (typedInput, Boolean-
   Zustand) dokumentieren; ADR 0012 referenzieren.
 - `tests/e2e/nodes/view/ui-checkbox.tests.md`: disabled-Store-Binding-Fall.
+
+## Result
+
+- **delivered:** ui-checkbox: bindbares `disabled` über den kanonischen P113-Helfer (`valueBindingTypes('boolean')` + `readValueBinding`/`applyValueBinding`). Die Knoten-`disabled`-Behandlung (bei ui-checkbox auch label/value) vom Legacy-`bindingTypedInputTypes` auf den kanonischen Satz migriert. Keine Helfer-Redefinition (editor-common.js-Delta 0). Muster = ui-checkbox (P129).
+- **stats:** Reine Editor-Phase (Serializer emittierte `disabled` bereits). Eigene E2E-Spec im Worktree verifiziert (self-verified). Batch-3-Cross-Check auf gebautem develop: **479 passed, exit=0, 0 failed**. Unit 871.
+- **notes:** P113-Ancestor + In-Scope-Commit (1) bei Merge verifiziert; `view.spec.ts` geprüft. Teil von Batch 3 (sequenziell self-verified) — Abschluss der ADR-0012-Knotenwelle P122–P130.
+- **cost:** Batch 3 (sonnet, ~4m je).
