@@ -497,6 +497,22 @@ export const reactiveBindingFixture: BindingDefinition = {
     value: "`Kunde ${routeParam.id}`"
 };
 
+/**
+ * P131 (ADR 0013) — canonical `store` binding with a `subPath`. The motivating
+ * owner example: a store whose slice is `{a:false, b:false, c:"eins"}`; binding a
+ * ui-text to property `c` should display "eins" (not the whole object → "?"). The
+ * `subPath` is itself a leaf value binding — here a literal path string "c".
+ * Downstream packages reuse this as the reference shape.
+ */
+export const storeSubPathBindingFixture: BindingDefinition = {
+    kind: "store",
+    path: "monsterStore",
+    subPath: {
+        kind: "literal",
+        value: "c"
+    }
+};
+
 export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
     {
         type: "ui-app",

@@ -37,45 +37,109 @@ export const routeNodePathSchema = routePathSchema.refine((path) => path !== "/"
  */
 export const DYNAMIC_BINDING_KINDS = ["state", "query", "routeParam", "msg", "flow", "global", "jsonata", "env", "store"] as const;
 
-export const bindingSchema = z
-    .object({
-        kind: z.enum(["state", "query", "routeParam", "literal", "msg", "flow", "global", "jsonata", "env", "store", "reactive"]),
-        path: z.string().min(1, "Binding paths must not be empty.").optional(),
-        value: z.unknown().optional(),
-        fallback: z.unknown().optional()
-    })
-    .superRefine((binding, context) => {
-        if (binding.kind === "literal") {
-            if (binding.value === undefined) {
-                context.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    message: "Literal bindings require a value."
-                });
-            }
+const BINDING_KINDS = ["state", "query", "routeParam", "literal", "msg", "flow", "global", "jsonata", "env", "store", "reactive"] as const;
 
-            return;
-        }
-
-        // P115 (ADR 0010): a `reactive` binding carries the expression SOURCE in
-        // `value` (a non-empty string), not a `path`. The renderer compiles and
-        // evaluates it per snapshot.
-        if (binding.kind === "reactive") {
-            if (typeof binding.value !== "string" || binding.value.trim().length === 0) {
-                context.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    message: "Reactive bindings require a non-empty expression in 'value'."
-                });
-            }
-
-            return;
-        }
-
-        if (!binding.path) {
+/**
+ * The kind-level validity check shared by the leaf and the full binding schema:
+ * literal needs a `value`, reactive needs a non-empty expression in `value`, all
+ * other (path-bearing) kinds need a `path`.
+ */
+function refineBindingKindShape(
+    binding: { kind: string; path?: string; value?: unknown },
+    context: z.RefinementCtx
+): void {
+    if (binding.kind === "literal") {
+        if (binding.value === undefined) {
             context.addIssue({
                 code: z.ZodIssueCode.custom,
-                message: `Bindings of kind '${binding.kind}' require a path.`
+                message: "Literal bindings require a value."
             });
         }
+
+        return;
+    }
+
+    // P115 (ADR 0010): a `reactive` binding carries the expression SOURCE in
+    // `value` (a non-empty string), not a `path`. The renderer compiles and
+    // evaluates it per snapshot.
+    if (binding.kind === "reactive") {
+        if (typeof binding.value !== "string" || binding.value.trim().length === 0) {
+            context.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Reactive bindings require a non-empty expression in 'value'."
+            });
+        }
+
+        return;
+    }
+
+    if (!binding.path) {
+        context.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Bindings of kind '${binding.kind}' require a path.`
+        });
+    }
+}
+
+/**
+ * P131 (ADR 0013): a `store` binding may carry an optional `subPath` — a value
+ * binding that resolves to a path string / numeric index into the store slice.
+ * That sub-binding is a **leaf**: it follows the full kind rules but may NOT
+ * itself carry a `subPath`. This is the structural recursion lock — a path of a
+ * path of a path has no use, and forbidding `subPath.subPath` makes a chain/cycle
+ * impossible by construction. The runtime keeps a depth guard as a backstop.
+ *
+ * The leaf accepts the full canonical source set EXCEPT `state` (which is not an
+ * editor offering; the sub-path comes from the canonical value-binding types).
+ * `state` is still tolerated here for symmetry with the main binding, but a
+ * `subPath` is rejected on it.
+ */
+export const leafBindingSchema = z
+    .object({
+        kind: z.enum(BINDING_KINDS),
+        path: z.string().min(1, "Binding paths must not be empty.").optional(),
+        value: z.unknown().optional(),
+        fallback: z.unknown().optional(),
+        // The structural recursion lock: a sub-path binding may not declare its
+        // own sub-path. `subPath` is meaningful ONLY on the top-level store
+        // binding; on a leaf it is always an error.
+        subPath: z.unknown().optional()
+    })
+    .superRefine((binding, context) => {
+        if (binding.subPath !== undefined) {
+            context.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "A store binding's subPath is a single leaf — it must not itself declare a subPath.",
+                path: ["subPath"]
+            });
+        }
+
+        refineBindingKindShape(binding, context);
+    });
+
+export type LeafBindingDefinition = z.infer<typeof leafBindingSchema>;
+
+export const bindingSchema = z
+    .object({
+        kind: z.enum(BINDING_KINDS),
+        path: z.string().min(1, "Binding paths must not be empty.").optional(),
+        value: z.unknown().optional(),
+        fallback: z.unknown().optional(),
+        // P131 (ADR 0013): optional one-level sub-path into a store slice. Only
+        // valid on `kind:"store"`; itself a LEAF binding (no nested subPath).
+        subPath: leafBindingSchema.optional()
+    })
+    .superRefine((binding, context) => {
+        // P131: `subPath` is only meaningful when reaching into a store slice.
+        if (binding.subPath !== undefined && binding.kind !== "store") {
+            context.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "A subPath is only valid on a 'store' binding.",
+                path: ["subPath"]
+            });
+        }
+
+        refineBindingKindShape(binding, context);
     });
 
 export type BindingDefinition = z.infer<typeof bindingSchema>;
