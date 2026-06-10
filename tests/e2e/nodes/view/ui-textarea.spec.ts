@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 import { deployFlow, resetFlow } from "../../../helpers/admin-api";
 import { FlowBuilder } from "../../../helpers/flow-builder";
+import { NodeEditorPage } from "../../../helpers/node-editor-page";
 import { WebappPage } from "../../../helpers/webapp-page";
 
 /**
@@ -13,6 +14,9 @@ import { WebappPage } from "../../../helpers/webapp-page";
  *
  * P82: inject → value update behaviour is covered by classic unit tests
  * (packages/runtime/test/p82-input-nodes-behaviour.test.ts).
+ *
+ * P128 (ADR 0012): value → canonical typedInput (full set); valuePath migration;
+ * bindable disabled (boolean category, incl. Store).
  */
 
 test.describe("ui-textarea (P44)", () => {
@@ -81,4 +85,102 @@ test.describe("ui-textarea (P44)", () => {
         expect((body.params as Record<string, unknown>).value).toBe("My text");
     });
 
+    // ─── P128: value typedInput — literal binding ─────────────────────────────
+
+    test("P128: value binding (literal string) renders as initial textarea value", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "taApp4", root: "taApp4" })
+            .node("ui-textarea", {
+                id: "taNode4",
+                label: "Notes",
+                value: { kind: "literal", value: "Hello world" }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "taApp4");
+        await webapp.navigate("/");
+        await expect(page.locator("sl-textarea")).toHaveAttribute("value", "Hello world");
+    });
+
+    // ─── P128: valuePath legacy migration ────────────────────────────────────
+
+    test("P128: legacy valuePath is accepted and renders textarea without crash", async ({ page, request }) => {
+        // A pre-P128 config uses plain `valuePath` with no `value` binding object.
+        // webapp.js migrates it via getBinding(config.value, stateBinding(config.valuePath)).
+        const flow = new FlowBuilder()
+            .app({ id: "taApp5", root: "taApp5" })
+            .node("ui-textarea", {
+                id: "taNode5",
+                label: "Legacy",
+                valuePath: "form.notes",
+                value: null
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "taApp5");
+        await webapp.navigate("/");
+        // The textarea renders (no crash); value is empty because store is not seeded.
+        await expect(page.locator("sl-textarea")).toBeVisible();
+    });
+
+    // ─── P128: disabled binding ───────────────────────────────────────────────
+
+    test("P128: disabled=false (literal) renders enabled sl-textarea", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "taApp6", root: "taApp6" })
+            .node("ui-textarea", {
+                id: "taNode6",
+                label: "Editable",
+                disabled: { kind: "literal", value: false }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "taApp6");
+        await webapp.navigate("/");
+        await expect(page.locator("sl-textarea")).toBeVisible();
+        // Must NOT carry the disabled attribute.
+        await expect(page.locator("sl-textarea[disabled]")).toHaveCount(0);
+    });
+
+});
+
+// ─── P128: editor panel ───────────────────────────────────────────────────────
+
+test.describe("ui-textarea editor panel (P128)", () => {
+    test.afterEach(async ({ request }) => {
+        await resetFlow(request);
+    });
+
+    test("P128: canonical fields present — valueBinding + disabledBinding; label drives validity", async ({ page, request }) => {
+        // Deploy with empty label → node is invalid (required field).
+        const flow = new FlowBuilder()
+            .app({ id: "taEdApp1", root: "taEdApp1" })
+            .node("ui-textarea", { id: "taEdNode1", label: "" })
+            .build();
+        await deployFlow(request, flow);
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode("taEdNode1");
+
+        // P128: valueBinding and disabledBinding typedInputs must be present.
+        await editor.expectFields(["name", "mount", "label", "valueBinding", "disabledBinding"]);
+
+        // Empty required label → invalid.
+        expect(await editor.getValidationState("taEdNode1")).toBe("invalid");
+
+        // Fill label → valid; persists across re-open.
+        await editor.fillField("label", "My Textarea");
+        await editor.save();
+        expect(await editor.getValidationState("taEdNode1")).toBe("valid");
+
+        await editor.openNode("taEdNode1");
+        expect(await editor.readField("label")).toBe("My Textarea");
+    });
 });
