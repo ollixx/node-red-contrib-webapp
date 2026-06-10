@@ -31,9 +31,6 @@ their blocker clears.
 - **P113** — aspects/editor — EIN kanonischer Value-Binding-Typ-Satz (Reihenfolge + Semantik, jsonata message-getrieben, ohne state) für alle Display-Wert-Inputs — *geplant, nicht umgesetzt* — [P113](aspects/editor/P113-canonical-value-binding-types.md)
 - **P116** — aspects/editor — `Reactive`-typedInput: Expression-Editor-Dialog mit Completion, zweistufiger Validierung + Doku-Panel; Typ #4 im kanonischen Satz (ADR 0010) — *geplant; braucht P113 + P115* — [P116](aspects/editor/P116-reactive-typedinput-expression-editor.md)
 - **P119** — nodes/ui-action — Navigate-Editor: Modus-Umschalter mit Zwei-Wege-Badges, transitiver Wire-Scan (Assistenz), Parameter-Mapping-Tabelle (ADR 0011) — *geplant; braucht P118 + P120* — [P119](nodes/ui-action/P119-navigate-editor-modes-wire-scan.md)
-- **P120** — aspects/editor — Zwei-Wege-Farbcodierung: Tokens (Blau=Wire, Lila=Referenz) + Badge-Helfer + Editor-User-Setting (ADR 0011) — *Code + Aktivierungs-Fix gemerged, 5 dual-path-E2E grün; Close-out blockiert bis Suite gesamt grün* — [P120](aspects/editor/P120-dual-path-coding-tokens-user-setting.md)
-- **P114** — aspects/editor — Picker-Dialog als EINZIGE Auswahl für alle Referenzfelder (parent, route, action, store, mount) + `mounts`-Preset (ADR 0009) — *REOPENED: Code gemerged, aber Mount-Picker-E2E rot (`.webapp-node-picker-row` erscheint nicht im Mount-Dialog) — Fix nötig* — [P114](aspects/editor/P114-picker-dialog-sole-reference-selection.md)
-- **P117** — aspects/editor — Node-Picker-Dialog: Kandidaten auf die App des editierten Knotens scopen + Optik an die NR-Admin-Dialoge angleichen (ADR 0009) — *REOPENED: zusammen mit P114; Mount-Picker-E2E rot — Fix nötig* — [P117](aspects/editor/P117-node-picker-app-scope-and-styling.md)
 - **P122** — nodes/ui-button — `disabledPath`→Boolean-Zustand-typedInput (inkl. Store) + `href`→URL/Pfad-typedInput (ADR 0012) — *geplant; braucht P113* — [P122](nodes/ui-button/P122-button-disabled-href-typedinput.md)
 - **P123** — nodes/ui-input — `value`→kanonischer typedInput + valuePath-Migration; bindbares `disabled` (ADR 0012) — *geplant; braucht P113* — [P123](nodes/ui-input/P123-input-value-disabled-typedinput.md)
 - **P124** — nodes/ui-select — `value`→kanonischer typedInput + valuePath-Migration; bindbares `disabled` (ADR 0012) — *geplant; braucht P113* — [P124](nodes/ui-select/P124-select-value-disabled-typedinput.md)
@@ -76,11 +73,11 @@ open the folder for the full history.
 | aspects/misc | 16 |
 | aspects/runtime | 7 |
 | aspects/state | 8 |
-| aspects/editor | 5 |
+| aspects/editor | 8 |
 | schema | 5 |
 | aspects/rendering | 7 |
 | aspects/foundation | 5 |
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 117 done, 16 open, 5 deferred.**
+**Total: 120 done, 13 open, 5 deferred.**

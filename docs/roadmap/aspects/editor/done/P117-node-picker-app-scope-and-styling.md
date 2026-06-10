@@ -2,13 +2,13 @@
 id: P117
 title: "Node-Picker-Dialog: Kandidaten auf die App des editierten Knotens scopen + Erscheinungsbild an die Node-RED-Admin-Dialoge angleichen"
 epic: aspects/editor
-status: in_progress
+status: done
 dependencies: [P114]
 ---
 # P117 — Node-Picker: App-Scope + Admin-UI-Look
 
 > Betroffen ist der vereinheitlichte P68-Picker-Dialog (`openNodePickerDialog`
-> in `resources/lib/editor-common.js`), der mit [ADR 0009](../../../adr/0009-picker-dialog-as-sole-reference-selection.md)
+> in `resources/lib/editor-common.js`), der mit [ADR 0009](../../../../adr/0009-picker-dialog-as-sole-reference-selection.md)
 > / **P114** zur EINZIGEN Referenzauswahl wird — Mängel in diesem Dialog
 > skalieren damit auf jedes Referenzfeld jedes Knotens. Deshalb hängt dieses
 > Paket auf P114 (gleiche Code-Stellen, P114 läuft zuerst).
@@ -185,3 +185,10 @@ verify: browser
 - `ui-query` trägt ebenfalls `parent` — falls es ein Query-Preset gibt oder
   bekommt, gleich mitscopen; heute existiert keines (nicht erfinden).
 
+
+## Result
+
+- **delivered:** Node-Picker-Kandidaten auf die App des editierten Knotens gescoped (route/action/store), Optik an NR-Admin-Dialoge angeglichen (`ensurePickerStylesheet`, `--red-ui-*`-Tokens, sans-serif, Hover/Selected via Stylesheet). `resolveEditedNodeApp` liest live `#node-input-parent`/`#node-input-mount` zum Klick-Zeitpunkt.
+- **stats:** Merge (+626/−115), 6 neue E2E. Volle Suite auf gebautem develop **423 passed, exit=0, 0 failed**.
+- **notes:** **Close-out-Korrektur (2026-06-10):** Zusammen mit P114 reopened — das App-Scoping war versehentlich auch aufs `mounts`-Preset angewandt (4 rote Mount-Picker-E2E). Fix 9f3f095: Scoping bleibt fuer route/action/store, `mounts` zeigt alle Kandidaten (Breadcrumb traegt App-Titel). `isMountUnderApp`/`resolveAppFromMount` als Pure-Helfer erhalten.
+- **cost:** Impl session a651c9a (~10m) + gemeinsamer Picker-Fix ac5fca7e (~5m). Modell opus/sonnet.

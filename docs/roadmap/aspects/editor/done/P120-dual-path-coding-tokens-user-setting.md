@@ -2,12 +2,12 @@
 id: P120
 title: "Zwei-Wege-Farbcodierung: zentrale Tokens (Blau=Wire, Lila=Referenz) + Badge-Helfer + Editor-User-Setting für die Farben"
 epic: aspects/editor
-status: in_progress
+status: done
 dependencies: []
 ---
 # P120 — Zwei-Wege-Codierung: Tokens, Badge, User-Setting
 
-> Entscheidung & Begründung: [ADR 0011](../../../adr/0011-ui-action-navigation-target-modes-and-dual-path-coding.md) §4.
+> Entscheidung & Begründung: [ADR 0011](../../../../adr/0011-ui-action-navigation-target-modes-and-dual-path-coding.md) §4.
 > Erster Konsument: der Zielquellen-Umschalter in **P119**. Dieses Paket
 > liefert die wiederverwendbare Grundlage und ist bewusst klein gehalten.
 
@@ -31,9 +31,9 @@ dependencies: []
   Modus-Switch-Segment ist eine gefüllte Vollfläche.
 
 > Zielbild der Codierung (kräftig, nicht pastell) in den Skizzen zu ADR 0011:
-> [Modi](../../../adr/assets/0011-target-modes.svg) ·
-> [Voreinstellung](../../../adr/assets/0011-mode-preselection.svg) ·
-> [Laufzeit-Vorrang](../../../adr/assets/0011-runtime-precedence.svg).
+> [Modi](../../../../adr/assets/0011-target-modes.svg) ·
+> [Voreinstellung](../../../../adr/assets/0011-mode-preselection.svg) ·
+> [Laufzeit-Vorrang](../../../../adr/assets/0011-runtime-precedence.svg).
 
 ## Zielmodell
 
@@ -99,3 +99,10 @@ verify: browser
   über Reload. Kein per-Node-Katalog betroffen (zentraler Helfer); P119
   referenziert die Badges in seinen Knoten-Tests.
 
+
+## Result
+
+- **delivered:** ADR-0011-Zwei-Wege-Farbcodierung in `resources/lib/editor-common.js`: CSS-Tokens `--webapp-path-wire-color`/`--webapp-path-ref-color`, `pathBadge(kind,label)` (HTMLElement, FA-Icon, Farbe nie alleiniger Traeger), `applyDualPathTokens`, Panel-Klassen, `installDualPathUserSettings` (RED.userSettings-Pane "Webapp"). Doku in `docs/nodes/concepts/editor.md`.
+- **stats:** Impl-Merge da26015-Reihe + Aktivierungs-Fix b73949a; 5 dual-path-E2E gruen. Volle Suite auf gebautem develop **423 passed, exit=0, 0 failed**.
+- **notes:** **Close-out-Korrektur (2026-06-10):** Erstes Schliessen war false-green (tail); die 5 E2E waren real rot, weil das Feature im echten Editor nicht aktivierte. Fix b73949a behob drei Editor-Defekte: `pathBadge` gab jQuery statt HTMLElement zurueck; der Registrierungs-Guard war pro-Aufruf (lief 37× ueber die Node-HTML-Skripte → Duplikat-Inputs); die Pane hatte nicht die `id`, die NR 4.x zum Einblenden braucht. Tokens/Badge bewusst wiederverwendbar fuer P119.
+- **cost:** Impl session aa3afd4f (~5m) + Aktivierungs-Fix session a6047eb (~13m). Modell sonnet/opus.

@@ -2,12 +2,12 @@
 id: P114
 title: "Picker-Dialog als EINZIGE Auswahl für alle Referenzfelder (parent, route, action, store, mount) + mounts-Preset"
 epic: aspects/editor
-status: in_progress
+status: done
 dependencies: []
 ---
 # P114 — Picker-Dialog als einzige Referenzauswahl
 
-> Rationale & Entscheidung: [ADR 0009](../../../adr/0009-picker-dialog-as-sole-reference-selection.md).
+> Rationale & Entscheidung: [ADR 0009](../../../../adr/0009-picker-dialog-as-sole-reference-selection.md).
 > Zielzustand bereits dokumentiert in `docs/nodes/concepts/editor.md` (Abschnitte
 > „Knoten-Auswahl" + „Referenz-Selektoren") — die Implementierung zieht den Code
 > auf diesen Stand.
@@ -122,3 +122,10 @@ verify: browser
   versteckt es und rendert Anzeige+Button daneben; kein Massen-Edit der
   Templates nötig, sofern die Installer zentral greifen.
 
+
+## Result
+
+- **delivered:** Picker-Dialog ist die EINZIGE Referenz-Auswahl (ADR 0009). `installPickerField` + Picker-Presets (routes/actions/stores/mounts) in `resources/lib/editor-common.js`; versteckter Value-Carrier + Read-only-Anzeige + "Auswaehlen…" + optionales Clear; kein sichtbares Referenz-`<select>` mehr. `mounts`-Preset flacht `buildMountOptionsTree` zu selbstbeschreibenden Breadcrumbs.
+- **stats:** Merge da26015 (+719/−310); 1 Unit-Spec, 1 E2E-Helper, 6 E2E-Specs auf Dialog-only umgeschrieben. Volle Suite auf gebautem develop **423 passed, exit=0, 0 failed**.
+- **notes:** **Close-out-Korrektur (2026-06-10):** Beim ersten Schliessen mit tail-maskierter Verifikation; 4 Mount-Picker-E2E waren real rot, weil P117s App-Scoping faelschlich aufs `mounts`-Preset wirkte (Mount legt App-Zugehoerigkeit erst fest, darf also nicht nach bestehender App gefiltert werden). Fix-Commit 9f3f095: `mounts`-Preset ignoriert `appId`. Danach gruen.
+- **cost:** Impl session 984cc39b (~27m) + Picker-Fix session ac5fca7e (~5m). Modell opus.
