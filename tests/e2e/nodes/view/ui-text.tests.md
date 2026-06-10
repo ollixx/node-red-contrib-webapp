@@ -73,3 +73,18 @@ element) and `variant` (semantic colour) — and removed the `size` field. Legac
 | store binding renders the bound store value | `store` value source resolves in the browser |
 | msg binding (payload): empty until a message is pushed | empty before push; updates + SSE-shared after inject |
 | msg binding respects a nested path (payload.label) | standard msg binding reads the configured message property, not just payload |
+
+## E2E tests — Reactive binding type #4 (P116, `tests/e2e/nodes/editor/reactive-expression.spec.ts`)
+
+ui-text is the lead node of the canonical value-binding set, so the `Reactive`
+(type #4) editor cases live here.
+
+| Test | Goal |
+|---|---|
+| Reactive is type #4 of the ui-text value type set | canonical order (after Route-Param, before msg) holds on ui-text |
+| expand opens the dialog; a multi-line expression round-trips through save | dialog open + doc panel + `{ kind:"reactive", value }` round-trip |
+| syntax error: broken template literal shows an error, disables Übernehmen, blocks deploy | stage-1 syntax validation, live + deploy-blocking |
+| reference error: store("gibtsnicht") names the unknown store + marks the node invalid | stage-2 reference validation names the store; a known name is valid |
+| completion provider: registered with the live route-param + store names | completion context resolves real `:id` + `customer` from the graph |
+| ace-fallback: dialog opens + validates with NO console error when Monaco is absent | fallback path is an acceptance criterion, not an error case |
+| end-to-end: editor-set `Kunde ${routeParam.id}` renders + re-evaluates on navigation | the gedankenspiel proof, driven through the editor (not a fixture) |
