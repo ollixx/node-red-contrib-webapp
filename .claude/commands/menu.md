@@ -11,7 +11,7 @@ Do exactly this:
    **Question 1 — "Which agent do you want to run?"** (header: "Agent"), options:
    - **Run roadmap (orchestrated)** — one worktree sub-agent per phase (`run-roadmap-orchestrated`)
    - **Evolve roadmap** — turn a decision into an ADR + packages (`evolve-roadmap`)
-   - **Review agent-OS** — audit the agent-OS, use opus (`review-agent-os`)
+   - **Review agent-OS** — audit the agent-OS, use fable/opus (`review-agent-os`)
    - **More…** — show the remaining agents
 
    If the user picks **More…**, immediately call AskUserQuestion again:

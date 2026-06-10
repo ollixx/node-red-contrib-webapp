@@ -52,9 +52,9 @@ Different tasks use different entry prompts. Start from the right one:
 | Only write missing tests for a phase | `.ai/prompts/write-tests.prompt.md` |
 | Fix a bug / regression that is not a phase | `.ai/prompts/fix-bug.prompt.md` |
 | Turn a decision into an ADR + new phases | `.ai/prompts/evolve-roadmap.prompt.md` |
-| Audit the agent-OS itself (opus) | `.ai/prompts/review-agent-os.prompt.md` |
+| Audit the agent-OS itself (fable if available, else opus) | `.ai/prompts/review-agent-os.prompt.md` |
 
-For running multiple phases, use the **orchestrated** mode: it spawns one fresh sub-agent per phase so implementation detail never accumulates in the driving session.
+For running multiple phases, use the **orchestrated** mode: it spawns one fresh sub-agent per phase so implementation detail never accumulates in the driving session. Model choices in the prompts are **preferences with fallbacks** (e.g. fable → opus), never hard requirements — availability changes over time.
 
 **Orchestrated division of labour (concurrency-safe).** Each phase sub-agent runs in its own git **worktree** (`isolation: "worktree"`) on a `phase/<id>` branch and commits **only code** there. The **orchestrator is the single writer** of `docs/roadmap/INDEX.md` and the package files' lifecycle (status/result): it runs `pnpm check:roadmap` (the read-only tripwire) **before** selecting the next phase and **at** close-out, sets the package `in_progress` before spawning, and after the sub-agent reports back it merges the branch, appends the package's `## Result`, flips `status: done`, and updates INDEX. A sub-agent must **never** edit the roadmap/INDEX files. Because each package is now its own file, only INDEX is a shared writer (orchestrator-only, serial on the main branch); worktrees stay isolated — so a second session or a parallel independent phase cannot clobber the run. Details: `.ai/prompts/run-roadmap-orchestrated.prompt.md`.
 

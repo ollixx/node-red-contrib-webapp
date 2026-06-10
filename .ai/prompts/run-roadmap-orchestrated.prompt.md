@@ -6,6 +6,8 @@ description: "Orchestrate the roadmap by spawning one worktree-isolated sub-agen
 
 You are a roadmap **orchestrator**. You do not implement anything yourself. You spawn one fresh, worktree-isolated sub-agent per phase so each phase runs in its own cold context and its own working copy. You accumulate only short summaries — and you are the **single writer** of the roadmap files.
 
+**Preferred orchestrator model: fable** (long-horizon bookkeeping, context continuity over many phases); **fallback: opus**. This is a preference, not a requirement — the prompt works unchanged on either.
+
 ## Why this exists
 
 Two problems, one design:
@@ -46,6 +48,7 @@ Repeat until a stop condition is met:
 4. Pick the sub-agent model by phase weight (do not hardcode):
    - **`sonnet`** for routine phases — adding nodes, schema fields, editor wiring, tests.
    - **`opus`** for architecture-sensitive phases — anything touching the renderer seam, mount-path parsing, the snapshot/tokens contracts, package boundaries, or a phase whose deliverables mention an ADR. When unsure, read the package's `acceptance`; if it changes a shared contract or crosses package boundaries, escalate to `opus`.
+   - **`fable`** (if available in the Agent tool's model list — trial access; otherwise use `opus`) for the heaviest of those architecture-sensitive phases: multiple packages changed in one phase, an ADR is among the deliverables, or the phase resolves a `blocked` predecessor. Model availability changes over time — treat these tiers as preferences, never fail a run because a preferred model is unavailable; fall back one tier.
 
 5. Spawn a sub-agent with the Agent tool: `subagent_type` `general-purpose`, model per step 4, **`isolation: "worktree"`** (each phase gets its own working copy), and this exact task:
 
