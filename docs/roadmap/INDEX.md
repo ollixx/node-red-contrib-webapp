@@ -30,6 +30,7 @@ their blocker clears.
 - **P111** — nodes/ui-text — `variant`→`style` (typografische Rolle) + neue Farb-`variant`, `size` entfernen — *erste Tranche geliefert; Sammelpaket aus dem ui-text-Review, weitere Findings folgen* — [P111](nodes/ui-text/P111-text-style-color-axes.md)
 - **P112** — nodes/ui-route — onEnter/onLeave bei JEDER Ankunft (Deep-Link/Refresh/Navigate), Connect-basiert mit Load-Nonce — *geplant, nicht umgesetzt* — [P112](nodes/ui-route/P112-route-lifecycle-on-arrival.md)
 - **P113** — aspects/editor — EIN kanonischer Value-Binding-Typ-Satz (Reihenfolge + Semantik, jsonata message-getrieben, ohne state) für alle Display-Wert-Inputs — *geplant, nicht umgesetzt* — [P113](aspects/editor/P113-canonical-value-binding-types.md)
+- **P114** — aspects/editor — Picker-Dialog als EINZIGE Auswahl für alle Referenzfelder (parent, route, action, store, mount) + `mounts`-Preset (ADR 0009) — *geplant, nicht umgesetzt* — [P114](aspects/editor/P114-picker-dialog-sole-reference-selection.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -67,4 +68,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 114 done, 3 open, 4 deferred.**
+**Total: 114 done, 4 open, 4 deferred.**

@@ -16,21 +16,41 @@ Es gibt bewusst keine Kopien unter `lib/` oder `nodes/lib/`.
 
 ---
 
-## Knoten-Auswahl: der Node-Picker-Dialog (P68)
+## Knoten-Auswahl: der Node-Picker-Dialog (P68, ADR 0009)
 
 Wo immer ein anderer Webapp-Knoten ausgewählt werden muss (Parent, Route,
-Action, Store, Mount-Ziel), steht derselbe **filter- und scrollbare
-Auswahl-Dialog** zur Verfügung — statt eines nackten `<select>`.
+Action, Store, Parent-Slot/Mount), ist derselbe **filter- und scrollbare
+Auswahl-Dialog** der **einzige** Auswahlmechanismus (ADR 0009). Es gibt keine
+voll befüllten Dropdowns mehr — Referenzlisten wachsen mit dem Flow und sind
+als natives `<select>` weder durchsuch- noch lesbar.
 
-**Verhalten:**
-- Scrollbare Kandidatenliste; jede Zeile zeigt **Name + ID + Knotentyp**.
-- **Contains-Suche** (case-insensitive) über Name, ID **und** Typ (`nodePickerMatch`).
+**Darstellung im Panel (ein Muster für alle Referenzfelder):**
+- eine **read-only-Anzeige** der aktuellen Auswahl (menschenlesbares Label; bei
+  Mounts der vollständige Breadcrumb, z. B. `Shop > /customers > content`);
+  Platzhaltertext, wenn leer; optionale Felder sind über ein „×" leerbar,
+- daneben der Button **„Auswählen…"**, der den Dialog mit dem passenden Preset
+  öffnet.
+
+Das gebundene `#node-input-*`-Element bleibt als **verstecktes Wertefeld** im
+DOM — Node-RED-Defaults-Bindung, `change`-Events, Validierung und der
+Save-Round-Trip sind unverändert. Ein gespeicherter Wert, der im aktuellen
+Graphen nicht mehr auflösbar ist, bleibt erhalten und wird als
+`<wert> (bestehend)` angezeigt.
+
+**Verhalten des Dialogs:**
+- Scrollbare Kandidatenliste; jede Zeile zeigt **Name + ID + Knotentyp** (beim
+  `mounts`-Preset: Breadcrumb + Mount-Wert).
+- **Contains-Suche** (case-insensitive) über Name, ID **und** Typ (`nodePickerMatch`);
+  beim `mounts`-Preset über Breadcrumb und Mount-Wert.
 - Aktuelle Auswahl hervorgehoben; Auswahl per Klick, Schließen per `Esc` oder Overlay-Klick.
-- Gespeichert wird stets die **Knoten-ID** (Round-Trip unverändert).
+- Gespeichert wird stets die **Knoten-ID** (bzw. der Mount-String) — Round-Trip unverändert.
 
 **API:**
 - `openNodePickerDialog({ title, value, entries, onSelect })` — öffnet den Dialog (CSS-Klassen `webapp-node-picker-*`).
-- `enhanceSelectWithPicker(selector, { filterPreset, title })` — hängt neben ein bestehendes, an die ID gebundenes `<select>` einen „Auswählen…"-Button, der den Dialog mit dem passenden Preset öffnet und die Auswahl zurück ins `<select>` schreibt. So bleibt das `<select>` die Quelle der Wahrheit; per-Node-HTML muss nicht angefasst werden.
+- `installPickerField(selector, { filterPreset, title, placeholder, clearable })` —
+  verwandelt ein gebundenes `#node-input-*`-Feld in das Anzeige+Button-Muster
+  oben. Ersetzt das frühere `enhanceSelectWithPicker` (Dropdown + Button),
+  das mit ADR 0009 entfällt.
 
 **Default-Filter (Presets).** Die Kandidatenliste wird pro Feld durch ein Preset
 vorgefiltert (`nodePickerPresets`, gespeist aus `collectReferenceNodes`):
@@ -41,6 +61,7 @@ vorgefiltert (`nodePickerPresets`, gespeist aus `collectReferenceNodes`):
 | `routes` | alle `ui-route` |
 | `actions` | alle `ui-action` / `ui-navigation` |
 | `stores` | alle `ui-store` |
+| `mounts` | alle Parent-Slots (Apps → Routen/Dialoge → Container → Slots), flach mit Breadcrumb-Label aus `buildMountOptionsTree` |
 
 `collectReferenceNodes()` sammelt App-, Route-, Dialog-, Container-, Action- und
 Store-Knoten aus dem aktuellen Editor-Graphen (inkl. id/typ/titel/parent/path),
@@ -51,17 +72,21 @@ Modell, nicht auf Canvas-Wires.
 
 ## Referenz-Selektoren
 
-Die folgenden Installer verdrahten die obigen Picker an die Standard-Felder eines
-Panels (in `oneditprepare` aufrufen, an den Knoten gebunden):
+Die folgenden Installer verdrahten die obigen Picker-Felder an die
+Standard-Felder eines Panels (in `oneditprepare` aufrufen, an den Knoten
+gebunden). Sie rendern jeweils das Anzeige+Button-Muster aus ADR 0009 — kein
+befülltes Dropdown:
 
-- `installParentAppSelector()` — füllt `#node-input-parent` mit allen Apps (Preset `apps`).
+- `installParentAppSelector()` — `#node-input-parent` (Preset `apps`).
 - `installReferenceSelectors(config)` — je nach `config`-Flags:
-  - `route: true` → `#node-input-routeId` (Preset `routes`)
+  - `route: true` → `#node-input-routeId` (Preset `routes`, optional/leerbar)
   - `action: "<selector>"` → ein Action-Feld (Preset `actions`)
-  - `store: true | "<selector>"` → ein Store-Feld (Preset `stores`)
-  - `mount: true` → `#node-input-mount` als **Baum** (`setSelectOptionsTree`, Routen/Dialoge → Container → Slots); der Mount-Picker bleibt hierarchisch und nutzt nicht den flachen Listen-Dialog.
+  - `store: true | "<selector>"` → ein Store-Feld (Preset `stores`, optional/leerbar)
+  - `mount: true` → `#node-input-mount` (Preset `mounts`; Anzeige = Breadcrumb;
+    eine Auswahl feuert `change`, sodass die Layout-Child-Felder
+    (`installLayoutChildPropRows`) dem neuen Parent-Layout folgen)
   - `layout: true` → `#node-input-layoutId`
-- `installLayoutSelector(config)` — Preset-Auswahl (`getStandardLayoutPresetOptions`) für App/Route/Dialog/Container.
+- `installLayoutSelector(config)` — Preset-Auswahl (`getStandardLayoutPresetOptions`) für App/Route/Dialog/Container; **kein** Referenzfeld, bleibt eine kleine, feste SelectBox.
 
 Alle gespeicherten Werte sind **IDs** (bzw. Mount-Strings `<type>:<id>/<slot>`).
 
@@ -143,7 +168,7 @@ sind nur interaktionsfähige `ui-*`-Knoten wählbar (nicht `ui-action`/
 |---|---|---|
 | Auswahl | aus einer gefilterten Liste | durch Anklicken auf der Canvas |
 | Anzahl | ein Wert | Mehrfachauswahl (Liste) |
-| Gespeichert in | gebundenes `<select>` (eine ID) | Hidden-Input (JSON-Array von IDs) |
+| Gespeichert in | verstecktes Wertefeld (eine ID / Mount-String) | Hidden-Input (JSON-Array von IDs) |
 | Typischer Einsatz | parent, route, action, store, mount | `ui-action` `targets` |
 
 ---
