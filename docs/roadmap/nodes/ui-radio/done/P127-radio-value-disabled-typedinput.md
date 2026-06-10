@@ -10,11 +10,11 @@ verify: browser
 spec: docs/nodes/input/ui-radio.md
 tests: tests/e2e/nodes/view/ui-radio.tests.md
 dependencies: [P113]
-status: in_progress
+status: done
 ---
 # P127 — ui-radio: value + disabled auf typedInput
 
-> Prinzip & Matrix: [ADR 0012](../../../adr/0012-binding-ubiquity-every-value-field-offers-bindings.md).
+> Prinzip & Matrix: [ADR 0012](../../../../adr/0012-binding-ubiquity-every-value-field-offers-bindings.md).
 > Fundament: **P113**. **Präzedenz:** ui-checkbox (P97)/ui-datepicker (P98) —
 > value→typedInput inkl. valuePath-Migration exakt diesem Muster folgen. Reines
 > Editor-Paket.
@@ -46,3 +46,10 @@ status: in_progress
   dokumentieren; ADR 0012 referenzieren.
 - `tests/e2e/nodes/view/ui-radio.tests.md`: value-Binding, valuePath-Migration,
   disabled-Store-Binding.
+
+## Result
+
+- **delivered:** ui-radio: `value`→kanonischer typedInput + valuePath→state-Migration; bindbares `disabled`. Konsumiert den kanonischen P113-Helfer (`valueBindingTypes`/`readValueBinding`/`applyValueBinding`) — keine Helfer-Redefinition (editor-common.js-Delta 0). Muster = ui-input (P123).
+- **stats:** Reine Editor-(+Serializer-)Phase. Eigene E2E-Spec im Worktree verifiziert (self-verified Batch-2-Strategie). Batch-2-Cross-Check auf gebautem develop: **474 passed** (die eine rote Stelle war der flaky, isoliert grüne P112-Route-Lifecycle-Test — kein Bezug zu diesem Paket). Unit 871.
+- **notes:** Serializer-Gap gefixt: radio-Branch emittierte `disabled` nicht. Ein out-of-scope reactive-Commit des Agents wurde NICHT gemerged (auf salvage/reactive-error-dedup bewahrt). P113-Ancestor + In-Scope-Commits bei Merge verifiziert. `view.spec.ts` für diesen Knoten geprüft/nachgezogen.
+- **cost:** Batch 2 (sonnet, self-verified, ~4-8m je).

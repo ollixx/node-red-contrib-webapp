@@ -28,9 +28,6 @@ their blocker clears.
 ## Open work (pending / in_progress)
 
 - **P116** — aspects/editor — `Reactive`-typedInput: Expression-Editor-Dialog mit Completion, zweistufiger Validierung + Doku-Panel; Typ #4 im kanonischen Satz (ADR 0010) — *geplant; braucht P113 + P115* — [P116](aspects/editor/P116-reactive-typedinput-expression-editor.md)
-- **P126** — nodes/ui-slider — `value`→kanonischer typedInput + valuePath-Migration; bindbares `disabled` (ADR 0012) — *geplant; braucht P113* — [P126](nodes/ui-slider/P126-slider-value-disabled-typedinput.md)
-- **P127** — nodes/ui-radio — `value`→kanonischer typedInput + valuePath-Migration; bindbares `disabled` (ADR 0012) — *geplant; braucht P113* — [P127](nodes/ui-radio/P127-radio-value-disabled-typedinput.md)
-- **P128** — nodes/ui-textarea — `value`→kanonischer typedInput + valuePath-Migration; bindbares `disabled` (ADR 0012) — *geplant; braucht P113* — [P128](nodes/ui-textarea/P128-textarea-value-disabled-typedinput.md)
 - **P129** — nodes/ui-checkbox — bindbares `disabled` (Boolean-Zustand, inkl. Store) (ADR 0012) — *geplant; braucht P113* — [P129](nodes/ui-checkbox/P129-checkbox-disabled-typedinput.md)
 - **P130** — nodes/ui-datepicker — bindbares `disabled` (Boolean-Zustand, inkl. Store) (ADR 0012) — *geplant; braucht P113* — [P130](nodes/ui-datepicker/P130-datepicker-disabled-typedinput.md)
 
@@ -66,6 +63,9 @@ open the folder for the full history.
 | nodes/ui-input | 2 |
 | nodes/ui-select | 2 |
 | nodes/ui-switch | 2 |
+| nodes/ui-slider | 2 |
+| nodes/ui-radio | 2 |
+| nodes/ui-textarea | 2 |
 | nodes/ui-accordion · ui-breadcrumb · ui-checkbox · ui-datepicker · ui-dialog · ui-divider · ui-icon · ui-image · ui-pagination · ui-table | 1 each |
 | aspects/test-infra | 21 |
 | aspects/misc | 16 |
@@ -78,4 +78,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 127 done, 6 open, 5 deferred.**
+**Total: 130 done, 3 open, 5 deferred.**
