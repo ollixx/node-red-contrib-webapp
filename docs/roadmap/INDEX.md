@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P113** — aspects/editor — EIN kanonischer Value-Binding-Typ-Satz (Reihenfolge + Semantik, jsonata message-getrieben, ohne state) für alle Display-Wert-Inputs — *geplant, nicht umgesetzt* — [P113](aspects/editor/P113-canonical-value-binding-types.md)
 - **P116** — aspects/editor — `Reactive`-typedInput: Expression-Editor-Dialog mit Completion, zweistufiger Validierung + Doku-Panel; Typ #4 im kanonischen Satz (ADR 0010) — *geplant; braucht P113 + P115* — [P116](aspects/editor/P116-reactive-typedinput-expression-editor.md)
 - **P122** — nodes/ui-button — `disabledPath`→Boolean-Zustand-typedInput (inkl. Store) + `href`→URL/Pfad-typedInput (ADR 0012) — *geplant; braucht P113* — [P122](nodes/ui-button/P122-button-disabled-href-typedinput.md)
 - **P123** — nodes/ui-input — `value`→kanonischer typedInput + valuePath-Migration; bindbares `disabled` (ADR 0012) — *geplant; braucht P113* — [P123](nodes/ui-input/P123-input-value-disabled-typedinput.md)
@@ -72,11 +71,11 @@ open the folder for the full history.
 | aspects/misc | 16 |
 | aspects/runtime | 7 |
 | aspects/state | 8 |
-| aspects/editor | 8 |
+| aspects/editor | 9 |
 | schema | 5 |
 | aspects/rendering | 7 |
 | aspects/foundation | 5 |
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 122 done, 11 open, 5 deferred.**
+**Total: 123 done, 10 open, 5 deferred.**

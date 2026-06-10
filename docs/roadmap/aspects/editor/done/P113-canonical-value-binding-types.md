@@ -2,7 +2,7 @@
 id: P113
 title: "EIN kanonischer Value-Binding-Typ-Satz (Reihenfolge + Semantik) für alle Display-Wert-Inputs"
 epic: aspects/editor
-status: in_progress
+status: done
 dependencies: [P111]
 ---
 # P113 — Kanonischer Value-Binding-Typ-Satz
@@ -139,3 +139,10 @@ Jeder Display-Wert-Input ruft nur noch diese Helfer. Reihenfolge + Mapping:
   je-Typ-Semantik (reaktiv / statisch / message-getrieben / server-resolved).
 - `docs/nodes/concepts/editor.md` — der gemeinsame Value-typedInput.
 - Je Knoten die `value`-Feldzeile auf „nutzt den kanonischen Satz" verweisen lassen.
+
+## Result
+
+- **delivered:** Der EINE kanonische Value-Binding-Typ-Satz (ADR 0012 / ADR 0010) als Single Source of Truth in `resources/lib/editor-common.js`: `valueBindingTypes()` (kategorie-faehig value/boolean/url), `readValueBinding()`, `applyValueBinding()`. Kanonische 14er-Reihenfolge mit `Reactive` an Position 4, kein `state`, Default `string`; Literale serialisieren als typisiertes `{kind:"literal",value}`, reactive als `{kind:"reactive",value}`, Rest als `{kind,path}`. In-Scope-Display-Knoten auf den Helfer migriert (ui-text `value`, ui-alert `message`/`title`, ui-image `src`, ui-avatar `src`/`initials`). `jsonata` kehrt als **message-getriebenes** Binding zurueck: Input-Handler `applyJsonataBinding` (`nodes/webapp.js`) captured den Ausdruck einmalig und wertet ihn via **async** `RED.util.evaluateJSONataExpression`-Callback (v3+ async-only) gegen die `msg` aus; Renderer hat einen gemeinsamen msg/jsonata-Case (leer bis zur ersten Message). Docs: `stores.md`, `editor.md`, `ui-text.md`.
+- **stats:** 15 Dateien im Merge (+727/−164). **Maßgebliche volle E2E auf gebautem develop: 434 passed, exit=0, 0 failed** (inkl. jsonata-Browser-Acceptance `payload.user.name` → "Ada"). Unit 1219 (editor 20→42 via 22 neue P113-Tests, die Typsatz + Serialisierungs-Round-Trips pinnen). Lint + Tripwires gruen; einzige kanonische `editor-common.js`.
+- **notes:** Per-Knoten-Migration von ui-button `label`/`disabled`/`href` und der Input-Control-`value`/`disabled` ist bewusst **out of P113** → die nachgelagerten Pakete P122–P130. Die 8 `state`-Bindings im Beispiel sitzen alle auf out-of-scope-Feldern (ui-button disabled, ui-table rows, ui-badge valuePath, ui-input value) → generiertes `flow.json` unangetastet (kein Hand-Edit). ui-breadcrumb `items` bleibt auf seinem JSON-Array-typedInput (strukturierte Collection, kein Skalar). Legacy `bindingTypedInputTypes`/`bindingValueForEditor` bleiben fuer noch nicht migrierte ui-datepicker/-checkbox/-route.
+- **cost:** session p113-session, ~55m, Modell opus.
