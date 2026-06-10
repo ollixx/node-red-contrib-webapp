@@ -51,6 +51,16 @@ Jeder Display-Wert-Input ruft nur noch diese Helfer. Reihenfolge + Mapping:
 | 12 | Global | `global` | serverseitig einmalig pro Render |
 | 13 | Env | `env` | serverseitig einmalig pro Render |
 
+> **Amendment (ADR 0010, 2026-06-10):** Der Satz wächst auf **14 Typen** — nach
+> Route-Param (Position 4) kommt **`Reactive`** (`kind: "reactive"`, `value` =
+> JS-Expression-Quelltext, client-state-getrieben; Vertrag in
+> `docs/nodes/concepts/reactive-expressions.md`). Der Typsatz-Helfer wird also
+> von Anfang an mit `Reactive` an Position 4 gebaut: Store, Query, Route-Param,
+> **Reactive**, msg, JSONata, string, number, boolean, json, timestamp, Flow,
+> Global, Env. Die Editor-UI des Typs (Expression-Dialog, Completion,
+> Validierung) liefert **P116** — P113 muss nur den Slot im Satz und die
+> Serialisierung `{kind:"reactive", value}` vorsehen (Renderer-Seite: P115).
+
 - **Default-Typ:** `string` (ersetzt das frühere einzelne „Text"/literal).
 - Die fünf Literaltypen sind Node-REDs Primitive (`str`/`num`/`bool`/`json`/`date`).
   Alle serialisieren als `{kind:"literal", value:<typisierter Wert>}`. Anzeige folgt

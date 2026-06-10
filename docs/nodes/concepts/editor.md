@@ -105,7 +105,14 @@ gemeinsame Typsatz kommt aus `bindingTypedInputTypes({ literalLabel })`:
 | query | „Query" | `query` | Query-Pfad (mit Pfad-Validierung) |
 | routeParam | „Route Param" | `routeParam` | Name des Routen-/Seiten-Parameters der aktuellen Route |
 | **store** | „Store" | `store` | **referenzierter `ui-store` (per Picker gewählt)** |
+| **reactive** | „Reactive" | `reactive` | **JavaScript-Expression gegen die Client-Quellen (`routeParam`, `store(…)`, `query(…)`); Expand öffnet den Expression-Editor mit Completion + Validierung — [reactive-expressions.md](reactive-expressions.md), ADR 0010** |
 | msg / flow / global / jsonata / env | (Node-RED-Standard) | `msg`/`flow`/`global`/`jsonata`/`env` | je nach Quelle |
+
+> **Hinweis (P113/ADR 0010):** Dieser Typsatz wird durch den **kanonischen
+> Value-Binding-Typ-Satz** abgelöst (14 Typen in fester Reihenfolge: Store,
+> Query, Route-Param, **Reactive**, msg, JSONata, string, number, boolean,
+> json, timestamp, Flow, Global, Env — ohne `state`). Details: P113 +
+> [reactive-expressions.md](reactive-expressions.md).
 
 > „Page-Param" entspricht dem Typ **„Route Param"** (`routeParam`): er liest einen
 > Parameter aus dem Pfad der aktuell angezeigten Route.

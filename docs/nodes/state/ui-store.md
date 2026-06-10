@@ -157,4 +157,9 @@ msg.ui.store = {
 - Initialwerte sollen zusätzlich Node-RED-typisch über typedInput-Felder oder
   eingehende Initialisierungsnachrichten gesetzt werden können.
 - Ob `ui-store` später Derived State oder Synchronisationsregeln kapseln soll,
-  ist noch nicht entschieden.
+  ist noch nicht entschieden. **Teilantwort (ADR 0010):** die *per-Feld*-
+  Ableitung (ein Wert, ein Konsument) ist als `reactive`-Binding gelöst
+  ([reactive-expressions.md](../concepts/reactive-expressions.md)) — ein
+  Reactive-Ausdruck schreibt bewusst **nicht** in einen Store. Offen bleibt nur
+  der Mehr-Konsumenten-Fall („Derived Store": eine Ableitung, die mehrere
+  Knoten lesen).

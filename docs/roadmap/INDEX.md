@@ -30,6 +30,8 @@ their blocker clears.
 - **P111** — nodes/ui-text — `variant`→`style` (typografische Rolle) + neue Farb-`variant`, `size` entfernen — *erste Tranche geliefert; Sammelpaket aus dem ui-text-Review, weitere Findings folgen* — [P111](nodes/ui-text/P111-text-style-color-axes.md)
 - **P113** — aspects/editor — EIN kanonischer Value-Binding-Typ-Satz (Reihenfolge + Semantik, jsonata message-getrieben, ohne state) für alle Display-Wert-Inputs — *geplant, nicht umgesetzt* — [P113](aspects/editor/P113-canonical-value-binding-types.md)
 - **P114** — aspects/editor — Picker-Dialog als EINZIGE Auswahl für alle Referenzfelder (parent, route, action, store, mount) + `mounts`-Preset (ADR 0009) — *geplant, nicht umgesetzt* — [P114](aspects/editor/P114-picker-dialog-sole-reference-selection.md)
+- **P115** — aspects/rendering — `reactive`-Binding: Schema-Kind + Renderer-Auswertung (kompilierte JS-Expression, `routeParam`/`store()`/`query()`-Globals, Fehler-Containment) (ADR 0010) — *geplant, nicht umgesetzt* — [P115](aspects/rendering/P115-reactive-binding-schema-renderer.md)
+- **P116** — aspects/editor — `Reactive`-typedInput: Expression-Editor-Dialog mit Completion, zweistufiger Validierung + Doku-Panel; Typ #4 im kanonischen Satz (ADR 0010) — *geplant; braucht P113 + P115* — [P116](aspects/editor/P116-reactive-typedinput-expression-editor.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -68,4 +70,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 115 done, 3 open, 4 deferred.**
+**Total: 115 done, 5 open, 4 deferred.**

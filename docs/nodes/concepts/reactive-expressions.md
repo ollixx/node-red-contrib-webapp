@@ -1,0 +1,155 @@
+# Reactive-Expressions (`reactive`-Binding)
+
+> Entschieden in [ADR 0010](../../adr/0010-reactive-binding-client-expressions.md).
+> Implementierung: P115 (Schema + Renderer) und P116 (Editor). Bis beide `done`
+> sind, beschreibt diese Seite den **Zielzustand**.
+
+Das `reactive`-Binding macht einen anzeigbaren Wert zu einer **abgeleiteten
+Sicht auf den Client-Zustand**: eine einzelne JavaScript-Expression, die
+Route-Parameter, Store-Werte und Query-Ergebnisse liest und den anzuzeigenden
+Wert zurückgibt. Sie wird vom Renderer bei **jedem** Snapshot neu ausgewertet —
+ändert sich die Route, ein Store oder ein Query-Ergebnis, ändert sich die
+Anzeige. Ohne Backend-Knoten, ohne Events, ohne `clientId`.
+
+**Das Motivbeispiel:** Eine Route `/customers/:id`, deren Parameter Teil eines
+Textes sein soll. Statt `onEnter → function → ui-store → store-Binding` reicht
+auf dem `ui-text` ein `reactive`-Binding mit:
+
+```js
+`Kunde ${routeParam.id}`
+```
+
+Korrekt bei Deep-Link, Refresh und Navigation; pro Client automatisch richtig.
+
+## Serialisierung
+
+```json
+{ "kind": "reactive", "value": "`Kunde ${routeParam.id}`" }
+```
+
+`value` trägt den **Quelltext der Expression** (kein Pfad, keine Referenz).
+
+## Die Expression
+
+- **Genau eine synchrone JavaScript-Expression** (ES2020). Kein
+  Funktionskörper: keine Statements, keine Zuweisungen, kein `async`/`await`,
+  keine Semikolon-Ketten. Formal: der Quelltext muss als
+  `return ( <quelltext> );` parsebar sein.
+- **Template-Literals sind das erwartete Idiom** und dürfen mehrzeilig sein.
+- Ausführung in **Strict Mode**. Der Rückgabewert wird über die normalen
+  Wert-Rendering-Regeln angezeigt (Strings direkt; number/boolean als String;
+  nicht darstellbare Objekte gemäß der Invalid-Value-Konvention, siehe
+  [value-rendering.md](value-rendering.md)).
+- **Nur lesen.** Es gibt keine Schreib-API. Das Ergebnis einer Reactive-
+  Expression ist kein Zustand, sondern eine Sicht auf Zustand — wer Zustand
+  schreiben will, nutzt Stores ([stores.md](stores.md)).
+
+## Die Globals
+
+Die Expression sieht exakt die Quellen, die der Renderer auch für die
+deklarativen Binding-Arten auflöst — nicht mehr:
+
+| Global | Typ | Bedeutung | Beispiel |
+|---|---|---|---|
+| `routeParam` | Objekt | Aufgelöste Parameter der **aktuell aktiven Route** (gleiche Quelle wie das `routeParam`-Binding). Fehlender Parameter → `undefined`. | `routeParam.id` |
+| `store(name)` | Funktion | Live-Wert des `ui-store` der Parent-App, dessen **Name** (`name`-Feld, getrimmt, exakter Vergleich) übergeben wird. Aufgelöst wird Name → `statePath` → Live-Wert im Client-State. | `store("customer").name` |
+| `query(pfad)` | Funktion | Wert am Pfad innerhalb der Query-Ergebnisse (gleiches Lookup wie das `query`-Binding). | `query("customers.total")` |
+
+**Bewusst nicht verfügbar:**
+
+- `msg` — zur Render-Zeit existiert kein Message-Kontext. Message-getriebene
+  Werte sind die Domäne der Binding-Arten `msg` und `JSONata` (P113).
+- `flow` / `global` / `env` — serverseitige, nicht-reaktive Quellen.
+- DOM, `window`, Netzwerk o. Ä. — die Expression ist eine reine Ableitung.
+
+**Stores per Name — der bewusste Trade-off.** Das `store`-*Binding* (P67)
+referenziert per Knoten-ID (umbenennungsrobust). In einer Expression wäre eine
+ID unleserlich und Completion sinnlos; deshalb gilt hier der **Name** als
+Schnittstelle. Konsequenzen:
+
+1. Store-Namen, die in Expressions verwendet werden, müssen **innerhalb ihrer
+   App eindeutig** sein.
+2. Das Umbenennen eines Stores bricht Expressions, die ihn referenzieren — die
+   **Deploy-Validierung im Editor** meldet unbekannte/mehrdeutige Namen als
+   Fehler (Knoten ungültig), bevor das in der App sichtbar wird.
+
+## Reaktivität — warum es „einfach funktioniert"
+
+Es gibt **kein Dependency-Tracking**. Der Renderer wertet jedes Binding bei
+jedem Snapshot neu aus; eine Reactive-Expression wird dabei einfach mit
+ausgewertet. Snapshot-Anlässe sind Routenwechsel, Store-/State-Änderungen und
+Query-Updates — also genau die Quellen der Globals. Damit ist die Anzeige
+
+- korrekt beim **Deep-Link** und **Refresh** (die Route ist beim ersten Render
+  bekannt),
+- korrekt bei **Navigation** (neuer Snapshot mit neuen `routeParam`s),
+- korrekt pro **Client** (jeder Client hat eigenen Route-/State-Kontext) —
+  kein `clientId`-Routing nötig.
+
+Zur Performance wird der Quelltext **einmal kompiliert und gecacht** (Schlüssel:
+der Quelltext selbst); pro Render läuft nur die Auswertung.
+
+## Fehlerverhalten
+
+Eine Expression darf das Rendering **niemals** brechen:
+
+- Wirft die Auswertung (Syntax war ok, aber z. B. `store("gibtsnicht")` oder
+  `routeParam.id.foo.bar`), rendert das Feld gemäß der
+  Invalid-Value-Konvention (P104) — kein Crash, kein leerer Snapshot.
+- Der Fehler wird **einmal pro distinktem Fehler** über die bestehende
+  Client-Logging-/Error-Forwarding-Pipeline gemeldet (nicht bei jedem
+  Re-Render erneut), damit die Ursache in `ui-log`/Debug sichtbar ist, ohne zu
+  fluten.
+
+## Editor-Erlebnis (P116)
+
+Der typedInput-Typ **`Reactive`** (Position 4 im kanonischen Typsatz, siehe
+[editor.md](editor.md)) zeigt den Quelltext einzeilig; der Expand-Button öffnet
+den **Expression-Editor-Dialog** (Vorbild: Node-REDs JSONata-Editor):
+
+- **Code-Editor** über Node-REDs gebündelten Editor (`RED.editor.createEditor`,
+  Monaco ab Node-RED 2.x; mit Ace-Fallback funktioniert der Dialog ohne
+  Completion weiter).
+- **Completion aus dem echten Graphen:** `store("` schlägt die tatsächlich
+  existierenden Store-Namen der App vor; `routeParam.` die `:param`-Namen der
+  Route, unter der der Knoten gemountet ist; dazu die drei Globals selbst.
+- **Validierung zweistufig:** beim Tippen Syntaxprüfung (Expression-Parse,
+  Fehlermeldung inline unter dem Editor); beim Speichern/Deploy zusätzlich
+  Referenzprüfung (unbekannter/mehrdeutiger Store-Name → Knoten ungültig,
+  Deploy blockiert).
+- **Doku-Panel im Dialog:** die Globals-Tabelle dieser Seite in Kompaktform
+  plus Beispiele; Quelle ist **diese Datei**, damit Editor-Hilfe und Doku nicht
+  divergieren (Link-Muster wie bei den Inline-Hilfen der Knoten).
+
+## Beispiele
+
+```js
+// Route-Parameter als Teil eines Textes (das Motivbeispiel)
+`Kunde ${routeParam.id}`
+
+// Kombination aus Store und Route-Parameter
+`${store("customer").name} (#${routeParam.id})`
+
+// Bedingte Anzeige aus einem Query-Ergebnis
+query("customers.total") > 0
+    ? `${query("customers.total")} Kunden`
+    : "Keine Kunden"
+```
+
+## Abgrenzung — wann NICHT `reactive`
+
+| Bedarf | Richtiges Mittel |
+|---|---|
+| Roher Einzelwert aus der URL | `routeParam`-Binding (einfacher, kein Code) |
+| Wert, der auf eine eingehende `msg` reagieren soll | `msg`- oder `JSONata`-Binding (message-getrieben, P113) |
+| Daten, die der Client nicht hat (DB, Berechtigungen) | Backend-Muster: `ui-route` `onEnter` → `function`/`ui-query` → `ui-store` (seit P112 bei jeder Ankunft zuverlässig) |
+| Eine Ableitung, die **mehrere** Knoten lesen sollen | offen („Derived Store", siehe [ui-store.md](../state/ui-store.md) „Offene Punkte") — bis dahin: Backend-Muster |
+| Zustand schreiben | niemals per Expression — Stores über Operationen ([stores.md](stores.md)) |
+
+## Referenzen
+
+- [ADR 0010](../../adr/0010-reactive-binding-client-expressions.md) — Entscheidung und Begründung
+- [editor.md](editor.md) — typedInput-Typen und Editor-Helfer
+- [stores.md](stores.md) — Stores, `store`-Binding, State-Modell
+- [value-rendering.md](value-rendering.md) — Anzeige-Regeln und Invalid-Value-Konvention
+- [`ui-route`](../structure/ui-route.md) — Route-Parameter und Lifecycle-Events
