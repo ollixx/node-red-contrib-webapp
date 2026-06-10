@@ -49,9 +49,14 @@ test.describe("editor — ui-image media (P70)", () => {
                 ));
             return (instance?.typeList ?? []).map((t) => (typeof t === "string" ? t : t.value));
         });
+        // P113: src now uses the ONE canonical value-binding type set (ADR 0012 /
+        // ADR 0010) PLUS the media `asset` type. No more `literal`/`state`.
         expect(srcTypes).toEqual(expect.arrayContaining([
-            "literal", "asset", "state", "query", "store", "msg"
+            "asset", "store", "query", "routeParam", "reactive", "msg", "jsonata",
+            "str", "num", "bool", "json", "date", "flow", "global", "env"
         ]));
+        expect(srcTypes).not.toContain("literal");
+        expect(srcTypes).not.toContain("state");
     });
 
     test("ui-app has a Media Store URL field that round-trips", async ({ page, request }) => {

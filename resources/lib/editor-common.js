@@ -2114,6 +2114,216 @@
         ];
     }
 
+    // ─── P113 (ADR 0012 / ADR 0010): the ONE canonical value-binding type set ───
+    //
+    // A single source of truth for BOTH the editor type list (order + kind) AND
+    // the serialisation (type+value → binding object, and back). Every display-
+    // value input calls `valueBindingTypes()` for its typedInput `types`,
+    // `readValueBinding()` in oneditprepare, and `applyValueBinding()` in
+    // oneditsave — so adding/reordering a type is exactly one change here.
+    //
+    // Canonical order (value/display = full set, 14 kinds):
+    //   Store, Query, Route-Param, Reactive, msg, JSONata, string, number,
+    //   boolean, json, timestamp, Flow, Global, Env.
+    // `state` is deliberately NOT offered (owner decision): the renderer/schema
+    // still support it for legacy bindings, it is just no longer authorable.
+    //
+    // Category type-sets (ADR 0012 field-category matrix):
+    //   - "value"   (default): the full 14-type set above.
+    //   - "boolean" (e.g. `disabled`): drops the string/number/json/timestamp
+    //     literals — a boolean can only hold `bool`.
+    //   - "url"     (e.g. `href`/`to`): str + msg/JSONata + Store/Reactive +
+    //     Flow/Global/Env (no num/bool/json/timestamp — not a URL).
+    // A field with no declared category → "value" (the safe, maximal default).
+
+    // The five Node-RED primitive literal sub-types, in canonical order. Each
+    // serialises as { kind:"literal", value:<typed value> }.
+    var VALUE_BINDING_LITERAL_TYPES = ["str", "num", "bool", "json", "date"];
+
+    function reactiveTypedInputType() {
+        // P116 delivers the full editor experience (expression dialog, completion,
+        // validation). Here we only reserve the slot + carry the source string in
+        // `value`. A bare typedInput type renders a text field — enough to author
+        // and round-trip a reactive expression until P116 enriches it.
+        return {
+            value: "reactive",
+            label: "Reactive",
+            icon: "fa fa-bolt",
+            hasValue: true
+        };
+    }
+
+    function valueBindingTypes(options) {
+        var opts = options || {};
+        var category = opts.category || "value";
+        var assetTypes = opts.includeAsset
+            ? [assetTypedInputType({ appId: opts.appId })]
+            : [];
+
+        var queryType = {
+            value: "query",
+            label: "Query",
+            icon: "fa fa-search",
+            hasValue: true,
+            validate: function (value) {
+                if (!value || value.trim().length === 0) {
+                    return false;
+                }
+                return /^[a-zA-Z_$][a-zA-Z0-9_$]*(\.[a-zA-Z_$][a-zA-Z0-9_$]*|\[\d+\])*$/.test(value.trim());
+            }
+        };
+        var routeParamType = { value: "routeParam", label: "Route Param", icon: "fa fa-map-signs", hasValue: true };
+        var storeType = storeTypedInputType({ label: "Store" });
+        var reactiveType = reactiveTypedInputType();
+
+        if (category === "url") {
+            // str, msg, JSONata, Store, Reactive, Flow, Global, Env.
+            return [
+                "str",
+                ...assetTypes,
+                "msg",
+                "jsonata",
+                storeType,
+                reactiveType,
+                "flow",
+                "global",
+                "env"
+            ];
+        }
+
+        if (category === "boolean") {
+            // Store, Query, Route-Param, Reactive, msg, JSONata, boolean, Flow,
+            // Global, Env (no string/number/json/timestamp).
+            return [
+                storeType,
+                queryType,
+                routeParamType,
+                reactiveType,
+                "msg",
+                "jsonata",
+                "bool",
+                "flow",
+                "global",
+                "env"
+            ];
+        }
+
+        // Default — value/display full set (14 kinds).
+        return [
+            storeType,
+            queryType,
+            routeParamType,
+            reactiveType,
+            "msg",
+            "jsonata",
+            ...assetTypes,
+            "str",
+            "num",
+            "bool",
+            "json",
+            "date",
+            "flow",
+            "global",
+            "env"
+        ];
+    }
+
+    // Serialise a typedInput (type + raw string value) into the stored binding.
+    //   - literal sub-types (str/num/bool/json/date) → { kind:"literal", value:<typed> }
+    //   - reactive → { kind:"reactive", value:<expression source> }   (value, not path)
+    //   - every other kind (store/query/routeParam/msg/jsonata/flow/global/env)
+    //     → { kind, path:<value> }   (jsonata's path holds the expression source)
+    function applyValueBinding(type, value) {
+        var raw = value === undefined || value === null ? "" : String(value);
+
+        if (VALUE_BINDING_LITERAL_TYPES.indexOf(type) !== -1) {
+            return { kind: "literal", value: typedLiteralValue(type, raw) };
+        }
+
+        if (type === "reactive") {
+            return { kind: "reactive", value: raw };
+        }
+
+        return { kind: type, path: raw };
+    }
+
+    // Convert a typedInput string value into the typed JS literal for its sub-type.
+    // Falls back to the string form when conversion fails, so a half-typed value
+    // never throws during save.
+    function typedLiteralValue(type, raw) {
+        if (type === "num" || type === "date") {
+            var n = Number(raw);
+            return Number.isNaN(n) ? raw : n;
+        }
+        if (type === "bool") {
+            return raw === "true";
+        }
+        if (type === "json") {
+            try {
+                return JSON.parse(raw);
+            }
+            catch (_e) {
+                return raw;
+            }
+        }
+        return raw;
+    }
+
+    // Read a stored binding back into a typedInput { type, value } pair. The
+    // inverse of applyValueBinding: a literal restores its primitive sub-type
+    // (so number/boolean/json round-trip to num/bool/json, not str), reactive
+    // restores from `value`, every other dynamic kind from `path`.
+    function readValueBinding(binding, fallbackLiteral) {
+        var fallback = fallbackLiteral === undefined || fallbackLiteral === null ? "" : String(fallbackLiteral);
+        var parsed = parseBindingValue(binding) || binding;
+
+        if (!parsed || typeof parsed !== "object" || typeof parsed.kind !== "string") {
+            return { type: "str", value: fallback };
+        }
+
+        if (parsed.kind === "literal") {
+            return { type: literalSubType(parsed.value), value: literalEditorValue(parsed.value, fallback) };
+        }
+
+        if (parsed.kind === "reactive") {
+            return { type: "reactive", value: typeof parsed.value === "string" ? parsed.value : "" };
+        }
+
+        // All remaining kinds (store/query/routeParam/msg/jsonata/flow/global/env
+        // and legacy `state`) carry their reference/expression in `path`.
+        return { type: parsed.kind, value: parsed.path || "" };
+    }
+
+    // Pick the editor literal sub-type for a stored literal value by its JS type.
+    function literalSubType(value) {
+        if (typeof value === "number") {
+            return "num";
+        }
+        if (typeof value === "boolean") {
+            return "bool";
+        }
+        if (value !== null && typeof value === "object") {
+            return "json";
+        }
+        return "str";
+    }
+
+    // Render a stored literal value as the string the typedInput field expects.
+    function literalEditorValue(value, fallback) {
+        if (value === undefined || value === null) {
+            return fallback;
+        }
+        if (value !== null && typeof value === "object") {
+            try {
+                return JSON.stringify(value);
+            }
+            catch (_e) {
+                return fallback;
+            }
+        }
+        return String(value);
+    }
+
     function isStandardLayoutPreset(value) {
         return standardLayoutPresetOptions.some(function (option) {
             return option.value === value;
@@ -3126,6 +3336,9 @@
     global.WebappEditorCommon = {
         assetTypedInputType,
         bindingTypedInputTypes,
+        valueBindingTypes,
+        readValueBinding,
+        applyValueBinding,
         bindingValueForEditor,
         buildMountOptionsTree,
         flattenMountOptionTree,

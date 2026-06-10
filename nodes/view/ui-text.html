@@ -38,43 +38,17 @@
                 common.installTextStyleSelectBox().call(this);
                 common.installVariantSelectBox("text").call(this);
                 common.installLayoutChildPropRows().call(this);
-                const binding = common.bindingValueForEditor(common.parseBindingValue(this.value), this.text || "");
+                // P113 (ADR 0012 / ADR 0010): the ONE canonical value-binding type
+                // set + serialisation — read/apply come from the shared helper, so
+                // the type list and (de)serialisation live in exactly one place.
+                // Order: Store, Query, Route-Param, Reactive, msg, JSONata, str,
+                // num, bool, json, date (timestamp), Flow, Global, Env. No `state`.
+                const binding = common.readValueBinding(this.value, this.text || "");
                 const textInput = $("#node-input-text");
 
-                // P111: sharpened value sources. Reactive bindings (store/query/
-                // routeParam) + server-resolved one-shot values (flow/global/env) +
-                // the standard Node-RED `msg` binding. Removed: `jsonata` (never
-                // resolved → "?") and `state` (too low-level / not clearly delimited
-                // next to `store` — the renderer/schema still support it for other
-                // nodes, it is just no longer authorable on ui-text). Added: `store`.
                 textInput.typedInput({
                     default: binding.type,
-                    types: [
-                        { value: "literal", label: "Text", icon: "fa fa-font", hasValue: true },
-                        common.storeTypedInputType({ label: "Store" }),
-                        {
-                            value: "query",
-                            label: "Query",
-                            icon: "fa fa-search",
-                            hasValue: true,
-                            validate: function (value) {
-                                if (!value || value.trim().length === 0) {
-                                    return false;
-                                }
-                                // Accept dot-bracket notation: e.g. items[2].name, user.address.city, arr[0]
-                                return /^[a-zA-Z_$][a-zA-Z0-9_$]*(\.[a-zA-Z_$][a-zA-Z0-9_$]*|\[\d+\])*$/.test(value.trim());
-                            }
-                        },
-                        { value: "routeParam", label: "Route Param", icon: "fa fa-map-signs", hasValue: true },
-                        // Standard Node-RED `msg` binding: the value is read from
-                        // the configured message property (e.g. payload, payload.label,
-                        // topic) of messages sent to this node; held backend-side and
-                        // renders empty until the first matching message arrives.
-                        "msg",
-                        "flow",
-                        "global",
-                        "env"
-                    ]
+                    types: common.valueBindingTypes()
                 });
                 textInput.typedInput("type", binding.type);
                 textInput.typedInput("value", binding.value);
@@ -84,24 +58,12 @@
                 const bindingType = textInput.typedInput("type");
                 const bindingValue = textInput.typedInput("value");
 
-                if (bindingType === "literal") {
-                    this.text = bindingValue;
-                    this.value = {
-                        kind: "literal",
-                        value: bindingValue
-                    };
-                    return;
-                }
-
-                this.text = "";
-                this.value = {
-                    kind: bindingType,
-                    path: bindingValue
-                };
-                // All dynamic kinds serialise as { kind, path }: reactive
-                // (state/store/query/routeParam), server-resolved (flow/global/env),
-                // and the standard Node-RED `msg` binding (path = message property,
-                // e.g. payload / payload.label). For `store` the path is the ui-store id.
+                this.value = common.applyValueBinding(bindingType, bindingValue);
+                // Keep the legacy `text` mirror in sync for the plain-string literal
+                // (back-compat); any other kind clears it (the bound value wins).
+                this.text = (this.value.kind === "literal" && typeof this.value.value === "string")
+                    ? this.value.value
+                    : "";
             }
         });
     })();

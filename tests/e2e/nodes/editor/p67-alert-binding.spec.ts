@@ -26,7 +26,10 @@ test.describe("editor panel — ui-alert message/title typedInput (P67)", () => 
         await resetFlow(request);
     });
 
-    test("message and title are typedInputs whose type set includes 'store'", async ({ page, request }) => {
+    // P113: message/title now use the ONE canonical value-binding type set
+    // (ADR 0012 / ADR 0010) — Store, Query, Route-Param, Reactive, msg, JSONata,
+    // str, num, bool, json, date, Flow, Global, Env. No more `literal`/`state`.
+    test("message and title are typedInputs whose type set is the canonical value set", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "alertApp", root: "alertApp", name: "Alert App" })
             .node("ui-store", { id: "draftStore", statePath: "draft.customer", initialValue: "{}" })
@@ -73,9 +76,10 @@ test.describe("editor panel — ui-alert message/title typedInput (P67)", () => 
                 ));
             return (instance?.typeList ?? []).map((t) => (typeof t === "string" ? t : t.value));
         });
-        expect(messageTypes).toEqual(expect.arrayContaining([
-            "literal", "state", "query", "routeParam", "store", "msg", "flow", "global", "jsonata", "env"
-        ]));
+        expect(messageTypes).toEqual([
+            "store", "query", "routeParam", "reactive", "msg", "jsonata",
+            "str", "num", "bool", "json", "date", "flow", "global", "env"
+        ]);
     });
 
     test("setting message to a store binding round-trips on save", async ({ page, request }) => {
