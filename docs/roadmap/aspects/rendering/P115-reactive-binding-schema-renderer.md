@@ -2,7 +2,7 @@
 id: P115
 title: "reactive-Binding: Schema-Kind + Renderer-Auswertung (kompilierte JS-Expression, Fehler-Containment, Re-Evaluation pro Snapshot)"
 epic: aspects/rendering
-status: pending
+status: in_progress
 dependencies: []
 ---
 # P115 — `reactive`-Binding: Schema + Renderer
