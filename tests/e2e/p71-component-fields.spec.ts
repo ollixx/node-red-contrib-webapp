@@ -119,7 +119,10 @@ test.describe("P71: editor fields", () => {
         expect(saved).toMatchObject({ size: "lg", linkMode: "url", href: "https://example.com" });
     });
 
-    test("ui-text editor exposes the size SelectBox", async ({ page, request }) => {
+    // P111 removed `size` and split the old `variant` (role) into two axes:
+    //   `style`   = typographic role  (heading-1 … code)
+    //   `variant` = semantic colour   (default, muted, primary …)
+    test("ui-text editor exposes style + variant SelectBoxes; no size field (P111)", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "p71TextApp", root: "p71TextApp", name: "P71 Text App" })
             .node("ui-text", { id: "p71Text", name: "T", text: "Hi" })
@@ -130,7 +133,15 @@ test.describe("P71: editor fields", () => {
         await editor.open();
         await editor.openNode("p71Text");
 
-        await expect(page.locator("#node-input-size")).toHaveCount(1);
-        await expect(page.locator('#node-input-size option[value="sm"]')).toHaveCount(1);
+        // `style` SelectBox must be present (typographic role axis).
+        await expect(page.locator("#node-input-style")).toHaveCount(1);
+        await expect(page.locator('#node-input-style option[value="heading-1"]')).toHaveCount(1);
+
+        // `variant` SelectBox must be present (semantic colour axis).
+        await expect(page.locator("#node-input-variant")).toHaveCount(1);
+        await expect(page.locator('#node-input-variant option[value="danger"]')).toHaveCount(1);
+
+        // `size` must NOT be present (removed in P111).
+        await expect(page.locator("#node-input-size")).toHaveCount(0);
     });
 });

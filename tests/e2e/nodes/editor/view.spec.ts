@@ -192,12 +192,16 @@ test.describe("editor panels — variant SelectBox (P50)", () => {
         expect(await editor.readField("variant")).toBe("ghost");
     });
 
-    test("ui-text — variant SelectBox present with schema vocabulary (text variants)", async ({
+    test("ui-text — style SelectBox (typographic role) + variant SelectBox (colour) per P111 contract", async ({
         page,
         request
     }) => {
+        // P111 split the old `variant` (role) field into two orthogonal axes:
+        //   `style`   = typographic role (TEXT_STYLES vocabulary)
+        //   `variant` = semantic colour  (TEXT_COLOR_VARIANTS vocabulary)
+        // `size` was also removed.
         const flow = appOnly(new FlowBuilder(), "txtVApp")
-            .node("ui-text", { id: "txtV1", text: "Hello", variant: "heading-1" })
+            .node("ui-text", { id: "txtV1", text: "Hello", style: "heading-2", variant: "primary" })
             .build();
         await deployFlow(request, flow);
 
@@ -205,19 +209,34 @@ test.describe("editor panels — variant SelectBox (P50)", () => {
         await editor.open();
         await editor.openNode("txtV1");
 
-        await editor.expectFields(["variant"]);
-        const options = await editor.selectOptionValues("variant");
-        expect(options).toEqual([
+        // Both axes must be present; `size` must NOT be present.
+        await editor.expectFields(["style", "variant"]);
+
+        // `style` = typographic role vocabulary (TEXT_STYLES).
+        const styleOptions = await editor.selectOptionValues("style");
+        expect(styleOptions).toEqual([
             "heading-1",
             "heading-2",
             "heading-3",
             "body",
             "caption",
             "label",
-            "code",
-            "muted"
+            "code"
         ]);
-        expect(await editor.readField("variant")).toBe("heading-1");
+        expect(await editor.readField("style")).toBe("heading-2");
+
+        // `variant` = semantic colour vocabulary (TEXT_COLOR_VARIANTS).
+        const variantOptions = await editor.selectOptionValues("variant");
+        expect(variantOptions).toEqual([
+            "default",
+            "muted",
+            "primary",
+            "success",
+            "warning",
+            "danger",
+            "neutral"
+        ]);
+        expect(await editor.readField("variant")).toBe("primary");
     });
 
     test("ui-input — variant SelectBox present with schema vocabulary (input variants)", async ({
