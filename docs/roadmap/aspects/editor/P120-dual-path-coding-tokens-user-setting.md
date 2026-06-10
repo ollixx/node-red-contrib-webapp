@@ -2,12 +2,12 @@
 id: P120
 title: "Zwei-Wege-Farbcodierung: zentrale Tokens (Blau=Wire, Lila=Referenz) + Badge-Helfer + Editor-User-Setting für die Farben"
 epic: aspects/editor
-status: done
+status: in_progress
 dependencies: []
 ---
 # P120 — Zwei-Wege-Codierung: Tokens, Badge, User-Setting
 
-> Entscheidung & Begründung: [ADR 0011](../../../../adr/0011-ui-action-navigation-target-modes-and-dual-path-coding.md) §4.
+> Entscheidung & Begründung: [ADR 0011](../../../adr/0011-ui-action-navigation-target-modes-and-dual-path-coding.md) §4.
 > Erster Konsument: der Zielquellen-Umschalter in **P119**. Dieses Paket
 > liefert die wiederverwendbare Grundlage und ist bewusst klein gehalten.
 
@@ -31,9 +31,9 @@ dependencies: []
   Modus-Switch-Segment ist eine gefüllte Vollfläche.
 
 > Zielbild der Codierung (kräftig, nicht pastell) in den Skizzen zu ADR 0011:
-> [Modi](../../../../adr/assets/0011-target-modes.svg) ·
-> [Voreinstellung](../../../../adr/assets/0011-mode-preselection.svg) ·
-> [Laufzeit-Vorrang](../../../../adr/assets/0011-runtime-precedence.svg).
+> [Modi](../../../adr/assets/0011-target-modes.svg) ·
+> [Voreinstellung](../../../adr/assets/0011-mode-preselection.svg) ·
+> [Laufzeit-Vorrang](../../../adr/assets/0011-runtime-precedence.svg).
 
 ## Zielmodell
 
@@ -99,9 +99,3 @@ verify: browser
   über Reload. Kein per-Node-Katalog betroffen (zentraler Helfer); P119
   referenziert die Badges in seinen Knoten-Tests.
 
-## Result
-
-- **delivered:** ADR-0011-Zwei-Wege-Farbcodierung als geteilte Editor-Infrastruktur in `resources/lib/editor-common.js`. CSS-Custom-Properties `--webapp-path-wire-color` (#185FA5) + `--webapp-path-ref-color` (#534AB7) via `ensureDualPathStylesheet()` (Strong-Fill, Hex-Defaults genau einmal in `DUAL_PATH_DEFAULTS`); `pathBadge(kind,label)` (Badge mit Strong-Fill, weißer Schrift, FA-Icon `fa-plug`/`fa-link` — Farbe nie alleiniger Träger); `applyDualPathTokens()` (Live-Update der CSS-Variablen ohne Reload); Panel-Klassen `webapp-path-panel--wire/--ref` + `webapp-path-field-inset` für P119; `installDualPathUserSettings()` (RED.userSettings-Pane "Webapp" mit zwei Color-Pickern, Live-Preview, RED.settings-Persistenz, Reset), auto-registriert. Beide Helfer auf `window.WebappEditorCommon` exportiert. Doku: neuer Abschnitt in `docs/nodes/concepts/editor.md`.
-- **stats:** +514 Zeilen (Impl + 1 E2E-Spec `dual-path-coding.spec.ts` mit 5 Fällen). Unit 1196 gruen, Lint + beide Tripwires gruen. E2E vom Orchestrator auf develop verifiziert.
-- **notes:** E2E im Worktree nur geschrieben, nicht ausgefuehrt (Host-Caveat) → Orchestrator-Lauf auf develop. `RED.userSettings.show()` nimmt NR ≥ 3.x an. Tokens/Badge-Helfer bewusst wiederverwendbar fuer P119 gehalten.
-- **cost:** session-id nicht eindeutig (SubagentStop ~2026-06-10T12:18Z in `.ai/agent-runs.jsonl`, cwd agent-aa3afd4f0d7f80e90), ~5m wall-clock, Modell sonnet.
