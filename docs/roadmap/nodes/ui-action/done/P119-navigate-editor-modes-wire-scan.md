@@ -13,11 +13,11 @@ verify: browser
 spec: docs/nodes/behavior/ui-action.md
 tests: tests/e2e/nodes/behavior/ui-action.tests.md
 dependencies: [P118, P120]
-status: in_progress
+status: done
 ---
 # P119 — Navigate-Editor: Modus-UI, Wire-Scan, Mapping-Tabelle
 
-> Entscheidung & Begründung: [ADR 0011](../../../adr/0011-ui-action-navigation-target-modes-and-dual-path-coding.md).
+> Entscheidung & Begründung: [ADR 0011](../../../../adr/0011-ui-action-navigation-target-modes-and-dual-path-coding.md).
 > Unterbau (Schema/Runtime/Migration): **P118** (vorausgesetzt). Zwei-Wege-
 > Farbtokens + Badge-Helfer: **P120** (vorausgesetzt). Referenz-Picker:
 > P68/P114-Infrastruktur, app-gescoped nach P117.
@@ -138,3 +138,10 @@ Implementierung — gleiche zentrale Funktionen.
   Format per `.ai/agents/node-testing.md`) + ui-navigation-Katalog; bestehende
   Navigation-Specs (`p66-navigation.spec.ts`, `ui-navigation.spec.ts`,
   `navigation-nodes.spec.ts`) auf das Modus-Modell umschreiben statt ergänzen.
+
+## Result
+
+- **delivered:** ADR-0011 Navigate-Action-Editor-UX. Zentrale, wiederverwendbare `installNavigateTargetMode()` in `resources/lib/editor-common.js` (Drei-Segment-Switch wire|route|url, faerbt das ganze Panel ueber P120-Tokens), transitiver `scanWiredNavigationTargets()` (BFS-Wire-Scan, reine Assistenz, Link-Nodes/Subflows uebersprungen), `parseRoutePlaceholders()`, `validateNavigateConfig()` (route-Modus hart: aufloesbare routeId + jeder `:placeholder` gefuellt; wire/url blocken nie). In `ui-action.html` UND `ui-navigation.html` verdrahtet (eine Helper, keine Zweitimpl); route-Modus nutzt den P114-Picker (routes-Preset, app-scoped) + typedInput-Mapping-Tabelle. `ui-navigation`-Schema `to` optional gemacht.
+- **stats:** 13 Dateien (3 editor/src, 1 schema, 1 runtime, 5 tests/Kataloge, 3 Spec-Docs); neue `navigate-target-modes.spec.ts` (+10 E2E). Unit: schema 251, renderer 55, editor 20, runtime 871. **Maßgebliche volle E2E auf gebautem develop: 432 passed, exit=0, 0 failed.**
+- **notes:** `ui-navigation`-Runtime bleibt url-only (P118-Kontrakt) — der route-Modus-Switcher ist editor-only laut acceptance, kein Runtime-Scope-Creep. Schema-Relaxation (`to` optional) ist vorwaerts-kompatibel. P47 `behavior-state.spec.ts` auf das Modus-Modell aktualisiert (Legacy-`to` → URL-Modus).
+- **cost:** session sess-p119, ~62m, Modell opus.
