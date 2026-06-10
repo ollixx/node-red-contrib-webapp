@@ -273,6 +273,39 @@ nicht selbst aufrufen.
 
 ---
 
+## Navigations-Zielquellen-Umschalter & Wire-Scan (P119, ADR 0011)
+
+Erster Konsument der Zwei-Wege-Codierung ist die Navigations-Konfiguration von
+`ui-action` (Verb `navigate`) und `ui-navigation`. `installNavigateTargetMode()`
+baut aus drei Hidden-Carriern (`targetMode`, `routeId`, `params`) und dem
+`to`-typedInput eine Modus-UI:
+
+- **Segment-Schalter** mit drei Modi (Icon + Label): **via Wire** · **Route** ·
+  **URL**. Genau ein Modus ist aktiv; die Felder der anderen Modi werden
+  ausgeblendet und beim Speichern **nicht serialisiert** (Modus-Exklusivität,
+  P118-Schema). Der **Panel-Hintergrund** nimmt die Modus-Farbe an (blau/lila/
+  neutral, P120-Tokens); ein separates Badge entfällt (ADR 0011 §4).
+- **`scanWiredNavigationTargets(nodeId)`** — transitiver **Wire-Scan**: BFS über
+  ausgehende Wires ab dem editierten Knoten, durch Zwischenknoten (function,
+  switch …) hinweg, mit Visited-Set (Zyklus-Schutz) und Tiefenlimit (~50). Er
+  sammelt erreichte `ui-route`/`ui-app` als **Menge** (Verzweigung ⇒ mehrere
+  Treffer). **Dokumentierte Limitation:** Link-Nodes und Subflow-Instanzen werden
+  nicht verfolgt. Der Scan ist **reine Assistenz** — er erzeugt **nie** einen
+  Validierungsfehler (eine Heuristik darf keinen Deploy blockieren).
+- **`parseRoutePlaceholders(path)`** — extrahiert die `:platzhalter` eines
+  Routen-Pfads (geordnet, dedupliziert) für die Mapping-Tabelle.
+- **Initiale Vorbelegung** nur, wenn `targetMode` noch nie gespeichert wurde
+  (Scan ≥1 → `wire`, sonst `route`); danach gewinnt die gespeicherte Absicht —
+  spätere Wire-Änderungen schalten den Modus nicht um (kein UI-Flackern).
+- **`validateNavigateConfig(node)`** — Field-Validator: nur der `route`-Modus
+  wird **hart** geprüft (auflösbare `routeId` + jeder `:platzhalter` mit Wert);
+  `wire`/`url` blockieren nie. Wirkt sowohl bei offenem Panel (über den
+  Controller) als auch zur Deploy-Zeit (liest die gespeicherten Felder).
+
+Beide Knoten verdrahten **dieselbe** zentrale Funktion — keine Zweit-Implementierung.
+
+---
+
 ## Weitere gemeinsame Helfer
 
 - `registerNodeType(type, definition)` — Registrierung inkl. uiId-Migrations-Shim.
