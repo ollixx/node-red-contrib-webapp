@@ -10,13 +10,24 @@
                 parent: { value: "" },
                 mount: { value: "", required: true },
                 label: { value: "", required: true },
-                valuePath: { value: "", required: true },
+                // P123 (ADR 0012): `value` persists the binding OBJECT; there is no
+                // matching #node-input-value element so Node-RED auto-save cannot
+                // clobber it. The typedInput lives on #node-input-valueBinding.
+                // Legacy `valuePath` (pre-P123 plain state path) is kept for migration only.
+                valuePath: { value: "" },
                 value: { value: null },
+                valueBinding: { value: "" },
                 storeId: { value: "" },
                 path: { value: "" },
                 inputType: { value: "text", required: true },
                 variant: { value: "default" },
                 size: { value: "" },
+                // P123 (ADR 0012 / boolean category): `disabled` persists the binding
+                // OBJECT; there is no matching #node-input-disabled element so
+                // Node-RED auto-save cannot clobber it. The typedInput lives on
+                // #node-input-disabledBinding.
+                disabled: { value: null },
+                disabledBinding: { value: "" },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
                 col: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
@@ -40,6 +51,49 @@
                 common.installVariantSelectBox("input").call(this);
                 common.installSizeSelectBox().call(this);
                 common.installLayoutChildPropRows().call(this);
+
+                // P123 (ADR 0012 / value/display category): `value` typedInput — full
+                // canonical set. Migration: a legacy `valuePath` plain string becomes a
+                // state binding; a stored `value` binding object takes precedence.
+                const storedValue = common.parseBindingValue(this.value);
+                const valueBinding = storedValue
+                    ? storedValue
+                    : (this.valuePath ? { kind: "state", path: this.valuePath } : undefined);
+                const valueEditor = common.readValueBinding(valueBinding, "");
+                const valueInput = $("#node-input-valueBinding");
+                valueInput.typedInput({
+                    default: valueEditor.type,
+                    types: common.valueBindingTypes({ category: "value" })
+                });
+                valueInput.typedInput("type", valueEditor.type);
+                valueInput.typedInput("value", valueEditor.value);
+
+                // P123 (ADR 0012 / boolean category): `disabled` typedInput.
+                // No legacy to migrate (new field).
+                const storedDisabled = common.parseBindingValue(this.disabled);
+                const disabledBinding = storedDisabled ? storedDisabled : undefined;
+                const disabledEditor = common.readValueBinding(disabledBinding, "");
+                const disabledInput = $("#node-input-disabledBinding");
+                disabledInput.typedInput({
+                    default: disabledEditor.type,
+                    types: common.valueBindingTypes({ category: "boolean" })
+                });
+                disabledInput.typedInput("type", disabledEditor.type);
+                disabledInput.typedInput("value", disabledEditor.value);
+            },
+            oneditsave: function () {
+                // P123: persist value as binding object; clear legacy valuePath.
+                this.value = common.applyValueBinding(
+                    $("#node-input-valueBinding").typedInput("type"),
+                    $("#node-input-valueBinding").typedInput("value")
+                );
+                this.valuePath = "";
+
+                // P123: persist disabled as binding object.
+                this.disabled = common.applyValueBinding(
+                    $("#node-input-disabledBinding").typedInput("type"),
+                    $("#node-input-disabledBinding").typedInput("value")
+                );
             }
         });
     })();
@@ -49,10 +103,30 @@
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <div class="form-row"><label for="node-input-label">Label</label><input type="text" id="node-input-label"></div>
-    <div class="form-row"><label for="node-input-valuePath">Value Path</label><input type="text" id="node-input-valuePath"></div>
+    <!-- P123 (ADR 0012 / value/display category): Value binding — typedInput managed in oneditprepare/oneditsave. -->
+    <div class="form-row"><label for="node-input-valueBinding">Value Path</label><input type="text" id="node-input-valueBinding"></div>
     <div class="form-row"><label for="node-input-storeId">Store ID</label><select id="node-input-storeId"></select></div>
     <div class="form-row"><label for="node-input-path">Store Path</label><input type="text" id="node-input-path"></div>
     <div class="form-row"><label for="node-input-inputType">Input Type</label><select id="node-input-inputType"><option value="text">text</option><option value="email">email</option><option value="number">number</option></select></div>
+    <!-- P123 (ADR 0012 / boolean category): Disabled binding — typedInput managed in oneditprepare/oneditsave. -->
+    <div class="form-row"><label for="node-input-disabledBinding">Disabled</label><input type="text" id="node-input-disabledBinding"></div>
 </script>
-<script type="text/html"
-    data-help-name="ui-input"><p>Mountet ein generisches Eingabefeld mit State- und optionalem Store-Binding.</p></script>
+<script type="text/html" data-help-name="ui-input">
+    <p>Mountet ein einzeiliges Eingabefeld und bindet seinen Wert an den Client-State.</p>
+    <h4>Value (P123)</h4>
+    <p>Bindbare Quelle des Feldwerts (Anzeige/Initialwert) — voller kanonischer Satz (ADR 0012):
+    Store, Query, Route-Param, Reactive, msg, JSONata, string, number, boolean, json, timestamp,
+    Flow, Global, Env. Ein bestehender <code>valuePath</code> wird automatisch als
+    <code>state</code>-Binding übernommen.</p>
+    <h4>Store-Binding</h4>
+    <p>Wenn <code>Store ID</code> und <code>Store Path</code> gesetzt sind, schreibt der Knoten
+    Nutzeränderungen direkt in den Store zurück.</p>
+    <h4>Disabled (P123)</h4>
+    <p>Bindbar über den Boolean-Zustand-Satz (ADR 0012): Store, Query, Route-Param, Reactive,
+    msg, JSONata, boolean, Flow, Global, Env. Ein Store-Binding deaktiviert das Feld live,
+    sobald der Wert truthy ist.</p>
+    <h4>Events</h4>
+    <p>Emittiert <code>{ event: "change", params: { value } }</code> bei jeder Eingabe und
+    <code>{ event: "submit", params: { value } }</code> bei Enter/Submit.</p>
+    <p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/input/ui-input.md">Ausführliche Doku</a></p>
+</script>
