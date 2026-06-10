@@ -16,6 +16,7 @@ export {
     ALERT_VARIANTS,
     BADGE_VARIANTS,
     bindingSchema,
+    leafBindingSchema,
     BUTTON_VARIANTS,
     BUTTON_LINK_MODES,
     COMPONENT_SIZES,
@@ -71,6 +72,7 @@ export type {
     NavigateTargetMode,
     AppModel,
     BindingDefinition,
+    LeafBindingDefinition,
     ButtonVariant,
     ButtonLinkMode,
     ComponentSize,
@@ -210,5 +212,6 @@ export {
     customersCrudRuntimeIntegrationFixture,
     fixtureAppModels,
     operationsConsoleAppModelFixture,
-    reactiveBindingFixture
+    reactiveBindingFixture,
+    storeSubPathBindingFixture
 } from "./fixtures";

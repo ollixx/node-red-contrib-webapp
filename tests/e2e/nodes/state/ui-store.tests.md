@@ -67,3 +67,14 @@ E2E tests live in `tests/e2e/nodes/behavior/ui-store.spec.ts`.
 | store with numeric initial value → bound ui-text renders the number | Numeric initial values round-trip correctly |
 | inject message to store node → bound ui-text updates via SSE | Flow-driven store update triggers live snapshot push |
 | value injected into store persists when re-navigating within session | liveState retains value across route navigation |
+
+## E2E tests — store subPath (P131, ADR 0013)
+
+Spec: `tests/e2e/nodes/behavior/ui-store.spec.ts` (describe block `ui-store subPath (P131)`).
+
+| Test | Goal |
+|---|---|
+| store binding with subPath 'c' renders the property value 'eins' | One-level `subPath` reads a property out of an object slice instead of rendering the whole object as "?" |
+| replacing the store slice updates the subPath-bound text via SSE | A flow-driven `replace` re-resolves the `subPath` and pushes the new value live |
+
+Unit coverage: `packages/schema/test/p131-store-subpath.test.ts` (schema: `subPath` validates; `subPath.subPath` and `subPath` on non-store rejected) and `packages/renderer/test/p131-store-subpath.test.ts` (resolution: literal/numeric/dotted/dynamic paths, empty vs object slice, unresolvable → marker + one speaking error, recursion-guard backstop).

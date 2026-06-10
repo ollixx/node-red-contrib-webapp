@@ -165,6 +165,67 @@ der `store`-typedInput-Typ an `ui-alert` (`message`/`title`) verdrahtet (P67);
 die Binding-Art selbst ist allgemein und kann auf weitere Felder ausgerollt
 werden.
 
+### Unterpfad (`subPath`) — P131 (ADR 0013)
+
+Ein `store`-Binding liest standardmäßig den **ganzen Slice**. Ist der Slice ein
+Objekt/Array (z. B. `{a:false, b:false, c:"eins"}`), ist er **nicht direkt
+darstellbar** → der zentrale Display-Normalizer (P104) rendert den
+Invalid-Value-Marker `"?"`. Damit eine Komponente auf **eine Property** des Slice
+binden kann, trägt das `store`-Binding einen optionalen **`subPath`**:
+
+```json
+{ "kind": "store", "path": "<ui-store-id>", "subPath": { "kind": "literal", "value": "c" } }
+```
+
+Auflösung im Renderer (`resolveBinding`, `case "store"`):
+
+1. Slice wie bisher auflösen (Store-ID → `statePath` → Live-Wert).
+2. Ist `subPath` gesetzt: das `subPath`-Binding zu einem **Pfad-String/Index**
+   auflösen, dann `getValueAtPath(slice, pfad)`. Punkt-/Klammer-Notation
+   (`b.label`, `items.0`, `items[0]`) wird unterstützt; ein **numerisches**
+   Segment ist ein **Array-Index**, ein Wort-Segment ein **Objekt-Key** —
+   datengetrieben, kein Typ-Entscheid.
+3. **Leerer/fehlender** `subPath` ⇒ der ganze Slice (unverändert; korrekt, wenn
+   der Slice ein Skalar ist).
+
+#### Ein-Level-Regel (Rekursionssperre)
+
+`subPath` ist selbst ein **Blatt-Value-Binding** und darf **kein eigenes
+`subPath`** tragen — das Schema lehnt `subPath.subPath` ab. Damit ist keine
+Kette/kein Zyklus möglich. Ein Laufzeit-**Tiefen-Guard** im Renderer ist der
+Backstop: würde (nur per Schema-Bypass erreichbar) doch eine Verschachtelung
+auftreten, gibt der Renderer **keinen** Stack-Overflow aus, sondern den
+Invalid-Value-Marker plus **eine** sprechende Meldung über dieselbe
+[reaktive-Fehler-Pipeline](logs-errors.md) (App-weite Dedup wie beim
+`reactive`-Binding, zurückgesetzt bei `flows:started`).
+
+#### Drei Stabilitätsklassen des Pfads
+
+Der `subPath` ist ein gebundener Wert aus dem kanonischen Satz
+(`literal` string/number · `routeParam` · `query` · `store` · `reactive` ·
+`jsonata` · `msg` · `flow` · `global` · `env`). Die Quelle bestimmt das
+Stabilitätsverhalten:
+
+| Klasse | Quellen | Verhalten |
+|---|---|---|
+| reaktiv / stabil | `routeParam`, `query`, `store`, `reactive` | wird je Snapshot neu aufgelöst; übersteht Deploy |
+| server-einmalig | `flow`, `global`, `env` | einmal pro Render im Server-Kontext aufgelöst |
+| message-getrieben / ephemer | `msg`, `jsonata` | Pfad kommt aus einer Message → leer bis zur nächsten Message, geht bei Deploy/Restart verloren (ADR-0012-Caveat — jetzt auf dem *Pfad*) |
+
+#### Sprechende Laufzeitfehler
+
+Editor permissiv, Laufzeit validiert (Owner-Entscheid). Bei Fehlkonfiguration
+gibt der Renderer den Invalid-Value-Marker `"?"` aus und meldet **einmalig**:
+
+- `subPath` gesetzt, aber **unauflösbar** (Key fehlt / Slice ist Skalar) →
+  `Store "<name>": Pfad "<p>" nicht gefunden (Slice ist <typ/wert>)`.
+- **kein** `subPath`, aber Slice ist ein nicht-darstellbares Objekt/Array →
+  `Store "<name>": Wert ist ein Objekt — gib einen Pfad zu einer anzeigbaren Property an`.
+
+> Die Editor-Seite (Store-**Name** statt ID, Pfad-typedInput mit Autocomplete aus
+> der Default-Shape) liefert **P132**. P131 ist der Unterbau (Schema, Renderer,
+> Runtime-Guard).
+
 ## Ausgabe: Änderungs-Notification
 
 Ändert sich ein Store (über Node-RED oder vom Client), emittiert der Knoten auf

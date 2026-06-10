@@ -132,3 +132,64 @@ test.describe("ui-store (P46)", () => {
         await expect(webapp.root()).toContainText("after");
     });
 });
+
+/**
+ * P131 (ADR 0013) — `store` binding with an optional one-level `subPath`.
+ *
+ * A ui-text bound to `{ kind:"store", path:<storeId>, subPath:{kind:"literal",
+ * value:"c"} }` reads property `c` out of the store slice (here
+ * `{a:false,b:false,c:"eins"}`) and displays "eins" — not the whole object → "?".
+ * When the flow replaces the slice, the live snapshot push updates the text.
+ */
+test.describe("ui-store subPath (P131)", () => {
+    test.afterEach(async ({ request }) => {
+        await resetFlow(request);
+    });
+
+    test("store binding with subPath 'c' renders the property value 'eins'", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "subPathApp1", root: "subPathApp1" })
+            .node("ui-store", {
+                id: "subPathStore1",
+                statePath: "monster",
+                initialValue: JSON.stringify({ a: false, b: false, c: "eins" })
+            })
+            .node("ui-text", {
+                id: "subPathTxt1",
+                value: { kind: "store", path: "subPathStore1", subPath: { kind: "literal", value: "c" } }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "subPathApp1");
+        await webapp.navigate("/");
+        await expect(webapp.root()).toContainText("eins");
+    });
+
+    test("replacing the store slice updates the subPath-bound text via SSE", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "subPathApp2", root: "subPathApp2" })
+            .node("ui-store", {
+                id: "subPathStore2",
+                statePath: "monster",
+                initialValue: JSON.stringify({ a: false, b: false, c: "eins" })
+            })
+            .node("ui-text", {
+                id: "subPathTxt2",
+                value: { kind: "store", path: "subPathStore2", subPath: { kind: "literal", value: "c" } }
+            })
+            .withStoreInject("subPathInj2", "subPathStore2", { a: false, b: false, c: "zwei" })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "subPathApp2");
+        await webapp.navigate("/");
+        await expect(webapp.root()).toContainText("eins");
+
+        // Replace the whole slice; the subPath ("c") now resolves to "zwei".
+        await injectMessage(request, "subPathInj2");
+        await expect(webapp.root()).toContainText("zwei", { timeout: 5000 });
+    });
+});

@@ -158,6 +158,40 @@ export interface RendererApp {
 // per P104 and is NOT replaced by binding.fallback.
 const REACTIVE_INVALID = Symbol("reactive-invalid");
 
+// P131 (ADR 0013): the same invalid-value marker is returned when a store
+// sub-path is unresolvable, when an object/array slice is bound without a
+// sub-path, or when the depth guard trips. It is a Symbol, so the central
+// normalization (normalizeDisplayValue) renders it as the "?" marker (P104) and
+// it is NOT replaced by a binding fallback.
+const STORE_SUBPATH_INVALID = REACTIVE_INVALID;
+
+// P131 (ADR 0013): expected sub-path resolution depth is 1 (the store binding's
+// single leaf sub-path). The schema forbids `subPath.subPath`, so a chain/cycle
+// is impossible by construction — this runtime depth guard is a backstop that
+// returns the invalid-value marker instead of overflowing the stack.
+const STORE_SUBPATH_MAX_DEPTH = 4;
+
+/** Short human description of a slice's runtime type, for speaking errors. */
+function describeSliceType(slice: unknown): string {
+    if (slice === null) {
+        return "null";
+    }
+
+    if (Array.isArray(slice)) {
+        return "Array";
+    }
+
+    if (typeof slice === "object") {
+        return "Objekt";
+    }
+
+    if (typeof slice === "string") {
+        return `der String "${slice}"`;
+    }
+
+    return String(slice);
+}
+
 interface BindingSources {
     state: Record<string, unknown>;
     queries: Record<string, unknown>;
@@ -169,7 +203,11 @@ interface BindingSources {
     // P115: store NAME → statePath, the lookup `store("<name>")` uses inside a
     // reactive expression. Built alongside storePaths.
     storeNamePaths: Record<string, string>;
+    // P131 (ADR 0013): store id → display NAME, for the speaking sub-path errors
+    // (`Store "<name>": …`). Falls back to the id when a store has no name.
+    storeNames: Record<string, string>;
     // P115: invoked with a distinct reactive failure (already deduped upstream).
+    // P131: also the sink for store sub-path speaking errors — same dedup/pipeline.
     reportReactiveError?: ReactiveErrorReporter;
 }
 
@@ -185,13 +223,38 @@ function getObjectRecord(input: unknown): Record<string, unknown> {
     return input as Record<string, unknown>;
 }
 
+/**
+ * Split a path string into segments, honouring both dot and bracket notation:
+ * `items.0`, `items[0]`, `b.label` → `["items", "0"]`, `["items", "0"]`,
+ * `["b", "label"]`. Bracket segments are normalised to bare segments so a numeric
+ * index and a numeric key are handled identically downstream (data-driven, not a
+ * typed choice — ADR 0013).
+ */
+function splitPathSegments(path: string): string[] {
+    return path
+        .replace(/\[(\d+)\]/g, ".$1")
+        .split(".")
+        .filter((segment) => segment.length > 0);
+}
+
 function getValueAtPath(source: unknown, path: string | undefined): unknown {
     if (!path) {
         return undefined;
     }
 
-    return path.split(".").reduce<unknown>((currentValue, segment) => {
-        if (typeof currentValue !== "object" || currentValue === null || Array.isArray(currentValue)) {
+    return splitPathSegments(path).reduce<unknown>((currentValue, segment) => {
+        if (currentValue === null || currentValue === undefined) {
+            return undefined;
+        }
+
+        // P131 (ADR 0013): a numeric segment indexes an array; a string segment
+        // keys an object. "Index vs key" is data-driven, not a typed choice.
+        if (Array.isArray(currentValue)) {
+            const index = Number(segment);
+            return Number.isInteger(index) ? currentValue[index] : undefined;
+        }
+
+        if (typeof currentValue !== "object") {
             return undefined;
         }
 
@@ -229,7 +292,91 @@ function applyStatePatch(currentState: Record<string, unknown>, statePatch: Reco
     return Object.entries(statePatch).reduce<Record<string, unknown>>((nextState, [path, value]) => setValueAtPath(nextState, path, value), currentState);
 }
 
-function resolveBinding(binding: BindingDefinition | undefined, sources: BindingSources): unknown {
+/**
+ * P131 (ADR 0013): resolve a `store` binding, honouring an optional `subPath`.
+ *
+ * 1. Resolve the slice (store id → statePath → live value) as before.
+ * 2. No `subPath` (or it resolves empty): a scalar slice is returned as-is; a
+ *    non-renderable object/array slice yields the invalid-value marker + a
+ *    speaking error.
+ * 3. With a `subPath`: resolve the (leaf) sub-path binding through the normal
+ *    `resolveBinding` mechanics (msg/jsonata message-driven; reactive/routeParam/
+ *    query/store reactive; flow/global/env server-once) to a path string/index,
+ *    then `getValueAtPath(slice, path)`. A missing key / scalar slice yields the
+ *    invalid-value marker + a speaking error.
+ *
+ * `depth` is the runtime backstop for the (schema-forbidden) nested case: if a
+ * sub-path binding is itself a store binding carrying its own sub-path (only
+ * reachable by bypassing the schema), the guard trips and returns the marker
+ * instead of recursing without bound.
+ */
+function resolveStoreBinding(binding: BindingDefinition, sources: BindingSources, depth: number): unknown {
+    const storeId = binding.path;
+    const storeName = (storeId && sources.storeNames[storeId]) || storeId || "?";
+
+    if (depth > STORE_SUBPATH_MAX_DEPTH) {
+        reportStoreSubPathError(
+            sources,
+            `store binding "${storeName}": sub-path nesting too deep / cycle`
+        );
+        return STORE_SUBPATH_INVALID;
+    }
+
+    const statePath = storeId ? sources.storePaths[storeId] : undefined;
+    const slice = getValueAtPath(sources.state, statePath);
+
+    let pathValue: unknown;
+    if (binding.subPath !== undefined) {
+        pathValue = resolveBinding(binding.subPath as BindingDefinition, sources, depth + 1);
+    }
+
+    const isObjectSlice = typeof slice === "object" && slice !== null;
+
+    // No (or empty) sub-path: a scalar slice renders directly. A non-renderable
+    // object/array slice is a configuration error → marker + speaking message.
+    if (pathValue === undefined || pathValue === null || pathValue === "") {
+        if (isObjectSlice) {
+            reportStoreSubPathError(
+                sources,
+                `Store "${storeName}": Wert ist ein Objekt — gib einen Pfad zu einer anzeigbaren Property an`
+            );
+            return STORE_SUBPATH_INVALID;
+        }
+
+        return slice;
+    }
+
+    // A sub-path is set. It resolves to a path string / numeric index; coerce to
+    // a path string (a numeric index becomes its decimal string, e.g. 0 → "0").
+    const pathString = String(pathValue);
+    const resolved = getValueAtPath(slice, pathString);
+
+    if (resolved === undefined) {
+        reportStoreSubPathError(
+            sources,
+            `Store "${storeName}": Pfad "${pathString}" nicht gefunden (Slice ist ${describeSliceType(slice)})`
+        );
+        return STORE_SUBPATH_INVALID;
+    }
+
+    return resolved;
+}
+
+/**
+ * P131 (ADR 0013): emit a speaking store sub-path error through the SAME
+ * app-scoped reactive-error sink/dedup (webapp.js `runtimeState.reactiveErrorKeys`,
+ * cleared on flows:started). The message is the dedup key — a given misconfigured
+ * binding reports once per app lifetime, not per render.
+ */
+function reportStoreSubPathError(sources: BindingSources, message: string): void {
+    sources.reportReactiveError?.({
+        source: "store-subpath",
+        message,
+        key: `store-subpath ${message}`
+    });
+}
+
+function resolveBinding(binding: BindingDefinition | undefined, sources: BindingSources, depth = 0): unknown {
     if (!binding) {
         return undefined;
     }
@@ -250,10 +397,17 @@ function resolveBinding(binding: BindingDefinition | undefined, sources: Binding
             resolvedValue = getValueAtPath(sources.state, binding.path);
             break;
         case "store": {
-            // P67: binding.path holds the referenced ui-store node id. Resolve
-            // it to the store's statePath, then read the live value from state.
-            const statePath = binding.path ? sources.storePaths[binding.path] : undefined;
-            resolvedValue = getValueAtPath(sources.state, statePath);
+            // P67: binding.path holds the referenced ui-store node id → statePath
+            // → live slice. P131 (ADR 0013): an optional `subPath` reaches one
+            // level into the slice (and reports speaking errors / the invalid-value
+            // marker when unresolvable). The marker is a Symbol, so it bypasses the
+            // fallback substitution below (an explicit invalid, not an absent value).
+            const storeValue = resolveStoreBinding(binding, sources, depth);
+            if (storeValue === STORE_SUBPATH_INVALID) {
+                return STORE_SUBPATH_INVALID;
+            }
+
+            resolvedValue = storeValue;
             break;
         }
         case "msg":
@@ -814,6 +968,13 @@ export function createRendererApp(appModel: AppModel, options: RendererAppOption
     // P115: store NAME → statePath, the lookup `store("<name>")` uses inside a
     // reactive expression. Duplicate names are marked ambiguous (not last-wins).
     const storeNamePaths = buildStoreNamePaths(integration.stores);
+    // P131 (ADR 0013): store id → display NAME, for the speaking sub-path errors.
+    const storeNames = integration.stores.reduce<Record<string, string>>((names, store) => {
+        if (typeof store.name === "string" && store.name.trim().length > 0) {
+            names[store.id] = store.name;
+        }
+        return names;
+    }, {});
     // P115: dedup distinct reactive failures per app instance, so a broken
     // expression is reported once — not on every re-render. The set persists
     // across render()/navigate()/replaceState()/replaceQueries() calls.
@@ -842,6 +1003,7 @@ export function createRendererApp(appModel: AppModel, options: RendererAppOption
                 params: routeMatch.params,
                 storePaths,
                 storeNamePaths,
+                storeNames,
                 reportReactiveError
             }
         };
