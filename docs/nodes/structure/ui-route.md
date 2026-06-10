@@ -64,9 +64,15 @@ in der Regel nichts verdrahten.
 
 - **Akzeptiert (intern zugestellt):**
   - **Navigation** zu dieser Route. Sie entsteht aus einer `navigate`-Action
-    ([`ui-action`](../behavior/ui-action.md)) — entweder durch eine an die Route
-    **verdrahtete** Action (Szenario 1, Pfad aus dem eigenen `path` + `params`)
-    oder über ein app-global aufgelöstes `to` (Szenario 2). Format: [messages.md](../concepts/messages.md).
+    ([`ui-action`](../behavior/ui-action.md)). **Adressierungs-Vorrang (ADR 0011
+    §3 / P118):** Trägt die eingehende navigate-msg bereits ein **explizites
+    Ziel** (`msg.ui.action.to`, aus Modus `route`/`url` oder als Override), so
+    behandelt die Route sie als **adressierte Navigation und reicht sie
+    unverändert durch** — sie setzt NICHT ihren eigenen `path` darauf. Nur ein
+    **zielloses** navigate (Modus `wire`, kein `to`) löst das Verhalten „Route
+    baut die Location aus ihrem eigenen `path` + `params`" aus. Eine verdrahtete
+    Route kapert also keine bereits adressierte Navigation. Format:
+    [messages.md](../concepts/messages.md).
   - **Component-State-Messages** für ihre Kind-Elemente (`show`/`hide` etc.),
     ebenfalls über die Runtime geroutet.
 - **Validierung:** der Pfad `/` ist verboten und Pfade müssen je App eindeutig

@@ -54,14 +54,26 @@ Das vollständige Verbset und die Zieladressierung stehen in
 ## Navigation
 
 Navigation ist **kein eigenes Message-Format** — sie reist als Action-Message
-mit `type: "navigate"` (siehe oben). Zwei Szenarien (ADR 0007, P66-Amendment):
+mit `type: "navigate"` (siehe oben). Die Zielquelle ist ein expliziter Modus
+(ADR 0011 / P118), der die Absicht speichert:
 
-- **Szenario 1 — verdrahtet:** Der Out-Port von `ui-action` ist mit einer `ui-route`/`ui-app` verbunden. Die Ziel-Route baut ihren Pfad aus dem **eigenen** `path` und den `msg.ui.action.params` (`:placeholder` → Parameter). Kein `to` nötig.
-- **Szenario 2 — `to`:** `ui-action` setzt `to` (typedInput: `str`/`msg`/`flow`/`global`/`jsonata`), das app-global aufgelöst wird; zusätzliche `params` sind möglich.
+- **Modus `wire`:** Kein `to` in der msg. Die `ui-route`/`ui-app`, welche die
+  Navigation **empfängt**, baut die Location aus dem **eigenen** `path` + den
+  `msg.ui.action.params`. Verzweigung ist wohldefiniert — die erreichte Route gewinnt.
+- **Modus `route`:** `ui-action` löst die referenzierte Route auf, wertet die
+  typisierten `params` gegen die msg aus und trägt die fertige Location als
+  explizites `msg.ui.action.to`.
+- **Modus `url`:** `ui-action` setzt `to` (typedInput: `str`/`msg`/`flow`/`global`/`jsonata`)
+  als ganze URL; `params` entfällt.
 
-`onEnter`/`onLeave` der betroffenen Route(n) werden in **beiden** Szenarien
-emittiert (siehe [events.md](events.md)). Der frühere `msg.ui.navigate`-Pfad und
-der Knoten `ui-navigation` sind **deprecated**.
+**Adressierungs-Vorrang (ADR 0011 §3):** Trägt die msg bereits ein explizites
+`to` (Modus `route`/`url` oder ein Override), reicht eine empfangende `ui-route`
+sie **unverändert durch** und setzt NICHT ihren eigenen Pfad darauf. Nur
+zielloses navigate (Modus `wire`) löst „Route baut die Location" aus.
+
+`onEnter`/`onLeave` der betroffenen Route(n) werden in **allen** Modi emittiert
+(siehe [events.md](events.md)). Der frühere `msg.ui.navigate`-Pfad und der Knoten
+`ui-navigation` sind **deprecated**.
 
 ---
 

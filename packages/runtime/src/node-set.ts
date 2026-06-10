@@ -333,9 +333,13 @@ function assembleRuntimeIntegration(
         .map((definition) => ({
             id: definition.id,
             actionType: definition.type === "ui-navigation" ? "navigate" : definition.actionType,
-            targetMode: definition.type === "ui-navigation" ? "out-port" : definition.targetMode,
+            // P118 (ADR 0011 §1): the navigate target SOURCE (wire | route | url).
+            // ui-navigation has no stored mode → its `to` makes it a url target.
+            targetMode: definition.type === "ui-navigation" ? "url" : definition.targetMode,
+            routeId: definition.type === "ui-navigation" ? undefined : definition.routeId,
             target: definition.type === "ui-navigation" ? undefined : definition.target,
             to: definition.type === "ui-navigation" ? definition.to : definition.to,
+            params: definition.type === "ui-navigation" ? undefined : definition.params,
             description: definition.type === "ui-navigation" ? undefined : definition.description
         }))
         .sort((left, right) => left.id.localeCompare(right.id));

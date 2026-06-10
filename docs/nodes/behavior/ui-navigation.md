@@ -13,9 +13,13 @@ kein eigenständiges Verhaltenskonzept — der Knoten besteht nur aus
 Abwärtskompatibilität für bestehende Flows weiter.
 
 **Für neue Flows: [`ui-action`](ui-action.md) mit `actionType: navigate`
-verwenden.** Dort sind die zwei Navigations-Szenarien (verdrahtet mit einer
-`ui-route` vs. `to`-typedInput), das `params`-Modell und die Zieladressierung
+verwenden.** Dort sind die drei Navigations-Modi (`wire` / `route` / `url`,
+ADR 0011 / P118), das typisierte `params`-Modell und der Adressierungs-Vorrang
 ausführlich beschrieben.
+
+`ui-navigation` hat nur das Feld `to` und verhält sich daher wie eine
+`ui-action` im **Modus `url`**: das `to` ist die ganze Ziel-URL. Den `wire`- und
+`route`-Modus (sowie typisierte `params`) gibt es nur auf `ui-action`.
 
 ## Einordnung
 

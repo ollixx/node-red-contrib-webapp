@@ -1,6 +1,7 @@
 import {
     standardLayoutPresetIds,
     validateUiNodeDefinition,
+    type ActionParamEntry,
     type BindingDefinition,
     type StandardLayoutPresetId,
     type UiActionNodeDefinition,
@@ -205,13 +206,17 @@ export interface UiSliderEditorConfig extends MountableEditorConfig {
 
 export interface UiActionEditorConfig extends IdentifiedEditorConfig {
     actionType?: "navigate" | "disable" | "enable" | "show" | "hide" | "trigger";
-    targetMode?: "out-port" | "path";
+    // P118 (ADR 0011 §1): navigate target SOURCE — wire | route | url.
+    targetMode?: "wire" | "route" | "url";
+    // P118: referenced ui-route id (route mode).
+    routeId?: string;
     target?: string;
     to?: string;
     // P66: navigate `to` is a typedInput. `toType` is its type.
     toType?: "str" | "msg" | "flow" | "global" | "jsonata";
-    // P66: named URL params (Scenario 1: wired to a ui-route). Stored as a JSON
-    // object string by the editor (key/value rows).
+    // P118 (ADR 0011 §1): typed navigate params — a JSON-array string of
+    // { name, value, valueType } rows (route mode). The legacy `{k: "v"}` object
+    // string is still accepted and migrated to str-typed rows on emit.
     params?: string;
     description?: string;
 }
@@ -557,6 +562,51 @@ function parseParamsObject(value: string | undefined): Record<string, string> | 
         }
     }
     return Object.keys(out).length > 0 ? out : undefined;
+}
+
+// P118 (ADR 0011 §1): normalise the editor's `params` field into the canonical
+// list of typed entries. Accepts the new JSON-array form `[{name,value,valueType}]`
+// or the legacy JSON-object `{k: "v"}` (migrated to str-typed rows). Returns
+// undefined for empty/invalid input.
+const ACTION_PARAM_VALUE_TYPES = new Set(["str", "msg", "jsonata", "flow", "global", "env"]);
+
+function migrateActionParamList(value: string | undefined): ActionParamEntry[] | undefined {
+    if (!value || typeof value !== "string") {
+        return undefined;
+    }
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(value);
+    }
+    catch {
+        return undefined;
+    }
+    if (Array.isArray(parsed)) {
+        const out: ActionParamEntry[] = [];
+        for (const entry of parsed) {
+            if (!entry || typeof entry !== "object") {
+                continue;
+            }
+            const e = entry as Record<string, unknown>;
+            const name = typeof e.name === "string" ? e.name.trim() : "";
+            if (!name) {
+                continue;
+            }
+            const valueType = (typeof e.valueType === "string" && ACTION_PARAM_VALUE_TYPES.has(e.valueType)
+                ? e.valueType
+                : "str") as ActionParamEntry["valueType"];
+            const v = e.value === undefined || e.value === null ? "" : String(e.value);
+            out.push({ name, value: v, valueType });
+        }
+        return out.length > 0 ? out : undefined;
+    }
+    // Legacy object → str-typed rows.
+    const obj = parseParamsObject(value);
+    if (!obj) {
+        return undefined;
+    }
+    const migrated = Object.entries(obj).map(([name, v]) => ({ name, value: v, valueType: "str" as const }));
+    return migrated.length > 0 ? migrated : undefined;
 }
 
 function literalBinding(value: string): BindingDefinition {
@@ -966,34 +1016,34 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
     "ui-action": createDefinition("ui-action", "behavior", {
         id: requiredString("Action IDs are required before deploy."),
         actionType: optionalStringEnum(["navigate", "disable", "enable", "show", "hide", "trigger"], "Actions must use a known action type."),
+        // P118 (ADR 0011 §1): `targetMode` is the navigate target SOURCE
+        // (wire | route | url) — navigate-only and optional (legacy configs are
+        // migrated to a mode on emit). The old out-port/path enum and the
+        // "typed actions must declare a target mode" rule are dropped.
         targetMode: {
-            validate(value, config) {
-                if (value === undefined) {
-                    return typeof config.actionType === "string" ? "Typed actions must declare a target mode." : undefined;
+            validate(value) {
+                if (value === undefined || value === "") {
+                    return undefined;
                 }
-
-                if (typeof value !== "string" || !["out-port", "path"].includes(value)) {
-                    return "Actions must use a known target mode.";
-                }
-
-                return typeof config.actionType === "string" ? undefined : "Target modes require an action type.";
+                return ["wire", "route", "url"].includes(value as string)
+                    ? undefined
+                    : "Navigate target mode must be one of wire, route, url.";
             }
         },
+        // `target` is the deprecated wireless addressing field — accepted as-is.
         target: {
-            validate(value, config) {
-                if (config.targetMode === "path") {
-                    return typeof value === "string" && value.trim().length > 0
-                        ? undefined
-                        : "Path-targeted actions must declare a target.";
-                }
-
-                if (config.targetMode === "out-port") {
-                    return value === undefined || value === ""
-                        ? undefined
-                        : "Out-port actions must not declare a direct target.";
-                }
-
+            validate() {
                 return undefined;
+            }
+        },
+        // P118: `routeId` is the referenced ui-route id (route mode). The picker
+        // (P119) supplies it; per-node validation only checks it is a string.
+        routeId: {
+            validate(value) {
+                if (value === undefined || value === "") {
+                    return undefined;
+                }
+                return typeof value === "string" ? undefined : "Route reference must be a string id.";
             }
         },
         // P66 (ADR 0007): a navigate action no longer REQUIRES `to`. When the
@@ -1014,6 +1064,9 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
             }
         },
         params: {
+            // P118 (ADR 0011 §1): accept the new typed-list form
+            // `[{name,value,valueType}]` OR the legacy `{k: "v"}` object (migrated
+            // on emit). Per-node validation only checks it parses to one of those.
             validate(value) {
                 if (value === undefined || value === "" || typeof value !== "string") {
                     return undefined;
@@ -1023,27 +1076,45 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
                     parsed = JSON.parse(value);
                 }
                 catch {
-                    return "Navigate params must be a JSON object.";
+                    return "Navigate params must be a JSON array of typed entries or a JSON object.";
                 }
-                if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-                    return "Navigate params must be a JSON object.";
+                if (Array.isArray(parsed)) {
+                    const ok = parsed.every((entry) => entry
+                        && typeof entry === "object"
+                        && typeof (entry as Record<string, unknown>).name === "string"
+                        && (entry as Record<string, unknown>).name !== "");
+                    return ok ? undefined : "Navigate param rows need a non-empty `name`.";
+                }
+                if (typeof parsed !== "object" || parsed === null) {
+                    return "Navigate params must be a JSON array of typed entries or a JSON object.";
                 }
                 return Object.values(parsed as Record<string, unknown>).every((v) => typeof v === "string")
                     ? undefined
                     : "Navigate param values must be strings (they fill URL segments).";
             }
         }
-    }, (config: UiActionEditorConfig): UiActionNodeDefinition => ({
-        type: "ui-action",
-        id: config.id ?? "",
-        actionType: config.actionType,
-        targetMode: config.targetMode,
-        target: config.target,
-        to: config.to,
-        toType: config.toType,
-        params: parseParamsObject(config.params),
-        description: config.description
-    })),
+    }, (config: UiActionEditorConfig): UiActionNodeDefinition => {
+        // P118 (ADR 0011 §1 + Migration): derive the navigate target mode and keep
+        // only the fields it owns, so the emitted definition is mode-exclusive
+        // (and never trips the schema's double-config refinement).
+        const isNavigate = config.actionType === "navigate";
+        const targetMode: UiActionNodeDefinition["targetMode"] = isNavigate
+            ? (config.targetMode
+                ?? (config.routeId ? "route" : (config.to ? "url" : "wire")))
+            : undefined;
+        return {
+            type: "ui-action",
+            id: config.id ?? "",
+            actionType: config.actionType,
+            targetMode,
+            routeId: targetMode === "route" ? (config.routeId || undefined) : undefined,
+            target: config.target,
+            to: targetMode === "url" ? (config.to || undefined) : undefined,
+            toType: targetMode === "url" ? config.toType : undefined,
+            params: targetMode === "url" ? undefined : migrateActionParamList(config.params),
+            description: config.description
+        };
+    }),
     "ui-navigation": createDefinition("ui-navigation", "behavior", {
         id: requiredString("Navigation IDs are required before deploy."),
         to: requiredString("Navigation nodes must declare a destination path.")

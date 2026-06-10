@@ -199,6 +199,76 @@ function parseParamsObject(value) {
     return Object.keys(out).length > 0 ? out : undefined;
 }
 
+// P118 (ADR 0011 §1): the typed navigate param value-types.
+const ACTION_PARAM_VALUE_TYPES = new Set(["str", "msg", "jsonata", "flow", "global", "env"]);
+
+// P118 (ADR 0011 §1 + Migration): normalise a ui-action `params` config into the
+// canonical LIST of typed entries `[{ name, value, valueType }]`.
+//   • Already a list (new editor / typed fixture) → validated + passed through.
+//   • Legacy object `{k: "v"}` (P66) or a JSON-object string → migrated to a list
+//     of `str`-typed rows (lossless: literal key/value becomes name/value/str).
+// Returns undefined when empty (keeps the definition clean).
+function parseActionParamList(value) {
+    let list;
+    if (Array.isArray(value)) {
+        list = value;
+    }
+    else if (typeof value === "string" && value.trim().startsWith("[")) {
+        try {
+            const parsed = JSON.parse(value);
+            list = Array.isArray(parsed) ? parsed : undefined;
+        }
+        catch (_e) {
+            list = undefined;
+        }
+    }
+    if (list) {
+        const out = [];
+        for (const entry of list) {
+            if (!entry || typeof entry !== "object") {
+                continue;
+            }
+            const name = typeof entry.name === "string" ? entry.name.trim() : "";
+            if (!name) {
+                continue;
+            }
+            const valueType = ACTION_PARAM_VALUE_TYPES.has(entry.valueType) ? entry.valueType : "str";
+            const v = entry.value === undefined || entry.value === null ? "" : String(entry.value);
+            out.push({ name, value: v, valueType });
+        }
+        return out.length > 0 ? out : undefined;
+    }
+    // Legacy object form → migrate to str-typed rows.
+    const obj = parseParamsObject(value);
+    if (!obj) {
+        return undefined;
+    }
+    const migrated = Object.keys(obj).map((name) => ({ name, value: obj[name], valueType: "str" }));
+    return migrated.length > 0 ? migrated : undefined;
+}
+
+// P118 (ADR 0011 §1 + Migration): derive the navigate target-source MODE for a
+// ui-action config. An explicit stored `targetMode` (wire | route | url) wins.
+// Legacy configs without one are migrated: a `routeId` → "route"; a `to` →
+// "url"; otherwise → "wire" (the wired route supplies the path). Returns
+// undefined for non-navigate actions (the mode is navigate-only).
+function deriveNavigateTargetMode(config) {
+    if (blankToUndefined(config.actionType) !== "navigate") {
+        return undefined;
+    }
+    const stored = blankToUndefined(config.targetMode);
+    if (stored === "wire" || stored === "route" || stored === "url") {
+        return stored;
+    }
+    if (blankToUndefined(config.routeId)) {
+        return "route";
+    }
+    if (blankToUndefined(config.to)) {
+        return "url";
+    }
+    return "wire";
+}
+
 // P23: design tokens may arrive as an object (typed fixture / gen-example) or a
 // JSON string (editor field). Returns a plain object or undefined.
 function parseTokens(value) {
@@ -1806,137 +1876,6 @@ function resolveContextBindingsForDef(def, RED) {
     return out;
 }
 
-// P66 (ADR 0007): compile-/deploy-time cross-validation of navigate actions.
-// The wire that links a navigate ui-action to a ui-route is INVISIBLE to the
-// per-node editor validator, so these checks run here with the full flow graph:
-//   • navigate wired-to-route AND `to` set        → ambiguous (which destination?)
-//   • navigate with no wire-to-route and no `to`   → no destination at all
-//   • navigate with a STATIC `to` matching no route → dead link
-// A dynamic `to` (msg / flow / global / jsonata) is NOT edit-time checkable —
-// it is validated at runtime on no-match. Returns a list of { nodeId, message }.
-function validateNavigationFlow(RED) {
-    const issues = [];
-    let nodes;
-    try {
-        const flowFilePath = getFlowFilePath(RED);
-        if (!fs.existsSync(flowFilePath)) {
-            return issues;
-        }
-        const parsed = JSON.parse(fs.readFileSync(flowFilePath, "utf8"));
-        nodes = Array.isArray(parsed) ? parsed : [];
-    }
-    catch {
-        return issues;
-    }
-
-    // Map Node-RED node id → type, and uiId → type (targets/picker store uiIds or
-    // node ids depending on the path; check both). Collect route paths per app
-    // is not needed for the dead-link check — any declared route path counts.
-    const typeByNodeId = new Map();
-    const typeByUiId = new Map();
-    const routePaths = new Set();
-    for (const n of nodes) {
-        if (!n || !WEBAPP_NODE_TYPES.has(n.type)) {
-            continue;
-        }
-        typeByNodeId.set(n.id, n.type);
-        if (n.uiId) {
-            typeByUiId.set(n.uiId, n.type);
-        }
-        if (n.type === "ui-route" && typeof n.path === "string" && n.path) {
-            routePaths.add(n.path);
-        }
-        if (n.type === "ui-app") {
-            // The ui-app owns the implicit root route "/".
-            routePaths.add("/");
-        }
-    }
-
-    const isRouteOrApp = (id) => {
-        const t = typeByNodeId.get(id) || typeByUiId.get(id);
-        return t === "ui-route" || t === "ui-app";
-    };
-
-    // Does a STATIC path template match a declared route (ignoring :param values)?
-    const staticPathMatchesARoute = (template) => {
-        const norm = template.startsWith("/") ? template : `/${template}`;
-        for (const routePath of routePaths) {
-            const rp = routePath.startsWith("/") ? routePath : `/${routePath}`;
-            const tplSegs = norm.split("/");
-            const rpSegs = rp.split("/");
-            if (tplSegs.length !== rpSegs.length) {
-                continue;
-            }
-            let ok = true;
-            for (let i = 0; i < rpSegs.length; i += 1) {
-                if (rpSegs[i].startsWith(":")) {
-                    continue; // a placeholder matches any segment
-                }
-                if (rpSegs[i] !== tplSegs[i]) {
-                    ok = false;
-                    break;
-                }
-            }
-            if (ok) {
-                return true;
-            }
-        }
-        return false;
-    };
-
-    for (const n of nodes) {
-        if (!n || n.type !== "ui-action" || n.actionType !== "navigate") {
-            continue;
-        }
-        // Wired to a route/app? Check output wires + picker targets + legacy target.
-        const wiredIds = [];
-        if (Array.isArray(n.wires)) {
-            for (const port of n.wires) {
-                if (Array.isArray(port)) {
-                    for (const id of port) {
-                        wiredIds.push(id);
-                    }
-                }
-            }
-        }
-        const pickerTargets = parseTargetIds(n.targets) || [];
-        for (const id of pickerTargets) {
-            wiredIds.push(id);
-        }
-        if (typeof n.target === "string" && n.target) {
-            wiredIds.push(n.target);
-        }
-        const wiredToRoute = wiredIds.some(isRouteOrApp);
-
-        const toType = n.toType || (n.to ? "str" : undefined);
-        const hasTo = typeof n.to === "string" && n.to.trim().length > 0;
-        const ref = n.uiId || n.id;
-
-        if (wiredToRoute && hasTo) {
-            issues.push({
-                nodeId: n.id,
-                message: `ui-action '${ref}': navigate is wired to a ui-route/ui-app AND has a 'to' — ambiguous. Remove the 'to' (the route supplies the path) or the wire.`
-            });
-            continue;
-        }
-        if (!wiredToRoute && !hasTo) {
-            issues.push({
-                nodeId: n.id,
-                message: `ui-action '${ref}': navigate has no destination — wire it to a ui-route/ui-app, or set 'to'.`
-            });
-            continue;
-        }
-        if (!wiredToRoute && hasTo && toType === "str" && !staticPathMatchesARoute(n.to)) {
-            issues.push({
-                nodeId: n.id,
-                message: `ui-action '${ref}': navigate 'to' = '${n.to}' matches no ui-route — dead link. Every navigable path needs a ui-route.`
-            });
-        }
-    }
-
-    return issues;
-}
-
 // P108: cross-validate that no two ui-app nodes share the same root path.
 // Two apps with the same root collide on the URL and cause non-deterministic
 // routing — surface this as a structured error at deploy time.
@@ -2744,11 +2683,87 @@ function resolveActionTo(node, toValue, toType, msg) {
     }
 }
 
+// P118 (ADR 0011 §1): resolve a single typed navigate-param value against the
+// triggering msg. str = literal; msg/flow/global/env via evaluateNodeProperty;
+// jsonata against the full msg. Mirrors resolveActionTo's mechanics. A no-match
+// yields "" so the URL segment is still well-formed (an empty placeholder).
+function resolveActionParamValue(node, entry, msg) {
+    const type = entry && ACTION_PARAM_VALUE_TYPES.has(entry.valueType) ? entry.valueType : "str";
+    const raw = entry && entry.value !== undefined && entry.value !== null ? String(entry.value) : "";
+    if (type === "str") {
+        return raw;
+    }
+    const RED = runtimeState.RED;
+    if (!RED || !RED.util) {
+        return "";
+    }
+    try {
+        if (type === "jsonata") {
+            const expr = RED.util.prepareJSONataExpression(raw, node);
+            const result = RED.util.evaluateJSONataExpression(expr, msg);
+            return result === undefined || result === null ? "" : String(result);
+        }
+        // msg / flow / global / env
+        const result = RED.util.evaluateNodeProperty(raw, type, node, msg);
+        return result === undefined || result === null ? "" : String(result);
+    }
+    catch (err) {
+        reportRuntimeError(node, {
+            severity: "error",
+            code: "navigate-param-eval-failed",
+            message: `Could not resolve navigate param '${entry && entry.name}' (${type}): ${err && err.message ? err.message : err}`,
+            context: { nodeId: node && node.id, op: "navigate" }
+        });
+        return "";
+    }
+}
+
+// P118: resolve a navigate param LIST into a string→string record, evaluating
+// each typed entry against the triggering msg.
+function resolveActionParamRecord(node, paramList, msg) {
+    if (!Array.isArray(paramList) || paramList.length === 0) {
+        return undefined;
+    }
+    const out = {};
+    for (const entry of paramList) {
+        if (entry && typeof entry.name === "string" && entry.name) {
+            out[entry.name] = resolveActionParamValue(node, entry, msg);
+        }
+    }
+    return Object.keys(out).length > 0 ? out : undefined;
+}
+
+// P118 (ADR 0011 §1): resolve a referenced ui-route id (route mode) to its
+// declared `path` template, app-globally over the live definitions. Returns
+// undefined when the id matches no ui-route/ui-app (caller treats as no target).
+function resolveRouteIdToPath(routeId) {
+    if (!routeId) {
+        return undefined;
+    }
+    const defs = collectLiveDefinitions();
+    for (const def of defs) {
+        if (!def || def.id !== routeId) {
+            continue;
+        }
+        if (def.type === "ui-route") {
+            return typeof def.path === "string" && def.path ? def.path : "/";
+        }
+        if (def.type === "ui-app") {
+            return "/";
+        }
+    }
+    return undefined;
+}
+
 // Map a ui-action definition + incoming msg into the interaction command the
 // client applies. Domain-agnostic: only the documented interaction verbs.
-// `node` (optional) is the ui-action runtime node — needed to resolve a navigate
-// `to` typedInput of type msg/flow/global/jsonata (P66). When absent (e.g. unit
-// tests passing only a definition) `to` is treated as a literal string.
+// `node` (optional) is the ui-action runtime node — needed to resolve typedInputs.
+//
+// P118 (ADR 0011 §1/§3): navigate carries an EXPLICIT target in route/url mode —
+// the resolved `to` location — which a receiving ui-route must pass through (it
+// never imposes its own path on an addressed navigation). In wire mode the
+// command carries NO `to`; the route that receives the message builds the
+// location from its own path (today's behaviour).
 function buildActionCommand(actionDefinition, msg, node) {
     const uiMsg = msg && msg.ui && typeof msg.ui === "object" ? msg.ui : {};
     const override = uiMsg.action && typeof uiMsg.action === "object" ? uiMsg.action : {};
@@ -2756,21 +2771,49 @@ function buildActionCommand(actionDefinition, msg, node) {
     if (!type) {
         return null;
     }
-    // P66: resolve the navigate `to` typedInput. An explicit msg.ui.action.to
-    // override (already a literal path) wins; otherwise resolve the configured
-    // `to` against its `toType`.
-    const resolvedConfigTo = node
-        ? resolveActionTo(node, actionDefinition && actionDefinition.to, actionDefinition && actionDefinition.toType, msg)
-        : (actionDefinition && actionDefinition.to ? String(actionDefinition.to) : undefined);
-    const to = override.to || resolvedConfigTo || undefined;
-    // P66: merge named URL params (msg override wins per-key over config).
-    const configParams = actionDefinition && actionDefinition.params && typeof actionDefinition.params === "object"
-        ? actionDefinition.params
+
+    const def = actionDefinition || {};
+    const isNavigate = String(type) === "navigate";
+    const targetMode = isNavigate
+        ? (def.targetMode || (def.to ? "url" : (def.routeId ? "route" : "wire")))
+        : undefined;
+
+    // P118: typed config params (route/wire mode) resolved against the msg →
+    // a string→string record. url mode ignores them (the URL is built whole).
+    const configParamRecord = (isNavigate && targetMode !== "url")
+        ? resolveActionParamRecord(node, def.params, msg)
         : undefined;
     const overrideParams = override.params && typeof override.params === "object" ? override.params : undefined;
-    const mergedParams = (configParams || overrideParams)
-        ? Object.assign({}, configParams, overrideParams)
+    const mergedParams = (configParamRecord || overrideParams)
+        ? Object.assign({}, configParamRecord, overrideParams)
         : undefined;
+
+    // P118: resolve the explicit destination by mode.
+    //   • url   → the `to` typedInput (msg/flow/global/jsonata/str), as P66.
+    //   • route → the referenced route's path, with its :placeholders filled from
+    //             the resolved params → an explicit, addressed location.
+    //   • wire  → no explicit `to`; the receiving route supplies the path.
+    // A msg.ui.action.to override (already a literal path) always wins.
+    let resolvedTo;
+    if (isNavigate && targetMode === "url") {
+        resolvedTo = node
+            ? resolveActionTo(node, def.to, def.toType, msg)
+            : (def.to ? String(def.to) : undefined);
+    }
+    else if (isNavigate && targetMode === "route") {
+        const template = resolveRouteIdToPath(def.routeId);
+        resolvedTo = template
+            ? resolveNavigationTarget(template, mergedParams || {}, {})
+            : undefined;
+    }
+    else if (!isNavigate) {
+        // Non-navigate verbs keep the legacy `to` passthrough (rarely set).
+        resolvedTo = node
+            ? resolveActionTo(node, def.to, def.toType, msg)
+            : (def.to ? String(def.to) : undefined);
+    }
+    const to = override.to || resolvedTo || undefined;
+
     // P53 (ADR 0005): the command carries `target` (a rendered node id) and an
     // optional `part` (a sub-id within that element — accordion section, tree
     // branch, tab) for open/close/select granularity. msg.ui.action overrides win.
@@ -2778,8 +2821,8 @@ function buildActionCommand(actionDefinition, msg, node) {
         type: String(type),
         to,
         params: mergedParams && Object.keys(mergedParams).length > 0 ? mergedParams : undefined,
-        target: override.target || (actionDefinition && actionDefinition.target) || undefined,
-        part: override.part || (actionDefinition && actionDefinition.part) || undefined
+        target: override.target || def.target || undefined,
+        part: override.part || def.part || undefined
     };
 }
 
@@ -3122,24 +3165,11 @@ function registerDeployHook(RED) {
     runtimeState.deployHookRegistered = true;
 
     RED.events.on("flows:started", function () {
-        // P66 (ADR 0007): cross-validate navigate actions against the full flow
-        // graph (ambiguous / no-destination / dead-link). These can only be seen
-        // with the whole flow, not in per-node editor validation. Surface each as
-        // a structured runtime error so it is visible in the Node-RED log.
-        try {
-            const navIssues = validateNavigationFlow(RED);
-            for (const issue of navIssues) {
-                reportRuntimeError(undefined, {
-                    severity: "error",
-                    code: "navigate-validation",
-                    message: issue.message,
-                    context: { nodeId: issue.nodeId, op: "deploy" }
-                });
-            }
-        }
-        catch (_e) {
-            // Never let validation crash the deploy.
-        }
+        // P118 (ADR 0011 §3): the old P66 navigate cross-validation (wired +
+        // `to` = ambiguous; no-destination; dead-link) is REMOVED. The explicit
+        // target-source mode now stores the intent, so the wire-scan-based
+        // ambiguity check is gegenstandslos; a nonsensical wiring is the user's
+        // responsibility (owner decision) — there is no scan-based deploy check.
 
         // P108: cross-validate that all ui-app nodes have unique root paths.
         try {
@@ -3844,25 +3874,38 @@ function emitRouteLifecycleEvent(node, eventName, appId, clientId, location, par
 }
 
 // Resolve the navigate destination location for a ui-route / ui-app target.
-//   • ui-route → its own path, with :placeholders filled from action.params.
-//   • ui-app   → action.to (Scenario 2 path template) filled from params, or the
-//     implicit root "/" (Scenario 1: wired to the app for the home route).
+//
+// P118 (ADR 0011 §3) — ADDRESSING PRECEDENCE: an explicitly addressed navigation
+// wins; a wired ui-route never hijacks a message that already carries a target.
+//   • If the incoming action ALREADY carries an explicit `to` (route/url mode, or
+//     a msg.ui.action.to override) the route treats it as ADDRESSED navigation and
+//     PASSES IT THROUGH unchanged — it does NOT impose its own path.
+//   • Only a target-LESS navigate (wire mode, no `to`) falls back to today's
+//     behaviour: the receiving ui-route builds the location from its OWN path
+//     (its :placeholders filled from action.params); a ui-app uses the implicit
+//     root "/". This also makes wire-mode branching well-defined (the route the
+//     message reaches, wins).
 // Returns the concrete location string (params already substituted).
 function resolveNavigateLocation(node, uiAction) {
     const def = node && node.webappDefinition ? node.webappDefinition : {};
     const params = uiAction && uiAction.params && typeof uiAction.params === "object" ? uiAction.params : {};
     const explicitTo = typeof uiAction.to === "string" && uiAction.to ? uiAction.to : undefined;
 
+    // P118 §3: addressed navigation — pass the explicit target through unchanged.
+    if (explicitTo) {
+        // The `to` carries any :placeholders already filled by the emitter (route/
+        // url mode). Re-substituting with params is a no-op for a concrete path and
+        // harmlessly fills any remaining placeholder from params.
+        return resolveNavigationTarget(explicitTo, params, {});
+    }
+
+    // Target-less navigate (wire mode): the receiving node supplies the path.
     if (def.type === "ui-route") {
-        // Scenario 1: the route owns its path. An explicit `to` on the action is
-        // ambiguous (compile-time validation flags it) — the route's own path wins.
         const template = typeof def.path === "string" && def.path ? def.path : "/";
         return resolveNavigationTarget(template, params, {});
     }
-
-    // ui-app: Scenario 2 (a `to` template) or Scenario 1 to the implicit root.
-    const template = explicitTo || "/";
-    return resolveNavigationTarget(template, params, {});
+    // ui-app: the implicit root route.
+    return resolveNavigationTarget("/", params, {});
 }
 
 // Perform a navigate for a ui-route / ui-app target: resolve the new location
@@ -4595,26 +4638,45 @@ const runtimeNodeRegistry = {
         }
     },
     "ui-action": {
-        mapConfig: (config) => ({
-            type: "ui-action",
-            id: getUiId(config),
-            parent: config.parent || undefined,
-            actionType: blankToUndefined(config.actionType),
-            // P66 (ADR 0007): navigate `to` is a typedInput — `to` is the value,
-            // `toType` its type (default "str", a literal path). Resolution of
-            // msg/flow/global/jsonata happens at input time in actionInputHandler.
-            to: blankToUndefined(config.to),
-            toType: blankToUndefined(config.toType) || (blankToUndefined(config.to) ? "str" : undefined),
-            // P66: named URL params (Scenario 1: wired to a ui-route).
-            params: parseParamsObject(config.params),
-            // P60 / ADR 0007 §3: the node picker stores a LIST of target node ids
-            // (the optional "wireless" path). Legacy singular `target` (pre-P60
-            // free-text) is still honoured for backward-compat.
-            targets: parseTargetIds(config.targets),
-            target: blankToUndefined(config.target),
-            part: blankToUndefined(config.part),
-            description: config.description || undefined
-        }),
+        mapConfig: (config) => {
+            // P118 (ADR 0011 §1 + Migration): derive the explicit navigate target
+            // mode (wire | route | url), then keep ONLY the fields the mode owns so
+            // the definition can never carry a double configuration (route ⇒ routeId,
+            // no `to`; url ⇒ `to`, no routeId; wire ⇒ neither). Legacy configs are
+            // migrated here: `to` → url, `routeId` → route, otherwise wire; legacy
+            // params object → str-typed list.
+            const targetMode = deriveNavigateTargetMode(config);
+            const routeId = targetMode === "route" ? blankToUndefined(config.routeId) : undefined;
+            const to = targetMode === "url" ? blankToUndefined(config.to) : undefined;
+            const toType = targetMode === "url"
+                ? (blankToUndefined(config.toType) || (to ? "str" : undefined))
+                : undefined;
+            // P118: typed param list applies in route mode (and wire mode where the
+            // editor prefills it); ignored in url mode (the URL is built whole).
+            const params = targetMode === "url" ? undefined : parseActionParamList(config.params);
+            return {
+                type: "ui-action",
+                id: getUiId(config),
+                parent: config.parent || undefined,
+                actionType: blankToUndefined(config.actionType),
+                // P118 (ADR 0011 §1): the stored navigate target SOURCE.
+                targetMode,
+                // P118: referenced ui-route id (route mode).
+                routeId,
+                // P118: url-mode destination typedInput (value + type).
+                to,
+                toType,
+                // P118: typed navigate params (route mode).
+                params,
+                // P60 / ADR 0007 §3: the node picker stores a LIST of target node ids
+                // (the optional "wireless" path). Legacy singular `target` (pre-P60
+                // free-text) is still honoured for backward-compat.
+                targets: parseTargetIds(config.targets),
+                target: blankToUndefined(config.target),
+                part: blankToUndefined(config.part),
+                description: config.description || undefined
+            };
+        },
         options: {
             inputHandler: actionInputHandler
         }
@@ -5073,11 +5135,14 @@ registerWebappNodes.__test__ = {
     // P59 / ADR 0007 §2: per-node interaction handler factory + verb ownership
     interactionInputHandler,
     INTERACTION_VERBS_BY_TYPE,
-    // P66 (ADR 0007): navigate scenarios + cross-validation
+    // P66 (ADR 0007) / P118 (ADR 0011): navigate scenarios + typed resolution
     resolveActionTo,
+    resolveActionParamRecord,
+    resolveRouteIdToPath,
+    deriveNavigateTargetMode,
+    parseActionParamList,
     resolveNavigateLocation,
     performTargetNavigate,
-    validateNavigationFlow,
     validateAppRootUniqueness,
     parseParamsObject,
     runtimeNodeRegistry,
