@@ -163,6 +163,17 @@ string/number/json/timestamp) und `{ category: "url" }` (für `href`/`to`: nur
 str + msg/JSONata + Store/Reactive + Flow/Global/Env). Ein Feld ohne deklarierte
 Kategorie → Wert/Anzeige-Vollsatz.
 
+> **`msg`/`jsonata` sind message-getrieben und flüchtig (Owner-Entscheid
+> 2026-06-10).** Der zuletzt aus einer Nachricht erfasste Wert lebt nur in der
+> Live-Definition (Backend), **nicht** im Flow-File. Ein **NR-Deploy** (und ein
+> Neustart) baut das Modell frisch aus dem Flow → der erfasste Wert geht
+> verloren und das Feld rendert wieder **leer**, bis die nächste passende
+> Message kommt. Im **Production-Modus** lädt der User nach dem Deploy neu →
+> `onEnter` feuert → der Flow kann den Wert neu setzen; im **Development-Modus**
+> (In-Place-Apply ohne Reload) bleibt das Feld bis zur nächsten Message leer.
+> Wer einen über Deploys **stabilen** Wert braucht, nutzt eine reaktive Quelle
+> (Store/Query/Route-Param/Reactive). Details: [live-deploy-update.md](live-deploy-update.md).
+
 > „Page-Param" entspricht dem Typ **„Route Param"** (`routeParam`): er liest einen
 > Parameter aus dem Pfad der aktuell angezeigten Route.
 

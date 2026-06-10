@@ -107,6 +107,25 @@ reservierter Node-RED-Knotenname) mit zwei Werten:
 Das `mode`-Feld reist im `deploy`-Frame mit; der Client liest es (bzw. die in die
 Seite gebackene `data-webapp-mode`) und wählt den Produktions-Zweig.
 
+## Flüchtige Werte (`msg`/`jsonata`) beim Deploy
+
+Message-getriebene **Anzeige**-Werte (`msg`/`jsonata`, z. B. ein per Navigation
+gesetzter `ui-text`) leben nur in der **Live-Definition** (Backend), nicht im
+Flow-File. Ein Deploy baut das Modell frisch aus dem Flow → diese Werte werden
+**zurückgesetzt** (Owner-Entscheid 2026-06-10: bewusst flüchtig, nicht
+„repariert"):
+
+- **Development** (In-Place-Apply): das Feld rendert **leer**, bis die nächste
+  passende Message kommt. `onEnter` feuert beim In-Place-Apply **nicht** (kein
+  neuer `loadId` — der Lifecycle hängt am Page-Load, siehe
+  [`ui-route`](../structure/ui-route.md)).
+- **Production** (Versions-Alert): der manuelle Reload erzeugt einen neuen
+  `loadId` → `onEnter` feuert → der Flow kann den Wert neu setzen.
+
+Wer einen über Deploys **stabilen** Wert braucht, bindet ihn an eine reaktive
+Quelle (Store/Query/Route-Param/Reactive) statt an `msg`/`jsonata` — siehe die
+Binding-Kategorien in [editor.md](editor.md).
+
 ## Siehe auch
 
 - [multi-user.md](multi-user.md) — per-Client vs. Broadcast, clientId-Modell
