@@ -288,12 +288,13 @@
         };
     }
 
-    // ── Button link mode + outline (P71) ─────────────────────────────────────
+    // ── Button link mode + outline (P71, updated P122) ───────────────────────
     // installButtonLinkFields() injects:
     //   • an "Outline" checkbox (boolean outline flag),
-    //   • a "Link Mode" select (button | url | navigate),
-    //   • an "URL / Route" text field, shown only for url/navigate modes.
-    // The href field's visibility tracks the selected mode live.
+    //   • a "Link Mode" select (button | url | navigate).
+    // P122: the "URL / Route" href field is now a typedInput (url category,
+    // ADR 0012) living in the node template as id="node-input-hrefBinding".
+    // Visibility is synced via data-button-href-row="hrefBinding" on that row.
     const BUTTON_LINK_MODE_OPTIONS = [
         { value: "button", label: "Button (no link)" },
         { value: "url", label: "URL (hyperlink)" },
@@ -308,8 +309,7 @@
                 separator: false,
                 fields: [
                     { id: "outline", label: "Outline", type: "checkbox" },
-                    { id: "linkMode", label: "Link Mode", type: "select", options: BUTTON_LINK_MODE_OPTIONS },
-                    { id: "href", label: "URL / Route", type: "text", rowAttrs: { "data-button-href-row": "href" } }
+                    { id: "linkMode", label: "Link Mode", type: "select", options: BUTTON_LINK_MODE_OPTIONS }
                 ]
             });
 
@@ -321,14 +321,10 @@
             if (mode.length) {
                 mode.val(self.linkMode || "button");
             }
-            const href = $("#node-input-href");
-            if (href.length) {
-                href.val(self.href || "");
-            }
 
             function syncHrefVisibility() {
                 const value = $("#node-input-linkMode").val() || "button";
-                const row = $('[data-button-href-row="href"]');
+                const row = $('[data-button-href-row="hrefBinding"]');
                 if (value === "button") {
                     row.hide();
                 } else {
