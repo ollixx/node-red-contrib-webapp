@@ -1041,6 +1041,11 @@
         }
     }
 
+    // Holds the live EventSource so the page-lifecycle handlers (pagehide /
+    // pageshow) can close it. The native EventSource auto-reconnect only covers
+    // transient drops, not navigation/bfcache — see the lifecycle wiring below.
+    let activeStream = null;
+
     // P31: subscribe to the live Server→Client SSE stream. The flow pushes
     // `snapshot` events (a ui-store update re-renders) and `command` events (a
     // ui-action interaction). The native EventSource auto-reconnects; on every
@@ -1059,6 +1064,7 @@
             + (dialogId ? "&dialog=" + encodeURIComponent(dialogId) : "");
 
         const source = new EventSource(streamUrl);
+        activeStream = source;
 
         // P55: lifecycle — log SSE connection open at INFO.
         source.addEventListener("open", function () {
@@ -1278,4 +1284,34 @@
 
     hydrate();
     subscribe();
+
+    // Page-lifecycle handling for browser navigation + the back/forward cache
+    // (bfcache). The live SSE stream is long-lived, which interacts badly with
+    // a plain navigation if left untended:
+    //   - On navigate-away / tab-close (`pagehide`) the stream is closed, so it
+    //     never lingers server-side and never starves the per-origin HTTP/1.1
+    //     connection pool. A starved pool delays the Shoelace autoloader's lazy
+    //     component-chunk imports (e.g. <sl-button>) — the ~60s "button renders
+    //     late" symptom — and blocks the click → POST /event → SSE round-trip
+    //     ("page not responsive").
+    //   - On a bfcache RESTORE (`pageshow` with persisted=true) the page is a
+    //     frozen snapshot whose stream was closed at freeze and whose web
+    //     components may never have upgraded. A full reload guarantees a fresh,
+    //     live, fully interactive page. (Standard pattern for SSE/WebSocket
+    //     pages; only fires on a real back/forward restore.)
+    const lifecycleWindow = root.ownerDocument.defaultView || (typeof window !== "undefined" ? window : undefined);
+    if (lifecycleWindow && typeof lifecycleWindow.addEventListener === "function") {
+        lifecycleWindow.addEventListener("pagehide", function () {
+            if (activeStream) {
+                try { activeStream.close(); } catch { /* already closed */ }
+                activeStream = null;
+            }
+        });
+        lifecycleWindow.addEventListener("pageshow", function (pageShowEvent) {
+            if (pageShowEvent && pageShowEvent.persisted) {
+                log.info("lifecycle", "Restored from bfcache — reloading for a live stream");
+                lifecycleWindow.location.reload();
+            }
+        });
+    }
 })();
