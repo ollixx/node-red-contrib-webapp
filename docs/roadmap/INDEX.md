@@ -30,7 +30,6 @@ their blocker clears.
 - **P111** — nodes/ui-text — `variant`→`style` (typografische Rolle) + neue Farb-`variant`, `size` entfernen — *erste Tranche geliefert; Sammelpaket aus dem ui-text-Review, weitere Findings folgen* — [P111](nodes/ui-text/P111-text-style-color-axes.md)
 - **P113** — aspects/editor — EIN kanonischer Value-Binding-Typ-Satz (Reihenfolge + Semantik, jsonata message-getrieben, ohne state) für alle Display-Wert-Inputs — *geplant, nicht umgesetzt* — [P113](aspects/editor/P113-canonical-value-binding-types.md)
 - **P116** — aspects/editor — `Reactive`-typedInput: Expression-Editor-Dialog mit Completion, zweistufiger Validierung + Doku-Panel; Typ #4 im kanonischen Satz (ADR 0010) — *geplant; braucht P113 + P115* — [P116](aspects/editor/P116-reactive-typedinput-expression-editor.md)
-- **P118** — nodes/ui-action — Navigate-Zielquelle (wire | route | url) im Schema + Laufzeit-Adressierungs-Vorrang (ADR 0011) — *geplant, nicht umgesetzt* — [P118](nodes/ui-action/P118-navigate-target-modes-runtime.md)
 - **P119** — nodes/ui-action — Navigate-Editor: Modus-Umschalter mit Zwei-Wege-Badges, transitiver Wire-Scan (Assistenz), Parameter-Mapping-Tabelle (ADR 0011) — *geplant; braucht P118 + P120* — [P119](nodes/ui-action/P119-navigate-editor-modes-wire-scan.md)
 - **P120** — aspects/editor — Zwei-Wege-Farbcodierung: Tokens (Blau=Wire, Lila=Referenz) + Badge-Helfer + Editor-User-Setting (ADR 0011) — *geplant, nicht umgesetzt* — [P120](aspects/editor/P120-dual-path-coding-tokens-user-setting.md)
 
@@ -52,7 +51,7 @@ open the folder for the full history.
 
 | Epic | done |
 |---|---|
-| nodes/ui-action | 4 |
+| nodes/ui-action | 5 |
 | nodes/ui-app | 6 |
 | nodes/ui-alert | 4 |
 | nodes/ui-avatar | 2 |
@@ -73,4 +72,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 118 done, 6 open, 5 deferred.**
+**Total: 119 done, 5 open, 5 deferred.**

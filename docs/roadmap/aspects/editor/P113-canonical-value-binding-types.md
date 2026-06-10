@@ -7,6 +7,14 @@ dependencies: [P111]
 ---
 # P113 — Kanonischer Value-Binding-Typ-Satz
 
+> **Einordnung (ADR 0012):** Dieses Paket ist die **erste Anwendung** des
+> breiteren Prinzips „Binding-Ubiquität" — *jedes* wertführende Feld bietet
+> standardmäßig Bindings; reduziert wird nur bewusst pro Feld-Kategorie. P113
+> liefert die **Display-Wert-Kategorie** (voller Satz) und sollte den Helfer so
+> bauen, dass eine **Feld-Kategorie** deklarierbar ist (Default = Display-Wert-
+> Vollsatz). Boolean-Zustand (`disabled`), URL/Pfad (`href`) und Input-Control-
+> `value` sind eigene, später zu schneidende Pakete (siehe ADR 0012).
+
 ## findings (Nutzer-Wortlaut)
 
 - "ui-text braucht zusätzlich noch den Type 'Jsonata' im input. eigentlich brauchen
