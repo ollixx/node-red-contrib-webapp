@@ -2,7 +2,7 @@
 id: P131
 title: "store-Binding: optionaler subPath (Ein-Level-Value-Binding) — Schema + Renderer-Auflösung + Rekursions-Guard + sprechende Fehler"
 epic: aspects/rendering
-status: pending
+status: in_progress
 dependencies: []
 spec: docs/nodes/concepts/stores.md
 tests: tests/e2e/nodes/state/ui-store.tests.md

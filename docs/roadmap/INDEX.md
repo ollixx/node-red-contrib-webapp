@@ -79,4 +79,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 133 done, 0 open, 5 deferred.**
+**Total: 133 done, 2 open, 5 deferred.**
