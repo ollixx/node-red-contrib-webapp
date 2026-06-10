@@ -27,6 +27,8 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
+- **P131** — aspects/rendering — `store`-Binding: optionaler `subPath` (Ein-Level-Value-Binding) — Schema + Renderer-Auflösung + Rekursions-Guard + sprechende Fehler (ADR 0013) — *geplant, nicht umgesetzt* — [P131](aspects/rendering/P131-store-binding-subpath-schema-renderer.md)
+- **P132** — aspects/editor — `store`-Binding-Editor: Button-erst (Store-Icon) + Name statt ID + Pfad-typedInput mit Default-Slice-Autocomplete (ADR 0013) — *geplant; braucht P113 + P131* — [P132](aspects/editor/P132-store-binding-subpath-editor.md)
 
 
 ## Deferred (parked, not abandoned)
