@@ -117,10 +117,17 @@ First consumer is the ui-action target-mode badge; the tokens are central so
 later consumers (structure sidebar, other panels with both ways) reuse them.
 
 The color must carry the meaning at a glance, so it is a **strong, saturated
-fill** (the badge/segment background is the full color with white text/icon),
-**not a pale pastel tint** (owner decision, 2026-06-10: pastel variants are not
-distinct enough). The active mode-switch segment is likewise a solid filled
-segment, not just a tinted one. The sketches in §6 show the intended weight.
+fill**, **not a pale pastel tint** (owner decision, 2026-06-10: pastel variants
+are not distinct enough).
+
+Where a full panel is available (the ui-action navigation panel), the coding is
+applied as the **panel's background** in the mode color, and the **mode switch
+carries the icon + label per segment** (active segment highlighted). In that
+case there is **no separate rounded badge** and **no repeated mode name** — a
+plain section heading suffices (owner cosmetic decision, 2026-06-10). The
+compact **badge** form (color fill + icon + label) is reserved for places that
+have no full panel to color — e.g. structure-sidebar rows. The sketches in §6
+show the intended weight.
 
 **Where the color configuration lives — decided: editor-global, per user, NOT
 `ui-app`.** The coding is pure editor presentation (like theme or grid), not

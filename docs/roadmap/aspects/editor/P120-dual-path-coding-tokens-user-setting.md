@@ -45,12 +45,19 @@ Alles in `resources/lib/editor-common.js` + dem geteilten Stylesheet (P117):
    Töne sind **Vollflächen-tauglich** (weiße Schrift darauf lesbar), nicht als
    Tint gedacht. Alle Konsumenten nutzen NUR die Variablen — nie Hex-Werte
    inline.
-2. **Badge-Helfer** (Vorschlag `pathBadge(kind, label)` mit `kind` ∈
-   `wire | ref`): erzeugt das Badge-Element — **kräftige Farbvollfläche**
-   (Token als Hintergrund, **weiße** Schrift + Icon), Icon (Stecker für Wire,
-   Kette für Referenz, FontAwesome
-   wie im Editor üblich) und Text-Label. Farbe ist nie der einzige Träger:
-   Icon + Label sind immer dabei.
+2. **Zwei Anwendungsformen derselben Tokens (ADR 0011 §4):**
+   - **Panel-Hintergrund** (bevorzugt, wo ein ganzes Panel den Weg trägt — z. B.
+     das ui-action-Navigations-Panel in P119): der Panel-Hintergrund nimmt die
+     Modus-Farbe als kräftige Vollfläche an; Formfelder sitzen als helle Insets
+     darauf; das Icon steckt im Modus-Switch; **kein** Pill-Badge, nur eine
+     schlichte Überschrift. (Siehe Skizze 1 zu ADR 0011.)
+   - **Kompaktes Badge** (`pathBadge(kind, label)`, `kind` ∈ `wire | ref`) für
+     Kontexte ohne färbbares Panel (z. B. Struktur-Sidebar-Zeilen): kräftige
+     Farbvollfläche (Token als Hintergrund, **weiße** Schrift + Icon), Icon
+     (Stecker für Wire, Kette für Referenz, FontAwesome wie im Editor üblich)
+     und Text-Label.
+   Farbe ist in beiden Formen nie der einzige Träger: Icon + Label sind immer
+   dabei.
 3. **User-Setting:** eine Webapp-Sektion in den Editor-User-Settings
    (`RED.userSettings.add({...})`) mit zwei Farbwählern (Wire-Farbe,
    Referenz-Farbe) + „Zurücksetzen auf Standard". Persistenz über den
@@ -74,9 +81,10 @@ zweite Präferenz real wird, nicht auf Vorrat.
   erzeugtes Badge zeigt Default-Blau bzw. -Lila als **kräftige Vollfläche mit
   weißer Schrift** (kein heller Tint), je mit Icon + Label (Screenshot beider
   Badges); Kontrast Schrift/Hintergrund WCAG-AA.
-- Farbänderung im Setting wirkt ohne Editor-Reload auf sichtbare Badges;
-  nach Browser-Reload bleibt sie erhalten (Persistenz). „Zurücksetzen"
-  stellt die Defaults wieder her.
+- Farbänderung im Setting wirkt ohne Editor-Reload auf sichtbare Badges
+  **und auf den Panel-Hintergrund** (P119-Navigations-Panel); nach
+  Browser-Reload bleibt sie erhalten (Persistenz). „Zurücksetzen" stellt die
+  Defaults wieder her.
 - Es existiert kein Konsument mit hartkodierter Wege-Farbe (Code-Suche:
   die Hex-Defaults kommen genau einmal vor — an der Token-Definition).
 

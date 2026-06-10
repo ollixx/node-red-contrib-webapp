@@ -30,12 +30,21 @@ Verdrahtung in `nodes/behavior/ui-action.html` und `ui-navigation.html`.
 
 ### 1. Zielquellen-Umschalter
 
-Bei Verb `navigate` zeigt das Panel die Gruppe „Ziel" mit drei Modi
-(Radio/Segmente): **via Wire** · **Route (Referenz)** · **URL**. Der aktive
-Modus trägt das Zwei-Wege-Badge aus P120 (blau+Stecker „via Wire" /
-lila+Kette „Referenz"; URL neutral). Es ist immer genau EIN Modus aktiv;
-die Felder der anderen Modi sind ausgeblendet (nicht nur disabled) und
+Bei Verb `navigate` zeigt das Panel die Gruppe „Ziel" mit drei Modi als
+**Segment-Switch**: **via Wire** · **Route** · **URL**. Jedes Segment trägt
+**Icon + Label** (Stecker / Kette / Globus); das aktive Segment ist
+hervorgehoben (siehe Skizze 1 zu ADR 0011). Es ist immer genau EIN Modus
+aktiv; die Felder der anderen Modi sind ausgeblendet (nicht nur disabled) und
 werden beim Speichern nicht serialisiert (P118-Exklusivität).
+
+**Kosmetik (ADR 0011 §4, Owner 2026-06-10):** Da das Icon bereits im Switch
+steckt, gibt es **kein zusätzliches Pill-Badge** und keine Wiederholung des
+Modusnamens — nur eine **schlichte Überschrift**. Stattdessen nimmt der
+**Hintergrund dieses Panels** (und nur dieses Navigations-Panels) die
+**Modus-Farbe** an (blau/lila/neutral, kräftige Vollfläche; Formfelder sitzen
+als helle Insets darauf), sodass der aktive Weg unübersehbar ist. Die
+Modus-Farbe kommt aus den P120-Tokens. Das kompakte `pathBadge` (P120) bleibt
+für Kontexte ohne färbbares Panel (z. B. Struktur-Sidebar) reserviert.
 
 **Initiale Vorbelegung (nur wenn `targetMode` noch nie gespeichert):**
 Wire-Scan findet ≥1 Route → `wire` vorausgewählt; sonst `route`. Ab dem
