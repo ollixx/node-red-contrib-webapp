@@ -3,7 +3,7 @@ id: P111
 title: "ui-text: variant→style (typografische Rolle) + neue Farb-variant, size entfernen"
 epic: nodes/ui-text
 node: ui-text
-status: in_progress
+status: done
 dependencies: [P20b]
 verify: browser
 spec: docs/nodes/display/ui-text.md
@@ -147,7 +147,19 @@ als eigenes cross-cutting Paket, wenn die betroffenen Knoten an der Review-Reihe
 sind. Die serverseitige `flow`/`global`/`env`-Auflösung ist bereits generisch (greift
 für alle Knoten), sodass dort nur noch die Editor-Sätze nachzuziehen sind.
 
-## Offen (kommt noch dazu)
+## Abschluss (2026-06-10)
 
-- _Weitere ui-text-Findings aus dem laufenden Review hier ergänzen, bevor das Paket
-  nach `done/` wandert._
+Beide Tranchen geliefert und grün. Auf Owner-Entscheid geschlossen; keine
+weiteren ui-text-Findings offen. Die verbleibende Konsolidierung der
+**Wert-Quellen** wird an **P113** (kanonischer Satz, ADR 0010/0012) übergeben:
+
+- ui-text `value` bekommt mit P113 den **vollen kanonischen 14er-Satz**. Damit
+  **kehrt `jsonata` in den ui-text-Editor zurück** — diesmal **message-getrieben
+  auflösbar** (der P111-Tranche-2-Ausschluss war nur dem damals fehlenden
+  Renderer-Support geschuldet). **`reactive` kommt neu hinzu** (ADR 0010).
+  `state` bleibt draußen (unverändert). Owner-bestätigt am 2026-06-10.
+- Damit löst P113 den in Tranche 2 gesetzten ui-text-Typsatz bewusst ab; diese
+  Umkehr ist hier dokumentiert, nicht stillschweigend.
+
+cost — session: diese Sitzung (Token-Log via SessionEnd-Hook); Schließung
+Bookkeeping-only (Implementierung war in den zwei Tranchen erledigt).

@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P111** — nodes/ui-text — `variant`→`style` (typografische Rolle) + neue Farb-`variant`, `size` entfernen — *erste Tranche geliefert; Sammelpaket aus dem ui-text-Review, weitere Findings folgen* — [P111](nodes/ui-text/P111-text-style-color-axes.md)
 - **P113** — aspects/editor — EIN kanonischer Value-Binding-Typ-Satz (Reihenfolge + Semantik, jsonata message-getrieben, ohne state) für alle Display-Wert-Inputs — *geplant, nicht umgesetzt* — [P113](aspects/editor/P113-canonical-value-binding-types.md)
 - **P116** — aspects/editor — `Reactive`-typedInput: Expression-Editor-Dialog mit Completion, zweistufiger Validierung + Doku-Panel; Typ #4 im kanonischen Satz (ADR 0010) — *geplant; braucht P113 + P115* — [P116](aspects/editor/P116-reactive-typedinput-expression-editor.md)
 - **P122** — nodes/ui-button — `disabledPath`→Boolean-Zustand-typedInput (inkl. Store) + `href`→URL/Pfad-typedInput (ADR 0012) — *geplant; braucht P113* — [P122](nodes/ui-button/P122-button-disabled-href-typedinput.md)
@@ -67,7 +66,8 @@ open the folder for the full history.
 | nodes/ui-store | 2 |
 | nodes/ui-badge | 2 |
 | nodes/ui-route | 2 |
-| nodes/ui-accordion · ui-breadcrumb · ui-button · ui-checkbox · ui-datepicker · ui-dialog · ui-divider · ui-icon · ui-image · ui-pagination · ui-table · ui-text | 1 each |
+| nodes/ui-text | 2 |
+| nodes/ui-accordion · ui-breadcrumb · ui-button · ui-checkbox · ui-datepicker · ui-dialog · ui-divider · ui-icon · ui-image · ui-pagination · ui-table | 1 each |
 | aspects/test-infra | 21 |
 | aspects/misc | 16 |
 | aspects/runtime | 7 |
@@ -79,4 +79,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 121 done, 12 open, 5 deferred.**
+**Total: 122 done, 11 open, 5 deferred.**

@@ -126,8 +126,12 @@ Jeder Display-Wert-Input ruft nur noch diese Helfer. Reihenfolge + Mapping:
   `pnpm gen:example` bzw. Owner-Regenerierung — `flow.json` ist generiert.
 - **Save-Logik zentralisieren** (`applyValueBinding`) ist der größere Teil — pro
   Knoten `oneditsave` auf den Helfer umstellen, sonst bleibt die Duplikation.
-- **ui-text (P111):** dessen Wert-Typen werden von diesem Satz **abgelöst** — P111
-  Tranche 2 und P113 hier konsolidieren; beim Umsetzen P111 entsprechend schließen.
+- **ui-text (P111 ist `done`):** dessen Wert-Typen werden von diesem Satz
+  **abgelöst**. Konkret (Owner-bestätigt 2026-06-10): P111 Tranche 2 hatte
+  `jsonata` aus dem ui-text-Editor entfernt (damals nicht auflösbar) — mit P113
+  **kehrt `jsonata` zurück** (message-getrieben) und **`reactive` kommt neu
+  hinzu**; `state` bleibt draußen. Diese Umkehr ist bewusst; P111 wurde mit
+  diesem Hinweis geschlossen.
 
 ## Docs (an der richtigen Stelle)
 
