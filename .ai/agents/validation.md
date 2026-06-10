@@ -12,6 +12,23 @@ pnpm test
 pnpm exec playwright test
 ```
 
+**Never pipe the authoritative E2E run through `tail`/`head` — it lies.**
+A pipeline's exit code is the *last* command's, so `pnpm exec playwright test | tail` always
+exits `0` even when tests fail; and Playwright prints its `N failed` header *above* the trailing
+failed-test list, so `tail -N` scrolls the failure count off the top and leaves only `… passed`
+visible. Both together produce a convincing false-green. This has caused phases to be closed
+`done` with real regressions on the integration branch. Instead capture the full output and assert
+explicitly:
+
+```
+pnpm exec playwright test > /tmp/e2e.log 2>&1; echo "exit=$?"
+grep -cE '[0-9]+ failed' /tmp/e2e.log   # must be 0
+```
+
+The only acceptable signal is **`exit=0` AND zero `failed` lines** — never a `passed` count read
+from a piped tail. A quick cross-check when a phase adds N tests: the suite total must rise by ~N;
+if it stayed flat, the new tests (or others) silently failed.
+
 **Anti-baseline rule — no exceptions, no rationalisation.**
 It does not matter whether a failing test was already failing before your phase started.
 If `pnpm exec playwright test` exits with any failure, you must fix every failing test before
