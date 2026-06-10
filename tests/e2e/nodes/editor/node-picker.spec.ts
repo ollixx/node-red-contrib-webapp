@@ -186,15 +186,16 @@ test.describe("editor — picker dialog as sole reference selection (P114)", () 
         expect(values).toContain("route:/customers/content");
         expect(entries.every((e) => e.type === "mount")).toBe(true);
 
-        // Open the dialog, search by the route breadcrumb, pick the route content.
+        // Open the dialog, search by the route path, pick the route content slot.
+        // The breadcrumb label is self-describing ("Shop > Customers > content").
         await pickReference(page, "mount", {
-            search: "customers",
-            rowText: "customers",
+            search: "/customers/content",
+            rowText: "Customers",
             expectValue: "route:/customers/content"
         });
 
-        // The display now shows the chosen breadcrumb.
-        await expect(pickerFieldDisplay(page, "mount")).toContainText("customers");
+        // The display now shows the chosen breadcrumb (the route title).
+        await expect(pickerFieldDisplay(page, "mount")).toContainText("Customers");
 
         // Round-trips through save.
         await editor.save();

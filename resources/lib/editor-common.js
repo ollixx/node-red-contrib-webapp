@@ -780,6 +780,9 @@
     //   title        — dialog heading
     //   placeholder  — display text when the field is empty
     //   clearable    — show the "×" clear control (optional fields)
+    //   seedValue    — value to seed into the carrier if it is currently empty
+    //                  (the node's stored value; needed for <select> carriers
+    //                  that Node-RED could not bind because they have no options)
     function installPickerField(selector, config) {
         const cfg = config || {};
         const $field = $(selector);
@@ -787,6 +790,30 @@
             return;
         }
         $field.data("webappPickerField", true);
+
+        const isSelect = $field.is("select");
+
+        // A <select> only ever holds a value it has an <option> for. The template
+        // ships an option-less <select> under ADR 0009, so ensure the needed
+        // option exists before selecting it: an empty option so "" (cleared)
+        // sticks, plus a raw option for any value not already present.
+        if (isSelect && $field.find("option[value='']").length === 0) {
+            $field.prepend($("<option></option>").attr("value", "").text(""));
+        }
+        function setFieldValue(value) {
+            const next = value == null ? "" : String(value);
+            if (isSelect && next && $field.find("option[value='" + next.replace(/'/g, "\\'") + "']").length === 0) {
+                $field.append($("<option></option>").attr("value", next).text(next));
+            }
+            $field.val(next);
+        }
+
+        // Seed the stored value (Node-RED may have failed to bind it onto an
+        // option-less <select>). Only when the carrier is currently empty so we
+        // never clobber a value Node-RED already bound onto an <input>.
+        if (cfg.seedValue && !$field.val()) {
+            setFieldValue(cfg.seedValue);
+        }
 
         // Hide the bound value carrier (a <select> or <input>) but keep it in the
         // DOM — it remains the single source of truth for save/round-trip.
@@ -863,7 +890,7 @@
                 value: String($field.val() || ""),
                 entries: nodePickerOptionsForPreset(cfg.filterPreset),
                 onSelect: function (value) {
-                    $field.val(value);
+                    setFieldValue(value);
                     $field.trigger("change");
                     refreshDisplay();
                 }
@@ -872,7 +899,7 @@
 
         $clear.on("click", function (event) {
             event.preventDefault();
-            $field.val("");
+            setFieldValue("");
             $field.trigger("change");
             refreshDisplay();
         });
@@ -1064,10 +1091,14 @@
             const appRoutes = routes.filter(function (r) { return r.parent === app.id; });
             const appDialogs = dialogs.filter(function (d) { return d.parent === app.id; });
 
+            // P114 / ADR 0009: breadcrumbs are now self-describing (the flattened
+            // `mounts` picker has no group headers to carry context), so each
+            // app/route/dialog slot label includes the full path, e.g.
+            // "Shop > /customers > content".
             if (appSlots.length > 0) {
                 groupOptions.push({ disabled: true, label: "Slots" });
                 for (const slot of appSlots) {
-                    groupOptions.push.apply(groupOptions, slotOptions(`${app.id}.${slot}`, slot));
+                    groupOptions.push.apply(groupOptions, slotOptions(`${app.id}.${slot}`, `${appLabel} > ${slot}`));
                 }
             }
 
@@ -1076,9 +1107,10 @@
                 for (const route of appRoutes) {
                     const routeSlots = getSlotNamesForLayout(route.layoutId);
                     if (routeSlots.length === 0) continue;
-                    groupOptions.push({ disabled: true, label: route.title || route.path || route.id });
+                    const routeLabel = route.title || route.path || route.id;
+                    groupOptions.push({ disabled: true, label: routeLabel });
                     for (const slot of routeSlots) {
-                        groupOptions.push.apply(groupOptions, slotOptions(`route:${route.path}/${slot}`, slot));
+                        groupOptions.push.apply(groupOptions, slotOptions(`route:${route.path}/${slot}`, `${appLabel} > ${routeLabel} > ${slot}`));
                     }
                 }
             }
@@ -1088,9 +1120,10 @@
                 for (const dialog of appDialogs) {
                     const dialogSlots = getSlotNamesForLayout(dialog.layoutId);
                     if (dialogSlots.length === 0) continue;
-                    groupOptions.push({ disabled: true, label: dialog.title || dialog.id });
+                    const dialogLabel = dialog.title || dialog.id;
+                    groupOptions.push({ disabled: true, label: dialogLabel });
                     for (const slot of dialogSlots) {
-                        groupOptions.push.apply(groupOptions, slotOptions(`dialog:${dialog.id}/${slot}`, slot));
+                        groupOptions.push.apply(groupOptions, slotOptions(`dialog:${dialog.id}/${slot}`, `${appLabel} > ${dialogLabel} > ${slot}`));
                     }
                 }
             }
@@ -1228,17 +1261,14 @@
     function installParentAppSelector() {
         return function () {
             const self = this;
-            // The bound #node-input-parent stays the value carrier; Node-RED has
-            // already bound its default. If unset, fall back to the node's own id
-            // (legacy default), then render the dialog-only picker over it.
-            const $parent = $("#node-input-parent");
-            if ($parent.length && !$parent.val()) {
-                $parent.val(self.parent || self.id || "");
-            }
+            // The bound #node-input-parent stays the value carrier. The template
+            // ships an option-less <select>, so seed the stored value (falling
+            // back to the node's own id, the legacy default) into the picker.
             installPickerField("#node-input-parent", {
                 filterPreset: "apps",
                 title: "App auswählen",
-                placeholder: "App auswählen"
+                placeholder: "App auswählen",
+                seedValue: self.parent || self.id || ""
             });
         };
     }
@@ -1256,44 +1286,36 @@
                 installPickerField("#node-input-layoutId", {
                     filterPreset: "layouts",
                     title: "Layout auswählen",
-                    placeholder: "Parent-Layout auswählen"
+                    placeholder: "Parent-Layout auswählen",
+                    seedValue: self.layoutId || ""
                 });
             }
 
             if (config.route) {
-                const $route = $("#node-input-routeId");
-                if ($route.length && !$route.val()) {
-                    $route.val(self.routeId || "");
-                }
                 installPickerField("#node-input-routeId", {
                     filterPreset: "routes",
                     title: "Route auswählen",
                     placeholder: "Optional: Parent-Route auswählen",
-                    clearable: true
+                    clearable: true,
+                    seedValue: self.routeId || ""
                 });
             }
 
             if (config.mount) {
-                const $mount = $("#node-input-mount");
-                if ($mount.length && !$mount.val()) {
-                    $mount.val(self.mount || "");
-                }
                 installPickerField("#node-input-mount", {
                     filterPreset: "mounts",
                     title: "Parent-Slot auswählen",
-                    placeholder: "Parent-Slot auswählen"
+                    placeholder: "Parent-Slot auswählen",
+                    seedValue: self.mount || ""
                 });
             }
 
             if (config.action) {
-                const $action = $(config.action);
-                if ($action.length && !$action.val()) {
-                    $action.val(self.action || self.selectAction || self.refreshAction || "");
-                }
                 installPickerField(config.action, {
                     filterPreset: "actions",
                     title: "Action auswählen",
-                    placeholder: "Action auswählen"
+                    placeholder: "Action auswählen",
+                    seedValue: self.action || self.selectAction || self.refreshAction || ""
                 });
             }
 
@@ -1301,15 +1323,12 @@
                 const storeSelector = typeof config.store === "string" && config.store.startsWith("#")
                     ? config.store
                     : "#node-input-storeId";
-                const $store = $(storeSelector);
-                if ($store.length && !$store.val()) {
-                    $store.val(self.storeId || self.params || "");
-                }
                 installPickerField(storeSelector, {
                     filterPreset: "stores",
                     title: "Store auswählen",
                     placeholder: "Optional: Store auswählen",
-                    clearable: true
+                    clearable: true,
+                    seedValue: self.storeId || self.params || ""
                 });
             }
         };
