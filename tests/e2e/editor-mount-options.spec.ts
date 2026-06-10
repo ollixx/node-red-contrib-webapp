@@ -3,6 +3,8 @@ import path from "node:path";
 
 import { expect, test } from "@playwright/test";
 
+import { pickReference } from "../helpers/picker-dialog";
+
 type FlowNode = Record<string, unknown>;
 
 async function loadFlowFixture(relativePath: string): Promise<FlowNode[]> {
@@ -25,7 +27,15 @@ async function waitForEditorNode(page: Parameters<typeof test>[0]["page"], nodeI
     }, nodeId);
 }
 
-async function readMountOptions(page: Parameters<typeof test>[0]["page"], nodeId: string) {
+/**
+ * P114 / ADR 0009: the mount field is the dialog-only picker. The candidate
+ * mount targets are produced by the `mounts` preset (flatten of the option tree
+ * into breadcrumb-labelled, mount-valued entries) — there is no native mount
+ * `<select>` to read options from anymore. We assert the preset's VALUES (the
+ * canonical "<appId>.<slot>" / "route:<path>/<slot>" identifiers) for the node
+ * currently being edited.
+ */
+async function readMountOptionValues(page: Parameters<typeof test>[0]["page"], nodeId: string) {
     await waitForEditorNode(page, nodeId);
     await page.evaluate((id) => {
         const node = RED.nodes.node(id);
@@ -33,12 +43,9 @@ async function readMountOptions(page: Parameters<typeof test>[0]["page"], nodeId
     }, nodeId);
     await page.waitForTimeout(300);
 
-    // Return option VALUES (e.g. "mountAppShellDemo.content") — values uniquely
-    // identify mount targets regardless of the display label format used by the
-    // tree select (which shows slot names without app name context).
     return page.evaluate(() => {
-        const select = document.querySelector<HTMLSelectElement>("#node-input-mount");
-        return select ? Array.from(select.options).map((option) => option.value).filter((v) => v !== "") : [];
+        const C = (window as unknown as { WebappEditorCommon: { nodePickerOptionsForPreset: (p: string) => Array<{ value: string }> } }).WebappEditorCommon;
+        return C.nodePickerOptionsForPreset("mounts").map((o) => o.value).filter((v) => v !== "");
     });
 }
 
@@ -74,10 +81,7 @@ test.describe("editor mount option coverage", () => {
         await deployFlow(request, baselineFlow);
     });
 
-    test("shows all valid app slots for mount-based nodes", async ({ page }) => {
-        // Option VALUES encode the mount target as "<appId>.<slot>" or
-        // "route:<path>/<slot>" — these are the canonical identifiers regardless of
-        // the display label used by the tree-select widget.
+    test("mounts preset offers all valid app slots for mount-based nodes", async ({ page }) => {
         const expectedOptions = [
             "mountAbsoluteApp.content",
             "mountAppShellDemo.content",
@@ -93,31 +97,36 @@ test.describe("editor mount option coverage", () => {
         await page.waitForLoadState("networkidle");
 
         for (const nodeId of ["mountTextNode", "mountButtonNode", "mountInputNode", "mountContainerNode"]) {
-            const options = await readMountOptions(page, nodeId);
+            const options = await readMountOptionValues(page, nodeId);
             expect(options).toEqual(expect.arrayContaining(expectedOptions));
         }
     });
 
-    test("shows layout-specific child fields for direct mounts", async ({ page }) => {
+    test("layout-specific child fields follow the parent picked in the mount dialog", async ({ page }) => {
         await page.goto("/");
         await page.waitForLoadState("networkidle");
         await openEditor(page, "mountTextNode");
 
+        // mountTextNode starts mounted to a vertical app → only `order`.
         expect(await readVisibleLayoutChildRows(page)).toEqual(["order"]);
 
-        await page.selectOption("#node-input-mount", "mountHorizontalApp.content");
+        // Pick a horizontal-app slot via the dialog → still `order`.
+        await pickReference(page, "mount", { search: "mountHorizontalApp.content", expectValue: "mountHorizontalApp.content" });
         await page.waitForTimeout(100);
         expect(await readVisibleLayoutChildRows(page)).toEqual(["order"]);
 
-        await page.selectOption("#node-input-mount", "mountGridApp.content");
+        // Pick a grid-app slot → row/col/colSize/rowSize.
+        await pickReference(page, "mount", { search: "mountGridApp.content", expectValue: "mountGridApp.content" });
         await page.waitForTimeout(100);
         expect(await readVisibleLayoutChildRows(page)).toEqual(["row", "col", "colSize", "rowSize"]);
 
-        await page.selectOption("#node-input-mount", "mountAbsoluteApp.content");
+        // Pick an absolute-app slot → layoutX/layoutY.
+        await pickReference(page, "mount", { search: "mountAbsoluteApp.content", expectValue: "mountAbsoluteApp.content" });
         await page.waitForTimeout(100);
         expect(await readVisibleLayoutChildRows(page)).toEqual(["layoutX", "layoutY"]);
 
-        await page.selectOption("#node-input-mount", "mountAppShellDemo.content");
+        // Pick an app-shell slot (app layout has no child-placement fields) → none.
+        await pickReference(page, "mount", { search: "mountAppShellDemo.content", expectValue: "mountAppShellDemo.content" });
         await page.waitForTimeout(100);
         expect(await readVisibleLayoutChildRows(page)).toEqual([]);
     });

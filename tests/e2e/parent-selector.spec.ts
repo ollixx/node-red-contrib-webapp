@@ -4,6 +4,7 @@ import path from "node:path";
 import { expect, test } from "@playwright/test";
 
 import { gotoEditor } from "../helpers/editor-ready";
+import { openPicker, pickerFieldButton } from "../helpers/picker-dialog";
 
 type FlowNode = Record<string, unknown>;
 
@@ -34,7 +35,14 @@ async function openEditor(page: Parameters<typeof test>[0]["page"], nodeId: stri
     await page.waitForTimeout(300);
 }
 
-test.describe("P11b: parent SelectBox in editors", () => {
+/**
+ * P114 / ADR 0009: parent and parent-slot selection is the dialog-only picker.
+ * The bound `#node-input-parent` / `#node-input-mount` are hidden value carriers;
+ * a read-only display + "Auswählen…" button drive selection through the P68
+ * dialog (apps / mounts presets). These specs assert the dialog pattern is wired
+ * and the preset candidates are populated from the editor graph.
+ */
+test.describe("P11b/P114: parent + parent-slot pickers in editors", () => {
     let baselineFlow: FlowNode[];
     let mountFlow: FlowNode[];
 
@@ -51,39 +59,39 @@ test.describe("P11b: parent SelectBox in editors", () => {
         await deployFlow(request, baselineFlow);
     });
 
-    test("ui-route editor shows populated parent app SelectBox", async ({ page }) => {
+    test("ui-store parent field is the dialog picker; dialog lists app entries", async ({ page }) => {
         await gotoEditor(page);
-
-        // ui-route node is not in the mount fixture; use a ui-store which has a parent select
-        // Instead, verify via the ui-store node (app-scoped)
         await openEditor(page, "mountStore");
 
-        const options = await page.evaluate(() => {
-            const select = document.querySelector<HTMLSelectElement>("#node-input-parent");
-            return select ? Array.from(select.options).map((o) => ({ value: o.value, text: o.text })) : [];
-        });
+        // Dialog-only pattern: button present, bound control hidden.
+        await expect(pickerFieldButton(page, "parent")).toBeVisible();
+        await expect(page.locator("#node-input-parent")).toBeHidden();
 
-        // Should have at least one app entry (from the fixture apps)
-        const appEntries = options.filter((o) => o.value !== "");
-        expect(appEntries.length).toBeGreaterThan(0);
+        // The apps preset (what the dialog renders from) has app candidates.
+        const appCount = await page.evaluate(() => {
+            const C = (window as unknown as { WebappEditorCommon: { nodePickerOptionsForPreset: (p: string) => unknown[] } }).WebappEditorCommon;
+            return C.nodePickerOptionsForPreset("apps").length;
+        });
+        expect(appCount).toBeGreaterThan(0);
+
+        // Opening the dialog shows app rows.
+        await openPicker(page, "parent");
+        await expect(page.locator(".webapp-node-picker-row").first()).toBeVisible();
     });
 
-    test("ui-button editor parent slot selector shows route entries", async ({ page }) => {
+    test("ui-button parent-slot field is the dialog picker; mounts preset has app slots", async ({ page }) => {
         await gotoEditor(page);
         await openEditor(page, "mountButtonNode");
 
-        const mountOptionValues = await page.evaluate(() => {
-            const select = document.querySelector<HTMLSelectElement>("#node-input-mount");
-            // Read option values — the tree-select widget uses "<appId>.<slot>" values
-            // so we can verify the correct app slots are populated without relying on
-            // the human-readable label format which changed with the tree widget.
-            return select ? Array.from(select.options).map((o) => o.value).filter((v) => v !== "") : [];
-        });
+        await expect(pickerFieldButton(page, "mount")).toBeVisible();
+        await expect(page.locator("#node-input-mount")).toBeHidden();
 
-        // The fixture has 5 apps; each should contribute at least its "content" slot.
-        // Verify slot entries for the "App Layout Demo" (mountAppShellDemo) which has
-        // header, navbar, content, footer — 4 slots covering the full app layout.
-        const appShellEntries = mountOptionValues.filter((v) => v.startsWith("mountAppShellDemo."));
+        // The mounts preset contributes the fixture apps' slots.
+        const mountValues = await page.evaluate(() => {
+            const C = (window as unknown as { WebappEditorCommon: { nodePickerOptionsForPreset: (p: string) => Array<{ value: string }> } }).WebappEditorCommon;
+            return C.nodePickerOptionsForPreset("mounts").map((o) => o.value);
+        });
+        const appShellEntries = mountValues.filter((v) => v.startsWith("mountAppShellDemo."));
         expect(appShellEntries.length).toBeGreaterThan(0);
     });
 
@@ -91,19 +99,16 @@ test.describe("P11b: parent SelectBox in editors", () => {
         await gotoEditor(page);
 
         const result = await page.evaluate(() => {
-            // Get the registered node type definition
             const typeDef = (RED.nodes as unknown as { getType: (type: string) => { onadd?: () => void } | undefined }).getType?.("ui-button");
             if (!typeDef || typeof typeDef.onadd !== "function") {
                 return { hasOnadd: false, name: "" };
             }
 
-            // Count current ui-button nodes
             let count = 0;
             RED.nodes.eachNode((n: { type: string }) => {
                 if (n.type === "ui-button") count++;
             });
 
-            // Call onadd with a fake node context (no name set)
             const fakeNode: { name: string; type?: string } = { name: "" };
             typeDef.onadd.call(fakeNode);
 

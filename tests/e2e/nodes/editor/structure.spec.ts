@@ -80,8 +80,8 @@ test.describe("editor panels — structure nodes (P47)", () => {
         // P89: title is a typedInput that uses `titleBinding` as the DOM field id.
         await editor.expectFields(["name", "parent", "path", "titleBinding", "layout-preset"]);
 
-        // Parent SelectBox lists the app.
-        const parentOptions = await editor.selectOptionValues("parent");
+        // Parent picker (apps preset) lists the app (P114 / ADR 0009).
+        const parentOptions = await editor.pickerPresetValues("apps");
         expect(parentOptions).toContain("routeEdApp");
 
         // Empty path → invalid.
@@ -146,9 +146,9 @@ test.describe("editor panels — structure nodes (P47)", () => {
         await editor.openNode("dlgEd");
 
         await editor.expectFields(["name"]);
-        // Parent selector present and lists the app.
+        // Parent picker present and the apps preset lists the app.
         if (await editor.hasField("parent")) {
-            expect(await editor.selectOptionValues("parent")).toContain("dlgApp");
+            expect(await editor.pickerPresetValues("apps")).toContain("dlgApp");
         }
     });
 });

@@ -3,6 +3,8 @@ import path from "node:path";
 
 import { expect, test } from "@playwright/test";
 
+import { pickReference } from "../helpers/picker-dialog";
+
 type FlowNode = Record<string, unknown>;
 
 async function loadFlowFixture(relativePath: string): Promise<FlowNode[]> {
@@ -58,7 +60,9 @@ test.describe("P51: grid child prop positive-integer validation in editor", () =
         await openEditor(page, "mountTextNode");
 
         // Switch to a grid layout mount so the col field becomes visible
-        await page.selectOption("#node-input-mount", "mountGridApp.content");
+        // P114 / ADR 0009: switch the mount to a grid layout through the picker
+        // dialog (the mount field is dialog-only now) so the col field appears.
+        await pickReference(page, "mount", { search: "mountGridApp.content", expectValue: "mountGridApp.content" });
         await page.waitForTimeout(150);
 
         const colInput = page.locator("#node-input-col");
@@ -77,7 +81,9 @@ test.describe("P51: grid child prop positive-integer validation in editor", () =
         await openEditor(page, "mountTextNode");
 
         // Switch to grid mount so col becomes visible
-        await page.selectOption("#node-input-mount", "mountGridApp.content");
+        // P114 / ADR 0009: switch the mount to a grid layout through the picker
+        // dialog (the mount field is dialog-only now) so the col field appears.
+        await pickReference(page, "mount", { search: "mountGridApp.content", expectValue: "mountGridApp.content" });
         await page.waitForTimeout(150);
 
         // Enter invalid value 0 into col and trigger blur
@@ -116,7 +122,9 @@ test.describe("P51: grid child prop positive-integer validation in editor", () =
 
         await openEditor(page, "mountTextNode");
 
-        await page.selectOption("#node-input-mount", "mountGridApp.content");
+        // P114 / ADR 0009: switch the mount to a grid layout through the picker
+        // dialog (the mount field is dialog-only now) so the col field appears.
+        await pickReference(page, "mount", { search: "mountGridApp.content", expectValue: "mountGridApp.content" });
         await page.waitForTimeout(150);
 
         await page.fill("#node-input-col", "1");
