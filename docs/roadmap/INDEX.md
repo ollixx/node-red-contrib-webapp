@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P132** — aspects/editor — `store`-Binding-Editor: Button-erst (Store-Icon) + Name statt ID + Pfad-typedInput mit Default-Slice-Autocomplete (ADR 0013) — *geplant; braucht P113 + P131* — [P132](aspects/editor/P132-store-binding-subpath-editor.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -71,11 +70,11 @@ open the folder for the full history.
 | aspects/misc | 16 |
 | aspects/runtime | 7 |
 | aspects/state | 8 |
-| aspects/editor | 10 |
+| aspects/editor | 11 |
 | schema | 5 |
 | aspects/rendering | 8 |
 | aspects/foundation | 5 |
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 134 done, 1 open, 5 deferred.**
+**Total: 135 done, 0 open, 5 deferred.**

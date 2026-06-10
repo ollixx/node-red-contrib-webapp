@@ -2,14 +2,14 @@
 id: P132
 title: "store-Binding-Editor: Button-erst (Store-Icon) + Name statt ID + Pfad-typedInput (string/number/routeParam/query/store/reactive/jsonata/msg/flow/global/env) mit Default-Slice-Autocomplete"
 epic: aspects/editor
-status: in_progress
+status: done
 dependencies: [P113, P131]
 spec: docs/nodes/concepts/editor.md
 tests: tests/e2e/nodes/state/ui-store.tests.md
 ---
 # P132 — store-Binding-Editor: Name-erst + Pfad-typedInput
 
-> Entscheidung & Begründung: [ADR 0013](../../../adr/0013-store-binding-subpath.md).
+> Entscheidung & Begründung: [ADR 0013](../../../../adr/0013-store-binding-subpath.md).
 > Unterbau (Schema/Renderer/Guard): **P131** (vorausgesetzt). Kanonischer Helfer:
 > **P113**. Reines Editor-Paket in `resources/lib/editor-common.js`.
 > Korrigiertes UI: siehe die Skizzen zu ADR 0013 (Label links, Store-UI rechts,
@@ -112,3 +112,10 @@ verify: browser
 - Name-Auflösung ID→Name über `collectReferenceNodes` (app-gescoped, P117);
   nicht auflösbare ID (gelöschter Store) → `<id> (bestehend)`-Fallback wie bei
   den anderen Referenzfeldern.
+
+## Result
+
+- **delivered:** Der `store`-Typ in jedem Wert-Feld ist jetzt **button-erst** (`fa fa-database`; „Store auswählen" → „Store ändern"), zeigt den aufgelösten Store-**Namen** statt der Node-ID (app-gescoped via `collectReferenceNodes`, `<id> (bestehend)`-Fallback) und exponiert einen optionalen Ein-Level-`subPath`-typedInput (storePath-Quellensatz) mit weichem Default-Slice-Key/Index-Autocomplete. Serialisiert `{kind:"store", path, subPath?}` über die um `subPath` erweiterten P113-Helfer.
+- **stats:** editor-common.js +324/−17 (1 Datei, `valueBindingTypes` bleibt EINE Definition — `storePath` als Kategorie ergänzt, kein Fork). E2E (exakter Task-Block + Regression): 23 + 39 passed, 0 failed. **Maßgebliche volle E2E auf gebautem develop: 494 passed, exit=0, 0 failed.** Unit: editor 74 (+15 P132), runtime 872, alle Pakete grün. Tripwires grün.
+- **notes:** P131 (ee2dbd5) + P113 (cde6f93) Ancestors verifiziert; kein schema/renderer/runtime berührt (1 in-scope-Commit). Name-statt-ID per E2E belegt („monster" sichtbar, ID „monsterStore" nicht; gelöschter Store → „deletedStore (bestehend)"). Reiches Rendering über NR-typedInput-`valueLabel`-Hook (Button + Name + verschachtelter subPath-typedInput in der Wert-Spalte); innerer Leaf-Store rendert nur Name+Button (Ein-Level-Regel ADR 0013 §3).
+- **cost:** session (opus), ~55m.
