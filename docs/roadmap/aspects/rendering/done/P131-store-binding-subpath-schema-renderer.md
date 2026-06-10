@@ -2,14 +2,14 @@
 id: P131
 title: "store-Binding: optionaler subPath (Ein-Level-Value-Binding) — Schema + Renderer-Auflösung + Rekursions-Guard + sprechende Fehler"
 epic: aspects/rendering
-status: in_progress
+status: done
 dependencies: []
 spec: docs/nodes/concepts/stores.md
 tests: tests/e2e/nodes/state/ui-store.tests.md
 ---
 # P131 — store-Binding mit subPath: Schema + Renderer
 
-> Entscheidung & Begründung: [ADR 0013](../../../adr/0013-store-binding-subpath.md).
+> Entscheidung & Begründung: [ADR 0013](../../../../adr/0013-store-binding-subpath.md).
 > Editor-Seite (Name-Chip + Pfad-typedInput + Autocomplete): **P132**.
 > Dieses Paket ist der Unterbau (Schema, Renderer, Runtime-Guard) — keine Editor-UI.
 
@@ -99,3 +99,10 @@ verify: browser
   ergänzen) — „Index vs. Key" ist datengetrieben, kein Typ.
 - Invalid-Value/Logging-Pipeline (P104/P55-56) wiederverwenden; Dedup wie beim
   reactive-Fehler (pro appId, nicht pro Build).
+
+## Result
+
+- **delivered:** ADR-0013 store-Binding-`subPath`-Unterbau. Schema (`leafBindingSchema` + optionaler `subPath` auf dem store-Binding; strukturelle Rekursionssperre — `subPath.subPath` abgelehnt; `subPath` auf Nicht-Store abgelehnt; Fixture `storeSubPathBindingFixture`). Renderer (`case "store"`: Slice → Leaf-`subPath`-Binding via `resolveBinding` → `getValueAtPath`; `getValueAtPath` um Array-Indizes + Bracket-Notation erweitert; Tiefen-Guard `STORE_SUBPATH_MAX_DEPTH`; deutsche sprechende Fehler für unauflösbaren Pfad + Objekt-Slice-ohne-subPath). Doku `stores.md` „Unterpfad" + Test-Katalog.
+- **stats:** 1 in-scope-Commit. Unit: schema 259 (+8 P131), renderer 65 (+10 P131), editor 59, runtime 872 — 0 failed. **Maßgebliche volle E2E auf gebautem develop: 488 passed, exit=0, 0 failed** (inkl. 2 neue Store-subPath-E2E). Tripwires grün.
+- **notes:** Dedup **wiederverwendet** (nicht neu erfunden) — sprechende Fehler laufen durch den bestehenden `reportReactiveError`-Sink → webapp.js `onReactiveError` → app-scoped `runtimeState.reactiveErrorKeys` (20ff657), bei `flows:started` geleert. Rekursionssperre zweifach: Schema lehnt `subPath.subPath` ab + Laufzeit-Guard fängt Bypass-Zyklus (Marker + ein Fehler, kein Crash). Kein Editor-UI (P132). Ancestry (20ff657 + cde6f93) bei Merge verifiziert.
+- **cost:** session (opus), ~11m.
