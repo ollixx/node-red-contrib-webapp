@@ -10,7 +10,7 @@ verify: browser
 spec: docs/nodes/input/ui-textarea.md
 tests: tests/e2e/nodes/view/ui-textarea.tests.md
 dependencies: [P113]
-status: pending
+status: in_progress
 ---
 # P128 — ui-textarea: value + disabled auf typedInput
 
