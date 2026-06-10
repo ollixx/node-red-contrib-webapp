@@ -81,7 +81,14 @@ const runtimeState = {
     // P106: guard so the flows:started deploy hook is wired exactly once across
     // all node-type registrations (each node calls registerNodeType, which calls
     // registerEndpoints; the hook must not stack one listener per node type).
-    deployHookRegistered: false
+    deployHookRegistered: false,
+    // Reactive-expression error dedup, keyed per appId. webapp.js builds a fresh
+    // renderer app per snapshot (page render, /snapshot pull, SSE push, …), so the
+    // renderer's per-instance dedup resets each build and a broken expression
+    // would be reported on every build. This app-scoped set dedups ACROSS builds;
+    // it is cleared on deploy so a fixed expression is no longer suppressed and a
+    // newly-broken one reports again. appId → Set<errorKey>.
+    reactiveErrorKeys: new Map()
 };
 
 const WEBAPP_NODE_TYPES = new Set([
@@ -1505,8 +1512,21 @@ function buildAppSnapshot(appId, location, dialogId, definitions, clientId) {
         queries,
         // P115 (ADR 0010): a failed `reactive` expression never breaks the
         // snapshot; it is reported once per distinct error through the existing
-        // error-forwarding/logging pipeline (ADR 0006 / P55–P56).
+        // error-forwarding/logging pipeline (ADR 0006 / P55–P56). The renderer
+        // dedups within its (per-build) instance; webapp.js dedups ACROSS builds
+        // per appId (runtimeState.reactiveErrorKeys) so a broken expression is
+        // reported once per page, not once per snapshot build.
         onReactiveError: (error) => {
+            let reportedKeys = runtimeState.reactiveErrorKeys.get(appId);
+            if (!reportedKeys) {
+                reportedKeys = new Set();
+                runtimeState.reactiveErrorKeys.set(appId, reportedKeys);
+            }
+            const dedupKey = error.key || `${error.source} ${error.message}`;
+            if (reportedKeys.has(dedupKey)) {
+                return;
+            }
+            reportedKeys.add(dedupKey);
             reportRuntimeError(undefined, {
                 severity: "error",
                 code: "reactive_expression_failed",
@@ -3166,6 +3186,11 @@ function registerDeployHook(RED) {
     runtimeState.deployHookRegistered = true;
 
     RED.events.on("flows:started", function () {
+        // Reset the per-app reactive-error dedup on every deploy: a fixed
+        // expression should no longer be suppressed, and a newly-introduced
+        // failure should report again.
+        runtimeState.reactiveErrorKeys.clear();
+
         // P118 (ADR 0011 §3): the old P66 navigate cross-validation (wired +
         // `to` = ambiguous; no-destination; dead-link) is REMOVED. The explicit
         // target-source mode now stores the intent, so the wire-scan-based
