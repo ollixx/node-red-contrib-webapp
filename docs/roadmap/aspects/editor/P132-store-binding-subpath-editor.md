@@ -2,7 +2,7 @@
 id: P132
 title: "store-Binding-Editor: Button-erst (Store-Icon) + Name statt ID + Pfad-typedInput (string/number/routeParam/query/store/reactive/jsonata/msg/flow/global/env) mit Default-Slice-Autocomplete"
 epic: aspects/editor
-status: pending
+status: in_progress
 dependencies: [P113, P131]
 spec: docs/nodes/concepts/editor.md
 tests: tests/e2e/nodes/state/ui-store.tests.md
