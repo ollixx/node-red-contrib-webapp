@@ -2,7 +2,7 @@
 id: P113
 title: "EIN kanonischer Value-Binding-Typ-Satz (Reihenfolge + Semantik) für alle Display-Wert-Inputs"
 epic: aspects/editor
-status: pending
+status: in_progress
 dependencies: [P111]
 ---
 # P113 — Kanonischer Value-Binding-Typ-Satz
