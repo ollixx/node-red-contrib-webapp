@@ -27,6 +27,7 @@ eine optionale Suche/Filterung der Optionen. Bei Auswahländerung emittiert er e
 ## Felder
 
 Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
+Binding-Kategorien (Value/display, Boolean-Zustand): [ADR 0012](../../adr/0012-binding-ubiquity-every-value-field-offers-bindings.md).
 
 ### Gruppe „Allgemein"
 
@@ -40,12 +41,12 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
 | `label` | „Label" | Textfeld | **ja** | Beschriftung des Auswahlfeldes. Wird als Feld-Label über dem Select angezeigt. |
-| `value` | „Value Path" | typedInput (alle Binding-Arten) | **ja** | Bindbare Quelle des aktuell gewählten Werts. Unterstützt alle Binding-Arten: `literal`, `state`, `store`, `query`, `routeParam`, `msg`, `flow`, `global`, `jsonata`, `env`. Details: [stores.md](../concepts/stores.md). |
+| `value` | „Value" | typedInput (voller Binding-Satz, P124) | **ja** | Bindbare Quelle des aktuell gewählten Werts (Anzeige-/Initialwert). Voller Binding-Satz (ADR 0012, Value/display-Kategorie): Store, Query, Route-Param, Reactive, msg, JSONata, string, number, boolean, json, timestamp, Flow, Global, Env. Migration: ein bestehender `valuePath` wird automatisch als `state`-Binding übernommen. Details: [stores.md](../concepts/stores.md). |
 | `options` | „Options (JSON)" / „Options Binding" | Textfeld (JSON) **oder** typedInput (Binding) | optional | Liste der Auswahloptionen. Entweder statisch als JSON-Array von `{ label, value }`-Objekten oder als Binding auf ein Array im Client-State. Wenn leer, zeigt das Feld keine Optionen. |
 | `placeholder` | „Placeholder" | Textfeld | optional | Hinweistext, der angezeigt wird, wenn kein Wert ausgewählt ist. |
 | `multiple` | „Multiple" | Checkbox | optional | Erlaubt Mehrfachauswahl. Bei `true` ist `value` ein Array der gewählten Werte. Default: `false`. |
 | `searchable` | „Searchable" | Checkbox | optional | Blendet einen Filter-Input im Dropdown ein, mit dem Optionen durchsucht werden können. Default: `false`. |
-| `disabled` | „Disabled" | typedInput (alle Binding-Arten) | optional | Bindbare Bedingung, die das Auswahlfeld deaktiviert (Nutzerinteraktion gesperrt). |
+| `disabled` | „Disabled" | typedInput (Boolean-Zustand-Satz, P124) | optional | Bindbare Bedingung, die das Auswahlfeld deaktiviert (Nutzerinteraktion gesperrt). Boolean-Zustand-Satz (ADR 0012): Store, Query, Route-Param, Reactive, msg, JSONata, boolean, Flow, Global, Env. Ein Store-Binding deaktiviert das Select live, sobald der Wert truthy ist. |
 
 ### Gruppe „Platzierung"
 
