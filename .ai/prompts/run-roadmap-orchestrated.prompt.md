@@ -69,11 +69,13 @@ Repeat until a stop condition is met:
 
 7. **If `done`:** as the sole roadmap writer, on the main branch:
    a. Merge the sub-agent's branch: `git merge --no-ff phase/<PHASE_ID>`. If the merge conflicts (only possible when a concurrent phase touched the same source files), resolve trivially or, if unsure, mark the phase `blocked` with the conflict as the blocker and stop.
-   b. **Verify the full E2E suite on the integration branch yourself — the sub-agent could not (its worktree can't reliably run Playwright).** Run it WITHOUT a tail/head pipe (a pipe masks Playwright's non-zero exit, and `tail` cuts off the `N failed` header — this has produced false-greens that closed phases over real regressions):
+   b. **Verify the full E2E suite on the integration branch yourself — the sub-agent could not (its worktree can't reliably run Playwright).** FIRST `pnpm build` on the develop checkout — a merge brings in `packages/*/dist` source changes (schema/runtime/renderer) that the checkout's compiled artifacts do NOT reflect until rebuilt; running E2E against stale `dist` tests OLD behaviour and produces **false-reds** (e.g. a new schema field silently stripped at runtime). Then run E2E WITHOUT a tail/head pipe (a pipe masks Playwright's non-zero exit, and `tail` cuts off the `N failed` header — this has produced both false-greens that closed phases over real regressions AND false-reds from stale builds):
       ```
+      pnpm build > /tmp/build-<PHASE_ID>.log 2>&1; echo "build exit=$?"
       pnpm exec playwright test > /tmp/e2e-<PHASE_ID>.log 2>&1; echo "exit=$?"
       grep -cE '[0-9]+ failed' /tmp/e2e-<PHASE_ID>.log   # must be 0
       ```
+      If a spec is red, before concluding it is a real defect, re-run it after a clean `pnpm build` — a stale-`dist` false-red wastes a fix sub-agent and roadmap churn (it has).
       Only `exit=0` AND zero `failed` lines counts as green. Cross-check: if the phase added N tests, the suite total should rise by ~N; a flat total means something failed silently. **If red, do NOT close the phase** — diagnose (targeted re-run of the failing specs), spawn a fix sub-agent, re-verify; treat an unfixable regression as a `blocked` stop condition.
    c. Append the package's `## Result` by transcribing the sub-agent's `result:` block (format in `.ai/prompts/run-next-phase.prompt.md`), flip its frontmatter `status: done`, then `git mv` it into the epic's `done/` subfolder and fix its relative body links for the new depth.
    d. Update `docs/roadmap/INDEX.md`: remove the package from "Open work", bump its epic's done rollup.

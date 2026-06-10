@@ -13,11 +13,11 @@ verify: browser
 spec: docs/nodes/behavior/ui-action.md
 tests: tests/e2e/nodes/behavior/ui-action.tests.md
 dependencies: []
-status: in_progress
+status: done
 ---
 # P118 — Navigate-Zielquelle: Schema + Laufzeit
 
-> Entscheidung & Begründung: [ADR 0011](../../../adr/0011-ui-action-navigation-target-modes-and-dual-path-coding.md).
+> Entscheidung & Begründung: [ADR 0011](../../../../adr/0011-ui-action-navigation-target-modes-and-dual-path-coding.md).
 > Dieses Paket liefert die **Unterbau-Semantik** (Schema, Runtime, Migration).
 > Die Editor-UI (Modus-Umschalter, Wire-Scan, Mapping-Tabelle, Badges) ist
 > **P119** — hier nur so viel Editor-Anpassung, dass Bestands-Panels nicht
@@ -104,3 +104,10 @@ dokumentieren.
 - Testkataloge `tests/e2e/nodes/behavior/ui-action.tests.md` (und der
   ui-navigation-Katalog) um die obigen Fälle erweitern.
 
+
+## Result
+
+- **delivered:** ADR 0011, Schema+Runtime-Haelfte fuer Navigate-Zielmodi. Schema: `navigateTargetModeSchema` (wire|route|url), typisierte Param-Liste, `superRefine` fuer Per-Modus-Feldexklusivitaet. Runtime (`nodes/webapp.js`): Load-Shim-Migration, route-Modus `routeId`→Pfad mit msg-Params, ADR-§3-Adressierungsvorrang, Entfernung der obsoleten P66-Scan-Validierung. Specs + Test-Katalog aktualisiert.
+- **stats:** 19 Dateien im Merge (+1150/−460). Unit gesamt 1196 gruen. Navigate-E2E (6 Faelle: route/precedence/wire/url + P46 ui-action/ui-navigation) gruen — siehe Korrektur unten.
+- **notes:** **Close-out-Korrektur (2026-06-10):** Beim ersten Schliessen mit tail-maskierter Verifikation; bei der Nachpruefung erschienen 6 Navigate-E2E rot. Ursache war **kein Code-Defekt**, sondern ein **stale `packages/*/dist` auf dem develop-Haupt-Checkout** — nach den Merges war nicht neu gebaut worden, also nutzte `webapp.js` ein altes kompiliertes Schema, das P118s neue Navigate-Felder strippte → Navigate landete auf der App-Wurzel. Nach `pnpm build` auf develop sind alle 6 Tests gruen (verifiziert ohne tail, exit=0). Phase ist korrekt und bleibt done. Bekannte jsonata-async-Limitation (NR v3+) unveraendert dokumentiert.
+- **cost:** session a2b7c03044efeed9a (~64m, Impl) + Nachpruefung session a27f203364530086a (~6m, kein Code-Change). Modell opus.

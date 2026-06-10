@@ -8,9 +8,18 @@ No human reviews PRs. The agent is responsible for verifying its own work before
 Run the full test suite and all E2E tests. Fix every failure before proceeding. No exceptions.
 
 ```
+pnpm build          # FIRST — see the stale-dist warning below
 pnpm test
 pnpm exec playwright test
 ```
+
+**Always `pnpm build` before the authoritative E2E — stale `dist` produces false-reds.**
+`nodes/webapp.js` loads the compiled `packages/*/dist` at runtime. After merging or switching
+branches, the checkout's `dist` does not reflect the new `packages/*/src` until rebuilt — so a new
+schema field is silently stripped by the OLD compiled schema and the feature appears broken. If a
+spec is red, re-run it after a clean `pnpm build` before concluding it is a real defect (a stale-dist
+false-red has wasted a fix cycle). Raw-served files (`resources/lib/*.js`) are build-independent, so
+a failure that persists across a rebuild is real.
 
 **Never pipe the authoritative E2E run through `tail`/`head` — it lies.**
 A pipeline's exit code is the *last* command's, so `pnpm exec playwright test | tail` always
