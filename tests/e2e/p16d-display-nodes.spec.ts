@@ -3,6 +3,8 @@ import path from "node:path";
 
 import { expect, test } from "@playwright/test";
 
+import { pickerFieldButton } from "../helpers/picker-dialog";
+
 type FlowNode = Record<string, unknown>;
 
 async function loadFlowFixture(relativePath: string): Promise<FlowNode[]> {
@@ -55,8 +57,10 @@ test.describe("P16d: display nodes editor", () => {
         await page.waitForLoadState("networkidle");
         await openEditor(page, "p16dImage");
 
-        const mountSelect = await page.locator("#node-input-mount").isVisible();
-        expect(mountSelect).toBe(true);
+        // P114 / ADR 0009: the mount field is the dialog-only picker — the bound
+        // control is hidden; the "Auswählen…" button is the visible affordance.
+        await expect(pickerFieldButton(page, "mount")).toBeVisible();
+        await expect(page.locator("#node-input-mount")).toBeHidden();
 
         const nameValue = await page.inputValue("#node-input-name");
         expect(nameValue.length).toBeGreaterThan(0);
@@ -69,8 +73,10 @@ test.describe("P16d: display nodes editor", () => {
         await page.waitForLoadState("networkidle");
         await openEditor(page, "p16dIcon");
 
-        const mountSelect = await page.locator("#node-input-mount").isVisible();
-        expect(mountSelect).toBe(true);
+        // P114 / ADR 0009: the mount field is the dialog-only picker — the bound
+        // control is hidden; the "Auswählen…" button is the visible affordance.
+        await expect(pickerFieldButton(page, "mount")).toBeVisible();
+        await expect(page.locator("#node-input-mount")).toBeHidden();
 
         const nameValue = await page.inputValue("#node-input-name");
         expect(nameValue.length).toBeGreaterThan(0);
@@ -83,8 +89,10 @@ test.describe("P16d: display nodes editor", () => {
         await page.waitForLoadState("networkidle");
         await openEditor(page, "p16dList");
 
-        const mountSelect = await page.locator("#node-input-mount").isVisible();
-        expect(mountSelect).toBe(true);
+        // P114 / ADR 0009: the mount field is the dialog-only picker — the bound
+        // control is hidden; the "Auswählen…" button is the visible affordance.
+        await expect(pickerFieldButton(page, "mount")).toBeVisible();
+        await expect(page.locator("#node-input-mount")).toBeHidden();
 
         const nameValue = await page.inputValue("#node-input-name");
         expect(nameValue.length).toBeGreaterThan(0);
@@ -97,8 +105,10 @@ test.describe("P16d: display nodes editor", () => {
         await page.waitForLoadState("networkidle");
         await openEditor(page, "p16dAvatar");
 
-        const mountSelect = await page.locator("#node-input-mount").isVisible();
-        expect(mountSelect).toBe(true);
+        // P114 / ADR 0009: the mount field is the dialog-only picker — the bound
+        // control is hidden; the "Auswählen…" button is the visible affordance.
+        await expect(pickerFieldButton(page, "mount")).toBeVisible();
+        await expect(page.locator("#node-input-mount")).toBeHidden();
 
         const nameValue = await page.inputValue("#node-input-name");
         expect(nameValue.length).toBeGreaterThan(0);
@@ -111,8 +121,10 @@ test.describe("P16d: display nodes editor", () => {
         await page.waitForLoadState("networkidle");
         await openEditor(page, "p16dDivider");
 
-        const mountSelect = await page.locator("#node-input-mount").isVisible();
-        expect(mountSelect).toBe(true);
+        // P114 / ADR 0009: the mount field is the dialog-only picker — the bound
+        // control is hidden; the "Auswählen…" button is the visible affordance.
+        await expect(pickerFieldButton(page, "mount")).toBeVisible();
+        await expect(page.locator("#node-input-mount")).toBeHidden();
 
         const nameValue = await page.inputValue("#node-input-name");
         expect(nameValue.length).toBeGreaterThan(0);

@@ -3,30 +3,36 @@ import { expect, test } from "@playwright/test";
 import { deployFlow, resetFlow } from "../../../helpers/admin-api";
 import { FlowBuilder } from "../../../helpers/flow-builder";
 import { NodeEditorPage } from "../../../helpers/node-editor-page";
+import {
+    pickReference,
+    pickerFieldButton,
+    pickerFieldClear,
+    pickerFieldDisplay,
+    pickerFieldValue,
+    openPicker
+} from "../../../helpers/picker-dialog";
 
 /**
- * P68 — unified node-picker dialog.
+ * P114 / ADR 0009 — the picker dialog is the SOLE reference-selection mechanism.
  *
- * Every ui-* node selection (parents, routes, actions, stores, references) is
- * enhanced with ONE reusable picker dialog (resources/lib/editor-common.js):
- * a "list" button next to the existing <select> opens a modal with a scrollable
- * candidate list and a case-insensitive contains-search over name, id AND type.
- * Only the DEFAULT filter (preset) differs per field. Selecting in the dialog
- * writes the chosen id back into the bound <select> — values stay IDs, the save
- * round-trip is unchanged.
+ * Every reference field (parent, routeId, action, store, mount) renders the
+ * dialog-only pattern: the bound `#node-input-*` is HIDDEN (it stays the value
+ * carrier so the save round-trip is unchanged) and a read-only display + an
+ * "Auswählen…" button sit next to it. There is no visible, fully-populated
+ * reference `<select>` anywhere in a panel. Selection happens through the P68
+ * dialog (scrollable, contains-search), including a new `mounts` preset whose
+ * rows are breadcrumb labels.
  *
- * These tests drive the real Node-RED editor:
- *   1. The picker button is injected next to enhanced selects.
- *   2. Opening it shows the preset-filtered candidates only (store preset → only
- *      ui-store nodes; the ui-action sibling is NOT listed).
- *   3. The contains-search narrows by name, id and type.
- *   4. Picking a row writes the id into the <select> and round-trips through save.
- *
- * Pure helpers (nodePickerMatch / nodePickerPresets) are also asserted directly
- * in the page context — they are the testable core the dialog renders from.
+ * These tests drive the real Node-RED editor and assert:
+ *   1. The pure core (nodePickerMatch / nodePickerPresets) the dialog renders from.
+ *   2. The display+button pattern is present and the bound control is hidden.
+ *   3. The store preset lists only ui-store nodes; picking one round-trips.
+ *   4. The contains-search narrows by name, id and type.
+ *   5. The mounts preset offers breadcrumb rows; search + pick writes the mount.
+ *   6. Optional fields clear via "×"; a non-resolvable value shows "(bestehend)".
  */
 
-test.describe("editor — unified node-picker dialog (P68)", () => {
+test.describe("editor — picker dialog as sole reference selection (P114)", () => {
     test.afterEach(async ({ request }) => {
         await resetFlow(request);
     });
@@ -59,6 +65,28 @@ test.describe("editor — unified node-picker dialog (P68)", () => {
         });
     });
 
+    test("reference fields render display + button, and the bound control is hidden (no visible select)", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "patApp", root: "patApp", name: "Pattern App", layout: "app" })
+            .node("ui-input", { id: "inp1", name: "Input 1" })
+            .build();
+        await deployFlow(request, flow);
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode("inp1");
+
+        // The mount field is the dialog-only pattern: button visible, bound
+        // control hidden, NO visible reference <select> in the wrapper.
+        await expect(pickerFieldButton(page, "mount")).toBeVisible();
+        await expect(page.locator("#node-input-mount")).toBeHidden();
+        await expect(pickerFieldDisplay(page, "mount")).toBeVisible();
+
+        // The store field (ui-input has one) is likewise dialog-only and clearable.
+        await expect(pickerFieldButton(page, "storeId")).toBeVisible();
+        await expect(page.locator("#node-input-storeId")).toBeHidden();
+    });
+
     test("store preset lists only ui-store nodes; picking one round-trips", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "pickApp", root: "pickApp", name: "Picker App" })
@@ -73,9 +101,9 @@ test.describe("editor — unified node-picker dialog (P68)", () => {
         await editor.open();
         await editor.openNode("queryNode");
 
-        // The picker button is injected next to the store <select>.
-        const storeButton = page.locator("#node-input-params + .webapp-node-picker-button");
-        await expect(storeButton).toHaveCount(1);
+        // The store picker button is rendered next to the (hidden) store field.
+        await expect(pickerFieldButton(page, "params")).toBeVisible();
+        await expect(page.locator("#node-input-params")).toBeHidden();
 
         // The candidate entries the dialog renders from, for the store preset.
         const entries = await page.evaluate(() => {
@@ -86,21 +114,11 @@ test.describe("editor — unified node-picker dialog (P68)", () => {
         const ids = entries.map((e) => e.value);
         expect(ids).toContain("storeA");
         expect(ids).toContain("storeB");
-        // The ui-action sibling is NOT a store candidate.
         expect(ids).not.toContain("actX");
         expect(entries.every((e) => e.type === "ui-store")).toBe(true);
 
-        // Open the dialog, search by name, pick the match.
-        await storeButton.click();
-        await expect(page.locator(".webapp-node-picker-dialog")).toBeVisible();
-        await page.locator(".webapp-node-picker-search").fill("Beta");
-        const rows = page.locator(".webapp-node-picker-row");
-        await expect(rows).toHaveCount(1);
-        await rows.first().click();
-
-        // Dialog closed and the bound select now carries the picked id.
-        await expect(page.locator(".webapp-node-picker-dialog")).toHaveCount(0);
-        expect(await page.locator("#node-input-params").inputValue()).toBe("storeB");
+        // Pick "Beta" through the dialog; the hidden carrier holds the id.
+        await pickReference(page, "params", { search: "Beta", expectValue: "storeB" });
 
         // Save without further edits — the id round-trips onto the node config.
         await editor.save();
@@ -126,8 +144,7 @@ test.describe("editor — unified node-picker dialog (P68)", () => {
         await editor.open();
         await editor.openNode("q2");
 
-        await page.locator("#node-input-params + .webapp-node-picker-button").click();
-        await expect(page.locator(".webapp-node-picker-dialog")).toBeVisible();
+        await openPicker(page, "params");
 
         const search = page.locator(".webapp-node-picker-search");
         const rows = page.locator(".webapp-node-picker-row");
@@ -144,5 +161,104 @@ test.describe("editor — unified node-picker dialog (P68)", () => {
         // no match
         await search.fill("does-not-exist");
         await expect(rows).toHaveCount(0);
+    });
+
+    test("mounts preset offers breadcrumb rows; search + pick writes the mount value", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "shopApp", root: "shopApp", name: "Shop", layout: "app" })
+            .route({ id: "custRoute", path: "/customers", layoutId: "grid", title: "Customers" })
+            .node("ui-text", { id: "txt1", name: "Text 1" })
+            .build();
+        await deployFlow(request, flow);
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode("txt1");
+
+        // The mounts preset entries are breadcrumb-labelled, mount-valued.
+        const entries = await page.evaluate(() => {
+            const C = (window as unknown as { WebappEditorCommon: Record<string, (...a: unknown[]) => unknown> }).WebappEditorCommon;
+            const opts = (C.nodePickerOptionsForPreset as (p: string) => Array<{ value: string; label: string; type: string }>)("mounts");
+            return opts.map((o) => ({ value: o.value, label: o.label, type: o.type }));
+        });
+        const values = entries.map((e) => e.value);
+        expect(values).toContain("shopApp.content");
+        expect(values).toContain("route:/customers/content");
+        expect(entries.every((e) => e.type === "mount")).toBe(true);
+
+        // Open the dialog, search by the route breadcrumb, pick the route content.
+        await pickReference(page, "mount", {
+            search: "customers",
+            rowText: "customers",
+            expectValue: "route:/customers/content"
+        });
+
+        // The display now shows the chosen breadcrumb.
+        await expect(pickerFieldDisplay(page, "mount")).toContainText("customers");
+
+        // Round-trips through save.
+        await editor.save();
+        const saved = await page.evaluate(() => {
+            const n = (window as unknown as {
+                RED: { nodes: { node: (id: string) => Record<string, unknown> | null } };
+            }).RED.nodes.node("txt1");
+            return n ? n.mount : null;
+        });
+        expect(saved).toBe("route:/customers/content");
+    });
+
+    test("optional store field clears via '×' and saves an empty value", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "clrApp", root: "clrApp", name: "Clear App" })
+            .node("ui-store", { id: "theStore", name: "The Store", statePath: "s" })
+            .node("ui-query", { id: "q3", name: "Q3", params: "theStore" })
+            .build();
+        await deployFlow(request, flow);
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode("q3");
+
+        // The stored reference is shown and the clear control is available.
+        expect(await pickerFieldValue(page, "params")).toBe("theStore");
+        await expect(pickerFieldClear(page, "params")).toBeVisible();
+
+        await pickerFieldClear(page, "params").click();
+        expect(await pickerFieldValue(page, "params")).toBe("");
+
+        await editor.save();
+        const saved = await page.evaluate(() => {
+            const n = (window as unknown as {
+                RED: { nodes: { node: (id: string) => Record<string, unknown> | null } };
+            }).RED.nodes.node("q3");
+            return n ? n.params : null;
+        });
+        expect(saved).toBe("");
+    });
+
+    test("a non-resolvable stored value is shown as '(bestehend)' and survives save", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "ghostApp", root: "ghostApp", name: "Ghost App" })
+            // points at a store id that does NOT exist in the graph.
+            .node("ui-query", { id: "q4", name: "Q4", params: "deleted-store-id" })
+            .build();
+        await deployFlow(request, flow);
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode("q4");
+
+        await expect(pickerFieldDisplay(page, "params")).toContainText("deleted-store-id");
+        await expect(pickerFieldDisplay(page, "params")).toContainText("bestehend");
+
+        // Opening + saving without touching it keeps the value.
+        await editor.save();
+        const saved = await page.evaluate(() => {
+            const n = (window as unknown as {
+                RED: { nodes: { node: (id: string) => Record<string, unknown> | null } };
+            }).RED.nodes.node("q4");
+            return n ? n.params : null;
+        });
+        expect(saved).toBe("deleted-store-id");
     });
 });
