@@ -2,7 +2,7 @@
 id: P117
 title: "Node-Picker-Dialog: Kandidaten auf die App des editierten Knotens scopen + Erscheinungsbild an die Node-RED-Admin-Dialoge angleichen"
 epic: aspects/editor
-status: pending
+status: in_progress
 dependencies: [P114]
 ---
 # P117 — Node-Picker: App-Scope + Admin-UI-Look
