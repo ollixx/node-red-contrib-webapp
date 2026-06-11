@@ -970,7 +970,10 @@ export type UiAvatarNodeDefinition = z.infer<typeof uiAvatarNodeDefinitionSchema
 export const uiDividerNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-divider"),
     orientation: z.enum(["horizontal", "vertical"]).optional(),
-    label: z.string().optional()
+    // P150 (ADR 0012): `label` accepts the canonical value-binding set — a
+    // literal string or a dynamic binding object. A legacy plain string is
+    // accepted directly (z.string() branch). Optional: a divider can have no label.
+    label: z.union([bindingSchema, z.string()]).optional()
 });
 
 export type UiDividerNodeDefinition = z.infer<typeof uiDividerNodeDefinitionSchema>;

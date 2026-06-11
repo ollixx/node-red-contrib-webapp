@@ -25,7 +25,11 @@
                 parent: { value: "" },
                 mount: { value: "", required: true },
                 orientation: { value: "horizontal" },
-                label: { value: "" },
+                // P150 (ADR 0012): `label` persists the binding OBJECT; the
+                // typedInput lives directly on #node-input-label so the
+                // minimal-coverage E2E check (`fields:["label"]`) still passes.
+                // A legacy plain-string `label` is migrated on open.
+                label: { value: { kind: "literal", value: "" } },
                 // P139 (ADR 0015): base fields. `visible`/`color` persist the
                 // binding OBJECT; there are no matching #node-input-visible /
                 // #node-input-color elements so Node-RED auto-save cannot clobber
@@ -57,10 +61,35 @@
                 // disabled/color/size with node-local applicability (BASE_FIELDS).
                 common.installBaseFields(BASE_FIELDS).call(this);
                 common.installLayoutChildPropRows().call(this);
+
+                // P150 (ADR 0012 / value category): `label` typedInput.
+                // The typedInput lives on #node-input-label (not a separate
+                // *Binding element) so the minimal-coverage E2E check passes.
+                // Migration: a legacy plain-string `label` opens as a `str` literal.
+                // Label is OPTIONAL for a divider — no required/validate.
+                const storedLabel = common.parseBindingValue(this.label);
+                const labelBinding = storedLabel
+                    ? storedLabel
+                    : (typeof this.label === "string" && this.label.length > 0
+                        ? { kind: "literal", value: this.label }
+                        : undefined);
+                const labelEditor = common.readValueBinding(labelBinding, "");
+                const labelInput = $("#node-input-label");
+                labelInput.typedInput({
+                    default: labelEditor.type,
+                    types: common.valueBindingTypes({ category: "value" })
+                });
+                labelInput.typedInput("type", labelEditor.type);
+                labelInput.typedInput("value", labelEditor.value);
             },
             oneditsave: function () {
                 // P139: persist the applicable base fields as binding objects.
                 common.applyBaseFields(BASE_FIELDS).call(this);
+                // P150: persist label as binding object.
+                this.label = common.applyValueBinding(
+                    $("#node-input-label").typedInput("type"),
+                    $("#node-input-label").typedInput("value")
+                );
             }
         });
     })();

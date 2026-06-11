@@ -47,7 +47,8 @@ const VIEW_CASES: Case[] = [
     // P139 (ADR 0015): ui-divider is the base-field reference node — the
     // injected "Allgemein" group adds visible/disabled/color/size controls
     // (disabled + size rendered N/A). Dedicated coverage: base-fields.spec.ts.
-    { type: "ui-divider", fields: ["name", "mount", "visibleBinding", "disabledBinding", "colorBinding", "size"], inputs: 0 },
+    // P150: label typedInput added — lives on #node-input-label.
+    { type: "ui-divider", fields: ["name", "mount", "label", "visibleBinding", "disabledBinding", "colorBinding", "size"], inputs: 0 },
     // Composite / layout nodes.
     { type: "ui-container", fields: ["name", "mount"], inputs: 1 },
     { type: "ui-accordion", fields: ["name", "mount"], inputs: 1 },

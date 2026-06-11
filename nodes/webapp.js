@@ -1182,7 +1182,8 @@ function toComponentDefinitions(components) {
             // P146: ui-slider label is now a full binding — add "slider" to the set.
             // P147: ui-switch label is now a full binding — add "switch" to the set.
             // P148: ui-textarea label is now a full binding — add "textarea" to the set.
-            const labelBinding = (p16Kind === "checkbox" || p16Kind === "datepicker" || p16Kind === "select" || p16Kind === "radio" || p16Kind === "progress" || p16Kind === "slider" || p16Kind === "switch" || p16Kind === "textarea") ? getBinding(component.label, undefined) : undefined;
+            // P150: ui-divider label is now a full binding — add "divider" to the set.
+            const labelBinding = (p16Kind === "checkbox" || p16Kind === "datepicker" || p16Kind === "select" || p16Kind === "radio" || p16Kind === "progress" || p16Kind === "slider" || p16Kind === "switch" || p16Kind === "textarea" || p16Kind === "divider") ? getBinding(component.label, undefined) : undefined;
             if (labelBinding) {
                 bind.label = labelBinding;
             }
