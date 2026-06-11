@@ -10,7 +10,7 @@ verify: browser
 spec: docs/nodes/feedback/ui-skeleton.md
 tests: tests/e2e/nodes/view/ui-skeleton.tests.md
 dependencies: [P113]
-status: pending
+status: in_progress
 ---
 # P138 — ui-skeleton: visible standardisieren + lines kontextabhängig
 
