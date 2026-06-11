@@ -453,6 +453,35 @@ function resolveBinding(binding: BindingDefinition | undefined, sources: Binding
 }
 
 /**
+ * P133 (ADR 0012) — resolve a STRUCTURAL binding (a value that is itself an
+ * array/object, e.g. ui-select `options`). It mirrors {@link resolveBinding}
+ * for the non-store kinds, but for a `store` binding it returns the raw slice
+ * (honouring an optional one-level `subPath`) instead of routing through the
+ * display-scalar resolver, which deliberately rejects object/array slices.
+ */
+function resolveStructuralBinding(binding: BindingDefinition | undefined, sources: BindingSources): unknown {
+    if (!binding) {
+        return undefined;
+    }
+
+    if (binding.kind === "store") {
+        const storeId = binding.path;
+        const statePath = storeId ? sources.storePaths[storeId] : undefined;
+        const slice = getValueAtPath(sources.state, statePath);
+        if (binding.subPath !== undefined) {
+            const pathValue = resolveBinding(binding.subPath as BindingDefinition, sources, 1);
+            if (pathValue === undefined || pathValue === null || pathValue === "") {
+                return slice;
+            }
+            return getValueAtPath(slice, String(pathValue));
+        }
+        return slice;
+    }
+
+    return resolveBinding(binding, sources);
+}
+
+/**
  * P104 — the single, central normalization of a bound display value.
  *
  * Every node that binds a *display* value (ui-text `value`, ui-badge `value`,
@@ -677,6 +706,14 @@ function toRenderedComponent(component: ComponentDefinition, context: ComponentR
 
     for (const [key, binding] of Object.entries(component.bind)) {
         resolvedProps[key] = resolveBinding(binding, context.sources);
+    }
+
+    // P133 (ADR 0012): a ui-select `options` binding is STRUCTURAL — its store
+    // slice is legitimately an array (or object map), not a scalar display value.
+    // The generic store resolver rejects object/array slices (display-only), so
+    // resolve options through the structural path that keeps the array intact.
+    if (component.kind === "select" && component.bind.options) {
+        resolvedProps.options = resolveStructuralBinding(component.bind.options, context.sources);
     }
 
     const baseComponent: RenderedComponentBase = {

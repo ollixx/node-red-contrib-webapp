@@ -9,10 +9,9 @@
 
 `ui-select` rendert ein Dropdown- oder Combobox-Auswahlfeld. Die auswählbaren
 Optionen werden entweder statisch als `{ label, value }`-Liste konfiguriert oder
-dynamisch über ein Binding aus dem Client-State (z. B. aus einem `ui-store` oder
-`ui-query`) bezogen. Der Knoten unterstützt Einzel- und Mehrfachauswahl sowie
-eine optionale Suche/Filterung der Optionen. Bei Auswahländerung emittiert er ein
-`change`-Event auf dem Output-Port.
+dynamisch über ein Store-Binding bezogen. Der Knoten unterstützt Einzel- und
+Mehrfachauswahl. Bei Auswahländerung emittiert er ein `change`-Event auf dem
+Output-Port.
 
 ## Einordnung
 
@@ -40,12 +39,11 @@ Binding-Kategorien (Value/display, Boolean-Zustand): [ADR 0012](../../adr/0012-b
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `label` | „Label" | Textfeld | **ja** | Beschriftung des Auswahlfeldes. Wird als Feld-Label über dem Select angezeigt. |
+| `label` | „Label" | typedInput (voller Binding-Satz, P133) | **ja** | Beschriftung des Auswahlfeldes. Bindbar (ADR 0012, Value/display-Kategorie): literaler Text **oder** Store/Query/Route-Param/Reactive/msg/JSONata/Flow/Global/Env. Ein bestehender plain-string `label` wird automatisch als Literal-Binding übernommen. Pflicht: das Feld darf nicht leer sein. |
 | `value` | „Value" | typedInput (voller Binding-Satz, P124) | **ja** | Bindbare Quelle des aktuell gewählten Werts (Anzeige-/Initialwert). Voller Binding-Satz (ADR 0012, Value/display-Kategorie): Store, Query, Route-Param, Reactive, msg, JSONata, string, number, boolean, json, timestamp, Flow, Global, Env. Migration: ein bestehender `valuePath` wird automatisch als `state`-Binding übernommen. Details: [stores.md](../concepts/stores.md). |
-| `options` | „Options (JSON)" / „Options Binding" | Textfeld (JSON) **oder** typedInput (Binding) | optional | Liste der Auswahloptionen. Entweder statisch als JSON-Array von `{ label, value }`-Objekten oder als Binding auf ein Array im Client-State. Wenn leer, zeigt das Feld keine Optionen. |
-| `placeholder` | „Placeholder" | Textfeld | optional | Hinweistext, der angezeigt wird, wenn kein Wert ausgewählt ist. |
+| `options` | „Options" | typedInput `{ json \| store }` (P133) | optional | **Ein** Feld mit zwei Typen. Typ `json` nutzt den NR-JSON-Editor und validiert die Struktur vor dem Deploy (Knoten rot bei Fehler) — genau eine von drei Formen: Objekt `{ "<label>": "<value>" }`, String-Array `["A","B"]` (Value = Label) oder Objekt-Array `[{ "label":…, "value":… }]`. Typ `store` liest die Optionen reaktiv aus einem Store(-Pfad). Migration: ein bestehender `optionsJson`-String öffnet im `json`-Typ; ein bestehender `optionsBinding` öffnet im `store`-Typ. Wenn leer, zeigt das Feld keine Optionen. |
+| `placeholder` | „Placeholder" | typedInput (voller Binding-Satz, P133) | optional | Hinweistext, der angezeigt wird, wenn kein Wert ausgewählt ist. Bindbar (ADR 0012, Value/display-Kategorie); ein Store-/state-Binding zeigt den Live-Wert. |
 | `multiple` | „Multiple" | Checkbox | optional | Erlaubt Mehrfachauswahl. Bei `true` ist `value` ein Array der gewählten Werte. Default: `false`. |
-| `searchable` | „Searchable" | Checkbox | optional | Blendet einen Filter-Input im Dropdown ein, mit dem Optionen durchsucht werden können. Default: `false`. |
 | `disabled` | „Disabled" | typedInput (Boolean-Zustand-Satz, P124) | optional | Bindbare Bedingung, die das Auswahlfeld deaktiviert (Nutzerinteraktion gesperrt). Boolean-Zustand-Satz (ADR 0012): Store, Query, Route-Param, Reactive, msg, JSONata, boolean, Flow, Global, Env. Ein Store-Binding deaktiviert das Select live, sobald der Wert truthy ist. |
 
 ### Gruppe „Platzierung"
@@ -107,9 +105,10 @@ das Backend bildet sie auf die Dropdown-Darstellung ab. Details:
 
 ## Besonderheiten
 
-- **Optionen: statisch vs. dynamisch.** Die `options`-Konfiguration nimmt
-  entweder ein statisches JSON-Array oder ein Binding entgegen. Beides ist
-  optional; ein leeres Feld rendert ein Auswahlfeld ohne Optionen.
+- **Optionen: ein Feld, zwei Typen (P133).** Die `options`-Konfiguration ist
+  **ein** typedInput: Typ `json` (statisches, vor dem Deploy validiertes JSON in
+  einer von drei Formen) oder Typ `store` (reaktiv aus einem Store-Pfad). Das
+  Feld ist optional; leer rendert ein Auswahlfeld ohne Optionen.
 - **Mehrfachauswahl.** Bei `multiple: true` ist `value` ein Array; das
   `change`-Event liefert entsprechend ein Array unter `msg.ui.params.value`.
 

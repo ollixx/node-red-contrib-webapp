@@ -6,6 +6,7 @@ const {
     appModelSchema,
     collectMissingStandardLayouts,
     createAppRootRoute,
+    normalizeSelectOptions,
     storeOperationSchema,
     uiEventMessageSchema,
     validateUiNodeDefinition
@@ -691,6 +692,62 @@ function getBinding(bindingCandidate, fallbackBinding) {
     return fallbackBinding;
 }
 
+// P133 (ADR 0012): resolve a ui-select / ui-radio `options` config into the
+// node-definition `options` value — either a normalised `{label,value}[]` array
+// (the `json` type) or a binding object (the `store` type), with legacy migration:
+//   - new `options` binding object:
+//       · { kind:"literal", value:<raw JSON> } → normalise the JSON (3 forms)
+//       · { kind:"store"/… }                   → pass the binding through
+//   - legacy `optionsJson` string  → JSON.parse → normalise to an array
+//   - legacy `optionsBinding` string → stateBinding(path)
+// `fallback` is returned when nothing is configured (undefined for ui-select,
+// [] for ui-radio which requires options).
+function mapSelectOptions(config, fallback) {
+    const candidate = config.options;
+
+    // New single binding object.
+    if (candidate && typeof candidate === "object" && typeof candidate.kind === "string") {
+        if (candidate.kind === "literal") {
+            const normalised = normalizeSelectOptions(candidate.value);
+            return normalised.ok ? normalised.options : fallback;
+        }
+        return candidate;
+    }
+
+    // New `options` carrying a raw JSON value (object/array) directly.
+    if (candidate && typeof candidate === "object") {
+        const normalised = normalizeSelectOptions(candidate);
+        return normalised.ok ? normalised.options : fallback;
+    }
+    if (typeof candidate === "string" && candidate.trim().length > 0) {
+        try {
+            const normalised = normalizeSelectOptions(JSON.parse(candidate));
+            return normalised.ok ? normalised.options : fallback;
+        }
+        catch (_err) {
+            return fallback;
+        }
+    }
+
+    // Legacy `optionsJson` static JSON string.
+    if (typeof config.optionsJson === "string" && config.optionsJson.trim().length > 0) {
+        try {
+            const normalised = normalizeSelectOptions(JSON.parse(config.optionsJson));
+            return normalised.ok ? normalised.options : fallback;
+        }
+        catch (_err) {
+            return fallback;
+        }
+    }
+
+    // Legacy `optionsBinding` store-path string → state binding.
+    if (typeof config.optionsBinding === "string" && config.optionsBinding.trim().length > 0) {
+        return stateBinding(config.optionsBinding);
+    }
+
+    return fallback;
+}
+
 // P69: normalise an icon field config value into the schema-accepted shape.
 //  - a dynamic binding ({ kind, … }) → passed through unchanged
 //  - a literal { library, name } object → passed through unchanged
@@ -1089,9 +1146,20 @@ function toComponentDefinitions(components) {
             // P97/P98: label binding for ui-checkbox and ui-datepicker — when label is a
             // binding object, route it through bind.label so the renderer resolves it to a
             // string in resolvedProps.label → component.props.label (used by serializer).
-            const labelBinding = (p16Kind === "checkbox" || p16Kind === "datepicker") ? getBinding(component.label, undefined) : undefined;
+            const labelBinding = (p16Kind === "checkbox" || p16Kind === "datepicker" || p16Kind === "select") ? getBinding(component.label, undefined) : undefined;
             if (labelBinding) {
                 bind.label = labelBinding;
+            }
+            // P133: ui-select `placeholder` and `options` may be binding objects
+            // (canonical value set / store binding). Route them through `bind` so
+            // the renderer resolves them into resolvedProps.{placeholder,options}.
+            const placeholderBinding = p16Kind === "select" ? getBinding(component.placeholder, undefined) : undefined;
+            if (placeholderBinding) {
+                bind.placeholder = placeholderBinding;
+            }
+            const optionsBinding = p16Kind === "select" ? getBinding(component.options, undefined) : undefined;
+            if (optionsBinding) {
+                bind.options = optionsBinding;
             }
 
             return {
@@ -1105,10 +1173,11 @@ function toComponentDefinitions(components) {
                     // it goes through bind.label; only put it in props when it is a plain string
                     // (or for other nodes that don't support label bindings).
                     ...(component.label !== undefined && !(labelBinding) ? { label: component.label } : {}),
-                    ...(component.placeholder !== undefined ? { placeholder: component.placeholder } : {}),
-                    ...(component.options !== undefined ? { options: component.options } : {}),
+                    // P133: placeholder/options bound objects go through bind (above);
+                    // only a plain/literal value stays in props.
+                    ...(component.placeholder !== undefined && !(placeholderBinding) ? { placeholder: component.placeholder } : {}),
+                    ...(component.options !== undefined && !(optionsBinding) ? { options: component.options } : {}),
                     ...(component.multiple !== undefined ? { multiple: component.multiple } : {}),
-                    ...(component.searchable !== undefined ? { searchable: component.searchable } : {}),
                     ...(component.rows !== undefined ? { rows: component.rows } : {}),
                     ...(component.maxLength !== undefined ? { maxLength: component.maxLength } : {}),
                     ...(component.min !== undefined ? { min: component.min } : {}),
@@ -4440,12 +4509,16 @@ const runtimeNodeRegistry = {
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
-            label: config.label,
+            // P133: label is now a binding (literal string or dynamic binding).
+            label: getBinding(config.label, undefined) || config.label,
             value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
-            options: config.optionsJson ? JSON.parse(config.optionsJson) : (config.optionsBinding ? stateBinding(config.optionsBinding) : undefined),
-            placeholder: config.placeholder || undefined,
+            // P133: single Options field — json (literal array) | store binding,
+            // with legacy optionsJson / optionsBinding migration.
+            options: mapSelectOptions(config, undefined),
+            // P133: placeholder is now a binding (literal string or dynamic binding).
+            placeholder: getBinding(config.placeholder, undefined) || (config.placeholder || undefined),
             multiple: config.multiple === true || config.multiple === "true" || undefined,
-            searchable: config.searchable === true || config.searchable === "true" || undefined,
+            // P133: `searchable` removed.
             size: blankToUndefined(config.size),
             disabled: getBinding(config.disabled, undefined),
             ...collectNodeConfigLayoutProps(config)

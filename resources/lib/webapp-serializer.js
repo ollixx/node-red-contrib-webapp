@@ -604,6 +604,12 @@
             const disabled = component.disabled ? " disabled" : "";
             const attrs = shoelaceAttrs(mapComponentToShoelace("select", component.props || {}).attributes);
             const options = Array.isArray(component.props.options) ? component.props.options : [];
+            // P133: placeholder is a bindable value — render it as the sl-select
+            // `placeholder` attribute when present (empty/undefined → omitted).
+            const placeholderValue = component.props.placeholder;
+            const placeholder = placeholderValue !== undefined && placeholderValue !== null && String(placeholderValue).length > 0
+                ? " placeholder=\"" + escapeAttribute(String(placeholderValue)) + "\""
+                : "";
             const optionHtml = options.map(function (opt) {
                 const val = escapeAttribute(String(opt.value !== undefined ? opt.value : opt));
                 const lbl = escapeHtml(String(opt.label !== undefined ? opt.label : (opt.value !== undefined ? opt.value : opt)));
@@ -611,7 +617,7 @@
                 return "<sl-option value=\"" + val + "\"" + selected + ">" + lbl + "</sl-option>";
             }).join("");
             return wrapRenderedComponentHtml(component, layoutId, "<sl-select" + attrs + " label=\"" + escapeAttribute(label)
-                + "\" name=\"" + escapeAttribute(name) + "\" value=\"" + escapeAttribute(value) + "\"" + disabled + ">" + optionHtml + "</sl-select>");
+                + "\" name=\"" + escapeAttribute(name) + "\" value=\"" + escapeAttribute(value) + "\"" + placeholder + disabled + ">" + optionHtml + "</sl-select>");
         }
 
         if (component.kind === "checkbox") {

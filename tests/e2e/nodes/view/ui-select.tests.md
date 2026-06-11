@@ -32,3 +32,34 @@
 | Test | Ziel |
 |---|---|
 | change-Event bleibt funktional nach P124-Migration | `valuePath`-Migration bricht bestehende Event-Kette nicht |
+
+## P133 — Options `{ json \| store }`, placeholder/label-Bindings, searchable raus (ADR 0012)
+
+### Options (ein Feld, zwei Typen)
+
+| Test | Ziel |
+|---|---|
+| Options json — Objekt-Map `{ label: value }` → sl-options | Form 1 (Objekt) wird normalisiert und gerendert |
+| Options json — String-Array `["A","B"]` → value=label | Form 2 (String-Array) → Value = Label |
+| Options store-Binding rendert Optionen reaktiv aus dem Store | Store-Typ liest das Options-Array live aus dem Store |
+| legacy optionsBinding migriert zu (state) Options-Binding — App crasht nicht | Alt-`optionsBinding` lädt verlustfrei als state-Binding |
+
+### placeholder / label (kanonischer Wert-Satz)
+
+| Test | Ziel |
+|---|---|
+| placeholder literal → sl-select[placeholder] | Literal-Placeholder erscheint als Attribut |
+| placeholder store-Binding zeigt den Live-Wert | Store-Binding rendert den Live-Placeholder |
+| label store-Binding zeigt den Live-Wert | Store-Binding rendert das Live-Label |
+
+### searchable entfernt
+
+| Test | Ziel |
+|---|---|
+| legacy `searchable:true` lädt fehlerfrei | Alt-Config mit entferntem Feld lädt ohne Fehler (ignoriert) |
+
+## P133 — Editor-Panel
+
+| Test | Ziel |
+|---|---|
+| label/value/options/placeholder typedInputs vorhanden, required-label-Validierung | Ein Options-Feld, keine optionsJson/searchable; leeres Label → invalid, gefüllt → valid |

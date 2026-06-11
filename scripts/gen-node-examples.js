@@ -452,8 +452,9 @@ examples.push(inputNodeExample({
     tabId: "ex-ui-select", appId: "selApp", routeId: "selRoute", nodeId: "selNode",
     nodeType: "ui-select",
     nodeProps: {
-        label: "Country",
-        optionsJson: JSON.stringify([{ label: "Germany", value: "de" }, { label: "Austria", value: "at" }, { label: "Switzerland", value: "ch" }]),
+        // P133: label is a binding; options is a single json|store binding.
+        label: { kind: "literal", value: "Country" },
+        options: { kind: "literal", value: [{ label: "Germany", value: "de" }, { label: "Austria", value: "at" }, { label: "Switzerland", value: "ch" }] },
         value: { kind: "literal", value: "" }
     },
     injectValue: "at", injectPayloadType: "str"
