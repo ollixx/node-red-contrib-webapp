@@ -26,7 +26,10 @@
                 mode: { value: "date" },
                 min: { value: "" },
                 max: { value: "" },
-                placeholder: { value: "" },
+                // P149 (ADR 0012): `placeholder` persists the binding OBJECT; DOM-less widget lives on `placeholderBinding`.
+                // Back-compat: legacy plain string placeholder is migrated on first open (load-shim below).
+                placeholder: { value: null },
+                placeholderBinding: { value: "" },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
                 col: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
@@ -93,6 +96,23 @@
                 });
                 disabledInput.typedInput("type", disabledEditor.type);
                 disabledInput.typedInput("value", disabledEditor.value);
+
+                // P149 (ADR 0012): Placeholder typedInput — canonical P113 helper.
+                // Back-compat: stored placeholder may be a plain string (pre-P149) or a binding object.
+                var placeholderStored = common.parseBindingValue(this.placeholder);
+                var placeholderBinding = placeholderStored
+                    ? placeholderStored
+                    : (this.placeholder && typeof this.placeholder === "string" && this.placeholder.trim().length > 0
+                        ? { kind: "literal", value: this.placeholder }
+                        : undefined);
+                var placeholderEditor = common.readValueBinding(placeholderBinding, "");
+                var placeholderInput = $("#node-input-placeholderBinding");
+                placeholderInput.typedInput({
+                    default: placeholderEditor.type,
+                    types: common.valueBindingTypes({ category: "value" })
+                });
+                placeholderInput.typedInput("type", placeholderEditor.type);
+                placeholderInput.typedInput("value", placeholderEditor.value);
             },
             oneditsave: function () {
                 // P130: persist label as binding object.
@@ -112,6 +132,12 @@
                 this.disabled = common.applyValueBinding(
                     $("#node-input-disabledBinding").typedInput("type"),
                     $("#node-input-disabledBinding").typedInput("value")
+                );
+
+                // P149: persist placeholder as binding object.
+                this.placeholder = common.applyValueBinding(
+                    $("#node-input-placeholderBinding").typedInput("type"),
+                    $("#node-input-placeholderBinding").typedInput("value")
                 );
             }
         });
@@ -137,7 +163,8 @@
     </div>
     <div class="form-row"><label for="node-input-min">Min</label><input type="text" id="node-input-min" placeholder="YYYY-MM-DD"></div>
     <div class="form-row"><label for="node-input-max">Max</label><input type="text" id="node-input-max" placeholder="YYYY-MM-DD"></div>
-    <div class="form-row"><label for="node-input-placeholder">Placeholder</label><input type="text" id="node-input-placeholder"></div>
+    <!-- P149 (ADR 0012): Placeholder binding — typedInput managed in oneditprepare/oneditsave. -->
+    <div class="form-row"><label for="node-input-placeholderBinding">Placeholder</label><input type="text" id="node-input-placeholderBinding"></div>
 </script>
 <script type="text/html" data-help-name="ui-datepicker">
 <p>Datums- und Uhrzeiteingabe mit konfigurierbarem Modus (date, datetime, time). Rendert ein <code>sl-input</code>-Element (type="date", "datetime-local" oder "time").</p>

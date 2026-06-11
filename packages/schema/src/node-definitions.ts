@@ -641,7 +641,9 @@ export const uiDatepickerNodeDefinitionSchema = mountableNodeSchema.extend({
     mode: z.enum(["date", "datetime", "time"]).optional(),
     min: z.string().optional(),
     max: z.string().optional(),
-    placeholder: z.string().optional(),
+    // P149 (ADR 0012): placeholder accepts the canonical value-binding set — a literal
+    // string or a dynamic binding object. Back-compat: a plain string is still accepted.
+    placeholder: z.union([bindingSchema, z.string()]).optional(),
     disabled: bindingSchema.optional()
 });
 

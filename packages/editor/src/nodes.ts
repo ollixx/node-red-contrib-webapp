@@ -205,7 +205,8 @@ export interface UiDatepickerEditorConfig extends MountableEditorConfig {
     mode?: "date" | "datetime" | "time";
     min?: string;
     max?: string;
-    placeholder?: string;
+    // P149 (ADR 0012): placeholder accepts a binding object or a literal string.
+    placeholder?: string | BindingDefinition;
 }
 
 export interface UiSliderEditorConfig extends MountableEditorConfig {
@@ -1042,7 +1043,8 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         mode: config.mode,
         min: config.min,
         max: config.max,
-        placeholder: config.placeholder,
+        // P149: placeholder is a binding (literal string or dynamic binding).
+        placeholder: bindingOrString(config.placeholder),
         ...collectLayoutChildConfig(config)
     })),
     "ui-slider": createDefinition("ui-slider", "view", {
