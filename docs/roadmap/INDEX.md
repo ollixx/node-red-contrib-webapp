@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P148** — nodes/ui-textarea — `label`+`placeholder` auf Wert-typedInput — *Field-Typing Welle 1; braucht P113* — [P148](nodes/ui-textarea/P148-textarea-label-placeholder-value-typedinput.md)
 - **P149** — nodes/ui-datepicker — `placeholder` auf Wert-typedInput — *Field-Typing Welle 1; braucht P113* — [P149](nodes/ui-datepicker/P149-datepicker-placeholder-value-typedinput.md)
 - **P150** — nodes/ui-divider — `label` auf Wert-typedInput — *Field-Typing Welle 1; braucht P113* — [P150](nodes/ui-divider/P150-divider-label-value-typedinput.md)
 - **P151** — nodes/ui-image — `alt`+`fallback` auf Wert-typedInput — *Field-Typing Welle 1; braucht P113* — [P151](nodes/ui-image/P151-image-alt-fallback-value-typedinput.md)
@@ -81,7 +80,7 @@ open the folder for the full history.
 | nodes/ui-switch | 3 |
 | nodes/ui-slider | 3 |
 | nodes/ui-radio | 3 |
-| nodes/ui-textarea | 2 |
+| nodes/ui-textarea | 3 |
 | nodes/ui-checkbox | 2 |
 | nodes/ui-datepicker | 2 |
 | nodes/ui-accordion · ui-breadcrumb · ui-dialog · ui-divider · ui-icon · ui-image · ui-pagination · ui-progress · ui-skeleton · ui-table | 1 each |
@@ -96,4 +95,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 146 done, 13 open, 11 deferred.**
+**Total: 147 done, 12 open, 11 deferred.**
