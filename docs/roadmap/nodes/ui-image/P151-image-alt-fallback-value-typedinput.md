@@ -9,7 +9,7 @@ verify: browser
 spec: docs/nodes/display/ui-image.md
 tests: tests/e2e/nodes/view/ui-image.tests.md
 dependencies: [P113]
-status: pending
+status: in_progress
 ---
 # P151 — ui-image: alt + fallback → Wert-typedInput
 
