@@ -708,11 +708,12 @@ function toRenderedComponent(component: ComponentDefinition, context: ComponentR
         resolvedProps[key] = resolveBinding(binding, context.sources);
     }
 
-    // P133 (ADR 0012): a ui-select `options` binding is STRUCTURAL — its store
-    // slice is legitimately an array (or object map), not a scalar display value.
-    // The generic store resolver rejects object/array slices (display-only), so
-    // resolve options through the structural path that keeps the array intact.
-    if (component.kind === "select" && component.bind.options) {
+    // P133/P136 (ADR 0012): a ui-select / ui-radio `options` binding is STRUCTURAL
+    // — its store slice is legitimately an array (or object map), not a scalar
+    // display value. The generic store resolver rejects object/array slices
+    // (display-only), so resolve options through the structural path that keeps
+    // the array intact. Both nodes share the same options model.
+    if ((component.kind === "select" || component.kind === "radio") && component.bind.options) {
         resolvedProps.options = resolveStructuralBinding(component.bind.options, context.sources);
     }
 

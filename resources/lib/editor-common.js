@@ -3406,14 +3406,16 @@
         return String(value);
     }
 
-    // ─── P133 (ADR 0012): ui-select Options validation/normalisation ──────────
-    // Browser-side mirror of schema's `normalizeSelectOptions` (the editor cannot
-    // require the schema dist). Accepts exactly three forms and rejects the rest:
+    // ─── P133/P136 (ADR 0012): shared Options validation/normalisation ────────
+    // The ONE options helper, shared by ui-select (P133) and ui-radio (P136) —
+    // the only two nodes with an `options` model. Browser-side mirror of schema's
+    // `normalizeSelectOptions` (the editor cannot require the schema dist).
+    // Accepts exactly three forms and rejects the rest:
     //   1. object map  { label: value }            (values must be scalars)
     //   2. array of strings  ["A","B"]             (value = label)
     //   3. array of objects  [{ label, value }]    (both props required)
     // Empty array/object/null/undefined → [] (valid, no options).
-    function normalizeSelectOptionsStructure(input) {
+    function normalizeOptionsStructure(input) {
         if (input === undefined || input === null) {
             return { ok: true, options: [] };
         }
@@ -3460,7 +3462,7 @@
 
     // Validate a raw JSON STRING for the Options `json` typedInput. Returns
     // true (valid / empty) or an error string (invalid JSON or wrong structure).
-    function validateSelectOptionsJson(raw) {
+    function validateOptionsJson(raw) {
         var text = raw === undefined || raw === null ? "" : String(raw).trim();
         if (text.length === 0) {
             return true;
@@ -3472,15 +3474,16 @@
         catch (_e) {
             return "Options must be valid JSON.";
         }
-        var result = normalizeSelectOptionsStructure(parsed);
+        var result = normalizeOptionsStructure(parsed);
         return result.ok ? true : result.error;
     }
 
-    // Install the P133 single Options typedInput on `selector` (json | store).
-    // Reads the stored `options` binding object (literal json / store) and a
-    // legacy optionsJson / optionsBinding for migration. Returns a `save()` that
+    // P133/P136: install the single shared Options typedInput on `selector`
+    // (json | store) — used by both ui-select and ui-radio. Reads the stored
+    // `options` binding object (literal json / store) and a legacy
+    // optionsJson / optionsBinding for migration. Returns a `save()` that
     // serialises the typedInput back into the `options` binding object.
-    function installSelectOptionsField(selector, opts) {
+    function installOptionsField(selector, opts) {
         var options = opts || {};
         var input = $(selector);
         var stored = parseBindingValue(options.options);
@@ -3514,7 +3517,7 @@
                     label: "Options",
                     icon: "fa fa-list",
                     hasValue: true,
-                    validate: validateSelectOptionsJson
+                    validate: validateOptionsJson
                 },
                 storeTypedInputType({ label: "Store" })
             ]
@@ -4743,9 +4746,14 @@
         valueBindingTypes,
         readValueBinding,
         applyValueBinding,
-        normalizeSelectOptionsStructure,
-        validateSelectOptionsJson,
-        installSelectOptionsField,
+        // P136: the ONE shared Options helper (ui-select + ui-radio).
+        normalizeOptionsStructure,
+        validateOptionsJson,
+        installOptionsField,
+        // Back-compat aliases (P133 names) so older callers keep working.
+        normalizeSelectOptionsStructure: normalizeOptionsStructure,
+        validateSelectOptionsJson: validateOptionsJson,
+        installSelectOptionsField: installOptionsField,
         bindingValueForEditor,
         buildMountOptionsTree,
         flattenMountOptionTree,

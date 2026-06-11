@@ -9,7 +9,30 @@
                 name: { value: "" },
                 parent: { value: "" },
                 mount: { value: "", required: true },
-                label: { value: "", required: true },
+                // P136 (ADR 0012): `label` persists the binding OBJECT (literal
+                // string or dynamic binding); the typedInput lives on
+                // #node-input-labelBinding. A legacy plain-string `label` migrates.
+                // Required: the labelBinding typedInput must carry a non-empty value.
+                label: {
+                    value: "",
+                    required: true,
+                    validate: function () {
+                        var el = $("#node-input-labelBinding");
+                        if (el.length && typeof el.typedInput === "function") {
+                            var v = el.typedInput("value");
+                            return v !== undefined && v !== null && String(v).length > 0;
+                        }
+                        // Pre-open (no typedInput yet): trust the persisted binding.
+                        var b = this.label;
+                        if (b && typeof b === "object") {
+                            return b.value !== undefined && b.value !== null && String(b.value).length > 0
+                                ? true
+                                : (typeof b.path === "string" && b.path.length > 0);
+                        }
+                        return typeof b === "string" && b.length > 0;
+                    }
+                },
+                labelBinding: { value: "" },
                 // P127 (ADR 0012): `value` persists the binding OBJECT; there is no
                 // matching #node-input-value element so Node-RED auto-save cannot
                 // clobber it. The typedInput lives on #node-input-valueBinding.
@@ -17,6 +40,12 @@
                 valuePath: { value: "" },
                 value: { value: null },
                 valueBinding: { value: "" },
+                // P136 (ADR 0012): single Options field — `options` persists the
+                // binding OBJECT (json literal | store). The typedInput lives on
+                // #node-input-optionsField. Legacy `optionsJson`/`optionsBinding`
+                // strings are kept for migration only (shared helper with ui-select).
+                options: { value: null },
+                optionsField: { value: "" },
                 optionsJson: { value: "" },
                 optionsBinding: { value: "" },
                 orientation: { value: "vertical" },
@@ -47,6 +76,30 @@
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
                 common.installLayoutChildPropRows().call(this);
+
+                // P136 (ADR 0012 / value category): `label` typedInput — full set.
+                // Migration: a legacy plain-string `label` opens as a `str` literal.
+                const storedLabel = common.parseBindingValue(this.label);
+                const labelBinding = storedLabel
+                    ? storedLabel
+                    : (typeof this.label === "string" && this.label.length > 0 ? { kind: "literal", value: this.label } : undefined);
+                const labelEditor = common.readValueBinding(labelBinding, "");
+                const labelInput = $("#node-input-labelBinding");
+                labelInput.typedInput({
+                    default: labelEditor.type,
+                    types: common.valueBindingTypes({ category: "value" })
+                });
+                labelInput.typedInput("type", labelEditor.type);
+                labelInput.typedInput("value", labelEditor.value);
+
+                // P136 (ADR 0012): single shared Options typedInput — json | store,
+                // with legacy optionsJson / optionsBinding migration + JSON
+                // validation. The same helper backs ui-select (one source of truth).
+                this._saveOptions = common.installOptionsField("#node-input-optionsField", {
+                    options: this.options,
+                    optionsJson: this.optionsJson,
+                    optionsBinding: this.optionsBinding
+                });
 
                 // P127 (ADR 0012 / value/display category): `value` typedInput — full
                 // canonical set. Migration: a legacy `valuePath` plain string becomes a
@@ -90,6 +143,18 @@
                     $("#node-input-disabledBinding").typedInput("type"),
                     $("#node-input-disabledBinding").typedInput("value")
                 );
+
+                // P136: persist label as binding object (literal string | binding).
+                this.label = common.applyValueBinding(
+                    $("#node-input-labelBinding").typedInput("type"),
+                    $("#node-input-labelBinding").typedInput("value")
+                );
+
+                // P136: persist options as binding object (json literal | store);
+                // clear the legacy options fields so they don't shadow the new one.
+                this.options = this._saveOptions ? this._saveOptions() : null;
+                this.optionsJson = "";
+                this.optionsBinding = "";
             }
         });
     })();
@@ -98,11 +163,12 @@
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
-    <div class="form-row"><label for="node-input-label">Label</label><input type="text" id="node-input-label"></div>
+    <!-- P136 (ADR 0012 / value category): Label binding — typedInput managed in oneditprepare/oneditsave. -->
+    <div class="form-row"><label for="node-input-labelBinding">Label</label><input type="text" id="node-input-labelBinding"></div>
     <!-- P127 (ADR 0012 / value/display category): Value binding — typedInput managed in oneditprepare/oneditsave. -->
     <div class="form-row"><label for="node-input-valueBinding">Value</label><input type="text" id="node-input-valueBinding"></div>
-    <div class="form-row"><label for="node-input-optionsJson">Options (JSON)</label><input type="text" id="node-input-optionsJson" placeholder='[{"label":"A","value":"a"}]'></div>
-    <div class="form-row"><label for="node-input-optionsBinding">Options Binding</label><input type="text" id="node-input-optionsBinding" placeholder="store path"></div>
+    <!-- P136 (ADR 0012): single Options field — json (NR JSON editor) | store. Shared helper with ui-select. -->
+    <div class="form-row"><label for="node-input-optionsField">Options</label><input type="text" id="node-input-optionsField"></div>
     <div class="form-row"><label for="node-input-orientation">Orientation</label>
         <select id="node-input-orientation">
             <option value="vertical">vertical</option>
@@ -114,6 +180,16 @@
 </script>
 <script type="text/html" data-help-name="ui-radio">
     <p>Radio-Gruppe — genau eine Option waehlbar.</p>
+    <h4>Label &amp; Optionen (P136)</h4>
+    <p><code>Label</code> nutzt den kanonischen Wert-Satz (ADR 0012): literaler Text oder ein Binding
+    (Store, Query, Route-Param, Reactive, msg, JSONata, Flow, Global, Env).</p>
+    <p><code>Optionen</code> ist ein einziges Feld mit zwei Typen — <code>Options</code> (NR-JSON-Editor)
+    oder <code>Store</code> — der <strong>gleiche geteilte Helfer</strong> wie bei ui-select.
+    Das JSON akzeptiert genau eine von drei Formen: Objekt <code>{"A":"a"}</code>,
+    String-Array <code>["A","B"]</code> oder Objekt-Array <code>[{"label":"A","value":"a"}]</code>;
+    andere Strukturen markieren den Knoten vor dem Deploy als ungültig. Der Typ <code>Store</code>
+    liest die Optionen reaktiv aus einem Store(-Pfad). Bestehende <code>optionsJson</code>/
+    <code>optionsBinding</code>-Felder migrieren verlustfrei.</p>
     <h4>Value (P127)</h4>
     <p>Bindbare Quelle des ausgewählten Werts (Anzeige/Initialwert) — voller kanonischer Satz (ADR 0012):
     Store, Query, Route-Param, Reactive, msg, JSONata, string, number, boolean, json, timestamp,

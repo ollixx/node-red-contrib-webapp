@@ -1146,7 +1146,9 @@ function toComponentDefinitions(components) {
             // P97/P98: label binding for ui-checkbox and ui-datepicker — when label is a
             // binding object, route it through bind.label so the renderer resolves it to a
             // string in resolvedProps.label → component.props.label (used by serializer).
-            const labelBinding = (p16Kind === "checkbox" || p16Kind === "datepicker" || p16Kind === "select") ? getBinding(component.label, undefined) : undefined;
+            // P136: ui-radio joins ui-select/checkbox/datepicker — a binding-object
+            // label routes through bind.label so the renderer resolves it.
+            const labelBinding = (p16Kind === "checkbox" || p16Kind === "datepicker" || p16Kind === "select" || p16Kind === "radio") ? getBinding(component.label, undefined) : undefined;
             if (labelBinding) {
                 bind.label = labelBinding;
             }
@@ -1157,7 +1159,9 @@ function toComponentDefinitions(components) {
             if (placeholderBinding) {
                 bind.placeholder = placeholderBinding;
             }
-            const optionsBinding = p16Kind === "select" ? getBinding(component.options, undefined) : undefined;
+            // P133/P136: ui-select AND ui-radio share the `options` binding model —
+            // a literal-json or store binding object routes through bind.options.
+            const optionsBinding = (p16Kind === "select" || p16Kind === "radio") ? getBinding(component.options, undefined) : undefined;
             if (optionsBinding) {
                 bind.options = optionsBinding;
             }
@@ -4553,9 +4557,14 @@ const runtimeNodeRegistry = {
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
-            label: config.label,
+            // P136: label is now a binding (literal string or dynamic binding),
+            // mirroring ui-select.
+            label: getBinding(config.label, undefined) || config.label,
             value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
-            options: config.optionsJson ? JSON.parse(config.optionsJson) : (config.optionsBinding ? stateBinding(config.optionsBinding) : []),
+            // P136: single Options field — json (literal array) | store binding,
+            // via the SAME shared resolver as ui-select, with legacy
+            // optionsJson / optionsBinding migration.
+            options: mapSelectOptions(config, undefined),
             orientation: config.orientation || undefined,
             disabled: getBinding(config.disabled, undefined),
             ...collectNodeConfigLayoutProps(config)
