@@ -2,7 +2,7 @@
 id: P135
 title: "Mount-Picker als Zwei-Spalten-Tree (Tree links / Slots rechts, Suche → flache Pfadliste links) + Dialog resizable, Größe gemerkt, Ellipsis"
 epic: aspects/editor
-status: pending
+status: in_progress
 dependencies: [P114]
 spec: docs/nodes/concepts/editor.md
 tests: tests/e2e/nodes/editor/node-picker.spec.ts
