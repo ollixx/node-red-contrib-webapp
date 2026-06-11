@@ -18,7 +18,7 @@ passenden Daten, und `ui-pagination` gibt das visuelle Steuerelement dafür ab.
 
 - **Parent:** eine `ui-app`, `ui-route`, `ui-dialog` oder ein `ui-container` — via `mount`. Typischerweise unterhalb einer `ui-table` oder `ui-list` im selben Container oder in einem dedizierten Footer-Slot.
 - **Kinder:** keine — `ui-pagination` hat keine eigenen Slots.
-- **Rolle zur Laufzeit:** rein darstellendes Steuerelement; es schreibt keinen Zustand selbst zurück. Der `pageChange`-Event-Output muss im Flow mit einem Store-Update verdrahtet werden.
+- **Rolle zur Laufzeit:** Seitennavigations-Steuerelement mit **zweiseitigem** `currentPage`-Binding — es liest die aktuelle Seite aus dem gebundenen Store/State und emittiert beim Seitenwechsel das `pageChange`-Event mit der neuen Seite. Der Store-Roundtrip bleibt deklarativ: der Event-Output wird im Flow mit einem Store-Update verdrahtet (die Laufzeit schreibt nicht selbst), woraufhin das `currentPage`-Binding die neue Seite reaktiv liest.
 
 ## Felder
 
@@ -35,10 +35,10 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `page` | „Current Page Path" | typedInput (Binding) | **ja** | Binding auf die aktuell angezeigte Seitennummer (1-basiert). Typischerweise an einen `ui-store`-Wert gebunden, der beim `pageChange`-Event aktualisiert wird. Bindbare Arten: `state`, `store`, `query`, `routeParam`, `literal` sowie Node-RED-Standard-Arten (`msg`, `flow`, `global`, `jsonata`, `env`). |
-| `totalPages` | „Total Items Path" | typedInput (Binding) | **ja** | Binding auf die Gesamtzahl der Seiten. Wird typischerweise aus einem `ui-query`-Ergebnis bezogen (z. B. `Math.ceil(total / pageSize)`). Bindbare Arten wie `page`. |
-| `pageSize` | „Page Size" | typedInput (Binding) | optional | Binding auf die Anzahl der Einträge pro Seite. Wenn gesetzt und `totalItems` ebenfalls gesetzt, kann `totalPages` aus beiden berechnet werden. Bindbare Arten wie `page`. |
-| `totalItems` | — | typedInput (Binding) | optional | Binding auf die Gesamtanzahl der Einträge (nicht Seiten). Wird zusammen mit `pageSize` und `showInfo` genutzt, um die Info-Zeile „Einträge X–Y von Z" darzustellen. Bindbare Arten wie `page`. |
+| `currentPage` | „Current Page" | typedInput (Binding, **zweiseitig**) | **ja** | Kanonischer Wert-typedInput (Default-Typ `number`, ADR 0012) auf die aktuell angezeigte Seitennummer (1-basiert). **Zweiseitig**: liest die Live-Seite aus einem `ui-store`/`state`-Wert UND der Seitenwechsel emittiert das `pageChange`-Event mit der neuen Seite, das im Flow zurück in denselben Store geschrieben wird (Store-Roundtrip). Kompiliert intern zum `page`-Binding. Bindbare Arten: `state`, `store`, `query`, `routeParam`, `literal`, `reactive` sowie Node-RED-Standard-Arten (`msg`, `flow`, `global`, `jsonata`, `env`). Ein bestehender `currentPagePath` (nackter State-Pfad) wird automatisch als `state`-Binding übernommen. |
+| `total` | „Total" | typedInput (Binding, **lesend**) | **ja** | Kanonischer Wert-typedInput (Default-Typ `number`, ADR 0012) auf die Gesamtzahl der Seiten — **rein lesende Quelle**. Wird typischerweise aus einem `ui-query`-Ergebnis bezogen (z. B. `Math.ceil(total / pageSize)`). Kompiliert intern zum `totalPages`-Binding. Bindbare Arten wie `currentPage`. Ein bestehender `totalPath` wird automatisch als `state`-Binding übernommen. |
+| `pageSize` | „Page Size" | Zahlenfeld (Config) | optional | Anzahl der Einträge pro Seite (Config-Number). Wenn gesetzt und `totalItems` ebenfalls gesetzt, kann `total` aus beiden berechnet werden. |
+| `totalItems` | — | typedInput (Binding) | optional | Binding auf die Gesamtanzahl der Einträge (nicht Seiten). Wird zusammen mit `pageSize` und `showInfo` genutzt, um die Info-Zeile „Einträge X–Y von Z" darzustellen. Bindbare Arten wie `currentPage`. |
 | `showInfo` | — | Checkbox | optional | `true` — zeigt eine Info-Zeile mit dem Bereich der aktuell sichtbaren Einträge (z. B. „Einträge 11–20 von 47"). Erfordert `totalItems` und `pageSize`. Default: `false`. |
 
 ### Gruppe „Darstellung"
@@ -66,13 +66,14 @@ Sichtbarkeit dieser Felder folgt dem Layout-Preset des jeweiligen Parents — ge
 ### Inline-Hilfe (HTML)
 
 Der `data-help-name="ui-pagination"`-Hilfetext soll knapp sein: Zweck
-(Seitennavigation), Pflicht-Bindings `page` und `totalPages`, Hinweis auf
-`pageChange`-Event + Store-Roundtrip und ein Link auf die ausführliche Doku:
+(Seitennavigation), Pflicht-Bindings `currentPage` (zweiseitig) und `total`
+(lesend), Hinweis auf `pageChange`-Event + Store-Roundtrip und ein Link auf die
+ausführliche Doku:
 `https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/navigation/ui-pagination.md`.
 
 ## Input
 
-- **`msg.payload`** — setzt die aktuelle Seite direkt (Ganzzahl ≥ 1). Der Wert wirkt wie ein `page`-Update; das `page`-Binding wird bei der nächsten Binding-Auflösung wieder führend.
+- **`msg.payload`** — setzt die aktuelle Seite direkt (Ganzzahl ≥ 1). Der Wert wirkt wie ein `currentPage`-Update; das `currentPage`-Binding wird bei der nächsten Binding-Auflösung wieder führend.
 - **`msg.ui.patch`** — überschreibt beliebige Felder der Knoten-Definition (z. B. `variant`, `showInfo`). Binding-Felder müssen als Binding-Objekt übergeben werden. Format: [inputs.md](../concepts/inputs.md).
 - **Component-Operationen** (`msg.ui.component.op`): `show`, `hide` steuern die Sichtbarkeit der Seitennavigation. Format und Semantik: [inputs.md](../concepts/inputs.md).
 - **Nicht erkannte / fachfremde Messages:** werden **unverändert durchgereicht** (Pass-Through), ohne Fehlerausgabe.
@@ -83,14 +84,14 @@ Pro aktivem Event ein Output-Port:
 
 | Event | Wann | Erzeugte `msg.ui`-Felder | Intention |
 |---|---|---|---|
-| `pageChange` | Nutzer wechselt die Seite | `event: "pageChange"`, `params.page`, `clientId`, `sourceId`, `appId` | Neue Seite in den `page`-Store schreiben → `ui-query` liest den Store → lädt die passenden Daten |
+| `pageChange` | Nutzer wechselt die Seite | `event: "pageChange"`, `params.page`, `clientId`, `sourceId`, `appId` | Neue Seite in den `currentPage`-Store schreiben → `ui-query` liest den Store → lädt die passenden Daten |
 
 `params.page` trägt die neu gewählte Seitennummer (1-basiert). Erst wenn der Flow
-den Store-Wert aktualisiert und der Store das `page`-Binding des `ui-pagination`
+den Store-Wert aktualisiert und der Store das `currentPage`-Binding des `ui-pagination`
 versorgt, ändert sich die visuelle Darstellung der aktuellen Seite.
 
 **Antizipierte Wiring-Szenarien:**
-- `pageChange` → `ui-store` (`set`, `path: "page"`, `value: msg.ui.params.page`) → `page`-Binding liest aus demselben Store → `ui-pagination` aktualisiert sich reaktiv.
+- `pageChange` → `ui-store` (`set`, `path: "page"`, `value: msg.ui.params.page`) → `currentPage`-Binding liest aus demselben Store → `ui-pagination` aktualisiert sich reaktiv.
 - `ui-store`-Änderungs-Output → `ui-query` mit `page`-Parameter → `ui-table`/`ui-list` zeigt neue Daten.
 - `pageChange` → `function`, das zusätzlich `pageSize` aus dem State liest, `offset` berechnet und einen HTTP-Request abschickt.
 

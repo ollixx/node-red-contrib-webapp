@@ -9,9 +9,19 @@
                 name: { value: "" },
                 parent: { value: "" },
                 mount: { value: "", required: true },
+                // P154 (ADR 0012): `total` (read-only) and `currentPage` (two-way)
+                // persist the binding OBJECT; there is no matching #node-input-total /
+                // #node-input-currentPage element so Node-RED auto-save cannot clobber
+                // them. The typedInputs live on #node-input-totalBinding /
+                // #node-input-currentPageBinding. Legacy `totalPath` / `currentPagePath`
+                // (pre-P154 plain state paths) are kept for migration only.
+                total: { value: null },
+                currentPage: { value: null },
+                totalBinding: { value: "" },
+                currentPageBinding: { value: "" },
                 totalPath: { value: "" },
-                pageSize: { value: "" },
                 currentPagePath: { value: "" },
+                pageSize: { value: "" },
                 events: { value: "" },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
@@ -34,6 +44,57 @@
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
                 common.installLayoutChildPropRows().call(this);
+
+                // P154 (ADR 0012 / value category): `currentPage` typedInput — full
+                // canonical set with literal default type `num` (a 1-based page index).
+                // This is the TWO-WAY input value: it reads the live page from the
+                // bound Store/state AND the change-event carries the new page for the
+                // wired write-back loop. Migration: a legacy `currentPagePath` plain
+                // string becomes a state binding; a stored `currentPage` binding wins.
+                const storedCurrent = common.parseBindingValue(this.currentPage);
+                const currentBinding = storedCurrent
+                    ? storedCurrent
+                    : (this.currentPagePath ? { kind: "state", path: this.currentPagePath } : undefined);
+                const currentEditor = common.readValueBinding(currentBinding, "");
+                const currentDefaultType = currentEditor.type !== "str" ? currentEditor.type : "num";
+                const currentInput = $("#node-input-currentPageBinding");
+                currentInput.typedInput({
+                    default: currentDefaultType,
+                    types: common.valueBindingTypes({ category: "value" })
+                });
+                currentInput.typedInput("type", currentEditor.type !== "str" || currentBinding ? currentEditor.type : "num");
+                currentInput.typedInput("value", currentEditor.value);
+
+                // P154 (ADR 0012 / value category): `total` typedInput — full canonical
+                // set with literal default type `num` (the total page count). READ-ONLY
+                // source. Migration: a legacy `totalPath` plain string becomes a state
+                // binding; a stored `total` binding wins.
+                const storedTotal = common.parseBindingValue(this.total);
+                const totalBinding = storedTotal
+                    ? storedTotal
+                    : (this.totalPath ? { kind: "state", path: this.totalPath } : undefined);
+                const totalEditor = common.readValueBinding(totalBinding, "");
+                const totalDefaultType = totalEditor.type !== "str" ? totalEditor.type : "num";
+                const totalInput = $("#node-input-totalBinding");
+                totalInput.typedInput({
+                    default: totalDefaultType,
+                    types: common.valueBindingTypes({ category: "value" })
+                });
+                totalInput.typedInput("type", totalEditor.type !== "str" || totalBinding ? totalEditor.type : "num");
+                totalInput.typedInput("value", totalEditor.value);
+            },
+            oneditsave: function () {
+                // P154: persist currentPage/total as binding objects; clear legacy paths.
+                this.currentPage = common.applyValueBinding(
+                    $("#node-input-currentPageBinding").typedInput("type"),
+                    $("#node-input-currentPageBinding").typedInput("value")
+                );
+                this.currentPagePath = "";
+                this.total = common.applyValueBinding(
+                    $("#node-input-totalBinding").typedInput("type"),
+                    $("#node-input-totalBinding").typedInput("value")
+                );
+                this.totalPath = "";
             }
         });
     })();
@@ -42,8 +103,25 @@
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
-    <div class="form-row"><label for="node-input-totalPath">Total Items Path</label><input type="text" id="node-input-totalPath" placeholder="e.g. customers.total"></div>
+    <!-- P154 (ADR 0012 / value category): Current Page binding (two-way) — typedInput managed in oneditprepare/oneditsave. -->
+    <div class="form-row"><label for="node-input-currentPageBinding">Current Page</label><input type="text" id="node-input-currentPageBinding"></div>
+    <!-- P154 (ADR 0012 / value category): Total (page count) binding (read-only) — typedInput managed in oneditprepare/oneditsave. -->
+    <div class="form-row"><label for="node-input-totalBinding">Total</label><input type="text" id="node-input-totalBinding"></div>
     <div class="form-row"><label for="node-input-pageSize">Page Size</label><input type="number" id="node-input-pageSize" placeholder="10"></div>
-    <div class="form-row"><label for="node-input-currentPagePath">Current Page Path</label><input type="text" id="node-input-currentPagePath" placeholder="e.g. customers.page"></div>
 </script>
-<script type="text/html" data-help-name="ui-pagination"><p>Page controls connected to ui-query params, emits page-change events.</p></script>
+<script type="text/html" data-help-name="ui-pagination">
+<p>Seitennavigations-Controls (Vor/Zurück, Seitenzahl) für paginierte Datensätze. Emittiert ein <code>pageChange</code>-Event beim Seitenwechsel.</p>
+<h4>Current Page (P154)</h4>
+<p>Bindbare, <strong>zweiseitige</strong> Quelle der aktuellen Seite (1-basiert) — voller
+kanonischer Satz (ADR 0012): Store, Query, Route-Param, Reactive, msg, JSONata, string,
+number, boolean, json, timestamp, Flow, Global, Env. Liest den Live-Wert aus dem
+gebundenen Store/State; der Seitenwechsel emittiert das Change-Event mit der neuen
+Seite, das im Flow zurück in den Store geschrieben wird (Roundtrip). Default-Typ:
+<code>number</code>. Ein bestehender <code>currentPagePath</code> wird automatisch als
+<code>state</code>-Binding übernommen.</p>
+<h4>Total (P154)</h4>
+<p>Bindbare, <strong>lesende</strong> Quelle der Gesamt-Seitenzahl — gleicher kanonischer
+Satz. Default-Typ: <code>number</code>. Ein bestehender <code>totalPath</code> wird
+automatisch als <code>state</code>-Binding übernommen.</p>
+<p>Doku: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/navigation/ui-pagination.md" target="_blank">ui-pagination</a>.</p>
+</script>

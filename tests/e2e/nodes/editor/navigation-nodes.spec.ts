@@ -164,7 +164,11 @@ test.describe("editor panels — ui-pagination (P85)", () => {
         await resetFlow(request);
     });
 
-    test("pagination: totalPath, pageSize, currentPagePath fields present", async ({ page, request }) => {
+    // P154 (ADR 0012): totalPath/currentPagePath plain text fields became the
+    // `total` / `currentPage` value typedInputs (currentPage two-way). The legacy
+    // paths migrate to state bindings; the visible widgets are now
+    // #node-input-totalBinding / #node-input-currentPageBinding.
+    test("pagination: total + currentPage typedInputs present; legacy paths migrate", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "pgEdApp", root: "pgEdApp", name: "Pagination App" })
             .node("ui-pagination", {
@@ -180,11 +184,13 @@ test.describe("editor panels — ui-pagination (P85)", () => {
         await editor.open();
         await editor.openNode("pgEd1");
 
-        await editor.expectFields(["name", "mount", "currentPagePath", "totalPath", "pageSize"]);
+        await editor.expectFields(["name", "mount", "currentPageBinding", "totalBinding", "pageSize"]);
         expect(await editor.inputPortCount("pgEd1")).toBe(1);
 
-        // currentPagePath must persist.
-        expect(await editor.readField("currentPagePath")).toBe("data.page");
+        // Legacy currentPagePath/totalPath migrate into the typedInputs as state
+        // bindings — the typedInput value holds the migrated state path.
+        expect(await editor.readTypedInput("currentPageBinding")).toBe("data.page");
+        expect(await editor.readTypedInput("totalBinding")).toBe("data.total");
     });
 });
 

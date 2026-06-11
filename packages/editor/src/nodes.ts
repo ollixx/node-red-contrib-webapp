@@ -332,9 +332,14 @@ export interface UiMenuEditorConfig extends MountableEditorConfig {
 }
 
 export interface UiPaginationEditorConfig extends MountableEditorConfig {
+    // P154 (ADR 0012): `total` (read-only) and `currentPage` (two-way) are the
+    // canonical value typedInputs (persisted as binding objects). The legacy
+    // `totalPath` / `currentPagePath` plain state paths are kept for migration only.
+    total?: BindingDefinition;
+    currentPage?: BindingDefinition;
     totalPath?: string;
-    pageSize?: number;
     currentPagePath?: string;
+    pageSize?: number;
     events?: string;
 }
 
@@ -1366,14 +1371,20 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
     })),
     "ui-pagination": createDefinition("ui-pagination", "view", {
         id: requiredString("Pagination IDs are required before deploy."),
-        mount: requiredString("Pagination must declare a parent slot."),
-        totalPath: requiredString("Pagination must declare a total state path.")
+        mount: requiredString("Pagination must declare a parent slot.")
+        // P154 (ADR 0012): `total` / `currentPage` are typedInput binding objects —
+        // no requiredString validator. Migration: legacy `totalPath` /
+        // `currentPagePath` plain state paths are converted to state bindings.
     }, (config: UiPaginationEditorConfig): UiPaginationNodeDefinition => ({
         type: "ui-pagination",
         id: config.id ?? "",
         mount: config.mount ?? "",
-        page: stateBinding(config.totalPath ?? ""),
-        totalPages: stateBinding(config.totalPath ?? ""),
+        // P154: `currentPage` (two-way) → schema `page`; `total` (read-only) →
+        // schema `totalPages`. Prefer the stored binding object; migrate legacy paths.
+        page: isBindingObject(config.currentPage) ? config.currentPage
+            : (config.currentPagePath ? stateBinding(config.currentPagePath) : stateBinding("")),
+        totalPages: isBindingObject(config.total) ? config.total
+            : (config.totalPath ? stateBinding(config.totalPath) : stateBinding("")),
         pageSize: config.pageSize ? stateBinding(config.pageSize.toString()) : undefined,
         ...collectLayoutChildConfig(config)
     })),
