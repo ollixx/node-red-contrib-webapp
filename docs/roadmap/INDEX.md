@@ -55,6 +55,7 @@ Reason in each package's `deferred_reason`. Picked up once the blocker clears.
 - **P141** — aspects/rendering — Konzept: Components (wiederverwendbare Knoten-Sets, Definition/Instanz) — *großes Feature; ADR nötig* — [P141](aspects/rendering/deferred/P141-components-reusable-node-sets.md)
 - **P142** — aspects/rendering — Konzept: ui-tabs/ui-accordion dynamische Slots — *hängt an Repeats/Components* — [P142](aspects/rendering/deferred/P142-tabs-accordion-dynamic-slots.md)
 - **P143** — aspects/editor — Konzept: Enums dynamisch bindbar (Pro-Feld-typedInput mit Enum-Default statt globalem Advanced-Mode) — *ADR + Owner-Entscheidung nötig; Empfehlung steht* — [P143](aspects/editor/deferred/P143-enums-dynamic-binding-vs-advanced-mode.md)
+- **P152** — nodes/ui-empty-state — Redesign: Container mit Slot(s) + visible-Binding (statt fester icon/title/message/action-Felder) — *Vertragswechsel; ADR + Restfragen nötig; Richtung steht* — [P152](nodes/ui-empty-state/deferred/P152-empty-state-as-container-with-visible-binding.md)
 
 ## Done (rollup — history lives in the epic folders)
 
