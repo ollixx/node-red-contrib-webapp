@@ -14,7 +14,7 @@ verify: browser
 spec: docs/nodes/input/ui-select.md
 tests: tests/e2e/nodes/view/ui-select.tests.md
 dependencies: [P113]
-status: pending
+status: in_progress
 ---
 # P133 — ui-select: Options/Placeholder/Label/Searchable
 
