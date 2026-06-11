@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P150** — nodes/ui-divider — `label` auf Wert-typedInput — *Field-Typing Welle 1; braucht P113* — [P150](nodes/ui-divider/P150-divider-label-value-typedinput.md)
 - **P151** — nodes/ui-image — `alt`+`fallback` auf Wert-typedInput — *Field-Typing Welle 1; braucht P113* — [P151](nodes/ui-image/P151-image-alt-fallback-value-typedinput.md)
 - **P153** — nodes/ui-badge — `valuePath`→`value` (Wert-typedInput) — *Field-Typing Welle 2; braucht P113* — [P153](nodes/ui-badge/P153-badge-value-typedinput.md)
 - **P154** — nodes/ui-pagination — `total`/`currentPage` als typedInput (currentPage zweiseitig + Event) — *Field-Typing Welle 2; braucht P113* — [P154](nodes/ui-pagination/P154-pagination-total-currentpage-typedinput.md)
@@ -82,7 +81,8 @@ open the folder for the full history.
 | nodes/ui-textarea | 3 |
 | nodes/ui-checkbox | 2 |
 | nodes/ui-datepicker | 3 |
-| nodes/ui-accordion · ui-breadcrumb · ui-dialog · ui-divider · ui-icon · ui-image · ui-pagination · ui-progress · ui-skeleton · ui-table | 1 each |
+| nodes/ui-divider | 2 |
+| nodes/ui-accordion · ui-breadcrumb · ui-dialog · ui-icon · ui-image · ui-pagination · ui-progress · ui-skeleton · ui-table | 1 each |
 | aspects/test-infra | 21 |
 | aspects/misc | 16 |
 | aspects/runtime | 7 |
@@ -94,4 +94,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 148 done, 11 open, 11 deferred.**
+**Total: 149 done, 10 open, 11 deferred.**
