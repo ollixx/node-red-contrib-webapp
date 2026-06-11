@@ -168,8 +168,12 @@ export interface UiCheckboxEditorConfig extends MountableEditorConfig {
 }
 
 export interface UiRadioEditorConfig extends MountableEditorConfig {
-    label?: string;
+    // P136: label accepts a binding object or a literal string (shared with ui-select).
+    label?: string | BindingDefinition;
     valuePath?: string;
+    // P136: single Options field — a binding object (json literal | store) or a
+    // raw JSON value; legacy optionsJson/optionsBinding kept for migration.
+    options?: unknown;
     optionsJson?: string;
     optionsBinding?: string;
     orientation?: "horizontal" | "vertical";
@@ -941,9 +945,12 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         type: "ui-radio",
         id: config.id ?? "",
         mount: config.mount ?? "",
-        label: config.label ?? "",
+        // P136: label is a binding (literal string or dynamic binding).
+        label: bindingOrString(config.label) ?? "",
         value: stateBinding(config.valuePath ?? ""),
-        options: config.optionsJson ? JSON.parse(config.optionsJson) : (config.optionsBinding ? stateBinding(config.optionsBinding) : []),
+        // P136: single Options field — json (array) | store, via the SAME shared
+        // resolver as ui-select, with legacy optionsJson/optionsBinding migration.
+        options: selectOptionsFromConfig(config, undefined),
         orientation: config.orientation,
         ...collectLayoutChildConfig(config)
     })),

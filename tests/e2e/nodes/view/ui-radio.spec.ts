@@ -258,4 +258,133 @@ test.describe("ui-radio (P127)", () => {
         expect(body.event).toBe("change");
         expect((body.params as Record<string, unknown>).value).toBe("blue");
     });
+
+    // ─── P136: shared Options helper (json | store) + label binding ───────────
+
+    test("O01 — options json form 3 (array of {label,value}) renders sl-radio options", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "rd10App", root: "rd10App" })
+            .node("ui-radio", {
+                id: "rd10",
+                label: "Size",
+                options: {
+                    kind: "literal",
+                    value: [
+                        { label: "Small", value: "s" },
+                        { label: "Large", value: "l" }
+                    ]
+                }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "rd10App");
+        await webapp.navigate("/");
+        await expect(page.locator("sl-radio-group")).toBeVisible();
+        await expect(page.locator("sl-radio[value='s']")).toBeVisible();
+        await expect(page.locator("sl-radio[value='l']")).toBeVisible();
+    });
+
+    test("O02 — options json form 2 (array of strings, value = label) renders options", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "rd11App", root: "rd11App" })
+            .node("ui-radio", {
+                id: "rd11",
+                label: "Letter",
+                options: { kind: "literal", value: ["A", "B"] }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "rd11App");
+        await webapp.navigate("/");
+        await expect(page.locator("sl-radio[value='A']")).toBeVisible();
+        await expect(page.locator("sl-radio[value='B']")).toBeVisible();
+    });
+
+    test("O03 — options json form 1 (object map {label:value}) renders options", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "rd12App", root: "rd12App" })
+            .node("ui-radio", {
+                id: "rd12",
+                label: "Country",
+                options: { kind: "literal", value: { Germany: "de", France: "fr" } }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "rd12App");
+        await webapp.navigate("/");
+        await expect(page.locator("sl-radio[value='de']")).toBeVisible();
+        await expect(page.locator("sl-radio[value='fr']")).toBeVisible();
+    });
+
+    test("O04 — options store binding renders options reactively from the store", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "rd13App", root: "rd13App" })
+            .node("ui-store", {
+                id: "rd13Store",
+                statePath: "radioOptions",
+                initialValue: JSON.stringify([
+                    { label: "One", value: "1" },
+                    { label: "Two", value: "2" }
+                ])
+            })
+            .node("ui-radio", {
+                id: "rd13",
+                label: "Number",
+                options: { kind: "store", path: "rd13Store" }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "rd13App");
+        await webapp.navigate("/");
+        await expect(page.locator("sl-radio[value='1']")).toBeVisible();
+        await expect(page.locator("sl-radio[value='2']")).toBeVisible();
+    });
+
+    test("O05 — legacy optionsJson migrates: new `options` field still renders", async ({ page, request }) => {
+        // Pre-P136 config: optionsJson only, no `options` binding object.
+        const flow = new FlowBuilder()
+            .app({ id: "rd14App", root: "rd14App" })
+            .node("ui-radio", {
+                id: "rd14",
+                label: "Legacy",
+                optionsJson: JSON.stringify([{ label: "Old", value: "old" }])
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "rd14App");
+        await webapp.navigate("/");
+        await expect(page.locator("sl-radio[value='old']")).toBeVisible();
+    });
+
+    test("L01 — label store binding shows the live label value on the group", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "rd15App", root: "rd15App" })
+            .node("ui-store", {
+                id: "rd15Store",
+                statePath: "radioLabel",
+                initialValue: JSON.stringify("Choose a size")
+            })
+            .node("ui-radio", {
+                id: "rd15",
+                label: { kind: "store", path: "rd15Store" },
+                options: { kind: "literal", value: ["s", "l"] }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "rd15App");
+        await webapp.navigate("/");
+        await expect(page.locator("sl-radio-group")).toHaveAttribute("label", "Choose a size");
+    });
 });

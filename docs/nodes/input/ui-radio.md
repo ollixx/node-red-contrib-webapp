@@ -38,9 +38,9 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `label` | „Label" | Textfeld | **ja** | Gruppen-Beschriftung der Radio-Gruppe. Wird als übergeordnetes Label angezeigt. |
-| `value` | „Value Path" | typedInput (alle Binding-Arten) | **ja** | Bindbare Quelle des aktuell gewählten Werts. Unterstützt alle Binding-Arten: `literal`, `state`, `store`, `query`, `routeParam`, `msg`, `flow`, `global`, `jsonata`, `env`. Details: [stores.md](../concepts/stores.md). |
-| `options` | „Options (JSON)" / „Options Binding" | Textfeld (JSON) **oder** typedInput (Binding) | **ja** | Liste der Radio-Optionen. Entweder statisch als JSON-Array von `{ label, value }`-Objekten oder als Binding auf ein Array im Client-State. Mindestens eine Option ist erforderlich. |
+| `label` | „Label" | typedInput (kanonischer Wert-Satz) | **ja** | Gruppen-Beschriftung der Radio-Gruppe. P136 (ADR 0012): literaler Text **oder** ein Binding (`store`, `query`, `routeParam`, `state`/Reactive, `msg`, `jsonata`, `flow`, `global`, `env`) — derselbe Satz wie `ui-select`. Ein Store-/State-Binding zeigt den Live-Wert. |
+| `value` | „Value" | typedInput (alle Binding-Arten) | **ja** | Bindbare Quelle des aktuell gewählten Werts. Unterstützt alle Binding-Arten: `literal`, `state`, `store`, `query`, `routeParam`, `msg`, `flow`, `global`, `jsonata`, `env`. Details: [stores.md](../concepts/stores.md). |
+| `options` | „Options" | **ein** typedInput `{ json \| store }` | optional | P136 (ADR 0012): **ein** Feld mit dem **geteilten Options-Helfer** (eine Quelle für `ui-select` **und** `ui-radio`). Typ `json` öffnet den NR-JSON-Editor und validiert genau eine von drei Formen — Objekt `{ "<label>": "<value>" }`, String-Array `["A","B"]` oder Objekt-Array `[{ label, value }]`; andere Strukturen markieren den Knoten vor Deploy als ungültig (sprechende Meldung). Typ `store` liest die Optionen reaktiv aus einem Store(-Pfad) (P134-Layout). Es gibt **kein** separates `optionsBinding`-Feld mehr. Legacy `optionsJson`/`optionsBinding` migrieren verlustfrei. |
 | `orientation` | „Orientation" | SelectBox (`vertical` / `horizontal`) | optional | Ausrichtung der Radio-Gruppe. `vertical` = Optionen untereinander; `horizontal` = nebeneinander. Default: `vertical`. |
 | `disabled` | „Disabled" | typedInput (alle Binding-Arten) | optional | Bindbare Bedingung, die die gesamte Radio-Gruppe deaktiviert (Nutzerinteraktion gesperrt). |
 
@@ -106,9 +106,17 @@ das Backend bildet sie auf die Radio-Darstellung ab. Details:
 - **Genau-Eins-Semantik.** Es ist stets genau eine Option ausgewählt (oder keine,
   wenn `value` keiner Option entspricht). Mehrfachauswahl ist nicht vorgesehen —
   dafür steht `ui-checkbox` oder `ui-select` mit `multiple: true` zur Verfügung.
-- **Optionen: Pflicht.** Im Gegensatz zu `ui-select` ist `options` bei `ui-radio`
-  ein Pflichtfeld (Schema: `z.union([z.array(selectOptionSchema), bindingSchema])`
-  ohne `.optional()`).
+- **Geteilter Options-Helfer (P136).** `ui-radio` und `ui-select` sind die
+  einzigen zwei Knoten mit einem Options-Modell und teilen sich **eine** Quelle:
+  den Helfer in `resources/lib/editor-common.js`
+  (`installOptionsField` / `validateOptionsJson` / `normalizeOptionsStructure`)
+  und den Validator `normalizeSelectOptions` im Schema. Eine Änderung an der
+  Options-Logik ist genau eine Stelle. `ui-radio` hat — anders als `ui-select` —
+  **kein** `placeholder`/`searchable` (das bleibt `ui-select`-spezifisch).
+- **Optionen: optional.** Schema:
+  `z.union([z.array(selectOptionSchema), bindingSchema]).optional()` — ein
+  noch-nicht-konfigurierter Radio (leere/`null`-Optionen) bleibt gültig
+  (gespiegelt von `ui-select`).
 
 ## Referenzen
 

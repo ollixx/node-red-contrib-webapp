@@ -113,9 +113,10 @@
                 placeholderInput.typedInput("type", placeholderEditor.type);
                 placeholderInput.typedInput("value", placeholderEditor.value);
 
-                // P133 (ADR 0012): single Options typedInput — json | store, with
-                // legacy optionsJson / optionsBinding migration + JSON validation.
-                this._saveSelectOptions = common.installSelectOptionsField("#node-input-optionsField", {
+                // P133/P136 (ADR 0012): single shared Options typedInput — json |
+                // store, with legacy optionsJson / optionsBinding migration + JSON
+                // validation. The same helper backs ui-radio (one source of truth).
+                this._saveSelectOptions = common.installOptionsField("#node-input-optionsField", {
                     options: this.options,
                     optionsJson: this.optionsJson,
                     optionsBinding: this.optionsBinding

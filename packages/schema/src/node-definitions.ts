@@ -578,9 +578,16 @@ export type UiCheckboxNodeDefinition = z.infer<typeof uiCheckboxNodeDefinitionSc
 
 export const uiRadioNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-radio"),
-    label: z.string().min(1, "Radio labels must not be empty."),
+    // P136 (ADR 0012): label accepts the canonical value-binding set — a literal
+    // non-empty string OR a binding object (store/query/route-param/…), mirroring
+    // ui-select (P133).
+    label: z.union([bindingSchema, z.string().min(1, "Radio labels must not be empty.")]),
     value: bindingSchema,
-    options: z.union([z.array(selectOptionSchema), bindingSchema]),
+    // P136: options is the SHARED model with ui-select — a normalised
+    // `{label,value}[]` array (json type) or a binding object (store type).
+    // Optional so an as-yet-unconfigured radio (empty/null options) stays valid,
+    // matching ui-select.
+    options: z.union([z.array(selectOptionSchema), bindingSchema]).optional(),
     orientation: z.enum(["horizontal", "vertical"]).optional(),
     disabled: bindingSchema.optional()
 });
