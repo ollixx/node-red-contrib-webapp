@@ -32,6 +32,14 @@ their blocker clears.
 - **P137** — nodes/ui-progress — `valuePath`→`value` (kanonischer typedInput) + `label` auf Wert-Satz — *geplant; braucht P113* — [P137](nodes/ui-progress/P137-progress-value-label-typedinput.md)
 - **P138** — nodes/ui-skeleton — `visiblePath`→Standard-`visible`-typedInput; `lines` kontextabhängig disablen (Hinweis) — *geplant; braucht P113* — [P138](nodes/ui-skeleton/P138-skeleton-visible-typedinput-lines-disable.md)
 - **P139** — aspects/editor — Fundament: Basis-Felder (visible/disabled/color/size) + Editor-Struktur („Layout"-Überschrift, Einklappen, N/A-Disable mit Hinweis) (ADR 0015) — *geplant; braucht P113* — [P139](aspects/editor/P139-common-base-fields-foundation.md)
+- **P144** — nodes/ui-button — `label` auf kanonischen Wert-typedInput (P113-Lücke) — *Field-Typing Welle 1; braucht P113* — [P144](nodes/ui-button/P144-button-label-value-typedinput.md)
+- **P145** — nodes/ui-input — `label` auf Wert-typedInput — *Field-Typing Welle 1; braucht P113* — [P145](nodes/ui-input/P145-input-label-value-typedinput.md)
+- **P146** — nodes/ui-slider — `label` auf Wert-typedInput — *Field-Typing Welle 1; braucht P113* — [P146](nodes/ui-slider/P146-slider-label-value-typedinput.md)
+- **P147** — nodes/ui-switch — `label`/`labelOn`/`labelOff` auf Wert-typedInput — *Field-Typing Welle 1; braucht P113* — [P147](nodes/ui-switch/P147-switch-labels-value-typedinput.md)
+- **P148** — nodes/ui-textarea — `label`+`placeholder` auf Wert-typedInput — *Field-Typing Welle 1; braucht P113* — [P148](nodes/ui-textarea/P148-textarea-label-placeholder-value-typedinput.md)
+- **P149** — nodes/ui-datepicker — `placeholder` auf Wert-typedInput — *Field-Typing Welle 1; braucht P113* — [P149](nodes/ui-datepicker/P149-datepicker-placeholder-value-typedinput.md)
+- **P150** — nodes/ui-divider — `label` auf Wert-typedInput — *Field-Typing Welle 1; braucht P113* — [P150](nodes/ui-divider/P150-divider-label-value-typedinput.md)
+- **P151** — nodes/ui-image — `alt`+`fallback` auf Wert-typedInput — *Field-Typing Welle 1; braucht P113* — [P151](nodes/ui-image/P151-image-alt-fallback-value-typedinput.md)
 
 
 ## Deferred (parked, not abandoned)
