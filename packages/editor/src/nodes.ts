@@ -183,9 +183,11 @@ export interface UiRadioEditorConfig extends MountableEditorConfig {
 
 export interface UiSwitchEditorConfig extends MountableEditorConfig {
     valuePath?: string;
-    label?: string;
-    labelOn?: string;
-    labelOff?: string;
+    // P147 (ADR 0012): all three label fields accept a binding object or a
+    // plain string (legacy plain-string migrated via load-shim in the editor).
+    label?: string | BindingDefinition;
+    labelOn?: string | BindingDefinition;
+    labelOff?: string | BindingDefinition;
 }
 
 export interface UiTextareaEditorConfig extends MountableEditorConfig {
@@ -983,9 +985,11 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         id: config.id ?? "",
         mount: config.mount ?? "",
         value: stateBinding(config.valuePath ?? ""),
-        label: config.label,
-        labelOn: config.labelOn,
-        labelOff: config.labelOff,
+        // P147 (ADR 0012): all three label fields accept a binding object or a
+        // plain string (legacy). bindingOrString passes either through unchanged.
+        label: bindingOrString(config.label),
+        labelOn: bindingOrString(config.labelOn),
+        labelOff: bindingOrString(config.labelOff),
         ...collectLayoutChildConfig(config)
     })),
     "ui-textarea": createDefinition("ui-textarea", "view", {

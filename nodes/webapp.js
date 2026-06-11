@@ -1180,9 +1180,21 @@ function toComponentDefinitions(components) {
             // label routes through bind.label so the renderer resolves it.
             // P137: ui-progress label is now a full binding — add "progress" to the set.
             // P146: ui-slider label is now a full binding — add "slider" to the set.
-            const labelBinding = (p16Kind === "checkbox" || p16Kind === "datepicker" || p16Kind === "select" || p16Kind === "radio" || p16Kind === "progress" || p16Kind === "slider") ? getBinding(component.label, undefined) : undefined;
+            // P147: ui-switch label is now a full binding — add "switch" to the set.
+            const labelBinding = (p16Kind === "checkbox" || p16Kind === "datepicker" || p16Kind === "select" || p16Kind === "radio" || p16Kind === "progress" || p16Kind === "slider" || p16Kind === "switch") ? getBinding(component.label, undefined) : undefined;
             if (labelBinding) {
                 bind.label = labelBinding;
+            }
+            // P147: ui-switch labelOn/labelOff are now full bindings — route through
+            // bind.labelOn / bind.labelOff so the renderer resolves them. A plain
+            // string (legacy) stays in props. Only applies to the "switch" kind.
+            const labelOnBinding = p16Kind === "switch" ? getBinding(component.labelOn, undefined) : undefined;
+            if (labelOnBinding) {
+                bind.labelOn = labelOnBinding;
+            }
+            const labelOffBinding = p16Kind === "switch" ? getBinding(component.labelOff, undefined) : undefined;
+            if (labelOffBinding) {
+                bind.labelOff = labelOffBinding;
             }
             // P133: ui-select `placeholder` and `options` may be binding objects
             // (canonical value set / store binding). Route them through `bind` so
@@ -1222,8 +1234,10 @@ function toComponentDefinitions(components) {
                     ...(component.showValue !== undefined ? { showValue: component.showValue } : {}),
                     // P73: ui-switch labelOn/labelOff and ui-datepicker mode were in mapConfig
                     // but omitted from the props block, so the serializer never received them.
-                    ...(component.labelOn !== undefined ? { labelOn: component.labelOn } : {}),
-                    ...(component.labelOff !== undefined ? { labelOff: component.labelOff } : {}),
+                    // P147: labelOn/labelOff are now binding-capable — only pass plain strings
+                    // through props; binding objects route through bind.labelOn/labelOff above.
+                    ...(component.labelOn !== undefined && !labelOnBinding ? { labelOn: component.labelOn } : {}),
+                    ...(component.labelOff !== undefined && !labelOffBinding ? { labelOff: component.labelOff } : {}),
                     ...(component.mode !== undefined ? { mode: component.mode } : {}),
                     ...(component.severity !== undefined ? { severity: component.severity } : {}),
                     // P67: ui-alert title is a binding routed through bind.title;
@@ -4613,9 +4627,13 @@ const runtimeNodeRegistry = {
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
             value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
-            label: config.label || undefined,
-            labelOn: config.labelOn || undefined,
-            labelOff: config.labelOff || undefined,
+            // P147 (ADR 0012): label/labelOn/labelOff may now be binding objects
+            // or plain strings (legacy). Use the same pattern as ui-radio: try
+            // getBinding first (returns the object when it has .kind), then fall
+            // back to the plain-string value so legacy flows keep working.
+            label: getBinding(config.label, undefined) || config.label || undefined,
+            labelOn: getBinding(config.labelOn, undefined) || config.labelOn || undefined,
+            labelOff: getBinding(config.labelOff, undefined) || config.labelOff || undefined,
             disabled: getBinding(config.disabled, undefined),
             ...collectNodeConfigLayoutProps(config)
         }),
