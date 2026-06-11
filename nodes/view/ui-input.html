@@ -9,7 +9,23 @@
                 name: { value: "" },
                 parent: { value: "" },
                 mount: { value: "", required: true },
-                label: { value: "", required: true },
+                // P145 (ADR 0012): `label` persists the binding OBJECT; the
+                // typedInput lives directly on #node-input-label so the
+                // minimal-coverage E2E check still passes.
+                // A legacy plain-string `label` is migrated on open.
+                label: {
+                    value: { kind: "literal", value: "" },
+                    serialize: function () {
+                        var el = $("#node-input-label");
+                        if (el.length && typeof el.typedInput === "function") {
+                            var v = el.typedInput("value");
+                            return common.applyValueBinding(el.typedInput("type"), v || "");
+                        }
+                        // Pre-open (no typedInput yet): trust the persisted binding.
+                        var b = this.label;
+                        return b && typeof b === "object" ? b : { kind: "literal", value: b || "" };
+                    }
+                },
                 // P123 (ADR 0012): `value` persists the binding OBJECT; there is no
                 // matching #node-input-value element so Node-RED auto-save cannot
                 // clobber it. The typedInput lives on #node-input-valueBinding.
@@ -52,6 +68,25 @@
                 common.installSizeSelectBox().call(this);
                 common.installLayoutChildPropRows().call(this);
 
+                // P145 (ADR 0012 / value category): `label` typedInput.
+                // The typedInput lives on #node-input-label (not a separate
+                // *Binding element) so the convention `fields:["label"]` is satisfied.
+                // Migration: a legacy plain-string `label` opens as a `str` literal.
+                const storedLabel = common.parseBindingValue(this.label);
+                const labelBinding = storedLabel
+                    ? storedLabel
+                    : (typeof this.label === "string" && this.label.length > 0
+                        ? { kind: "literal", value: this.label }
+                        : undefined);
+                const labelEditor = common.readValueBinding(labelBinding, "");
+                const labelInput = $("#node-input-label");
+                labelInput.typedInput({
+                    default: labelEditor.type,
+                    types: common.valueBindingTypes({ category: "display" })
+                });
+                labelInput.typedInput("type", labelEditor.type);
+                labelInput.typedInput("value", labelEditor.value);
+
                 // P123 (ADR 0012 / value/display category): `value` typedInput — full
                 // canonical set. Migration: a legacy `valuePath` plain string becomes a
                 // state binding; a stored `value` binding object takes precedence.
@@ -82,6 +117,12 @@
                 disabledInput.typedInput("value", disabledEditor.value);
             },
             oneditsave: function () {
+                // P145: persist label as binding object.
+                this.label = common.applyValueBinding(
+                    $("#node-input-label").typedInput("type"),
+                    $("#node-input-label").typedInput("value")
+                );
+
                 // P123: persist value as binding object; clear legacy valuePath.
                 this.value = common.applyValueBinding(
                     $("#node-input-valueBinding").typedInput("type"),

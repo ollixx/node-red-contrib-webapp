@@ -131,7 +131,8 @@ export interface UiTableEditorConfig extends MountableEditorConfig {
 }
 
 export interface UiInputEditorConfig extends MountableEditorConfig {
-    label?: string;
+    // P145 (ADR 0012): label accepts a binding object or a literal string.
+    label?: string | BindingDefinition;
     valuePath?: string;
     storeId?: string;
     path?: string;
@@ -882,7 +883,8 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         type: "ui-input",
         id: config.id ?? "",
         mount: config.mount ?? "",
-        label: config.label ?? "",
+        // P145: label is a binding (literal string or dynamic binding).
+        label: bindingOrString(config.label) ?? "",
         value: stateBinding(config.valuePath ?? ""),
         storeId: config.storeId,
         path: config.path,

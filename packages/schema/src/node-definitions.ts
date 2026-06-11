@@ -301,7 +301,10 @@ export type UiTableNodeDefinition = z.infer<typeof uiTableNodeDefinitionSchema>;
 
 export const uiInputNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-input"),
-    label: z.string().min(1, "Input labels must not be empty."),
+    // P145 (ADR 0012): label accepts the canonical value-binding set — a literal
+    // string or a dynamic binding object. Back-compat: a plain string from a
+    // pre-P145 flow is still accepted and treated as a literal label.
+    label: z.union([bindingSchema, z.string().min(1, "Input labels must not be empty.")]),
     value: bindingSchema,
     storeId: identifierSchema.optional(),
     path: z.string().min(1, "Input store paths must not be empty.").optional(),
