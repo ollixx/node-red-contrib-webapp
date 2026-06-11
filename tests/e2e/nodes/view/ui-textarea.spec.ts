@@ -175,12 +175,12 @@ test.describe("ui-textarea editor panel (P128)", () => {
         // Empty required label → invalid.
         expect(await editor.getValidationState("taEdNode1")).toBe("invalid");
 
-        // Fill label → valid; persists across re-open.
-        await editor.fillField("label", "My Textarea");
+        // Fill label via typedInput helper (label is now a typedInput widget).
+        await editor.fillTypedInput("label", "My Textarea");
         await editor.save();
         expect(await editor.getValidationState("taEdNode1")).toBe("valid");
 
         await editor.openNode("taEdNode1");
-        expect(await editor.readField("label")).toBe("My Textarea");
+        expect(await editor.readTypedInput("label")).toBe("My Textarea");
     });
 });
