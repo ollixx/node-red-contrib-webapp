@@ -164,6 +164,8 @@
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <!-- P136 (ADR 0012 / value category): Label binding — typedInput managed in oneditprepare/oneditsave. -->
+    <!-- Hidden input so NR auto-save can resolve the `label` default without clobbering the binding object. -->
+    <input type="hidden" id="node-input-label">
     <div class="form-row"><label for="node-input-labelBinding">Label</label><input type="text" id="node-input-labelBinding"></div>
     <!-- P127 (ADR 0012 / value/display category): Value binding — typedInput managed in oneditprepare/oneditsave. -->
     <div class="form-row"><label for="node-input-valueBinding">Value</label><input type="text" id="node-input-valueBinding"></div>
