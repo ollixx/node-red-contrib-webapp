@@ -177,22 +177,32 @@ Kategorie → Wert/Anzeige-Vollsatz.
 > „Page-Param" entspricht dem Typ **„Route Param"** (`routeParam`): er liest einen
 > Parameter aus dem Pfad der aktuell angezeigten Route.
 
-### Der Store-Typ: Button-erst, Name statt ID, Pfad-typedInput (P132, ADR 0013)
+### Der Store-Typ: Name im Wert, eingerücktes Pfad-typedInput (P132 → P134, ADR 0013 §4)
 
 Der **Store-Typ** (`storeTypedInputType`) ist eine Sonderform mit eigener
 Wert-Spalten-Darstellung (`valueLabel`). Das Feld-Label bleibt in der **linken**
 Panel-Label-Spalte; das gesamte Store-UI sitzt in der **Wert-Spalte**:
 
-- **Vor Auswahl:** nur ein Button **„Store auswählen"** mit Store-Icon
-  (`fa fa-database`). Er öffnet **denselben** app-gescopten Node-Picker-Dialog
-  (Preset `stores`, P68/P117) — kein zweiter Picker. **Kein** Pfad-Feld.
-- **Nach Auswahl:** der Button wird **„Store ändern"** (gleiches Icon); daneben
-  erscheint der **Name** des Stores (aus der ID über `collectReferenceNodes`
-  aufgelöst, app-gescoped) — **nicht** die rohe ID. Eine nicht auflösbare ID
-  (gelöschter Store) fällt auf `<id> (bestehend)` zurück. Gespeichert wird stets
-  die **ID**.
-- **Pfad-typedInput (`subPath`).** Unter dem Button ein typedInput für einen
-  optionalen **Ein-Level-Pfad** in den Slice (leer = ganzer Slice). Quellen über
+> **Korrektur P134 (2026-06-11):** P132 hatte das Layout falsch gebaut — ein
+> „Store ändern"-Button **und** den Sub-Pfad in **einer** Zeile (mit ID-Anzeige
+> `<x> (bestehend)`). P134 hebt es auf das korrigierte **Zwei-Zeilen-Layout**:
+> **Name im Wert** (oben) + **zweites, eingerücktes Pfad-typedInput** darunter.
+> **Kein** „Store ändern"-Button mehr — das **„…"**-Expand des typedInput selbst
+> öffnet den Picker.
+
+- **Vor Auswahl:** im Wert-Bereich nur ein **weicher Hinweis** („Store über „…"
+  auswählen"). Die typedInput-eigene **„…"**-(Expand-)Taste öffnet den
+  app-gescopten Node-Picker-Dialog (Preset `stores`, P68/P117). Store-Icon
+  (`fa fa-database`) ist das **Typ-Icon** des typedInput. **Kein** Pfad-Feld.
+- **Nach Auswahl:** im Wert-Bereich erscheint der **Name** des Stores (aus der ID
+  über `collectReferenceNodes` aufgelöst, app-gescoped) — **nicht** die rohe ID,
+  **kein** „Store ändern"-Button, **kein** `(bestehend)` für einen lebenden Store.
+  Die **„…"**-Taste wechselt den Store. Eine nicht auflösbare ID (gelöschter
+  Store) fällt auf `<id> (bestehend)` zurück. Gespeichert wird stets die **ID**.
+- **Zweites, eingerücktes Pfad-typedInput (`subPath`).** Unterhalb des Namens, in
+  der Wert-Spalte eingerückt (das Feld-Label bleibt in Spalte 1), ein typedInput
+  für einen optionalen **Ein-Level-Pfad** in den Slice (leer = ganzer Slice).
+  Quellen über
   die Helfer-Kategorie `valueBindingTypes({ category: "storePath" })`: `string`
   (Default), `number`, `routeParam`, `query`, `store`, `reactive`, `jsonata`,
   `msg`, `flow`, `global`, `env`. Der innere `store` ist ein **Blatt** (kein

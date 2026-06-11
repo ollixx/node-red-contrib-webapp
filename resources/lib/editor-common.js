@@ -2064,18 +2064,24 @@
         });
     }
 
-    // P67/P132: the custom Node-RED typedInput type for the `store` binding kind.
-    // Button-first, name-not-id rendering (ADR 0013 §4):
+    // P67/P132/P134: the custom Node-RED typedInput type for the `store` binding
+    // kind. Name-in-value, path-in-a-second-row layout (ADR 0013 §4, corrected
+    // 2026-06-11 — P132 had crammed a "Store ändern" button + the sub-path into a
+    // single row showing the id; P134 lifts it to the corrected two-row layout):
     //   - the typedInput value carries the store id, optionally as a JSON envelope
     //     `{path, subPath}` (encodeStoreFieldValue) so a one-level sub-path
     //     round-trips through the canonical apply/read helpers unchanged.
-    //   - `valueLabel` paints the value column: a button ("Store auswählen" before
-    //     a pick, "Store ändern" after — both with the `fa fa-database` icon) plus
-    //     the resolved NAME beside it; and, unless `leaf:true`, the optional
-    //     sub-path typedInput (the `storePath` source set) below it.
+    //   - `valueLabel` paints the value column: the chosen store's resolved NAME
+    //     ("monster") in the value area — NO "Store ändern" button, NO raw id, NO
+    //     "(bestehend)" for a live store. The typedInput's own "…" expand button
+    //     (re-)opens the app-scoped P68 picker to pick/change; the store icon is
+    //     the typedInput's type icon (`fa fa-database`). Before a pick the value
+    //     area shows a soft "… auswählen"-Hinweis. Unless `leaf:true`, a SECOND,
+    //     indented sub-path typedInput (the full `storePath` source set) sits
+    //     BELOW the name, in the value column (the field's own label stays in
+    //     column 1).
     //   - the leaf form (`leaf:true`, used as the inner source inside a sub-path)
-    //     renders name + button only — NO nested sub-path (one-level rule).
-    // The expand button mirrors the picker so keyboard/expand still works.
+    //     renders the name only — NO nested sub-path (one-level rule, ADR 0013 §3).
     function storeTypedInputType(options) {
         const opts = options || {};
         const isLeaf = !!opts.leaf;
@@ -2106,13 +2112,12 @@
                     .addClass("webapp-store-field")
                     .css({ display: "inline-flex", "flex-direction": "column", gap: "6px", width: "100%", padding: "2px 0" });
 
-                // Row 1: button (with store icon) + resolved name.
+                // Row 1: the resolved store NAME in the value area (no button —
+                // the typedInput's native "…" expand re-opens the picker). Before
+                // a pick a soft hint stands in. ADR 0013 §4 (P134 correction).
                 const $row = $("<span>")
                     .css({ display: "inline-flex", "align-items": "center", gap: "8px", "min-width": "0" });
                 const hasStore = !!decoded.path;
-                const $btn = $("<button type=\"button\" class=\"red-ui-button webapp-store-field-button\">")
-                    .css({ "flex": "0 0 auto" })
-                    .html("<i class=\"fa fa-database\" style=\"margin-right:5px;\"></i>" + (hasStore ? "Store ändern" : "Store auswählen"));
                 const $name = $("<span>")
                     .addClass("webapp-store-field-name")
                     .css({ "min-width": "0", overflow: "hidden", "text-overflow": "ellipsis", "white-space": "nowrap" });
@@ -2121,24 +2126,21 @@
                     $name.text(name).attr("title", name)
                         .css({ color: "var(--red-ui-primary-text-color, #333)", "font-style": "normal" });
                 }
-                $row.append($btn).append($name);
+                else {
+                    $name.addClass("webapp-store-field-placeholder")
+                        .text("Store über „…“ auswählen")
+                        .css({ color: "var(--red-ui-secondary-text-color, #888)", "font-style": "italic" });
+                }
+                $row.append($name);
                 $wrap.append($row);
 
-                $btn.on("click", function (event) {
-                    event.preventDefault();
-                    openStorePicker(that, function (picked) {
-                        // Keep any existing sub-path when the store changes.
-                        const prior = decodeStoreFieldValue(that.value());
-                        that.value(encodeStoreFieldValue(picked, isLeaf ? null : prior.subPath));
-                    });
-                });
-
-                // Row 2: the optional sub-path typedInput (skipped for leaf form
-                // and until a store is chosen — button-first, ADR 0013 §4).
+                // Row 2: the SECOND, indented sub-path typedInput (skipped for the
+                // leaf form and until a store is chosen). The field label stays in
+                // column 1; this row is indented inside the value column. ADR 0013 §4.
                 if (!isLeaf && hasStore) {
                     const $pathRow = $("<span>")
                         .addClass("webapp-store-field-subpath")
-                        .css({ display: "inline-flex", "align-items": "center", gap: "6px", width: "100%" });
+                        .css({ display: "inline-flex", "align-items": "center", gap: "6px", width: "100%", "padding-left": "12px" });
                     const $pathInput = $("<input type=\"text\">")
                         .addClass("webapp-store-subpath-input")
                         .css({ width: "100%" });

@@ -6,12 +6,16 @@ import { FlowBuilder } from "../../../helpers/flow-builder";
 import { NodeEditorPage } from "../../../helpers/node-editor-page";
 
 /**
- * P132 (ADR 0013) — the store-binding editor: button-first, name-not-id, with a
- * one-level `subPath` typedInput and soft default-slice autocomplete.
+ * P132 + P134 (ADR 0013 §4) — the store-binding editor: name-in-value,
+ * path-in-a-second-row. The store type is one type among many in the value
+ * typedInput; when chosen, the value area shows the store NAME (not the id, no
+ * "Store ändern" button, no "(bestehend)" for a live store) and the typedInput's
+ * native "…" expand button (re-)opens the app-scoped picker. BELOW the name, a
+ * second, indented sub-path typedInput carries the one-level `subPath` (the full
+ * 11-source `storePath` set) with soft default-slice autocomplete.
  *
  * These are EDITOR specs: open a ui-text panel, drive the value typedInput's
- * `store` source, assert the rich rendering (button + NAME, not the raw id; the
- * sub-path typedInput; the 11-source set; the default-slice suggestions) and that
+ * `store` source, assert the two-row rendering and that
  * `{kind:"store", path, subPath}` round-trips through save → reopen.
  *
  * ui-text's value lives on `#node-input-text` (the canonical value typedInput).
@@ -27,12 +31,7 @@ async function selectStoreType(page: Page): Promise<void> {
     });
 }
 
-/** The rich store field's "Store auswählen"/"Store ändern" button. */
-function storeButton(page: Page) {
-    return page.locator(".webapp-store-field-button");
-}
-
-/** The resolved store name shown beside the button. */
+/** The resolved store name shown in the value area (or the soft placeholder). */
 function storeName(page: Page) {
     return page.locator(".webapp-store-field-name");
 }
@@ -40,6 +39,15 @@ function storeName(page: Page) {
 /** The sub-path typedInput row (present only after a store is chosen). */
 function subPathRow(page: Page) {
     return page.locator(".webapp-store-field-subpath");
+}
+
+/**
+ * Click the value typedInput's native "…" expand button to (re-)open the picker.
+ * The store type's `expand` handler opens the shared node-picker dialog.
+ */
+async function openStorePicker(page: Page): Promise<void> {
+    await page.locator("#node-input-text").locator("xpath=..")
+        .locator(".red-ui-typedInput-option-expand").first().click();
 }
 
 /** Pick a store row by visible text in the shared node-picker dialog. */
@@ -59,7 +67,7 @@ function buildFlow(): unknown {
             initialValue: JSON.stringify({ a: false, b: false, c: "eins" })
         })
         // Empty text → the value typedInput starts on the `str` type with an
-        // empty value, so switching to `store` carries no phantom id (button-first).
+        // empty value, so switching to `store` carries no phantom id.
         .node("ui-text", { id: "txtEd", text: "" })
         .build();
 }
@@ -71,12 +79,12 @@ async function readTextBinding(page: Page, nodeId: string): Promise<StoreBinding
     }, nodeId);
 }
 
-test.describe("editor — store binding sub-path (P132)", () => {
+test.describe("editor — store binding sub-path (P132 / P134)", () => {
     test.afterEach(async ({ request }) => {
         await resetFlow(request);
     });
 
-    test("button-first: before a store is chosen, only the 'Store auswählen' button (no path field)", async ({ page, request }) => {
+    test("before a store is chosen: a soft '…'-Hinweis, no path field (no button)", async ({ page, request }) => {
         await deployFlow(request, buildFlow());
 
         const editor = new NodeEditorPage(page);
@@ -85,16 +93,15 @@ test.describe("editor — store binding sub-path (P132)", () => {
 
         await selectStoreType(page);
 
-        // The button carries the store icon and the "auswählen" label.
-        await expect(storeButton(page)).toBeVisible();
-        await expect(storeButton(page)).toContainText("Store auswählen");
-        await expect(storeButton(page).locator("i.fa-database")).toHaveCount(1);
+        // No in-value button — the name area carries a soft placeholder.
+        await expect(page.locator(".webapp-store-field-button")).toHaveCount(0);
+        await expect(storeName(page)).toHaveClass(/webapp-store-field-placeholder/);
 
-        // No sub-path typedInput yet (button-first, ADR 0013 §4).
+        // No sub-path typedInput yet (appears once a store is picked, ADR 0013 §4).
         await expect(subPathRow(page)).toHaveCount(0);
     });
 
-    test("after selecting a store the button becomes 'Store ändern' and the NAME (not id) shows", async ({ page, request }) => {
+    test("after selecting a store the NAME (not id) shows in the value area; no button, no '(bestehend)'", async ({ page, request }) => {
         await deployFlow(request, buildFlow());
 
         const editor = new NodeEditorPage(page);
@@ -102,16 +109,17 @@ test.describe("editor — store binding sub-path (P132)", () => {
         await editor.openNode("txtEd");
         await selectStoreType(page);
 
-        await storeButton(page).click();
+        await openStorePicker(page);
         await pickStoreRow(page, "monster");
 
-        // Button label flips; the resolved NAME "monster" shows beside it — the
-        // raw node id "monsterStore" must NOT appear.
-        await expect(storeButton(page)).toContainText("Store ändern");
+        // The resolved NAME "monster" shows — never the raw node id, never a
+        // "Store ändern" button, never "(bestehend)" for a live store.
         await expect(storeName(page)).toHaveText("monster");
         await expect(storeName(page)).not.toContainText("monsterStore");
+        await expect(storeName(page)).not.toContainText("bestehend");
+        await expect(page.locator(".webapp-store-field-button")).toHaveCount(0);
 
-        // The sub-path typedInput now appears.
+        // The second, indented sub-path typedInput now appears below the name.
         await expect(subPathRow(page)).toHaveCount(1);
     });
 
@@ -122,7 +130,7 @@ test.describe("editor — store binding sub-path (P132)", () => {
         await editor.open();
         await editor.openNode("txtEd");
         await selectStoreType(page);
-        await storeButton(page).click();
+        await openStorePicker(page);
         await pickStoreRow(page, "monster");
 
         const types = await page.evaluate(() => {
@@ -152,7 +160,7 @@ test.describe("editor — store binding sub-path (P132)", () => {
         await editor.open();
         await editor.openNode("txtEd");
         await selectStoreType(page);
-        await storeButton(page).click();
+        await openStorePicker(page);
         await pickStoreRow(page, "monster");
 
         // Invoke the typedInput's configured autoComplete for the `str` type and
@@ -189,7 +197,7 @@ test.describe("editor — store binding sub-path (P132)", () => {
         await editor.open();
         await editor.openNode("txtEd");
         await selectStoreType(page);
-        await storeButton(page).click();
+        await openStorePicker(page);
         await pickStoreRow(page, "monster");
 
         // Type the path "c" into the sub-path typedInput (str type, default).
