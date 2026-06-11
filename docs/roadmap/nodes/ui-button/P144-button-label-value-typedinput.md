@@ -9,7 +9,7 @@ verify: browser
 spec: docs/nodes/display/ui-button.md
 tests: tests/e2e/nodes/view/ui-button.tests.md
 dependencies: [P113]
-status: pending
+status: in_progress
 ---
 # P144 — ui-button: label → Wert-typedInput
 
