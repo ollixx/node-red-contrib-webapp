@@ -2,7 +2,7 @@
 id: P139
 title: "Fundament: gemeinsame Basis-Felder (visible/disabled/color/size) + Editor-Struktur (Gruppen-Überschriften, 'Layout'-Überschrift, Einklappen, N/A-Disable mit Hinweis)"
 epic: aspects/editor
-status: pending
+status: in_progress
 dependencies: [P113]
 spec: docs/nodes/concepts/editor.md
 tests: tests/e2e/nodes/editor/placement-rows.spec.ts
