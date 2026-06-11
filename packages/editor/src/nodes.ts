@@ -283,7 +283,10 @@ export interface UiSkeletonEditorConfig extends MountableEditorConfig {
 }
 
 export interface UiBadgeEditorConfig extends MountableEditorConfig {
+    // P153 (ADR 0012): `valuePath` kept for migration only (pre-P153 plain state path).
+    // The canonical field is `value` (persisted as a binding object by the editor).
     valuePath?: string;
+    value?: BindingDefinition;
     // P92: displayType is now shape (square/rounded/pill).
     displayType?: "square" | "rounded" | "pill";
     // P92: variant (renamed from severity).
@@ -1278,13 +1281,17 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
     })),
     "ui-badge": createDefinition("ui-badge", "view", {
         id: requiredString("Badge IDs are required before deploy."),
-        mount: requiredString("Badges must declare a parent slot."),
-        valuePath: requiredString("Badges must declare a value path.")
+        mount: requiredString("Badges must declare a parent slot.")
+        // P153 (ADR 0012): value is now a typedInput binding object — no requiredString
+        // validator. The typedInput may store any binding kind (literal/state/store/…).
+        // Migration: legacy `valuePath` is converted to a state binding by the mapper.
     }, (config: UiBadgeEditorConfig): UiBadgeNodeDefinition => ({
         type: "ui-badge",
         id: config.id ?? "",
         mount: config.mount ?? "",
-        value: stateBinding(config.valuePath ?? ""),
+        // P153 (ADR 0012): prefer the stored binding object; migrate legacy valuePath.
+        value: isBindingObject(config.value) ? config.value
+            : (config.valuePath ? stateBinding(config.valuePath) : stateBinding("")),
         // P92: displayType now shape (square/rounded/pill); variant replaces severity.
         // P103: size field removed.
         displayType: config.displayType,
