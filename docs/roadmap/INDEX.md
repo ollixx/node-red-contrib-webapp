@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P136** — nodes/ui-radio — Options als EIN typedInput {JSON+Validierung | Store} (geteilter Helfer mit ui-select) + label auf Wert-Satz — *geplant; braucht P113 + P133* — [P136](nodes/ui-radio/P136-radio-options-label-shared-helper.md)
 - **P137** — nodes/ui-progress — `valuePath`→`value` (kanonischer typedInput) + `label` auf Wert-Satz — *geplant; braucht P113* — [P137](nodes/ui-progress/P137-progress-value-label-typedinput.md)
 - **P138** — nodes/ui-skeleton — `visiblePath`→Standard-`visible`-typedInput; `lines` kontextabhängig disablen (Hinweis) — *geplant; braucht P113* — [P138](nodes/ui-skeleton/P138-skeleton-visible-typedinput-lines-disable.md)
 - **P139** — aspects/editor — Fundament: Basis-Felder (visible/disabled/color/size) + Editor-Struktur („Layout"-Überschrift, Einklappen, N/A-Disable mit Hinweis) (ADR 0015) — *geplant; braucht P113* — [P139](aspects/editor/P139-common-base-fields-foundation.md)
@@ -86,7 +85,7 @@ open the folder for the full history.
 | nodes/ui-select | 3 |
 | nodes/ui-switch | 2 |
 | nodes/ui-slider | 2 |
-| nodes/ui-radio | 2 |
+| nodes/ui-radio | 3 |
 | nodes/ui-textarea | 2 |
 | nodes/ui-checkbox | 2 |
 | nodes/ui-datepicker | 2 |
@@ -102,4 +101,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 138 done, 12 open, 9 deferred.**
+**Total: 139 done, 19 open, 10 deferred.**
