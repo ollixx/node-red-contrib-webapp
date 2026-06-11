@@ -951,6 +951,21 @@ function toComponentDefinitions(components) {
             if (iconBinding) {
                 buttonBind.icon = iconBinding;
             }
+            // P144 (ADR 0012): `label` may now be a binding object or a plain
+            // string (legacy). When it is a dynamic binding (non-literal), route
+            // it through bind.label; a literal binding unwraps to props.label; a
+            // plain string stays in props.label unchanged.
+            const labelDef = component.label;
+            const labelBinding = getBinding(labelDef, undefined);
+            const labelLiteral = (labelBinding && labelBinding.kind === "literal")
+                ? (labelBinding.value !== undefined && labelBinding.value !== null ? String(labelBinding.value) : undefined)
+                : undefined;
+            const labelProp = labelLiteral !== undefined
+                ? labelLiteral
+                : (typeof labelDef === "string" ? labelDef : undefined);
+            if (labelBinding && labelBinding.kind !== "literal") {
+                buttonBind.label = labelBinding;
+            }
             // P71: href is a binding (mapConfig already normalised a literal string
             // into a literal binding). A dynamic binding routes through bind.href so
             // the renderer resolves it into resolvedProps.href; a literal binding's
@@ -970,7 +985,7 @@ function toComponentDefinitions(components) {
                 order: toOptionalNumber(component.order),
                 bind: buttonBind,
                 props: {
-                    label: component.label,
+                    label: labelProp,
                     ...(component.icon !== undefined && !iconBinding ? { icon: component.icon } : {}),
                     ...(blankToUndefined(component.variant) ? { variant: component.variant } : {}),
                     // P71: size (sm/md/lg), explicit outline flag, link mode + href.

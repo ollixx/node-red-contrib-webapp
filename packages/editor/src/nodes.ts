@@ -117,7 +117,8 @@ export interface UiTextEditorConfig extends MountableEditorConfig {
 }
 
 export interface UiButtonEditorConfig extends MountableEditorConfig {
-    label?: string;
+    // P144 (ADR 0012): label accepts a binding object or a literal string.
+    label?: string | BindingDefinition;
     action?: string;
     disabledPath?: string;
     variant?: "primary" | "secondary" | "success" | "danger" | "warning" | "neutral" | "ghost" | "link";
@@ -799,7 +800,8 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         type: "ui-button",
         id: config.id ?? "",
         mount: config.mount ?? "",
-        label: config.label ?? "",
+        // P144: label is a binding (literal string or dynamic binding).
+        label: bindingOrString(config.label) ?? "",
         action: config.action ?? "",
         variant: config.variant,
         disabled: config.disabledPath ? stateBinding(config.disabledPath) : undefined,
