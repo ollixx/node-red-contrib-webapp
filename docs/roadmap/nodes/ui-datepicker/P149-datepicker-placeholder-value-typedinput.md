@@ -9,7 +9,7 @@ verify: browser
 spec: docs/nodes/input/ui-datepicker.md
 tests: tests/e2e/nodes/view/ui-datepicker.tests.md
 dependencies: [P113]
-status: pending
+status: in_progress
 ---
 # P149 — ui-datepicker: placeholder → Wert-typedInput
 
