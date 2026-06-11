@@ -15,15 +15,27 @@ status: pending
 # P161 — Query-reaktives Paging
 
 > Setzt auf **P154** (ui-pagination-Felder bindbar) + **P160** (Lifecycle-Lese-
-> Konvention) auf. Der **Trigger** ist die Kernfrage: die Query beobachtet ihren
-> `params`-Store und **emittiert bei Änderung einen Refresh am Out-Port** — der
-> verdrahtete Fetch lädt, schickt Daten + `totalCount` zurück.
+> Konvention) auf und folgt dem **Trigger-Modell aus
+> [ADR 0016](../../../adr/0016-ui-query-trigger-model-visible-no-auto-fire.md)**:
+> jeder Fetch hängt an einer **sichtbaren** Ursache. Dieses Paket deckt nur den
+> **Refresh** ab — die Query beobachtet ihre **deklarierte `params`-Referenz** und
+> **emittiert bei Änderung einen Refresh am Out-Port**; der verdrahtete Fetch lädt
+> und schickt Daten + `totalCount` zurück.
+>
+> **Nicht hier:** der **Initial-/Arrival-Load**. Der läuft per **`route onEnter →
+> ui-query`-Wire** (ADR 0016 §2), **nicht** per Auto-on-Arrival — kein
+> autonomes Selbst-Feuern der Query bei Client-Ankunft.
 
 ## Zielmodell — der reaktive Loop
 
+0. **Initial-Load** (ADR 0016 §2): `route onEnter → ui-query`-Wire feuert den
+   ersten Fetch — per-client (`onEnter` trägt die `clientId`). **Kein**
+   Auto-on-Arrival. Dieser Schritt ist Voraussetzung, aber nicht Gegenstand
+   dieses Pakets.
 1. **`params`-Store** hält `{ page, pageSize, sort?, search? }`.
-2. **ui-query** referenziert den params-Store (`params`-Feld) und **beobachtet**
-   ihn. Bei Änderung **emittiert die Query eine Refresh-`msg.ui.query`** am
+2. **ui-query** referenziert den params-Store (`params`-Feld, **deklarierte
+   sichtbare Referenz** — ADR 0016 §3) und **beobachtet** ihn. Bei Änderung
+   **emittiert die Query eine Refresh-`msg.ui.query`** am
    **Out-Port** (mit den aktuellen Params im `msg`, z. B. `msg.ui.query.params`),
    und setzt den Lifecycle auf `loading`.
    - **Implementieren/verifizieren:** ob die Query den params-Store heute schon
