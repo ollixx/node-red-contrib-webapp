@@ -616,9 +616,14 @@ export type UiSwitchNodeDefinition = z.infer<typeof uiSwitchNodeDefinitionSchema
 
 export const uiTextareaNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-textarea"),
-    label: z.string().min(1, "Textarea labels must not be empty."),
+    // P148 (ADR 0012): label accepts the canonical value-binding set — a literal
+    // string or a dynamic binding object. Back-compat: a plain string from a
+    // pre-P148 flow is still accepted and treated as a literal label.
+    label: z.union([bindingSchema, z.string().min(1, "Textarea labels must not be empty.")]),
     value: bindingSchema,
-    placeholder: z.string().optional(),
+    // P148 (ADR 0012): placeholder accepts the canonical value-binding set.
+    // Back-compat: a plain string from a pre-P148 flow is still accepted.
+    placeholder: z.union([bindingSchema, z.string().min(1, "Textarea placeholders must not be empty.")]).optional(),
     rows: z.number().int().positive().optional(),
     maxLength: z.number().int().positive().optional(),
     // P71: three-step size (sm/md/lg).

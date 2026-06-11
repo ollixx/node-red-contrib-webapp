@@ -191,9 +191,10 @@ export interface UiSwitchEditorConfig extends MountableEditorConfig {
 }
 
 export interface UiTextareaEditorConfig extends MountableEditorConfig {
-    label?: string;
+    // P148 (ADR 0012): label and placeholder accept a binding object or a literal string.
+    label?: string | BindingDefinition;
     valuePath?: string;
-    placeholder?: string;
+    placeholder?: string | BindingDefinition;
     rows?: number;
     maxLength?: number;
 }
@@ -1010,9 +1011,11 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         type: "ui-textarea",
         id: config.id ?? "",
         mount: config.mount ?? "",
-        label: config.label ?? "",
+        // P148: label is a binding (literal string or dynamic binding).
+        label: bindingOrString(config.label) ?? "",
         value: stateBinding(config.valuePath ?? ""),
-        placeholder: config.placeholder,
+        // P148: placeholder is a binding (literal string or dynamic binding).
+        placeholder: bindingOrString(config.placeholder),
         rows: config.rows,
         maxLength: config.maxLength,
         ...collectLayoutChildConfig(config)

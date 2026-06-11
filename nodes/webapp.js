@@ -1181,7 +1181,8 @@ function toComponentDefinitions(components) {
             // P137: ui-progress label is now a full binding — add "progress" to the set.
             // P146: ui-slider label is now a full binding — add "slider" to the set.
             // P147: ui-switch label is now a full binding — add "switch" to the set.
-            const labelBinding = (p16Kind === "checkbox" || p16Kind === "datepicker" || p16Kind === "select" || p16Kind === "radio" || p16Kind === "progress" || p16Kind === "slider" || p16Kind === "switch") ? getBinding(component.label, undefined) : undefined;
+            // P148: ui-textarea label is now a full binding — add "textarea" to the set.
+            const labelBinding = (p16Kind === "checkbox" || p16Kind === "datepicker" || p16Kind === "select" || p16Kind === "radio" || p16Kind === "progress" || p16Kind === "slider" || p16Kind === "switch" || p16Kind === "textarea") ? getBinding(component.label, undefined) : undefined;
             if (labelBinding) {
                 bind.label = labelBinding;
             }
@@ -1199,7 +1200,8 @@ function toComponentDefinitions(components) {
             // P133: ui-select `placeholder` and `options` may be binding objects
             // (canonical value set / store binding). Route them through `bind` so
             // the renderer resolves them into resolvedProps.{placeholder,options}.
-            const placeholderBinding = p16Kind === "select" ? getBinding(component.placeholder, undefined) : undefined;
+            // P148: ui-textarea placeholder is now a full binding — add "textarea" to the set.
+            const placeholderBinding = (p16Kind === "select" || p16Kind === "textarea") ? getBinding(component.placeholder, undefined) : undefined;
             if (placeholderBinding) {
                 bind.placeholder = placeholderBinding;
             }
@@ -4648,9 +4650,13 @@ const runtimeNodeRegistry = {
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
-            label: config.label,
+            // P148 (ADR 0012): label may be a binding object or a legacy plain string.
+            // getBinding passes a binding object through; for a plain string, we keep it
+            // as-is via the fallback: a non-object label stays as a string.
+            label: getBinding(config.label, typeof config.label === "string" && config.label ? config.label : undefined),
             value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
-            placeholder: config.placeholder || undefined,
+            // P148 (ADR 0012): placeholder may be a binding object or a legacy plain string.
+            placeholder: getBinding(config.placeholder, typeof config.placeholder === "string" && config.placeholder ? config.placeholder : undefined),
             rows: toOptionalNumber(config.rows),
             maxLength: toOptionalNumber(config.maxLength),
             size: blankToUndefined(config.size),
