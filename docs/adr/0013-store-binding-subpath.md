@@ -85,23 +85,27 @@ it resolves to the invalid-value marker and reports a **speaking** error
 (`store binding: sub-path nesting too deep / cycle`) through the P104/P105
 affordance.
 
-### 4. Editor: button-first, name-first, permissive, runtime-validated
+### 4. Editor: a typedInput type among many; name in the value, path in a second row
 
-- **Before a store is chosen:** the field shows only a button **"Store
-  auswählen"** (opens the app-scoped P68 picker, P117). The button carries the
-  **same store icon as the store typedInput** (`fa fa-database`), for visual
-  consistency. **No path typedInput yet** — it appears only after a store is
-  selected.
-- **After selection:** the button stays at the top and becomes **"Store
-  ändern"** (same store icon); next to it the store **name** is shown (resolved
-  from the id; the raw node id is **not** shown, and no second/decorative glyph —
-  the store icon lives on the button, the name beside it). The id is what's
-  stored. The field's own label (e.g. "Wert") stays in the panel's left label
-  column; the whole store UI lives in the value column.
-- **Then a path typedInput** appears — itself a typedInput over the §2 source
-  set — **always present once a store is chosen, always optional**. Default type
-  `string` with **autocomplete from the slice's default shape** (soft
-  suggestions: keys/indices; never a restriction, never hidden).
+Store is **one type among many** in the value typedInput (chosen via the type
+selector ▾) — **not** an exclusive/standalone field. When the type is **Store**:
+
+- The value area shows the chosen store's **name** ("monster") after picking via
+  the typedInput's **"…"** expand button (which re-opens the app-scoped P68
+  picker to pick/change). The raw node **id is not shown** (the id is what's
+  stored); the store icon (`fa fa-database`) is the typedInput's type icon.
+- **Below, indented in the value column** (the field's own label stays in the
+  left label column), a **second typedInput** carries the path — the full §2
+  `storePath` source set, **nothing removed**. Default `string` with autocomplete
+  from the slice's default shape (soft; never restricts/hides). Empty = whole
+  slice.
+
+**Correction (2026-06-11):** P132 shipped this **wrong** — it crammed a "Store
+ändern" button and the sub-path into a **single row** (showing the id as
+`<x> (bestehend)`) instead of *name in the value area + a second, indented path
+typedInput below*. The corrected layout above is implemented by **P134**; the
+earlier "button-first" wording in this section misled the coding agent and is
+replaced by the above.
 - The editor makes **no** shape-dependent decisions. Shape correctness is a
   **runtime** concern with speaking errors:
   - `subPath` set but unresolvable (missing key; or slice is scalar) →

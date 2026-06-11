@@ -27,6 +27,9 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
+- **P133** — nodes/ui-select — Options als EIN typedInput {JSON+Validierung | Store}, placeholder+label auf Wert-Satz, searchable entfernen — *geplant; braucht P113* — [P133](nodes/ui-select/P133-select-options-placeholder-label-searchable.md)
+- **P134** — aspects/editor — Store-typedInput-Layout korrigieren: Name im Wert + zweites eingerücktes Pfad-typedInput (ADR 0013 §4) — *geplant; braucht P132* — [P134](aspects/editor/P134-store-typedinput-layout-fix.md)
+- **P135** — aspects/editor — Mount-Picker als Zwei-Spalten-Tree + Dialog resizable/gemerkt/Ellipsis (ADR 0014) — *geplant; braucht P114* — [P135](aspects/editor/P135-mount-picker-two-column-tree.md)
 
 
 ## Deferred (parked, not abandoned)
