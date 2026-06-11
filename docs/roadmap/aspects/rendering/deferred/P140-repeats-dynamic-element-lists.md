@@ -12,6 +12,20 @@ dependencies: []
 
 - "offene Punkte: Wie rendern wir dynamische listen von Elementen (n mal text)
   > repeats"
+- "ui-list ist auch ein Kandidat für dynamische Slots, bzw. einen generischen
+  Ansatz, wo Elemente in den Default-Slot der Liste kommen und das List-Item als
+  Context bekommen. Auch ein offener Punkt."
+
+## ui-list als konkreter Fall
+
+`ui-list` ist genau dieser Repeats-Fall in Container-Form: Kinder werden in den
+**Default-Slot** der Liste gemountet und **pro Item** der Datenquelle (heute
+`itemsPath`, ein nacktes Textfeld) gerendert; jede Instanz bekommt das
+**List-Item als Kontext/Scope** (für die Bindings der Kinder). Damit ist `ui-list`
+**nicht** ein simples „value-Feld" (raus aus dem Field-Typing-Audit Bucket A) —
+sein ganzes Modell (`itemsPath`-Quelle, Item-Scope, Slot-Wiederholung) hängt an
+dieser Repeats/Slots-Entscheidung. ui-list ist damit der **Leit-Knoten** für
+dieses Konzept.
 
 ## Worum es geht
 
