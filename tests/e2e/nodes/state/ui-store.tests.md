@@ -79,15 +79,17 @@ Spec: `tests/e2e/nodes/behavior/ui-store.spec.ts` (describe block `ui-store subP
 
 Unit coverage: `packages/schema/test/p131-store-subpath.test.ts` (schema: `subPath` validates; `subPath.subPath` and `subPath` on non-store rejected) and `packages/renderer/test/p131-store-subpath.test.ts` (resolution: literal/numeric/dotted/dynamic paths, empty vs object slice, unresolvable → marker + one speaking error, recursion-guard backstop).
 
-## E2E tests — store-binding editor (P132, ADR 0013)
+## E2E tests — store-binding editor (P132 → P134, ADR 0013 §4)
 
 Spec: `tests/e2e/nodes/editor/store-binding-subpath.spec.ts`. Drives the value
-typedInput's `store` source in a ui-text panel.
+typedInput's `store` source in a ui-text panel. **P134** corrects the layout to
+*name-in-value + a second, indented path typedInput* (P132 had crammed a button +
+the sub-path into one row showing the id).
 
 | Test | Goal |
 |---|---|
-| button-first: before a store is chosen, only the 'Store auswählen' button (no path field) | Button-first rendering with the `fa fa-database` icon; the sub-path typedInput is absent until a store is picked (ADR 0013 §4) |
-| after selecting a store the button becomes 'Store ändern' and the NAME (not id) shows | The resolved store **name** ("monster") shows beside the button — never the raw node id ("monsterStore"); the sub-path typedInput appears |
+| before a store is chosen: a soft '…'-Hinweis, no path field (no button) | The value area shows a soft placeholder (no "Store ändern" button); the typedInput's native "…" expand opens the picker; the sub-path typedInput is absent until a store is picked (ADR 0013 §4) |
+| after selecting a store the NAME (not id) shows in the value area; no button, no '(bestehend)' | The resolved store **name** ("monster") shows in the value area — never the raw node id ("monsterStore"), never a "Store ändern" button, never "(bestehend)" for a live store; the second, indented sub-path typedInput appears below |
 | the sub-path typedInput offers exactly the 11 storePath sources, string default | `valueBindingTypes({category:"storePath"})` → `str, num, routeParam, query, store, reactive, jsonata, msg, flow, global, env`, string default |
 | string-type autocomplete suggests the default-slice keys (a, b, c) | Soft autocomplete derives the slice keys from the store's `initialValue` `{a,b,c}` for the `str` type |
 | selecting 'c' saves subPath {kind:'literal', value:'c'} and round-trips showing the NAME | `{kind:"store", path:"monsterStore", subPath:{kind:"literal", value:"c"}}` saves and survives close/reopen; the **name** is shown on reopen |
