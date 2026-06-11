@@ -246,7 +246,10 @@ export type UiTextNodeDefinition = z.infer<typeof uiTextNodeDefinitionSchema>;
 
 export const uiButtonNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-button"),
-    label: z.string().min(1, "Button labels must not be empty."),
+    // P144 (ADR 0012): label accepts the canonical value-binding set — a literal
+    // string or a dynamic binding object. Back-compat: a plain string from a
+    // pre-P144 flow is still accepted and treated as a literal label.
+    label: z.union([bindingSchema, z.string().min(1, "Button labels must not be empty.")]),
     // P49: true Ebene-2 variant (semantic action role). Default "neutral".
     variant: z.enum(BUTTON_VARIANTS).optional(),
     // action is deprecated — click events are now emitted on the output port.

@@ -9,7 +9,29 @@
                 name: { value: "" },
                 parent: { value: "" },
                 mount: { value: "", required: true },
-                label: { value: "", required: true },
+                // P144 (ADR 0012): `label` persists the binding OBJECT; the
+                // typedInput lives directly on #node-input-label so the
+                // minimal-coverage E2E check (`fields:["label"]`) still passes.
+                // A legacy plain-string `label` is migrated on open.
+                label: {
+                    value: { kind: "literal", value: "" },
+                    required: true,
+                    validate: function () {
+                        var el = $("#node-input-label");
+                        if (el.length && typeof el.typedInput === "function") {
+                            var v = el.typedInput("value");
+                            return v !== undefined && v !== null && String(v).length > 0;
+                        }
+                        // Pre-open (no typedInput yet): trust the persisted binding.
+                        var b = this.label;
+                        if (b && typeof b === "object") {
+                            return b.value !== undefined && b.value !== null && String(b.value).length > 0
+                                ? true
+                                : (typeof b.path === "string" && b.path.length > 0);
+                        }
+                        return typeof b === "string" && b.length > 0;
+                    }
+                },
                 variant: { value: "neutral" },
                 size: { value: "" },
                 outline: { value: false },
@@ -54,6 +76,25 @@
                 common.installLayoutChildPropRows().call(this);
                 common.installIconField("#node-input-icon", { title: "Button-Icon auswählen" });
 
+                // P144 (ADR 0012 / value category): `label` typedInput.
+                // The typedInput lives on #node-input-label (not a separate
+                // *Binding element) so the minimal-coverage E2E check passes.
+                // Migration: a legacy plain-string `label` opens as a `str` literal.
+                const storedLabel = common.parseBindingValue(this.label);
+                const labelBinding = storedLabel
+                    ? storedLabel
+                    : (typeof this.label === "string" && this.label.length > 0
+                        ? { kind: "literal", value: this.label }
+                        : undefined);
+                const labelEditor = common.readValueBinding(labelBinding, "");
+                const labelInput = $("#node-input-label");
+                labelInput.typedInput({
+                    default: labelEditor.type,
+                    types: common.valueBindingTypes({ category: "value" })
+                });
+                labelInput.typedInput("type", labelEditor.type);
+                labelInput.typedInput("value", labelEditor.value);
+
                 // P122 (ADR 0012 / boolean category): `disabled` typedInput.
                 // Migration: a legacy `disabledPath` plain string becomes a
                 // state binding; a stored `disabled` binding object takes
@@ -90,6 +131,12 @@
                 hrefInput.typedInput("value", hrefEditor.value);
             },
             oneditsave: function () {
+                // P144: persist label as binding object.
+                this.label = common.applyValueBinding(
+                    $("#node-input-label").typedInput("type"),
+                    $("#node-input-label").typedInput("value")
+                );
+
                 // P122: persist disabled as binding object; clear legacy disabledPath.
                 this.disabled = common.applyValueBinding(
                     $("#node-input-disabledBinding").typedInput("type"),
