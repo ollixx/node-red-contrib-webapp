@@ -53,6 +53,12 @@ test.describe("editor panels — central placement-row injection (P49a)", () => 
 
             // Exactly one injected field-group container (idempotent injection).
             await expect(page.locator('[data-field-group="layout-placement"]')).toHaveCount(1);
+
+            // P139 (ADR 0015): the central injector prepends a "Layout" heading
+            // over the placement rows — one heading, landing on every node at once.
+            const heading = page.locator('[data-group-heading="layout-placement"]');
+            await expect(heading).toHaveCount(1);
+            await expect(heading).toHaveText("Layout");
         });
     }
 
@@ -83,6 +89,29 @@ test.describe("editor panels — central placement-row injection (P49a)", () => 
         expect(await visible("order")).toBe(false);
         expect(await visible("layoutX")).toBe(false);
         expect(await visible("layoutY")).toBe(false);
+
+        // P139: with placement fields active, the "Layout" heading is shown.
+        await expect(page.locator('[data-group-heading="layout-placement"]')).toBeVisible();
+    });
+
+    test("ui-text in an app-layout slot — no placement fields, Layout heading hidden (P139)", async ({ page, request }) => {
+        const nodeId = "ui-text-app";
+        // The "app" layout has no child placement fields (layoutChildFieldsByVariant),
+        // so every placement row stays hidden — and so must the central heading.
+        const flow = new FlowBuilder()
+            .app({ id: "appLayoutApp", root: "appLayoutApp", name: "App Layout App", layout: "app" })
+            .node("ui-text", { id: nodeId, mount: "appLayoutApp.content" })
+            .build();
+        await deployFlow(request, flow);
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode(nodeId);
+
+        for (const field of PLACEMENT_FIELDS) {
+            await expect(page.locator(`[data-layout-child-prop-row="${field}"]`)).toBeHidden();
+        }
+        await expect(page.locator('[data-group-heading="layout-placement"]')).toBeHidden();
     });
 
     test("ui-text in a vertical route — only order visible", async ({ page, request }) => {
@@ -104,6 +133,9 @@ test.describe("editor panels — central placement-row injection (P49a)", () => 
         expect(await visible("order")).toBe(true);
         expect(await visible("row")).toBe(false);
         expect(await visible("col")).toBe(false);
+
+        // P139: the "Layout" heading is shown for the active vertical layout.
+        await expect(page.locator('[data-group-heading="layout-placement"]')).toBeVisible();
     });
 
     test("ui-text in a grid route — placement values round-trip through save unchanged", async ({ page, request }) => {

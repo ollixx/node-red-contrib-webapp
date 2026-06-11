@@ -115,18 +115,35 @@
         );
     }
 
+    // P139 (ADR 0015): a small heading line for an injected field group (e.g.
+    // "Layout" over the placement rows, "Allgemein" over the base fields).
+    // Identified per group via data-group-heading so visibility logic (e.g. the
+    // placement-row toggle) can show/hide the heading with its rows.
+    function buildGroupHeadingMarkup(groupId, text) {
+        return '<div class="form-row webapp-field-group-heading" data-group-heading="' + escapeHtml(groupId) + '"' +
+            ' style="font-weight: 600; margin: 8px 0 4px;">' + escapeHtml(text) + "</div>";
+    }
+
+    // The edit-form element injected field groups append to (shared by
+    // injectFieldGroup and installBaseFields). Returns an empty jQuery set when
+    // no edit form is present.
+    function resolveEditFormTarget() {
+        const form = $("#node-input-mount").closest("form, .red-ui-tray-content, #dialog-form");
+        const container = form.length ? form : $("#dialog-form");
+        return container.length ? container : $(".red-ui-tray-body").first();
+    }
+
     // Generic "inject this shared field group" primitive.
     // spec = {
     //   groupId:   unique marker (data-field-group="<groupId>"), for idempotency
     //   separator: boolean — prepend an <hr> matching the template convention
+    //   heading:   optional heading text rendered above the rows (P139)
     //   fields:    array of field specs (see buildFieldRowMarkup)
     // }
     // Returns the injected (or pre-existing) container as a jQuery object, or null
     // if no edit form is present. Appends to the form that hosts the node fields.
     function injectFieldGroup(spec) {
-        const form = $("#node-input-mount").closest("form, .red-ui-tray-content, #dialog-form");
-        const container = form.length ? form : $("#dialog-form");
-        const target = container.length ? container : $(".red-ui-tray-body").first();
+        const target = resolveEditFormTarget();
         if (!target.length) {
             return null;
         }
@@ -139,6 +156,9 @@
         let markup = '<span data-field-group="' + escapeHtml(spec.groupId) + '" style="display: contents;">';
         if (spec.separator) {
             markup += '<hr style="margin: 8px 0;">';
+        }
+        if (spec.heading) {
+            markup += buildGroupHeadingMarkup(spec.groupId, spec.heading);
         }
         (spec.fields || []).forEach(function (field) {
             markup += buildFieldRowMarkup(field);
@@ -171,6 +191,10 @@
         return injectFieldGroup({
             groupId: "layout-placement",
             separator: true,
+            // P139 (ADR 0015): central "Layout" heading over the placement rows —
+            // one change here lands the heading on every node at once. Shown/
+            // hidden together with the rows (see installLayoutChildPropRows).
+            heading: "Layout",
             fields: placementRowFields
         });
     }
@@ -252,6 +276,260 @@
             const select = $("#node-input-size");
             if (select.length) {
                 select.val(self.size || "");
+            }
+        };
+    }
+
+    // ── Common base fields (P139, ADR 0015) ─────────────────────────────────
+    // Every node offers the four common base fields visible/disabled/color/size
+    // as ONE grouped section with its own heading ("Allgemein").
+    // installBaseFields(config) renders the group in oneditprepare;
+    // applyBaseFields(config) persists it in oneditsave. `config` is the
+    // node-LOCAL capability declaration (a central capability map — P102 — may
+    // replace the scattered flags later):
+    //
+    //   {
+    //     visible:  true|false,   // default true — false renders the field N/A
+    //     disabled: true|false,
+    //     color:    true|false,
+    //     size:     true|false,
+    //     variant:  true|false,   // node carries semantic `variant` → color N/A
+    //     advanced: ["size"],     // rarely-used fields → collapsible "Erweitert"
+    //     hints:    { disabled: "…", … }  // N/A reason per field (defaults below)
+    //   }
+    //
+    // Persistence follows the rolled-out ADR 0012 patterns exactly (REUSE, not
+    // duplicate): `disabled` is the P122–P130 boolean-state typedInput
+    // (#node-input-disabledBinding, binding object on `disabled`, legacy
+    // `disabledPath` → state-binding migration); `visible` mirrors it (the P138
+    // shape, legacy `visiblePath` migration); `color` is a general value
+    // typedInput persisted as a binding object on `color` (legacy plain string →
+    // literal; empty literal → null); `size` is the existing SIZE_OPTIONS token
+    // select on #node-input-size (Node-RED auto-saves it via its default).
+    //
+    // An N/A field is SHOWN but disabled, with a short reason (visible hint +
+    // title tooltip). All base fields are visible by default; only the fields
+    // listed in `advanced` sit in the collapsed "Erweitert" subsection (a pure
+    // editor affordance — the collapse state is never persisted).
+
+    var BASE_FIELD_ORDER = ["visible", "disabled", "color", "size"];
+    var BASE_FIELD_LABELS = { visible: "Visible", disabled: "Disabled", color: "Color", size: "Size" };
+    var BASE_FIELD_DEFAULT_NA_HINTS = {
+        visible: "Für diesen Knoten nicht anwendbar.",
+        disabled: "Dieser Knoten hat keinen interaktiven Zustand.",
+        color: "Für diesen Knoten nicht anwendbar.",
+        size: "Dieser Knoten hat keine einstellbare Größe."
+    };
+    var BASE_FIELD_VARIANT_COLOR_HINT = "Nutzt die semantische Variant (Farbe über das Variant-Feld).";
+
+    // The binding-carrier (or plain) input element id per base field.
+    var BASE_FIELD_INPUT_IDS = {
+        visible: "visibleBinding",
+        disabled: "disabledBinding",
+        color: "colorBinding",
+        size: "size"
+    };
+
+    // Pure node-local applicability/hint resolver (unit-tested,
+    // packages/editor/test/p139-base-fields.test.ts). Default: applicable.
+    // `variant: true` forces `color` → N/A (mutual exclusion, ADR 0015 §1). An
+    // N/A field's hint comes from config.hints[field], falling back to the
+    // built-in defaults above; applicable fields never carry a hint.
+    function resolveBaseFieldApplicability(config) {
+        var cfg = config || {};
+        var hints = cfg.hints || {};
+        var result = {};
+        BASE_FIELD_ORDER.forEach(function (field) {
+            var applicable = cfg[field] !== false;
+            var defaultHint = BASE_FIELD_DEFAULT_NA_HINTS[field];
+            if (field === "color" && cfg.variant === true) {
+                applicable = false;
+                defaultHint = BASE_FIELD_VARIANT_COLOR_HINT;
+            }
+            result[field] = {
+                applicable: applicable,
+                hint: applicable ? "" : (hints[field] || defaultHint)
+            };
+        });
+        return result;
+    }
+
+    // One base-field form row. N/A → control disabled + data-base-field-na
+    // marker + hint (visible text and title tooltip on the row).
+    function buildBaseFieldRowMarkup(field, state) {
+        var inputId = "node-input-" + BASE_FIELD_INPUT_IDS[field];
+        var rowAttrs = ' data-base-field="' + escapeHtml(field) + '"';
+        if (!state.applicable) {
+            rowAttrs += ' data-base-field-na="true" title="' + escapeHtml(state.hint) + '"';
+        }
+        var control;
+        if (field === "size") {
+            var optionMarkup = SIZE_OPTIONS.map(function (opt) {
+                return '<option value="' + escapeHtml(opt.value) + '">' + escapeHtml(opt.label) + "</option>";
+            }).join("");
+            control = '<select id="' + inputId + '"' + (state.applicable ? "" : " disabled") + ">" + optionMarkup + "</select>";
+        } else {
+            control = '<input type="text" id="' + inputId + '"' + (state.applicable ? "" : " disabled") + ">";
+        }
+        var hintMarkup = state.applicable
+            ? ""
+            : '<span data-base-field-hint style="display: block; margin-left: 104px; font-size: 11px; color: var(--red-ui-secondary-text-color, #888);">' +
+                escapeHtml(state.hint) + "</span>";
+        return '<div class="form-row"' + rowAttrs + ">" +
+            '<label for="' + inputId + '">' + escapeHtml(BASE_FIELD_LABELS[field]) + "</label>" +
+            control + hintMarkup +
+            "</div>";
+    }
+
+    function installBaseFields(config) {
+        return function () {
+            var self = this;
+            var cfg = config || {};
+            var applicability = resolveBaseFieldApplicability(cfg);
+            var advanced = Array.isArray(cfg.advanced) ? cfg.advanced : [];
+
+            var target = resolveEditFormTarget();
+            if (!target.length) {
+                return;
+            }
+            var group = target.find('[data-field-group="base-fields"]');
+            if (!group.length) {
+                var mainRows = "";
+                var advancedRows = "";
+                BASE_FIELD_ORDER.forEach(function (field) {
+                    var row = buildBaseFieldRowMarkup(field, applicability[field]);
+                    if (advanced.indexOf(field) !== -1) {
+                        advancedRows += row;
+                    } else {
+                        mainRows += row;
+                    }
+                });
+                var markup = '<span data-field-group="base-fields" style="display: contents;">' +
+                    '<hr style="margin: 8px 0;">' +
+                    buildGroupHeadingMarkup("base-fields", "Allgemein") +
+                    mainRows;
+                if (advancedRows) {
+                    markup +=
+                        '<div class="form-row" data-base-advanced-toggle style="margin-bottom: 4px;">' +
+                        '<a href="#" style="text-decoration: none;"><i class="fa fa-caret-right"></i> Erweitert</a>' +
+                        "</div>" +
+                        '<div data-base-advanced-section style="display: none;">' + advancedRows + "</div>";
+                }
+                markup += "</span>";
+                group = $(markup);
+                target.append(group);
+
+                // "Erweitert" collapse toggle — default collapsed, pure editor
+                // affordance (no persistence).
+                group.find("[data-base-advanced-toggle] a").on("click", function (evt) {
+                    evt.preventDefault();
+                    var section = group.find("[data-base-advanced-section]");
+                    var open = section.is(":visible");
+                    section.toggle(!open);
+                    $(this).find("i")
+                        .toggleClass("fa-caret-right", open)
+                        .toggleClass("fa-caret-down", !open);
+                });
+            }
+
+            // visible — boolean-state typedInput (ADR 0012 boolean set; the P138
+            // shape incl. legacy visiblePath → state-binding migration). Default
+            // (empty) = visible.
+            if (applicability.visible.applicable) {
+                var storedVisible = parseBindingValue(self.visible);
+                var visibleBinding = storedVisible
+                    ? storedVisible
+                    : (self.visiblePath ? { kind: "state", path: self.visiblePath } : undefined);
+                var visibleEditor = readValueBinding(visibleBinding, "");
+                var visibleInput = $("#node-input-visibleBinding");
+                visibleInput.typedInput({
+                    default: visibleEditor.type,
+                    types: valueBindingTypes({ category: "boolean" })
+                });
+                visibleInput.typedInput("type", visibleEditor.type);
+                visibleInput.typedInput("value", visibleEditor.value);
+            }
+
+            // disabled — THE P122–P130 boolean-state typedInput, centralised
+            // (legacy disabledPath → state-binding migration).
+            if (applicability.disabled.applicable) {
+                var storedDisabled = parseBindingValue(self.disabled);
+                var disabledBinding = storedDisabled
+                    ? storedDisabled
+                    : (self.disabledPath ? { kind: "state", path: self.disabledPath } : undefined);
+                var disabledEditor = readValueBinding(disabledBinding, "");
+                var disabledInput = $("#node-input-disabledBinding");
+                disabledInput.typedInput({
+                    default: disabledEditor.type,
+                    types: valueBindingTypes({ category: "boolean" })
+                });
+                disabledInput.typedInput("type", disabledEditor.type);
+                disabledInput.typedInput("value", disabledEditor.value);
+            }
+
+            // color — general value typedInput (full canonical set); a legacy
+            // plain-string colour becomes a literal binding.
+            if (applicability.color.applicable) {
+                var storedColor = parseBindingValue(self.color);
+                var colorBinding = storedColor
+                    ? storedColor
+                    : (typeof self.color === "string" && self.color.length > 0
+                        ? { kind: "literal", value: self.color }
+                        : undefined);
+                var colorEditor = readValueBinding(colorBinding, "");
+                var colorInput = $("#node-input-colorBinding");
+                colorInput.typedInput({
+                    default: colorEditor.type,
+                    types: valueBindingTypes({ category: "value" })
+                });
+                colorInput.typedInput("type", colorEditor.type);
+                colorInput.typedInput("value", colorEditor.value);
+            }
+
+            // size — the existing token select. Node-RED binds defaults before
+            // this row exists, so bind the stored value manually; auto-save
+            // persists it through the node's `size` default.
+            if (applicability.size.applicable) {
+                var sizeSelect = $("#node-input-size");
+                if (sizeSelect.length) {
+                    sizeSelect.val(self.size || "");
+                }
+            }
+        };
+    }
+
+    // oneditsave counterpart: persist the applicable base fields as binding
+    // objects. N/A fields are never written (any stored value stays untouched);
+    // `size` auto-saves through its #node-input-size default binding.
+    function applyBaseFields(config) {
+        return function () {
+            var self = this;
+            var applicability = resolveBaseFieldApplicability(config);
+
+            if (applicability.visible.applicable) {
+                self.visible = applyValueBinding(
+                    $("#node-input-visibleBinding").typedInput("type"),
+                    $("#node-input-visibleBinding").typedInput("value")
+                );
+                self.visiblePath = "";
+            }
+
+            if (applicability.disabled.applicable) {
+                self.disabled = applyValueBinding(
+                    $("#node-input-disabledBinding").typedInput("type"),
+                    $("#node-input-disabledBinding").typedInput("value")
+                );
+                self.disabledPath = "";
+            }
+
+            if (applicability.color.applicable) {
+                var colorBinding = applyValueBinding(
+                    $("#node-input-colorBinding").typedInput("type"),
+                    $("#node-input-colorBinding").typedInput("value")
+                );
+                var emptyLiteral = colorBinding.kind === "literal"
+                    && (colorBinding.value === undefined || colorBinding.value === null || colorBinding.value === "");
+                self.color = emptyLiteral ? null : colorBinding;
             }
         };
     }
@@ -3967,6 +4245,10 @@
                     const field = String(row.attr("data-layout-child-prop-row") || "");
                     row.toggle(activeFields.has(field));
                 });
+
+                // P139: the central "Layout" heading follows its rows — no active
+                // placement field (e.g. "app" layout / unresolved mount) → hidden.
+                $('[data-group-heading="layout-placement"]').toggle(activeFields.size > 0);
             }
 
             refreshRows();
@@ -4777,6 +5059,10 @@
         formatIconValue,
         installReferenceSelectors,
         installSizeSelectBox,
+        // P139 (ADR 0015): common base fields (visible/disabled/color/size).
+        installBaseFields,
+        applyBaseFields,
+        resolveBaseFieldApplicability,
         installTextStyleSelectBox,
         installButtonLinkFields,
         installVariantSelectBox,

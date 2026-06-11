@@ -1,0 +1,161 @@
+import { expect, test } from "@playwright/test";
+
+import { deployFlow, resetFlow } from "../../../helpers/admin-api";
+import { FlowBuilder } from "../../../helpers/flow-builder";
+import { NodeEditorPage } from "../../../helpers/node-editor-page";
+
+/**
+ * P139 (ADR 0015) — the common base-field foundation: `installBaseFields()`.
+ *
+ * The shared helper renders the grouped base-field section ("Allgemein") with
+ * visible/disabled/color/size, N/A-disable-with-hint, and the optional
+ * collapsible "Erweitert" subsection. The per-node rollout is OUT of scope —
+ * the helper is proven on ONE reference node: **ui-divider** (non-variant, so
+ * `color` is active; non-interactive, so `disabled` is the N/A showcase; no
+ * size steps, so `size` is the rarely-used N/A field inside "Erweitert").
+ */
+
+test.describe("editor panels — common base fields (P139, ADR 0015)", () => {
+    test.afterEach(async ({ request }) => {
+        await resetFlow(request);
+    });
+
+    async function openDividerPanel(page: import("@playwright/test").Page, request: import("@playwright/test").APIRequestContext) {
+        const nodeId = "divider-bf";
+        const flow = new FlowBuilder()
+            .app({ id: "bfApp", root: "bfApp", name: "Base Fields App" })
+            .node("ui-divider", { id: nodeId })
+            .build();
+        await deployFlow(request, flow);
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode(nodeId);
+        return { editor, nodeId };
+    }
+
+    test("ui-divider — base-field group with 'Allgemein' heading is injected", async ({ page, request }) => {
+        await openDividerPanel(page, request);
+
+        // Exactly one injected base-field group (idempotent injection).
+        await expect(page.locator('[data-field-group="base-fields"]')).toHaveCount(1);
+
+        // Its own heading, "Allgemein".
+        const heading = page.locator('[data-group-heading="base-fields"]');
+        await expect(heading).toHaveCount(1);
+        await expect(heading).toHaveText("Allgemein");
+        await expect(heading).toBeVisible();
+
+        // All four base fields are rendered (applicable or N/A — always shown).
+        for (const field of ["visible", "disabled", "color", "size"]) {
+            await expect(
+                page.locator(`[data-base-field="${field}"]`),
+                `expected base-field row for ${field}`
+            ).toHaveCount(1);
+        }
+    });
+
+    test("ui-divider — visible (applicable) is a boolean-state typedInput, shown by default", async ({ page, request }) => {
+        await openDividerPanel(page, request);
+
+        const row = page.locator('[data-base-field="visible"]');
+        await expect(row).toBeVisible();
+        // typedInput initialised on the carrier input → the typedInput container exists.
+        await expect(row.locator(".red-ui-typedInput-container")).toHaveCount(1);
+        await expect(page.locator("#node-input-visibleBinding")).toHaveCount(1);
+    });
+
+    test("ui-divider — disabled is N/A: shown, greyed out, with the configured hint", async ({ page, request }) => {
+        await openDividerPanel(page, request);
+
+        const row = page.locator('[data-base-field="disabled"]');
+        await expect(row).toBeVisible();
+        await expect(row).toHaveAttribute("data-base-field-na", "true");
+
+        // The control is disabled (no typedInput is initialised on an N/A field).
+        await expect(row.locator("#node-input-disabledBinding")).toBeDisabled();
+
+        // The node-local hint is visible AND available as a title tooltip.
+        const hint = "Ein Trenner hat keinen interaktiven Zustand.";
+        await expect(row.locator("[data-base-field-hint]")).toHaveText(hint);
+        await expect(row).toHaveAttribute("title", hint);
+    });
+
+    test("ui-divider — color (applicable, non-variant node) is an active value typedInput", async ({ page, request }) => {
+        await openDividerPanel(page, request);
+
+        const row = page.locator('[data-base-field="color"]');
+        // color sits in the always-visible part of the group (not "Erweitert").
+        await expect(row).toBeVisible();
+        await expect(row).not.toHaveAttribute("data-base-field-na", "true");
+        await expect(row.locator(".red-ui-typedInput-container")).toHaveCount(1);
+        await expect(page.locator("#node-input-colorBinding")).toHaveCount(1);
+        await expect(row.locator("[data-base-field-hint]")).toHaveCount(0);
+    });
+
+    test("ui-divider — 'Erweitert' is collapsed by default and toggles open/closed", async ({ page, request }) => {
+        await openDividerPanel(page, request);
+
+        const toggle = page.locator("[data-base-advanced-toggle]");
+        const section = page.locator("[data-base-advanced-section]");
+        await expect(toggle).toHaveCount(1);
+
+        // Collapsed by default — the rarely-used size field is inside it.
+        await expect(section).toBeHidden();
+        const sizeRow = page.locator('[data-base-field="size"]');
+        await expect(sizeRow).toBeHidden();
+
+        // Expand: the size row appears, N/A-disabled with its hint.
+        await toggle.locator("a").click();
+        await expect(section).toBeVisible();
+        await expect(sizeRow).toBeVisible();
+        await expect(sizeRow).toHaveAttribute("data-base-field-na", "true");
+        await expect(sizeRow.locator("#node-input-size")).toBeDisabled();
+        await expect(sizeRow.locator("[data-base-field-hint]")).toHaveText("Ein Trenner hat keine Größen-Stufen.");
+
+        // Collapse again.
+        await toggle.locator("a").click();
+        await expect(section).toBeHidden();
+    });
+
+    test("ui-divider — color binding round-trips through save", async ({ page, request }) => {
+        const { editor, nodeId } = await openDividerPanel(page, request);
+
+        // Type a literal colour into the color typedInput.
+        await editor.fillTypedInput("colorBinding", "#ff0000", "str");
+        await editor.save();
+
+        const stored = await page.evaluate((id) => {
+            const n = (window as unknown as {
+                RED: { nodes: { node: (id: string) => Record<string, unknown> | null } };
+            }).RED.nodes.node(id);
+            return n ? { color: n.color, visible: n.visible } : null;
+        }, nodeId);
+
+        expect(stored?.color).toEqual({ kind: "literal", value: "#ff0000" });
+
+        // Re-open: the typedInput restores the stored literal.
+        await editor.openNode(nodeId);
+        expect(await editor.readTypedInputType("colorBinding")).toBe("str");
+        expect(await editor.readTypedInput("colorBinding")).toBe("#ff0000");
+    });
+
+    test("variant→color mutual exclusion — the resolver marks color N/A with the Variant hint (ADR 0015 §1)", async ({ page, request }) => {
+        // The per-node rollout (variant nodes adopting installBaseFields) is out
+        // of P139's scope, so the mutual-exclusion rule is exercised against the
+        // shared resolver in the real editor runtime.
+        await openDividerPanel(page, request);
+
+        const result = await page.evaluate(() => {
+            const common = (window as unknown as {
+                WebappEditorCommon: {
+                    resolveBaseFieldApplicability: (config: Record<string, unknown>) => Record<string, { applicable: boolean; hint: string }>;
+                };
+            }).WebappEditorCommon;
+            return common.resolveBaseFieldApplicability({ color: true, variant: true });
+        });
+
+        expect(result.color.applicable).toBe(false);
+        expect(result.color.hint).toContain("Variant");
+    });
+});

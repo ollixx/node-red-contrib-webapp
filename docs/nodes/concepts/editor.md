@@ -275,10 +275,64 @@ Abgrenzung `variant` vs. `displayType`): [theming.md](theming.md).
 
 ---
 
+## Basis-Felder + Editor-Struktur (P139, ADR 0015)
+
+Jeder Knoten bietet die **vier gemeinsamen Basis-Felder** `visible`, `disabled`,
+`color`, `size` als standardisierte Gruppe an (Entscheidung:
+[ADR 0015](../../adr/0015-common-base-fields-and-editor-structure.md)). Der
+geteilte Helfer dafür ist `installBaseFields(config)` in
+`resources/lib/editor-common.js` (Gegenstück fürs Speichern:
+`applyBaseFields(config)` in `oneditsave`):
+
+- **Gruppe mit Überschrift „Allgemein"** — die Basis-Felder stehen in einem
+  eigenen, per `injectFieldGroup` injizierten Abschnitt.
+- **`visible`** — Boolean-Zustand-typedInput (ADR-0012-Boolean-Satz). Leer =
+  sichtbar (Default). Persistiert als Binding-Objekt auf `visible`, typedInput
+  auf `#node-input-visibleBinding` (Trennung wie beim `disabled`-Muster);
+  Legacy-`visiblePath` wird als `state`-Binding migriert.
+- **`disabled`** — **dasselbe** Boolean-Zustand-typedInput, das P122–P130
+  ausgerollt haben (`#node-input-disabledBinding`, Binding-Objekt auf
+  `disabled`, `disabledPath`-Migration) — zentralisiert, nicht dupliziert.
+- **`color`** — allgemeiner Farb-typedInput (voller Wert-Binding-Satz),
+  Binding-Objekt auf `color`, typedInput auf `#node-input-colorBinding`; ein
+  Legacy-String wird als Literal migriert, ein leeres Literal als `null`
+  gespeichert. **Wechselseitig exklusiv mit `variant`**: trägt der Knoten das
+  semantische `variant`, ist `color` N/A (Hinweis „nutzt semantische Variant").
+- **`size`** — das bestehende Größen-Token-Select (`#node-input-size`,
+  `installSizeSelectBox`-Optionen), wo anwendbar.
+
+**Knoten-lokale Anwendbarkeit:** `config` deklariert, welche Basis-Felder für
+den Knoten gelten, z. B.
+`{ visible: true, disabled: false, color: true, size: false, variant: false, advanced: ["size"], hints: { … } }`.
+Die pure Logik dahinter ist `resolveBaseFieldApplicability(config)`:
+Default ist **anwendbar**; `variant: true` erzwingt `color` → N/A. Eine
+zentrale Capability-Map (P102) kann die verstreuten Flags später ersetzen.
+
+**N/A-Disable mit Hinweis:** Ein nicht anwendbares Feld wird **angezeigt, aber
+disabled** (Zeile `data-base-field-na="true"`), mit kurzer Begründung aus
+`config.hints[feld]` (Fallback: eingebaute Default-Hinweise) — sichtbar als
+`[data-base-field-hint]`-Text und als `title`-Tooltip der Zeile.
+
+**Einklappbarer „Erweitert"-Abschnitt:** Selten genutzte Basis-Felder können per
+`config.advanced: ["size", …]` in einen einklappbaren Unterabschnitt (default
+eingeklappt) wandern; ohne `advanced` sind **alle Basis-Felder sichtbar**
+(Default). Der Zustand ist reine Editor-Affordanz, nicht persistiert.
+
+**Rollout:** P139 liefert nur die Mechanik + den Referenzknoten **`ui-divider`**
+(non-variant → `color` aktiv; nicht interaktiv → `disabled` N/A). Die Umstellung
+aller übrigen Knoten folgt als eigene Pakete (ADR 0015 „Consequences").
+
+---
+
 ## Layout-Felder
 
 - `installLayoutSelector(config)` — Standard-Preset-Auswahl (`horizontal`, `vertical`, `app`, `grid`, `absolute`, `dialog`).
 - `installLayoutChildPropRows()` — blendet je nach Parent-Layout die passenden **Child-Platzierungs-Felder** ein (Grid: `row`/`col`/`colSize`/`rowSize`; Absolute: `layoutX`/`layoutY`; Horizontal/Vertical: `order`). Wertebereiche und Validierung: [layout.md](layout.md).
+- **„Layout"-Überschrift (P139, ADR 0015):** Die zentral injizierten
+  Platzierungs-Zeilen (`injectPlacementRows`) tragen eine vorangestellte
+  **„Layout"**-Überschrift — sie landet damit auf jedem Knoten zugleich und wird
+  zusammen mit den Zeilen ein-/ausgeblendet (kein Layout-Feld aktiv → keine
+  Überschrift).
 
 ---
 
