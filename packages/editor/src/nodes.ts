@@ -344,8 +344,9 @@ export interface UiStepperEditorConfig extends MountableEditorConfig {
 
 export interface UiImageEditorConfig extends MountableEditorConfig {
     srcPath?: string;
-    alt?: string;
-    fallback?: string;
+    // P151 (ADR 0012): alt and fallback are now binding-capable.
+    alt?: string | BindingDefinition;
+    fallback?: string | BindingDefinition;
     width?: string;
     height?: string;
 }
@@ -1390,8 +1391,10 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         id: config.id ?? "",
         mount: config.mount ?? "",
         src: stateBinding(config.srcPath ?? ""),
-        alt: config.alt || undefined,
-        fallbackSrc: config.fallback || undefined,
+        // P151 (ADR 0012): alt and fallbackSrc are binding-capable; plain strings
+        // are accepted unchanged via bindingOrString.
+        alt: bindingOrString(config.alt) || undefined,
+        fallbackSrc: bindingOrString(config.fallback) || undefined,
         width: config.width || undefined,
         height: config.height || undefined,
         ...collectLayoutChildConfig(config)

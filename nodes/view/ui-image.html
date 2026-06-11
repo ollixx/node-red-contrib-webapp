@@ -34,6 +34,32 @@
             return common.applyValueBinding(type, value);
         }
 
+        // P151 (ADR 0012): helper for display-value typed inputs (alt / fallback).
+        // Accepts a binding object OR a legacy plain string; outputs a binding object.
+        function applyDisplayTypedInput(selector, fieldValue) {
+            const input = $(selector);
+            // Migration: a legacy plain string becomes a literal binding.
+            const binding = common.parseBindingValue(fieldValue)
+                || (typeof fieldValue === "string" && fieldValue
+                    ? { kind: "literal", value: fieldValue }
+                    : undefined);
+            const editor = common.readValueBinding(binding, "");
+            input.typedInput({
+                default: "str",
+                types: common.valueBindingTypes({ category: "display" })
+            });
+            input.typedInput("type", editor.type);
+            input.typedInput("value", editor.value);
+        }
+
+        function readDisplayBinding(selector) {
+            const input = $(selector);
+            return common.applyValueBinding(
+                input.typedInput("type"),
+                input.typedInput("value")
+            );
+        }
+
         common.registerNodeType("ui-image", {
             category: "webapp view",
             color: "#f4efcf",
@@ -47,8 +73,11 @@
                 srcBinding: { value: "" },
                 // Legacy field (pre-P70 plain state path) — DOM-less, read for back-compat.
                 srcPath: { value: "" },
-                alt: { value: "" },
-                fallback: { value: "" },
+                // P151 (ADR 0012): alt and fallback persist as binding OBJECTS.
+                // The typedInputs live directly on #node-input-alt / #node-input-fallback.
+                // Legacy plain strings are migrated to { kind:"literal", value } on open.
+                alt: { value: { kind: "literal", value: "" } },
+                fallback: { value: { kind: "literal", value: "" } },
                 width: { value: "" },
                 height: { value: "" },
                 fit: { value: "" },
@@ -82,10 +111,19 @@
                     ? parsedSrc
                     : (this.srcPath ? { kind: "state", path: this.srcPath } : parsedSrc);
                 applyBindingTypedInput("#node-input-srcBinding", srcBinding);
+
+                // P151 (ADR 0012): alt and fallback are binding-capable typedInputs.
+                // A legacy plain-string value is migrated to a str literal on open.
+                applyDisplayTypedInput("#node-input-alt", this.alt);
+                applyDisplayTypedInput("#node-input-fallback", this.fallback);
             },
             oneditsave: function () {
                 this.src = readBinding("#node-input-srcBinding");
                 this.srcPath = "";
+
+                // P151: persist alt and fallback as binding objects.
+                this.alt = readDisplayBinding("#node-input-alt");
+                this.fallback = readDisplayBinding("#node-input-fallback");
             }
         });
     })();
@@ -96,7 +134,7 @@
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <div class="form-row"><label for="node-input-srcBinding">Src</label><input type="text" id="node-input-srcBinding"></div>
     <div class="form-row"><label for="node-input-alt">Alt Text</label><input type="text" id="node-input-alt"></div>
-    <div class="form-row"><label for="node-input-fallback">Fallback URL</label><input type="text" id="node-input-fallback" placeholder="https://..."></div>
+    <div class="form-row"><label for="node-input-fallback">Fallback URL</label><input type="text" id="node-input-fallback"></div>
     <div class="form-row"><label for="node-input-width">Width</label><input type="text" id="node-input-width" placeholder="e.g. 200 or 100%"></div>
     <div class="form-row"><label for="node-input-height">Height</label><input type="text" id="node-input-height" placeholder="e.g. 150"></div>
     <div class="form-row"><label for="node-input-fit">Fit</label>
@@ -118,6 +156,6 @@
   <li><b>Asset</b> — verwaltetes Medium aus dem Media-Store der App (in <code>ui-app.mediaStoreUrl</code> konfiguriert). Auswahl/Upload über den Media-Picker; gespeichert als <code>asset:&lt;id&gt;</code> und zur Laufzeit über einen Backend-Proxy aufgelöst (die echte Store-URL bleibt verborgen).</li>
   <li><b>msg</b> — wiring-first: <code>msg.payload</code> setzt die Quelle. Ein Buffer wird zu einer <code>data:</code>-URL konvertiert (Content-Type via <code>msg.contentType</code> oder Magic-Bytes). Hinweis: <code>data:</code>/Base64 landet im Snapshot und wird bei jedem Render mitgeschickt — fuer kleine/seltene Bilder geeignet, grosse/haeufige Bilder besser via URL/Asset.</li>
 </ul>
-<p><code>Fallback URL</code> wird angezeigt, wenn das Laden fehlschlaegt. <code>Fit</code> steuert object-fit.</p>
+<p><code>Alt Text</code> und <code>Fallback URL</code> sind bindbar (literal, state, store, …). <code>Fit</code> steuert object-fit.</p>
 <p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/display/ui-image.md">Doku</a></p>
 </script>

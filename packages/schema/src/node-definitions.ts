@@ -907,8 +907,10 @@ export type UiStepperNodeDefinition = z.infer<typeof uiStepperNodeDefinitionSche
 export const uiImageNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-image"),
     src: bindingSchema,
-    alt: z.string().optional(),
-    fallbackSrc: z.string().optional(),
+    // P151 (ADR 0012): alt and fallbackSrc are now binding-capable. A plain
+    // string is still accepted for back-compat (e.g. from FlowBuilder tests).
+    alt: z.union([bindingSchema, z.string()]).optional(),
+    fallbackSrc: z.union([bindingSchema, z.string()]).optional(),
     width: z.union([z.number().int().positive(), z.string()]).optional(),
     height: z.union([z.number().int().positive(), z.string()]).optional(),
     fit: z.enum(["contain", "cover", "fill", "none"]).optional()
