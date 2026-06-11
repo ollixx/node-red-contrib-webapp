@@ -880,6 +880,11 @@ export type UiMenuNodeDefinition = z.infer<typeof uiMenuNodeDefinitionSchema>;
 
 export const uiPaginationNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-pagination"),
+    // P154 (ADR 0012): the canonical editor field `currentPage` (two-way value
+    // typedInput: read source + change-event write-back) compiles to this `page`
+    // binding; the editor field `total` (read-only value typedInput) compiles to
+    // `totalPages`. Legacy `currentPagePath` / `totalPath` plain state paths are
+    // migrated to state bindings by webapp.js mapConfig / the editor mapper.
     page: bindingSchema,
     totalPages: bindingSchema,
     pageSize: bindingSchema.optional(),

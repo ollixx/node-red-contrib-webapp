@@ -823,6 +823,12 @@ function toRenderedComponent(component: ComponentDefinition, context: ComponentR
         // through bind.value like avatar); the serializer reads component.value.
         // falls through
         case "image":
+        // P154 (ADR 0012): ui-pagination `currentPage` is the TWO-WAY input value —
+        // it resolves through bind.value into resolvedProps.value (read source); the
+        // serializer emits a `change` event carrying the new page on click, which the
+        // wired flow writes back to the bound store. `total` (read-only) resolves
+        // through bind.totalPages into resolvedProps.totalPages (page-count label /
+        // last-page guard). Both ride in baseComponent.props (= resolvedProps).
         // falls through — P45: composite and layout nodes
         case "list":
         case "pagination":

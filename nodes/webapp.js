@@ -1133,7 +1133,17 @@ function toComponentDefinitions(components) {
             // renderer resolves it to a string in resolvedProps.initials → component.props.initials.
             const initialsBinding = p16Kind === "avatar" ? getBinding(component.initials, undefined) : undefined;
             // P45: pagination uses `page` as its primary binding; stepper uses `activeStep`; list uses `items`.
-            const pageBinding = !valueBinding && p16Kind === "pagination" ? getBinding(component.page, component.currentPagePath ? stateBinding(component.currentPagePath) : undefined) : undefined;
+            // P154 (ADR 0012): `currentPage` (canonical two-way value typedInput) is
+            // the page source — it becomes bind.value (read source); the change-event
+            // carries the new page for the wired write-back loop. Legacy order:
+            // `currentPage` → `page` → `currentPagePath` plain state path.
+            const pageBinding = !valueBinding && p16Kind === "pagination" ? getBinding(component.currentPage, getBinding(component.page, component.currentPagePath ? stateBinding(component.currentPagePath) : undefined)) : undefined;
+            // P154 (ADR 0012): `total` (canonical read-only value typedInput) → the
+            // total-page count. Routed through bind.totalPages so the renderer
+            // RESOLVES it (state/query/store) into resolvedProps.totalPages — the
+            // serializer reads component.props.totalPages. Legacy order:
+            // `total` → `totalPages` → `totalPath` plain state path.
+            const totalPagesBinding = p16Kind === "pagination" ? getBinding(component.total, getBinding(component.totalPages, component.totalPath ? stateBinding(component.totalPath) : undefined)) : undefined;
             const activeStepBinding = !valueBinding && p16Kind === "stepper" ? getBinding(component.activeStep, component.activeStepPath ? stateBinding(component.activeStepPath) : undefined) : undefined;
             const itemsBinding = !valueBinding && p16Kind === "list" ? getBinding(component.items, component.itemsPath ? stateBinding(component.itemsPath) : undefined) : undefined;
             const bind = {};
@@ -1157,6 +1167,12 @@ function toComponentDefinitions(components) {
             }
             if (disabledBinding) {
                 bind.disabled = disabledBinding;
+            }
+            // P154 (ADR 0012): pagination `total` (read-only) resolves through
+            // bind.totalPages → resolvedProps.totalPages → props.totalPages, which
+            // the serializer reads for the "n / total" label and last-page guard.
+            if (totalPagesBinding) {
+                bind.totalPages = totalPagesBinding;
             }
             if (titleBinding) {
                 bind.title = titleBinding;
@@ -1273,7 +1289,10 @@ function toComponentDefinitions(components) {
                     // P45: composite and layout node props
                     ...(component.steps !== undefined ? { steps: component.steps } : {}),
                     ...(component.page !== undefined ? { page: component.page } : {}),
-                    ...(component.totalPages !== undefined ? { totalPages: component.totalPages } : {}),
+                    // P154: when `total`/`totalPages` is a binding it routes through
+                    // bind.totalPages (resolved by the renderer); only a plain literal
+                    // value stays in props as a static fallback.
+                    ...(component.totalPages !== undefined && !totalPagesBinding ? { totalPages: component.totalPages } : {}),
                     ...(component.activeStep !== undefined ? { activeStep: component.activeStep } : {}),
                     // Store domain-specific events (itemClick, change, etc.) in props
                     // so they reach the serializer without failing Zod event-name validation.
@@ -5221,9 +5240,16 @@ const runtimeNodeRegistry = {
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
-            page: getBinding(config.page, config.currentPagePath ? stateBinding(config.currentPagePath) : undefined),
+            // P154 (ADR 0012): `currentPage` (canonical, two-way value typedInput)
+            // is the page source; it maps to the schema `page` binding. Legacy
+            // order: canonical `currentPage` binding object → legacy `page` →
+            // legacy `currentPagePath` plain state path (migrated to a state binding).
+            page: getBinding(config.currentPage, getBinding(config.page, config.currentPagePath ? stateBinding(config.currentPagePath) : undefined)),
             pageSize: config.pageSize ? stateBinding(config.pageSize) : undefined,
-            totalPages: getBinding(config.totalPages, config.totalPath ? stateBinding(config.totalPath) : undefined),
+            // P154 (ADR 0012): `total` (canonical, read-only value typedInput) maps
+            // to the schema `totalPages` binding. Legacy order: canonical `total`
+            // → legacy `totalPages` → legacy `totalPath` plain state path.
+            totalPages: getBinding(config.total, getBinding(config.totalPages, config.totalPath ? stateBinding(config.totalPath) : undefined)),
             events: parseJsonList(config.events),
             ...collectNodeConfigLayoutProps(config)
         }),
