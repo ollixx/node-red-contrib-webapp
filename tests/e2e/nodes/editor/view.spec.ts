@@ -43,12 +43,14 @@ test.describe("editor panels — view nodes (P47)", () => {
         expect(await editor.getValidationState("inputEd")).toBe("invalid");
 
         // Fill label → valid; value persists across re-open.
-        await editor.fillField("label", "Email");
+        // label is a typedInput widget on #node-input-label (P145); plain .fill()
+        // hangs because the element is hidden — use the typedInput jQuery API.
+        await editor.fillTypedInput("label", "Email", "str");
         await editor.save();
         expect(await editor.getValidationState("inputEd")).toBe("valid");
 
         await editor.openNode("inputEd");
-        expect(await editor.readField("label")).toBe("Email");
+        expect(await editor.readTypedInput("label")).toBe("Email");
 
         // inputType is a select with the documented options.
         const inputTypes = await editor.selectOptionValues("inputType");
