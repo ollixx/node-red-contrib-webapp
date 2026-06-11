@@ -2,14 +2,14 @@
 id: P139
 title: "Fundament: gemeinsame Basis-Felder (visible/disabled/color/size) + Editor-Struktur (Gruppen-Überschriften, 'Layout'-Überschrift, Einklappen, N/A-Disable mit Hinweis)"
 epic: aspects/editor
-status: in_progress
+status: done
 dependencies: [P113]
 spec: docs/nodes/concepts/editor.md
 tests: tests/e2e/nodes/editor/placement-rows.spec.ts
 ---
 # P139 — Fundament: Basis-Felder + Editor-Struktur
 
-> Entscheidung & Begründung: [ADR 0015](../../../adr/0015-common-base-fields-and-editor-structure.md).
+> Entscheidung & Begründung: [ADR 0015](../../../../adr/0015-common-base-fields-and-editor-structure.md).
 > Dieses Paket baut die **geteilte Mechanik**; der **per-Knoten-Rollout** folgt
 > danach (siehe ADR 0015 „Consequences"). Owner-Entscheidungen (2026-06-11):
 > `disabled` (nicht `enabled`); `color` allgemein, `variant` knoten-spezifisch
@@ -101,3 +101,32 @@ verify: browser
   `disabled`-typedInput **wiederverwenden**, nicht doppeln.
 - Reihenfolge: erst dieses Fundament, dann per-Knoten; die node-lokalen
   Vorgriffe ([[P138]] visible) bleiben kompatibel.
+
+## Result
+
+- **delivered:** Built the shared base-fields mechanics per ADR 0015 (consumed, not rewritten);
+  per-node rollout left out of scope. `resources/lib/editor-common.js`: new
+  `installBaseFields(config)` / `applyBaseFields` renders the base-field group under an
+  "Allgemein" heading — `visible` + `disabled` as boolean-state typedInputs (the existing
+  P122–P130 `disabled` typedInput **reused**, not duplicated), `color` (general colour
+  typedInput, N/A→disabled+hint when the node carries `variant`), `size` token where applicable;
+  `config` declares node-locally which fields apply + `hints`. N/A fields render disabled with a
+  visible/title-tooltip reason. A central **"Layout"** heading was prepended inside the existing
+  `injectPlacementRows`/`installLayoutChildPropRows` injector so it lands on every node at once.
+  Optional collapsible "Erweitert" subsection (default collapsed, no persistence). Demonstrated
+  on the reference node **ui-divider** (non-variant, so `color` is active). Spec
+  `docs/nodes/concepts/editor.md` + `docs/nodes/display/ui-divider.md` updated; ADR 0015 linked.
+- **stats:** 9 source/doc/test files changed, +748/−5. New unit
+  `packages/editor/test/p139-base-fields.test.ts` (applicability/hint logic) and new E2E
+  `tests/e2e/nodes/editor/base-fields.spec.ts` (group + heading, N/A-disable+hint,
+  variant→color-N/A); both regression guards updated — `placement-rows.spec.ts` (+32, new Layout
+  heading) and `minimal-coverage.spec.ts` (+5, ui-divider field list). Develop verification:
+  `pnpm build` exit 0, full Playwright suite **520 passed / 0 failed** (8.8m, +8 net new);
+  check:roadmap + check:links + lint + all unit green.
+- **notes:** Foundation only — no existing nodes converted (that is the ADR 0015 per-node
+  rollout, separate packages); P138's node-local `visible` pre-emption stays compatible. The
+  central capability-map (P102) stays deferred. Reference node ui-divider's own field-typing
+  (P150) is still open and untouched here beyond the base-fields demo. Implemented with the
+  `fable` model (heaviest architecture tier; ADR among deliverables).
+- **cost:** session abc14e6dafc0237fd, ~27m (fable; orchestrator ran the authoritative develop
+  E2E since the worktree can't reliably run Playwright).
