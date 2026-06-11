@@ -9,7 +9,7 @@ verify: browser
 spec: docs/nodes/feedback/ui-badge.md
 tests: tests/e2e/nodes/view/ui-badge.tests.md
 dependencies: [P113]
-status: pending
+status: in_progress
 ---
 # P153 — ui-badge: valuePath → value-typedInput
 
