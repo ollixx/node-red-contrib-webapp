@@ -1201,7 +1201,8 @@ function toComponentDefinitions(components) {
             // (canonical value set / store binding). Route them through `bind` so
             // the renderer resolves them into resolvedProps.{placeholder,options}.
             // P148: ui-textarea placeholder is now a full binding — add "textarea" to the set.
-            const placeholderBinding = (p16Kind === "select" || p16Kind === "textarea") ? getBinding(component.placeholder, undefined) : undefined;
+            // P149: ui-datepicker placeholder is now a full binding — add "datepicker" to the set.
+            const placeholderBinding = (p16Kind === "select" || p16Kind === "textarea" || p16Kind === "datepicker") ? getBinding(component.placeholder, undefined) : undefined;
             if (placeholderBinding) {
                 bind.placeholder = placeholderBinding;
             }
@@ -4683,7 +4684,8 @@ const runtimeNodeRegistry = {
             mode: config.mode || undefined,
             min: config.min || undefined,
             max: config.max || undefined,
-            placeholder: config.placeholder || undefined,
+            // P149 (ADR 0012): placeholder may be a binding object or a legacy plain string.
+            placeholder: getBinding(config.placeholder, typeof config.placeholder === "string" && config.placeholder ? config.placeholder : undefined),
             disabled: getBinding(config.disabled, undefined),
             ...collectNodeConfigLayoutProps(config)
         }),
