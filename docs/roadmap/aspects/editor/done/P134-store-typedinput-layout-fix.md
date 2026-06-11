@@ -2,14 +2,14 @@
 id: P134
 title: "store-typedInput-Layout korrigieren: Name im Wert-Bereich + zweites eingerücktes Pfad-typedInput (nicht Ein-Zeilen-Quetschung)"
 epic: aspects/editor
-status: in_progress
+status: done
 dependencies: [P132]
 spec: docs/nodes/concepts/editor.md
 tests: tests/e2e/nodes/state/ui-store.tests.md
 ---
 # P134 — Store-typedInput-Layout korrigieren
 
-> Korrektur zu [ADR 0013](../../../adr/0013-store-binding-subpath.md) §4
+> Korrektur zu [ADR 0013](../../../../adr/0013-store-binding-subpath.md) §4
 > (dort am 2026-06-11 berichtigt). **P132 hat das Layout falsch gebaut** —
 > dieses Paket zieht es auf den korrigierten Stand. Reines Editor-Layout, **kein**
 > Modell-/Schema-/Renderer-Wechsel (Serialisierung `{kind:"store", path, subPath}`
@@ -76,3 +76,26 @@ verify: browser
 - tests: `tests/e2e/nodes/state/ui-store.tests.md` + die Store-Binding-Editor-Spec
   aus P132 auf das korrigierte Layout umschreiben (Name statt ID, zweites
   eingerücktes Pfad-Feld, Pfad-Typen).
+
+## Result
+
+- **delivered:** Corrected the shared store typedInput layout (`resources/lib/editor-common.js`,
+  `storeTypedInputType`) to ADR 0013 §4 — name in the value area (no "Store ändern" button, no
+  raw id, no "(bestehend)" for a live store), the typedInput's native "…" expand re-opens the
+  app-scoped picker, and a second, indented sub-path typedInput below the name (field label
+  stays in column 1). Pure editor-layout fix; `{kind:"store", path, subPath}` serialization and
+  renderer (P131) untouched. Updated the store-binding E2E spec
+  (`tests/e2e/nodes/editor/store-binding-subpath.spec.ts`), the test catalogue
+  (`tests/e2e/nodes/state/ui-store.tests.md`), and the editor concepts doc
+  (`docs/nodes/concepts/editor.md`).
+- **stats:** 4 files changed, +89/−67. Develop verification: `pnpm build` exit 0, full
+  Playwright suite **502 passed / 0 failed** (8.1m); `pnpm validate` (1285 unit tests across
+  schema/runtime/renderer/editor) + check:roadmap + check:links all OK. Browser-verified: 6
+  store-binding editor E2E (name-in-value, native "…" expand, second indented path row,
+  round-trip) and 6 ui-store renderer E2E (P131, unchanged) pass; two-row layout screenshot
+  captured.
+- **notes:** Worktree-sanity all passed — local develop ref was stale (`ef22eb6`) as warned;
+  branched from explicit SHA `01b1cf6`; P132 ancestry OK; the P132 store typedInput helper was
+  present (not reimplemented). The P132 editor unit test is pure logic (no DOM/button refs) so
+  it needed no change. No model/schema/renderer change.
+- **cost:** session adbed81b4c721d925, ~9m (orchestrator-measured wall-clock incl. develop E2E).

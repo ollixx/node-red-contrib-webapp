@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P134** — aspects/editor — Store-typedInput-Layout korrigieren: Name im Wert + zweites eingerücktes Pfad-typedInput (ADR 0013 §4) — *geplant; braucht P132* — [P134](aspects/editor/P134-store-typedinput-layout-fix.md)
 - **P135** — aspects/editor — Mount-Picker als Zwei-Spalten-Tree + Dialog resizable/gemerkt/Ellipsis (ADR 0014) — *geplant; braucht P114* — [P135](aspects/editor/P135-mount-picker-two-column-tree.md)
 - **P136** — nodes/ui-radio — Options als EIN typedInput {JSON+Validierung | Store} (geteilter Helfer mit ui-select) + label auf Wert-Satz — *geplant; braucht P113 + P133* — [P136](nodes/ui-radio/P136-radio-options-label-shared-helper.md)
 - **P137** — nodes/ui-progress — `valuePath`→`value` (kanonischer typedInput) + `label` auf Wert-Satz — *geplant; braucht P113* — [P137](nodes/ui-progress/P137-progress-value-label-typedinput.md)
@@ -79,11 +78,11 @@ open the folder for the full history.
 | aspects/misc | 16 |
 | aspects/runtime | 7 |
 | aspects/state | 8 |
-| aspects/editor | 11 |
+| aspects/editor | 12 |
 | schema | 5 |
 | aspects/rendering | 8 |
 | aspects/foundation | 5 |
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 136 done, 3 open, 5 deferred.**
+**Total: 137 done, 4 open, 9 deferred.**
