@@ -267,6 +267,9 @@ export interface UiProgressEditorConfig extends MountableEditorConfig {
 }
 
 export interface UiSkeletonEditorConfig extends MountableEditorConfig {
+    // P138 (ADR 0012): `visible` is now a full binding object (boolean-state set).
+    // Legacy `visiblePath` (plain state path string) is kept for migration only.
+    visible?: BindingDefinition | null;
     visiblePath?: string;
     displayType?: "text" | "avatar" | "card" | "table";
     lines?: number;
@@ -1240,13 +1243,18 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
     })),
     "ui-skeleton": createDefinition("ui-skeleton", "view", {
         id: requiredString("Skeleton IDs are required before deploy."),
-        mount: requiredString("Skeletons must declare a parent slot."),
-        visiblePath: requiredString("Skeletons must declare a visible path.")
+        mount: requiredString("Skeletons must declare a parent slot.")
+        // P138 (ADR 0012): `visible` is now optional — absent ⇒ always visible.
+        // No required validator: the typedInput may be left empty (= no binding).
     }, (config: UiSkeletonEditorConfig): UiSkeletonNodeDefinition => ({
         type: "ui-skeleton",
         id: config.id ?? "",
         mount: config.mount ?? "",
-        visible: stateBinding(config.visiblePath ?? ""),
+        // P138 (ADR 0012): prefer the stored binding object; fall back to the
+        // legacy `visiblePath` plain state path; absent = no binding (always visible).
+        visible: isBindingObject(config.visible)
+            ? config.visible
+            : (config.visiblePath ? stateBinding(config.visiblePath) : undefined),
         displayType: config.displayType,
         lines: config.lines,
         ...collectLayoutChildConfig(config)

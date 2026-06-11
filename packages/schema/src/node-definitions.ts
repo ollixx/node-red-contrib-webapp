@@ -718,7 +718,10 @@ export type UiProgressNodeDefinition = z.infer<typeof uiProgressNodeDefinitionSc
 
 export const uiSkeletonNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-skeleton"),
-    visible: bindingSchema,
+    // P138 (ADR 0012): `visible` is now the standard boolean-state binding
+    // (optional — absent/null ⇒ always visible = true). Legacy `visiblePath`
+    // (plain state path string) is migrated by webapp.js and editor/nodes.ts.
+    visible: bindingSchema.optional(),
     // P49: DISPLAY TYPE (placeholder shape), not a semantic variant.
     displayType: z.enum(["text", "avatar", "card", "table"]).optional(),
     lines: z.number().int().positive().optional()
