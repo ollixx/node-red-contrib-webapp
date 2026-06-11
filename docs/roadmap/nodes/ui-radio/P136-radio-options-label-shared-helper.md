@@ -12,7 +12,7 @@ verify: browser
 spec: docs/nodes/input/ui-radio.md
 tests: tests/e2e/nodes/view/ui-radio.tests.md
 dependencies: [P113, P133]
-status: pending
+status: in_progress
 ---
 # P136 — ui-radio: Options-Fix (geteilter Helfer) + label
 
