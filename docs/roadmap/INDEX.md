@@ -46,6 +46,7 @@ their blocker clears.
 - **P157** — nodes/ui-menu — `items`/`activeRoute` als typedInput — *Field-Typing Welle 2; braucht P113* — [P157](nodes/ui-menu/P157-menu-items-activeroute-typedinput.md)
 - **P158** — nodes/ui-table — `rows` als typedInput (Daten-Array); columns separat — *Field-Typing Welle 2; braucht P113* — [P158](nodes/ui-table/P158-table-rows-typedinput.md)
 - **P159** — nodes/ui-icon — `size` auf xs..xl-Token-Select (Spec/Code-Fix); color via P139 — *Field-Typing Welle 2* — [P159](nodes/ui-icon/P159-icon-size-token-select.md)
+- **P160** — nodes/ui-query — Spec entrümpeln (previewData raus, Wiring-Beispiel), Store/Query-Trennung schärfen, Daten-Pipeline test-first verifizieren — *geplant* — [P160](nodes/ui-query/P160-query-spec-cleanup-store-distinction-pipeline-verify.md)
 
 
 ## Deferred (parked, not abandoned)
