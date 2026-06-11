@@ -30,6 +30,8 @@ their blocker clears.
 - **P134** — aspects/editor — Store-typedInput-Layout korrigieren: Name im Wert + zweites eingerücktes Pfad-typedInput (ADR 0013 §4) — *geplant; braucht P132* — [P134](aspects/editor/P134-store-typedinput-layout-fix.md)
 - **P135** — aspects/editor — Mount-Picker als Zwei-Spalten-Tree + Dialog resizable/gemerkt/Ellipsis (ADR 0014) — *geplant; braucht P114* — [P135](aspects/editor/P135-mount-picker-two-column-tree.md)
 - **P136** — nodes/ui-radio — Options als EIN typedInput {JSON+Validierung | Store} (geteilter Helfer mit ui-select) + label auf Wert-Satz — *geplant; braucht P113 + P133* — [P136](nodes/ui-radio/P136-radio-options-label-shared-helper.md)
+- **P137** — nodes/ui-progress — `valuePath`→`value` (kanonischer typedInput) + `label` auf Wert-Satz — *geplant; braucht P113* — [P137](nodes/ui-progress/P137-progress-value-label-typedinput.md)
+- **P138** — nodes/ui-skeleton — `visiblePath`→Standard-`visible`-typedInput; `lines` kontextabhängig disablen (Hinweis) — *geplant; braucht P113* — [P138](nodes/ui-skeleton/P138-skeleton-visible-typedinput-lines-disable.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -41,6 +43,10 @@ Reason in each package's `deferred_reason`. Picked up once the blocker clears.
 - **P105** — aspects/rendering — nicht-darstellbarer Wert: Achtung-Icon + Alert/Dialog statt nacktem `"?"` — *Stufe 2 über P104* — [P105](aspects/rendering/deferred/P105-invalid-value-warning-affordance.md)
 - **P107** — nodes/ui-app — App-weite Auth/Authz (OAuth2/OIDC) modellieren — *eigenes Epic, ADR + Owner-Entscheidung nötig* — [P107](nodes/ui-app/deferred/P107-auth-authz.md)
 - **P121** — aspects/docs — Konzept Nutzer-Doku: Wo/Wie die zwei Wege (Wire vs. Referenz) mit Beispielen dokumentieren — *Owner-Entscheidung zu Ort + Form nötig* — [P121](aspects/docs/deferred/P121-user-docs-concept-two-ways.md)
+- **P139** — aspects/editor — Konzept: standardisierte Basis-Felder (visible/enabled/color/size) + Editor-Struktur (Gruppierung, Überschriften, N/A-Disable) — *Keystone; ADR + Owner-Entscheidungen nötig* — [P139](aspects/editor/deferred/P139-common-base-fields-editor-structure.md)
+- **P140** — aspects/rendering — Konzept: Repeats (dynamische Element-Listen, n×) — *foundational; ADR + Owner-Entscheidung nötig* — [P140](aspects/rendering/deferred/P140-repeats-dynamic-element-lists.md)
+- **P141** — aspects/rendering — Konzept: Components (wiederverwendbare Knoten-Sets, Definition/Instanz) — *großes Feature; ADR nötig* — [P141](aspects/rendering/deferred/P141-components-reusable-node-sets.md)
+- **P142** — aspects/rendering — Konzept: ui-tabs/ui-accordion dynamische Slots — *hängt an Repeats/Components* — [P142](aspects/rendering/deferred/P142-tabs-accordion-dynamic-slots.md)
 
 ## Done (rollup — history lives in the epic folders)
 
