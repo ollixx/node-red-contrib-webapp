@@ -256,8 +256,13 @@ export interface UiToastEditorConfig extends IdentifiedEditorConfig {
 
 export interface UiProgressEditorConfig extends MountableEditorConfig {
     displayType?: "bar" | "spinner" | "circular";
+    // P137 (ADR 0012): `valuePath` kept for migration only (pre-P137 plain state path).
+    // The canonical field is `value` (persisted as a binding object by the editor).
     valuePath?: string;
-    label?: string;
+    value?: BindingDefinition;
+    // P137 (ADR 0012): `label` is now a full binding (literal string or dynamic binding).
+    // Back-compat: a plain string is still accepted for pre-P137 flows.
+    label?: string | BindingDefinition;
     showValue?: boolean;
 }
 
@@ -1225,8 +1230,11 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         id: config.id ?? "",
         mount: config.mount ?? "",
         displayType: config.displayType,
-        value: config.valuePath ? stateBinding(config.valuePath) : undefined,
-        label: config.label,
+        // P137 (ADR 0012): prefer the stored binding object; migrate legacy valuePath.
+        value: isBindingObject(config.value) ? config.value
+            : (config.valuePath ? stateBinding(config.valuePath) : undefined),
+        // P137 (ADR 0012): label is now a binding (literal string or dynamic binding).
+        label: bindingOrString(config.label),
         showValue: config.showValue,
         ...collectLayoutChildConfig(config)
     })),

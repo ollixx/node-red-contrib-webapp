@@ -10,9 +10,17 @@
                 parent: { value: "" },
                 mount: { value: "", required: true },
                 displayType: { value: "bar" },
+                // P137 (ADR 0012): `value` persists the binding OBJECT; there is no
+                // matching #node-input-value element so Node-RED auto-save cannot
+                // clobber it. The typedInput lives on #node-input-valueBinding.
+                // Legacy `valuePath` (pre-P137 plain state path) is kept for migration only.
                 valuePath: { value: "" },
                 value: { value: null },
-                label: { value: "" },
+                valueBinding: { value: "" },
+                // P137 (ADR 0012): `label` persists the binding OBJECT; DOM-less widget lives on `labelBinding`.
+                // Legacy plain-string label (pre-P137) is migrated on first open.
+                label: { value: null },
+                labelBinding: { value: "" },
                 showValue: { value: false },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
@@ -34,6 +42,57 @@
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
                 common.installLayoutChildPropRows().call(this);
+
+                // P137 (ADR 0012 / value/display category): `value` typedInput — full
+                // canonical set with literal default type `num` (progress is numeric 0…max).
+                // Migration: a legacy `valuePath` plain string becomes a state binding;
+                // a stored `value` binding object takes precedence.
+                const storedValue = common.parseBindingValue(this.value);
+                const valueBinding = storedValue
+                    ? storedValue
+                    : (this.valuePath ? { kind: "state", path: this.valuePath } : undefined);
+                const valueEditor = common.readValueBinding(valueBinding, "");
+                // Use "num" as the default type for a numeric progress value.
+                const valueDefaultType = valueEditor.type !== "str" ? valueEditor.type : "num";
+                const valueInput = $("#node-input-valueBinding");
+                valueInput.typedInput({
+                    default: valueDefaultType,
+                    types: common.valueBindingTypes({ category: "value" })
+                });
+                valueInput.typedInput("type", valueEditor.type !== "str" || valueBinding ? valueEditor.type : "num");
+                valueInput.typedInput("value", valueEditor.value);
+
+                // P137 (ADR 0012 / value category): `label` typedInput — full canonical
+                // set with literal default type `str`.
+                // Back-compat: stored label may be a plain string (pre-P137) or a binding object.
+                const labelStored = common.parseBindingValue(this.label);
+                const labelBinding = labelStored
+                    ? labelStored
+                    : (this.label && typeof this.label === "string" && this.label.trim().length > 0
+                        ? { kind: "literal", value: this.label }
+                        : undefined);
+                const labelEditor = common.readValueBinding(labelBinding, "");
+                const labelInput = $("#node-input-labelBinding");
+                labelInput.typedInput({
+                    default: labelEditor.type,
+                    types: common.valueBindingTypes({ category: "value" })
+                });
+                labelInput.typedInput("type", labelEditor.type);
+                labelInput.typedInput("value", labelEditor.value);
+            },
+            oneditsave: function () {
+                // P137: persist value as binding object; clear legacy valuePath.
+                this.value = common.applyValueBinding(
+                    $("#node-input-valueBinding").typedInput("type"),
+                    $("#node-input-valueBinding").typedInput("value")
+                );
+                this.valuePath = "";
+
+                // P137: persist label as binding object.
+                this.label = common.applyValueBinding(
+                    $("#node-input-labelBinding").typedInput("type"),
+                    $("#node-input-labelBinding").typedInput("value")
+                );
             }
         });
     })();
@@ -49,8 +108,18 @@
             <option value="circular">Circular</option>
         </select>
     </div>
-    <div class="form-row"><label for="node-input-valuePath">Value Path</label><input type="text" id="node-input-valuePath"></div>
-    <div class="form-row"><label for="node-input-label">Label</label><input type="text" id="node-input-label"></div>
+    <!-- P137 (ADR 0012 / value/display category): Value binding — typedInput managed in oneditprepare/oneditsave. -->
+    <div class="form-row"><label for="node-input-valueBinding">Value</label><input type="text" id="node-input-valueBinding"></div>
+    <!-- P137 (ADR 0012 / value category): Label binding — typedInput managed in oneditprepare/oneditsave. -->
+    <div class="form-row"><label for="node-input-labelBinding">Label</label><input type="text" id="node-input-labelBinding"></div>
     <div class="form-row"><label for="node-input-showValue">Show Value</label><input type="checkbox" id="node-input-showValue" style="width:auto"></div>
 </script>
-<script type="text/html" data-help-name="ui-progress"><p>Fortschrittsbalken oder Spinner für Ladezustände.</p></script>
+<script type="text/html" data-help-name="ui-progress"><p>Fortschrittsbalken oder Spinner für Ladezustände.</p>
+<h4>Value (P137)</h4>
+<p>Bindbare numerische Quelle des Fortschrittswerts (0…max) — voller kanonischer Satz (ADR 0012):
+Store, Query, Route-Param, Reactive, msg, JSONata, string, number, boolean, json, timestamp,
+Flow, Global, Env. Ein bestehender <code>valuePath</code> wird automatisch als
+<code>state</code>-Binding übernommen. Literaler Default-Typ: <code>number</code>.</p>
+<h4>Label (P137)</h4>
+<p>Bindbare Beschriftung des Fortschrittsbalkens — voller kanonischer Satz (ADR 0012).</p>
+</script>

@@ -703,8 +703,14 @@ export const uiProgressNodeDefinitionSchema = mountableNodeSchema.extend({
     // variant — renamed from `variant` so the variant SelectBox (P50) stays
     // semantic. Legacy `variant` is still accepted by webapp.js mapConfig.
     displayType: z.enum(["bar", "spinner", "circular"]).optional(),
+    // P137 (ADR 0012): `value` is the canonical value/display typedInput (literal
+    // default `number`). Legacy `valuePath` (pre-P137 plain state path) is migrated
+    // by webapp.js getBinding / editor shim on first open.
     value: bindingSchema.optional(),
-    label: z.string().optional(),
+    // P137 (ADR 0012): `label` is now a full binding (literal string or dynamic
+    // binding) so the progress bar label can be reactive. Back-compat: a plain
+    // string is still accepted (legacy flows).
+    label: z.union([bindingSchema, z.string()]).optional(),
     showValue: z.boolean().optional()
 });
 
