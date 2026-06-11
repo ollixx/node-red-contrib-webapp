@@ -36,6 +36,12 @@ status: pending
 - Die **Verdrahtungs-Pflicht** prominent dokumentieren + ein **vollständiges
   Wiring-Beispiel**: `ui-route onEnter → ui-query (Pass-Through) → Datenquelle →
   zurück an In-Port mit msg.ui.query.data → ui-table bindet query:<path>`.
+- **Lifecycle-Lese-Konvention festnageln (heute widersprüchlich):** eindeutig
+  definieren, was `query:<path>` liefert — die **Daten** oder die **Hülle**
+  `{loading,data,error,updatedAt}` — und wie man die Teile bindet. Vorschlag:
+  `query:<path>` = die **Daten** (häufigster Fall); Lifecycle über reservierte
+  Unterpfade `query:<path>.loading` / `.error` / `.updatedAt`. Renderer-Auflösung
+  entsprechend prüfen/anpassen und in `stores.md` (query-Binding) dokumentieren.
 - Inline-Hilfe (`data-help-name="ui-query"`) entsprechend schärfen, damit der
   „leere" Erstkontakt verständlich ist.
 
