@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P145** — nodes/ui-input — `label` auf Wert-typedInput — *Field-Typing Welle 1; braucht P113* — [P145](nodes/ui-input/P145-input-label-value-typedinput.md)
 - **P146** — nodes/ui-slider — `label` auf Wert-typedInput — *Field-Typing Welle 1; braucht P113* — [P146](nodes/ui-slider/P146-slider-label-value-typedinput.md)
 - **P147** — nodes/ui-switch — `label`/`labelOn`/`labelOff` auf Wert-typedInput — *Field-Typing Welle 1; braucht P113* — [P147](nodes/ui-switch/P147-switch-labels-value-typedinput.md)
 - **P148** — nodes/ui-textarea — `label`+`placeholder` auf Wert-typedInput — *Field-Typing Welle 1; braucht P113* — [P148](nodes/ui-textarea/P148-textarea-label-placeholder-value-typedinput.md)
@@ -79,7 +78,7 @@ open the folder for the full history.
 | nodes/ui-route | 2 |
 | nodes/ui-text | 2 |
 | nodes/ui-button | 3 |
-| nodes/ui-input | 2 |
+| nodes/ui-input | 3 |
 | nodes/ui-select | 3 |
 | nodes/ui-switch | 2 |
 | nodes/ui-slider | 2 |
@@ -99,4 +98,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 143 done, 16 open, 11 deferred.**
+**Total: 144 done, 15 open, 11 deferred.**
