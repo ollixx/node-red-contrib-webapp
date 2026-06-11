@@ -2,14 +2,14 @@
 id: P135
 title: "Mount-Picker als Zwei-Spalten-Tree (Tree links / Slots rechts, Suche → flache Pfadliste links) + Dialog resizable, Größe gemerkt, Ellipsis"
 epic: aspects/editor
-status: in_progress
+status: done
 dependencies: [P114]
 spec: docs/nodes/concepts/editor.md
 tests: tests/e2e/nodes/editor/node-picker.spec.ts
 ---
 # P135 — Mount-Picker: Zwei-Spalten-Tree + resizable Dialog
 
-> Entscheidung & Begründung: [ADR 0014](../../../adr/0014-mount-picker-two-column-tree.md).
+> Entscheidung & Begründung: [ADR 0014](../../../../adr/0014-mount-picker-two-column-tree.md).
 > Betrifft **nur** das `mounts`-Preset; die flachen Referenz-Presets
 > (apps/routes/actions/stores/layouts) bleiben flache Listen. Kein
 > Daten-Vertragswechsel (Mount-Strings unverändert).
@@ -103,3 +103,30 @@ verify: browser
   rendern statt neu zu erheben. `flattenMountOptionTree` bleibt für den
   Suchmodus (flache Pfadliste) nutzbar.
 - Der Mount-Picker bleibt **nicht app-gescoped** (P117-Begründung beibehalten).
+
+## Result
+
+- **delivered:** The `mounts` preset picker is now a two-column master-detail tree (ADR 0014),
+  editor-only — no mount data-format/schema/renderer change (mount strings stay
+  `<type>:<id>/<slot>` and `<appId>.<slot>`). LEFT structural tree (App → Routes/Dialoge →
+  Container → rekursiv) built by a new pure `buildMountPickerTree`; only structural nodes are
+  branches, child containers nest under their parent node (not a slot level); not app-scoped
+  (P117 retained); cycle guard excludes a `ui-container`'s own subtree when editing its own
+  mount. RIGHT = the selected node's slots (the only selectable leaves). Search runs over the
+  tree: left → flat matching-path list (no slots), right → the selected path's slots; empty
+  query → browse view. `buildMountOptionsTree`/`flattenMountOptionTree` consumed/retained for
+  label resolution + flat fallback; added pure `findMountInTree` for pre-select + footer
+  breadcrumb. Shared `webapp-node-picker-*` dialog (node/mount/icon/media): resizable via native
+  CSS `resize: both` (min/max 95vw/90vh), size persisted to localStorage and restored on
+  re-open, long labels ellipsised. Spec `docs/nodes/concepts/editor.md` updated.
+- **stats:** 7 files, +910/−37. Unit: +4 cases in `packages/editor/test/picker-mounts-preset.test.ts`.
+  E2E: +5 P135 cases in `tests/e2e/nodes/editor/node-picker.spec.ts` and a new `pickMountInTree`
+  helper; ported `editor-mount-options.spec.ts` and `p51-grid-child-props.spec.ts` from the flat
+  list to the tree. Develop verification: `pnpm build` exit 0, full Playwright suite **506 passed
+  / 0 failed** (8.4m, was 502 + 4 net new); check:roadmap + check:links + lint + all unit green.
+- **notes:** Worktree sanity passed — local develop tip was stale (`f09e6cf` vs expected
+  `8bb9705`); branched from the explicit SHA as instructed; P114 ancestry OK; helpers
+  buildMountOptionsTree/flattenMountOptionTree present and consumed (not reimplemented).
+  Unmounted nodes open with collapsed branches (only the current mount's path pre-expands, per
+  ADR); the E2E helper expands via the twisty when needed.
+- **cost:** session a09643fbdd39a877e, ~40m (orchestrator-measured wall-clock incl. develop E2E).
