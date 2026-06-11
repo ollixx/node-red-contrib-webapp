@@ -642,7 +642,10 @@ export type UiDatepickerNodeDefinition = z.infer<typeof uiDatepickerNodeDefiniti
 export const uiSliderNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-slider"),
     value: bindingSchema,
-    label: z.string().optional(),
+    // P146 (ADR 0012): label accepts the canonical value-binding set — a literal
+    // string or a dynamic binding object. Back-compat: a plain string from a
+    // pre-P146 flow is still accepted and treated as a literal label.
+    label: z.union([bindingSchema, z.string()]).optional(),
     min: z.number().optional(),
     max: z.number().optional(),
     step: z.number().positive().optional(),

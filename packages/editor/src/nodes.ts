@@ -207,7 +207,8 @@ export interface UiDatepickerEditorConfig extends MountableEditorConfig {
 
 export interface UiSliderEditorConfig extends MountableEditorConfig {
     valuePath?: string;
-    label?: string;
+    // P146 (ADR 0012): label accepts a binding object or a literal string.
+    label?: string | BindingDefinition;
     min?: number;
     max?: number;
     step?: number;
@@ -1053,7 +1054,8 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         id: config.id ?? "",
         mount: config.mount ?? "",
         value: stateBinding(config.valuePath ?? ""),
-        label: config.label,
+        // P146: label is a binding (literal string or dynamic binding).
+        label: bindingOrString(config.label),
         min: config.min,
         max: config.max,
         step: config.step,

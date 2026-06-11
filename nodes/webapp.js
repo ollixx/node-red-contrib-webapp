@@ -1179,7 +1179,8 @@ function toComponentDefinitions(components) {
             // P136: ui-radio joins ui-select/checkbox/datepicker — a binding-object
             // label routes through bind.label so the renderer resolves it.
             // P137: ui-progress label is now a full binding — add "progress" to the set.
-            const labelBinding = (p16Kind === "checkbox" || p16Kind === "datepicker" || p16Kind === "select" || p16Kind === "radio" || p16Kind === "progress") ? getBinding(component.label, undefined) : undefined;
+            // P146: ui-slider label is now a full binding — add "slider" to the set.
+            const labelBinding = (p16Kind === "checkbox" || p16Kind === "datepicker" || p16Kind === "select" || p16Kind === "radio" || p16Kind === "progress" || p16Kind === "slider") ? getBinding(component.label, undefined) : undefined;
             if (labelBinding) {
                 bind.label = labelBinding;
             }
@@ -4674,7 +4675,10 @@ const runtimeNodeRegistry = {
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
             value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
-            label: config.label || undefined,
+            // P146 (ADR 0012): label may be a binding object or a legacy plain string.
+            // getBinding passes a binding object through; for a plain string, we keep it
+            // as-is via the fallback: a non-object label stays as a string.
+            label: getBinding(config.label, typeof config.label === "string" && config.label ? config.label : undefined),
             min: toOptionalNumber(config.min),
             max: toOptionalNumber(config.max),
             step: toOptionalNumber(config.step),

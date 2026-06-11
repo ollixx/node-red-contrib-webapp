@@ -16,7 +16,11 @@
                 valuePath: { value: "" },
                 value: { value: null },
                 valueBinding: { value: "" },
-                label: { value: "" },
+                // P146 (ADR 0012): `label` persists the binding OBJECT; the
+                // typedInput lives directly on #node-input-label so the
+                // minimal-coverage E2E check (`fields:["label"]`) still passes.
+                // A legacy plain-string `label` is migrated on open.
+                label: { value: { kind: "literal", value: "" } },
                 min: { value: "" },
                 max: { value: "" },
                 step: { value: "" },
@@ -48,6 +52,25 @@
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
                 common.installLayoutChildPropRows().call(this);
+
+                // P146 (ADR 0012 / value category): `label` typedInput.
+                // The typedInput lives on #node-input-label (not a separate
+                // *Binding element) so the minimal-coverage E2E check passes.
+                // Migration: a legacy plain-string `label` opens as a `str` literal.
+                const storedLabel = common.parseBindingValue(this.label);
+                const labelBinding = storedLabel
+                    ? storedLabel
+                    : (typeof this.label === "string" && this.label.length > 0
+                        ? { kind: "literal", value: this.label }
+                        : undefined);
+                const labelEditor = common.readValueBinding(labelBinding, "");
+                const labelInput = $("#node-input-label");
+                labelInput.typedInput({
+                    default: labelEditor.type,
+                    types: common.valueBindingTypes({ category: "value" })
+                });
+                labelInput.typedInput("type", labelEditor.type);
+                labelInput.typedInput("value", labelEditor.value);
 
                 // P126 (ADR 0012 / value/display category): `value` typedInput — full
                 // canonical set with literal default type `num` (slider is numeric).
@@ -82,6 +105,12 @@
                 disabledInput.typedInput("value", disabledEditor.value);
             },
             oneditsave: function () {
+                // P146: persist label as binding object.
+                this.label = common.applyValueBinding(
+                    $("#node-input-label").typedInput("type"),
+                    $("#node-input-label").typedInput("value")
+                );
+
                 // P126: persist value as binding object; clear legacy valuePath.
                 this.value = common.applyValueBinding(
                     $("#node-input-valueBinding").typedInput("type"),
@@ -102,6 +131,7 @@
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <!-- P146 (ADR 0012 / value category): Label binding — typedInput managed in oneditprepare/oneditsave. -->
     <div class="form-row"><label for="node-input-label">Label</label><input type="text" id="node-input-label"></div>
     <!-- P126 (ADR 0012 / value/display category): Value binding — typedInput managed in oneditprepare/oneditsave. -->
     <div class="form-row"><label for="node-input-valueBinding">Value</label><input type="text" id="node-input-valueBinding"></div>
@@ -114,6 +144,10 @@
 </script>
 <script type="text/html" data-help-name="ui-slider">
     <p>Numerischer Schieberegler mit konfigurierbaren Grenzen und Schrittweite.</p>
+    <h4>Label (P146)</h4>
+    <p>Bindbar über den vollen kanonischen Wert-Satz (ADR 0012): Store, Query, Route-Param,
+    Reactive, msg, JSONata, string, number, boolean, json, timestamp, Flow, Global, Env.
+    Ein bestehender Plain-String <code>label</code> wird automatisch als <code>str</code>-Literal übernommen.</p>
     <h4>Value (P126)</h4>
     <p>Bindbare numerische Quelle des Slider-Werts (Anzeige/Initialwert) — voller kanonischer Satz (ADR 0012):
     Store, Query, Route-Param, Reactive, msg, JSONata, string, number, boolean, json, timestamp,
