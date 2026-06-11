@@ -9,7 +9,7 @@ verify: browser
 spec: docs/nodes/input/ui-input.md
 tests: tests/e2e/nodes/view/ui-input.tests.md
 dependencies: [P113]
-status: pending
+status: in_progress
 ---
 # P145 — ui-input: label → Wert-typedInput
 
