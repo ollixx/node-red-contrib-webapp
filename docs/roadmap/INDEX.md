@@ -39,6 +39,13 @@ their blocker clears.
 - **P149** — nodes/ui-datepicker — `placeholder` auf Wert-typedInput — *Field-Typing Welle 1; braucht P113* — [P149](nodes/ui-datepicker/P149-datepicker-placeholder-value-typedinput.md)
 - **P150** — nodes/ui-divider — `label` auf Wert-typedInput — *Field-Typing Welle 1; braucht P113* — [P150](nodes/ui-divider/P150-divider-label-value-typedinput.md)
 - **P151** — nodes/ui-image — `alt`+`fallback` auf Wert-typedInput — *Field-Typing Welle 1; braucht P113* — [P151](nodes/ui-image/P151-image-alt-fallback-value-typedinput.md)
+- **P153** — nodes/ui-badge — `valuePath`→`value` (Wert-typedInput) — *Field-Typing Welle 2; braucht P113* — [P153](nodes/ui-badge/P153-badge-value-typedinput.md)
+- **P154** — nodes/ui-pagination — `total`/`currentPage` als typedInput (currentPage zweiseitig + Event) — *Field-Typing Welle 2; braucht P113* — [P154](nodes/ui-pagination/P154-pagination-total-currentpage-typedinput.md)
+- **P155** — nodes/ui-tabs — `activeTab` als typedInput (zweiseitig + Event) — *Field-Typing Welle 2; braucht P113* — [P155](nodes/ui-tabs/P155-tabs-activetab-typedinput.md)
+- **P156** — nodes/ui-stepper — `activeStep` als typedInput (zweiseitig + Event) — *Field-Typing Welle 2; braucht P113* — [P156](nodes/ui-stepper/P156-stepper-activestep-typedinput.md)
+- **P157** — nodes/ui-menu — `items`/`activeRoute` als typedInput — *Field-Typing Welle 2; braucht P113* — [P157](nodes/ui-menu/P157-menu-items-activeroute-typedinput.md)
+- **P158** — nodes/ui-table — `rows` als typedInput (Daten-Array); columns separat — *Field-Typing Welle 2; braucht P113* — [P158](nodes/ui-table/P158-table-rows-typedinput.md)
+- **P159** — nodes/ui-icon — `size` auf xs..xl-Token-Select (Spec/Code-Fix); color via P139 — *Field-Typing Welle 2* — [P159](nodes/ui-icon/P159-icon-size-token-select.md)
 
 
 ## Deferred (parked, not abandoned)
