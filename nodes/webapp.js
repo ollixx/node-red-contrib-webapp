@@ -1148,7 +1148,8 @@ function toComponentDefinitions(components) {
             // string in resolvedProps.label → component.props.label (used by serializer).
             // P136: ui-radio joins ui-select/checkbox/datepicker — a binding-object
             // label routes through bind.label so the renderer resolves it.
-            const labelBinding = (p16Kind === "checkbox" || p16Kind === "datepicker" || p16Kind === "select" || p16Kind === "radio") ? getBinding(component.label, undefined) : undefined;
+            // P137: ui-progress label is now a full binding — add "progress" to the set.
+            const labelBinding = (p16Kind === "checkbox" || p16Kind === "datepicker" || p16Kind === "select" || p16Kind === "radio" || p16Kind === "progress") ? getBinding(component.label, undefined) : undefined;
             if (labelBinding) {
                 bind.label = labelBinding;
             }
@@ -4939,7 +4940,10 @@ const runtimeNodeRegistry = {
             order: toOptionalNumber(config.order),
             displayType: config.displayType || config.variant || undefined,
             value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
-            label: config.label || undefined,
+            // P137 (ADR 0012): label is now a full binding (literal string or dynamic binding).
+            // getBinding returns the binding object if config.label is a binding object; falls
+            // back to the raw label value (plain string, back-compat for pre-P137 flows).
+            label: getBinding(config.label, undefined) || config.label || undefined,
             showValue: config.showValue === true || config.showValue === "true" || undefined,
             ...collectNodeConfigLayoutProps(config)
         }),
