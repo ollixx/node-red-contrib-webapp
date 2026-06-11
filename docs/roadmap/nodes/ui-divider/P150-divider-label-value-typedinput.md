@@ -9,7 +9,7 @@ verify: browser
 spec: docs/nodes/display/ui-divider.md
 tests: tests/e2e/nodes/view/ui-divider.tests.md
 dependencies: [P113]
-status: pending
+status: in_progress
 ---
 # P150 — ui-divider: label → Wert-typedInput
 
