@@ -32,6 +32,19 @@ Layout-Child-Props).
 | `name` | „Name" | Textfeld | optional | Anzeigename im Editor und in Auswahllisten. Default: fortlaufend `Divider N`. |
 | `mount` | „Parent Slot" | Mount-Baum (Node-Picker-Dialog) | **ja** | Slot-Pfad des Parents (`<type>:<id>/<slot>`). Bestimmt die sichtbaren Layout-Child-Props (Gruppe „Platzierung"). |
 
+#### Basis-Felder (P139, ADR 0015 — `ui-divider` ist der Referenzknoten)
+
+`ui-divider` rendert die gemeinsame Basis-Feld-Gruppe über
+`installBaseFields(config)` (siehe [editor.md](../concepts/editor.md),
+Abschnitt „Basis-Felder + Editor-Struktur"):
+
+| Feld | Label | Editor-Typ | Anwendbar | Beschreibung |
+|---|---|---|---|---|
+| `visible` | „Visible" | Boolean-Zustand-typedInput (ADR-0012-Boolean-Satz) | ja | Sichtbarkeit; leer = sichtbar (Default). Persistiert als Binding-Objekt. Laufzeit-Auswertung folgt mit dem Rollout. |
+| `disabled` | „Disabled" | — (N/A) | **nein** | Ein Trenner hat keinen interaktiven Zustand — Feld wird disabled mit diesem Hinweis angezeigt. |
+| `color` | „Color" | Wert-typedInput (voller Binding-Satz) | ja | Allgemeine Linienfarbe; `ui-divider` trägt kein `variant`, daher ist `color` aktiv. Persistiert als Binding-Objekt (leeres Literal → `null`). Laufzeit-Auswertung folgt mit dem Rollout. |
+| `size` | „Size" | — (N/A, im „Erweitert"-Abschnitt) | **nein** | Ein Trenner hat keine Größen-Stufen — Feld wird disabled mit diesem Hinweis angezeigt. |
+
 ### Gruppe „Darstellung"
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
