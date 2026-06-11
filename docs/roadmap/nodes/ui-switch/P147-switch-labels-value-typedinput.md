@@ -9,7 +9,7 @@ verify: browser
 spec: docs/nodes/input/ui-switch.md
 tests: tests/e2e/nodes/view/ui-switch.tests.md
 dependencies: [P113]
-status: pending
+status: in_progress
 ---
 # P147 — ui-switch: label/labelOn/labelOff → Wert-typedInput
 
