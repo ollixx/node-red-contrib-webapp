@@ -75,3 +75,49 @@ export async function pickReference(
 export async function pickerFieldValue(page: Page, fieldId: string): Promise<string> {
     return page.locator(`#node-input-${fieldId}`).inputValue();
 }
+
+/**
+ * P135 / ADR 0014 — the `mounts` picker is a two-column tree. Open it, click the
+ * left-column tree node carrying `nodeText` (a branch label), then click the
+ * right-column slot row carrying `slotText` (the slot name). Resolves once the
+ * dialog has closed and (when given) the hidden carrier holds `expectValue`.
+ *
+ * If the tree node is collapsed, its ancestors are expanded by clicking their
+ * twisties first via `expandPath` labels (parent → … order).
+ */
+export async function pickMountInTree(
+    page: Page,
+    fieldId: string,
+    options: { nodeText: string; slotText: string; expectValue?: string; expandPath?: string[] }
+): Promise<void> {
+    await openPicker(page, fieldId);
+    await expect(page.locator(".webapp-node-picker-dialog-tree")).toBeVisible();
+
+    // A tree node's label is identified by its OWN text (`.tree-text`), not by a
+    // descendant — an ancestor node also "has" a child's text, so we target the
+    // label whose direct text span matches exactly.
+    function labelFor(text: string) {
+        return page
+            .locator(".webapp-node-picker-tree-label")
+            .filter({ has: page.locator(`.webapp-node-picker-tree-text:text-is("${text}")`) })
+            .first();
+    }
+
+    for (const branch of options.expandPath ?? []) {
+        // Click the twisty to expand children (does not change the selection).
+        await labelFor(branch).locator(".webapp-node-picker-twisty").click();
+    }
+
+    await labelFor(options.nodeText).click();
+
+    const slot = page
+        .locator(".webapp-node-picker-slots .webapp-node-picker-slot-row")
+        .filter({ hasText: options.slotText })
+        .first();
+    await slot.click();
+
+    await expect(page.locator(".webapp-node-picker-dialog")).toHaveCount(0);
+    if (options.expectValue !== undefined) {
+        await expect(page.locator(`#node-input-${fieldId}`)).toHaveValue(options.expectValue);
+    }
+}

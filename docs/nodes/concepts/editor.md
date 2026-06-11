@@ -51,11 +51,43 @@ Graphen nicht mehr auflösbar ist, bleibt erhalten und wird als
   liegen in einem geteilten Stylesheet der `webapp-node-picker-*`-Klassen,
   das auch Icon-Picker (P69) und Media-Picker (P70) erben.
 - Scrollbare Kandidatenliste; jede Zeile zeigt **Name + ID + Knotentyp** (beim
-  `mounts`-Preset: Breadcrumb + Mount-Wert).
+  `mounts`-Preset siehe Zwei-Spalten-Tree unten).
 - **Contains-Suche** (case-insensitive) über Name, ID **und** Typ (`nodePickerMatch`);
-  beim `mounts`-Preset über Breadcrumb und Mount-Wert.
+  beim `mounts`-Preset über Breadcrumb/Pfad und Mount-Wert.
 - Aktuelle Auswahl hervorgehoben; Auswahl per Klick, Schließen per `Esc` oder Overlay-Klick.
 - Gespeichert wird stets die **Knoten-ID** (bzw. der Mount-String) — Round-Trip unverändert.
+
+**Zwei-Spalten-Tree für `mounts` (P135, [ADR 0014](../../adr/0014-mount-picker-two-column-tree.md)):**
+Der Mount-Picker (Preset `mounts`) ist ein **Master-Detail-Browser** statt einer
+flachen Breadcrumb-Liste. Nur dieses Preset ändert sich; die flachen
+Referenz-Presets (apps/routes/actions/stores/layouts) bleiben flache Listen.
+- **Links — Struktur-Tree:** App → (Routen / Dialoge) → Container → **rekursiv**
+  Kind-Container. Nur **Struktur-Knoten** sind Branches; ein Kind-Container hängt
+  direkt unter seinem **Parent-Knoten** (nicht unter einer Slot-Ebene). Links ist
+  reine Navigation. Quelle ist `buildMountPickerTree` (rein, testbar).
+- **Rechts — Slots des links gewählten Knotens:** flache Liste; **Slots sind die
+  einzigen selektierbaren Leaves** (der Pick). Knoten ohne eigene Slots zeigen
+  rechts „Keine Slots".
+- **Nicht app-gescoped (P117):** alle Apps als oberste Ebene — Cross-App-Mounts
+  bleiben möglich.
+- **Zyklus-Schutz:** beim Editieren des eigenen Mounts eines `ui-container` wird
+  dessen eigener Teilbaum aus dem Tree ausgeschlossen.
+- **Vorauswahl:** der aktuelle Mount-Pfad ist aufgeklappt und markiert, sein Slot
+  rechts gewählt; der Footer zeigt den vollen Breadcrumb der Auswahl.
+- **Suche:** läuft über den Tree. Bei Suchbegriff wird **links** eine **flache
+  Liste der gefundenen Pfade** (Branches, **ohne** Slots); **rechts** bleiben die
+  **Slots** des links gewählten Treffers. Leere Suche → Zwei-Spalten-Browser.
+- Der gespeicherte Mount-String (`<type>:<id>/<slot>` bzw. `<appId>.<slot>`) ist
+  **unverändert** — kein Daten-/Schema-/Renderer-Wechsel.
+
+**Resizable + gemerkte Größe + Ellipsis (geteilt für ALLE Picker, P135):**
+- Der Dialog-Container ist über CSS `resize: both` resizable (nativer
+  Eck-Anfasser, kein JS), mit `min-width`/`min-height`, `max-width: 95vw`,
+  `max-height: 90vh`.
+- Die gewählte Breite/Höhe wird in `localStorage` gemerkt und beim nächsten
+  Öffnen wiederhergestellt — geteilt über die `webapp-node-picker-*`-Klassen, also
+  auch für Icon- (P69) und Media-Picker (P70).
+- Lange Labels nutzen `text-overflow: ellipsis` statt Horizontal-Scroll.
 
 **API:**
 - `openNodePickerDialog({ title, value, entries, onSelect })` — öffnet den Dialog (CSS-Klassen `webapp-node-picker-*`).
@@ -73,7 +105,7 @@ vorgefiltert (`nodePickerPresets`, gespeist aus `collectReferenceNodes`):
 | `routes` | alle `ui-route` |
 | `actions` | alle `ui-action` / `ui-navigation` |
 | `stores` | alle `ui-store` |
-| `mounts` | alle Parent-Slots (Apps → Routen/Dialoge → Container → Slots), flach mit Breadcrumb-Label aus `buildMountOptionsTree` |
+| `mounts` | alle Parent-Slots (Apps → Routen/Dialoge → Container → Slots) als **Zwei-Spalten-Tree** (P135, `buildMountPickerTree`); `buildMountOptionsTree`/`flattenMountOptionTree` liefern weiterhin die flache Breadcrumb-Liste (Such-Pfade + Label-Auflösung) |
 
 `collectReferenceNodes()` sammelt App-, Route-, Dialog-, Container-, Action- und
 Store-Knoten aus dem aktuellen Editor-Graphen (inkl. id/typ/titel/parent/path),

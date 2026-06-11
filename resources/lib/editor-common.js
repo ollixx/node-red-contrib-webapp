@@ -773,9 +773,16 @@
             "  border: 1px solid var(--red-ui-secondary-border-color, #ccc);",
             "  border-radius: 4px;",
             "  box-shadow: 0 4px 24px rgba(0,0,0,0.3);",
-            "  width: 420px; max-width: 90vw; max-height: 80vh;",
+            "  width: 420px; max-width: 95vw; max-height: 90vh;",
             "  display: flex; flex-direction: column;",
             "  overflow: hidden;",
+            /* P135 / ADR 0014: resizable via the native corner handle (no JS). */
+            "  resize: both;",
+            "  min-width: 320px; min-height: 280px;",
+            "}",
+            /* the tree variant opens wider to host the two columns side by side */
+            ".webapp-node-picker-dialog-tree {",
+            "  width: 640px; min-width: 420px;",
             "}",
 
             /* header bar — matches NR tray/dialog header style */
@@ -828,6 +835,10 @@
             "  min-height: 120px;",
             "  padding: 4px 6px 6px;",
             "}",
+            /* P135: in tree mode the columns own the scrolling, not the list */
+            ".webapp-node-picker-dialog-tree .webapp-node-picker-list {",
+            "  overflow: hidden; padding: 0; min-height: 0;",
+            "}",
 
             /* individual row */
             ".webapp-node-picker-row {",
@@ -844,19 +855,21 @@
             "  background: var(--red-ui-list-item-background-selected, #e6f0f8);",
             "}",
 
-            /* primary label */
+            /* primary label — P135: ellipsis instead of horizontal scroll */
             ".webapp-node-picker-row-primary {",
             "  font-family: var(--red-ui-primary-font, 'Helvetica Neue', Arial, sans-serif);",
             "  font-size: 13px;",
             "  font-weight: 500;",
             "  color: var(--red-ui-primary-text-color, #333);",
+            "  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;",
             "}",
 
-            /* secondary meta line (id · type · app) */
+            /* secondary meta line (id · type · app) — P135: ellipsis */
             ".webapp-node-picker-row-secondary {",
             "  font-family: var(--red-ui-primary-font, 'Helvetica Neue', Arial, sans-serif);",
             "  font-size: 11px;",
             "  color: var(--red-ui-secondary-text-color, #666);",
+            "  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;",
             "}",
 
             /* empty / no-match notice */
@@ -875,6 +888,51 @@
             "  text-align: right;",
             "  flex: 0 0 auto;",
             "  display: flex; align-items: center; justify-content: flex-end; gap: 6px;",
+            "}",
+            /* P135: footer breadcrumb of the current pick (left-aligned, ellipsis) */
+            ".webapp-node-picker-crumb {",
+            "  flex: 1 1 auto; min-width: 0; text-align: left;",
+            "  font-size: 12px; color: var(--red-ui-secondary-text-color, #666);",
+            "  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;",
+            "}",
+
+            /* ── P135 / ADR 0014: two-column tree (mounts preset) ──────────── */
+            ".webapp-node-picker-columns {",
+            "  display: flex; align-items: stretch; height: 100%;",
+            "  min-height: 0;",
+            "}",
+            ".webapp-node-picker-tree {",
+            "  flex: 1 1 55%; min-width: 0;",
+            "  overflow: auto;",
+            "  border-right: 1px solid var(--red-ui-secondary-border-color, #eee);",
+            "  padding: 2px 0;",
+            "}",
+            ".webapp-node-picker-slots {",
+            "  flex: 1 1 45%; min-width: 0;",
+            "  overflow: auto;",
+            "  padding: 2px 6px;",
+            "}",
+            ".webapp-node-picker-tree-label {",
+            "  display: flex; align-items: center; gap: 4px;",
+            "  padding: 4px 8px 4px 0;",
+            "  cursor: pointer; border-radius: 3px;",
+            "  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;",
+            "}",
+            ".webapp-node-picker-tree-label:hover {",
+            "  background: var(--red-ui-list-item-background-hover, #f3f3f3);",
+            "}",
+            ".webapp-node-picker-tree-label.active {",
+            "  background: var(--red-ui-list-item-background-selected, #e6f0f8);",
+            "}",
+            ".webapp-node-picker-tree-text {",
+            "  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;",
+            "}",
+            ".webapp-node-picker-twisty {",
+            "  width: 12px; text-align: center; flex: 0 0 auto;",
+            "  color: var(--red-ui-secondary-text-color, #888); font-size: 12px;",
+            "}",
+            ".webapp-node-picker-slot-row .webapp-node-picker-row-secondary {",
+            "  font-size: 10px;",
             "}"
         ].join("\n");
 
@@ -1729,6 +1787,53 @@
     //   value      — currently-selected id (highlighted, pre-scrolled)
     //   entries    — array of { value, label, name, id, type, secondary? }
     //   onSelect   — function(value) called with the chosen id when confirmed
+    // P135 / ADR 0014: the chosen size of the SHARED picker dialog is persisted in
+    // localStorage so it is restored on the next open (any picker — node/mount/
+    // icon/media — through the `webapp-node-picker-dialog` class). Restored on
+    // open, saved on close (the native CSS `resize` handle has no event, so we
+    // read the element's box at close time). Best-effort: a missing/locked
+    // localStorage simply means the size is not remembered.
+    var PICKER_SIZE_STORAGE_KEY = "webapp-picker-dialog-size";
+    function readPickerSize() {
+        try {
+            var raw = window.localStorage.getItem(PICKER_SIZE_STORAGE_KEY);
+            if (!raw) {
+                return null;
+            }
+            var parsed = JSON.parse(raw);
+            if (parsed && parsed.width && parsed.height) {
+                return { width: parsed.width, height: parsed.height };
+            }
+        } catch (err) {
+            /* ignore */
+        }
+        return null;
+    }
+    function writePickerSize(width, height) {
+        try {
+            window.localStorage.setItem(
+                PICKER_SIZE_STORAGE_KEY,
+                JSON.stringify({ width: Math.round(width), height: Math.round(height) })
+            );
+        } catch (err) {
+            /* ignore */
+        }
+    }
+    // Apply any remembered size + persist the current box on close. Shared by
+    // every picker dialog (node/mount/icon/media) via the `$dialog` element.
+    function applyPickerSizePersistence($dialog) {
+        var remembered = readPickerSize();
+        if (remembered) {
+            $dialog.css({ width: remembered.width + "px", height: remembered.height + "px" });
+        }
+        return function persistOnClose() {
+            var el = $dialog && $dialog[0];
+            if (el && el.offsetWidth && el.offsetHeight) {
+                writePickerSize(el.offsetWidth, el.offsetHeight);
+            }
+        };
+    }
+
     function openNodePickerDialog(options) {
         ensurePickerStylesheet();
 
@@ -1736,9 +1841,22 @@
         const entries = Array.isArray(opts.entries) ? opts.entries : [];
         const currentValue = opts.value ? String(opts.value) : "";
 
+        // P135 / ADR 0014: tree mode (the `mounts` preset). `opts.tree` is the
+        // structural node tree (buildMountPickerTree); `opts.searchEntries` is the
+        // flat path list used while a query is present (the breadcrumb entries from
+        // flattenMountOptionTree). When absent, the dialog renders the classic flat
+        // row list (every other preset is unchanged).
+        const treeMode = Array.isArray(opts.tree);
+        const tree = treeMode ? opts.tree : [];
+        const searchEntries = Array.isArray(opts.searchEntries) ? opts.searchEntries : [];
+
         const $overlay = $("<div>").addClass("webapp-node-picker-overlay");
 
         const $dialog = $("<div>").addClass("webapp-node-picker-dialog").appendTo($overlay);
+        if (treeMode) {
+            $dialog.addClass("webapp-node-picker-dialog-tree");
+        }
+        const persistPickerSize = applyPickerSizePersistence($dialog);
 
         // Header
         $("<div>")
@@ -1761,6 +1879,7 @@
         let selectedValue = currentValue;
 
         function close() {
+            persistPickerSize();
             $overlay.remove();
             $(document).off("keydown.webappNodePicker");
         }
@@ -1772,9 +1891,214 @@
             }
         }
 
+        // ── P135 / ADR 0014: two-column tree render ──────────────────────────
+        // Left = structure tree (navigation only); right = slots of the
+        // left-selected node (the only selectable leaves). A footer breadcrumb
+        // shows the full path of the current pick. While a search query is
+        // present the left column becomes a flat list of matching paths (no
+        // slots); the right column stays the slots of the left-selected path.
+        let treeSelectedKey = null;     // left-column node currently shown on the right
+        const treeExpanded = {};        // key → bool (expanded branches)
+        const $footerCrumb = treeMode
+            ? $("<span>").addClass("webapp-node-picker-crumb").appendTo($footer)
+            : null;
+
+        function flattenTreeNodes(nodes, acc) {
+            (nodes || []).forEach(function (node) {
+                acc.push(node);
+                flattenTreeNodes(node.children, acc);
+            });
+            return acc;
+        }
+        function findTreeNodeByKey(key) {
+            const all = flattenTreeNodes(tree, []);
+            for (let i = 0; i < all.length; i++) {
+                if (all[i].key === key) {
+                    return all[i];
+                }
+            }
+            return null;
+        }
+
+        function breadcrumbForValue(value) {
+            const hit = findMountInTree(tree, value);
+            if (!hit) {
+                return value || "";
+            }
+            const labels = hit.path.map(function (n) { return n.label; });
+            labels.push(hit.slot);
+            return labels.join(" > ");
+        }
+
+        function updateFooterCrumb() {
+            if (!$footerCrumb) {
+                return;
+            }
+            $footerCrumb.text(selectedValue ? breadcrumbForValue(selectedValue) : "");
+        }
+
+        function renderSlots($right, node) {
+            $right.empty();
+            const slots = node && node.slots ? node.slots : [];
+            if (slots.length === 0) {
+                $("<div>").addClass("webapp-node-picker-empty").text("Keine Slots.").appendTo($right);
+                return;
+            }
+            slots.forEach(function (slot) {
+                const $row = $("<div>")
+                    .addClass("webapp-node-picker-row webapp-node-picker-slot-row")
+                    .attr("data-value", slot.value);
+                if (slot.value === selectedValue) {
+                    $row.addClass("selected");
+                }
+                $("<div>").addClass("webapp-node-picker-row-primary").text(slot.slot).appendTo($row);
+                $("<div>").addClass("webapp-node-picker-row-secondary").text(slot.value).appendTo($row);
+                $row.on("click", function () { confirm(slot.value); });
+                $right.append($row);
+            });
+        }
+
+        function renderTreeBrowse() {
+            $list.empty();
+            const $columns = $("<div>").addClass("webapp-node-picker-columns").appendTo($list);
+            const $left = $("<div>").addClass("webapp-node-picker-tree").appendTo($columns);
+            const $right = $("<div>").addClass("webapp-node-picker-slots").appendTo($columns);
+
+            function selectNode(key) {
+                treeSelectedKey = key;
+                $left.find(".webapp-node-picker-tree-label.active").removeClass("active");
+                $left.find('[data-tree-key="' + cssEscape(key) + '"] > .webapp-node-picker-tree-label')
+                    .addClass("active");
+                renderSlots($right, findTreeNodeByKey(key));
+            }
+
+            function renderBranch($parent, node, depth) {
+                const $node = $("<div>").addClass("webapp-node-picker-tree-node").attr("data-tree-key", node.key);
+                const hasChildren = node.children && node.children.length > 0;
+                const $label = $("<div>")
+                    .addClass("webapp-node-picker-tree-label")
+                    .css({ "padding-left": (6 + depth * 14) + "px" })
+                    .appendTo($node);
+                const $twisty = $("<i>")
+                    .addClass("fa webapp-node-picker-twisty")
+                    .addClass(hasChildren ? (treeExpanded[node.key] ? "fa-caret-down" : "fa-caret-right") : "fa-fw")
+                    .appendTo($label);
+                $("<span>").addClass("webapp-node-picker-tree-text").text(node.label).appendTo($label);
+
+                const $childWrap = $("<div>").addClass("webapp-node-picker-tree-children").appendTo($node);
+                if (!treeExpanded[node.key]) {
+                    $childWrap.hide();
+                }
+                if (hasChildren) {
+                    node.children.forEach(function (child) { renderBranch($childWrap, child, depth + 1); });
+                    $twisty.on("click", function (event) {
+                        event.stopPropagation();
+                        treeExpanded[node.key] = !treeExpanded[node.key];
+                        $childWrap.toggle(treeExpanded[node.key]);
+                        $twisty.toggleClass("fa-caret-down", !!treeExpanded[node.key])
+                            .toggleClass("fa-caret-right", !treeExpanded[node.key]);
+                    });
+                }
+                $label.on("click", function () { selectNode(node.key); });
+                $parent.append($node);
+            }
+
+            if (tree.length === 0) {
+                $("<div>").addClass("webapp-node-picker-empty").text("Keine Mount-Ziele.").appendTo($left);
+            } else {
+                tree.forEach(function (node) { renderBranch($left, node, 0); });
+            }
+
+            // Pre-select: the current mount's owner node (expanded ancestors).
+            const preHit = findMountInTree(tree, selectedValue);
+            const preKey = preHit ? preHit.node.key : (tree[0] ? tree[0].key : null);
+            if (preHit) {
+                preHit.path.forEach(function (n) { treeExpanded[n.key] = true; });
+                // Re-render so the expansion is reflected, then select.
+                $left.empty();
+                tree.forEach(function (node) { renderBranch($left, node, 0); });
+            }
+            if (preKey) {
+                selectNode(preKey);
+            } else {
+                renderSlots($right, null);
+            }
+        }
+
+        function renderTreeSearch(query) {
+            $list.empty();
+            const $columns = $("<div>").addClass("webapp-node-picker-columns").appendTo($list);
+            const $left = $("<div>").addClass("webapp-node-picker-tree webapp-node-picker-search-paths").appendTo($columns);
+            const $right = $("<div>").addClass("webapp-node-picker-slots").appendTo($columns);
+
+            // Left = flat list of matching PATHS (branches, no slots). A path is
+            // the breadcrumb of a tree node; we match against breadcrumb + the
+            // node's own slot mount values (so "route:" still finds the branch).
+            const allNodes = flattenTreeNodes(tree, []);
+            const matches = allNodes.filter(function (node) {
+                const crumb = node.slots.length
+                    ? breadcrumbForValue(node.slots[0].value).replace(/ > [^>]*$/, "")
+                    : node.label;
+                const haystack = [crumb, node.key]
+                    .concat(node.slots.map(function (s) { return s.value; }))
+                    .join(" ");
+                return nodePickerMatch({ label: haystack, name: haystack, id: node.key, type: node.kind }, query);
+            });
+
+            if (matches.length === 0) {
+                $("<div>").addClass("webapp-node-picker-empty").text("Keine Treffer.").appendTo($left);
+                renderSlots($right, null);
+                return;
+            }
+
+            function selectPath(node, $row) {
+                $left.find(".webapp-node-picker-row.selected").removeClass("selected");
+                $row.addClass("selected");
+                renderSlots($right, node);
+            }
+
+            matches.forEach(function (node, index) {
+                const crumb = node.slots.length
+                    ? breadcrumbForValue(node.slots[0].value).replace(/ > [^>]*$/, "")
+                    : node.label;
+                const $row = $("<div>").addClass("webapp-node-picker-row").attr("data-tree-key", node.key);
+                $("<div>").addClass("webapp-node-picker-row-primary").text(crumb).appendTo($row);
+                $("<div>").addClass("webapp-node-picker-row-secondary").text(node.key).appendTo($row);
+                $row.on("click", function () { selectPath(node, $row); });
+                $left.append($row);
+                if (index === 0) {
+                    selectPath(node, $row);
+                }
+            });
+        }
+
+        // Minimal CSS.escape shim (jsdom/older browsers) for the tree key selector.
+        function cssEscape(value) {
+            const str = String(value);
+            if (window.CSS && typeof window.CSS.escape === "function") {
+                return window.CSS.escape(str);
+            }
+            return str.replace(/[^a-zA-Z0-9_-]/g, function (ch) { return "\\" + ch; });
+        }
+
         function renderRows() {
             const query = $search.val();
             $list.empty();
+
+            // P135 / ADR 0014: tree mode for the `mounts` preset. Empty query →
+            // two-column browse; with a query → flat matching-path list (left) +
+            // the selected path's slots (right). The footer crumb always tracks
+            // the current pick.
+            if (treeMode) {
+                if (query && String(query).trim().length > 0) {
+                    renderTreeSearch(query);
+                } else {
+                    renderTreeBrowse();
+                }
+                updateFooterCrumb();
+                return;
+            }
+
             const matches = entries.filter(function (entry) { return nodePickerMatch(entry, query); });
 
             if (matches.length === 0) {
@@ -1999,7 +2323,7 @@
             event.preventDefault();
             const appId = resolveAppContext();
             const context = appId ? { appId: appId } : {};
-            openNodePickerDialog({
+            const dialogOptions = {
                 title: cfg.title || "Knoten auswählen",
                 value: String($field.val() || ""),
                 entries: nodePickerOptionsForPreset(cfg.filterPreset, context),
@@ -2008,7 +2332,22 @@
                     $field.trigger("change");
                     refreshDisplay();
                 }
-            });
+            };
+            // P135 / ADR 0014: the `mounts` preset gets the two-column tree. The
+            // structural tree (left/right columns) comes from buildMountPickerTree;
+            // the existing flat breadcrumb entries (above) stay as the source of
+            // the search-mode fallback + the field's label resolution. The cycle
+            // guard excludes the edited container's own subtree (a container can
+            // never mount into its own descendant). Not app-scoped (P117): the
+            // mount establishes which app a node belongs to, so all apps appear.
+            if (cfg.filterPreset === "mounts") {
+                const references = collectReferenceNodes();
+                const editedId = cfg.editedNodeId
+                    ? cfg.editedNodeId
+                    : ($("#node-input-id").val() ? String($("#node-input-id").val()) : "");
+                dialogOptions.tree = buildMountPickerTree(references, editedId);
+            }
+            openNodePickerDialog(dialogOptions);
         });
 
         $clear.on("click", function (event) {
@@ -3374,6 +3713,179 @@
         return groups;
     }
 
+    // P135 / ADR 0014: the structural tree the two-column mount picker renders.
+    // While buildMountOptionsTree FLATTENS the hierarchy into breadcrumb options
+    // (kept for the flat reference list + the search-mode path list), the picker's
+    // LEFT column needs the hierarchy as a *node tree*: App → (Routes / Dialoge) →
+    // Container → recursive child containers. Each tree node carries the SLOTS that
+    // become the RIGHT column (the only selectable leaves — the mount strings are
+    // identical to buildMountOptionsTree's option values). Pure — unit-testable
+    // without a DOM.
+    //
+    // Shape of a tree node:
+    //   { key, kind: "app"|"route"|"dialog"|"container", label,
+    //     slots: [{ value(mount string), slot(name) }],
+    //     children: [<tree node>, …] }
+    //
+    // `excludeContainerId` (the cycle guard): when editing a container's own
+    // mount, its entire subtree is omitted — a container can never mount into its
+    // own descendant (mirrors buildMountOptionsTree's visitedContainers guard).
+    function buildMountPickerTree(references, excludeContainerId) {
+        const apps = references.apps || [];
+        const routes = references.routes || [];
+        const dialogs = references.dialogs || [];
+        const containers = references.containers || [];
+        const visitedContainers = new Set();
+        const excluded = excludeContainerId ? String(excludeContainerId) : "";
+
+        // Recursively collect the child-container tree nodes mounted into a given
+        // mount value (a parent node's slot). Each child container becomes its own
+        // tree node, with its own slots and (recursively) its own children.
+        function childContainerNodes(parentMountValues) {
+            const mountSet = new Set(parentMountValues);
+            const nodes = [];
+            for (const child of containers) {
+                if (child.id === excluded || visitedContainers.has(child.id)) {
+                    continue;
+                }
+                if (!mountSet.has(child.mount)) {
+                    continue;
+                }
+                visitedContainers.add(child.id);
+                nodes.push(containerNode(child));
+            }
+            return nodes;
+        }
+
+        function containerNode(child) {
+            const slotNames = getSlotNamesForLayout(child.layoutId);
+            const slots = slotNames.map(function (slot) {
+                return { value: "container:" + child.id + "/" + slot, slot: slot };
+            });
+            return {
+                key: "container:" + child.id,
+                kind: "container",
+                label: child.title || child.id,
+                slots: slots,
+                children: childContainerNodes(slots.map(function (s) { return s.value; }))
+            };
+        }
+
+        const tree = [];
+
+        for (const app of apps) {
+            const appLabel = app.title || app.id;
+            const appSlotNames = getSlotNamesForLayout(app.layoutId);
+            const appSlots = appSlotNames.map(function (slot) {
+                return { value: app.id + "." + slot, slot: slot };
+            });
+            const appNode = {
+                key: "app:" + app.id,
+                kind: "app",
+                label: appLabel,
+                slots: appSlots,
+                children: childContainerNodes(appSlots.map(function (s) { return s.value; }))
+            };
+
+            const appRoutes = routes.filter(function (r) { return r.parent === app.id; });
+            for (const route of appRoutes) {
+                const routeSlotNames = getSlotNamesForLayout(route.layoutId);
+                const routeSlots = routeSlotNames.map(function (slot) {
+                    return { value: "route:" + route.path + "/" + slot, slot: slot };
+                });
+                appNode.children.push({
+                    key: "route:" + route.id,
+                    kind: "route",
+                    label: route.title || route.path || route.id,
+                    slots: routeSlots,
+                    children: childContainerNodes(routeSlots.map(function (s) { return s.value; }))
+                });
+            }
+
+            const appDialogs = dialogs.filter(function (d) { return d.parent === app.id; });
+            for (const dialog of appDialogs) {
+                const dialogSlotNames = getSlotNamesForLayout(dialog.layoutId);
+                const dialogSlots = dialogSlotNames.map(function (slot) {
+                    return { value: "dialog:" + dialog.id + "/" + slot, slot: slot };
+                });
+                appNode.children.push({
+                    key: "dialog:" + dialog.id,
+                    kind: "dialog",
+                    label: dialog.title || dialog.id,
+                    slots: dialogSlots,
+                    children: childContainerNodes(dialogSlots.map(function (s) { return s.value; }))
+                });
+            }
+
+            tree.push(appNode);
+        }
+
+        // Orphaned routes/dialogs (no known parent app) become top-level branches,
+        // mirroring buildMountOptionsTree's "Weitere" group.
+        for (const route of routes) {
+            if (route.parent && apps.some(function (a) { return a.id === route.parent; })) {
+                continue;
+            }
+            const routeSlots = getSlotNamesForLayout(route.layoutId).map(function (slot) {
+                return { value: "route:" + route.path + "/" + slot, slot: slot };
+            });
+            if (routeSlots.length === 0) {
+                continue;
+            }
+            tree.push({
+                key: "route:" + route.id,
+                kind: "route",
+                label: route.title || route.path || route.id,
+                slots: routeSlots,
+                children: childContainerNodes(routeSlots.map(function (s) { return s.value; }))
+            });
+        }
+        for (const dialog of dialogs) {
+            if (dialog.parent && apps.some(function (a) { return a.id === dialog.parent; })) {
+                continue;
+            }
+            const dialogSlots = getSlotNamesForLayout(dialog.layoutId).map(function (slot) {
+                return { value: "dialog:" + dialog.id + "/" + slot, slot: slot };
+            });
+            if (dialogSlots.length === 0) {
+                continue;
+            }
+            tree.push({
+                key: "dialog:" + dialog.id,
+                kind: "dialog",
+                label: dialog.title || dialog.id,
+                slots: dialogSlots,
+                children: childContainerNodes(dialogSlots.map(function (s) { return s.value; }))
+            });
+        }
+
+        return tree;
+    }
+
+    // P135 / ADR 0014: find the path of tree nodes (root → … → owner) whose own
+    // slots contain `mountValue`, plus the slot name. Used to pre-expand and
+    // pre-select the current mount, and to render the footer breadcrumb. Pure.
+    function findMountInTree(tree, mountValue) {
+        if (!mountValue) {
+            return null;
+        }
+        const target = String(mountValue);
+        function walk(nodes, ancestry) {
+            for (const node of nodes || []) {
+                const slot = (node.slots || []).find(function (s) { return s.value === target; });
+                if (slot) {
+                    return { path: ancestry.concat([node]), slot: slot.slot, node: node };
+                }
+                const hit = walk(node.children, ancestry.concat([node]));
+                if (hit) {
+                    return hit;
+                }
+            }
+            return null;
+        }
+        return walk(tree, []);
+    }
+
     function getMountLayoutId(mountValue, references) {
         if (!mountValue) {
             return "";
@@ -3526,7 +4038,11 @@
                     title: "Parent-Slot auswählen",
                     placeholder: "Parent-Slot auswählen",
                     seedValue: self.mount || "",
-                    getAppId: getAppId
+                    getAppId: getAppId,
+                    // P135 / ADR 0014: cycle guard — when editing a ui-container's
+                    // own mount, exclude its own subtree from the tree (a container
+                    // can never mount into its own descendant).
+                    editedNodeId: self.type === "ui-container" ? (self.id || "") : ""
                 });
             }
 
@@ -3869,8 +4385,11 @@
 
         const $dialog = $("<div>")
             .addClass("webapp-icon-picker-dialog webapp-node-picker-dialog")
-            .css({ width: "520px", "max-width": "92vw", "max-height": "82vh" })
+            .css({ width: "520px", "max-width": "95vw", "max-height": "90vh" })
             .appendTo($overlay);
+        // P135 / ADR 0014: shared resize + remembered size (applied AFTER the
+        // default inline width so a remembered box wins).
+        const persistIconSize = applyPickerSizePersistence($dialog);
 
         $("<div>")
             .addClass("webapp-node-picker-header")
@@ -3897,6 +4416,7 @@
             .appendTo($dialog);
 
         function close() {
+            persistIconSize();
             $overlay.remove();
             $(document).off("keydown.webappIconPicker");
         }
@@ -4058,8 +4578,10 @@
 
         const $dialog = $("<div>")
             .addClass("webapp-media-picker-dialog webapp-node-picker-dialog")
-            .css({ width: "560px", "max-width": "92vw", "max-height": "82vh" })
+            .css({ width: "560px", "max-width": "95vw", "max-height": "90vh" })
             .appendTo($overlay);
+        // P135 / ADR 0014: shared resize + remembered size.
+        const persistMediaSize = applyPickerSizePersistence($dialog);
 
         $("<div>")
             .addClass("webapp-node-picker-header")
@@ -4085,6 +4607,7 @@
         const $footer = $("<div>").addClass("webapp-node-picker-footer").appendTo($dialog);
 
         function close() {
+            persistMediaSize();
             $overlay.remove();
             $(document).off("keydown.webappMediaPicker");
         }
@@ -4226,6 +4749,8 @@
         bindingValueForEditor,
         buildMountOptionsTree,
         flattenMountOptionTree,
+        buildMountPickerTree,
+        findMountInTree,
         collectEventCheckboxValues,
         injectFieldGroup,
         getNextNameDefault,
@@ -4251,6 +4776,7 @@
         labelWithName,
         nodePickerMatch,
         nodePickerOptionsForPreset,
+        collectReferenceNodes,
         nodePickerPresets,
         openNodePickerDialog,
         parseBindingValue,

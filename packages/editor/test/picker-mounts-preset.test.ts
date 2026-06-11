@@ -20,9 +20,23 @@ import { beforeAll, describe, expect, it } from "vitest";
 type Entry = { value: string; label: string; name: string; id: string; type: string };
 type References = Parameters<(r: unknown) => unknown> extends [infer R] ? R : never;
 
+interface MountTreeSlot {
+    value: string;
+    slot: string;
+}
+interface MountTreeNode {
+    key: string;
+    kind: "app" | "route" | "dialog" | "container";
+    label: string;
+    slots: MountTreeSlot[];
+    children: MountTreeNode[];
+}
+
 interface EditorCommon {
     buildMountOptionsTree: (references: unknown) => Array<{ label: string; options: Array<{ value?: string; label: string; disabled?: boolean }> }>;
     flattenMountOptionTree: (groups: unknown) => Entry[];
+    buildMountPickerTree: (references: unknown, excludeContainerId?: string) => MountTreeNode[];
+    findMountInTree: (tree: MountTreeNode[], mountValue: string) => { path: MountTreeNode[]; slot: string; node: MountTreeNode } | null;
     nodePickerPresets: { mounts: (references: unknown) => Entry[] };
     nodePickerMatch: (entry: Partial<Entry>, query: string) => boolean;
 }
@@ -121,5 +135,104 @@ describe("P114: mounts picker preset", () => {
         expect(common.nodePickerMatch(entry, "")).toBe(true);
         // miss
         expect(common.nodePickerMatch(entry, "zzz")).toBe(false);
+    });
+});
+
+// P135 / ADR 0014 — the structural node tree the two-column mount picker renders.
+// The left column is the structure tree (App → Routes/Dialogs → Container →
+// recursive child containers); the right column is the SLOTS of the selected
+// node (the only selectable leaves; their mount strings are unchanged).
+function multiAppReferences(): References {
+    return {
+        apps: [
+            { id: "shopApp", layoutId: "app", title: "Shop" },
+            { id: "adminApp", layoutId: "app", title: "Admin" }
+        ],
+        routes: [
+            { id: "custRoute", path: "/customers", layoutId: "grid", title: "Customers", parent: "shopApp" },
+            { id: "usersRoute", path: "/users", layoutId: "grid", title: "Users", parent: "adminApp" }
+        ],
+        dialogs: [{ id: "confirmDlg", layoutId: "vertical", title: "Confirm", parent: "shopApp" }],
+        containers: [
+            { id: "cardC", layoutId: "vertical", title: "Card", mount: "route:/customers/content" },
+            { id: "innerC", layoutId: "vertical", title: "Inner", mount: "container:cardC/content" }
+        ],
+        actions: [],
+        stores: []
+    } as unknown as References;
+}
+
+describe("P135: buildMountPickerTree (two-column structure tree)", () => {
+    it("nests App → Route → recursive child containers; only structural nodes are branches", () => {
+        const tree = common.buildMountPickerTree(multiAppReferences());
+
+        // Both apps are top-level branches (NOT app-scoped — P117 carried forward).
+        const keys = tree.map((n) => n.key);
+        expect(keys).toContain("app:shopApp");
+        expect(keys).toContain("app:adminApp");
+
+        const shop = tree.find((n) => n.key === "app:shopApp")!;
+        // The app's own slots are on the app node (right column when selected).
+        expect(shop.slots.map((s) => s.value)).toContain("shopApp.content");
+
+        // The route is a child branch of its app.
+        const route = shop.children.find((n) => n.key === "route:custRoute")!;
+        expect(route).toBeTruthy();
+        expect(route.kind).toBe("route");
+        expect(route.slots.map((s) => s.value)).toEqual(["route:/customers/content"]);
+
+        // The dialog is also a child branch of the app.
+        expect(shop.children.some((n) => n.key === "dialog:confirmDlg")).toBe(true);
+
+        // A child container nests directly under its PARENT NODE (the route),
+        // not under a slot level — and recursively (innerC under cardC).
+        const card = route.children.find((n) => n.key === "container:cardC")!;
+        expect(card).toBeTruthy();
+        expect(card.kind).toBe("container");
+        expect(card.children.some((n) => n.key === "container:innerC")).toBe(true);
+
+        // Slots remain the canonical mount strings (no data-format change).
+        expect(card.slots.map((s) => s.value)).toEqual(["container:cardC/content"]);
+        const inner = card.children.find((n) => n.key === "container:innerC")!;
+        expect(inner.slots.map((s) => s.value)).toEqual(["container:innerC/content"]);
+    });
+
+    it("excludes the edited container's own subtree (cycle guard)", () => {
+        const tree = common.buildMountPickerTree(multiAppReferences(), "cardC");
+        const flat = JSON.stringify(tree);
+        // Editing cardC's mount → neither cardC nor its descendant innerC appear.
+        expect(flat).not.toContain("container:cardC");
+        expect(flat).not.toContain("container:innerC");
+        // The rest of the structure is intact.
+        expect(flat).toContain("route:custRoute");
+        expect(flat).toContain("app:adminApp");
+    });
+
+    it("findMountInTree returns the ancestor path + slot for a mount value", () => {
+        const tree = common.buildMountPickerTree(multiAppReferences());
+
+        const hit = common.findMountInTree(tree, "container:innerC/content");
+        expect(hit).not.toBeNull();
+        expect(hit!.slot).toBe("content");
+        expect(hit!.path.map((n) => n.label)).toEqual(["Shop", "Customers", "Card", "Inner"]);
+
+        const appHit = common.findMountInTree(tree, "shopApp.content");
+        expect(appHit!.path.map((n) => n.label)).toEqual(["Shop"]);
+        expect(appHit!.slot).toBe("content");
+
+        // A non-resolvable mount yields null.
+        expect(common.findMountInTree(tree, "route:/nope/content")).toBeNull();
+        expect(common.findMountInTree(tree, "")).toBeNull();
+    });
+
+    it("the search-mode flat path list is still derivable via flattenMountOptionTree", () => {
+        // P135 keeps flattenMountOptionTree(buildMountOptionsTree(...)) for the
+        // search-mode flat path list + the field's label resolution.
+        const entries = common.flattenMountOptionTree(
+            common.buildMountOptionsTree(multiAppReferences())
+        );
+        const values = entries.map((e) => e.value);
+        expect(values).toContain("route:/customers/content");
+        expect(values).toContain("container:innerC/content");
     });
 });

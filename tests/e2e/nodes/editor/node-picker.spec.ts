@@ -5,6 +5,7 @@ import { FlowBuilder } from "../../../helpers/flow-builder";
 import { NodeEditorPage } from "../../../helpers/node-editor-page";
 import {
     pickReference,
+    pickMountInTree,
     pickerFieldButton,
     pickerFieldClear,
     pickerFieldDisplay,
@@ -163,7 +164,7 @@ test.describe("editor — picker dialog as sole reference selection (P114)", () 
         await expect(rows).toHaveCount(0);
     });
 
-    test("mounts preset offers breadcrumb rows; search + pick writes the mount value", async ({ page, request }) => {
+    test("mounts preset is a two-column tree; selecting a node + slot writes the mount value (P135)", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "shopApp", root: "shopApp", name: "Shop", layout: "app" })
             .route({ id: "custRoute", path: "/customers", layoutId: "grid", title: "Customers" })
@@ -175,29 +176,39 @@ test.describe("editor — picker dialog as sole reference selection (P114)", () 
         await editor.open();
         await editor.openNode("txt1");
 
-        // The mounts preset entries are breadcrumb-labelled, mount-valued.
-        const entries = await page.evaluate(() => {
+        // The mounts preset still exposes the canonical mount strings (no data
+        // change) AND the structural tree the picker renders from.
+        const data = await page.evaluate(() => {
             const C = (window as unknown as { WebappEditorCommon: Record<string, (...a: unknown[]) => unknown> }).WebappEditorCommon;
-            const opts = (C.nodePickerOptionsForPreset as (p: string) => Array<{ value: string; label: string; type: string }>)("mounts");
-            return opts.map((o) => ({ value: o.value, label: o.label, type: o.type }));
+            const refs = (C.collectReferenceNodes as () => unknown)();
+            type TNode = { key: string; slots: Array<{ value: string }>; children: TNode[] };
+            const tree = (C.buildMountPickerTree as (r: unknown) => TNode[])(refs);
+            const flat: string[] = [];
+            const walk = (nodes: TNode[]) => nodes.forEach((n) => {
+                n.slots.forEach((s) => flat.push(s.value));
+                walk(n.children);
+            });
+            walk(tree);
+            return { keys: tree.map((n) => n.key), flat };
         });
-        const values = entries.map((e) => e.value);
-        expect(values).toContain("shopApp.content");
-        expect(values).toContain("route:/customers/content");
-        expect(entries.every((e) => e.type === "mount")).toBe(true);
+        expect(data.keys).toContain("app:shopApp");
+        expect(data.flat).toContain("shopApp.content");
+        expect(data.flat).toContain("route:/customers/content");
 
-        // Open the dialog, search by the route path, pick the route content slot.
-        // The breadcrumb label is self-describing ("Shop > Customers > content").
-        await pickReference(page, "mount", {
-            search: "/customers/content",
-            rowText: "Customers",
-            expectValue: "route:/customers/content"
+        // Open the tree, expand the Shop app, pick the Customers route node
+        // (left), then its content slot (right). The route is a child branch of
+        // the Shop app.
+        await pickMountInTree(page, "mount", {
+            nodeText: "Customers",
+            slotText: "content",
+            expectValue: "route:/customers/content",
+            expandPath: ["Shop"]
         });
 
         // The display now shows the chosen breadcrumb (the route title).
         await expect(pickerFieldDisplay(page, "mount")).toContainText("Customers");
 
-        // Round-trips through save.
+        // Round-trips through save (mount string unchanged).
         await editor.save();
         const saved = await page.evaluate(() => {
             const n = (window as unknown as {
@@ -206,6 +217,147 @@ test.describe("editor — picker dialog as sole reference selection (P114)", () 
             return n ? n.mount : null;
         });
         expect(saved).toBe("route:/customers/content");
+    });
+
+    test("mounts tree search shows a flat path list (no slots) on the left; slots stay on the right (P135)", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "shopApp", root: "shopApp", name: "Shop", layout: "app" })
+            .route({ id: "custRoute", path: "/customers", layoutId: "grid", title: "Customers" })
+            .node("ui-text", { id: "txt2", name: "Text 2" })
+            .build();
+        await deployFlow(request, flow);
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode("txt2");
+
+        await openPicker(page, "mount");
+        await expect(page.locator(".webapp-node-picker-dialog-tree")).toBeVisible();
+
+        // Empty query → the two-column browse view (tree on the left).
+        await expect(page.locator(".webapp-node-picker-tree-node").first()).toBeVisible();
+
+        // Type a query → the left becomes a flat path list (search-paths), and the
+        // right still shows the selected path's slots.
+        await page.locator(".webapp-node-picker-search").fill("customers");
+        await expect(page.locator(".webapp-node-picker-search-paths")).toBeVisible();
+        const pathRows = page.locator(".webapp-node-picker-search-paths .webapp-node-picker-row");
+        await expect(pathRows.first()).toContainText("Customers");
+        // No tree branches (twisties) render in search mode.
+        await expect(page.locator(".webapp-node-picker-tree-node")).toHaveCount(0);
+        // The right column shows the slots of the first (auto-selected) match.
+        await expect(page.locator(".webapp-node-picker-slots .webapp-node-picker-slot-row").first()).toContainText("content");
+
+        // Clearing the search returns to the two-column browse view.
+        await page.locator(".webapp-node-picker-search").fill("");
+        await expect(page.locator(".webapp-node-picker-tree-node").first()).toBeVisible();
+    });
+
+    test("mounts tree is cross-app: a node can be mounted into another app's slot (P135)", async ({ page, request }) => {
+        const flowA = new FlowBuilder()
+            .app({ id: "shopApp", root: "shopApp", name: "Shop", layout: "app" })
+            .route({ id: "shopRoute", path: "/shop", layoutId: "grid", title: "ShopHome" })
+            .node("ui-text", { id: "crossTxt", name: "Cross Text", mount: "route:/shop/content" })
+            .build();
+        const flowB = new FlowBuilder()
+            .app({ id: "adminApp", root: "adminApp", name: "Admin", layout: "app" })
+            .route({ id: "adminRoute", path: "/admin", layoutId: "grid", title: "AdminHome" })
+            .build();
+        await deployFlow(request, [...flowA, ...flowB]);
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode("crossTxt");
+
+        // Both apps are top-level branches in the (not app-scoped) tree.
+        await openPicker(page, "mount");
+        await expect(
+            page.locator(`.webapp-node-picker-tree-text:text-is("Admin")`)
+        ).toBeVisible();
+        await expect(
+            page.locator(`.webapp-node-picker-tree-text:text-is("Shop")`)
+        ).toBeVisible();
+        await page.keyboard.press("Escape");
+
+        // Mount the Shop node into Admin's route slot (cross-app move).
+        await pickMountInTree(page, "mount", {
+            nodeText: "AdminHome",
+            slotText: "content",
+            expectValue: "route:/admin/content",
+            expandPath: ["Admin"]
+        });
+
+        await editor.save();
+        const saved = await page.evaluate(() => {
+            const n = (window as unknown as {
+                RED: { nodes: { node: (id: string) => Record<string, unknown> | null } };
+            }).RED.nodes.node("crossTxt");
+            return n ? n.mount : null;
+        });
+        expect(saved).toBe("route:/admin/content");
+    });
+
+    test("mounts tree cycle guard: editing a container omits its own subtree (P135)", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "cycApp", root: "cycApp", name: "Cyc", layout: "app" })
+            .route({ id: "cycRoute", path: "/c", layoutId: "grid", title: "CycRoute" })
+            .node("ui-container", { id: "outerCont", name: "Outer", layoutId: "vertical", mount: "route:/c/content" })
+            .build();
+        await deployFlow(request, flow);
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode("outerCont");
+
+        await openPicker(page, "mount");
+        await expect(page.locator(".webapp-node-picker-dialog-tree")).toBeVisible();
+        // The container's own node ("Outer") must not appear anywhere in the tree.
+        await expect(page.locator(`.webapp-node-picker-tree-text:text-is("Outer")`)).toHaveCount(0);
+        // The rest of the structure is still there.
+        await expect(page.locator(`.webapp-node-picker-tree-text:text-is("CycRoute")`)).toBeVisible();
+        await page.keyboard.press("Escape");
+    });
+
+    test("picker dialog is resizable and remembers its size across re-open (P135)", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "rzApp", root: "rzApp", name: "Resize App", layout: "app" })
+            .node("ui-text", { id: "rzTxt", name: "Rz Text" })
+            .build();
+        await deployFlow(request, flow);
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode("rzTxt");
+
+        await openPicker(page, "mount");
+        // Native CSS resize handle: the dialog has `resize: both`.
+        const resize = await page.evaluate(() => {
+            const d = document.querySelector(".webapp-node-picker-dialog") as HTMLElement | null;
+            return d ? window.getComputedStyle(d).resize : "";
+        });
+        expect(resize).toBe("both");
+
+        // Resize the dialog (set an explicit larger size), then close.
+        await page.evaluate(() => {
+            const d = document.querySelector(".webapp-node-picker-dialog") as HTMLElement | null;
+            if (d) {
+                d.style.width = "720px";
+                d.style.height = "560px";
+            }
+        });
+        await page.keyboard.press("Escape");
+        await expect(page.locator(".webapp-node-picker-dialog")).toHaveCount(0);
+
+        // Re-open → the remembered size is restored (persisted in localStorage).
+        await openPicker(page, "mount");
+        const restored = await page.evaluate(() => {
+            const d = document.querySelector(".webapp-node-picker-dialog") as HTMLElement | null;
+            return d ? { w: d.offsetWidth, h: d.offsetHeight } : null;
+        });
+        expect(restored).not.toBeNull();
+        expect(restored!.w).toBeGreaterThanOrEqual(700);
+        expect(restored!.h).toBeGreaterThanOrEqual(540);
+        await page.keyboard.press("Escape");
     });
 
     test("optional store field clears via '×' and saves an empty value", async ({ page, request }) => {
