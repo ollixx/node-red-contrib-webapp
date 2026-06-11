@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P153** — nodes/ui-badge — `valuePath`→`value` (Wert-typedInput) — *Field-Typing Welle 2; braucht P113* — [P153](nodes/ui-badge/P153-badge-value-typedinput.md)
 - **P154** — nodes/ui-pagination — `total`/`currentPage` als typedInput (currentPage zweiseitig + Event) — *Field-Typing Welle 2; braucht P113* — [P154](nodes/ui-pagination/P154-pagination-total-currentpage-typedinput.md)
 - **P155** — nodes/ui-tabs — `activeTab` als typedInput (zweiseitig + Event) — *Field-Typing Welle 2; braucht P113* — [P155](nodes/ui-tabs/P155-tabs-activetab-typedinput.md)
 - **P156** — nodes/ui-stepper — `activeStep` als typedInput (zweiseitig + Event) — *Field-Typing Welle 2; braucht P113* — [P156](nodes/ui-stepper/P156-stepper-activestep-typedinput.md)
@@ -68,7 +67,7 @@ open the folder for the full history.
 | nodes/ui-log | 2 |
 | nodes/ui-query | 2 |
 | nodes/ui-store | 2 |
-| nodes/ui-badge | 2 |
+| nodes/ui-badge | 3 |
 | nodes/ui-route | 2 |
 | nodes/ui-text | 2 |
 | nodes/ui-button | 3 |
@@ -94,4 +93,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 150 done, 9 open, 11 deferred.**
+**Total: 151 done, 8 open, 11 deferred.**
