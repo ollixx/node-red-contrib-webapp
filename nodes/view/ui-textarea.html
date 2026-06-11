@@ -9,7 +9,12 @@
                 name: { value: "" },
                 parent: { value: "" },
                 mount: { value: "", required: true },
-                label: { value: "", required: true },
+                // P148 (ADR 0012): `label` persists the binding OBJECT; the
+                // typedInput lives directly on #node-input-label so the
+                // minimal-coverage E2E check still passes (fields:["label"]).
+                // A legacy plain-string `label` is migrated on open.
+                // label is optional for ui-textarea (unlike ui-input).
+                label: { value: { kind: "literal", value: "" } },
                 // P128 (ADR 0012): `value` persists the binding OBJECT; there is no
                 // matching #node-input-value element so Node-RED auto-save cannot
                 // clobber it. The typedInput lives on #node-input-valueBinding.
@@ -17,7 +22,10 @@
                 valuePath: { value: "" },
                 value: { value: null },
                 valueBinding: { value: "" },
-                placeholder: { value: "" },
+                // P148 (ADR 0012): `placeholder` persists the binding OBJECT; the
+                // typedInput lives directly on #node-input-placeholder.
+                // A legacy plain-string `placeholder` is migrated on open.
+                placeholder: { value: null },
                 rows: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 maxLength: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 size: { value: "" },
@@ -50,6 +58,43 @@
                 common.installSizeSelectBox().call(this);
                 common.installLayoutChildPropRows().call(this);
 
+                // P148 (ADR 0012 / display category): `label` typedInput.
+                // The typedInput lives on #node-input-label (not a separate
+                // *Binding element) so the convention `fields:["label"]` is satisfied.
+                // Migration: a legacy plain-string `label` opens as a `str` literal.
+                const storedLabel = common.parseBindingValue(this.label);
+                const labelBinding = storedLabel
+                    ? storedLabel
+                    : (typeof this.label === "string" && this.label.length > 0
+                        ? { kind: "literal", value: this.label }
+                        : undefined);
+                const labelEditor = common.readValueBinding(labelBinding, "");
+                const labelInput = $("#node-input-label");
+                labelInput.typedInput({
+                    default: labelEditor.type,
+                    types: common.valueBindingTypes({ category: "display" })
+                });
+                labelInput.typedInput("type", labelEditor.type);
+                labelInput.typedInput("value", labelEditor.value);
+
+                // P148 (ADR 0012 / display category): `placeholder` typedInput.
+                // The typedInput lives on #node-input-placeholder.
+                // Migration: a legacy plain-string `placeholder` opens as a `str` literal.
+                const storedPlaceholder = common.parseBindingValue(this.placeholder);
+                const placeholderBinding = storedPlaceholder
+                    ? storedPlaceholder
+                    : (typeof this.placeholder === "string" && this.placeholder.length > 0
+                        ? { kind: "literal", value: this.placeholder }
+                        : undefined);
+                const placeholderEditor = common.readValueBinding(placeholderBinding, "");
+                const placeholderInput = $("#node-input-placeholder");
+                placeholderInput.typedInput({
+                    default: placeholderEditor.type,
+                    types: common.valueBindingTypes({ category: "display" })
+                });
+                placeholderInput.typedInput("type", placeholderEditor.type);
+                placeholderInput.typedInput("value", placeholderEditor.value);
+
                 // P128 (ADR 0012 / value/display category): `value` typedInput — full
                 // canonical set. Migration: a legacy `valuePath` plain string becomes a
                 // state binding; a stored `value` binding object takes precedence.
@@ -80,6 +125,18 @@
                 disabledInput.typedInput("value", disabledEditor.value);
             },
             oneditsave: function () {
+                // P148: persist label as binding object.
+                this.label = common.applyValueBinding(
+                    $("#node-input-label").typedInput("type"),
+                    $("#node-input-label").typedInput("value")
+                );
+
+                // P148: persist placeholder as binding object.
+                this.placeholder = common.applyValueBinding(
+                    $("#node-input-placeholder").typedInput("type"),
+                    $("#node-input-placeholder").typedInput("value")
+                );
+
                 // P128: persist value as binding object; clear legacy valuePath.
                 this.value = common.applyValueBinding(
                     $("#node-input-valueBinding").typedInput("type"),
@@ -100,9 +157,11 @@
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <!-- P148 (ADR 0012 / display category): Label binding — typedInput managed in oneditprepare/oneditsave. -->
     <div class="form-row"><label for="node-input-label">Label</label><input type="text" id="node-input-label"></div>
     <!-- P128 (ADR 0012 / value/display category): Value binding — typedInput managed in oneditprepare/oneditsave. -->
     <div class="form-row"><label for="node-input-valueBinding">Value</label><input type="text" id="node-input-valueBinding"></div>
+    <!-- P148 (ADR 0012 / display category): Placeholder binding — typedInput managed in oneditprepare/oneditsave. -->
     <div class="form-row"><label for="node-input-placeholder">Placeholder</label><input type="text" id="node-input-placeholder"></div>
     <div class="form-row"><label for="node-input-rows">Rows</label><input type="number" id="node-input-rows" min="1"></div>
     <div class="form-row"><label for="node-input-maxLength">Max Length</label><input type="number" id="node-input-maxLength" min="1"></div>
@@ -111,6 +170,13 @@
 </script>
 <script type="text/html" data-help-name="ui-textarea">
     <p>Mehrzeiliges Texteingabefeld mit optionalem Zähler und maximaler Länge.</p>
+    <h4>Label (P148)</h4>
+    <p>Bindbares Label — kanonischer Display-Satz (ADR 0012): Store, Query, Route-Param, Reactive,
+    msg, JSONata, string, number, boolean, json, timestamp, Flow, Global, Env.
+    Ein bestehender Plaintext-<code>label</code> wird automatisch als <code>str</code>-Literal übernommen.</p>
+    <h4>Placeholder (P148)</h4>
+    <p>Bindbarer Platzhaltertext — kanonischer Display-Satz (ADR 0012).
+    Ein bestehender Plaintext-<code>placeholder</code> wird automatisch als <code>str</code>-Literal übernommen.</p>
     <h4>Value (P128)</h4>
     <p>Bindbare Quelle des Feldwerts (Anzeige/Initialwert) — voller kanonischer Satz (ADR 0012):
     Store, Query, Route-Param, Reactive, msg, JSONata, string, number, boolean, json, timestamp,
