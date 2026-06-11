@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P133** — nodes/ui-select — Options als EIN typedInput {JSON+Validierung | Store}, placeholder+label auf Wert-Satz, searchable entfernen — *geplant; braucht P113* — [P133](nodes/ui-select/P133-select-options-placeholder-label-searchable.md)
 - **P134** — aspects/editor — Store-typedInput-Layout korrigieren: Name im Wert + zweites eingerücktes Pfad-typedInput (ADR 0013 §4) — *geplant; braucht P132* — [P134](aspects/editor/P134-store-typedinput-layout-fix.md)
 - **P135** — aspects/editor — Mount-Picker als Zwei-Spalten-Tree + Dialog resizable/gemerkt/Ellipsis (ADR 0014) — *geplant; braucht P114* — [P135](aspects/editor/P135-mount-picker-two-column-tree.md)
 - **P136** — nodes/ui-radio — Options als EIN typedInput {JSON+Validierung | Store} (geteilter Helfer mit ui-select) + label auf Wert-Satz — *geplant; braucht P113 + P133* — [P136](nodes/ui-radio/P136-radio-options-label-shared-helper.md)
@@ -62,7 +61,7 @@ open the folder for the full history.
 | nodes/ui-text | 2 |
 | nodes/ui-button | 2 |
 | nodes/ui-input | 2 |
-| nodes/ui-select | 2 |
+| nodes/ui-select | 3 |
 | nodes/ui-switch | 2 |
 | nodes/ui-slider | 2 |
 | nodes/ui-radio | 2 |
@@ -81,4 +80,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 135 done, 0 open, 5 deferred.**
+**Total: 136 done, 3 open, 5 deferred.**

@@ -14,12 +14,12 @@ verify: browser
 spec: docs/nodes/input/ui-select.md
 tests: tests/e2e/nodes/view/ui-select.tests.md
 dependencies: [P113]
-status: in_progress
+status: done
 ---
 # P133 — ui-select: Options/Placeholder/Label/Searchable
 
-> Prinzip: [ADR 0012](../../../adr/0012-binding-ubiquity-every-value-field-offers-bindings.md)
-> (Binding-Ubiquität). Store-typedInput-Layout: [ADR 0013](../../../adr/0013-store-binding-subpath.md)
+> Prinzip: [ADR 0012](../../../../adr/0012-binding-ubiquity-every-value-field-offers-bindings.md)
+> (Binding-Ubiquität). Store-typedInput-Layout: [ADR 0013](../../../../adr/0013-store-binding-subpath.md)
 > + Korrektur **P134** (Options-Store nutzt denselben Store-typedInput). Reines
 > Editor-/Render-Paket für ui-select.
 
@@ -84,3 +84,27 @@ status: in_progress
 - tests: `tests/e2e/nodes/view/ui-select.tests.md` erweitern (Options-Validierung
   3 Formen + Fehlerfall, Store-Options, placeholder/label-Binding,
   searchable-Migration). Unit: die Options-Struktur-Validierung als reine Funktion.
+
+## Result
+
+- **delivered:** ui-select reworked per ADR 0012 — the parallel `optionsJson`/`optionsBinding`
+  fields collapse into one Options typedInput `{ json | store }` (json type validates the 3
+  accepted structures pre-deploy and marks the node red on failure; store type renders the
+  options array reactively from a store path); `label` and `placeholder` now use the canonical
+  value-binding set with live store/state resolution; `searchable` removed from schema, editor,
+  HTML and render. Lossless migration shims for legacy `optionsJson` → json literal,
+  `optionsBinding` → state binding, plain-string `label` → literal binding, and `searchable`
+  (ignored). A pure `normalizeSelectOptions` validator lives in `@schema` (mirrored in
+  editor-common for the browser editor); the renderer gained a structural binding path so a
+  store slice that is legitimately an array is no longer rejected by the display-scalar guard.
+- **stats:** 15 files changed (1 new schema test file); +23 unit tests (schema 259→274) and
+  +8 ui-select E2E specs plus the rewritten editor-panel spec; 0 nodes added (ui-select already
+  existed). Develop verification: `pnpm build` exit 0, full Playwright suite **502 passed / 0
+  failed** (8.1m); `pnpm validate` + `check:links` + `check:roadmap` all OK.
+- **notes:** The store-options rejection by the display-only `resolveStoreBinding` was the one
+  non-obvious issue — fixed with a dedicated `resolveStructuralBinding` used only for select
+  `options`, leaving the display-scalar contract untouched. Per-node example
+  `examples/view/ui-select.json` regenerated via `gen:node-examples` (generator updated to the
+  new binding shape; only that one file changed). `label` keeps its required-validation via a
+  typedInput-aware `validate`. No friction-log entry needed.
+- **cost:** session ad444a1fcbbe50a24, ~33m (orchestrator-measured wall-clock incl. develop E2E).
