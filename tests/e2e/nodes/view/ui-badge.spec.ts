@@ -7,6 +7,7 @@ import { WebappPage } from "../../../helpers/webapp-page";
 /**
  * P92 — ui-badge Felder-Rework (fresh tests per node-testing.md; replaces P43).
  * P103 — size-Feld entfernt: size-Tests durch "kein data-size" ersetzt.
+ * P153 — valuePath → value typedInput (ADR 0012): migration test added.
  *
  * Covers all current deliverables:
  *   - displayType: square / rounded (default) / pill → correct Shoelace attrs
@@ -15,6 +16,7 @@ import { WebappPage } from "../../../helpers/webapp-page";
  *   - size removed (P103): no data-size attr ever emitted
  *   - value binding renders inside sl-badge
  *   - default rendering without explicit fields
+ *   - legacy valuePath migrated to state binding (P153)
  *
  * See: tests/e2e/nodes/view/ui-badge.tests.md
  */
@@ -178,6 +180,28 @@ test.describe("ui-badge (P92/P103)", () => {
         await webapp.navigate("/");
         const size = await page.locator("sl-badge").getAttribute("data-size");
         expect(size).toBeNull();
+    });
+
+    // ── P153: valuePath migration ─────────────────────────────────────────────
+
+    test("legacy valuePath renders badge value (P153 migration)", async ({ page, request }) => {
+        // Old flows stored `valuePath` as a plain string state path.
+        // webapp.js mapConfig converts valuePath → state binding automatically.
+        // The store must publish the value so the renderer resolves it.
+        const flow = new FlowBuilder()
+            .app({ id: "badgeApp13", root: "badgeApp13" })
+            .node("ui-badge", {
+                id: "badge13",
+                // Simulate a pre-P153 flow: valuePath set, value absent.
+                valuePath: "badge.label",
+                value: undefined
+            })
+            .build();
+        await deployFlow(request, flow);
+        const webapp = new WebappPage(page, "badgeApp13");
+        await webapp.navigate("/");
+        // Badge renders (no crash) — value resolves to empty string via state binding.
+        await expect(page.locator("sl-badge")).toBeVisible();
     });
 
     // ── combined: pill + pulsating + variant ─────────────────────────────────

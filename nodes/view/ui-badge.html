@@ -9,8 +9,13 @@
                 name: { value: "" },
                 parent: { value: "" },
                 mount: { value: "", required: true },
-                valuePath: { value: "", required: true },
+                // P153 (ADR 0012): `value` persists the binding OBJECT; there is no
+                // matching #node-input-value element so Node-RED auto-save cannot
+                // clobber it. The typedInput lives on #node-input-valueBinding.
+                // Legacy `valuePath` (pre-P153 plain state path) is kept for migration only.
+                valuePath: { value: "" },
                 value: { value: null },
+                valueBinding: { value: "" },
                 // P92: displayType is now shape (square/rounded/pill).
                 displayType: { value: "rounded" },
                 // P92: variant (renamed from severity).
@@ -40,6 +45,31 @@
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
                 common.installLayoutChildPropRows().call(this);
+
+                // P153 (ADR 0012 / value/display category): `value` typedInput — full
+                // canonical set with literal default type `str` (badge shows text/count).
+                // Migration: a legacy `valuePath` plain string becomes a state binding;
+                // a stored `value` binding object takes precedence.
+                const storedValue = common.parseBindingValue(this.value);
+                const valueBinding = storedValue
+                    ? storedValue
+                    : (this.valuePath ? { kind: "state", path: this.valuePath } : undefined);
+                const valueEditor = common.readValueBinding(valueBinding, "");
+                const valueInput = $("#node-input-valueBinding");
+                valueInput.typedInput({
+                    default: valueEditor.type,
+                    types: common.valueBindingTypes({ category: "value" })
+                });
+                valueInput.typedInput("type", valueEditor.type);
+                valueInput.typedInput("value", valueEditor.value);
+            },
+            oneditsave: function () {
+                // P153: persist value as binding object; clear legacy valuePath.
+                this.value = common.applyValueBinding(
+                    $("#node-input-valueBinding").typedInput("type"),
+                    $("#node-input-valueBinding").typedInput("value")
+                );
+                this.valuePath = "";
             }
         });
     })();
@@ -48,7 +78,8 @@
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
-    <div class="form-row"><label for="node-input-valuePath">Value Path</label><input type="text" id="node-input-valuePath"></div>
+    <!-- P153 (ADR 0012 / value/display category): Value binding — typedInput managed in oneditprepare/oneditsave. -->
+    <div class="form-row"><label for="node-input-valueBinding">Value</label><input type="text" id="node-input-valueBinding"></div>
     <div class="form-row">
         <label for="node-input-displayType">Display Type</label>
         <select id="node-input-displayType">
@@ -77,6 +108,11 @@
 </script>
 <script type="text/html" data-help-name="ui-badge">
 <p>Kleiner Zähler oder Status-Indikator, typischerweise an einem anderen Element.</p>
+<h4>Value (P153)</h4>
+<p>Bindbare Quelle des Badge-Werts — voller kanonischer Satz (ADR 0012):
+Store, Query, Route-Param, Reactive, msg, JSONata, string, number, boolean, json, timestamp,
+Flow, Global, Env. Ein bestehender <code>valuePath</code> wird automatisch als
+<code>state</code>-Binding übernommen. Literaler Default-Typ: <code>string</code>.</p>
 <p><strong>Display Type</strong> bestimmt die <em>Form</em> des Badge: <code>rounded</code> (Standard), <code>pill</code> (abgerundete Enden) oder <code>square</code> (eckig).</p>
 <p><strong>Variant</strong> bestimmt die semantische <em>Farbrolle</em>: <code>neutral</code>, <code>primary</code>, <code>info</code>, <code>success</code>, <code>warning</code>, <code>danger</code>.</p>
 <p><em>Hinweis (backend-neutral):</em> Das Shoelace-Backend unterstützt <strong>Pulsating</strong> nativ über das <code>pulse</code>-Attribut von <code>sl-badge</code>. Andere Backends ohne native Unterstützung können einen CSS-Animations-Fallback einsetzen. Das Feld ist bewusst offen für weitere Backends definiert.</p>

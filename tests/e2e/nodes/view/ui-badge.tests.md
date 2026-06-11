@@ -1,8 +1,8 @@
 # ui-badge — Test Catalogue
 
-Phase: **P103** (size-Feld entfernt). Built on P92 (Felder-Rework: displayType square/rounded/pill, variant rename, pulsating, max removed). Size tests replaced with "no data-size" assertions.
+Phase: **P153** (valuePath → value typedInput, ADR 0012). Built on P103 (size-Feld entfernt) and P92 (Felder-Rework: displayType square/rounded/pill, variant rename, pulsating, max removed).
 
-All tests are in `ui-badge.spec.ts` (E2E, Playwright) and `packages/runtime/test/p92-badge-fields-rework.test.ts` + `packages/runtime/test/p103-badge-remove-size.test.ts` (unit).
+All tests are in `ui-badge.spec.ts` (E2E, Playwright) and `packages/runtime/test/p92-badge-fields-rework.test.ts` + `packages/runtime/test/p103-badge-remove-size.test.ts` + `packages/runtime/test/p153-badge-value-typedinput.test.ts` (unit).
 
 ## Unit tests (`p92-badge-fields-rework.test.ts`)
 
@@ -65,6 +65,19 @@ All tests are in `ui-badge.spec.ts` (E2E, Playwright) and `packages/runtime/test
 | sl-badge rendered correctly without size | Core badge rendering intact |
 | pill + pulse + variant, no data-size | All retained attrs compose; no spurious data-size |
 
+## Unit tests (`p153-badge-value-typedinput.test.ts`)
+
+### mapConfig — value typedInput (P153)
+
+| Test | Goal |
+|---|---|
+| migrates legacy valuePath (plain string) → state binding for value | valuePath back-compat: old flows render without changes |
+| prefers stored value binding object over valuePath | New binding object wins when both present |
+| accepts literal string binding for value | Literal string value passes through |
+| accepts literal number binding for value | Literal number value passes through |
+| falls back to state binding from valuePath when value not present | Migration covers valuePath-only flows |
+| passes displayType, variant, pulsating through unchanged | No regression on other fields |
+
 ## E2E tests (`ui-badge.spec.ts`)
 
 | Test | Goal |
@@ -80,4 +93,5 @@ All tests are in `ui-badge.spec.ts` (E2E, Playwright) and `packages/runtime/test
 | pulsating: true → sl-badge has pulse attribute | Shoelace pulse attribute in browser |
 | pulsating omitted → no pulse attribute | Default: no pulse in browser |
 | no size field → no data-size attribute (P103) | Size removed: no data-size in browser DOM |
+| legacy valuePath renders badge value (P153 migration) | Old flows with valuePath render without crash |
 | pill + pulsating + variant 'primary' combined, no data-size (P103) | All attributes compose correctly; no data-size |
