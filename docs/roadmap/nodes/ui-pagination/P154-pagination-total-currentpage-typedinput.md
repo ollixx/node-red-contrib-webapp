@@ -9,7 +9,7 @@ verify: browser
 spec: docs/nodes/navigation/ui-pagination.md
 tests: tests/e2e/nodes/view/ui-pagination.tests.md
 dependencies: [P113]
-status: pending
+status: in_progress
 ---
 # P154 — ui-pagination: total + currentPage als typedInput
 
