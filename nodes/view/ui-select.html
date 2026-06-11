@@ -9,7 +9,31 @@
                 name: { value: "" },
                 parent: { value: "" },
                 mount: { value: "", required: true },
-                label: { value: "", required: true },
+                // P133 (ADR 0012): `label` persists the binding OBJECT (literal
+                // string or dynamic binding); the typedInput lives on
+                // #node-input-labelBinding. A legacy plain-string `label` migrates.
+                // Required: the labelBinding typedInput must carry a non-empty value
+                // (a literal text or any dynamic binding source).
+                label: {
+                    value: "",
+                    required: true,
+                    validate: function () {
+                        var el = $("#node-input-labelBinding");
+                        if (el.length && typeof el.typedInput === "function") {
+                            var v = el.typedInput("value");
+                            return v !== undefined && v !== null && String(v).length > 0;
+                        }
+                        // Pre-open (no typedInput yet): trust the persisted binding.
+                        var b = this.label;
+                        if (b && typeof b === "object") {
+                            return b.value !== undefined && b.value !== null && String(b.value).length > 0
+                                ? true
+                                : (typeof b.path === "string" && b.path.length > 0);
+                        }
+                        return typeof b === "string" && b.length > 0;
+                    }
+                },
+                labelBinding: { value: "" },
                 // P124 (ADR 0012): `value` persists the binding OBJECT; there is no
                 // matching #node-input-value element so Node-RED auto-save cannot
                 // clobber it. The typedInput lives on #node-input-valueBinding.
@@ -17,11 +41,20 @@
                 value: { value: null },
                 valueBinding: { value: "" },
                 valuePath: { value: "", required: false },
+                // P133 (ADR 0012): single Options field — `options` persists the
+                // binding OBJECT (json literal | store). The typedInput lives on
+                // #node-input-optionsField. Legacy `optionsJson`/`optionsBinding`
+                // strings are kept for migration only.
+                options: { value: null },
+                optionsField: { value: "" },
                 optionsJson: { value: "" },
                 optionsBinding: { value: "" },
-                placeholder: { value: "" },
+                // P133 (ADR 0012): `placeholder` persists the binding OBJECT; the
+                // typedInput lives on #node-input-placeholderBinding.
+                placeholder: { value: null },
+                placeholderBinding: { value: "" },
                 multiple: { value: false },
-                searchable: { value: false },
+                // P133: `searchable` removed.
                 size: { value: "" },
                 // P124 (ADR 0012): `disabled` persists the binding OBJECT; there is
                 // no matching #node-input-disabled element so Node-RED auto-save cannot
@@ -50,6 +83,43 @@
                 common.installReferenceSelectors({ mount: true }).call(this);
                 common.installSizeSelectBox().call(this);
                 common.installLayoutChildPropRows().call(this);
+
+                // P133 (ADR 0012 / value category): `label` typedInput — full set.
+                // Migration: a legacy plain-string `label` opens as a `str` literal.
+                const storedLabel = common.parseBindingValue(this.label);
+                const labelBinding = storedLabel
+                    ? storedLabel
+                    : (typeof this.label === "string" && this.label.length > 0 ? { kind: "literal", value: this.label } : undefined);
+                const labelEditor = common.readValueBinding(labelBinding, "");
+                const labelInput = $("#node-input-labelBinding");
+                labelInput.typedInput({
+                    default: labelEditor.type,
+                    types: common.valueBindingTypes({ category: "value" })
+                });
+                labelInput.typedInput("type", labelEditor.type);
+                labelInput.typedInput("value", labelEditor.value);
+
+                // P133 (ADR 0012 / value category): `placeholder` typedInput.
+                const storedPlaceholder = common.parseBindingValue(this.placeholder);
+                const placeholderBinding = storedPlaceholder
+                    ? storedPlaceholder
+                    : (typeof this.placeholder === "string" && this.placeholder.length > 0 ? { kind: "literal", value: this.placeholder } : undefined);
+                const placeholderEditor = common.readValueBinding(placeholderBinding, "");
+                const placeholderInput = $("#node-input-placeholderBinding");
+                placeholderInput.typedInput({
+                    default: placeholderEditor.type,
+                    types: common.valueBindingTypes({ category: "value" })
+                });
+                placeholderInput.typedInput("type", placeholderEditor.type);
+                placeholderInput.typedInput("value", placeholderEditor.value);
+
+                // P133 (ADR 0012): single Options typedInput — json | store, with
+                // legacy optionsJson / optionsBinding migration + JSON validation.
+                this._saveSelectOptions = common.installSelectOptionsField("#node-input-optionsField", {
+                    options: this.options,
+                    optionsJson: this.optionsJson,
+                    optionsBinding: this.optionsBinding
+                });
 
                 // P124 (ADR 0012 / value category): `value` typedInput — full set.
                 // Migration: a legacy `valuePath` plain state path becomes a
@@ -92,6 +162,24 @@
                     $("#node-input-disabledBinding").typedInput("type"),
                     $("#node-input-disabledBinding").typedInput("value")
                 );
+
+                // P133: persist label as binding object.
+                this.label = common.applyValueBinding(
+                    $("#node-input-labelBinding").typedInput("type"),
+                    $("#node-input-labelBinding").typedInput("value")
+                );
+
+                // P133: persist placeholder as binding object.
+                this.placeholder = common.applyValueBinding(
+                    $("#node-input-placeholderBinding").typedInput("type"),
+                    $("#node-input-placeholderBinding").typedInput("value")
+                );
+
+                // P133: persist options as binding object (json literal | store);
+                // clear the legacy options fields so they don't shadow the new one.
+                this.options = this._saveSelectOptions ? this._saveSelectOptions() : null;
+                this.optionsJson = "";
+                this.optionsBinding = "";
             }
         });
     })();
@@ -100,16 +188,17 @@
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
-    <div class="form-row"><label for="node-input-label">Label</label><input type="text" id="node-input-label"></div>
+    <!-- P133 (ADR 0012 / value category): Label binding — typedInput managed in oneditprepare/oneditsave. -->
+    <div class="form-row"><label for="node-input-labelBinding">Label</label><input type="text" id="node-input-labelBinding"></div>
     <!-- P124 (ADR 0012 / value category): Value binding — typedInput managed in oneditprepare/oneditsave. -->
     <div class="form-row"><label for="node-input-valueBinding">Value</label><input type="text" id="node-input-valueBinding"></div>
     <!-- P124 (ADR 0012 / boolean category): Disabled binding — typedInput managed in oneditprepare/oneditsave. -->
     <div class="form-row"><label for="node-input-disabledBinding">Disabled</label><input type="text" id="node-input-disabledBinding"></div>
-    <div class="form-row"><label for="node-input-optionsJson">Options (JSON)</label><input type="text" id="node-input-optionsJson" placeholder='[{"label":"A","value":"a"}]'></div>
-    <div class="form-row"><label for="node-input-optionsBinding">Options Binding</label><input type="text" id="node-input-optionsBinding" placeholder="store path"></div>
-    <div class="form-row"><label for="node-input-placeholder">Placeholder</label><input type="text" id="node-input-placeholder"></div>
+    <!-- P133 (ADR 0012): single Options field — json (NR JSON editor) | store. -->
+    <div class="form-row"><label for="node-input-optionsField">Options</label><input type="text" id="node-input-optionsField"></div>
+    <!-- P133 (ADR 0012 / value category): Placeholder binding. -->
+    <div class="form-row"><label for="node-input-placeholderBinding">Placeholder</label><input type="text" id="node-input-placeholderBinding"></div>
     <div class="form-row"><label for="node-input-multiple">Multiple</label><input type="checkbox" id="node-input-multiple" style="width:auto"></div>
-    <div class="form-row"><label for="node-input-searchable">Searchable</label><input type="checkbox" id="node-input-searchable" style="width:auto"></div>
 </script>
 <script type="text/html" data-help-name="ui-select">
 <p>Dropdown- oder Combobox-Eingabefeld mit konfigurierbaren Optionen. Rendert ein <code>sl-select</code>-Element.</p>
@@ -121,9 +210,15 @@ Ein bestehender <code>valuePath</code> wird automatisch als <code>state</code>-B
 <p>Bindbare Bedingung zum Deaktivieren des Auswahlfeldes (Boolean-Zustand-Satz, ADR 0012):
 Store, Query, Route-Param, Reactive, msg, JSONata, boolean, Flow, Global, Env.
 Ein Store-Binding deaktiviert das Select live, sobald der Wert truthy ist.</p>
-<h3>Optionen</h3>
-<p>Statisch als JSON-Array <code>[{"label":"A","value":"a"}]</code> oder als Binding auf ein
-Array im Client-State (z. B. aus einem <code>ui-store</code>).</p>
+<h3>Label &amp; Placeholder (P133)</h3>
+<p>Beide nutzen den kanonischen Wert-Satz (ADR 0012): literaler Text oder ein Binding
+(Store, Query, Route-Param, Reactive, msg, JSONata, Flow, Global, Env).</p>
+<h3>Optionen (P133)</h3>
+<p>Ein einziges Feld mit zwei Typen: <code>Options</code> (NR-JSON-Editor) oder <code>Store</code>.
+Das JSON akzeptiert genau eine von drei Formen — Objekt <code>{"A":"a"}</code>,
+String-Array <code>["A","B"]</code> oder Objekt-Array <code>[{"label":"A","value":"a"}]</code>;
+andere Strukturen markieren den Knoten vor dem Deploy als ungültig. Der Typ <code>Store</code>
+liest die Optionen reaktiv aus einem Store(-Pfad).</p>
 <h3>Mehrfachauswahl</h3>
 <p>Bei <code>multiple: true</code> ist <code>value</code> ein Array der gewählten Werte;
 das <code>change</code>-Event liefert entsprechend ein Array.</p>

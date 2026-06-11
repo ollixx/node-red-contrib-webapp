@@ -84,10 +84,13 @@ test.describe("editor panels — view nodes (P47)", () => {
         expect(sizeOptions).toEqual(expect.arrayContaining(["xs", "sm", "md", "lg", "xl"]));
     });
 
-    test("ui-select — P124 value binding + options fields present, required label validation", async ({ page, request }) => {
-        // P124 (ADR 0012): the plain `valuePath` field was removed; `value` is now a
-        // canonical typedInput on #node-input-valueBinding. Validity is driven by the
-        // required `label` and `mount` fields, so we exercise it on `label`.
+    test("ui-select — P133 label/value/options/placeholder typedInputs present, required label validation", async ({ page, request }) => {
+        // P124: `value` is a canonical typedInput on #node-input-valueBinding.
+        // P133 (ADR 0012): `label` and `placeholder` are canonical typedInputs
+        // (#node-input-labelBinding / #node-input-placeholderBinding); the two old
+        // Options fields collapse to ONE #node-input-optionsField (json|store); the
+        // `searchable` checkbox is gone. Validity is driven by the required label
+        // (non-empty labelBinding value) and mount.
         const flow = appWithRoute(new FlowBuilder(), "selApp")
             .node("ui-select", { id: "selEd", label: "" })
             .build();
@@ -97,10 +100,16 @@ test.describe("editor panels — view nodes (P47)", () => {
         await editor.open();
         await editor.openNode("selEd");
 
-        await editor.expectFields(["name", "mount", "label", "valueBinding", "optionsJson", "optionsBinding"]);
+        await editor.expectFields([
+            "name", "mount", "labelBinding", "valueBinding", "disabledBinding",
+            "optionsField", "placeholderBinding", "multiple"
+        ]);
+        // P133: the removed fields must NOT be present.
+        expect(await editor.hasField("optionsJson")).toBe(false);
+        expect(await editor.hasField("searchable")).toBe(false);
         expect(await editor.getValidationState("selEd")).toBe("invalid");
 
-        await editor.fillField("label", "Country");
+        await editor.fillTypedInput("labelBinding", "Country", "str");
         await editor.save();
         expect(await editor.getValidationState("selEd")).toBe("valid");
     });

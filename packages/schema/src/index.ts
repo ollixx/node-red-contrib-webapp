@@ -145,6 +145,7 @@ export {
     uiAvatarNodeDefinitionSchema,
     uiDividerNodeDefinitionSchema,
     uiLogNodeDefinitionSchema,
+    normalizeSelectOptions,
     validateUiNodeDefinition
 } from "./node-definitions";
 export type {
@@ -173,6 +174,8 @@ export type {
     UiRadioNodeDefinition,
     UiRouteNodeDefinition,
     UiSelectNodeDefinition,
+    SelectOption,
+    SelectOptionsResult,
     UiSkeletonNodeDefinition,
     UiSliderNodeDefinition,
     UiStoreNodeDefinition,

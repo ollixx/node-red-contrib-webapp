@@ -251,4 +251,175 @@ test.describe("ui-select (P44 + P124)", () => {
         expect(body.event).toBe("change");
         expect((body.params as Record<string, unknown>).value).toBe("de");
     });
+
+    // ─── P133: Options (json|store), placeholder/label bindings, searchable gone ──
+
+    test("P133: Options json — object-map form { label: value } renders sl-options", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "p133ObjApp", root: "p133ObjApp" })
+            .node("ui-select", {
+                id: "p133ObjNode",
+                label: "Country",
+                // Form 1: object map { label: value }.
+                options: { kind: "literal", value: { Germany: "de", France: "fr" } }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "p133ObjApp");
+        await webapp.navigate("/");
+        await expect(page.locator("sl-select")).toBeVisible();
+        await expect(page.locator("sl-option[value='de']")).toBeAttached();
+        await expect(page.locator("sl-option[value='fr']")).toBeAttached();
+    });
+
+    test("P133: Options json — string-array form ['A','B'] renders value=label", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "p133StrApp", root: "p133StrApp" })
+            .node("ui-select", {
+                id: "p133StrNode",
+                label: "Pick",
+                // Form 2: array of strings → value = label.
+                options: { kind: "literal", value: ["Alpha", "Beta"] }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "p133StrApp");
+        await webapp.navigate("/");
+        await expect(page.locator("sl-option[value='Alpha']")).toBeAttached();
+        await expect(page.locator("sl-option[value='Beta']")).toBeAttached();
+    });
+
+    test("P133: Options store-binding renders options reactively from the store", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "p133StoreApp", root: "p133StoreApp" })
+            .node("ui-store", {
+                id: "p133OptStore",
+                statePath: "countryOptions",
+                initialValue: JSON.stringify([
+                    { label: "Germany", value: "de" },
+                    { label: "Spain", value: "es" }
+                ])
+            })
+            .node("ui-select", {
+                id: "p133StoreNode",
+                label: "Country",
+                // store binding: path = the ui-store NODE id.
+                options: { kind: "store", path: "p133OptStore" }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "p133StoreApp");
+        await webapp.navigate("/");
+        await expect(page.locator("sl-select")).toBeVisible();
+        await expect(page.locator("sl-option[value='de']")).toBeAttached();
+        await expect(page.locator("sl-option[value='es']")).toBeAttached();
+    });
+
+    test("P133: legacy optionsBinding migrates to a (state) options binding — app does not crash", async ({ page, request }) => {
+        // Legacy config: optionsBinding string → stateBinding(path). Without a live
+        // store feeding the path the select renders with no options but must not crash.
+        const flow = new FlowBuilder()
+            .app({ id: "p133LegBindApp", root: "p133LegBindApp" })
+            .node("ui-select", {
+                id: "p133LegBindNode",
+                label: "Legacy Binding",
+                optionsBinding: "data.options"
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "p133LegBindApp");
+        await webapp.navigate("/");
+        await expect(webapp.root()).toBeVisible();
+        await expect(page.locator("sl-select")).toBeVisible();
+    });
+
+    test("P133: placeholder literal renders as sl-select[placeholder]", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "p133PhApp", root: "p133PhApp" })
+            .node("ui-select", {
+                id: "p133PhNode",
+                label: "Lang",
+                placeholder: { kind: "literal", value: "Choose a language" },
+                options: { kind: "literal", value: [{ label: "EN", value: "en" }] }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "p133PhApp");
+        await webapp.navigate("/");
+        await expect(page.locator("sl-select")).toHaveAttribute("placeholder", "Choose a language");
+    });
+
+    test("P133: placeholder store-binding shows the live value", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "p133PhStoreApp", root: "p133PhStoreApp" })
+            .node("ui-store", {
+                id: "p133PhStore",
+                statePath: "hint",
+                initialValue: JSON.stringify("Pick one (live)")
+            })
+            .node("ui-select", {
+                id: "p133PhStoreNode",
+                label: "Lang",
+                placeholder: { kind: "store", path: "p133PhStore" },
+                options: { kind: "literal", value: [{ label: "EN", value: "en" }] }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "p133PhStoreApp");
+        await webapp.navigate("/");
+        await expect(page.locator("sl-select")).toHaveAttribute("placeholder", "Pick one (live)");
+    });
+
+    test("P133: label store-binding shows the live value", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "p133LblStoreApp", root: "p133LblStoreApp" })
+            .node("ui-store", {
+                id: "p133LblStore",
+                statePath: "fieldLabel",
+                initialValue: JSON.stringify("Country (live)")
+            })
+            .node("ui-select", {
+                id: "p133LblStoreNode",
+                label: { kind: "store", path: "p133LblStore" },
+                options: { kind: "literal", value: [{ label: "EN", value: "en" }] }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "p133LblStoreApp");
+        await webapp.navigate("/");
+        await expect(page.locator("sl-select")).toHaveAttribute("label", "Country (live)");
+    });
+
+    test("P133: legacy `searchable:true` config loads without error", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "p133SearchApp", root: "p133SearchApp" })
+            .node("ui-select", {
+                id: "p133SearchNode",
+                label: "Old",
+                searchable: true,
+                optionsJson: JSON.stringify([{ label: "A", value: "a" }])
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "p133SearchApp");
+        await webapp.navigate("/");
+        await expect(webapp.root()).toBeVisible();
+        await expect(page.locator("sl-select")).toBeVisible();
+    });
 });

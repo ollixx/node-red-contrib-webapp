@@ -1,4 +1,5 @@
 import {
+    normalizeSelectOptions,
     standardLayoutPresetIds,
     validateUiNodeDefinition,
     type ActionParamEntry,
@@ -149,13 +150,16 @@ export interface UiQueryEditorConfig extends IdentifiedEditorConfig {
 }
 
 export interface UiSelectEditorConfig extends MountableEditorConfig {
-    label?: string;
+    // P133: label and placeholder accept a binding object or a literal string.
+    label?: string | BindingDefinition;
     valuePath?: string;
+    // P133: single Options field — a binding object (json literal | store) or a
+    // raw JSON value; legacy optionsJson/optionsBinding kept for migration.
+    options?: unknown;
     optionsJson?: string;
     optionsBinding?: string;
-    placeholder?: string;
+    placeholder?: string | BindingDefinition;
     multiple?: boolean;
-    searchable?: boolean;
 }
 
 export interface UiCheckboxEditorConfig extends MountableEditorConfig {
@@ -623,6 +627,45 @@ function stateBinding(path: string): BindingDefinition {
     };
 }
 
+function isBindingObject(value: unknown): value is BindingDefinition {
+    return Boolean(value) && typeof value === "object" && typeof (value as { kind?: unknown }).kind === "string";
+}
+
+// P133 (ADR 0012): resolve a ui-select / ui-radio `options` editor config into
+// the node-definition `options` value — a normalised `{label,value}[]` array
+// (json type) or a binding object (store type), migrating legacy fields.
+function selectOptionsFromConfig(
+    config: { options?: unknown; optionsJson?: string; optionsBinding?: string },
+    fallback: UiSelectNodeDefinition["options"]
+): UiSelectNodeDefinition["options"] {
+    const candidate = config.options;
+    if (isBindingObject(candidate)) {
+        if (candidate.kind === "literal") {
+            const normalised = normalizeSelectOptions((candidate as { value?: unknown }).value);
+            return normalised.ok ? normalised.options : fallback;
+        }
+        return candidate;
+    }
+    if (candidate && typeof candidate === "object") {
+        const normalised = normalizeSelectOptions(candidate);
+        return normalised.ok ? normalised.options : fallback;
+    }
+    if (config.optionsJson) {
+        const normalised = normalizeSelectOptions(JSON.parse(config.optionsJson));
+        return normalised.ok ? normalised.options : fallback;
+    }
+    if (config.optionsBinding) {
+        return stateBinding(config.optionsBinding);
+    }
+    return fallback;
+}
+
+// P133: a ui-select label/placeholder may be a literal string or a binding —
+// either is passed through to the schema (which accepts both).
+function bindingOrString(value: string | BindingDefinition | undefined): string | BindingDefinition | undefined {
+    return value;
+}
+
 function queryBinding(path: string): BindingDefinition {
     return {
         kind: "query",
@@ -850,12 +893,15 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         type: "ui-select",
         id: config.id ?? "",
         mount: config.mount ?? "",
-        label: config.label ?? "",
+        // P133: label is a binding (literal string or dynamic binding).
+        label: bindingOrString(config.label) ?? "",
         value: stateBinding(config.valuePath ?? ""),
-        options: config.optionsJson ? JSON.parse(config.optionsJson) : (config.optionsBinding ? stateBinding(config.optionsBinding) : undefined),
-        placeholder: config.placeholder,
+        // P133: single Options field — json (array) | store, with legacy migration.
+        options: selectOptionsFromConfig(config, undefined),
+        // P133: placeholder is a binding (literal string or dynamic binding).
+        placeholder: bindingOrString(config.placeholder),
         multiple: config.multiple,
-        searchable: config.searchable,
+        // P133: `searchable` removed.
         ...collectLayoutChildConfig(config)
     })),
     "ui-checkbox": createDefinition("ui-checkbox", "view", {

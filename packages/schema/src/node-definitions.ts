@@ -460,14 +460,103 @@ const selectOptionSchema = z.object({
     value: z.unknown()
 });
 
+/** A normalised select option — always `{ label, value }`. */
+export interface SelectOption {
+    label: string;
+    value: unknown;
+}
+
+/** Result of {@link normalizeSelectOptions}: either the normalised list or an error message. */
+export type SelectOptionsResult =
+    | { ok: true; options: SelectOption[] }
+    | { ok: false; error: string };
+
+/**
+ * P133 (ADR 0012): the ONE pure validator/normaliser for a ui-select `options`
+ * JSON value. The editor's `json`-type Options field, the runtime mapper, and
+ * the unit tests all share this single source of truth so the three accepted
+ * forms — and the rejection of everything else — stay in lockstep.
+ *
+ * Accepts exactly one of three shapes and normalises to `{ label, value }[]`:
+ *   1. **Object** `{ "<label>": "<value>" }`  → key = label, value = value.
+ *   2. **Array of strings** `["A","B"]`       → value = label.
+ *   3. **Array of objects** `[{ label, value }]` (each needs both props).
+ *
+ * Anything else (a bare number/string/bool, an array of numbers, an array of
+ * objects missing `label`/`value`, an object whose values are non-scalars, …)
+ * is rejected with a spoken error. An empty array / empty object → `[]` (valid,
+ * renders no options). `null`/`undefined` → `[]` (no options).
+ */
+export function normalizeSelectOptions(input: unknown): SelectOptionsResult {
+    if (input === undefined || input === null) {
+        return { ok: true, options: [] };
+    }
+
+    if (Array.isArray(input)) {
+        if (input.length === 0) {
+            return { ok: true, options: [] };
+        }
+
+        // Form 2: array of strings (value = label).
+        if (input.every((entry) => typeof entry === "string")) {
+            return { ok: true, options: input.map((label) => ({ label: label as string, value: label })) };
+        }
+
+        // Form 3: array of objects, each with both `label` and `value`.
+        if (input.every((entry) => typeof entry === "object" && entry !== null && !Array.isArray(entry))) {
+            const options: SelectOption[] = [];
+            for (const entry of input as Record<string, unknown>[]) {
+                if (typeof entry.label !== "string" || entry.label.length === 0) {
+                    return { ok: false, error: "Each option object must have a non-empty string 'label'." };
+                }
+                if (!("value" in entry)) {
+                    return { ok: false, error: "Each option object must declare a 'value'." };
+                }
+                options.push({ label: entry.label, value: entry.value });
+            }
+            return { ok: true, options };
+        }
+
+        return {
+            ok: false,
+            error: "Options array must be all strings (['A','B']) or all objects ([{label,value}])."
+        };
+    }
+
+    if (typeof input === "object") {
+        // Form 1: object map { label: value } — each value must be a scalar.
+        const entries = Object.entries(input as Record<string, unknown>);
+        if (entries.length === 0) {
+            return { ok: true, options: [] };
+        }
+        const options: SelectOption[] = [];
+        for (const [label, value] of entries) {
+            if (value !== null && typeof value === "object") {
+                return { ok: false, error: "Options object values must be scalars (string/number/boolean), not objects or arrays." };
+            }
+            options.push({ label, value });
+        }
+        return { ok: true, options };
+    }
+
+    return {
+        ok: false,
+        error: "Options must be an object {label:value}, an array of strings, or an array of {label,value} objects."
+    };
+}
+
 export const uiSelectNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-select"),
-    label: z.string().min(1, "Select labels must not be empty."),
+    // P133: label accepts the canonical value-binding set (ADR 0012) — a literal
+    // non-empty string OR a binding object (store/query/route-param/…).
+    label: z.union([bindingSchema, z.string().min(1, "Select labels must not be empty.")]),
     value: bindingSchema,
     options: z.union([z.array(selectOptionSchema), bindingSchema]).optional(),
-    placeholder: z.string().optional(),
+    // P133: placeholder and label accept the canonical value-binding set (ADR
+    // 0012) — a literal string, a store/query/route-param/… binding object, etc.
+    placeholder: z.union([bindingSchema, z.string()]).optional(),
     multiple: z.boolean().optional(),
-    searchable: z.boolean().optional(),
+    // P133: `searchable` removed — neither Shoelace nor Bootstrap support it.
     // P71: three-step size (sm/md/lg).
     size: componentSizeSchema.optional(),
     disabled: bindingSchema.optional()

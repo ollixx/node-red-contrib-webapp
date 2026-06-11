@@ -3065,6 +3065,144 @@
         return String(value);
     }
 
+    // ─── P133 (ADR 0012): ui-select Options validation/normalisation ──────────
+    // Browser-side mirror of schema's `normalizeSelectOptions` (the editor cannot
+    // require the schema dist). Accepts exactly three forms and rejects the rest:
+    //   1. object map  { label: value }            (values must be scalars)
+    //   2. array of strings  ["A","B"]             (value = label)
+    //   3. array of objects  [{ label, value }]    (both props required)
+    // Empty array/object/null/undefined → [] (valid, no options).
+    function normalizeSelectOptionsStructure(input) {
+        if (input === undefined || input === null) {
+            return { ok: true, options: [] };
+        }
+        if (Array.isArray(input)) {
+            if (input.length === 0) {
+                return { ok: true, options: [] };
+            }
+            if (input.every(function (e) { return typeof e === "string"; })) {
+                return { ok: true, options: input.map(function (label) { return { label: label, value: label }; }) };
+            }
+            if (input.every(function (e) { return typeof e === "object" && e !== null && !Array.isArray(e); })) {
+                var arr = [];
+                for (var i = 0; i < input.length; i++) {
+                    var entry = input[i];
+                    if (typeof entry.label !== "string" || entry.label.length === 0) {
+                        return { ok: false, error: "Each option object must have a non-empty string 'label'." };
+                    }
+                    if (!("value" in entry)) {
+                        return { ok: false, error: "Each option object must declare a 'value'." };
+                    }
+                    arr.push({ label: entry.label, value: entry.value });
+                }
+                return { ok: true, options: arr };
+            }
+            return { ok: false, error: "Options array must be all strings (['A','B']) or all objects ([{label,value}])." };
+        }
+        if (typeof input === "object") {
+            var keys = Object.keys(input);
+            if (keys.length === 0) {
+                return { ok: true, options: [] };
+            }
+            var out = [];
+            for (var k = 0; k < keys.length; k++) {
+                var v = input[keys[k]];
+                if (v !== null && typeof v === "object") {
+                    return { ok: false, error: "Options object values must be scalars (string/number/boolean), not objects or arrays." };
+                }
+                out.push({ label: keys[k], value: v });
+            }
+            return { ok: true, options: out };
+        }
+        return { ok: false, error: "Options must be an object {label:value}, an array of strings, or an array of {label,value} objects." };
+    }
+
+    // Validate a raw JSON STRING for the Options `json` typedInput. Returns
+    // true (valid / empty) or an error string (invalid JSON or wrong structure).
+    function validateSelectOptionsJson(raw) {
+        var text = raw === undefined || raw === null ? "" : String(raw).trim();
+        if (text.length === 0) {
+            return true;
+        }
+        var parsed;
+        try {
+            parsed = JSON.parse(text);
+        }
+        catch (_e) {
+            return "Options must be valid JSON.";
+        }
+        var result = normalizeSelectOptionsStructure(parsed);
+        return result.ok ? true : result.error;
+    }
+
+    // Install the P133 single Options typedInput on `selector` (json | store).
+    // Reads the stored `options` binding object (literal json / store) and a
+    // legacy optionsJson / optionsBinding for migration. Returns a `save()` that
+    // serialises the typedInput back into the `options` binding object.
+    function installSelectOptionsField(selector, opts) {
+        var options = opts || {};
+        var input = $(selector);
+        var stored = parseBindingValue(options.options);
+
+        var initialType = "json";
+        var initialValue = "";
+        if (stored && stored.kind === "store") {
+            initialType = "store";
+            initialValue = encodeStoreFieldValue(stored.path, stored.subPath);
+        }
+        else if (stored && stored.kind === "literal") {
+            initialType = "json";
+            initialValue = literalEditorValue(stored.value, "");
+        }
+        else if (options.optionsJson) {
+            // Legacy static JSON string.
+            initialType = "json";
+            initialValue = String(options.optionsJson);
+        }
+        else if (options.optionsBinding) {
+            // Legacy store-path binding string → store type.
+            initialType = "store";
+            initialValue = encodeStoreFieldValue(options.optionsBinding, null);
+        }
+
+        input.typedInput({
+            default: initialType,
+            types: [
+                {
+                    value: "json",
+                    label: "Options",
+                    icon: "fa fa-list",
+                    hasValue: true,
+                    validate: validateSelectOptionsJson
+                },
+                storeTypedInputType({ label: "Store" })
+            ]
+        });
+        input.typedInput("type", initialType);
+        input.typedInput("value", initialValue);
+
+        return function save() {
+            var type = input.typedInput("type");
+            var value = input.typedInput("value");
+            if (type === "store") {
+                return applyValueBinding("store", value);
+            }
+            // json type → literal binding carrying the parsed structure (or null).
+            var text = value === undefined || value === null ? "" : String(value).trim();
+            if (text.length === 0) {
+                return null;
+            }
+            try {
+                return { kind: "literal", value: JSON.parse(text) };
+            }
+            catch (_e) {
+                // Invalid JSON is blocked by the typedInput validate before save;
+                // persist the raw string so nothing is silently lost.
+                return { kind: "literal", value: text };
+            }
+        };
+    }
+
     function isStandardLayoutPreset(value) {
         return standardLayoutPresetOptions.some(function (option) {
             return option.value === value;
@@ -4080,6 +4218,9 @@
         valueBindingTypes,
         readValueBinding,
         applyValueBinding,
+        normalizeSelectOptionsStructure,
+        validateSelectOptionsJson,
+        installSelectOptionsField,
         bindingValueForEditor,
         buildMountOptionsTree,
         flattenMountOptionTree,
