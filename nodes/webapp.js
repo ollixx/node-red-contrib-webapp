@@ -1047,6 +1047,21 @@ function toComponentDefinitions(components) {
             if (disabledBinding) {
                 bind.disabled = disabledBinding;
             }
+            // P145 (ADR 0012): `label` may now be a binding object or a plain
+            // string (legacy). When it is a dynamic binding (non-literal), route
+            // it through bind.label; a literal binding unwraps to props.label; a
+            // plain string stays in props.label unchanged.
+            const inputLabelDef = component.label;
+            const inputLabelBinding = getBinding(inputLabelDef, undefined);
+            const inputLabelLiteral = (inputLabelBinding && inputLabelBinding.kind === "literal")
+                ? (inputLabelBinding.value !== undefined && inputLabelBinding.value !== null ? String(inputLabelBinding.value) : undefined)
+                : undefined;
+            const inputLabelProp = inputLabelLiteral !== undefined
+                ? inputLabelLiteral
+                : (typeof inputLabelDef === "string" ? inputLabelDef : undefined);
+            if (inputLabelBinding && inputLabelBinding.kind !== "literal") {
+                bind.label = inputLabelBinding;
+            }
             return {
                 id: component.id,
                 kind: "input",
@@ -1054,7 +1069,7 @@ function toComponentDefinitions(components) {
                 order: toOptionalNumber(component.order),
                 bind,
                 props: {
-                    label: component.label,
+                    label: inputLabelProp,
                     storeId: component.storeId,
                     path: component.path,
                     inputType: component.inputType,
