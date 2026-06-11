@@ -1,9 +1,9 @@
 {
   "phase": "P139",
   "sessionId": "abc14e6dafc0237fd",
-  "toolCalls": 40,
-  "lastAt": "2026-06-11T15:35:13Z",
-  "activity": "waiting for E2E baseline (bywa24el5), tests written first",
-  "backgroundTasks": ["bywa24el5"],
+  "toolCalls": 65,
+  "lastAt": "2026-06-11T15:42:05Z",
+  "activity": "running targeted E2E (base-fields, placement-rows, minimal-coverage)",
+  "backgroundTasks": [],
   "status": "running"
 }

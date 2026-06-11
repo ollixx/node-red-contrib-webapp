@@ -2,6 +2,21 @@
 <script type="text/javascript">
     (function () {
         const common = window.WebappEditorCommon;
+        // P139 (ADR 0015): ui-divider is the base-field REFERENCE node — it is
+        // non-variant (so `color` is active), non-interactive (`disabled` N/A)
+        // and has no size steps (`size` N/A, rarely used → "Erweitert").
+        const BASE_FIELDS = {
+            visible: true,
+            disabled: false,
+            color: true,
+            size: false,
+            variant: false,
+            advanced: ["size"],
+            hints: {
+                disabled: "Ein Trenner hat keinen interaktiven Zustand.",
+                size: "Ein Trenner hat keine Größen-Stufen."
+            }
+        };
         common.registerNodeType("ui-divider", {
             category: "webapp view",
             color: "#f4efcf",
@@ -11,6 +26,14 @@
                 mount: { value: "", required: true },
                 orientation: { value: "horizontal" },
                 label: { value: "" },
+                // P139 (ADR 0015): base fields. `visible`/`color` persist the
+                // binding OBJECT; there are no matching #node-input-visible /
+                // #node-input-color elements so Node-RED auto-save cannot clobber
+                // them — the typedInputs live on the *Binding carrier inputs.
+                visible: { value: null },
+                visibleBinding: { value: "" },
+                color: { value: null },
+                colorBinding: { value: "" },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
                 col: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
@@ -30,7 +53,14 @@
             },
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
+                // P139: the shared base-field group ("Allgemein") — visible/
+                // disabled/color/size with node-local applicability (BASE_FIELDS).
+                common.installBaseFields(BASE_FIELDS).call(this);
                 common.installLayoutChildPropRows().call(this);
+            },
+            oneditsave: function () {
+                // P139: persist the applicable base fields as binding objects.
+                common.applyBaseFields(BASE_FIELDS).call(this);
             }
         });
     })();
@@ -47,4 +77,7 @@
     </div>
     <div class="form-row"><label for="node-input-label">Label</label><input type="text" id="node-input-label" placeholder="optional divider label"></div>
 </script>
-<script type="text/html" data-help-name="ui-divider"><p>Visueller Trenner (horizontal oder vertikal), optional mit Label.</p></script>
+<script type="text/html" data-help-name="ui-divider"><p>Visueller Trenner (horizontal oder vertikal), optional mit Label.</p>
+<p><b>Basis-Felder (Allgemein):</b> <code>Visible</code> (Boolean-Zustand-Binding, leer = sichtbar) und
+<code>Color</code> (allgemeine Linienfarbe, bindbar) sind anwendbar; <code>Disabled</code> und
+<code>Size</code> sind für einen Trenner nicht anwendbar und werden deaktiviert mit Hinweis angezeigt.</p></script>
