@@ -2,7 +2,7 @@
 id: P134
 title: "store-typedInput-Layout korrigieren: Name im Wert-Bereich + zweites eingerücktes Pfad-typedInput (nicht Ein-Zeilen-Quetschung)"
 epic: aspects/editor
-status: pending
+status: in_progress
 dependencies: [P132]
 spec: docs/nodes/concepts/editor.md
 tests: tests/e2e/nodes/state/ui-store.tests.md
