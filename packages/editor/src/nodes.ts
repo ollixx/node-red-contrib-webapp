@@ -372,7 +372,8 @@ export interface UiAvatarEditorConfig extends MountableEditorConfig {
 
 export interface UiDividerEditorConfig extends MountableEditorConfig {
     orientation?: "horizontal" | "vertical";
-    label?: string;
+    // P150 (ADR 0012): label may be a literal string or a binding object.
+    label?: string | BindingDefinition;
 }
 
 export interface UiLogEditorConfig extends MountableEditorConfig {
@@ -1441,7 +1442,9 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         id: config.id ?? "",
         mount: config.mount ?? "",
         orientation: config.orientation,
-        label: config.label || undefined,
+        // P150 (ADR 0012): label may be a binding object or a plain string;
+        // bindingOrString passes either through unchanged. Falsy → undefined.
+        label: bindingOrString(config.label) || undefined,
         ...collectLayoutChildConfig(config)
     })),
     // P57: ui-log — persistent error/log display
