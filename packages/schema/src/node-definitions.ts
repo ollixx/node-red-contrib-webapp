@@ -603,9 +603,12 @@ export type UiRadioNodeDefinition = z.infer<typeof uiRadioNodeDefinitionSchema>;
 export const uiSwitchNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-switch"),
     value: bindingSchema,
-    label: z.string().optional(),
-    labelOn: z.string().optional(),
-    labelOff: z.string().optional(),
+    // P147 (ADR 0012): label/labelOn/labelOff accept the canonical value-binding
+    // set — a literal string binding or a plain string (legacy). All three are
+    // optional (spec says labels are optional on ui-switch).
+    label: z.union([bindingSchema, z.string()]).optional(),
+    labelOn: z.union([bindingSchema, z.string()]).optional(),
+    labelOff: z.union([bindingSchema, z.string()]).optional(),
     disabled: bindingSchema.optional()
 });
 
