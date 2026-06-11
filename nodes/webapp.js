@@ -1213,6 +1213,18 @@ function toComponentDefinitions(components) {
             if (optionsBinding) {
                 bind.options = optionsBinding;
             }
+            // P151 (ADR 0012): ui-image alt and fallbackSrc are binding-capable.
+            // When either is a binding object, route it through bind so the
+            // renderer resolves it into resolvedProps.alt / resolvedProps.fallbackSrc
+            // (the serializer reads component.props.alt / component.props.fallbackSrc).
+            const altBinding = p16Kind === "image" ? getBinding(component.alt, undefined) : undefined;
+            if (altBinding) {
+                bind.alt = altBinding;
+            }
+            const fallbackSrcBinding = p16Kind === "image" ? getBinding(component.fallbackSrc, undefined) : undefined;
+            if (fallbackSrcBinding) {
+                bind.fallbackSrc = fallbackSrcBinding;
+            }
 
             return {
                 id: component.id,
@@ -1288,11 +1300,15 @@ function toComponentDefinitions(components) {
                     // alt is used by ui-image; for ui-avatar it was removed in P93
                     // (sl-avatar uses `label` for a11y). The avatar serializer block
                     // never emits alt= even when this prop is set.
-                    ...(component.alt !== undefined ? { alt: component.alt } : {}),
+                    // P151: when alt is a binding object it routes through bind.alt;
+                    // only a plain string stays in props as a static literal.
+                    ...(component.alt !== undefined && !altBinding ? { alt: component.alt } : {}),
                     ...(component.fit !== undefined ? { fit: component.fit } : {}),
                     ...(component.width !== undefined ? { width: component.width } : {}),
                     ...(component.height !== undefined ? { height: component.height } : {}),
-                    ...(component.fallbackSrc !== undefined ? { fallbackSrc: component.fallbackSrc } : {}),
+                    // P151: when fallbackSrc is a binding it routes through bind.fallbackSrc;
+                    // only a plain string stays in props as a static literal.
+                    ...(component.fallbackSrc !== undefined && !fallbackSrcBinding ? { fallbackSrc: component.fallbackSrc } : {}),
                     // P91: ui-alert duration + countdown — auto-hide and countdown
                     // progress bar. These are mapped by mapConfig but were missing from
                     // the props block, so the serializer never received them.
@@ -5245,8 +5261,11 @@ const runtimeNodeRegistry = {
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
             src: getBinding(config.src, config.srcPath ? stateBinding(config.srcPath) : undefined),
-            alt: config.alt || undefined,
-            fallbackSrc: config.fallback || undefined,
+            // P151 (ADR 0012): alt and fallback are binding-capable. getBinding
+            // returns the object when it has .kind; a plain string is kept as-is
+            // so the legacy string path (E2E FlowBuilder tests) keeps working.
+            alt: getBinding(config.alt, typeof config.alt === "string" && config.alt ? { kind: "literal", value: config.alt } : undefined),
+            fallbackSrc: getBinding(config.fallback, typeof config.fallback === "string" && config.fallback ? { kind: "literal", value: config.fallback } : undefined),
             width: config.width || undefined,
             height: config.height || undefined,
             // P70: object-fit mode (contain/cover/fill/none).
