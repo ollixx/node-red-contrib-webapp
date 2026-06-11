@@ -13,8 +13,25 @@
                 // typedInput lives directly on #node-input-label so the
                 // minimal-coverage E2E check still passes.
                 // A legacy plain-string `label` is migrated on open.
+                // Required: the typedInput must carry a non-empty value.
                 label: {
                     value: { kind: "literal", value: "" },
+                    required: true,
+                    validate: function () {
+                        var el = $("#node-input-label");
+                        if (el.length && typeof el.typedInput === "function") {
+                            var v = el.typedInput("value");
+                            return v !== undefined && v !== null && String(v).length > 0;
+                        }
+                        // Pre-open (no typedInput yet): trust the persisted binding.
+                        var b = this.label;
+                        if (b && typeof b === "object") {
+                            return b.value !== undefined && b.value !== null && String(b.value).length > 0
+                                ? true
+                                : (typeof b.path === "string" && b.path.length > 0);
+                        }
+                        return typeof b === "string" && b.length > 0;
+                    },
                     serialize: function () {
                         var el = $("#node-input-label");
                         if (el.length && typeof el.typedInput === "function") {
