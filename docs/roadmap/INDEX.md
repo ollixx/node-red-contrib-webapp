@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P138** — nodes/ui-skeleton — `visiblePath`→Standard-`visible`-typedInput; `lines` kontextabhängig disablen (Hinweis) — *geplant; braucht P113* — [P138](nodes/ui-skeleton/P138-skeleton-visible-typedinput-lines-disable.md)
 - **P139** — aspects/editor — Fundament: Basis-Felder (visible/disabled/color/size) + Editor-Struktur („Layout"-Überschrift, Einklappen, N/A-Disable mit Hinweis) (ADR 0015) — *geplant; braucht P113* — [P139](aspects/editor/P139-common-base-fields-foundation.md)
 - **P144** — nodes/ui-button — `label` auf kanonischen Wert-typedInput (P113-Lücke) — *Field-Typing Welle 1; braucht P113* — [P144](nodes/ui-button/P144-button-label-value-typedinput.md)
 - **P145** — nodes/ui-input — `label` auf Wert-typedInput — *Field-Typing Welle 1; braucht P113* — [P145](nodes/ui-input/P145-input-label-value-typedinput.md)
@@ -89,7 +88,7 @@ open the folder for the full history.
 | nodes/ui-textarea | 2 |
 | nodes/ui-checkbox | 2 |
 | nodes/ui-datepicker | 2 |
-| nodes/ui-accordion · ui-breadcrumb · ui-dialog · ui-divider · ui-icon · ui-image · ui-pagination · ui-progress · ui-table | 1 each |
+| nodes/ui-accordion · ui-breadcrumb · ui-dialog · ui-divider · ui-icon · ui-image · ui-pagination · ui-progress · ui-skeleton · ui-table | 1 each |
 | aspects/test-infra | 21 |
 | aspects/misc | 16 |
 | aspects/runtime | 7 |
@@ -101,4 +100,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 140 done, 19 open, 10 deferred.**
+**Total: 141 done, 18 open, 10 deferred.**
