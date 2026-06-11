@@ -9,7 +9,7 @@ verify: browser
 spec: docs/nodes/input/ui-slider.md
 tests: tests/e2e/nodes/view/ui-slider.tests.md
 dependencies: [P113]
-status: pending
+status: in_progress
 ---
 # P146 — ui-slider: label → Wert-typedInput
 
