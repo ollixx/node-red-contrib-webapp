@@ -10,7 +10,7 @@ verify: browser
 spec: docs/nodes/feedback/ui-progress.md
 tests: tests/e2e/nodes/view/ui-progress.tests.md
 dependencies: [P113]
-status: pending
+status: in_progress
 ---
 # P137 — ui-progress: value + label auf typedInput
 
