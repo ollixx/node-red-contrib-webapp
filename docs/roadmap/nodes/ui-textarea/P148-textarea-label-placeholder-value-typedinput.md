@@ -9,7 +9,7 @@ verify: browser
 spec: docs/nodes/input/ui-textarea.md
 tests: tests/e2e/nodes/view/ui-textarea.tests.md
 dependencies: [P113]
-status: pending
+status: in_progress
 ---
 # P148 — ui-textarea: label + placeholder → Wert-typedInput
 
