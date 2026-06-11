@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { expect, test } from "@playwright/test";
 
-import { pickReference } from "../helpers/picker-dialog";
+import { pickMountInTree } from "../helpers/picker-dialog";
 
 type FlowNode = Record<string, unknown>;
 
@@ -110,23 +110,27 @@ test.describe("editor mount option coverage", () => {
         // mountTextNode starts mounted to a vertical app → only `order`.
         expect(await readVisibleLayoutChildRows(page)).toEqual(["order"]);
 
+        // P135 / ADR 0014: mounts are now picked via the two-column tree — click
+        // the app node (left), then its `content` slot (right). Each demo app is a
+        // top-level branch, so no expansion is needed.
+
         // Pick a horizontal-app slot via the dialog → still `order`.
-        await pickReference(page, "mount", { search: "mountHorizontalApp.content", expectValue: "mountHorizontalApp.content" });
+        await pickMountInTree(page, "mount", { nodeText: "Horizontal Layout Demo", slotText: "content", expectValue: "mountHorizontalApp.content" });
         await page.waitForTimeout(100);
         expect(await readVisibleLayoutChildRows(page)).toEqual(["order"]);
 
         // Pick a grid-app slot → row/col/colSize/rowSize.
-        await pickReference(page, "mount", { search: "mountGridApp.content", expectValue: "mountGridApp.content" });
+        await pickMountInTree(page, "mount", { nodeText: "Grid Layout Demo", slotText: "content", expectValue: "mountGridApp.content" });
         await page.waitForTimeout(100);
         expect(await readVisibleLayoutChildRows(page)).toEqual(["row", "col", "colSize", "rowSize"]);
 
         // Pick an absolute-app slot → layoutX/layoutY.
-        await pickReference(page, "mount", { search: "mountAbsoluteApp.content", expectValue: "mountAbsoluteApp.content" });
+        await pickMountInTree(page, "mount", { nodeText: "Absolute Layout Demo", slotText: "content", expectValue: "mountAbsoluteApp.content" });
         await page.waitForTimeout(100);
         expect(await readVisibleLayoutChildRows(page)).toEqual(["layoutX", "layoutY"]);
 
         // Pick an app-shell slot (app layout has no child-placement fields) → none.
-        await pickReference(page, "mount", { search: "mountAppShellDemo.content", expectValue: "mountAppShellDemo.content" });
+        await pickMountInTree(page, "mount", { nodeText: "App Layout Demo", slotText: "content", expectValue: "mountAppShellDemo.content" });
         await page.waitForTimeout(100);
         expect(await readVisibleLayoutChildRows(page)).toEqual([]);
     });
