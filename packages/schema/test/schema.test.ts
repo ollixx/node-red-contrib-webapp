@@ -594,14 +594,15 @@ describe("P16b feedback and status nodes", () => {
         expect(result.success).toBe(true);
     });
 
-    it("rejects ui-skeleton without visible binding", () => {
+    // P138 (ADR 0012): `visible` is now optional — absent means always visible.
+    it("accepts ui-skeleton without visible binding (default = always visible)", () => {
         const result = validateUiNodeDefinition({
             type: "ui-skeleton",
             id: "skel1",
             mount: "route:/customers/content"
         });
 
-        expect(result.success).toBe(false);
+        expect(result.success).toBe(true);
     });
 
     it("compiles ui-badge to a valid definition", () => {
