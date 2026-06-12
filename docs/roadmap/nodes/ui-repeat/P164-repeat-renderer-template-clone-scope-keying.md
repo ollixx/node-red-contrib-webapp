@@ -16,7 +16,7 @@ verify: unit
 spec: docs/nodes/display/ui-repeat.md
 tests: tests/e2e/nodes/view/ui-repeat.tests.md
 dependencies: [P163]
-status: pending
+status: in_progress
 ---
 # P164 — ui-repeat Renderer: Klon + Scope + Keys
 
