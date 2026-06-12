@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P168** — nodes/ui-tabs — Renderer + Editor: Slot pro Kind, activeTab per Kind-id, Mount-Tree, Eindeutigkeits-Validierung; Browser-Beweis — *Tabs-1a-Welle, Schicht 2; braucht P167* — [P168](nodes/ui-tabs/P168-tabs-renderer-editor-and-browser-proof.md)
 - **P169** — nodes/ui-accordion — Kinder definieren Sektionen: `ui-accordion-section`-Kind (Spiegel zu ui-tabs); Browser-Beweis — *Tabs-1a-Welle, Schicht 3; braucht P168* — [P169](nodes/ui-accordion/P169-accordion-children-define-sections-mirror.md)
 - **P170** — aspects/rendering — Dynamische Tabs/Sektionen via ui-repeat (Capstone, kein eigener Dynamik-Mechanismus) — *löst P142-Dynamik; braucht P165 + P168 + P169* — [P170](aspects/rendering/P170-dynamic-tabs-sections-via-repeat.md)
 
@@ -75,7 +74,7 @@ open the folder for the full history.
 | nodes/ui-divider | 2 |
 | nodes/ui-image | 2 |
 | nodes/ui-pagination | 2 |
-| nodes/ui-tabs | 2 |
+| nodes/ui-tabs | 3 |
 | nodes/ui-repeat | 3 |
 | nodes/ui-stepper | 1 |
 | nodes/ui-menu | 1 |
@@ -93,4 +92,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 166 done, 3 open, 9 deferred.**
+**Total: 167 done, 2 open, 9 deferred.**
