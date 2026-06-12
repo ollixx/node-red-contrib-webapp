@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P154** — nodes/ui-pagination — `total`/`currentPage` als typedInput (currentPage zweiseitig + Event) — *Field-Typing Welle 2; braucht P113* — [P154](nodes/ui-pagination/P154-pagination-total-currentpage-typedinput.md)
 - **P155** — nodes/ui-tabs — `activeTab` als typedInput (zweiseitig + Event) — *Field-Typing Welle 2; braucht P113* — [P155](nodes/ui-tabs/P155-tabs-activetab-typedinput.md)
 - **P156** — nodes/ui-stepper — `activeStep` als typedInput (zweiseitig + Event) — *Field-Typing Welle 2; braucht P113* — [P156](nodes/ui-stepper/P156-stepper-activestep-typedinput.md)
 - **P157** — nodes/ui-menu — `items`/`activeRoute` als typedInput — *Field-Typing Welle 2; braucht P113* — [P157](nodes/ui-menu/P157-menu-items-activeroute-typedinput.md)
@@ -81,7 +80,8 @@ open the folder for the full history.
 | nodes/ui-datepicker | 3 |
 | nodes/ui-divider | 2 |
 | nodes/ui-image | 2 |
-| nodes/ui-accordion · ui-breadcrumb · ui-dialog · ui-icon · ui-pagination · ui-progress · ui-skeleton · ui-table | 1 each |
+| nodes/ui-pagination | 2 |
+| nodes/ui-accordion · ui-breadcrumb · ui-dialog · ui-icon · ui-progress · ui-skeleton · ui-table | 1 each |
 | aspects/test-infra | 21 |
 | aspects/misc | 16 |
 | aspects/runtime | 7 |
@@ -93,4 +93,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 151 done, 8 open, 11 deferred.**
+**Total: 152 done, 7 open, 11 deferred.**
