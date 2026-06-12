@@ -33,6 +33,10 @@ their blocker clears.
 - **P164** — nodes/ui-repeat — Renderer: Template-Klon pro Item, Render-Zeit-Scope, keyed Morphing — *ui-repeat-Welle, Schicht 2; braucht P163* — [P164](nodes/ui-repeat/P164-repeat-renderer-template-clone-scope-keying.md)
 - **P165** — nodes/ui-repeat — Node-Registrierung + Editor (Default-Slot-Template, items/keyField) + Browser-Beweis — *ui-repeat-Welle, Schicht 3; braucht P164* — [P165](nodes/ui-repeat/P165-repeat-node-registration-and-editor.md)
 - **P166** — aspects/rendering — Feasibility-Spike: NR-Subflow als Component-Unterbau (Mount-Subtree + typisierte Props + ein äußerer Mount-Punkt)? A/B-Empfehlung für die Component-ADR — *Spike vor [[P141]]* — [P166](aspects/rendering/P166-component-substrate-subflow-feasibility-spike.md)
+- **P167** — nodes/ui-tabs — Kinder definieren Tabs: neues `ui-tab`-Kind (label/icon/order + Slot), `tabs`-JSON entfällt, Migration — *Tabs-1a-Welle (ADR 0018), Schicht 1* — [P167](nodes/ui-tabs/P167-tabs-children-define-schema-and-ui-tab-node.md)
+- **P168** — nodes/ui-tabs — Renderer + Editor: Slot pro Kind, activeTab per Kind-id, Mount-Tree, Eindeutigkeits-Validierung; Browser-Beweis — *Tabs-1a-Welle, Schicht 2; braucht P167* — [P168](nodes/ui-tabs/P168-tabs-renderer-editor-and-browser-proof.md)
+- **P169** — nodes/ui-accordion — Kinder definieren Sektionen: `ui-accordion-section`-Kind (Spiegel zu ui-tabs); Browser-Beweis — *Tabs-1a-Welle, Schicht 3; braucht P168* — [P169](nodes/ui-accordion/P169-accordion-children-define-sections-mirror.md)
+- **P170** — aspects/rendering — Dynamische Tabs/Sektionen via ui-repeat (Capstone, kein eigener Dynamik-Mechanismus) — *löst P142-Dynamik; braucht P165 + P168 + P169* — [P170](aspects/rendering/P170-dynamic-tabs-sections-via-repeat.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -44,8 +48,7 @@ Reason in each package's `deferred_reason`. Picked up once the blocker clears.
 - **P105** — aspects/rendering — nicht-darstellbarer Wert: Achtung-Icon + Alert/Dialog statt nacktem `"?"` — *Stufe 2 über P104* — [P105](aspects/rendering/deferred/P105-invalid-value-warning-affordance.md)
 - **P107** — nodes/ui-app — App-weite Auth/Authz (OAuth2/OIDC) modellieren — *eigenes Epic, ADR + Owner-Entscheidung nötig* — [P107](nodes/ui-app/deferred/P107-auth-authz.md)
 - **P121** — aspects/docs — Konzept Nutzer-Doku: Wo/Wie die zwei Wege (Wire vs. Referenz) mit Beispielen dokumentieren — *Owner-Entscheidung zu Ort + Form nötig* — [P121](aspects/docs/deferred/P121-user-docs-concept-two-ways.md)
-- **P141** — aspects/rendering — Konzept: Components (wiederverwendbare Knoten-Sets, Definition/Instanz) — *großes Feature; ADR nötig* — [P141](aspects/rendering/deferred/P141-components-reusable-node-sets.md)
-- **P142** — aspects/rendering — Konzept: ui-tabs/ui-accordion dynamische Slots — *hängt an Repeats/Components* — [P142](aspects/rendering/deferred/P142-tabs-accordion-dynamic-slots.md)
+- **P141** — aspects/rendering — Konzept: Components (Definition/Instanz) — *Richtung steht (Subflow-first); braucht Spike [[P166]]* — [P141](aspects/rendering/deferred/P141-components-reusable-node-sets.md)
 - **P143** — aspects/editor — Konzept: Enums dynamisch bindbar (Pro-Feld-typedInput mit Enum-Default statt globalem Advanced-Mode) — *ADR + Owner-Entscheidung nötig; Empfehlung steht* — [P143](aspects/editor/deferred/P143-enums-dynamic-binding-vs-advanced-mode.md)
 - **P152** — nodes/ui-empty-state — Redesign: Container mit Slot(s) + visible-Binding (statt fester icon/title/message/action-Felder) — *Vertragswechsel; ADR + Restfragen nötig; Richtung steht* — [P152](nodes/ui-empty-state/deferred/P152-empty-state-as-container-with-visible-binding.md)
 - **P162** — nodes/ui-event — Konzept: referenzbasierter lokaler Tap der App/Route-Lifecycle-Events (onEnter/onLeave) neben dem Consumer — *neuer Knoten + Vertrag; ADR-würdig (Scope/Events/Output-Form); löst Lange-Leitung aus ADR 0016* — [P162](nodes/ui-event/deferred/P162-ui-event-local-lifecycle-tap.md)
@@ -91,9 +94,9 @@ open the folder for the full history.
 | aspects/state | 8 |
 | aspects/editor | 14 |
 | schema | 5 |
-| aspects/rendering | 9 |
+| aspects/rendering | 10 |
 | aspects/foundation | 5 |
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 158 done, 6 open, 10 deferred.**
+**Total: 159 done, 10 open, 9 deferred.**

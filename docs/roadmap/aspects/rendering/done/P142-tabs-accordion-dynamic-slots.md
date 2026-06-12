@@ -2,11 +2,21 @@
 id: P142
 title: "Konzept: ui-tabs / ui-accordion — Slots bei (dynamischen) Optionen; dynamische Slot-Zuweisung"
 epic: aspects/rendering
-status: deferred
-deferred_reason: "Design offen: Slots erscheinen nicht in der Mount-Auswahl, und bei dynamisch gefüllten Tabs/Sektionen ist die Slot-Anzahl erst zur Laufzeit bekannt. Hängt an der Repeats/Components-Entscheidung [[P140]]/[[P141]]."
+status: done
 dependencies: []
 ---
-# P142 — Konzept: dynamische Slots (ui-tabs / ui-accordion) (geparkt)
+# P142 — Konzept: dynamische Slots (ui-tabs / ui-accordion) (aufgelöst)
+
+## Auflösung (2026-06-12)
+
+Aufgelöst durch **[ADR 0018](../../../../adr/0018-tabs-accordion-children-define-sections.md)**
+(Modell 1a: **Kinder definieren die Sektionen** über `ui-tab`/
+`ui-accordion-section`-Kinder; `tabs`/`sections`-JSON entfällt). Der **statische**
+Picker-Teil löst sich auf (Mounten in `ui-tabs` = „werde ein Tab", normale
+Slot-Enumeration). Der **dynamische** Teil **fällt aus `ui-repeat`** ([[P140]]/
+ADR 0017): N Tabs = ein `ui-repeat`, das `ui-tab`-Kinder aus Daten erzeugt — keine
+eigene „dynamischer-Slot"-Bindung nötig. Umsetzung: P167–P170 (Reversed-Link 1b
+und Config-Beibehaltung 2 wurden verworfen — Begründung in der ADR).
 
 ## findings (Nutzer-Wortlaut, 2026-06-11)
 
