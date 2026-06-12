@@ -37,6 +37,7 @@ describe("editor node set", () => {
             "ui-stepper",
             "ui-store",
             "ui-switch",
+            "ui-tab",
             "ui-table",
             "ui-tabs",
             "ui-text",

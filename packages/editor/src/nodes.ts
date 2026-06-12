@@ -32,6 +32,7 @@ import {
     type UiTextNodeDefinition,
     type UiToastNodeDefinition,
     type UiTabsNodeDefinition,
+    type UiTabNodeDefinition,
     type UiAccordionNodeDefinition,
     type UiBreadcrumbNodeDefinition,
     type UiMenuNodeDefinition,
@@ -325,14 +326,28 @@ export interface UiEmptyStateEditorConfig extends MountableEditorConfig {
 }
 
 // P16c: navigation and structure node editor configs
+// P167 (ADR 0018, Model 1a): the `tabs` JSON config field is REMOVED — tabs are
+// derived from mounted `ui-tab` children. The full ui-tabs editor UX (no tabs
+// field, derived-slot mount picker) lands in P168; this entry keeps the editor
+// package type-checking against the schema's reworked UiTabsNodeDefinition.
 export interface UiTabsEditorConfig extends MountableEditorConfig {
-    tabs?: string;
     // P155 (ADR 0012): `activeTab` is the canonical two-way value typedInput
-    // (persisted as a binding object). The legacy `activeTabPath` plain state
-    // path is kept for migration only.
+    // (persisted as a binding object). P167: it now carries the active CHILD ID.
+    // The legacy `activeTabPath` plain state path is kept for migration only.
     activeTab?: BindingDefinition;
     activeTabPath?: string;
     events?: string;
+}
+
+// P167 (ADR 0018): minimal `ui-tab` editor config — a container child of
+// ui-tabs carrying label/icon/order plus a default content slot. The full editor
+// UX (label value typedInput, icon, order, content slot) lands in P168; this
+// entry exists so the editor package type-checks against the schema's new
+// UiTabNodeDefinition.
+export interface UiTabEditorConfig extends MountableEditorConfig {
+    label?: BindingDefinition;
+    labelPath?: string;
+    icon?: string;
 }
 
 export interface UiAccordionEditorConfig extends MountableEditorConfig {
@@ -449,6 +464,7 @@ export type NodeEditorConfig =
     | UiBadgeEditorConfig
     | UiEmptyStateEditorConfig
     | UiTabsEditorConfig
+    | UiTabEditorConfig
     | UiAccordionEditorConfig
     | UiBreadcrumbEditorConfig
     | UiMenuEditorConfig
@@ -489,6 +505,7 @@ export type NodeEditorDefinition =
     | BaseEditorNodeDefinition<UiBadgeEditorConfig, UiBadgeNodeDefinition>
     | BaseEditorNodeDefinition<UiEmptyStateEditorConfig, UiEmptyStateNodeDefinition>
     | BaseEditorNodeDefinition<UiTabsEditorConfig, UiTabsNodeDefinition>
+    | BaseEditorNodeDefinition<UiTabEditorConfig, UiTabNodeDefinition>
     | BaseEditorNodeDefinition<UiAccordionEditorConfig, UiAccordionNodeDefinition>
     | BaseEditorNodeDefinition<UiBreadcrumbEditorConfig, UiBreadcrumbNodeDefinition>
     | BaseEditorNodeDefinition<UiMenuEditorConfig, UiMenuNodeDefinition>
@@ -1431,20 +1448,39 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         actionLabel: config.actionLabel,
         ...collectLayoutChildConfig(config)
     })),
+    // P167 (ADR 0018, Model 1a): the `tabs` JSON field is REMOVED. Tabs are
+    // derived from mounted `ui-tab` children; the full ui-tabs/ui-tab editor UX
+    // (no tabs field, derived-slot picker, validation) lands in P168. This entry
+    // keeps the editor mapping type-checking against the reworked schema.
     "ui-tabs": createDefinition("ui-tabs", "view", {
         id: requiredString("Tabs IDs are required before deploy."),
-        mount: requiredString("Tabs must declare a parent slot."),
-        tabs: requiredString("Tabs must declare at least one tab.")
+        mount: requiredString("Tabs must declare a parent slot.")
     }, (config: UiTabsEditorConfig): UiTabsNodeDefinition => ({
         type: "ui-tabs",
         id: config.id ?? "",
         mount: config.mount ?? "",
-        tabs: JSON.parse(config.tabs ?? "[]"),
         // P155 (ADR 0012): prefer the canonical `activeTab` binding object; migrate
-        // a legacy `activeTabPath` plain state path to a state binding.
+        // a legacy `activeTabPath` plain state path to a state binding. P167: the
+        // value is now the active CHILD ID.
         activeTab: isBindingObject(config.activeTab)
             ? config.activeTab
             : (config.activeTabPath ? stateBinding(config.activeTabPath) : undefined),
+        ...collectLayoutChildConfig(config)
+    })),
+    // P167 (ADR 0018): minimal `ui-tab` registration — a container child of
+    // ui-tabs with label/icon/order. Full editor UX is P168.
+    "ui-tab": createDefinition("ui-tab", "view", {
+        id: requiredString("Tab IDs are required before deploy."),
+        mount: requiredString("Tabs must declare a parent ui-tabs slot."),
+        order: optionalInteger("Tab order must be an integer.")
+    }, (config: UiTabEditorConfig): UiTabNodeDefinition => ({
+        type: "ui-tab",
+        id: config.id ?? "",
+        mount: config.mount ?? "",
+        label: isBindingObject(config.label)
+            ? config.label
+            : literalBinding(config.labelPath ?? ""),
+        ...(config.icon ? { icon: config.icon } : {}),
         ...collectLayoutChildConfig(config)
     })),
     "ui-accordion": createDefinition("ui-accordion", "view", {
