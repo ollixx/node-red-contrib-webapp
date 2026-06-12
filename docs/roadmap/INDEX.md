@@ -36,6 +36,7 @@ their blocker clears.
 - **P163** — nodes/ui-repeat — Schema-Knotendefinition + neue Binding-Art `item`/`index` (scope-lokal) — *ui-repeat-Welle (ADR 0017), Schicht 1* — [P163](nodes/ui-repeat/P163-repeat-schema-and-item-binding-kind.md)
 - **P164** — nodes/ui-repeat — Renderer: Template-Klon pro Item, Render-Zeit-Scope, keyed Morphing — *ui-repeat-Welle, Schicht 2; braucht P163* — [P164](nodes/ui-repeat/P164-repeat-renderer-template-clone-scope-keying.md)
 - **P165** — nodes/ui-repeat — Node-Registrierung + Editor (Default-Slot-Template, items/keyField) + Browser-Beweis — *ui-repeat-Welle, Schicht 3; braucht P164* — [P165](nodes/ui-repeat/P165-repeat-node-registration-and-editor.md)
+- **P166** — aspects/rendering — Feasibility-Spike: NR-Subflow als Component-Unterbau (Mount-Subtree + typisierte Props + ein äußerer Mount-Punkt)? A/B-Empfehlung für die Component-ADR — *Spike vor [[P141]]* — [P166](aspects/rendering/P166-component-substrate-subflow-feasibility-spike.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -95,4 +96,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 154 done, 9 open, 10 deferred.**
+**Total: 154 done, 10 open, 10 deferred.**
