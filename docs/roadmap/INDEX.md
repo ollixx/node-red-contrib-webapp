@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P156** — nodes/ui-stepper — `activeStep` als typedInput (zweiseitig + Event) — *Field-Typing Welle 2; braucht P113* — [P156](nodes/ui-stepper/P156-stepper-activestep-typedinput.md)
 - **P157** — nodes/ui-menu — `items`/`activeRoute` als typedInput — *Field-Typing Welle 2; braucht P113* — [P157](nodes/ui-menu/P157-menu-items-activeroute-typedinput.md)
 - **P158** — nodes/ui-table — `rows` als typedInput (Daten-Array); columns separat — *Field-Typing Welle 2; braucht P113* — [P158](nodes/ui-table/P158-table-rows-typedinput.md)
 - **P159** — nodes/ui-icon — `size` auf xs..xl-Token-Select (Spec/Code-Fix); color via P139 — *Field-Typing Welle 2* — [P159](nodes/ui-icon/P159-icon-size-token-select.md)
@@ -84,6 +83,7 @@ open the folder for the full history.
 | nodes/ui-image | 2 |
 | nodes/ui-pagination | 2 |
 | nodes/ui-tabs | 1 |
+| nodes/ui-stepper | 1 |
 | nodes/ui-accordion · ui-breadcrumb · ui-dialog · ui-icon · ui-progress · ui-skeleton · ui-table | 1 each |
 | aspects/test-infra | 21 |
 | aspects/misc | 16 |
@@ -96,4 +96,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 154 done, 10 open, 10 deferred.**
+**Total: 155 done, 9 open, 10 deferred.**
