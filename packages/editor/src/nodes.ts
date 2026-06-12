@@ -126,6 +126,12 @@ export interface UiButtonEditorConfig extends MountableEditorConfig {
 
 export interface UiTableEditorConfig extends MountableEditorConfig {
     columns?: string[];
+    // P158 (ADR 0012): `rows` is the canonical STRUCTURAL array DATA SOURCE — a
+    // static array of row records, OR a binding object (store/query/reactive/
+    // json-literal). The table renders its rows ITSELF (a data source, NOT a
+    // repeats case). `rowsPath` is the legacy plain state/query path kept for
+    // migration only. `columns` (schema) stays separate (Collections).
+    rows?: BindingDefinition | unknown[];
     rowsPath?: string;
     selectAction?: string;
 }
@@ -734,11 +740,27 @@ function menuItemsFromConfig(config: UiMenuEditorConfig): UiMenuNodeDefinition["
     return stateBinding("");
 }
 
-function queryBinding(path: string): BindingDefinition {
-    return {
-        kind: "query",
-        path
-    };
+// P158 (ADR 0012): resolve a ui-table `rows` editor config into the schema
+// `rows` value — the canonical STRUCTURAL array DATA SOURCE (the table renders
+// its rows ITSELF; this is a data source, NOT a repeats case). It mirrors the
+// ui-select `options` (P133) / ui-menu `items` (P157) structural pattern: a
+// static array of row records, OR a binding object (store/query/reactive). A
+// json-literal binding's raw array is unwrapped so the schema's binding-literal
+// branch carries it; every dynamic binding kind passes through for the
+// renderer's structural resolution. Legacy `rowsPath` plain paths migrate to a
+// state binding (P137 shim). `columns` (schema) stays separate.
+function tableRowsFromConfig(config: UiTableEditorConfig): UiTableNodeDefinition["rows"] {
+    const candidate = config.rows;
+    if (isBindingObject(candidate)) {
+        return candidate;
+    }
+    if (Array.isArray(candidate)) {
+        return { kind: "literal", value: candidate };
+    }
+    if (config.rowsPath) {
+        return stateBinding(config.rowsPath);
+    }
+    return stateBinding("");
 }
 
 function collectLayoutChildConfig(config: MountableEditorConfig) {
@@ -866,7 +888,8 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         id: requiredString("Table IDs are required before deploy."),
         mount: requiredString("Tables must declare a mount target."),
         columns: requiredStringArray("Tables must declare at least one column."),
-        rowsPath: requiredString("Tables must bind to a query path."),
+        // P158 (ADR 0012): `rows` is a typedInput binding (data-array source) — no
+        // requiredString validator. Migration: legacy `rowsPath` → state binding.
         order: optionalInteger("Table order must be an integer."),
         row: optionalInteger("Table grid rows must be integers."),
         col: optionalInteger("Table grid columns must be integers."),
@@ -879,7 +902,7 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         id: config.id ?? "",
         mount: config.mount ?? "",
         columns: config.columns ?? [],
-        rows: queryBinding(config.rowsPath ?? ""),
+        rows: tableRowsFromConfig(config),
         selectAction: config.selectAction,
         ...collectLayoutChildConfig(config)
     })),

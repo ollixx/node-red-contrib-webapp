@@ -10,8 +10,16 @@
                 parent: { value: "" },
                 mount: { value: "", required: true },
                 columns: { value: "", validate: common.required },
-                rowsPath: { value: "", required: true },
+                // P158 (ADR 0012): `rows` is the canonical STRUCTURAL array DATA
+                // SOURCE (the table renders its rows ITSELF; a data source, NOT a
+                // repeats case). It persists the binding OBJECT; there is no
+                // matching #node-input-rows element so Node-RED auto-save cannot
+                // clobber it. The typedInput lives on #node-input-rowsBinding.
+                // Legacy `rowsPath` plain path is kept for migration only.
+                // `columns` (schema) stays separate (Collections).
                 rows: { value: null },
+                rowsBinding: { value: "" },
+                rowsPath: { value: "" },
                 selectAction: { value: "" },
                 footer: { value: false },
                 events: { value: "[]" },
@@ -45,6 +53,34 @@
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
                 common.installLayoutChildPropRows().call(this);
+
+                // P158 (ADR 0012 / value category): `rows` typedInput — full
+                // canonical value set with a JSON-literal default type (a static
+                // rows array). STRUCTURAL array DATA SOURCE: a Store/Query/Reactive
+                // binding reads the rows reactively; the json type holds a static
+                // array literal. Migration: a legacy `rowsPath` plain string opens
+                // as a `state` binding; a stored `rows` binding object wins.
+                const storedRows = common.parseBindingValue(this.rows);
+                const rowsBinding = storedRows
+                    ? storedRows
+                    : (this.rowsPath ? { kind: "state", path: this.rowsPath } : undefined);
+                const rowsEditor = common.readValueBinding(rowsBinding, "");
+                const rowsDefaultType = rowsEditor.type !== "str" ? rowsEditor.type : "json";
+                const rowsInput = $("#node-input-rowsBinding");
+                rowsInput.typedInput({
+                    default: rowsDefaultType,
+                    types: common.valueBindingTypes({ category: "value" })
+                });
+                rowsInput.typedInput("type", rowsEditor.type !== "str" || rowsBinding ? rowsEditor.type : "json");
+                rowsInput.typedInput("value", rowsEditor.value);
+            },
+            oneditsave: function () {
+                // P158: persist rows as a binding object; clear the legacy path.
+                this.rows = common.applyValueBinding(
+                    $("#node-input-rowsBinding").typedInput("type"),
+                    $("#node-input-rowsBinding").typedInput("value")
+                );
+                this.rowsPath = "";
             }
         }, ["rowSelect", "rowAction", "checkboxChange", "cellSelect"]);
     })();
@@ -54,7 +90,8 @@
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <div class="form-row"><label for="node-input-columns">Columns</label><input type="text" id="node-input-columns" placeholder="name,email,status"></div>
-    <div class="form-row"><label for="node-input-rowsPath">Rows Path</label><input type="text" id="node-input-rowsPath"></div>
+    <!-- P158 (ADR 0012 / value category): Rows binding (structural array data source) — typedInput managed in oneditprepare/oneditsave. -->
+    <div class="form-row"><label for="node-input-rowsBinding">Rows</label><input type="text" id="node-input-rowsBinding"></div>
     <div class="form-row">
         <label for="node-input-footer" style="width:auto; margin-right:8px;">Footer Slot</label>
         <input type="checkbox" id="node-input-footer" style="width:auto; margin:0;">
@@ -64,4 +101,13 @@
     <div class="form-row"><label>Events</label></div>
     <div id="node-input-events-container"></div>
 </script>
-<script type="text/html" data-help-name="ui-table"><p>Mountet eine Tabelle mit Query-Binding und konfigurierbaren Zeilen-Events.</p></script>
+<script type="text/html" data-help-name="ui-table">
+<p>Mountet eine Tabelle mit bindbarer Daten-Quelle und konfigurierbaren Zeilen-Events.</p>
+<h4>Rows (P158)</h4>
+<p>Bindbare, <strong>strukturelle</strong> Daten-Quelle der Tabellenzeilen (ein Array von
+Zeilen-Objekten) — voller kanonischer Satz (ADR 0012): Store, Query, Route-Param, Reactive,
+msg, JSONata, json (statisches Array-Literal), Flow, Global, Env. Die Tabelle rendert ihre
+Zeilen selbst. Default-Typ: <code>json</code>. Ein bestehender <code>rowsPath</code> wird
+automatisch als <code>state</code>-Binding übernommen. <code>columns</code> (Schema) bleibt
+separat.</p>
+</script>

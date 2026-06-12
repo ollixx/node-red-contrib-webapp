@@ -86,6 +86,69 @@ test.describe("ui-table (P45)", () => {
         await expect(page.locator("table.webapp-table tbody")).toContainText("No rows loaded.");
     });
 
+    // P158 (ADR 0012): `rows` is the canonical STRUCTURAL array DATA SOURCE — the
+    // SAME structural-array case as ui-select `options` (P133) / ui-menu `items`
+    // (P157). A bound store slice that is legitimately an array of row records must
+    // keep its shape (not be coerced by the display-scalar guard). The table
+    // renders its rows itself; `columns` stays separate.
+    test("store-array rows render the table rows reactively", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "tblStoreApp", root: "tblStoreApp" })
+            .node("ui-store", {
+                id: "tblRowsStore",
+                statePath: "people",
+                initialValue: JSON.stringify([
+                    { id: "p1", name: "Eve" },
+                    { id: "p2", name: "Frank" }
+                ])
+            })
+            .node("ui-table", {
+                id: "tblStoreNode",
+                columns: JSON.stringify([{ key: "name", label: "Name" }]),
+                // store binding: path = the ui-store NODE id; the whole array slice
+                // is read structurally (not coerced by the display-scalar guard).
+                rows: { kind: "store", path: "tblRowsStore" }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "tblStoreApp");
+        await webapp.navigate("/");
+
+        const rows = page.locator("table.webapp-table tbody tr");
+        await expect(rows).toHaveCount(2);
+        await expect(rows.nth(0)).toContainText("Eve");
+        await expect(rows.nth(1)).toContainText("Frank");
+    });
+
+    // P158: a legacy `rowsPath` plain state path migrates to a `{ kind:"state" }`
+    // binding and the table renders its rows from that store slice — verifying the
+    // rename + migration is loss-free (so customers-crud keeps working unchanged).
+    test("legacy rowsPath migrates to a state binding and renders rows", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "tblMigApp", root: "tblMigApp" })
+            .node("ui-store", {
+                id: "tblMigStore",
+                statePath: "data",
+                initialValue: JSON.stringify({ list: [{ id: "g1", name: "Grace" }] })
+            })
+            .node("ui-table", {
+                id: "tblMigNode",
+                columns: JSON.stringify([{ key: "name", label: "Name" }]),
+                // legacy plain state-path field — migrates to { kind:"state", path }.
+                rowsPath: "data.list"
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "tblMigApp");
+        await webapp.navigate("/");
+
+        await expect(page.locator("table.webapp-table tbody tr").first()).toContainText("Grace");
+    });
+
     // ─── events — row select ─────────────────────────────────────────────────
 
     test("row click → POST /event with event='rowSelect' and params.rowId", async ({ page, request }) => {

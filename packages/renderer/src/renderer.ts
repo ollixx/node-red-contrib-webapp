@@ -733,6 +733,17 @@ function toRenderedComponent(component: ComponentDefinition, context: ComponentR
         }
     }
 
+    // P158 (ADR 0012): ui-table `rows` is the SAME structural-array case as
+    // ui-select `options` (P133) / ui-menu `items` (P157) — the table renders its
+    // rows ITSELF from this DATA SOURCE (NOT a repeats case). A bound store slice
+    // is legitimately an array of row records, which the display-scalar resolver
+    // rejects; resolve `rows` through the SHARED structural path (reused from
+    // P133) so store/query/reactive/literal arrays keep their shape. `columns`
+    // stays a plain prop (schema, not a data source).
+    if (component.kind === "table" && component.bind.rows) {
+        resolvedProps.rows = resolveStructuralBinding(component.bind.rows, context.sources);
+    }
+
     const baseComponent: RenderedComponentBase = {
         id: component.id,
         kind: component.kind,
