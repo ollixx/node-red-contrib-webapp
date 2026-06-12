@@ -9,7 +9,7 @@ verify: browser
 spec: docs/nodes/navigation/ui-stepper.md
 tests: tests/e2e/nodes/view/ui-stepper.tests.md
 dependencies: [P113]
-status: pending
+status: in_progress
 ---
 # P156 — ui-stepper: activeStep als typedInput
 
