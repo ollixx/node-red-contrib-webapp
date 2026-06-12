@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P169** — nodes/ui-accordion — Kinder definieren Sektionen: `ui-accordion-section`-Kind (Spiegel zu ui-tabs); Browser-Beweis — *Tabs-1a-Welle, Schicht 3; braucht P168* — [P169](nodes/ui-accordion/P169-accordion-children-define-sections-mirror.md)
 - **P170** — aspects/rendering — Dynamische Tabs/Sektionen via ui-repeat (Capstone, kein eigener Dynamik-Mechanismus) — *löst P142-Dynamik; braucht P165 + P168 + P169* — [P170](aspects/rendering/P170-dynamic-tabs-sections-via-repeat.md)
 
 
@@ -80,7 +79,8 @@ open the folder for the full history.
 | nodes/ui-menu | 1 |
 | nodes/ui-table | 2 |
 | nodes/ui-icon | 2 |
-| nodes/ui-accordion · ui-breadcrumb · ui-dialog · ui-progress · ui-skeleton | 1 each |
+| nodes/ui-accordion | 2 |
+| nodes/ui-breadcrumb · ui-dialog · ui-progress · ui-skeleton | 1 each |
 | aspects/test-infra | 21 |
 | aspects/misc | 16 |
 | aspects/runtime | 7 |
@@ -92,4 +92,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 167 done, 2 open, 9 deferred.**
+**Total: 168 done, 1 open, 9 deferred.**
