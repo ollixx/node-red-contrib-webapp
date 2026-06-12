@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P165** — nodes/ui-repeat — Node-Registrierung + Editor (Default-Slot-Template, items/keyField) + Browser-Beweis — *ui-repeat-Welle, Schicht 3; braucht P164* — [P165](nodes/ui-repeat/P165-repeat-node-registration-and-editor.md)
 - **P166** — aspects/rendering — Feasibility-Spike: NR-Subflow als Component-Unterbau (Mount-Subtree + typisierte Props + ein äußerer Mount-Punkt)? A/B-Empfehlung für die Component-ADR — *Spike vor [[P141]]* — [P166](aspects/rendering/P166-component-substrate-subflow-feasibility-spike.md)
 - **P167** — nodes/ui-tabs — Kinder definieren Tabs: neues `ui-tab`-Kind (label/icon/order + Slot), `tabs`-JSON entfällt, Migration — *Tabs-1a-Welle (ADR 0018), Schicht 1* — [P167](nodes/ui-tabs/P167-tabs-children-define-schema-and-ui-tab-node.md)
 - **P168** — nodes/ui-tabs — Renderer + Editor: Slot pro Kind, activeTab per Kind-id, Mount-Tree, Eindeutigkeits-Validierung; Browser-Beweis — *Tabs-1a-Welle, Schicht 2; braucht P167* — [P168](nodes/ui-tabs/P168-tabs-renderer-editor-and-browser-proof.md)
@@ -79,7 +78,7 @@ open the folder for the full history.
 | nodes/ui-image | 2 |
 | nodes/ui-pagination | 2 |
 | nodes/ui-tabs | 1 |
-| nodes/ui-repeat | 2 |
+| nodes/ui-repeat | 3 |
 | nodes/ui-stepper | 1 |
 | nodes/ui-menu | 1 |
 | nodes/ui-table | 2 |
@@ -96,4 +95,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 163 done, 6 open, 9 deferred.**
+**Total: 164 done, 5 open, 9 deferred.**
