@@ -10,7 +10,7 @@ verify: browser
 spec: docs/nodes/display/ui-icon.md
 tests: tests/e2e/nodes/view/ui-icon.tests.md
 dependencies: []
-status: in_progress
+status: done
 ---
 # P159 — ui-icon: size → Größen-Token-Select
 
@@ -42,3 +42,27 @@ status: in_progress
   Migration der freien Werte dokumentieren; `color` → Verweis auf P139.
 - tests: `tests/e2e/nodes/view/ui-icon.tests.md` (neu): size-Select rendert je
   Token; Migration eines freien Alt-Werts.
+
+## Result
+
+- **delivered:** Resolved the ui-icon `size` spec/code contradiction. Added
+  `installIconSizeSelectBox()` to `resources/lib/editor-common.js` (mirrors `installSizeSelectBox`
+  via the same `injectFieldGroup` primitive but with the icon token set `xs/sm/md/lg/xl`);
+  `nodes/view/ui-icon.html` replaces the free-text size input with the injected SelectBox, default
+  `md`. Schema `size` widened to `z.union([z.enum([…]), z.string()])` for back-compat. `color`
+  untouched (P139 base-field rollout); the later dynamic ENUM-typedInput is P143. Spec updated.
+- **stats:** 6 files, +126/−7 (+ a 1-line follow-up test fix). Develop verification: `pnpm build`
+  exit 0, full Playwright suite **549 passed / 0 failed** (9.2m clean run); 938 unit green;
+  check:roadmap + check:links + lint OK.
+- **notes (migration):** a legacy free CSS size (`"24"`, `"1.5rem"`) is handled at three layers —
+  schema union accepts it without a Zod error; the editor SelectBox detects a non-token value and
+  prepends a `"<value> (bestehend)"` option so it round-trips (user can pick a real token, after
+  which the legacy value drops on next save); the renderer emits `webapp-icon--<value>` as-is
+  (no matching size CSS → harmless ambient size). No data lost, no node breaks.
+- **notes (verify):** the authoritative full run first showed 4 reds in a degraded 1.2h
+  environment — 3 were environmental (ui-alert/p12/p36, 6–43m durations, browser-closed/protocol
+  errors) and cleared on the clean re-run; the 4th was a real **test-authoring bug** in P159's own
+  migration-guard spec (called `.ok()` on `deployFlow`'s `Promise<void>` return) — fixed in
+  `fix/P159-icon-test` to match the sibling tests' contract. Clean re-run 549/0.
+- **cost:** session a6ff6bcc00e74066b (~8m) + fix a2742f344329b5d71 (~1m); plus orchestrator
+  develop-E2E incl. the degraded-run diagnosis.

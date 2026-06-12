@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P159** — nodes/ui-icon — `size` auf xs..xl-Token-Select (Spec/Code-Fix); color via P139 — *Field-Typing Welle 2* — [P159](nodes/ui-icon/P159-icon-size-token-select.md)
 - **P160** — nodes/ui-query — Spec entrümpeln (previewData raus, Wiring-Beispiel), Store/Query-Trennung schärfen, Daten-Pipeline test-first verifizieren — *geplant* — [P160](nodes/ui-query/P160-query-spec-cleanup-store-distinction-pipeline-verify.md)
 - **P161** — nodes/ui-query — Query-reaktives Paging: params-Store-getriggerter Refresh (Out-Port) + totalCount/pageCount im Lifecycle; ui-pagination bindet total←query, currentPage↔Store — *geplant; braucht P154 + P160* — [P161](nodes/ui-query/P161-query-reactive-paging-loop.md)
 - **P163** — nodes/ui-repeat — Schema-Knotendefinition + neue Binding-Art `item`/`index` (scope-lokal) — *ui-repeat-Welle (ADR 0017), Schicht 1* — [P163](nodes/ui-repeat/P163-repeat-schema-and-item-binding-kind.md)
@@ -84,7 +83,8 @@ open the folder for the full history.
 | nodes/ui-stepper | 1 |
 | nodes/ui-menu | 1 |
 | nodes/ui-table | 2 |
-| nodes/ui-accordion · ui-breadcrumb · ui-dialog · ui-icon · ui-progress · ui-skeleton | 1 each |
+| nodes/ui-icon | 2 |
+| nodes/ui-accordion · ui-breadcrumb · ui-dialog · ui-progress · ui-skeleton | 1 each |
 | aspects/test-infra | 21 |
 | aspects/misc | 16 |
 | aspects/runtime | 7 |
@@ -96,4 +96,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 157 done, 7 open, 10 deferred.**
+**Total: 158 done, 6 open, 10 deferred.**
