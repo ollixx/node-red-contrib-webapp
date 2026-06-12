@@ -311,6 +311,10 @@ export interface UiEmptyStateEditorConfig extends MountableEditorConfig {
 // P16c: navigation and structure node editor configs
 export interface UiTabsEditorConfig extends MountableEditorConfig {
     tabs?: string;
+    // P155 (ADR 0012): `activeTab` is the canonical two-way value typedInput
+    // (persisted as a binding object). The legacy `activeTabPath` plain state
+    // path is kept for migration only.
+    activeTab?: BindingDefinition;
     activeTabPath?: string;
     events?: string;
 }
@@ -1330,7 +1334,11 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         id: config.id ?? "",
         mount: config.mount ?? "",
         tabs: JSON.parse(config.tabs ?? "[]"),
-        activeTab: config.activeTabPath ? stateBinding(config.activeTabPath) : undefined,
+        // P155 (ADR 0012): prefer the canonical `activeTab` binding object; migrate
+        // a legacy `activeTabPath` plain state path to a state binding.
+        activeTab: isBindingObject(config.activeTab)
+            ? config.activeTab
+            : (config.activeTabPath ? stateBinding(config.activeTabPath) : undefined),
         ...collectLayoutChildConfig(config)
     })),
     "ui-accordion": createDefinition("ui-accordion", "view", {

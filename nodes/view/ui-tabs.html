@@ -10,6 +10,13 @@
                 parent: { value: "" },
                 mount: { value: "", required: true },
                 tabs: { value: "" },
+                // P155 (ADR 0012): `activeTab` (two-way value typedInput) persists the
+                // binding OBJECT; there is no matching #node-input-activeTab element so
+                // Node-RED auto-save cannot clobber it. The typedInput lives on
+                // #node-input-activeTabBinding. Legacy `activeTabPath` (pre-P155 plain
+                // state path) is kept for migration only.
+                activeTab: { value: null },
+                activeTabBinding: { value: "" },
                 activeTabPath: { value: "" },
                 events: { value: "" },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
@@ -33,6 +40,33 @@
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
                 common.installLayoutChildPropRows().call(this);
+
+                // P155 (ADR 0012 / value category): `activeTab` typedInput — full
+                // canonical set with literal default type `str` (a tab id). This is the
+                // TWO-WAY input value: it reads the active tab from the bound Store/state
+                // AND the tab-change event carries the chosen tab id for the wired
+                // write-back loop. Migration: a legacy `activeTabPath` plain string
+                // becomes a state binding; a stored `activeTab` binding wins.
+                const storedActive = common.parseBindingValue(this.activeTab);
+                const activeBinding = storedActive
+                    ? storedActive
+                    : (this.activeTabPath ? { kind: "state", path: this.activeTabPath } : undefined);
+                const activeEditor = common.readValueBinding(activeBinding, "");
+                const activeInput = $("#node-input-activeTabBinding");
+                activeInput.typedInput({
+                    default: activeEditor.type,
+                    types: common.valueBindingTypes({ category: "value" })
+                });
+                activeInput.typedInput("type", activeEditor.type);
+                activeInput.typedInput("value", activeEditor.value);
+            },
+            oneditsave: function () {
+                // P155: persist activeTab as a binding object; clear the legacy path.
+                this.activeTab = common.applyValueBinding(
+                    $("#node-input-activeTabBinding").typedInput("type"),
+                    $("#node-input-activeTabBinding").typedInput("value")
+                );
+                this.activeTabPath = "";
             }
         });
     })();
@@ -42,6 +76,18 @@
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <div class="form-row"><label for="node-input-tabs">Tabs (JSON array)</label><input type="text" id="node-input-tabs" placeholder='[{"id":"tab1","label":"Tab 1"}]'></div>
-    <div class="form-row"><label for="node-input-activeTabPath">Active Tab Path</label><input type="text" id="node-input-activeTabPath"></div>
+    <!-- P155 (ADR 0012 / value category): Active Tab binding (two-way) — typedInput managed in oneditprepare/oneditsave. -->
+    <div class="form-row"><label for="node-input-activeTabBinding">Active Tab</label><input type="text" id="node-input-activeTabBinding"></div>
 </script>
-<script type="text/html" data-help-name="ui-tabs"><p>Tab bar with one slot per tab for switching between views.</p></script>
+<script type="text/html" data-help-name="ui-tabs">
+<p>Tab-Leiste mit einem Slot pro Tab zum Umschalten zwischen Ansichten. Emittiert beim Tab-Wechsel ein Change-Event mit der gewählten Tab-ID.</p>
+<h4>Active Tab (P155)</h4>
+<p>Bindbare, <strong>zweiseitige</strong> Quelle des aktiven Tabs (Tab-ID) — voller
+kanonischer Satz (ADR 0012): Store, Query, Route-Param, Reactive, msg, JSONata, string,
+number, boolean, json, timestamp, Flow, Global, Env. Liest den aktiven Tab aus dem
+gebundenen Store/State; der Tab-Wechsel emittiert das Change-Event mit der neuen Tab-ID,
+das im Flow zurück in den Store geschrieben wird (Roundtrip). Default-Typ:
+<code>string</code>. Ein bestehender <code>activeTabPath</code> wird automatisch als
+<code>state</code>-Binding übernommen.</p>
+<p>Doku: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/navigation/ui-tabs.md" target="_blank">ui-tabs</a>.</p>
+</script>

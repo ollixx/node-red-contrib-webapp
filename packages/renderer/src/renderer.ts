@@ -806,6 +806,11 @@ function toRenderedComponent(component: ComponentDefinition, context: ComponentR
                 value: resolvedProps.value === undefined ? undefined : normalizeDisplayValue(resolvedProps.value)
             } as RenderedGenericComponent;
         // P25: P16x interactive kinds — rendered generically with value + all props.
+        // P155 (ADR 0012): ui-tabs `activeTab` is the TWO-WAY input value — it
+        // resolves through bind.value into resolvedProps.value (read source); the
+        // serializer reads component.value to mark the matching sl-tab active. The
+        // existing tab-change event carries the new tab id on the out-port, which a
+        // wired flow writes back to the bound store (declarative roundtrip).
         case "select":
         case "checkbox":
         case "radio":

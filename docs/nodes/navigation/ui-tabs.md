@@ -35,7 +35,7 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
 | `tabs` | „Tabs (JSON array)" | Textfeld (JSON) | **ja** | Geordnete Liste der Tabs. Jedes Element hat die Form `{ "id": "<bezeichner>", "label": "<anzeigename>" }`. Mindestens ein Tab erforderlich. Die `id` muss innerhalb des Knotens eindeutig sein; sie bestimmt den Slot-Namen (`tab:<id>`) und ist das Token, das `activeTab` trägt. |
-| `activeTab` | „Active Tab Path" | typedInput (Binding) | optional | Binding auf die `id` des derzeit aktiven Tabs. Bindbare Arten: `state`, `store`, `query`, `routeParam`, `literal` sowie Node-RED-Standard-Arten (`msg`, `flow`, `global`, `jsonata`, `env`). Default: erster Tab der Liste. Wird ein ungültiger Wert geliefert, fällt die Komponente auf den ersten Tab zurück. |
+| `activeTab` | „Active Tab" | typedInput (Binding, **zweiseitig**) | optional | Zweiseitiges Binding auf die `id` des derzeit aktiven Tabs (P155 / ADR 0012): liest den aktiven Tab aus dem gebundenen Store/State **und** der Tab-Wechsel emittiert das Change-Event mit der gewählten Tab-ID für den Write-back-Roundtrip. Bindbare Arten: `state`, `store`, `query`, `routeParam`, `literal` sowie Node-RED-Standard-Arten (`msg`, `flow`, `global`, `jsonata`, `env`). Default-Typ: `string`. Ein bestehender `activeTabPath` (plain string) wird automatisch als `state`-Binding übernommen. Default-Wert: erster Tab der Liste. Wird ein ungültiger Wert geliefert, fällt die Komponente auf den ersten Tab zurück. |
 
 ### Gruppe „Darstellung"
 
