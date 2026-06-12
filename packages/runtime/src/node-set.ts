@@ -324,7 +324,8 @@ function assembleRuntimeIntegration(
             id: definition.id,
             queryPath: definition.queryPath,
             params: definition.params,
-            refreshAction: definition.refreshAction
+            refreshAction: definition.refreshAction,
+            debounceMs: definition.debounceMs
         }))
         .sort((left, right) => left.id.localeCompare(right.id));
 

@@ -95,6 +95,27 @@ versorgt, ändert sich die visuelle Darstellung der aktuellen Seite.
 - `ui-store`-Änderungs-Output → `ui-query` mit `page`-Parameter → `ui-table`/`ui-list` zeigt neue Daten.
 - `pageChange` → `function`, das zusätzlich `pageSize` aus dem State liest, `offset` berechnet und einen HTTP-Request abschickt.
 
+## Bindungs-Muster mit `ui-query` (reaktives Paging)
+
+Der kanonische Paging-Loop (P161, [ADR 0016](../../adr/0016-ui-query-trigger-model-visible-no-auto-fire.md))
+verbindet `ui-pagination`, einen `params`-Store und eine `ui-query`:
+
+| `ui-pagination`-Feld | Binding | Richtung |
+|---|---|---|
+| `total` | `query:<path>.totalCount` | **lesend** — die Gesamtzahl aus dem Query-Ergebnis (P161; die Query legt `totalCount` neben `data` ab). |
+| `currentPage` | `store(params).page` (bzw. `state:params.page`) | **zweiseitig** — liest die aktuelle Seite aus dem `params`-Store; der Seitenwechsel schreibt sie über den Store-Roundtrip (`pageChange` → `ui-store set page`) zurück. |
+
+Der Loop: **„Next Page"** schreibt `page+1` in den `params`-Store → die
+`ui-query` **beobachtet** diesen Store und feuert einen Out-Port-Refresh →
+der verdrahtete Fetch liefert die neue Seite + `totalCount` zurück → `ui-table`
+(`rows = query:<path>.data`) und `ui-pagination` (`total = query:<path>.totalCount`)
+aktualisieren sich. **Kein Loop**, da die Datenrückgabe die Params nicht ändert.
+Siehe [`ui-query` › Reaktives Paging](../state/ui-query.md#reaktives-paging--params-store--out-port-refresh).
+
+> **Beide Felder sind seit P154 bindbar** (kanonische Wert-typedInputs, ADR 0012);
+> P161 fügt nur die Datenquelle hinzu (`query:<path>.totalCount`). Es ist keine
+> weitere Knoten-Änderung am `ui-pagination` nötig.
+
 ## Theming
 
 `ui-pagination` rendert Schaltflächen und ggf. Seitenzahl-Links; das Theme

@@ -347,6 +347,10 @@ export const uiQueryNodeDefinitionSchema = identifiedNodeSchema.extend({
     queryPath: z.string().min(1, "Queries must declare a query path."),
     params: z.string().min(1, "Params store reference must not be empty.").optional(),
     refreshAction: z.string().min(1, "Refresh actions must not be empty.").optional(),
+    // P161 (ADR 0016 §3): debounce the params-observed out-port refresh so a
+    // search-as-you-type does not fire a fetch per keystroke. Default (absent /
+    // 0) = immediate.
+    debounceMs: z.number().int().nonnegative("Debounce must not be negative.").optional(),
 });
 
 export type UiQueryNodeDefinition = z.infer<typeof uiQueryNodeDefinitionSchema>;

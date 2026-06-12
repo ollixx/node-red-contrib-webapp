@@ -10,7 +10,10 @@
                 parent: { value: "" },
                 queryPath: { value: "", required: true },
                 params: { value: "" },
-                refreshAction: { value: "" }
+                refreshAction: { value: "" },
+                // P161 (ADR 0016 §3): debounce the params-observed out-port refresh
+                // (ms). Empty / 0 = immediate.
+                debounceMs: { value: "" }
             },
             inputs: 1,
             outputs: 1,
@@ -34,6 +37,7 @@
     <div class="form-row"><label for="node-input-parent">App</label><select id="node-input-parent"></select></div>
     <div class="form-row"><label for="node-input-queryPath">Query Path</label><input type="text" id="node-input-queryPath"></div>
     <div class="form-row"><label for="node-input-params">Params Store</label><select id="node-input-params"></select></div>
+    <div class="form-row"><label for="node-input-debounceMs">Debounce (ms)</label><input type="number" id="node-input-debounceMs" min="0" placeholder="0 (sofort)"></div>
     <div class="form-row"><label for="node-input-refreshAction">Refresh Action</label><select id="node-input-refreshAction"></select></div>
 </script>
 <script type="text/html" data-help-name="ui-query">
@@ -45,10 +49,21 @@ ueber das <b>Wiring</b> herein: Trigger → ui-query (Pass-Through) → Datenque
 zurueck an den In-Port mit <code>msg.ui.query.data</code> (passender
 <code>queryPath</code>). Ohne diese Verdrahtung bleibt die Query leer.</p>
 <p><b>Push/Refresh</b> ueber <code>msg.ui.query</code> mit <code>queryPath</code>
-und <code>data</code> / <code>error</code> / <code>refresh</code>.</p>
+und <code>data</code> / <code>error</code> / <code>refresh</code>; Paging-Daten
+optional als <code>totalCount</code> / <code>pageCount</code> neben
+<code>data</code>.</p>
+<p><b>Reaktives Refresh (Params-Store):</b> ist ein <b>Params Store</b> gesetzt,
+beobachtet die Query ihn. Aendert er sich, feuert die Query einen Refresh am
+<b>Out-Port</b> (<code>msg.ui.query.params</code> = aktueller Store-Wert) und
+setzt den Ladezustand auf <code>loading</code>. Der verdrahtete Fetch laedt die
+Seite und schickt <code>data</code> + <code>totalCount</code> zurueck an den
+In-Port. Kein Auto-on-Arrival — der Initial-Load haengt am
+<code>route onEnter → ui-query</code>-Wire (ADR 0016). <b>Debounce (ms)</b>
+buendelt schnelle Aenderungen (Such-Tippen).</p>
 <p><b>Lesen:</b> Daten ueber <code>query:&lt;queryPath&gt;</code>; Ladezustand
 ueber die reservierten Unterpfade <code>query:&lt;queryPath&gt;.loading</code> /
-<code>.error</code> / <code>.updatedAt</code>.</p>
+<code>.error</code> / <code>.updatedAt</code>; Paging ueber
+<code>query:&lt;queryPath&gt;.totalCount</code> / <code>.pageCount</code>.</p>
 <p>Details:
 <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/state/ui-query.md">ui-query.md</a>.</p>
 </script>
