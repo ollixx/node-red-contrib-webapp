@@ -81,6 +81,43 @@ die in den alten abgeleiteten Slot `tab:<id>` gemountet waren, werden auf
 `ui-tab:<id>/content` umgehängt. Die Migration ist verlustfrei und einmalig; ein
 Flow, der bereits im Kinder-Modell vorliegt, bleibt unverändert.
 
+## Dynamische Tabs = ein `ui-repeat` von `ui-tab` (P170 / ADR 0017 × 0018)
+
+Tabs aus **Daten** sind **kein eigenes Feature** und kein „dynamischer Slot": sie
+sind die **Komposition** aus [`ui-repeat`](../display/ui-repeat.md) (ADR 0017) und
+dem Kinder-definieren-Modell (ADR 0018). Ein `ui-repeat`, dessen Schablone (der
+Default-Slot `content`) ein **einzelnes** [`ui-tab`](ui-tab.md) ist und das in
+dieses `ui-tabs` gemountet wird, erzeugt **einen Tab je Datenzeile**. Das Tab-
+`label` (und der Panel-Inhalt) bindet `item.<feld>` und löst gegen die jeweilige
+Zeile auf.
+
+```
+ui-tabs (id: viewTabs)
+└── ui-repeat            mount: ui-tabs:viewTabs/content
+    │                    items:  state  →  view.people   (ein Array)
+    │                    keyField: id
+    └── ui-tab           mount: container:viewRepeat/content
+        │                label: item  →  name            (= item.name)
+        └── ui-text      mount: ui-tab:viewTab/content
+                         value: item  →  bio             (= item.bio)
+```
+
+Für ein Array `[{id:"ada",name:"Ada",bio:"…"}, {id:"lin",name:"Linus",bio:"…"}]`
+rendert das **zwei** Tabs „Ada" / „Linus", jeder mit seinem eigenen Panel-Inhalt.
+
+- **Keying/Stabilität:** die sichtbare Tab-Id ist `<itemKey>#<tab-id>` (Repeat-Key
+  × Tab-id). Ändert sich das Array (Zeile hinzu/weg/umsortiert), formt sich die
+  Tab-Menge um — **keyed**: unveränderte Tabs behalten ihre Id und werden nicht
+  neu gemountet (kein Flackern). `activeTab` bleibt gültig, solange seine Zeile
+  existiert; verschwindet die Zeile, fällt der aktive Tab auf das erste Kind
+  zurück.
+- **Statisch + dynamisch mischbar:** ein direkt gemountetes `ui-tab` (statischer
+  Tab) und ein `ui-repeat`-von-`ui-tab` (dynamische Tabs) dürfen **gemeinsam**
+  unter einem `ui-tabs` hängen; die Reihenfolge richtet sich nach `order`.
+- **Kein neuer Mechanismus:** der Container zählt seine Tab-Kinder auf und
+  expandiert dabei ein gemountetes `ui-repeat` je Item in genau ein keyed `ui-tab`
+  — dieselbe Klon-/Key-Logik wie jeder andere Repeat (ADR 0017 §4).
+
 ## Input
 
 `ui-tabs` nimmt Eingangs-Messages entgegen, um seinen Zustand oder seine
