@@ -692,6 +692,30 @@ function getBinding(bindingCandidate, fallbackBinding) {
     return fallbackBinding;
 }
 
+// P157 (ADR 0012): resolve a ui-menu `items` config into the node-definition
+// `items` value — a static array (the menu renders entries itself, a STRUCTURAL
+// array like ui-select `options`, NOT a repeats case) OR a binding object
+// (store/query/reactive) resolved structurally by the renderer. A json-literal
+// binding's raw array is unwrapped to the static array; every dynamic binding
+// kind passes through; a legacy `itemsPath` migrates to a state binding; a bare
+// JSON string / array (flow.json/tests) is parsed/kept as an array.
+function resolveMenuItems(config) {
+    const candidate = config.items;
+    if (candidate && typeof candidate === "object" && typeof candidate.kind === "string") {
+        if (candidate.kind === "literal") {
+            return Array.isArray(candidate.value) ? candidate.value : candidate;
+        }
+        return candidate;
+    }
+    if (Array.isArray(candidate)) {
+        return candidate;
+    }
+    if (config.itemsPath) {
+        return stateBinding(config.itemsPath);
+    }
+    return parseJsonList(config.items);
+}
+
 // P133 (ADR 0012): resolve a ui-select / ui-radio `options` config into the
 // node-definition `options` value — either a normalised `{label,value}[]` array
 // (the `json` type) or a binding object (the `store` type), with legacy migration:
@@ -1154,6 +1178,15 @@ function toComponentDefinitions(components) {
             // reads it back reactively. Legacy: `activeTabPath` plain state path.
             const activeTabBinding = !valueBinding && p16Kind === "tabs" ? getBinding(component.activeTab, component.activeTabPath ? stateBinding(component.activeTabPath) : undefined) : undefined;
             const itemsBinding = !valueBinding && p16Kind === "list" ? getBinding(component.items, component.itemsPath ? stateBinding(component.itemsPath) : undefined) : undefined;
+            // P157 (ADR 0012): ui-menu `items` is a STRUCTURAL array binding (the
+            // menu renders its entries itself — NOT a repeats/slot case, vgl. P140).
+            // When it is a binding object (store/query/reactive/json-literal) route
+            // it through bind.items so the renderer resolves it structurally (shared
+            // P133 path) — a plain static array stays in props.items. `activeItem`
+            // (the active route/path, read-only display value) routes through
+            // bind.activeItem so the renderer resolves it into resolvedProps.activeItem.
+            const menuItemsBinding = p16Kind === "menu" ? getBinding(component.items, undefined) : undefined;
+            const menuActiveBinding = p16Kind === "menu" ? getBinding(component.activeItem, undefined) : undefined;
             const bind = {};
             if (valueBinding) {
                 bind.value = valueBinding;
@@ -1240,6 +1273,15 @@ function toComponentDefinitions(components) {
             if (optionsBinding) {
                 bind.options = optionsBinding;
             }
+            // P157: ui-menu items (structural array) and activeItem (read-only value)
+            // route through bind so the renderer resolves them (items structurally,
+            // activeItem via the scalar path).
+            if (menuItemsBinding) {
+                bind.items = menuItemsBinding;
+            }
+            if (menuActiveBinding) {
+                bind.activeItem = menuActiveBinding;
+            }
             // P151 (ADR 0012): ui-image alt and fallbackSrc are binding-capable.
             // When either is a binding object, route it through bind so the
             // renderer resolves it into resolvedProps.alt / resolvedProps.fallbackSrc
@@ -1293,7 +1335,11 @@ function toComponentDefinitions(components) {
                     ...(component.pulsating !== undefined ? { pulsating: component.pulsating } : {}),
                     // P49: display type (progress/skeleton/badge/menu/list render mode).
                     ...(component.displayType !== undefined ? { displayType: component.displayType } : {}),
-                    ...(component.items !== undefined ? { items: component.items } : {}),
+                    // P157: a menu `items` BINDING object routes through bind.items
+                    // (resolved structurally by the renderer); only a plain static
+                    // array stays in props.items. Other kinds (list/breadcrumb) keep
+                    // their existing items-in-props behaviour.
+                    ...(component.items !== undefined && !menuItemsBinding ? { items: component.items } : {}),
                     ...(component.sections !== undefined ? { sections: component.sections } : {}),
                     ...(component.tabs !== undefined ? { tabs: component.tabs } : {}),
                     ...(component.orientation !== undefined ? { orientation: component.orientation } : {}),
@@ -5236,7 +5282,14 @@ const runtimeNodeRegistry = {
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
             displayType: config.displayType || config.variant || undefined,
-            items: getBinding(config.items, config.itemsPath ? stateBinding(config.itemsPath) : undefined) || parseJsonList(config.items),
+            // P157 (ADR 0012): `items` is a STRUCTURAL array source (store/query/
+            // reactive/json-literal) — the menu renders its entries itself (NOT a
+            // repeats case). A json-literal binding's raw array is unwrapped to a
+            // static array (props.items); a dynamic binding passes through (resolved
+            // structurally by the renderer); a legacy `itemsPath` migrates to a state
+            // binding; a bare JSON/array stays an array. `activeRoute` /
+            // `activeRoutePath` (read-only active route) → `activeItem` binding.
+            items: resolveMenuItems(config),
             activeItem: getBinding(config.activeRoute, config.activeRoutePath ? stateBinding(config.activeRoutePath) : undefined),
             // P75: ui-menu always exposes a single navigate output port; a click on
             // a navigable item (route/path, not external href) emits a `navigate`

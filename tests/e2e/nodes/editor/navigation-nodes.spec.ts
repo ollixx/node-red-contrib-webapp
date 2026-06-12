@@ -220,6 +220,34 @@ test.describe("editor panels — ui-menu (P85)", () => {
         await editor.expectFields(["name", "mount"]);
         expect(await editor.inputPortCount("menuEd1")).toBe(1);
     });
+
+    // P157 (ADR 0012): `itemsPath` / `activeRoutePath` plain text fields became the
+    // `items` (structural array) / `activeRoute` (read-only) value typedInputs. The
+    // legacy paths migrate to state bindings; the visible widgets are now
+    // #node-input-itemsBinding / #node-input-activeRouteBinding.
+    test("menu: items + activeRoute typedInputs present; legacy paths migrate", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "menuTiApp", root: "menuTiApp", name: "Menu TI App" })
+            .node("ui-menu", {
+                id: "menuTi1",
+                itemsPath: "nav.items",
+                activeRoutePath: "nav.activeRoute"
+            })
+            .build();
+        await deployFlow(request, flow);
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode("menuTi1");
+
+        await editor.expectFields(["name", "mount", "itemsBinding", "activeRouteBinding"]);
+        expect(await editor.inputPortCount("menuTi1")).toBe(1);
+
+        // Legacy itemsPath/activeRoutePath migrate into the typedInputs as state
+        // bindings — the typedInput value holds the migrated state path.
+        expect(await editor.readTypedInput("itemsBinding")).toBe("nav.items");
+        expect(await editor.readTypedInput("activeRouteBinding")).toBe("nav.activeRoute");
+    });
 });
 
 test.describe("editor panels — ui-breadcrumb (P85)", () => {

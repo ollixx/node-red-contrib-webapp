@@ -10,6 +10,17 @@
                 parent: { value: "" },
                 mount: { value: "", required: true },
                 displayType: { value: "sidebar" },
+                // P157 (ADR 0012): `items` (structural array source) and `activeRoute`
+                // (read-only active route) persist the binding OBJECT; there is no
+                // matching #node-input-items / #node-input-activeRoute element so
+                // Node-RED auto-save cannot clobber them. The typedInputs live on
+                // #node-input-itemsBinding / #node-input-activeRouteBinding. Legacy
+                // `itemsPath` / `activeRoutePath` plain state paths are kept for
+                // migration only.
+                items: { value: null },
+                activeRoute: { value: null },
+                itemsBinding: { value: "" },
+                activeRouteBinding: { value: "" },
                 itemsPath: { value: "" },
                 activeRoutePath: { value: "" },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
@@ -32,6 +43,56 @@
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
                 common.installLayoutChildPropRows().call(this);
+
+                // P157 (ADR 0012 / value category): `items` typedInput — full
+                // canonical value set with a JSON-literal default type (the menu
+                // items array). STRUCTURAL array source: a Store/Query/Reactive
+                // binding reads the items reactively; the json type holds a static
+                // array literal. Migration: a legacy `itemsPath` plain string opens
+                // as a `state` binding; a stored `items` binding object wins.
+                const storedItems = common.parseBindingValue(this.items);
+                const itemsBinding = storedItems
+                    ? storedItems
+                    : (this.itemsPath ? { kind: "state", path: this.itemsPath } : undefined);
+                const itemsEditor = common.readValueBinding(itemsBinding, "");
+                const itemsDefaultType = itemsEditor.type !== "str" ? itemsEditor.type : "json";
+                const itemsInput = $("#node-input-itemsBinding");
+                itemsInput.typedInput({
+                    default: itemsDefaultType,
+                    types: common.valueBindingTypes({ category: "value" })
+                });
+                itemsInput.typedInput("type", itemsEditor.type !== "str" || itemsBinding ? itemsEditor.type : "json");
+                itemsInput.typedInput("value", itemsEditor.value);
+
+                // P157 (ADR 0012 / value category): `activeRoute` typedInput — full
+                // canonical value set (read-only display value; typically routeParam/
+                // store). Migration: a legacy `activeRoutePath` plain string opens as
+                // a `state` binding; a stored `activeRoute` binding object wins.
+                const storedActive = common.parseBindingValue(this.activeRoute);
+                const activeBinding = storedActive
+                    ? storedActive
+                    : (this.activeRoutePath ? { kind: "state", path: this.activeRoutePath } : undefined);
+                const activeEditor = common.readValueBinding(activeBinding, "");
+                const activeInput = $("#node-input-activeRouteBinding");
+                activeInput.typedInput({
+                    default: activeEditor.type,
+                    types: common.valueBindingTypes({ category: "value" })
+                });
+                activeInput.typedInput("type", activeEditor.type);
+                activeInput.typedInput("value", activeEditor.value);
+            },
+            oneditsave: function () {
+                // P157: persist items/activeRoute as binding objects; clear legacy paths.
+                this.items = common.applyValueBinding(
+                    $("#node-input-itemsBinding").typedInput("type"),
+                    $("#node-input-itemsBinding").typedInput("value")
+                );
+                this.itemsPath = "";
+                this.activeRoute = common.applyValueBinding(
+                    $("#node-input-activeRouteBinding").typedInput("type"),
+                    $("#node-input-activeRouteBinding").typedInput("value")
+                );
+                this.activeRoutePath = "";
             }
         });
     })();
@@ -46,7 +107,23 @@
             <option value="topbar">Topbar</option>
         </select>
     </div>
-    <div class="form-row"><label for="node-input-itemsPath">Items State Path</label><input type="text" id="node-input-itemsPath" placeholder="e.g. nav.items"></div>
-    <div class="form-row"><label for="node-input-activeRoutePath">Active Route Path</label><input type="text" id="node-input-activeRoutePath" placeholder="e.g. nav.activeRoute"></div>
+    <!-- P157 (ADR 0012 / value category): Items binding (structural array source) — typedInput managed in oneditprepare/oneditsave. -->
+    <div class="form-row"><label for="node-input-itemsBinding">Items</label><input type="text" id="node-input-itemsBinding"></div>
+    <!-- P157 (ADR 0012 / value category): Active Route binding (read-only) — typedInput managed in oneditprepare/oneditsave. -->
+    <div class="form-row"><label for="node-input-activeRouteBinding">Active Route</label><input type="text" id="node-input-activeRouteBinding"></div>
 </script>
-<script type="text/html" data-help-name="ui-menu"><p>Navigation menu supporting sidebar or topbar layout variants.</p></script>
+<script type="text/html" data-help-name="ui-menu">
+<p>Navigationsmenü (Sidebar oder Topbar). Klicks auf navigierbare Items (mit <code>route</code>/<code>path</code>) emittieren ein <code>navigate</code>-Event auf dem Output-Port.</p>
+<h4>Items (P157)</h4>
+<p>Bindbare, <strong>strukturelle</strong> Quelle der Menü-Einträge (ein Array) — voller
+kanonischer Satz (ADR 0012): Store, Query, Route-Param, Reactive, msg, JSONata, json (statisches
+Array-Literal), Flow, Global, Env. Das Menü rendert seine Einträge selbst (kein Slot-pro-Item).
+Jedes Item: <code>{ "label": …, "route"?: …, "href"?: …, "path"?: …, "icon"?: … }</code>.
+Default-Typ: <code>json</code>. Ein bestehender <code>itemsPath</code> wird automatisch als
+<code>state</code>-Binding übernommen.</p>
+<h4>Active Route (P157)</h4>
+<p>Bindbare, <strong>lesende</strong> Quelle der aktiven Route — gleicher kanonischer Satz;
+das passende Item wird hervorgehoben. Ein bestehender <code>activeRoutePath</code> wird
+automatisch als <code>state</code>-Binding übernommen.</p>
+<p>Doku: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/navigation/ui-menu.md" target="_blank">ui-menu</a>.</p>
+</script>

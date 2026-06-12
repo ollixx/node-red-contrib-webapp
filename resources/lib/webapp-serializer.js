@@ -865,6 +865,12 @@
             const appId = ctx.appId;
             const items = Array.isArray(component.props.items) ? component.props.items : (Array.isArray(component.value) ? component.value : []);
             const src = escapeAttribute(component.id);
+            // P157 (ADR 0012): `activeItem` is the resolved active route/path
+            // (read-only display value). The matching item is marked active so the
+            // current route is visually highlighted in the menu.
+            const activeRoute = (component.props.activeItem !== undefined && component.props.activeItem !== null)
+                ? String(component.props.activeItem)
+                : undefined;
             const itemHtml = items.map(function (item) {
                 const label = escapeHtml(String(item.label !== undefined ? item.label : item));
                 const href = item.href
@@ -880,7 +886,12 @@
                 const navAttr = navPath
                     ? " data-webapp-source=\"" + src + "\" data-webapp-navigate-path=\"" + escapeAttribute(String(navPath)) + "\""
                     : "";
-                return "<sl-menu-item" + href + navAttr + ">" + label + "</sl-menu-item>";
+                // P157: an item whose route/path matches the resolved activeItem
+                // carries data-webapp-active + aria-current for the active highlight.
+                const itemRoute = item.route !== undefined ? item.route : item.path;
+                const isActive = activeRoute !== undefined && itemRoute !== undefined && String(itemRoute) === activeRoute;
+                const activeAttr = isActive ? " data-webapp-active=\"true\" aria-current=\"page\"" : "";
+                return "<sl-menu-item" + href + navAttr + activeAttr + ">" + label + "</sl-menu-item>";
             }).join("");
             return wrapRenderedComponentHtml(component, layoutId, "<sl-menu>" + itemHtml + "</sl-menu>");
         }

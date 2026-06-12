@@ -717,6 +717,22 @@ function toRenderedComponent(component: ComponentDefinition, context: ComponentR
         resolvedProps.options = resolveStructuralBinding(component.bind.options, context.sources);
     }
 
+    // P157 (ADR 0012): ui-menu `items` is the SAME structural-array case as
+    // ui-select `options` — the menu renders its entries ITSELF (no slot-per-item),
+    // so a bound store/query slice that is legitimately an array of menu items must
+    // keep its shape, not be coerced by the display-scalar resolver. Resolve it
+    // through the SHARED structural path (reused from P133). `activeItem` is a plain
+    // READ-ONLY display value (the active route/path) — resolved through the normal
+    // scalar path into resolvedProps.activeItem so the serializer can mark the match.
+    if (component.kind === "menu") {
+        if (component.bind.items) {
+            resolvedProps.items = resolveStructuralBinding(component.bind.items, context.sources);
+        }
+        if (component.bind.activeItem) {
+            resolvedProps.activeItem = resolveBinding(component.bind.activeItem, context.sources);
+        }
+    }
+
     const baseComponent: RenderedComponentBase = {
         id: component.id,
         kind: component.kind,
