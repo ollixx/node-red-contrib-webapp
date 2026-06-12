@@ -36,4 +36,19 @@
     <div class="form-row"><label for="node-input-params">Params Store</label><select id="node-input-params"></select></div>
     <div class="form-row"><label for="node-input-refreshAction">Refresh Action</label><select id="node-input-refreshAction"></select></div>
 </script>
-<script type="text/html" data-help-name="ui-query"><p>Beschreibt eine UI-Query fuer geladene Daten.</p></script>
+<script type="text/html" data-help-name="ui-query">
+<p>Benannte, <b>server-geladene</b> Datenquelle mit Ladezustand, abgelegt unter
+<code>ui.queries.&lt;queryPath&gt;</code>. Im UI <b>read-only</b> — fuer eigenen,
+veraenderbaren Zustand nutze einen <code>ui-store</code>.</p>
+<p><b>„Leer" ist normal:</b> der Knoten laedt nichts selbst. Daten kommen nur
+ueber das <b>Wiring</b> herein: Trigger → ui-query (Pass-Through) → Datenquelle →
+zurueck an den In-Port mit <code>msg.ui.query.data</code> (passender
+<code>queryPath</code>). Ohne diese Verdrahtung bleibt die Query leer.</p>
+<p><b>Push/Refresh</b> ueber <code>msg.ui.query</code> mit <code>queryPath</code>
+und <code>data</code> / <code>error</code> / <code>refresh</code>.</p>
+<p><b>Lesen:</b> Daten ueber <code>query:&lt;queryPath&gt;</code>; Ladezustand
+ueber die reservierten Unterpfade <code>query:&lt;queryPath&gt;.loading</code> /
+<code>.error</code> / <code>.updatedAt</code>.</p>
+<p>Details:
+<a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/state/ui-query.md">ui-query.md</a>.</p>
+</script>

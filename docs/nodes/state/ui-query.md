@@ -39,16 +39,85 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 |---|---|---|---|---|
 | `params` | „Params Store" | Node-Picker-Dialog (Preset Stores) | optional | Referenz auf einen `ui-store` derselben App, der die Abfrageparameter (Seite, Sortierung, Suchbegriff) hält. Die Query reagiert reaktiv auf Änderungen dieses Stores. |
 | `refreshAction` | „Refresh Action" | Node-Picker-Dialog (Preset Actions) | optional | Referenz auf eine `ui-action` derselben App, die einen Query-Refresh auslöst. |
-| `previewData` | „Preview Data (JSON)" | Textfeld (JSON, mehrzeilig) | optional | Deklarative Seed-Daten für Preview/Runtime. Werden unter dem ersten Segment von `queryPath` (dem Sammlungs-Root) eingehängt — Demo-Daten kommen so aus der Knoten-Konfiguration. |
+
+> **Kein `previewData`/Seed-Feld.** Eine Query hat **keinen** Demo-Shortcut aus
+> der Knoten-Konfiguration — das frühere `previewData`-Feld wurde in **P32**
+> entfernt (es gibt kein Editor-Feld mehr). Der **verdrahtete** Weg (siehe
+> [Verdrahtungs-Pflicht](#verdrahtungs-pflicht--keine-daten-ohne-wiring)) ist
+> der **einzige** Weg, Daten in eine Query zu bekommen. Eine frisch deployte,
+> noch nicht befüllte Query ist **leer** (`status: "idle"`, `data` undefiniert)
+> — das ist *by design*, kein Fehler.
+
+## Verdrahtungs-Pflicht — keine Daten ohne Wiring
+
+`ui-query` **lädt nichts selbst.** Der Knoten ist Deklaration + Zustands-Halter:
+er beschreibt *wo* (`queryPath`) und *in welchem Ladezustand* Daten liegen — die
+Beschaffung verdrahtet der App-Autor. **Ohne Wiring bleibt die Query leer.** Das
+ist die Erklärung hinter dem „alles leer"-Ersteindruck.
+
+Der eine, verbindliche Datenpfad:
+
+1. Ein Auslöser (typisch `ui-route` `onEnter`, ein `ui-action`-`refresh` oder ein
+   `params`-Store-Wechsel) erreicht den **In-Port** der `ui-query`.
+2. Die Query **reicht die Message durch** (Pass-Through) an ihren **Out-Port**.
+3. Dahinter liegt die **eigentliche Datenquelle** (DB-/HTTP-/`function`-Knoten).
+4. Deren Ergebnis wird als `msg.ui.query.data` (mit passendem `queryPath`)
+   **zurück an den In-Port** der **selben** `ui-query` geschickt.
+5. Der Knoten legt die Daten unter `ui.queries.<queryPath>` ab und pusht einen
+   frischen Snapshot an die Clients — jede `query:<queryPath>`-Bindung
+   aktualisiert sich live.
+
+### Vollständiges Wiring-Beispiel
+
+```text
+ui-route (onEnter)                                   ┌─────────────────────────┐
+      │  msg (trigger)                                │  ui-table               │
+      ▼                                               │  rows = query:customers.list
+┌───────────────┐  Pass-Through   ┌──────────────┐    └─────────────▲───────────┘
+│  ui-query     │ ───────────────▶│  Datenquelle │                  │ Snapshot-Push
+│ queryPath:    │                 │ (DB / HTTP / │                  │ (SSE)
+│ customers.list│                 │  function)   │                  │
+└──────▲────────┘                 └──────┬───────┘          ui.queries.customers.list
+       │  msg.ui.query.data              │                          ▲
+       └─────────────────────────────────┘  msg.ui = {              │
+            zurück an den In-Port              query: {             │
+                                                 queryPath: "customers.list",
+                                                 data: [ … ]        │
+                                               }                    │
+                                             }  ──────────────────────┘
+```
+
+Die `function`-Knoten-Zeile hinter der Datenquelle, die das Ergebnis
+zurückschickt:
+
+```js
+msg.ui = { query: { queryPath: "customers.list", data: msg.payload } };
+return msg; // → an den In-Port der ui-query zurückverdrahten
+```
+
+Ein **Fehler** beim Laden wird genauso zurückgeschickt — nur mit `error` statt
+`data`:
+
+```js
+msg.ui = { query: { queryPath: "customers.list", error: "Laden fehlgeschlagen" } };
+return msg;
+```
 
 ### Inline-Hilfe (HTML)
 
 Der `data-help-name="ui-query"`-Hilfetext im Editor soll **knapp, aber
-ausreichend** sein: Zweck (benannte geladene Datenquelle, Ladezustand unter
-`ui.queries.<queryPath>`), ein Hinweis auf das Push-/Refresh-Format
-(`msg.ui.query`), die Bindung über `query:<queryPath>` und ein Link auf die
-ausführliche Doku. Empfohlener Link (später ggf. Wiki):
-`https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/state/ui-query.md`.
+ausreichend** sein und vor allem den leeren Erstkontakt erklären:
+
+- **Zweck:** benannte, *geladene* Datenquelle + Ladezustand unter
+  `ui.queries.<queryPath>` — **read-only** im UI (zum eigenen, veränderbaren
+  Zustand → [`ui-store`](ui-store.md)).
+- **„Leer ist normal":** ohne Wiring kommen keine Daten — der Knoten lädt nichts
+  selbst. Kurzer Verweis auf die Verdrahtungs-Pflicht.
+- **Push-/Refresh-Format:** `msg.ui.query` mit `queryPath` + `data`/`error`/`refresh`.
+- **Lesen:** Daten über `query:<queryPath>`, Ladezustand über die reservierten
+  Unterpfade `query:<queryPath>.loading` / `.error` / `.updatedAt`.
+- **Link** auf die ausführliche Doku (später ggf. Wiki):
+  `https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/state/ui-query.md`.
 
 ## Input
 
@@ -85,18 +154,41 @@ das Ergebnis als `msg.ui.query.data` zurück an den In-Port.
 - `params`-Store ändert sich → reaktiver Refresh → neue Daten an die gebundene
   `ui-table`.
 
-## Ladezustand
+## Ladezustand und Lese-Konvention
 
-Eine Query hat immer einen Ladezustand im Client-State unter `ui.queries.<queryPath>`:
+Eine Query hält im Client-State unter `ui.queries.<queryPath>` eine
+**Lebenszyklus-Hülle** `{ data, loading, error, updatedAt, status }`:
 
-- `loading` — Daten werden gerade geladen
-- `data` — zuletzt geladene Daten
-- `error` — Fehlermeldung, wenn das Laden fehlschlug
+- `data` — zuletzt erfolgreich geladene Daten
+- `loading` — `true`, während gerade geladen wird
+- `error` — Fehlermeldung, wenn das Laden fehlschlug (sonst `undefined`)
 - `updatedAt` — Timestamp des letzten erfolgreichen Ladevorgangs
+- `status` — `idle` | `loading` | `success` | `error`
 
-View-Knoten wie `ui-table` binden sich an `data`; Ladeindikatoren oder
-Fehlermeldungen lassen sich über `ui-text` mit Binding auf `loading` bzw.
-`error` darstellen.
+**Gelesen wird über die `query`-Binding-Art — mit einer festen Konvention
+(eindeutig, früher widersprüchlich):**
+
+| Bindung | liefert |
+|---|---|
+| `query:<queryPath>` | die **DATEN** (`data`) — der häufigste Fall |
+| `query:<queryPath>.loading` | das Lade-Flag |
+| `query:<queryPath>.error` | die Fehlermeldung |
+| `query:<queryPath>.updatedAt` | den Timestamp |
+| `query:<queryPath>.status` | den Status-String |
+
+> `query:<queryPath>` zeigt **direkt auf die Daten**, nicht auf die Hülle — eine
+> gebundene `ui-table` mit `rows = query:customers.list` bekommt also das
+> Array selbst. Der Ladezustand wird über die **reservierten Unterpfade**
+> `.loading` / `.error` / `.updatedAt` / `.status` gelesen. Die reservierten
+> Suffixe greifen **nur** für bekannte Query-Pfade — ein tieferer Pfad in die
+> Daten (z. B. `query:customers.current.name`) bleibt unberührt.
+
+Damit:
+
+- `ui-table` `rows = query:customers.list` → zeigt die Zeilen.
+- `ui-text` `value = query:customers.list.error` → zeigt eine Fehlermeldung.
+- `ui-text` `value = query:customers.list.loading` → zeigt das Lade-Flag (z. B.
+  als Bedingung für einen Spinner via `visibleIf`).
 
 ## Theming
 
@@ -104,11 +196,32 @@ Fehlermeldungen lassen sich über `ui-text` mit Binding auf `loading` bzw.
 Darstellung der Daten (und ihres Lade-/Fehlerzustands) übernehmen die gebundenen
 View-Knoten; deren Theming ist backend-neutral. Siehe [theming.md](../concepts/theming.md).
 
+## Abgrenzung: `ui-query` vs. `ui-store`
+
+`ui-query` und `ui-store` bleiben **bewusst getrennte** Knoten (Owner-Entscheid).
+Die Trennung ist scharf — wähle nach **Eigentümerschaft und Schreibrichtung**:
+
+| | [`ui-store`](ui-store.md) | `ui-query` (diese Seite) |
+|---|---|---|
+| Was | **eigener, veränderbarer** Client-Zustand | **server-geladene** Daten, im UI **read-only** |
+| Schreiben | ja — über `msg.ui.store`-Operationen; **Input-Controls schreiben in Stores** (zweiseitig) | **nein** — kein zweiter Schreibpfad; befüllt **nur** über das Fetch-Wiring (`msg.ui.query.data`) |
+| Lesen | `store`-Binding (per Knoten-ID → `statePath`) bzw. `state` | `query`-Binding (`query:<queryPath>` = Daten; `.loading`/`.error`/`.updatedAt` = Ladezustand) |
+| Ladezustand | keiner | `loading` / `data` / `error` / `updatedAt` / `status` |
+| Beladung | Operationen aus dem Flow oder von Input-Controls | Fetch-Wiring (+ `params`-Store, `refreshAction`, ETag) |
+
+**Faustregel:** Hält der Nutzer/das Formular den Wert (Entwurf, Auswahl, Toggle)
+→ `ui-store`. Kommt der Wert vom Server und das UI zeigt ihn nur an (Liste,
+Detaildatensatz, Suchergebnis) → `ui-query`. Es gibt in einer Query **keinen**
+zweiten Schreibpfad — Mutationen laufen über den Flow zurück und kommen als neuer
+`msg.ui.query.data`-Push wieder herein.
+
+Siehe auch [stores.md](../concepts/stores.md) für das gemeinsame Binding-Vokabular.
+
 ## Besonderheiten
 
-- **Abgrenzung.** `ui-query` beschreibt geladene Datenquellen und ihren
-  Ladezustand; `ui-store` hält und verändert lokalen Zustand; `ui-action` ändert
-  nur Interaktionszustand.
+- **Abgrenzung kurz.** `ui-query` = geladene, read-only Daten **mit** Ladezustand;
+  `ui-store` = eigener, veränderbarer Zustand (siehe Tabelle oben); `ui-action`
+  ändert nur Interaktionszustand, keine Daten.
 - **ETag-Caching.** Liefert eine Message einen `etag`, kann die Runtime einen
   unveränderten Wert vom Push ausschließen (der App-Autor weiß am besten, ob sich
   Daten geändert haben — DB-Timestamp, Version, Hash). Fehlt `etag`, wird immer

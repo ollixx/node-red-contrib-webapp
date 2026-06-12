@@ -18,9 +18,14 @@ wird ausschließlich über Store-Operationen (nie direkt durch Komponenten).
 
 Abgrenzung zu den verwandten Konzepten:
 
-- **`ui-store`** — hält und verändert fachlichen/eingabebezogenen Datenzustand. Der **einzige** deklarative Pfad für Zustandsänderungen.
-- **`ui-query`** — beschreibt geladene Datenquellen und ihren Ladezustand (siehe [`ui-query`](../state/ui-query.md)).
+- **`ui-store`** — **eigener, veränderbarer** Client-Zustand. Der **einzige** deklarative Schreibpfad; **Input-Controls schreiben in Stores** (zweiseitig), gelesen über `store`/`state`.
+- **`ui-query`** — **server-geladene, im UI read-only** Daten **mit Ladezustand** (`loading`/`data`/`error`/`updatedAt`). Befüllt **nur** über das Fetch-Wiring, **kein** zweiter Schreibpfad; gelesen über das `query`-Binding (siehe [`ui-query`](../state/ui-query.md) und [unten](#das-query-binding-server-geladene-read-only-daten)).
 - **`ui-action`** — beschreibt UI-*Verhalten* (Navigation, Sichtbarkeit, Fokus …), **keine** Datenupdates (siehe [actions.md](actions.md)).
+
+> **Store oder Query?** Hält der Nutzer/das Formular den Wert (Entwurf, Auswahl,
+> Toggle) → **Store** (zweiseitig). Kommt der Wert vom Server und das UI zeigt
+> ihn nur an (Liste, Detaildatensatz, Suchergebnis) → **Query** (read-only, mit
+> Ladezustand). Die beiden bleiben getrennte Knoten (Owner-Entscheid).
 
 Fachliche Logik (CRUD, Validierung, Berechnung) gehört in den verdrahteten
 Node-RED-Flow — der Store ist nur der Zustandsspeicher, nicht der Ort der Logik.
@@ -226,6 +231,37 @@ gibt der Renderer den Invalid-Value-Marker `"?"` aus und meldet **einmalig**:
 > der Default-Shape) liefert **P132**. P131 ist der Unterbau (Schema, Renderer,
 > Runtime-Guard).
 
+## Das `query`-Binding: server-geladene, read-only Daten
+
+Während `store`/`state` in einen **veränderbaren** Store lesen, liest das
+`query`-Binding aus einer [`ui-query`](../state/ui-query.md) — **server-geladene
+Daten, die das UI nur anzeigt**. Eine Query hält unter `ui.queries.<queryPath>`
+eine Lebenszyklus-Hülle `{ data, loading, error, updatedAt, status }`; befüllt
+wird sie ausschließlich über das Fetch-Wiring (`msg.ui.query.data`), **nicht**
+durch Komponenten — es gibt keinen zweiten Schreibpfad.
+
+**Lese-Konvention (Renderer, `resolveBinding` `case "query"`):**
+
+| Bindung | liefert |
+|---|---|
+| `query:<queryPath>` | die **DATEN** (`data`) — häufigster Fall |
+| `query:<queryPath>.loading` | das Lade-Flag |
+| `query:<queryPath>.error` | die Fehlermeldung |
+| `query:<queryPath>.updatedAt` | den Timestamp des letzten Erfolgs |
+| `query:<queryPath>.status` | `idle` \| `loading` \| `success` \| `error` |
+
+```json
+{ "kind": "query", "path": "customers.list" }          // → die Daten (z. B. ein Array)
+{ "kind": "query", "path": "customers.list.error" }    // → die Fehlermeldung
+```
+
+Die reservierten Suffixe (`loading`/`error`/`updatedAt`/`status`) greifen **nur**,
+wenn der Präfix ein **bekannter** Query-Pfad ist — ein tieferer Pfad in die Daten
+(`query:customers.current.name`) bleibt unberührt. Der Renderer bekommt die DATEN
+und die Lebenszyklus-Hülle als zwei getrennte Quellen (`queries` bzw.
+`queryLifecycle`), die `nodes/webapp.js` aus dem Live-State unter
+`ui.queries.<queryPath>` ableitet (`buildQuerySources`).
+
 ## Ausgabe: Änderungs-Notification
 
 Ändert sich ein Store (über Node-RED oder vom Client), emittiert der Knoten auf
@@ -260,7 +296,7 @@ Der vollständige Satz der Binding-`kind`s (`bindingSchema`,
 | `literal` | dem Binding selbst (`value`) | Renderer |
 | `state` | Client-State per rohem Pfad | Renderer |
 | `store` | Client-State per Store-ID → `statePath` | Renderer |
-| `query` | Query-State per `queryPath` | Renderer |
+| `query` | Query-Daten per `queryPath`; Ladezustand über reservierte Unterpfade `.loading`/`.error`/`.updatedAt`/`.status` | Renderer |
 | `routeParam` | Routen-Parameter der aktuellen Route | Renderer |
 | `reactive` | clientseitiger JS-Ausdruck (`routeParam`/`store(…)`/`query(…)`) | Renderer (kompiliert einmal, wertet je Snapshot aus — ADR 0010, P115) |
 | `msg` | eingehender Node-RED-Message (Pfad) | Runtime (Node-RED-Schicht) |

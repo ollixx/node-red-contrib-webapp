@@ -132,11 +132,28 @@ msg.ui.store = {
 - `changed` mit `origin: "client"` → server-seitige Verarbeitung einer
   client-getriebenen Eingabe (z. B. Validierung eines Formularfeldes).
 
+## Abgrenzung: `ui-store` vs. `ui-query`
+
+`ui-store` und [`ui-query`](ui-query.md) bleiben **bewusst getrennte** Knoten
+(Owner-Entscheid). Die Trennung ist scharf — wähle nach **Eigentümerschaft und
+Schreibrichtung**:
+
+| | `ui-store` (diese Seite) | [`ui-query`](ui-query.md) |
+|---|---|---|
+| Was | **eigener, veränderbarer** Client-Zustand | **server-geladene** Daten, im UI **read-only** |
+| Schreiben | ja — über `msg.ui.store`-Operationen; **Input-Controls schreiben in Stores** (zweiseitig) | **nein** — kein zweiter Schreibpfad; befüllt **nur** über das Fetch-Wiring (`msg.ui.query.data`) |
+| Lesen | `store`-Binding (per Knoten-ID → `statePath`) bzw. `state` | `query`-Binding (`query:<queryPath>` = Daten; `.loading`/`.error`/`.updatedAt` = Ladezustand) |
+| Ladezustand | keiner | `loading` / `data` / `error` / `updatedAt` / `status` |
+
+**Faustregel:** Hält der Nutzer/das Formular den Wert (Entwurf, Auswahl, Toggle)
+→ `ui-store`. Kommt der Wert vom Server und das UI zeigt ihn nur an (Liste,
+Detaildatensatz, Suchergebnis) → [`ui-query`](ui-query.md).
+
 ## Besonderheiten
 
-- **Abgrenzung.** `ui-store` hält und verändert lokalen Zustand; `ui-query`
-  beschreibt geladene Datenquellen und deren Ladezustand; `ui-action` ändert nur
-  Interaktionszustand, keine Daten.
+- **Abgrenzung kurz.** `ui-store` hält und verändert lokalen Zustand (siehe
+  Tabelle oben); `ui-query` beschreibt geladene, read-only Datenquellen **mit**
+  Ladezustand; `ui-action` ändert nur Interaktionszustand, keine Daten.
 - **Lesen.** Werte werden nicht über den Store-Knoten gelesen, sondern über
   Bindings: `state` (roher Pfad) oder robust `store` (per Store-ID → `statePath`).
   Vokabular und Auflösung: [stores.md](../concepts/stores.md).
