@@ -42,7 +42,8 @@ import {
     type UiListNodeDefinition,
     type UiAvatarNodeDefinition,
     type UiDividerNodeDefinition,
-    type UiLogNodeDefinition
+    type UiLogNodeDefinition,
+    type UiRepeatNodeDefinition
 } from "@node-red-contrib-webapp/schema";
 
 export type NodeEditorType = UiNodeDefinition["type"];
@@ -81,6 +82,15 @@ export interface UiContainerEditorConfig extends MountableEditorConfig {
     layoutId?: StandardLayoutPresetId;
     title?: string;
     variant?: "card" | "panel" | "section" | "transparent";
+}
+
+// P163 (ADR 0017): minimal ui-repeat editor config. The full editor UX (items
+// typedInput, keyField field, template slot) lands in P165 — this entry exists
+// so the editor package type-checks against the schema's UiNodeDefinition union.
+export interface UiRepeatEditorConfig extends MountableEditorConfig {
+    items?: BindingDefinition | unknown[];
+    itemsPath?: string;
+    keyField?: string;
 }
 
 export interface UiRouteEditorConfig extends IdentifiedEditorConfig {
@@ -419,6 +429,7 @@ export type NodeEditorConfig =
     | UiButtonEditorConfig
     | UiTableEditorConfig
     | UiContainerEditorConfig
+    | UiRepeatEditorConfig
     | UiInputEditorConfig
     | UiSelectEditorConfig
     | UiCheckboxEditorConfig
@@ -458,6 +469,7 @@ export type NodeEditorDefinition =
     | BaseEditorNodeDefinition<UiButtonEditorConfig, UiButtonNodeDefinition>
     | BaseEditorNodeDefinition<UiTableEditorConfig, UiTableNodeDefinition>
     | BaseEditorNodeDefinition<UiContainerEditorConfig, UiContainerNodeDefinition>
+    | BaseEditorNodeDefinition<UiRepeatEditorConfig, UiRepeatNodeDefinition>
     | BaseEditorNodeDefinition<UiInputEditorConfig, UiInputNodeDefinition>
     | BaseEditorNodeDefinition<UiSelectEditorConfig, UiSelectNodeDefinition>
     | BaseEditorNodeDefinition<UiCheckboxEditorConfig, UiCheckboxNodeDefinition>
@@ -763,6 +775,23 @@ function tableRowsFromConfig(config: UiTableEditorConfig): UiTableNodeDefinition
     return stateBinding("");
 }
 
+// P163 (ADR 0017): build the ui-repeat `items` value-binding from editor config.
+// Mirrors tableRowsFromConfig — a binding object, a raw array (→ literal), or a
+// plain state path (legacy `itemsPath`). The full typedInput UX is P165.
+function repeatItemsFromConfig(config: UiRepeatEditorConfig): UiRepeatNodeDefinition["items"] {
+    const candidate = config.items;
+    if (isBindingObject(candidate)) {
+        return candidate;
+    }
+    if (Array.isArray(candidate)) {
+        return { kind: "literal", value: candidate };
+    }
+    if (config.itemsPath) {
+        return stateBinding(config.itemsPath);
+    }
+    return stateBinding("");
+}
+
 function collectLayoutChildConfig(config: MountableEditorConfig) {
     return {
         ...(config.order !== undefined ? { order: config.order } : {}),
@@ -923,6 +952,25 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         mount: config.mount ?? "",
         layout: config.layoutId ?? "vertical",
         variant: config.variant,
+        ...collectLayoutChildConfig(config)
+    })),
+    // P163 (ADR 0017): minimal ui-repeat registration. Full editor UX is P165.
+    "ui-repeat": createDefinition("ui-repeat", "view", {
+        id: requiredString("Repeat IDs are required before deploy."),
+        mount: requiredString("Repeats must declare a mount target."),
+        order: optionalInteger("Repeat order must be an integer."),
+        row: optionalInteger("Repeat grid rows must be integers."),
+        col: optionalInteger("Repeat grid columns must be integers."),
+        colSize: optionalInteger("Repeat grid column spans must be integers."),
+        rowSize: optionalInteger("Repeat grid row spans must be integers."),
+        layoutX: optionalInteger("Repeat absolute x coordinates must be integers."),
+        layoutY: optionalInteger("Repeat absolute y coordinates must be integers.")
+    }, (config: UiRepeatEditorConfig): UiRepeatNodeDefinition => ({
+        type: "ui-repeat",
+        id: config.id ?? "",
+        mount: config.mount ?? "",
+        items: repeatItemsFromConfig(config),
+        ...(config.keyField ? { keyField: config.keyField } : {}),
         ...collectLayoutChildConfig(config)
     })),
     "ui-input": createDefinition("ui-input", "view", {

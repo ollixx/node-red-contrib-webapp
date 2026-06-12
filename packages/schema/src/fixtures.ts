@@ -513,6 +513,58 @@ export const storeSubPathBindingFixture: BindingDefinition = {
     }
 };
 
+/**
+ * P163 (ADR 0017) — the scope-local `item.<path>` binding a repeat child uses to
+ * read a field of the current iteration element. The `path` carries only the
+ * field tail (`name`), never an `item.` prefix (that is the `kind`). Resolution
+ * against the render-time item scope happens in the renderer (P164).
+ */
+export const itemBindingFixture: BindingDefinition = {
+    kind: "item",
+    path: "name"
+};
+
+/** P163 — the scope-local `index` binding (zero-based position; path-free). */
+export const indexBindingFixture: BindingDefinition = {
+    kind: "index"
+};
+
+/**
+ * P163 (ADR 0017) — a minimal `ui-repeat`: an array source (`items`) mounted in a
+ * route, with one child `ui-text` in the repeat's default slot that binds to
+ * `item.name`. This is the reference shape downstream layers (renderer/editor)
+ * reuse. NB: the child node id is unique here; the per-instance keyed clone is a
+ * renderer concern (P164), not a schema one.
+ */
+export const minimalRepeatNodeSetFixture: UiNodeDefinition[] = [
+    {
+        type: "ui-app",
+        id: "repeatApp",
+        name: "Repeat demo",
+        root: "repeatApp",
+        layout: "vertical"
+    },
+    {
+        type: "ui-repeat",
+        id: "customerRepeat",
+        mount: "repeatApp.content",
+        order: 0,
+        items: {
+            kind: "literal",
+            value: [{ name: "Ada" }, { name: "Linus" }]
+        },
+        keyField: "name"
+    },
+    {
+        type: "ui-text",
+        id: "customerName",
+        // Children mount into the repeat's fixed default "content" slot.
+        mount: "customerRepeat.content",
+        order: 0,
+        value: itemBindingFixture
+    }
+];
+
 export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
     {
         type: "ui-app",

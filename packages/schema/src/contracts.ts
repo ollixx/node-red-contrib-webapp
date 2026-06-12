@@ -37,7 +37,30 @@ export const routeNodePathSchema = routePathSchema.refine((path) => path !== "/"
  */
 export const DYNAMIC_BINDING_KINDS = ["state", "query", "routeParam", "msg", "flow", "global", "jsonata", "env", "store"] as const;
 
-const BINDING_KINDS = ["state", "query", "routeParam", "literal", "msg", "flow", "global", "jsonata", "env", "store", "reactive"] as const;
+/**
+ * P163 (ADR 0017): the **scope-local** binding kinds introduced by `ui-repeat`.
+ * Unlike the global kinds above (state/store/query/…), these resolve against the
+ * render-time item scope the renderer pushes while cloning a repeat template —
+ * they are not persisted and have no global source. This phase validates their
+ * **form** only; resolution lands in the renderer (P164).
+ *
+ *  - `item`  → the whole current element; an optional `path` selects a one- OR
+ *              multi-level field of the element (e.g. `address.city`).
+ *  - `index` → the zero-based position of the current element. Path-free.
+ */
+export const SCOPE_LOCAL_BINDING_KINDS = ["item", "index"] as const;
+
+const BINDING_KINDS = ["state", "query", "routeParam", "literal", "msg", "flow", "global", "jsonata", "env", "store", "reactive", "item", "index"] as const;
+
+/**
+ * P163: validates the FIELD-PATH form of an `item.<path>` binding — a dotted path
+ * of one or more segments, each a JS-identifier-ish word (letters, digits, `_`,
+ * `$`), e.g. `name`, `address.city`. No leading/trailing/double dots. The `item.`
+ * prefix is the `kind`, NOT part of `path`; `path` carries only the field tail
+ * (a field that happens to be named `item` is a legitimate segment). This is pure
+ * FORM validation — no slice/length requirement (cf. store subPath).
+ */
+const ITEM_PATH_PATTERN = /^[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)*$/;
 
 /**
  * The kind-level validity check shared by the leaf and the full binding schema:
@@ -67,6 +90,34 @@ function refineBindingKindShape(
             context.addIssue({
                 code: z.ZodIssueCode.custom,
                 message: "Reactive bindings require a non-empty expression in 'value'."
+            });
+        }
+
+        return;
+    }
+
+    // P163 (ADR 0017): scope-local `item` / `index` bindings. FORM only — the
+    // renderer resolves them against the render-time item scope (P164), not here.
+    if (binding.kind === "index") {
+        // `index` is the bare zero-based position — it carries no path.
+        if (binding.path !== undefined) {
+            context.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "An 'index' binding is the bare item position — it must not carry a path."
+            });
+        }
+
+        return;
+    }
+
+    if (binding.kind === "item") {
+        // `item` alone is the whole element. An optional `path` selects a one- OR
+        // multi-level field of the element (e.g. `address.city`) — pure path-form
+        // validation, no `item.` prefix (that is the kind).
+        if (binding.path !== undefined && !ITEM_PATH_PATTERN.test(binding.path)) {
+            context.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "An 'item' binding path must be a dotted field path (e.g. 'name' or 'address.city')."
             });
         }
 
