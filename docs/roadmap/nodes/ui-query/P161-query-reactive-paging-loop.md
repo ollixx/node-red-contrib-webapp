@@ -10,7 +10,7 @@ verify: browser
 spec: docs/nodes/state/ui-query.md
 tests: tests/e2e/nodes/state/ui-query.tests.md
 dependencies: [P154, P160]
-status: pending
+status: in_progress
 ---
 # P161 — Query-reaktives Paging
 
