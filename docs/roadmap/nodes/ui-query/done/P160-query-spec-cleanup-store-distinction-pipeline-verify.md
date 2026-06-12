@@ -11,7 +11,7 @@ verify: browser
 spec: docs/nodes/state/ui-query.md
 tests: tests/e2e/nodes/state/ui-query.tests.md
 dependencies: []
-status: in_progress
+status: done
 ---
 # P160 — ui-query: Spec-Cleanup + Store-Abgrenzung + Pipeline-Verifikation
 
@@ -89,3 +89,35 @@ Glasklare, gegenseitig verlinkte Abgrenzung:
   reproduzieren, dann entscheiden. (Tooling-bedingt in der Planung nicht
   abschließend verifiziert.)
 - ui-query bleibt eigenständig (Owner-Entscheid) — **kein** Merge in ui-store.
+
+## Result
+
+- **delivered:** (1) **Spec cleanup** — `docs/nodes/state/ui-query.md`: removed `previewData`
+  (gone since P32), documented the wiring requirement + a full wiring example (`ui-route onEnter →
+  ui-query pass-through → data source → back to in-port via msg.ui.query.data → ui-table binds
+  query:<path>`), nailed the lifecycle read-convention (`query:<path>` = the **data**; lifecycle via
+  reserved sub-paths `query:<path>.loading` / `.error` / `.updatedAt`), sharpened the inline help.
+  (2) **Store-vs-query distinction** sharpened and mutually linked across `ui-query.md`,
+  `ui-store.md`, `concepts/stores.md` (ui-store = owned/mutable, input-controls write, `store`
+  binding; ui-query = server-loaded/read-only with load-state, `query` binding via fetch wiring).
+  (3) **Pipeline — a REAL FIX, not just verification:** the test-first E2E reproduced the "alles
+  leer" symptom; the renderer/runtime now populates `sources.queries` from the query live-state
+  and resolves `query:<path>` to the data plus the lifecycle sub-paths. Touched
+  `packages/renderer/src/renderer.ts`, `nodes/webapp.js`, `nodes/state/ui-query.html`.
+- **stats:** 10 files (+728/−35); new `packages/renderer/test/p160-query-lifecycle.test.ts`,
+  `packages/runtime/test/p160-query-live-state.test.ts`, and E2E
+  `tests/e2e/nodes/state/ui-query-pipeline.spec.ts`. Develop verification: `pnpm build` exit 0,
+  unit **944 runtime / 69 renderer / 96 editor** + schema green; full Playwright suite **549 passed**
+  — the new P160 pipeline spec passes (wired push fills a query-bound ui-table, live update, and an
+  `error` push shows on a `query:<path>.error`-bound ui-text). The single red in the full run was
+  an **unrelated route-lifecycle flake** (`p112-route-lifecycle-on-arrival.spec.ts:110`, onEnter
+  re-fire on refresh) — re-ran **2/2 green** in isolation. check:roadmap + check:links OK.
+- **notes:** Confirms point 3 was a genuine snapshot/renderer bugfix (queries arrived empty), the
+  defect behind "ui-query — alles leer". ui-query stays standalone (no merge into ui-store).
+  **Orchestrator-recovered phase:** the sub-agent completed the implementation but returned while
+  waiting on its own (unreliable, worktree-bound) E2E monitor without committing or emitting its
+  result block; the orchestrator persisted its uncommitted worktree changes to `phase/P160` and ran
+  the authoritative build + unit + full E2E gate (all green) before close-out. (A misattributed
+  task-notification also briefly mislabeled the run mid-flight; the actual playwright process was
+  tracked to real exit.)
+- **cost:** session ac69ea84d5eea8abc, ~32m (+ orchestrator recovery/verify overhead).

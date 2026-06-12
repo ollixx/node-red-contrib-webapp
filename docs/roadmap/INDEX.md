@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P160** — nodes/ui-query — Spec entrümpeln (previewData raus, Wiring-Beispiel), Store/Query-Trennung schärfen, Daten-Pipeline test-first verifizieren — *geplant* — [P160](nodes/ui-query/P160-query-spec-cleanup-store-distinction-pipeline-verify.md)
 - **P161** — nodes/ui-query — Query-reaktives Paging: params-Store-getriggerter Refresh (Out-Port) + totalCount/pageCount im Lifecycle; ui-pagination bindet total←query, currentPage↔Store — *geplant; braucht P154 + P160* — [P161](nodes/ui-query/P161-query-reactive-paging-loop.md)
 - **P163** — nodes/ui-repeat — Schema-Knotendefinition + neue Binding-Art `item`/`index` (scope-lokal) — *ui-repeat-Welle (ADR 0017), Schicht 1* — [P163](nodes/ui-repeat/P163-repeat-schema-and-item-binding-kind.md)
 - **P164** — nodes/ui-repeat — Renderer: Template-Klon pro Item, Render-Zeit-Scope, keyed Morphing — *ui-repeat-Welle, Schicht 2; braucht P163* — [P164](nodes/ui-repeat/P164-repeat-renderer-template-clone-scope-keying.md)
@@ -65,7 +64,7 @@ open the folder for the full history.
 | nodes/ui-alert | 4 |
 | nodes/ui-avatar | 2 |
 | nodes/ui-log | 2 |
-| nodes/ui-query | 2 |
+| nodes/ui-query | 3 |
 | nodes/ui-store | 2 |
 | nodes/ui-badge | 3 |
 | nodes/ui-route | 2 |
@@ -99,4 +98,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 159 done, 10 open, 9 deferred.**
+**Total: 160 done, 9 open, 9 deferred.**
