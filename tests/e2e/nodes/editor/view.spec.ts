@@ -116,10 +116,16 @@ test.describe("editor panels — view nodes (P47)", () => {
         expect(await editor.getValidationState("selEd")).toBe("valid");
     });
 
-    test("ui-table — columns editor + rowsPath present, required fields drive validity", async ({ page, request }) => {
-        // Leave columns and rowsPath empty → both required, so node is invalid.
+    // P158 (ADR 0012): `rowsPath` plain text field became the `rows` STRUCTURAL
+    // array value typedInput (the table renders its rows itself — a DATA SOURCE,
+    // NOT a repeats case). `columns` stays a separate required field. The legacy
+    // `rowsPath` migrates to a state binding; the visible widget is now
+    // #node-input-rowsBinding.
+    test("ui-table — columns required drives validity; rows typedInput present", async ({ page, request }) => {
+        // Leave columns empty → columns is required, so node is invalid. `rows`
+        // (data source) is optional.
         const flow = appWithRoute(new FlowBuilder(), "tblApp")
-            .node("ui-table", { id: "tblEd", columns: "", rowsPath: "" })
+            .node("ui-table", { id: "tblEd", columns: "" })
             .build();
         await deployFlow(request, flow);
 
@@ -127,17 +133,37 @@ test.describe("editor panels — view nodes (P47)", () => {
         await editor.open();
         await editor.openNode("tblEd");
 
-        await editor.expectFields(["name", "mount", "columns", "rowsPath", "events"]);
+        await editor.expectFields(["name", "mount", "columns", "rowsBinding", "events"]);
         expect(await editor.getValidationState("tblEd")).toBe("invalid");
 
-        // Fill both required fields → valid; persists.
+        // Fill the required columns field → valid; configure rows; persists.
         await editor.fillField("columns", JSON.stringify([{ key: "name", label: "Name" }]));
-        await editor.fillField("rowsPath", "data.rows");
+        await editor.fillTypedInput("rowsBinding", "data.rows", "msg");
         await editor.save();
         expect(await editor.getValidationState("tblEd")).toBe("valid");
 
         await editor.openNode("tblEd");
-        expect(await editor.readField("rowsPath")).toBe("data.rows");
+        expect(await editor.readTypedInput("rowsBinding")).toBe("data.rows");
+    });
+
+    // P158: a legacy `rowsPath` plain string migrates into the `rows` typedInput
+    // as a state binding (the typedInput value holds the migrated state path).
+    test("ui-table — legacy rowsPath migrates into the rows typedInput", async ({ page, request }) => {
+        const flow = appWithRoute(new FlowBuilder(), "tblMigApp")
+            .node("ui-table", {
+                id: "tblMig",
+                columns: JSON.stringify([{ key: "name", label: "Name" }]),
+                rowsPath: "customers.list"
+            })
+            .build();
+        await deployFlow(request, flow);
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode("tblMig");
+
+        await editor.expectFields(["name", "mount", "columns", "rowsBinding", "events"]);
+        expect(await editor.readTypedInput("rowsBinding")).toBe("customers.list");
     });
 
     test("ui-table — configured event surfaces as the output port label", async ({ page, request }) => {

@@ -716,6 +716,28 @@ function resolveMenuItems(config) {
     return parseJsonList(config.items);
 }
 
+// P158 (ADR 0012): resolve a ui-table `rows` config into the schema `rows`
+// binding — the canonical STRUCTURAL array DATA SOURCE (the table renders its
+// rows ITSELF; a data source, NOT a repeats case). Mirrors `resolveMenuItems`:
+// a binding object (store/query/reactive/json-literal) passes through for the
+// renderer's structural resolution; a bare array (flow.json/tests) is wrapped as
+// a json-literal binding; a legacy `rowsPath` plain path migrates to a state
+// binding (P137 shim). The schema's `rows` is `bindingSchema`, so the result is
+// always a binding object. `columns` stays separate (Collections).
+function resolveTableRows(config) {
+    const candidate = config.rows;
+    if (candidate && typeof candidate === "object" && typeof candidate.kind === "string") {
+        return candidate;
+    }
+    if (Array.isArray(candidate)) {
+        return { kind: "literal", value: candidate };
+    }
+    if (config.rowsPath) {
+        return stateBinding(config.rowsPath);
+    }
+    return stateBinding("");
+}
+
 // P133 (ADR 0012): resolve a ui-select / ui-radio `options` config into the
 // node-definition `options` value — either a normalised `{label,value}[]` array
 // (the `json` type) or a binding object (the `store` type), with legacy migration:
@@ -1033,7 +1055,7 @@ function toComponentDefinitions(components) {
                 order: toOptionalNumber(component.order),
                 footer: component.footer === true || component.footer === "true",
                 bind: {
-                    rows: getBinding(component.rows, queryBinding(component.rowsPath || ""))
+                    rows: resolveTableRows(component)
                 },
                 props: {
                     columns: parseColumns(component.columns),
@@ -4604,7 +4626,7 @@ const runtimeNodeRegistry = {
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
             columns: parseColumns(config.columns),
-            rows: getBinding(config.rows, queryBinding(config.rowsPath || "")),
+            rows: resolveTableRows(config),
             footer: config.footer === true || config.footer === "true",
             events: parseJsonList(config.events).length > 0 ? parseJsonList(config.events) : undefined,
             selectAction: config.selectAction || undefined,

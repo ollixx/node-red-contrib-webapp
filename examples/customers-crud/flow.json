@@ -539,8 +539,8 @@
             "kind": "state",
             "path": "customers.current.status"
         },
-        "variant": "status",
-        "severity": "info",
+        "displayType": "rounded",
+        "variant": "info",
         "z": "flow1",
         "x": 1320,
         "y": 660,
