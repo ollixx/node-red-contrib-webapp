@@ -35,7 +35,56 @@
         "accDbg"
       ]
     ],
-    "items": "[{\"id\":\"q1\",\"label\":\"What is node-red-contrib-webapp?\",\"content\":\"A set of declarative UI nodes for Node-RED to build web apps without custom HTML.\"},{\"id\":\"q2\",\"label\":\"How does routing work?\",\"content\":\"Each ui-route node defines a URL path. Navigation is handled by ui-action nodes.\"},{\"id\":\"q3\",\"label\":\"Can I use it with my existing flows?\",\"content\":\"Yes — nodes emit standard msg.ui events on their output port, compatible with any Node-RED node.\"}]"
+    "sections": "[{\"id\":\"q1\",\"label\":\"What is node-red-contrib-webapp?\"},{\"id\":\"q2\",\"label\":\"How does routing work?\"},{\"id\":\"q3\",\"label\":\"Can I use it with my existing flows?\"}]",
+    "openSection": {
+      "kind": "literal",
+      "value": "q1"
+    }
+  },
+  {
+    "id": "accQ1",
+    "type": "ui-text",
+    "name": "q1 content",
+    "uiId": "accQ1",
+    "parent": "accApp",
+    "mount": "section:q1",
+    "z": "ex-ui-accordion",
+    "x": 700,
+    "y": 200,
+    "wires": [
+      []
+    ],
+    "text": "A set of declarative UI nodes for Node-RED to build web apps without custom HTML."
+  },
+  {
+    "id": "accQ2",
+    "type": "ui-text",
+    "name": "q2 content",
+    "uiId": "accQ2",
+    "parent": "accApp",
+    "mount": "section:q2",
+    "z": "ex-ui-accordion",
+    "x": 700,
+    "y": 280,
+    "wires": [
+      []
+    ],
+    "text": "Each ui-route node defines a URL path. Navigation is handled by ui-action nodes."
+  },
+  {
+    "id": "accQ3",
+    "type": "ui-text",
+    "name": "q3 content",
+    "uiId": "accQ3",
+    "parent": "accApp",
+    "mount": "section:q3",
+    "z": "ex-ui-accordion",
+    "x": 700,
+    "y": 360,
+    "wires": [
+      []
+    ],
+    "text": "Yes — nodes emit standard msg.ui events on their output port, compatible with any Node-RED node."
   },
   {
     "id": "accDbg",
@@ -53,14 +102,14 @@
     ]
   },
   {
-    "id": "inj-items",
+    "id": "inj-section",
     "type": "inject",
-    "name": "Update items",
+    "name": "Open Q2 section",
     "z": "ex-ui-accordion",
     "x": 120,
     "y": 480,
-    "payload": "[{\"id\":\"new\",\"label\":\"New Section\",\"content\":\"Injected at runtime.\"}]",
-    "payloadType": "json",
+    "payload": "q2",
+    "payloadType": "str",
     "repeat": "",
     "crontab": "",
     "once": false,

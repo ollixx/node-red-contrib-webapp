@@ -52,6 +52,8 @@ const VIEW_CASES: Case[] = [
     // Composite / layout nodes.
     { type: "ui-container", fields: ["name", "mount"], inputs: 1 },
     { type: "ui-accordion", fields: ["name", "mount"], inputs: 1 },
+    // P169 (ADR 0018): ui-accordion-section — thin container child of ui-accordion, no ports.
+    { type: "ui-accordion-section", fields: ["name", "mount"], inputs: 0 },
     { type: "ui-list", fields: ["name", "mount"], inputs: 1 },
     { type: "ui-menu", fields: ["name", "mount"], inputs: 1 },
     { type: "ui-pagination", fields: ["name", "mount"], inputs: 1 },

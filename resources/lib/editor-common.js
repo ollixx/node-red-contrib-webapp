@@ -822,6 +822,38 @@
                 return;
             }
 
+            // P169 (ADR 0018, Model 1a): ui-accordion is a CONTAINER whose children
+            // are `ui-accordion-section`s — mounting INTO a ui-accordion means
+            // "become a section". Single synthetic "content" slot
+            // (ACCORDION_SECTION_SLOT); a section dropped there mounts via
+            // `container:<accId>/content` (renderer aliases to
+            // `ui-accordion:<id>/content`). Mirror of ui-tabs.
+            if (node.type === "ui-accordion") {
+                references.containers.push({
+                    id: id,
+                    layoutId: "vertical",
+                    title: node.title || node.name || id,
+                    mount: node.mount || "",
+                    dropHint: "Mounten in ui-accordion heißt: werde eine Sektion (ui-accordion-section).",
+                    containerKind: "ui-accordion"
+                });
+                return;
+            }
+
+            // P169 (ADR 0018, Model 1a): ui-accordion-section is a thin CONTAINER
+            // child of ui-accordion with a single default "content" slot for the
+            // section body. Mirror of ui-tab.
+            if (node.type === "ui-accordion-section") {
+                references.containers.push({
+                    id: id,
+                    layoutId: "vertical",
+                    title: node.title || node.name || id,
+                    mount: node.mount || "",
+                    containerKind: "ui-accordion-section"
+                });
+                return;
+            }
+
             if (node.type === "ui-action" || node.type === "ui-navigation") {
                 references.actions.push({
                     id,

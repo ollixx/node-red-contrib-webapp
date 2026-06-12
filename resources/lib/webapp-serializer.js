@@ -334,9 +334,9 @@
             if (component.kind === "input") {
                 return true;
             }
-            // P168 (ADR 0018): a `tabs` component nests its per-tab content in
-            // `regions` (like a container), so recurse into them too.
-            if ((component.kind === "container" || component.kind === "tabs") && Array.isArray(component.regions)) {
+            // P168/P169 (ADR 0018): `tabs` and `accordion` components nest their
+            // per-section content in `regions` (like a container), so recurse too.
+            if ((component.kind === "container" || component.kind === "tabs" || component.kind === "accordion") && Array.isArray(component.regions)) {
                 return component.regions.some(regionContainsInput);
             }
             return false;
@@ -865,13 +865,30 @@
         }
 
         if (component.kind === "accordion") {
+            // P169 (ADR 0018, Model 1a): sections are DERIVED from the
+            // ui-accordion-section children. `component.props.sections` carries the
+            // per-child metadata { id, label, icon, open } (the renderer resolved
+            // each section's label binding), and `component.regions` carries one
+            // region per child (region.name = the child/section id) holding that
+            // section's content subtree. We render one <sl-details> per child; the
+            // open section is component.value (resolved openSection, default = first
+            // child). Mirrors the tabs branch above.
             const items = Array.isArray(component.props.sections) ? component.props.sections : [];
+            const regions = Array.isArray(component.regions) ? component.regions : [];
+            const openSection = component.value !== undefined && component.value !== null ? String(component.value) : "";
             const detailsHtml = items.map(function (item) {
-                // P53: each section carries a stable data-webapp-part hook (its id,
-                // falling back to the label) so a ui-action open/close command can
-                // disclose one section by `part` (ADR 0005).
+                // P53: each section carries a stable data-webapp-part hook (its id)
+                // so a ui-action open/close command can disclose one section by
+                // `part` (ADR 0005). `name` mirrors the tab-panel name for E2E.
                 const partId = String(item.id !== undefined ? item.id : (item.label !== undefined ? item.label : item));
-                return "<sl-details data-webapp-part=\"" + escapeAttribute(partId) + "\" summary=\"" + escapeAttribute(String(item.label !== undefined ? item.label : (item.id !== undefined ? item.id : item))) + "\"></sl-details>";
+                const summary = escapeAttribute(String(item.label !== undefined ? item.label : partId));
+                const iconHtml = item.icon ? "<sl-icon slot=\"icon\" name=\"" + escapeAttribute(String(item.icon)) + "\"></sl-icon>" : "";
+                const open = (openSection && partId === openSection) || item.open ? " open" : "";
+                const region = regions.find(function (r) { return String(r.name) === partId; });
+                const body = region
+                    ? region.components.map(function (c) { return renderComponentHtml(c, layoutId, ctx); }).join("")
+                    : "";
+                return "<sl-details name=\"" + escapeAttribute(partId) + "\" data-webapp-part=\"" + escapeAttribute(partId) + "\" summary=\"" + summary + "\"" + open + ">" + iconHtml + body + "</sl-details>";
             }).join("");
             return wrapRenderedComponentHtml(component, layoutId, "<div class=\"webapp-accordion\">" + detailsHtml + "</div>");
         }

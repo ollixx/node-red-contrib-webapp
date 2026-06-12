@@ -17,19 +17,17 @@ import { NodeEditorPage } from "../../../helpers/node-editor-page";
  * property panel, and asserts on fields and port counts.
  */
 
-test.describe("editor panels — ui-accordion (P85)", () => {
+test.describe("editor panels — ui-accordion / ui-accordion-section (P169 children model)", () => {
     test.afterEach(async ({ request }) => {
         await resetFlow(request);
     });
 
-    test("accordion: sections, multiple fields present and persist", async ({ page, request }) => {
-        const sections = JSON.stringify([
-            { id: "s1", label: "Section 1" },
-            { id: "s2", label: "Section 2" }
-        ]);
+    test("accordion: the sections-JSON field is GONE; name + mount + openSection + multiple remain", async ({ page, request }) => {
+        // P169 (ADR 0018): sections are derived from ui-accordion-section children —
+        // no sections field.
         const flow = new FlowBuilder()
             .app({ id: "accEdApp", root: "accEdApp", name: "Accordion App" })
-            .node("ui-accordion", { id: "accEd1", sections, multiple: false })
+            .node("ui-accordion", { id: "accEd1" })
             .build();
         await deployFlow(request, flow);
 
@@ -37,14 +35,10 @@ test.describe("editor panels — ui-accordion (P85)", () => {
         await editor.open();
         await editor.openNode("accEd1");
 
-        // Accordion-specific fields must be present.
-        await editor.expectFields(["name", "mount", "sections", "multiple"]);
+        await editor.expectFields(["name", "mount", "openSectionBinding", "multiple"]);
+        // the legacy sections-JSON field must NOT be present anymore.
+        expect(await page.locator("#node-input-sections").count()).toBe(0);
         expect(await editor.inputPortCount("accEd1")).toBe(1);
-
-        // The sections JSON must round-trip through the editor.
-        const stored = await editor.readField("sections");
-        expect(stored).toContain("s1");
-        expect(stored).toContain("s2");
     });
 
     test("accordion has 1 output port (static, events stored as field)", async ({ page, request }) => {
@@ -52,7 +46,6 @@ test.describe("editor panels — ui-accordion (P85)", () => {
             .app({ id: "accEdApp2", root: "accEdApp2" })
             .node("ui-accordion", {
                 id: "accEd2",
-                sections: JSON.stringify([{ id: "faq", label: "FAQ" }]),
                 events: JSON.stringify(["sectionOpen"])
             })
             .build();
@@ -60,9 +53,28 @@ test.describe("editor panels — ui-accordion (P85)", () => {
 
         const editor = new NodeEditorPage(page);
         await editor.open();
-        // ui-accordion has 1 static output port (events are stored as a field, not
-        // reflected as dynamic port labels the way ui-table does it).
+        // ui-accordion has 1 static output port.
         expect(await editor.inputPortCount("accEd2")).toBe(1);
+    });
+
+    test("section: ui-accordion-section opens with name + mount + label + icon fields", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "secEdApp", root: "secEdApp", name: "Section App" })
+            .node("ui-accordion", { id: "secEdAcc" })
+            .node("ui-accordion-section", {
+                id: "secEd1",
+                uiId: "overview",
+                mount: "ui-accordion:secEdAcc/content",
+                label: { kind: "literal", value: "Overview" }
+            })
+            .build();
+        await deployFlow(request, flow);
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode("secEd1");
+
+        await editor.expectFields(["name", "mount", "labelBinding", "icon"]);
     });
 });
 

@@ -619,6 +619,14 @@ export const componentKindSchema = z.enum([
     // `tabs` parent is dropped by the renderer.
     "tab",
     "accordion",
+    // P169 (ADR 0018, Model 1a): ui-accordion-section — a thin CONTAINER child of
+    // ui-accordion. It carries section metadata (label/icon/order) plus a single
+    // default "content" slot. It renders NO standalone chrome: its parent
+    // `accordion` component enumerates its `ui-accordion-section` children and
+    // renders one collapsible panel per child (content mounts via
+    // `ui-accordion-section:<sectionId>/content`). A stray `accordion-section` not
+    // enumerated by an `accordion` parent is dropped by the renderer.
+    "accordion-section",
     "menu",
     "avatar",
     // P70: image display node (native <img>)

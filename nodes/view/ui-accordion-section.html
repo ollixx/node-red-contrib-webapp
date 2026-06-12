@@ -1,0 +1,113 @@
+<script type="text/javascript" src="resources/node-red-contrib-webapp/lib/editor-common.js"></script>
+<script type="text/javascript">
+    (function () {
+        const common = window.WebappEditorCommon;
+        // P169 (ADR 0018, Model 1a): ui-accordion-section is a thin CONTAINER child
+        // of ui-accordion (mirror of ui-tab). It renders no chrome of its own (its
+        // parent ui-accordion renders the section summary + collapsible panel), so
+        // the visual base fields are N/A.
+        const BASE_FIELDS = {
+            visible: false,
+            disabled: false,
+            color: false,
+            size: false,
+            variant: false,
+            advanced: [],
+            hints: {
+                visible: "Die Sichtbarkeit einer Sektion steuert die Open-Section-Auswahl (openSection), nicht ein visible-Binding.",
+                disabled: "Eine Sektion hat keinen interaktiven Zustand.",
+                color: "Eine Sektion rendert keine eigene Chrome.",
+                size: "Eine Sektion hat keine einstellbare Größe."
+            }
+        };
+        common.registerNodeType("ui-accordion-section", {
+            category: "webapp view",
+            color: "#f4efcf",
+            defaults: {
+                name: { value: "" },
+                parent: { value: "" },
+                mount: { value: "", required: true },
+                // P169 (ADR 0012/0018): `label` value typedInput — the section title.
+                // Persists the binding OBJECT on `label`; the typedInput carrier is
+                // #node-input-labelBinding so Node-RED auto-save cannot clobber it.
+                // Legacy `labelPath` (plain string) migrates on open.
+                label: { value: null },
+                labelBinding: { value: "" },
+                labelPath: { value: "" },
+                // P169: optional icon name shown beside the section label (sl-icon).
+                icon: { value: "" },
+                order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
+                row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
+                col: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
+                colSize: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
+                rowSize: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
+                layoutX: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
+                layoutY: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } }
+            },
+            inputs: 0,
+            outputs: 0,
+            icon: "font-awesome/fa-bars",
+            label: common.labelWithName("ui-accordion-section"),
+            onadd: function () {
+                if (!this.name) {
+                    this.name = common.getNextNameDefault("ui-accordion-section", "Section");
+                }
+            },
+            oneditprepare: function () {
+                // P169: mount picker — mounting INTO a ui-accordion declares this as a section.
+                common.installReferenceSelectors({ mount: true }).call(this);
+                common.installBaseFields(BASE_FIELDS).call(this);
+                common.installLayoutChildPropRows().call(this);
+
+                // P169 (ADR 0012 value category): `label` value typedInput (full
+                // value-binding set, default type `str`). Migration: a legacy
+                // `labelPath` opens as a literal binding; a stored `label` wins.
+                const storedLabel = common.parseBindingValue(this.label);
+                const labelBinding = storedLabel
+                    ? storedLabel
+                    : (this.labelPath ? { kind: "literal", value: this.labelPath } : undefined);
+                const labelEditor = common.readValueBinding(labelBinding, "");
+                const labelInput = $("#node-input-labelBinding");
+                labelInput.typedInput({
+                    default: labelEditor.type,
+                    types: common.valueBindingTypes({ category: "value" })
+                });
+                labelInput.typedInput("type", labelEditor.type);
+                labelInput.typedInput("value", labelEditor.value);
+            },
+            oneditsave: function () {
+                common.applyBaseFields(BASE_FIELDS).call(this);
+                // P169: persist `label` as a binding object; clear the legacy path.
+                this.label = common.applyValueBinding(
+                    $("#node-input-labelBinding").typedInput("type"),
+                    $("#node-input-labelBinding").typedInput("value")
+                );
+                this.labelPath = "";
+            }
+        });
+    })();
+</script>
+<script type="text/html" data-template-name="ui-accordion-section">
+    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <hr style="margin: 8px 0;">
+    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-row"><label for="node-input-labelBinding">Label</label><input type="text" id="node-input-labelBinding"></div>
+    <div class="form-row"><label for="node-input-icon">Icon</label><input type="text" id="node-input-icon" placeholder="optional, e.g. house"></div>
+    <div class="form-tips" style="margin-top: 4px;">
+        Mount this node into a <code>ui-accordion</code> to make it a section. Its
+        own id is the section key (the <code>openSection</code> value); the ids of
+        all sections under one ui-accordion must be unique. Mount any content into
+        this node's <code>content</code> slot — that becomes the section's panel.
+    </div>
+</script>
+<script type="text/html" data-help-name="ui-accordion-section">
+<p>Eine einzelne Sektion innerhalb eines <code>ui-accordion</code> (ADR 0018, Modell 1a). Die Sektionen eines <code>ui-accordion</code> werden aus seinen <code>ui-accordion-section</code>-Kindern abgeleitet — es gibt kein Sections-JSON-Feld mehr.</p>
+<h3>Felder</h3>
+<ul>
+  <li><b>Parent Slot</b> — in ein <code>ui-accordion</code> mounten heißt „werde eine Sektion". Die Knoten-ID ist der Sektions-Schlüssel (der <code>openSection</code>-Wert) und muss innerhalb eines ui-accordion eindeutig sein.</li>
+  <li><b>Label</b> — der Sektions-Titel (Summary). Voller kanonischer Bindungssatz (Store, Query, State, literal, …); Default-Typ <code>string</code>.</li>
+  <li><b>Icon</b> — optionaler Icon-Name (<code>sl-icon</code>) neben dem Label.</li>
+  <li><b>Inhalt</b> — mounte beliebige Kinder in den <code>content</code>-Slot dieser Sektion; sie bilden das Panel.</li>
+</ul>
+<p>Doku: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/navigation/ui-accordion-section.md" target="_blank">ui-accordion-section</a>.</p>
+</script>

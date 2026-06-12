@@ -41,7 +41,12 @@ import {
     validateUiTabChildrenUnique,
     defaultActiveTabId,
     uiTabContentMount,
-    migrateUiTabsToChildren
+    migrateUiTabsToChildren,
+    ACCORDION_SECTION_SLOT,
+    validateUiAccordionChildrenUnique,
+    defaultOpenSectionId,
+    uiAccordionSectionContentMount,
+    migrateUiAccordionToChildren
 } from "../src";
 
 describe("mount parsing", () => {
@@ -679,15 +684,12 @@ describe("P16c navigation and structure nodes", () => {
         expect(result.success).toBe(false);
     });
 
-    it("compiles ui-accordion to a valid definition", () => {
+    it("compiles ui-accordion to a valid definition (P169: children-model, no sections field)", () => {
         const result = validateUiNodeDefinition({
             type: "ui-accordion",
             id: "acc1",
             mount: "route:/dashboard/content",
-            sections: [
-                { id: "s1", label: "Section 1" },
-                { id: "s2", label: "Section 2" }
-            ],
+            openSection: { kind: "literal", value: "s1" },
             multiple: true
         });
 
@@ -697,8 +699,7 @@ describe("P16c navigation and structure nodes", () => {
     it("rejects ui-accordion without mount or parent", () => {
         const result = validateUiNodeDefinition({
             type: "ui-accordion",
-            id: "acc1",
-            sections: [{ id: "s1", label: "Section 1" }]
+            id: "acc1"
         });
 
         expect(result.success).toBe(false);
@@ -1146,6 +1147,144 @@ describe("P167 (ADR 0018): ui-tab children define tabs + migration", () => {
 
         const validatedTabs = validateUiNodeDefinition(result.tabs);
         expect(validatedTabs.success).toBe(true);
+    });
+});
+
+describe("P169 (ADR 0018): ui-accordion-section children define sections + migration", () => {
+    it("compiles a ui-accordion-section child (label binding, optional icon, order, content slot)", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-accordion-section",
+            id: "sectionFaq",
+            mount: "ui-accordion:acc1/content",
+            label: { kind: "literal", value: "FAQ" },
+            icon: "question",
+            order: 0
+        });
+
+        expect(result.success).toBe(true);
+        if (result.success && result.data.type === "ui-accordion-section") {
+            expect(result.data.label).toEqual({ kind: "literal", value: "FAQ" });
+            expect(result.data.icon).toBe("question");
+            expect(result.data.order).toBe(0);
+        }
+    });
+
+    it("requires a ui-accordion-section label", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-accordion-section",
+            id: "sectionNoLabel",
+            mount: "ui-accordion:acc1/content"
+        });
+
+        expect(result.success).toBe(false);
+    });
+
+    it("requires a ui-accordion-section mount or parent", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-accordion-section",
+            id: "sectionNoMount",
+            label: { kind: "literal", value: "Detached" }
+        });
+
+        expect(result.success).toBe(false);
+    });
+
+    it("accepts a content child mounted into a section's content slot (per-child slot)", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-text",
+            id: "sectionBody",
+            mount: uiAccordionSectionContentMount("sectionFaq"),
+            value: { kind: "literal", value: "hello" }
+        });
+
+        expect(uiAccordionSectionContentMount("sectionFaq")).toBe(`ui-accordion-section:sectionFaq/${ACCORDION_SECTION_SLOT}`);
+        expect(result.success).toBe(true);
+    });
+
+    it("validateUiAccordionChildrenUnique accepts unique ids and rejects a duplicate", () => {
+        expect(validateUiAccordionChildrenUnique([{ id: "a" }, { id: "b" }, { id: "c" }])).toBeUndefined();
+
+        const error = validateUiAccordionChildrenUnique([{ id: "a" }, { id: "b" }, { id: "a" }]);
+        expect(error).toBeDefined();
+        expect(error).toContain("a");
+        expect(error).toMatch(/unique/i);
+    });
+
+    it("defaultOpenSectionId = first child by order (then declaration order)", () => {
+        expect(
+            defaultOpenSectionId([
+                { id: "b", order: 2 },
+                { id: "a", order: 1 },
+                { id: "c", order: 3 }
+            ])
+        ).toBe("a");
+
+        expect(
+            defaultOpenSectionId([
+                { id: "noorder" },
+                { id: "ordered", order: 5 }
+            ])
+        ).toBe("ordered");
+
+        expect(defaultOpenSectionId([{ id: "first" }, { id: "second" }])).toBe("first");
+        expect(defaultOpenSectionId([])).toBeUndefined();
+    });
+
+    it("migrateUiAccordionToChildren maps a legacy sections array to section children + remapped mounts", () => {
+        const result = migrateUiAccordionToChildren(
+            {
+                id: "acc1",
+                mount: "route:/dashboard/content",
+                sections: [
+                    { id: "overview", label: "Overview" },
+                    { id: "details", label: "Details" }
+                ],
+                multiple: true
+            },
+            [
+                { id: "bodyOverview", sectionId: "overview", legacyMount: "section:overview" },
+                { id: "bodyDetails", sectionId: "details", legacyMount: "section:details" }
+            ]
+        );
+
+        // Reworked ui-accordion carries no `sections` field.
+        expect("sections" in result.accordion).toBe(false);
+        expect(result.accordion).toMatchObject({
+            type: "ui-accordion",
+            id: "acc1",
+            mount: "route:/dashboard/content",
+            multiple: true
+        });
+
+        // One section child per legacy entry, id/label preserved, ordered.
+        expect(result.sectionChildren).toHaveLength(2);
+        expect(result.sectionChildren[0]).toEqual({
+            type: "ui-accordion-section",
+            id: "overview",
+            mount: "ui-accordion:acc1/content",
+            label: { kind: "literal", value: "Overview" },
+            order: 0
+        });
+        expect(result.sectionChildren[1].id).toBe("details");
+        expect(result.sectionChildren[1].order).toBe(1);
+
+        // section:<id> content mounts re-pointed at the new section content slot.
+        expect(result.childMounts).toEqual([
+            { childId: "bodyOverview", legacyMount: "section:overview", mount: "ui-accordion-section:overview/content" },
+            { childId: "bodyDetails", legacyMount: "section:details", mount: "ui-accordion-section:details/content" }
+        ]);
+
+        // Round-trip: every migrated section child validates, ids are unique, and
+        // the default open section is the first by order.
+        for (const child of result.sectionChildren) {
+            const validated = validateUiNodeDefinition(child);
+            expect(validated.success).toBe(true);
+        }
+        expect(validateUiAccordionChildrenUnique(result.sectionChildren)).toBeUndefined();
+        expect(defaultOpenSectionId(result.sectionChildren)).toBe("overview");
+
+        const validatedAccordion = validateUiNodeDefinition(result.accordion);
+        expect(validatedAccordion.success).toBe(true);
     });
 });
 

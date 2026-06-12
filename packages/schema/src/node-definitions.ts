@@ -1015,20 +1015,177 @@ export function migrateUiTabsToChildren(
     return { tabs, tabChildren, childMounts };
 }
 
-const accordionSectionSchema = z.object({
+// P169 (ADR 0018, Model 1a): legacy accordion `sections` config-array item shape.
+// Kept ONLY as the INPUT type for the migration mapping
+// (`migrateUiAccordionToChildren`); the `ui-accordion` node no longer carries a
+// `sections` field.
+export const legacySectionItemSchema = z.object({
     id: z.string().min(1),
     label: z.string().min(1)
 });
 
+export type LegacySectionItem = z.infer<typeof legacySectionItemSchema>;
+
+// P169 (ADR 0018, Model 1a): `ui-accordion` slots are derived from its children.
+// A content child mounts into the standard "content" slot of its
+// `ui-accordion-section` parent exactly like any other container child:
+// `ui-accordion-section:<sectionId>/content` (= ACCORDION_SECTION_SLOT). The slot
+// KEY a section contributes to its `ui-accordion` parent is the section's own id
+// (the id is the slot key and the token the open-state carries — ADR 0018 §1/§4).
+export const ACCORDION_SECTION_SLOT = "content";
+
+// P169 (ADR 0018): `ui-accordion-section` — a thin CONTAINER child of
+// `ui-accordion`. It carries the section's own metadata (`label`, optional
+// `icon`, `order`) plus a single DEFAULT slot for its content. The MOUNT is the
+// declaration of the section — there is no second source of truth (no orphan
+// problem). Mirrors `ui-tab` (P167).
+export const uiAccordionSectionNodeDefinitionSchema = mountableNodeSchema.extend({
+    type: z.literal("ui-accordion-section"),
+    // The section's summary/header label. Full value-binding set
+    // (literal/state/store/query/…) so a section title may be static or bound.
+    label: bindingSchema,
+    // Optional icon shown beside the label (literal name / icon value / binding).
+    icon: iconFieldSchema.optional()
+    // NOTE: `order` is inherited from `mountableNodeSchema`; it is the per-section
+    // ordering within the `ui-accordion` parent. The first section by `order` is
+    // the default open section (see `defaultOpenSectionId`).
+});
+
+export type UiAccordionSectionNodeDefinition = z.infer<typeof uiAccordionSectionNodeDefinitionSchema>;
+
 export const uiAccordionNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-accordion"),
-    sections: z.array(accordionSectionSchema).min(1, "Accordion must declare at least one section."),
+    // P169 (ADR 0018, Model 1a): the `sections` JSON config-array is REMOVED. The
+    // sections are derived from the mounted `ui-accordion-section` children (one
+    // panel per child, slot key = child id). See
+    // `uiAccordionSectionNodeDefinitionSchema` and `ACCORDION_SECTION_SLOT`.
+    //
+    // The open-state is analogous to ui-tabs `activeTab` (ADR 0018 §4): the
+    // canonical two-way `openSection` value typedInput compiles to this binding and
+    // carries the open section's CHILD ID. The DEFAULT is the first child by
+    // `order` (resolved from the mounted children — see `defaultOpenSectionId`); an
+    // invalid value falls back to the first child.
+    openSection: bindingSchema.optional(),
+    // When true, more than one section may be open at once (sl-details semantics).
     multiple: z.boolean().optional(),
-    defaultOpen: z.union([identifierSchema, z.array(identifierSchema)]).optional(),
     events: z.array(z.enum(["sectionOpen", "sectionClose"])).optional()
 });
 
 export type UiAccordionNodeDefinition = z.infer<typeof uiAccordionNodeDefinitionSchema>;
+
+// ── P169 (ADR 0018): ui-accordion uniqueness + migration (pure functions) ─────
+
+/**
+ * P169 (ADR 0018 §1): the child ids of a `ui-accordion` MUST be unique within the
+ * parent — a duplicate is a validation error (the id is the slot key and the
+ * open-state token, so a collision would alias two sections onto one slot).
+ *
+ * This is a pure, registry-level check (the per-node schema cannot see its
+ * siblings). Returns an error string on the first duplicate, or `undefined` when
+ * all ids are unique.
+ */
+export function validateUiAccordionChildrenUnique(
+    sectionChildren: ReadonlyArray<{ id: string }>
+): string | undefined {
+    const seen = new Set<string>();
+    for (const child of sectionChildren) {
+        if (seen.has(child.id)) {
+            return `Duplicate ui-accordion-section id '${child.id}' within a ui-accordion — section ids must be unique (the id is the slot key and the open-state value).`;
+        }
+        seen.add(child.id);
+    }
+    return undefined;
+}
+
+/**
+ * P169 (ADR 0018 §4): resolve the DEFAULT open section id — the first child by
+ * `order` (sections without an `order` sort after ordered sections, ties broken by
+ * declaration order). Returns `undefined` for an empty child set. Mirrors
+ * `defaultActiveTabId`.
+ */
+export function defaultOpenSectionId(
+    sectionChildren: ReadonlyArray<{ id: string; order?: number }>
+): string | undefined {
+    return defaultActiveTabId(sectionChildren);
+}
+
+/**
+ * P169 (ADR 0018 §5): build the new content-slot mount for a section —
+ * `ui-accordion-section:<sectionId>/<ACCORDION_SECTION_SLOT>`.
+ */
+export function uiAccordionSectionContentMount(sectionId: string): string {
+    return `ui-accordion-section:${sectionId}/${ACCORDION_SECTION_SLOT}`;
+}
+
+/**
+ * P169 (ADR 0018 §5): one-shot migration mapping from the LEGACY config-array
+ * model (`ui-accordion` with a `sections:[{id,label}]` field) to the Model-1a
+ * children model. Pure function — given a legacy `ui-accordion` config plus the
+ * content children that mounted into its legacy `section:<id>` slots, it returns
+ * the reworked `ui-accordion` (no `sections` field), one new
+ * `ui-accordion-section` child per legacy entry (id/label preserved, ordered by
+ * declaration), and the remapped child mounts
+ * (`section:<id>` → `ui-accordion-section:<id>/content`).
+ */
+export interface LegacyUiAccordionForMigration {
+    /** The legacy `ui-accordion` node id. */
+    id: string;
+    /** The legacy `sections` config array. */
+    sections: ReadonlyArray<LegacySectionItem>;
+    /** Optional carried-over fields (mount/parent/openSection/multiple/events). */
+    mount?: string;
+    parent?: string;
+    openSection?: UiAccordionNodeDefinition["openSection"];
+    multiple?: UiAccordionNodeDefinition["multiple"];
+    events?: UiAccordionNodeDefinition["events"];
+}
+
+export interface UiAccordionMigrationResult {
+    /** The reworked `ui-accordion` node (no `sections` field). */
+    accordion: UiAccordionNodeDefinition;
+    /** One new `ui-accordion-section` child per legacy entry (id/label preserved). */
+    sectionChildren: UiAccordionSectionNodeDefinition[];
+    /** Remapped content-child mounts (`section:<id>` → new section content slot). */
+    childMounts: MigratedChildMount[];
+}
+
+export function migrateUiAccordionToChildren(
+    legacy: LegacyUiAccordionForMigration,
+    /**
+     * Content children currently mounted into a legacy derived section slot, given
+     * as `{ id, sectionId, legacyMount }`. The migration re-points each onto the
+     * matching new `ui-accordion-section`'s content slot.
+     */
+    contentChildren: ReadonlyArray<{ id: string; sectionId: string; legacyMount: string }> = []
+): UiAccordionMigrationResult {
+    const sectionChildren: UiAccordionSectionNodeDefinition[] = legacy.sections.map((entry, index) => ({
+        type: "ui-accordion-section",
+        id: entry.id,
+        // The new section mounts into its `ui-accordion` parent's content slot,
+        // contributing the slot keyed by its own id (ADR 0018 §1).
+        mount: `ui-accordion:${legacy.id}/${ACCORDION_SECTION_SLOT}`,
+        label: { kind: "literal", value: entry.label },
+        order: index
+    }));
+
+    const childMounts: MigratedChildMount[] = contentChildren.map((content) => ({
+        childId: content.id,
+        legacyMount: content.legacyMount,
+        mount: uiAccordionSectionContentMount(content.sectionId)
+    }));
+
+    const accordion: UiAccordionNodeDefinition = {
+        type: "ui-accordion",
+        id: legacy.id,
+        ...(legacy.mount !== undefined ? { mount: legacy.mount } : {}),
+        ...(legacy.parent !== undefined ? { parent: legacy.parent } : {}),
+        ...(legacy.openSection !== undefined ? { openSection: legacy.openSection } : {}),
+        ...(legacy.multiple !== undefined ? { multiple: legacy.multiple } : {}),
+        ...(legacy.events !== undefined ? { events: legacy.events } : {})
+    };
+
+    return { accordion, sectionChildren, childMounts };
+}
 
 // P95: breadcrumb item schema — supports three static forms:
 //   (a) a string         → label = string, action = string (click param)
@@ -1261,6 +1418,7 @@ export const uiNodeDefinitionSchema = z.union([
     uiTabsNodeDefinitionSchema,
     uiTabNodeDefinitionSchema,
     uiAccordionNodeDefinitionSchema,
+    uiAccordionSectionNodeDefinitionSchema,
     uiBreadcrumbNodeDefinitionSchema,
     uiMenuNodeDefinitionSchema,
     uiPaginationNodeDefinitionSchema,
@@ -1303,6 +1461,7 @@ const uiNodeSchemaByType: Record<string, z.ZodTypeAny> = {
     "ui-tabs": uiTabsNodeDefinitionSchema,
     "ui-tab": uiTabNodeDefinitionSchema,
     "ui-accordion": uiAccordionNodeDefinitionSchema,
+    "ui-accordion-section": uiAccordionSectionNodeDefinitionSchema,
     "ui-breadcrumb": uiBreadcrumbNodeDefinitionSchema,
     "ui-menu": uiMenuNodeDefinitionSchema,
     "ui-pagination": uiPaginationNodeDefinitionSchema,
