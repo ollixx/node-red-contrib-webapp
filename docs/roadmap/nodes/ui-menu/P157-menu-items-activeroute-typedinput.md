@@ -9,7 +9,7 @@ verify: browser
 spec: docs/nodes/navigation/ui-menu.md
 tests: tests/e2e/nodes/view/ui-menu.tests.md
 dependencies: [P113]
-status: pending
+status: in_progress
 ---
 # P157 — ui-menu: items + activeRoute als typedInput
 
