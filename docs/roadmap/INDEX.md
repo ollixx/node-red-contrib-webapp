@@ -27,7 +27,7 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P170** — aspects/rendering — Dynamische Tabs/Sektionen via ui-repeat (Capstone, kein eigener Dynamik-Mechanismus) — *löst P142-Dynamik; braucht P165 + P168 + P169* — [P170](aspects/rendering/P170-dynamic-tabs-sections-via-repeat.md)
+_No open work — the roadmap is drained. New work is added here as packages are authored._
 
 
 ## Deferred (parked, not abandoned)
@@ -87,9 +87,9 @@ open the folder for the full history.
 | aspects/state | 8 |
 | aspects/editor | 14 |
 | schema | 5 |
-| aspects/rendering | 11 |
+| aspects/rendering | 12 |
 | aspects/foundation | 5 |
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 168 done, 1 open, 9 deferred.**
+**Total: 169 done, 0 open, 9 deferred.**
