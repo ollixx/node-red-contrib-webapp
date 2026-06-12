@@ -56,3 +56,30 @@ Editor-Regression: `tests/e2e/nodes/editor/navigation-nodes.spec.ts`,
 - `minimal-coverage.spec.ts`: ui-tabs `fields:["name","mount"]`, `inputs:1`;
   ui-tab `fields:["name","mount"]`.
 - `navigation-nodes.spec.ts`: ui-tabs hat **kein** `tabs`-Feld mehr; 1 Output-Port.
+
+## Dynamische Tabs via ui-repeat (P170, ADR 0017 × 0018) — abgedeckt
+
+> Kapstein der Tabs-1a-Welle: der **dynamische** Fall ist **kein** eigener
+> Mechanismus, sondern die Komposition aus `ui-repeat` (ADR 0017) und
+> Kinder-definieren-Tabs (ADR 0018). Ein `ui-repeat` (Schablone = ein einzelnes
+> `ui-tab`, `label = item.<feld>`), in ein `ui-tabs` gemountet, rendert N Tabs —
+> einen je Datenzeile.
+>
+> - Renderer-Unit: `packages/renderer/test/p170-dynamic-tabs-sections.test.ts`
+>   (Komposition + Keying/Stabilität via `replaceState`).
+> - Voller Pipeline-Render (HTML): `packages/runtime/test/p170-dynamic-tabs-sections.test.ts`.
+> - Browser-Beweis: `tests/e2e/nodes/view/dynamic-tabs-sections.spec.ts`
+>   (T01 N Tabs aus Store-Array + Inhalt je Item-Scope; T02 Hinzufügen keyed;
+>   T03 Umsortieren keyed, Ids stabil).
+
+- **Komposition statt Mechanismus:** `renderTabs` zählt die Tab-Kinder über
+  `resolveSectionChildren` auf — ein direkt gemountetes `ui-tab` ist eine
+  statische Sektion, ein gemountetes `ui-repeat` wird (mit `expandRepeat`-Frames
+  und Per-Instanz-Key) je Item in genau ein keyed `ui-tab` expandiert. Statische
+  und dynamische Tabs koexistieren unter einem `ui-tabs`.
+- **Keying/Stabilität:** Tab-Id = `<itemKey>#<templateId>` (Repeat-Key × Tab-Id);
+  Hinzufügen/Löschen/Umsortieren des Arrays formt die sichtbare Tab-Menge um, die
+  unveränderten Tabs behalten ihre Id (kein Re-Mount); `activeTab` bleibt gültig,
+  solange seine Zeile existiert, und fällt sonst auf das erste Kind zurück.
+- **Label/Inhalt im Item-Scope:** das Tab-`label` und der Panel-Inhalt lösen gegen
+  den `{item,index}`-Frame der jeweiligen Zeile auf (`item.<feld>`).

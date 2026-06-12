@@ -89,6 +89,41 @@ Slot `section:<id>` gemountet waren, werden auf
 `ui-accordion-section:<id>/content` umgehängt. Die Migration ist verlustfrei und
 einmalig; ein Flow, der bereits im Kinder-Modell vorliegt, bleibt unverändert.
 
+## Dynamische Sektionen = ein `ui-repeat` von `ui-accordion-section` (P170 / ADR 0017 × 0018)
+
+Sektionen aus **Daten** sind **kein eigenes Feature** und kein „dynamischer Slot":
+sie sind die **Komposition** aus [`ui-repeat`](../display/ui-repeat.md) (ADR 0017)
+und dem Kinder-definieren-Modell (ADR 0018) — spiegelbildlich zu
+[`ui-tabs`](ui-tabs.md). Ein `ui-repeat`, dessen Schablone (der Default-Slot
+`content`) ein **einzelnes** [`ui-accordion-section`](ui-accordion-section.md) ist
+und das in dieses `ui-accordion` gemountet wird, erzeugt **eine Sektion je
+Datenzeile**. Das Sektions-`label` (und der Inhalt) bindet `item.<feld>`.
+
+```
+ui-accordion (id: faqAcc)
+└── ui-repeat                  mount: ui-accordion:faqAcc/content
+    │                          items:  state  →  faq.entries   (ein Array)
+    │                          keyField: id
+    └── ui-accordion-section   mount: container:faqRepeat/content
+        │                      label: item  →  question        (= item.question)
+        └── ui-text            mount: ui-accordion-section:faqSection/content
+                               value: item  →  answer          (= item.answer)
+```
+
+Für ein Array `[{id:"a",question:"…",answer:"…"}, {id:"b",…}]` rendert das **zwei**
+Sektionen, jede mit ihrem eigenen Inhalt.
+
+- **Keying/Stabilität:** die sichtbare Sektions-Id ist `<itemKey>#<section-id>`
+  (Repeat-Key × Sektions-id). Array-Änderungen (Zeile hinzu/weg/umsortiert) formen
+  die Sektions-Menge um — **keyed**: unveränderte Sektionen behalten ihre Id (kein
+  Re-Mount). Der offene-Sektion-Zustand bleibt gültig, solange seine Zeile
+  existiert, sonst Fallback auf die erste Sektion.
+- **Statisch + dynamisch mischbar** unter einem `ui-accordion` (Reihenfolge per
+  `order`).
+- **Kein neuer Mechanismus:** der Container expandiert ein gemountetes `ui-repeat`
+  je Item in genau eine keyed Sektion — dieselbe Klon-/Key-Logik wie jeder andere
+  Repeat (ADR 0017 §4).
+
 ## Input
 
 - **`msg.payload`** — setzt die offene Sektion; der Wert muss die `id` eines `ui-accordion-section`-Kindes sein. Ungültige Werte werden ignoriert (Fallback: erste Sektion).

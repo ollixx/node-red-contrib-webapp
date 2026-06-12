@@ -57,3 +57,26 @@ Editor-Regression: `tests/e2e/nodes/editor/navigation-nodes.spec.ts`,
 ## Dynamisch (P170)
 - `ui-repeat` (Template = `ui-accordion-section`, `label = item.<feld>`) → N
   Sektionen aus Daten; keyed, stabil über Datenänderungen. **Nicht in P169.**
+
+## Dynamische Sektionen via ui-repeat (P170, ADR 0017 × 0018) — abgedeckt
+
+> Spiegelt P170 für ui-accordion: ein `ui-repeat` (Schablone = ein einzelnes
+> `ui-accordion-section`, `label = item.<feld>`), in ein `ui-accordion` gemountet,
+> rendert N Sektionen — eine je Datenzeile. Kein eigener Dynamik-Mechanismus,
+> reine Komposition aus ui-repeat (ADR 0017) + Kinder-definieren-Sektionen
+> (ADR 0018).
+>
+> - Renderer-Unit: `packages/renderer/test/p170-dynamic-tabs-sections.test.ts`.
+> - Voller Pipeline-Render (HTML): `packages/runtime/test/p170-dynamic-tabs-sections.test.ts`.
+> - Browser-Beweis: `tests/e2e/nodes/view/dynamic-tabs-sections.spec.ts`
+>   (S01 N Sektionen aus Store-Array + Inhalt je Item-Scope; S02 Löschen keyed).
+
+- **Komposition statt Mechanismus:** `renderAccordion` zählt die Sektions-Kinder
+  über `resolveSectionChildren` auf — ein direkt gemountetes
+  `ui-accordion-section` ist statisch, ein gemountetes `ui-repeat` wird je Item in
+  genau eine keyed Sektion expandiert (Per-Instanz-Id `<itemKey>#<templateId>`).
+- **Keying/Stabilität:** Array-Änderung formt die sichtbare Sektions-Menge um,
+  unveränderte Sektionen behalten ihre Id; der offene-Sektion-Zustand bleibt
+  gültig, solange seine Zeile existiert, sonst Fallback auf die erste Sektion.
+- **Label/Inhalt im Item-Scope:** `label` und Inhalt lösen gegen den
+  `{item,index}`-Frame der Zeile auf (`item.<feld>`).

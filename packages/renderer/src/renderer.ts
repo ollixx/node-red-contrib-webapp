@@ -1,7 +1,6 @@
 import {
     REPEAT_SLOT,
     TAB_SLOT,
-    ACCORDION_SECTION_SLOT,
     defaultActiveTabId,
     defaultOpenSectionId,
     resolveMountReference,
@@ -1152,12 +1151,125 @@ function createTabMountMatcher(
 }
 
 /**
+ * P170 (ADR 0017 × 0018, capstone): one resolved tab/section child of a
+ * `ui-tabs`/`ui-accordion`, after the DYNAMIC case has been folded in. There is
+ * NO bespoke dynamic-slot mechanism — a data-driven section is simply a `ui-tab`
+ * (or `ui-accordion-section`) TEMPLATE inside a `ui-repeat` mounted into the
+ * container. This struct is the unification point: a static child and a
+ * repeat-cloned child are both reduced to the same shape.
+ *
+ * - `def` — the section definition. For a static child this is the node itself.
+ *   For a repeat clone it is the template with a composed per-instance id
+ *   (`<itemKey>#<templateId>`), exactly as `expandRepeat` keys its clones, so the
+ *   visible tab id is stable/keyed and `activeTab`/open-state survives data change.
+ * - `templateId` — the ORIGINAL section-node id (== `def.id` for a static child).
+ *   The content subtree mounts at `ui-tab:<templateId>/content`, so content
+ *   enumeration must address the template, not the composed clone id.
+ * - `context` — the render-time scope the section resolves against. For a repeat
+ *   clone this carries the `{item,index}` frame pushed by the repeat, so the
+ *   child's `label` AND its content's `item.*` bindings resolve to that row.
+ */
+interface ResolvedSectionChild {
+    def: ComponentDefinition;
+    templateId: string;
+    context: ComponentRenderContext;
+}
+
+/**
+ * P170 (ADR 0017 × 0018): enumerate the tab/section children of a container,
+ * COMPOSING the static and dynamic cases. A child mounted directly into the
+ * container of the matching `kind` is one static section. A `ui-repeat` mounted
+ * into the container is EXPANDED: each item clones the repeat's section-kind
+ * template into one keyed section, scoped to that item's frame. No new
+ * mechanism — this is `expandRepeat`'s frame/key logic (ADR 0017) reused so the
+ * container's child enumeration (ADR 0018) sees repeat-expanded children.
+ */
+function resolveSectionChildren(
+    hostPrefix: "ui-tabs" | "ui-accordion",
+    sectionKind: "tab" | "accordion-section",
+    hostId: string,
+    context: ComponentRenderContext,
+    appModel: AppModel
+): ResolvedSectionChild[] {
+    const directMatcher = createTabMountMatcher(hostPrefix, hostId);
+    const directChildren = appModel.components
+        .filter((candidate) =>
+            (candidate.kind === sectionKind || candidate.kind === "repeat") &&
+            directMatcher(candidate, [TAB_SLOT]))
+        .sort(componentSort);
+
+    return directChildren.flatMap((child) => {
+        // Static case: a section node mounted straight into the container.
+        if (child.kind === sectionKind) {
+            return [{ def: child, templateId: child.id, context }];
+        }
+
+        // Dynamic case: a `ui-repeat` whose template is a section node. Reuse the
+        // repeat's own item resolution + per-instance keying so the visible tab
+        // set is data-driven and keyed exactly like every other repeat clone.
+        const repeat = child;
+        const items = resolveStructuralBinding(repeat.bind.items, context.sources);
+        const frames = resolveRepeatItems(items);
+        const keyField = typeof repeat.props.keyField === "string" ? repeat.props.keyField : undefined;
+        const sectionTemplates = appModel.components
+            .filter((candidate) =>
+                candidate.kind === sectionKind &&
+                createRepeatChildMatcher(repeat.id)(candidate, [REPEAT_SLOT]))
+            .sort(componentSort);
+
+        return frames.flatMap((frame) => {
+            const itemKey = repeatItemKey(frame, keyField);
+            const scopedContext: ComponentRenderContext = {
+                sources: {
+                    ...context.sources,
+                    itemScope: [...(context.sources.itemScope ?? []), frame]
+                }
+            };
+            return sectionTemplates.map((template) => ({
+                def: { ...template, id: `${itemKey}#${template.id}` },
+                templateId: template.id,
+                context: scopedContext
+            }));
+        });
+    });
+}
+
+/**
+ * P170 (ADR 0017 × 0018): resolve a section's CONTENT subtree against the
+ * section's scope. Content mounts at `<contentPrefix>:<templateId>/content` — the
+ * TEMPLATE id, never the composed clone id — so a single static template mount
+ * fans out to every item instance. The content resolves against the section's
+ * (possibly item-scoped) context, so `item.*` bindings inside a dynamic tab's
+ * content resolve to that row; a nested `ui-repeat` inside the content still
+ * expands normally.
+ */
+function renderSectionContent(
+    contentPrefix: "ui-tab" | "ui-accordion-section",
+    section: ResolvedSectionChild,
+    appModel: AppModel
+): RenderedComponent[] {
+    const contentMatcher = createTabMountMatcher(contentPrefix, section.templateId);
+    return appModel.components
+        .filter((candidate) => contentMatcher(candidate, [TAB_SLOT]))
+        .sort(componentSort)
+        .flatMap((candidate) => candidate.kind === "repeat"
+            ? expandRepeat(candidate, section.context, appModel)
+            : [toRenderedComponent(candidate, section.context, appModel)])
+        .filter((rendered): rendered is RenderedComponent => rendered !== undefined);
+}
+
+/**
  * P168 (ADR 0018, Model 1a): render a `ui-tabs` from its mounted `ui-tab`
  * children. Each child becomes exactly one panel/region (region name = child
  * id); the child's `label` is resolved (literal/state/store/query binding); the
  * active tab is `component.value` (the two-way `activeTab` binding) and falls
  * back to the first child by `order` (`defaultActiveTabId`) when absent/invalid.
  * The child's content subtree mounts into `ui-tab:<childId>/content`.
+ *
+ * P170 (ADR 0017 × 0018): the child enumeration is COMPOSED via
+ * `resolveSectionChildren`, so a `ui-repeat` of `ui-tab` mounted into the
+ * container produces one keyed tab per data item — the dynamic case with no new
+ * mechanism.
  */
 function renderTabs(
     component: ComponentDefinition,
@@ -1166,55 +1278,46 @@ function renderTabs(
     context: ComponentRenderContext,
     appModel: AppModel
 ): RenderedTabsComponent {
-    const tabChildMatcher = createTabMountMatcher("ui-tabs", component.id);
-    const tabChildren = appModel.components
-        .filter((candidate) => candidate.kind === "tab" && tabChildMatcher(candidate, [TAB_SLOT]))
-        .sort(componentSort);
+    // P170: COMPOSED enumeration — static `ui-tab` children AND repeat-expanded
+    // `ui-tab` clones, each reduced to a `ResolvedSectionChild` (keyed clone id +
+    // template id + item scope). The dynamic case is just a `ui-repeat` here.
+    const tabChildren = resolveSectionChildren("ui-tabs", "tab", component.id, context, appModel);
 
     // Default active = first child by order; an absent/invalid bound value falls
     // back to it (ADR 0018 §4). `component.value` is the resolved activeTab.
     const defaultId = defaultActiveTabId(
-        tabChildren.map((child) => ({ id: child.id, order: child.order }))
+        tabChildren.map((child) => ({ id: child.def.id, order: child.def.order }))
     );
     const boundValue = resolvedProps.value;
     const boundId = boundValue === undefined || boundValue === null ? undefined : String(boundValue);
-    const activeId = boundId !== undefined && tabChildren.some((child) => child.id === boundId)
+    const activeId = boundId !== undefined && tabChildren.some((child) => child.def.id === boundId)
         ? boundId
         : defaultId;
 
     const tabsMeta = tabChildren.map((child) => {
-        const resolvedLabel = resolveBinding(child.bind.label, context.sources);
+        // Label resolves against the SECTION's scope, so a dynamic tab's
+        // `label = item.<field>` resolves to that row.
+        const resolvedLabel = resolveBinding(child.def.bind.label, child.context.sources);
         const label = resolvedLabel !== undefined && resolvedLabel !== null
             ? String(resolvedLabel)
-            : child.id;
-        const icon = typeof child.props.icon === "string" ? child.props.icon : undefined;
+            : child.def.id;
+        const icon = typeof child.def.props.icon === "string" ? child.def.props.icon : undefined;
         return {
-            id: child.id,
+            id: child.def.id,
             label,
             ...(icon ? { icon } : {}),
-            active: child.id === activeId
+            active: child.def.id === activeId
         };
     });
 
     // One region per child (region name = child id) holding the child's content
-    // subtree (mounted at `ui-tab:<childId>/content`).
-    const regions: RenderedRegion[] = tabChildren.map((child) => {
-        const contentMatcher = createTabMountMatcher("ui-tab", child.id);
-        const components = appModel.components
-            .filter((candidate) => contentMatcher(candidate, [TAB_SLOT]))
-            .sort(componentSort)
-            .flatMap((candidate) => candidate.kind === "repeat"
-                ? expandRepeat(candidate, context, appModel)
-                : [toRenderedComponent(candidate, context, appModel)])
-            .filter((rendered): rendered is RenderedComponent => rendered !== undefined);
-
-        return {
-            kind: "region",
-            name: child.id,
-            components,
-            regions: []
-        };
-    });
+    // subtree (mounted at `ui-tab:<templateId>/content`, resolved in scope).
+    const regions: RenderedRegion[] = tabChildren.map((child) => ({
+        kind: "region",
+        name: child.def.id,
+        components: renderSectionContent("ui-tab", child, appModel),
+        regions: []
+    }));
 
     return {
         ...baseComponent,
@@ -1244,55 +1347,44 @@ function renderAccordion(
     context: ComponentRenderContext,
     appModel: AppModel
 ): RenderedAccordionComponent {
-    const sectionChildMatcher = createTabMountMatcher("ui-accordion", component.id);
-    const sectionChildren = appModel.components
-        .filter((candidate) => candidate.kind === "accordion-section" && sectionChildMatcher(candidate, [ACCORDION_SECTION_SLOT]))
-        .sort(componentSort);
+    // P170: COMPOSED enumeration — static `ui-accordion-section` children AND
+    // repeat-expanded section clones (keyed clone id + template id + item scope).
+    // The dynamic case is just a `ui-repeat` of `ui-accordion-section` here.
+    const sectionChildren = resolveSectionChildren("ui-accordion", "accordion-section", component.id, context, appModel);
 
     // Default open = first child by order; an absent/invalid bound value falls
     // back to it (ADR 0018 §4). `component.value` is the resolved openSection.
     const defaultId = defaultOpenSectionId(
-        sectionChildren.map((child) => ({ id: child.id, order: child.order }))
+        sectionChildren.map((child) => ({ id: child.def.id, order: child.def.order }))
     );
     const boundValue = resolvedProps.value;
     const boundId = boundValue === undefined || boundValue === null ? undefined : String(boundValue);
-    const openId = boundId !== undefined && sectionChildren.some((child) => child.id === boundId)
+    const openId = boundId !== undefined && sectionChildren.some((child) => child.def.id === boundId)
         ? boundId
         : defaultId;
 
     const sectionsMeta = sectionChildren.map((child) => {
-        const resolvedLabel = resolveBinding(child.bind.label, context.sources);
+        const resolvedLabel = resolveBinding(child.def.bind.label, child.context.sources);
         const label = resolvedLabel !== undefined && resolvedLabel !== null
             ? String(resolvedLabel)
-            : child.id;
-        const icon = typeof child.props.icon === "string" ? child.props.icon : undefined;
+            : child.def.id;
+        const icon = typeof child.def.props.icon === "string" ? child.def.props.icon : undefined;
         return {
-            id: child.id,
+            id: child.def.id,
             label,
             ...(icon ? { icon } : {}),
-            open: child.id === openId
+            open: child.def.id === openId
         };
     });
 
     // One region per child (region name = child id) holding the child's content
-    // subtree (mounted at `ui-accordion-section:<childId>/content`).
-    const regions: RenderedRegion[] = sectionChildren.map((child) => {
-        const contentMatcher = createTabMountMatcher("ui-accordion-section", child.id);
-        const components = appModel.components
-            .filter((candidate) => contentMatcher(candidate, [ACCORDION_SECTION_SLOT]))
-            .sort(componentSort)
-            .flatMap((candidate) => candidate.kind === "repeat"
-                ? expandRepeat(candidate, context, appModel)
-                : [toRenderedComponent(candidate, context, appModel)])
-            .filter((rendered): rendered is RenderedComponent => rendered !== undefined);
-
-        return {
-            kind: "region",
-            name: child.id,
-            components,
-            regions: []
-        };
-    });
+    // subtree (mounted at `ui-accordion-section:<templateId>/content`, in scope).
+    const regions: RenderedRegion[] = sectionChildren.map((child) => ({
+        kind: "region",
+        name: child.def.id,
+        components: renderSectionContent("ui-accordion-section", child, appModel),
+        regions: []
+    }));
 
     return {
         ...baseComponent,
