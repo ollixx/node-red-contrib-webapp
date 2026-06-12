@@ -9,7 +9,7 @@ verify: browser
 spec: docs/nodes/navigation/ui-tabs.md
 tests: tests/e2e/nodes/view/ui-tabs.tests.md
 dependencies: [P113]
-status: pending
+status: in_progress
 ---
 # P155 — ui-tabs: activeTab als typedInput
 
