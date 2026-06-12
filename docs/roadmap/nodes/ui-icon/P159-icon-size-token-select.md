@@ -10,7 +10,7 @@ verify: browser
 spec: docs/nodes/display/ui-icon.md
 tests: tests/e2e/nodes/view/ui-icon.tests.md
 dependencies: []
-status: pending
+status: in_progress
 ---
 # P159 — ui-icon: size → Größen-Token-Select
 
