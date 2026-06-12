@@ -11,7 +11,7 @@ verify: browser
 spec: docs/nodes/state/ui-query.md
 tests: tests/e2e/nodes/state/ui-query.tests.md
 dependencies: []
-status: pending
+status: in_progress
 ---
 # P160 — ui-query: Spec-Cleanup + Store-Abgrenzung + Pipeline-Verifikation
 
