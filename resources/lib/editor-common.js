@@ -280,6 +280,52 @@
         };
     }
 
+    // ── Icon Size SelectBox (P159) ────────────────────────────────────────────
+    // installIconSizeSelectBox() injects a "Größe" select with the five-step
+    // token set (xs/sm/md/lg/xl) for icon-scale nodes (ui-icon). Mirrors the
+    // installSizeSelectBox() mechanism exactly, but uses the wider xs..xl scale.
+    //
+    // Migration: if the stored `size` is not a recognised token (e.g. a legacy
+    // free CSS value like "24" or "1.5rem"), a temporary "<value> (bestehend)"
+    // option is prepended so the old value round-trips without data loss. The
+    // user can pick a proper token; on next save the legacy value is gone if a
+    // token was chosen. The schema accepts only xs..xl — this guard keeps the
+    // editor from silently discarding unexpected stored values.
+    var ICON_SIZE_TOKENS = ["xs", "sm", "md", "lg", "xl"];
+    var ICON_SIZE_OPTIONS = [
+        { value: "",   label: "(default / md)" },
+        { value: "xs", label: "XSmall" },
+        { value: "sm", label: "Small" },
+        { value: "md", label: "Medium" },
+        { value: "lg", label: "Large" },
+        { value: "xl", label: "XLarge" }
+    ];
+
+    function installIconSizeSelectBox() {
+        return function () {
+            var self = this;
+            injectFieldGroup({
+                groupId: "size-select",
+                separator: false,
+                fields: [
+                    { id: "size", label: "Größe", type: "select", options: ICON_SIZE_OPTIONS }
+                ]
+            });
+            var select = $("#node-input-size");
+            if (!select.length) { return; }
+            var stored = self.size || "";
+            if (stored && ICON_SIZE_TOKENS.indexOf(stored) === -1) {
+                // Legacy free CSS value — prepend a "(bestehend)" option so the
+                // old value is preserved on first open; user can then choose a
+                // token to migrate permanently.
+                select.prepend(
+                    $("<option>").val(stored).text(stored + " (bestehend)")
+                );
+            }
+            select.val(stored);
+        };
+    }
+
     // ── Common base fields (P139, ADR 0015) ─────────────────────────────────
     // Every node offers the four common base fields visible/disabled/color/size
     // as ONE grouped section with its own heading ("Allgemein").
@@ -5059,6 +5105,7 @@
         formatIconValue,
         installReferenceSelectors,
         installSizeSelectBox,
+        installIconSizeSelectBox,
         // P139 (ADR 0015): common base fields (visible/disabled/color/size).
         installBaseFields,
         applyBaseFields,
