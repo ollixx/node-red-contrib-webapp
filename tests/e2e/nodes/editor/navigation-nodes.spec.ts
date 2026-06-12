@@ -117,7 +117,10 @@ test.describe("editor panels — ui-stepper (P85)", () => {
         await resetFlow(request);
     });
 
-    test("stepper: steps, activeStepPath, orientation fields present and data persists", async ({ page, request }) => {
+    // P156 (ADR 0012): the `activeStepPath` plain text field became the `activeStep`
+    // value typedInput (two-way). The legacy path migrates to a state binding; the
+    // visible widget is now #node-input-activeStepBinding (typedInput).
+    test("stepper: steps, activeStep typedInput, orientation fields present and data persists", async ({ page, request }) => {
         const steps = JSON.stringify([
             { id: "configure", label: "Configure" },
             { id: "review", label: "Review" },
@@ -133,7 +136,7 @@ test.describe("editor panels — ui-stepper (P85)", () => {
         await editor.open();
         await editor.openNode("stpEd1");
 
-        await editor.expectFields(["name", "mount", "steps", "activeStepPath"]);
+        await editor.expectFields(["name", "mount", "steps", "activeStepBinding"]);
         expect(await editor.inputPortCount("stpEd1")).toBe(1);
 
         const stored = await editor.readField("steps");

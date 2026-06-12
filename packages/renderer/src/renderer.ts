@@ -811,6 +811,11 @@ function toRenderedComponent(component: ComponentDefinition, context: ComponentR
         // serializer reads component.value to mark the matching sl-tab active. The
         // existing tab-change event carries the new tab id on the out-port, which a
         // wired flow writes back to the bound store (declarative roundtrip).
+        // P156 (ADR 0012): ui-stepper `activeStep` mirrors the same TWO-WAY path —
+        // it resolves through bind.value into resolvedProps.value (read source); the
+        // serializer reads component.value to mark the active step. The existing
+        // step-change event carries the chosen step id, which a wired flow writes
+        // back to the bound store (declarative roundtrip).
         case "select":
         case "checkbox":
         case "radio":
