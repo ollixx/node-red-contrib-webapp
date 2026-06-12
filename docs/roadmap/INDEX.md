@@ -27,13 +27,15 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P155** — nodes/ui-tabs — `activeTab` als typedInput (zweiseitig + Event) — *Field-Typing Welle 2; braucht P113* — [P155](nodes/ui-tabs/P155-tabs-activetab-typedinput.md)
 - **P156** — nodes/ui-stepper — `activeStep` als typedInput (zweiseitig + Event) — *Field-Typing Welle 2; braucht P113* — [P156](nodes/ui-stepper/P156-stepper-activestep-typedinput.md)
 - **P157** — nodes/ui-menu — `items`/`activeRoute` als typedInput — *Field-Typing Welle 2; braucht P113* — [P157](nodes/ui-menu/P157-menu-items-activeroute-typedinput.md)
 - **P158** — nodes/ui-table — `rows` als typedInput (Daten-Array); columns separat — *Field-Typing Welle 2; braucht P113* — [P158](nodes/ui-table/P158-table-rows-typedinput.md)
 - **P159** — nodes/ui-icon — `size` auf xs..xl-Token-Select (Spec/Code-Fix); color via P139 — *Field-Typing Welle 2* — [P159](nodes/ui-icon/P159-icon-size-token-select.md)
 - **P160** — nodes/ui-query — Spec entrümpeln (previewData raus, Wiring-Beispiel), Store/Query-Trennung schärfen, Daten-Pipeline test-first verifizieren — *geplant* — [P160](nodes/ui-query/P160-query-spec-cleanup-store-distinction-pipeline-verify.md)
 - **P161** — nodes/ui-query — Query-reaktives Paging: params-Store-getriggerter Refresh (Out-Port) + totalCount/pageCount im Lifecycle; ui-pagination bindet total←query, currentPage↔Store — *geplant; braucht P154 + P160* — [P161](nodes/ui-query/P161-query-reactive-paging-loop.md)
+- **P163** — nodes/ui-repeat — Schema-Knotendefinition + neue Binding-Art `item`/`index` (scope-lokal) — *ui-repeat-Welle (ADR 0017), Schicht 1* — [P163](nodes/ui-repeat/P163-repeat-schema-and-item-binding-kind.md)
+- **P164** — nodes/ui-repeat — Renderer: Template-Klon pro Item, Render-Zeit-Scope, keyed Morphing — *ui-repeat-Welle, Schicht 2; braucht P163* — [P164](nodes/ui-repeat/P164-repeat-renderer-template-clone-scope-keying.md)
+- **P165** — nodes/ui-repeat — Node-Registrierung + Editor (Default-Slot-Template, items/keyField) + Browser-Beweis — *ui-repeat-Welle, Schicht 3; braucht P164* — [P165](nodes/ui-repeat/P165-repeat-node-registration-and-editor.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -45,7 +47,6 @@ Reason in each package's `deferred_reason`. Picked up once the blocker clears.
 - **P105** — aspects/rendering — nicht-darstellbarer Wert: Achtung-Icon + Alert/Dialog statt nacktem `"?"` — *Stufe 2 über P104* — [P105](aspects/rendering/deferred/P105-invalid-value-warning-affordance.md)
 - **P107** — nodes/ui-app — App-weite Auth/Authz (OAuth2/OIDC) modellieren — *eigenes Epic, ADR + Owner-Entscheidung nötig* — [P107](nodes/ui-app/deferred/P107-auth-authz.md)
 - **P121** — aspects/docs — Konzept Nutzer-Doku: Wo/Wie die zwei Wege (Wire vs. Referenz) mit Beispielen dokumentieren — *Owner-Entscheidung zu Ort + Form nötig* — [P121](aspects/docs/deferred/P121-user-docs-concept-two-ways.md)
-- **P140** — aspects/rendering — Konzept: Repeats (dynamische Element-Listen, n×) — *foundational; ADR + Owner-Entscheidung nötig* — [P140](aspects/rendering/deferred/P140-repeats-dynamic-element-lists.md)
 - **P141** — aspects/rendering — Konzept: Components (wiederverwendbare Knoten-Sets, Definition/Instanz) — *großes Feature; ADR nötig* — [P141](aspects/rendering/deferred/P141-components-reusable-node-sets.md)
 - **P142** — aspects/rendering — Konzept: ui-tabs/ui-accordion dynamische Slots — *hängt an Repeats/Components* — [P142](aspects/rendering/deferred/P142-tabs-accordion-dynamic-slots.md)
 - **P143** — aspects/editor — Konzept: Enums dynamisch bindbar (Pro-Feld-typedInput mit Enum-Default statt globalem Advanced-Mode) — *ADR + Owner-Entscheidung nötig; Empfehlung steht* — [P143](aspects/editor/deferred/P143-enums-dynamic-binding-vs-advanced-mode.md)
@@ -81,6 +82,7 @@ open the folder for the full history.
 | nodes/ui-divider | 2 |
 | nodes/ui-image | 2 |
 | nodes/ui-pagination | 2 |
+| nodes/ui-tabs | 1 |
 | nodes/ui-accordion · ui-breadcrumb · ui-dialog · ui-icon · ui-progress · ui-skeleton · ui-table | 1 each |
 | aspects/test-infra | 21 |
 | aspects/misc | 16 |
@@ -88,9 +90,9 @@ open the folder for the full history.
 | aspects/state | 8 |
 | aspects/editor | 14 |
 | schema | 5 |
-| aspects/rendering | 8 |
+| aspects/rendering | 9 |
 | aspects/foundation | 5 |
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 152 done, 7 open, 11 deferred.**
+**Total: 154 done, 9 open, 10 deferred.**
