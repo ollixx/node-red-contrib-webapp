@@ -76,9 +76,13 @@ test.describe("editor panel — ui-alert message/title typedInput (P67)", () => 
                 ));
             return (instance?.typeList ?? []).map((t) => (typeof t === "string" ? t : t.value));
         });
+        // P165 (ADR 0017): the canonical value set gained the two scope-local
+        // `item`/`index` repeat kinds at the tail (offered on every value field;
+        // outside a repeat they show an out-of-repeat hint).
         expect(messageTypes).toEqual([
             "store", "query", "routeParam", "reactive", "msg", "jsonata",
-            "str", "num", "bool", "json", "date", "flow", "global", "env"
+            "str", "num", "bool", "json", "date", "flow", "global", "env",
+            "item", "index"
         ]);
     });
 
