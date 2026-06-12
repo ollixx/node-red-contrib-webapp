@@ -16,7 +16,7 @@ verify: unit
 spec: docs/nodes/navigation/ui-tabs.md
 tests: tests/e2e/nodes/view/ui-tabs.tests.md
 dependencies: []
-status: pending
+status: in_progress
 ---
 # P167 — ui-tabs: Kinder-definieren-Tabs (Schema + ui-tab-Knoten)
 
