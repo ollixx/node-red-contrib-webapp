@@ -9,7 +9,6 @@
                 name: { value: "" },
                 parent: { value: "" },
                 mount: { value: "", required: true },
-                tabs: { value: "" },
                 // P155 (ADR 0012): `activeTab` (two-way value typedInput) persists the
                 // binding OBJECT; there is no matching #node-input-activeTab element so
                 // Node-RED auto-save cannot clobber it. The typedInput lives on
@@ -75,12 +74,20 @@
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
-    <div class="form-row"><label for="node-input-tabs">Tabs (JSON array)</label><input type="text" id="node-input-tabs" placeholder='[{"id":"tab1","label":"Tab 1"}]'></div>
     <!-- P155 (ADR 0012 / value category): Active Tab binding (two-way) — typedInput managed in oneditprepare/oneditsave. -->
     <div class="form-row"><label for="node-input-activeTabBinding">Active Tab</label><input type="text" id="node-input-activeTabBinding"></div>
+    <div class="form-tips" style="margin-top: 4px;">
+        <b>P168 (ADR 0018):</b> Tabs werden aus den gemounteten <code>ui-tab</code>-Kindern
+        abgeleitet — es gibt <b>kein</b> Tabs-JSON-Feld mehr. Lege je Tab einen
+        <code>ui-tab</code> an und mounte ihn in dieses <code>ui-tabs</code>
+        („Mounten in ui-tabs heißt: werde ein Tab"). Die Tab-IDs müssen eindeutig
+        sein; <b>Active Tab</b> trägt die ID des aktiven Tabs.
+    </div>
 </script>
 <script type="text/html" data-help-name="ui-tabs">
 <p>Tab-Leiste mit einem Slot pro Tab zum Umschalten zwischen Ansichten. Emittiert beim Tab-Wechsel ein Change-Event mit der gewählten Tab-ID.</p>
+<h4>Kinder definieren die Tabs (P168, ADR 0018)</h4>
+<p>Die Tabs werden aus den gemounteten <code>ui-tab</code>-Kindern abgeleitet — <b>kein</b> Tabs-JSON-Feld mehr. Lege je Tab einen <code>ui-tab</code> an und mounte ihn in dieses <code>ui-tabs</code>; der Inhalt des Tabs mountet in den <code>content</code>-Slot des <code>ui-tab</code>. Die Tab-IDs müssen eindeutig sein (die ID ist der Slot-Schlüssel und der <code>activeTab</code>-Wert).</p>
 <h4>Active Tab (P155)</h4>
 <p>Bindbare, <strong>zweiseitige</strong> Quelle des aktiven Tabs (Tab-ID) — voller
 kanonischer Satz (ADR 0012): Store, Query, Route-Param, Reactive, msg, JSONata, string,

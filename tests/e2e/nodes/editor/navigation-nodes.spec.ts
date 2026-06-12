@@ -66,19 +66,16 @@ test.describe("editor panels — ui-accordion (P85)", () => {
     });
 });
 
-test.describe("editor panels — ui-tabs (P85)", () => {
+test.describe("editor panels — ui-tabs / ui-tab (P168 children model)", () => {
     test.afterEach(async ({ request }) => {
         await resetFlow(request);
     });
 
-    test("tabs: tabs JSON array field is present and data persists", async ({ page, request }) => {
-        const tabs = JSON.stringify([
-            { id: "overview", label: "Overview" },
-            { id: "details", label: "Details" }
-        ]);
+    test("tabs: the tabs-JSON field is GONE; name + mount + activeTab remain", async ({ page, request }) => {
+        // P168 (ADR 0018): tabs are derived from ui-tab children — no tabs field.
         const flow = new FlowBuilder()
             .app({ id: "tabsEdApp", root: "tabsEdApp", name: "Tabs App" })
-            .node("ui-tabs", { id: "tabsEd1", tabs })
+            .node("ui-tabs", { id: "tabsEd1" })
             .build();
         await deployFlow(request, flow);
 
@@ -86,12 +83,10 @@ test.describe("editor panels — ui-tabs (P85)", () => {
         await editor.open();
         await editor.openNode("tabsEd1");
 
-        await editor.expectFields(["name", "mount", "tabs"]);
+        await editor.expectFields(["name", "mount", "activeTabBinding"]);
+        // the legacy tabs-JSON field must NOT be present anymore.
+        expect(await page.locator("#node-input-tabs").count()).toBe(0);
         expect(await editor.inputPortCount("tabsEd1")).toBe(1);
-
-        const stored = await editor.readField("tabs");
-        expect(stored).toContain("overview");
-        expect(stored).toContain("details");
     });
 
     test("tabs has 1 output port (static, events stored as field)", async ({ page, request }) => {
@@ -99,7 +94,6 @@ test.describe("editor panels — ui-tabs (P85)", () => {
             .app({ id: "tabsEdApp2", root: "tabsEdApp2" })
             .node("ui-tabs", {
                 id: "tabsEd2",
-                tabs: JSON.stringify([{ id: "t1", label: "T1" }]),
                 events: JSON.stringify(["tabChange"])
             })
             .build();
@@ -109,6 +103,26 @@ test.describe("editor panels — ui-tabs (P85)", () => {
         await editor.open();
         // ui-tabs has 1 static output port.
         expect(await editor.inputPortCount("tabsEd2")).toBe(1);
+    });
+
+    test("tab: ui-tab opens with name + mount + label + icon fields", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "tabEdApp", root: "tabEdApp", name: "Tab App" })
+            .node("ui-tabs", { id: "tabEdTabs" })
+            .node("ui-tab", {
+                id: "tabEd1",
+                uiId: "overview",
+                mount: "ui-tabs:tabEdTabs/content",
+                label: { kind: "literal", value: "Overview" }
+            })
+            .build();
+        await deployFlow(request, flow);
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode("tabEd1");
+
+        await editor.expectFields(["name", "mount", "labelBinding", "icon"]);
     });
 });
 

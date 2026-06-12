@@ -15,8 +15,16 @@ bis hin zu mehrspaltigen Arbeitsansichten.
 
 ## Einordnung
 
+> **P168 / ADR 0018 (Modell 1a): Kinder definieren die Tabs.** Es gibt **kein**
+> `tabs`-JSON-Feld mehr. Jeder Tab ist ein eigener [`ui-tab`](ui-tab.md)-Knoten,
+> der in dieses `ui-tabs` gemountet wird. Der Mount **ist** die Deklaration des
+> Tabs (kein zweite Quelle der Wahrheit, kein Orphan-Problem). Alte Flows mit
+> einem `tabs`-Array werden beim Deploy automatisch migriert (siehe Migration).
+
 - **Parent:** eine `ui-app`, `ui-route`, `ui-dialog` oder ein `ui-container` — via `mount`.
-- **Kinder:** View-Knoten mounten per `mount: tab:<tabId>` in den Slot des jeweiligen Tabs. Slots werden aus der `tabs`-Liste abgeleitet: ein Tab mit `id: "details"` erzeugt den Slot `tab:details`.
+- **Kinder:** ein oder mehrere [`ui-tab`](ui-tab.md)-Knoten, gemountet per `mount: ui-tabs:<tabsId>/content` (der Mount-Picker liefert die äquivalente `container:<tabsId>/content`-Form). Jeder `ui-tab` trägt sein eigenes `label`/`icon`/`order` und einen Default-`content`-Slot für den Tab-Inhalt. „Mounten in ein `ui-tabs` heißt: werde ein Tab."
+- **Slot pro Kind:** Der Renderer erzeugt genau einen Tab/Panel je `ui-tab`-Kind; der Slot-Schlüssel ist die **id des Kindes** (zugleich das Token, das `activeTab` trägt). Inhalt eines Tabs mountet in `ui-tab:<tabId>/content`.
+- **Eindeutigkeit:** Die ids der `ui-tab`-Kinder eines `ui-tabs` müssen **eindeutig** sein — ein Duplikat ist ein sichtbarer Deploy-Fehler (die id ist der Slot-Schlüssel und der `activeTab`-Wert).
 - **Rolle zur Laufzeit:** Der Renderer stellt immer genau den Slot des aktiven Tabs dar und blendet die übrigen aus. Der aktive Tab kann über ein Binding gesteuert werden.
 
 ## Felder
@@ -32,10 +40,13 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 
 ### Gruppe „Tabs"
 
+> **Kein `tabs`-Feld mehr.** Die Tabs werden aus den gemounteten
+> [`ui-tab`](ui-tab.md)-Kindern abgeleitet (P168 / ADR 0018). Lege je Tab einen
+> `ui-tab` an und mounte ihn in dieses `ui-tabs`.
+
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `tabs` | „Tabs (JSON array)" | Textfeld (JSON) | **ja** | Geordnete Liste der Tabs. Jedes Element hat die Form `{ "id": "<bezeichner>", "label": "<anzeigename>" }`. Mindestens ein Tab erforderlich. Die `id` muss innerhalb des Knotens eindeutig sein; sie bestimmt den Slot-Namen (`tab:<id>`) und ist das Token, das `activeTab` trägt. |
-| `activeTab` | „Active Tab" | typedInput (Binding, **zweiseitig**) | optional | Zweiseitiges Binding auf die `id` des derzeit aktiven Tabs (P155 / ADR 0012): liest den aktiven Tab aus dem gebundenen Store/State **und** der Tab-Wechsel emittiert das Change-Event mit der gewählten Tab-ID für den Write-back-Roundtrip. Bindbare Arten: `state`, `store`, `query`, `routeParam`, `literal` sowie Node-RED-Standard-Arten (`msg`, `flow`, `global`, `jsonata`, `env`). Default-Typ: `string`. Ein bestehender `activeTabPath` (plain string) wird automatisch als `state`-Binding übernommen. Default-Wert: erster Tab der Liste. Wird ein ungültiger Wert geliefert, fällt die Komponente auf den ersten Tab zurück. |
+| `activeTab` | „Active Tab" | typedInput (Binding, **zweiseitig**) | optional | Zweiseitiges Binding auf die `id` des derzeit aktiven Tabs = die id eines `ui-tab`-Kindes (P155 / ADR 0012): liest den aktiven Tab aus dem gebundenen Store/State **und** der Tab-Wechsel emittiert das Change-Event mit der gewählten Tab-ID für den Write-back-Roundtrip. Bindbare Arten: `state`, `store`, `query`, `routeParam`, `literal` sowie Node-RED-Standard-Arten (`msg`, `flow`, `global`, `jsonata`, `env`). Default-Typ: `string`. Ein bestehender `activeTabPath` (plain string) wird automatisch als `state`-Binding übernommen. Default-Wert: **erstes `ui-tab`-Kind nach `order`**. Wird ein ungültiger Wert geliefert, fällt die Komponente auf das erste Kind zurück. |
 
 ### Gruppe „Darstellung"
 
@@ -56,17 +67,27 @@ Sichtbarkeit dieser Felder folgt dem Layout-Preset des jeweiligen Parents — ge
 ### Inline-Hilfe (HTML)
 
 Der `data-help-name="ui-tabs"`-Hilfetext soll knapp sein: Zweck (Tab-Leiste,
-ein Slot pro Tab), Hinweis auf `tabs`-JSON-Format (`id`/`label`) und `activeTab`-Binding,
-Hinweis auf Child-Mounting (`tab:<id>`) und ein Link auf die ausführliche Doku:
+ein Slot pro `ui-tab`-Kind), Hinweis auf das Kinder-Modell (je Tab ein `ui-tab`,
+in dieses `ui-tabs` gemountet — „werde ein Tab"), `activeTab`-Binding,
+Eindeutigkeit der Tab-ids und ein Link auf die ausführliche Doku:
 `https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/navigation/ui-tabs.md`.
+
+## Migration (P168 / ADR 0018 §5)
+
+Alte Flows mit einem `tabs:[{id,label}]`-Array werden beim Deploy automatisch in
+das Kinder-Modell überführt: je Array-Eintrag entsteht ein `ui-tab`-Kind
+(`id`/`label` erhalten, gemountet in `ui-tabs:<id>/content`), und Inhalts-Kinder,
+die in den alten abgeleiteten Slot `tab:<id>` gemountet waren, werden auf
+`ui-tab:<id>/content` umgehängt. Die Migration ist verlustfrei und einmalig; ein
+Flow, der bereits im Kinder-Modell vorliegt, bleibt unverändert.
 
 ## Input
 
 `ui-tabs` nimmt Eingangs-Messages entgegen, um seinen Zustand oder seine
 Darstellung zu steuern.
 
-- **`msg.payload`** — setzt den aktiven Tab; der Wert muss einer der `id`-Werte aus der `tabs`-Liste sein. Ungültige Werte werden ignoriert.
-- **`msg.ui.patch`** — überschreibt beliebige Felder der Knoten-Definition (z. B. `tabs`, `activeTab`-Binding, `variant`). Binding-Felder müssen als Binding-Objekt übergeben werden. Format: [inputs.md](../concepts/inputs.md).
+- **`msg.payload`** — setzt den aktiven Tab; der Wert muss die `id` eines `ui-tab`-Kindes sein. Ungültige Werte werden ignoriert (Fallback: erstes Kind).
+- **`msg.ui.patch`** — überschreibt beliebige Felder der Knoten-Definition (z. B. `activeTab`-Binding, `variant`). Binding-Felder müssen als Binding-Objekt übergeben werden. Format: [inputs.md](../concepts/inputs.md).
 - **Component-Operationen** (`msg.ui.component.op`): `show`, `hide` steuern die Sichtbarkeit des gesamten `ui-tabs`-Blocks. Format und Semantik: [inputs.md](../concepts/inputs.md).
 - **Nicht erkannte / fachfremde Messages:** werden **unverändert durchgereicht** (Pass-Through), ohne Fehlerausgabe.
 

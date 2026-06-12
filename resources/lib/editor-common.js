@@ -789,6 +789,39 @@
                 return;
             }
 
+            // P168 (ADR 0018, Model 1a): ui-tabs is a CONTAINER whose children are
+            // `ui-tab`s — mounting INTO a ui-tabs means "become a tab". It carries
+            // a single synthetic "content" slot (the schema's TAB_SLOT); a ui-tab
+            // dropped there mounts via `container:<tabsId>/content` (the renderer
+            // aliases this to `ui-tabs:<id>/content`). Surfaced to the mount picker
+            // through the shared container machinery (no special tab-slot logic).
+            if (node.type === "ui-tabs") {
+                references.containers.push({
+                    id: id,
+                    layoutId: "vertical",
+                    title: node.title || node.name || id,
+                    mount: node.mount || "",
+                    // P168: the hint the picker shows for this drop target —
+                    // mounting here makes the child a tab.
+                    dropHint: "Mounten in ui-tabs heißt: werde ein Tab (ui-tab).",
+                    containerKind: "ui-tabs"
+                });
+                return;
+            }
+
+            // P168 (ADR 0018, Model 1a): ui-tab is a thin CONTAINER child of
+            // ui-tabs with a single default "content" slot for the tab body.
+            if (node.type === "ui-tab") {
+                references.containers.push({
+                    id: id,
+                    layoutId: "vertical",
+                    title: node.title || node.name || id,
+                    mount: node.mount || "",
+                    containerKind: "ui-tab"
+                });
+                return;
+            }
+
             if (node.type === "ui-action" || node.type === "ui-navigation") {
                 references.actions.push({
                     id,

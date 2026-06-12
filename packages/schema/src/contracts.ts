@@ -611,6 +611,13 @@ export const componentKindSchema = z.enum([
     "progress",
     "breadcrumb",
     "tabs",
+    // P168 (ADR 0018, Model 1a): ui-tab — a thin CONTAINER child of ui-tabs. It
+    // carries section metadata (label/icon/order) plus a single default "content"
+    // slot. It renders NO standalone chrome: its parent `tabs` component
+    // enumerates its `ui-tab` children and renders one panel per child (content
+    // mounts via `ui-tab:<tabId>/content`). A stray `tab` not enumerated by a
+    // `tabs` parent is dropped by the renderer.
+    "tab",
     "accordion",
     "menu",
     "avatar",

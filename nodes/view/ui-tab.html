@@ -1,0 +1,114 @@
+<script type="text/javascript" src="resources/node-red-contrib-webapp/lib/editor-common.js"></script>
+<script type="text/javascript">
+    (function () {
+        const common = window.WebappEditorCommon;
+        // P168 (ADR 0018, Model 1a): ui-tab is a thin CONTAINER child of ui-tabs.
+        // It renders no chrome of its own (its parent ui-tabs renders the tab nav +
+        // panel), so the visual base fields are N/A; only `visible` could matter,
+        // but a tab's visibility is governed by the active-tab selection, so the
+        // whole base-field group is N/A here.
+        const BASE_FIELDS = {
+            visible: false,
+            disabled: false,
+            color: false,
+            size: false,
+            variant: false,
+            advanced: [],
+            hints: {
+                visible: "Die Sichtbarkeit eines Tabs steuert die aktive-Tab-Auswahl (activeTab), nicht ein visible-Binding.",
+                disabled: "Ein Tab hat keinen interaktiven Zustand.",
+                color: "Ein Tab rendert keine eigene Chrome.",
+                size: "Ein Tab hat keine einstellbare Größe."
+            }
+        };
+        common.registerNodeType("ui-tab", {
+            category: "webapp view",
+            color: "#f4efcf",
+            defaults: {
+                name: { value: "" },
+                parent: { value: "" },
+                mount: { value: "", required: true },
+                // P168 (ADR 0012/0018): `label` value typedInput — the tab title.
+                // Persists the binding OBJECT on `label`; the typedInput carrier is
+                // #node-input-labelBinding so Node-RED auto-save cannot clobber it.
+                // Legacy `labelPath` (plain string) migrates on open.
+                label: { value: null },
+                labelBinding: { value: "" },
+                labelPath: { value: "" },
+                // P168: optional icon name shown beside the tab label (sl-icon).
+                icon: { value: "" },
+                order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
+                row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
+                col: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
+                colSize: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
+                rowSize: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
+                layoutX: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
+                layoutY: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } }
+            },
+            inputs: 0,
+            outputs: 0,
+            icon: "font-awesome/fa-bookmark",
+            label: common.labelWithName("ui-tab"),
+            onadd: function () {
+                if (!this.name) {
+                    this.name = common.getNextNameDefault("ui-tab", "Tab");
+                }
+            },
+            oneditprepare: function () {
+                // P168: mount picker — mounting INTO a ui-tabs declares this as a tab.
+                common.installReferenceSelectors({ mount: true }).call(this);
+                common.installBaseFields(BASE_FIELDS).call(this);
+                common.installLayoutChildPropRows().call(this);
+
+                // P168 (ADR 0012 value category): `label` value typedInput (full
+                // value-binding set, default type `str`). Migration: a legacy
+                // `labelPath` opens as a literal binding; a stored `label` wins.
+                const storedLabel = common.parseBindingValue(this.label);
+                const labelBinding = storedLabel
+                    ? storedLabel
+                    : (this.labelPath ? { kind: "literal", value: this.labelPath } : undefined);
+                const labelEditor = common.readValueBinding(labelBinding, "");
+                const labelInput = $("#node-input-labelBinding");
+                labelInput.typedInput({
+                    default: labelEditor.type,
+                    types: common.valueBindingTypes({ category: "value" })
+                });
+                labelInput.typedInput("type", labelEditor.type);
+                labelInput.typedInput("value", labelEditor.value);
+            },
+            oneditsave: function () {
+                common.applyBaseFields(BASE_FIELDS).call(this);
+                // P168: persist `label` as a binding object; clear the legacy path.
+                this.label = common.applyValueBinding(
+                    $("#node-input-labelBinding").typedInput("type"),
+                    $("#node-input-labelBinding").typedInput("value")
+                );
+                this.labelPath = "";
+            }
+        });
+    })();
+</script>
+<script type="text/html" data-template-name="ui-tab">
+    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <hr style="margin: 8px 0;">
+    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-row"><label for="node-input-labelBinding">Label</label><input type="text" id="node-input-labelBinding"></div>
+    <div class="form-row"><label for="node-input-icon">Icon</label><input type="text" id="node-input-icon" placeholder="optional, e.g. house"></div>
+    <div class="form-tips" style="margin-top: 4px;">
+        Mount this node into a <code>ui-tabs</code> to make it a tab. Its own id is
+        the tab key (the <code>activeTab</code> value); the ids of all tabs under one
+        ui-tabs must be unique. Mount any content into this node's
+        <code>content</code> slot — that becomes the tab's panel.
+    </div>
+</script>
+<script type="text/html" data-help-name="ui-tab">
+<p>Ein einzelner Tab innerhalb eines <code>ui-tabs</code> (ADR 0018, Modell 1a). Die Tabs eines <code>ui-tabs</code> werden aus seinen <code>ui-tab</code>-Kindern abgeleitet — es gibt kein Tabs-JSON-Feld mehr.</p>
+<h3>Felder</h3>
+<ul>
+  <li><b>Parent Slot</b> — in ein <code>ui-tabs</code> mounten heißt „werde ein Tab". Die Knoten-ID ist der Tab-Schlüssel (der <code>activeTab</code>-Wert) und muss innerhalb eines ui-tabs eindeutig sein.</li>
+  <li><b>Label</b> — der Tab-Titel. Voller kanonischer Bindungssatz (Store, Query, State, literal, …); Default-Typ <code>string</code>.</li>
+  <li><b>Icon</b> — optionaler Icon-Name (<code>sl-icon</code>) neben dem Label.</li>
+  <li><b>Inhalt</b> — mounte beliebige Kinder in den <code>content</code>-Slot dieses Tabs; sie bilden das Panel.</li>
+</ul>
+<p>Doku: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/navigation/ui-tab.md" target="_blank">ui-tab</a>.</p>
+</script>

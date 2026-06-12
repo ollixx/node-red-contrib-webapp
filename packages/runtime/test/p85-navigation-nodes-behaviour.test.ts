@@ -485,33 +485,43 @@ describe("P85: pageChange event dispatched via dispatchClientEvent (ui-paginatio
 //         stepper steps/activeStep
 // ---------------------------------------------------------------------------
 
-describe("P85: ui-tabs mapConfig round-trip", () => {
-    it("tabs list is stored as an array of tab objects", () => {
+describe("P85/P168: ui-tabs + ui-tab mapConfig round-trip (children model)", () => {
+    it("ui-tabs no longer carries a tabs config-array (ADR 0018, Model 1a)", () => {
         const def = h.registry["ui-tabs"].mapConfig({
             id: "t1",
-            parent: h.appId,
-            tabs: JSON.stringify([
-                { id: "tab-x", label: "X" },
-                { id: "tab-y", label: "Y" }
-            ])
+            parent: h.appId
         });
 
-        expect(Array.isArray(def.tabs)).toBe(true);
-        const tabs = def.tabs as Array<{ id: string; label: string }>;
-        expect(tabs).toHaveLength(2);
-        expect(tabs[0]).toMatchObject({ id: "tab-x", label: "X" });
-        expect(tabs[1]).toMatchObject({ id: "tab-y", label: "Y" });
+        // Tabs are now derived from mounted ui-tab children; the node has no
+        // `tabs` field at all.
+        expect(def.tabs).toBeUndefined();
     });
 
     it("activeTab binding is preserved in definition", () => {
         const def = h.registry["ui-tabs"].mapConfig({
             id: "t2",
             parent: h.appId,
-            tabs: JSON.stringify([{ id: "tab-a", label: "A" }]),
             activeTab: { kind: "literal", value: "tab-a" }
         });
 
         expect(def.activeTab).toMatchObject({ kind: "literal", value: "tab-a" });
+    });
+
+    it("ui-tab maps to a tab definition with id, label binding, mount, order", () => {
+        const def = h.registry["ui-tab"].mapConfig({
+            id: "tab-x",
+            mount: "ui-tabs:t3/content",
+            label: { kind: "literal", value: "X" },
+            icon: "house",
+            order: 1
+        }) as Record<string, unknown>;
+
+        expect(def.type).toBe("ui-tab");
+        expect(def.id).toBe("tab-x");
+        expect(def.mount).toBe("ui-tabs:t3/content");
+        expect(def.label).toMatchObject({ kind: "literal", value: "X" });
+        expect(def.icon).toBe("house");
+        expect(def.order).toBe(1);
     });
 });
 

@@ -44,6 +44,7 @@
             "ui-badge": "nodes/view/ui-badge.js",
             "ui-empty-state": "nodes/view/ui-empty-state.js",
             "ui-tabs": "nodes/view/ui-tabs.js",
+            "ui-tab": "nodes/view/ui-tab.js",
             "ui-accordion": "nodes/view/ui-accordion.js",
             "ui-breadcrumb": "nodes/view/ui-breadcrumb.js",
             "ui-menu": "nodes/view/ui-menu.js",

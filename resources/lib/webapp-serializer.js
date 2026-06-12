@@ -334,7 +334,9 @@
             if (component.kind === "input") {
                 return true;
             }
-            if (component.kind === "container") {
+            // P168 (ADR 0018): a `tabs` component nests its per-tab content in
+            // `regions` (like a container), so recurse into them too.
+            if ((component.kind === "container" || component.kind === "tabs") && Array.isArray(component.regions)) {
                 return component.regions.some(regionContainsInput);
             }
             return false;
@@ -830,16 +832,29 @@
         }
 
         if (component.kind === "tabs") {
+            // P168 (ADR 0018, Model 1a): tabs are DERIVED from the ui-tab children.
+            // `component.props.tabs` carries the per-child metadata { id, label,
+            // icon, active } (the renderer resolved each tab's label binding), and
+            // `component.regions` carries one region per child (region.name = the
+            // child/tab id) holding that tab's content subtree. We render one
+            // <sl-tab> (nav) + one <sl-tab-panel> (body) per child; the active tab
+            // is component.value (resolved activeTab, default = first child).
             const tabs = Array.isArray(component.props.tabs) ? component.props.tabs : [];
+            const regions = Array.isArray(component.regions) ? component.regions : [];
             const activeTab = component.value !== undefined && component.value !== null ? String(component.value) : "";
             const tabHtml = tabs.map(function (tab) {
-                const panelId = escapeAttribute(String(tab.id !== undefined ? tab.id : tab));
-                const label = escapeHtml(String(tab.label !== undefined ? tab.label : (tab.id !== undefined ? tab.id : tab)));
-                const active = activeTab && (tab.id !== undefined ? tab.id : tab) === activeTab ? " active" : "";
-                return "<sl-tab slot=\"nav\" panel=\"" + panelId + "\"" + active + ">" + label + "</sl-tab>";
+                const panelId = escapeAttribute(String(tab.id));
+                const iconHtml = tab.icon ? "<sl-icon slot=\"prefix\" name=\"" + escapeAttribute(String(tab.icon)) + "\"></sl-icon>" : "";
+                const label = escapeHtml(String(tab.label !== undefined ? tab.label : tab.id));
+                const active = (activeTab && String(tab.id) === activeTab) || tab.active ? " active" : "";
+                return "<sl-tab slot=\"nav\" panel=\"" + panelId + "\"" + active + ">" + iconHtml + label + "</sl-tab>";
             }).join("");
             const panelHtml = tabs.map(function (tab) {
-                return "<sl-tab-panel name=\"" + escapeAttribute(String(tab.id !== undefined ? tab.id : tab)) + "\"></sl-tab-panel>";
+                const region = regions.find(function (r) { return String(r.name) === String(tab.id); });
+                const body = region
+                    ? region.components.map(function (c) { return renderComponentHtml(c, layoutId, ctx); }).join("")
+                    : "";
+                return "<sl-tab-panel name=\"" + escapeAttribute(String(tab.id)) + "\">" + body + "</sl-tab-panel>";
             }).join("");
             // P38: sl-tab-group fires sl-tab-show (Shoelace custom event) when a tab is
             // selected. The client listens for sl-tab-show on the root element, finds the

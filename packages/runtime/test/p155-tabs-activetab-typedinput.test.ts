@@ -21,15 +21,17 @@ function buildDefinitions(rawNodes: Record<string, unknown>[]) {
 }
 
 /**
- * P155 (ADR 0012) — ui-tabs field-typing wave 2.
+ * P155 (ADR 0012) — ui-tabs activeTab canonical value typedInput.
  *
  * `activeTabPath` → `activeTab` (canonical value typedInput, TWO-WAY: reads the
- * active tab from a Store/state binding AND, on tab change, the existing
- * `tabChange` event carries the new tab so a wired flow writes it back). The
- * canonical field carries a binding OBJECT; the legacy plain-string
- * `activeTabPath` migrates losslessly to `{kind:"state", path}`.
+ * active tab id from a Store/state binding AND, on tab change, the `change`
+ * event carries the new tab so a wired flow writes it back). The canonical field
+ * carries a binding OBJECT; the legacy plain-string `activeTabPath` migrates
+ * losslessly to `{kind:"state", path}`.
  *
- * Scope is ONLY the active tab — the `tabs` list is out of scope.
+ * P168 (ADR 0018, Model 1a): the `tabs` config-array is gone — tabs are derived
+ * from the mounted `ui-tab` children. The mapConfig assertions below no longer
+ * pass a `tabs` field; the read-resolution block mounts two `ui-tab` children.
  */
 describe("P155: ui-tabs — activeTab canonical typedInput", () => {
     const reg = runtimeNodeRegistry["ui-tabs"];
@@ -38,7 +40,6 @@ describe("P155: ui-tabs — activeTab canonical typedInput", () => {
         const def = reg.mapConfig({
             id: "tb1",
             mount: "app1.content",
-            tabs: JSON.stringify([{ id: "a", label: "A" }]),
             activeTab: { kind: "state", path: "view.tab" }
         }) as Record<string, unknown>;
 
@@ -51,7 +52,6 @@ describe("P155: ui-tabs — activeTab canonical typedInput", () => {
         const def = reg.mapConfig({
             id: "tb2",
             mount: "app1.content",
-            tabs: JSON.stringify([{ id: "a", label: "A" }]),
             activeTab: { kind: "store", storeId: "s", path: "tab" }
         }) as Record<string, unknown>;
 
@@ -64,7 +64,6 @@ describe("P155: ui-tabs — activeTab canonical typedInput", () => {
         const def = reg.mapConfig({
             id: "tb3",
             mount: "app1.content",
-            tabs: JSON.stringify([{ id: "a", label: "A" }]),
             activeTab: { kind: "literal", value: "details" }
         }) as Record<string, unknown>;
 
@@ -77,7 +76,6 @@ describe("P155: ui-tabs — activeTab canonical typedInput", () => {
         const def = reg.mapConfig({
             id: "tb4",
             mount: "app1.content",
-            tabs: JSON.stringify([{ id: "a", label: "A" }]),
             activeTabPath: "view.tab"
         }) as Record<string, unknown>;
 
@@ -90,7 +88,6 @@ describe("P155: ui-tabs — activeTab canonical typedInput", () => {
         const def = reg.mapConfig({
             id: "tb5",
             mount: "app1.content",
-            tabs: JSON.stringify([{ id: "a", label: "A" }]),
             activeTab: { kind: "store", storeId: "s", path: "tab" },
             activeTabPath: "legacy.tab"
         }) as Record<string, unknown>;
@@ -103,8 +100,7 @@ describe("P155: ui-tabs — activeTab canonical typedInput", () => {
     it("no activeTab and no activeTabPath leaves activeTab undefined", () => {
         const def = reg.mapConfig({
             id: "tb6",
-            mount: "app1.content",
-            tabs: JSON.stringify([{ id: "a", label: "A" }])
+            mount: "app1.content"
         }) as Record<string, unknown>;
 
         expect(def.activeTab).toBeUndefined();
@@ -114,7 +110,6 @@ describe("P155: ui-tabs — activeTab canonical typedInput", () => {
         const def = reg.mapConfig({
             id: "tb7",
             mount: "app1.content",
-            tabs: JSON.stringify([{ id: "a", label: "A" }]),
             activeTab: { kind: "state", path: "view.tab" },
             events: JSON.stringify(["tabChange"])
         }) as Record<string, unknown>;
@@ -124,21 +119,25 @@ describe("P155: ui-tabs — activeTab canonical typedInput", () => {
 });
 
 /**
- * P155 read-resolution: the activeTab binding routes through bind.value, so the
- * renderer resolves the active tab id (literal / store / state source) and the
- * serializer marks the matching <sl-tab> active. This is the SAME read path
- * P154 established for ui-pagination currentPage.
+ * P155/P168 read-resolution: the activeTab binding routes through bind.value, so
+ * the renderer resolves the active tab id (literal / store / state source). Under
+ * the Model-1a children model (P168) the renderer enumerates the `ui-tab`
+ * children and marks the matching <sl-tab> active. An absent/invalid value falls
+ * back to the first child by order (defaultActiveTabId).
  */
-describe("P155: ui-tabs — activeTab read-resolution into the active sl-tab", () => {
-    const tabs = JSON.stringify([
-        { id: "overview", label: "Overview" },
-        { id: "details", label: "Details" }
-    ]);
+describe("P155/P168: ui-tabs — activeTab read-resolution into the active sl-tab", () => {
+    function tabChildren(tabsId: string) {
+        return [
+            { type: "ui-tab", id: "overview", mount: `ui-tabs:${tabsId}/content`, label: { kind: "literal", value: "Overview" }, order: 0, z: "f1" },
+            { type: "ui-tab", id: "details", mount: `ui-tabs:${tabsId}/content`, label: { kind: "literal", value: "Details" }, order: 1, z: "f1" }
+        ];
+    }
 
     it("a literal activeTab marks the matching sl-tab active", () => {
         const definitions = buildDefinitions([
             { type: "ui-app", id: "tabsResApp", name: "Tabs", root: "tabsResApp", layout: "app", z: "f1" },
-            { type: "ui-tabs", id: "tabsRes1", mount: "tabsResApp.content", tabs, activeTab: { kind: "literal", value: "details" }, z: "f1" }
+            { type: "ui-tabs", id: "tabsRes1", mount: "tabsResApp.content", activeTab: { kind: "literal", value: "details" }, z: "f1" },
+            ...tabChildren("tabsRes1")
         ]);
 
         const result = renderAppPage("tabsResApp", "/", undefined, definitions);
@@ -146,13 +145,20 @@ describe("P155: ui-tabs — activeTab read-resolution into the active sl-tab", (
         // the "details" sl-tab carries the active flag; "overview" does not.
         expect(result.body).toContain("panel=\"details\" active");
         expect(result.body).toContain("panel=\"overview\">");
+        // each child contributes its own panel.
+        expect(result.body).toContain("name=\"overview\"");
+        expect(result.body).toContain("name=\"details\"");
+        // labels come from the resolved per-child label binding.
+        expect(result.body).toContain("Overview");
+        expect(result.body).toContain("Details");
     });
 
     it("a state activeTab resolves the active tab from the store", () => {
         const definitions = buildDefinitions([
             { type: "ui-app", id: "tabsResApp2", name: "Tabs", root: "tabsResApp2", layout: "app", z: "f1" },
             { type: "ui-store", id: "tabsResStore", statePath: "view", initialValue: JSON.stringify({ tab: "details" }), z: "f1" },
-            { type: "ui-tabs", id: "tabsRes2", mount: "tabsResApp2.content", tabs, activeTab: { kind: "state", path: "view.tab" }, z: "f1" }
+            { type: "ui-tabs", id: "tabsRes2", mount: "tabsResApp2.content", activeTab: { kind: "state", path: "view.tab" }, z: "f1" },
+            ...tabChildren("tabsRes2")
         ]);
 
         const result = renderAppPage("tabsResApp2", "/", undefined, definitions);
@@ -164,11 +170,42 @@ describe("P155: ui-tabs — activeTab read-resolution into the active sl-tab", (
         const definitions = buildDefinitions([
             { type: "ui-app", id: "tabsResApp3", name: "Tabs", root: "tabsResApp3", layout: "app", z: "f1" },
             { type: "ui-store", id: "tabsResStore3", statePath: "view", initialValue: JSON.stringify({ tab: "overview" }), z: "f1" },
-            { type: "ui-tabs", id: "tabsRes3", mount: "tabsResApp3.content", tabs, activeTabPath: "view.tab", z: "f1" }
+            { type: "ui-tabs", id: "tabsRes3", mount: "tabsResApp3.content", activeTabPath: "view.tab", z: "f1" },
+            ...tabChildren("tabsRes3")
         ]);
 
         const result = renderAppPage("tabsResApp3", "/", undefined, definitions);
         expect(result.status).toBe(200);
         expect(result.body).toContain("panel=\"overview\" active");
+    });
+
+    it("no activeTab falls back to the first child by order", () => {
+        const definitions = buildDefinitions([
+            { type: "ui-app", id: "tabsResApp4", name: "Tabs", root: "tabsResApp4", layout: "app", z: "f1" },
+            { type: "ui-tabs", id: "tabsRes4", mount: "tabsResApp4.content", z: "f1" },
+            ...tabChildren("tabsRes4")
+        ]);
+
+        const result = renderAppPage("tabsResApp4", "/", undefined, definitions);
+        expect(result.status).toBe(200);
+        // first child by order ("overview", order 0) is the default active tab.
+        expect(result.body).toContain("panel=\"overview\" active");
+    });
+
+    it("renders each ui-tab child's content into its own panel", () => {
+        const definitions = buildDefinitions([
+            { type: "ui-app", id: "tabsResApp5", name: "Tabs", root: "tabsResApp5", layout: "app", z: "f1" },
+            { type: "ui-tabs", id: "tabsRes5", mount: "tabsResApp5.content", activeTab: { kind: "literal", value: "overview" }, z: "f1" },
+            ...tabChildren("tabsRes5"),
+            { type: "ui-text", id: "txtOverview", mount: "ui-tab:overview/content", text: "Overview body", z: "f1" },
+            { type: "ui-text", id: "txtDetails", mount: "ui-tab:details/content", text: "Details body", z: "f1" }
+        ]);
+
+        const result = renderAppPage("tabsResApp5", "/", undefined, definitions);
+        expect(result.status).toBe(200);
+        expect(result.body).toContain("Overview body");
+        expect(result.body).toContain("Details body");
+        // content sits inside the per-tab panels.
+        expect(result.body).toContain("name=\"overview\">");
     });
 });

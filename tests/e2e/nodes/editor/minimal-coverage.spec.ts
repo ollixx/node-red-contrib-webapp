@@ -56,7 +56,9 @@ const VIEW_CASES: Case[] = [
     { type: "ui-menu", fields: ["name", "mount"], inputs: 1 },
     { type: "ui-pagination", fields: ["name", "mount"], inputs: 1 },
     { type: "ui-stepper", fields: ["name", "mount"], inputs: 1 },
-    { type: "ui-tabs", fields: ["name", "mount"], inputs: 1 }
+    { type: "ui-tabs", fields: ["name", "mount"], inputs: 1 },
+    // P168 (ADR 0018): ui-tab — thin container child of ui-tabs, no ports.
+    { type: "ui-tab", fields: ["name", "mount"], inputs: 0 }
 ];
 
 test.describe("editor panels — minimal coverage (P47)", () => {
