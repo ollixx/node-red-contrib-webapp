@@ -61,6 +61,9 @@ const SHOELACE_ICONS_DIR = path.join(__dirname, "..", "resources", "shoelace", "
 const runtimeState = {
     definitions: new Map(),
     queryEtags: new Map(),
+    // P161: per-query debounce timers (keyed by query node id) for the
+    // params-observed out-port refresh, so search-as-you-type coalesces.
+    queryDebounceTimers: new Map(),
     // liveState: appId → merged store state for broadcast (no clientId) updates.
     // Per-client state (clientStateMap) takes precedence when a clientId is present.
     liveState: new Map(),
@@ -909,7 +912,11 @@ function buildQuerySources(state, queries) {
             loading: env.loading === true,
             error: env.error,
             updatedAt: env.updatedAt,
-            status: env.status || "idle"
+            status: env.status || "idle",
+            // P161: paging metadata surfaced via the lifecycle read convention so
+            // `query:<path>.totalCount` / `.pageCount` resolve like `.loading`.
+            totalCount: env.totalCount,
+            pageCount: env.pageCount
         };
     }
     return { queries: dataTree, queryLifecycle: lifecycle };
@@ -935,6 +942,17 @@ function applyQueryMessage(currentState, queryMsg) {
         envelope.loading = false;
         envelope.status = "success";
         envelope.updatedAt = Date.now();
+        // P161: paging metadata travels alongside the data push. A wired fetch
+        // that knows the full result size reports `totalCount` (and optionally
+        // `pageCount`); they live in the SAME envelope so `query:<path>.totalCount`
+        // resolves them via the lifecycle read convention. Absent keys leave the
+        // previous values untouched (a data-only push keeps the last known total).
+        if (Object.prototype.hasOwnProperty.call(queryMsg, "totalCount")) {
+            envelope.totalCount = queryMsg.totalCount;
+        }
+        if (Object.prototype.hasOwnProperty.call(queryMsg, "pageCount")) {
+            envelope.pageCount = queryMsg.pageCount;
+        }
     }
     else if (Object.prototype.hasOwnProperty.call(queryMsg, "error")) {
         envelope.error = queryMsg.error;
@@ -3690,19 +3708,97 @@ function toastInputHandler(node, msg, send, done) {
     }
 }
 
-function triggerParamQueryRefresh(storeId) {
+// Fire one query's refresh: flip its lifecycle to `loading`, push a snapshot so
+// the spinner shows, and emit the refresh on its OUT-PORT carrying the current
+// params. Split out of triggerParamQueryRefresh so the debounce branch can defer
+// exactly this work per query.
+function fireQueryRefresh(nodeId, queryPath, params, appId, clientId) {
     const RED = runtimeState.RED;
     if (!RED) {
         return;
     }
-    for (const registration of runtimeState.definitions.values()) {
-        const def = registration.definition;
-        if (def.type === "ui-query" && def.params === storeId) {
-            const queryNode = RED.nodes.getNode(registration.nodeId);
-            if (queryNode && typeof queryNode.send === "function") {
-                queryNode.send({ ui: { query: { queryPath: def.queryPath, refresh: true } } });
+    let pushedLoading = false;
+    if (appId) {
+        const base = clientId
+            ? (getClientState(appId, clientId)?.state || clone(runtimeState.liveState.get(appId)))
+            : clone(runtimeState.liveState.get(appId));
+        if (base) {
+            const nextState = applyQueryMessage(base, { queryPath, refresh: true });
+            if (nextState) {
+                if (clientId) {
+                    setClientState(appId, clientId, nextState, Date.now());
+                }
+                else {
+                    runtimeState.liveState.set(appId, nextState);
+                }
+                pushedLoading = true;
             }
         }
+    }
+    const queryNode = RED.nodes.getNode(nodeId);
+    if (queryNode && typeof queryNode.send === "function") {
+        const query = { queryPath, refresh: true };
+        if (params !== undefined) {
+            query.params = clone(params);
+        }
+        const refreshMsg = { ui: { query } };
+        // Carry clientId so the wired fetch can target the same client on its
+        // data return (P15 per-client model).
+        if (clientId) {
+            refreshMsg.ui.clientId = clientId;
+        }
+        queryNode.send(refreshMsg);
+    }
+    // Push the loading state so it reaches the client(s) immediately, before the
+    // wired fetch returns.
+    if (pushedLoading && appId) {
+        pushSnapshotToClients(appId, clientId, readDeployDefinitions(RED));
+    }
+}
+
+// P161 (ADR 0016 §3): a ui-query OBSERVES its declared `params`-store reference.
+// When that store changes, every query whose `params` points at it emits a
+// REFRESH on its OUT-PORT — carrying the store's CURRENT value as
+// `msg.ui.query.params` so the wired fetch can page/sort/search by it — and its
+// lifecycle flips to `loading` (pushed to the same target the store write hit:
+// the per-client state when `clientId` is given, else the broadcast state). The
+// data return is NOT here: it arrives later on the IN-PORT (queryInputHandler),
+// so there is no loop. `paramsValue`/`appId`/`clientId` are optional: callers
+// that don't carry them (legacy) still get the bare refresh + out-port emit.
+// Optional per-query `debounceMs` coalesces rapid changes (search-as-you-type).
+function triggerParamQueryRefresh(storeId, paramsValue, appId, clientId) {
+    const RED = runtimeState.RED;
+    if (!RED) {
+        return;
+    }
+    const params = paramsValue !== undefined ? clone(paramsValue) : undefined;
+    for (const registration of runtimeState.definitions.values()) {
+        const def = registration.definition;
+        if (def.type !== "ui-query" || def.params !== storeId) {
+            continue;
+        }
+        const debounceMs = typeof def.debounceMs === "number" && def.debounceMs > 0 ? def.debounceMs : 0;
+        if (debounceMs === 0) {
+            fireQueryRefresh(registration.nodeId, def.queryPath, params, appId, clientId);
+            continue;
+        }
+        // Debounced: coalesce rapid changes (search-as-you-type). Keep the LATEST
+        // params; reset the timer on each change. Keyed by node id so concurrent
+        // queries don't clobber each other.
+        const existing = runtimeState.queryDebounceTimers.get(registration.nodeId);
+        if (existing) {
+            clearTimeout(existing);
+        }
+        const nodeId = registration.nodeId;
+        const queryPath = def.queryPath;
+        const timer = setTimeout(() => {
+            runtimeState.queryDebounceTimers.delete(nodeId);
+            fireQueryRefresh(nodeId, queryPath, params, appId, clientId);
+        }, debounceMs);
+        if (typeof timer.unref === "function") {
+            timer.unref();
+        }
+        runtimeState.queryDebounceTimers.set(nodeId, timer);
     }
 }
 
@@ -5106,7 +5202,11 @@ const runtimeNodeRegistry = {
                     }
                 };
                 send(notificationMsg);
-                triggerParamQueryRefresh(storeDefinition.id);
+                // P161 (ADR 0016 §3): a query observing THIS store re-fetches via
+                // its out-port, carrying the store's current value as params. Read
+                // it from the just-applied state at the store's statePath.
+                const paramsValue = getValueAtPath(applied.nextState, storeDefinition.statePath);
+                triggerParamQueryRefresh(storeDefinition.id, paramsValue, activeAppId, clientId);
 
                 // P31: live push. The node state has changed; push a fresh snapshot
                 // to the targeted client (per-client update) or to every subscriber
@@ -5129,7 +5229,11 @@ const runtimeNodeRegistry = {
             parent: config.parent || undefined,
             queryPath: config.queryPath,
             params: config.params || undefined,
-            refreshAction: config.refreshAction || undefined
+            refreshAction: config.refreshAction || undefined,
+            // P161 (ADR 0016 §3): optional debounce for the params-observed refresh.
+            debounceMs: config.debounceMs !== undefined && config.debounceMs !== "" && config.debounceMs !== null
+                ? Number(config.debounceMs)
+                : undefined
         }),
         options: {
             inputHandler: queryInputHandler

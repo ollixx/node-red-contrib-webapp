@@ -391,8 +391,12 @@ function reportStoreSubPathError(sources: BindingSources, message: string): void
  * P160: reserved lifecycle sub-paths a `query:<path>.<field>` binding may read.
  * `query:<path>` itself resolves the DATA; these suffixes resolve the load-state
  * envelope built alongside the data.
+ *
+ * P161: `totalCount`/`pageCount` join the reserved set so a ui-pagination can
+ * bind `total ← query:<path>.totalCount` (read) — the paging metadata the wired
+ * fetch reports alongside the page of data.
  */
-const QUERY_LIFECYCLE_FIELDS = new Set(["loading", "error", "updatedAt", "status"]);
+const QUERY_LIFECYCLE_FIELDS = new Set(["loading", "error", "updatedAt", "status", "totalCount", "pageCount"]);
 
 /**
  * P160: resolve a `query` binding honouring the read convention:
