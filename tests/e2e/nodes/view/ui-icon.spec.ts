@@ -64,3 +64,52 @@ test.describe("ui-icon render (P83)", () => {
         await expect(webapp.root()).toBeVisible();
     });
 });
+
+/**
+ * P159 — ui-icon size-token SelectBox E2E specs.
+ *
+ * Verifies that each xs..xl size token produces the correct CSS class on the
+ * rendered <sl-icon> element, and that a legacy free CSS value (stored as a
+ * plain string) does not crash the runtime (back-compat migration guard).
+ */
+test.describe("ui-icon size tokens (P159)", () => {
+    test.afterEach(async ({ request }) => {
+        await resetFlow(request);
+    });
+
+    for (const token of ["xs", "sm", "md", "lg", "xl"] as const) {
+        test(`renders with class webapp-icon--${token} for size="${token}"`, async ({ request }) => {
+            const flow = new FlowBuilder()
+                .app({ id: `sizeApp_${token}`, root: `sizeApp_${token}` })
+                .node("ui-icon", { id: `sizeNode_${token}`, icon: "house", size: token })
+                .build();
+
+            await deployFlow(request, flow);
+
+            const res = await request.get(`/webapp/sizeApp_${token}/`);
+            expect(res.ok()).toBeTruthy();
+            const html = await res.text();
+            expect(html).toContain(`webapp-icon--${token}`);
+        });
+    }
+
+    test("legacy free CSS size value does not crash the runtime (migration guard)", async ({ request }) => {
+        // A node stored with size="24" (old free-text field) must not cause a
+        // deploy error or a 500; the page must render the icon without a size class.
+        const flow = new FlowBuilder()
+            .app({ id: "legacySizeApp", root: "legacySizeApp" })
+            .node("ui-icon", { id: "legacySizeNode", icon: "house", size: "24" })
+            .build();
+
+        const deployed = await deployFlow(request, flow);
+        expect(deployed.ok()).toBeTruthy();
+
+        const res = await request.get("/webapp/legacySizeApp/");
+        expect(res.ok()).toBeTruthy();
+        const html = await res.text();
+        // The icon is rendered (no crash).
+        expect(html).toContain("sl-icon");
+        // The legacy size is passed through as a class suffix — not a 500.
+        expect(html).toContain("webapp-icon--24");
+    });
+});

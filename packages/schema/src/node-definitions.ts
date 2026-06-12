@@ -944,7 +944,12 @@ export const uiIconNodeDefinitionSchema = mountableNodeSchema.extend({
     // P69: backend-neutral { library, name } icon value; binding-capable. A bare
     // string is still accepted (back-compat — maps to the default library).
     icon: iconFieldSchema,
-    size: z.enum(["xs", "sm", "md", "lg", "xl"]).optional(),
+    // P159: canonical values are xs/sm/md/lg/xl tokens. A plain string is also
+    // accepted for back-compat with existing nodes that store a legacy free CSS
+    // value (e.g. "24", "1.5rem") — those round-trip through the editor via the
+    // "(bestehend)" option and render as-is. The editor SelectBox only offers the
+    // five tokens; the free value is preserved until the user actively picks a token.
+    size: z.union([z.enum(["xs", "sm", "md", "lg", "xl"]), z.string()]).optional(),
     color: z.string().optional()
 });
 

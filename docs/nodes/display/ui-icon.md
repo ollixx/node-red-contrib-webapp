@@ -42,7 +42,7 @@ Layout-Child-Props).
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `size` | „Größe" | SelectBox (`xs` / `sm` / `md` / `lg` / `xl`) | optional | Größe des Icons. Default: `md`. Das Backend übersetzt die Größenstufe in eine konkrete Pixel- oder em-Größe. |
+| `size` | „Größe" | SelectBox (`xs` / `sm` / `md` / `lg` / `xl`) | optional | Größe des Icons. Default: `md`. Das Backend übersetzt die Größenstufe in eine konkrete Pixel- oder em-Größe. **Migration:** Knoten mit alten freien CSS-Werten (z. B. `24`, `1.5rem`) werden im Editor als `<wert> (bestehend)` angezeigt und brechen nicht — der Wert bleibt erhalten bis der Nutzer aktiv einen Token wählt. |
 | `color` | „Farbe" | Textfeld | optional | Farbe des Icons als CSS-Wert (z. B. `#ff0000`, `red`) oder Design-Token-Name. Ist kein Wert gesetzt, erbt das Icon die Text-/Icon-Farbe des umgebenden Themes (`colorText`). |
 
 ### Gruppe „Platzierung"

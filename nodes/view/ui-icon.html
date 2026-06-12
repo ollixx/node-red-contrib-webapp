@@ -2,6 +2,10 @@
 <script type="text/javascript">
     (function () {
         const common = window.WebappEditorCommon;
+        // P159: size is now a five-step token SelectBox (xs/sm/md/lg/xl), default
+        // "md". Legacy free CSS values (e.g. "24", "1.5rem") round-trip safely —
+        // installIconSizeSelectBox prepends a "<value> (bestehend)" option on first
+        // open so no data is lost; user can migrate to a token at any time.
         common.registerNodeType("ui-icon", {
             category: "webapp view",
             color: "#f4efcf",
@@ -10,7 +14,7 @@
                 parent: { value: "" },
                 mount: { value: "", required: true },
                 icon: { value: "", required: true },
-                size: { value: "" },
+                size: { value: "md" },
                 color: { value: "" },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
@@ -33,6 +37,9 @@
                 common.installReferenceSelectors({ mount: true }).call(this);
                 common.installLayoutChildPropRows().call(this);
                 common.installIconField("#node-input-icon", { title: "Icon auswählen" });
+                // P159: inject the xs..xl size SelectBox (mirrors installSizeSelectBox
+                // mechanism; uses the wider ICON_SIZE_OPTIONS set).
+                common.installIconSizeSelectBox().call(this);
             }
         });
     })();
@@ -42,7 +49,6 @@
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <div class="form-row"><label for="node-input-icon">Icon Name</label><input type="text" id="node-input-icon" placeholder="e.g. home, user, check"></div>
-    <div class="form-row"><label for="node-input-size">Size</label><input type="text" id="node-input-size" placeholder="e.g. 24 or 1.5rem"></div>
     <div class="form-row"><label for="node-input-color">Color</label><input type="text" id="node-input-color" placeholder="e.g. #ff0000 or red"></div>
 </script>
 <script type="text/html" data-help-name="ui-icon"><p>Zeigt ein Icon anhand seines Namens (icon-set-agnostisch).</p></script>
