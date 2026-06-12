@@ -22,16 +22,28 @@
 - Fixtures: `itemBindingFixture`, `indexBindingFixture`,
   `minimalRepeatNodeSetFixture` (Array-Quelle + Kind mit `item.name`).
 
-### Renderer — Template-Klon + Render-Zeit-Scope (P164)
+### Renderer — Template-Klon + Render-Zeit-Scope (P164) — abgedeckt (unit)
 
-- `items`-Array → die Schablone wird n-mal geklont (n = Array-Länge); Objekt →
-  Iteration als `{key,value}`.
-- `item.<pfad>` in einem Kind löst gegen das aktuelle Element auf; `index` gegen
-  die Position.
-- `item`/`index` **außerhalb** eines Repeats → `undefined` (kein Crash).
-- Keyed Morphing: Umsortieren/Einfügen/Löschen erhält Fokus/Scroll der
-  unveränderten Instanzen (Key = `keyField`×childId, sonst Index).
-- Reaktiv: Änderung der `items`-Quelle → Re-Render mit korrekter Instanzzahl.
+> Umgesetzt in `packages/renderer/test/p164-repeat-template-clone.test.ts`
+> (`verify: unit` — diese Snapshot-Tests SIND die Akzeptanz dieser Schicht). Der
+> Browser-Beweis des Gesamt-Flows liegt in P165.
+
+- `items`-Array → die Schablone wird n-mal geklont (n = Array-Länge); leeres Array
+  / Skalar → 0 Klone (kein Crash); Objekt → Iteration als `{key,value}`
+  (`item.key` / `item.value`).
+- `item.<pfad>` (ein-/mehrstufig, z. B. `address.city`) in einem Kind löst gegen
+  das aktuelle Element auf; `index` gegen die Position; verschiedene Instanzen
+  zeigen verschiedene Werte. Bare `item` auf ein Objekt → `"?"` (P104), kein Wurf.
+- `item`/`index` **außerhalb** eines Repeats → `undefined` (greift `fallback`,
+  sonst `"?"`; kein Crash).
+- Keyed Morphing: Per-Instanz-Id `<itemKey>#<childId>` (Key = `keyField`-Wert,
+  sonst Objekt-Eintrags-`key`, sonst Index) bleibt bei Umsortieren/Einfügen/Löschen
+  für unveränderte Instanzen stabil — speist das bestehende keyed Morphing
+  (Fokus/Scroll-Erhalt wird im Browser in P165 bewiesen).
+- Reaktiv: Änderung der `items`-Quelle (Store via `replaceState`, Query via
+  `replaceQueries`) → frischer Snapshot mit korrekter Instanzzahl.
+- Verschachtelte Repeats: Scope-Stapel, innerster Frame gewinnt; Ids verketten
+  beide Ebenen kollisionsfrei (`<aussenKey>#<innenKey>#<childId>`).
 
 ### Editor + Node-Registrierung (P165, browser)
 

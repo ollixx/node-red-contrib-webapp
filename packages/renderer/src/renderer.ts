@@ -1,4 +1,5 @@
 import {
+    REPEAT_SLOT,
     resolveMountReference,
     uiEventMessageSchema,
     type AppModel,
@@ -220,6 +221,24 @@ interface BindingSources {
     // P115: invoked with a distinct reactive failure (already deduped upstream).
     // P131: also the sink for store sub-path speaking errors — same dedup/pipeline.
     reportReactiveError?: ReactiveErrorReporter;
+    // P164 (ADR 0017): the render-time ITEM SCOPE — a STACK of `{item, index}`
+    // frames the renderer pushes as it clones a `ui-repeat` template per element.
+    // `item` / `item.<path>` / `index` bindings resolve against the TOP (innermost)
+    // frame; nested repeats stack, innermost wins. Empty/absent outside any repeat
+    // → an `item`/`index` binding resolves to `undefined` (no throw). This scope is
+    // render-time only — never persisted, never written back to a store (cf.
+    // routeParam). The stack is rebuilt immutably per clone (no mutate/restore).
+    itemScope?: ItemScopeFrame[];
+}
+
+/**
+ * P164 (ADR 0017): one frame of the render-time item scope — the current element
+ * of a `ui-repeat` iteration and its zero-based position. For an OBJECT source the
+ * element is the `{key, value}` entry; for an ARRAY source it is the element value.
+ */
+interface ItemScopeFrame {
+    item: unknown;
+    index: number;
 }
 
 interface ComponentRenderContext {
@@ -491,6 +510,29 @@ function resolveBinding(binding: BindingDefinition | undefined, sources: Binding
             }
 
             resolvedValue = result.value;
+            break;
+        }
+        case "item": {
+            // P164 (ADR 0017): the FIRST scope-local binding kind. `item` resolves
+            // the whole current element of the innermost active repeat; an optional
+            // `path` (e.g. `name`, `address.city`) selects a one-or-more-level field
+            // of it. OUTSIDE any repeat (empty scope stack) → `undefined`, NOT a
+            // throw — a defined "no value" so the editor-validateable misuse renders
+            // cleanly rather than crashing the snapshot.
+            const frame = sources.itemScope?.[sources.itemScope.length - 1];
+            resolvedValue = frame === undefined
+                ? undefined
+                : binding.path
+                    ? getValueAtPath(frame.item, binding.path)
+                    : frame.item;
+            break;
+        }
+        case "index": {
+            // P164 (ADR 0017): the zero-based position of the current element in the
+            // innermost active repeat. Path-free (schema-enforced). Outside any
+            // repeat → `undefined` (no throw), mirroring `item`.
+            const frame = sources.itemScope?.[sources.itemScope.length - 1];
+            resolvedValue = frame === undefined ? undefined : frame.index;
             break;
         }
     }
@@ -971,7 +1013,12 @@ function renderRegions(
         const mountedComponents = appModel.components
             .filter((component) => shouldIncludeMount(component, regionPath))
             .sort(componentSort)
-            .map((component) => toRenderedComponent(component, context, appModel))
+            // P164 (ADR 0017): a `repeat` component carries no rendered chrome — it
+            // EXPANDS in place into n× cloned subtrees, which flatten into THIS
+            // region (flatMap). Every other kind maps to at most one component.
+            .flatMap((component) => component.kind === "repeat"
+                ? expandRepeat(component, context, appModel)
+                : [toRenderedComponent(component, context, appModel)])
             .filter((component): component is RenderedComponent => component !== undefined);
 
         return {
@@ -981,6 +1028,158 @@ function renderRegions(
             components: mountedComponents,
             regions: []
         };
+    });
+}
+
+/**
+ * P164 (ADR 0017): match a `ui-repeat`'s default-slot children. A repeat is a
+ * template container with a single fixed `content` slot (REPEAT_SLOT), so its
+ * children address it exactly as any container child does — `container:<repeatId>/
+ * content`. (A repeat carries no layout, so the `layout:` fallback of the generic
+ * container matcher does not apply.)
+ */
+function createRepeatChildMatcher(
+    repeatId: string
+): (component: ComponentDefinition, regionPath: string[]) => boolean {
+    return (component, regionPath) => {
+        const rawMount = component.mount.trim();
+
+        if (!rawMount.startsWith("container:")) {
+            return false;
+        }
+
+        const separatorIndex = rawMount.indexOf("/");
+
+        if (separatorIndex < 0) {
+            return false;
+        }
+
+        const targetContainerId = rawMount.slice("container:".length, separatorIndex);
+        const regionKey = rawMount.slice(separatorIndex + 1);
+
+        return targetContainerId === repeatId && regionKey === regionPath.join("/");
+    };
+}
+
+/**
+ * P164 (ADR 0017): resolve a repeat's `items` collection into an ordered list of
+ * `{item, index}` scope frames.
+ *  - an ARRAY → one frame per element (`item` = the element).
+ *  - an OBJECT → one frame per OWN entry, in insertion order, with
+ *    `item = { key, value }` (the documented object-iteration shape).
+ *  - anything else (scalar / null / undefined) → no frames (zero clones).
+ * The structural resolver is reused so a store/query slice that is legitimately an
+ * array/object keeps its shape (the display-scalar resolver would reject it).
+ */
+function resolveRepeatItems(items: unknown): ItemScopeFrame[] {
+    if (Array.isArray(items)) {
+        return items.map((item, index) => ({ item, index }));
+    }
+
+    if (items !== null && typeof items === "object") {
+        return Object.entries(items as Record<string, unknown>).map(([key, value], index) => ({
+            item: { key, value },
+            index
+        }));
+    }
+
+    return [];
+}
+
+/**
+ * P164 (ADR 0017): per-instance key field for a repeated element. Stable identity
+ * = the `keyField` value of the element (preferred) else the array index. For an
+ * object source (`item = {key, value}`) the entry `key` is the natural stable key.
+ * The result is stringified — it composes the cloned child id (`<itemKey>#<childId>`)
+ * the serializer stamps as `data-webapp-node`, which feeds the existing keyed morph
+ * so focus/scroll/DOM of unchanged instances survive reorder/insert/delete.
+ */
+function repeatItemKey(frame: ItemScopeFrame, keyField: string | undefined): string {
+    if (keyField) {
+        const fieldValue = getValueAtPath(frame.item, keyField);
+        if (fieldValue !== undefined && fieldValue !== null && fieldValue !== "") {
+            return String(fieldValue);
+        }
+    }
+
+    // Object-source convention: the entry key is the stable identity when present
+    // and no explicit keyField resolved.
+    const record = frame.item;
+    if (!keyField && record !== null && typeof record === "object" && "key" in (record as Record<string, unknown>)) {
+        const entryKey = (record as Record<string, unknown>).key;
+        if (typeof entryKey === "string" && entryKey.length > 0) {
+            return entryKey;
+        }
+    }
+
+    return String(frame.index);
+}
+
+/**
+ * P164 (ADR 0017): EXPAND a `ui-repeat` into its per-item cloned subtrees.
+ *
+ * 1. Resolve `items` (structural — array/object/store/query/reactive slice).
+ * 2. Build one `{item, index}` frame per element (object → `{key,value}` entries).
+ * 3. For each frame, PUSH the frame onto the render-time item-scope stack, render
+ *    the default-slot child subtree against the extended scope, then move on (the
+ *    stack is rebuilt immutably, so there is nothing to pop). Children's `item` /
+ *    `item.<path>` / `index` bindings resolve against the top frame.
+ * 4. RE-ID each cloned component to a stable per-instance id `<itemKey>#<childId>`
+ *    so the serializer stamps a unique `data-webapp-node` and the keyed morph can
+ *    preserve unchanged instances across reorder/insert/delete.
+ *
+ * The repeat itself emits NO wrapper component — its clones flatten into the host
+ * region (the caller flatMaps). Zero items → zero components.
+ */
+function expandRepeat(
+    repeat: ComponentDefinition,
+    context: ComponentRenderContext,
+    appModel: AppModel
+): RenderedComponent[] {
+    // `items` is a structural source (array/object), not a display scalar — resolve
+    // it through the shared structural path so store/query slices keep their shape.
+    const items = resolveStructuralBinding(repeat.bind.items, context.sources);
+    const frames = resolveRepeatItems(items);
+    const keyField = typeof repeat.props.keyField === "string" ? repeat.props.keyField : undefined;
+
+    const childMatcher = createRepeatChildMatcher(repeat.id);
+    const templateChildren = appModel.components
+        .filter((component) => childMatcher(component, [REPEAT_SLOT]))
+        .sort(componentSort);
+
+    return frames.flatMap((frame) => {
+        const itemKey = repeatItemKey(frame, keyField);
+        // Immutable scope extension — the new frame is the innermost (top) one.
+        const scopedContext: ComponentRenderContext = {
+            sources: {
+                ...context.sources,
+                itemScope: [...(context.sources.itemScope ?? []), frame]
+            }
+        };
+
+        return templateChildren
+            .flatMap((child) => {
+                // Stable per-instance identity = itemKey × childId. The clone carries
+                // this composed id so each instance has a unique data-webapp-node.
+                const clone: ComponentDefinition = { ...child, id: `${itemKey}#${child.id}` };
+
+                // P164: NESTED repeats — a repeat inside a repeat's template expands
+                // recursively against the EXTENDED scope (the inner frame becomes the
+                // new innermost = top; `item`/`index` resolve to the innermost, so
+                // the inner level wins). The cloned (re-id'd) inner repeat keeps its
+                // child mounts pointing at the ORIGINAL inner-repeat id, so resolve
+                // the inner template against the original node, not the clone.
+                if (child.kind === "repeat") {
+                    return expandRepeat(child, scopedContext, appModel).map((rendered) => ({
+                        ...rendered,
+                        id: `${itemKey}#${rendered.id}`
+                    }));
+                }
+
+                const rendered = toRenderedComponent(clone, scopedContext, appModel);
+                return rendered === undefined ? [] : [rendered];
+            })
+            .filter((component): component is RenderedComponent => component !== undefined);
     });
 }
 

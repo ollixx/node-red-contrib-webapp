@@ -77,10 +77,36 @@ sind gemountet, nicht verdrahtet). `msg.ui.patch` überschreibt Felder.
 - **Per-Client** wie der übrige Baum (P15).
 - `ui-list` bleibt unangetastet und ist **kein** Zucker über `ui-repeat`.
 
+## Renderer-Verhalten (P164)
+
+Der Renderer setzt den Vertrag oben um (Snapshot-Ebene; der Browser-Beweis ist
+P165):
+
+- **Klon-Zahl:** Array → `n` Klone (`n` = Länge); leeres Array / Skalar → **0**
+  Klone (kein Crash). Objekt → ein Klon pro **eigener** Eigenschaft, in
+  Einfügereihenfolge, mit `item = {key, value}`.
+- **Scope-Auflösung:** `item` (ganzes Element), `item.<pfad>` (ein-/mehrstufig)
+  und `index` (nullbasiert) lösen gegen den **innersten** aktiven Frame auf.
+  `item` ohne Pfad auf ein Objekt-Element ist kein anzeigbarer Skalar → `"?"`
+  (P104), wirft aber **nicht**. Außerhalb eines Repeats → `undefined` (greift den
+  `fallback` der Bindung, sonst `"?"`) — **kein** Wurf.
+- **Per-Instanz-Id:** `<itemKey>#<childId>` mit `itemKey` aus `keyField` (sonst
+  Objekt-Eintrags-`key`, sonst Index). Diese Id wird vom Serializer als
+  `data-webapp-node` gestempelt und speist das bestehende keyed Morphing; bei
+  Reorder/Insert/Delete bleiben die Ids der unveränderten Instanzen stabil.
+- **Reaktiv:** Änderung der `items`-Quelle (Store/Query) → frischer Snapshot mit
+  korrekter Instanzzahl.
+- **Verschachtelung:** Der Scope ist ein **Stapel** — der innerste Frame gewinnt
+  für `item`/`index`. Verschachtelte Repeats expandieren rekursiv; die
+  Per-Instanz-Ids verketten beide Ebenen (`<aussenKey>#<innenKey>#<childId>`),
+  kollisionsfrei. Eine **explizite** Benennung der äußeren Ebene ist Folgearbeit
+  (s. Offene Punkte).
+
 ## Offene Punkte
 
-- Verschachtelte `ui-repeat` (Scope-Stapel mit mehreren `item`-Ebenen — Benennung
-  der äußeren Ebene?).
+- Verschachtelte `ui-repeat`: explizite **Benennung der äußeren Ebene** (heute
+  gewinnt der innerste `item`/`index`-Frame; eine äußere Ebene ist nicht direkt
+  adressierbar).
 - Schreiben aus der Zeile (Stufe 2): item-relatives Schreibziel + Input/Store-
   Vertrag im Repeat.
 - Leerzustand (kein Item) — Zusammenspiel mit `ui-empty-state` ([[P152]]).
