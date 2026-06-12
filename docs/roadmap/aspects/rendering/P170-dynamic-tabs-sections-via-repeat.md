@@ -14,7 +14,7 @@ verify: browser
 spec: docs/nodes/navigation/ui-tabs.md
 tests: tests/e2e/nodes/view/ui-tabs.tests.md
 dependencies: [P165, P168, P169]
-status: pending
+status: in_progress
 ---
 # P170 — Dynamische Tabs/Sektionen via ui-repeat (Capstone)
 
