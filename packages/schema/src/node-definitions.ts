@@ -818,25 +818,202 @@ export type UiEmptyStateNodeDefinition = z.infer<typeof uiEmptyStateNodeDefiniti
 
 // ── P16c: navigation and structure nodes ────────────────────────────────────
 
-const tabItemSchema = z.object({
+// P167 (ADR 0018, Model 1a): legacy `tabs` config-array item shape. Kept ONLY
+// as the INPUT type for the migration mapping (`migrateUiTabsToChildren`); the
+// `ui-tabs` node no longer carries a `tabs` field.
+export const legacyTabItemSchema = z.object({
     id: z.string().min(1),
     label: z.string().min(1)
 });
 
+export type LegacyTabItem = z.infer<typeof legacyTabItemSchema>;
+
+// P167 (ADR 0018, Model 1a): `ui-tabs` slots are derived from its children. A
+// content child mounts into the standard "content" slot of its `ui-tab` parent
+// exactly like any other container child: `ui-tab:<tabId>/content` (= TAB_SLOT).
+// The slot KEY a `ui-tab` contributes to its `ui-tabs` parent is the tab's own
+// id (ADR 0018 §1: "the id is the slot key and the token `activeTab` carries").
+export const TAB_SLOT = "content";
+
+// P167 (ADR 0018): `ui-tab` — a thin CONTAINER child of `ui-tabs`. It carries
+// the section's own metadata (`label`, optional `icon`, `order`) plus a single
+// DEFAULT slot for its content. The MOUNT is the declaration of the tab — there
+// is no second source of truth (no orphan problem). `ui-tab` is children-allowed
+// (container-kind), registered analogously to `ui-container`/`ui-repeat`.
+export const uiTabNodeDefinitionSchema = mountableNodeSchema.extend({
+    type: z.literal("ui-tab"),
+    // The tab's label. Full value-binding set (literal/state/store/query/…) so a
+    // tab title may be static or bound. The editor's value typedInput persists a
+    // binding object; a literal-kind binding holds a plain string.
+    label: bindingSchema,
+    // Optional icon shown beside the label (literal name / icon value / binding).
+    icon: iconFieldSchema.optional()
+    // NOTE: `order` is inherited from `mountableNodeSchema` (an optional integer);
+    // it is the per-tab ordering within the `ui-tabs` parent. The first tab by
+    // `order` is the default `activeTab` (see `defaultActiveTabId`). Tabs without
+    // an `order` sort after ordered tabs, ties broken by declaration order.
+});
+
+export type UiTabNodeDefinition = z.infer<typeof uiTabNodeDefinitionSchema>;
+
 export const uiTabsNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-tabs"),
-    tabs: z.array(tabItemSchema).min(1, "Tabs must declare at least one tab."),
+    // P167 (ADR 0018, Model 1a): the `tabs` JSON config-array is REMOVED. The
+    // tabs are derived from the mounted `ui-tab` children (one slot per child,
+    // slot key = child id). See `uiTabNodeDefinitionSchema` and `TAB_SLOT`.
+    //
     // P155 (ADR 0012): the canonical editor field `activeTab` (two-way value
-    // typedInput: reads the active tab from a Store/state binding + the existing
-    // tab-change event writes the chosen tab back) compiles to this binding. The
-    // legacy `activeTabPath` plain state path is migrated to a state binding by
-    // webapp.js mapConfig / the editor mapper (P137/P154 shim).
+    // typedInput) compiles to this binding. P167 (ADR 0018 §4): `activeTab` now
+    // carries the CHILD ID; the DEFAULT is the first child by `order` (resolved
+    // from the mounted children — see `defaultActiveTabId`). There is no static
+    // default value on this node because the children are not visible to a single
+    // node's schema; an invalid value falls back to the first child (P168).
     activeTab: bindingSchema.optional(),
     variant: z.enum(["line", "contained", "pills"]).optional(),
     events: z.array(z.enum(["tabChange"])).optional()
 });
 
 export type UiTabsNodeDefinition = z.infer<typeof uiTabsNodeDefinitionSchema>;
+
+// ── P167 (ADR 0018): ui-tabs uniqueness + migration (pure functions) ─────────
+
+/**
+ * P167 (ADR 0018 §1): the child ids of a `ui-tabs` MUST be unique within the
+ * parent — a duplicate is a validation error (the id is the slot key and the
+ * `activeTab` token, so a collision would alias two tabs onto one slot).
+ *
+ * This is a pure, registry-level check (the per-node schema cannot see its
+ * siblings). Returns an error string on the first duplicate, or `undefined` when
+ * all ids are unique.
+ */
+export function validateUiTabChildrenUnique(
+    tabChildren: ReadonlyArray<{ id: string }>
+): string | undefined {
+    const seen = new Set<string>();
+    for (const child of tabChildren) {
+        if (seen.has(child.id)) {
+            return `Duplicate ui-tab id '${child.id}' within a ui-tabs — tab ids must be unique (the id is the slot key and the activeTab value).`;
+        }
+        seen.add(child.id);
+    }
+    return undefined;
+}
+
+/**
+ * P167 (ADR 0018 §4): resolve the DEFAULT active tab id — the first child by
+ * `order` (tabs without an `order` sort after ordered tabs, ties broken by
+ * declaration order). Returns `undefined` for an empty child set.
+ */
+export function defaultActiveTabId(
+    tabChildren: ReadonlyArray<{ id: string; order?: number }>
+): string | undefined {
+    if (tabChildren.length === 0) {
+        return undefined;
+    }
+    const sorted = tabChildren
+        .map((child, index) => ({ child, index }))
+        .sort((a, b) => {
+            const ao = a.child.order;
+            const bo = b.child.order;
+            if (ao !== undefined && bo !== undefined && ao !== bo) {
+                return ao - bo;
+            }
+            if (ao !== undefined && bo === undefined) {
+                return -1;
+            }
+            if (ao === undefined && bo !== undefined) {
+                return 1;
+            }
+            return a.index - b.index;
+        });
+    return sorted[0].child.id;
+}
+
+/**
+ * P167 (ADR 0018 §5): build the new content-slot mount for a tab —
+ * `ui-tab:<tabId>/<TAB_SLOT>`.
+ */
+export function uiTabContentMount(tabId: string): string {
+    return `ui-tab:${tabId}/${TAB_SLOT}`;
+}
+
+/**
+ * P167 (ADR 0018 §5): one-shot migration mapping from the LEGACY config-array
+ * model (`ui-tabs` with a `tabs:[{id,label}]` field) to the Model-1a children
+ * model. Pure function — given a legacy `ui-tabs` config plus the content
+ * children that mounted into its legacy `tab:<id>` slots, it returns the
+ * reworked `ui-tabs` (no `tabs` field), one new `ui-tab` child per legacy entry
+ * (id/label preserved, ordered by declaration), and the remapped child mounts
+ * (`tab:<id>` → `ui-tab:<id>/content`).
+ */
+export interface LegacyUiTabsForMigration {
+    /** The legacy `ui-tabs` node id. */
+    id: string;
+    /** The legacy `tabs` config array. */
+    tabs: ReadonlyArray<LegacyTabItem>;
+    /** Optional carried-over fields (mount/parent/activeTab/variant/events). */
+    mount?: string;
+    parent?: string;
+    activeTab?: UiTabsNodeDefinition["activeTab"];
+    variant?: UiTabsNodeDefinition["variant"];
+    events?: UiTabsNodeDefinition["events"];
+}
+
+export interface MigratedChildMount {
+    /** The content node whose mount is being re-pointed. */
+    childId: string;
+    /** The legacy mount string (e.g. `tab:<tabId>`). */
+    legacyMount: string;
+    /** The new mount string pointing at the ui-tab's content slot. */
+    mount: string;
+}
+
+export interface UiTabsMigrationResult {
+    /** The reworked `ui-tabs` node (no `tabs` field). */
+    tabs: UiTabsNodeDefinition;
+    /** One new `ui-tab` child per legacy entry (id/label preserved). */
+    tabChildren: UiTabNodeDefinition[];
+    /** Remapped content-child mounts (`tab:<id>` → new ui-tab content slot). */
+    childMounts: MigratedChildMount[];
+}
+
+export function migrateUiTabsToChildren(
+    legacy: LegacyUiTabsForMigration,
+    /**
+     * Content children currently mounted into a legacy derived tab slot, given as
+     * `{ id, tabId, legacyMount }`. The migration re-points each onto the matching
+     * new `ui-tab`'s content slot.
+     */
+    contentChildren: ReadonlyArray<{ id: string; tabId: string; legacyMount: string }> = []
+): UiTabsMigrationResult {
+    const tabChildren: UiTabNodeDefinition[] = legacy.tabs.map((entry, index) => ({
+        type: "ui-tab",
+        id: entry.id,
+        // The new `ui-tab` mounts into its `ui-tabs` parent's content slot,
+        // contributing the slot keyed by its own id (ADR 0018 §1).
+        mount: `ui-tabs:${legacy.id}/${TAB_SLOT}`,
+        label: { kind: "literal", value: entry.label },
+        order: index
+    }));
+
+    const childMounts: MigratedChildMount[] = contentChildren.map((content) => ({
+        childId: content.id,
+        legacyMount: content.legacyMount,
+        mount: uiTabContentMount(content.tabId)
+    }));
+
+    const tabs: UiTabsNodeDefinition = {
+        type: "ui-tabs",
+        id: legacy.id,
+        ...(legacy.mount !== undefined ? { mount: legacy.mount } : {}),
+        ...(legacy.parent !== undefined ? { parent: legacy.parent } : {}),
+        ...(legacy.activeTab !== undefined ? { activeTab: legacy.activeTab } : {}),
+        ...(legacy.variant !== undefined ? { variant: legacy.variant } : {}),
+        ...(legacy.events !== undefined ? { events: legacy.events } : {})
+    };
+
+    return { tabs, tabChildren, childMounts };
+}
 
 const accordionSectionSchema = z.object({
     id: z.string().min(1),
@@ -1082,6 +1259,7 @@ export const uiNodeDefinitionSchema = z.union([
     uiBadgeNodeDefinitionSchema,
     uiEmptyStateNodeDefinitionSchema,
     uiTabsNodeDefinitionSchema,
+    uiTabNodeDefinitionSchema,
     uiAccordionNodeDefinitionSchema,
     uiBreadcrumbNodeDefinitionSchema,
     uiMenuNodeDefinitionSchema,
@@ -1123,6 +1301,7 @@ const uiNodeSchemaByType: Record<string, z.ZodTypeAny> = {
     "ui-badge": uiBadgeNodeDefinitionSchema,
     "ui-empty-state": uiEmptyStateNodeDefinitionSchema,
     "ui-tabs": uiTabsNodeDefinitionSchema,
+    "ui-tab": uiTabNodeDefinitionSchema,
     "ui-accordion": uiAccordionNodeDefinitionSchema,
     "ui-breadcrumb": uiBreadcrumbNodeDefinitionSchema,
     "ui-menu": uiMenuNodeDefinitionSchema,

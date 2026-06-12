@@ -36,7 +36,12 @@ import {
     storeOperationSchema,
     uiDialogNodeDefinitionSchema,
     validateUiNodeDefinition,
-    validateAppModel
+    validateAppModel,
+    TAB_SLOT,
+    validateUiTabChildrenUnique,
+    defaultActiveTabId,
+    uiTabContentMount,
+    migrateUiTabsToChildren
 } from "../src";
 
 describe("mount parsing", () => {
@@ -650,40 +655,25 @@ describe("P16b feedback and status nodes", () => {
 // ── P16c: navigation and structure nodes ────────────────────────────────────
 
 describe("P16c navigation and structure nodes", () => {
-    it("compiles ui-tabs with 3 tabs to a valid definition", () => {
+    // P167 (ADR 0018, Model 1a): ui-tabs no longer carries a `tabs` config array;
+    // tabs are derived from mounted `ui-tab` children.
+    it("compiles ui-tabs WITHOUT a tabs field (children define tabs)", () => {
         const result = validateUiNodeDefinition({
             type: "ui-tabs",
             id: "tabs1",
-            mount: "route:/dashboard/content",
-            tabs: [
-                { id: "tab1", label: "Overview" },
-                { id: "tab2", label: "Details" },
-                { id: "tab3", label: "Settings" }
-            ]
+            mount: "route:/dashboard/content"
         });
 
         expect(result.success).toBe(true);
         if (result.success && result.data.type === "ui-tabs") {
-            expect(result.data.tabs).toHaveLength(3);
+            expect("tabs" in result.data).toBe(false);
         }
-    });
-
-    it("rejects ui-tabs with empty tabs array", () => {
-        const result = validateUiNodeDefinition({
-            type: "ui-tabs",
-            id: "tabs1",
-            mount: "route:/dashboard/content",
-            tabs: []
-        });
-
-        expect(result.success).toBe(false);
     });
 
     it("rejects ui-tabs without mount or parent", () => {
         const result = validateUiNodeDefinition({
             type: "ui-tabs",
-            id: "tabs1",
-            tabs: [{ id: "tab1", label: "Tab 1" }]
+            id: "tabs1"
         });
 
         expect(result.success).toBe(false);
@@ -1014,6 +1004,148 @@ describe("P16c navigation and structure nodes", () => {
         });
 
         expect(result.success).toBe(true);
+    });
+});
+
+describe("P167 (ADR 0018): ui-tab children define tabs + migration", () => {
+    it("compiles a ui-tab child (label binding, optional icon, order, content slot)", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-tab",
+            id: "tabOverview",
+            mount: "ui-tabs:tabs1/content",
+            label: { kind: "literal", value: "Overview" },
+            icon: "house",
+            order: 0
+        });
+
+        expect(result.success).toBe(true);
+        if (result.success && result.data.type === "ui-tab") {
+            expect(result.data.label).toEqual({ kind: "literal", value: "Overview" });
+            expect(result.data.icon).toBe("house");
+            expect(result.data.order).toBe(0);
+        }
+    });
+
+    it("requires a ui-tab label", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-tab",
+            id: "tabNoLabel",
+            mount: "ui-tabs:tabs1/content"
+        });
+
+        expect(result.success).toBe(false);
+    });
+
+    it("requires a ui-tab mount or parent", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-tab",
+            id: "tabNoMount",
+            label: { kind: "literal", value: "Detached" }
+        });
+
+        expect(result.success).toBe(false);
+    });
+
+    it("accepts a content child mounted into a ui-tab's content slot (per-child slot)", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-text",
+            id: "tabBody",
+            mount: uiTabContentMount("tabOverview"),
+            value: { kind: "literal", value: "hello" }
+        });
+
+        expect(uiTabContentMount("tabOverview")).toBe(`ui-tab:tabOverview/${TAB_SLOT}`);
+        expect(result.success).toBe(true);
+    });
+
+    it("validateUiTabChildrenUnique accepts unique ids and rejects a duplicate", () => {
+        expect(validateUiTabChildrenUnique([{ id: "a" }, { id: "b" }, { id: "c" }])).toBeUndefined();
+
+        const error = validateUiTabChildrenUnique([{ id: "a" }, { id: "b" }, { id: "a" }]);
+        expect(error).toBeDefined();
+        expect(error).toContain("a");
+        expect(error).toMatch(/unique/i);
+    });
+
+    it("defaultActiveTabId = first child by order (then declaration order)", () => {
+        // Explicit order wins regardless of declaration order.
+        expect(
+            defaultActiveTabId([
+                { id: "b", order: 2 },
+                { id: "a", order: 1 },
+                { id: "c", order: 3 }
+            ])
+        ).toBe("a");
+
+        // Tabs WITHOUT order sort after ordered tabs.
+        expect(
+            defaultActiveTabId([
+                { id: "noorder" },
+                { id: "ordered", order: 5 }
+            ])
+        ).toBe("ordered");
+
+        // No order anywhere → declaration order.
+        expect(defaultActiveTabId([{ id: "first" }, { id: "second" }])).toBe("first");
+
+        expect(defaultActiveTabId([])).toBeUndefined();
+    });
+
+    it("migrateUiTabsToChildren maps a legacy tabs array to ui-tab children + remapped mounts", () => {
+        const result = migrateUiTabsToChildren(
+            {
+                id: "tabs1",
+                mount: "route:/dashboard/content",
+                tabs: [
+                    { id: "overview", label: "Overview" },
+                    { id: "details", label: "Details" }
+                ],
+                variant: "pills"
+            },
+            [
+                { id: "bodyOverview", tabId: "overview", legacyMount: "tab:overview" },
+                { id: "bodyDetails", tabId: "details", legacyMount: "tab:details" }
+            ]
+        );
+
+        // Reworked ui-tabs carries no `tabs` field.
+        expect("tabs" in result.tabs).toBe(false);
+        expect(result.tabs).toMatchObject({
+            type: "ui-tabs",
+            id: "tabs1",
+            mount: "route:/dashboard/content",
+            variant: "pills"
+        });
+
+        // One ui-tab child per legacy entry, id/label preserved, ordered.
+        expect(result.tabChildren).toHaveLength(2);
+        expect(result.tabChildren[0]).toEqual({
+            type: "ui-tab",
+            id: "overview",
+            mount: "ui-tabs:tabs1/content",
+            label: { kind: "literal", value: "Overview" },
+            order: 0
+        });
+        expect(result.tabChildren[1].id).toBe("details");
+        expect(result.tabChildren[1].order).toBe(1);
+
+        // tab:<id> content mounts re-pointed at the new ui-tab content slot.
+        expect(result.childMounts).toEqual([
+            { childId: "bodyOverview", legacyMount: "tab:overview", mount: "ui-tab:overview/content" },
+            { childId: "bodyDetails", legacyMount: "tab:details", mount: "ui-tab:details/content" }
+        ]);
+
+        // Round-trip: every migrated ui-tab child validates, ids are unique, and
+        // the default active tab is the first by order.
+        for (const child of result.tabChildren) {
+            const validated = validateUiNodeDefinition(child);
+            expect(validated.success).toBe(true);
+        }
+        expect(validateUiTabChildrenUnique(result.tabChildren)).toBeUndefined();
+        expect(defaultActiveTabId(result.tabChildren)).toBe("overview");
+
+        const validatedTabs = validateUiNodeDefinition(result.tabs);
+        expect(validatedTabs.success).toBe(true);
     });
 });
 
