@@ -10,6 +10,13 @@
                 parent: { value: "" },
                 mount: { value: "", required: true },
                 steps: { value: "" },
+                // P156 (ADR 0012): `activeStep` (two-way value typedInput) persists the
+                // binding OBJECT; there is no matching #node-input-activeStep element so
+                // Node-RED auto-save cannot clobber it. The typedInput lives on
+                // #node-input-activeStepBinding. Legacy `activeStepPath` (pre-P156 plain
+                // state path) is kept for migration only.
+                activeStep: { value: null },
+                activeStepBinding: { value: "" },
                 activeStepPath: { value: "" },
                 orientation: { value: "horizontal" },
                 events: { value: "" },
@@ -34,6 +41,33 @@
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
                 common.installLayoutChildPropRows().call(this);
+
+                // P156 (ADR 0012 / value category): `activeStep` typedInput — full
+                // canonical set with literal default type `str` (a step id). This is the
+                // TWO-WAY input value: it reads the active step from the bound Store/state
+                // AND the step-change event carries the chosen step id for the wired
+                // write-back loop. Migration: a legacy `activeStepPath` plain string
+                // becomes a state binding; a stored `activeStep` binding wins.
+                const storedActive = common.parseBindingValue(this.activeStep);
+                const activeBinding = storedActive
+                    ? storedActive
+                    : (this.activeStepPath ? { kind: "state", path: this.activeStepPath } : undefined);
+                const activeEditor = common.readValueBinding(activeBinding, "");
+                const activeInput = $("#node-input-activeStepBinding");
+                activeInput.typedInput({
+                    default: activeEditor.type,
+                    types: common.valueBindingTypes({ category: "value" })
+                });
+                activeInput.typedInput("type", activeEditor.type);
+                activeInput.typedInput("value", activeEditor.value);
+            },
+            oneditsave: function () {
+                // P156: persist activeStep as a binding object; clear the legacy path.
+                this.activeStep = common.applyValueBinding(
+                    $("#node-input-activeStepBinding").typedInput("type"),
+                    $("#node-input-activeStepBinding").typedInput("value")
+                );
+                this.activeStepPath = "";
             }
         });
     })();
@@ -43,7 +77,8 @@
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <div class="form-row"><label for="node-input-steps">Steps (JSON array)</label><input type="text" id="node-input-steps" placeholder='[{"id":"s1","label":"Step 1"},{"id":"s2","label":"Step 2"}]'></div>
-    <div class="form-row"><label for="node-input-activeStepPath">Active Step Path</label><input type="text" id="node-input-activeStepPath" placeholder="e.g. wizard.step"></div>
+    <!-- P156 (ADR 0012 / value category): Active Step binding (two-way) — typedInput managed in oneditprepare/oneditsave. -->
+    <div class="form-row"><label for="node-input-activeStepBinding">Active Step</label><input type="text" id="node-input-activeStepBinding"></div>
     <div class="form-row"><label for="node-input-orientation">Orientation</label>
         <select id="node-input-orientation">
             <option value="horizontal">Horizontal</option>
@@ -51,4 +86,15 @@
         </select>
     </div>
 </script>
-<script type="text/html" data-help-name="ui-stepper"><p>Multi-step process indicator for guided workflows.</p></script>
+<script type="text/html" data-help-name="ui-stepper">
+<p>Mehrschritt-Prozessanzeige für geführte Workflows. Emittiert beim Schrittwechsel ein Change-Event mit der gewählten Step-ID.</p>
+<h4>Active Step (P156)</h4>
+<p>Bindbare, <strong>zweiseitige</strong> Quelle des aktiven Schritts (Step-ID) — voller
+kanonischer Satz (ADR 0012): Store, Query, Route-Param, Reactive, msg, JSONata, string,
+number, boolean, json, timestamp, Flow, Global, Env. Liest den aktiven Schritt aus dem
+gebundenen Store/State; der Schrittwechsel emittiert das Change-Event mit der neuen
+Step-ID, das im Flow zurück in den Store geschrieben wird (Roundtrip). Default-Typ:
+<code>string</code>. Ein bestehender <code>activeStepPath</code> wird automatisch als
+<code>state</code>-Binding übernommen.</p>
+<p>Doku: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/navigation/ui-stepper.md" target="_blank">ui-stepper</a>.</p>
+</script>

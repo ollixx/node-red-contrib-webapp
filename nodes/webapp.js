@@ -1304,7 +1304,11 @@ function toComponentDefinitions(components) {
                     // bind.totalPages (resolved by the renderer); only a plain literal
                     // value stays in props as a static fallback.
                     ...(component.totalPages !== undefined && !totalPagesBinding ? { totalPages: component.totalPages } : {}),
-                    ...(component.activeStep !== undefined ? { activeStep: component.activeStep } : {}),
+                    // P156 (ADR 0012): when `activeStep` is a binding it routes through
+                    // bind.value (resolved by the renderer into component.value); only a
+                    // plain literal index stays in props as a static fallback so the
+                    // serializer's Number(activeStep) does not see a binding object.
+                    ...(component.activeStep !== undefined && !activeStepBinding ? { activeStep: component.activeStep } : {}),
                     // Store domain-specific events (itemClick, change, etc.) in props
                     // so they reach the serializer without failing Zod event-name validation.
                     ...(Array.isArray(component.events) && component.events.length > 0 ? { componentEvents: component.events } : {}),

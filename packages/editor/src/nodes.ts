@@ -349,6 +349,10 @@ export interface UiPaginationEditorConfig extends MountableEditorConfig {
 
 export interface UiStepperEditorConfig extends MountableEditorConfig {
     steps?: string;
+    // P156 (ADR 0012): `activeStep` is the canonical two-way value typedInput
+    // (persisted as a binding object). The legacy `activeStepPath` plain state
+    // path is kept for migration only.
+    activeStep?: BindingDefinition;
     activeStepPath?: string;
     orientation?: "horizontal" | "vertical";
     events?: string;
@@ -1405,7 +1409,11 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         id: config.id ?? "",
         mount: config.mount ?? "",
         steps: JSON.parse(config.steps ?? "[]"),
-        activeStep: stateBinding(config.activeStepPath ?? ""),
+        // P156 (ADR 0012): prefer the canonical `activeStep` binding object; migrate
+        // a legacy `activeStepPath` plain state path to a state binding (mirrors ui-tabs P155).
+        activeStep: isBindingObject(config.activeStep)
+            ? config.activeStep
+            : (config.activeStepPath ? stateBinding(config.activeStepPath) : undefined),
         variant: config.orientation,
         ...collectLayoutChildConfig(config)
     })),

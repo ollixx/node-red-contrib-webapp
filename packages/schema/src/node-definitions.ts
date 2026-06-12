@@ -904,7 +904,12 @@ export type UiPaginationNodeDefinition = z.infer<typeof uiPaginationNodeDefiniti
 export const uiStepperNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-stepper"),
     steps: z.array(z.object({ id: z.string().min(1), label: z.string().min(1) })).min(2, "Stepper must declare at least two steps."),
-    activeStep: bindingSchema,
+    // P156 (ADR 0012): the canonical editor field `activeStep` (two-way value
+    // typedInput: reads the active step from a Store/state binding + the existing
+    // step-change event writes the chosen step back) compiles to this binding. The
+    // legacy `activeStepPath` plain state path is migrated to a state binding by
+    // webapp.js toComponentDefinitions / the editor mapper (mirrors ui-tabs P155).
+    activeStep: bindingSchema.optional(),
     variant: z.enum(["horizontal", "vertical"]).optional(),
     linear: z.boolean().optional(),
     events: z.array(z.enum(["stepChange", "complete"])).optional()
