@@ -6,7 +6,7 @@ findings:
   - "Owner (2026-06-11): 'componenten > set von Knoten, wiederverwendbar (definition / instanz)'."
   - "Owner-Entscheidung (2026-06-12): Subflow-Unterbau ZUERST prüfen (node-red first); geht es sauber → Subflow-Weg, sonst eigener ui-component-Knoten."
 dependencies: []
-status: pending
+status: in_progress
 ---
 # P166 — Component-Unterbau: Subflow-Feasibility-Spike
 
