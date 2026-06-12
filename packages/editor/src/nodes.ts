@@ -34,6 +34,7 @@ import {
     type UiTabsNodeDefinition,
     type UiTabNodeDefinition,
     type UiAccordionNodeDefinition,
+    type UiAccordionSectionNodeDefinition,
     type UiBreadcrumbNodeDefinition,
     type UiMenuNodeDefinition,
     type UiPaginationNodeDefinition,
@@ -350,10 +351,24 @@ export interface UiTabEditorConfig extends MountableEditorConfig {
     icon?: string;
 }
 
+// P169 (ADR 0018, Model 1a): the `sections` JSON config field is REMOVED —
+// sections are derived from mounted `ui-accordion-section` children. The
+// open-state is the canonical two-way `openSection` binding (mirror of ui-tabs
+// `activeTab`); the legacy `openSectionPath` plain state path is migration-only.
 export interface UiAccordionEditorConfig extends MountableEditorConfig {
-    items?: string;
+    openSection?: BindingDefinition;
+    openSectionPath?: string;
     multiple?: boolean;
     events?: string;
+}
+
+// P169 (ADR 0018): `ui-accordion-section` editor config — a container child of
+// ui-accordion carrying label/icon/order plus a default content slot. Mirror of
+// UiTabEditorConfig.
+export interface UiAccordionSectionEditorConfig extends MountableEditorConfig {
+    label?: BindingDefinition;
+    labelPath?: string;
+    icon?: string;
 }
 
 export interface UiBreadcrumbEditorConfig extends MountableEditorConfig {
@@ -507,6 +522,7 @@ export type NodeEditorDefinition =
     | BaseEditorNodeDefinition<UiTabsEditorConfig, UiTabsNodeDefinition>
     | BaseEditorNodeDefinition<UiTabEditorConfig, UiTabNodeDefinition>
     | BaseEditorNodeDefinition<UiAccordionEditorConfig, UiAccordionNodeDefinition>
+    | BaseEditorNodeDefinition<UiAccordionSectionEditorConfig, UiAccordionSectionNodeDefinition>
     | BaseEditorNodeDefinition<UiBreadcrumbEditorConfig, UiBreadcrumbNodeDefinition>
     | BaseEditorNodeDefinition<UiMenuEditorConfig, UiMenuNodeDefinition>
     | BaseEditorNodeDefinition<UiPaginationEditorConfig, UiPaginationNodeDefinition>
@@ -1483,16 +1499,37 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         ...(config.icon ? { icon: config.icon } : {}),
         ...collectLayoutChildConfig(config)
     })),
+    // P169 (ADR 0018, Model 1a): the `sections` JSON field is REMOVED. Sections are
+    // derived from mounted `ui-accordion-section` children; the open-state is the
+    // canonical two-way `openSection` binding (mirror of ui-tabs `activeTab`). A
+    // legacy `openSectionPath` plain state path migrates to a state binding.
     "ui-accordion": createDefinition("ui-accordion", "view", {
         id: requiredString("Accordion IDs are required before deploy."),
-        mount: requiredString("Accordion must declare a parent slot."),
-        items: requiredString("Accordion must declare at least one item.")
+        mount: requiredString("Accordion must declare a parent slot.")
     }, (config: UiAccordionEditorConfig): UiAccordionNodeDefinition => ({
         type: "ui-accordion",
         id: config.id ?? "",
         mount: config.mount ?? "",
-        sections: JSON.parse(config.items ?? "[]"),
+        openSection: isBindingObject(config.openSection)
+            ? config.openSection
+            : (config.openSectionPath ? stateBinding(config.openSectionPath) : undefined),
         multiple: config.multiple,
+        ...collectLayoutChildConfig(config)
+    })),
+    // P169 (ADR 0018): `ui-accordion-section` registration — a container child of
+    // ui-accordion with label/icon/order (mirror of ui-tab).
+    "ui-accordion-section": createDefinition("ui-accordion-section", "view", {
+        id: requiredString("Section IDs are required before deploy."),
+        mount: requiredString("Sections must declare a parent ui-accordion slot."),
+        order: optionalInteger("Section order must be an integer.")
+    }, (config: UiAccordionSectionEditorConfig): UiAccordionSectionNodeDefinition => ({
+        type: "ui-accordion-section",
+        id: config.id ?? "",
+        mount: config.mount ?? "",
+        label: isBindingObject(config.label)
+            ? config.label
+            : literalBinding(config.labelPath ?? ""),
+        ...(config.icon ? { icon: config.icon } : {}),
         ...collectLayoutChildConfig(config)
     })),
     "ui-breadcrumb": createDefinition("ui-breadcrumb", "view", {

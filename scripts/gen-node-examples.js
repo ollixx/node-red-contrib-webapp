@@ -827,21 +827,30 @@ examples.push(inputNodeExample({
             uiApp(A, T, { name: "Accordion App" }),
 
             // Output: sectionOpen / sectionClose events
+            // P169 (ADR 0018, Model 1a): sections are derived from
+            // ui-accordion-section children. A legacy `sections` JSON is migrated at
+            // deploy into ui-accordion-section children (mirror of the ui-tabs
+            // example, which still rides the migration path).
             { ...viewNode("ui-accordion", NODE, A, R, T, {
                 name: "FAQ accordion",
-                items: JSON.stringify([
-                    { id: "q1", label: "What is node-red-contrib-webapp?", content: "A set of declarative UI nodes for Node-RED to build web apps without custom HTML." },
-                    { id: "q2", label: "How does routing work?", content: "Each ui-route node defines a URL path. Navigation is handled by ui-action nodes." },
-                    { id: "q3", label: "Can I use it with my existing flows?", content: "Yes — nodes emit standard msg.ui events on their output port, compatible with any Node-RED node." }
-                ])
+                sections: JSON.stringify([
+                    { id: "q1", label: "What is node-red-contrib-webapp?" },
+                    { id: "q2", label: "How does routing work?" },
+                    { id: "q3", label: "Can I use it with my existing flows?" }
+                ]),
+                openSection: { kind: "literal", value: "q1" }
             }), wires: [[DBG]] },
+
+            // Content per section slot (legacy section:<id> mounts migrate to
+            // ui-accordion-section:<id>/content at deploy).
+            viewNode("ui-text", "accQ1", A, R, T, { name: "q1 content", mount: "section:q1", text: "A set of declarative UI nodes for Node-RED to build web apps without custom HTML.", x: 700, y: 200 }),
+            viewNode("ui-text", "accQ2", A, R, T, { name: "q2 content", mount: "section:q2", text: "Each ui-route node defines a URL path. Navigation is handled by ui-action nodes.", x: 700, y: 280 }),
+            viewNode("ui-text", "accQ3", A, R, T, { name: "q3 content", mount: "section:q3", text: "Yes — nodes emit standard msg.ui events on their output port, compatible with any Node-RED node.", x: 700, y: 360 }),
 
             debugNode(DBG, T, "sectionOpen / sectionClose events", 280),
 
-            // Inject: update items at runtime
-            injectPayload("inj-items", T, "Update items",
-                JSON.stringify([{ id: "new", label: "New Section", content: "Injected at runtime." }]),
-                "json", NODE, 480)
+            // Inject: programmatically open a section
+            injectPayload("inj-section", T, "Open Q2 section", "q2", "str", NODE, 480)
         ]
     });
 }

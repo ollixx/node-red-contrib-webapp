@@ -125,6 +125,8 @@ const WEBAPP_NODE_TYPES = new Set([
     // P168 (ADR 0018, Model 1a): ui-tab — thin container child of ui-tabs.
     "ui-tab",
     "ui-accordion",
+    // P169 (ADR 0018, Model 1a): ui-accordion-section — thin container child of ui-accordion.
+    "ui-accordion-section",
     "ui-breadcrumb",
     "ui-menu",
     "ui-pagination",
@@ -1129,6 +1131,67 @@ function migrateLegacyTabComponents(components) {
     return [...remapped, ...syntheticChildren];
 }
 
+// P169 (ADR 0018, Model 1a): mirror of migrateLegacyTabComponents for
+// ui-accordion. Synthesizes `ui-accordion-section` children from a legacy
+// `sections` config array and re-points legacy `section:<id>` content mounts onto
+// the new section content slots.
+function migrateLegacyAccordionComponents(components) {
+    // Accept BOTH the raw `sections` array (when migration runs on un-mapped
+    // configs) and the `legacySections` carrier that ui-accordion mapConfig keeps.
+    const legacySectionsOf = (c) => {
+        if (Array.isArray(c.legacySections) && c.legacySections.length > 0) { return c.legacySections; }
+        if (Array.isArray(c.sections) && c.sections.length > 0) { return c.sections; }
+        return null;
+    };
+    const legacyAccordionNodes = components.filter((c) => c && c.type === "ui-accordion" && legacySectionsOf(c));
+
+    if (legacyAccordionNodes.length === 0) {
+        return components;
+    }
+
+    const sectionIdToAccordionId = new Map();
+    const syntheticChildren = [];
+    const migratedAccordionIds = new Set();
+
+    for (const accNode of legacyAccordionNodes) {
+        migratedAccordionIds.add(accNode.id || accNode.uiId);
+        const accId = accNode.id || accNode.uiId;
+        (legacySectionsOf(accNode) || []).forEach((entry, index) => {
+            const sectionId = (entry && (entry.id !== undefined ? String(entry.id) : String(entry))) || String(index);
+            const label = entry && entry.label !== undefined ? String(entry.label) : sectionId;
+            sectionIdToAccordionId.set(sectionId, accId);
+            syntheticChildren.push({
+                type: "ui-accordion-section",
+                id: sectionId,
+                uiId: sectionId,
+                mount: `ui-accordion:${accId}/${"content"}`,
+                label: { kind: "literal", value: label },
+                order: index
+            });
+        });
+    }
+
+    const remapped = components.map((c) => {
+        if (!c) { return c; }
+        // Strip the legacy `sections` / `legacySections` carriers from migrated ui-accordion.
+        if (c.type === "ui-accordion" && migratedAccordionIds.has(c.id || c.uiId)) {
+            const { sections, legacySections, ...rest } = c;
+            return rest;
+        }
+        // Re-point legacy content children mounted at `section:<sectionId>`.
+        const rawMount = typeof c.mount === "string" ? c.mount.trim() : "";
+        if (rawMount.startsWith("section:")) {
+            const sectionId = rawMount.slice("section:".length).split("/")[0];
+            if (sectionIdToAccordionId.has(sectionId)) {
+                return { ...c, mount: `ui-accordion-section:${sectionId}/content` };
+            }
+        }
+        return c;
+    });
+
+    return [...remapped, ...syntheticChildren];
+}
+
 function toComponentDefinitions(components) {
     return components.map((component) => {
         if (component.type === "ui-text") {
@@ -1346,6 +1409,30 @@ function toComponentDefinitions(components) {
             };
         }
 
+        // P169 (ADR 0018, Model 1a): ui-accordion-section — a thin CONTAINER child
+        // of ui-accordion (mirror of ui-tab). It maps to the renderer kind
+        // "accordion-section"; it emits no standalone chrome (its parent
+        // `accordion` enumerates it and renders its panel). `label` is a value
+        // binding routed through bind.label so the renderer resolves it to the
+        // section title; `icon` is a static prop. Content children mount via
+        // `ui-accordion-section:<id>/content` (= ACCORDION_SECTION_SLOT).
+        if (component.type === "ui-accordion-section") {
+            const layoutProps = collectNormalizedLayoutProps(component);
+            const labelBinding = getBinding(component.label, undefined);
+            return {
+                id: component.id,
+                kind: "accordion-section",
+                mount: component.mount || component.parent,
+                order: toOptionalNumber(component.order),
+                bind: labelBinding ? { label: labelBinding } : {},
+                props: {
+                    ...(blankToUndefined(component.icon) ? { icon: component.icon } : {}),
+                    ...(Object.keys(layoutProps).length > 0 ? { layout: layoutProps } : {})
+                },
+                events: []
+            };
+        }
+
         // P25: P16x interactive kinds — each maps to its semantic kind so the
         // renderer snapshot carries the correct kind and renderComponentHtml can
         // produce the right Shoelace element (or semantic-HTML fallback).
@@ -1417,6 +1504,12 @@ function toComponentDefinitions(components) {
             // flow writes that id back to the bound store and the activeTab binding
             // reads it back reactively. Legacy: `activeTabPath` plain state path.
             const activeTabBinding = !valueBinding && p16Kind === "tabs" ? getBinding(component.activeTab, component.activeTabPath ? stateBinding(component.activeTabPath) : undefined) : undefined;
+            // P169 (ADR 0018 §4): ui-accordion `openSection` mirrors the ui-tabs
+            // `activeTab` TWO-WAY path — it resolves through bind.value into
+            // resolvedProps.value (read source), which the renderer uses to mark the
+            // open section (default = first child by order). Legacy `openSectionPath`
+            // plain state path migrates here.
+            const openSectionBinding = !valueBinding && p16Kind === "accordion" ? getBinding(component.openSection, component.openSectionPath ? stateBinding(component.openSectionPath) : undefined) : undefined;
             const itemsBinding = !valueBinding && p16Kind === "list" ? getBinding(component.items, component.itemsPath ? stateBinding(component.itemsPath) : undefined) : undefined;
             // P157 (ADR 0012): ui-menu `items` is a STRUCTURAL array binding (the
             // menu renders its entries itself — NOT a repeats/slot case, vgl. P140).
@@ -1445,6 +1538,9 @@ function toComponentDefinitions(components) {
             }
             else if (activeTabBinding) {
                 bind.value = activeTabBinding;
+            }
+            else if (openSectionBinding) {
+                bind.value = openSectionBinding;
             }
             else if (itemsBinding) {
                 bind.value = itemsBinding;
@@ -1711,7 +1807,7 @@ function getAppModelResult(appId, definitions) {
                 closable: dialog.closable !== false
             }))
             .sort((left, right) => left.id.localeCompare(right.id)),
-        components: toComponentDefinitions(migrateLegacyTabComponents(buckets.components))
+        components: toComponentDefinitions(migrateLegacyAccordionComponents(migrateLegacyTabComponents(buckets.components)))
     };
 
     const validation = appModelSchema.safeParse(modelCandidate);
@@ -2465,6 +2561,65 @@ function validateUiTabChildrenUniqueness(RED) {
     return issues;
 }
 
+// P169 (ADR 0018 §1): mirror of parseTabsHostFromMount/validateUiTabChildrenUniqueness
+// for ui-accordion-section. Parses the owning ui-accordion id from a section's
+// mount (`ui-accordion:<id>/...` or `container:<id>/...`) and flags a duplicate
+// section id within one ui-accordion (a collision aliases two sections onto one
+// panel). Returns one issue per offending node for a visible red status + error.
+function parseAccordionHostFromMount(mount) {
+    const raw = typeof mount === "string" ? mount.trim() : "";
+    const heads = ["ui-accordion:", "container:"];
+    for (const head of heads) {
+        if (raw.startsWith(head)) {
+            const sep = raw.indexOf("/");
+            if (sep < 0) { return ""; }
+            return raw.slice(head.length, sep);
+        }
+    }
+    return "";
+}
+
+function validateUiAccordionSectionChildrenUniqueness(RED) {
+    const issues = [];
+    let nodes;
+    try {
+        const flowFilePath = getFlowFilePath(RED);
+        if (!fs.existsSync(flowFilePath)) { return issues; }
+        const parsed = JSON.parse(fs.readFileSync(flowFilePath, 'utf8'));
+        nodes = Array.isArray(parsed) ? parsed : [];
+    }
+    catch { return issues; }
+
+    const sectionNodes = nodes.filter((n) => n && n.type === 'ui-accordion-section');
+    // host (ui-accordion id) → Map<sectionId, node[]>
+    const byHost = new Map();
+    for (const n of sectionNodes) {
+        const host = parseAccordionHostFromMount(n.mount);
+        if (!host) { continue; }
+        const sectionId = (n.id || n.uiId || '').trim();
+        if (!sectionId) { continue; }
+        if (!byHost.has(host)) { byHost.set(host, new Map()); }
+        const bySectionId = byHost.get(host);
+        if (bySectionId.has(sectionId)) { bySectionId.get(sectionId).push(n); }
+        else { bySectionId.set(sectionId, [n]); }
+    }
+
+    for (const [host, bySectionId] of byHost.entries()) {
+        for (const [sectionId, group] of bySectionId.entries()) {
+            if (group.length < 2) { continue; }
+            for (const n of group) {
+                issues.push({
+                    nodeId: n.id,
+                    host,
+                    sectionId,
+                    message: `Duplicate ui-accordion-section id '${sectionId}' within ui-accordion '${host}' — section ids must be unique (the id is the slot key and the open-state value).`
+                });
+            }
+        }
+    }
+    return issues;
+}
+
 function getDefinitionBuckets(appId, definitions) {
     const matchingApp = definitions.find((entry) => entry.type === "ui-app" && (entry.id === appId || entry.root === appId));
 
@@ -2490,7 +2645,7 @@ function getDefinitionBuckets(appId, definitions) {
         app: matchingApp,
         routes: matchingDefinitions.filter((entry) => entry.type === "ui-route"),
         dialogs: matchingDefinitions.filter((entry) => entry.type === "ui-dialog"),
-        components: matchingDefinitions.filter((entry) => ["ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select", "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider", "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state", "ui-tabs", "ui-tab", "ui-accordion", "ui-breadcrumb", "ui-menu", "ui-pagination", "ui-stepper", "ui-avatar", "ui-image", "ui-icon", "ui-list", "ui-log", "ui-divider", "ui-repeat"].includes(entry.type)),
+        components: matchingDefinitions.filter((entry) => ["ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select", "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider", "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state", "ui-tabs", "ui-tab", "ui-accordion", "ui-accordion-section", "ui-breadcrumb", "ui-menu", "ui-pagination", "ui-stepper", "ui-avatar", "ui-image", "ui-icon", "ui-list", "ui-log", "ui-divider", "ui-repeat"].includes(entry.type)),
         stores: matchingDefinitions.filter((entry) => entry.type === "ui-store"),
         queries: matchingDefinitions.filter((entry) => entry.type === "ui-query"),
         actions: matchingDefinitions.filter((entry) => entry.type === "ui-action"),
@@ -3763,6 +3918,27 @@ function registerDeployHook(RED) {
             }
         }
         catch (_e3) {
+            // Never let validation crash the deploy.
+        }
+
+        // P169 (ADR 0018 §1): cross-validate ui-accordion-section id uniqueness
+        // within each ui-accordion — a duplicate aliases two sections onto one panel.
+        try {
+            const sectionIssues = validateUiAccordionSectionChildrenUniqueness(RED);
+            for (const issue of sectionIssues) {
+                const issueNode = RED.nodes.getNode(issue.nodeId);
+                if (issueNode) {
+                    issueNode.status({ fill: "red", shape: "ring", text: "duplicate section id" });
+                }
+                reportRuntimeError(issueNode || undefined, {
+                    severity: 'error',
+                    code: 'duplicate-ui-accordion-section-id',
+                    message: issue.message,
+                    context: { nodeId: issue.nodeId, accordionId: issue.host, sectionId: issue.sectionId, op: 'deploy' }
+                });
+            }
+        }
+        catch (_e4) {
             // Never let validation crash the deploy.
         }
 
@@ -5687,24 +5863,58 @@ const runtimeNodeRegistry = {
         }
     },
     "ui-accordion": {
+        // P169 (ADR 0018, Model 1a): the `sections` config-array is REMOVED.
+        // Sections are DERIVED from the mounted `ui-accordion-section` children (one
+        // panel per child); the renderer enumerates them. Only `openSection`
+        // (two-way), `multiple`, and events remain. Mirror of ui-tabs.
+        mapConfig: (config) => {
+            // P169 (ADR 0018 §5): preserve a LEGACY `sections` config-array under
+            // `legacySections` so the in-editor migration pre-pass
+            // (migrateLegacyAccordionComponents) can synthesize section children.
+            // New flows have no `sections` field and `legacySections` stays unset.
+            const legacySections = (parseJsonList(config.sections).length > 0 ? parseJsonList(config.sections) : parseList(config.sections))
+                .map((t) => {
+                    if (typeof t === "string") {
+                        try { return JSON.parse(t); } catch { return { id: t, label: t }; }
+                    }
+                    return t;
+                })
+                .filter(Boolean);
+            return {
+                type: "ui-accordion",
+                id: getUiId(config),
+                parent: config.parent || undefined,
+                mount: config.mount || config.parent,
+                order: toOptionalNumber(config.order),
+                openSection: getBinding(config.openSection, config.openSectionPath ? stateBinding(config.openSectionPath) : undefined),
+                multiple: config.multiple === true || config.multiple === "true" || undefined,
+                events: parseJsonList(config.events),
+                ...(legacySections.length > 0 ? { legacySections } : {}),
+                ...collectNodeConfigLayoutProps(config)
+            };
+        },
+        options: {
+            inputHandler: interactionInputHandler(INTERACTION_VERBS_BY_TYPE["ui-accordion"], componentStateInputHandler)
+        }
+    },
+    // P169 (ADR 0018, Model 1a): ui-accordion-section — a thin CONTAINER child of
+    // ui-accordion (mirror of ui-tab). It carries the section's `label` (value
+    // binding), optional `icon`, and `order`, plus a single default `content` slot
+    // for the section body. The MOUNT into a ui-accordion is the declaration of the
+    // section; its own id is the slot key / the `openSection` token.
+    "ui-accordion-section": {
         mapConfig: (config) => ({
-            type: "ui-accordion",
+            type: "ui-accordion-section",
             id: getUiId(config),
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
-            sections: (parseJsonList(config.sections).length > 0 ? parseJsonList(config.sections) : parseList(config.sections)).map((t) => {
-                if (typeof t === "string") {
-                    try { return JSON.parse(t); } catch { return { id: t, label: t }; }
-                }
-                return t;
-            }).filter(Boolean),
-            multiple: config.multiple === true || config.multiple === "true" || undefined,
-            events: parseJsonList(config.events),
+            label: getBinding(config.label, config.labelPath ? stateBinding(config.labelPath) : literalBinding(config.labelPath || "")),
+            icon: config.icon || undefined,
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: interactionInputHandler(INTERACTION_VERBS_BY_TYPE["ui-accordion"], componentStateInputHandler)
+            inputHandler: passThroughInputHandler
         }
     },
     "ui-breadcrumb": {
@@ -6013,6 +6223,8 @@ registerWebappNodes.__test__ = {
     getAppModelResult,
     migrateLegacyTabComponents,
     validateUiTabChildrenUniqueness,
+    migrateLegacyAccordionComponents,
+    validateUiAccordionSectionChildrenUniqueness,
     renderAppPage,
     buildAppSnapshot,
     renderLayoutHtml,

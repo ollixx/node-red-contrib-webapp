@@ -6,6 +6,7 @@ describe("editor node set", () => {
     it("covers the full P4 MVP node catalog", () => {
         expect(Object.keys(nodeSet).sort()).toEqual([
             "ui-accordion",
+            "ui-accordion-section",
             "ui-action",
             "ui-alert",
             "ui-app",

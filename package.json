@@ -46,6 +46,7 @@
             "ui-tabs": "nodes/view/ui-tabs.js",
             "ui-tab": "nodes/view/ui-tab.js",
             "ui-accordion": "nodes/view/ui-accordion.js",
+            "ui-accordion-section": "nodes/view/ui-accordion-section.js",
             "ui-breadcrumb": "nodes/view/ui-breadcrumb.js",
             "ui-menu": "nodes/view/ui-menu.js",
             "ui-pagination": "nodes/view/ui-pagination.js",

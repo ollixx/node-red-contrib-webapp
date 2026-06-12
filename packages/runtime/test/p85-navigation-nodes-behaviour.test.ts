@@ -552,7 +552,11 @@ describe("P85: ui-accordion multiple / defaultOpen round-trip through mapConfig"
         expect(def.multiple).toBeFalsy();
     });
 
-    it("sections list is parsed into an array of section objects", () => {
+    // P169 (ADR 0018, Model 1a): the `sections` config-array is REMOVED. A legacy
+    // `sections` JSON is preserved on the `legacySections` carrier so the in-editor
+    // migration pre-pass can synthesize ui-accordion-section children; the mapConfig
+    // no longer emits a `sections` field.
+    it("a legacy sections list is preserved on the legacySections carrier (not `sections`)", () => {
         const def = h.registry["ui-accordion"].mapConfig({
             id: "acc3",
             parent: h.appId,
@@ -562,8 +566,9 @@ describe("P85: ui-accordion multiple / defaultOpen round-trip through mapConfig"
             ])
         });
 
-        expect(Array.isArray(def.sections)).toBe(true);
-        const sections = def.sections as Array<{ id: string; label: string }>;
+        expect(def.sections).toBeUndefined();
+        expect(Array.isArray(def.legacySections)).toBe(true);
+        const sections = def.legacySections as Array<{ id: string; label: string }>;
         expect(sections).toHaveLength(2);
         expect(sections[0]).toMatchObject({ id: "faq-1", label: "What is this?" });
     });

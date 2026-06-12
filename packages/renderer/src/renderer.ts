@@ -1,7 +1,9 @@
 import {
     REPEAT_SLOT,
     TAB_SLOT,
+    ACCORDION_SECTION_SLOT,
     defaultActiveTabId,
+    defaultOpenSectionId,
     resolveMountReference,
     uiEventMessageSchema,
     type AppModel,
@@ -97,7 +99,7 @@ export interface RenderedInputComponent extends RenderedComponentBase {
 
 /** Generic rendered component for P16x kinds (select, checkbox, radio, etc.). */
 export interface RenderedGenericComponent extends RenderedComponentBase {
-    kind: "select" | "checkbox" | "radio" | "switch" | "textarea" | "datepicker" | "slider" | "alert" | "badge" | "progress" | "breadcrumb" | "accordion" | "menu" | "avatar" | "image" | "list" | "pagination" | "stepper" | "log" | "icon" | "divider";
+    kind: "select" | "checkbox" | "radio" | "switch" | "textarea" | "datepicker" | "slider" | "alert" | "badge" | "progress" | "breadcrumb" | "menu" | "avatar" | "image" | "list" | "pagination" | "stepper" | "log" | "icon" | "divider";
     value: unknown;
 }
 
@@ -116,6 +118,22 @@ export interface RenderedTabsComponent extends RenderedComponentBase {
     regions: RenderedRegion[];
 }
 
+/**
+ * P169 (ADR 0018, Model 1a): ui-accordion renders ONE collapsible panel per
+ * `ui-accordion-section` child. The sections are DERIVED from the mounted children
+ * (not a config array) — `props.sections` carries the per-child metadata
+ * `{ id, label, icon, open }` (id = child id = slot key = the open-state token),
+ * and `regions` carries one region per child (region name = child id) holding that
+ * section's content subtree. The open section is `component.value` (resolved from
+ * the two-way `openSection` binding); an invalid / absent value falls back to the
+ * first child by `order` (defaultOpenSectionId). Mirrors RenderedTabsComponent.
+ */
+export interface RenderedAccordionComponent extends RenderedComponentBase {
+    kind: "accordion";
+    value: unknown;
+    regions: RenderedRegion[];
+}
+
 export type RenderedComponent =
     | RenderedButtonComponent
     | RenderedCardComponent
@@ -124,6 +142,7 @@ export type RenderedComponent =
     | RenderedInputComponent
     | RenderedTableComponent
     | RenderedTabsComponent
+    | RenderedAccordionComponent
     | RenderedTextComponent;
 
 export interface RenderedRegion {
@@ -959,6 +978,16 @@ function toRenderedComponent(component: ComponentDefinition, context: ComponentR
         // directly (not via its tabs parent) is dropped from the region.
         case "tab":
             return undefined;
+        // P169 (ADR 0018, Model 1a): ui-accordion derives one collapsible panel per
+        // `ui-accordion-section` child. Like tabs, it carries `regions` (one per
+        // child) + `props.sections` metadata. Handled by its own path below.
+        case "accordion":
+            return renderAccordion(component, baseComponent, resolvedProps, context, appModel);
+        // P169: a `ui-accordion-section` renders NO standalone chrome — its parent
+        // `accordion` enumerates it and renders its panel. A section reached here
+        // directly (not via its accordion parent) is dropped from the region.
+        case "accordion-section":
+            return undefined;
         case "select":
         case "checkbox":
         case "radio":
@@ -968,7 +997,6 @@ function toRenderedComponent(component: ComponentDefinition, context: ComponentR
         case "slider":
         case "progress":
         case "breadcrumb":
-        case "accordion":
         case "menu":
         case "avatar":
         // P70: image — src binding resolved into resolvedProps.value (routed
@@ -1195,6 +1223,84 @@ function renderTabs(
         props: {
             ...resolvedProps,
             tabs: tabsMeta
+        },
+        regions
+    };
+}
+
+/**
+ * P169 (ADR 0018, Model 1a): render a `ui-accordion` from its mounted
+ * `ui-accordion-section` children. Each child becomes exactly one collapsible
+ * panel/region (region name = child id); the child's `label` is resolved
+ * (literal/state/store/query binding); the open section is `component.value` (the
+ * two-way `openSection` binding) and falls back to the first child by `order`
+ * (`defaultOpenSectionId`) when absent/invalid. The child's content subtree mounts
+ * into `ui-accordion-section:<childId>/content`. Mirrors `renderTabs` (P168).
+ */
+function renderAccordion(
+    component: ComponentDefinition,
+    baseComponent: RenderedComponentBase,
+    resolvedProps: Record<string, unknown>,
+    context: ComponentRenderContext,
+    appModel: AppModel
+): RenderedAccordionComponent {
+    const sectionChildMatcher = createTabMountMatcher("ui-accordion", component.id);
+    const sectionChildren = appModel.components
+        .filter((candidate) => candidate.kind === "accordion-section" && sectionChildMatcher(candidate, [ACCORDION_SECTION_SLOT]))
+        .sort(componentSort);
+
+    // Default open = first child by order; an absent/invalid bound value falls
+    // back to it (ADR 0018 §4). `component.value` is the resolved openSection.
+    const defaultId = defaultOpenSectionId(
+        sectionChildren.map((child) => ({ id: child.id, order: child.order }))
+    );
+    const boundValue = resolvedProps.value;
+    const boundId = boundValue === undefined || boundValue === null ? undefined : String(boundValue);
+    const openId = boundId !== undefined && sectionChildren.some((child) => child.id === boundId)
+        ? boundId
+        : defaultId;
+
+    const sectionsMeta = sectionChildren.map((child) => {
+        const resolvedLabel = resolveBinding(child.bind.label, context.sources);
+        const label = resolvedLabel !== undefined && resolvedLabel !== null
+            ? String(resolvedLabel)
+            : child.id;
+        const icon = typeof child.props.icon === "string" ? child.props.icon : undefined;
+        return {
+            id: child.id,
+            label,
+            ...(icon ? { icon } : {}),
+            open: child.id === openId
+        };
+    });
+
+    // One region per child (region name = child id) holding the child's content
+    // subtree (mounted at `ui-accordion-section:<childId>/content`).
+    const regions: RenderedRegion[] = sectionChildren.map((child) => {
+        const contentMatcher = createTabMountMatcher("ui-accordion-section", child.id);
+        const components = appModel.components
+            .filter((candidate) => contentMatcher(candidate, [ACCORDION_SECTION_SLOT]))
+            .sort(componentSort)
+            .flatMap((candidate) => candidate.kind === "repeat"
+                ? expandRepeat(candidate, context, appModel)
+                : [toRenderedComponent(candidate, context, appModel)])
+            .filter((rendered): rendered is RenderedComponent => rendered !== undefined);
+
+        return {
+            kind: "region",
+            name: child.id,
+            components,
+            regions: []
+        };
+    });
+
+    return {
+        ...baseComponent,
+        kind: "accordion",
+        value: openId,
+        props: {
+            ...resolvedProps,
+            sections: sectionsMeta
         },
         regions
     };
