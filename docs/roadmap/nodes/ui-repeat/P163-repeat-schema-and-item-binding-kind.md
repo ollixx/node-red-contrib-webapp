@@ -14,7 +14,7 @@ verify: unit
 spec: docs/nodes/display/ui-repeat.md
 tests: tests/e2e/nodes/view/ui-repeat.tests.md
 dependencies: []
-status: pending
+status: in_progress
 ---
 # P163 — ui-repeat: Schema + Binding-Art item/index
 
