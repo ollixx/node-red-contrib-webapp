@@ -15,7 +15,7 @@ verify: browser
 spec: docs/nodes/navigation/ui-accordion.md
 tests: tests/e2e/nodes/view/ui-accordion.tests.md
 dependencies: [P168]
-status: pending
+status: in_progress
 ---
 # P169 — ui-accordion: Kinder definieren Sektionen (Spiegel zu ui-tabs)
 
