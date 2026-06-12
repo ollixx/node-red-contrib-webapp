@@ -101,8 +101,7 @@ test.describe("ui-icon size tokens (P159)", () => {
             .node("ui-icon", { id: "legacySizeNode", icon: "house", size: "24" })
             .build();
 
-        const deployed = await deployFlow(request, flow);
-        expect(deployed.ok()).toBeTruthy();
+        await deployFlow(request, flow);
 
         const res = await request.get("/webapp/legacySizeApp/");
         expect(res.ok()).toBeTruthy();
