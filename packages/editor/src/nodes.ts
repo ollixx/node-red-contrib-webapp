@@ -331,6 +331,12 @@ export interface UiBreadcrumbEditorConfig extends MountableEditorConfig {
 
 export interface UiMenuEditorConfig extends MountableEditorConfig {
     displayType?: "sidebar" | "topbar";
+    // P157 (ADR 0012): `items` (structural array source: store/query/reactive/
+    // json-literal) and `activeRoute` (read-only active-route value) are the
+    // canonical value typedInputs, persisted as binding objects. The legacy
+    // `itemsPath` / `activeRoutePath` plain state paths are kept for migration only.
+    items?: BindingDefinition | unknown[];
+    activeRoute?: BindingDefinition;
     itemsPath?: string;
     activeRoutePath?: string;
 }
@@ -701,6 +707,31 @@ function selectOptionsFromConfig(
 // either is passed through to the schema (which accepts both).
 function bindingOrString(value: string | BindingDefinition | undefined): string | BindingDefinition | undefined {
     return value;
+}
+
+// P157 (ADR 0012): resolve a ui-menu `items` editor config into the schema
+// `items` value — a static array (the menu renders its entries itself, a
+// STRUCTURAL array like ui-select `options`, NOT a repeats case) OR a binding
+// object (store/query/reactive). A json-literal binding's raw array is unwrapped
+// so the schema's `array(menuItem)` branch accepts it; every dynamic binding kind
+// passes through for the renderer's structural resolution. Legacy `itemsPath`
+// plain state paths migrate to a state binding.
+function menuItemsFromConfig(config: UiMenuEditorConfig): UiMenuNodeDefinition["items"] {
+    const candidate = config.items;
+    if (isBindingObject(candidate)) {
+        if (candidate.kind === "literal") {
+            const raw = (candidate as { value?: unknown }).value;
+            return Array.isArray(raw) ? (raw as UiMenuNodeDefinition["items"]) : candidate;
+        }
+        return candidate;
+    }
+    if (Array.isArray(candidate)) {
+        return candidate as UiMenuNodeDefinition["items"];
+    }
+    if (config.itemsPath) {
+        return stateBinding(config.itemsPath);
+    }
+    return stateBinding("");
 }
 
 function queryBinding(path: string): BindingDefinition {
@@ -1368,17 +1399,23 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         items: stateBinding(config.itemsPath ?? ""),
         ...collectLayoutChildConfig(config)
     })),
+    // P157 (ADR 0012): `items` / `activeRoute` are canonical value typedInputs
+    // (binding objects) — no requiredString validator (mirrors P154 pagination).
+    // Legacy `itemsPath` / `activeRoutePath` plain state paths migrate to state
+    // bindings. `items` is a STRUCTURAL array binding: a json-literal binding's
+    // raw array is unwrapped; every dynamic kind passes through for the renderer's
+    // structural resolution. A bare array (flow.json/tests) passes through.
     "ui-menu": createDefinition("ui-menu", "view", {
         id: requiredString("Menu IDs are required before deploy."),
-        mount: requiredString("Menu must declare a parent slot."),
-        itemsPath: requiredString("Menu must declare an items state path.")
+        mount: requiredString("Menu must declare a parent slot.")
     }, (config: UiMenuEditorConfig): UiMenuNodeDefinition => ({
         type: "ui-menu",
         id: config.id ?? "",
         mount: config.mount ?? "",
         displayType: config.displayType,
-        items: stateBinding(config.itemsPath ?? ""),
-        activeItem: config.activeRoutePath ? stateBinding(config.activeRoutePath) : undefined,
+        items: menuItemsFromConfig(config),
+        activeItem: isBindingObject(config.activeRoute) ? config.activeRoute
+            : (config.activeRoutePath ? stateBinding(config.activeRoutePath) : undefined),
         ...collectLayoutChildConfig(config)
     })),
     "ui-pagination": createDefinition("ui-pagination", "view", {

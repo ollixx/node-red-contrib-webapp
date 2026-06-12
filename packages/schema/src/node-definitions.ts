@@ -872,7 +872,13 @@ export const uiMenuNodeDefinitionSchema = mountableNodeSchema.extend({
     // P49: sidebar/topbar/dropdown is a DISPLAY TYPE (layout mode), not a
     // semantic variant.
     displayType: z.enum(["sidebar", "topbar", "dropdown"]).optional(),
+    // P157 (ADR 0012): `items` is the canonical STRUCTURAL array source — either a
+    // static array of menu items (the menu renders its entries itself; NOT a
+    // repeats case, vgl. ui-list P140) OR a binding (store/query/reactive/
+    // json-literal) resolved structurally by the renderer (shared P133 path).
     items: z.union([z.array(menuItemSchema), bindingSchema]),
+    // P157 (ADR 0012): `activeItem` is the read-only active-route binding (editor
+    // field `activeRoute`); the matching item is highlighted by the serializer.
     activeItem: bindingSchema.optional(),
     collapsed: bindingSchema.optional(),
     // P75: clicking a navigable item (one with `route`/`path`, not an external
