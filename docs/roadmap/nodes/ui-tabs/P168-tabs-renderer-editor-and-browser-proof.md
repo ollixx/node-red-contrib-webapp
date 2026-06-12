@@ -16,7 +16,7 @@ verify: browser
 spec: docs/nodes/navigation/ui-tabs.md
 tests: tests/e2e/nodes/view/ui-tabs.tests.md
 dependencies: [P167]
-status: pending
+status: in_progress
 ---
 # P168 — ui-tabs/ui-tab Renderer + Editor + Beweis
 
