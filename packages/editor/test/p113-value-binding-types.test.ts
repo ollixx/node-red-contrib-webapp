@@ -56,7 +56,7 @@ beforeAll(() => {
 });
 
 describe("P113: canonical value-binding type set", () => {
-    it("value category (default) offers exactly the 14 canonical types in order", () => {
+    it("value category (default) offers the 14 canonical types in order, then the 2 scope-local repeat kinds", () => {
         const order = typeValues(common.valueBindingTypes());
         expect(order).toEqual([
             "store",
@@ -72,8 +72,28 @@ describe("P113: canonical value-binding type set", () => {
             "date",
             "flow",
             "global",
-            "env"
+            "env",
+            // P165 (ADR 0017): scope-local item/index appended at the end so the
+            // established ordering of the global kinds is unchanged.
+            "item",
+            "index"
         ]);
+    });
+
+    it("the scope-local item/index kinds sit ONLY at the tail of the value set (P165)", () => {
+        const order = typeValues(common.valueBindingTypes());
+        // item/index are present, last, and in that order.
+        expect(order.slice(-2)).toEqual(["item", "index"]);
+        expect(order.indexOf("item")).toBe(order.length - 2);
+        expect(order.indexOf("index")).toBe(order.length - 1);
+    });
+
+    it("scope-local item/index are NOT offered in the boolean or url categories (P165)", () => {
+        for (const category of ["boolean", "url"] as const) {
+            const order = typeValues(common.valueBindingTypes({ category }));
+            expect(order).not.toContain("item");
+            expect(order).not.toContain("index");
+        }
     });
 
     it("an undeclared category defaults to the full value set (safe default)", () => {
@@ -175,6 +195,17 @@ describe("P113: applyValueBinding serialisation", () => {
             expect(common.applyValueBinding(kind, "x")).toEqual({ kind, path: "x" });
         }
     });
+
+    it("scope-local item → { kind:'item', path:<field path> } (P165)", () => {
+        expect(common.applyValueBinding("item", "name")).toEqual({ kind: "item", path: "name" });
+        expect(common.applyValueBinding("item", "address.city")).toEqual({ kind: "item", path: "address.city" });
+        // The whole element (empty path) serialises with an empty path.
+        expect(common.applyValueBinding("item", "")).toEqual({ kind: "item", path: "" });
+    });
+
+    it("scope-local index → { kind:'index', path:'' } (path-free) (P165)", () => {
+        expect(common.applyValueBinding("index", "")).toEqual({ kind: "index", path: "" });
+    });
 });
 
 describe("P113: readValueBinding round-trips applyValueBinding", () => {
@@ -220,5 +251,15 @@ describe("P113: readValueBinding round-trips applyValueBinding", () => {
             type: "state",
             value: "greeting"
         });
+    });
+
+    it("scope-local item round-trips field path through `path` (P165)", () => {
+        const stored = common.applyValueBinding("item", "name");
+        expect(common.readValueBinding(stored, "")).toEqual({ type: "item", value: "name" });
+    });
+
+    it("scope-local index round-trips as path-free (P165)", () => {
+        const stored = common.applyValueBinding("index", "");
+        expect(common.readValueBinding(stored, "")).toEqual({ type: "index", value: "" });
     });
 });

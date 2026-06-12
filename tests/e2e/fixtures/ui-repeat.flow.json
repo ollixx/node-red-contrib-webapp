@@ -1,0 +1,89 @@
+[
+  {
+    "type": "tab",
+    "id": "repeatflow",
+    "label": "Repeat"
+  },
+  {
+    "type": "ui-app",
+    "id": "repeatApp",
+    "name": "Repeat App",
+    "root": "repeatApp",
+    "layout": "app",
+    "title": "Repeat",
+    "z": "repeatflow",
+    "wires": [],
+    "x": 200,
+    "y": 120
+  },
+  {
+    "type": "ui-store",
+    "id": "peopleStore",
+    "name": "People",
+    "parent": "repeatApp",
+    "statePath": "people",
+    "initialValue": "[{\"name\":\"A\"},{\"name\":\"B\"}]",
+    "z": "repeatflow",
+    "wires": [],
+    "x": 200,
+    "y": 180
+  },
+  {
+    "type": "ui-repeat",
+    "id": "peopleRepeat",
+    "name": "People Repeat",
+    "parent": "repeatApp",
+    "mount": "repeatApp.content",
+    "order": 0,
+    "items": {
+      "kind": "store",
+      "path": "peopleStore"
+    },
+    "keyField": "name",
+    "z": "repeatflow",
+    "wires": [],
+    "x": 200,
+    "y": 240
+  },
+  {
+    "type": "ui-text",
+    "id": "personName",
+    "name": "Person name",
+    "parent": "peopleRepeat",
+    "mount": "container:peopleRepeat/content",
+    "order": 0,
+    "value": {
+      "kind": "item",
+      "path": "name"
+    },
+    "z": "repeatflow",
+    "wires": [],
+    "x": 200,
+    "y": 300
+  },
+  {
+    "type": "ui-button",
+    "id": "addThirdButton",
+    "name": "Add third",
+    "parent": "repeatApp",
+    "mount": "repeatApp.content",
+    "order": 1,
+    "label": "Add third",
+    "z": "repeatflow",
+    "wires": [["toStoreFn"]],
+    "x": 200,
+    "y": 360
+  },
+  {
+    "type": "function",
+    "id": "toStoreFn",
+    "name": "Build store update",
+    "func": "msg.ui = { store: { id: 'peopleStore', op: 'replace', value: [{ name: 'A' }, { name: 'B' }, { name: 'C' }] } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "z": "repeatflow",
+    "wires": [["peopleStore"]],
+    "x": 400,
+    "y": 360
+  }
+]

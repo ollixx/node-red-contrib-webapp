@@ -1,0 +1,126 @@
+<script type="text/javascript" src="resources/node-red-contrib-webapp/lib/editor-common.js"></script>
+<script type="text/javascript">
+    (function () {
+        const common = window.WebappEditorCommon;
+        // P165 (ADR 0017): ui-repeat is a TEMPLATE CONTAINER. Base-field
+        // applicability: `visible` applies (a container can be shown/hidden);
+        // `disabled` is N/A (no interactive state), `color`/`size` are N/A (it
+        // renders no chrome of its own — the cloned child subtree carries styling).
+        const BASE_FIELDS = {
+            visible: true,
+            disabled: false,
+            color: false,
+            size: false,
+            variant: false,
+            advanced: [],
+            hints: {
+                disabled: "Ein Repeat-Template hat keinen interaktiven Zustand.",
+                color: "Ein Repeat-Template rendert keine eigene Chrome.",
+                size: "Ein Repeat-Template hat keine einstellbare Größe."
+            }
+        };
+        common.registerNodeType("ui-repeat", {
+            category: "webapp view",
+            color: "#f4efcf",
+            defaults: {
+                name: { value: "" },
+                parent: { value: "" },
+                mount: { value: "", required: true },
+                // P165: `items` REQUIRED collection binding (value typedInput).
+                // Persists the binding OBJECT on `items`; legacy `itemsPath` (plain
+                // state path) is migrated on open. The typedInput lives directly on
+                // #node-input-items so the minimal-coverage E2E check passes.
+                items: { value: null },
+                itemsPath: { value: "" },
+                // P165: optional stable per-instance key field (e.g. "id").
+                keyField: { value: "" },
+                // P139 (ADR 0015): base fields. `visible` persists the binding
+                // OBJECT; the typedInput lives on the *Binding carrier input so
+                // Node-RED auto-save cannot clobber it.
+                visible: { value: null },
+                visibleBinding: { value: "" },
+                order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
+                row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
+                col: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
+                colSize: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
+                rowSize: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
+                layoutX: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
+                layoutY: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } }
+            },
+            // P165: ui-repeat takes the wire path like ui-list — an inbound
+            // msg.payload array sets `items`. No event outputs of its own.
+            inputs: 1,
+            outputs: 0,
+            icon: "font-awesome/fa-clone",
+            label: common.labelWithName("ui-repeat"),
+            onadd: function () {
+                if (!this.name) {
+                    this.name = common.getNextNameDefault("ui-repeat", "Repeat");
+                }
+            },
+            oneditprepare: function () {
+                common.installReferenceSelectors({ mount: true }).call(this);
+                // P139: shared base-field group ("Allgemein") — only `visible` is
+                // applicable for a repeat; the rest render N/A with a hint.
+                common.installBaseFields(BASE_FIELDS).call(this);
+                common.installLayoutChildPropRows().call(this);
+
+                // P165 (ADR 0017): `items` value typedInput (full value-binding
+                // set). Migration: a legacy `itemsPath` opens as a `state` binding.
+                const storedItems = common.parseBindingValue(this.items);
+                const itemsBinding = storedItems
+                    ? storedItems
+                    : (this.itemsPath
+                        ? { kind: "state", path: this.itemsPath }
+                        : undefined);
+                const itemsEditor = common.readValueBinding(itemsBinding, "");
+                const itemsInput = $("#node-input-items");
+                itemsInput.typedInput({
+                    default: itemsEditor.type,
+                    types: common.valueBindingTypes({ category: "value" })
+                });
+                itemsInput.typedInput("type", itemsEditor.type);
+                itemsInput.typedInput("value", itemsEditor.value);
+            },
+            oneditsave: function () {
+                // P139: persist the applicable base fields (visible) as a binding.
+                common.applyBaseFields(BASE_FIELDS).call(this);
+                // P165: persist `items` as a binding object; clear the legacy path.
+                this.items = common.applyValueBinding(
+                    $("#node-input-items").typedInput("type"),
+                    $("#node-input-items").typedInput("value")
+                );
+                this.itemsPath = "";
+            }
+        });
+    })();
+</script>
+<script type="text/html" data-template-name="ui-repeat">
+    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <hr style="margin: 8px 0;">
+    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-row"><label for="node-input-items">Items</label><input type="text" id="node-input-items"></div>
+    <div class="form-row"><label for="node-input-keyField">Key Field</label><input type="text" id="node-input-keyField" placeholder="optional, e.g. id"></div>
+    <div class="form-tips" style="margin-top: 4px;">
+        Children mounted into this node's <code>content</code> slot are the
+        <b>template</b> — cloned once per item. In a child, bind a value to
+        <b>Item (Repeat)</b> (optional field path, e.g. <code>name</code>) or
+        <b>Index (Repeat)</b> to read the current element / position.
+    </div>
+</script>
+<script type="text/html" data-help-name="ui-repeat">
+<p>Repeats a child template once per element of a bound collection (ADR 0017).</p>
+<h3>How it works</h3>
+<ul>
+  <li><b>Items</b> — a value binding (Store, Query, State, literal JSON array, msg, …) that resolves to an array. An object is iterated as <code>{key, value}</code> entries. The wire path mirrors <code>ui-list</code>: an inbound <code>msg.payload</code> array sets <code>items</code>.</li>
+  <li><b>Template</b> — mount any child subtree into this node's default <code>content</code> slot. The renderer clones it once per item.</li>
+  <li><b>Key Field</b> — optional field name used as the stable per-instance key (keyed morph; focus/scroll survive reorder). Falls back to the array index when absent.</li>
+</ul>
+<h3>Item scope (in children)</h3>
+<ul>
+  <li><b>Item (Repeat)</b> — the current element; an optional dotted path selects a field (e.g. <code>name</code>, <code>address.city</code>).</li>
+  <li><b>Index (Repeat)</b> — the zero-based position of the current element.</li>
+</ul>
+<p>These scope-local bindings only resolve inside a <code>ui-repeat</code>; outside one they resolve to <i>undefined</i> (the editor shows a hint).</p>
+<p><b>Stage 1 is read-only</b> — writing back from a row (e.g. an input targeting <code>item.name</code>) is a later stage.</p>
+</script>

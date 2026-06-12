@@ -771,6 +771,24 @@
                 return;
             }
 
+            // P165 (ADR 0017): `ui-repeat` is a template CONTAINER — its children
+            // mount into a single fixed default slot (REPEAT_SLOT = "content").
+            // It carries no layout chrome, so we expose it to BOTH mount pickers as
+            // a container with a synthetic single-slot layout ("vertical" → one
+            // "content" slot). This yields the mount value `container:<id>/content`,
+            // exactly the shape children use to bind into the repeat template.
+            if (node.type === "ui-repeat") {
+                references.containers.push({
+                    id,
+                    // Synthetic: a one-slot ("content") layout. The real ui-repeat
+                    // node has no layoutId; the slot is fixed by the schema.
+                    layoutId: "vertical",
+                    title: node.title || node.name || id,
+                    mount: node.mount || ""
+                });
+                return;
+            }
+
             if (node.type === "ui-action" || node.type === "ui-navigation") {
                 references.actions.push({
                     id,
@@ -891,6 +909,100 @@
             break;
         }
         return null;
+    }
+
+    // P165 (ADR 0017): does this mount value sit (transitively) inside a
+    // `ui-repeat` template? Walks the container chain upward; returns true as soon
+    // as an ancestor container id resolves to a `ui-repeat` node. Pure except for
+    // the RED.nodes lookup of each ancestor's type. Used to gate the scope-local
+    // item/index hint — those bindings only resolve inside a repeat.
+    function mountIsInsideRepeat(mountValue, references) {
+        if (!mountValue) {
+            return false;
+        }
+        const seen = new Set();
+        let current = mountValue;
+        while (current && !seen.has(current)) {
+            seen.add(current);
+            if (!current.startsWith("container:")) {
+                // App/route/dialog slot — no repeat above this point.
+                return false;
+            }
+            const sepIdx = current.lastIndexOf("/");
+            const containerId = sepIdx >= 0
+                ? current.slice("container:".length, sepIdx)
+                : current.slice("container:".length);
+            const ancestor = RED.nodes.node(containerId);
+            if (ancestor && ancestor.type === "ui-repeat") {
+                return true;
+            }
+            const container = references.containers.find(function (c) { return c.id === containerId; });
+            if (container && container.mount) {
+                current = container.mount;
+                continue;
+            }
+            return false;
+        }
+        return false;
+    }
+
+    // P165 (ADR 0017): mount a live hint under a value typedInput that warns when
+    // the field's selected kind is the scope-local `item`/`index` BUT the node is
+    // not (transitively) inside a `ui-repeat`. The scope-local kinds resolve to
+    // `undefined` outside a repeat, so this is a misuse the author should see. The
+    // hint is advisory (non-blocking) and re-evaluates on type change + mount
+    // change. `fieldSelector` is the typedInput's <input>; the hint row is created
+    // lazily right after it.
+    function installRepeatScopeHint(fieldSelector) {
+        const $field = $(fieldSelector);
+        if (!$field.length) {
+            return;
+        }
+        const hintId = "webapp-repeat-scope-hint-" + String(fieldSelector).replace(/[^a-zA-Z0-9]/g, "");
+        let $hint = $("#" + hintId);
+        if (!$hint.length) {
+            $hint = $("<div>")
+                .attr("id", hintId)
+                .addClass("form-tips")
+                .css({ display: "none", "margin-top": "4px", color: "var(--red-ui-text-color-warning, #a05a00)" });
+            $field.closest(".form-row").after($hint);
+        }
+        function currentType() {
+            try {
+                return $field.typedInput("type");
+            }
+            catch (_e) {
+                return "";
+            }
+        }
+        function reevaluate() {
+            const type = currentType();
+            const isScopeLocal = type === "item" || type === "index";
+            if (!isScopeLocal) {
+                $hint.hide();
+                return;
+            }
+            const references = collectReferenceNodes();
+            const mountVal = String($("#node-input-mount").val() || "");
+            const inside = mountIsInsideRepeat(mountVal, references);
+            if (inside) {
+                $hint.hide();
+            }
+            else {
+                $hint
+                    .html("<i class=\"fa fa-exclamation-triangle\"></i> "
+                        + "This <b>" + (type === "item" ? "Item" : "Index") + "</b> binding only resolves "
+                        + "inside a <code>ui-repeat</code> template. This node is not mounted inside a "
+                        + "repeat, so it will resolve to <i>undefined</i> at render time.")
+                    .show();
+            }
+        }
+        $field.on("change", reevaluate);
+        const $mount = $("#node-input-mount");
+        if ($mount.length) {
+            $mount.on("change", reevaluate);
+        }
+        reevaluate();
     }
 
     function sortOptions(options) {
@@ -3460,6 +3572,27 @@
         var routeParamType = { value: "routeParam", label: "Route Param", icon: "fa fa-map-signs", hasValue: true };
         var storeType = storeTypedInputType({ label: "Store" });
         var reactiveType = reactiveTypedInputType();
+        // P165 (ADR 0017): the scope-local `item`/`index` binding kinds. They only
+        // resolve inside a `ui-repeat` template (against the render-time item
+        // scope). `item` carries an optional dotted field path (e.g. `name`,
+        // `address.city`); `index` is the zero-based position and is PATH-FREE.
+        // Outside a repeat they resolve to undefined — the consuming node shows a
+        // visible hint (see installRepeatScopeHint).
+        var itemType = {
+            value: "item",
+            label: "Item (Repeat)",
+            icon: "fa fa-cube",
+            hasValue: true,
+            // Optional path: empty (the whole element) OR a dotted field path.
+            validate: function (value) {
+                var v = (value || "").trim();
+                if (v.length === 0) {
+                    return true;
+                }
+                return /^[a-zA-Z_$][a-zA-Z0-9_$]*(\.[a-zA-Z_$][a-zA-Z0-9_$]*)*$/.test(v);
+            }
+        };
+        var indexType = { value: "index", label: "Index (Repeat)", icon: "fa fa-list-ol", hasValue: false };
 
         if (category === "url") {
             // str, msg, JSONata, Store, Reactive, Flow, Global, Env.
@@ -3523,7 +3656,9 @@
             ];
         }
 
-        // Default — value/display full set (14 kinds).
+        // Default — value/display full set (14 kinds) + the 2 scope-local
+        // ui-repeat kinds (item/index). The scope-local pair sits at the end so it
+        // never shifts the established default ordering of the global kinds.
         return [
             storeType,
             queryType,
@@ -3539,7 +3674,10 @@
             "date",
             "flow",
             "global",
-            "env"
+            "env",
+            // P165 (ADR 0017): scope-local item/index (resolve only inside a repeat).
+            itemType,
+            indexType
         ];
     }
 
@@ -5132,6 +5270,9 @@
         required,
         resolveEditedNodeApp,
         resolveAppFromMount,
+        // P165 (ADR 0017): scope-local item/index repeat helpers.
+        mountIsInsideRepeat,
+        installRepeatScopeHint,
         resolveRouteFromMount,
         storeTypedInputType,
         defaultSliceKeySuggestions,
