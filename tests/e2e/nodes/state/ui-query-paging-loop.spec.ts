@@ -16,13 +16,15 @@ import { WebappPage } from "../../../helpers/webapp-page";
  *   3. a wired "mock DB" reads `msg.ui.query.params.page`, returns that page's
  *      rows + `totalCount`, and sends `msg.ui.query = { queryPath, data, totalCount }`
  *      back to the query's IN-PORT;
- *   4. the query stores `data` + `totalCount` under `ui.queries.<path>`;
- *   5. a ui-table binds `rows = query:list.data`, a ui-pagination binds
- *      `total = query:list.totalCount`, a ui-text binds `query:list.loading`.
+ *   4. the query stores `data` + `totalCount` + `pageCount` under
+ *      `ui.queries.<path>`;
+ *   5. a ui-table binds `rows = query:list` (bare path = the DATA), a
+ *      ui-pagination binds `total = query:list.pageCount` (the derived page
+ *      count), a ui-text binds `query:list.loading`.
  *
  * Acceptance: initial load shows page 1; setting `page=2` in the store fires the
  * out-port refresh → mock DB returns page 2 → the table updates; NO loop (the
- * data return does not mutate the params); `query:list.totalCount` reaches the
+ * data return does not mutate the params); `query:list.pageCount` reaches the
  * pagination.
  */
 
@@ -31,17 +33,33 @@ const TAB_ID = "e2e-flow";
 const PAGE_ONE = [{ id: "c1", name: "Alice" }];
 const PAGE_TWO = [{ id: "c2", name: "Bob" }];
 const TOTAL_COUNT = 42;
+const PAGE_SIZE = 10;
+const PAGE_COUNT = Math.ceil(TOTAL_COUNT / PAGE_SIZE); // 5
 
 /**
- * The wired "mock DB": reads the page out of the refresh msg
- * (`msg.ui.query.params.page`) and returns the matching page + totalCount on the
- * query's IN-PORT. This closes the loop the out-port refresh opens.
+ * The wired "mock DB": fires only on a TRIGGER — the initial `onEnter`-style
+ * inject (no `msg.ui.query`) or a params-store refresh (`msg.ui.query.refresh`).
+ * It reads the page out of the refresh msg (`msg.ui.query.params.page`) and
+ * returns the matching page + totalCount + pageCount on the query's IN-PORT.
+ *
+ * Crucially it IGNORES its own data return: the query's in-port handler passes
+ * the data message back out the query's out-port (so downstream wiring works),
+ * and that echo carries `msg.ui.query.data`. A real fetch node does not re-fetch
+ * on a result it just produced — so this mock drops any message that already
+ * carries `data`. That is what prevents the fetch→data→fetch loop (ADR 0016: the
+ * data return must not re-trigger the fetch).
+ *
+ * `totalCount` (item count) and `pageCount` (derived page count) are the
+ * reserved query-lifecycle metadata a ui-pagination binds via
+ * `query:<path>.totalCount` / `query:<path>.pageCount`.
  */
 function mockDbNode(id: string, queryNodeId: string, queryPath: string, y: number): NodeDef {
     const func =
-        `var page = (msg.ui && msg.ui.query && msg.ui.query.params && msg.ui.query.params.page) || 1;\n` +
+        `var q = msg.ui && msg.ui.query;\n` +
+        `if (q && Object.prototype.hasOwnProperty.call(q, "data")) { return null; }\n` +
+        `var page = (q && q.params && q.params.page) || 1;\n` +
         `var rows = page >= 2 ? ${JSON.stringify(PAGE_TWO)} : ${JSON.stringify(PAGE_ONE)};\n` +
-        `msg.ui = { query: { queryPath: ${JSON.stringify(queryPath)}, data: rows, totalCount: ${TOTAL_COUNT} } };\n` +
+        `msg.ui = { query: { queryPath: ${JSON.stringify(queryPath)}, data: rows, totalCount: ${TOTAL_COUNT}, pageCount: ${PAGE_COUNT} } };\n` +
         `return msg;`;
     return {
         type: "function",
@@ -87,11 +105,11 @@ test.describe("ui-query reactive paging loop (P161)", () => {
             .node("ui-table", {
                 id: "plTable",
                 columns: JSON.stringify([{ key: "name", label: "Name" }]),
-                rows: { kind: "query", path: `${queryPath}.data` }
+                rows: { kind: "query", path: queryPath }
             })
             .node("ui-pagination", {
                 id: "plPager",
-                total: { kind: "query", path: `${queryPath}.totalCount` },
+                total: { kind: "query", path: `${queryPath}.pageCount` },
                 currentPage: { kind: "state", path: "params.page" }
             })
             .node("ui-text", {
@@ -121,8 +139,8 @@ test.describe("ui-query reactive paging loop (P161)", () => {
         await expect(page.locator("table.webapp-table tbody")).toContainText("Alice", { timeout: 5000 });
         await expect(page.locator("table.webapp-table tbody")).not.toContainText("Bob");
 
-        // totalCount reached the pagination (42 items / 10 per page = 5 pages).
-        await expect(webapp.root()).toContainText("5", { timeout: 5000 });
+        // pageCount reached the pagination (42 items / 10 per page = 5 pages).
+        await expect(page.locator(".webapp-pagination-page")).toContainText(`/ ${PAGE_COUNT}`, { timeout: 5000 });
 
         // "Next Page": page=2 in the store → query observes the change → out-port
         // refresh carrying params.page=2 → mock DB returns page 2 → table updates.
