@@ -625,7 +625,14 @@ export const componentKindSchema = z.enum([
     // P69: icon display node
     "icon",
     // P83: divider — static visual separator (sl-divider)
-    "divider"
+    "divider",
+    // P164 (ADR 0017): ui-repeat — a TEMPLATE CONTAINER. It carries no rendered
+    // chrome of its own; the renderer EXPANDS it, cloning its default-slot child
+    // subtree once per resolved `items` element (with a render-time item scope).
+    // It appears in the compiled AppModel like a container does, so children mount
+    // via `container:<repeatId>/content` (= REPEAT_SLOT); `bind.items` holds the
+    // collection binding and `props.keyField` the optional stable key field.
+    "repeat"
 ]);
 
 /**
