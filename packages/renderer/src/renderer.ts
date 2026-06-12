@@ -32,6 +32,10 @@ export interface RendererAppOptions {
     location?: string;
     state?: Record<string, unknown>;
     queries?: Record<string, unknown>;
+    // P160: per-query lifecycle envelopes (queryPath → { loading, error,
+    // updatedAt, status }). Drives `query:<path>.loading|error|updatedAt`
+    // bindings. Optional — absent/partial entries simply resolve undefined.
+    queryLifecycle?: Record<string, Record<string, unknown>>;
     // P115: optional sink for distinct `reactive` expression failures. Deduped
     // per app instance so a broken expression is reported once, not on every
     // re-render. The host wires this to the error-forwarding pipeline.
@@ -148,7 +152,7 @@ export interface RendererApp {
     render(): RenderSnapshot;
     navigate(location: string): RenderSnapshot;
     replaceState(nextState: Record<string, unknown>): RenderSnapshot;
-    replaceQueries(nextQueries: Record<string, unknown>): RenderSnapshot;
+    replaceQueries(nextQueries: Record<string, unknown>, nextQueryLifecycle?: Record<string, Record<string, unknown>>): RenderSnapshot;
     dispatchEvent(componentId: string, event: UiEventName, payload?: Record<string, unknown>): DispatchResult;
 }
 
@@ -195,6 +199,13 @@ function describeSliceType(slice: unknown): string {
 interface BindingSources {
     state: Record<string, unknown>;
     queries: Record<string, unknown>;
+    // P160: per-query LIFECYCLE envelope, keyed by the EXACT queryPath →
+    // `{ loading, error, updatedAt, status }`. Separate from `queries` (the DATA
+    // tree) so the read convention is unambiguous: `query:<path>` resolves the
+    // DATA; `query:<path>.loading` / `.error` / `.updatedAt` resolve the
+    // lifecycle field. The set of keys here is exactly the app's query paths, so
+    // the resolver can tell a lifecycle sub-path from a data sub-field.
+    queryLifecycle: Record<string, Record<string, unknown>>;
     params: Record<string, string>;
     // P67: store id → statePath, so a `store` binding resolves to the store's
     // current value via state. Referencing by id (not statePath) stays robust
@@ -376,6 +387,37 @@ function reportStoreSubPathError(sources: BindingSources, message: string): void
     });
 }
 
+/**
+ * P160: reserved lifecycle sub-paths a `query:<path>.<field>` binding may read.
+ * `query:<path>` itself resolves the DATA; these suffixes resolve the load-state
+ * envelope built alongside the data.
+ */
+const QUERY_LIFECYCLE_FIELDS = new Set(["loading", "error", "updatedAt", "status"]);
+
+/**
+ * P160: resolve a `query` binding honouring the read convention:
+ *   - `query:<queryPath>`                         → the loaded DATA
+ *   - `query:<queryPath>.<loading|error|updatedAt|status>` → the lifecycle field
+ *   - `query:<queryPath>.<deeper.path>`           → a field INSIDE the data
+ * The lifecycle branch only fires when the prefix is a KNOWN query path and the
+ * suffix is exactly one reserved field — so a data object that happens to carry
+ * an `error`/`status` key of its own is never shadowed for an unknown path.
+ */
+function resolveQueryBinding(path: string | undefined, sources: BindingSources): unknown {
+    if (path) {
+        const lastDot = path.lastIndexOf(".");
+        if (lastDot > 0) {
+            const prefix = path.slice(0, lastDot);
+            const suffix = path.slice(lastDot + 1);
+            if (QUERY_LIFECYCLE_FIELDS.has(suffix) && Object.prototype.hasOwnProperty.call(sources.queryLifecycle, prefix)) {
+                return sources.queryLifecycle[prefix][suffix];
+            }
+        }
+    }
+
+    return getValueAtPath(sources.queries, path);
+}
+
 function resolveBinding(binding: BindingDefinition | undefined, sources: BindingSources, depth = 0): unknown {
     if (!binding) {
         return undefined;
@@ -388,7 +430,7 @@ function resolveBinding(binding: BindingDefinition | undefined, sources: Binding
             resolvedValue = binding.value;
             break;
         case "query":
-            resolvedValue = getValueAtPath(sources.queries, binding.path);
+            resolvedValue = resolveQueryBinding(binding.path, sources);
             break;
         case "routeParam":
             resolvedValue = binding.path ? sources.params[binding.path] : undefined;
@@ -1072,6 +1114,7 @@ export function createRendererApp(appModel: AppModel, options: RendererAppOption
         : undefined;
     let location = options.location ?? appModel.routes[0]?.path ?? "/";
     let queries = options.queries ?? {};
+    let queryLifecycle = options.queryLifecycle ?? {};
     let state = initializeState(options.state ?? {}, queries, integration);
 
     function render(): RenderSnapshot {
@@ -1081,6 +1124,7 @@ export function createRendererApp(appModel: AppModel, options: RendererAppOption
             sources: {
                 state,
                 queries,
+                queryLifecycle,
                 params: routeMatch.params,
                 storePaths,
                 storeNamePaths,
@@ -1134,8 +1178,11 @@ export function createRendererApp(appModel: AppModel, options: RendererAppOption
         return render();
     }
 
-    function replaceQueries(nextQueries: Record<string, unknown>): RenderSnapshot {
+    function replaceQueries(nextQueries: Record<string, unknown>, nextQueryLifecycle?: Record<string, Record<string, unknown>>): RenderSnapshot {
         queries = nextQueries;
+        if (nextQueryLifecycle !== undefined) {
+            queryLifecycle = nextQueryLifecycle;
+        }
         state = syncQueryState(state, queries, integration);
         return render();
     }

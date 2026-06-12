@@ -866,12 +866,90 @@ function initializeState(stores, queries, appId) {
         }
     }
 
+    // P160: a query's live state lives under `ui.queries.<queryPath>` as a
+    // lifecycle envelope `{ data, loading, error, updatedAt, status }`. The
+    // bound view reads the DATA via `query:<queryPath>` and the lifecycle via
+    // the reserved sub-paths `query:<queryPath>.loading|error|updatedAt`. We seed
+    // the idle envelope (no data yet) keyed by queryPath — NOT node id — so the
+    // key a `query` binding references and the key the push writes agree.
     for (const query of queries) {
-        state = setValueAtPath(state, `ui.queries.${query.id}.loading`, false);
-        state = setValueAtPath(state, `ui.queries.${query.id}.status`, "idle");
+        if (!query.queryPath) {
+            continue;
+        }
+        state = setValueAtPath(state, `ui.queries.${query.queryPath}`, {
+            data: undefined,
+            loading: false,
+            error: undefined,
+            updatedAt: undefined,
+            status: "idle"
+        });
     }
 
     return state;
+}
+
+// P160: split the live `ui.queries.<queryPath>` envelopes into the two sources
+// the renderer reads — `queries` (the DATA tree, so `query:<queryPath>` resolves
+// the data) and `queryLifecycle` (queryPath → {loading,error,updatedAt,status},
+// so `query:<queryPath>.loading|error|updatedAt` resolve the load state). Keyed
+// by queryPath; dotted paths nest in the data tree exactly as the binding reads.
+function buildQuerySources(state, queries) {
+    let dataTree = {};
+    const lifecycle = {};
+    for (const query of queries) {
+        if (!query.queryPath) {
+            continue;
+        }
+        const envelope = getValueAtPath(state, `ui.queries.${query.queryPath}`);
+        const env = isPlainObject(envelope) ? envelope : {};
+        if (env.data !== undefined) {
+            dataTree = setValueAtPath(dataTree, query.queryPath, env.data);
+        }
+        lifecycle[query.queryPath] = {
+            loading: env.loading === true,
+            error: env.error,
+            updatedAt: env.updatedAt,
+            status: env.status || "idle"
+        };
+    }
+    return { queries: dataTree, queryLifecycle: lifecycle };
+}
+
+// P160: fold an incoming `msg.ui.query` push into the live query envelope at
+// `ui.queries.<queryPath>`. A `data` push records the data + success status +
+// updatedAt and clears any prior error; an `error` push records the error +
+// error status; a bare `refresh`/`loading` push flips `loading`/status without
+// touching the last good data. Returns the next state (immutably via
+// setValueAtPath) or null when the message carries no recognised query path.
+function applyQueryMessage(currentState, queryMsg) {
+    if (!queryMsg || typeof queryMsg !== "object" || !queryMsg.queryPath) {
+        return null;
+    }
+    const path = `ui.queries.${queryMsg.queryPath}`;
+    const prev = getValueAtPath(currentState, path);
+    const envelope = isPlainObject(prev) ? { ...prev } : { status: "idle" };
+
+    if (Object.prototype.hasOwnProperty.call(queryMsg, "data")) {
+        envelope.data = clone(queryMsg.data);
+        envelope.error = undefined;
+        envelope.loading = false;
+        envelope.status = "success";
+        envelope.updatedAt = Date.now();
+    }
+    else if (Object.prototype.hasOwnProperty.call(queryMsg, "error")) {
+        envelope.error = queryMsg.error;
+        envelope.loading = false;
+        envelope.status = "error";
+    }
+    else if (queryMsg.refresh === true || queryMsg.loading === true) {
+        envelope.loading = true;
+        envelope.status = "loading";
+    }
+    else {
+        return null;
+    }
+
+    return setValueAtPath(currentState, path, envelope);
 }
 
 function resolveNavigationTarget(navigationPath, parameters, routeParams) {
@@ -1734,7 +1812,6 @@ function buildAppSnapshot(appId, location, dialogId, definitions, clientId) {
         actions: buckets.actions,
         stores: buckets.stores
     };
-    const queries = {};
     const state = initializeState(integration.stores, integration.queries, appId);
     // Per-client state wins when a clientId is given and that client has its own
     // state (P15 multi-user model); otherwise fall back to the shared broadcast state.
@@ -1744,6 +1821,13 @@ function buildAppSnapshot(appId, location, dialogId, definitions, clientId) {
     const hydratedState = resolvedState ? mergeDeep(state, resolvedState) : state;
     const effectiveState = dialogId ? setValueAtPath(hydratedState, `ui.dialogs.${dialogId}.open`, true) : hydratedState;
 
+    // P160: derive the renderer's `queries` (DATA tree keyed by queryPath) and
+    // `queryLifecycle` ({ queryPath → {loading,error,updatedAt,status} }) from the
+    // live `ui.queries.<queryPath>` envelopes held in state. This is the fix
+    // behind "everything empty": before, `queries` was passed as `{}` and the
+    // wired `msg.ui.query.data` push never reached a `query:`-bound view.
+    const { queries, queryLifecycle } = buildQuerySources(effectiveState, integration.queries);
+
     // P21: a single RenderSnapshot from packages/renderer is the source of truth.
     // webapp.js no longer re-walks the AppModel — it only serializes this snapshot.
     const rendererApp = createRendererApp(model, {
@@ -1751,6 +1835,7 @@ function buildAppSnapshot(appId, location, dialogId, definitions, clientId) {
         location,
         state: effectiveState,
         queries,
+        queryLifecycle,
         // P115 (ADR 0010): a failed `reactive` expression never breaks the
         // snapshot; it is reported once per distinct error through the existing
         // error-forwarding/logging pipeline (ADR 0006 / P55–P56). The renderer
@@ -3634,6 +3719,42 @@ function queryInputHandler(node, msg, send, done) {
         }
         runtimeState.queryEtags.set(cacheKey, queryMsg.etag);
     }
+
+    // P160: persist a recognised query push (data / error / refresh) into the
+    // live query envelope at `ui.queries.<queryPath>`, then push a fresh snapshot
+    // so every `query:`-bound view updates live. This is the wired data path:
+    //   onEnter/trigger → ui-query (pass-through) → data source → back to in-port
+    //   with msg.ui.query.data → here it lands in state → query:<path> binds it.
+    // Targeted (msg.ui.clientId) pushes update only that client's state; an
+    // unaddressed push updates the shared broadcast state. The message is still
+    // passed through unchanged so downstream wiring (and the trigger path) works.
+    if (queryMsg && typeof queryMsg === "object" && queryMsg.queryPath) {
+        const appId = findAppIdForNode(node);
+        if (appId) {
+            const clientId = msg && msg.ui && msg.ui.clientId ? String(msg.ui.clientId) : undefined;
+            const RED = runtimeState.RED;
+            const definitions = RED ? readDeployDefinitions(RED) : [];
+            const queryDefs = getDefinitionBuckets(appId, definitions).queries;
+            const seed = () => initializeState([], queryDefs, appId);
+            const base = clientId
+                ? (getClientState(appId, clientId)?.state || clone(runtimeState.liveState.get(appId) || seed()))
+                : clone(runtimeState.liveState.get(appId) || seed());
+
+            const nextState = applyQueryMessage(base, queryMsg);
+            if (nextState) {
+                if (clientId) {
+                    setClientState(appId, clientId, nextState, Date.now());
+                }
+                else {
+                    runtimeState.liveState.set(appId, nextState);
+                }
+                if (RED) {
+                    pushSnapshotToClients(appId, clientId, definitions);
+                }
+            }
+        }
+    }
+
     send(msg);
     if (done) {
         done();
@@ -5514,6 +5635,11 @@ registerWebappNodes.__test__ = {
     // emits msg.ui on its output port; takes no domain action.
     dispatchClientEvent,
     applyStoreOperation,
+    // P160: query live-state — push folding + snapshot source derivation.
+    applyQueryMessage,
+    buildQuerySources,
+    initializeState,
+    getDefinitionBuckets,
     getAppModelResult,
     renderAppPage,
     buildAppSnapshot,
