@@ -29,6 +29,7 @@ describe("editor node set", () => {
             "ui-progress",
             "ui-query",
             "ui-radio",
+            "ui-repeat",
             "ui-route",
             "ui-select",
             "ui-skeleton",

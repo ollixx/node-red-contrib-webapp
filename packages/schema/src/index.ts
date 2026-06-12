@@ -17,6 +17,7 @@ export {
     BADGE_VARIANTS,
     bindingSchema,
     leafBindingSchema,
+    SCOPE_LOCAL_BINDING_KINDS,
     BUTTON_VARIANTS,
     BUTTON_LINK_MODES,
     COMPONENT_SIZES,
@@ -123,6 +124,8 @@ export {
     uiProgressNodeDefinitionSchema,
     uiQueryNodeDefinitionSchema,
     uiRadioNodeDefinitionSchema,
+    uiRepeatNodeDefinitionSchema,
+    REPEAT_SLOT,
     uiRouteNodeDefinitionSchema,
     uiSelectNodeDefinitionSchema,
     uiSkeletonNodeDefinitionSchema,
@@ -172,6 +175,7 @@ export type {
     UiProgressNodeDefinition,
     UiQueryNodeDefinition,
     UiRadioNodeDefinition,
+    UiRepeatNodeDefinition,
     UiRouteNodeDefinition,
     UiSelectNodeDefinition,
     SelectOption,
@@ -216,5 +220,8 @@ export {
     fixtureAppModels,
     operationsConsoleAppModelFixture,
     reactiveBindingFixture,
-    storeSubPathBindingFixture
+    storeSubPathBindingFixture,
+    itemBindingFixture,
+    indexBindingFixture,
+    minimalRepeatNodeSetFixture
 } from "./fixtures";

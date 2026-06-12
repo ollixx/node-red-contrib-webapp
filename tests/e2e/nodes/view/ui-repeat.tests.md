@@ -5,12 +5,22 @@
 
 ## Geplante Testziele
 
-### Schema + Binding-Art `item`/`index` (P163)
+### Schema + Binding-Art `item`/`index` (P163) — abgedeckt (unit)
+
+> Umgesetzt in `packages/schema/test/p163-repeat-item-binding.test.ts`
+> (`verify: unit`). Kein E2E-Spec in dieser Schicht.
 
 - `ui-repeat`-Knotendefinition validiert (`items` Pflicht-Wert-Binding,
-  optionales `keyField`, Default-Slot).
-- Binding-Art `item`/`item.<pfad>`/`index` ist im Binding-Union zugelassen und
-  schema-validierbar.
+  optionales `keyField`, fester Default-Slot `content` = `REPEAT_SLOT`). Negativ:
+  fehlende `items` und leeres `keyField` bleiben rot; Knoten ohne `mount`/`parent`
+  rot.
+- Binding-Art `item` (ganzes Element), `item.<pfad>` (ein-/mehrstufig, z. B.
+  `address.city`) und `index` (nullbasiert, pfadlos) ist im Binding-Union
+  zugelassen, **scope-lokal** markiert und schema-validierbar; `item.<pfad>`
+  roundtrippt durch parse/serialize. Negativ: unbekannte Binding-Art bleibt rot;
+  `index` mit Pfad und malformierte `item`-Pfade (führender/Doppel-Punkt) rot.
+- Fixtures: `itemBindingFixture`, `indexBindingFixture`,
+  `minimalRepeatNodeSetFixture` (Array-Quelle + Kind mit `item.name`).
 
 ### Renderer — Template-Klon + Render-Zeit-Scope (P164)
 

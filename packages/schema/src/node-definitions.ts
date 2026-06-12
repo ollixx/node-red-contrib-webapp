@@ -197,6 +197,33 @@ export const uiContainerNodeDefinitionSchema = mountableNodeSchema.extend({
 
 export type UiContainerNodeDefinition = z.infer<typeof uiContainerNodeDefinitionSchema>;
 
+// P163 (ADR 0017): `ui-repeat` — a template CONTAINER (children allowed),
+// analogous to `ui-container`. It is mountable, holds a child subtree in a
+// **default slot** (the template), and is repeated n× by the renderer over the
+// bound `items` collection. Unlike ui-container it carries no `layout`/`variant`
+// chrome: its single slot is fixed to the standard "content" slot (REPEAT_SLOT)
+// so children mount via `<type>:<id>/content` exactly like any other container.
+//
+//  - `items`    → REQUIRED value-binding (the collection to iterate). Resolves to
+//                 an array (an object is iterated as `{key, value}` entries). The
+//                 renderer (P164) does the n× expansion; here it is form-only.
+//  - `keyField` → optional field name used as the stable per-instance key for the
+//                 keyed morph; falls back to the array index when absent.
+export const REPEAT_SLOT = "content";
+
+export const uiRepeatNodeDefinitionSchema = mountableNodeSchema.extend({
+    type: z.literal("ui-repeat"),
+    // REQUIRED collection binding — full value-binding set (literal/state/query/
+    // store/routeParam/reactive/msg/flow/global/jsonata/env). Resolution → array
+    // happens in the renderer (P164), not here.
+    items: bindingSchema,
+    // Optional stable key field for the keyed morph (e.g. "id"). When omitted the
+    // renderer keys instances by array index.
+    keyField: z.string().min(1, "ui-repeat keyField must not be empty when set.").optional()
+});
+
+export type UiRepeatNodeDefinition = z.infer<typeof uiRepeatNodeDefinitionSchema>;
+
 export const uiRouteNodeDefinitionSchema = identifiedNodeSchema.extend({
     type: z.literal("ui-route"),
     parent: identifierSchema.optional(),
@@ -1031,6 +1058,7 @@ export const uiNodeDefinitionSchema = z.union([
     uiAppNodeDefinitionSchema,
     uiRouteNodeDefinitionSchema,
     uiContainerNodeDefinitionSchema,
+    uiRepeatNodeDefinitionSchema,
     uiTextNodeDefinitionSchema,
     uiButtonNodeDefinitionSchema,
     uiTableNodeDefinitionSchema,
@@ -1071,6 +1099,7 @@ const uiNodeSchemaByType: Record<string, z.ZodTypeAny> = {
     "ui-app": uiAppNodeDefinitionSchema,
     "ui-route": uiRouteNodeDefinitionSchema,
     "ui-container": uiContainerNodeDefinitionSchema,
+    "ui-repeat": uiRepeatNodeDefinitionSchema,
     "ui-text": uiTextNodeDefinitionSchema,
     "ui-button": uiButtonNodeDefinitionSchema,
     "ui-table": uiTableNodeDefinitionSchema,
