@@ -16,7 +16,7 @@ verify: unit
 spec: docs/nodes/display/ui-repeat.md
 tests: tests/e2e/nodes/view/ui-repeat.tests.md
 dependencies: [P163]
-status: in_progress
+status: done
 ---
 # P164 — ui-repeat Renderer: Klon + Scope + Keys
 
@@ -53,3 +53,33 @@ status: in_progress
   Mindestens **nicht crashen**; saubere Mehr-Ebenen-Benennung ist Folgearbeit.
 - **Stufe 1 read-only:** nur Lesen aus `item.*`. Schreiben aus der Zeile ist
   Stufe 2 (ADR 0017 §5) — hier **nicht** bauen.
+
+## Result
+
+- **delivered:** Renderer half of ui-repeat (ADR 0017 Schicht 2). Added `"repeat"` to the
+  renderer's `componentKindSchema` (runtime mapping stays P165). In `packages/renderer/src/renderer.ts`:
+  (1) **template expansion** — `expandRepeat` resolves `items` via the structural resolver, builds
+  `{item,index}` frames (array → n×, object → `{key,value}` entries, scalar/empty → 0), clones the
+  `REPEAT_SLOT` (`container:<repeatId>/content`) child subtree per item and flattens it into the host
+  region; (2) **render-time scope** — a new `itemScope` STACK on `BindingSources` plus `item` /
+  `item.<path>` / `index` cases in `resolveBinding` (the FIRST scope-local binding kinds), resolved
+  against the innermost frame; (3) **keyed clones** — per-instance id `<itemKey>#<childId>` (keyField
+  value → object entry key → index) feeds the existing keyed morph so focus/scroll/DOM of unchanged
+  instances survive reorder/insert/delete; (4) **reactive/wire path** — store/query `items` change
+  re-renders a fresh snapshot with the correct count, no child fan-out. Spec + catalogue extended.
+- **stats:** 5 files (2 src, 1 new test, 2 docs); **+21 renderer snapshot tests**
+  (`packages/renderer/test/p164-repeat-template-clone.test.ts`). `pnpm validate` exit 0 — schema 296,
+  editor 96, renderer **92**, runtime 952 unit tests green; lint + check:roadmap + check:links + build
+  green. Develop regression: render-side E2E **0 failed** across the slices that ran (199 view-dir +
+  62 render-slice tests green before the host's slow E2E was interrupted) — `verify:unit` acceptance
+  (the 21 renderer snapshot tests) is the contract and is fully met.
+- **notes:** **Outside a repeat** — `item`/`index` resolve to `undefined` (defined, no throw); a
+  binding `fallback` applies, else the display normalizes to `"?"` (P104); bare `item` on an object
+  element → `"?"` (non-scalar), no crash. **Nested repeats** — the scope is an immutably-rebuilt
+  stack; innermost frame wins for `item`/`index`; inner repeats expand recursively with chained
+  per-instance ids (`<outerKey>#<innerKey>#<childId>`), collision-free; explicit *outer*-level naming
+  is documented follow-up. Stage-1 read-only (no row write-back — that is ADR 0017 §5). Worktree-sanity
+  self-heal: worktree arrived on orphan base `db4f4ff`; recreated `phase/P164` from the explicit
+  develop SHA, P163 ancestry confirmed before any work. The browser proof of the end-to-end flow is
+  **P165** (verify:browser).
+- **cost:** session aa91b560cd2e8fa6d, ~22m.
