@@ -1,43 +1,58 @@
-# Testkatalog: ui-tabs
+# Testkatalog: ui-tabs / ui-tab
 
-> Format gemäß `.ai/agents/node-testing.md`. Angelegt mit P155 (Field-Typing Welle 2).
+> Format gemäß `.ai/agents/node-testing.md`. Neu geschrieben mit P168 (ADR 0018,
+> Modell 1a — Kinder definieren die Tabs).
 
 Spec: `tests/e2e/nodes/view/ui-tabs.spec.ts`
-Unit: `packages/runtime/test/p155-tabs-activetab-typedinput.test.ts`
+Unit: `packages/runtime/test/p155-tabs-activetab-typedinput.test.ts`,
+`packages/runtime/test/p168-tabs-children-model.test.ts`
 Editor-Regression: `tests/e2e/nodes/editor/navigation-nodes.spec.ts`,
 `tests/e2e/nodes/editor/minimal-coverage.spec.ts`
 
-## Zielmodell (P155, ADR 0012)
-- `activeTabPath` → **`activeTab`**: kanonischer Wert-typedInput, **zweiseitig** —
-  liest den aktiven Tab (Tab-`id`) aus Store/State (`bind.value`, vom Renderer
-  aufgelöst → markiert den passenden `sl-tab` aktiv) UND der Tab-Wechsel emittiert
-  das `change`-Event mit der gewählten Tab-ID, das im Flow in denselben Store
-  zurückgeschrieben wird (Roundtrip). Default-Typ `string`.
-- Das bestehende Tab-Change-Event am Out-Port bleibt unverändert.
-- **Scope nur der aktive Tab** — die `tabs`-Liste (Tab-Definition) und dynamische
-  Slots sind ausdrücklich nicht Teil dieses Phase (separate Collections-Arbeit).
-- Migration: `activeTabPath` (nackter State-Pfad) → `{kind:"state", path}`.
+## Zielmodell (P168, ADR 0018)
+- **Kein `tabs`-JSON-Feld mehr.** Die Tabs werden aus den gemounteten
+  `ui-tab`-Kindern abgeleitet — ein Panel je Kind, Slot-Schlüssel = Kind-id.
+- `ui-tab` ist ein dünner Container (`label`/`icon`/`order` + Default-`content`-Slot).
+  Mount in ein `ui-tabs` (`ui-tabs:<id>/content`, Picker-Alias `container:<id>/content`)
+  = „werde ein Tab". Inhalt mountet in `ui-tab:<tabId>/content`.
+- `activeTab` (P155/ADR 0012, **zweiseitig**) trägt die **Kind-id**; Default =
+  erstes Kind nach `order`; ungültiger Wert → erstes Kind.
+- Eindeutigkeit: doppelte `ui-tab`-id unter einem `ui-tabs` → sichtbarer Deploy-Fehler.
+- Migration: Legacy `tabs:[{id,label}]` + `tab:<id>`-Mounts → `ui-tab`-Kinder +
+  `ui-tab:<id>/content`-Mounts (verlustfrei, einmalig beim Deploy).
 
 ## E2E-Tests (`ui-tabs.spec.ts`)
 | ID | Ziel |
 |---|---|
-| R01 | Zwei Tabs gerendert als `sl-tab`/`sl-tab-panel`-Paare. |
+| R01 | Zwei `ui-tab`-Kinder rendern als `sl-tab`/`sl-tab-panel`-Paare. |
+| R02 | Inhalt jedes Tabs rendert in sein eigenes Panel; Tab-Wechsel zeigt es. |
 | A01 | `activeTab` Literal-Binding markiert den passenden `sl-tab` aktiv. |
 | A02 | `activeTab` State-Binding löst den aktiven Tab aus dem Store auf. |
-| A03 | `activeTab` **zweiseitig**: Tab-Klick → change-Event → verdrahteter Store-`set` → SSE-Re-Render aktiviert den gewählten Tab. |
+| A03 | `activeTab` **zweiseitig**: Tab-Klick → change-Event → verdrahteter Store-`set` → SSE-Re-Render aktiviert den gewählten Tab (Browser-Beweis-Roundtrip). |
 | A04 | Externe Store-Änderung → SSE-Re-Render aktiviert den Tab. |
-| E01 | `change`: `sl-tab-show` emittiert `change` mit `params.value` (Tab-ID). |
-| M01 | Legacy `activeTabPath` migriert: aktiver Tab aus dem Store. |
+| D01 | Ohne `activeTab` → erstes Kind nach `order` ist aktiv. |
+| E01 | `change`: `sl-tab-show` emittiert `change` mit `params.value` (Kind-id). |
+| M01 | Legacy `tabs`-JSON-Flow migriert: Tabs + Inhalt rendern weiterhin. |
 
-## Unit-Tests (`p155-tabs-activetab-typedinput.test.ts`)
+## Unit-Tests
+`p155-tabs-activetab-typedinput.test.ts`:
 - Kanonisches `activeTab`-Binding-Objekt (state/store/literal) → `activeTab`.
-- Legacy `activeTabPath` → State-Binding (Migration).
-- Kanonisches `activeTab` gewinnt über Legacy-Pfad.
+- Legacy `activeTabPath` → State-Binding (Migration); kanonisch gewinnt.
 - Ohne `activeTab`/`activeTabPath` bleibt `activeTab` `undefined`.
 - `tabChange`-Event bleibt neben dem `activeTab`-Binding erhalten.
 - Read-Resolution (Compile→Render→Serialize): Literal/State/Legacy-Pfad markieren
-  den richtigen `sl-tab` aktiv.
+  den richtigen `sl-tab` aktiv; ohne Wert → erstes Kind; je Kind ein Panel mit Inhalt.
+
+`p168-tabs-children-model.test.ts`:
+- Ein `sl-tab` + `sl-tab-panel` je `ui-tab`-Kind; Inhalt im Panel.
+- activeTab markiert das Kind; ungültiger Wert → erstes Kind (Fallback).
+- `container:<id>/content`-Mount-Alias des Pickers wird akzeptiert.
+- Migration (`migrateLegacyTabComponents`): synthetisiert `ui-tab`-Kinder,
+  hängt `tab:<id>`-Inhalts-Mounts um, lässt Kinder-Modell unverändert, rendert E2E.
+- Eindeutigkeit (`validateUiTabChildrenUniqueness`): doppelte id pro `ui-tabs` →
+  ein Issue je Knoten; gleiche id unter verschiedenen `ui-tabs` ist erlaubt.
 
 ## Editor-Regression
-- `minimal-coverage.spec.ts`: ui-tabs `fields:["name","mount"]`, `inputs:1`.
-- `navigation-nodes.spec.ts`: `tabs`-Feld vorhanden; 1 Output-Port.
+- `minimal-coverage.spec.ts`: ui-tabs `fields:["name","mount"]`, `inputs:1`;
+  ui-tab `fields:["name","mount"]`.
+- `navigation-nodes.spec.ts`: ui-tabs hat **kein** `tabs`-Feld mehr; 1 Output-Port.

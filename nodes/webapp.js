@@ -122,6 +122,8 @@ const WEBAPP_NODE_TYPES = new Set([
     "ui-badge",
     "ui-empty-state",
     "ui-tabs",
+    // P168 (ADR 0018, Model 1a): ui-tab — thin container child of ui-tabs.
+    "ui-tab",
     "ui-accordion",
     "ui-breadcrumb",
     "ui-menu",
@@ -1056,6 +1058,77 @@ function getRouteMatch(location, routes) {
     return matches[0];
 }
 
+// P168 (ADR 0018 §5): in-editor migration of LEGACY `ui-tabs` flows (pre-P167)
+// so old flows do not break under the children model. A legacy `ui-tabs` carries
+// a `tabs:[{id,label}]` array and its content children mount via the derived
+// slot `tab:<tabId>`. This pre-pass rewrites such a node to the Model-1a shape:
+//   - drop the legacy `tabs` array from the ui-tabs node,
+//   - synthesize one `ui-tab` child per legacy entry (id/label preserved,
+//     mounting into `ui-tabs:<tabsId>/content`),
+//   - re-point each `tab:<tabId>` content child onto `ui-tab:<tabId>/content`.
+// A flow already on the children model (no `tabs` array) passes through
+// untouched. Pure — operates on a shallow copy.
+function migrateLegacyTabComponents(components) {
+    // Accept BOTH the raw `tabs` array (when migration runs on un-mapped configs)
+    // and the `legacyTabs` carrier that ui-tabs mapConfig preserves.
+    const legacyTabsOf = (c) => {
+        if (Array.isArray(c.legacyTabs) && c.legacyTabs.length > 0) { return c.legacyTabs; }
+        if (Array.isArray(c.tabs) && c.tabs.length > 0) { return c.tabs; }
+        return null;
+    };
+    const legacyTabsNodes = components.filter((c) => c && c.type === "ui-tabs" && legacyTabsOf(c));
+
+    if (legacyTabsNodes.length === 0) {
+        return components;
+    }
+
+    // Map a legacy tab slot mount (`tab:<tabId>`) → the owning ui-tabs id, so a
+    // content child can be re-pointed. Each legacy tab id is globally unique
+    // enough here (tab ids are the slot keys); collisions across ui-tabs are a
+    // pre-existing authoring error and fall back to a best-effort remap.
+    const tabIdToTabsId = new Map();
+    const syntheticChildren = [];
+    const migratedTabsIds = new Set();
+
+    for (const tabsNode of legacyTabsNodes) {
+        migratedTabsIds.add(tabsNode.id || tabsNode.uiId);
+        const tabsId = tabsNode.id || tabsNode.uiId;
+        (legacyTabsOf(tabsNode) || []).forEach((entry, index) => {
+            const tabId = (entry && (entry.id !== undefined ? String(entry.id) : String(entry))) || String(index);
+            const label = entry && entry.label !== undefined ? String(entry.label) : tabId;
+            tabIdToTabsId.set(tabId, tabsId);
+            syntheticChildren.push({
+                type: "ui-tab",
+                id: tabId,
+                uiId: tabId,
+                mount: `ui-tabs:${tabsId}/${"content"}`,
+                label: { kind: "literal", value: label },
+                order: index
+            });
+        });
+    }
+
+    const remapped = components.map((c) => {
+        if (!c) { return c; }
+        // Strip the legacy `tabs` / `legacyTabs` carriers from migrated ui-tabs.
+        if (c.type === "ui-tabs" && migratedTabsIds.has(c.id || c.uiId)) {
+            const { tabs, legacyTabs, ...rest } = c;
+            return rest;
+        }
+        // Re-point legacy content children mounted at `tab:<tabId>`.
+        const rawMount = typeof c.mount === "string" ? c.mount.trim() : "";
+        if (rawMount.startsWith("tab:")) {
+            const tabId = rawMount.slice("tab:".length).split("/")[0];
+            if (tabIdToTabsId.has(tabId)) {
+                return { ...c, mount: `ui-tab:${tabId}/content` };
+            }
+        }
+        return c;
+    });
+
+    return [...remapped, ...syntheticChildren];
+}
+
 function toComponentDefinitions(components) {
     return components.map((component) => {
         if (component.type === "ui-text") {
@@ -1244,6 +1317,29 @@ function toComponentDefinitions(components) {
                 bind: itemsBinding ? { items: itemsBinding } : {},
                 props: {
                     ...(blankToUndefined(component.keyField) ? { keyField: component.keyField } : {}),
+                    ...(Object.keys(layoutProps).length > 0 ? { layout: layoutProps } : {})
+                },
+                events: []
+            };
+        }
+
+        // P168 (ADR 0018, Model 1a): ui-tab — a thin CONTAINER child of ui-tabs.
+        // It maps to the renderer kind "tab"; it emits no standalone chrome (its
+        // parent `tabs` enumerates it and renders its panel). `label` is a value
+        // binding routed through bind.label so the renderer resolves it to the tab
+        // title; `icon` is a static prop. Content children mount via
+        // `ui-tab:<id>/content` (= TAB_SLOT) and render into the tab's panel.
+        if (component.type === "ui-tab") {
+            const layoutProps = collectNormalizedLayoutProps(component);
+            const labelBinding = getBinding(component.label, undefined);
+            return {
+                id: component.id,
+                kind: "tab",
+                mount: component.mount || component.parent,
+                order: toOptionalNumber(component.order),
+                bind: labelBinding ? { label: labelBinding } : {},
+                props: {
+                    ...(blankToUndefined(component.icon) ? { icon: component.icon } : {}),
                     ...(Object.keys(layoutProps).length > 0 ? { layout: layoutProps } : {})
                 },
                 events: []
@@ -1615,7 +1711,7 @@ function getAppModelResult(appId, definitions) {
                 closable: dialog.closable !== false
             }))
             .sort((left, right) => left.id.localeCompare(right.id)),
-        components: toComponentDefinitions(buckets.components)
+        components: toComponentDefinitions(migrateLegacyTabComponents(buckets.components))
     };
 
     const validation = appModelSchema.safeParse(modelCandidate);
@@ -2307,6 +2403,68 @@ function validateAppRootUniqueness(RED) {
     return issues;
 }
 
+// P168 (ADR 0018 §1): cross-validate that the `ui-tab` children mounted into one
+// `ui-tabs` carry UNIQUE ids — the id is the slot key AND the `activeTab` token,
+// so a collision aliases two tabs onto one panel. Reads the flow file (like
+// validateAppRootUniqueness) and groups ui-tab nodes by the ui-tabs id parsed
+// from their mount (`container:<tabsId>/...` or `ui-tabs:<tabsId>/...`). Returns
+// one issue per offending node so each gets a visible red status + error.
+function parseTabsHostFromMount(mount) {
+    const raw = typeof mount === "string" ? mount.trim() : "";
+    const heads = ["ui-tabs:", "container:"];
+    for (const head of heads) {
+        if (raw.startsWith(head)) {
+            const sep = raw.indexOf("/");
+            if (sep < 0) { return ""; }
+            return raw.slice(head.length, sep);
+        }
+    }
+    return "";
+}
+
+function validateUiTabChildrenUniqueness(RED) {
+    const issues = [];
+    let nodes;
+    try {
+        const flowFilePath = getFlowFilePath(RED);
+        if (!fs.existsSync(flowFilePath)) { return issues; }
+        const parsed = JSON.parse(fs.readFileSync(flowFilePath, 'utf8'));
+        nodes = Array.isArray(parsed) ? parsed : [];
+    }
+    catch { return issues; }
+
+    const tabNodes = nodes.filter((n) => n && n.type === 'ui-tab');
+    // host (ui-tabs id) → Map<tabId, node[]>
+    const byHost = new Map();
+    for (const n of tabNodes) {
+        const host = parseTabsHostFromMount(n.mount);
+        if (!host) { continue; }
+        // The tab id is the node id (getUiId = config.id); the slot key derives
+        // from it. uiId is only a fallback for nodes that lack an id.
+        const tabId = (n.id || n.uiId || '').trim();
+        if (!tabId) { continue; }
+        if (!byHost.has(host)) { byHost.set(host, new Map()); }
+        const byTabId = byHost.get(host);
+        if (byTabId.has(tabId)) { byTabId.get(tabId).push(n); }
+        else { byTabId.set(tabId, [n]); }
+    }
+
+    for (const [host, byTabId] of byHost.entries()) {
+        for (const [tabId, group] of byTabId.entries()) {
+            if (group.length < 2) { continue; }
+            for (const n of group) {
+                issues.push({
+                    nodeId: n.id,
+                    host,
+                    tabId,
+                    message: `Duplicate ui-tab id '${tabId}' within ui-tabs '${host}' — tab ids must be unique (the id is the slot key and the activeTab value).`
+                });
+            }
+        }
+    }
+    return issues;
+}
+
 function getDefinitionBuckets(appId, definitions) {
     const matchingApp = definitions.find((entry) => entry.type === "ui-app" && (entry.id === appId || entry.root === appId));
 
@@ -2332,7 +2490,7 @@ function getDefinitionBuckets(appId, definitions) {
         app: matchingApp,
         routes: matchingDefinitions.filter((entry) => entry.type === "ui-route"),
         dialogs: matchingDefinitions.filter((entry) => entry.type === "ui-dialog"),
-        components: matchingDefinitions.filter((entry) => ["ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select", "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider", "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state", "ui-tabs", "ui-accordion", "ui-breadcrumb", "ui-menu", "ui-pagination", "ui-stepper", "ui-avatar", "ui-image", "ui-icon", "ui-list", "ui-log", "ui-divider", "ui-repeat"].includes(entry.type)),
+        components: matchingDefinitions.filter((entry) => ["ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select", "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider", "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state", "ui-tabs", "ui-tab", "ui-accordion", "ui-breadcrumb", "ui-menu", "ui-pagination", "ui-stepper", "ui-avatar", "ui-image", "ui-icon", "ui-list", "ui-log", "ui-divider", "ui-repeat"].includes(entry.type)),
         stores: matchingDefinitions.filter((entry) => entry.type === "ui-store"),
         queries: matchingDefinitions.filter((entry) => entry.type === "ui-query"),
         actions: matchingDefinitions.filter((entry) => entry.type === "ui-action"),
@@ -3584,6 +3742,27 @@ function registerDeployHook(RED) {
             }
         }
         catch (_e2) {
+            // Never let validation crash the deploy.
+        }
+
+        // P168 (ADR 0018 §1): cross-validate ui-tab id uniqueness within each
+        // ui-tabs — a duplicate aliases two tabs onto one panel.
+        try {
+            const tabIssues = validateUiTabChildrenUniqueness(RED);
+            for (const issue of tabIssues) {
+                const issueNode = RED.nodes.getNode(issue.nodeId);
+                if (issueNode) {
+                    issueNode.status({ fill: "red", shape: "ring", text: "duplicate tab id" });
+                }
+                reportRuntimeError(issueNode || undefined, {
+                    severity: 'error',
+                    code: 'duplicate-ui-tab-id',
+                    message: issue.message,
+                    context: { nodeId: issue.nodeId, tabsId: issue.host, tabId: issue.tabId, op: 'deploy' }
+                });
+            }
+        }
+        catch (_e3) {
             // Never let validation crash the deploy.
         }
 
@@ -5454,24 +5633,57 @@ const runtimeNodeRegistry = {
         }
     },
     "ui-tabs": {
+        // P168 (ADR 0018, Model 1a): the `tabs` config-array is REMOVED. Tabs are
+        // DERIVED from the mounted `ui-tab` children (one panel per child); the
+        // renderer enumerates them. Only `activeTab` (two-way) + events remain.
+        mapConfig: (config) => {
+            // P168 (ADR 0018 §5): preserve a LEGACY `tabs` config-array (pre-P167)
+            // under `legacyTabs` so the in-editor migration pre-pass
+            // (migrateLegacyTabComponents) can synthesize ui-tab children. New flows
+            // have no `tabs` field and `legacyTabs` stays undefined.
+            const legacyTabs = (parseJsonList(config.tabs).length > 0 ? parseJsonList(config.tabs) : parseList(config.tabs))
+                .map((t) => {
+                    if (typeof t === "string") {
+                        try { return JSON.parse(t); } catch { return { id: t, label: t }; }
+                    }
+                    return t;
+                })
+                .filter(Boolean);
+            return {
+                type: "ui-tabs",
+                id: getUiId(config),
+                parent: config.parent || undefined,
+                mount: config.mount || config.parent,
+                order: toOptionalNumber(config.order),
+                activeTab: getBinding(config.activeTab, config.activeTabPath ? stateBinding(config.activeTabPath) : undefined),
+                variant: config.variant || undefined,
+                events: parseJsonList(config.events),
+                ...(legacyTabs.length > 0 ? { legacyTabs } : {}),
+                ...collectNodeConfigLayoutProps(config)
+            };
+        },
+        options: {
+            inputHandler: interactionInputHandler(INTERACTION_VERBS_BY_TYPE["ui-tabs"], componentStateInputHandler)
+        }
+    },
+    // P168 (ADR 0018, Model 1a): ui-tab — a thin CONTAINER child of ui-tabs. It
+    // carries the section's `label` (value binding), optional `icon`, and `order`,
+    // plus a single default `content` slot for the tab's body. The MOUNT into a
+    // ui-tabs is the declaration of the tab; its own id is the slot key / the
+    // `activeTab` token.
+    "ui-tab": {
         mapConfig: (config) => ({
-            type: "ui-tabs",
+            type: "ui-tab",
             id: getUiId(config),
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
-            tabs: (parseJsonList(config.tabs).length > 0 ? parseJsonList(config.tabs) : parseList(config.tabs)).map((t) => {
-                if (typeof t === "string") {
-                    try { return JSON.parse(t); } catch { return { id: t, label: t }; }
-                }
-                return t;
-            }).filter(Boolean),
-            activeTab: getBinding(config.activeTab, config.activeTabPath ? stateBinding(config.activeTabPath) : undefined),
-            events: parseJsonList(config.events),
+            label: getBinding(config.label, config.labelPath ? stateBinding(config.labelPath) : literalBinding(config.labelPath || "")),
+            icon: config.icon || undefined,
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: interactionInputHandler(INTERACTION_VERBS_BY_TYPE["ui-tabs"], componentStateInputHandler)
+            inputHandler: passThroughInputHandler
         }
     },
     "ui-accordion": {
@@ -5799,6 +6011,8 @@ registerWebappNodes.__test__ = {
     initializeState,
     getDefinitionBuckets,
     getAppModelResult,
+    migrateLegacyTabComponents,
+    validateUiTabChildrenUniqueness,
     renderAppPage,
     buildAppSnapshot,
     renderLayoutHtml,

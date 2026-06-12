@@ -1,5 +1,7 @@
 import {
     REPEAT_SLOT,
+    TAB_SLOT,
+    defaultActiveTabId,
     resolveMountReference,
     uiEventMessageSchema,
     type AppModel,
@@ -95,8 +97,23 @@ export interface RenderedInputComponent extends RenderedComponentBase {
 
 /** Generic rendered component for P16x kinds (select, checkbox, radio, etc.). */
 export interface RenderedGenericComponent extends RenderedComponentBase {
-    kind: "select" | "checkbox" | "radio" | "switch" | "textarea" | "datepicker" | "slider" | "alert" | "badge" | "progress" | "breadcrumb" | "tabs" | "accordion" | "menu" | "avatar" | "image" | "list" | "pagination" | "stepper" | "log" | "icon" | "divider";
+    kind: "select" | "checkbox" | "radio" | "switch" | "textarea" | "datepicker" | "slider" | "alert" | "badge" | "progress" | "breadcrumb" | "accordion" | "menu" | "avatar" | "image" | "list" | "pagination" | "stepper" | "log" | "icon" | "divider";
     value: unknown;
+}
+
+/**
+ * P168 (ADR 0018, Model 1a): ui-tabs renders ONE panel per `ui-tab` child. The
+ * tabs are DERIVED from the mounted children (not a config array) — `props.tabs`
+ * carries the per-child metadata `{ id, label, active }` (id = child id = slot
+ * key = the `activeTab` token), and `regions` carries one region per child
+ * (region name = child id) holding that tab's content subtree. The active tab is
+ * `component.value` (resolved from the two-way `activeTab` binding); an invalid /
+ * absent value falls back to the first child by `order` (defaultActiveTabId).
+ */
+export interface RenderedTabsComponent extends RenderedComponentBase {
+    kind: "tabs";
+    value: unknown;
+    regions: RenderedRegion[];
 }
 
 export type RenderedComponent =
@@ -106,6 +123,7 @@ export type RenderedComponent =
     | RenderedGenericComponent
     | RenderedInputComponent
     | RenderedTableComponent
+    | RenderedTabsComponent
     | RenderedTextComponent;
 
 export interface RenderedRegion {
@@ -931,6 +949,16 @@ function toRenderedComponent(component: ComponentDefinition, context: ComponentR
         // serializer reads component.value to mark the active step. The existing
         // step-change event carries the chosen step id, which a wired flow writes
         // back to the bound store (declarative roundtrip).
+        // P168 (ADR 0018, Model 1a): ui-tabs derives one panel per `ui-tab` child.
+        // It is NOT a plain generic value component — it carries `regions` (one per
+        // child) and `props.tabs` metadata. Handled by its own path below.
+        case "tabs":
+            return renderTabs(component, baseComponent, resolvedProps, context, appModel);
+        // P168: a `ui-tab` renders NO standalone chrome — its parent `tabs`
+        // component enumerates it and renders its panel. A `tab` reached here
+        // directly (not via its tabs parent) is dropped from the region.
+        case "tab":
+            return undefined;
         case "select":
         case "checkbox":
         case "radio":
@@ -940,7 +968,6 @@ function toRenderedComponent(component: ComponentDefinition, context: ComponentR
         case "slider":
         case "progress":
         case "breadcrumb":
-        case "tabs":
         case "accordion":
         case "menu":
         case "avatar":
@@ -1058,6 +1085,118 @@ function createRepeatChildMatcher(
         const regionKey = rawMount.slice(separatorIndex + 1);
 
         return targetContainerId === repeatId && regionKey === regionPath.join("/");
+    };
+}
+
+/**
+ * P168 (ADR 0018, Model 1a): match children mounted into a `ui-tabs` / `ui-tab`
+ * host. The CANONICAL mount shape is `<prefix>:<hostId>/<slot>` (e.g.
+ * `ui-tabs:t1/content`, `ui-tab:overview/content` — what the schema's
+ * `uiTabContentMount` / migration emit). The editor's mount-tree picker surfaces
+ * these hosts via the shared container machinery, which emits the generic
+ * `container:<hostId>/<slot>` form — so BOTH are accepted here (the `container:`
+ * alias lets the existing two-column picker drive tabs with no special-casing).
+ */
+function createTabMountMatcher(
+    prefix: string,
+    hostId: string
+): (component: ComponentDefinition, regionPath: string[]) => boolean {
+    const heads = [`${prefix}:`, "container:"];
+    return (component, regionPath) => {
+        const rawMount = component.mount.trim();
+        const head = heads.find((candidate) => rawMount.startsWith(candidate));
+
+        if (!head) {
+            return false;
+        }
+
+        const separatorIndex = rawMount.indexOf("/");
+
+        if (separatorIndex < 0) {
+            return false;
+        }
+
+        const targetId = rawMount.slice(head.length, separatorIndex);
+        const regionKey = rawMount.slice(separatorIndex + 1);
+
+        return targetId === hostId && regionKey === regionPath.join("/");
+    };
+}
+
+/**
+ * P168 (ADR 0018, Model 1a): render a `ui-tabs` from its mounted `ui-tab`
+ * children. Each child becomes exactly one panel/region (region name = child
+ * id); the child's `label` is resolved (literal/state/store/query binding); the
+ * active tab is `component.value` (the two-way `activeTab` binding) and falls
+ * back to the first child by `order` (`defaultActiveTabId`) when absent/invalid.
+ * The child's content subtree mounts into `ui-tab:<childId>/content`.
+ */
+function renderTabs(
+    component: ComponentDefinition,
+    baseComponent: RenderedComponentBase,
+    resolvedProps: Record<string, unknown>,
+    context: ComponentRenderContext,
+    appModel: AppModel
+): RenderedTabsComponent {
+    const tabChildMatcher = createTabMountMatcher("ui-tabs", component.id);
+    const tabChildren = appModel.components
+        .filter((candidate) => candidate.kind === "tab" && tabChildMatcher(candidate, [TAB_SLOT]))
+        .sort(componentSort);
+
+    // Default active = first child by order; an absent/invalid bound value falls
+    // back to it (ADR 0018 §4). `component.value` is the resolved activeTab.
+    const defaultId = defaultActiveTabId(
+        tabChildren.map((child) => ({ id: child.id, order: child.order }))
+    );
+    const boundValue = resolvedProps.value;
+    const boundId = boundValue === undefined || boundValue === null ? undefined : String(boundValue);
+    const activeId = boundId !== undefined && tabChildren.some((child) => child.id === boundId)
+        ? boundId
+        : defaultId;
+
+    const tabsMeta = tabChildren.map((child) => {
+        const resolvedLabel = resolveBinding(child.bind.label, context.sources);
+        const label = resolvedLabel !== undefined && resolvedLabel !== null
+            ? String(resolvedLabel)
+            : child.id;
+        const icon = typeof child.props.icon === "string" ? child.props.icon : undefined;
+        return {
+            id: child.id,
+            label,
+            ...(icon ? { icon } : {}),
+            active: child.id === activeId
+        };
+    });
+
+    // One region per child (region name = child id) holding the child's content
+    // subtree (mounted at `ui-tab:<childId>/content`).
+    const regions: RenderedRegion[] = tabChildren.map((child) => {
+        const contentMatcher = createTabMountMatcher("ui-tab", child.id);
+        const components = appModel.components
+            .filter((candidate) => contentMatcher(candidate, [TAB_SLOT]))
+            .sort(componentSort)
+            .flatMap((candidate) => candidate.kind === "repeat"
+                ? expandRepeat(candidate, context, appModel)
+                : [toRenderedComponent(candidate, context, appModel)])
+            .filter((rendered): rendered is RenderedComponent => rendered !== undefined);
+
+        return {
+            kind: "region",
+            name: child.id,
+            components,
+            regions: []
+        };
+    });
+
+    return {
+        ...baseComponent,
+        kind: "tabs",
+        value: activeId,
+        props: {
+            ...resolvedProps,
+            tabs: tabsMeta
+        },
+        regions
     };
 }
 
@@ -1241,7 +1380,10 @@ function createContainerMountMatcher(
 
 function flattenRegions(regions: RenderedRegion[]): RenderedComponent[] {
     return regions.flatMap((region) => region.components.flatMap((component) => {
-        if (component.kind === "container") {
+        // P168 (ADR 0018): a `tabs` component nests its per-child panels in
+        // `regions` (like a container), so flatten into them to surface the
+        // content of every tab (for event/wire resolution and snapshot lookups).
+        if (component.kind === "container" || component.kind === "tabs") {
             return [component, ...flattenRegions(component.regions)];
         }
 
