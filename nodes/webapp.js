@@ -1145,6 +1145,14 @@ function toComponentDefinitions(components) {
             // `total` → `totalPages` → `totalPath` plain state path.
             const totalPagesBinding = p16Kind === "pagination" ? getBinding(component.total, getBinding(component.totalPages, component.totalPath ? stateBinding(component.totalPath) : undefined)) : undefined;
             const activeStepBinding = !valueBinding && p16Kind === "stepper" ? getBinding(component.activeStep, component.activeStepPath ? stateBinding(component.activeStepPath) : undefined) : undefined;
+            // P155 (ADR 0012): ui-tabs `activeTab` is the TWO-WAY input value — it
+            // becomes bind.value so the renderer RESOLVES the active tab id from the
+            // bound store/state (read source) into resolvedProps.value → component.value
+            // (the serializer marks the matching sl-tab active). The existing tab
+            // change event (params.value = the clicked tab id) is unchanged; a wired
+            // flow writes that id back to the bound store and the activeTab binding
+            // reads it back reactively. Legacy: `activeTabPath` plain state path.
+            const activeTabBinding = !valueBinding && p16Kind === "tabs" ? getBinding(component.activeTab, component.activeTabPath ? stateBinding(component.activeTabPath) : undefined) : undefined;
             const itemsBinding = !valueBinding && p16Kind === "list" ? getBinding(component.items, component.itemsPath ? stateBinding(component.itemsPath) : undefined) : undefined;
             const bind = {};
             if (valueBinding) {
@@ -1161,6 +1169,9 @@ function toComponentDefinitions(components) {
             }
             else if (activeStepBinding) {
                 bind.value = activeStepBinding;
+            }
+            else if (activeTabBinding) {
+                bind.value = activeTabBinding;
             }
             else if (itemsBinding) {
                 bind.value = itemsBinding;

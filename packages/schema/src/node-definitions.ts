@@ -795,6 +795,11 @@ const tabItemSchema = z.object({
 export const uiTabsNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-tabs"),
     tabs: z.array(tabItemSchema).min(1, "Tabs must declare at least one tab."),
+    // P155 (ADR 0012): the canonical editor field `activeTab` (two-way value
+    // typedInput: reads the active tab from a Store/state binding + the existing
+    // tab-change event writes the chosen tab back) compiles to this binding. The
+    // legacy `activeTabPath` plain state path is migrated to a state binding by
+    // webapp.js mapConfig / the editor mapper (P137/P154 shim).
     activeTab: bindingSchema.optional(),
     variant: z.enum(["line", "contained", "pills"]).optional(),
     events: z.array(z.enum(["tabChange"])).optional()
