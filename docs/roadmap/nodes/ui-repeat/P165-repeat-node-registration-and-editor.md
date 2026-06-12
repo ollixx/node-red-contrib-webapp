@@ -15,7 +15,7 @@ verify: browser
 spec: docs/nodes/display/ui-repeat.md
 tests: tests/e2e/nodes/view/ui-repeat.tests.md
 dependencies: [P164]
-status: pending
+status: in_progress
 ---
 # P165 — ui-repeat Node-Registrierung + Editor
 
