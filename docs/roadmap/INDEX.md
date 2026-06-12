@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P166** — aspects/rendering — Feasibility-Spike: NR-Subflow als Component-Unterbau (Mount-Subtree + typisierte Props + ein äußerer Mount-Punkt)? A/B-Empfehlung für die Component-ADR — *Spike vor [[P141]]* — [P166](aspects/rendering/P166-component-substrate-subflow-feasibility-spike.md)
 - **P167** — nodes/ui-tabs — Kinder definieren Tabs: neues `ui-tab`-Kind (label/icon/order + Slot), `tabs`-JSON entfällt, Migration — *Tabs-1a-Welle (ADR 0018), Schicht 1* — [P167](nodes/ui-tabs/P167-tabs-children-define-schema-and-ui-tab-node.md)
 - **P168** — nodes/ui-tabs — Renderer + Editor: Slot pro Kind, activeTab per Kind-id, Mount-Tree, Eindeutigkeits-Validierung; Browser-Beweis — *Tabs-1a-Welle, Schicht 2; braucht P167* — [P168](nodes/ui-tabs/P168-tabs-renderer-editor-and-browser-proof.md)
 - **P169** — nodes/ui-accordion — Kinder definieren Sektionen: `ui-accordion-section`-Kind (Spiegel zu ui-tabs); Browser-Beweis — *Tabs-1a-Welle, Schicht 3; braucht P168* — [P169](nodes/ui-accordion/P169-accordion-children-define-sections-mirror.md)
@@ -90,9 +89,9 @@ open the folder for the full history.
 | aspects/state | 8 |
 | aspects/editor | 14 |
 | schema | 5 |
-| aspects/rendering | 10 |
+| aspects/rendering | 11 |
 | aspects/foundation | 5 |
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 164 done, 5 open, 9 deferred.**
+**Total: 165 done, 4 open, 9 deferred.**
