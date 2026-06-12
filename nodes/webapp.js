@@ -132,7 +132,8 @@ const WEBAPP_NODE_TYPES = new Set([
     "ui-list",
     "ui-avatar",
     "ui-divider",
-    "ui-log"
+    "ui-log",
+    "ui-repeat"
 ]);
 
 function parseList(value) {
@@ -1224,6 +1225,31 @@ function toComponentDefinitions(components) {
             };
         }
 
+        // P165 (ADR 0017): ui-repeat — a TEMPLATE CONTAINER. It maps to the
+        // renderer kind "repeat" (like ui-container maps to "container"). It emits
+        // no rendered chrome: the renderer EXPANDS it, cloning its default-slot
+        // ("content"/REPEAT_SLOT) child subtree once per resolved `items` element
+        // and pushing a render-time item scope. `items` is a REQUIRED structural
+        // binding resolved by the renderer into the iteration list; `keyField` is
+        // the optional stable per-instance key for the keyed morph. Back-compat
+        // fallbacks (itemsPath / json-literal) mirror ui-list.
+        if (component.type === "ui-repeat") {
+            const layoutProps = collectNormalizedLayoutProps(component);
+            const itemsBinding = getBinding(component.items, component.itemsPath ? stateBinding(component.itemsPath) : undefined);
+            return {
+                id: component.id,
+                kind: "repeat",
+                mount: component.mount || component.parent,
+                order: toOptionalNumber(component.order),
+                bind: itemsBinding ? { items: itemsBinding } : {},
+                props: {
+                    ...(blankToUndefined(component.keyField) ? { keyField: component.keyField } : {}),
+                    ...(Object.keys(layoutProps).length > 0 ? { layout: layoutProps } : {})
+                },
+                events: []
+            };
+        }
+
         // P25: P16x interactive kinds — each maps to its semantic kind so the
         // renderer snapshot carries the correct kind and renderComponentHtml can
         // produce the right Shoelace element (or semantic-HTML fallback).
@@ -2306,7 +2332,7 @@ function getDefinitionBuckets(appId, definitions) {
         app: matchingApp,
         routes: matchingDefinitions.filter((entry) => entry.type === "ui-route"),
         dialogs: matchingDefinitions.filter((entry) => entry.type === "ui-dialog"),
-        components: matchingDefinitions.filter((entry) => ["ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select", "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider", "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state", "ui-tabs", "ui-accordion", "ui-breadcrumb", "ui-menu", "ui-pagination", "ui-stepper", "ui-avatar", "ui-image", "ui-icon", "ui-list", "ui-log", "ui-divider"].includes(entry.type)),
+        components: matchingDefinitions.filter((entry) => ["ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select", "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider", "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state", "ui-tabs", "ui-accordion", "ui-breadcrumb", "ui-menu", "ui-pagination", "ui-stepper", "ui-avatar", "ui-image", "ui-icon", "ui-list", "ui-log", "ui-divider", "ui-repeat"].includes(entry.type)),
         stores: matchingDefinitions.filter((entry) => entry.type === "ui-store"),
         queries: matchingDefinitions.filter((entry) => entry.type === "ui-query"),
         actions: matchingDefinitions.filter((entry) => entry.type === "ui-action"),
@@ -4004,7 +4030,11 @@ const VIEW_NODE_PRIMARY_FIELD = {
     "ui-avatar": "src",
     "ui-alert": "message",
     "ui-table": "rows",
-    "ui-list": "items"
+    "ui-list": "items",
+    // P165 (ADR 0017): ui-repeat — the wire path mirrors ui-list. An inbound
+    // `msg.payload` array SETS the repeat's `items` collection; the renderer then
+    // does the n× template expansion. items is binding-wrapped (see below).
+    "ui-repeat": "items"
 };
 
 // Binding-wrapped fields — msg.payload is wrapped in a literalBinding so
@@ -5643,6 +5673,30 @@ const runtimeNodeRegistry = {
             items: getBinding(config.items, config.itemsPath ? stateBinding(config.itemsPath) : undefined) || parseJsonList(config.items),
             displayType: config.displayType || config.variant || undefined,
             events: parseJsonList(config.events).length > 0 ? parseJsonList(config.events) : undefined,
+            ...collectNodeConfigLayoutProps(config)
+        }),
+        options: {
+            inputHandler: viewNodePatchInputHandler
+        }
+    },
+    // P165 (ADR 0017): ui-repeat — a template CONTAINER. It carries no rendered
+    // leaf field of its own; its children mount into the fixed default slot
+    // (container:<id>/content) and the renderer clones that subtree per item of
+    // the bound `items` collection. `items` is a REQUIRED value-binding; the wire
+    // path (msg.payload → items) is handled by viewNodePatchInputHandler exactly
+    // like ui-list. `keyField` is the optional stable per-instance key.
+    "ui-repeat": {
+        mapConfig: (config) => ({
+            type: "ui-repeat",
+            id: getUiId(config),
+            parent: config.parent || undefined,
+            mount: config.mount || config.parent,
+            order: toOptionalNumber(config.order),
+            // items: full value-binding (typedInput). Back-compat fallbacks mirror
+            // ui-list: a plain itemsPath state path, or a JSON literal array.
+            items: getBinding(config.items, config.itemsPath ? stateBinding(config.itemsPath) : undefined)
+                || (parseJsonList(config.items).length > 0 ? { kind: "literal", value: parseJsonList(config.items) } : undefined),
+            keyField: config.keyField || undefined,
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {

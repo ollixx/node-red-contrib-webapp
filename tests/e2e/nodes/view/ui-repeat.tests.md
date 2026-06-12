@@ -45,15 +45,36 @@
 - Verschachtelte Repeats: Scope-Stapel, innerster Frame gewinnt; Ids verketten
   beide Ebenen kollisionsfrei (`<aussenKey>#<innenKey>#<childId>`).
 
-### Editor + Node-Registrierung (P165, browser)
+### Editor + Node-Registrierung (P165, browser) — abgedeckt
 
-- `ui-repeat` ist im Editor anlegbar; `items`-typedInput + `keyField`-Feld
-  sichtbar; Mount-Picker.
-- Default-Slot nimmt Kind-Knoten auf (Mount in den Repeat-Slot).
-- End-to-End: ein Store-Array + ui-repeat mit ui-text-Kind (`item.name`) rendert
-  je Element eine Zeile; Array-Änderung aktualisiert sichtbar.
+> Browser-Beweis: `tests/e2e/nodes/view/ui-repeat.spec.ts`
+> (Fixture-Flow `tests/e2e/fixtures/ui-repeat.flow.json`). Editor-Unit-Coverage:
+> `packages/editor/test/p113-value-binding-types.test.ts` (item/index als
+> Wert-Binding-Arten am Ende des Sets; Serialisierung/Roundtrip) +
+> `packages/editor/test/node-set.test.ts` (`ui-repeat` im Editor-Node-Set).
 
-## Editor: Basis-Felder (P139, ADR 0015 — Referenzknoten)
+- **Registrierung:** `ui-repeat` ist registriert (`nodes/view/ui-repeat.{js,html}`,
+  `package.json` `node-red.nodes`, `WEBAPP_NODE_TYPES`, `runtimeNodeRegistry`,
+  Komponenten-Filter). Im Editor anlegbar; `items`-typedInput (Wert-Binding) +
+  `keyField`-Textfeld + Mount-Picker sichtbar.
+- **Default-Slot:** der Knoten erscheint als Container in beiden Mount-Pickern
+  (`buildMountOptionsTree` / `buildMountPickerTree`); Kinder mounten via
+  `container:<id>/content` (REPEAT_SLOT). Im Fixture-Flow mountet `ui-text` in
+  `container:peopleRepeat/content`.
+- **item/index im Editor:** die Wert-typedInputs bieten „Item (Repeat)" (opt.
+  Pfad) + „Index (Repeat)" (pfadlos); Serialisierung `item`→`{kind:item,path}`,
+  `index`→`{kind:index,path:""}` und Roundtrip (Unit). `installRepeatScopeHint`
+  warnt sichtbar, wenn `item`/`index` außerhalb eines Repeats genutzt wird (an
+  `ui-text` verdrahtet).
+- **End-to-End (browser):** Store-Array `[{name:'A'},{name:'B'}]` + `ui-repeat`
+  (an Store gebunden) mit `ui-text`-Kind (`value = item.name`) rendert zwei
+  Zeilen `A`, `B`. Klick auf „Add third" (Store-`replace` mit 3-Element-Array)
+  rendert sichtbar eine dritte Zeile `C`; **keyed** (`keyField:"name"`) — die
+  vorhandene `A`-Zeile (Per-Instanz-Id `A#personName`) behält ihren DOM-Marker
+  über das Morph hinweg (kein Re-Mount).
 
-- Anwendbarkeit der „Allgemein"/„Erweitert"-Basis-Felder noch zu klären (Container
-  mit Slot — `visible` anwendbar; `disabled`/`color`/`size` ggf. N/A).
+## Editor: Basis-Felder (P139, ADR 0015) — abgedeckt
+
+- `ui-repeat` ist ein Template-Container: `visible` anwendbar; `disabled`,
+  `color`, `size` N/A (mit Hinweis deaktiviert). Verdrahtet via `installBaseFields`
+  / `applyBaseFields` (`BASE_FIELDS` in `nodes/view/ui-repeat.html`).

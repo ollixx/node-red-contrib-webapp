@@ -52,6 +52,9 @@
                 });
                 textInput.typedInput("type", binding.type);
                 textInput.typedInput("value", binding.value);
+                // P165 (ADR 0017): warn when the scope-local item/index kind is
+                // selected but this node is not inside a ui-repeat template.
+                common.installRepeatScopeHint("#node-input-text");
             },
             oneditsave: function () {
                 const textInput = $("#node-input-text");

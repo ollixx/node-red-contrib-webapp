@@ -55,6 +55,7 @@
             "ui-avatar": "nodes/view/ui-avatar.js",
             "ui-divider": "nodes/view/ui-divider.js",
             "ui-log": "nodes/view/ui-log.js",
+            "ui-repeat": "nodes/view/ui-repeat.js",
             "ui-store": "nodes/state/ui-store.js",
             "ui-query": "nodes/state/ui-query.js",
             "ui-action": "nodes/behavior/ui-action.js",

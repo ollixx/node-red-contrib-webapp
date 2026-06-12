@@ -56,6 +56,22 @@ Der Scope ist **Render-Zeit** (wie `routeParam`) — **keine** Persistenz, **kei
 Store-Nebeneffekt. **Außerhalb** eines `ui-repeat` löst `item`/`index` zu
 `undefined` auf und ist ein im Editor prüfbarer Fehlgebrauch.
 
+### Im Editor (P165)
+
+- Die Wert-typedInputs der Kinder bieten die Binding-Arten **„Item (Repeat)"**
+  (optionaler Feldpfad, z. B. `name`, `address.city`) und **„Index (Repeat)"**
+  (pfadlos) an — am Ende des kanonischen Wert-Bindings-Sets, damit die bestehende
+  Reihenfolge der globalen Arten unverändert bleibt.
+- Wählt ein Kind `item`/`index`, **ohne** (transitiv) in einem `ui-repeat` zu
+  hängen, zeigt der Editor einen **sichtbaren Hinweis** (nicht deploy-blockierend):
+  die Bindung löst zur Render-Zeit zu `undefined` auf.
+
+### Basis-Felder (P139 / ADR 0015)
+
+`ui-repeat` ist ein Template-Container: **`visible`** ist anwendbar;
+**`disabled`** (kein interaktiver Zustand), **`color`** und **`size`** (keine
+eigene Chrome) sind **N/A** und werden mit Hinweis deaktiviert angezeigt.
+
 ## Identität / Keys
 
 Eine wiederholte Kind-Knoten-ID ist nicht mehr eindeutig. Der Renderer bildet
