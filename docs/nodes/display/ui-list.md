@@ -10,11 +10,13 @@
 `ui-list` rendert eine **strukturierte Liste** an einem Mount-Ziel. Die
 Listenelemente werden über das `items`-Binding bereitgestellt — entweder als
 statisches Array oder dynamisch aus State, Query oder Node-RED-Kontext. Jedes
-Element folgt einem **festen Item-Schema** (`id`/`label`/`value`/`icon`) — dieses
-Schema ist der **Vertrag zwischen deinen Daten und der gerenderten Zeile** und in
+Element ist ein **String** (Kurzform fürs Label) oder ein **Item-Objekt** mit
+festem Schema (`id`/`label`/`value`/`icon`) — dieses Schema ist der **Vertrag
+zwischen deinen Daten und der gerenderten Zeile** und in
 [„Item-Schema — das Datenmodell"](#item-schema--das-datenmodell) exakt beschrieben.
 Der visuelle Darstellungsmodus (`displayType`) steuert, ob die Liste standard,
-geteilt oder kompakt erscheint. Nutzerinteraktionen (Klick, Auswahl) werden als
+geteilt oder kompakt erscheint. Optional ist die Liste **auswählbar**
+(`selectable`, Single-Select). Nutzerinteraktionen (Klick, Auswahl) werden als
 Events auf konfigurierten Output-Ports emittiert.
 
 > **Stärke und Schwäche zugleich:** das Item-Schema ist fest. Der Autor muss seine
@@ -30,9 +32,11 @@ Events auf konfigurierten Output-Ports emittiert.
   das `items`-Binding deklarativ, nicht durch Child-Knoten, beschrieben.
 - **Erreichbarkeit:** als Teil des gerenderten Snapshots der Parent-Route bzw.
   des Parent-Dialogs.
-- **Rolle zur Laufzeit:** der Renderer löst `items` auf, iteriert über das Array
-  und erzeugt pro Element eine Listenzelle mit Label, optionalem Icon und
-  optionalem Wert.
+- **Rolle zur Laufzeit:** der Renderer löst `items` auf, normalisiert
+  String-Kurzformen zu `{label}`, iteriert und erzeugt pro Element eine Zeile
+  (Label + optionales Icon); `value` wird gemäß `displayValue`
+  (`none`/`secondary`/`badge`) dargestellt. Bei `selectable` markiert er die über
+  `selectedId` bestimmte Zeile als ausgewählt.
 
 ## Felder
 
@@ -49,16 +53,23 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `items` | „Items" | typedInput (Wert-Binding, **eingeschränkt**) | **ja** | Array der Listenelemente. **Nur Typen, die ein valides Modell liefern können** — Skalar-Typen (`str`, `num`, `bool`) sind im typedInput **ausgeblendet**. Erlaubt: `json` (statisches Array direkt im Editor) sowie die Binding-Arten `state`, `query`, `routeParam`, `store` (Store-Picker), `msg`/`flow`/`global`/`jsonata`/`env`. Die **Form jedes Elements** ist in [„Item-Schema"](#item-schema--das-datenmodell) festgelegt. Binding-Arten: [stores.md](../concepts/stores.md). **Migration:** ein bestehendes `itemsPath` (nacktes Textfeld) wird als `state`-Binding auf `items` übernommen; das separate `itemsPath`-Feld entfällt. |
+| `items` | „Items" | typedInput (Wert-Binding, **eingeschränkt**) | **ja** | Array der Listenelemente. **Nur Typen, die ein valides Modell liefern können** — Skalar-Typen (`str`, `num`, `bool`) sind im typedInput **ausgeblendet**. Erlaubt: `json` (statisches Array direkt im Editor) sowie die Binding-Arten `state`, `query`, `routeParam`, `store` (Store-Picker), `msg`/`flow`/`global`/`jsonata`/`env`. Die **Form jedes Elements** ist in [„Item-Schema"](#item-schema--das-datenmodell) festgelegt. Binding-Arten: [stores.md](../concepts/stores.md). **Migration:** ein bestehendes `itemsPath` (nacktes Textfeld) wird als `state`-Binding auf `items` übernommen; das separate `itemsPath`-Feld entfällt. Mapping: ein führendes `state.` im alten Pfad wird abgezogen (`state.foo.bar` → `state`-Binding mit Pfad `foo.bar`), sonst der ganze String als State-Pfad — **kein** doppeltes `state.state.…`. |
 | `displayType` | „Display Type" | SelectBox | optional | Darstellungsmodus der Liste: `default` (Standard-Liste ohne Trennlinie), `divided` (mit horizontalen Trennlinien zwischen Elementen), `compact` (reduzierter Zeilenabstand). Default: `default`. `displayType` ist ein Darstellungstyp, kein semantischer Variant — Details: [theming.md](../concepts/theming.md). |
-| `displayValue` | „Value-Anzeige" | SelectBox (Enum) | optional | Wie der `value` einer Zeile **dargestellt** wird: `none` („nicht anzeigen" — `value` bleibt rein Daten, wird nur im Event geliefert), `secondary` („sekundär darstellen" — trailing Text), `badge` („als Badge" — `value` als Badge-Pille, z. B. „Anzahl"/„Preis"). Default: `secondary`. Betrifft nur die **Anzeige**; `value` wird unabhängig davon stets im Event mitgeliefert. |
-| `badgeVariant` | „Badge Variant" | typedInput (Variant) | optional | **Nur sichtbar, wenn `displayValue = badge`.** Semantische Farbe der Badge ([variant-Konvention](../concepts/theming.md)) — Standard-Variant-typedInput (bindbar). Default: `neutral`. |
+| `displayValue` | „Value-Anzeige" | SelectBox (Enum) | optional | Wie der `value` einer Zeile **dargestellt** wird: `none` („nicht anzeigen" — `value` bleibt rein Daten, wird nur im Event geliefert), `secondary` („sekundär darstellen" — trailing Text), `badge` („als Badge" — `value` als Badge-Pille, z. B. „Anzahl"/„Preis"). Default: `none`. Betrifft nur die **Anzeige**; `value` wird unabhängig davon stets im Event mitgeliefert. **Node-weit** (gilt für alle Zeilen gleich). |
+| `badgeVariant` | „Badge Variant" | Variant-SelectBox | optional | **Nur sichtbar, wenn `displayValue = badge`.** Semantische Farbrolle der Badge — `SEVERITY_VARIANTS` (`primary`/`success`/`warning`/`danger`/`neutral`/`info`), identisch zu [ui-badge](../feedback/ui-badge.md). Default: `neutral`. Node-weit (eine Farbe für alle Badges; pro-Zeile-Farbe wäre Folgearbeit). |
+
+### Gruppe „Auswahl"
+
+| Feld | Label | Editor-Typ | Pflicht | Beschreibung |
+|---|---|---|---|---|
+| `selectable` | „Auswählbar" | Checkbox (Boolean) | optional | Schaltet **Single-Select** ein: ein Klick auf eine Zeile **selektiert** sie (markiert sie visuell als ausgewählt). Default: `false`. Bei `false` ist die Liste rein anzeigend/klickbar, ohne Auswahl-Zustand. |
+| `selectedId` | „Ausgewählt (id)" | typedInput (Binding, **zweiseitig**) | optional | **Nur relevant bei `selectable`.** Zweiseitiges Binding auf die `id` der ausgewählten Zeile (analog `activeTab` bei ui-tabs): liest die Auswahl aus dem gebundenen Store/State **und** schreibt sie beim Auswahlwechsel zurück. Bindbar: `state`/`store`/`query`/`routeParam`/`literal` + NR-Standard. Default: keine Auswahl. Ungültige id → keine Zeile markiert. |
 
 ### Gruppe „Events"
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `events` | „Events" | Event-Checkboxen → Output-Ports | optional | Aktivierbare Ausgangs-Events: `itemClick`, `itemSelect`. Jedes aktive Event erzeugt einen Output-Port (Reihenfolge = Listenreihenfolge). Siehe Abschnitt „Output". |
+| `events` | „Events" | Event-Checkboxen → Output-Ports | optional | Aktivierbare Ausgangs-Events: `itemClick` (immer verfügbar), `itemSelect` (**nur sinnvoll bei `selectable`**). Jedes aktive Event erzeugt einen Output-Port (Reihenfolge = **Konfigurationsreihenfolge**). Siehe Abschnitt „Output". |
 
 ### Gruppe „Platzierung"
 
@@ -87,9 +98,10 @@ Von `ui-app` injizierte, knotenübergreifende Felder (Anwendbarkeit per
 ### Inline-Hilfe (HTML)
 
 Der `data-help-name="ui-list"`-Hilfetext soll **knapp, aber ausreichend** sein:
-Zweck (Listenrendering mit Binding), **das Item-Schema** (`{id?,label,value?,icon?}`
-— `label` Pflicht, kein implizites Mapping), Hinweis auf `displayType` und Events
-sowie ein Link auf die ausführliche Doku. Empfohlener Link:
+Zweck (Listenrendering mit Binding), **das Item-Schema** (String-Kurzform **oder**
+`{id?,label,value?,icon?}` — `label` Pflicht, kein implizites Mapping), `value`
+über `displayValue` (none/secondary/badge), Single-Select (`selectable`/
+`selectedId`) sowie ein Link auf die ausführliche Doku. Empfohlener Link:
 `https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/display/ui-list.md`.
 
 ## Item-Schema — das Datenmodell
@@ -163,14 +175,20 @@ Listenelement interagiert:
 
 | Event | Wann | Erzeugte `msg.ui`-Felder | Intention |
 |---|---|---|---|
-| `itemClick` | Nutzer klickt auf ein Listenelement | `event: "itemClick"`, `params: { rowId, row }` | Navigation, Detailansicht oder Aktion für das geklickte Element auslösen |
-| `itemSelect` | Nutzer wählt ein Element aus (Auswahl-Modus) | `event: "itemSelect"`, `params: { rowId, row }` | Auswahl-Zustand in einem Store persistieren |
+| `itemClick` | Nutzer klickt auf ein Listenelement (unabhängig von `selectable`) | `event: "itemClick"`, `params: { rowId, row }`, `clientId`, `sourceId`, `appId` | Navigation, Detailansicht oder Aktion für das geklickte Element auslösen |
+| `itemSelect` | **Auswahl wechselt** (nur bei `selectable`) | `event: "itemSelect"`, `params: { rowId, row }`, `clientId`, `sourceId`, `appId` | Auswahl-Zustand weiterverarbeiten (der `selectedId`-Roundtrip persistiert ihn bereits im gebundenen Store) |
 
 `rowId` ist die `id` des Listenelements (sofern gesetzt), andernfalls der
 Array-Index als String. `row` ist das **vollständige Elementobjekt** aus `items` —
 **inkl. `value`** (`row.value`), unabhängig davon, ob `displayValue` es anzeigt.
-So liefert ein Klick immer **Identität (`rowId`) und Anwendungswert (`row.value`)**
-zugleich. Allgemeines Event-Format: [events.md](../concepts/events.md).
+So liefert ein Event immer **Identität (`rowId`) und Anwendungswert (`row.value`)**
+zugleich. `clientId`/`sourceId`/`appId` folgen dem Standardformat (wie ui-tabs).
+Allgemeines Event-Format: [events.md](../concepts/events.md).
+
+> **`itemSelect` vs. `itemClick`:** `itemClick` feuert bei **jedem** Klick (auch
+> ohne Auswahl-Modus). `itemSelect` feuert nur, wenn `selectable` an ist **und sich
+> die Auswahl ändert** — und ist mit dem `selectedId`-Binding gekoppelt. Ohne
+> `selectable` ist `itemSelect` wirkungslos.
 
 **Antizipierte Wiring-Szenarien:**
 - `itemClick` → `ui-action` (Navigation zur Detailseite des Elements).
@@ -205,7 +223,15 @@ Details: [theming.md](../concepts/theming.md).
 
 ## Offene Punkte
 
-- Mehrfachselektion (Checkbox-Modus pro Zeile) ist noch nicht modelliert.
+- **Mehrfachselektion** (Multi-Select) ist noch nicht modelliert — `selectable`
+  deckt nur **Single-Select** ab. Multi-Select bräuchte ein Set-Binding statt
+  `selectedId` (eigene Stufe).
+- **Leerzustand** (`items = []`): heute eine leere Liste; ein eigener Empty-State
+  (Platzhalter/CTA) ist offen — Zusammenspiel mit `ui-empty-state` ([[P152]]).
+- **`value`-Formatierung** (Number → Tausender/Währung/Datum) bei `secondary`/
+  `badge` ist nicht spezifiziert (heute roher String-Cast).
+- **Pro-Zeile-Badge-Farbe:** `badgeVariant` ist node-weit; eine Variant pro Zeile
+  (aus einem Item-Feld) wäre Folgearbeit.
 - Virtuelle Liste / Lazy-Rendering für sehr lange Item-Arrays ist noch nicht spezifiziert.
 - Icon-Rendering: `icon` erwartet einen Icon-Namen des App-Icon-Sets (s.
   [ui-icon](ui-icon.md)); die endgültige Festlegung der Icon-Bibliothek/-Notation

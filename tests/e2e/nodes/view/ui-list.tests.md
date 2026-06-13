@@ -18,12 +18,21 @@
 - Item-Schema `{id?,label,value?,icon?}`: `label` Pflicht rendert; fehlendes
   `label` (Objektform) → `"?"` nur für diese Zeile; Nicht-Array-Wurzel → leere
   Liste, kein Crash; Zusatzfelder ignoriert.
-- **value/displayValue:** `displayValue=none` → `value` nicht sichtbar, aber im
-  Event; `secondary` → trailing Text; `badge` → Badge in `badgeVariant`-Farbe
-  (Feld nur bei `badge` sichtbar). `value` (String|Number) stets in `row.value`.
-- Events: `itemClick`/`itemSelect`-Checkboxen → Output-Ports; `rowId` = `id`
-  (sonst Index), `row` = ganzes Element inkl. `value`.
+- **value/displayValue:** Default `none` → `value` nicht sichtbar, aber im Event;
+  `secondary` → trailing Text; `badge` → Badge in `badgeVariant`-Farbe
+  (Variant-SelectBox, `SEVERITY_VARIANTS`; Feld nur bei `badge` sichtbar). `value`
+  (String|Number) stets in `row.value`.
+- `itemClick`-Event → Output-Port; `params {rowId,row}` + clientId/sourceId/appId;
+  `rowId` = `id` (sonst Index), `row` = ganzes Element inkl. `value`.
 - Hilfetext nennt Item-Schema + String-Kurzform + value/displayValue + Doku-Link.
+
+### Single-Select (P173)
+
+- `selectable` (Default false) schaltet Single-Select; Klick markiert die Zeile.
+- `selectedId` (zweiseitig): externe Store-Änderung markiert die Zeile (SSE);
+  Klick auf andere Zeile schreibt den Store; ungültige id → keine Markierung.
+- `itemSelect` feuert nur bei `selectable` + Auswahlwechsel; `params {rowId,row}`
+  + clientId/sourceId/appId; ohne `selectable` wirkungslos.
 
 ### Basis-Felder (P172, ADR 0015)
 

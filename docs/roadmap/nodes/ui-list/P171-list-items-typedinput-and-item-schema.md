@@ -14,8 +14,8 @@ acceptance:
   - "Migration: ein gespeichertes itemsPath (plain string) wird beim Laden als state-Binding auf items übernommen; bestehende Flows rendern unverändert weiter (test-bar)."
   - "Array-of-Strings: ein String-Element wird auf {label:<string>} gemappt; gemischte Arrays (Strings + Objekte) rendern."
   - "Item-Schema: items löst zu einem Array von String|{id?,label,value?,icon?} auf; label Pflicht (Objektform); fehlt label → \"?\" nur für diese Zeile; Nicht-Array-Wurzel → leere Liste, kein Crash; Zusatzfelder ignoriert; kein implizites Mapping."
-  - "value-Semantik: value (String|Number) wird — wenn vorhanden — stets im Event mitgeliefert (row.value). Das Node-Feld displayValue (none/secondary/badge, Default secondary) steuert NUR die Anzeige; bei badge erscheint badgeVariant (Variant-typedInput, Default neutral) und value rendert als Badge in dieser Farbe."
-  - "Events: die itemClick/itemSelect-Checkboxen erzeugen Output-Ports; rowId = id (sonst Index), row = ganzes Element inkl. value."
+  - "value-Semantik: value (String|Number) wird — wenn vorhanden — stets im Event mitgeliefert (row.value). Das Node-Feld displayValue (none/secondary/badge, Default none) steuert NUR die Anzeige; bei badge erscheint badgeVariant (Variant-SelectBox mit SEVERITY_VARIANTS, Default neutral) und value rendert als Badge in dieser Farbe. displayValue/badgeVariant sind node-weit."
+  - "itemClick-Event: Output-Port; params {rowId, row} + clientId/sourceId/appId (Standardformat); rowId = id (sonst Index), row = ganzes Element inkl. value. (itemSelect/Single-Select: siehe P173.)"
   - "Hilfetext nennt das Item-Schema (label Pflicht, String-Kurzform, value/displayValue, kein implizites Mapping) + Doku-Link."
 verify: browser
 spec: docs/nodes/display/ui-list.md
@@ -36,17 +36,21 @@ status: pending
    Literale (`str`/`num`/`bool`) ausblenden — nur `json`(Array) + die Binding-Arten,
    die ein Array/Objekt liefern. Folgt ADR 0012.
 2. **Migration** `itemsPath` (string) → `state`-Binding auf `items` (verlustfrei,
-   beim Laden); analog `activeTabPath`→`activeTab` bei ui-tabs.
+   beim Laden); analog `activeTabPath`→`activeTab` bei ui-tabs. **Mapping
+   präzise:** führendes `state.` abziehen (`state.foo.bar` → Pfad `foo.bar`), sonst
+   ganzer String als State-Pfad — kein doppeltes `state.state.…`.
 3. **Item-Schema-Vertrag** (Schema/Renderer/Validierung):
    - Element = **String** (→ `{label}`) **oder** Objekt `{id?,label,value?,icon?}`.
    - `label` Pflicht (Objektform); Nicht-Array-Wurzel → leere Liste; fehlendes
      `label` → `"?"` pro Zeile; Zusatzfelder ignoriert; **kein implizites Mapping**.
 4. **value-Anzeige:** neues Node-Feld **`displayValue`** (SelectBox
-   `none`/`secondary`/`badge`, Default `secondary`) + **`badgeVariant`** (Variant-
-   typedInput, nur sichtbar bei `badge`, Default `neutral`). `value` immer im Event
-   (`row.value`); Anzeige rein über `displayValue`.
-5. **Events-Editor:** `itemClick`/`itemSelect`-Checkboxen → Output-Ports (heute im
-   Schema vorhanden, aber ohne Editor-Control). `row` trägt das ganze Element.
+   `none`/`secondary`/`badge`, Default `none`) + **`badgeVariant`** (Variant-
+   **SelectBox** mit `SEVERITY_VARIANTS` wie ui-badge, nur sichtbar bei `badge`,
+   Default `neutral`). `value` immer im Event (`row.value`); Anzeige rein über
+   `displayValue`; beide node-weit.
+5. **Events-Editor:** `itemClick`-Checkbox → Output-Port (heute im Schema, aber
+   ohne Editor-Control); `params {rowId,row}` + `clientId`/`sourceId`/`appId`.
+   (`itemSelect` + Single-Select sind **P173**.)
 6. **Hilfetext** gemäß Spec (Item-Schema + String-Kurzform + value/displayValue).
 
 ## acceptance / verify
