@@ -1065,6 +1065,15 @@
             const declaresClick = allEvents.some(function (ev) {
                 return (typeof ev === "string" ? ev : (ev && ev.event)) === "itemClick";
             });
+            // P172 (ADR 0015): disabled and color base fields for ui-list.
+            // disabled: when true, adds aria-disabled + webapp-list--disabled class
+            // to lock row interaction visually (the client checks disabled before
+            // emitting itemClick/itemSelect events).
+            // color: resolved into resolvedProps.color by the renderer; applied as an
+            // inline CSS custom property on the <ul> so CSS can style list items.
+            const listDisabled = component.disabled ? " aria-disabled=\"true\" class=\"webapp-list webapp-list--disabled\"" : " class=\"webapp-list\"";
+            const resolvedColor = component.props.color !== undefined ? String(component.props.color) : undefined;
+            const colorStyle = resolvedColor ? " style=\"color:" + escapeAttribute(resolvedColor) + "\"" : "";
             const itemHtml = rawItems.map(function (item, index) {
                 // String shorthand → {label:<string>}. Anything else is read as an
                 // object; the whole element (incl. value) is the event row payload.
@@ -1095,7 +1104,7 @@
                 }
                 return "<li class=\"webapp-list-item\">" + label + valueHtml + "</li>";
             }).join("");
-            return wrapRenderedComponentHtml(component, layoutId, "<ul class=\"webapp-list\">" + itemHtml + "</ul>");
+            return wrapRenderedComponentHtml(component, layoutId, "<ul" + listDisabled + colorStyle + ">" + itemHtml + "</ul>");
         }
 
         // P83: ui-divider — static horizontal/vertical separator (sl-divider or webapp-divider fallback).

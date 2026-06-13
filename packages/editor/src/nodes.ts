@@ -436,6 +436,10 @@ export interface UiListEditorConfig extends MountableEditorConfig {
     displayValue?: "none" | "secondary" | "badge";
     badgeVariant?: (typeof SEVERITY_VARIANTS)[number];
     events?: string;
+    // P172 (ADR 0015): common base fields.
+    visible?: BindingDefinition | null;
+    disabled?: BindingDefinition | null;
+    color?: BindingDefinition | null;
 }
 
 export interface UiAvatarEditorConfig extends MountableEditorConfig {
@@ -1671,6 +1675,11 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         displayType: config.displayType,
         displayValue: config.displayValue,
         badgeVariant: config.badgeVariant,
+        // P172 (ADR 0015): base fields — pass binding objects through unchanged;
+        // absent/null means "use default" (always visible / not disabled / no color).
+        ...(isBindingObject(config.visible) ? { visible: config.visible } : {}),
+        ...(isBindingObject(config.disabled) ? { disabled: config.disabled } : {}),
+        ...(isBindingObject(config.color) ? { color: config.color } : {}),
         ...collectLayoutChildConfig(config)
     })),
     "ui-avatar": createDefinition("ui-avatar", "view", {

@@ -2,6 +2,26 @@
 <script type="text/javascript">
     (function () {
         const common = window.WebappEditorCommon;
+        // P172 (ADR 0015): ui-list base-field applicability.
+        // - `visible` applicable: boolean-state binding, blends the list in/out.
+        // - `disabled` applicable: locks row interaction (itemClick/itemSelect);
+        //   without active events it is a no-op — the hint explains this.
+        // - `color` applicable: non-variant node; active value typedInput; a
+        //   literal colour round-trips as a binding object.
+        // - `size` N/A (Erweitert): density is controlled via `displayType`
+        //   (default/divided/compact) — a size field is meaningless here.
+        const BASE_FIELDS = {
+            visible: true,
+            disabled: true,
+            color: true,
+            size: false,
+            variant: false,
+            advanced: ["size"],
+            hints: {
+                disabled: "Ohne aktive Events (itemClick/itemSelect) hat disabled keinen sichtbaren Effekt.",
+                size: "Die Dichte wird über Display-Typ (Default/Divided/Compact) gesteuert, nicht über Size."
+            }
+        };
         common.registerNodeTypeWithEvents("ui-list", {
             category: "webapp view",
             color: "#f4efcf",
@@ -24,6 +44,17 @@
                 badgeVariant: { value: "neutral" },
                 events: { value: "[]" },
                 outputs: { value: 0 },
+                // P172 (ADR 0015): base fields. `visible`/`color`/`disabled` persist
+                // the binding OBJECT; there are no matching #node-input-visible /
+                // #node-input-color / #node-input-disabled elements so Node-RED
+                // auto-save cannot clobber them — the typedInputs live on the
+                // *Binding carrier inputs.
+                visible: { value: null },
+                visibleBinding: { value: "" },
+                disabled: { value: null },
+                disabledBinding: { value: "" },
+                color: { value: null },
+                colorBinding: { value: "" },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
                 col: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
@@ -52,6 +83,9 @@
             },
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
+                // P172: the shared base-field group ("Allgemein") — visible/disabled/
+                // color/size with node-local applicability (BASE_FIELDS).
+                common.installBaseFields(BASE_FIELDS).call(this);
                 common.installLayoutChildPropRows().call(this);
 
                 // P171 (ADR 0012 / structural category): `items` typedInput — the
@@ -93,6 +127,8 @@
                 syncBadgeRow();
             },
             oneditsave: function () {
+                // P172: persist the applicable base fields as binding objects.
+                common.applyBaseFields(BASE_FIELDS).call(this);
                 // P171: persist items as a binding object; clear the legacy path.
                 this.items = common.applyValueBinding(
                     $("#node-input-itemsBinding").typedInput("type"),
@@ -143,6 +179,12 @@
 <script type="text/html" data-help-name="ui-list">
 <p>Rendert eine strukturierte Liste an einem Mount-Ziel. Die Elemente kommen aus dem
 <code>items</code>-Binding (statisches Array oder dynamisch aus State/Query/Store/Kontext).</p>
+<h4>Basis-Felder (Allgemein, P172)</h4>
+<p><b>Visible</b> (Boolean-Zustand-Binding, leer = sichtbar) — blendet die gesamte Liste ein/aus.
+<b>Disabled</b> (Boolean-Zustand-Binding) — sperrt die Zeilen-Interaktion (itemClick/itemSelect);
+ohne aktive Events hat disabled keinen sichtbaren Effekt.
+<b>Color</b> (bindbare Farbe, non-variant) — allgemeine Listenfarbe.
+<b>Size</b> ist N/A — die Dichte wird über Display-Typ (Default/Divided/Compact) gesteuert.</p>
 <h4>Items (P171)</h4>
 <p>Bindbare, <strong>strukturelle</strong> Quelle der Listenelemente (ein Array) — nur Typen,
 die ein valides Modell liefern: <code>json</code> (statisches Array-Literal) sowie

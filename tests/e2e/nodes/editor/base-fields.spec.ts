@@ -159,3 +159,116 @@ test.describe("editor panels — common base fields (P139, ADR 0015)", () => {
         expect(result.color.hint).toContain("Variant");
     });
 });
+
+/**
+ * P172 (ADR 0015) — ui-list: base fields retrofitted.
+ * visible/disabled/color applicable; size N/A (displayType controls density).
+ * Mirrors the ui-divider tests above but exercises the list-specific applicability.
+ */
+
+test.describe("editor panels — ui-list base fields (P172, ADR 0015)", () => {
+    test.afterEach(async ({ request }) => {
+        await resetFlow(request);
+    });
+
+    async function openListPanel(page: import("@playwright/test").Page, request: import("@playwright/test").APIRequestContext) {
+        const nodeId = "list-bf";
+        const flow = new FlowBuilder()
+            .app({ id: "bfListApp", root: "bfListApp", name: "Base Fields List App" })
+            .node("ui-list", { id: nodeId, items: [] })
+            .build();
+        await deployFlow(request, flow);
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode(nodeId);
+        return { editor, nodeId };
+    }
+
+    test("ui-list — base-field group with 'Allgemein' heading is injected", async ({ page, request }) => {
+        await openListPanel(page, request);
+
+        await expect(page.locator('[data-field-group="base-fields"]')).toHaveCount(1);
+
+        const heading = page.locator('[data-group-heading="base-fields"]');
+        await expect(heading).toHaveCount(1);
+        await expect(heading).toHaveText("Allgemein");
+        await expect(heading).toBeVisible();
+
+        for (const field of ["visible", "disabled", "color", "size"]) {
+            await expect(
+                page.locator(`[data-base-field="${field}"]`),
+                `expected base-field row for ${field}`
+            ).toHaveCount(1);
+        }
+    });
+
+    test("ui-list — visible (applicable) is a boolean-state typedInput", async ({ page, request }) => {
+        await openListPanel(page, request);
+
+        const row = page.locator('[data-base-field="visible"]');
+        await expect(row).toBeVisible();
+        await expect(row.locator(".red-ui-typedInput-container")).toHaveCount(1);
+        await expect(page.locator("#node-input-visibleBinding")).toHaveCount(1);
+    });
+
+    test("ui-list — disabled (applicable) is a boolean-state typedInput", async ({ page, request }) => {
+        await openListPanel(page, request);
+
+        const row = page.locator('[data-base-field="disabled"]');
+        await expect(row).toBeVisible();
+        // applicable → no N/A attribute
+        await expect(row).not.toHaveAttribute("data-base-field-na", "true");
+        await expect(row.locator(".red-ui-typedInput-container")).toHaveCount(1);
+        await expect(page.locator("#node-input-disabledBinding")).toHaveCount(1);
+    });
+
+    test("ui-list — color (applicable, non-variant) is an active value typedInput", async ({ page, request }) => {
+        await openListPanel(page, request);
+
+        const row = page.locator('[data-base-field="color"]');
+        await expect(row).toBeVisible();
+        await expect(row).not.toHaveAttribute("data-base-field-na", "true");
+        await expect(row.locator(".red-ui-typedInput-container")).toHaveCount(1);
+        await expect(page.locator("#node-input-colorBinding")).toHaveCount(1);
+    });
+
+    test("ui-list — size is N/A (Erweitert) with displayType hint", async ({ page, request }) => {
+        await openListPanel(page, request);
+
+        const toggle = page.locator("[data-base-advanced-toggle]");
+        const section = page.locator("[data-base-advanced-section]");
+
+        // Collapsed by default.
+        await expect(section).toBeHidden();
+
+        await toggle.locator("a").click();
+        await expect(section).toBeVisible();
+
+        const sizeRow = page.locator('[data-base-field="size"]');
+        await expect(sizeRow).toBeVisible();
+        await expect(sizeRow).toHaveAttribute("data-base-field-na", "true");
+        await expect(sizeRow.locator("#node-input-size")).toBeDisabled();
+        await expect(sizeRow.locator("[data-base-field-hint]")).toContainText("Display-Typ");
+    });
+
+    test("ui-list — color binding round-trips through save", async ({ page, request }) => {
+        const { editor, nodeId } = await openListPanel(page, request);
+
+        await editor.fillTypedInput("colorBinding", "#aabbcc", "str");
+        await editor.save();
+
+        const stored = await page.evaluate((id) => {
+            const n = (window as unknown as {
+                RED: { nodes: { node: (id: string) => Record<string, unknown> | null } };
+            }).RED.nodes.node(id);
+            return n ? { color: n.color, visible: n.visible } : null;
+        }, nodeId);
+
+        expect(stored?.color).toEqual({ kind: "literal", value: "#aabbcc" });
+
+        await editor.openNode(nodeId);
+        expect(await editor.readTypedInputType("colorBinding")).toBe("str");
+        expect(await editor.readTypedInput("colorBinding")).toBe("#aabbcc");
+    });
+});
