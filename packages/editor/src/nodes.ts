@@ -2,6 +2,7 @@ import {
     normalizeSelectOptions,
     standardLayoutPresetIds,
     validateUiNodeDefinition,
+    SEVERITY_VARIANTS,
     type ActionParamEntry,
     type BindingDefinition,
     type StandardLayoutPresetId,
@@ -426,8 +427,14 @@ export interface UiIconEditorConfig extends MountableEditorConfig {
 }
 
 export interface UiListEditorConfig extends MountableEditorConfig {
+    // P171: `items` is a STRUCTURAL value-binding (typedInput). A stored binding
+    // object wins; the legacy `itemsPath` plain state path migrates to a state
+    // binding; a static array may carry mixed String/object elements.
+    items?: unknown;
     itemsPath?: string;
     displayType?: "default" | "divided" | "compact";
+    displayValue?: "none" | "secondary" | "badge";
+    badgeVariant?: (typeof SEVERITY_VARIANTS)[number];
     events?: string;
 }
 
@@ -806,6 +813,32 @@ function tableRowsFromConfig(config: UiTableEditorConfig): UiTableNodeDefinition
         return stateBinding(config.rowsPath);
     }
     return stateBinding("");
+}
+
+// P171 (ADR 0012): resolve a ui-list `items` editor config into the schema `items`
+// value — a STRUCTURAL array source like ui-menu `items` / ui-table `rows`. A
+// binding object passes through (a json-literal's raw array is unwrapped so the
+// schema's `array(listItem)` branch accepts it); a static array (mixed String /
+// object elements) is kept; a legacy `itemsPath` plain state path migrates to a
+// state binding (PRECISE: a leading `state.` is stripped — never `state.state.…`).
+function listItemsFromConfig(config: UiListEditorConfig): UiListNodeDefinition["items"] {
+    const candidate = config.items;
+    if (isBindingObject(candidate)) {
+        if (candidate.kind === "literal") {
+            const raw = (candidate as { value?: unknown }).value;
+            return Array.isArray(raw) ? (raw as UiListNodeDefinition["items"]) : candidate;
+        }
+        return candidate;
+    }
+    if (Array.isArray(candidate)) {
+        return candidate as UiListNodeDefinition["items"];
+    }
+    if (config.itemsPath) {
+        const trimmed = config.itemsPath.trim();
+        const path = trimmed.startsWith("state.") ? trimmed.slice("state.".length) : trimmed;
+        return stateBinding(path);
+    }
+    return [];
 }
 
 // P163 (ADR 0017): build the ui-repeat `items` value-binding from editor config.
@@ -1634,8 +1667,10 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         type: "ui-list",
         id: config.id ?? "",
         mount: config.mount ?? "",
-        items: config.itemsPath ? stateBinding(config.itemsPath) : [],
+        items: listItemsFromConfig(config),
         displayType: config.displayType,
+        displayValue: config.displayValue,
+        badgeVariant: config.badgeVariant,
         ...collectLayoutChildConfig(config)
     })),
     "ui-avatar": createDefinition("ui-avatar", "view", {

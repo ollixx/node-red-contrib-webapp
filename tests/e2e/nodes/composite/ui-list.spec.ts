@@ -72,8 +72,11 @@ test.describe("ui-list (P45)", () => {
 
         const body = await eventPromise;
         expect(body.event).toBe("itemClick");
-        // The dispatched value should be the item id ("fruit-1"), not the label ("Cherry").
-        expect((body.params as Record<string, unknown>).value).toBe("fruit-1");
+        // P171: the dispatched shape is { rowId, row } — rowId = the item id
+        // ("fruit-1", not the label), row = the whole element incl. value.
+        const params = body.params as Record<string, unknown>;
+        expect(params.rowId).toBe("fruit-1");
+        expect((params.row as Record<string, unknown>).label).toBe("Cherry");
     });
 
     test("empty items renders <ul> without crashing", async ({ page, request }) => {

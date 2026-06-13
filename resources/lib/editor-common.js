@@ -3721,6 +3721,28 @@
             ];
         }
 
+        // ── P171 (ADR 0012): the `structural` category — for a value field whose
+        // resolved value MUST be an array/object model (e.g. ui-list `items`), not a
+        // scalar. Scalar literals (str/num/bool/date) cannot yield a valid model, so
+        // they are EXCLUDED; `json` (a static array literal) is kept, alongside every
+        // binding kind that can resolve to an array/object (store/query/routeParam/
+        // reactive/msg/jsonata/flow/global/env). No scope-local item/index here — a
+        // structural source is a top-level collection, not a per-item scalar.
+        if (category === "structural") {
+            return [
+                storeType,
+                queryType,
+                routeParamType,
+                reactiveType,
+                "msg",
+                "jsonata",
+                "json",
+                "flow",
+                "global",
+                "env"
+            ];
+        }
+
         // Default — value/display full set (14 kinds) + the 2 scope-local
         // ui-repeat kinds (item/index). The scope-local pair sits at the end so it
         // never shifts the established default ordering of the global kinds.

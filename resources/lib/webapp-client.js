@@ -555,15 +555,26 @@
             return;
         }
 
-        // P45: list items carry data-webapp-item — dispatch as an `itemClick`
-        // event with params.value = item id so the flow receives the documented shape.
+        // P171: list items carry data-webapp-item (the rowId = item id, else index)
+        // and data-webapp-row (the JSON-encoded whole element incl. value). Dispatch
+        // an `itemClick` event with the documented shape params: { rowId, row }.
         if (trigger.hasAttribute("data-webapp-item")) {
             eventObject.preventDefault();
-            const itemId = trigger.getAttribute("data-webapp-item");
+            const rowId = trigger.getAttribute("data-webapp-item");
+            let row;
+            const rawRow = trigger.getAttribute("data-webapp-row");
+            if (rawRow !== null) {
+                try {
+                    row = JSON.parse(rawRow);
+                }
+                catch (_e) {
+                    row = undefined;
+                }
+            }
             dispatch({
                 source: trigger.getAttribute("data-webapp-source"),
                 event: "itemClick",
-                params: { value: itemId }
+                params: { rowId: rowId, row: row }
             });
             return;
         }

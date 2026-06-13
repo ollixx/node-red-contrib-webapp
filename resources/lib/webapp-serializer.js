@@ -1045,12 +1045,19 @@
             return wrapRenderedComponentHtml(component, layoutId, "<div class=\"webapp-stepper webapp-stepper--" + escapeAttribute(orientation) + "\">" + stepHtml + "</div>");
         }
 
-        // P45: list — renders a <ul> with <li> items. Each item carries
-        // data-webapp-source + data-webapp-event="click" so clicks dispatch
-        // an itemClick event with params.value = item id (or label).
+        // P171: list — renders a <ul> with <li> items per the FIXED item schema.
+        // Each element is a String (shorthand → {label}) or an object
+        // {id?,label,value?,icon?}. `label` is required (object form); a missing
+        // label renders "?" for THAT row only (no implicit mapping, extra fields
+        // ignored). A non-array root → empty list (no crash). `value` is ALWAYS
+        // carried in the itemClick event (row.value); the node-wide `displayValue`
+        // (none/secondary/badge) controls DISPLAY only; at `badge` the value renders
+        // as a badge in `badgeVariant`.
         if (component.kind === "list") {
             const rawItems = Array.isArray(component.props.items) ? component.props.items
                 : (Array.isArray(component.value) ? component.value : []);
+            const displayValue = component.props.displayValue ? String(component.props.displayValue) : "none";
+            const badgeVariant = component.props.badgeVariant ? String(component.props.badgeVariant) : "neutral";
             const src = " data-webapp-source=\"" + escapeAttribute(component.id) + "\"";
             // Events are stored in props.componentEvents (to avoid Zod uiEventName validation).
             const allEvents = Array.isArray(component.props.componentEvents) ? component.props.componentEvents
@@ -1058,15 +1065,35 @@
             const declaresClick = allEvents.some(function (ev) {
                 return (typeof ev === "string" ? ev : (ev && ev.event)) === "itemClick";
             });
-            const itemHtml = rawItems.map(function (item) {
-                const label = escapeHtml(String(item.label !== undefined ? item.label : (item.id !== undefined ? item.id : item)));
-                const itemId = item.id !== undefined ? String(item.id) : label;
+            const itemHtml = rawItems.map(function (item, index) {
+                // String shorthand → {label:<string>}. Anything else is read as an
+                // object; the whole element (incl. value) is the event row payload.
+                const row = (typeof item === "string") ? { label: item } : item;
+                const hasLabel = row && typeof row === "object" && typeof row.label === "string" && row.label.length > 0;
+                // Missing label → "?" for THAT row only (P104 non-displayable hint).
+                const label = hasLabel ? escapeHtml(String(row.label)) : "?";
+                const rowId = (row && typeof row === "object" && row.id !== undefined) ? String(row.id) : String(index);
+                // `value` is ALWAYS in the event payload (row.value). Its DISPLAY is
+                // node-wide via displayValue.
+                const value = (row && typeof row === "object") ? row.value : undefined;
+                let valueHtml = "";
+                if (value !== undefined && value !== null) {
+                    if (displayValue === "secondary") {
+                        valueHtml = "<span class=\"webapp-list-value\">" + escapeHtml(String(value)) + "</span>";
+                    }
+                    else if (displayValue === "badge") {
+                        const shoelaceVariant = mapVariant("badge", badgeVariant);
+                        valueHtml = "<sl-badge class=\"webapp-list-value\" variant=\"" + escapeAttribute(shoelaceVariant) + "\">"
+                            + escapeHtml(String(value)) + "</sl-badge>";
+                    }
+                }
+                const rowAttr = " data-webapp-row=\"" + escapeAttribute(JSON.stringify(row)) + "\"";
                 if (declaresClick) {
                     return "<li class=\"webapp-list-item\"><a class=\"webapp-link\" href=\"#\""
-                        + src + " data-webapp-event=\"click\" data-webapp-item=\"" + escapeAttribute(itemId) + "\">"
-                        + label + "</a></li>";
+                        + src + " data-webapp-event=\"click\" data-webapp-item=\"" + escapeAttribute(rowId) + "\""
+                        + rowAttr + ">" + label + valueHtml + "</a></li>";
                 }
-                return "<li class=\"webapp-list-item\">" + label + "</li>";
+                return "<li class=\"webapp-list-item\">" + label + valueHtml + "</li>";
             }).join("");
             return wrapRenderedComponentHtml(component, layoutId, "<ul class=\"webapp-list\">" + itemHtml + "</ul>");
         }

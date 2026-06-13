@@ -1320,18 +1320,35 @@ export const uiIconNodeDefinitionSchema = mountableNodeSchema.extend({
 
 export type UiIconNodeDefinition = z.infer<typeof uiIconNodeDefinitionSchema>;
 
-const listItemSchema = z.object({
+// P171: the FIXED item-object schema — the contract between the author's data and
+// the rendered row. `label` is required (the String shorthand sets exactly this).
+// `id` = identity (rowId / render key, default array index); `value` (String|Number)
+// = the application value, ALWAYS carried in the event (row.value), displayed only
+// via the node-wide `displayValue`; `icon` = leading icon name. Extra fields are
+// ignored — ui-list reads only these four (no implicit mapping).
+const listItemObjectSchema = z.object({
     id: z.string().optional(),
     label: z.string().min(1),
-    value: z.string().optional(),
+    value: z.union([z.string(), z.number()]).optional(),
     icon: z.string().optional()
 });
+
+// P171: an element is a String shorthand (→ {label}) OR an item object. A static
+// `items` array may mix both.
+const listItemSchema = z.union([z.string(), listItemObjectSchema]);
 
 export const uiListNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-list"),
     items: z.union([z.array(listItemSchema), bindingSchema]),
     // P49: list render mode is a DISPLAY TYPE, not a semantic variant.
     displayType: z.enum(["default", "divided", "compact"]).optional(),
+    // P171: node-wide DISPLAY of a row's `value` — `none` (data-only, event only),
+    // `secondary` (trailing text), `badge` (a badge pill in `badgeVariant`). The
+    // value is always carried in the event regardless of this setting.
+    displayValue: z.enum(["none", "secondary", "badge"]).optional(),
+    // P171: semantic colour role of the value badge (only when displayValue=badge).
+    // Same palette as ui-badge (SEVERITY_VARIANTS). Node-wide.
+    badgeVariant: z.enum(SEVERITY_VARIANTS).optional(),
     events: z.array(z.enum(["itemClick", "itemSelect"])).optional()
 });
 
