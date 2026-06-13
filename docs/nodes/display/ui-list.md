@@ -10,10 +10,17 @@
 `ui-list` rendert eine **strukturierte Liste** an einem Mount-Ziel. Die
 Listenelemente werden über das `items`-Binding bereitgestellt — entweder als
 statisches Array oder dynamisch aus State, Query oder Node-RED-Kontext. Jedes
-Element kann eine ID, ein Label, einen Wert und ein Icon tragen. Der visuelle
-Darstellungsmodus (`displayType`) steuert, ob die Liste standard, geteilt oder
-kompakt erscheint. Nutzerinteraktionen (Klick, Auswahl) werden als Events auf
-konfigurierten Output-Ports emittiert.
+Element folgt einem **festen Item-Schema** (`id`/`label`/`value`/`icon`) — dieses
+Schema ist der **Vertrag zwischen deinen Daten und der gerenderten Zeile** und in
+[„Item-Schema — das Datenmodell"](#item-schema--das-datenmodell) exakt beschrieben.
+Der visuelle Darstellungsmodus (`displayType`) steuert, ob die Liste standard,
+geteilt oder kompakt erscheint. Nutzerinteraktionen (Klick, Auswahl) werden als
+Events auf konfigurierten Output-Ports emittiert.
+
+> **Stärke und Schwäche zugleich:** das Item-Schema ist fest. Der Autor muss seine
+> Daten in genau diese Form bringen — ui-list macht **kein** implizites
+> Feld-Mapping. Für beliebig reiche Zeilen ist `ui-repeat` (beliebiger Subtree
+> pro Element) oder `ui-table` (Spalten) gedacht, nicht ui-list.
 
 ## Einordnung
 
@@ -42,7 +49,7 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `items` | „Items" | typedInput (Binding) | **ja** | Array der Listenelemente. Bindbar über alle Standard-Binding-Arten: `literal` (statisches Array), `state` (State-Pfad), `query` (Query-Pfad), `routeParam`, `store` (Store-Picker), `msg`/`flow`/`global`/`jsonata`/`env`. Jedes Element kann die Felder `id` (optional, String), `label` (Pflicht, String), `value` (optional, String) und `icon` (optional, Icon-Name) tragen. Binding-Arten: [stores.md](../concepts/stores.md). |
+| `items` | „Items" | typedInput (Wert-Binding) | **ja** | Array der Listenelemente. Bindbar über alle Wert-Binding-Arten: `literal` (statisches Array, direkt im Editor als JSON gepflegt), `state`, `query`, `routeParam`, `store` (Store-Picker), `msg`/`flow`/`global`/`jsonata`/`env`. Die **Form jedes Elements** ist in [„Item-Schema"](#item-schema--das-datenmodell) festgelegt. Binding-Arten: [stores.md](../concepts/stores.md). **Migration:** ein bestehendes `itemsPath` (nacktes Textfeld) wird als `state`-Binding auf `items` übernommen; das separate `itemsPath`-Feld entfällt. |
 | `displayType` | „Display Type" | SelectBox | optional | Darstellungsmodus der Liste: `default` (Standard-Liste ohne Trennlinie), `divided` (mit horizontalen Trennlinien zwischen Elementen), `compact` (reduzierter Zeilenabstand). Default: `default`. `displayType` ist ein Darstellungstyp, kein semantischer Variant — Details: [theming.md](../concepts/theming.md). |
 
 ### Gruppe „Events"
@@ -65,9 +72,57 @@ Welche Platzierungsfelder sichtbar sind, hängt vom Layout-Preset des Parent-Slo
 ### Inline-Hilfe (HTML)
 
 Der `data-help-name="ui-list"`-Hilfetext soll **knapp, aber ausreichend** sein:
-Zweck (Listenrendering mit Binding), Hinweis auf `displayType` und Events sowie ein
-Link auf die ausführliche Doku. Empfohlener Link:
+Zweck (Listenrendering mit Binding), **das Item-Schema** (`{id?,label,value?,icon?}`
+— `label` Pflicht, kein implizites Mapping), Hinweis auf `displayType` und Events
+sowie ein Link auf die ausführliche Doku. Empfohlener Link:
 `https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/display/ui-list.md`.
+
+## Item-Schema — das Datenmodell
+
+`items` löst (über sein Binding) zu einem **Array von Item-Objekten** auf. Genau
+dieses Objektschema ist der Vertrag zwischen den Daten und der gerenderten Zeile.
+
+| Feld | Typ | Pflicht | Default | Gerenderte Wirkung |
+|---|---|---|---|---|
+| `label` | String | **ja** | — | Primärtext der Zeile (sichtbare Hauptzeile). |
+| `value` | String | optional | — | Sekundär-/Trailing-Text (je `displayType` rechts/darunter). Fehlt er → nur das Label. |
+| `icon` | String (Icon-Name) | optional | — | Führendes Icon. Erwartet einen Icon-Namen des App-Icon-Sets (s. [ui-icon](ui-icon.md)). Fehlt er → kein Icon. |
+| `id` | String | optional | Array-Index | Stabiler Zeilen-Anker: wird als `rowId` in `itemClick`/`itemSelect` getragen **und** als Render-Key genutzt. Ohne `id` = Array-Index (instabil bei Umsortieren). |
+
+**Regeln für das Datenmodell:**
+
+- Die Quelle von `items` **muss ein Array** sein. Skalar / Objekt / `null` →
+  **leere Liste** (kein Crash).
+- Jedes Element muss mindestens `label` tragen. Fehlt `label` an einem Element →
+  diese Zeile zeigt den Nicht-darstellbar-Hinweis (`"?"`, P104); die übrigen Zeilen
+  rendern normal.
+- **Zusätzliche Felder werden ignoriert** — ein Datensatz darf mehr Felder haben
+  (z. B. eine ganze DB-Zeile); ui-list liest **nur** `id`/`label`/`value`/`icon`.
+- **Kein implizites Mapping.** Kommen die Daten in anderer Form (z. B.
+  `{ customerId, name, city }`), müssen sie **vor** dem Store/`items` auf
+  `{ id, label, value, icon }` abgebildet werden (in einem `function`-Knoten oder
+  per `jsonata`-Binding). ui-list rät keine Feldnamen.
+
+```json
+[
+  { "id": "c-1", "label": "Ada Lovelace", "value": "London",     "icon": "user" },
+  { "id": "c-2", "label": "Alan Turing",  "value": "Manchester"                  }
+]
+```
+
+## Basis-Felder (P139 / ADR 0015)
+
+Die „Allgemein"/„Erweitert"-Basis-Felder gelten wie folgt (Anwendbarkeit per
+`resolveBaseFieldApplicability`):
+
+- **`visible`** — anwendbar (Boolean-Zustand; blendet die ganze Liste ein/aus).
+- **`disabled`** — anwendbar: sperrt die Zeilen-Interaktion (`itemClick`/
+  `itemSelect`); ohne aktive Events wirkungslos.
+- **`color`** — anwendbar (allgemeine Farbe; ui-list hat keinen semantischen
+  `variant`).
+- **`size`** — **N/A**: die Zeilendichte steuert `displayType`
+  (`default`/`divided`/`compact`), **nicht** ein size-Token (mit Hinweis
+  deaktiviert).
 
 ## Input
 
@@ -114,14 +169,12 @@ Details: [theming.md](../concepts/theming.md).
 
 ## Besonderheiten
 
-- **Statisches Item-Schema.** Jedes Element im `items`-Array folgt dem Schema
-  `{ id?, label, value?, icon? }`. `label` ist Pflicht; alle anderen Felder sind
-  optional. Komplexe Zeileninhalte (verschachtelte Komponenten pro Element) sind
-  nicht Teil des Contracts von `ui-list` — dafür ist `ui-table` mit strukturierten
-  Spaltendefinitionen vorgesehen.
-- **`id` als Anker.** Ist `id` gesetzt, verwendet der Knoten ihn als `rowId` im
-  Event-Payload; ohne `id` wird der Array-Index verwendet. Eine stabile `id`
-  erleichtert die Zuordnung im verdrahteten Flow.
+- **Festes Item-Schema** (Details: [Item-Schema](#item-schema--das-datenmodell)).
+  Komplexe Zeileninhalte (verschachtelte Komponenten pro Element) sind **nicht**
+  Teil des ui-list-Contracts — dafür ist `ui-table` (Spalten) bzw. `ui-repeat`
+  (beliebiger Subtree pro Element) vorgesehen.
+- **`id` als Anker.** Stabile `id` = stabiler `rowId` im Event **und** stabiler
+  Render-Key (überlebt Umsortieren); ohne `id` = Array-Index.
 
 ## Referenzen
 
@@ -136,4 +189,12 @@ Details: [theming.md](../concepts/theming.md).
 
 - Mehrfachselektion (Checkbox-Modus pro Zeile) ist noch nicht modelliert.
 - Virtuelle Liste / Lazy-Rendering für sehr lange Item-Arrays ist noch nicht spezifiziert.
-- Icon-Rendering: welche Icon-Bibliothek und welches Format `icon` erwartet, ist noch nicht festgelegt.
+- Icon-Rendering: `icon` erwartet einen Icon-Namen des App-Icon-Sets (s.
+  [ui-icon](ui-icon.md)); die endgültige Festlegung der Icon-Bibliothek/-Notation
+  ist an ui-icon gekoppelt und dort offen.
+
+> **Hinweis zum Implementierungsstand (2026-06-13):** Der Knoten hängt hinter
+> diesem Vertrag — der Editor nutzt heute ein nacktes `itemsPath`-Textfeld statt
+> des `items`-typedInput, die Basis-Felder fehlen, Events-Checkboxen und Item-
+> Schema-Validierung sind nicht verdrahtet. Angleichung: Epic `nodes/ui-list`
+> (P171/P172).

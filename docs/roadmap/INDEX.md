@@ -27,7 +27,8 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-_No open work — the roadmap is drained. New work is added here as packages are authored._
+- **P171** — nodes/ui-list — an die Spec angleichen: `items` als Wert-typedInput (itemsPath migrieren), Item-Schema-Validierung, Events-Checkboxen, Hilfetext — *Datenmodell-Schwachpunkt; braucht keine* — [P171](nodes/ui-list/P171-list-items-typedinput-and-item-schema.md)
+- **P172** — nodes/ui-list — Basis-Felder (P139/ADR 0015) nachrüsten: visible/disabled/color anwendbar, size N/A — *in P139-Welle übersehen; braucht P171* — [P172](nodes/ui-list/P172-list-base-fields.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -92,4 +93,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 169 done, 0 open, 9 deferred.**
+**Total: 169 done, 2 open, 9 deferred.**
