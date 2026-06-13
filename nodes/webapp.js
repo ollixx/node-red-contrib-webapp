@@ -700,6 +700,23 @@ function getBinding(bindingCandidate, fallbackBinding) {
     return fallbackBinding;
 }
 
+// P171: migrate a legacy ui-list `itemsPath` (a plain state path) into a `state`
+// binding on `items` (mirrors ui-tabs `activeTabPath`→`activeTab`). PRECISE
+// mapping: a leading `state.` prefix is stripped (`state.foo.bar` → path
+// `foo.bar`), otherwise the whole string is the state path — never `state.state.…`.
+// An empty/absent path yields no binding (undefined).
+function migrateStatePath(rawPath) {
+    if (typeof rawPath !== "string") {
+        return undefined;
+    }
+    const trimmed = rawPath.trim();
+    if (trimmed.length === 0) {
+        return undefined;
+    }
+    const path = trimmed.startsWith("state.") ? trimmed.slice("state.".length) : trimmed;
+    return stateBinding(path);
+}
+
 // P157 (ADR 0012): resolve a ui-menu `items` config into the node-definition
 // `items` value — a static array (the menu renders entries itself, a STRUCTURAL
 // array like ui-select `options`, NOT a repeats case) OR a binding object
@@ -1510,7 +1527,13 @@ function toComponentDefinitions(components) {
             // open section (default = first child by order). Legacy `openSectionPath`
             // plain state path migrates here.
             const openSectionBinding = !valueBinding && p16Kind === "accordion" ? getBinding(component.openSection, component.openSectionPath ? stateBinding(component.openSectionPath) : undefined) : undefined;
-            const itemsBinding = !valueBinding && p16Kind === "list" ? getBinding(component.items, component.itemsPath ? stateBinding(component.itemsPath) : undefined) : undefined;
+            // P171: ui-list `items` is a STRUCTURAL array source (the list renders
+            // its rows ITSELF — NOT a repeats case), exactly like ui-menu `items` /
+            // ui-table `rows`. A binding object routes through bind.items so the
+            // renderer resolves it structurally (shared P133 path); a plain static
+            // array stays in props.items. Legacy `itemsPath` migrates to a state
+            // binding (leading `state.` stripped).
+            const listItemsBinding = p16Kind === "list" ? getBinding(component.items, migrateStatePath(component.itemsPath)) : undefined;
             // P157 (ADR 0012): ui-menu `items` is a STRUCTURAL array binding (the
             // menu renders its entries itself — NOT a repeats/slot case, vgl. P140).
             // When it is a binding object (store/query/reactive/json-literal) route
@@ -1541,9 +1564,6 @@ function toComponentDefinitions(components) {
             }
             else if (openSectionBinding) {
                 bind.value = openSectionBinding;
-            }
-            else if (itemsBinding) {
-                bind.value = itemsBinding;
             }
             if (disabledBinding) {
                 bind.disabled = disabledBinding;
@@ -1618,6 +1638,12 @@ function toComponentDefinitions(components) {
             if (menuActiveBinding) {
                 bind.activeItem = menuActiveBinding;
             }
+            // P171: ui-list `items` binding routes through bind.items (resolved
+            // structurally by the renderer into resolvedProps.items); a plain static
+            // array stays in props.items (handled in the props block below).
+            if (listItemsBinding) {
+                bind.items = listItemsBinding;
+            }
             // P151 (ADR 0012): ui-image alt and fallbackSrc are binding-capable.
             // When either is a binding object, route it through bind so the
             // renderer resolves it into resolvedProps.alt / resolvedProps.fallbackSrc
@@ -1671,11 +1697,14 @@ function toComponentDefinitions(components) {
                     ...(component.pulsating !== undefined ? { pulsating: component.pulsating } : {}),
                     // P49: display type (progress/skeleton/badge/menu/list render mode).
                     ...(component.displayType !== undefined ? { displayType: component.displayType } : {}),
-                    // P157: a menu `items` BINDING object routes through bind.items
-                    // (resolved structurally by the renderer); only a plain static
-                    // array stays in props.items. Other kinds (list/breadcrumb) keep
+                    // P171: ui-list node-wide value display + badge colour role.
+                    ...(component.displayValue !== undefined ? { displayValue: component.displayValue } : {}),
+                    ...(component.badgeVariant !== undefined ? { badgeVariant: component.badgeVariant } : {}),
+                    // P157/P171: a menu/list `items` BINDING object routes through
+                    // bind.items (resolved structurally by the renderer); only a plain
+                    // static array stays in props.items. Other kinds (breadcrumb) keep
                     // their existing items-in-props behaviour.
-                    ...(component.items !== undefined && !menuItemsBinding ? { items: component.items } : {}),
+                    ...(component.items !== undefined && !menuItemsBinding && !listItemsBinding ? { items: component.items } : {}),
                     ...(component.sections !== undefined ? { sections: component.sections } : {}),
                     ...(component.tabs !== undefined ? { tabs: component.tabs } : {}),
                     ...(component.orientation !== undefined ? { orientation: component.orientation } : {}),
@@ -6092,8 +6121,15 @@ const runtimeNodeRegistry = {
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
-            items: getBinding(config.items, config.itemsPath ? stateBinding(config.itemsPath) : undefined) || parseJsonList(config.items),
+            // P171: `items` is a STRUCTURAL value-binding (typedInput). A stored
+            // binding object wins; a legacy `itemsPath` plain path migrates to a
+            // `state` binding (leading `state.` stripped); a bare JSON array literal
+            // (flow.json/tests) is kept as a static array.
+            items: getBinding(config.items, migrateStatePath(config.itemsPath)) || parseJsonList(config.items),
             displayType: config.displayType || config.variant || undefined,
+            // P171: node-wide value display + badge colour role.
+            displayValue: config.displayValue || undefined,
+            badgeVariant: config.badgeVariant || undefined,
             events: parseJsonList(config.events).length > 0 ? parseJsonList(config.events) : undefined,
             ...collectNodeConfigLayoutProps(config)
         }),

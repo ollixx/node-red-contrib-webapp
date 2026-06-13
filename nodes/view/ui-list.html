@@ -2,17 +2,28 @@
 <script type="text/javascript">
     (function () {
         const common = window.WebappEditorCommon;
-        common.registerNodeType("ui-list", {
+        common.registerNodeTypeWithEvents("ui-list", {
             category: "webapp view",
             color: "#f4efcf",
             defaults: {
                 name: { value: "" },
                 parent: { value: "" },
                 mount: { value: "", required: true },
-                itemsPath: { value: "" },
+                // P171 (ADR 0012): `items` is a STRUCTURAL array source (the list
+                // renders its rows ITSELF — NOT a repeats case). It persists the
+                // binding OBJECT; there is no matching #node-input-items element so
+                // Node-RED auto-save cannot clobber it. The typedInput lives on
+                // #node-input-itemsBinding. The legacy `itemsPath` plain state path
+                // is kept for migration only (the unused `items:null` default is gone).
                 items: { value: null },
+                itemsBinding: { value: "" },
+                itemsPath: { value: "" },
                 displayType: { value: "default" },
-                events: { value: [] },
+                // P171: node-wide value display (none/secondary/badge) + badge colour.
+                displayValue: { value: "none" },
+                badgeVariant: { value: "neutral" },
+                events: { value: "[]" },
+                outputs: { value: 0 },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
                 col: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
@@ -23,6 +34,15 @@
             },
             inputs: 1,
             outputs: 0,
+            outputLabels: function (index) {
+                try {
+                    const events = JSON.parse(this.events || "[]");
+                    return events[index] || "";
+                }
+                catch (_e) {
+                    return "";
+                }
+            },
             icon: "font-awesome/fa-list",
             label: common.labelWithName("ui-list"),
             onadd: function () {
@@ -33,15 +53,64 @@
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
                 common.installLayoutChildPropRows().call(this);
+
+                // P171 (ADR 0012 / structural category): `items` typedInput — the
+                // RESTRICTED set: scalar literals (str/num/bool/date) are EXCLUDED
+                // (they cannot yield a valid array model); allowed is json (a static
+                // array literal) + every binding kind that can resolve to an array/
+                // object (store/query/routeParam/reactive/msg/jsonata/flow/global/env).
+                // Migration: a legacy `itemsPath` plain string opens as a state
+                // binding (leading `state.` stripped); a stored `items` binding wins.
+                const storedItems = common.parseBindingValue(this.items);
+                const itemsBinding = storedItems
+                    ? storedItems
+                    : (this.itemsPath
+                        ? { kind: "state", path: this.itemsPath.indexOf("state.") === 0 ? this.itemsPath.slice("state.".length) : this.itemsPath }
+                        : undefined);
+                const itemsEditor = common.readValueBinding(itemsBinding, "");
+                const itemsDefaultType = itemsEditor.type !== "str" ? itemsEditor.type : "json";
+                const itemsInput = $("#node-input-itemsBinding");
+                itemsInput.typedInput({
+                    default: itemsDefaultType,
+                    types: common.valueBindingTypes({ category: "structural" })
+                });
+                itemsInput.typedInput("type", itemsEditor.type !== "str" || itemsBinding ? itemsEditor.type : "json");
+                itemsInput.typedInput("value", itemsEditor.value);
+
+                // P171: bind the stored displayValue / badgeVariant and toggle the
+                // badgeVariant row visibility (only when displayValue = badge).
+                $("#node-input-displayValue").val(this.displayValue || "none");
+                $("#node-input-badgeVariant").val(this.badgeVariant || "neutral");
+                const syncBadgeRow = function () {
+                    if ($("#node-input-displayValue").val() === "badge") {
+                        $("#node-list-badge-variant-row").show();
+                    }
+                    else {
+                        $("#node-list-badge-variant-row").hide();
+                    }
+                };
+                $("#node-input-displayValue").on("change", syncBadgeRow);
+                syncBadgeRow();
+            },
+            oneditsave: function () {
+                // P171: persist items as a binding object; clear the legacy path.
+                this.items = common.applyValueBinding(
+                    $("#node-input-itemsBinding").typedInput("type"),
+                    $("#node-input-itemsBinding").typedInput("value")
+                );
+                this.itemsPath = "";
+                this.displayValue = $("#node-input-displayValue").val();
+                this.badgeVariant = $("#node-input-badgeVariant").val();
             }
-        });
+        }, ["itemClick"]);
     })();
 </script>
 <script type="text/html" data-template-name="ui-list">
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
-    <div class="form-row"><label for="node-input-itemsPath">Items Path</label><input type="text" id="node-input-itemsPath" placeholder="state.path.to.items"></div>
+    <!-- P171 (ADR 0012 / structural category): Items binding (structural array source) — typedInput managed in oneditprepare/oneditsave. -->
+    <div class="form-row"><label for="node-input-itemsBinding">Items</label><input type="text" id="node-input-itemsBinding"></div>
     <div class="form-row"><label for="node-input-displayType">Display Type</label>
         <select id="node-input-displayType">
             <option value="default">Default</option>
@@ -49,5 +118,58 @@
             <option value="compact">Compact</option>
         </select>
     </div>
+    <div class="form-row"><label for="node-input-displayValue">Value-Anzeige</label>
+        <select id="node-input-displayValue">
+            <option value="none">Nicht anzeigen (Default)</option>
+            <option value="secondary">Sekundär (Text)</option>
+            <option value="badge">Badge</option>
+        </select>
+    </div>
+    <div class="form-row" id="node-list-badge-variant-row"><label for="node-input-badgeVariant">Badge Variant</label>
+        <select id="node-input-badgeVariant">
+            <option value="neutral">Neutral (Default)</option>
+            <option value="primary">Primary</option>
+            <option value="info">Info</option>
+            <option value="success">Success</option>
+            <option value="warning">Warning</option>
+            <option value="danger">Danger</option>
+        </select>
+    </div>
+    <input type="hidden" id="node-input-events">
+    <input type="hidden" id="node-input-outputs">
+    <div class="form-row"><label>Events</label></div>
+    <div id="node-input-events-container"></div>
 </script>
-<script type="text/html" data-help-name="ui-list"><p>Zeigt eine strukturierte Liste mit optionalem Item-Slot.</p></script>
+<script type="text/html" data-help-name="ui-list">
+<p>Rendert eine strukturierte Liste an einem Mount-Ziel. Die Elemente kommen aus dem
+<code>items</code>-Binding (statisches Array oder dynamisch aus State/Query/Store/Kontext).</p>
+<h4>Items (P171)</h4>
+<p>Bindbare, <strong>strukturelle</strong> Quelle der Listenelemente (ein Array) — nur Typen,
+die ein valides Modell liefern: <code>json</code> (statisches Array-Literal) sowie
+Store, Query, Route-Param, Reactive, msg, JSONata, Flow, Global, Env. Skalar-Literale
+(string/number/boolean) sind <b>ausgeblendet</b>. Ein bestehender <code>itemsPath</code>
+wird automatisch als <code>state</code>-Binding übernommen.</p>
+<h4>Item-Schema — der Vertrag</h4>
+<p>Jedes Element ist ein <strong>String</strong> (Kurzform → <code>{label:&lt;string&gt;}</code>)
+<strong>oder</strong> ein Objekt <code>{ id?, label, value?, icon? }</code>:</p>
+<ul>
+<li><code>label</code> — <strong>Pflicht</strong> (Objektform); fehlt es, zeigt <em>diese</em>
+Zeile <code>"?"</code>. Die String-Kurzform setzt genau dieses Feld.</li>
+<li><code>id</code> — Identität: <code>rowId</code> im Event und Render-Key. Ohne <code>id</code>
+= Array-Index.</li>
+<li><code>value</code> (String|Number) — Anwendungswert: <strong>stets im Event</strong>
+(<code>row.value</code>). Die Anzeige steuert <code>displayValue</code>
+(<code>none</code>/<code>secondary</code>/<code>badge</code>) — bei <code>badge</code> als Badge
+in <code>badgeVariant</code>.</li>
+<li><code>icon</code> — führendes Icon (Icon-Name).</li>
+</ul>
+<p>Gemischte Arrays (Strings + Objekte) rendern. <strong>Kein implizites Mapping</strong> —
+Zusatzfelder werden ignoriert; bringe deine Daten vorher in diese Form. Nicht-Array-Wurzel
+→ leere Liste (kein Crash).</p>
+<h4>Events</h4>
+<p><code>itemClick</code> erzeugt einen Output-Port; der Klick emittiert
+<code>params: { rowId, row }</code> (plus <code>clientId</code>/<code>sourceId</code>/<code>appId</code>) —
+<code>rowId</code> = <code>id</code> (sonst Index), <code>row</code> = das ganze Element inkl.
+<code>value</code>.</p>
+<p>Doku: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/display/ui-list.md" target="_blank">ui-list</a>.</p>
+</script>

@@ -868,6 +868,18 @@ function toRenderedComponent(component: ComponentDefinition, context: ComponentR
         resolvedProps.rows = resolveStructuralBinding(component.bind.rows, context.sources);
     }
 
+    // P171 (ADR 0012): ui-list `items` is the SAME structural-array case as
+    // ui-select `options` (P133) / ui-menu `items` (P157) / ui-table `rows` (P158)
+    // — the list renders its rows ITSELF from this DATA SOURCE (NOT a repeats case).
+    // A bound store/query slice is legitimately an array of items, which the
+    // display-scalar resolver rejects; resolve `items` through the SHARED structural
+    // path so store/query/reactive/json-literal arrays keep their shape. The item
+    // schema (String shorthand | {id?,label,value?,icon?}) is normalised by the
+    // serializer (non-array root → empty list, missing label → "?").
+    if (component.kind === "list" && component.bind.items) {
+        resolvedProps.items = resolveStructuralBinding(component.bind.items, context.sources);
+    }
+
     const baseComponent: RenderedComponentBase = {
         id: component.id,
         kind: component.kind,

@@ -237,8 +237,13 @@ Details: [theming.md](../concepts/theming.md).
   [ui-icon](ui-icon.md)); die endgültige Festlegung der Icon-Bibliothek/-Notation
   ist an ui-icon gekoppelt und dort offen.
 
-> **Hinweis zum Implementierungsstand (2026-06-13):** Der Knoten hängt hinter
-> diesem Vertrag — der Editor nutzt heute ein nacktes `itemsPath`-Textfeld statt
-> des `items`-typedInput, die Basis-Felder fehlen, Events-Checkboxen und Item-
-> Schema-Validierung sind nicht verdrahtet. Angleichung: Epic `nodes/ui-list`
-> (P171/P172).
+> **Hinweis zum Implementierungsstand (2026-06-13):** P171 hat den Knoten an den
+> Kern dieses Vertrags angeglichen — `items` ist jetzt ein **strukturelles**
+> Wert-typedInput (Skalar-Literale ausgeblendet), der alte `itemsPath` migriert
+> verlustfrei auf ein `state`-Binding, das **Item-Schema** (String-Kurzform |
+> `{id?,label,value?,icon?}`, `label` Pflicht, fehlend → `"?"`, Nicht-Array-Wurzel
+> → leere Liste, kein implizites Mapping) ist in Schema/Renderer/Serializer
+> verdrahtet, `displayValue`/`badgeVariant` steuern die `value`-Anzeige und die
+> `itemClick`-Events-Checkbox erzeugt den Output-Port (`params {rowId,row}`).
+> **Offen:** Basis-Felder (P172) und Single-Select `selectable`/`selectedId` +
+> `itemSelect` (P173). Epic `nodes/ui-list`.
