@@ -1,0 +1,60 @@
+---
+id: P175
+node: ui-query
+epic: nodes/ui-query
+title: "ui-query: data/error-Rückgabe terminal machen — kein Re-Emit am Out-Port (Endlosschleifen-Fix)"
+findings:
+  - "Owner (2026-06-13): 'der rückweg von function zu ui-query führt zu einer endlos schleife.'"
+  - "Code-Befund: der Query-Input-Handler ruft am Ende ein UNBEDINGTES send(msg) (nodes/webapp.js:4302) — auch nachdem eine data-Message via applyQueryMessage absorbiert wurde. Die data-Rückgabe wird so erneut an den Out-Port → Datenquelle → Shaper → In-Port geschickt: Endlosschleife. Kommentar im Code: 'The message is still passed through unchanged'."
+acceptance:
+  - "Eine eingehende msg.ui.query mit data (passender queryPath) wird absorbiert (State + Snapshot-Push) und NICHT am Out-Port emittiert (kein send) — terminal."
+  - "Eine eingehende msg.ui.query mit error ist ebenfalls terminal (absorbiert, kein Re-Emit)."
+  - "Ein Trigger ohne data/error (onEnter, ui-action-refresh) wird WEITERHIN am Out-Port emittiert (der Fetch wird ausgelöst)."
+  - "Eine refresh:true/loading:true-Message setzt den Ladezustand UND wird am Out-Port emittiert (manueller Re-Trigger funktioniert)."
+  - "Nicht erkannte/fachfremde Messages passieren den Out-Port unverändert (Pass-Through bleibt)."
+  - "Regression (no-loop): onEnter → ui-query → function(liefert data) → ui-query terminiert nach EINEM Fetch; der Out-Port feuert für die data-Rückgabe NICHT erneut (Unit zählt send-Aufrufe; E2E zeigt stabile, nicht endlos wachsende Snapshots)."
+verify: browser
+spec: docs/nodes/state/ui-query.md
+tests: tests/e2e/nodes/state/ui-query.tests.md
+dependencies: []
+status: pending
+---
+# P175 — ui-query: terminale data/error-Rückgabe (kein Loop)
+
+> **Bugfix.** Der Query-In-Handler reicht heute **jede** Message am Out-Port durch
+> (`send(msg)` unbedingt, `nodes/webapp.js:4302`) — auch die `data`-Rückgabe der
+> Datenquelle. Damit läuft `out → Datenquelle → Shaper → in → out → …` endlos.
+> ADR 0016 + die Spec ([Terminal-Regel](../../../nodes/state/ui-query.md#output))
+> verlangen: `data`/`error` sind **terminal**.
+
+## Kern des Fixes
+
+Im Query-Input-Handler **vor** dem abschließenden `send(msg)` unterscheiden:
+
+- War die Message eine **terminale Rückgabe** (`msg.ui.query` mit `data` **oder**
+  `error` für einen passenden `queryPath`)? → absorbieren (wie heute via
+  `applyQueryMessage`) **und `return` ohne `send`**.
+- Sonst (Trigger / `refresh` / `loading` / nicht erkannt) → wie bisher
+  `send(msg)` (der Auslöser muss die Datenquelle erreichen).
+
+`applyQueryMessage` liefert die Klassifikation bereits implizit (data/error vs.
+refresh vs. null) — den Rückgabewert/Zweig nutzen, um den `send` zu unterdrücken.
+**Kein** zweiter Code-Pfad, **kein** Schema-/Renderer-Wechsel.
+
+## acceptance / verify
+
+- `verify: browser` — der no-loop-Nachweis im laufenden Flow (stabile Snapshots,
+  kein endloses Nachladen); E2E im Haupt-Checkout durch den Orchestrator
+  ([[orchestrator-must-verify-e2e-in-main-checkout]]).
+- **Unit zuerst:** ein Handler-Test, der `send` mockt und zählt — `data`/`error`
+  ⇒ 0 Out-Emits, Trigger/`refresh` ⇒ 1 Out-Emit. Das ist die billigste, härteste
+  Absicherung gegen Re-Regression.
+
+## Risiken / Hinweise
+
+- **Pass-Through für Fremd-Messages bleibt** — nur `data`/`error` werden terminal.
+  Genau prüfen, dass ein reiner Trigger (onEnter ohne `msg.ui.query`) weiterhin
+  durchläuft.
+- Etag-Kurzschluss (P-Caching, `runtimeState.queryEtags`) bleibt unberührt.
+- Spec ist bereits auf die Terminal-Regel gezogen (dieser Commit); der Code zieht
+  nach.

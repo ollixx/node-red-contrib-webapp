@@ -58,14 +58,16 @@ ist die Erklärung hinter dem „alles leer"-Ersteindruck.
 
 Der eine, verbindliche Datenpfad:
 
-1. Ein Auslöser (typisch `ui-route` `onEnter`, ein `ui-action`-`refresh` oder ein
-   `params`-Store-Wechsel) erreicht den **In-Port** der `ui-query`.
-2. Die Query **reicht die Message durch** (Pass-Through) an ihren **Out-Port**.
+1. Ein **Auslöser** (typisch `ui-route` `onEnter`, ein `ui-action`-`refresh` oder
+   ein `params`-Store-Wechsel) erreicht den **In-Port** der `ui-query`.
+2. Die Query **reicht den Auslöser durch** an ihren **Out-Port** (nur Trigger/
+   `refresh` — **nicht** `data`/`error`, s. Terminal-Regel unten).
 3. Dahinter liegt die **eigentliche Datenquelle** (DB-/HTTP-/`function`-Knoten).
 4. Deren Ergebnis wird als `msg.ui.query.data` (mit passendem `queryPath`)
    **zurück an den In-Port** der **selben** `ui-query` geschickt.
 5. Der Knoten legt die Daten unter `ui.queries.<queryPath>` ab und pusht einen
-   frischen Snapshot an die Clients — jede `query:<queryPath>`-Bindung
+   frischen Snapshot — die `data`-Rückgabe ist **terminal** und wird **nicht**
+   erneut am Out-Port emittiert (sonst Schleife). Jede `query:<queryPath>`-Bindung
    aktualisiert sich live.
 
 ### Vollständiges Wiring-Beispiel
@@ -141,9 +143,12 @@ msg.ui.query.params      = { page, … }        ← vom Out-Port-Refresh getrage
 msg.ui.clientId          = <optional: gezielter Push>
 ```
 
-- **Was passiert:** Eine `data`-Message legt die geladenen Daten unter dem
-  `queryPath` ab und pusht sie an die verbundenen Clients (gezielt bei gesetztem
-  `clientId`, sonst Broadcast). Eine `refresh`-Message signalisiert das Neuladen.
+- **Was passiert:** Eine `data`- oder `error`-Message ist **terminal** — sie legt
+  Daten/Fehler unter dem `queryPath` ab und pusht an die verbundenen Clients
+  (gezielt bei gesetztem `clientId`, sonst Broadcast) und wird **nicht** am
+  Out-Port wiederholt (siehe [Output](#output) — sonst Endlosschleife). Eine
+  `refresh`/`loading`-Message setzt den Ladezustand **und** läuft als Auslöser
+  weiter (Out-Port).
 - **Validierung:** keine fachlichen Verben über die `queryPath`-Zuordnung hinaus.
 - **Nicht erkannte / fachfremde Messages:** werden **unverändert durchgereicht**
   (Pass-Through), ohne Fehlerausgabe — so kann der Knoten transparent zwischen
@@ -153,13 +158,22 @@ msg.ui.clientId          = <optional: gezielter Push>
 
 ## Output
 
-Der Out-Port **reicht die eingehende Message durch** — dahinter verdrahtet der
-App-Autor die eigentliche Datenquelle (DB-Node, HTTP-Request etc.) und schickt
-das Ergebnis als `msg.ui.query.data` zurück an den In-Port.
+Der Out-Port trägt **nur Auslöser** Richtung Datenquelle — die **Trigger-/
+Refresh-Durchreichung**: ein `onEnter`/Action-Trigger, ein `refresh`-Signal oder
+der reaktive `params`-Out-Port-Refresh. Dahinter verdrahtet der App-Autor die
+eigentliche Datenquelle (DB-Node, HTTP-Request etc.) und schickt das Ergebnis als
+`msg.ui.query.data` zurück an den In-Port.
+
+> **Terminal-Regel (Schleifenschutz):** Eine eingehende Message, die **`data`
+> oder `error`** für diesen `queryPath` trägt, ist die **Rückgabe** der
+> Datenquelle — sie wird **absorbiert** (State + Push) und **NICHT** erneut am
+> Out-Port emittiert. Würde sie durchgereicht, ginge sie zurück an die
+> Datenquelle → erneute Rückgabe → **Endlosschleife**. Nur Trigger/`refresh`/
+> nicht-erkannte Messages passieren den Out-Port; `data`/`error` enden hier.
 
 **Antizipierte Wiring-Szenarien:**
-- `ui-route` `onEnter` → `ui-query` (Refresh-/Trigger-Durchreichung) → DB/HTTP →
-  zurück an den In-Port mit `msg.ui.query.data`.
+- `ui-route` `onEnter` → `ui-query` (Trigger-Durchreichung am Out-Port) → DB/HTTP
+  → zurück an den In-Port mit `msg.ui.query.data` (**terminal**, kein Re-Emit).
 - `params`-Store ändert sich → reaktiver Refresh → neue Daten an die gebundene
   `ui-table`.
 
