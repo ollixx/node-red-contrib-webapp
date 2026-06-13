@@ -42,6 +42,16 @@
                 // P171: node-wide value display (none/secondary/badge) + badge colour.
                 displayValue: { value: "none" },
                 badgeVariant: { value: "neutral" },
+                // P173: single-select. `selectable` is a plain boolean checkbox.
+                // `selectedId` is the two-way binding OBJECT (mirror of ui-tabs
+                // `activeTab`); there is no #node-input-selectedId element so Node-RED
+                // auto-save cannot clobber it — the typedInput lives on the
+                // #node-input-selectedIdBinding carrier. Legacy `selectedIdPath` is a
+                // plain state path kept for migration only.
+                selectable: { value: false },
+                selectedId: { value: null },
+                selectedIdBinding: { value: "" },
+                selectedIdPath: { value: "" },
                 events: { value: "[]" },
                 outputs: { value: 0 },
                 // P172 (ADR 0015): base fields. `visible`/`color`/`disabled` persist
@@ -125,6 +135,38 @@
                 };
                 $("#node-input-displayValue").on("change", syncBadgeRow);
                 syncBadgeRow();
+
+                // P173 (ADR 0012 / value category): single-select. `selectable` is a
+                // plain checkbox; `selectedId` is the TWO-WAY value typedInput (full
+                // canonical set, default type `str` = a row id) — it reads the selected
+                // id from the bound Store/state AND the itemSelect event carries the
+                // chosen id for the wired write-back loop (mirror of ui-tabs activeTab).
+                // Migration: a legacy `selectedIdPath` plain string opens as a state
+                // binding; a stored `selectedId` binding wins.
+                $("#node-input-selectable").prop("checked", this.selectable === true);
+                const storedSelected = common.parseBindingValue(this.selectedId);
+                const selectedBinding = storedSelected
+                    ? storedSelected
+                    : (this.selectedIdPath ? { kind: "state", path: this.selectedIdPath } : undefined);
+                const selectedEditor = common.readValueBinding(selectedBinding, "");
+                const selectedInput = $("#node-input-selectedIdBinding");
+                selectedInput.typedInput({
+                    default: selectedEditor.type,
+                    types: common.valueBindingTypes({ category: "value" })
+                });
+                selectedInput.typedInput("type", selectedEditor.type);
+                selectedInput.typedInput("value", selectedEditor.value);
+                // The selectedId row is only relevant when selectable is on.
+                const syncSelectableRow = function () {
+                    if ($("#node-input-selectable").is(":checked")) {
+                        $("#node-list-selected-id-row").show();
+                    }
+                    else {
+                        $("#node-list-selected-id-row").hide();
+                    }
+                };
+                $("#node-input-selectable").on("change", syncSelectableRow);
+                syncSelectableRow();
             },
             oneditsave: function () {
                 // P172: persist the applicable base fields as binding objects.
@@ -137,8 +179,16 @@
                 this.itemsPath = "";
                 this.displayValue = $("#node-input-displayValue").val();
                 this.badgeVariant = $("#node-input-badgeVariant").val();
+                // P173: persist selectable + selectedId binding object; clear the
+                // legacy path.
+                this.selectable = $("#node-input-selectable").is(":checked");
+                this.selectedId = common.applyValueBinding(
+                    $("#node-input-selectedIdBinding").typedInput("type"),
+                    $("#node-input-selectedIdBinding").typedInput("value")
+                );
+                this.selectedIdPath = "";
             }
-        }, ["itemClick"]);
+        }, ["itemClick", "itemSelect"]);
     })();
 </script>
 <script type="text/html" data-template-name="ui-list">
@@ -171,6 +221,12 @@
             <option value="danger">Danger</option>
         </select>
     </div>
+    <!-- P173: single-select — selectable checkbox + two-way selectedId typedInput. -->
+    <hr style="margin: 8px 0;">
+    <div class="form-row">
+        <label for="node-input-selectable" style="width: auto;"><input type="checkbox" id="node-input-selectable" style="display:inline-block; width:auto; vertical-align:top;"> Auswählbar (Single-Select)</label>
+    </div>
+    <div class="form-row" id="node-list-selected-id-row"><label for="node-input-selectedIdBinding">Ausgewählt (id)</label><input type="text" id="node-input-selectedIdBinding"></div>
     <input type="hidden" id="node-input-events">
     <input type="hidden" id="node-input-outputs">
     <div class="form-row"><label>Events</label></div>
@@ -208,10 +264,25 @@ in <code>badgeVariant</code>.</li>
 <p>Gemischte Arrays (Strings + Objekte) rendern. <strong>Kein implizites Mapping</strong> —
 Zusatzfelder werden ignoriert; bringe deine Daten vorher in diese Form. Nicht-Array-Wurzel
 → leere Liste (kein Crash).</p>
+<h4>Single-Select (P173)</h4>
+<p><b>Auswählbar</b> (<code>selectable</code>, Checkbox, Default aus) schaltet Single-Select ein:
+ein Klick auf eine Zeile markiert sie sichtbar als ausgewählt. Bei aus ist die Liste rein
+anzeigend/klickbar, ohne Auswahl-Zustand.</p>
+<p><b>Ausgewählt (id)</b> (<code>selectedId</code>, nur relevant bei „Auswählbar") ist ein
+<strong>zweiseitiges</strong> Binding auf die <code>id</code> der ausgewählten Zeile — analog
+<code>activeTab</code> bei ui-tabs: liest die Auswahl aus dem gebundenen Store/State <strong>und</strong>
+das <code>itemSelect</code>-Event trägt die gewählte id für den Write-Back (verdrahte
+<code>itemSelect</code> → ui-store <code>set</code>; die Store-Änderung re-rendert via SSE und
+markiert die Zeile). Eine ungültige/leere id markiert <em>keine</em> Zeile. Eine stabile
+<code>id</code> je Item ist dringend empfohlen — ohne <code>id</code> dient der Array-Index als
+<code>rowId</code> (instabil beim Umsortieren). Mehrfachauswahl (Multi-Select) ist nicht abgedeckt.</p>
 <h4>Events</h4>
 <p><code>itemClick</code> erzeugt einen Output-Port; der Klick emittiert
 <code>params: { rowId, row }</code> (plus <code>clientId</code>/<code>sourceId</code>/<code>appId</code>) —
 <code>rowId</code> = <code>id</code> (sonst Index), <code>row</code> = das ganze Element inkl.
-<code>value</code>.</p>
+<code>value</code>. <code>itemClick</code> feuert bei <em>jedem</em> Klick.</p>
+<p><code>itemSelect</code> feuert <strong>nur</strong> bei <code>selectable</code> <strong>und</strong>
+Auswahlwechsel (gleiche Payload <code>{ rowId, row }</code>). Ohne <code>selectable</code> ist es
+wirkungslos. So unterscheidet es sich von <code>itemClick</code>.</p>
 <p>Doku: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/display/ui-list.md" target="_blank">ui-list</a>.</p>
 </script>

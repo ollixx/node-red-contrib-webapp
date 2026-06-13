@@ -1544,6 +1544,13 @@ function toComponentDefinitions(components) {
             // array stays in props.items. Legacy `itemsPath` migrates to a state
             // binding (leading `state.` stripped).
             const listItemsBinding = p16Kind === "list" ? getBinding(component.items, migrateStatePath(component.itemsPath)) : undefined;
+            // P173: ui-list `selectedId` is the TWO-WAY selected-row binding (mirror of
+            // ui-tabs `activeTab`, P155). It cannot ride bind.value (the list reuses
+            // component.value as the legacy items-array fallback), so it routes through
+            // a dedicated bind.selectedId → resolvedProps.selectedId (read source). The
+            // itemSelect change-event carries the new rowId for the wired write-back
+            // loop. Only meaningful when `selectable`.
+            const selectedIdBinding = p16Kind === "list" ? getBinding(component.selectedId, undefined) : undefined;
             // P157 (ADR 0012): ui-menu `items` is a STRUCTURAL array binding (the
             // menu renders its entries itself — NOT a repeats/slot case, vgl. P140).
             // When it is a binding object (store/query/reactive/json-literal) route
@@ -1658,6 +1665,11 @@ function toComponentDefinitions(components) {
             if (listItemsBinding) {
                 bind.items = listItemsBinding;
             }
+            // P173: route the two-way selectedId binding so the renderer resolves it
+            // into resolvedProps.selectedId (the serializer marks the matching row).
+            if (selectedIdBinding) {
+                bind.selectedId = selectedIdBinding;
+            }
             // P151 (ADR 0012): ui-image alt and fallbackSrc are binding-capable.
             // When either is a binding object, route it through bind so the
             // renderer resolves it into resolvedProps.alt / resolvedProps.fallbackSrc
@@ -1718,6 +1730,11 @@ function toComponentDefinitions(components) {
                     // P171: ui-list node-wide value display + badge colour role.
                     ...(component.displayValue !== undefined ? { displayValue: component.displayValue } : {}),
                     ...(component.badgeVariant !== undefined ? { badgeVariant: component.badgeVariant } : {}),
+                    // P173: single-select switch (plain boolean). `selectedId` only goes
+                    // into props as a STATIC fallback when no binding resolved (a binding
+                    // routes through bind.selectedId → resolvedProps.selectedId above).
+                    ...(component.selectable !== undefined ? { selectable: component.selectable } : {}),
+                    ...(component.selectedId !== undefined && !selectedIdBinding ? { selectedId: component.selectedId } : {}),
                     // P157/P171: a menu/list `items` BINDING object routes through
                     // bind.items (resolved structurally by the renderer); only a plain
                     // static array stays in props.items. Other kinds (breadcrumb) keep
@@ -6151,6 +6168,13 @@ const runtimeNodeRegistry = {
             // P171: node-wide value display + badge colour role.
             displayValue: config.displayValue || undefined,
             badgeVariant: config.badgeVariant || undefined,
+            // P173: single-select switch + two-way selectedId binding (analogous to
+            // ui-tabs `activeTab`). `selectable` is a plain boolean; `selectedId` is a
+            // binding object (a stored binding wins, else a legacy `selectedIdPath`
+            // plain state path migrates to a state binding). Only relevant when
+            // `selectable`; an absent/invalid id marks no row.
+            selectable: config.selectable === true || config.selectable === "true" ? true : undefined,
+            selectedId: getBinding(config.selectedId, config.selectedIdPath ? stateBinding(config.selectedIdPath) : undefined),
             events: parseJsonList(config.events).length > 0 ? parseJsonList(config.events) : undefined,
             ...collectNodeConfigLayoutProps(config)
         }),

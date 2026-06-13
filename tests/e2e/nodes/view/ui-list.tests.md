@@ -34,6 +34,21 @@
 - `itemSelect` feuert nur bei `selectable` + Auswahlwechsel; `params {rowId,row}`
   + clientId/sourceId/appId; ohne `selectable` wirkungslos.
 
+Umgesetzt in `tests/e2e/nodes/view/ui-list.spec.ts` (`describe` „single-select (P173)"):
+
+- **S01** `selectable` aus → kein `aria-selected`, keine `webapp-list-item--selected`-Klasse.
+- **S02** `selectable` an + `selectedId`-State-Binding markiert die passende Zeile (Read).
+- **S03** externe Store-Änderung → SSE-Re-Render verschiebt die Markierung.
+- **S04** Zwei-Wege-Roundtrip: Klick → `itemSelect` → verdrahtetes `ui-store set` →
+  Zeile wird via `selectedId` markiert.
+- **S05** `itemSelect` feuert nur bei `selectable` + Auswahlwechsel; Payload
+  `{rowId,row}` + `sourceId`.
+- **S06** `selectable` aus → Klick emittiert nur `itemClick`, nie `itemSelect`;
+  kein `data-webapp-selectable`.
+
+Ergänzende Renderer-Unit-Coverage: `packages/runtime/test/p173-list-single-select-behaviour.test.ts`
+(mapConfig-Pass-through/Migration + Selected-State-Markierung inkl. Index-Fallback-`rowId`).
+
 ### Basis-Felder (P172, ADR 0015)
 
 - „Allgemein"-Gruppe injiziert (idempotent).

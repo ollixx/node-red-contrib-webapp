@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { deployFlow, resetFlow } from "../../../helpers/admin-api";
+import { deployFlow, injectMessage, resetFlow } from "../../../helpers/admin-api";
 import { FlowBuilder } from "../../../helpers/flow-builder";
 import { WebappPage } from "../../../helpers/webapp-page";
 
@@ -174,5 +174,212 @@ test.describe("ui-list — items typedInput + item schema (P171)", () => {
         const row = params.row as Record<string, unknown>;
         expect(row.label).toBe("Cherry");
         expect(row.value).toBe(5);
+    });
+});
+
+/**
+ * P173 — ui-list: Single-Select (selectable + selectedId TWO-WAY + selected state +
+ * itemSelect). Resolves review W1. Mirrors the ui-tabs `activeTab` two-way pattern
+ * (P155): `selectedId` reads the selected id from the bound store/state (marks the
+ * row) and the itemSelect event carries the new id for the wired write-back loop.
+ */
+test.describe("ui-list — single-select (P173)", () => {
+    test.afterEach(async ({ request }) => {
+        await resetFlow(request);
+    });
+
+    const FRUITS = [
+        { id: "apple", label: "Apple" },
+        { id: "banana", label: "Banana" },
+        { id: "cherry", label: "Cherry" }
+    ];
+
+    test("S01 — selectable off → no selection state (no aria-selected / selected class)", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "listSelOffApp", root: "listSelOffApp" })
+            .node("ui-list", {
+                id: "listSelOffNode",
+                items: { kind: "literal", value: FRUITS }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "listSelOffApp");
+        await webapp.navigate("/");
+
+        await expect(page.locator("ul.webapp-list li.webapp-list-item")).toHaveCount(3);
+        await expect(page.locator("ul.webapp-list li[aria-selected]")).toHaveCount(0);
+        await expect(page.locator("ul.webapp-list li.webapp-list-item--selected")).toHaveCount(0);
+    });
+
+    test("S02 — selectable on + selectedId state binding marks the matching row", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "listSelReadApp", root: "listSelReadApp" })
+            .node("ui-store", {
+                id: "listSelReadStore",
+                statePath: "sel",
+                initialValue: JSON.stringify({ id: "banana" })
+            })
+            .node("ui-list", {
+                id: "listSelReadNode",
+                items: { kind: "literal", value: FRUITS },
+                selectable: true,
+                selectedId: { kind: "state", path: "sel.id" }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "listSelReadApp");
+        await webapp.navigate("/");
+
+        // The Banana row is selected (one selected row).
+        await expect(page.locator("ul.webapp-list li.webapp-list-item--selected")).toHaveCount(1);
+        await expect(page.locator("ul.webapp-list li[aria-selected='true']")).toContainText("Banana");
+    });
+
+    test("S03 — external store change → SSE re-render marks the new row", async ({ page, request }) => {
+        const builder = new FlowBuilder()
+            .app({ id: "listSelSseApp", root: "listSelSseApp" })
+            .node("ui-store", {
+                id: "listSelSseStore",
+                statePath: "sel",
+                initialValue: JSON.stringify({ id: "apple" })
+            })
+            .node("ui-list", {
+                id: "listSelSseNode",
+                items: { kind: "literal", value: FRUITS },
+                selectable: true,
+                selectedId: { kind: "state", path: "sel.id" }
+            });
+        const flow = builder.withStoreInject("listSelSseInj", "listSelSseStore", { id: "cherry" }).build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "listSelSseApp");
+        await webapp.navigate("/");
+        await expect(page.locator("ul.webapp-list li[aria-selected='true']")).toContainText("Apple");
+
+        // External store change → SSE re-render moves the selection to Cherry.
+        await injectMessage(request, "listSelSseInj");
+        await expect(page.locator("ul.webapp-list li[aria-selected='true']")).toContainText("Cherry", { timeout: 5000 });
+        await expect(page.locator("ul.webapp-list li.webapp-list-item--selected")).toHaveCount(1);
+    });
+
+    test("S04 — two-way roundtrip: clicking a row → itemSelect → wired store set → that row becomes selected", async ({ page, request }) => {
+        const writeBackFnId = "listSelRtFn";
+        const builder = new FlowBuilder()
+            .app({ id: "listSelRtApp", root: "listSelRtApp" })
+            .node("ui-store", {
+                id: "listSelRtStore",
+                statePath: "sel",
+                initialValue: JSON.stringify({ id: "apple" })
+            })
+            .node("ui-list", {
+                id: "listSelRtNode",
+                items: { kind: "literal", value: FRUITS },
+                selectable: true,
+                selectedId: { kind: "state", path: "sel.id" },
+                events: JSON.stringify(["itemSelect"]),
+                wires: [[writeBackFnId]]
+            });
+        const flow = builder.build();
+
+        flow.push({
+            type: "function",
+            id: writeBackFnId,
+            name: writeBackFnId,
+            // itemSelect carries params.rowId → write it back into the bound store.
+            func: 'msg.ui = { store: { id: "listSelRtStore", op: "set", path: "id", value: msg.ui.params.rowId } }; return msg;',
+            outputs: 1,
+            z: flow[0].id,
+            x: 400,
+            y: 420,
+            wires: [["listSelRtStore"]]
+        });
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "listSelRtApp");
+        await webapp.navigate("/");
+        await expect(page.locator("ul.webapp-list li[aria-selected='true']")).toContainText("Apple");
+
+        // Click the Cherry row → itemSelect → function → store set → SSE re-render.
+        await page.locator("ul.webapp-list li", { hasText: "Cherry" }).locator("a.webapp-link").click();
+
+        await expect(page.locator("ul.webapp-list li[aria-selected='true']")).toContainText("Cherry", { timeout: 5000 });
+        await expect(page.locator("ul.webapp-list li.webapp-list-item--selected")).toHaveCount(1);
+    });
+
+    test("S05 — itemSelect fires only in selectable mode, only on a selection change", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "listSelEvtApp", root: "listSelEvtApp" })
+            .node("ui-store", {
+                id: "listSelEvtStore",
+                statePath: "sel",
+                initialValue: JSON.stringify({ id: "apple" })
+            })
+            .node("ui-list", {
+                id: "listSelEvtNode",
+                items: { kind: "literal", value: FRUITS },
+                selectable: true,
+                selectedId: { kind: "state", path: "sel.id" },
+                events: JSON.stringify(["itemSelect"])
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "listSelEvtApp");
+        await webapp.navigate("/");
+        await expect(page.locator("ul.webapp-list li[aria-selected='true']")).toContainText("Apple");
+
+        // Collect ALL event POSTs (a selectable-row click fires BOTH itemClick — on
+        // every click — AND itemSelect — only on a selection change). We assert that
+        // itemSelect IS emitted (with the documented payload) for a DIFFERENT row.
+        const events: Record<string, unknown>[] = [];
+        page.on("request", (req) => {
+            if (req.url().includes("/event") && req.method() === "POST") {
+                events.push((req.postDataJSON() ?? {}) as Record<string, unknown>);
+            }
+        });
+
+        // Click a DIFFERENT row (Banana) → selection changes → itemSelect fires.
+        await page.locator("ul.webapp-list li", { hasText: "Banana" }).locator("a.webapp-link").click();
+        await expect.poll(() => events.some((e) => e.event === "itemSelect")).toBe(true);
+
+        const selectEvt = events.find((e) => e.event === "itemSelect") as Record<string, unknown>;
+        expect(selectEvt.sourceId).toBe("listSelEvtNode");
+        const params = selectEvt.params as Record<string, unknown>;
+        expect(params.rowId).toBe("banana");
+        expect((params.row as Record<string, unknown>).label).toBe("Banana");
+    });
+
+    test("S06 — selectable off → clicking a row does NOT emit itemSelect (itemClick only)", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "listSelNoneApp", root: "listSelNoneApp" })
+            .node("ui-list", {
+                id: "listSelNoneNode",
+                items: { kind: "literal", value: FRUITS },
+                // selectable omitted (off); only itemClick is meaningful.
+                events: JSON.stringify(["itemClick", "itemSelect"])
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "listSelNoneApp");
+        await webapp.navigate("/");
+
+        // No selection state is rendered at all.
+        await expect(page.locator("ul.webapp-list li[aria-selected]")).toHaveCount(0);
+        await expect(page.locator("ul.webapp-list [data-webapp-selectable]")).toHaveCount(0);
+
+        // A click emits itemClick — and never itemSelect (selectable is off).
+        const clickEvent = webapp.interceptNextEvent();
+        await page.locator("ul.webapp-list li", { hasText: "Apple" }).locator("a.webapp-link").click();
+        const body = await clickEvent;
+        expect(body.event).toBe("itemClick");
     });
 });

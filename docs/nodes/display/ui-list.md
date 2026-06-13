@@ -245,5 +245,13 @@ Details: [theming.md](../concepts/theming.md).
 > → leere Liste, kein implizites Mapping) ist in Schema/Renderer/Serializer
 > verdrahtet, `displayValue`/`badgeVariant` steuern die `value`-Anzeige und die
 > `itemClick`-Events-Checkbox erzeugt den Output-Port (`params {rowId,row}`).
-> **Offen:** Basis-Felder (P172) und Single-Select `selectable`/`selectedId` +
-> `itemSelect` (P173). Epic `nodes/ui-list`.
+> P172 hat die **Basis-Felder** (`visible`/`disabled`/`color`) ergänzt. P173 hat
+> **Single-Select** verdrahtet: `selectable` (Checkbox, Default `false`) schaltet
+> den Auswahl-Zustand ein; `selectedId` ist das **zweiseitige** Binding auf die
+> `id` der ausgewählten Zeile (Spiegel von ui-tabs `activeTab`, P155) — der
+> Renderer markiert die passende Zeile (`aria-selected` + `webapp-list-item--selected`,
+> ungültige/leere id → keine Markierung) und das `itemSelect`-Event (`params
+> {rowId,row}`) trägt die neue id für den verdrahteten Write-Back-Loop; `itemSelect`
+> feuert **nur** bei `selectable` und Auswahlwechsel. Stabile `id` je Item dringend
+> empfohlen (ohne `id` ist der Array-Index der `rowId` — instabil beim Umsortieren).
+> **Offen:** Mehrfachselektion (Multi-Select). Epic `nodes/ui-list`.

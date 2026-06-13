@@ -1349,6 +1349,16 @@ export const uiListNodeDefinitionSchema = mountableNodeSchema.extend({
     // P171: semantic colour role of the value badge (only when displayValue=badge).
     // Same palette as ui-badge (SEVERITY_VARIANTS). Node-wide.
     badgeVariant: z.enum(SEVERITY_VARIANTS).optional(),
+    // P173: single-select. `selectable` (default false when absent) turns on the
+    // selection state — a row click marks the row and fires `itemSelect`. Multi-select
+    // is out of scope.
+    selectable: z.boolean().optional(),
+    // P173: `selectedId` is the canonical TWO-WAY value binding on the selected row's
+    // `id` (mirror of ui-tabs `activeTab`, P155): the renderer resolves it to mark the
+    // matching row, and the `itemSelect` event carries the new id for the wired
+    // write-back loop. An absent/empty/unmatched id marks no row. Only meaningful when
+    // `selectable`.
+    selectedId: bindingSchema.optional(),
     events: z.array(z.enum(["itemClick", "itemSelect"])).optional(),
     // P172 (ADR 0015): common base fields — visible (boolean-state binding, absent
     // = always visible), disabled (boolean-state binding, locks row interaction)

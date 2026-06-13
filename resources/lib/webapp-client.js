@@ -576,6 +576,25 @@
                 event: "itemClick",
                 params: { rowId: rowId, row: row }
             });
+            // P173: single-select. When the list is selectable, a row click also
+            // drives the selection: emit `itemSelect` (params { rowId, row }) ONLY when
+            // the selection actually CHANGES. The previously-selected row carries
+            // aria-selected="true" in the current snapshot; clicking it again is a
+            // no-op (no itemSelect). The flow wires itemSelect → ui-store set; the store
+            // change re-renders via SSE and the selectedId binding re-marks the row
+            // (two-way roundtrip, mirror of ui-tabs activeTab). Without selectable this
+            // whole block is skipped (no selection state).
+            if (trigger.hasAttribute("data-webapp-selectable")) {
+                const li = trigger.closest(".webapp-list-item");
+                const alreadySelected = li && li.getAttribute("aria-selected") === "true";
+                if (!alreadySelected) {
+                    dispatch({
+                        source: trigger.getAttribute("data-webapp-source"),
+                        event: "itemSelect",
+                        params: { rowId: rowId, row: row }
+                    });
+                }
+            }
             return;
         }
 

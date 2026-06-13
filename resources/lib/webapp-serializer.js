@@ -1065,6 +1065,21 @@
             const declaresClick = allEvents.some(function (ev) {
                 return (typeof ev === "string" ? ev : (ev && ev.event)) === "itemClick";
             });
+            // P173: itemSelect fires only in selectable mode on a selection change.
+            const declaresSelect = allEvents.some(function (ev) {
+                return (typeof ev === "string" ? ev : (ev && ev.event)) === "itemSelect";
+            });
+            // P173: single-select. `selectable` turns on selection state; `selectedId`
+            // is the resolved two-way selected row id (bind.selectedId → props.selectedId,
+            // analogous to ui-tabs activeTab → component.value). An absent/empty id marks
+            // no row; an id matching no row marks no row.
+            const selectable = component.props.selectable === true;
+            const selectedId = (component.props.selectedId !== undefined && component.props.selectedId !== null)
+                ? String(component.props.selectedId)
+                : "";
+            // A row is interactive (carries the click hook) when itemClick is declared OR
+            // the list is selectable (a click then drives the selection + itemSelect).
+            const interactive = declaresClick || selectable;
             // P172 (ADR 0015): disabled and color base fields for ui-list.
             // disabled: when true, adds aria-disabled + webapp-list--disabled class
             // to lock row interaction visually (the client checks disabled before
@@ -1097,12 +1112,21 @@
                     }
                 }
                 const rowAttr = " data-webapp-row=\"" + escapeAttribute(JSON.stringify(row)) + "\"";
-                if (declaresClick) {
-                    return "<li class=\"webapp-list-item\"><a class=\"webapp-link\" href=\"#\""
+                // P173: the row whose id matches the resolved selectedId is marked
+                // selected (aria-selected + webapp-list-item--selected). Only meaningful
+                // when selectable; an empty/invalid id marks no row.
+                const isSelected = selectable && selectedId !== "" && rowId === selectedId;
+                const liClass = isSelected ? "webapp-list-item webapp-list-item--selected" : "webapp-list-item";
+                const liAttr = selectable ? " aria-selected=\"" + (isSelected ? "true" : "false") + "\"" : "";
+                if (interactive) {
+                    // P173: data-webapp-selectable marks that a click drives selection +
+                    // itemSelect (the client checks it before emitting itemSelect).
+                    const selectableAttr = selectable ? " data-webapp-selectable=\"true\"" : "";
+                    return "<li class=\"" + liClass + "\"" + liAttr + "><a class=\"webapp-link\" href=\"#\""
                         + src + " data-webapp-event=\"click\" data-webapp-item=\"" + escapeAttribute(rowId) + "\""
-                        + rowAttr + ">" + label + valueHtml + "</a></li>";
+                        + selectableAttr + rowAttr + ">" + label + valueHtml + "</a></li>";
                 }
-                return "<li class=\"webapp-list-item\">" + label + valueHtml + "</li>";
+                return "<li class=\"" + liClass + "\"" + liAttr + ">" + label + valueHtml + "</li>";
             }).join("");
             return wrapRenderedComponentHtml(component, layoutId, "<ul" + listDisabled + colorStyle + ">" + itemHtml + "</ul>");
         }
