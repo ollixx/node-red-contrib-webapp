@@ -24,9 +24,12 @@ import { NodeBehaviourHarness, webappTest } from "./helpers/node-behaviour-harne
  *
  * ui-query:
  *   8. msg without msg.ui.query passes through (no etag, no crash).
- *   9. msg.ui.query without etag always passes through.
- *  10. msg.ui.clientId is preserved in the outgoing message (clientId routing).
- *  11. etag deduplication: same etag twice → only one send.
+ *   9. msg.ui.query with data/error: TERMINAL — absorbed, 0 out-emits (P175 fix).
+ *      msg.ui.query with refresh/loading: trigger — 1 out-emit.
+ *  10. msg.ui.clientId routes state update server-side; data/error remain terminal
+ *      (0 out-emits) regardless of clientId (P175 supersedes the old pass-through).
+ *  11. etag deduplication: same etag twice → early return; data returns are also
+ *      terminal, so neither first nor second call produces an out-emit (P175).
  *  12. Non-query message (arbitrary payload) passes through unchanged.
  *
  * ui-navigation:
@@ -302,41 +305,46 @@ describe("P86: ui-query — message without msg.ui.query passes through", () => 
     });
 });
 
-describe("P86: ui-query — msg.ui.clientId is preserved (clientId routing)", () => {
-    it("outgoing message retains msg.ui.clientId when set", () => {
+// P175: data/error returns are TERMINAL — they are absorbed and NOT forwarded.
+// msg.ui.clientId routing applies server-side (state update targets the per-client
+// state) but the message is NOT emitted at the out-port.
+describe("P86/P175: ui-query — data/error returns are terminal (no out-port emit)", () => {
+    it("data return with clientId: absorbed (0 out-emits) — terminal per ADR 0016", () => {
         const node = h.makeNode("ui-query", "q3");
         const msg = { ui: { clientId: "browser-5", query: { queryPath: "items.list", data: [] } } };
         const { sent } = h.drive("ui-query", node, msg);
 
-        expect(sent).toHaveLength(1);
-        const outMsg = sent[0] as { ui: Record<string, unknown> };
-        expect(outMsg.ui.clientId).toBe("browser-5");
+        // P175 fix: data is terminal → no out-port emit (prevents infinite loop).
+        expect(sent).toHaveLength(0);
     });
 
-    it("outgoing message has no clientId when not set in the incoming message", () => {
+    it("data return without clientId: absorbed (0 out-emits) — terminal", () => {
         const node = h.makeNode("ui-query", "q4");
         const msg = { ui: { query: { queryPath: "items.list", data: [] } } };
         const { sent } = h.drive("ui-query", node, msg);
 
-        expect(sent).toHaveLength(1);
-        const outMsg = sent[0] as { ui: Record<string, unknown> };
-        expect((outMsg.ui as Record<string, unknown>).clientId).toBeUndefined();
+        expect(sent).toHaveLength(0);
     });
 });
 
-describe("P86: ui-query — etag deduplication", () => {
-    it("same etag twice → only one send (second is deduplicated)", () => {
+// P175: data/error are terminal — no out-port emit regardless of etag.
+// The etag short-circuit still applies (same etag → early return without state update),
+// but since data returns are terminal, NEITHER call produces an out-port emit.
+describe("P86/P175: ui-query — etag deduplication (data returns remain terminal)", () => {
+    it("data+etag: first call absorbed (terminal, 0 out-emits); same etag again: short-circuited (0 out-emits)", () => {
         const node = h.makeNode("ui-query", "q-etag1");
         const msg = { ui: { query: { queryPath: "data.list", etag: "v1", data: [] } } };
 
         const { sent: sent1 } = h.drive("ui-query", node, msg);
         const { sent: sent2 } = h.drive("ui-query", node, msg);
 
-        expect(sent1).toHaveLength(1);
+        // P175: data is terminal → no out-emit on first call either.
+        expect(sent1).toHaveLength(0);
+        // etag deduplication → early return (no state update, no send).
         expect(sent2).toHaveLength(0);
     });
 
-    it("different etag → both sends through", () => {
+    it("data+different etag: both absorbed (terminal, 0 out-emits each)", () => {
         const node = h.makeNode("ui-query", "q-etag2");
         const msg1 = { ui: { query: { queryPath: "data.list", etag: "v1", data: [] } } };
         const msg2 = { ui: { query: { queryPath: "data.list", etag: "v2", data: [1] } } };
@@ -344,8 +352,9 @@ describe("P86: ui-query — etag deduplication", () => {
         const { sent: sent1 } = h.drive("ui-query", node, msg1);
         const { sent: sent2 } = h.drive("ui-query", node, msg2);
 
-        expect(sent1).toHaveLength(1);
-        expect(sent2).toHaveLength(1);
+        // P175: both are terminal data returns → no out-port emit in either case.
+        expect(sent1).toHaveLength(0);
+        expect(sent2).toHaveLength(0);
     });
 });
 
