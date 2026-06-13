@@ -17,7 +17,7 @@ verify: browser
 spec: docs/nodes/state/ui-query.md
 tests: tests/e2e/nodes/state/ui-query.tests.md
 dependencies: []
-status: pending
+status: in_progress
 ---
 # P175 — ui-query: terminale data/error-Rückgabe (kein Loop)
 
