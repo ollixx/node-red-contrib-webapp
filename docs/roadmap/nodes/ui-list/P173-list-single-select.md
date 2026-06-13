@@ -15,7 +15,7 @@ verify: browser
 spec: docs/nodes/display/ui-list.md
 tests: tests/e2e/nodes/view/ui-list.tests.md
 dependencies: [P171]
-status: pending
+status: in_progress
 ---
 # P173 — ui-list: Single-Select
 
