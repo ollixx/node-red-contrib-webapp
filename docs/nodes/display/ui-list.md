@@ -49,8 +49,10 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `items` | „Items" | typedInput (Wert-Binding) | **ja** | Array der Listenelemente. Bindbar über alle Wert-Binding-Arten: `literal` (statisches Array, direkt im Editor als JSON gepflegt), `state`, `query`, `routeParam`, `store` (Store-Picker), `msg`/`flow`/`global`/`jsonata`/`env`. Die **Form jedes Elements** ist in [„Item-Schema"](#item-schema--das-datenmodell) festgelegt. Binding-Arten: [stores.md](../concepts/stores.md). **Migration:** ein bestehendes `itemsPath` (nacktes Textfeld) wird als `state`-Binding auf `items` übernommen; das separate `itemsPath`-Feld entfällt. |
+| `items` | „Items" | typedInput (Wert-Binding, **eingeschränkt**) | **ja** | Array der Listenelemente. **Nur Typen, die ein valides Modell liefern können** — Skalar-Typen (`str`, `num`, `bool`) sind im typedInput **ausgeblendet**. Erlaubt: `json` (statisches Array direkt im Editor) sowie die Binding-Arten `state`, `query`, `routeParam`, `store` (Store-Picker), `msg`/`flow`/`global`/`jsonata`/`env`. Die **Form jedes Elements** ist in [„Item-Schema"](#item-schema--das-datenmodell) festgelegt. Binding-Arten: [stores.md](../concepts/stores.md). **Migration:** ein bestehendes `itemsPath` (nacktes Textfeld) wird als `state`-Binding auf `items` übernommen; das separate `itemsPath`-Feld entfällt. |
 | `displayType` | „Display Type" | SelectBox | optional | Darstellungsmodus der Liste: `default` (Standard-Liste ohne Trennlinie), `divided` (mit horizontalen Trennlinien zwischen Elementen), `compact` (reduzierter Zeilenabstand). Default: `default`. `displayType` ist ein Darstellungstyp, kein semantischer Variant — Details: [theming.md](../concepts/theming.md). |
+| `displayValue` | „Value-Anzeige" | SelectBox (Enum) | optional | Wie der `value` einer Zeile **dargestellt** wird: `none` („nicht anzeigen" — `value` bleibt rein Daten, wird nur im Event geliefert), `secondary` („sekundär darstellen" — trailing Text), `badge` („als Badge" — `value` als Badge-Pille, z. B. „Anzahl"/„Preis"). Default: `secondary`. Betrifft nur die **Anzeige**; `value` wird unabhängig davon stets im Event mitgeliefert. |
+| `badgeVariant` | „Badge Variant" | typedInput (Variant) | optional | **Nur sichtbar, wenn `displayValue = badge`.** Semantische Farbe der Badge ([variant-Konvention](../concepts/theming.md)) — Standard-Variant-typedInput (bindbar). Default: `neutral`. |
 
 ### Gruppe „Events"
 
@@ -69,6 +71,19 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 
 Welche Platzierungsfelder sichtbar sind, hängt vom Layout-Preset des Parent-Slots ab — `installLayoutChildPropRows()` blendet sie dynamisch ein. Details: [layout.md](../concepts/layout.md).
 
+### Gruppe „Basis-Felder" (P139 / ADR 0015)
+
+Von `ui-app` injizierte, knotenübergreifende Felder (Anwendbarkeit per
+`resolveBaseFieldApplicability`). In der „Allgemein"-Gruppe, `size` unter
+„Erweitert":
+
+| Feld | Anwendbar | Beschreibung |
+|---|---|---|
+| `visible` | ja | Boolean-Zustand-typedInput; blendet die ganze Liste ein/aus. |
+| `disabled` | ja | Sperrt die Zeilen-Interaktion (`itemClick`/`itemSelect`); ohne aktive Events wirkungslos. |
+| `color` | ja | Allgemeine Farbe (non-variant; ui-list hat keinen semantischen `variant`). |
+| `size` | **N/A** | Die Zeilendichte steuert `displayType` (`default`/`divided`/`compact`), **nicht** ein size-Token — Feld mit Hinweis deaktiviert. |
+
 ### Inline-Hilfe (HTML)
 
 Der `data-help-name="ui-list"`-Hilfetext soll **knapp, aber ausreichend** sein:
@@ -79,23 +94,34 @@ sowie ein Link auf die ausführliche Doku. Empfohlener Link:
 
 ## Item-Schema — das Datenmodell
 
-`items` löst (über sein Binding) zu einem **Array von Item-Objekten** auf. Genau
-dieses Objektschema ist der Vertrag zwischen den Daten und der gerenderten Zeile.
+`items` löst (über sein Binding) zu einem **Array** auf. Jedes Element ist
+entweder ein **String** (Kurzform) oder ein **Item-Objekt**:
 
-| Feld | Typ | Pflicht | Default | Gerenderte Wirkung |
+- **Kurzform `String`:** `["Ada", "Alan"]` wird intern auf `[{label:"Ada"},
+  {label:"Alan"}]` gemappt — der String *ist* das `label`. Der einfachste Fall
+  bleibt einfach.
+- **Objektform:** das folgende Schema (der Vertrag zwischen Daten und Zeile).
+
+| Feld | Typ | Pflicht | Default | Rolle |
 |---|---|---|---|---|
-| `label` | String | **ja** | — | Primärtext der Zeile (sichtbare Hauptzeile). |
-| `value` | String | optional | — | Sekundär-/Trailing-Text (je `displayType` rechts/darunter). Fehlt er → nur das Label. |
-| `icon` | String (Icon-Name) | optional | — | Führendes Icon. Erwartet einen Icon-Namen des App-Icon-Sets (s. [ui-icon](ui-icon.md)). Fehlt er → kein Icon. |
-| `id` | String | optional | Array-Index | Stabiler Zeilen-Anker: wird als `rowId` in `itemClick`/`itemSelect` getragen **und** als Render-Key genutzt. Ohne `id` = Array-Index (instabil bei Umsortieren). |
+| `label` | String | **ja** | — | **Anzeige** — Primärtext der Zeile. (Die String-Kurzform setzt genau dieses Feld.) |
+| `id` | String | optional | Array-Index | **Identität** — wird als `rowId` in `itemClick`/`itemSelect` getragen **und** als Render-Key genutzt. Ohne `id` = Array-Index (instabil bei Umsortieren). |
+| `value` | String / Number | optional | — | **Anwendungswert** der Zeile (z. B. Anzahl, Preis, Code). Wird — wenn vorhanden — **stets im Event mitgeliefert** (`row.value`). Die **Anzeige** steuert das Node-Feld `displayValue` (`none`/`secondary`/`badge`), nicht das Item. |
+| `icon` | String (Icon-Name) | optional | — | **Anzeige** — führendes Icon. Erwartet einen Icon-Namen des App-Icon-Sets (s. [ui-icon](ui-icon.md)). Fehlt er → kein Icon. |
+
+**Die drei Achsen, sauber getrennt:** `label`/`icon` = was man **sieht**, `id` =
+**Identität** (Event/Key), `value` = **Anwendungswert** (Event-Nutzlast, optional
+sichtbar via `displayValue`). Klick/Select liefert immer `{rowId, row}` — die
+eindeutige Identität **und** das ganze Element inkl. `value`.
 
 **Regeln für das Datenmodell:**
 
-- Die Quelle von `items` **muss ein Array** sein. Skalar / Objekt / `null` →
-  **leere Liste** (kein Crash).
-- Jedes Element muss mindestens `label` tragen. Fehlt `label` an einem Element →
-  diese Zeile zeigt den Nicht-darstellbar-Hinweis (`"?"`, P104); die übrigen Zeilen
-  rendern normal.
+- Die Quelle von `items` **muss ein Array** sein (Strings und/oder Objekte).
+  Skalar / Objekt / `null` als Wurzel → **leere Liste** (kein Crash).
+- Ein **String**-Element ist die Kurzform für `{label: <string>}`.
+- Ein **Objekt**-Element muss mindestens `label` tragen. Fehlt `label` → diese
+  Zeile zeigt den Nicht-darstellbar-Hinweis (`"?"`, P104); die übrigen rendern
+  normal.
 - **Zusätzliche Felder werden ignoriert** — ein Datensatz darf mehr Felder haben
   (z. B. eine ganze DB-Zeile); ui-list liest **nur** `id`/`label`/`value`/`icon`.
 - **Kein implizites Mapping.** Kommen die Daten in anderer Form (z. B.
@@ -105,24 +131,14 @@ dieses Objektschema ist der Vertrag zwischen den Daten und der gerenderten Zeile
 
 ```json
 [
-  { "id": "c-1", "label": "Ada Lovelace", "value": "London",     "icon": "user" },
-  { "id": "c-2", "label": "Alan Turing",  "value": "Manchester"                  }
+  "Schnellauswahl ohne Objekt",
+  { "id": "c-1", "label": "Offene Rechnungen", "value": 3,  "icon": "file" },
+  { "id": "c-2", "label": "Bezahlt",           "value": 12, "icon": "check" }
 ]
 ```
 
-## Basis-Felder (P139 / ADR 0015)
-
-Die „Allgemein"/„Erweitert"-Basis-Felder gelten wie folgt (Anwendbarkeit per
-`resolveBaseFieldApplicability`):
-
-- **`visible`** — anwendbar (Boolean-Zustand; blendet die ganze Liste ein/aus).
-- **`disabled`** — anwendbar: sperrt die Zeilen-Interaktion (`itemClick`/
-  `itemSelect`); ohne aktive Events wirkungslos.
-- **`color`** — anwendbar (allgemeine Farbe; ui-list hat keinen semantischen
-  `variant`).
-- **`size`** — **N/A**: die Zeilendichte steuert `displayType`
-  (`default`/`divided`/`compact`), **nicht** ein size-Token (mit Hinweis
-  deaktiviert).
+(Mit `displayValue: "badge"` erscheinen `3` und `12` als Badge-Pillen in der
+`badgeVariant`-Farbe; `"Schnellauswahl…"` ist die String-Kurzform.)
 
 ## Input
 
@@ -151,8 +167,10 @@ Listenelement interagiert:
 | `itemSelect` | Nutzer wählt ein Element aus (Auswahl-Modus) | `event: "itemSelect"`, `params: { rowId, row }` | Auswahl-Zustand in einem Store persistieren |
 
 `rowId` ist die `id` des Listenelements (sofern gesetzt), andernfalls der
-Array-Index als String. `row` ist das vollständige Elementobjekt aus `items`.
-Allgemeines Event-Format: [events.md](../concepts/events.md).
+Array-Index als String. `row` ist das **vollständige Elementobjekt** aus `items` —
+**inkl. `value`** (`row.value`), unabhängig davon, ob `displayValue` es anzeigt.
+So liefert ein Klick immer **Identität (`rowId`) und Anwendungswert (`row.value`)**
+zugleich. Allgemeines Event-Format: [events.md](../concepts/events.md).
 
 **Antizipierte Wiring-Szenarien:**
 - `itemClick` → `ui-action` (Navigation zur Detailseite des Elements).

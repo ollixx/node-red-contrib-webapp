@@ -9,14 +9,21 @@
 ### items-typedInput + Item-Schema (P171)
 
 - `items`-typedInput (Wert-Bindings) ersetzt `itemsPath`; `items:null`-Default weg.
+- **Typ-Einschränkung:** `str`/`num`/`bool` im typedInput nicht anwählbar; `json`
+  (Array) + state/store/query/routeParam/msg/flow/global/jsonata/env vorhanden.
 - Migration: gespeichertes `itemsPath` (string) → `state`-Binding auf `items`;
   Altflow rendert unverändert.
-- Item-Schema `{id?,label,value?,icon?}`: `label` Pflicht rendert; `icon`/`value`
-  optional; fehlendes `label` an einem Element → `"?"` nur für diese Zeile;
-  Nicht-Array (Skalar/Objekt/null) → leere Liste, kein Crash; Zusatzfelder ignoriert.
+- **Array-of-Strings:** `["A","B"]` → `[{label:"A"},{label:"B"}]`; gemischtes Array
+  (String + Objekt) rendert.
+- Item-Schema `{id?,label,value?,icon?}`: `label` Pflicht rendert; fehlendes
+  `label` (Objektform) → `"?"` nur für diese Zeile; Nicht-Array-Wurzel → leere
+  Liste, kein Crash; Zusatzfelder ignoriert.
+- **value/displayValue:** `displayValue=none` → `value` nicht sichtbar, aber im
+  Event; `secondary` → trailing Text; `badge` → Badge in `badgeVariant`-Farbe
+  (Feld nur bei `badge` sichtbar). `value` (String|Number) stets in `row.value`.
 - Events: `itemClick`/`itemSelect`-Checkboxen → Output-Ports; `rowId` = `id`
-  (sonst Index), `row` = Element.
-- Hilfetext nennt Item-Schema + Doku-Link.
+  (sonst Index), `row` = ganzes Element inkl. `value`.
+- Hilfetext nennt Item-Schema + String-Kurzform + value/displayValue + Doku-Link.
 
 ### Basis-Felder (P172, ADR 0015)
 

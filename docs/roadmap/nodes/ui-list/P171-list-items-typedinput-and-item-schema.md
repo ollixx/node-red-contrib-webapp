@@ -5,13 +5,18 @@ epic: nodes/ui-list
 title: "ui-list an die Spec angleichen: items als Wert-typedInput (itemsPath migrieren), Item-Schema-Validierung, Events-Checkboxen, Hilfetext"
 findings:
   - "Owner (2026-06-13): 'Die Docs wurden noch nicht umgesetzt.' Der Editor nutzt heute ein nacktes itemsPath-Textfeld plus ein ungenutztes items:null — statt des items-typedInput aus der Spec."
-  - "Owner (2026-06-13): 'In der Spec fehlt die exakte Beschreibung des Schemas, das ein Item in items haben kann/muss. Das ist auch der Schwachpunkt des Knotens, dass der Nutzer hier genau verstehen muss, was mit dem Datenmodell passiert.' (Spec ist jetzt glattgezogen — dieser Knoten setzt sie um.)"
+  - "Owner (2026-06-13): 'In der Spec fehlt die exakte Beschreibung des Schemas, das ein Item in items haben kann/muss. Das ist auch der Schwachpunkt des Knotens, dass der Nutzer hier genau verstehen muss, was mit dem Datenmodell passiert.'"
+  - "Owner (2026-06-13): 'Wir sollten ein Array of Strings erlauben und intern auf label mappen.'"
+  - "Owner (2026-06-13): 'Was bringt es, eine ID und ein value feld zu unterstützen? ... Die Semantik ist mir nicht 100% klar.' → Entscheidung: id = Identität (Event-rowId+Key); value = Anwendungswert, stets im Event (row.value); Anzeige via neuem Node-Feld displayValue (none/secondary/badge), bei badge ein badgeVariant-typedInput."
+  - "Owner (2026-06-13): 'Im Feld items sollten dann alle Types raus, die kein valides Model liefern können. Also String, number, boolean etc.'"
 acceptance:
-  - "Editor: ein items-typedInput (Wert-Bindings literal/state/query/store/routeParam/msg/flow/global/jsonata/env) ersetzt das itemsPath-Textfeld; das ungenutzte items:null-Feld ist weg."
+  - "Editor: ein items-typedInput ersetzt das itemsPath-Textfeld; das ungenutzte items:null-Feld ist weg. Die typedInput-Typen sind eingeschränkt — Skalar-Literale (str/num/bool) NICHT anwählbar; erlaubt nur json (Array) + state/query/store/routeParam/msg/flow/global/jsonata/env."
   - "Migration: ein gespeichertes itemsPath (plain string) wird beim Laden als state-Binding auf items übernommen; bestehende Flows rendern unverändert weiter (test-bar)."
-  - "Item-Schema: items löst zu einem Array von {id?,label,value?,icon?} auf; pro Element rendert label (Pflicht) + optional icon + value; fehlt label an einem Element → Nicht-darstellbar-Hinweis (\"?\") nur für diese Zeile; Nicht-Array (Skalar/Objekt/null) → leere Liste, kein Crash; Zusatzfelder werden ignoriert."
-  - "Events: die itemClick/itemSelect-Checkboxen erzeugen Output-Ports; rowId = id (sonst Index), row = Element."
-  - "Hilfetext nennt das Item-Schema (label Pflicht, kein implizites Mapping) + Doku-Link."
+  - "Array-of-Strings: ein String-Element wird auf {label:<string>} gemappt; gemischte Arrays (Strings + Objekte) rendern."
+  - "Item-Schema: items löst zu einem Array von String|{id?,label,value?,icon?} auf; label Pflicht (Objektform); fehlt label → \"?\" nur für diese Zeile; Nicht-Array-Wurzel → leere Liste, kein Crash; Zusatzfelder ignoriert; kein implizites Mapping."
+  - "value-Semantik: value (String|Number) wird — wenn vorhanden — stets im Event mitgeliefert (row.value). Das Node-Feld displayValue (none/secondary/badge, Default secondary) steuert NUR die Anzeige; bei badge erscheint badgeVariant (Variant-typedInput, Default neutral) und value rendert als Badge in dieser Farbe."
+  - "Events: die itemClick/itemSelect-Checkboxen erzeugen Output-Ports; rowId = id (sonst Index), row = ganzes Element inkl. value."
+  - "Hilfetext nennt das Item-Schema (label Pflicht, String-Kurzform, value/displayValue, kein implizites Mapping) + Doku-Link."
 verify: browser
 spec: docs/nodes/display/ui-list.md
 tests: tests/e2e/nodes/view/ui-list.tests.md
@@ -27,16 +32,22 @@ status: pending
 ## Umfang
 
 1. **`items`-typedInput** (Wert-Bindings) ersetzt das nackte `itemsPath`-Textfeld;
-   das ungenutzte `items: null`-Default entfällt. Folgt der Field-Typing-Konvention
-   (ADR 0012) wie die übrigen `*Path`→Wert-Migrationen.
+   das ungenutzte `items: null`-Default entfällt. **Typ-Einschränkung:** Skalar-
+   Literale (`str`/`num`/`bool`) ausblenden — nur `json`(Array) + die Binding-Arten,
+   die ein Array/Objekt liefern. Folgt ADR 0012.
 2. **Migration** `itemsPath` (string) → `state`-Binding auf `items` (verlustfrei,
    beim Laden); analog `activeTabPath`→`activeTab` bei ui-tabs.
-3. **Item-Schema-Vertrag** im Renderer/Validierung: `{id?,label,value?,icon?}`,
-   `label` Pflicht; Nicht-Array → leere Liste; fehlendes `label` → `"?"` pro Zeile;
-   Zusatzfelder ignoriert; **kein implizites Mapping**.
-4. **Events-Editor:** `itemClick`/`itemSelect`-Checkboxen → Output-Ports (heute im
-   Schema vorhanden, aber ohne Editor-Control).
-5. **Hilfetext** gemäß Spec (Item-Schema + Link).
+3. **Item-Schema-Vertrag** (Schema/Renderer/Validierung):
+   - Element = **String** (→ `{label}`) **oder** Objekt `{id?,label,value?,icon?}`.
+   - `label` Pflicht (Objektform); Nicht-Array-Wurzel → leere Liste; fehlendes
+     `label` → `"?"` pro Zeile; Zusatzfelder ignoriert; **kein implizites Mapping**.
+4. **value-Anzeige:** neues Node-Feld **`displayValue`** (SelectBox
+   `none`/`secondary`/`badge`, Default `secondary`) + **`badgeVariant`** (Variant-
+   typedInput, nur sichtbar bei `badge`, Default `neutral`). `value` immer im Event
+   (`row.value`); Anzeige rein über `displayValue`.
+5. **Events-Editor:** `itemClick`/`itemSelect`-Checkboxen → Output-Ports (heute im
+   Schema vorhanden, aber ohne Editor-Control). `row` trägt das ganze Element.
+6. **Hilfetext** gemäß Spec (Item-Schema + String-Kurzform + value/displayValue).
 
 ## acceptance / verify
 
