@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P171** — nodes/ui-list — an die Spec angleichen: `items` als Wert-typedInput (itemsPath migrieren), Item-Schema-Validierung, Events-Checkboxen, Hilfetext — *Datenmodell-Schwachpunkt; braucht keine* — [P171](nodes/ui-list/P171-list-items-typedinput-and-item-schema.md)
 - **P172** — nodes/ui-list — Basis-Felder (P139/ADR 0015) nachrüsten: visible/disabled/color anwendbar, size N/A — *in P139-Welle übersehen; braucht P171* — [P172](nodes/ui-list/P172-list-base-fields.md)
 - **P173** — nodes/ui-list — Single-Select: selectable + selectedId (zweiseitig) + Selected-Zustand + itemSelect-Event — *löst Review-Widerspruch W1; braucht P171* — [P173](nodes/ui-list/P173-list-single-select.md)
 
@@ -79,6 +78,7 @@ open the folder for the full history.
 | nodes/ui-repeat | 3 |
 | nodes/ui-stepper | 1 |
 | nodes/ui-menu | 1 |
+| nodes/ui-list | 1 |
 | nodes/ui-table | 2 |
 | nodes/ui-icon | 2 |
 | nodes/ui-accordion | 2 |
@@ -94,4 +94,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 169 done, 3 open, 9 deferred.**
+**Total: 170 done, 2 open, 9 deferred.**

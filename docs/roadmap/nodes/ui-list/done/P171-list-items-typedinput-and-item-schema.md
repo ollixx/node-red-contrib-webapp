@@ -21,7 +21,7 @@ verify: browser
 spec: docs/nodes/display/ui-list.md
 tests: tests/e2e/nodes/view/ui-list.tests.md
 dependencies: []
-status: in_progress
+status: done
 ---
 # P171 — ui-list: items-typedInput + Item-Schema
 
@@ -65,3 +65,29 @@ status: in_progress
 - **Schema-Invariante:** `packages/schema` importiert aus keinem anderen Repo-Paket.
 - Basis-Felder sind **P172** (separat, hängt auf diesem auf).
 - `examples/customers-crud/flow.json` nur via `pnpm gen:example`.
+
+## Result
+
+- **delivered:** ui-list aligned to spec (ADR 0012). (1) `items` is now a **structural**
+  value-typedInput — new `structural` category in `valueBindingTypes` (editor-common.js) that
+  excludes scalar literals (str/num/bool/date) and keeps `json` + array/object-yielding kinds
+  (store/query/routeParam/reactive/msg/jsonata/flow/global/env); unused `items:null` default
+  removed; routes through `bind.items` via the shared structural resolver (menu/table/select path).
+  (2) Lossless `itemsPath`→`state` migration with precise leading-`state.` stripping (webapp.js,
+  editor nodes.ts, HTML). (3) Item-schema contract (String → `{label}` | `{id?,label,value?,icon?}`;
+  label required; non-array root → empty list; missing label → `"?"` per-row; extra fields ignored;
+  no implicit mapping; mixed arrays render). (4) New node-wide `displayValue` (none/secondary/badge)
+  + `badgeVariant` (SEVERITY_VARIANTS, shown only at badge); `value` always carried in the event,
+  display-only control. (5) `itemClick` events checkbox → output port; client emits `params
+  {rowId,row}` + clientId/sourceId/appId (rowId = id else index, row = whole element incl. value).
+  (6) Help text + doc link. Touched schema/renderer/webapp.js/editor/ui-list.html + spec.
+- **stats:** 10 files + 3 new unit suites (+25 P171 tests) + new E2E. Unit green (runtime 983 /
+  renderer 103 / editor 108 / schema). Develop verification: `pnpm build` exit 0; **browser proof +
+  editor regression 33/33 green** — ui-list view spec 9/9 (array-of-strings labels, mixed arrays,
+  object items + value + `displayValue=badge` → badge in `badgeVariant`, itemsPath migration,
+  itemClick `{rowId,row}`) + editor minimal-coverage 24/24 (ui-list guard intact). check:roadmap +
+  check:links + lint OK.
+- **notes:** Reused the structural-array resolver (P133/P157/P158) and the ui-badge
+  SEVERITY_VARIANTS/variant-SelectBox — no new mechanism. Base fields are **P172** and single-select
+  /`itemSelect` is **P173** (both deps on this, now unblocked) — intentionally out of scope here.
+- **cost:** session a7d830cb0a6b3fd23, ~28m (+ orchestrator develop browser proof).
