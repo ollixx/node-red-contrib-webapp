@@ -222,6 +222,18 @@ Panel-Label-Spalte; das gesamte Store-UI sitzt in der **Wert-Spalte**:
 > **Kein** „Store ändern"-Button mehr — das **„…"**-Expand des typedInput selbst
 > öffnet den Picker.
 
+> **Live-Fix P174 (2026-06-13):** Das Zwei-Zeilen-Layout wirkte live trotzdem
+> **einzeilig/gequetscht**. Ursache: Node-REDs typedInput sperrt den äußeren
+> Container (`.red-ui-typedInput-container`, `height:34px`, `overflow:hidden`,
+> Zeilen-Flex) **und** die Wertzelle (`.red-ui-typedInput-value-label`,
+> `height:32px`, `overflow:hidden`) auf **eine** feste Zeilenhöhe — die zweite
+> (Sub-Pfad-)Zeile wurde abgeschnitten. `storeTypedInputType.valueLabel` lockert
+> diese beiden festen Höhen nun **nur** im Zwei-Zeilen-Fall (`height:auto`,
+> `overflow:visible`, Klasse `webapp-store-field-tworow` am Container) und stellt
+> sie beim Verlassen des Store-Typs bzw. in der Blatt-/Vor-Auswahl-Form wieder
+> her. Da das Store-Control aus **einer** geteilten Stelle kommt, gilt das Soll-
+> Layout identisch auf **allen ~26 Wertfeldern**.
+
 - **Vor Auswahl:** im Wert-Bereich nur ein **weicher Hinweis** („Store über „…"
   auswählen"). Die typedInput-eigene **„…"**-(Expand-)Taste öffnet den
   app-gescopten Node-Picker-Dialog (Preset `stores`, P68/P117). Store-Icon

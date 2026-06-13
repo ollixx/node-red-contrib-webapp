@@ -247,3 +247,194 @@ test.describe("editor — store binding sub-path (P132 / P134)", () => {
         await expect(storeName(page)).toHaveText("deletedStore (bestehend)");
     });
 });
+
+/**
+ * P174 (ADR 0013 §4) — the LIVE-LAYOUT contract. The shared store typedInput
+ * (`storeTypedInputType` in resources/lib/editor-common.js) must render the
+ * documented TWO-ROW layout on EVERY bindable value field, not the old P132
+ * single-line/squeezed variant. The concrete defect: Node-RED locks the
+ * typedInput container (`.red-ui-typedInput-container`, height:34px,
+ * overflow:hidden) and the value-label cell (`.red-ui-typedInput-value-label`,
+ * height:32px, overflow:hidden) to a single fixed-height ROW, so a
+ * `flex-direction:column` value label was clipped — the sub-path row sheared off.
+ * These specs assert the rows actually STACK (row 2 sits BELOW row 1, both
+ * visible) and that the container grew past one row — i.e. nothing is clipped.
+ *
+ * Cross-node: the identical layout/picker/autocomplete must appear on every node
+ * whose value field routes through `valueBindingTypes` → `storeTypedInputType`.
+ * We sample ui-text, ui-pagination (the owner's screenshot — two store fields)
+ * and ui-button.
+ */
+
+/** A node + the value typedInput's host element id, all sharing one store control. */
+type StoreFieldCase = { type: string; nodeId: string; fieldId: string; overrides?: Record<string, unknown> };
+
+const STORE_FIELD_CASES: StoreFieldCase[] = [
+    { type: "ui-text", nodeId: "ftxt", fieldId: "node-input-text", overrides: { text: "" } },
+    { type: "ui-pagination", nodeId: "fpag", fieldId: "node-input-currentPageBinding" },
+    { type: "ui-button", nodeId: "fbtn", fieldId: "node-input-label" }
+];
+
+function caseFlow(c: StoreFieldCase): unknown {
+    return new FlowBuilder()
+        .app({ id: "csApp", root: "csApp", name: "CS App" })
+        .node("ui-store", {
+            id: "monsterStore",
+            name: "monster",
+            statePath: "monster",
+            initialValue: JSON.stringify({ a: false, b: false, c: "eins" })
+        })
+        .node(c.type, { id: c.nodeId, ...(c.overrides ?? {}) })
+        .build();
+}
+
+async function selectStoreTypeOn(page: Page, fieldId: string): Promise<void> {
+    await page.evaluate((id) => {
+        const $ = (window as unknown as { $: (s: string) => { typedInput: (...a: unknown[]) => unknown } }).$;
+        $("#" + id).typedInput("type", "store");
+    }, fieldId);
+}
+
+async function openStorePickerOn(page: Page, fieldId: string): Promise<void> {
+    await page.locator("#" + fieldId).locator("xpath=..")
+        .locator(".red-ui-typedInput-option-expand").first().click();
+}
+
+/**
+ * Geometry of the live store field for a given host element id: the two row
+ * bounding boxes, the typedInput container box, and the value-label cell box.
+ * Proves the rows STACK and the field is not clipped to a single 34px row.
+ */
+async function storeFieldGeometry(page: Page, fieldId: string) {
+    const wrap = page.locator("#" + fieldId).locator("xpath=..").locator(".red-ui-typedInput-container");
+    const nameRow = wrap.locator(".webapp-store-field-name");
+    const pathRow = wrap.locator(".webapp-store-field-subpath");
+    const cell = wrap.locator(".red-ui-typedInput-value-label");
+    return {
+        name: await nameRow.boundingBox(),
+        path: await pathRow.boundingBox(),
+        container: await wrap.boundingBox(),
+        cell: await cell.boundingBox()
+    };
+}
+
+test.describe("editor — store typedInput two-row layout & cross-node consistency (P174)", () => {
+    test.afterEach(async ({ request }) => {
+        await resetFlow(request);
+    });
+
+    for (const c of STORE_FIELD_CASES) {
+        test(`${c.type}: store field renders the indented two-row layout (name above, sub-path below, not clipped)`, async ({ page, request }) => {
+            await deployFlow(request, caseFlow(c));
+
+            const editor = new NodeEditorPage(page);
+            await editor.open();
+            await editor.openNode(c.nodeId);
+            await selectStoreTypeOn(page, c.fieldId);
+
+            await openStorePickerOn(page, c.fieldId);
+            await expect(page.locator(".webapp-node-picker-dialog")).toBeVisible();
+            await page.locator(".webapp-node-picker-row").filter({ hasText: "monster" }).first().click();
+            await expect(page.locator(".webapp-node-picker-dialog")).toHaveCount(0);
+
+            // Row 1 shows the NAME; row 2 (indented sub-path) is present.
+            const wrap = page.locator("#" + c.fieldId).locator("xpath=..").locator(".red-ui-typedInput-container");
+            await expect(wrap.locator(".webapp-store-field-name")).toHaveText("monster");
+            await expect(wrap.locator(".webapp-store-field-subpath")).toHaveCount(1);
+            await expect(wrap.locator("input.webapp-store-subpath-input")).toBeVisible();
+
+            const g = await storeFieldGeometry(page, c.fieldId);
+            expect(g.name, "name row box").toBeTruthy();
+            expect(g.path, "sub-path row box").toBeTruthy();
+            expect(g.container, "container box").toBeTruthy();
+            expect(g.cell, "value-label cell box").toBeTruthy();
+            if (!g.name || !g.path || !g.container || !g.cell) {
+                throw new Error("store field rows did not render with a measurable box");
+            }
+
+            // STACKED: the sub-path row sits strictly BELOW the name row (not on
+            // the same squeezed line). A full row height is ~24-34px; require a
+            // clear vertical gap so a single-line regression fails here.
+            expect(g.path.y, "sub-path row is below the name row").toBeGreaterThan(g.name.y + 10);
+
+            // NOT CLIPPED: the container grew past the framework's single 34px row
+            // to hold both rows, and the sub-path row's bottom is within the cell
+            // (overflow:visible / height:auto won — old code clipped it to 32px).
+            expect(g.container.height, "container grew past one 34px row").toBeGreaterThan(40);
+            expect(
+                g.path.y + g.path.height,
+                "sub-path row bottom is inside the (grown) value cell, not clipped"
+            ).toBeLessThanOrEqual(g.cell.y + g.cell.height + 2);
+        });
+    }
+
+    test("ui-pagination: BOTH value fields (current + total) carry the identical two-row store control", async ({ page, request }) => {
+        // The owner's screenshot is ui-pagination — two adjacent store fields.
+        await deployFlow(request, caseFlow({ type: "ui-pagination", nodeId: "fpag2", fieldId: "node-input-currentPageBinding" }));
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode("fpag2");
+
+        for (const fieldId of ["node-input-currentPageBinding", "node-input-totalBinding"]) {
+            await selectStoreTypeOn(page, fieldId);
+            await openStorePickerOn(page, fieldId);
+            await expect(page.locator(".webapp-node-picker-dialog")).toBeVisible();
+            await page.locator(".webapp-node-picker-row").filter({ hasText: "monster" }).first().click();
+            await expect(page.locator(".webapp-node-picker-dialog")).toHaveCount(0);
+
+            const wrap = page.locator("#" + fieldId).locator("xpath=..").locator(".red-ui-typedInput-container");
+            await expect(wrap.locator(".webapp-store-field-name")).toHaveText("monster");
+            await expect(wrap.locator(".webapp-store-field-subpath")).toHaveCount(1);
+
+            const g = await storeFieldGeometry(page, fieldId);
+            if (!g.name || !g.path) {
+                throw new Error(`${fieldId}: store rows not measurable`);
+            }
+            expect(g.path.y, `${fieldId}: sub-path below name`).toBeGreaterThan(g.name.y + 10);
+        }
+    });
+
+    test("before a store is chosen: single row 1 with the soft hint, no sub-path, no clipping change", async ({ page, request }) => {
+        await deployFlow(request, caseFlow({ type: "ui-pagination", nodeId: "fpag3", fieldId: "node-input-currentPageBinding" }));
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode("fpag3");
+        await selectStoreTypeOn(page, "node-input-currentPageBinding");
+
+        const wrap = page.locator("#node-input-currentPageBinding").locator("xpath=..").locator(".red-ui-typedInput-container");
+        await expect(wrap.locator(".webapp-store-field-name")).toHaveClass(/webapp-store-field-placeholder/);
+        await expect(wrap.locator(".webapp-store-field-name")).toHaveText("Store über „…“ auswählen");
+        await expect(wrap.locator(".webapp-store-field-subpath")).toHaveCount(0);
+    });
+
+    test("leaf form (sub-path source = Store) shows the name only, no nested sub-path row", async ({ page, request }) => {
+        // A store whose sub-path is itself a store binding (the one-level rule):
+        // the INNER store control is the leaf form → name only, no further row.
+        await deployFlow(request, caseFlow({ type: "ui-text", nodeId: "fleaf", fieldId: "node-input-text", overrides: { text: "" } }));
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode("fleaf");
+        await selectStoreTypeOn(page, "node-input-text");
+        await openStorePickerOn(page, "node-input-text");
+        await expect(page.locator(".webapp-node-picker-dialog")).toBeVisible();
+        await page.locator(".webapp-node-picker-row").filter({ hasText: "monster" }).first().click();
+        await expect(page.locator(".webapp-node-picker-dialog")).toHaveCount(0);
+
+        // Switch the sub-path typedInput to its own `store` source → the inner
+        // (leaf) store control appears. It must render the NAME area only, with NO
+        // nested `.webapp-store-field-subpath` beneath it (ADR 0013 §3 one level).
+        await page.evaluate(() => {
+            const $ = (window as unknown as { $: (s: string) => { typedInput: (...a: unknown[]) => unknown } }).$;
+            $("input.webapp-store-subpath-input").typedInput("type", "store");
+        });
+
+        // The outer field still has exactly one sub-path row; the inner leaf store
+        // control inside it adds no second `.webapp-store-field-subpath`.
+        await expect(page.locator(".webapp-store-field-subpath")).toHaveCount(1);
+        // The leaf control still exposes a name area (its own value label).
+        await expect(page.locator(".webapp-store-field-subpath .webapp-store-field-name")).toHaveCount(1);
+    });
+});
