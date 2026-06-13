@@ -52,3 +52,29 @@ Unit:
 - `packages/renderer/test/p161-query-paging-meta.test.ts` —
   `query:<path>.totalCount` / `.pageCount` aus dem Lifecycle; kein Shadowing für
   unbekannte Query-Pfade.
+
+## Testziele (P175) — terminale data/error-Rückgabe (kein Loop) — umgesetzt
+
+Bugfix: der `queryInputHandler` emittierte jede eingehende Nachricht am Out-Port
+(`send(msg)` unbedingt, auch `data`/`error`). Das verursachte eine Endlosschleife
+(`out → Datenquelle → Shaper → In-Port → out → …`).
+
+Unit `packages/runtime/test/p175-query-terminal-data-no-loop.test.ts`:
+
+- `data`-Rückgabe (passender `queryPath`): `send` wird **nicht** aufgerufen (0
+  Out-Emits) — terminal. State + Snapshot-Push laufen weiterhin.
+- `error`-Rückgabe (passender `queryPath`): `send` wird **nicht** aufgerufen —
+  terminal. State + Snapshot-Push laufen weiterhin.
+- Trigger ohne `data`/`error` (onEnter, `refresh:true`, `loading:true`): `send`
+  wird **einmal** aufgerufen (Fetch-Auslöser erreicht die Datenquelle).
+- Fachfremde Message (kein `msg.ui.query`): Pass-Through — `send` wird einmal
+  aufgerufen, Nachricht unverändert.
+- Nicht erkanntes `msg.ui.query` (nur `queryPath`, kein `data`/`error`/`refresh`):
+  Pass-Through (1 Out-Emit).
+
+E2E-Nachweis (Orchestrator-Lauf im Haupt-Checkout, `verify: browser`):
+
+- `tests/e2e/nodes/state/ui-query-pipeline.spec.ts` bleibt grün — keine Regression
+  im verdrahteten Datenpfad.
+- `tests/e2e/nodes/state/ui-query-paging-loop.spec.ts` bleibt grün — `params`-Out-
+  Port-Refresh feuert weiterhin; die Datenrückgabe schließt die Schleife nicht mehr.

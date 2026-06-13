@@ -4270,8 +4270,11 @@ function queryInputHandler(node, msg, send, done) {
     //   onEnter/trigger → ui-query (pass-through) → data source → back to in-port
     //   with msg.ui.query.data → here it lands in state → query:<path> binds it.
     // Targeted (msg.ui.clientId) pushes update only that client's state; an
-    // unaddressed push updates the shared broadcast state. The message is still
-    // passed through unchanged so downstream wiring (and the trigger path) works.
+    // unaddressed push updates the shared broadcast state.
+    // P175: data/error returns are TERMINAL — they are absorbed here and NOT
+    // forwarded to the out-port (would cause out→source→in→out→… infinite loop).
+    // Only triggers / refresh / loading / foreign messages pass through (send).
+    let isTerminalReturn = false;
     if (queryMsg && typeof queryMsg === "object" && queryMsg.queryPath) {
         const appId = findAppIdForNode(node);
         if (appId) {
@@ -4295,11 +4298,20 @@ function queryInputHandler(node, msg, send, done) {
                 if (RED) {
                     pushSnapshotToClients(appId, clientId, definitions);
                 }
+                // data/error are terminal returns from the data source — absorb.
+                if (
+                    Object.prototype.hasOwnProperty.call(queryMsg, "data") ||
+                    Object.prototype.hasOwnProperty.call(queryMsg, "error")
+                ) {
+                    isTerminalReturn = true;
+                }
             }
         }
     }
 
-    send(msg);
+    if (!isTerminalReturn) {
+        send(msg);
+    }
     if (done) {
         done();
     }
