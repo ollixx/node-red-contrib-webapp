@@ -1,0 +1,96 @@
+<svg width="100%" viewBox="0 0 640 600" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>ADR 0013 §4 — das Store-typedInput in vier Zuständen (Soll-Layout)</title>
+<desc>Das Store-Wert-typedInput gemäß ADR 0013 §4 (Korrektur 2026-06-11 / P134): Zeile 1 trägt den Store-NAMEN im Wertbereich plus die native „…"-Expand-Taste (öffnet den app-scoped Picker); Zeile 2 ist eine ZWEITE, eingerückte typedInput-Zeile für den Sub-Pfad (voller storePath-Quellensatz). Vier Zustände: vor Auswahl (kein Sub-Pfad), nach Auswahl mit Literal-Pfad (stabil, blau), Sub-Pfad via msg (ephemer, amber), Sub-Pfad via JSONata (ephemer, amber).</desc>
+<style>
+ text{font-family:ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif}
+ .th{font-size:15px;font-weight:600;fill:#2c2c2a}
+ .st{font-size:13px;font-weight:600;fill:#2c2c2a}
+ .lbl{font-size:12px;fill:#5f5e5a}
+ .val{font-size:12.5px;fill:#2c2c2a}
+ .ph{font-size:12.5px;fill:#9a988f;font-style:italic}
+ .seg{font-size:11.5px;fill:#3a3a37}
+ .note{font-size:11px;fill:#6a6a64}
+ .badge{font-size:10.5px;font-weight:600}
+ @media (prefers-color-scheme:dark){ .th,.st{fill:#e9e7e0} .val{fill:#e9e7e0} .lbl,.note{fill:#b9b7ae} }
+</style>
+
+<text class="th" x="24" y="30">Store-Wert-typedInput — Soll-Layout (ADR 0013 §4, Korrektur P134)</text>
+<text class="note" x="24" y="50">Zeile 1 = Store-Name im Wert + „…"-Picker · Zeile 2 = eingerückte zweite typedInput für den Sub-Pfad</text>
+
+<!-- ============ 1 · Vor Auswahl ============ -->
+<text class="st" x="24" y="92">1 · Vor Auswahl — kein Store gewählt</text>
+<text class="lbl" x="24" y="123">Wert</text>
+<!-- type segment -->
+<rect x="80" y="106" width="92" height="26" rx="5" fill="#eceae3" stroke="#cfcdc4"/>
+<ellipse cx="96" cy="115" rx="5" ry="2.2" fill="none" stroke="#534AB7" stroke-width="1.2"/>
+<path d="M91 115 v4 a5 2.2 0 0 0 10 0 v-4" fill="none" stroke="#534AB7" stroke-width="1.2"/>
+<text class="seg" x="106" y="119">Store</text>
+<text class="seg" x="158" y="119">▾</text>
+<!-- value area + … -->
+<rect x="172" y="106" width="392" height="26" rx="5" fill="#fff" stroke="#cfcdc4"/>
+<text class="ph" x="184" y="123">Store über „…" auswählen</text>
+<rect x="528" y="106" width="36" height="26" rx="5" fill="#eceae3" stroke="#cfcdc4"/>
+<text class="seg" x="540" y="123">…</text>
+<text class="note" x="80" y="150">keine zweite Zeile, solange kein Store gewählt ist</text>
+
+<!-- ============ 2 · Nach Auswahl — Literal-Pfad (stabil) ============ -->
+<text class="st" x="24" y="200">2 · Nach Auswahl — Literal-Pfad „c" (stabil)</text>
+<text class="lbl" x="24" y="231">Wert</text>
+<rect x="80" y="214" width="92" height="26" rx="5" fill="#eceae3" stroke="#cfcdc4"/>
+<ellipse cx="96" cy="223" rx="5" ry="2.2" fill="none" stroke="#534AB7" stroke-width="1.2"/>
+<path d="M91 223 v4 a5 2.2 0 0 0 10 0 v-4" fill="none" stroke="#534AB7" stroke-width="1.2"/>
+<text class="seg" x="106" y="227">Store</text>
+<text class="seg" x="158" y="227">▾</text>
+<rect x="172" y="214" width="392" height="26" rx="5" fill="#fff" stroke="#cfcdc4"/>
+<text class="val" x="184" y="231">monster</text>
+<rect x="528" y="214" width="36" height="26" rx="5" fill="#eceae3" stroke="#cfcdc4"/>
+<text class="seg" x="540" y="231">…</text>
+<!-- row 2: indented sub-path typedInput -->
+<rect x="104" y="246" width="68" height="24" rx="5" fill="#eceae3" stroke="#cfcdc4"/>
+<text class="seg" x="114" y="262">abc ▾</text>
+<rect x="172" y="246" width="392" height="24" rx="5" fill="#fff" stroke="#185FA5"/>
+<text class="val" x="184" y="262">c</text>
+<rect x="180" y="120" width="0" height="0"/>
+<text class="badge" x="528" y="262" fill="#185FA5">stabil</text>
+<text class="note" x="104" y="287">Zeile 2 = eingerückter Sub-Pfad · Autocomplete aus der Default-Form (weich)</text>
+
+<!-- ============ 3 · Sub-Pfad via msg (ephemer) ============ -->
+<text class="st" x="24" y="338">3 · Sub-Pfad via msg — ephemer</text>
+<text class="lbl" x="24" y="369">Wert</text>
+<rect x="80" y="352" width="92" height="26" rx="5" fill="#eceae3" stroke="#cfcdc4"/>
+<ellipse cx="96" cy="361" rx="5" ry="2.2" fill="none" stroke="#534AB7" stroke-width="1.2"/>
+<path d="M91 361 v4 a5 2.2 0 0 0 10 0 v-4" fill="none" stroke="#534AB7" stroke-width="1.2"/>
+<text class="seg" x="106" y="365">Store</text>
+<text class="seg" x="158" y="365">▾</text>
+<rect x="172" y="352" width="392" height="26" rx="5" fill="#fff" stroke="#cfcdc4"/>
+<text class="val" x="184" y="369">monster</text>
+<rect x="528" y="352" width="36" height="26" rx="5" fill="#eceae3" stroke="#cfcdc4"/>
+<text class="seg" x="540" y="369">…</text>
+<rect x="104" y="384" width="68" height="24" rx="5" fill="#fbf0dd" stroke="#cf9a3a"/>
+<text class="seg" x="114" y="400" fill="#8a5d12">msg ▾</text>
+<rect x="172" y="384" width="392" height="24" rx="5" fill="#fff" stroke="#cf9a3a"/>
+<text class="val" x="184" y="400">payload.key</text>
+<rect x="512" y="387" width="52" height="18" rx="9" fill="#fbf0dd" stroke="#cf9a3a"/>
+<text class="badge" x="520" y="400" fill="#8a5d12">ephemer</text>
+<text class="note" x="104" y="425">message-getrieben: Pfad kommt aus msg → nach Deploy/Restart leer bis zur nächsten Message</text>
+
+<!-- ============ 4 · Sub-Pfad via JSONata (ephemer) ============ -->
+<text class="st" x="24" y="476">4 · Sub-Pfad via JSONata — ephemer</text>
+<text class="lbl" x="24" y="507">Wert</text>
+<rect x="80" y="490" width="92" height="26" rx="5" fill="#eceae3" stroke="#cfcdc4"/>
+<ellipse cx="96" cy="499" rx="5" ry="2.2" fill="none" stroke="#534AB7" stroke-width="1.2"/>
+<path d="M91 499 v4 a5 2.2 0 0 0 10 0 v-4" fill="none" stroke="#534AB7" stroke-width="1.2"/>
+<text class="seg" x="106" y="503">Store</text>
+<text class="seg" x="158" y="503">▾</text>
+<rect x="172" y="490" width="392" height="26" rx="5" fill="#fff" stroke="#cfcdc4"/>
+<text class="val" x="184" y="507">monster</text>
+<rect x="528" y="490" width="36" height="26" rx="5" fill="#eceae3" stroke="#cfcdc4"/>
+<text class="seg" x="540" y="507">…</text>
+<rect x="104" y="522" width="68" height="24" rx="5" fill="#fbf0dd" stroke="#cf9a3a"/>
+<text class="seg" x="114" y="538" fill="#8a5d12">J( ) ▾</text>
+<rect x="172" y="522" width="356" height="24" rx="5" fill="#fff" stroke="#cf9a3a"/>
+<text class="val" x="184" y="538">payload.items[0].id</text>
+<rect x="532" y="522" width="32" height="24" rx="5" fill="#eceae3" stroke="#cfcdc4"/>
+<text class="seg" x="543" y="538">…</text>
+<text class="note" x="104" y="563">JSONata gegen die msg · „…" öffnet den Ausdrucks-Editor · ephemer (ADR 0012-Caveat auf dem Pfad)</text>
+</svg>

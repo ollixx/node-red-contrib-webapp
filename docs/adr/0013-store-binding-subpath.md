@@ -87,6 +87,12 @@ affordance.
 
 ### 4. Editor: a typedInput type among many; name in the value, path in a second row
 
+> **Soll-Layout (Skizze):** [assets/0013-store-field-states.svg](assets/0013-store-field-states.svg)
+> — die vier Zustände (vor Auswahl / Literal-Pfad / msg / JSONata): Zeile 1 =
+> Store-Name + „…"-Picker, Zeile 2 = eingerückte zweite typedInput für den
+> Sub-Pfad. (Nachträglich ins Repo abgelegt 2026-06-13; die Skizzen entstanden
+> ursprünglich nur in der Design-Diskussion und fehlten als Asset.)
+
 Store is **one type among many** in the value typedInput (chosen via the type
 selector ▾) — **not** an exclusive/standalone field. When the type is **Store**:
 
