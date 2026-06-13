@@ -72,6 +72,14 @@ Der eine, verbindliche Datenpfad:
 
 ### Vollständiges Wiring-Beispiel
 
+> **Skizze:** [assets/ui-query-feeds-ui-list.svg](assets/ui-query-feeds-ui-list.svg)
+> — der volle Pfad `ui-route → ui-query → Datenquelle → Shaper → ui-list`. Die
+> **`data`-Rückgabe ist terminal** (absorbiert + SSE-Push, **kein** Re-Emit am
+> Out-Port — Schleifenschutz, s. [Output](#output)). Nötige Knoten: `ui-app`,
+> `ui-route`, `ui-query`, eine Datenquelle (DB/HTTP/`function`), ein
+> Shaper-`function` (Rohzeilen → ui-list-Item-Schema) und die `ui-list`
+> (`items = query:<queryPath>`).
+
 ```text
 ui-route (onEnter)                                   ┌─────────────────────────┐
       │  msg (trigger)                                │  ui-table               │

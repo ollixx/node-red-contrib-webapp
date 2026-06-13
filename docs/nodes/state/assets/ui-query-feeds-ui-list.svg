@@ -1,0 +1,96 @@
+<svg width="100%" viewBox="0 0 860 600" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>Wie eine ui-list aus einer ui-query gespeist wird</title>
+<desc>Zwei Zonen. Zone 1 (oben): die sichtbare Wire-Pipeline der Datenbeschaffung — ui-route(onEnter) triggert die ui-query, die den Auslöser per Out-Port an eine Datenquelle (DB/HTTP/function) reicht; ein Shaper-function-Knoten schickt msg.ui.query.data zurück an den In-Port der ui-query. Diese Daten-Rückgabe ist TERMINAL: sie wird absorbiert (State + SSE-Push) und NICHT erneut am Out-Port emittiert (Schleifenschutz). Zone 2 (unten): die UI-Struktur per Referenz — ui-app enthaelt ui-route, darin die gemountete ui-list, deren items per query:customers.list-Binding (live via SSE) aus der Query gespeist werden. Durchgezogene Pfeile = Wires (Datenfluss), gestrichelt = Referenz/Binding.</desc>
+<style>
+ svg{--ink:#2c2c2a;--muted:#62615c;--surface:#ffffff;--line:#cfcdc4;--wire:#185FA5;--ref:#534AB7;--slot:#f6f1d3;--stop:#b23b3b}
+ text{font-family:ui-sans-serif,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;fill:var(--ink)}
+ .h{font-size:13px;font-weight:600;fill:var(--muted)}
+ .nt{font-size:14px;font-weight:600}
+ .ns{font-size:11.5px;fill:var(--muted)}
+ .wl{font-size:11px;font-weight:600;fill:var(--wire)}
+ .wls{font-size:10px;fill:var(--muted)}
+ .rl{font-size:11px;font-weight:600;fill:var(--ref)}
+ .tl{font-size:10.5px;font-weight:600;fill:var(--stop)}
+ .lg{font-size:11px;fill:var(--muted)}
+ @media (prefers-color-scheme:dark){ svg{--ink:#e9e7e0;--muted:#b4b2a9;--surface:#26251f;--line:#4a4840;--slot:#3a3722;--stop:#e08a8a} }
+</style>
+<defs>
+ <marker id="aw" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto"><path d="M0,0 L6.5,3 L0,6 z" fill="var(--wire)"/></marker>
+ <marker id="ar" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto"><path d="M0,0 L6.5,3 L0,6 z" fill="var(--ref)"/></marker>
+</defs>
+
+<!-- legend -->
+<line x1="585" y1="30" x2="615" y2="30" stroke="var(--wire)" stroke-width="2" marker-end="url(#aw)"/>
+<text class="lg" x="620" y="34">Wire — Datenfluss</text>
+<line x1="585" y1="48" x2="615" y2="48" stroke="var(--ref)" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#ar)"/>
+<text class="lg" x="620" y="52">Referenz / Binding</text>
+
+<!-- ===================== ZONE 1: WIRES ===================== -->
+<text class="h" x="24" y="34">① Datenbeschaffung — sichtbare Wires  (ADR 0016: Trigger sichtbar, kein Auto-Fire)</text>
+
+<!-- A ui-route -->
+<rect x="24" y="70" width="150" height="60" rx="8" fill="var(--surface)" stroke="var(--line)"/>
+<text class="nt" x="38" y="96">ui-route</text>
+<text class="ns" x="38" y="114">onEnter ▸ (per Client)</text>
+
+<!-- B ui-query -->
+<rect x="240" y="70" width="172" height="60" rx="8" fill="var(--surface)" stroke="var(--line)"/>
+<text class="nt" x="254" y="94">ui-query</text>
+<text class="ns" x="254" y="110">queryPath: customers.list</text>
+<text class="ns" x="254" y="124">parent → ui-app</text>
+<circle cx="240" cy="100" r="3.5" fill="var(--wire)"/>
+<circle cx="412" cy="100" r="3.5" fill="var(--wire)"/>
+
+<!-- C Datenquelle -->
+<rect x="470" y="70" width="150" height="60" rx="8" fill="var(--surface)" stroke="var(--line)"/>
+<text class="nt" x="484" y="96">Datenquelle</text>
+<text class="ns" x="484" y="114">DB / HTTP / function</text>
+
+<!-- D Shaper -->
+<rect x="678" y="70" width="158" height="60" rx="8" fill="var(--surface)" stroke="var(--line)"/>
+<text class="nt" x="692" y="96">function</text>
+<text class="ns" x="692" y="114">Shaper → msg.ui.query</text>
+
+<!-- wires A->B->C->D -->
+<line x1="174" y1="100" x2="236" y2="100" stroke="var(--wire)" stroke-width="2" marker-end="url(#aw)"/>
+<text class="wl" x="178" y="92">① onEnter</text>
+<text class="wls" x="178" y="118">clientId</text>
+<line x1="412" y1="100" x2="466" y2="100" stroke="var(--wire)" stroke-width="2" marker-end="url(#aw)"/>
+<text class="wl" x="414" y="92">② Trigger → out</text>
+<text class="wls" x="414" y="118">nur Auslöser</text>
+<line x1="620" y1="100" x2="674" y2="100" stroke="var(--wire)" stroke-width="2" marker-end="url(#aw)"/>
+<text class="wl" x="628" y="92">③ rows</text>
+
+<!-- return D -> B in-port (terminal) -->
+<path d="M757,130 L757,166 L326,166 L326,132" fill="none" stroke="var(--wire)" stroke-width="2" marker-end="url(#aw)"/>
+<text class="wl" x="430" y="160">④ msg.ui.query.data  →  In-Port</text>
+<text class="tl" x="430" y="180">TERMINAL — absorbiert (State + SSE-Push), KEIN Re-Emit am Out-Port (Schleifenschutz)</text>
+<text class="wls" x="430" y="196">Shaper mappt Rohzeilen → {id, label, value?, icon?}</text>
+
+<!-- ===================== ZONE 2: STRUCTURE ===================== -->
+<text class="h" x="24" y="252">② UI-Struktur &amp; Render — Referenzen (Mount / Binding), keine Wires</text>
+
+<!-- ui-app container -->
+<rect x="430" y="268" width="406" height="232" rx="10" fill="var(--surface)" stroke="var(--line)"/>
+<text class="nt" x="446" y="292">ui-app</text>
+<text class="ns" x="500" y="292">Routing-Kontext (SSE an die Clients)</text>
+
+<!-- ui-route slot -->
+<rect x="454" y="306" width="358" height="170" rx="9" fill="var(--slot)" stroke="var(--line)"/>
+<text class="nt" x="470" y="330">ui-route</text>
+<text class="ns" x="470" y="346">Slot: content</text>
+
+<!-- ui-list -->
+<rect x="478" y="362" width="310" height="96" rx="8" fill="var(--surface)" stroke="var(--line)"/>
+<text class="nt" x="494" y="388">ui-list</text>
+<text class="ns" x="494" y="408">mount → ui-route/content</text>
+<text class="rl" x="494" y="428">items = query:customers.list</text>
+<text class="ns" x="494" y="446">(Daten in Item-Schema-Form; selectable optional)</text>
+
+<!-- binding bridge: ui-query -> ui-list -->
+<path d="M326,132 C300,250 360,332 478,394" fill="none" stroke="var(--ref)" stroke-width="2" stroke-dasharray="5 3" marker-end="url(#ar)"/>
+<text class="rl" x="120" y="300">query:customers.list</text>
+<text class="lg" x="120" y="316">live via SSE-Push;</text>
+<text class="lg" x="120" y="330">jede Bindung aktualisiert sich</text>
+<text class="lg" x="120" y="346">(auch .loading / .error)</text>
+</svg>
