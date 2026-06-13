@@ -54,7 +54,10 @@ const VIEW_CASES: Case[] = [
     { type: "ui-accordion", fields: ["name", "mount"], inputs: 1 },
     // P169 (ADR 0018): ui-accordion-section — thin container child of ui-accordion, no ports.
     { type: "ui-accordion-section", fields: ["name", "mount"], inputs: 0 },
-    { type: "ui-list", fields: ["name", "mount"], inputs: 1 },
+    // P172 (ADR 0015): ui-list gets the base-field group ("Allgemein") —
+    // visible/disabled/color applicable; size N/A (displayType controls density).
+    // Dedicated E2E coverage: base-fields.spec.ts.
+    { type: "ui-list", fields: ["name", "mount", "visibleBinding", "disabledBinding", "colorBinding", "size"], inputs: 1 },
     { type: "ui-menu", fields: ["name", "mount"], inputs: 1 },
     { type: "ui-pagination", fields: ["name", "mount"], inputs: 1 },
     { type: "ui-stepper", fields: ["name", "mount"], inputs: 1 },

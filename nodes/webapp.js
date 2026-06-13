@@ -1487,6 +1487,16 @@ function toComponentDefinitions(components) {
         if (p16Kind) {
             const valueBinding = getBinding(component.value, component.valuePath ? stateBinding(component.valuePath) : undefined);
             const disabledBinding = getBinding(component.disabled, component.disabledPath ? stateBinding(component.disabledPath) : undefined);
+            // P172 (ADR 0015): `visible` base field — extracted generically so any
+            // p16Kind node that stores a `visible` binding (from installBaseFields/
+            // applyBaseFields) has it wired into visibleIf on the ComponentDefinition
+            // (the renderer checks component.visibleIf to decide whether to render).
+            const visibleBinding = getBinding(component.visible, undefined);
+            // P172 (ADR 0015): `color` as a binding — for non-variant nodes (e.g.
+            // ui-list) the color is a bindable active-value (literal colour string or
+            // a dynamic binding). When it is a binding object it routes through
+            // bind.color so the renderer resolves it; a plain string stays in props.
+            const colorBinding = p16Kind === "list" ? getBinding(component.color, undefined) : undefined;
             // For alert/badge nodes that use `message`/`value` as primary binding fields
             // (not `value`), fall back to those fields as the value binding so the
             // renderer resolves them and the serializer can read the string from
@@ -1567,6 +1577,10 @@ function toComponentDefinitions(components) {
             }
             if (disabledBinding) {
                 bind.disabled = disabledBinding;
+            }
+            // P172 (ADR 0015): color binding for non-variant p16Kind nodes (list).
+            if (colorBinding) {
+                bind.color = colorBinding;
             }
             // P154 (ADR 0012): pagination `total` (read-only) resolves through
             // bind.totalPages → resolvedProps.totalPages → props.totalPages, which
@@ -1662,6 +1676,10 @@ function toComponentDefinitions(components) {
                 kind: p16Kind,
                 mount: component.mount || component.parent,
                 order: toOptionalNumber(component.order),
+                // P172 (ADR 0015): `visible` base field — when a binding object is
+                // stored, it becomes the ComponentDefinition's `visibleIf` field so
+                // the renderer's matchesCondition() can gate rendering on it.
+                ...(visibleBinding ? { visibleIf: visibleBinding } : {}),
                 bind,
                 props: {
                     // P97/P98: For checkbox and datepicker, label may be a binding object — when so
@@ -1730,7 +1748,10 @@ function toComponentDefinitions(components) {
                     // P69: icon literal + ui-icon display props (size/color).
                     ...(component.icon !== undefined && !iconBinding ? { icon: component.icon } : {}),
                     ...(component.size !== undefined ? { size: component.size } : {}),
-                    ...(component.color !== undefined ? { color: component.color } : {}),
+                    // P172: when color is a binding it routes through bind.color (resolved by
+                    // the renderer into resolvedProps.color); only a plain literal value stays
+                    // in props. For nodes without colorBinding (not list), pass through as before.
+                    ...(component.color !== undefined && !colorBinding ? { color: component.color } : {}),
                     // P93: ui-avatar shape and initials props.
                     // P94: initials is now a binding — routed through bind.initials so the
                     // renderer resolves it. A plain string (back-compat pre-P94) is passed

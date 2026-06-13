@@ -1349,7 +1349,13 @@ export const uiListNodeDefinitionSchema = mountableNodeSchema.extend({
     // P171: semantic colour role of the value badge (only when displayValue=badge).
     // Same palette as ui-badge (SEVERITY_VARIANTS). Node-wide.
     badgeVariant: z.enum(SEVERITY_VARIANTS).optional(),
-    events: z.array(z.enum(["itemClick", "itemSelect"])).optional()
+    events: z.array(z.enum(["itemClick", "itemSelect"])).optional(),
+    // P172 (ADR 0015): common base fields — visible (boolean-state binding, absent
+    // = always visible), disabled (boolean-state binding, locks row interaction)
+    // and color (active value binding, non-variant node).
+    visible: bindingSchema.optional(),
+    disabled: bindingSchema.optional(),
+    color: bindingSchema.optional()
 });
 
 export type UiListNodeDefinition = z.infer<typeof uiListNodeDefinitionSchema>;
