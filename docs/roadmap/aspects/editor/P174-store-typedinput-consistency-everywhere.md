@@ -15,7 +15,7 @@ verify: browser
 spec: docs/nodes/concepts/editor.md
 tests: tests/e2e/nodes/editor/store-binding-subpath.spec.ts
 dependencies: []
-status: pending
+status: in_progress
 ---
 # P174 — Store-typedInput überall konsistent (ADR 0013 §4)
 
