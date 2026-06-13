@@ -296,8 +296,13 @@ async function selectStoreTypeOn(page: Page, fieldId: string): Promise<void> {
 }
 
 async function openStorePickerOn(page: Page, fieldId: string): Promise<void> {
+    // Scope to the OUTER typedInput container (direct child of the field's
+    // form-row) and target the VISIBLE expand button: some nodes (e.g. ui-button)
+    // render an extra `display:none` expand in the same form-row, which a bare
+    // `.first()` would wrongly select.
     await page.locator("#" + fieldId).locator("xpath=..")
-        .locator(".red-ui-typedInput-option-expand").first().click();
+        .locator("> .red-ui-typedInput-container .red-ui-typedInput-option-expand:visible")
+        .first().click();
 }
 
 /**
@@ -306,10 +311,14 @@ async function openStorePickerOn(page: Page, fieldId: string): Promise<void> {
  * Proves the rows STACK and the field is not clipped to a single 34px row.
  */
 async function storeFieldGeometry(page: Page, fieldId: string) {
-    const wrap = page.locator("#" + fieldId).locator("xpath=..").locator(".red-ui-typedInput-container");
-    const nameRow = wrap.locator(".webapp-store-field-name");
+    // The OUTER typedInput container is the direct child of the host's form-row;
+    // the sub-path's own typedInput nests a SECOND `.red-ui-typedInput-container`
+    // inside `.webapp-store-field-subpath`, so scope to the direct child to avoid
+    // a strict-mode match on both.
+    const wrap = page.locator("#" + fieldId).locator("xpath=..").locator("> .red-ui-typedInput-container");
+    const nameRow = wrap.locator(".webapp-store-field-name").first();
     const pathRow = wrap.locator(".webapp-store-field-subpath");
-    const cell = wrap.locator(".red-ui-typedInput-value-label");
+    const cell = wrap.locator("> .red-ui-typedInput-value-label");
     return {
         name: await nameRow.boundingBox(),
         path: await pathRow.boundingBox(),
@@ -338,10 +347,18 @@ test.describe("editor — store typedInput two-row layout & cross-node consisten
             await expect(page.locator(".webapp-node-picker-dialog")).toHaveCount(0);
 
             // Row 1 shows the NAME; row 2 (indented sub-path) is present.
-            const wrap = page.locator("#" + c.fieldId).locator("xpath=..").locator(".red-ui-typedInput-container");
-            await expect(wrap.locator(".webapp-store-field-name")).toHaveText("monster");
+            // Scope to the OUTER container (direct child) so the nested sub-path
+            // typedInput's own container does not create a strict-mode match.
+            const wrap = page.locator("#" + c.fieldId).locator("xpath=..").locator("> .red-ui-typedInput-container");
+            await expect(wrap.locator(".webapp-store-field-name").first()).toHaveText("monster");
             await expect(wrap.locator(".webapp-store-field-subpath")).toHaveCount(1);
-            await expect(wrap.locator("input.webapp-store-subpath-input")).toBeVisible();
+            // The sub-path carries a real, VISIBLE typedInput widget. The raw
+            // `input.webapp-store-subpath-input` is `type="hidden"` by design (the
+            // typedInput replaces it with a widget), so assert on the visible
+            // widget — its container and its type-select button — not the backing
+            // input.
+            await expect(wrap.locator(".webapp-store-field-subpath .red-ui-typedInput-container")).toBeVisible();
+            await expect(wrap.locator(".webapp-store-field-subpath .red-ui-typedInput-type-select")).toBeVisible();
 
             const g = await storeFieldGeometry(page, c.fieldId);
             expect(g.name, "name row box").toBeTruthy();
@@ -383,8 +400,8 @@ test.describe("editor — store typedInput two-row layout & cross-node consisten
             await page.locator(".webapp-node-picker-row").filter({ hasText: "monster" }).first().click();
             await expect(page.locator(".webapp-node-picker-dialog")).toHaveCount(0);
 
-            const wrap = page.locator("#" + fieldId).locator("xpath=..").locator(".red-ui-typedInput-container");
-            await expect(wrap.locator(".webapp-store-field-name")).toHaveText("monster");
+            const wrap = page.locator("#" + fieldId).locator("xpath=..").locator("> .red-ui-typedInput-container");
+            await expect(wrap.locator(".webapp-store-field-name").first()).toHaveText("monster");
             await expect(wrap.locator(".webapp-store-field-subpath")).toHaveCount(1);
 
             const g = await storeFieldGeometry(page, fieldId);
@@ -403,7 +420,7 @@ test.describe("editor — store typedInput two-row layout & cross-node consisten
         await editor.openNode("fpag3");
         await selectStoreTypeOn(page, "node-input-currentPageBinding");
 
-        const wrap = page.locator("#node-input-currentPageBinding").locator("xpath=..").locator(".red-ui-typedInput-container");
+        const wrap = page.locator("#node-input-currentPageBinding").locator("xpath=..").locator("> .red-ui-typedInput-container");
         await expect(wrap.locator(".webapp-store-field-name")).toHaveClass(/webapp-store-field-placeholder/);
         await expect(wrap.locator(".webapp-store-field-name")).toHaveText("Store über „…“ auswählen");
         await expect(wrap.locator(".webapp-store-field-subpath")).toHaveCount(0);
@@ -431,10 +448,18 @@ test.describe("editor — store typedInput two-row layout & cross-node consisten
             $("input.webapp-store-subpath-input").typedInput("type", "store");
         });
 
+        // The inner control settles on the `store` source and renders its own
+        // (leaf) store value label — the soft name placeholder.
+        await expect(page.locator(".webapp-store-field-subpath .webapp-store-field-name"))
+            .toHaveCount(1);
+        await expect(page.locator(".webapp-store-field-subpath .webapp-store-field-name"))
+            .toHaveClass(/webapp-store-field-placeholder/);
+
         // The outer field still has exactly one sub-path row; the inner leaf store
-        // control inside it adds no second `.webapp-store-field-subpath`.
+        // control inside it adds no second (nested) `.webapp-store-field-subpath`
+        // — the one-level rule (ADR 0013 §3) holds.
         await expect(page.locator(".webapp-store-field-subpath")).toHaveCount(1);
-        // The leaf control still exposes a name area (its own value label).
-        await expect(page.locator(".webapp-store-field-subpath .webapp-store-field-name")).toHaveCount(1);
+        await expect(page.locator(".webapp-store-field-subpath .webapp-store-field-subpath"))
+            .toHaveCount(0);
     });
 });

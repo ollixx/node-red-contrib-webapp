@@ -3059,12 +3059,28 @@
                     $pathInput.typedInput("value", sub.value || "");
 
                     function syncSubPath() {
+                        const subType = $pathInput.typedInput("type");
                         const subBinding = applyValueBinding(
-                            $pathInput.typedInput("type"),
+                            subType,
                             $pathInput.typedInput("value")
                         );
                         const cur = decodeStoreFieldValue(that.value());
-                        that.value(encodeStoreFieldValue(cur.path, subBinding));
+                        // ADR 0013 §3: selecting "Store" as the sub-path SOURCE must
+                        // produce the inner LEAF store control (name-only, no nested
+                        // row) and stay selected while the user picks the inner store.
+                        // An empty leaf store binding ({kind:"store", path:""}) is not
+                        // yet "meaningful", so encodeStoreFieldValue would drop it —
+                        // the outer field would then re-render the sub-path control
+                        // back to its `str` default and the leaf form would snap away
+                        // before it could be used. Preserve an explicitly-store-typed
+                        // sub-path in the LIVE envelope even when empty so the leaf
+                        // control survives the re-render. The SAVE path
+                        // (applyValueBinding → isMeaningfulSubPath) still drops it, so
+                        // an unfinished leaf never pollutes the persisted binding.
+                        const liveEnvelope = (subType === "store" && !isMeaningfulSubPath(subBinding))
+                            ? JSON.stringify({ path: cur.path == null ? "" : String(cur.path), subPath: subBinding })
+                            : encodeStoreFieldValue(cur.path, subBinding);
+                        that.value(liveEnvelope);
                     }
                     $pathInput.on("change", syncSubPath);
                     $pathInput.typedInput("width", "100%");
