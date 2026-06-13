@@ -435,6 +435,12 @@ export interface UiListEditorConfig extends MountableEditorConfig {
     displayType?: "default" | "divided" | "compact";
     displayValue?: "none" | "secondary" | "badge";
     badgeVariant?: (typeof SEVERITY_VARIANTS)[number];
+    // P173: single-select. `selectable` turns on selection; `selectedId` is the
+    // two-way binding on the selected row's id (mirror of ui-tabs `activeTab`); the
+    // legacy `selectedIdPath` plain state path migrates to a state binding.
+    selectable?: boolean;
+    selectedId?: BindingDefinition | null;
+    selectedIdPath?: string;
     events?: string;
     // P172 (ADR 0015): common base fields.
     visible?: BindingDefinition | null;
@@ -1675,6 +1681,13 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         displayType: config.displayType,
         displayValue: config.displayValue,
         badgeVariant: config.badgeVariant,
+        // P173: single-select. `selectable` passes through; `selectedId` prefers the
+        // canonical binding object, else migrates a legacy `selectedIdPath` plain
+        // state path to a state binding (mirror of ui-tabs `activeTab`).
+        ...(config.selectable === true ? { selectable: true } : {}),
+        ...(isBindingObject(config.selectedId)
+            ? { selectedId: config.selectedId }
+            : (config.selectedIdPath ? { selectedId: stateBinding(config.selectedIdPath) } : {})),
         // P172 (ADR 0015): base fields — pass binding objects through unchanged;
         // absent/null means "use default" (always visible / not disabled / no color).
         ...(isBindingObject(config.visible) ? { visible: config.visible } : {}),
