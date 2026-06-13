@@ -2946,6 +2946,59 @@
             valueLabel: function (container, value) {
                 const that = this;
                 const decoded = decodeStoreFieldValue(value);
+                const hasStore = !!decoded.path;
+                // Two-row layout is shown only when a store is picked and this is
+                // not the leaf (inner) form. Pre-pick / leaf = a single name row.
+                const twoRow = !isLeaf && hasStore;
+
+                // ── The concrete live defect (P174) ────────────────────────────
+                // Node-RED's typedInput locks BOTH the outer container
+                // (`.red-ui-typedInput-container`: height 34px, overflow hidden,
+                // display inline-flex/row) AND the value-label cell
+                // (`.red-ui-typedInput-value-label`: height 32px, overflow hidden)
+                // to a single fixed-height ROW. Our `flex-direction: column` wrap
+                // therefore overflowed a 32px clip — the second (sub-path) row was
+                // sheared off, so live it rendered single-line / squeezed and the
+                // path field was unreachable (the exact owner report). We must
+                // relax those two fixed heights when — and only when — the two-row
+                // store layout is active, and restore them otherwise so every other
+                // state/type keeps the standard 34px row. `this.uiSelect` is the
+                // outer container; `container` is the value-label cell.
+                const $cell = container;
+                const $outer = (that.uiSelect && that.uiSelect.length)
+                    ? that.uiSelect
+                    : container.closest(".red-ui-typedInput-container");
+                function applyTwoRow() {
+                    $outer.addClass("webapp-store-field-tworow")
+                        .css({ height: "auto", "min-height": "34px", "align-items": "stretch", overflow: "visible" });
+                    $cell.css({ height: "auto", overflow: "visible", "white-space": "normal", display: "flex", "align-items": "stretch" });
+                }
+                function restoreSingleRow() {
+                    $outer.removeClass("webapp-store-field-tworow")
+                        .css({ height: "", "min-height": "", "align-items": "", overflow: "" });
+                    $cell.css({ height: "", overflow: "", "white-space": "", display: "", "align-items": "" });
+                }
+                if (twoRow) {
+                    applyTwoRow();
+                    // When the field's type is later switched AWAY from `store`,
+                    // the framework re-renders the value-label cell but never resets
+                    // the OUTER container height we relaxed — so it would stay tall.
+                    // A namespaced one-shot reset on the host element restores the
+                    // standard 34px row the moment the type leaves `store`.
+                    if (that.element && that.element.off) {
+                        that.element.off("change.webappStoreRow").on("change.webappStoreRow", function (_e, type) {
+                            if (type !== "store") {
+                                restoreSingleRow();
+                                that.element.off("change.webappStoreRow");
+                            }
+                        });
+                    }
+                }
+                else {
+                    // Idempotent: the store type may have been two-row before this
+                    // re-render (leaf form, or store cleared back to the hint).
+                    restoreSingleRow();
+                }
                 container.css({ padding: "0" });
 
                 const $wrap = $("<span>")
@@ -2957,7 +3010,6 @@
                 // a pick a soft hint stands in. ADR 0013 §4 (P134 correction).
                 const $row = $("<span>")
                     .css({ display: "inline-flex", "align-items": "center", gap: "8px", "min-width": "0" });
-                const hasStore = !!decoded.path;
                 const $name = $("<span>")
                     .addClass("webapp-store-field-name")
                     .css({ "min-width": "0", overflow: "hidden", "text-overflow": "ellipsis", "white-space": "nowrap" });
@@ -2977,7 +3029,7 @@
                 // Row 2: the SECOND, indented sub-path typedInput (skipped for the
                 // leaf form and until a store is chosen). The field label stays in
                 // column 1; this row is indented inside the value column. ADR 0013 §4.
-                if (!isLeaf && hasStore) {
+                if (twoRow) {
                     const $pathRow = $("<span>")
                         .addClass("webapp-store-field-subpath")
                         .css({ display: "inline-flex", "align-items": "center", gap: "6px", width: "100%", "padding-left": "12px" });
