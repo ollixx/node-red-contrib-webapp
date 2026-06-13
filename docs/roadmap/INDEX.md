@@ -28,6 +28,7 @@ their blocker clears.
 ## Open work (pending / in_progress)
 
 - **P173** — nodes/ui-list — Single-Select: selectable + selectedId (zweiseitig) + Selected-Zustand + itemSelect-Event — *löst Review-Widerspruch W1; braucht P171* — [P173](nodes/ui-list/P173-list-single-select.md)
+- **P174** — aspects/editor — Store-typedInput überall an ADR 0013 §4 angleichen (zweizeiliges Layout: Name + eingerückter Sub-Pfad), Live-Abweichung beheben — *zentral in editor-common; 26 Felder; Soll-Skizze 0013* — [P174](aspects/editor/P174-store-typedinput-consistency-everywhere.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -93,4 +94,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 171 done, 1 open, 9 deferred.**
+**Total: 171 done, 2 open, 9 deferred.**
