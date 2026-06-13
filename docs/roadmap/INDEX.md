@@ -27,7 +27,7 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P175** — nodes/ui-query — data/error-Rückgabe terminal machen (kein Re-Emit am Out-Port) — Endlosschleifen-Fix — *Owner-Bug 2026-06-13; webapp.js:4302 send unbedingt* — [P175](nodes/ui-query/P175-query-terminal-data-no-loop.md)
+_No open work — the roadmap is drained. New work is added here as packages are authored._
 
 
 ## Deferred (parked, not abandoned)
@@ -56,7 +56,7 @@ open the folder for the full history.
 | nodes/ui-alert | 4 |
 | nodes/ui-avatar | 2 |
 | nodes/ui-log | 2 |
-| nodes/ui-query | 4 |
+| nodes/ui-query | 5 |
 | nodes/ui-store | 2 |
 | nodes/ui-badge | 3 |
 | nodes/ui-route | 2 |
@@ -93,4 +93,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 173 done, 1 open, 9 deferred.**
+**Total: 174 done, 0 open, 9 deferred.**
