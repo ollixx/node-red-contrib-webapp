@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P174** — aspects/editor — Store-typedInput überall an ADR 0013 §4 angleichen (zweizeiliges Layout: Name + eingerückter Sub-Pfad), Live-Abweichung beheben — *zentral in editor-common; 26 Felder; Soll-Skizze 0013* — [P174](aspects/editor/P174-store-typedinput-consistency-everywhere.md)
 - **P175** — nodes/ui-query — data/error-Rückgabe terminal machen (kein Re-Emit am Out-Port) — Endlosschleifen-Fix — *Owner-Bug 2026-06-13; webapp.js:4302 send unbedingt* — [P175](nodes/ui-query/P175-query-terminal-data-no-loop.md)
 
 
@@ -87,11 +86,11 @@ open the folder for the full history.
 | aspects/misc | 16 |
 | aspects/runtime | 7 |
 | aspects/state | 8 |
-| aspects/editor | 14 |
+| aspects/editor | 15 |
 | schema | 5 |
 | aspects/rendering | 12 |
 | aspects/foundation | 5 |
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 172 done, 2 open, 9 deferred.**
+**Total: 173 done, 1 open, 9 deferred.**
