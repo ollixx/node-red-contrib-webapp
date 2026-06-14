@@ -14,7 +14,7 @@ verify: browser
 spec: docs/nodes/concepts/editor.md
 tests: tests/e2e/nodes/editor/base-fields.spec.ts
 dependencies: []
-status: pending
+status: in_progress
 ---
 # P181 — Base-Field Boolean-Default-Typ (visible/disabled glatt ziehen)
 
