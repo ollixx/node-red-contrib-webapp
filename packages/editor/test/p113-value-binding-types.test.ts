@@ -202,12 +202,23 @@ describe("P113: applyValueBinding serialisation", () => {
     it("scope-local item → { kind:'item', path:<field path> } (P165)", () => {
         expect(common.applyValueBinding("item", "name")).toEqual({ kind: "item", path: "name" });
         expect(common.applyValueBinding("item", "address.city")).toEqual({ kind: "item", path: "address.city" });
-        // The whole element (empty path) serialises with an empty path.
-        expect(common.applyValueBinding("item", "")).toEqual({ kind: "item", path: "" });
+        // P184: the whole element (empty path) serialises WITHOUT a `path` key —
+        // an empty string is no longer persisted (it is the legitimate
+        // "whole element" case, not a malformed path the schema would reject).
+        expect(common.applyValueBinding("item", "")).toEqual({ kind: "item" });
     });
 
-    it("scope-local index → { kind:'index', path:'' } (path-free) (P165)", () => {
-        expect(common.applyValueBinding("index", "")).toEqual({ kind: "index", path: "" });
+    it("scope-local index → { kind:'index' } (path-free) (P184)", () => {
+        // P184: `index` is always path-free — an empty value serialises with no
+        // `path` key at all (previously `path:''`, which the schema rejected).
+        expect(common.applyValueBinding("index", "")).toEqual({ kind: "index" });
+    });
+
+    it("scope-local prop → empty path omitted, dotted path kept (P184)", () => {
+        // The whole-`prop` value (empty path) drops the key, exactly like `item`;
+        // a real dotted field path is preserved.
+        expect(common.applyValueBinding("prop", "")).toEqual({ kind: "prop" });
+        expect(common.applyValueBinding("prop", "title")).toEqual({ kind: "prop", path: "title" });
     });
 });
 

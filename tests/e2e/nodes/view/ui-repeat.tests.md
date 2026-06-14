@@ -73,6 +73,31 @@
   vorhandene `A`-Zeile (Per-Instanz-Id `A#personName`) behält ihren DOM-Marker
   über das Morph hinweg (kein Re-Mount).
 
+### Scope-lokale Bindings mit leerem Pfad (P184) — abgedeckt
+
+> Bugfix: whole-`item` (String-Element) und `index` wurden mit `path:''`
+> serialisiert/validiert und fälschlich abgelehnt. Unit:
+> `packages/schema/test/p163-repeat-item-binding.test.ts`
+> (Schema akzeptiert item/index/prop mit leerem Pfad; `path:''`-Altflows
+> toleriert; Negative bleiben rot) +
+> `packages/renderer/test/p164-repeat-template-clone.test.ts`
+> (whole-`item` + `index` über ein String-Array) +
+> `packages/editor/test/p113-value-binding-types.test.ts`
+> (Serialisierung lässt den leeren Pfad weg). Browser:
+> `tests/e2e/nodes/view/ui-repeat.spec.ts`
+> (Fixture `tests/e2e/fixtures/ui-repeat-primitive.flow.json`).
+
+- **Schema:** `{kind:'item'}` / `{kind:'index'}` / `{kind:'prop'}` ohne Pfad gültig;
+  ein gespeichertes `path:''` auf item/index/prop validiert wie „kein Pfad"
+  (Migration ohne Re-Save). Negativ: `index` mit echtem Pfad, malformierter
+  `item`-Pfad und ein leerer Pfad auf Daten-Kinds (state/query) bleiben rot.
+- **Editor:** `applyValueBinding` speichert whole-`item`/`index`/`prop` OHNE
+  `path`-Schlüssel (leerer Pfad weggelassen); ein item-Feldpfad bleibt erhalten.
+- **End-to-End (browser):** Store-Array `["alpha","beta","gamma"]` + `ui-repeat`
+  mit zwei `ui-text`-Kindern (`value = item` ganzes Element, `value = index`
+  nullbasiert) rendert die interleaved Sequenz `alpha,0, beta,1, gamma,2` —
+  ganzes String-Element und Position lösen ohne Validierungsfehler auf.
+
 ## Editor: Basis-Felder (P139, ADR 0015) — abgedeckt
 
 - `ui-repeat` ist ein Template-Container: `visible` anwendbar; `disabled`,

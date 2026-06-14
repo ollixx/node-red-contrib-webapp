@@ -440,3 +440,47 @@ describe("P164 — nested repeats (scope is a stack, innermost wins; at minimum 
         expect(ids(app)).toEqual(["A#Ada#leaf", "A#Alan#leaf", "B#Bob#leaf"]);
     });
 });
+
+describe("P184 — whole-`item` + `index` over a PRIMITIVE (string) array", () => {
+    // The bug this phase fixes: binding to a string ELEMENT in its entirety
+    // (whole `item`, no path) and to its `index`. Both are serialised with an
+    // EMPTY path by older editor builds (path:''), so the renderer must resolve
+    // them end-to-end exactly as the path-free forms.
+
+    it("whole-`item` (path:'') renders each string element verbatim", () => {
+        const app = createRendererApp(
+            appWithRepeat(
+                { kind: "literal", value: ["alpha", "beta", "gamma"] },
+                { kind: "item", path: "" }
+            ),
+            { integration: NO_INTEGRATION }
+        );
+
+        expect(texts(app)).toEqual(["alpha", "beta", "gamma"]);
+    });
+
+    it("path-free whole-`item` ({kind:'item'}) renders each string element verbatim", () => {
+        const app = createRendererApp(
+            appWithRepeat(
+                { kind: "literal", value: ["alpha", "beta", "gamma"] },
+                { kind: "item" }
+            ),
+            { integration: NO_INTEGRATION }
+        );
+
+        expect(texts(app)).toEqual(["alpha", "beta", "gamma"]);
+    });
+
+    it("`index` (path:'') renders the zero-based position of each string element", () => {
+        const app = createRendererApp(
+            appWithRepeat(
+                { kind: "literal", value: ["alpha", "beta", "gamma"] },
+                { kind: "index", path: "" }
+            ),
+            { integration: NO_INTEGRATION }
+        );
+
+        // index 0/1/2 normalised to display strings by the text node.
+        expect(texts(app)).toEqual(["0", "1", "2"]);
+    });
+});

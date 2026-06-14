@@ -102,11 +102,23 @@ function refineBindingKindShape(
         return;
     }
 
+    // P184: for the scope-local kinds (`item`/`index`/`prop`) an EMPTY `path`
+    // ('') is the legitimate "whole element / bare index" case — NOT a malformed
+    // path. Normalise `''` to "no path" up front so a saved `path:''` (older
+    // editor builds, before the serialiser dropped the empty key) validates
+    // EXACTLY like a path-free binding — old flows go green without a re-save.
+    // This normalisation is scoped to item/index/prop ONLY; the data-binding
+    // kinds below still reject an empty path via the `!binding.path` guard, so we
+    // do NOT loosen path validation for state/query/etc.
+    const scopeLocalPath = binding.path === "" ? undefined : binding.path;
+
     // P163 (ADR 0017): scope-local `item` / `index` bindings. FORM only — the
     // renderer resolves them against the render-time item scope (P164), not here.
     if (binding.kind === "index") {
-        // `index` is the bare zero-based position — it carries no path.
-        if (binding.path !== undefined) {
+        // `index` is the bare zero-based position — it carries no path. An empty
+        // path ('') is tolerated as "no path" (P184); a real, non-empty path is
+        // still rejected.
+        if (scopeLocalPath !== undefined) {
             context.addIssue({
                 code: z.ZodIssueCode.custom,
                 message: "An 'index' binding is the bare item position — it must not carry a path."
@@ -117,10 +129,11 @@ function refineBindingKindShape(
     }
 
     if (binding.kind === "item") {
-        // `item` alone is the whole element. An optional `path` selects a one- OR
-        // multi-level field of the element (e.g. `address.city`) — pure path-form
-        // validation, no `item.` prefix (that is the kind).
-        if (binding.path !== undefined && !ITEM_PATH_PATTERN.test(binding.path)) {
+        // `item` alone is the whole element (an empty/absent path — P184). A
+        // present, non-empty `path` selects a one- OR multi-level field of the
+        // element (e.g. `address.city`) — pure path-form validation, no `item.`
+        // prefix (that is the kind).
+        if (scopeLocalPath !== undefined && !ITEM_PATH_PATTERN.test(scopeLocalPath)) {
             context.addIssue({
                 code: z.ZodIssueCode.custom,
                 message: "An 'item' binding path must be a dotted field path (e.g. 'name' or 'address.city')."
@@ -131,12 +144,13 @@ function refineBindingKindShape(
     }
 
     // P177 (ADR 0020): scope-local `prop` binding — the exact sibling of `item`.
-    // `prop` alone is the whole prop value; an optional `path` selects a one- OR
-    // multi-level field (`prop.<name>` / `prop.address.city`). The `prop.` prefix
-    // is the KIND, not part of `path`. FORM only — the renderer resolves it against
-    // the instance's render-time `propScope` (P178), not here.
+    // `prop` alone is the whole prop value (an empty/absent path — P184); a
+    // present, non-empty `path` selects a one- OR multi-level field (`prop.<name>`
+    // / `prop.address.city`). The `prop.` prefix is the KIND, not part of `path`.
+    // FORM only — the renderer resolves it against the instance's render-time
+    // `propScope` (P178), not here.
     if (binding.kind === "prop") {
-        if (binding.path !== undefined && !ITEM_PATH_PATTERN.test(binding.path)) {
+        if (scopeLocalPath !== undefined && !ITEM_PATH_PATTERN.test(scopeLocalPath)) {
             context.addIssue({
                 code: z.ZodIssueCode.custom,
                 message: "A 'prop' binding path must be a dotted field path (e.g. 'title' or 'address.city')."
@@ -170,7 +184,14 @@ function refineBindingKindShape(
 export const leafBindingSchema = z
     .object({
         kind: z.enum(BINDING_KINDS),
-        path: z.string().min(1, "Binding paths must not be empty.").optional(),
+        // P184: `path` is a plain optional string here — the empty-path RULE is
+        // enforced per-kind in `refineBindingKindShape`, NOT by a field-level
+        // `.min(1)`. A `.min(1)` would reject `path:''` for EVERY kind before the
+        // refine runs, which wrongly rejects the legitimate whole-`item` / bare
+        // `index` / whole-`prop` case (all serialised/migrated with `path:''`).
+        // Data-binding kinds still require a non-empty path via the refine's
+        // `!binding.path` guard, so this does not loosen them.
+        path: z.string().optional(),
         value: z.unknown().optional(),
         fallback: z.unknown().optional(),
         // The structural recursion lock: a sub-path binding may not declare its
@@ -195,7 +216,10 @@ export type LeafBindingDefinition = z.infer<typeof leafBindingSchema>;
 export const bindingSchema = z
     .object({
         kind: z.enum(BINDING_KINDS),
-        path: z.string().min(1, "Binding paths must not be empty.").optional(),
+        // P184: see leafBindingSchema — `path` carries no field-level `.min(1)`;
+        // the per-kind refine enforces non-empty for data kinds and treats `''`
+        // as "no path" for the scope-local kinds (whole-item / index / whole-prop).
+        path: z.string().optional(),
         value: z.unknown().optional(),
         fallback: z.unknown().optional(),
         // P131 (ADR 0013): optional one-level sub-path into a store slice. Only
