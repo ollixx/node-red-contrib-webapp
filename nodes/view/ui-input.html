@@ -99,7 +99,7 @@
                 const labelInput = $("#node-input-label");
                 labelInput.typedInput({
                     default: labelEditor.type,
-                    types: common.valueBindingTypes({ category: "display" })
+                    types: common.valueBindingTypes({ category: "display", currentKind: labelEditor.type })
                 });
                 labelInput.typedInput("type", labelEditor.type);
                 labelInput.typedInput("value", labelEditor.value);
@@ -115,7 +115,7 @@
                 const valueInput = $("#node-input-valueBinding");
                 valueInput.typedInput({
                     default: valueEditor.type,
-                    types: common.valueBindingTypes({ category: "value" })
+                    types: common.valueBindingTypes({ category: "value", currentKind: valueEditor.type })
                 });
                 valueInput.typedInput("type", valueEditor.type);
                 valueInput.typedInput("value", valueEditor.value);

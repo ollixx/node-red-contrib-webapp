@@ -28,10 +28,13 @@ interface Binding {
 
 interface EditorCommon {
     valueBindingTypes: (options?: {
-        category?: "value" | "boolean" | "url";
+        category?: "value" | "boolean" | "url" | "display" | "structural" | "storePath";
         literalLabel?: string;
         includeAsset?: boolean;
         appId?: string;
+        // P182: explicit scope gating + current-kind preservation.
+        scope?: { repeat?: boolean; componentDef?: boolean };
+        currentKind?: string;
     }) => Array<TypedInputType | string>;
     readValueBinding: (binding: unknown, fallbackLiteral?: string) => { type: string; value: string };
     applyValueBinding: (type: string, value: string) => Binding;
@@ -55,40 +58,41 @@ beforeAll(() => {
     common = sandbox.WebappEditorCommon as EditorCommon;
 });
 
+// The 14 canonical global value kinds in their established order — the base set
+// every value/display field offers regardless of scope (P182 gates the
+// scope-local item/index/prop kinds OUT of this base unless inside their
+// container).
+const BASE_VALUE_SET = [
+    "store",
+    "query",
+    "routeParam",
+    "reactive",
+    "msg",
+    "jsonata",
+    "str",
+    "num",
+    "bool",
+    "json",
+    "date",
+    "flow",
+    "global",
+    "env"
+];
+
 describe("P113: canonical value-binding type set", () => {
-    it("value category (default) offers the 14 canonical types in order, then the scope-local repeat/component kinds", () => {
+    it("value category (default) offers the 14 canonical global types in order — no scope-local kinds outside a scope (P182)", () => {
+        // P182: with no DOM/editor scope (the vm has no `$`/`RED`), the scope is
+        // unknown → both-false → the scope-local item/index/prop kinds are gated
+        // OUT. The base set is exactly the 14 global kinds.
         const order = typeValues(common.valueBindingTypes());
-        expect(order).toEqual([
-            "store",
-            "query",
-            "routeParam",
-            "reactive",
-            "msg",
-            "jsonata",
-            "str",
-            "num",
-            "bool",
-            "json",
-            "date",
-            "flow",
-            "global",
-            "env",
-            // P165 (ADR 0017): scope-local item/index appended at the end so the
-            // established ordering of the global kinds is unchanged.
-            "item",
-            "index",
-            // P179 (ADR 0020): scope-local prop (component instance) appended after.
-            "prop"
-        ]);
+        expect(order).toEqual(BASE_VALUE_SET);
     });
 
-    it("the scope-local item/index/prop kinds sit ONLY at the tail of the value set (P165/P179)", () => {
+    it("the scope-local item/index/prop kinds are ABSENT from the value set when out of scope (P182)", () => {
         const order = typeValues(common.valueBindingTypes());
-        // item/index/prop are present, last, and in that order.
-        expect(order.slice(-3)).toEqual(["item", "index", "prop"]);
-        expect(order.indexOf("item")).toBe(order.length - 3);
-        expect(order.indexOf("index")).toBe(order.length - 2);
-        expect(order.indexOf("prop")).toBe(order.length - 1);
+        expect(order).not.toContain("item");
+        expect(order).not.toContain("index");
+        expect(order).not.toContain("prop");
     });
 
     it("scope-local item/index are NOT offered in the boolean or url categories (P165)", () => {
@@ -152,6 +156,91 @@ describe("P113: canonical value-binding type set", () => {
         expect(order).not.toContain("bool");
         expect(order).not.toContain("json");
         expect(order).not.toContain("date");
+    });
+});
+
+// ── P182 — scope-local binding kinds are context-gated ────────────────────────
+// item/index appear ONLY inside a ui-repeat; prop ONLY inside a
+// ui-component-definition. The scope is injected explicitly here (`scope`) since
+// the vm has no live editor DOM. `currentKind` re-includes the matching kind so
+// an already-saved out-of-scope binding stays editable.
+describe("P182: context-gated scope-local kinds", () => {
+    it("scope.repeat=true appends item/index (and NOT prop) at the tail", () => {
+        const order = typeValues(
+            common.valueBindingTypes({ category: "value", scope: { repeat: true } })
+        );
+        expect(order).toEqual([...BASE_VALUE_SET, "item", "index"]);
+        expect(order).not.toContain("prop");
+    });
+
+    it("scope.componentDef=true appends prop (and NOT item/index) at the tail", () => {
+        const order = typeValues(
+            common.valueBindingTypes({ category: "value", scope: { componentDef: true } })
+        );
+        expect(order).toEqual([...BASE_VALUE_SET, "prop"]);
+        expect(order).not.toContain("item");
+        expect(order).not.toContain("index");
+    });
+
+    it("both scopes true appends item, index, then prop in canonical tail order", () => {
+        const order = typeValues(
+            common.valueBindingTypes({ category: "value", scope: { repeat: true, componentDef: true } })
+        );
+        expect(order).toEqual([...BASE_VALUE_SET, "item", "index", "prop"]);
+    });
+
+    it("an empty scope ({}) gates ALL scope-local kinds out (base set only)", () => {
+        const order = typeValues(common.valueBindingTypes({ category: "value", scope: {} }));
+        expect(order).toEqual(BASE_VALUE_SET);
+    });
+
+    it("currentKind='item' re-includes item/index even out of scope (existing binding stays editable)", () => {
+        const order = typeValues(
+            common.valueBindingTypes({ category: "value", scope: {}, currentKind: "item" })
+        );
+        expect(order).toContain("item");
+        expect(order).toContain("index");
+        expect(order).not.toContain("prop");
+    });
+
+    it("currentKind='index' re-includes item/index even out of scope", () => {
+        const order = typeValues(
+            common.valueBindingTypes({ category: "value", scope: {}, currentKind: "index" })
+        );
+        expect(order).toContain("item");
+        expect(order).toContain("index");
+    });
+
+    it("currentKind='prop' re-includes prop even out of scope", () => {
+        const order = typeValues(
+            common.valueBindingTypes({ category: "value", scope: {}, currentKind: "prop" })
+        );
+        expect(order).toContain("prop");
+        expect(order).not.toContain("item");
+        expect(order).not.toContain("index");
+    });
+
+    it("the display category is gated identically to value (scope-local kinds excluded out of scope)", () => {
+        const outOfScope = typeValues(common.valueBindingTypes({ category: "display", scope: {} }));
+        expect(outOfScope).not.toContain("item");
+        expect(outOfScope).not.toContain("index");
+        expect(outOfScope).not.toContain("prop");
+        const inRepeat = typeValues(
+            common.valueBindingTypes({ category: "display", scope: { repeat: true } })
+        );
+        expect(inRepeat).toContain("item");
+        expect(inRepeat).toContain("index");
+    });
+
+    it("boolean/url/structural/storePath categories never carry scope-local kinds, even in scope", () => {
+        for (const category of ["boolean", "url", "structural", "storePath"] as const) {
+            const order = typeValues(
+                common.valueBindingTypes({ category, scope: { repeat: true, componentDef: true } })
+            );
+            expect(order).not.toContain("item");
+            expect(order).not.toContain("index");
+            expect(order).not.toContain("prop");
+        }
     });
 });
 

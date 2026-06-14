@@ -77,7 +77,7 @@
                 const itemsInput = $("#node-input-items");
                 itemsInput.typedInput({
                     default: itemsEditor.type,
-                    types: common.valueBindingTypes({ category: "value" })
+                    types: common.valueBindingTypes({ category: "value", currentKind: itemsEditor.type })
                 });
                 itemsInput.typedInput("type", itemsEditor.type);
                 itemsInput.typedInput("value", itemsEditor.value);

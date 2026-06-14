@@ -53,7 +53,7 @@
                 const openInput = $("#node-input-openSectionBinding");
                 openInput.typedInput({
                     default: openEditor.type,
-                    types: common.valueBindingTypes({ category: "value" })
+                    types: common.valueBindingTypes({ category: "value", currentKind: openEditor.type })
                 });
                 openInput.typedInput("type", openEditor.type);
                 openInput.typedInput("value", openEditor.value);

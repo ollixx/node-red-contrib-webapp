@@ -10,10 +10,14 @@
         // a literal `asset:<id>` and chosen via the media picker (browse/upload).
         function applyBindingTypedInput(selector, binding) {
             const input = $(selector);
-            const types = common.valueBindingTypes({ includeAsset: true });
-            input.typedInput({ default: "str", types: types });
             // An asset:<id> literal is surfaced as the dedicated Asset type.
-            if (binding && binding.kind === "literal" && typeof binding.value === "string" && binding.value.indexOf("asset:") === 0) {
+            const isAsset = binding && binding.kind === "literal" && typeof binding.value === "string" && binding.value.indexOf("asset:") === 0;
+            // P182: keep the field's current scope-local kind in the type set so an
+            // existing item/index/prop binding stays editable outside its scope.
+            const currentKind = isAsset ? "asset" : common.readValueBinding(binding, "").type;
+            const types = common.valueBindingTypes({ includeAsset: true, currentKind: currentKind });
+            input.typedInput({ default: "str", types: types });
+            if (isAsset) {
                 input.typedInput("type", "asset");
                 input.typedInput("value", binding.value.slice("asset:".length));
             }
@@ -46,7 +50,7 @@
             const editor = common.readValueBinding(binding, "");
             input.typedInput({
                 default: "str",
-                types: common.valueBindingTypes({ category: "display" })
+                types: common.valueBindingTypes({ category: "display", currentKind: editor.type })
             });
             input.typedInput("type", editor.type);
             input.typedInput("value", editor.value);

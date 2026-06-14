@@ -56,7 +56,7 @@
                 const activeInput = $("#node-input-activeStepBinding");
                 activeInput.typedInput({
                     default: activeEditor.type,
-                    types: common.valueBindingTypes({ category: "value" })
+                    types: common.valueBindingTypes({ category: "value", currentKind: activeEditor.type })
                 });
                 activeInput.typedInput("type", activeEditor.type);
                 activeInput.typedInput("value", activeEditor.value);

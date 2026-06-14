@@ -10,7 +10,7 @@
         function applyBindingTypedInput(selector, binding, _literalLabel, _pickerTitle) {
             const editor = common.readValueBinding(binding, "");
             const input = $(selector);
-            input.typedInput({ default: editor.type, types: common.valueBindingTypes() });
+            input.typedInput({ default: editor.type, types: common.valueBindingTypes({ currentKind: editor.type }) });
             input.typedInput("type", editor.type);
             input.typedInput("value", editor.value);
         }

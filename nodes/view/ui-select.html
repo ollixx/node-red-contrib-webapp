@@ -94,7 +94,7 @@
                 const labelInput = $("#node-input-labelBinding");
                 labelInput.typedInput({
                     default: labelEditor.type,
-                    types: common.valueBindingTypes({ category: "value" })
+                    types: common.valueBindingTypes({ category: "value", currentKind: labelEditor.type })
                 });
                 labelInput.typedInput("type", labelEditor.type);
                 labelInput.typedInput("value", labelEditor.value);
@@ -108,7 +108,7 @@
                 const placeholderInput = $("#node-input-placeholderBinding");
                 placeholderInput.typedInput({
                     default: placeholderEditor.type,
-                    types: common.valueBindingTypes({ category: "value" })
+                    types: common.valueBindingTypes({ category: "value", currentKind: placeholderEditor.type })
                 });
                 placeholderInput.typedInput("type", placeholderEditor.type);
                 placeholderInput.typedInput("value", placeholderEditor.value);
@@ -133,7 +133,7 @@
                 const valueInput = $("#node-input-valueBinding");
                 valueInput.typedInput({
                     default: valueEditor.type,
-                    types: common.valueBindingTypes({ category: "value" })
+                    types: common.valueBindingTypes({ category: "value", currentKind: valueEditor.type })
                 });
                 valueInput.typedInput("type", valueEditor.type);
                 valueInput.typedInput("value", valueEditor.value);

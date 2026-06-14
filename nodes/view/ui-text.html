@@ -48,7 +48,7 @@
 
                 textInput.typedInput({
                     default: binding.type,
-                    types: common.valueBindingTypes()
+                    types: common.valueBindingTypes({ currentKind: binding.type })
                 });
                 textInput.typedInput("type", binding.type);
                 textInput.typedInput("value", binding.value);

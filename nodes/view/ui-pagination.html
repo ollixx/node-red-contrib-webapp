@@ -60,7 +60,7 @@
                 const currentInput = $("#node-input-currentPageBinding");
                 currentInput.typedInput({
                     default: currentDefaultType,
-                    types: common.valueBindingTypes({ category: "value" })
+                    types: common.valueBindingTypes({ category: "value", currentKind: currentEditor.type })
                 });
                 currentInput.typedInput("type", currentEditor.type !== "str" || currentBinding ? currentEditor.type : "num");
                 currentInput.typedInput("value", currentEditor.value);
@@ -78,7 +78,7 @@
                 const totalInput = $("#node-input-totalBinding");
                 totalInput.typedInput({
                     default: totalDefaultType,
-                    types: common.valueBindingTypes({ category: "value" })
+                    types: common.valueBindingTypes({ category: "value", currentKind: totalEditor.type })
                 });
                 totalInput.typedInput("type", totalEditor.type !== "str" || totalBinding ? totalEditor.type : "num");
                 totalInput.typedInput("value", totalEditor.value);

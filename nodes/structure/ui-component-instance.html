@@ -79,7 +79,7 @@
                         const editor = common.readValueBinding(row.binding, "");
                         valueInput.typedInput({
                             default: editor.type,
-                            types: common.valueBindingTypes({ category: "value" })
+                            types: common.valueBindingTypes({ category: "value", currentKind: editor.type })
                         });
                         valueInput.typedInput("type", editor.type);
                         valueInput.typedInput("value", editor.value);
