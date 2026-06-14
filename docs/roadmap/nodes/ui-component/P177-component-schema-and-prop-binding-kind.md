@@ -17,7 +17,7 @@ verify: unit
 spec: docs/nodes/structure/ui-component.md
 tests: tests/e2e/nodes/view/ui-component.tests.md
 dependencies: []
-status: pending
+status: in_progress
 ---
 # P177 — ui-component: Schema + def:-Scope + prop-Binding-Art
 
