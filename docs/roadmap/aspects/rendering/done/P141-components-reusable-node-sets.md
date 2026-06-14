@@ -2,10 +2,16 @@
 id: P141
 title: "Konzept: Components — wiederverwendbare Knoten-Sets (Definition / Instanz)"
 epic: aspects/rendering
-status: deferred
-deferred_reason: "Großes Modellierungs-/Rendering-Feature (Definition vs. Instanz, Props, Scoping). Richtung steht (Owner 2026-06-12: Subflow-Unterbau zuerst prüfen) — der Feasibility-Spike [[P166]] geht voraus; Implementierungs-Pakete erst nach dessen Ergebnis. Verzahnt mit Repeats [[P140]] (Scope-Grundlage)."
+status: done
 dependencies: [P166]
 ---
+
+> **Aufgelöst (2026-06-14).** Der Spike [[P166]] ist abgeschlossen; die Unterbau-
+> Entscheidung ist als [ADR 0020](../../../../adr/0020-component-model-dedicated-ui-component-node.md)
+> festgeschrieben (**dedizierter `ui-component`-Knoten**, kein Subflow). Dieses
+> Konzept-Paket ist damit erledigt — die Implementierung läuft als eigene Welle
+> `nodes/ui-component` (**P177** Schema → **P178** Renderer → **P179** Node+Editor+Beweis).
+
 # P141 — Konzept: Components (geparkt — Richtung steht)
 
 ## findings (Nutzer-Wortlaut, 2026-06-11)

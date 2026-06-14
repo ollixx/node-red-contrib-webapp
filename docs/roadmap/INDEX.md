@@ -28,6 +28,9 @@ their blocker clears.
 ## Open work (pending / in_progress)
 
 - **P176** — nodes/ui-list — per-Item-Icon rendern (führendes `<sl-icon>`); `row.icon` wird vom Serializer ignoriert — *Owner-Bug 2026-06-14; renderIconHtml vorhanden, nur nicht aufgerufen* — [P176](nodes/ui-list/P176-list-item-icon-render.md)
+- **P177** — nodes/ui-component — Schema: definition/instance-Knoten + `def:`-Mount-Scope + scope-lokale Binding-Art `prop`/`prop.<name>` + Self-Ref-Validierung — *Components-Welle (ADR 0020), Schicht 1* — [P177](nodes/ui-component/P177-component-schema-and-prop-binding-kind.md)
+- **P178** — nodes/ui-component — Renderer: `expandComponent` (Definition-Subtree an Instanz-Mount), `prop.<name>`-Auflösung, nested + Self-Guard, Re-Id/Keying — *Components-Welle, Schicht 2; braucht P177* — [P178](nodes/ui-component/P178-component-renderer-expand-and-prop-scope.md)
+- **P179** — nodes/ui-component — Node-Registrierung + Editor (def-Slot, definitionId-Picker, props-Map) + Runtime-Bucketing + Browser-Beweis — *Components-Welle, Schicht 3; braucht P178* — [P179](nodes/ui-component/P179-component-node-registration-editor-and-proof.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -39,7 +42,6 @@ Reason in each package's `deferred_reason`. Picked up once the blocker clears.
 - **P105** — aspects/rendering — nicht-darstellbarer Wert: Achtung-Icon + Alert/Dialog statt nacktem `"?"` — *Stufe 2 über P104* — [P105](aspects/rendering/deferred/P105-invalid-value-warning-affordance.md)
 - **P107** — nodes/ui-app — App-weite Auth/Authz (OAuth2/OIDC) modellieren — *eigenes Epic, ADR + Owner-Entscheidung nötig* — [P107](nodes/ui-app/deferred/P107-auth-authz.md)
 - **P121** — aspects/docs — Konzept Nutzer-Doku: Wo/Wie die zwei Wege (Wire vs. Referenz) mit Beispielen dokumentieren — *Owner-Entscheidung zu Ort + Form nötig* — [P121](aspects/docs/deferred/P121-user-docs-concept-two-ways.md)
-- **P141** — aspects/rendering — Konzept: Components (Definition/Instanz) — *Richtung steht (Subflow-first); braucht Spike [[P166]]* — [P141](aspects/rendering/deferred/P141-components-reusable-node-sets.md)
 - **P143** — aspects/editor — Konzept: Enums dynamisch bindbar (Pro-Feld-typedInput mit Enum-Default statt globalem Advanced-Mode) — *ADR + Owner-Entscheidung nötig; Empfehlung steht* — [P143](aspects/editor/deferred/P143-enums-dynamic-binding-vs-advanced-mode.md)
 - **P152** — nodes/ui-empty-state — Redesign: Container mit Slot(s) + visible-Binding (statt fester icon/title/message/action-Felder) — *Vertragswechsel; ADR + Restfragen nötig; Richtung steht* — [P152](nodes/ui-empty-state/deferred/P152-empty-state-as-container-with-visible-binding.md)
 - **P162** — nodes/ui-event — Konzept: referenzbasierter lokaler Tap der App/Route-Lifecycle-Events (onEnter/onLeave) neben dem Consumer — *neuer Knoten + Vertrag; ADR-würdig (Scope/Events/Output-Form); löst Lange-Leitung aus ADR 0016* — [P162](nodes/ui-event/deferred/P162-ui-event-local-lifecycle-tap.md)
@@ -88,9 +90,9 @@ open the folder for the full history.
 | aspects/state | 8 |
 | aspects/editor | 15 |
 | schema | 5 |
-| aspects/rendering | 12 |
+| aspects/rendering | 13 |
 | aspects/foundation | 5 |
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 174 done, 1 open, 9 deferred.**
+**Total: 175 done, 4 open, 8 deferred.**
