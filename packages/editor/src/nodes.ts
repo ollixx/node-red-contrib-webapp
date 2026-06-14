@@ -46,7 +46,9 @@ import {
     type UiAvatarNodeDefinition,
     type UiDividerNodeDefinition,
     type UiLogNodeDefinition,
-    type UiRepeatNodeDefinition
+    type UiRepeatNodeDefinition,
+    type UiComponentDefinitionNodeDefinition,
+    type UiComponentInstanceNodeDefinition
 } from "@node-red-contrib-webapp/schema";
 
 export type NodeEditorType = UiNodeDefinition["type"];
@@ -94,6 +96,19 @@ export interface UiRepeatEditorConfig extends MountableEditorConfig {
     items?: BindingDefinition | unknown[];
     itemsPath?: string;
     keyField?: string;
+}
+
+// P177 (ADR 0020): minimal ui-component editor configs. The full editor UX
+// (definition-slot container, instance definitionId picker + props typedInput map)
+// lands in P179 — these entries exist so the editor package type-checks against
+// the schema's UiNodeDefinition union (same pattern as the P163 ui-repeat stub).
+export interface UiComponentDefinitionEditorConfig extends IdentifiedEditorConfig {
+    name?: string;
+}
+
+export interface UiComponentInstanceEditorConfig extends MountableEditorConfig {
+    definitionId?: string;
+    props?: Record<string, BindingDefinition>;
 }
 
 export interface UiRouteEditorConfig extends IdentifiedEditorConfig {
@@ -477,6 +492,8 @@ export type NodeEditorConfig =
     | UiTableEditorConfig
     | UiContainerEditorConfig
     | UiRepeatEditorConfig
+    | UiComponentDefinitionEditorConfig
+    | UiComponentInstanceEditorConfig
     | UiInputEditorConfig
     | UiSelectEditorConfig
     | UiCheckboxEditorConfig
@@ -518,6 +535,8 @@ export type NodeEditorDefinition =
     | BaseEditorNodeDefinition<UiTableEditorConfig, UiTableNodeDefinition>
     | BaseEditorNodeDefinition<UiContainerEditorConfig, UiContainerNodeDefinition>
     | BaseEditorNodeDefinition<UiRepeatEditorConfig, UiRepeatNodeDefinition>
+    | BaseEditorNodeDefinition<UiComponentDefinitionEditorConfig, UiComponentDefinitionNodeDefinition>
+    | BaseEditorNodeDefinition<UiComponentInstanceEditorConfig, UiComponentInstanceNodeDefinition>
     | BaseEditorNodeDefinition<UiInputEditorConfig, UiInputNodeDefinition>
     | BaseEditorNodeDefinition<UiSelectEditorConfig, UiSelectNodeDefinition>
     | BaseEditorNodeDefinition<UiCheckboxEditorConfig, UiCheckboxNodeDefinition>
@@ -1047,6 +1066,37 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         mount: config.mount ?? "",
         items: repeatItemsFromConfig(config),
         ...(config.keyField ? { keyField: config.keyField } : {}),
+        ...collectLayoutChildConfig(config)
+    })),
+    // P177 (ADR 0020): minimal ui-component-definition registration. The full
+    // editor UX (default-slot container in the mount-tree) lands in P179 — this
+    // entry exists so the editor type-checks against the schema's node union.
+    "ui-component-definition": createDefinition("ui-component-definition", "structure", {
+        id: requiredString("Component definition IDs are required before deploy.")
+    }, (config: UiComponentDefinitionEditorConfig): UiComponentDefinitionNodeDefinition => ({
+        type: "ui-component-definition",
+        id: config.id ?? "",
+        ...(config.name ? { name: config.name } : {})
+    })),
+    // P177 (ADR 0020): minimal ui-component-instance registration. The full editor
+    // UX (definitionId picker + props typedInput map) lands in P179.
+    "ui-component-instance": createDefinition("ui-component-instance", "structure", {
+        id: requiredString("Component instance IDs are required before deploy."),
+        mount: requiredString("Component instances must declare a mount target."),
+        definitionId: requiredString("Component instances must reference a component definition."),
+        order: optionalInteger("Component instance order must be an integer."),
+        row: optionalInteger("Component instance grid rows must be integers."),
+        col: optionalInteger("Component instance grid columns must be integers."),
+        colSize: optionalInteger("Component instance grid column spans must be integers."),
+        rowSize: optionalInteger("Component instance grid row spans must be integers."),
+        layoutX: optionalInteger("Component instance absolute x coordinates must be integers."),
+        layoutY: optionalInteger("Component instance absolute y coordinates must be integers.")
+    }, (config: UiComponentInstanceEditorConfig): UiComponentInstanceNodeDefinition => ({
+        type: "ui-component-instance",
+        id: config.id ?? "",
+        mount: config.mount ?? "",
+        definitionId: config.definitionId ?? "",
+        props: config.props ?? {},
         ...collectLayoutChildConfig(config)
     })),
     "ui-input": createDefinition("ui-input", "view", {

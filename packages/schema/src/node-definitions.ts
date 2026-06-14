@@ -224,6 +224,229 @@ export const uiRepeatNodeDefinitionSchema = mountableNodeSchema.extend({
 
 export type UiRepeatNodeDefinition = z.infer<typeof uiRepeatNodeDefinitionSchema>;
 
+// ── P177 (ADR 0020): the `ui-component` definition / instance node pair ───────
+//
+// A **Component** is a named, parametrised, reusable set of `ui-*` nodes —
+// authored once as a `ui-component-definition` and used many times as a
+// `ui-component-instance` with props. This is the schema layer only: the two node
+// definitions, the `def:` mount scope (validation.ts), the `prop`/`prop.<name>`
+// scope-local binding kind (contracts.ts), and a self-reference validation rule.
+// The render-time expansion (`expandComponent`) is P178; the node registration +
+// editor + browser proof is P179. Reuses the ADR 0017 render-time-scope machinery.
+
+// The component DEFINITION is a CONTAINER-kind node (children allowed), registered
+// analogously to `ui-container`/`ui-repeat`. Its children mount into a fixed
+// default slot `content` via the new `def:` scope — `def:<componentId>/content`.
+// Unlike a normal container it is **off-canvas**: it carries no required outer
+// mount (it never renders on its own — it exists only to be expanded by instances)
+// and no `layout`/`variant` chrome. The node's own id IS its `componentId`.
+export const COMPONENT_DEF_SLOT = "content";
+
+export const uiComponentDefinitionNodeDefinitionSchema = identifiedNodeSchema.extend({
+    type: z.literal("ui-component-definition"),
+    // Off-canvas: no required outer mount/parent (the definition never renders on
+    // its own). An optional display name for the editor/structure sidebar.
+    name: z.string().min(1, "A component definition name must not be empty when set.").optional()
+});
+
+export type UiComponentDefinitionNodeDefinition = z.infer<typeof uiComponentDefinitionNodeDefinitionSchema>;
+
+// The component INSTANCE is a LEAF-shaped node (no children of its own). It carries
+// a required outer `mount`/`parent` into a real route/container (like any mounted
+// node), a required `definitionId` referencing a `ui-component-definition`, and a
+// `props` map (name → value-binding, any binding kind; optional/empty allowed).
+// The renderer (P178) resolves each prop into a `propScope` frame and renders the
+// `def:<definitionId>/content` subtree against it.
+export const uiComponentInstanceNodeDefinitionSchema = mountableNodeSchema.extend({
+    type: z.literal("ui-component-instance"),
+    // REQUIRED reference to a `ui-component-definition` node id. Existence /
+    // self-reference checks happen in `validateComponentAcyclic` and the runtime,
+    // not in this per-node form check.
+    definitionId: z.string().min(1, "A component instance must reference a definitionId."),
+    // Named prop values: each is an ordinary value-binding (any binding kind).
+    // Optional and may be empty. Resolution → `propScope` is P178.
+    props: z.record(z.string(), bindingSchema).default({})
+});
+
+export type UiComponentInstanceNodeDefinition = z.infer<typeof uiComponentInstanceNodeDefinitionSchema>;
+
+/**
+ * P177 (ADR 0020): self-reference validation as a PURE function. A component
+ * definition that instantiates itself — directly (an instance in its own subtree
+ * references it back) or transitively (through a chain of definitions) — would
+ * make `expandComponent` recurse forever. This walks the definition→instance graph
+ * and rejects any cycle with a clear, path-bearing error message. An acyclic
+ * definition→instance graph is valid.
+ *
+ * The graph is reconstructed purely from the node set: an instance's enclosing
+ * definition is found by walking its `mount`/`parent` chain up to a
+ * `ui-component-definition`; a `def:<id>/…` mount names the enclosing definition
+ * directly. An instance whose enclosing definition cannot be determined (it lives
+ * on a real route/container, the normal case) contributes no edge — only
+ * definition-to-definition edges can form a cycle.
+ */
+export interface ComponentAcyclicResult {
+    success: boolean;
+    error?: string;
+}
+
+interface ComponentGraphNode {
+    mount?: string;
+    parent?: string;
+    type?: string;
+    id?: string;
+    definitionId?: string;
+}
+
+// Extract the enclosing-definition id from a single mount/parent string, if that
+// string addresses a component-definition subtree (`def:<id>/<slot>`). Returns
+// undefined otherwise.
+function definitionTargetOfReference(reference: string | undefined): string | undefined {
+    if (!reference) {
+        return undefined;
+    }
+
+    const trimmed = reference.trim();
+    const scopeMatch = /^def:(.*)$/.exec(trimmed);
+
+    if (scopeMatch) {
+        // `def:<id>/<slot>` — the target id is the first `/`-segment.
+        const [target] = scopeMatch[1].split("/").filter(Boolean);
+        return target || undefined;
+    }
+
+    return undefined;
+}
+
+export function validateComponentAcyclic(nodes: unknown[]): ComponentAcyclicResult {
+    const graphNodes = nodes.filter(
+        (node): node is ComponentGraphNode => node != null && typeof node === "object"
+    );
+
+    const byId = new Map<string, ComponentGraphNode>();
+    for (const node of graphNodes) {
+        if (typeof node.id === "string") {
+            byId.set(node.id, node);
+        }
+    }
+
+    const definitionIds = new Set<string>(
+        graphNodes
+            .filter((node) => node.type === "ui-component-definition" && typeof node.id === "string")
+            .map((node) => node.id as string)
+    );
+
+    // Resolve the enclosing component-definition id for a node by walking its
+    // mount/parent chain upward until a `def:` reference (or a parent pointing at a
+    // definition node) is found. Bounded by the node count to avoid runaway loops
+    // on a malformed (cyclic) mount chain.
+    function enclosingDefinitionId(start: ComponentGraphNode): string | undefined {
+        let current: ComponentGraphNode | undefined = start;
+        let hops = 0;
+
+        while (current && hops <= graphNodes.length) {
+            const fromMount = definitionTargetOfReference(current.mount);
+            if (fromMount) {
+                return fromMount;
+            }
+
+            const parentRef = current.parent;
+            if (!parentRef) {
+                return undefined;
+            }
+
+            const fromDefParent = definitionTargetOfReference(parentRef);
+            if (fromDefParent) {
+                return fromDefParent;
+            }
+
+            const parentNode = byId.get(parentRef);
+            if (!parentNode) {
+                return undefined;
+            }
+
+            if (parentNode.type === "ui-component-definition") {
+                return parentNode.id;
+            }
+
+            current = parentNode;
+            hops += 1;
+        }
+
+        return undefined;
+    }
+
+    // Build definition→definition edges: an instance inside definition D that
+    // references definition T contributes an edge D → T.
+    const edges = new Map<string, Set<string>>();
+    for (const definitionId of definitionIds) {
+        edges.set(definitionId, new Set());
+    }
+
+    for (const node of graphNodes) {
+        if (node.type !== "ui-component-instance" || typeof node.definitionId !== "string") {
+            continue;
+        }
+
+        const host = enclosingDefinitionId(node);
+        if (host && definitionIds.has(host)) {
+            const target = node.definitionId;
+
+            if (host === target) {
+                return {
+                    success: false,
+                    error: `Component definition '${host}' instantiates itself (instance '${node.id ?? "?"}') — a component may not be self-referential.`
+                };
+            }
+
+            edges.get(host)?.add(target);
+        }
+    }
+
+    // Depth-first cycle detection over the definition→definition edges.
+    const VISITING = 1;
+    const DONE = 2;
+    const state = new Map<string, number>();
+
+    function findCycle(definitionId: string, stack: string[]): string[] | undefined {
+        state.set(definitionId, VISITING);
+        stack.push(definitionId);
+
+        for (const next of edges.get(definitionId) ?? []) {
+            const nextState = state.get(next);
+
+            if (nextState === VISITING) {
+                return [...stack.slice(stack.indexOf(next)), next];
+            }
+
+            if (nextState === undefined && definitionIds.has(next)) {
+                const found = findCycle(next, stack);
+                if (found) {
+                    return found;
+                }
+            }
+        }
+
+        stack.pop();
+        state.set(definitionId, DONE);
+        return undefined;
+    }
+
+    for (const definitionId of definitionIds) {
+        if (state.get(definitionId) === undefined) {
+            const cycle = findCycle(definitionId, []);
+            if (cycle) {
+                return {
+                    success: false,
+                    error: `Component definitions form an instantiation cycle: ${cycle.join(" → ")}. A component may not instantiate itself directly or transitively.`
+                };
+            }
+        }
+    }
+
+    return { success: true };
+}
+
 export const uiRouteNodeDefinitionSchema = identifiedNodeSchema.extend({
     type: z.literal("ui-route"),
     parent: identifierSchema.optional(),
@@ -1426,6 +1649,8 @@ export const uiNodeDefinitionSchema = z.union([
     uiRouteNodeDefinitionSchema,
     uiContainerNodeDefinitionSchema,
     uiRepeatNodeDefinitionSchema,
+    uiComponentDefinitionNodeDefinitionSchema,
+    uiComponentInstanceNodeDefinitionSchema,
     uiTextNodeDefinitionSchema,
     uiButtonNodeDefinitionSchema,
     uiTableNodeDefinitionSchema,
@@ -1469,6 +1694,8 @@ const uiNodeSchemaByType: Record<string, z.ZodTypeAny> = {
     "ui-route": uiRouteNodeDefinitionSchema,
     "ui-container": uiContainerNodeDefinitionSchema,
     "ui-repeat": uiRepeatNodeDefinitionSchema,
+    "ui-component-definition": uiComponentDefinitionNodeDefinitionSchema,
+    "ui-component-instance": uiComponentInstanceNodeDefinitionSchema,
     "ui-text": uiTextNodeDefinitionSchema,
     "ui-button": uiButtonNodeDefinitionSchema,
     "ui-table": uiTableNodeDefinitionSchema,

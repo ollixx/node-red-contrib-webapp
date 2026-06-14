@@ -126,6 +126,10 @@ export {
     uiRadioNodeDefinitionSchema,
     uiRepeatNodeDefinitionSchema,
     REPEAT_SLOT,
+    uiComponentDefinitionNodeDefinitionSchema,
+    uiComponentInstanceNodeDefinitionSchema,
+    COMPONENT_DEF_SLOT,
+    validateComponentAcyclic,
     uiRouteNodeDefinitionSchema,
     uiSelectNodeDefinitionSchema,
     uiSkeletonNodeDefinitionSchema,
@@ -190,6 +194,9 @@ export type {
     UiQueryNodeDefinition,
     UiRadioNodeDefinition,
     UiRepeatNodeDefinition,
+    UiComponentDefinitionNodeDefinition,
+    UiComponentInstanceNodeDefinition,
+    ComponentAcyclicResult,
     UiRouteNodeDefinition,
     UiSelectNodeDefinition,
     SelectOption,
@@ -246,5 +253,7 @@ export {
     storeSubPathBindingFixture,
     itemBindingFixture,
     indexBindingFixture,
-    minimalRepeatNodeSetFixture
+    minimalRepeatNodeSetFixture,
+    propBindingFixture,
+    minimalComponentNodeSetFixture
 } from "./fixtures";

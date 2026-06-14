@@ -565,6 +565,60 @@ export const minimalRepeatNodeSetFixture: UiNodeDefinition[] = [
     }
 ];
 
+/**
+ * P177 (ADR 0020) — the scope-local `prop.<path>` binding a component-definition
+ * child uses to read one of the instance's props. The `path` carries only the
+ * field tail (`title`), never a `prop.` prefix (that is the `kind`). Resolution
+ * against the render-time `propScope` happens in the renderer (P178).
+ */
+export const propBindingFixture: BindingDefinition = {
+    kind: "prop",
+    path: "title"
+};
+
+/**
+ * P177 (ADR 0020) — a minimal component pair: a `ui-component-definition` (off-
+ * canvas, no outer mount) with one `ui-text` child mounted into its `def:` slot
+ * that binds to `prop.title`; plus a `ui-component-instance` mounted into a real
+ * route that supplies `props = { title: "A" }`. This is the reference shape the
+ * renderer (P178) and editor (P179) reuse. The definition→instance graph here is
+ * acyclic, so `validateComponentAcyclic` accepts it.
+ */
+export const minimalComponentNodeSetFixture: UiNodeDefinition[] = [
+    {
+        type: "ui-app",
+        id: "componentApp",
+        name: "Component demo",
+        root: "componentApp",
+        layout: "vertical"
+    },
+    {
+        // Off-canvas definition — no outer mount; its id IS the componentId.
+        type: "ui-component-definition",
+        id: "greetingCard",
+        name: "Greeting card"
+    },
+    {
+        // The definition's child mounts into `def:<componentId>/content`.
+        type: "ui-text",
+        id: "greetingText",
+        mount: "def:greetingCard/content",
+        order: 0,
+        value: propBindingFixture
+    },
+    {
+        // A leaf instance mounted into a real route/container, with props.
+        type: "ui-component-instance",
+        id: "greetingInstance",
+        mount: "componentApp.content",
+        order: 0,
+        definitionId: "greetingCard",
+        props: {
+            title: { kind: "literal", value: "A" }
+        }
+    }
+];
+
 export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
     {
         type: "ui-app",

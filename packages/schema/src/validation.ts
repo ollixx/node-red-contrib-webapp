@@ -8,7 +8,12 @@ import {
     type RouteDefinition
 } from "./contracts";
 
-export type MountScope = "route" | "dialog" | "layout" | "named";
+// P177 (ADR 0020): `def` joins the mount-grammar scopes — `def:<componentId>/<slot>`
+// addresses a `ui-component-definition`'s off-canvas subtree, a sibling of
+// `route:`/`dialog:`/`layout:`. It parses/serialises losslessly here; the renderer
+// (P178) resolves it against the definition graph, so it does NOT participate in
+// the AppModel-side `resolveNamedMount` (those targets are route/dialog/layout).
+export type MountScope = "route" | "dialog" | "layout" | "def" | "named";
 
 interface ParsedMountReferenceBase {
     raw: string;
@@ -21,7 +26,7 @@ export interface ParsedRouteMountReference extends ParsedMountReferenceBase {
 }
 
 export interface ParsedNamedMountReference extends ParsedMountReferenceBase {
-    scope: "dialog" | "layout" | "named";
+    scope: "dialog" | "layout" | "def" | "named";
     target: string;
     regionPath: string[];
 }
@@ -74,7 +79,7 @@ function splitNamedMountReference(rawMount: string): Result<ParsedNamedMountRefe
     };
 }
 
-function splitScopedMountReference(scope: "dialog" | "layout", rawTarget: string, rawMount: string): Result<ParsedNamedMountReference> {
+function splitScopedMountReference(scope: "dialog" | "layout" | "def", rawTarget: string, rawMount: string): Result<ParsedNamedMountReference> {
     const [target, ...regionPath] = rawTarget.split("/").filter(Boolean);
 
     if (!target) {
@@ -147,13 +152,15 @@ export function parseMountReference(rawMount: string): Result<ParsedMountReferen
         };
     }
 
-    if (scope === "dialog" || scope === "layout") {
+    if (scope === "dialog" || scope === "layout" || scope === "def") {
+        // P177 (ADR 0020): `def:<componentId>/<slot>` parses like dialog/layout
+        // (`<target>/<region…>`). Resolution against the definition graph is P178.
         return splitScopedMountReference(scope, rawTarget, trimmedMount);
     }
 
     return {
         success: false,
-        error: `Unsupported mount scope '${scope}'. Supported scopes are route, dialog, and layout.`
+        error: `Unsupported mount scope '${scope}'. Supported scopes are route, dialog, layout, and def.`
     };
 }
 
@@ -206,6 +213,17 @@ function resolveRouteMount(parsedMount: ParsedRouteMountReference, routes: Route
 }
 
 function resolveNamedMount(parsedMount: ParsedNamedMountReference, appModel: AppModel): Result<MountResolution> {
+    // P177 (ADR 0020): `def:` mounts address a component definition's off-canvas
+    // subtree, not an AppModel route/dialog/layout. Their grammar parses here, but
+    // the renderer (P178, `expandComponent`) resolves them against the definition
+    // graph — the AppModel-side resolver never anchors them into a real region.
+    if (parsedMount.scope === "def") {
+        return {
+            success: false,
+            error: `Component-definition mount '${parsedMount.raw}' is resolved at render time by expandComponent, not against the AppModel.`
+        };
+    }
+
     if (parsedMount.scope === "dialog") {
         const dialog = appModel.dialogs.find((candidate) => candidate.id === parsedMount.target);
 

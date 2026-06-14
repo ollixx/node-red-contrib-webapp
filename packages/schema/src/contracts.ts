@@ -47,10 +47,16 @@ export const DYNAMIC_BINDING_KINDS = ["state", "query", "routeParam", "msg", "fl
  *  - `item`  → the whole current element; an optional `path` selects a one- OR
  *              multi-level field of the element (e.g. `address.city`).
  *  - `index` → the zero-based position of the current element. Path-free.
+ *  - `prop`  → P177 (ADR 0020): the value of a `ui-component-instance` prop, read
+ *              inside the component's `def:` subtree. `prop` alone is the whole
+ *              prop value; an optional `path` selects a one- OR multi-level field
+ *              (`prop.<name>`), exactly mirroring `item.<path>`. It resolves at
+ *              render time against the instance's `propScope` frame (P178); outside
+ *              any instance it resolves to `undefined`, mirroring `item` today.
  */
-export const SCOPE_LOCAL_BINDING_KINDS = ["item", "index"] as const;
+export const SCOPE_LOCAL_BINDING_KINDS = ["item", "index", "prop"] as const;
 
-const BINDING_KINDS = ["state", "query", "routeParam", "literal", "msg", "flow", "global", "jsonata", "env", "store", "reactive", "item", "index"] as const;
+const BINDING_KINDS = ["state", "query", "routeParam", "literal", "msg", "flow", "global", "jsonata", "env", "store", "reactive", "item", "index", "prop"] as const;
 
 /**
  * P163: validates the FIELD-PATH form of an `item.<path>` binding — a dotted path
@@ -118,6 +124,22 @@ function refineBindingKindShape(
             context.addIssue({
                 code: z.ZodIssueCode.custom,
                 message: "An 'item' binding path must be a dotted field path (e.g. 'name' or 'address.city')."
+            });
+        }
+
+        return;
+    }
+
+    // P177 (ADR 0020): scope-local `prop` binding — the exact sibling of `item`.
+    // `prop` alone is the whole prop value; an optional `path` selects a one- OR
+    // multi-level field (`prop.<name>` / `prop.address.city`). The `prop.` prefix
+    // is the KIND, not part of `path`. FORM only — the renderer resolves it against
+    // the instance's render-time `propScope` (P178), not here.
+    if (binding.kind === "prop") {
+        if (binding.path !== undefined && !ITEM_PATH_PATTERN.test(binding.path)) {
+            context.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "A 'prop' binding path must be a dotted field path (e.g. 'title' or 'address.city')."
             });
         }
 
