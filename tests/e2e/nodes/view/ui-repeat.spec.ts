@@ -77,3 +77,42 @@ test.describe("ui-repeat template render (P165)", () => {
         await expect(page.locator('.webapp-text')).toHaveText(["A", "B", "C"]);
     });
 });
+
+/**
+ * P184 — scope-local bindings with an EMPTY path: a repeat over a STRING array.
+ *
+ * The fixture binds a `ui-text` to the whole `item` ({kind:'item'}, no path) and
+ * a sibling `ui-text` to `index` ({kind:'index'}, no path). Both are the
+ * legitimate "whole element / bare position" cases that older builds serialised
+ * as `path:''`. The repeat clones BOTH children once per element, so a
+ * `["alpha","beta","gamma"]` store renders the interleaved sequence
+ * `alpha,0, beta,1, gamma,2` — proving the whole string element and its
+ * zero-based index resolve end-to-end with no validation error.
+ */
+test.describe("ui-repeat over a string array — whole-item + index (P184)", () => {
+    test.beforeAll(async ({ request }) => {
+        const flow = await loadFlowFixture("tests/e2e/fixtures/ui-repeat-primitive.flow.json");
+        const response = await request.post("/flows", { data: flow });
+        expect(response.ok()).toBeTruthy();
+    });
+
+    test.afterAll(async ({ request }) => {
+        const baseline = await loadFlowFixture("examples/customers-crud/flow.json");
+        await request.post("/flows", { data: baseline });
+    });
+
+    test("each string element renders verbatim alongside its zero-based index", async ({ page }) => {
+        await page.goto("/webapp/repeatPrimApp/");
+
+        // Whole-`item` renders the string element; `index` renders the position.
+        // The two children are cloned per element in mount order → interleaved.
+        await expect(page.locator(".webapp-text")).toHaveText([
+            "alpha",
+            "0",
+            "beta",
+            "1",
+            "gamma",
+            "2"
+        ]);
+    });
+});

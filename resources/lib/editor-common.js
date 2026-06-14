@@ -4083,6 +4083,17 @@
             return storeBinding;
         }
 
+        // P184: scope-local kinds (`item`/`index`/`prop`) treat an EMPTY path as
+        // the legitimate "whole element / bare index" case — store them WITHOUT a
+        // `path` key (an empty string is not serialised). `index` is always
+        // path-free; whole-`item` / whole-`prop` bind the entire value. A
+        // non-empty path (e.g. `item.name`) is stored as before. Data-binding
+        // kinds keep their `path` (even empty, which the schema rejects — as it
+        // should) so their requirement stays enforced.
+        if (raw.length === 0 && (type === "item" || type === "index" || type === "prop")) {
+            return { kind: type };
+        }
+
         return { kind: type, path: raw };
     }
 

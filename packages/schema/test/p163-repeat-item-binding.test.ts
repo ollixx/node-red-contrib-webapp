@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
     bindingSchema,
+    leafBindingSchema,
     SCOPE_LOCAL_BINDING_KINDS,
     uiRepeatNodeDefinitionSchema,
     REPEAT_SLOT,
@@ -130,6 +131,58 @@ describe("P163 (ADR 0017): scope-local binding kinds item / index", () => {
     it("rejects a binding with an UNKNOWN kind (negative test)", () => {
         const result = bindingSchema.safeParse({ kind: "scope", path: "name" });
         expect(result.success).toBe(false);
+    });
+});
+
+describe("P184: scope-local bindings tolerate an EMPTY path (whole-item / bare-index)", () => {
+    // The whole-`item` case: a primitive/string element bound in its entirety.
+    // The editor (older builds) and a re-save can persist this as `path:''`; the
+    // schema must treat an empty path identically to "no path" for the scope-local
+    // kinds — without loosening the data-binding kinds.
+
+    it("accepts a whole-`item` binding serialised WITH an empty path (path:'')", () => {
+        const result = bindingSchema.safeParse({ kind: "item", path: "" });
+        expect(result.success).toBe(true);
+    });
+
+    it("accepts an `index` binding serialised WITH an empty path (path:'')", () => {
+        const result = bindingSchema.safeParse({ kind: "index", path: "" });
+        expect(result.success).toBe(true);
+    });
+
+    it("accepts a whole-`prop` binding serialised WITH an empty path (path:'')", () => {
+        const result = bindingSchema.safeParse({ kind: "prop", path: "" });
+        expect(result.success).toBe(true);
+    });
+
+    it("still accepts the path-free forms ({kind} only) for item / index / prop", () => {
+        expect(bindingSchema.safeParse({ kind: "item" }).success).toBe(true);
+        expect(bindingSchema.safeParse({ kind: "index" }).success).toBe(true);
+        expect(bindingSchema.safeParse({ kind: "prop" }).success).toBe(true);
+    });
+
+    it("an empty-path scope-local binding parses without error inside leafBindingSchema too", () => {
+        expect(leafBindingSchema.safeParse({ kind: "item", path: "" }).success).toBe(true);
+        expect(leafBindingSchema.safeParse({ kind: "index", path: "" }).success).toBe(true);
+        expect(leafBindingSchema.safeParse({ kind: "prop", path: "" }).success).toBe(true);
+    });
+
+    // ── negatives that must STAY red ──────────────────────────────────────────
+
+    it("still REJECTS an `index` binding that carries a real (non-empty) path", () => {
+        expect(bindingSchema.safeParse({ kind: "index", path: "name" }).success).toBe(false);
+    });
+
+    it("still REJECTS an `item` path that breaks the dotted-field pattern", () => {
+        expect(bindingSchema.safeParse({ kind: "item", path: ".name" }).success).toBe(false);
+        expect(bindingSchema.safeParse({ kind: "item", path: "address..city" }).success).toBe(false);
+    });
+
+    it("does NOT loosen data-binding kinds: an empty path is still invalid for state/query", () => {
+        // The empty-path tolerance is scoped to item/index/prop ONLY. A data kind
+        // with `path:''` must remain rejected ("require a path").
+        expect(bindingSchema.safeParse({ kind: "state", path: "" }).success).toBe(false);
+        expect(bindingSchema.safeParse({ kind: "query", path: "" }).success).toBe(false);
     });
 });
 

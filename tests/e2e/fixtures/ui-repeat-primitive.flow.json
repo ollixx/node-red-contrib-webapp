@@ -1,0 +1,77 @@
+[
+  {
+    "type": "tab",
+    "id": "repeatprimflow",
+    "label": "Repeat Primitive"
+  },
+  {
+    "type": "ui-app",
+    "id": "repeatPrimApp",
+    "name": "Repeat Primitive App",
+    "root": "repeatPrimApp",
+    "layout": "app",
+    "title": "Repeat Primitive",
+    "z": "repeatprimflow",
+    "wires": [],
+    "x": 200,
+    "y": 120
+  },
+  {
+    "type": "ui-store",
+    "id": "wordsStore",
+    "name": "Words",
+    "parent": "repeatPrimApp",
+    "statePath": "words",
+    "initialValue": "[\"alpha\",\"beta\",\"gamma\"]",
+    "z": "repeatprimflow",
+    "wires": [],
+    "x": 200,
+    "y": 180
+  },
+  {
+    "type": "ui-repeat",
+    "id": "wordsRepeat",
+    "name": "Words Repeat",
+    "parent": "repeatPrimApp",
+    "mount": "repeatPrimApp.content",
+    "order": 0,
+    "items": {
+      "kind": "store",
+      "path": "wordsStore"
+    },
+    "z": "repeatprimflow",
+    "wires": [],
+    "x": 200,
+    "y": 240
+  },
+  {
+    "type": "ui-text",
+    "id": "wholeWord",
+    "name": "Whole word",
+    "parent": "wordsRepeat",
+    "mount": "container:wordsRepeat/content",
+    "order": 0,
+    "value": {
+      "kind": "item"
+    },
+    "z": "repeatprimflow",
+    "wires": [],
+    "x": 200,
+    "y": 300
+  },
+  {
+    "type": "ui-text",
+    "id": "wordIndex",
+    "name": "Word index",
+    "parent": "wordsRepeat",
+    "mount": "container:wordsRepeat/content",
+    "order": 1,
+    "value": {
+      "kind": "index"
+    },
+    "z": "repeatprimflow",
+    "wires": [],
+    "x": 200,
+    "y": 360
+  }
+]
