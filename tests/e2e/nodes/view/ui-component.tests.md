@@ -20,5 +20,20 @@
 - **self-guard (no hang)**: a definition that instantiates itself directly terminates (one level, then cut); a transitive A→B→A self-reference terminates (`["a","b"]`, then cut) — no infinite expansion.
 - **reactive prop**: a prop bound to `state` re-resolves on the next render after `replaceState` (`"First"` → `"Second"`); a dangling `definitionId` renders nothing (no crash).
 
-## P179 — node + editor + browser proof (browser)
-- _to add:_ both node types registered + bucketed; definition is a container with a default slot in the mount-tree; instance `definitionId` picker + props map; missing-definition / self-ref deploy error; end-to-end: a definition with two `ui-text` children (`prop.title`/`prop.body`) + two instances with different props render their own values; prop store-binding updates live; inner-node event carries the instance identity.
+## P179 — node + editor + runtime bucketing (unit) — `packages/runtime/test/p179-component-node-render.test.ts`
+- **registration**: `runtimeNodeRegistry` has `ui-component-definition` and `ui-component-instance`.
+- **bucketing**: `getDefinitionBuckets` buckets the definition, its two `ui-text` children, and both instances into the app (children bucket by their real `.z` like any ui-node).
+- **render**: a definition with two `ui-text` children (`prop.title`/`prop.body`) + two instances at different route mounts with different props render each instance's two lines with its own values; the other instance's values do not bleed across routes.
+- **identity**: inner nodes are re-id'd `<instanceId>#<innerNodeId>` (`inst1#tTitle`, `inst2#tBody`); an inner `ui-button`'s rendered id IS its event sourceId (`c1#btn`).
+- **off-canvas**: the definition never renders on its own (no `def:` leakage in the page body).
+- **store-bound prop**: a prop bound to a store (`state` path) resolves the store value into the instance (`Hello-from-store`).
+- **dangling**: a missing/unknown `definitionId` renders nothing for that instance (no crash, 200).
+
+## P179 — editor (unit) — `packages/editor/test/p113-value-binding-types.test.ts`
+- the canonical value-binding type set gains a scope-local **`prop`** kind at the tail (after `item`/`index`); `prop` is NOT offered in the boolean/url categories.
+
+## P179 — browser proof (e2e) — `tests/e2e/nodes/view/ui-component.spec.ts`
+- **two instances, instance-specific values**: a `ui-component-definition` with two `ui-text` children (`prop.title`/`prop.body`) + a `ui-button` child; two instances at the same app slot with different props render `inst1#cardTitle`="Alpha" / `inst1#cardBody`="First-live" and `inst2#cardTitle`="Beta" / `inst2#cardBody`="Second".
+- **instance identity**: both inner button clones exist as `inst1#cardCta` / `inst2#cardCta` (the click sourceId); the bare definition ids (`cardTitle`/`cardBody`) never render.
+- **live store-bound prop**: clicking "Update body" replaces `card.body`; only inst1 (store-bound body) updates live to "First-updated"; inst2's literal body ("Second") and inst1's literal title ("Alpha") are untouched.
+- **editor (manual / mount-tree)**: the definition appears in the mount picker under "Komponenten" with a `content` slot (children mount via `def:<id>/content`); the instance's `definitionId` button-picker lists `ui-component-definition` nodes; the props editableList persists name→value-binding pairs; a missing `definitionId` blocks deploy (required-field validation), and `validateComponentAcyclic` surfaces a self-reference as a deploy error.

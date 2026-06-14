@@ -1,0 +1,139 @@
+[
+  {
+    "type": "tab",
+    "id": "componentflow",
+    "label": "Component"
+  },
+  {
+    "type": "ui-app",
+    "id": "componentsApp",
+    "name": "Components App",
+    "root": "componentsApp",
+    "layout": "app",
+    "title": "Components",
+    "z": "componentflow",
+    "wires": [],
+    "x": 200,
+    "y": 120
+  },
+  {
+    "type": "ui-store",
+    "id": "cardStore",
+    "name": "Card store",
+    "parent": "componentsApp",
+    "statePath": "card",
+    "initialValue": "{\"body\":\"First-live\"}",
+    "z": "componentflow",
+    "wires": [],
+    "x": 200,
+    "y": 180
+  },
+  {
+    "type": "ui-component-definition",
+    "id": "cardDef",
+    "name": "Card",
+    "z": "componentflow",
+    "wires": [],
+    "x": 200,
+    "y": 240
+  },
+  {
+    "type": "ui-text",
+    "id": "cardTitle",
+    "name": "Card title",
+    "mount": "def:cardDef/content",
+    "order": 0,
+    "value": { "kind": "prop", "path": "title" },
+    "z": "componentflow",
+    "wires": [],
+    "x": 200,
+    "y": 300
+  },
+  {
+    "type": "ui-text",
+    "id": "cardBody",
+    "name": "Card body",
+    "mount": "def:cardDef/content",
+    "order": 1,
+    "value": { "kind": "prop", "path": "body" },
+    "z": "componentflow",
+    "wires": [],
+    "x": 200,
+    "y": 360
+  },
+  {
+    "type": "ui-button",
+    "id": "cardCta",
+    "name": "Card cta",
+    "mount": "def:cardDef/content",
+    "order": 2,
+    "label": "Open",
+    "z": "componentflow",
+    "wires": [["cardEventSink"]],
+    "x": 200,
+    "y": 420
+  },
+  {
+    "type": "ui-component-instance",
+    "id": "inst1",
+    "name": "Instance 1",
+    "parent": "componentsApp",
+    "mount": "componentsApp.content",
+    "order": 0,
+    "definitionId": "cardDef",
+    "props": "{\"title\":{\"kind\":\"literal\",\"value\":\"Alpha\"},\"body\":{\"kind\":\"state\",\"path\":\"card.body\"}}",
+    "z": "componentflow",
+    "wires": [],
+    "x": 200,
+    "y": 480
+  },
+  {
+    "type": "ui-component-instance",
+    "id": "inst2",
+    "name": "Instance 2",
+    "parent": "componentsApp",
+    "mount": "componentsApp.content",
+    "order": 1,
+    "definitionId": "cardDef",
+    "props": "{\"title\":{\"kind\":\"literal\",\"value\":\"Beta\"},\"body\":{\"kind\":\"literal\",\"value\":\"Second\"}}",
+    "z": "componentflow",
+    "wires": [],
+    "x": 200,
+    "y": 540
+  },
+  {
+    "type": "ui-button",
+    "id": "updateBodyButton",
+    "name": "Update body",
+    "parent": "componentsApp",
+    "mount": "componentsApp.content",
+    "order": 2,
+    "label": "Update body",
+    "z": "componentflow",
+    "wires": [["toStoreFn"]],
+    "x": 200,
+    "y": 600
+  },
+  {
+    "type": "function",
+    "id": "toStoreFn",
+    "name": "Build store update",
+    "func": "msg.ui = { store: { id: 'cardStore', op: 'replace', value: { body: 'First-updated' } } };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "z": "componentflow",
+    "wires": [["cardStore"]],
+    "x": 400,
+    "y": 600
+  },
+  {
+    "type": "debug",
+    "id": "cardEventSink",
+    "name": "Card event sink",
+    "active": true,
+    "z": "componentflow",
+    "wires": [],
+    "x": 400,
+    "y": 420
+  }
+]

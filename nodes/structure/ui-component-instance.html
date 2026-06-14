@@ -1,0 +1,167 @@
+<script type="text/javascript" src="resources/node-red-contrib-webapp/lib/editor-common.js"></script>
+<script type="text/javascript">
+    (function () {
+        const common = window.WebappEditorCommon;
+        // P179 (ADR 0020): ui-component-instance is a LEAF-shaped node. It carries a
+        // real outer `mount`, a `definitionId` (reference picker over
+        // ui-component-definition nodes — the P114/P60 picker pattern), and a `props`
+        // map (name → value-binding, any binding kind). At render time the renderer
+        // resolves each prop into a propScope frame and expands the definition's
+        // `def:` subtree, re-id'ing inner nodes `<instanceId>#<innerNodeId>`.
+        common.registerNodeType("ui-component-instance", {
+            category: "webapp structure",
+            color: "#e8d5f4",
+            defaults: {
+                name: { value: "" },
+                uiId: { value: "" },
+                parent: { value: "" },
+                mount: { value: "", required: true },
+                // The referenced definition id. Required — a missing/invalid
+                // definitionId is a visible deploy error (validateComponentAcyclic).
+                definitionId: {
+                    value: "",
+                    required: true,
+                    validate: function (v) { return !!(v && String(v).trim()); }
+                },
+                // props is a JSON object { name: <binding> } persisted on a hidden
+                // input; the editableList below is its editor.
+                props: { value: "" },
+                order: { value: "", validate: function (v) { return v === "" || RED.validators.number()(v); } },
+                row: { value: "", validate: function (v) { return v === "" || RED.validators.number()(v); } },
+                col: { value: "", validate: function (v) { return v === "" || RED.validators.number()(v); } },
+                colSize: { value: "", validate: function (v) { return v === "" || RED.validators.number()(v); } },
+                rowSize: { value: "", validate: function (v) { return v === "" || RED.validators.number()(v); } },
+                layoutX: { value: "", validate: function (v) { return v === "" || RED.validators.number()(v); } },
+                layoutY: { value: "", validate: function (v) { return v === "" || RED.validators.number()(v); } }
+            },
+            // v1: props in / events out. Inner nodes emit on their own ports; the
+            // instance node itself carries no input and no output.
+            inputs: 0,
+            outputs: 0,
+            icon: "font-awesome/fa-cubes",
+            label: common.labelWithName("ui-component-instance"),
+            onadd: function () {
+                if (!this.name) {
+                    this.name = common.getNextNameDefault("ui-component-instance", "Instance");
+                }
+            },
+            oneditprepare: function () {
+                common.installReferenceSelectors({ mount: true }).call(this);
+                common.installLayoutChildPropRows().call(this);
+
+                // definitionId — button-first reference picker over the
+                // ui-component-definition nodes (P114/P60 pattern).
+                common.installPickerField("#node-input-definitionId", {
+                    filterPreset: "definitions",
+                    title: "Komponenten-Definition auswählen",
+                    placeholder: "Definition auswählen…",
+                    seedValue: this.definitionId
+                });
+
+                // ── props map editor (name → value typedInput) ──────────────────
+                // Each row is { name, binding }. The value typedInput uses the full
+                // value-binding type set (any binding kind, incl. Prop/Item).
+                const propsList = $("#node-input-props-list");
+                propsList.editableList({
+                    addItem: function (container, _index, data) {
+                        const row = data || {};
+                        const rowEl = $("<div>").css({ display: "flex", gap: "6px", "align-items": "center", width: "100%" });
+                        const nameInput = $("<input type='text'>")
+                            .attr("placeholder", "Name")
+                            .css({ flex: "0 0 32%" })
+                            .appendTo(rowEl);
+                        const valueInput = $("<input type='text'>")
+                            .css({ flex: "1 1 auto" })
+                            .appendTo(rowEl);
+                        rowEl.appendTo(container);
+
+                        nameInput.val(row.name || "");
+                        const editor = common.readValueBinding(row.binding, "");
+                        valueInput.typedInput({
+                            default: editor.type,
+                            types: common.valueBindingTypes({ category: "value" })
+                        });
+                        valueInput.typedInput("type", editor.type);
+                        valueInput.typedInput("value", editor.value);
+
+                        // Attach the row accessor to the editableList item container
+                        // so oneditsave can read each row back via editableList("items").
+                        container.data("getRow", function () {
+                            return {
+                                name: String(nameInput.val() || "").trim(),
+                                binding: common.applyValueBinding(
+                                    valueInput.typedInput("type"),
+                                    valueInput.typedInput("value")
+                                )
+                            };
+                        });
+                    },
+                    removable: true,
+                    sortable: true
+                });
+
+                // Seed existing props.
+                let stored = {};
+                try {
+                    stored = this.props && typeof this.props === "string"
+                        ? (JSON.parse(this.props) || {})
+                        : (this.props && typeof this.props === "object" ? this.props : {});
+                } catch (e) {
+                    stored = {};
+                }
+                Object.keys(stored).forEach(function (name) {
+                    propsList.editableList("addItem", { name: name, binding: stored[name] });
+                });
+            },
+            oneditsave: function () {
+                const out = {};
+                $("#node-input-props-list").editableList("items").each(function () {
+                    const fn = $(this).data("getRow");
+                    if (typeof fn !== "function") {
+                        return;
+                    }
+                    const row = fn();
+                    if (row.name) {
+                        out[row.name] = row.binding;
+                    }
+                });
+                this.props = JSON.stringify(out);
+            }
+        });
+    })();
+</script>
+<script type="text/html" data-template-name="ui-component-instance">
+    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-uiId">Node ID</label><input type="text" id="node-input-uiId"></div>
+    <hr style="margin: 8px 0;">
+    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-row"><label for="node-input-definitionId">Definition</label><input type="text" id="node-input-definitionId"></div>
+    <div class="form-row" style="margin-bottom: 0;"><label style="width: 100%;">Props</label></div>
+    <div class="form-row">
+        <ol id="node-input-props-list" style="width: 100%;"></ol>
+    </div>
+    <input type="hidden" id="node-input-props">
+    <div class="form-tips" style="margin-top: 4px;">
+        Wählen Sie eine <b>Definition</b> und übergeben Sie <b>Props</b> (Name → Wert,
+        jede Binding-Art). In der Definition lesen Kind-Knoten diese über
+        <b>Prop (Component)</b> mit dem passenden Namen.
+    </div>
+    <div class="form-row" data-layout-child-prop-row="order"   style="display:none;"><label for="node-input-order">Order</label><input type="number" id="node-input-order"></div>
+    <div class="form-row" data-layout-child-prop-row="row"     style="display:none;"><label for="node-input-row">Row</label><input type="number" id="node-input-row"></div>
+    <div class="form-row" data-layout-child-prop-row="col"     style="display:none;"><label for="node-input-col">Col</label><input type="number" id="node-input-col"></div>
+    <div class="form-row" data-layout-child-prop-row="colSize" style="display:none;"><label for="node-input-colSize">Col Size</label><input type="number" id="node-input-colSize"></div>
+    <div class="form-row" data-layout-child-prop-row="rowSize" style="display:none;"><label for="node-input-rowSize">Row Size</label><input type="number" id="node-input-rowSize"></div>
+    <div class="form-row" data-layout-child-prop-row="layoutX" style="display:none;"><label for="node-input-layoutX">X</label><input type="number" id="node-input-layoutX"></div>
+    <div class="form-row" data-layout-child-prop-row="layoutY" style="display:none;"><label for="node-input-layoutY">Y</label><input type="number" id="node-input-layoutY"></div>
+</script>
+<script type="text/html" data-help-name="ui-component-instance">
+<p>Instantiates a <code>ui-component-definition</code> with props (ADR 0020).</p>
+<h3>How it works</h3>
+<ul>
+  <li><b>Parent Slot</b> — where this instance renders (a real route/container slot).</li>
+  <li><b>Definition</b> — the <code>ui-component-definition</code> to expand here. Required; a missing/invalid reference is a deploy error.</li>
+  <li><b>Props</b> — name → value pairs (any binding kind). The definition's children read them via <b>Prop (Component)</b>.</li>
+</ul>
+<p>Each inner node is re-id'd <code>&lt;instanceId&gt;#&lt;innerNodeId&gt;</code>, so events from inside an instance carry the instance identity in their <code>sourceId</code>.</p>
+<p><b>v1:</b> props in / events out. No child-slot projection and no per-instance state.</p>
+</script>

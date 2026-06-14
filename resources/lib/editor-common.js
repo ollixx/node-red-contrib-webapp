@@ -721,7 +721,10 @@
             dialogs: [],
             containers: [],
             actions: [],
-            stores: []
+            stores: [],
+            // P179 (ADR 0020): ui-component-definition nodes — surfaced for the
+            // instance's definitionId picker.
+            componentDefinitions: []
         };
 
         RED.nodes.eachNode(function (node) {
@@ -785,6 +788,36 @@
                     layoutId: "vertical",
                     title: node.title || node.name || id,
                     mount: node.mount || ""
+                });
+                return;
+            }
+
+            // P179 (ADR 0020): ui-component-definition is an OFF-CANVAS template
+            // CONTAINER. Its children mount into a single fixed default slot
+            // ("content" = COMPONENT_DEF_SLOT) addressed via the `def:` scope —
+            // `def:<id>/content` (NOT `container:` — the renderer's def-child matcher
+            // is strict). So we surface it to BOTH mount pickers as a container with a
+            // synthetic single-slot layout, but with `slotMountHead: "def:"` so the
+            // emitted mount value is `def:<id>/content`. It has no outer mount itself
+            // (off-canvas), so it never appears as a child of a real region. We also
+            // record it under `componentDefinitions` for the instance's id picker.
+            if (node.type === "ui-component-definition") {
+                references.componentDefinitions.push({
+                    id: id,
+                    name: node.name || id
+                });
+                references.containers.push({
+                    id: id,
+                    layoutId: "vertical",
+                    title: node.name || id,
+                    // Off-canvas: no outer mount. An empty mount keeps it out of the
+                    // child-of-a-real-region recursion; it is exposed as its own
+                    // top-level drop target via the synthetic-root logic below.
+                    mount: "",
+                    // P179: children address this container via the `def:` head.
+                    slotMountHead: "def:",
+                    containerKind: "ui-component-definition",
+                    dropHint: "Mounten in eine Komponenten-Definition: wird Teil der Vorlage (def:<id>/content)."
                 });
                 return;
             }
@@ -1139,6 +1172,20 @@
                 const label = route.path ? name + " (" + route.path + ")" : name;
                 const secondary = !appId && route.parent ? appTitleById(references, route.parent) : "";
                 return { value: route.id, label: label, name: name, id: route.id, type: "ui-route", secondary: secondary };
+            });
+        },
+        // P179 (ADR 0020): the component-definition picker for an instance's
+        // definitionId. Lists every ui-component-definition node by name/id. Not
+        // app-scoped — a definition is off-canvas and belongs to no single app slot.
+        definitions: function (references) {
+            return (references.componentDefinitions || []).map(function (def) {
+                return {
+                    value: def.id,
+                    label: def.name ? def.name + " (" + def.id + ")" : def.id,
+                    name: def.name || def.id,
+                    id: def.id,
+                    type: "ui-component-definition"
+                };
             });
         },
         actions: function (references, context) {
@@ -3726,6 +3773,25 @@
             }
         };
         var indexType = { value: "index", label: "Index (Repeat)", icon: "fa fa-list-ol", hasValue: false };
+        // P179 (ADR 0020): the scope-local `prop` binding kind. It resolves only
+        // inside a `ui-component-definition` template (against the render-time
+        // propScope frame pushed by the enclosing `ui-component-instance`). The value
+        // is the prop name with an optional dotted field tail (e.g. `title`,
+        // `user.name`) — the `prop.` prefix is the KIND, the value carries only the
+        // field path. Outside an instance it resolves to undefined (a hint is shown).
+        var propType = {
+            value: "prop",
+            label: "Prop (Component)",
+            icon: "fa fa-plug",
+            hasValue: true,
+            validate: function (value) {
+                var v = (value || "").trim();
+                if (v.length === 0) {
+                    return false;
+                }
+                return /^[a-zA-Z_$][a-zA-Z0-9_$]*(\.[a-zA-Z_$][a-zA-Z0-9_$]*)*$/.test(v);
+            }
+        };
 
         if (category === "url") {
             // str, msg, JSONata, Store, Reactive, Flow, Global, Env.
@@ -3832,7 +3898,10 @@
             "env",
             // P165 (ADR 0017): scope-local item/index (resolve only inside a repeat).
             itemType,
-            indexType
+            indexType,
+            // P179 (ADR 0020): scope-local prop (resolves only inside a component
+            // definition expanded by an instance).
+            propType
         ];
     }
 
@@ -4241,11 +4310,14 @@
                 const childSlots = getSlotNamesForLayout(child.layoutId);
                 const childName = child.title || child.id;
 
+                // P179 (ADR 0020): a container may declare a non-default slot head
+                // (e.g. a component-definition uses `def:`); default is `container:`.
+                const head = child.slotMountHead || "container:";
                 for (const slot of childSlots) {
                     const childLabel = childSlots.length > 1
                         ? `${breadcrumb} > ${childName} > ${slot}`
                         : `${breadcrumb} > ${childName}`;
-                    options.push.apply(options, slotOptions(`container:${child.id}/${slot}`, childLabel));
+                    options.push.apply(options, slotOptions(`${head}${child.id}/${slot}`, childLabel));
                 }
             }
 
@@ -4330,6 +4402,26 @@
             groups.push({ label: "Weitere", options: orphanOptions });
         }
 
+        // P179 (ADR 0020): component DEFINITIONS are off-canvas (no outer mount), so
+        // they are never reached by the route/dialog/container recursion above. Expose
+        // each as its own top-level drop target so a child can mount into the
+        // definition's `content` slot (`def:<id>/content`) — the editor's only way to
+        // build a component's template subtree.
+        const componentDefinitions = references.componentDefinitions || [];
+        if (componentDefinitions.length > 0) {
+            const defOptions = [];
+            for (const def of componentDefinitions) {
+                if (visitedContainers.has(def.id)) {
+                    continue;
+                }
+                visitedContainers.add(def.id);
+                defOptions.push.apply(defOptions, slotOptions(`def:${def.id}/content`, `${def.name || def.id} > content`));
+            }
+            if (defOptions.length > 0) {
+                groups.push({ label: "Komponenten", options: defOptions });
+            }
+        }
+
         return groups;
     }
 
@@ -4379,12 +4471,15 @@
 
         function containerNode(child) {
             const slotNames = getSlotNamesForLayout(child.layoutId);
+            // P179 (ADR 0020): a container may declare a non-default slot head (a
+            // component-definition uses `def:`); default is `container:`.
+            const head = child.slotMountHead || "container:";
             const slots = slotNames.map(function (slot) {
-                return { value: "container:" + child.id + "/" + slot, slot: slot };
+                return { value: head + child.id + "/" + slot, slot: slot };
             });
             return {
-                key: "container:" + child.id,
-                kind: "container",
+                key: head + child.id,
+                kind: child.containerKind === "ui-component-definition" ? "component-definition" : "container",
                 label: child.title || child.id,
                 slots: slots,
                 children: childContainerNodes(slots.map(function (s) { return s.value; }))
@@ -4476,6 +4571,24 @@
                 label: dialog.title || dialog.id,
                 slots: dialogSlots,
                 children: childContainerNodes(dialogSlots.map(function (s) { return s.value; }))
+            });
+        }
+
+        // P179 (ADR 0020): off-canvas component DEFINITIONS as top-level drop targets
+        // (mirror of buildMountOptionsTree's "Komponenten" group). Each exposes its
+        // single `content` slot so a child can mount into the def's template subtree.
+        for (const def of (references.componentDefinitions || [])) {
+            if (def.id === excluded || visitedContainers.has(def.id)) {
+                continue;
+            }
+            visitedContainers.add(def.id);
+            const defSlots = [{ value: "def:" + def.id + "/content", slot: "content" }];
+            tree.push({
+                key: "def:" + def.id,
+                kind: "component-definition",
+                label: def.name || def.id,
+                slots: defSlots,
+                children: childContainerNodes(defSlots.map(function (s) { return s.value; }))
             });
         }
 

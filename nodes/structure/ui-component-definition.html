@@ -1,0 +1,52 @@
+<script type="text/javascript" src="resources/node-red-contrib-webapp/lib/editor-common.js"></script>
+<script type="text/javascript">
+    (function () {
+        const common = window.WebappEditorCommon;
+        // P179 (ADR 0020): ui-component-definition is an OFF-CANVAS template
+        // container. It has NO outer-mount requirement (it never renders on its own)
+        // and no layout/variant chrome. Its children mount into its single default
+        // slot `content` via the `def:` scope — `def:<id>/content`. The node's own id
+        // is its componentId; the only field is an optional display name.
+        common.registerNodeType("ui-component-definition", {
+            category: "webapp structure",
+            color: "#e8d5f4",
+            defaults: {
+                name: { value: "" },
+                uiId: { value: "" }
+            },
+            // Off-canvas template: no wire data/event flow of its own.
+            inputs: 0,
+            outputs: 0,
+            icon: "font-awesome/fa-cube",
+            label: common.labelWithName("ui-component-definition"),
+            onadd: function () {
+                if (!this.name) {
+                    this.name = common.getNextNameDefault("ui-component-definition", "Component");
+                }
+            }
+        });
+    })();
+</script>
+<script type="text/html" data-template-name="ui-component-definition">
+    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-uiId">Node ID</label><input type="text" id="node-input-uiId"></div>
+    <div class="form-tips" style="margin-top: 8px;">
+        Eine <b>Komponenten-Definition</b> ist eine wiederverwendbare Vorlage und
+        rendert <b>nicht selbst</b>. Mounten Sie Kind-Knoten in ihren
+        <code>content</code>-Slot (im Mount-Picker unter <b>Komponenten</b>) — das ist
+        die Vorlage. Verwenden Sie eine <b>ui-component-instance</b>, um sie an einer
+        echten Stelle mit eigenen <i>props</i> einzusetzen. In einem Kind-Knoten binden
+        Sie Werte an <b>Prop (Component)</b> (z. B. <code>title</code>), um den vom
+        Instanz-Knoten übergebenen Wert zu lesen.
+    </div>
+</script>
+<script type="text/html" data-help-name="ui-component-definition">
+<p>Defines a reusable, parametrised component template (ADR 0020).</p>
+<h3>How it works</h3>
+<ul>
+  <li><b>Off-canvas</b> — a definition never renders on its own. It exists only to be expanded by a <code>ui-component-instance</code>.</li>
+  <li><b>Template</b> — mount any child subtree into this node's default <code>content</code> slot (shown under <b>Komponenten</b> in the mount picker). The instance clones it once per use.</li>
+  <li><b>Props</b> — in a child node, bind a value to <b>Prop (Component)</b> (with an optional field path, e.g. <code>title</code>, <code>address.city</code>) to read the value the instance passes in.</li>
+</ul>
+<p><b>v1:</b> props in / events out. No child-slot projection (composition) and no per-instance state.</p>
+</script>

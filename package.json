@@ -25,6 +25,8 @@
             "ui-app": "nodes/structure/ui-app.js",
             "ui-route": "nodes/structure/ui-route.js",
             "ui-dialog": "nodes/structure/ui-dialog.js",
+            "ui-component-definition": "nodes/structure/ui-component-definition.js",
+            "ui-component-instance": "nodes/structure/ui-component-instance.js",
             "ui-text": "nodes/view/ui-text.js",
             "ui-button": "nodes/view/ui-button.js",
             "ui-table": "nodes/view/ui-table.js",

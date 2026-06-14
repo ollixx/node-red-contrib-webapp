@@ -134,3 +134,64 @@ applies), never a throw, mirroring `item`.
 
 Props in / events out; **no** child-slot projection (composition, P142); **no**
 per-instance state (presentational). The browser proof of the full flow is **P179**.
+
+## Node registration + editor (P179 — shipped in `nodes/` + `resources/`)
+
+Both node types live under `nodes/structure/` and register through the single
+`registerNodeType` path in `nodes/webapp.js` (entries in `WEBAPP_NODE_TYPES`, the
+`getDefinitionBuckets` component bucket, `toComponentDefinitions`, and
+`runtimeNodeRegistry`). The `node-red.nodes` block in `package.json` maps both
+files.
+
+### Runtime bucketing
+
+- The **definition's children** mount with a `def:<id>/content` string and bucket
+  into the app by their **real `.z`** like any other `ui-*` node — there is no
+  subflow `.z` problem.
+- `toComponentDefinitions` maps `ui-component-definition` → renderer kind
+  `component-definition` (with a self-anchoring `def:<id>` mount that never resolves
+  to a real region) and `ui-component-instance` → kind `component-instance` (its
+  `props` map becomes the component's `bind`; `definitionId` rides in `props`). Only
+  `expandComponent` consumes a definition's `def:`-rooted subtree; `renderRegions`
+  never emits a definition directly.
+
+### Editor — `ui-component-definition`
+
+A `webapp structure` node. Off-canvas: **no** Parent-Slot field and **no**
+outer-mount requirement (it never renders on its own). Fields: an optional display
+`name` and the `uiId`. It is surfaced to **both** mount pickers as a container with a
+single `content` slot under a top-level **"Komponenten"** group, so a child mounts
+into `def:<id>/content` (the `slotMountHead` mechanism — the renderer's def-child
+matcher is strict on the `def:` head). In a child node, bind a value to **Prop
+(Component)** (the scope-local `prop` typedInput kind, sibling of Item/Index; an
+optional dotted field path) to read the value the instance passes in.
+
+### Editor — `ui-component-instance`
+
+A `webapp structure` node mounted into a real route/container (the standard
+button-first mount picker). Fields:
+
+- **Definition** — a button-first reference picker (`installPickerField` with the
+  `definitions` preset) listing every `ui-component-definition` by name/id. Required
+  (`required: true` + a non-empty validator) → a missing/invalid reference is a
+  visible deploy error.
+- **Props** — a native `editableList` of name→value rows; each value is a full
+  value-binding typedInput (any binding kind, incl. Store/Query/State/Prop/Item).
+  Add/remove/reorder; persisted as a JSON object `{ name: <binding> }` on a hidden
+  `props` input.
+- Standard layout child-prop rows.
+
+### Visible validation
+
+- A missing/empty `definitionId` fails the editor's required-field check (the node is
+  marked invalid, deploy blocked).
+- `validateComponentAcyclic` (P177) is the deploy-time guard for a definition that
+  instantiates itself directly or transitively — surfaced as a deploy error.
+
+### Browser proof
+
+`tests/e2e/nodes/view/ui-component.spec.ts`: a definition with two `ui-text`
+children (`prop.title`/`prop.body`) + a `ui-button` child; two instances with
+different props render their own two lines with the instance-specific values; a prop
+bound to a store updates only the affected instance live; inner clones carry the
+`<instanceId>#<innerNodeId>` identity (the inner event's sourceId).
