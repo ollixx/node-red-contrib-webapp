@@ -17,14 +17,14 @@ verify: unit
 spec: docs/nodes/structure/ui-component.md
 tests: tests/e2e/nodes/view/ui-component.tests.md
 dependencies: []
-status: in_progress
+status: done
 ---
 # P177 — ui-component: Schema + def:-Scope + prop-Binding-Art
 
-> Erste Schicht von [ADR 0020](../../../adr/0020-component-model-dedicated-ui-component-node.md).
+> Erste Schicht von [ADR 0020](../../../../adr/0020-component-model-dedicated-ui-component-node.md).
 > Rein in `packages/schema` (Knotendefinitionen + Mount-Grammatik + Binding-Union
 > + Validierung). **Kein Renderer, kein Editor, keine Node-Registrierung** (P177/P178).
-> Reuse: die scope-lokale Binding-Mechanik aus [ADR 0017](../../../adr/0017-ui-repeat-template-container-render-time-scope.md)
+> Reuse: die scope-lokale Binding-Mechanik aus [ADR 0017](../../../../adr/0017-ui-repeat-template-container-render-time-scope.md)
 > (`item`/`index`) — `prop` ist deren direkter Geschwister.
 
 ## Umfang
@@ -70,5 +70,31 @@ status: in_progress
 - **Invariante:** `packages/schema` importiert aus keinem anderen Repo-Paket.
 - `prop.name` korrekt als zweistufiger Feldpfad akzeptieren (`prop.` ist die ART,
   der Rest der Pfad) — analog zur P163-Klärung für `item.name`.
-- **Kein** Renderer-/Editor-/Node-Registrierungs-Code hier — das sind P177/P178.
+- **Kein** Renderer-/Editor-/Node-Registrierungs-Code hier — das sind P178/P179.
   Die Auflösung von `prop`/`index`/`item` ist ausdrücklich **nicht** hier.
+
+## Result
+
+- **delivered:** Components wave (ADR 0020) Schicht 1, **schema-only** (`packages/schema`).
+  `uiComponentDefinitionNodeDefinitionSchema` (container-kind, off-canvas — no required outer
+  mount, `COMPONENT_DEF_SLOT="content"`, id = componentId) + `uiComponentInstanceNodeDefinitionSchema`
+  (leaf, required outer mount/parent + `definitionId` + `props` map of any binding kind, default `{}`),
+  both registered in the union + dispatch. New **`def:<componentId>/<slot>` mount scope** in
+  `parseMountReference` (sibling of route/dialog/layout; lossless round-trip; unknown scope still
+  rejected; resolution deferred to P178). New scope-local **`prop`/`prop.<path>` binding kind** in the
+  union + `SCOPE_LOCAL_BINDING_KINDS` (form-only, mirrors `item.<path>`; item/index unchanged). Pure
+  **`validateComponentAcyclic`** self/transitive-cycle guard with clear messages. Fixtures
+  (`propBindingFixture`, `minimalComponentNodeSetFixture`). Schema-layer parts of the spec
+  `docs/nodes/structure/ui-component.md` + catalogue fleshed out.
+- **stats:** 11 files; **+37 schema unit tests** (`p177-component-schema.test.ts`). Develop
+  verification: `pnpm build` exit 0; unit green (schema +37, editor 117, renderer 103, runtime 1001);
+  **minimal-coverage 27/27 green** (the two new node types + `prop` kind + editor type-check stubs do
+  NOT break editor loading). check:roadmap + check:links + lint OK. Schema cross-package-import
+  invariant verified clean.
+- **notes:** Reused the P163 scope-local pattern (`SCOPE_LOCAL_BINDING_KINDS`) — `prop` is its third
+  member after `item`/`index`. Necessary minimal editor stub registrations (exhaustive
+  `Record<NodeEditorType,…>` + node-set catalog) to keep the cross-package build/tests green — same
+  precedent as the P163 ui-repeat stub; full editor UX is **P179**. One pre-existing P163 assertion
+  (`SCOPE_LOCAL_BINDING_KINDS` deep-equal) updated for the new `prop` kind — no behaviour regression.
+  **Next: P178 (renderer `expandComponent` + prop resolution); P179 (node+editor+browser proof).**
+- **cost:** session ac5097ac272162d69, ~13m (+ orchestrator develop verification).
