@@ -68,7 +68,9 @@ describe("P173: ui-list render — selected state + selectable interaction", () 
         expect(result.status).toBe(200);
         expect(result.body).not.toContain("aria-selected");
         expect(result.body).not.toContain("data-webapp-selectable");
-        expect(result.body).not.toContain("webapp-list-item--selected");
+        // P183: the CSS stylesheet now contains ".webapp-list-item--selected" as a class name.
+        // Use a tighter assertion: no HTML element should carry the class= attribute value.
+        expect(result.body).not.toContain("class=\"webapp-list-item webapp-list-item--selected\"");
     });
 
     it("selectable on, literal selectedId → the matching row is marked selected", () => {
@@ -117,7 +119,8 @@ describe("P173: ui-list render — selected state + selectable interaction", () 
         // Selectable rows still carry the hook + aria-selected="false", but none true.
         expect(result.body).toContain("data-webapp-selectable=\"true\"");
         expect(result.body).not.toContain("aria-selected=\"true\"");
-        expect(result.body).not.toContain("webapp-list-item--selected");
+        // P183: CSS stylesheet contains ".webapp-list-item--selected"; check no element has the class attr.
+        expect(result.body).not.toContain("class=\"webapp-list-item webapp-list-item--selected\"");
     });
 
     it("selectable on WITHOUT itemClick still makes rows interactive (click drives selection)", () => {

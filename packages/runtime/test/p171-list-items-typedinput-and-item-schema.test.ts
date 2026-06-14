@@ -167,8 +167,11 @@ describe("P171: ui-list — item-schema render + value display", () => {
 
         const result = renderAppPage("lApp6", "/", undefined, definitions);
         expect(result.status).toBe(200);
-        // value 3 is NOT shown (no badge / secondary span)…
-        expect(result.body).not.toContain("webapp-list-value");
+        // value 3 is NOT shown (no badge / secondary span).
+        // P183: the CSS stylesheet now contains ".webapp-list-value" as a class name, so we
+        // check that no HTML *element* with that class is rendered (no class= occurrence in
+        // the body content, only in the <style> block → use a tighter HTML assertion).
+        expect(result.body).not.toContain("class=\"webapp-list-value\"");
         // …but the whole element (incl. value) rides in data-webapp-row for the event.
         expect(result.body).toContain("data-webapp-item=\"c-1\"");
         expect(result.body).toContain("&quot;value&quot;:3");

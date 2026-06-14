@@ -111,6 +111,62 @@
             + libraryAttr + styleAttr + "></sl-icon>";
     }
 
+    // P183: resolveColorValue — shared color-resolution helper for base-field `color`.
+    // Maps a raw color value to a safe CSS value or undefined (no style attr).
+    //
+    //   semantic token  → var(--wa-color-<token>)
+    //     "primary" | "success" | "warning" | "danger" | "neutral" | "info"
+    //   valid CSS value → passed through unchanged
+    //     #hex, rgb(), hsl(), CSS named color, var(...), etc.
+    //   empty / unknown → undefined (no style attribute emitted — no broken CSS)
+    //
+    // Detection strategy: a semantic token is any of the six known words. Everything
+    // else is classified: CSS functions (#hex, rgb(...), var(...)) pass through;
+    // known CSS keyword names pass through; unknown bare words are IGNORED.
+    var SEMANTIC_COLOR_TOKENS = {
+        primary: "var(--wa-color-primary)",
+        success: "var(--wa-color-success)",
+        warning: "var(--wa-color-warning)",
+        danger:  "var(--wa-color-danger)",
+        neutral: "var(--wa-color-neutral)",
+        info:    "var(--wa-color-primary)"   // info → primary (no separate --wa-color-info token)
+    };
+
+    // A small set of always-safe CSS colour keywords. Extended keywords (rebeccapurple
+    // etc.) are intentionally not listed — we do not need to be exhaustive; a hex/rgb
+    // value covers any custom colour. This list handles common names so that e.g.
+    // color="red" works for quick testing.
+    var CSS_COLOR_KEYWORDS = {
+        red: 1, green: 1, blue: 1, yellow: 1, orange: 1, purple: 1, pink: 1,
+        brown: 1, black: 1, white: 1, gray: 1, grey: 1, cyan: 1, magenta: 1,
+        transparent: 1, currentcolor: 1, inherit: 1, initial: 1, unset: 1
+    };
+
+    function resolveColorValue(raw) {
+        if (raw === undefined || raw === null || raw === "") {
+            return undefined;
+        }
+        var s = String(raw).trim();
+        if (s === "") {
+            return undefined;
+        }
+        // 1. Semantic token?
+        var lower = s.toLowerCase();
+        if (SEMANTIC_COLOR_TOKENS[lower]) {
+            return SEMANTIC_COLOR_TOKENS[lower];
+        }
+        // 2. CSS function or hash (#hex / rgb() / hsl() / var())?
+        if (s[0] === "#" || /^(rgb|rgba|hsl|hsla|var|color)\s*\(/i.test(s)) {
+            return s;
+        }
+        // 3. Known CSS colour keyword (case-insensitive)?
+        if (CSS_COLOR_KEYWORDS[lower]) {
+            return s;
+        }
+        // 4. Unknown / bare word → IGNORE (no broken inline style).
+        return undefined;
+    }
+
     // --- Shoelace adapter mapping (mirrors packages/renderer shoelace-adapter) --
     // Kept inline so this module is browser-loadable without a bundler. A unit
     // test (p26-render-parity) asserts this mapping stays in sync with the
@@ -1116,7 +1172,10 @@
             const listDisabled = component.disabled
                 ? " aria-disabled=\"true\" class=\"webapp-list" + displayTypeClass + " webapp-list--disabled\""
                 : " class=\"webapp-list" + displayTypeClass + "\"";
-            const resolvedColor = component.props.color !== undefined ? String(component.props.color) : undefined;
+            // P183: resolve color via the shared helper — semantic tokens map to
+            // --wa-color-* CSS vars; CSS values pass through; unknown bare words
+            // (e.g. "primary" before P183) are ignored (no broken inline style).
+            const resolvedColor = resolveColorValue(component.props.color);
             const colorStyle = resolvedColor ? " style=\"color:" + escapeAttribute(resolvedColor) + "\"" : "";
             const itemHtml = rawItems.map(function (item, index) {
                 // String shorthand → {label:<string>}. Anything else is read as an
@@ -1277,6 +1336,7 @@
         renderRegionHtml: renderRegionHtml,
         renderLayoutHtml: renderLayoutHtml,
         renderDialogHtml: renderDialogHtml,
-        serializeSnapshot: serializeSnapshot
+        serializeSnapshot: serializeSnapshot,
+        resolveColorValue: resolveColorValue
     };
 }));
