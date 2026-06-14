@@ -1,4 +1,5 @@
 import {
+    COMPONENT_DEF_SLOT,
     REPEAT_SLOT,
     TAB_SLOT,
     defaultActiveTabId,
@@ -265,6 +266,14 @@ interface BindingSources {
     // render-time only — never persisted, never written back to a store (cf.
     // routeParam). The stack is rebuilt immutably per clone (no mutate/restore).
     itemScope?: ItemScopeFrame[];
+    // P178 (ADR 0020): the render-time PROP SCOPE — a STACK of frames, one per
+    // active `ui-component-instance` expansion. Each frame is the instance's
+    // resolved props `{ <name>: value, … }`. A `prop` / `prop.<path>` binding
+    // resolves against the TOP (innermost) frame, exactly as `item` does against
+    // `itemScope`; nested instances stack, innermost wins. Empty/absent outside any
+    // instance → a `prop` binding resolves to `undefined` (no throw). Sibling of
+    // `itemScope`, same immutable-per-clone discipline.
+    propScope?: PropScopeFrame[];
 }
 
 /**
@@ -276,6 +285,14 @@ interface ItemScopeFrame {
     item: unknown;
     index: number;
 }
+
+/**
+ * P178 (ADR 0020): one frame of the render-time prop scope — the resolved props of
+ * the current `ui-component-instance` expansion, keyed by prop name. A `prop` (bare)
+ * binding inside the definition subtree reads the whole map; a `prop.<path>` reaches
+ * into a structured prop value. Sibling of {@link ItemScopeFrame}.
+ */
+type PropScopeFrame = Record<string, unknown>;
 
 interface ComponentRenderContext {
     sources: BindingSources;
@@ -569,6 +586,20 @@ function resolveBinding(binding: BindingDefinition | undefined, sources: Binding
             // repeat → `undefined` (no throw), mirroring `item`.
             const frame = sources.itemScope?.[sources.itemScope.length - 1];
             resolvedValue = frame === undefined ? undefined : frame.index;
+            break;
+        }
+        case "prop": {
+            // P178 (ADR 0020): the prop value of the innermost active
+            // `ui-component-instance`. `prop` (bare) yields the whole value of the
+            // prop NAMED by `binding.path`'s FIRST segment; a deeper `prop.<a.b>`
+            // reaches into a structured prop value. Resolved against the TOP
+            // propScope frame, exactly the `item`/`index` pattern. OUTSIDE any
+            // instance (empty scope stack) → `undefined`, NOT a throw — a defined
+            // "no value" so an editor-validateable misuse renders cleanly.
+            const frame = sources.propScope?.[sources.propScope.length - 1];
+            resolvedValue = frame === undefined
+                ? undefined
+                : getValueAtPath(frame, binding.path);
             break;
         }
     }
@@ -1081,10 +1112,17 @@ function renderRegions(
             .sort(componentSort)
             // P164 (ADR 0017): a `repeat` component carries no rendered chrome — it
             // EXPANDS in place into n× cloned subtrees, which flatten into THIS
-            // region (flatMap). Every other kind maps to at most one component.
+            // region (flatMap). P178 (ADR 0020): a `component-instance` likewise
+            // EXPANDS in place — it renders its definition's `def:` subtree against a
+            // `propScope` frame and flattens the re-id'd clones into THIS region,
+            // exactly the repeat recipe. Every other kind maps to at most one
+            // component. (`component-definition` is off-canvas — its outer mount never
+            // resolves to a real region, so it is never enumerated here.)
             .flatMap((component) => component.kind === "repeat"
                 ? expandRepeat(component, context, appModel)
-                : [toRenderedComponent(component, context, appModel)])
+                : component.kind === "component-instance"
+                    ? expandComponent(component, context, appModel, [])
+                    : [toRenderedComponent(component, context, appModel)])
             .filter((component): component is RenderedComponent => component !== undefined);
 
         return {
@@ -1266,7 +1304,9 @@ function renderSectionContent(
         .sort(componentSort)
         .flatMap((candidate) => candidate.kind === "repeat"
             ? expandRepeat(candidate, section.context, appModel)
-            : [toRenderedComponent(candidate, section.context, appModel)])
+            : candidate.kind === "component-instance"
+                ? expandComponent(candidate, section.context, appModel, [])
+                : [toRenderedComponent(candidate, section.context, appModel)])
         .filter((rendered): rendered is RenderedComponent => rendered !== undefined);
 }
 
@@ -1525,11 +1565,158 @@ function expandRepeat(
                     }));
                 }
 
+                // P178 (ADR 0020): a `component-instance` inside a repeat template
+                // expands per item against the extended item scope (its props may bind
+                // `item.*`); the keyed clones get the repeat's per-item id prefix on top
+                // of their own `<instanceId>#<innerNodeId>` keying, exactly like a
+                // nested repeat.
+                if (child.kind === "component-instance") {
+                    return expandComponent(child, scopedContext, appModel, []).map((rendered) => ({
+                        ...rendered,
+                        id: `${itemKey}#${rendered.id}`
+                    }));
+                }
+
                 const rendered = toRenderedComponent(clone, scopedContext, appModel);
                 return rendered === undefined ? [] : [rendered];
             })
             .filter((component): component is RenderedComponent => component !== undefined);
     });
+}
+
+/**
+ * P178 (ADR 0020): match a `ui-component-definition`'s default-slot children. A
+ * definition is an OFF-CANVAS template container with a single fixed `content` slot
+ * (COMPONENT_DEF_SLOT); its children address it via `def:<definitionId>/content`.
+ * This is the `createRepeatChildMatcher` recipe with the `def:` head instead of
+ * `container:` — and it is the ONLY consumer of `def:` mounts, so those subtrees
+ * never reach a real region (the AppModel mount resolver deliberately refuses to
+ * anchor a `def:` mount).
+ */
+function createComponentDefChildMatcher(
+    definitionId: string
+): (component: ComponentDefinition, regionPath: string[]) => boolean {
+    return (component, regionPath) => {
+        const rawMount = component.mount.trim();
+
+        if (!rawMount.startsWith("def:")) {
+            return false;
+        }
+
+        const separatorIndex = rawMount.indexOf("/");
+
+        if (separatorIndex < 0) {
+            return false;
+        }
+
+        const targetDefinitionId = rawMount.slice("def:".length, separatorIndex);
+        const regionKey = rawMount.slice(separatorIndex + 1);
+
+        return targetDefinitionId === definitionId && regionKey === regionPath.join("/");
+    };
+}
+
+/**
+ * P178 (ADR 0020): EXPAND a `ui-component-instance` into its definition's rendered
+ * subtree. Modelled 1:1 on {@link expandRepeat} — composition over a new mechanism.
+ *
+ * 1. Read `props.definitionId` → find the `ui-component-definition`.
+ * 2. Resolve the instance's `bind` props (every binding kind) → ONE `propScope`
+ *    frame `{ <name>: value, … }`; push it onto the render-time prop-scope stack
+ *    (sibling of `itemScope`). Children's `prop` / `prop.<path>` bindings resolve
+ *    against the top (innermost) frame.
+ * 3. Render the definition's `def:<id>/content` subtree against the extended scope.
+ * 4. RE-ID each rendered node `<instanceId>#<innerNodeId>` (the repeat
+ *    `<itemKey>#<childId>` recipe) so each clone has a unique, stable
+ *    data-webapp-node and the keyed morph preserves unchanged instances.
+ * 5. The clones FLATTEN into the instance's host region (the caller flatMaps); the
+ *    instance's outer `mount` is the bridge, exactly like the repeat template mount.
+ *
+ * `visitedDefinitions` is the SELF-GUARD: a definition id already on the active
+ * expansion path is NOT re-expanded (a direct/transitive self-reference terminates
+ * with no infinite expansion — a defined abort, not a hang). Nested instances (an
+ * instance inside a definition's subtree) recurse normally — only a *repeat* of the
+ * same id on the active path is cut.
+ */
+function expandComponent(
+    instance: ComponentDefinition,
+    context: ComponentRenderContext,
+    appModel: AppModel,
+    visitedDefinitions: string[]
+): RenderedComponent[] {
+    const definitionId = typeof instance.props.definitionId === "string" ? instance.props.definitionId : undefined;
+
+    if (!definitionId) {
+        return [];
+    }
+
+    // Self-guard: a definition already being expanded on this path must not recurse
+    // into itself (direct or transitive). Terminate the branch — no infinite loop.
+    if (visitedDefinitions.includes(definitionId)) {
+        return [];
+    }
+
+    const definition = appModel.components.find(
+        (component) => component.kind === "component-definition" && component.id === definitionId
+    );
+
+    // A dangling definitionId (unknown / not a definition) renders nothing — a
+    // defined "no output", not a crash (the editor/deploy layer flags the misuse).
+    if (!definition) {
+        return [];
+    }
+
+    // Resolve each prop typedInput (any binding kind) against the CURRENT scope (so
+    // a prop may itself bind item.*/prop.* of an enclosing repeat/instance) → one
+    // propScope frame. `bind` is the instance's prop map; `definitionId` lives in
+    // `props`, never `bind`, so it is not a prop.
+    const propFrame: PropScopeFrame = {};
+    for (const [name, binding] of Object.entries(instance.bind)) {
+        propFrame[name] = resolveBinding(binding, context.sources);
+    }
+
+    // Immutable scope extension — the new prop frame is the innermost (top) one.
+    const scopedContext: ComponentRenderContext = {
+        sources: {
+            ...context.sources,
+            propScope: [...(context.sources.propScope ?? []), propFrame]
+        }
+    };
+
+    const nextVisited = [...visitedDefinitions, definitionId];
+    const childMatcher = createComponentDefChildMatcher(definitionId);
+    const templateChildren = appModel.components
+        .filter((component) => childMatcher(component, [COMPONENT_DEF_SLOT]))
+        .sort(componentSort);
+
+    return templateChildren
+        .flatMap((child) => {
+            // Stable per-instance identity = instanceId × innerNodeId.
+            const clone: ComponentDefinition = { ...child, id: `${instance.id}#${child.id}` };
+
+            // Nested: a repeat inside a definition subtree expands against the
+            // extended (prop-)scope; re-id its clones under this instance.
+            if (child.kind === "repeat") {
+                return expandRepeat(child, scopedContext, appModel).map((rendered) => ({
+                    ...rendered,
+                    id: `${instance.id}#${rendered.id}`
+                }));
+            }
+
+            // Nested: a component-instance inside a definition subtree recurses
+            // (its def's subtree, its own propScope), carrying the self-guard so a
+            // direct/transitive self-reference terminates. Re-id under this instance.
+            if (child.kind === "component-instance") {
+                return expandComponent(child, scopedContext, appModel, nextVisited).map((rendered) => ({
+                    ...rendered,
+                    id: `${instance.id}#${rendered.id}`
+                }));
+            }
+
+            const rendered = toRenderedComponent(clone, scopedContext, appModel);
+            return rendered === undefined ? [] : [rendered];
+        })
+        .filter((component): component is RenderedComponent => component !== undefined);
 }
 
 function createMountMatcher(

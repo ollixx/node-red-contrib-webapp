@@ -669,7 +669,17 @@ export const componentKindSchema = z.enum([
     // It appears in the compiled AppModel like a container does, so children mount
     // via `container:<repeatId>/content` (= REPEAT_SLOT); `bind.items` holds the
     // collection binding and `props.keyField` the optional stable key field.
-    "repeat"
+    "repeat",
+    // P178 (ADR 0020): ui-component-definition — an OFF-CANVAS template container.
+    // Its children mount into `def:<definitionId>/content` (= COMPONENT_DEF_SLOT),
+    // and its outer mount never resolves to a real region, so `renderRegions` never
+    // emits it directly. It exists only to be EXPANDED by instances.
+    "component-definition",
+    // P178 (ADR 0020): ui-component-instance — a leaf-shaped node that EXPANDS, at
+    // its real outer `mount`, the `def:` subtree of the definition named by
+    // `props.definitionId`, resolving the instance's `bind` props into a render-time
+    // `propScope` frame. Like `repeat`, it carries no rendered chrome of its own.
+    "component-instance"
 ]);
 
 /**

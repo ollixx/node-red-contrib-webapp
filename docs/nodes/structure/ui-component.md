@@ -75,3 +75,62 @@ referencing definition *T* is an edge *D → T*, where *D* is found by walking t
 instance's `def:` mount/parent chain) and rejects any cycle — a definition that
 instantiates itself **directly or transitively** — with a clear error message. An
 acyclic definition→instance graph is valid.
+
+## Renderer (P178 — shipped in `packages/renderer`)
+
+The renderer expands instances and resolves the `prop` kind. Both are modelled
+**1:1 on `expandRepeat`** (ADR 0017) — composition over a new mechanism.
+
+### `expandComponent`
+
+When `renderRegions` enumerates a region's components, a `component-instance` (like
+a `repeat`) carries **no rendered chrome** — it **expands in place**:
+
+1. Read `props.definitionId` → find the `component-definition`. A missing/unknown
+   definition (or absent `definitionId`) renders **nothing** (a defined "no output",
+   not a crash — the editor/deploy layer flags the misuse).
+2. Resolve the instance's **`bind` props** (each an ordinary typedInput, any binding
+   kind, resolved against the **current** scope so a prop may itself bind
+   `item.*`/`prop.*` of an enclosing repeat/instance) → one **`propScope` frame**
+   `{ <name>: value, … }`. `definitionId` lives in `props`, never `bind`, so it is
+   not a prop.
+3. Push the frame onto the render-time **`propScope` stack** (a sibling of
+   `itemScope`, same immutable-per-clone discipline).
+4. Render the definition's **`def:<definitionId>/content`** subtree (matched by the
+   `def:` head, the `createRepeatChildMatcher` recipe) against the extended scope.
+5. **Re-id** each rendered node **`<instanceId>#<innerNodeId>`** (the
+   `<itemKey>#<childId>` repeat recipe) → unique, stable `data-webapp-node` ids so
+   the keyed morph preserves unchanged instances.
+6. **Flatten** the clones into the instance's host region (the caller flatMaps); the
+   instance's **outer `mount`** is the bridge between "inside" and "outside", exactly
+   like the `ui-repeat` template mount.
+
+### `prop` / `prop.<name>` resolution
+
+`resolveBinding`'s `prop` case is the exact sibling of `item`/`index`: it reads the
+**top (innermost) `propScope` frame** and `getValueAtPath(frame, binding.path)` —
+so a bare `prop` (path = the prop name, e.g. `title`) yields the whole prop value and
+`prop.<a.b>` reaches into a structured value. **Outside any instance** (empty stack)
+it resolves to `undefined` — a defined "no value" (the binding's `fallback` then
+applies), never a throw, mirroring `item`.
+
+### Nested + self-guard; definition never renders
+
+- **Nested:** an instance (or a repeat) inside a definition's subtree expands
+  recursively against the extended scope; its clones get this instance's id prefix on
+  top of their own keying (`<outerId>#<innerId>#<leaf>`), exactly like nested repeats.
+- **Self-guard:** `expandComponent` carries a `visitedDefinitions` list of the
+  definition ids already on the active expansion path. A direct or transitive
+  self-reference (an instance of a definition already being expanded) is **cut** —
+  the branch terminates with no infinite expansion (a defined abort, not a hang). The
+  schema's `validateComponentAcyclic` rejects such graphs at deploy; the renderer
+  guard is the render-time backstop.
+- **Definition never renders on its own:** a `def:`-rooted mount never resolves to a
+  real route/dialog/layout region (the AppModel resolver deliberately refuses it), so
+  `renderRegions` never enumerates a definition or its `def:` children directly — only
+  `expandComponent` consumes them, via an instance.
+
+### v1 cut
+
+Props in / events out; **no** child-slot projection (composition, P142); **no**
+per-instance state (presentational). The browser proof of the full flow is **P179**.
