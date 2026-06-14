@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P182** — aspects/editor — scope-lokale Binding-Arten kontext-gated: `item`/`index` nur unter ui-repeat, `prop` nur in Component-Def (sonst aus dem typedInput-Set) — *zentral; mountIsInsideRepeat vorhanden; Owner 2026-06-14* — [P182](aspects/editor/P182-scope-local-binding-kinds-context-gated.md)
 - **P184** — nodes/ui-repeat — scope-lokale Bindings mit leerem Pfad reparieren: whole-`item` (String-Element) + `index` werden mit `path:''` abgelehnt — *Bug, blockiert Repeat-Grundnutzung; Owner 2026-06-14* — [P184](nodes/ui-repeat/P184-scope-local-empty-path-binding-fix.md)
 - **P185** — nodes/ui-repeat — `item`/`index` in Reactive-Expressions erreichbar (Per-Instanz-Scope) + Autocomplete — *Feature; braucht P184* — [P185](nodes/ui-repeat/P185-item-index-in-reactive-scope.md)
 
@@ -88,11 +87,11 @@ open the folder for the full history.
 | aspects/misc | 16 |
 | aspects/runtime | 7 |
 | aspects/state | 8 |
-| aspects/editor | 16 |
+| aspects/editor | 17 |
 | schema | 5 |
 | aspects/rendering | 13 |
 | aspects/foundation | 5 |
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 182 done, 3 open, 8 deferred.**
+**Total: 183 done, 2 open, 8 deferred.**

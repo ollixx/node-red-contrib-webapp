@@ -15,7 +15,7 @@ verify: browser
 spec: docs/nodes/concepts/editor.md
 tests: tests/e2e/nodes/view/ui-repeat.tests.md
 dependencies: []
-status: in_progress
+status: done
 ---
 # P182 — Scope-lokale Binding-Arten kontext-gated anbieten
 
@@ -60,3 +60,34 @@ status: in_progress
 - `boolean`/`url`/`storePath`/`structural`-Kategorien führen item/index/prop
   ohnehin nicht (bzw. nur value/structural) — prüfen, dass nur die betroffenen
   Kategorien angefasst werden.
+
+## Result
+
+- **delivered:** Scope-local binding kinds are now **context-gated** in the editor's typedInput
+  offering. `valueBindingTypes()` takes a `scope { repeat, componentDef }` + `currentKind`; when scope
+  is omitted it auto-derives from the live edit form via `mountIsInsideRepeat` and a new
+  `mountIsInsideComponentDef` analogue (both exported, alongside `currentEditorScope`). `item`/`index`
+  are offered ONLY when the edited node is mounted inside a `ui-repeat`; `prop` ONLY inside a
+  `ui-component-definition` (`def:` scope); outside both, none appear — the field shows the base
+  value set. `currentKind` re-includes an already-saved kind so existing bindings stay editable even
+  if the node is later viewed out of scope. All value/display value-field installers (incl.
+  `installBaseFields` colour + every ui-* node HTML) pass `currentKind`. `installRepeatScopeHint`
+  kept as a backstop. Documented in `docs/nodes/concepts/editor.md`.
+- **stats:** 33 files (impl) + 1 test-fix commit. Unit **1651 passed** (editor 136, incl. 18 new P182
+  cases for the helpers + gating + currentKind; updated the p113 canonical set to the gated base set).
+  E2E: new `tests/e2e/nodes/editor/p182-scope-local-binding-gating.spec.ts` (4 tests) — item/index in
+  a repeat, prop in a def, neither outside both, and the SAME field re-gating purely by mount context.
+  Develop verification: build exit 0; full editor E2E folder green (157/157 after the fix); the 4
+  gating tests + the 3 p67 tests **7/7 green**; lint + validate + both tripwires OK.
+- **notes:** Chose single-source auto-derivation inside `valueBindingTypes` over threading explicit
+  `scope` through ~44 call sites (the sweep only injects `currentKind`). **This phase also resolved a
+  pre-existing develop failure:** `p67-alert-binding`'s "canonical value set" test was red because the
+  Components P177–P179 wave had added `prop` to the global typedInput set; P182 corrects that test to
+  the gated base set (ui-alert is neither in a repeat nor a def → no `prop`/`item`/`index`).
+  **Orchestrator follow-up fix** (`phase/P182`, commit `498c222`, test-only): the new line-126
+  re-gating test was authored with two `deployFlow` calls but no editor reload between them, so the
+  panel bound to the stale free-mounted node and (correctly) derived "not in a repeat" — added a
+  reload before the re-open; the implementation derivation was correct and the assertion was NOT
+  weakened. CONSUMED helper `mountIsInsideRepeat` confirmed present before starting.
+- **cost:** session agent-acb1a7330743ac2b7 (~17m) + fix session a6a9d9f3a1447896f (~7m) +
+  orchestrator editor-folder E2E gate.
