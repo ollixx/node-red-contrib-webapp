@@ -55,3 +55,20 @@ Ergänzende Renderer-Unit-Coverage: `packages/runtime/test/p173-list-single-sele
 - `visible` anwendbar; `disabled` anwendbar (Zeilen-Interaktion); `color`
   anwendbar (non-variant, Literal-Roundtrip); `size` N/A (Hinweis: `displayType`
   steuert die Dichte).
+
+### Per-Item-Icon (P176)
+
+Das Item-Schema `{id?,label,value?,icon?}` verspricht ein führendes `icon`.
+`icon` ist ein backend-neutraler Icon-Wert (bare Name gegen die Shoelace-
+Default-Library ODER `{library?,name}`), gerendert als führendes
+`<sl-icon class="webapp-list-item-icon …">` vor dem Label — in interaktiven
+UND nicht-interaktiven Zeilen; fehlendes `icon` → kein Icon-Element (unverändert);
+String-Kurzform (Item ist ein String) → kein Icon.
+
+Umgesetzt in `tests/e2e/nodes/view/ui-list.spec.ts` (`describe` „per-item icon (P176)"):
+
+- **I01** Nicht-interaktiv: Item mit bare-String-Icon `"star"` → `<sl-icon
+  class="webapp-list-item-icon" name="star">`; Item ohne Icon → kein Icon.
+- **I02** Interaktiv (itemClick): Icon als führendes Kind im `<a>`; ohne Icon → kein Icon.
+- **I03** Objekt-Form `{name:"bell"}` rendert; String-Kurzform hat kein Icon und kein Crash.
+- **I04** Icon + value (badge) koexistieren: Icon führt, Badge folgt dem Label.
