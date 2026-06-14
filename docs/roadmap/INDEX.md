@@ -27,7 +27,7 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P180** — nodes/ui-list — displayType als semantisches Intent-Enum (plain/divided/grouped/actionable) + ordered (ul/ol); Shoelace-Mapping inkl. grouped Kasten-Look — *ADR 0021; semantische Intents statt backend-Enum* — [P180](nodes/ui-list/P180-list-displaytype-semantic-intents.md)
+_No open work — the roadmap is drained. New work is added here as packages are authored._
 
 
 ## Deferred (parked, not abandoned)
@@ -76,7 +76,7 @@ open the folder for the full history.
 | nodes/ui-repeat | 3 |
 | nodes/ui-stepper | 1 |
 | nodes/ui-menu | 1 |
-| nodes/ui-list | 4 |
+| nodes/ui-list | 5 |
 | nodes/ui-component | 3 |
 | nodes/ui-table | 2 |
 | nodes/ui-icon | 2 |
@@ -93,4 +93,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 179 done, 1 open, 8 deferred.**
+**Total: 180 done, 0 open, 8 deferred.**
