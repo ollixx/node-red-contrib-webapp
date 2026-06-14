@@ -6,7 +6,7 @@ title: "ui-list: displayType als semantisches Intent-Enum (plain/divided/grouped
 findings:
   - "Owner (2026-06-14): 'Ich sehe jetzt ui-list in shoelace als UL/LI tags. Das ist nicht so richtig befriedigend.' Vorstellung: eher die Bootstrap-Lösung, die Listen als kastenförmige explizite Abschnitte rendert; eine einfache HTML-Liste ist aber auch nicht abwegig."
   - "Owner (2026-06-14): Stil-Durchschlag des Backends; je Backend unterschiedliche Optionen gewünscht (Shoelace z.B. UL/OL/tabellarisch als ENUM)."
-  - "Owner-Entscheidung (2026-06-14): semantische Intents JETZT (backend-neutral, je Backend gemappt); backend-spezifische Optionssätze später via P102 (ADR 0020)."
+  - "Owner-Entscheidung (2026-06-14): semantische Intents JETZT (backend-neutral, je Backend gemappt); backend-spezifische Optionssätze später via P102 (ADR 0021)."
 acceptance:
   - "displayType ist ein semantisches Intent-Enum: plain | divided | grouped | actionable (Default: plain — kompatibel zum heutigen Look). Migration: alt default→plain, divided→divided, compact→plain (Dichte separat, s.u.)."
   - "grouped rendert den Kasten-/list-group-Look: jede Zeile eine umrandete Zelle, die Liste als kartenartiger Container (Shoelace-Adapter-Mapping)."
@@ -22,7 +22,7 @@ status: pending
 ---
 # P180 — ui-list: semantische displayType-Intents
 
-> Setzt [ADR 0020](../../../adr/0020-display-intents-semantic-backend-mapped.md)
+> Setzt [ADR 0021](../../../adr/0021-display-intents-semantic-backend-mapped.md)
 > auf ui-list um: der Look wird ein **semantischer Intent**, je Backend gemappt —
 > kein backend-spezifischer Editor-Enum (das wartet auf P102 + 2. Backend). Gibt
 > dir den **Kasten-Look (`grouped`) sofort**, ohne Shoelace einzubrennen.
@@ -45,7 +45,7 @@ status: pending
 
 ## Spec / Tests
 
-- Spec: `displayType`-Tabelle + Theming-Abschnitt auf die Intents ziehen; ADR 0020
+- Spec: `displayType`-Tabelle + Theming-Abschnitt auf die Intents ziehen; ADR 0021
   verlinken; die ui-list↔ui-repeat↔ui-table-Abgrenzung explizit machen.
 - Tests: je Intent ein Render-Nachweis (grouped = Kästen sichtbar; actionable =
   Hover/Klick-Affordanz; ordered = `<ol>`); Migration der Alt-Werte.
@@ -58,7 +58,7 @@ status: pending
 
 ## Risiken / Hinweise
 
-- **Kein** backend-spezifischer Enum im Editor (ADR 0020 §2) — nur semantische
+- **Kein** backend-spezifischer Enum im Editor (ADR 0021 §2) — nur semantische
   Intents. Wer Shoelace-Spezifika will, wartet auf P102.
 - Default-Look = `plain` für Kompatibilität; ob `grouped` der bessere Default für
   „eine Liste sieht aus wie eine Liste" ist, ist eine **Owner-Sub-Entscheidung**

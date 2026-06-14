@@ -1,4 +1,7 @@
-# ADR 0020: display options are semantic intents, mapped per backend (not backend-specific enums)
+# ADR 0021: display options are semantic intents, mapped per backend (not backend-specific enums)
+
+> Renumbered 0020 → 0021 (2026-06-14) to resolve a concurrent ADR-number collision with
+> the Components ADR ([ADR 0020](0020-component-model-dedicated-ui-component-node.md)).
 
 - Status: accepted
 - Date: 2026-06-14

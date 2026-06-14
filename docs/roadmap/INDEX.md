@@ -27,7 +27,7 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P180** — nodes/ui-list — displayType als semantisches Intent-Enum (plain/divided/grouped/actionable) + ordered (ul/ol); Shoelace-Mapping inkl. grouped Kasten-Look — *ADR 0020; semantische Intents statt backend-Enum* — [P180](nodes/ui-list/P180-list-displaytype-semantic-intents.md)
+- **P180** — nodes/ui-list — displayType als semantisches Intent-Enum (plain/divided/grouped/actionable) + ordered (ul/ol); Shoelace-Mapping inkl. grouped Kasten-Look — *ADR 0021; semantische Intents statt backend-Enum* — [P180](nodes/ui-list/P180-list-displaytype-semantic-intents.md)
 
 
 ## Deferred (parked, not abandoned)
