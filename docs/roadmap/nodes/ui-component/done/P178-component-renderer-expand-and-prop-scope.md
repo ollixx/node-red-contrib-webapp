@@ -17,11 +17,11 @@ verify: unit
 spec: docs/nodes/structure/ui-component.md
 tests: tests/e2e/nodes/view/ui-component.tests.md
 dependencies: [P177]
-status: in_progress
+status: done
 ---
 # P178 — ui-component Renderer: expandComponent + propScope
 
-> Zweite Schicht von [ADR 0020](../../../adr/0020-component-model-dedicated-ui-component-node.md).
+> Zweite Schicht von [ADR 0020](../../../../adr/0020-component-model-dedicated-ui-component-node.md).
 > Der Renderer macht die Instanz-Expansion und löst die neue scope-lokale Binding-
 > Art `prop` auf. Setzt auf das Schema (P177) auf und ist **1:1 modelliert auf
 > `expandRepeat`** (ADR 0017) — Komposition statt neuem Mechanismus.
@@ -68,3 +68,34 @@ status: in_progress
   braucht, stimmt etwas an ADR 0017/0020 nicht → zurückmelden.
 - **v1 read-only / presentational:** kein Child-Slot-Projection (P142), kein
   Per-Instanz-State. Nur props rein, Render raus.
+
+## Result
+
+- **delivered:** Components wave (ADR 0020) Schicht 2 — the renderer. `expandComponent`
+  (`packages/renderer/src/renderer.ts`, modelled 1:1 on `expandRepeat`): resolve the instance's
+  `props` typedInputs → build one `propScope` frame → push onto a new `BindingSources.propScope`
+  stack (next to `itemScope`) → render the `def:<definitionId>/content` subtree against the extended
+  scope → re-id each node `<instanceId>#<innerNodeId>` → flatten into the instance's host region →
+  pop. Added the `prop`/`prop.<path>` case to `resolveBinding` (against the top `propScope` frame;
+  `getValueAtPath` so bare `prop` = whole value and `prop.<a.b>` reaches multi-level; outside an
+  instance → `undefined`, fallback applies). Two new renderer component kinds
+  (component-definition/component-instance). Touched `renderer.ts` + `contracts.ts`.
+- **stats:** 3 src files + new `packages/renderer/test/p178-component-expand-prop-scope.test.ts`
+  (**13 snapshot tests**, renderer 103→116). Develop verification: `pnpm build` exit 0; unit green
+  (schema 353, renderer 116, editor 117, runtime 1001); **render regression 27/27 green**
+  (ui-repeat + ui-list + ui-tabs — the neighbors sharing the expand/scope machinery — no regression).
+  check:roadmap + check:links + lint OK.
+- **notes:** **nested** — an instance/repeat inside a definition's `def:` subtree recurses against
+  the extended scope; clones stack id prefixes (`<outerId>#<innerInst>#<leaf>`) like nested repeats;
+  each instance resolves its own props against the current scope (an inner instance's prop can bind
+  the outer `prop.*`). **self-guard** — a `visitedDefinitions` path list cuts an instance of a
+  definition already on the active expansion path (returns `[]`, defined termination, no hang;
+  direct `recur→recur` + transitive `A→B→A` tested). **definition-not-rendered** — relies on P177
+  making `def:` mounts deliberately unresolvable by the AppModel resolver, so no region matcher
+  enumerates a definition/its `def:` children directly; only `expandComponent` (via an instance)
+  consumes the `def:`-rooted subtree (new `createComponentDefChildMatcher`, the repeat-child recipe
+  with a `def:` head). A definition with children but no instance emits nothing — verified.
+  Flagged pre-existing tech debt (NOT introduced here): a stray NUL byte in `renderer.ts` makes it
+  grep-hostile — separate cleanup task spawned. **Next: P179 (node registration + editor + browser
+  proof) closes the wave.**
+- **cost:** session a00e7f56378783cba, ~14m (+ orchestrator develop verification).

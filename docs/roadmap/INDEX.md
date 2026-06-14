@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P178** — nodes/ui-component — Renderer: `expandComponent` (Definition-Subtree an Instanz-Mount), `prop.<name>`-Auflösung, nested + Self-Guard, Re-Id/Keying — *Components-Welle, Schicht 2; braucht P177* — [P178](nodes/ui-component/P178-component-renderer-expand-and-prop-scope.md)
 - **P179** — nodes/ui-component — Node-Registrierung + Editor (def-Slot, definitionId-Picker, props-Map) + Runtime-Bucketing + Browser-Beweis — *Components-Welle, Schicht 3; braucht P178* — [P179](nodes/ui-component/P179-component-node-registration-editor-and-proof.md)
 
 
@@ -78,7 +77,7 @@ open the folder for the full history.
 | nodes/ui-stepper | 1 |
 | nodes/ui-menu | 1 |
 | nodes/ui-list | 4 |
-| nodes/ui-component | 1 |
+| nodes/ui-component | 2 |
 | nodes/ui-table | 2 |
 | nodes/ui-icon | 2 |
 | nodes/ui-accordion | 2 |
@@ -94,4 +93,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 177 done, 2 open, 8 deferred.**
+**Total: 178 done, 1 open, 8 deferred.**
