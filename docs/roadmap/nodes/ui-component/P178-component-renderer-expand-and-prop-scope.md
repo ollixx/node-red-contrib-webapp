@@ -17,7 +17,7 @@ verify: unit
 spec: docs/nodes/structure/ui-component.md
 tests: tests/e2e/nodes/view/ui-component.tests.md
 dependencies: [P177]
-status: pending
+status: in_progress
 ---
 # P178 — ui-component Renderer: expandComponent + propScope
 
