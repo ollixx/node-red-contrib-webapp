@@ -15,7 +15,7 @@ verify: browser
 spec: docs/nodes/concepts/editor.md
 tests: tests/e2e/nodes/view/ui-repeat.tests.md
 dependencies: []
-status: pending
+status: in_progress
 ---
 # P182 — Scope-lokale Binding-Arten kontext-gated anbieten
 
