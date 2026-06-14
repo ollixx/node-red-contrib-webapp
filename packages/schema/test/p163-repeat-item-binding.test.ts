@@ -69,8 +69,11 @@ describe("P163 (ADR 0017): ui-repeat node definition", () => {
 });
 
 describe("P163 (ADR 0017): scope-local binding kinds item / index", () => {
-    it("declares item and index as the scope-local kinds", () => {
-        expect([...SCOPE_LOCAL_BINDING_KINDS]).toEqual(["item", "index"]);
+    it("declares item and index among the scope-local kinds", () => {
+        // P177 (ADR 0020) added `prop` as a third scope-local sibling; `item`/`index`
+        // remain present and unchanged.
+        expect(SCOPE_LOCAL_BINDING_KINDS).toContain("item");
+        expect(SCOPE_LOCAL_BINDING_KINDS).toContain("index");
     });
 
     it("accepts a bare `item` binding (whole current element)", () => {

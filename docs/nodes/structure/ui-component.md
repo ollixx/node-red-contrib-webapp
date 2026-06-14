@@ -24,3 +24,54 @@ machinery ([ADR 0017](../../adr/0017-ui-repeat-template-container-render-time-sc
   self-reference guard. *(P178.)*
 - **v1 cut** — props in / events out; **no** child-slot projection (composition,
   P142); **no** per-instance state (presentational).
+
+## Schema (P177 — shipped in `packages/schema`)
+
+### `ui-component-definition`
+
+A **container-kind** node, registered alongside `ui-container`/`ui-repeat`. Its
+children mount into a fixed default slot named `content`, exported as the constant
+`COMPONENT_DEF_SLOT = "content"` — the full mount string is `def:<componentId>/content`.
+The definition is **off-canvas**: it has **no required outer `mount`/`parent`**
+(it never renders on its own — it exists only to be expanded by instances). The
+node's own **`id` is its `componentId`**. The only other field is an optional
+display `name` for the editor/structure sidebar.
+
+### `ui-component-instance`
+
+A **leaf-shaped** node (no children of its own) that **must** carry an outer
+`mount`/`parent` into a real route/container (like any mounted node). Fields:
+
+- **`definitionId`** *(required string)* — the id of the `ui-component-definition`
+  it instantiates.
+- **`props`** *(map `name → value-binding`, default `{}`)* — each value is an
+  ordinary value-binding of **any** binding kind (literal/state/store/query/item/…).
+  Optional and may be empty.
+
+### `def:` mount scope
+
+`parseMountReference` (`packages/schema/src/validation.ts`) learns
+`def:<componentId>/<slot>` as a **sibling** of `route:`/`dialog:`/`layout:`. It
+parses/serialises **losslessly** (the `<target>/<region…>` grammar mirrors
+dialog/layout); an unknown scope is still rejected. A `def:` mount is **resolved at
+render time** by `expandComponent` (P178), so the AppModel-side resolver
+(`resolveNamedMount`) intentionally does **not** anchor it into a route/dialog/layout.
+
+### `prop` / `prop.<name>` binding kind
+
+`prop` joins `SCOPE_LOCAL_BINDING_KINDS` (`packages/schema/src/contracts.ts`) as the
+exact sibling of `item`/`index` (ADR 0017). `prop` alone is the whole prop value; an
+optional dotted `path` (`prop.<name>`, one- or multi-level, e.g. `prop.address.city`)
+selects a field — the `prop.` prefix is the **kind**, the `path` carries only the
+field tail. This phase validates **form only**; resolution against the instance's
+render-time `propScope` is P178. Outside any instance, `prop.<name>` resolves to
+`undefined` (an editor-validateable misuse), mirroring `item` today.
+
+### Self-reference validation
+
+`validateComponentAcyclic(nodes)` is a **pure** function that reconstructs the
+definition→definition instantiation graph (an instance inside definition *D*
+referencing definition *T* is an edge *D → T*, where *D* is found by walking the
+instance's `def:` mount/parent chain) and rejects any cycle — a definition that
+instantiates itself **directly or transitively** — with a clear error message. An
+acyclic definition→instance graph is valid.

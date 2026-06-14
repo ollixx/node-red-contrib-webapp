@@ -15,6 +15,8 @@ describe("editor node set", () => {
             "ui-breadcrumb",
             "ui-button",
             "ui-checkbox",
+            "ui-component-definition",
+            "ui-component-instance",
             "ui-container",
             "ui-datepicker",
             "ui-dialog",
