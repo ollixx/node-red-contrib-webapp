@@ -15,12 +15,12 @@ verify: browser
 spec: docs/nodes/display/ui-list.md
 tests: tests/e2e/nodes/view/ui-list.tests.md
 dependencies: []
-status: in_progress
+status: done
 ---
 # P176 — ui-list: per-Item-Icon rendern
 
 > Kleiner, klar umrissener Bugfix. Das Item-Schema verspricht ein führendes
-> `icon` (Spec [Item-Schema](../../../nodes/display/ui-list.md#item-schema--das-datenmodell)),
+> `icon` (Spec [Item-Schema](../../../../nodes/display/ui-list.md#item-schema--das-datenmodell)),
 > der Serializer setzt es aber nicht um.
 
 ## Kern des Fixes
@@ -59,3 +59,21 @@ List-Block.
   einfach als führendes Inline-`<sl-icon>` vor das Label setzen (Abstand via CSS-
   Klasse, z. B. `webapp-list-item-icon`).
 - Konsistenz mit ui-icon/ui-button (gleicher `renderIconHtml`-Pfad) wahren.
+
+## Result
+
+- **delivered:** Fixed the per-item icon in ui-list — the `kind==="list"` serializer block
+  (`resources/lib/webapp-serializer.js`) now calls the pre-existing `renderIconHtml(row.icon, …)`
+  per row and injects a **leading `<sl-icon class="webapp-list-item-icon …">`** before the label in
+  BOTH the interactive (`<a>`, itemClick/selectable) and non-interactive (`<li>`) branches;
+  backend-neutral (bare string vs `{library?,name}`, Shoelace default library), the same path
+  ui-button/ui-icon/ui-breadcrumb use. Missing `icon` → no icon (unchanged); string-shorthand items
+  (no `.icon`) untouched. No schema/renderer/editor change.
+- **stats:** 3 files (+156); +4 ui-list E2E (I01–I04). Develop verification: `pnpm build` exit 0;
+  unit **1537** green; ui-list view spec **16/16 green** — I01 (non-interactive bare-string icon, no
+  icon when absent), I02 (interactive icon inside `<a>`), I03 (object-form `{name}` + string-shorthand
+  safety), I04 (icon + badge coexist: icon leads, badge follows). check:roadmap + check:links + lint
+  OK; minimal-coverage unaffected (no editor field change).
+- **notes:** Pure serializer fix using the existing helper — no new mechanism. Spec doc's
+  item-schema icon open-point closed.
+- **cost:** session ac6c3eeee912473ca, ~8m (+ orchestrator develop E2E).
