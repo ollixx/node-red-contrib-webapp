@@ -91,7 +91,7 @@ Ebene-2-Rolle. Diese gehören **nicht** ins Variant-Vokabular und liegen im Feld
 | `ui-skeleton` | `text`, `avatar`, `card`, `table` |
 | `ui-badge` (Form) | `rounded` (Default), `pill`, `square` |
 | `ui-menu` | `sidebar`, `topbar`, `dropdown` |
-| `ui-list` | `default`, `divided`, `compact` |
+| `ui-list` | `plain` (Default), `divided`, `grouped`, `actionable` — semantic intents (P180 / ADR 0021); migration: `default`→`plain`, `compact`→`plain` |
 
 ### Regeln für den Adapter (Ebene 3)
 
