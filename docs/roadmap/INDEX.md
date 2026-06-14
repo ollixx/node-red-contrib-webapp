@@ -29,6 +29,7 @@ their blocker clears.
 
 - **P181** — aspects/editor — installBaseFields: gültiger Boolean-Default-Typ für visible/disabled (leer fällt auf `str` ∉ boolean-Set → store-Fallback mit leerem Dropdown + `…`) — *zentral; alle Knoten; Owner-Bug 2026-06-14* — [P181](aspects/editor/P181-base-field-boolean-default-type.md)
 - **P182** — aspects/editor — scope-lokale Binding-Arten kontext-gated: `item`/`index` nur unter ui-repeat, `prop` nur in Component-Def (sonst aus dem typedInput-Set) — *zentral; mountIsInsideRepeat vorhanden; Owner 2026-06-14* — [P182](aspects/editor/P182-scope-local-binding-kinds-context-gated.md)
+- **P183** — nodes/ui-list — Visual-Design: Zeilen-Anatomie (Icon|Label|Wert) + displayType-Intents als CSS (plain default, divided, grouped Kasten, actionable hover/active) + `color` Token/CSS auflösen — *Folge zu P180; Owner-Design 2026-06-14* — [P183](nodes/ui-list/P183-list-visual-design-and-color.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -94,4 +95,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 180 done, 2 open, 8 deferred.**
+**Total: 180 done, 3 open, 8 deferred.**
