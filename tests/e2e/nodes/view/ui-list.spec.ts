@@ -383,3 +383,129 @@ test.describe("ui-list — single-select (P173)", () => {
         expect(body.event).toBe("itemClick");
     });
 });
+
+/**
+ * P176 — ui-list: per-item icon rendering.
+ * Each item may declare an `icon` field (bare string OR {library?,name}).
+ * The serializer must emit a leading <sl-icon class="webapp-list-item-icon …">
+ * before the label in BOTH interactive and non-interactive rows.
+ * Items without an icon field are unaffected.
+ */
+test.describe("ui-list — per-item icon (P176)", () => {
+    test.afterEach(async ({ request }) => {
+        await resetFlow(request);
+    });
+
+    test("I01 — non-interactive: item with bare-string icon renders a leading sl-icon; item without icon does not", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "listIconNonIntApp", root: "listIconNonIntApp" })
+            .node("ui-list", {
+                id: "listIconNonIntNode",
+                items: { kind: "literal", value: [
+                    { id: "i1", label: "With icon", icon: "star" },
+                    { id: "i2", label: "No icon" }
+                ] }
+                // no events → non-interactive rows
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "listIconNonIntApp");
+        await webapp.navigate("/");
+
+        const items = page.locator("ul.webapp-list li.webapp-list-item");
+        await expect(items).toHaveCount(2);
+
+        // Row with icon: leading sl-icon before the label text.
+        const iconEl = items.nth(0).locator("sl-icon.webapp-list-item-icon");
+        await expect(iconEl).toHaveCount(1);
+        await expect(iconEl).toHaveAttribute("name", "star");
+
+        // Row without icon: no sl-icon.
+        await expect(items.nth(1).locator("sl-icon.webapp-list-item-icon")).toHaveCount(0);
+    });
+
+    test("I02 — interactive (itemClick): item with bare-string icon renders a leading sl-icon inside the <a>", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "listIconIntApp", root: "listIconIntApp" })
+            .node("ui-list", {
+                id: "listIconIntNode",
+                items: { kind: "literal", value: [
+                    { id: "j1", label: "Clickable with icon", icon: "heart" },
+                    { id: "j2", label: "Clickable no icon" }
+                ] },
+                events: JSON.stringify(["itemClick"])
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "listIconIntApp");
+        await webapp.navigate("/");
+
+        const links = page.locator("ul.webapp-list li.webapp-list-item a.webapp-link");
+        await expect(links).toHaveCount(2);
+
+        // Row with icon: leading sl-icon inside the <a>.
+        const iconEl = links.nth(0).locator("sl-icon.webapp-list-item-icon");
+        await expect(iconEl).toHaveCount(1);
+        await expect(iconEl).toHaveAttribute("name", "heart");
+
+        // Row without icon: no sl-icon.
+        await expect(links.nth(1).locator("sl-icon.webapp-list-item-icon")).toHaveCount(0);
+    });
+
+    test("I03 — object-form icon {name} renders correctly; string shorthand item has no icon", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "listIconObjApp", root: "listIconObjApp" })
+            .node("ui-list", {
+                id: "listIconObjNode",
+                items: { kind: "literal", value: [
+                    { id: "k1", label: "Object icon", icon: { name: "bell" } },
+                    "String shorthand"
+                ] }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "listIconObjApp");
+        await webapp.navigate("/");
+
+        const items = page.locator("ul.webapp-list li.webapp-list-item");
+        await expect(items).toHaveCount(2);
+
+        // Object-form icon renders.
+        await expect(items.nth(0).locator("sl-icon.webapp-list-item-icon")).toHaveCount(1);
+        await expect(items.nth(0).locator("sl-icon.webapp-list-item-icon")).toHaveAttribute("name", "bell");
+
+        // String shorthand has no icon.
+        await expect(items.nth(1).locator("sl-icon.webapp-list-item-icon")).toHaveCount(0);
+        await expect(items.nth(1)).toContainText("String shorthand");
+    });
+
+    test("I04 — icon + value (badge) both render: icon leads, badge follows the label", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "listIconBadgeApp", root: "listIconBadgeApp" })
+            .node("ui-list", {
+                id: "listIconBadgeNode",
+                items: { kind: "literal", value: [
+                    { id: "m1", label: "Inbox", icon: "inbox", value: 5 }
+                ] },
+                displayValue: "badge",
+                badgeVariant: "primary"
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "listIconBadgeApp");
+        await webapp.navigate("/");
+
+        const item = page.locator("ul.webapp-list li.webapp-list-item").first();
+        await expect(item.locator("sl-icon.webapp-list-item-icon")).toHaveCount(1);
+        await expect(item.locator("sl-badge.webapp-list-value")).toHaveCount(1);
+        await expect(item.locator("sl-badge.webapp-list-value")).toContainText("5");
+    });
+});

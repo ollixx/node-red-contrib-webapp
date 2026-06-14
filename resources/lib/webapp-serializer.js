@@ -1111,6 +1111,17 @@
                             + escapeHtml(String(value)) + "</sl-badge>";
                     }
                 }
+                // P176: per-item leading icon. renderIconHtml normalises bare string
+                // OR {library?,name} → <sl-icon …>; missing/falsy icon → "".
+                // Inject webapp-list-item-icon CSS class for spacing by replacing the
+                // first occurrence of class=" in the returned tag (which always starts
+                // with `<sl-icon class="webapp-icon…"`).
+                const rawIconHtml = (row && typeof row === "object" && row.icon !== undefined)
+                    ? renderIconHtml(row.icon, {})
+                    : "";
+                const leadingIcon = rawIconHtml
+                    ? rawIconHtml.replace("class=\"webapp-icon", "class=\"webapp-list-item-icon webapp-icon")
+                    : "";
                 const rowAttr = " data-webapp-row=\"" + escapeAttribute(JSON.stringify(row)) + "\"";
                 // P173: the row whose id matches the resolved selectedId is marked
                 // selected (aria-selected + webapp-list-item--selected). Only meaningful
@@ -1124,9 +1135,9 @@
                     const selectableAttr = selectable ? " data-webapp-selectable=\"true\"" : "";
                     return "<li class=\"" + liClass + "\"" + liAttr + "><a class=\"webapp-link\" href=\"#\""
                         + src + " data-webapp-event=\"click\" data-webapp-item=\"" + escapeAttribute(rowId) + "\""
-                        + selectableAttr + rowAttr + ">" + label + valueHtml + "</a></li>";
+                        + selectableAttr + rowAttr + ">" + leadingIcon + label + valueHtml + "</a></li>";
                 }
-                return "<li class=\"" + liClass + "\"" + liAttr + ">" + label + valueHtml + "</li>";
+                return "<li class=\"" + liClass + "\"" + liAttr + ">" + leadingIcon + label + valueHtml + "</li>";
             }).join("");
             return wrapRenderedComponentHtml(component, layoutId, "<ul" + listDisabled + colorStyle + ">" + itemHtml + "</ul>");
         }
