@@ -195,6 +195,35 @@ string/number/json/timestamp) und `{ category: "url" }` (für `href`/`to`: nur
 str + msg/JSONata + Store/Reactive + Flow/Global/Env). Ein Feld ohne deklarierte
 Kategorie → Wert/Anzeige-Vollsatz.
 
+### Scope-lokale Binding-Arten sind kontext-gated (P182, ADR 0017 / ADR 0020)
+
+Zusätzlich zum globalen 14er-Satz gibt es **scope-lokale** Binding-Arten, die nur
+im jeweiligen Template-Container auflösen — sie erscheinen daher im typedInput-Satz
+**nur**, wenn der editierte Knoten (transitiv) in diesem Container hängt:
+
+| typedInput-Typ | Binding-`kind` | Scope | sichtbar wenn … |
+|---|---|---|---|
+| item (Repeat) | `item` | `ui-repeat`-Template | der Knoten (transitiv) unter einem `ui-repeat` mountet |
+| index (Repeat) | `index` | `ui-repeat`-Template | wie `item` |
+| prop (Component) | `prop` | `ui-component-definition`-Template (`def:`-Scope) | der Knoten (transitiv) in einer Komponenten-Definition mountet |
+
+Außerhalb des passenden Scopes würden diese Arten zur Render-Zeit zu `undefined`
+auflösen — sie wären reines Rauschen und werden deshalb **aus dem Dropdown
+ausgeblendet**. Den Scope ermittelt `valueBindingTypes()` aus dem live editierten
+Formular (`#node-input-mount` + `collectReferenceNodes()`) über die Helfer
+`mountIsInsideRepeat()` bzw. `mountIsInsideComponentDef()`; ein Aufrufer kann den
+Scope auch explizit übergeben (`scope: { repeat, componentDef }`).
+
+**Editierbarkeit bestehender Configs:** trägt das Feld bereits ein
+`item`/`index`/`prop`-Binding (`currentKind`), bleibt der jeweilige Typ im Satz —
+auch wenn der Knoten nicht (mehr) im Scope hängt —, damit ein gespeichertes Binding
+beim erneuten Öffnen nicht still verloren geht. Der advisory `installRepeatScopeHint`
+bleibt als Backstop für den Fall „Binding gesetzt, dann aus dem Repeat gezogen".
+
+> **Re-open-Caveat:** ändert man den Mount nachträglich **in** einen Repeat/eine
+> Definition hinein, erscheint der scope-lokale Typ erst beim **erneuten Öffnen**
+> des Panels (der Typsatz wird in `oneditprepare` einmal gebaut).
+
 > **`msg`/`jsonata` sind message-getrieben und flüchtig (Owner-Entscheid
 > 2026-06-10).** Der zuletzt aus einer Nachricht erfasste Wert lebt nur in der
 > Live-Definition (Backend), **nicht** im Flow-File. Ein **NR-Deploy** (und ein

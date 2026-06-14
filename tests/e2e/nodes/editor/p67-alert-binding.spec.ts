@@ -76,14 +76,19 @@ test.describe("editor panel — ui-alert message/title typedInput (P67)", () => 
                 ));
             return (instance?.typeList ?? []).map((t) => (typeof t === "string" ? t : t.value));
         });
-        // P165 (ADR 0017): the canonical value set gained the two scope-local
-        // `item`/`index` repeat kinds at the tail (offered on every value field;
-        // outside a repeat they show an out-of-repeat hint).
+        // P182 (ADR 0017 / ADR 0020): the scope-local `item`/`index`/`prop` kinds
+        // are CONTEXT-GATED — offered ONLY when the edited node is inside a
+        // ui-repeat (item/index) or a ui-component-definition (prop). This
+        // ui-alert is mounted in a plain route slot — neither scope — so its
+        // canonical value set is exactly the 14 global kinds, with NO item/index
+        // and NO prop.
         expect(messageTypes).toEqual([
             "store", "query", "routeParam", "reactive", "msg", "jsonata",
-            "str", "num", "bool", "json", "date", "flow", "global", "env",
-            "item", "index"
+            "str", "num", "bool", "json", "date", "flow", "global", "env"
         ]);
+        expect(messageTypes).not.toContain("item");
+        expect(messageTypes).not.toContain("index");
+        expect(messageTypes).not.toContain("prop");
     });
 
     test("setting message to a store binding round-trips on save", async ({ page, request }) => {

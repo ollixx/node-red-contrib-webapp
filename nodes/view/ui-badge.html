@@ -58,7 +58,7 @@
                 const valueInput = $("#node-input-valueBinding");
                 valueInput.typedInput({
                     default: valueEditor.type,
-                    types: common.valueBindingTypes({ category: "value" })
+                    types: common.valueBindingTypes({ category: "value", currentKind: valueEditor.type })
                 });
                 valueInput.typedInput("type", valueEditor.type);
                 valueInput.typedInput("value", valueEditor.value);

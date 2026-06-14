@@ -11,9 +11,12 @@
         // `srcPath` (plain state path) is migrated to a state binding on first open.
         function applyImageTypedInput(selector, binding) {
             const input = $(selector);
-            const types = common.valueBindingTypes({ includeAsset: true });
+            const isAsset = binding && binding.kind === "literal" && typeof binding.value === "string" && binding.value.indexOf("asset:") === 0;
+            // P182: keep the field's current scope-local kind editable outside scope.
+            const currentKind = isAsset ? "asset" : common.readValueBinding(binding, "").type;
+            const types = common.valueBindingTypes({ includeAsset: true, currentKind: currentKind });
             input.typedInput({ default: "str", types: types });
-            if (binding && binding.kind === "literal" && typeof binding.value === "string" && binding.value.indexOf("asset:") === 0) {
+            if (isAsset) {
                 input.typedInput("type", "asset");
                 input.typedInput("value", binding.value.slice("asset:".length));
             } else {
@@ -36,7 +39,7 @@
         function applyInitialsTypedInput(selector, binding) {
             const input = $(selector);
             const editor = common.readValueBinding(binding, "");
-            input.typedInput({ default: "str", types: common.valueBindingTypes() });
+            input.typedInput({ default: "str", types: common.valueBindingTypes({ currentKind: editor.type }) });
             input.typedInput("type", editor.type);
             input.typedInput("value", editor.value);
         }

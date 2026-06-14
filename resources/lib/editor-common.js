@@ -550,7 +550,10 @@
                 var colorInput = $("#node-input-colorBinding");
                 colorInput.typedInput({
                     default: colorEditor.type,
-                    types: valueBindingTypes({ category: "value" })
+                    // P182: gate the scope-local kinds by the edited node's scope;
+                    // keep the current kind so an existing item/index/prop colour
+                    // binding stays editable even when re-opened outside its scope.
+                    types: valueBindingTypes({ category: "value", currentKind: colorEditor.type })
                 });
                 colorInput.typedInput("type", colorEditor.type);
                 colorInput.typedInput("value", colorEditor.value);
@@ -1085,6 +1088,80 @@
             return false;
         }
         return false;
+    }
+
+    // P182 (ADR 0020): does this mount value sit (transitively) inside a
+    // `ui-component-definition` template? A node mounts into a definition via the
+    // `def:<id>/content` head (P179). A direct child therefore carries a mount
+    // that starts with `def:`; a transitive child mounts into a plain
+    // `container:<id>/...` whose container's own mount resolves upward to a `def:`
+    // head (or to a container whose node type is `ui-component-definition`). Walks
+    // the container chain upward like `mountIsInsideRepeat`. Pure except for the
+    // RED.nodes lookup of each ancestor's type. Used to gate the scope-local
+    // `prop` kind — it only resolves inside a component definition.
+    function mountIsInsideComponentDef(mountValue, references) {
+        if (!mountValue) {
+            return false;
+        }
+        // A `def:` head means the field's node mounts directly into a definition.
+        if (mountValue.startsWith("def:")) {
+            return true;
+        }
+        const seen = new Set();
+        let current = mountValue;
+        while (current && !seen.has(current)) {
+            seen.add(current);
+            if (current.startsWith("def:")) {
+                return true;
+            }
+            if (!current.startsWith("container:")) {
+                // App/route/dialog slot — no definition above this point.
+                return false;
+            }
+            const sepIdx = current.lastIndexOf("/");
+            const containerId = sepIdx >= 0
+                ? current.slice("container:".length, sepIdx)
+                : current.slice("container:".length);
+            const ancestor = RED.nodes.node(containerId);
+            if (ancestor && ancestor.type === "ui-component-definition") {
+                return true;
+            }
+            const container = references.containers.find(function (c) { return c.id === containerId; });
+            if (container && container.mount) {
+                current = container.mount;
+                continue;
+            }
+            return false;
+        }
+        return false;
+    }
+
+    // P182: derive the scope-local binding scope for the node currently being
+    // edited, from the live edit form. Returns `{ repeat, componentDef }` —
+    // whether the edited node sits (transitively) inside a `ui-repeat` template
+    // and/or a `ui-component-definition` template. Used by `valueBindingTypes` to
+    // gate the scope-local `item`/`index`/`prop` kinds when no explicit scope is
+    // supplied by the caller. Safe outside a DOM/RED context: returns both-false
+    // when the editor globals (`$`, `RED`) or the mount field are absent, so the
+    // scope-local kinds are gated OUT by default (the maximal-safe behaviour —
+    // they only resolve inside their container).
+    function currentEditorScope() {
+        if (typeof $ === "undefined" || typeof RED === "undefined" || !RED.nodes) {
+            return { repeat: false, componentDef: false };
+        }
+        const $mount = $("#node-input-mount");
+        if (!$mount || !$mount.length) {
+            return { repeat: false, componentDef: false };
+        }
+        const mountVal = String($mount.val() || "");
+        if (!mountVal) {
+            return { repeat: false, componentDef: false };
+        }
+        const references = collectReferenceNodes();
+        return {
+            repeat: mountIsInsideRepeat(mountVal, references),
+            componentDef: mountIsInsideComponentDef(mountVal, references)
+        };
     }
 
     // P165 (ADR 0017): mount a live hint under a value typedInput that warns when
@@ -3776,6 +3853,20 @@
     function valueBindingTypes(options) {
         var opts = options || {};
         var category = opts.category || "value";
+        // P182: the scope-local kinds (`item`/`index` from a ui-repeat, `prop`
+        // from a ui-component-definition) are CONTEXT-GATED — they only appear in
+        // the value set when the edited node actually sits inside the matching
+        // container, or when the field already carries that kind (so existing
+        // configs stay editable). The scope can be passed explicitly by a caller
+        // that already knows it (`scope: { repeat, componentDef }`); when omitted
+        // it is derived from the live edit form. `currentKind` is the field's
+        // currently-selected typedInput type — its matching scope-local kind is
+        // always re-included so a previously-saved binding never silently drops.
+        var scope = opts.scope || currentEditorScope();
+        var currentKind = opts.currentKind || "";
+        var includeRepeatKinds = !!scope.repeat
+            || currentKind === "item" || currentKind === "index";
+        var includeComponentKind = !!scope.componentDef || currentKind === "prop";
         var assetTypes = opts.includeAsset
             ? [assetTypedInputType({ appId: opts.appId })]
             : [];
@@ -3920,10 +4011,13 @@
             ];
         }
 
-        // Default — value/display full set (14 kinds) + the 2 scope-local
-        // ui-repeat kinds (item/index). The scope-local pair sits at the end so it
-        // never shifts the established default ordering of the global kinds.
-        return [
+        // Default — value/display full set (14 kinds). The scope-local kinds are
+        // appended ONLY when the edited node is inside the matching container (or
+        // the field already carries that kind) — see the P182 gating above. They
+        // sit at the tail so they never shift the established ordering of the
+        // global kinds. Outside their scope they are absent (they would resolve to
+        // undefined there — pure noise; ADR 0017 / ADR 0020).
+        var types = [
             storeType,
             queryType,
             routeParamType,
@@ -3938,14 +4032,18 @@
             "date",
             "flow",
             "global",
-            "env",
+            "env"
+        ];
+        if (includeRepeatKinds) {
             // P165 (ADR 0017): scope-local item/index (resolve only inside a repeat).
-            itemType,
-            indexType,
+            types.push(itemType, indexType);
+        }
+        if (includeComponentKind) {
             // P179 (ADR 0020): scope-local prop (resolves only inside a component
             // definition expanded by an instance).
-            propType
-        ];
+            types.push(propType);
+        }
+        return types;
     }
 
     // Serialise a typedInput (type + raw string value) into the stored binding.
@@ -5583,6 +5681,10 @@
         resolveAppFromMount,
         // P165 (ADR 0017): scope-local item/index repeat helpers.
         mountIsInsideRepeat,
+        // P182 (ADR 0020): scope-local prop component-definition helper +
+        // the live-form scope resolver that gates the scope-local kinds.
+        mountIsInsideComponentDef,
+        currentEditorScope,
         installRepeatScopeHint,
         resolveRouteFromMount,
         storeTypedInputType,

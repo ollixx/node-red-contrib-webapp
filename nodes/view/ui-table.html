@@ -69,7 +69,7 @@
                 const rowsInput = $("#node-input-rowsBinding");
                 rowsInput.typedInput({
                     default: rowsDefaultType,
-                    types: common.valueBindingTypes({ category: "value" })
+                    types: common.valueBindingTypes({ category: "value", currentKind: rowsEditor.type })
                 });
                 rowsInput.typedInput("type", rowsEditor.type !== "str" || rowsBinding ? rowsEditor.type : "json");
                 rowsInput.typedInput("value", rowsEditor.value);

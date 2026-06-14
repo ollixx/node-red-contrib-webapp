@@ -59,7 +59,7 @@
                 const itemsInput = $("#node-input-itemsBinding");
                 itemsInput.typedInput({
                     default: itemsDefaultType,
-                    types: common.valueBindingTypes({ category: "value" })
+                    types: common.valueBindingTypes({ category: "value", currentKind: itemsEditor.type })
                 });
                 itemsInput.typedInput("type", itemsEditor.type !== "str" || itemsBinding ? itemsEditor.type : "json");
                 itemsInput.typedInput("value", itemsEditor.value);
@@ -76,7 +76,7 @@
                 const activeInput = $("#node-input-activeRouteBinding");
                 activeInput.typedInput({
                     default: activeEditor.type,
-                    types: common.valueBindingTypes({ category: "value" })
+                    types: common.valueBindingTypes({ category: "value", currentKind: activeEditor.type })
                 });
                 activeInput.typedInput("type", activeEditor.type);
                 activeInput.typedInput("value", activeEditor.value);

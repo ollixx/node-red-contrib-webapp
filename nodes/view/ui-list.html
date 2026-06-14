@@ -169,7 +169,7 @@
                 const selectedInput = $("#node-input-selectedIdBinding");
                 selectedInput.typedInput({
                     default: selectedEditor.type,
-                    types: common.valueBindingTypes({ category: "value" })
+                    types: common.valueBindingTypes({ category: "value", currentKind: selectedEditor.type })
                 });
                 selectedInput.typedInput("type", selectedEditor.type);
                 selectedInput.typedInput("value", selectedEditor.value);
