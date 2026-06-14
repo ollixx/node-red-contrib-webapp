@@ -18,7 +18,7 @@ verify: browser
 spec: docs/nodes/display/ui-list.md
 tests: tests/e2e/nodes/view/ui-list.tests.md
 dependencies: []
-status: pending
+status: in_progress
 ---
 # P180 — ui-list: semantische displayType-Intents
 
