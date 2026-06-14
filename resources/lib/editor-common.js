@@ -487,13 +487,25 @@
                     ? storedVisible
                     : (self.visiblePath ? { kind: "state", path: self.visiblePath } : undefined);
                 var visibleEditor = readValueBinding(visibleBinding, "");
+                // P181: when the binding is absent (`readValueBinding` returns type
+                // 'str' for an empty/undefined input), fall back to 'bool' so
+                // Node-RED shows a clean true/false control instead of the first
+                // entry of the boolean set (store → empty dropdown + '…').
+                var visibleType = visibleEditor.type !== "str" ? visibleEditor.type : "bool";
                 var visibleInput = $("#node-input-visibleBinding");
                 visibleInput.typedInput({
-                    default: visibleEditor.type,
+                    default: visibleType,
                     types: valueBindingTypes({ category: "boolean" })
                 });
-                visibleInput.typedInput("type", visibleEditor.type);
+                visibleInput.typedInput("type", visibleType);
                 visibleInput.typedInput("value", visibleEditor.value);
+                // P181: remember whether the field was originally absent so that
+                // applyBaseFields can preserve the "no binding" state on save when
+                // the user has not actively interacted with the field.
+                visibleInput.data("base-field-originally-empty", !visibleBinding);
+                visibleInput.on("change", function () {
+                    visibleInput.data("base-field-originally-empty", false);
+                });
             }
 
             // disabled — THE P122–P130 boolean-state typedInput, centralised
@@ -504,13 +516,22 @@
                     ? storedDisabled
                     : (self.disabledPath ? { kind: "state", path: self.disabledPath } : undefined);
                 var disabledEditor = readValueBinding(disabledBinding, "");
+                // P181: same fix for disabled — use 'bool' default when no binding.
+                var disabledType = disabledEditor.type !== "str" ? disabledEditor.type : "bool";
                 var disabledInput = $("#node-input-disabledBinding");
                 disabledInput.typedInput({
-                    default: disabledEditor.type,
+                    default: disabledType,
                     types: valueBindingTypes({ category: "boolean" })
                 });
-                disabledInput.typedInput("type", disabledEditor.type);
+                disabledInput.typedInput("type", disabledType);
                 disabledInput.typedInput("value", disabledEditor.value);
+                // P181: remember whether the field was originally absent so that
+                // applyBaseFields can preserve the "no binding" state on save when
+                // the user has not actively interacted with the field.
+                disabledInput.data("base-field-originally-empty", !disabledBinding);
+                disabledInput.on("change", function () {
+                    disabledInput.data("base-field-originally-empty", false);
+                });
             }
 
             // color — general value typedInput (full canonical set); a legacy
@@ -553,18 +574,33 @@
             var applicability = resolveBaseFieldApplicability(config);
 
             if (applicability.visible.applicable) {
-                self.visible = applyValueBinding(
-                    $("#node-input-visibleBinding").typedInput("type"),
-                    $("#node-input-visibleBinding").typedInput("value")
+                var $visibleInput = $("#node-input-visibleBinding");
+                var visibleResult = applyValueBinding(
+                    $visibleInput.typedInput("type"),
+                    $visibleInput.typedInput("value")
                 );
+                // P181: if the field was originally absent AND the result is a bool
+                // literal (produced by the P181 'bool' default type on an untouched
+                // field), keep it null — "no binding" semantics (= always visible).
+                var visibleOriginEmpty = $visibleInput.data("base-field-originally-empty");
+                var visibleIsBoolLiteral = visibleResult && visibleResult.kind === "literal"
+                    && typeof visibleResult.value === "boolean";
+                self.visible = (visibleOriginEmpty && visibleIsBoolLiteral) ? null : visibleResult;
                 self.visiblePath = "";
             }
 
             if (applicability.disabled.applicable) {
-                self.disabled = applyValueBinding(
-                    $("#node-input-disabledBinding").typedInput("type"),
-                    $("#node-input-disabledBinding").typedInput("value")
+                var $disabledInput = $("#node-input-disabledBinding");
+                var disabledResult = applyValueBinding(
+                    $disabledInput.typedInput("type"),
+                    $disabledInput.typedInput("value")
                 );
+                // P181: same guard for disabled — preserve null when field was
+                // originally absent and the result is the auto-generated bool literal.
+                var disabledOriginEmpty = $disabledInput.data("base-field-originally-empty");
+                var disabledIsBoolLiteral = disabledResult && disabledResult.kind === "literal"
+                    && typeof disabledResult.value === "boolean";
+                self.disabled = (disabledOriginEmpty && disabledIsBoolLiteral) ? null : disabledResult;
                 self.disabledPath = "";
             }
 

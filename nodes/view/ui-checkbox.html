@@ -86,13 +86,19 @@
                 var storedDisabled = common.parseBindingValue(this.disabled);
                 var disabledBinding = storedDisabled ? storedDisabled : undefined;
                 var disabledEditor = common.readValueBinding(disabledBinding, "");
+                // P181: use 'bool' default when no binding (avoids store fallback).
+                var disabledType = disabledEditor.type !== "str" ? disabledEditor.type : "bool";
                 var disabledInput = $("#node-input-disabledBinding");
                 disabledInput.typedInput({
-                    default: disabledEditor.type,
+                    default: disabledType,
                     types: common.valueBindingTypes({ category: "boolean" })
                 });
-                disabledInput.typedInput("type", disabledEditor.type);
+                disabledInput.typedInput("type", disabledType);
                 disabledInput.typedInput("value", disabledEditor.value);
+                disabledInput.data("base-field-originally-empty", !disabledBinding);
+                disabledInput.on("change", function () {
+                    disabledInput.data("base-field-originally-empty", false);
+                });
             },
             oneditsave: function () {
                 // P129: persist label as binding object.
@@ -109,10 +115,16 @@
                 this.valuePath = "";
 
                 // P129: persist disabled as binding object.
-                this.disabled = common.applyValueBinding(
-                    $("#node-input-disabledBinding").typedInput("type"),
-                    $("#node-input-disabledBinding").typedInput("value")
+                // P181: preserve null when field was originally absent and untouched.
+                var $disabledInput = $("#node-input-disabledBinding");
+                var disabledResult = common.applyValueBinding(
+                    $disabledInput.typedInput("type"),
+                    $disabledInput.typedInput("value")
                 );
+                var disabledOriginEmpty = $disabledInput.data("base-field-originally-empty");
+                var disabledIsBoolLiteral = disabledResult && disabledResult.kind === "literal"
+                    && typeof disabledResult.value === "boolean";
+                this.disabled = (disabledOriginEmpty && disabledIsBoolLiteral) ? null : disabledResult;
             }
         });
     })();

@@ -104,13 +104,22 @@
                     ? storedDisabled
                     : (this.disabledPath ? { kind: "state", path: this.disabledPath } : undefined);
                 const disabledEditor = common.readValueBinding(disabledBinding, "");
+                // P181: when the binding is absent, use 'bool' as the default type
+                // so Node-RED shows a clean true/false control instead of the first
+                // entry of the boolean set (store → empty dropdown + '…').
+                const disabledType = disabledEditor.type !== "str" ? disabledEditor.type : "bool";
                 const disabledInput = $("#node-input-disabledBinding");
                 disabledInput.typedInput({
-                    default: disabledEditor.type,
+                    default: disabledType,
                     types: common.valueBindingTypes({ category: "boolean" })
                 });
-                disabledInput.typedInput("type", disabledEditor.type);
+                disabledInput.typedInput("type", disabledType);
                 disabledInput.typedInput("value", disabledEditor.value);
+                // P181: track original-empty to preserve "no binding" on save.
+                disabledInput.data("base-field-originally-empty", !disabledBinding);
+                disabledInput.on("change", function () {
+                    disabledInput.data("base-field-originally-empty", false);
+                });
 
                 // P122 (ADR 0012 / url category): `href` typedInput.
                 // Migration: a legacy literal string `href` becomes
@@ -138,10 +147,17 @@
                 );
 
                 // P122: persist disabled as binding object; clear legacy disabledPath.
-                this.disabled = common.applyValueBinding(
-                    $("#node-input-disabledBinding").typedInput("type"),
-                    $("#node-input-disabledBinding").typedInput("value")
+                // P181: if the field was originally absent and the user never touched
+                // it, keep disabled null (no binding = always enabled).
+                const $disabledInput = $("#node-input-disabledBinding");
+                const disabledResult = common.applyValueBinding(
+                    $disabledInput.typedInput("type"),
+                    $disabledInput.typedInput("value")
                 );
+                const disabledOriginEmpty = $disabledInput.data("base-field-originally-empty");
+                const disabledIsBoolLiteral = disabledResult && disabledResult.kind === "literal"
+                    && typeof disabledResult.value === "boolean";
+                this.disabled = (disabledOriginEmpty && disabledIsBoolLiteral) ? null : disabledResult;
                 this.disabledPath = "";
 
                 // P122: persist href as binding object.

@@ -47,13 +47,22 @@
                     ? storedVisible
                     : (this.visiblePath ? { kind: "state", path: this.visiblePath } : undefined);
                 var visibleEditor = common.readValueBinding(visibleBinding, "");
+                // P181: when the binding is absent, use 'bool' as the default type
+                // so Node-RED shows a clean true/false control instead of the first
+                // entry of the boolean set (store → empty dropdown + '…').
+                var visibleType = visibleEditor.type !== "str" ? visibleEditor.type : "bool";
                 var visibleInput = $("#node-input-visibleBinding");
                 visibleInput.typedInput({
-                    default: visibleEditor.type,
+                    default: visibleType,
                     types: common.valueBindingTypes({ category: "boolean" })
                 });
-                visibleInput.typedInput("type", visibleEditor.type);
+                visibleInput.typedInput("type", visibleType);
                 visibleInput.typedInput("value", visibleEditor.value);
+                // P181: track original-empty to preserve "no binding" on save.
+                visibleInput.data("base-field-originally-empty", !visibleBinding);
+                visibleInput.on("change", function () {
+                    visibleInput.data("base-field-originally-empty", false);
+                });
 
                 // P138: Conditionally disable the `lines` field when the selected
                 // displayType renders no lines (avatar, card, table). Only `text`
@@ -77,10 +86,17 @@
             },
             oneditsave: function () {
                 // P138: persist visible as binding object; clear legacy visiblePath.
-                this.visible = common.applyValueBinding(
-                    $("#node-input-visibleBinding").typedInput("type"),
-                    $("#node-input-visibleBinding").typedInput("value")
+                // P181: if the field was originally absent and the user never touched
+                // it, keep visible null (no binding = always visible).
+                var $visibleInput = $("#node-input-visibleBinding");
+                var visibleResult = common.applyValueBinding(
+                    $visibleInput.typedInput("type"),
+                    $visibleInput.typedInput("value")
                 );
+                var visibleOriginEmpty = $visibleInput.data("base-field-originally-empty");
+                var visibleIsBoolLiteral = visibleResult && visibleResult.kind === "literal"
+                    && typeof visibleResult.value === "boolean";
+                this.visible = (visibleOriginEmpty && visibleIsBoolLiteral) ? null : visibleResult;
                 this.visiblePath = "";
             }
         });

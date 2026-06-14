@@ -272,3 +272,107 @@ test.describe("editor panels — ui-list base fields (P172, ADR 0015)", () => {
         expect(await editor.readTypedInput("colorBinding")).toBe("#aabbcc");
     });
 });
+
+/**
+ * P181 — empty visible/disabled must render a clean boolean typedInput (type
+ * 'bool', no store fallback, no extra dropdown, no '…' expand button).
+ * Tested on ui-list (uses installBaseFields) and ui-list visible field as the
+ * canonical reference; also verifies save-semantics (untouched → null stored).
+ */
+
+test.describe("editor panels — P181: boolean default type for empty visible/disabled", () => {
+    test.afterEach(async ({ request }) => {
+        await resetFlow(request);
+    });
+
+    async function openFreshListPanel(page: import("@playwright/test").Page, request: import("@playwright/test").APIRequestContext) {
+        const nodeId = "list-p181";
+        // Deploy a ui-list node with NO visible/disabled bindings set (both null).
+        const flow = new FlowBuilder()
+            .app({ id: "p181App", root: "p181App", name: "P181 App" })
+            .node("ui-list", { id: nodeId, items: [], visible: null, disabled: null })
+            .build();
+        await deployFlow(request, flow);
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode(nodeId);
+        return { editor, nodeId };
+    }
+
+    test("empty visible field renders with type 'bool' (not 'str'/store fallback)", async ({ page, request }) => {
+        await openFreshListPanel(page, request);
+
+        // The typedInput type must be 'bool', not 'str' (which would fall back to store).
+        const type = await page.evaluate(() => {
+            const $ = (window as unknown as { $: (s: string) => { typedInput: (...a: unknown[]) => string } }).$;
+            return $("#node-input-visibleBinding").typedInput("type");
+        });
+        expect(type).toBe("bool");
+    });
+
+    test("empty disabled field renders with type 'bool' (not 'str'/store fallback)", async ({ page, request }) => {
+        await openFreshListPanel(page, request);
+
+        const type = await page.evaluate(() => {
+            const $ = (window as unknown as { $: (s: string) => { typedInput: (...a: unknown[]) => string } }).$;
+            return $("#node-input-disabledBinding").typedInput("type");
+        });
+        expect(type).toBe("bool");
+    });
+
+    test("empty visible field shows exactly one type-selector button (no store expand '…')", async ({ page, request }) => {
+        await openFreshListPanel(page, request);
+
+        const row = page.locator('[data-base-field="visible"]');
+        // The store type renders an expand button with class red-ui-typedInput-expand
+        // and its icon shows '…'. A clean bool control must not have this button.
+        await expect(row.locator(".red-ui-typedInput-expand")).toHaveCount(0);
+        // Exactly one type-selector button (the dropdown arrow for the type list).
+        await expect(row.locator(".red-ui-typedInput-type-select")).toHaveCount(1);
+    });
+
+    test("empty disabled field shows exactly one type-selector button (no store expand '…')", async ({ page, request }) => {
+        await openFreshListPanel(page, request);
+
+        const row = page.locator('[data-base-field="disabled"]');
+        await expect(row.locator(".red-ui-typedInput-expand")).toHaveCount(0);
+        await expect(row.locator(".red-ui-typedInput-type-select")).toHaveCount(1);
+    });
+
+    test("save-semantics: open + save without touching visible/disabled → stored values remain null", async ({ page, request }) => {
+        const { editor, nodeId } = await openFreshListPanel(page, request);
+
+        // Save immediately without touching visible or disabled.
+        await editor.save();
+
+        const stored = await page.evaluate((id) => {
+            const n = (window as unknown as {
+                RED: { nodes: { node: (id: string) => Record<string, unknown> | null } };
+            }).RED.nodes.node(id);
+            return n ? { visible: n.visible, disabled: n.disabled } : null;
+        }, nodeId);
+
+        // Untouched boolean fields must not create a synthetic binding.
+        expect(stored?.visible).toBeNull();
+        expect(stored?.disabled).toBeNull();
+    });
+
+    test("save-semantics: explicitly setting visible=true stores a bool literal", async ({ page, request }) => {
+        const { editor, nodeId } = await openFreshListPanel(page, request);
+
+        // Explicitly set visible to true via the typedInput.
+        await editor.fillTypedInput("visibleBinding", "true", "bool");
+        await editor.save();
+
+        const stored = await page.evaluate((id) => {
+            const n = (window as unknown as {
+                RED: { nodes: { node: (id: string) => Record<string, unknown> | null } };
+            }).RED.nodes.node(id);
+            return n ? { visible: n.visible } : null;
+        }, nodeId);
+
+        // An intentionally-set bool literal must be persisted.
+        expect(stored?.visible).toEqual({ kind: "literal", value: true });
+    });
+});
