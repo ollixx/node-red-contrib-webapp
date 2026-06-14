@@ -72,3 +72,42 @@ Umgesetzt in `tests/e2e/nodes/view/ui-list.spec.ts` (`describe` „per-item icon
 - **I02** Interaktiv (itemClick): Icon als führendes Kind im `<a>`; ohne Icon → kein Icon.
 - **I03** Objekt-Form `{name:"bell"}` rendert; String-Kurzform hat kein Icon und kein Crash.
 - **I04** Icon + value (badge) koexistieren: Icon führt, Badge folgt dem Label.
+
+### Visuelles Design + color-Auflösung (P183)
+
+Unit-Coverage: `packages/runtime/test/p183-list-visual-design-and-color.test.ts`
+(37 Tests — resolveColorValue · displayType-CSS-Klassen · Zeilen-Anatomie · color-Basis-Feld).
+
+**resolveColorValue (Serializer-Helfer, exportiert):**
+- Semantische Tokens `primary/success/warning/danger/neutral/info` → `var(--wa-color-*)`.
+- `info` → `var(--wa-color-primary)` (kein separates `--wa-color-info`-Token).
+- Token-Matching case-insensitive.
+- `#hex`, `rgb()`, `rgba()`, `hsl()`, `var()` → unveränderter CSS-Wert.
+- Bekannte CSS-Farb-Keywords (`red`, `transparent`, …) → unveränderter CSS-Wert.
+- Unbekannter Bezeichner (z. B. `banana`, `myBrand`) → `undefined` (kein `style`-Attribut).
+- `""`, `undefined`, `null` → `undefined`.
+
+**displayType-CSS-Klassen im generierten HTML:**
+- `plain` / absent → `class="webapp-list"`, keine Modifier-Klasse.
+- Migration: alter Wert `default` oder `compact` → wie `plain`.
+- `divided` → `webapp-list--divided`.
+- `grouped` → `webapp-list--grouped`.
+- `actionable` → `webapp-list--actionable`.
+
+**Zeilen-Anatomie:**
+- Jede Zeile hat `webapp-list-item`-Klasse.
+- Icon → `webapp-list-item-icon`-Klasse auf dem `<sl-icon>`; Items ohne Icon → kein `<sl-icon>`.
+- String-Kurzform-Items → kein Icon.
+- `displayValue=secondary` → `<span class="webapp-list-value">…</span>` mit Abstand (kein „Eins1"-Kleben).
+- `displayValue=badge` → `<sl-badge class="webapp-list-value" …>`, kein Kleben.
+- `displayValue=none` → kein `class="webapp-list-value"`-Element im HTML.
+
+**color-Basis-Feld (P172/P183):**
+- `color='primary'` → `style` enthält `var(--wa-color-primary)`.
+- `color='success'` → `style` enthält `var(--wa-color-success)`.
+- `color='#ff0000'` → `style` enthält `color:#ff0000`.
+- `color='banana'` (unbekannt) → kein `style="color:"` emittiert.
+- `color` absent → kein `style="color:"` emittiert.
+
+E2E (`verify: browser`) wird im Haupt-Checkout durch den Orchestrator durchgeführt
+([[orchestrator-must-verify-e2e-in-main-checkout]]).

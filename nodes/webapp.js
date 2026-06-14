@@ -2413,6 +2413,72 @@ ${tokenCss ? tokenCss.split("\n").map((line) => `    ${line}`).join("\n") : "   
     .webapp-dialog-region { display:grid; gap:10px; }
     .webapp-dialog-region--footer { display:flex; justify-content:flex-end; gap:8px; }
     .webapp-link { color:var(--wa-color-primary); font-weight:700; }
+    /* P183: ui-list visual design — row anatomy, displayType intents, color resolution.
+       Scoped to .webapp-list / .webapp-list-item so it never leaks to nav or other lists.
+       Works in both light and dark modes via --wa-color-* tokens. */
+    /* Base list reset */
+    .webapp-list { list-style:none; margin:0; padding:0; }
+    /* Row anatomy: flex row — [icon] [label…] [value right] */
+    .webapp-list-item {
+      display:flex; align-items:center; gap:8px;
+      padding:10px 14px; min-width:0;
+    }
+    /* Anchor wrapper (interactive rows) inherits the item layout */
+    .webapp-list-item > a.webapp-link {
+      display:flex; align-items:center; gap:8px;
+      flex:1; min-width:0;
+      font-weight:inherit; color:inherit; text-decoration:none;
+    }
+    /* Leading icon: fixed 18 px, muted colour, no shrink */
+    .webapp-list-item-icon {
+      flex-shrink:0; font-size:18px; width:18px; height:18px;
+      color:var(--wa-color-text-muted);
+    }
+    /* Label: primary, flex-grows, truncates on overflow */
+    .webapp-list-item > a.webapp-link > :not(.webapp-list-item-icon):not(.webapp-list-value),
+    .webapp-list-item > :not(.webapp-list-item-icon):not(.webapp-list-value):not(a) {
+      flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    }
+    /* When item is a bare <a> with mixed children the label text node is the flex child */
+    /* Value: trailing, muted (secondary) or badge, separated by auto margin from label */
+    .webapp-list-value {
+      flex-shrink:0; margin-left:auto; padding-left:10px;
+    }
+    span.webapp-list-value { color:var(--wa-color-text-muted); font-size:0.875rem; }
+    /* displayType: plain (DEFAULT) — clean rows, no divider */
+    /* (no extra CSS needed — the anatomy above is the plain look) */
+    /* displayType: divided — 0.5px separators between rows */
+    .webapp-list--divided .webapp-list-item + .webapp-list-item {
+      border-top:0.5px solid var(--wa-color-border);
+    }
+    /* displayType: grouped — bordered card / list-group look */
+    .webapp-list--grouped {
+      border:1px solid var(--wa-color-border);
+      border-radius:var(--wa-radius-md);
+      overflow:hidden;
+    }
+    .webapp-list--grouped .webapp-list-item + .webapp-list-item {
+      border-top:1px solid var(--wa-color-border);
+    }
+    /* displayType: actionable — hover highlight + active/pressed feedback, NO chevron */
+    .webapp-list--actionable .webapp-list-item {
+      cursor:pointer; transition:background 0.1s;
+    }
+    .webapp-list--actionable .webapp-list-item:hover,
+    .webapp-list--actionable .webapp-list-item > a.webapp-link:hover {
+      background:color-mix(in srgb, var(--wa-color-primary) 8%, transparent);
+    }
+    .webapp-list--actionable .webapp-list-item:active,
+    .webapp-list--actionable .webapp-list-item > a.webapp-link:active {
+      background:color-mix(in srgb, var(--wa-color-primary) 15%, transparent);
+    }
+    /* Selected row (P173 selectable) */
+    .webapp-list-item--selected {
+      background:color-mix(in srgb, var(--wa-color-primary) 10%, transparent);
+      font-weight:500;
+    }
+    /* Disabled list — visual lock (P172) */
+    .webapp-list--disabled { opacity:0.5; pointer-events:none; }
     /* P36: desktop — sidebar layout; navbar collapses over content on narrow viewports */
     @media (min-width:900px) {
       .webapp-layout--app { flex-direction:row; flex-wrap:wrap; }
