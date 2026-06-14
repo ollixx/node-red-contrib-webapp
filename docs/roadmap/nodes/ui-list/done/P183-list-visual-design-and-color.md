@@ -19,7 +19,7 @@ verify: browser
 spec: docs/nodes/display/ui-list.md
 tests: tests/e2e/nodes/view/ui-list.tests.md
 dependencies: []
-status: in_progress
+status: done
 ---
 # P183 — ui-list Visual-Design + color-Auflösung
 
@@ -73,3 +73,31 @@ status: in_progress
   `.webapp-list--disabled`/`--selected` (P172/P173) weiter respektieren.
 - Reines Editor-/Render-CSS + ein Auflösungs-Helfer — **kein** Schema-Vertrags-
   wechsel außer dem `displayType`-Default.
+
+## Result
+
+- **delivered:** Real visual design for ui-list (P180 follow-on). New `resolveColorValue()`
+  helper in `resources/lib/webapp-serializer.js`: maps semantic colour tokens
+  (`primary/success/warning/danger/neutral/info`) → `var(--wa-color-*)`, passes CSS values
+  (`#hex`/`rgb()`/`hsl()`/`var()`/named) through, and returns `undefined` for unknown bare words
+  (no broken `style` attr). Fixes the list `color` bug — was emitting the literal
+  `style="color:primary"`, now `style="color:var(--wa-color-primary)"`. Row anatomy + intent CSS
+  added to the single shipped stylesheet (`<style>` block in `nodes/webapp.js`), scoped to
+  `.webapp-list`/`.webapp-list-item`: row = icon (18px, muted) │ label (flex, ellipsis) │ value
+  (trailing, `margin-left:auto`); `displayType` intents as CSS — `plain` (no modifier), `divided`
+  (hairline row borders), `grouped` (bordered/rounded card box with inner dividers), `actionable`
+  (hover highlight + active/pressed feedback via `color-mix`); `--selected`/`--disabled` (P172/P173)
+  still respected; light+dark-safe via `--wa-color-*` tokens. No inline-style duplication.
+- **stats:** 6 files changed; +37 runtime unit tests
+  (`packages/runtime/test/p183-list-visual-design-and-color.test.ts`). Develop verification:
+  `pnpm build` exit 0; full unit suite **1046 passed / 88 files** (incl. the 37 new); **ui-list E2E
+  24/24 green** (no regression from the colour/CSS changes); `pnpm validate` clean; check:roadmap +
+  check:links OK.
+- **notes:** No schema contract change beyond the existing `displayType` default (`plain` in editor
+  + serializer fallback). `color="info"` maps to `var(--wa-color-primary)` (no separate
+  `--wa-color-info` token exists). Fixed 3 pre-existing P171/P173 unit assertions that used broad
+  `.not.toContain("webapp-list-value")` / `…--selected` — these began matching the stylesheet text
+  once the CSS shipped; tightened to the `class="…"` attribute form (test-only, not a behaviour change).
+  Browser proof = the existing 24 ui-list E2E staying green over the new render output; the visual
+  intents/colour mapping are asserted at serializer-unit granularity.
+- **cost:** session agent-a6b95b26f46f7f2c4, ~8m (864s wall).
