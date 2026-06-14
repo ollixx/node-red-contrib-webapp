@@ -54,7 +54,8 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
 | `items` | „Items" | typedInput (Wert-Binding, **eingeschränkt**) | **ja** | Array der Listenelemente. **Nur Typen, die ein valides Modell liefern können** — Skalar-Typen (`str`, `num`, `bool`) sind im typedInput **ausgeblendet**. Erlaubt: `json` (statisches Array direkt im Editor) sowie die Binding-Arten `state`, `query`, `routeParam`, `store` (Store-Picker), `msg`/`flow`/`global`/`jsonata`/`env`. Die **Form jedes Elements** ist in [„Item-Schema"](#item-schema--das-datenmodell) festgelegt. Binding-Arten: [stores.md](../concepts/stores.md). **Migration:** ein bestehendes `itemsPath` (nacktes Textfeld) wird als `state`-Binding auf `items` übernommen; das separate `itemsPath`-Feld entfällt. Mapping: ein führendes `state.` im alten Pfad wird abgezogen (`state.foo.bar` → `state`-Binding mit Pfad `foo.bar`), sonst der ganze String als State-Pfad — **kein** doppeltes `state.state.…`. |
-| `displayType` | „Display Type" | SelectBox | optional | Darstellungsmodus der Liste: `default` (Standard-Liste ohne Trennlinie), `divided` (mit horizontalen Trennlinien zwischen Elementen), `compact` (reduzierter Zeilenabstand). Default: `default`. `displayType` ist ein Darstellungstyp, kein semantischer Variant — Details: [theming.md](../concepts/theming.md). |
+| `displayType` | „Display Type" | SelectBox | optional | **Semantisches Intent-Enum** (P180 / ADR 0021): `plain` (Standard-Liste, Default — rückwärtskompatibel), `divided` (horizontale Trennlinien), `grouped` (umrandete, kartenartige Zeilen / list-group-Look), `actionable` (Hover/Fokus-Affordanz, paart mit `itemClick`/`selectable`). Backend-neutral — je Adapter gemappt, kein Backend-Zweig im Editor. **Migration:** alter Wert `default` → `plain`; `compact` → `plain` (Dichte war kein Look; separater `density`-Modifier ist für eine künftige Phase vorgesehen). Details: [theming.md](../concepts/theming.md) und [ADR 0021](../../adr/0021-display-intents-semantic-backend-mapped.md). |
+| `ordered` | „Ordered list (ol)" | Checkbox | optional | Schaltet `ul` ↔ `ol` (nummerierte Liste). Default: `false`. Backend-neutral. |
 | `displayValue` | „Value-Anzeige" | SelectBox (Enum) | optional | Wie der `value` einer Zeile **dargestellt** wird: `none` („nicht anzeigen" — `value` bleibt rein Daten, wird nur im Event geliefert), `secondary` („sekundär darstellen" — trailing Text), `badge` („als Badge" — `value` als Badge-Pille, z. B. „Anzahl"/„Preis"). Default: `none`. Betrifft nur die **Anzeige**; `value` wird unabhängig davon stets im Event mitgeliefert. **Node-weit** (gilt für alle Zeilen gleich). |
 | `badgeVariant` | „Badge Variant" | Variant-SelectBox | optional | **Nur sichtbar, wenn `displayValue = badge`.** Semantische Farbrolle der Badge — `SEVERITY_VARIANTS` (`primary`/`success`/`warning`/`danger`/`neutral`/`info`), identisch zu [ui-badge](../feedback/ui-badge.md). Default: `neutral`. Node-weit (eine Farbe für alle Badges; pro-Zeile-Farbe wäre Folgearbeit). |
 
@@ -93,7 +94,7 @@ Von `ui-app` injizierte, knotenübergreifende Felder (Anwendbarkeit per
 | `visible` | ja | Boolean-Zustand-typedInput; blendet die ganze Liste ein/aus. |
 | `disabled` | ja | Sperrt die Zeilen-Interaktion (`itemClick`/`itemSelect`); ohne aktive Events wirkungslos. |
 | `color` | ja | Allgemeine Farbe (non-variant; ui-list hat keinen semantischen `variant`). |
-| `size` | **N/A** | Die Zeilendichte steuert `displayType` (`default`/`divided`/`compact`), **nicht** ein size-Token — Feld mit Hinweis deaktiviert. |
+| `size` | **N/A** | Die Zeilendichte steuert `displayType` (`plain`/`divided`/`grouped`/`actionable`), **nicht** ein size-Token — Feld mit Hinweis deaktiviert. |
 
 ### Inline-Hilfe (HTML)
 
@@ -196,21 +197,42 @@ Allgemeines Event-Format: [events.md](../concepts/events.md).
 
 ## Theming
 
-`ui-list` trägt sein Theming über `displayType` (`default`, `divided`, `compact`).
-Da es sich um einen **Darstellungstyp** (keine semantische Ebene-2-Variante)
-handelt, ist `displayType` nicht Teil des Variant-Vokabulars — es gibt keine
-Variant-SelectBox für `ui-list`. Das App-weite Theme (Design-Tokens, an `ui-app`
-konfiguriert) beeinflusst Abstände, Trennlinien-Farben und Typografie der Liste.
-Details: [theming.md](../concepts/theming.md).
+`ui-list` trägt sein Theming über `displayType` — ein **semantisches Intent-Enum**
+(P180 / [ADR 0021](../../adr/0021-display-intents-semantic-backend-mapped.md)):
+
+| Intent | Shoelace-Mapping | Beschreibung |
+|---|---|---|
+| `plain` | bare `<ul>/<li>` | Standardliste ohne Extra-Chrome. **Default** (rückwärtskompatibel). |
+| `divided` | `webapp-list--divided` CSS-Klasse | Horizontale Trennlinien zwischen Zeilen. |
+| `grouped` | `webapp-list--grouped` CSS-Klasse | Umrandete, kartenartige Zeilen (Bootstrap list-group-Look). |
+| `actionable` | `webapp-list--actionable` CSS-Klasse | Hover/Fokus-Affordanz (visuelle Rückmeldung); paart mit `itemClick`/`selectable`. |
+
+Das Mapping liegt **ausschließlich im Adapter** (Shoelace: `webapp-serializer.js`), nicht
+als Backend-Zweig im Editor — ein zweites Backend mappt dieselben Intents anders. Das ist
+die Antwort auf den Backend-Stil-Durchschlag (ADR 0021 §1). `displayType` ist nicht Teil
+des `variant`-Vokabulars (kein semantischer Farbwert). Das App-weite Theme beeinflusst
+Abstände und Typografie. Details: [theming.md](../concepts/theming.md).
+
+**Migration:** `default` → `plain`; `compact` → `plain`. Der alte `compact`-Wert war Dichte,
+kein Look — Dichte wird nicht modelliert (Drop für v1; `density`-Modifier ist offen).
 
 ## Besonderheiten
 
 - **Festes Item-Schema** (Details: [Item-Schema](#item-schema--das-datenmodell)).
   Komplexe Zeileninhalte (verschachtelte Komponenten pro Element) sind **nicht**
-  Teil des ui-list-Contracts — dafür ist `ui-table` (Spalten) bzw. `ui-repeat`
-  (beliebiger Subtree pro Element) vorgesehen.
+  Teil des ui-list-Contracts.
 - **`id` als Anker.** Stabile `id` = stabiler `rowId` im Event **und** stabiler
   Render-Key (überlebt Umsortieren); ohne `id` = Array-Index.
+
+## Abgrenzung: ui-list vs. ui-repeat vs. ui-table
+
+| Node | Zweck | Wann wählen? |
+|---|---|---|
+| `ui-list` | Gestylte Zeilen aus einem Daten-Array mit **festem Item-Schema** (`id/label/value/icon`). Der Look (Boxen, Trennlinien, Hover) ist sein Wert. | Wenn du eine **polished, backend-gestylte Liste** willst und deine Daten ins Schema passen. |
+| `ui-repeat` | **Beliebiger Subtree ×N** — volle Kontrolle über die Zeileninhalte; jede Zeile kann eigene Child-Nodes haben. | Wenn du **reiche oder variierende Zeileninhalte** brauchst (z. B. Karten mit Buttons). |
+| `ui-table` | **Spalten** — strukturierte Tabelle mit Header-Zeile und mehreren Daten-Spalten pro Zeile. | Wenn du **tabellarische Daten** mit Kopfzeilen brauchst. |
+
+> **„Tabellarisch" ist keine ui-list-Option** — das ist `ui-table`. Der Boundary ist bewusst scharf gehalten (ADR 0021 §3).
 
 ## Referenzen
 
@@ -220,6 +242,7 @@ Details: [theming.md](../concepts/theming.md).
 - [inputs.md](../concepts/inputs.md) — `msg.payload`-Verhalten und `msg.ui.patch`
 - [layout.md](../concepts/layout.md) — Platzierungsfelder und Layout-Presets
 - [theming.md](../concepts/theming.md) — `displayType` vs. Variant
+- [ADR 0021](../../adr/0021-display-intents-semantic-backend-mapped.md) — semantic intents, adapter-mapped
 
 ## Offene Punkte
 

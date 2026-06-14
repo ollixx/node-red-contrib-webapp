@@ -447,7 +447,11 @@ export interface UiListEditorConfig extends MountableEditorConfig {
     // binding; a static array may carry mixed String/object elements.
     items?: unknown;
     itemsPath?: string;
-    displayType?: "default" | "divided" | "compact";
+    // P180 (ADR 0021): new semantic intent enum. Old values ("default", "compact")
+    // are accepted here for lossless migration (load-shim in editor + serializer).
+    displayType?: "plain" | "divided" | "grouped" | "actionable" | "default" | "compact";
+    // P180: ordered (boolean, default false) — switches ul↔ol. Backend-neutral.
+    ordered?: boolean;
     displayValue?: "none" | "secondary" | "badge";
     badgeVariant?: (typeof SEVERITY_VARIANTS)[number];
     // P173: single-select. `selectable` turns on selection; `selectedId` is the
@@ -1728,7 +1732,14 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         id: config.id ?? "",
         mount: config.mount ?? "",
         items: listItemsFromConfig(config),
-        displayType: config.displayType,
+        // P180 (ADR 0021): migrate old displayType values. "default" → "plain",
+        // "compact" → "plain" (compact was density, not a look). The result must
+        // match the new schema enum; the Zod coercion handles unknown values gracefully.
+        displayType: (config.displayType === "default" || config.displayType === "compact")
+            ? "plain"
+            : (config.displayType as "plain" | "divided" | "grouped" | "actionable" | undefined),
+        // P180: ordered — ul↔ol. Pass through; default false when absent.
+        ...(config.ordered === true ? { ordered: true } : {}),
         displayValue: config.displayValue,
         badgeVariant: config.badgeVariant,
         // P173: single-select. `selectable` passes through; `selectedId` prefers the

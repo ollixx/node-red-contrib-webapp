@@ -509,3 +509,192 @@ test.describe("ui-list — per-item icon (P176)", () => {
         await expect(item.locator("sl-badge.webapp-list-value")).toContainText("5");
     });
 });
+
+/**
+ * P180 (ADR 0021): displayType semantic intents + ordered.
+ *
+ * displayType is a backend-neutral semantic intent enum (plain|divided|grouped|
+ * actionable). The Shoelace adapter maps each intent to CSS classes. One render
+ * proof per intent. Also: ordered (ul↔ol) and old-value migration shims.
+ */
+test.describe("ui-list — displayType semantic intents + ordered (P180)", () => {
+    test.afterEach(async ({ request }) => {
+        await resetFlow(request);
+    });
+
+    test("DT01 — plain (default) renders bare ul without extra CSS classes", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "listPlainApp", root: "listPlainApp" })
+            .node("ui-list", {
+                id: "listPlainNode",
+                items: { kind: "literal", value: ["Alpha", "Beta"] },
+                displayType: "plain"
+            })
+            .build();
+
+        await deployFlow(request, flow);
+        const webapp = new WebappPage(page, "listPlainApp");
+        await webapp.navigate("/");
+
+        // plain = bare ul.webapp-list — no extra intent CSS class.
+        const list = page.locator("ul.webapp-list");
+        await expect(list).toBeVisible();
+        await expect(list).not.toHaveClass(/webapp-list--divided/);
+        await expect(list).not.toHaveClass(/webapp-list--grouped/);
+        await expect(list).not.toHaveClass(/webapp-list--actionable/);
+    });
+
+    test("DT02 — divided renders ul.webapp-list--divided (separator class)", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "listDividedApp", root: "listDividedApp" })
+            .node("ui-list", {
+                id: "listDividedNode",
+                items: { kind: "literal", value: ["One", "Two", "Three"] },
+                displayType: "divided"
+            })
+            .build();
+
+        await deployFlow(request, flow);
+        const webapp = new WebappPage(page, "listDividedApp");
+        await webapp.navigate("/");
+
+        const list = page.locator("ul.webapp-list.webapp-list--divided");
+        await expect(list).toBeVisible();
+        const items = list.locator("li.webapp-list-item");
+        await expect(items).toHaveCount(3);
+    });
+
+    test("DT03 — grouped renders ul.webapp-list--grouped (bordered/box-like)", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "listGroupedApp", root: "listGroupedApp" })
+            .node("ui-list", {
+                id: "listGroupedNode",
+                items: { kind: "literal", value: [
+                    { id: "g1", label: "Open invoices", value: 3 },
+                    { id: "g2", label: "Paid", value: 12 }
+                ] },
+                displayType: "grouped"
+            })
+            .build();
+
+        await deployFlow(request, flow);
+        const webapp = new WebappPage(page, "listGroupedApp");
+        await webapp.navigate("/");
+
+        // grouped = bordered card-like container class present.
+        const list = page.locator("ul.webapp-list.webapp-list--grouped");
+        await expect(list).toBeVisible();
+        const items = list.locator("li.webapp-list-item");
+        await expect(items).toHaveCount(2);
+        await expect(items.nth(0)).toContainText("Open invoices");
+        await expect(items.nth(1)).toContainText("Paid");
+    });
+
+    test("DT04 — actionable renders ul.webapp-list--actionable (hover/click affordance class)", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "listActionableApp", root: "listActionableApp" })
+            .node("ui-list", {
+                id: "listActionableNode",
+                items: { kind: "literal", value: ["Click me", "Or me"] },
+                displayType: "actionable",
+                events: ["itemClick"]
+            })
+            .build();
+
+        await deployFlow(request, flow);
+        const webapp = new WebappPage(page, "listActionableApp");
+        await webapp.navigate("/");
+
+        const list = page.locator("ul.webapp-list.webapp-list--actionable");
+        await expect(list).toBeVisible();
+        const items = list.locator("li.webapp-list-item");
+        await expect(items).toHaveCount(2);
+    });
+
+    test("DT05 — ordered renders ol (not ul)", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "listOrderedApp", root: "listOrderedApp" })
+            .node("ui-list", {
+                id: "listOrderedNode",
+                items: { kind: "literal", value: ["Step 1", "Step 2", "Step 3"] },
+                ordered: true
+            })
+            .build();
+
+        await deployFlow(request, flow);
+        const webapp = new WebappPage(page, "listOrderedApp");
+        await webapp.navigate("/");
+
+        // ordered=true → <ol>, not <ul>.
+        const list = page.locator("ol.webapp-list");
+        await expect(list).toBeVisible();
+        // No ul.webapp-list should exist.
+        await expect(page.locator("ul.webapp-list")).toHaveCount(0);
+        const items = list.locator("li.webapp-list-item");
+        await expect(items).toHaveCount(3);
+        await expect(items.nth(0)).toContainText("Step 1");
+    });
+
+    test("DT06 — ordered=false (default) renders ul", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "listUnorderedApp", root: "listUnorderedApp" })
+            .node("ui-list", {
+                id: "listUnorderedNode",
+                items: { kind: "literal", value: ["Alpha"] },
+                ordered: false
+            })
+            .build();
+
+        await deployFlow(request, flow);
+        const webapp = new WebappPage(page, "listUnorderedApp");
+        await webapp.navigate("/");
+
+        await expect(page.locator("ul.webapp-list")).toBeVisible();
+        await expect(page.locator("ol.webapp-list")).toHaveCount(0);
+    });
+
+    test("DT07 — migration: old 'default' value renders as plain (bare ul, no extra class)", async ({ page, request }) => {
+        // Simulate a stored flow with the old displayType:"default" value.
+        // The serializer shim migrates it to "plain" at render time.
+        const flow = new FlowBuilder()
+            .app({ id: "listMigrateDefaultApp", root: "listMigrateDefaultApp" })
+            .node("ui-list", {
+                id: "listMigrateDefaultNode",
+                items: { kind: "literal", value: ["Legacy A", "Legacy B"] },
+                displayType: "default" as unknown as "plain"
+            })
+            .build();
+
+        await deployFlow(request, flow);
+        const webapp = new WebappPage(page, "listMigrateDefaultApp");
+        await webapp.navigate("/");
+
+        // "default" → "plain": renders as ul.webapp-list, no divided/grouped/actionable.
+        const list = page.locator("ul.webapp-list");
+        await expect(list).toBeVisible();
+        await expect(list).not.toHaveClass(/webapp-list--divided/);
+        await expect(list).not.toHaveClass(/webapp-list--grouped/);
+        await expect(list).not.toHaveClass(/webapp-list--actionable/);
+    });
+
+    test("DT08 — migration: old 'compact' value renders as plain (no extra class)", async ({ page, request }) => {
+        // Simulate a stored flow with the old displayType:"compact" value.
+        // compact was density (not a look); migrates to plain.
+        const flow = new FlowBuilder()
+            .app({ id: "listMigrateCompactApp", root: "listMigrateCompactApp" })
+            .node("ui-list", {
+                id: "listMigrateCompactNode",
+                items: { kind: "literal", value: ["Compact A"] },
+                displayType: "compact" as unknown as "plain"
+            })
+            .build();
+
+        await deployFlow(request, flow);
+        const webapp = new WebappPage(page, "listMigrateCompactApp");
+        await webapp.navigate("/");
+
+        const list = page.locator("ul.webapp-list");
+        await expect(list).toBeVisible();
+        await expect(list).not.toHaveClass(/webapp-list--divided/);
+    });
+});

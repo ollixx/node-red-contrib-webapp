@@ -1080,13 +1080,42 @@
             // A row is interactive (carries the click hook) when itemClick is declared OR
             // the list is selectable (a click then drives the selection + itemSelect).
             const interactive = declaresClick || selectable;
+            // P180 (ADR 0021): displayType is a semantic intent enum — mapped HERE
+            // (single adapter mapping, no backend branch in the editor). Migration:
+            // old "default" → "plain"; "compact" → "plain" (compact was density, not
+            // a look; density is a future modifier). Intents:
+            //   plain      — bare ul/li, no extra chrome (today's default look)
+            //   divided    — horizontal dividers between rows (webapp-list--divided)
+            //   grouped    — bordered, card-like rows (list-group box look).
+            //                Shoelace mapping: webapp-list--grouped class triggers
+            //                CSS border on each item + container border-radius.
+            //   actionable — hover/focus affordance for click/select rows.
+            //                webapp-list--actionable: CSS hover highlight, pairs with
+            //                itemClick/selectable.
+            // A 2nd backend will map the same intents differently; the vocabulary
+            // lives in the schema, the mapping lives only here.
+            const rawDisplayType = component.props.displayType ? String(component.props.displayType) : "plain";
+            // Migration shim: gracefully handle old values that may come from stored
+            // flows before P180 (old "default" → "plain", "compact" → "plain").
+            const displayType = rawDisplayType === "default" ? "plain"
+                : rawDisplayType === "compact" ? "plain"
+                : rawDisplayType;
+            // P180: ordered (boolean, default false) — switches ul↔ol. Backend-neutral.
+            const ordered = component.props.ordered === true;
+            const listTag = ordered ? "ol" : "ul";
             // P172 (ADR 0015): disabled and color base fields for ui-list.
             // disabled: when true, adds aria-disabled + webapp-list--disabled class
             // to lock row interaction visually (the client checks disabled before
             // emitting itemClick/itemSelect events).
             // color: resolved into resolvedProps.color by the renderer; applied as an
             // inline CSS custom property on the <ul> so CSS can style list items.
-            const listDisabled = component.disabled ? " aria-disabled=\"true\" class=\"webapp-list webapp-list--disabled\"" : " class=\"webapp-list\"";
+            const displayTypeClass = (displayType === "divided" ? " webapp-list--divided"
+                : displayType === "grouped" ? " webapp-list--grouped"
+                : displayType === "actionable" ? " webapp-list--actionable"
+                : "");
+            const listDisabled = component.disabled
+                ? " aria-disabled=\"true\" class=\"webapp-list" + displayTypeClass + " webapp-list--disabled\""
+                : " class=\"webapp-list" + displayTypeClass + "\"";
             const resolvedColor = component.props.color !== undefined ? String(component.props.color) : undefined;
             const colorStyle = resolvedColor ? " style=\"color:" + escapeAttribute(resolvedColor) + "\"" : "";
             const itemHtml = rawItems.map(function (item, index) {
@@ -1139,7 +1168,7 @@
                 }
                 return "<li class=\"" + liClass + "\"" + liAttr + ">" + leadingIcon + label + valueHtml + "</li>";
             }).join("");
-            return wrapRenderedComponentHtml(component, layoutId, "<ul" + listDisabled + colorStyle + ">" + itemHtml + "</ul>");
+            return wrapRenderedComponentHtml(component, layoutId, "<" + listTag + listDisabled + colorStyle + ">" + itemHtml + "</" + listTag + ">");
         }
 
         // P83: ui-divider — static horizontal/vertical separator (sl-divider or webapp-divider fallback).

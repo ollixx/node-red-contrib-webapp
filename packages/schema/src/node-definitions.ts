@@ -1563,8 +1563,17 @@ const listItemSchema = z.union([z.string(), listItemObjectSchema]);
 export const uiListNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-list"),
     items: z.union([z.array(listItemSchema), bindingSchema]),
-    // P49: list render mode is a DISPLAY TYPE, not a semantic variant.
-    displayType: z.enum(["default", "divided", "compact"]).optional(),
+    // P180 (ADR 0021): displayType is a SEMANTIC INTENT enum — backend-neutral,
+    // mapped per adapter. Vocab: plain (default look, back-compat), divided
+    // (horizontal dividers between rows), grouped (bordered card-like rows,
+    // list-group look), actionable (hover/focus affordance, pairs with
+    // itemClick/selectable). Migration: old "default"→"plain", "compact"→"plain"
+    // (compact was density, not a look; density is a future modifier).
+    // Load-shim for old values lives in the editor (oneditprepare) and in the
+    // serializer (graceful fallback).
+    displayType: z.enum(["plain", "divided", "grouped", "actionable"]).optional(),
+    // P180: ordered (boolean, default false) — switches ul↔ol. Backend-neutral.
+    ordered: z.boolean().optional(),
     // P171: node-wide DISPLAY of a row's `value` — `none` (data-only, event only),
     // `secondary` (trailing text), `badge` (a badge pill in `badgeVariant`). The
     // value is always carried in the event regardless of this setting.

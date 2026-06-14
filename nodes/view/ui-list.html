@@ -19,7 +19,7 @@
             advanced: ["size"],
             hints: {
                 disabled: "Ohne aktive Events (itemClick/itemSelect) hat disabled keinen sichtbaren Effekt.",
-                size: "Die Dichte wird über Display-Typ (Default/Divided/Compact) gesteuert, nicht über Size."
+                size: "Die Dichte wird über Display-Typ (Plain/Divided/Grouped/Actionable) gesteuert, nicht über Size."
             }
         };
         common.registerNodeTypeWithEvents("ui-list", {
@@ -38,7 +38,11 @@
                 items: { value: null },
                 itemsBinding: { value: "" },
                 itemsPath: { value: "" },
-                displayType: { value: "default" },
+                // P180 (ADR 0021): semantic intent enum. Default "plain" (back-compat
+                // with old "default"). Migration in oneditprepare maps old → new.
+                displayType: { value: "plain" },
+                // P180: ordered (boolean, default false) — ul↔ol, backend-neutral.
+                ordered: { value: false },
                 // P171: node-wide value display (none/secondary/badge) + badge colour.
                 displayValue: { value: "none" },
                 badgeVariant: { value: "neutral" },
@@ -121,6 +125,19 @@
                 itemsInput.typedInput("type", itemsEditor.type !== "str" || itemsBinding ? itemsEditor.type : "json");
                 itemsInput.typedInput("value", itemsEditor.value);
 
+                // P180 (ADR 0021): load-shim — migrate old displayType values to the
+                // new semantic intent vocabulary before setting the SelectBox.
+                // Old "default" → "plain", old "compact" → "plain" (compact was
+                // density, not a look; density is a future modifier).
+                const rawDisplayType = this.displayType || "plain";
+                const migratedDisplayType = rawDisplayType === "default" ? "plain"
+                    : rawDisplayType === "compact" ? "plain"
+                    : rawDisplayType;
+                $("#node-input-displayType").val(migratedDisplayType);
+
+                // P180: ordered checkbox.
+                $("#node-input-ordered").prop("checked", this.ordered === true);
+
                 // P171: bind the stored displayValue / badgeVariant and toggle the
                 // badgeVariant row visibility (only when displayValue = badge).
                 $("#node-input-displayValue").val(this.displayValue || "none");
@@ -177,6 +194,9 @@
                     $("#node-input-itemsBinding").typedInput("value")
                 );
                 this.itemsPath = "";
+                // P180: persist the migrated displayType and ordered.
+                this.displayType = $("#node-input-displayType").val();
+                this.ordered = $("#node-input-ordered").is(":checked");
                 this.displayValue = $("#node-input-displayValue").val();
                 this.badgeVariant = $("#node-input-badgeVariant").val();
                 // P173: persist selectable + selectedId binding object; clear the
@@ -197,12 +217,19 @@
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <!-- P171 (ADR 0012 / structural category): Items binding (structural array source) — typedInput managed in oneditprepare/oneditsave. -->
     <div class="form-row"><label for="node-input-itemsBinding">Items</label><input type="text" id="node-input-itemsBinding"></div>
+    <!-- P180 (ADR 0021): displayType = semantic intent enum (plain/divided/grouped/actionable).
+         Default "plain" (back-compat with old "default"). Migration shim in oneditprepare. -->
     <div class="form-row"><label for="node-input-displayType">Display Type</label>
         <select id="node-input-displayType">
-            <option value="default">Default</option>
-            <option value="divided">Divided</option>
-            <option value="compact">Compact</option>
+            <option value="plain">Plain (Default)</option>
+            <option value="divided">Divided (with separators)</option>
+            <option value="grouped">Grouped (bordered / list-group)</option>
+            <option value="actionable">Actionable (hover / click affordance)</option>
         </select>
+    </div>
+    <!-- P180: ordered — switches ul↔ol. Backend-neutral. -->
+    <div class="form-row">
+        <label for="node-input-ordered" style="width: auto;"><input type="checkbox" id="node-input-ordered" style="display:inline-block; width:auto; vertical-align:top;"> Ordered list (ol)</label>
     </div>
     <div class="form-row"><label for="node-input-displayValue">Value-Anzeige</label>
         <select id="node-input-displayValue">
@@ -235,12 +262,26 @@
 <script type="text/html" data-help-name="ui-list">
 <p>Rendert eine strukturierte Liste an einem Mount-Ziel. Die Elemente kommen aus dem
 <code>items</code>-Binding (statisches Array oder dynamisch aus State/Query/Store/Kontext).</p>
+<h4>Display Type (P180 / ADR 0021)</h4>
+<p>Semantisches Intent-Enum — backend-neutral, per Adapter gemappt (kein Backend-Zweig im Editor):</p>
+<ul>
+<li><b>Plain</b> (Default) — einfache ul/li, kein Extra-Chrome. Rückwärtskompatibel (alter Wert „default" → plain).</li>
+<li><b>Divided</b> — horizontale Trennlinien zwischen den Zeilen.</li>
+<li><b>Grouped</b> — umrandete, kartenartige Zeilen (Bootstrap list-group-Look). Jede Zeile eine Box, der Container hat Rahmen + Ecken.</li>
+<li><b>Actionable</b> — Hover/Fokus-Affordanz (visuelle Rückmeldung bei Klick). Sinnvoll mit <code>itemClick</code> oder <code>selectable</code>.</li>
+</ul>
+<p>Alter Wert <code>compact</code> wird beim Laden automatisch auf <code>plain</code> migriert (Dichte war kein Look; Dichte-Modifier kommt später).</p>
+<p><b>Ordered list</b> — schaltet <code>ul</code> auf <code>ol</code> (nummerierte Liste). Backend-neutral.</p>
+<h4>Abgrenzung: ui-list vs. ui-repeat vs. ui-table</h4>
+<p><b>ui-list</b> = gestylte Zeilen aus einem Daten-Array mit festem Item-Schema (<code>id/label/value/icon</code>); der Look (Boxen, Trennlinien, Hover) ist sein Wert.
+<b>ui-repeat</b> = beliebiger Subtree ×N — für reiche, variierende Zeileninhalte.
+<b>ui-table</b> = Spalten. <em>„tabellarisch"</em> ist <strong>keine</strong> ui-list-Option → ui-table verwenden.</p>
 <h4>Basis-Felder (Allgemein, P172)</h4>
 <p><b>Visible</b> (Boolean-Zustand-Binding, leer = sichtbar) — blendet die gesamte Liste ein/aus.
 <b>Disabled</b> (Boolean-Zustand-Binding) — sperrt die Zeilen-Interaktion (itemClick/itemSelect);
 ohne aktive Events hat disabled keinen sichtbaren Effekt.
 <b>Color</b> (bindbare Farbe, non-variant) — allgemeine Listenfarbe.
-<b>Size</b> ist N/A — die Dichte wird über Display-Typ (Default/Divided/Compact) gesteuert.</p>
+<b>Size</b> ist N/A — Dichte über Display-Typ gesteuert (Dichte-Modifier für künftige Phase).</p>
 <h4>Items (P171)</h4>
 <p>Bindbare, <strong>strukturelle</strong> Quelle der Listenelemente (ein Array) — nur Typen,
 die ein valides Modell liefern: <code>json</code> (statisches Array-Literal) sowie
