@@ -99,9 +99,6 @@
                 disabledInput.typedInput("type", disabledType);
                 disabledInput.typedInput("value", disabledEditor.value);
                 disabledInput.data("base-field-originally-empty", !disabledBinding);
-                disabledInput.on("change", function () {
-                    disabledInput.data("base-field-originally-empty", false);
-                });
 
                 // P149 (ADR 0012): Placeholder typedInput — canonical P113 helper.
                 // Back-compat: stored placeholder may be a plain string (pre-P149) or a binding object.
@@ -143,7 +140,7 @@
                 );
                 var disabledOriginEmpty = $disabledInput.data("base-field-originally-empty");
                 var disabledIsBoolLiteral = disabledResult && disabledResult.kind === "literal"
-                    && typeof disabledResult.value === "boolean";
+                    && disabledResult.value === false;
                 this.disabled = (disabledOriginEmpty && disabledIsBoolLiteral) ? null : disabledResult;
 
                 // P149: persist placeholder as binding object.

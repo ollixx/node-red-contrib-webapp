@@ -60,9 +60,6 @@
                 visibleInput.typedInput("value", visibleEditor.value);
                 // P181: track original-empty to preserve "no binding" on save.
                 visibleInput.data("base-field-originally-empty", !visibleBinding);
-                visibleInput.on("change", function () {
-                    visibleInput.data("base-field-originally-empty", false);
-                });
 
                 // P138: Conditionally disable the `lines` field when the selected
                 // displayType renders no lines (avatar, card, table). Only `text`
@@ -95,7 +92,7 @@
                 );
                 var visibleOriginEmpty = $visibleInput.data("base-field-originally-empty");
                 var visibleIsBoolLiteral = visibleResult && visibleResult.kind === "literal"
-                    && typeof visibleResult.value === "boolean";
+                    && visibleResult.value === false;
                 this.visible = (visibleOriginEmpty && visibleIsBoolLiteral) ? null : visibleResult;
                 this.visiblePath = "";
             }

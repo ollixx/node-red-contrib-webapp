@@ -117,9 +117,6 @@
                 disabledInput.typedInput("value", disabledEditor.value);
                 // P181: track original-empty to preserve "no binding" on save.
                 disabledInput.data("base-field-originally-empty", !disabledBinding);
-                disabledInput.on("change", function () {
-                    disabledInput.data("base-field-originally-empty", false);
-                });
 
                 // P122 (ADR 0012 / url category): `href` typedInput.
                 // Migration: a legacy literal string `href` becomes
@@ -156,7 +153,7 @@
                 );
                 const disabledOriginEmpty = $disabledInput.data("base-field-originally-empty");
                 const disabledIsBoolLiteral = disabledResult && disabledResult.kind === "literal"
-                    && typeof disabledResult.value === "boolean";
+                    && disabledResult.value === false;
                 this.disabled = (disabledOriginEmpty && disabledIsBoolLiteral) ? null : disabledResult;
                 this.disabledPath = "";
 
