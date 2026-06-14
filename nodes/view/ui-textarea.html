@@ -154,9 +154,6 @@
                 disabledInput.typedInput("type", disabledType);
                 disabledInput.typedInput("value", disabledEditor.value);
                 disabledInput.data("base-field-originally-empty", !disabledBinding);
-                disabledInput.on("change", function () {
-                    disabledInput.data("base-field-originally-empty", false);
-                });
             },
             oneditsave: function () {
                 // P148: persist label as binding object.
@@ -187,7 +184,7 @@
                 );
                 const disabledOriginEmpty = $disabledInput.data("base-field-originally-empty");
                 const disabledIsBoolLiteral = disabledResult && disabledResult.kind === "literal"
-                    && typeof disabledResult.value === "boolean";
+                    && disabledResult.value === false;
                 this.disabled = (disabledOriginEmpty && disabledIsBoolLiteral) ? null : disabledResult;
             }
         });

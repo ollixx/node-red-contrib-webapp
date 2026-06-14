@@ -501,11 +501,14 @@
                 visibleInput.typedInput("value", visibleEditor.value);
                 // P181: remember whether the field was originally absent so that
                 // applyBaseFields can preserve the "no binding" state on save when
-                // the user has not actively interacted with the field.
+                // the user has not actively interacted with the field. We must NOT
+                // hang a `change` listener here to detect "touched": the bool
+                // typedInput normalises an empty value to "false" and emits a
+                // programmatic `change` during init, which would immediately clear
+                // the flag and re-introduce the synthetic literal. The save guard
+                // instead distinguishes the synthetic default (an originally-empty
+                // field still carrying bool literal `false`) from a deliberate value.
                 visibleInput.data("base-field-originally-empty", !visibleBinding);
-                visibleInput.on("change", function () {
-                    visibleInput.data("base-field-originally-empty", false);
-                });
             }
 
             // disabled — THE P122–P130 boolean-state typedInput, centralised
@@ -527,11 +530,11 @@
                 disabledInput.typedInput("value", disabledEditor.value);
                 // P181: remember whether the field was originally absent so that
                 // applyBaseFields can preserve the "no binding" state on save when
-                // the user has not actively interacted with the field.
+                // the user has not actively interacted with the field. No `change`
+                // listener (see the visible field above): the bool typedInput emits
+                // a programmatic `change` during init that would clear the flag. The
+                // save guard discriminates the synthetic default by value instead.
                 disabledInput.data("base-field-originally-empty", !disabledBinding);
-                disabledInput.on("change", function () {
-                    disabledInput.data("base-field-originally-empty", false);
-                });
             }
 
             // color — general value typedInput (full canonical set); a legacy
@@ -579,13 +582,16 @@
                     $visibleInput.typedInput("type"),
                     $visibleInput.typedInput("value")
                 );
-                // P181: if the field was originally absent AND the result is a bool
-                // literal (produced by the P181 'bool' default type on an untouched
-                // field), keep it null — "no binding" semantics (= always visible).
+                // P181: if the field was originally absent AND the result is the
+                // synthetic default the P181 'bool' type produces for an untouched
+                // (empty) control — bool literal `false` — keep it null ("no binding"
+                // semantics; visible defaults to true, disabled to false). A user who
+                // actively picks a value yields either a non-bool binding or bool
+                // literal `true`, both of which fall through and persist verbatim.
                 var visibleOriginEmpty = $visibleInput.data("base-field-originally-empty");
-                var visibleIsBoolLiteral = visibleResult && visibleResult.kind === "literal"
-                    && typeof visibleResult.value === "boolean";
-                self.visible = (visibleOriginEmpty && visibleIsBoolLiteral) ? null : visibleResult;
+                var visibleIsSyntheticDefault = visibleResult && visibleResult.kind === "literal"
+                    && visibleResult.value === false;
+                self.visible = (visibleOriginEmpty && visibleIsSyntheticDefault) ? null : visibleResult;
                 self.visiblePath = "";
             }
 
@@ -595,12 +601,13 @@
                     $disabledInput.typedInput("type"),
                     $disabledInput.typedInput("value")
                 );
-                // P181: same guard for disabled — preserve null when field was
-                // originally absent and the result is the auto-generated bool literal.
+                // P181: same guard for disabled — preserve null when the field was
+                // originally absent and still carries the synthetic default bool
+                // literal `false`. An explicit value falls through and persists.
                 var disabledOriginEmpty = $disabledInput.data("base-field-originally-empty");
-                var disabledIsBoolLiteral = disabledResult && disabledResult.kind === "literal"
-                    && typeof disabledResult.value === "boolean";
-                self.disabled = (disabledOriginEmpty && disabledIsBoolLiteral) ? null : disabledResult;
+                var disabledIsSyntheticDefault = disabledResult && disabledResult.kind === "literal"
+                    && disabledResult.value === false;
+                self.disabled = (disabledOriginEmpty && disabledIsSyntheticDefault) ? null : disabledResult;
                 self.disabledPath = "";
             }
 

@@ -132,9 +132,6 @@
                 disabledInput.typedInput("type", disabledType);
                 disabledInput.typedInput("value", disabledEditor.value);
                 disabledInput.data("base-field-originally-empty", !disabledBinding);
-                disabledInput.on("change", function () {
-                    disabledInput.data("base-field-originally-empty", false);
-                });
             },
             oneditsave: function () {
                 // P127: persist value as binding object; clear legacy valuePath.
@@ -153,7 +150,7 @@
                 );
                 const disabledOriginEmpty = $disabledInput.data("base-field-originally-empty");
                 const disabledIsBoolLiteral = disabledResult && disabledResult.kind === "literal"
-                    && typeof disabledResult.value === "boolean";
+                    && disabledResult.value === false;
                 this.disabled = (disabledOriginEmpty && disabledIsBoolLiteral) ? null : disabledResult;
 
                 // P136: persist label as binding object (literal string | binding).
