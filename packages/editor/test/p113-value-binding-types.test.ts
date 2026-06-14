@@ -56,7 +56,7 @@ beforeAll(() => {
 });
 
 describe("P113: canonical value-binding type set", () => {
-    it("value category (default) offers the 14 canonical types in order, then the 2 scope-local repeat kinds", () => {
+    it("value category (default) offers the 14 canonical types in order, then the scope-local repeat/component kinds", () => {
         const order = typeValues(common.valueBindingTypes());
         expect(order).toEqual([
             "store",
@@ -76,16 +76,19 @@ describe("P113: canonical value-binding type set", () => {
             // P165 (ADR 0017): scope-local item/index appended at the end so the
             // established ordering of the global kinds is unchanged.
             "item",
-            "index"
+            "index",
+            // P179 (ADR 0020): scope-local prop (component instance) appended after.
+            "prop"
         ]);
     });
 
-    it("the scope-local item/index kinds sit ONLY at the tail of the value set (P165)", () => {
+    it("the scope-local item/index/prop kinds sit ONLY at the tail of the value set (P165/P179)", () => {
         const order = typeValues(common.valueBindingTypes());
-        // item/index are present, last, and in that order.
-        expect(order.slice(-2)).toEqual(["item", "index"]);
-        expect(order.indexOf("item")).toBe(order.length - 2);
-        expect(order.indexOf("index")).toBe(order.length - 1);
+        // item/index/prop are present, last, and in that order.
+        expect(order.slice(-3)).toEqual(["item", "index", "prop"]);
+        expect(order.indexOf("item")).toBe(order.length - 3);
+        expect(order.indexOf("index")).toBe(order.length - 2);
+        expect(order.indexOf("prop")).toBe(order.length - 1);
     });
 
     it("scope-local item/index are NOT offered in the boolean or url categories (P165)", () => {

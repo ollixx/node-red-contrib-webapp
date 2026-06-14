@@ -137,7 +137,12 @@ const WEBAPP_NODE_TYPES = new Set([
     "ui-avatar",
     "ui-divider",
     "ui-log",
-    "ui-repeat"
+    "ui-repeat",
+    // P179 (ADR 0020): the component node pair. The DEFINITION is an off-canvas
+    // template container (children mount via `def:<id>/content`); the INSTANCE is a
+    // leaf that EXPANDS that subtree at its own outer mount with a `propScope` frame.
+    "ui-component-definition",
+    "ui-component-instance"
 ]);
 
 function parseList(value) {
@@ -1421,6 +1426,58 @@ function toComponentDefinitions(components) {
                 props: {
                     ...(blankToUndefined(component.icon) ? { icon: component.icon } : {}),
                     ...(Object.keys(layoutProps).length > 0 ? { layout: layoutProps } : {})
+                },
+                events: []
+            };
+        }
+
+        // P179 (ADR 0020): ui-component-definition — an OFF-CANVAS template
+        // container. It maps to the renderer kind "component-definition". It carries
+        // NO rendered chrome: `renderRegions` never emits it (its outer mount never
+        // resolves to a real region); only `expandComponent` consumes it, via an
+        // instance. Its children mount via `def:<id>/content` (= COMPONENT_DEF_SLOT)
+        // and bucket into the app by their real `.z` like any ui-node.
+        if (component.type === "ui-component-definition") {
+            return {
+                id: component.id,
+                kind: "component-definition",
+                // Off-canvas self-anchor: `def:<id>` is non-empty (the schema requires
+                // a non-empty mount) but never resolves to a real region — the
+                // renderer finds the definition by id, never by mount. The definition
+                // therefore never renders on its own.
+                mount: `def:${component.id}`,
+                order: toOptionalNumber(component.order),
+                bind: {},
+                props: {
+                    ...(blankToUndefined(component.name) ? { name: component.name } : {})
+                },
+                events: []
+            };
+        }
+
+        // P179 (ADR 0020): ui-component-instance — a LEAF-shaped node that EXPANDS
+        // its definition's `def:` subtree at its real outer mount. It maps to the
+        // renderer kind "component-instance" (like a repeat, it carries no chrome of
+        // its own). `bind` is the prop map (name → value-binding, any binding kind);
+        // the renderer resolves each into a `propScope` frame. `definitionId` lives
+        // in `props` (never `bind`, so it is not treated as a prop).
+        if (component.type === "ui-component-instance") {
+            const propMap = (component.props && typeof component.props === "object") ? component.props : {};
+            const bind = {};
+            for (const [name, raw] of Object.entries(propMap)) {
+                const binding = getBinding(raw, undefined);
+                if (binding) {
+                    bind[name] = binding;
+                }
+            }
+            return {
+                id: component.id,
+                kind: "component-instance",
+                mount: component.mount || component.parent,
+                order: toOptionalNumber(component.order),
+                bind,
+                props: {
+                    definitionId: component.definitionId
                 },
                 events: []
             };
@@ -2712,7 +2769,7 @@ function getDefinitionBuckets(appId, definitions) {
         app: matchingApp,
         routes: matchingDefinitions.filter((entry) => entry.type === "ui-route"),
         dialogs: matchingDefinitions.filter((entry) => entry.type === "ui-dialog"),
-        components: matchingDefinitions.filter((entry) => ["ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select", "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider", "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state", "ui-tabs", "ui-tab", "ui-accordion", "ui-accordion-section", "ui-breadcrumb", "ui-menu", "ui-pagination", "ui-stepper", "ui-avatar", "ui-image", "ui-icon", "ui-list", "ui-log", "ui-divider", "ui-repeat"].includes(entry.type)),
+        components: matchingDefinitions.filter((entry) => ["ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select", "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider", "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state", "ui-tabs", "ui-tab", "ui-accordion", "ui-accordion-section", "ui-breadcrumb", "ui-menu", "ui-pagination", "ui-stepper", "ui-avatar", "ui-image", "ui-icon", "ui-list", "ui-log", "ui-divider", "ui-repeat", "ui-component-definition", "ui-component-instance"].includes(entry.type)),
         stores: matchingDefinitions.filter((entry) => entry.type === "ui-store"),
         queries: matchingDefinitions.filter((entry) => entry.type === "ui-query"),
         actions: matchingDefinitions.filter((entry) => entry.type === "ui-action"),
@@ -6277,8 +6334,61 @@ const runtimeNodeRegistry = {
         options: {
             inputHandler: passThroughInputHandler
         }
+    },
+    // P179 (ADR 0020): ui-component-definition — off-canvas template container.
+    // It is never mounted into a real region; its only role is to be expanded by
+    // instances. Its children mount via `def:<id>/content`. No input handling.
+    "ui-component-definition": {
+        mapConfig: (config) => ({
+            type: "ui-component-definition",
+            id: getUiId(config),
+            // Off-canvas: an outer mount/parent is NOT required. If one happens to be
+            // set it is harmless — the def: subtree is matched by id, not by mount.
+            parent: config.parent || undefined,
+            mount: config.mount || config.parent || undefined,
+            name: blankToUndefined(config.name)
+        }),
+        options: {}
+    },
+    // P179 (ADR 0020): ui-component-instance — a leaf that EXPANDS a definition's
+    // def: subtree at its outer mount, resolving its `props` into a propScope frame.
+    "ui-component-instance": {
+        mapConfig: (config) => ({
+            type: "ui-component-instance",
+            id: getUiId(config),
+            parent: config.parent || undefined,
+            mount: config.mount || config.parent,
+            order: toOptionalNumber(config.order),
+            definitionId: config.definitionId || "",
+            // `props` is a map name → value-binding (any binding kind). The editor
+            // persists it as a JSON string or an object; normalise to an object of
+            // binding objects so toComponentDefinitions can route each into bind.
+            props: parsePropsMap(config.props)
+        }),
+        options: {
+            inputHandler: passThroughInputHandler
+        }
     }
 };
+
+// P179 (ADR 0020): parse a ui-component-instance `props` map. Accepts an object
+// (already a map name → value-binding) or a JSON string (the editor's typedInput
+// map control persists a stringified object). Returns a plain object; a malformed
+// value yields {} (a defined "no props", not a crash).
+function parsePropsMap(value) {
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+        return value;
+    }
+    if (typeof value === "string" && value.trim()) {
+        try {
+            const parsed = JSON.parse(value);
+            return (parsed && typeof parsed === "object" && !Array.isArray(parsed)) ? parsed : {};
+        } catch {
+            return {};
+        }
+    }
+    return {};
+}
 
 function registerNodeType(RED, type) {
     // P31: the live push (and dynamic action targeting) needs the RED runtime to
