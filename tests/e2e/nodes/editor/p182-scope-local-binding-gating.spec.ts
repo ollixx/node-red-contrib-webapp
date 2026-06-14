@@ -145,6 +145,12 @@ test.describe("editor — scope-local binding kinds are context-gated (P182)", (
             .build();
         await deployFlow(request, repeatFlow);
 
+        // The admin-API deploy replaces the SERVER flow but does not refresh the
+        // editor's in-browser RED.nodes graph: the page still holds the free-mount
+        // p182Same and has no p182Repeat node. Reload the editor so the panel binds
+        // to the now repeat-mounted node (and the repeat ancestor is resolvable) —
+        // the same field, re-gated purely by its new mount context.
+        await editor.open();
         await editor.openNode("p182Same");
         const inRepeat = await readTypedInputTypeSet(page, "text");
         expect(inRepeat).toContain("item");
