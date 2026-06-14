@@ -27,7 +27,7 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-_No open work — the roadmap is drained. New work is added here as packages are authored._
+- **P176** — nodes/ui-list — per-Item-Icon rendern (führendes `<sl-icon>`); `row.icon` wird vom Serializer ignoriert — *Owner-Bug 2026-06-14; renderIconHtml vorhanden, nur nicht aufgerufen* — [P176](nodes/ui-list/P176-list-item-icon-render.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -93,4 +93,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 174 done, 0 open, 9 deferred.**
+**Total: 174 done, 1 open, 9 deferred.**
