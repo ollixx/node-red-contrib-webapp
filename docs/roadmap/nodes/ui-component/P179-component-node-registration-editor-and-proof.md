@@ -18,7 +18,7 @@ verify: browser
 spec: docs/nodes/structure/ui-component.md
 tests: tests/e2e/nodes/view/ui-component.tests.md
 dependencies: [P178]
-status: pending
+status: in_progress
 ---
 # P179 — ui-component: Node-Registrierung + Editor + Beweis
 
