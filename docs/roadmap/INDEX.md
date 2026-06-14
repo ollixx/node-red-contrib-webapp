@@ -28,6 +28,7 @@ their blocker clears.
 ## Open work (pending / in_progress)
 
 - **P179** — nodes/ui-component — Node-Registrierung + Editor (def-Slot, definitionId-Picker, props-Map) + Runtime-Bucketing + Browser-Beweis — *Components-Welle, Schicht 3; braucht P178* — [P179](nodes/ui-component/P179-component-node-registration-editor-and-proof.md)
+- **P180** — nodes/ui-list — displayType als semantisches Intent-Enum (plain/divided/grouped/actionable) + ordered (ul/ol); Shoelace-Mapping inkl. grouped Kasten-Look — *ADR 0020; semantische Intents statt backend-Enum* — [P180](nodes/ui-list/P180-list-displaytype-semantic-intents.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -93,4 +94,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 178 done, 1 open, 8 deferred.**
+**Total: 178 done, 2 open, 8 deferred.**
