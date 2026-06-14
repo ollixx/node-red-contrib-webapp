@@ -1784,6 +1784,9 @@ function toComponentDefinitions(components) {
                     ...(component.pulsating !== undefined ? { pulsating: component.pulsating } : {}),
                     // P49: display type (progress/skeleton/badge/menu/list render mode).
                     ...(component.displayType !== undefined ? { displayType: component.displayType } : {}),
+                    // P180: ui-list ordered flag (ul↔ol). Mirrors displayType: copied
+                    // into component.props so the serializer can read props.ordered.
+                    ...(component.ordered !== undefined ? { ordered: component.ordered } : {}),
                     // P171: ui-list node-wide value display + badge colour role.
                     ...(component.displayValue !== undefined ? { displayValue: component.displayValue } : {}),
                     ...(component.badgeVariant !== undefined ? { badgeVariant: component.badgeVariant } : {}),
@@ -6234,6 +6237,9 @@ const runtimeNodeRegistry = {
             // (flow.json/tests) is kept as a static array.
             items: getBinding(config.items, migrateStatePath(config.itemsPath)) || parseJsonList(config.items),
             displayType: config.displayType || config.variant || undefined,
+            // P180: ordered (boolean, default false) — switches ul↔ol. Mirrors how
+            // displayType is carried into the definition; absent/false → undefined.
+            ordered: config.ordered === true || config.ordered === "true" ? true : undefined,
             // P171: node-wide value display + badge colour role.
             displayValue: config.displayValue || undefined,
             badgeVariant: config.badgeVariant || undefined,
