@@ -29,6 +29,8 @@ their blocker clears.
 
 - **P184** — nodes/ui-repeat — scope-lokale Bindings mit leerem Pfad reparieren: whole-`item` (String-Element) + `index` werden mit `path:''` abgelehnt — *Bug, blockiert Repeat-Grundnutzung; Owner 2026-06-14* — [P184](nodes/ui-repeat/P184-scope-local-empty-path-binding-fix.md)
 - **P185** — nodes/ui-repeat — `item`/`index` in Reactive-Expressions erreichbar (Per-Instanz-Scope) + Autocomplete — *Feature; braucht P184* — [P185](nodes/ui-repeat/P185-item-index-in-reactive-scope.md)
+- **P186** — aspects/test-infra — Review-Video Quick-Win: Playwright video+trace+HTML-Report + on-demand `test:showcase` (sofort Videos der 74 Specs) — *ADR 0022, Stufe 1* — [P186](aspects/test-infra/P186-showcase-video-report-quickwin.md)
+- **P187** — aspects/test-infra — Showcase-Spec-Muster + Pilot (ui-list, ui-repeat, ui-query→ui-list): fixture-getriebene Feature-Tour mit Config-Dialog — *ADR 0022, Stufe 2; braucht P186* — [P187](aspects/test-infra/P187-showcase-spec-pattern-and-pilot.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -94,4 +96,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 183 done, 2 open, 8 deferred.**
+**Total: 183 done, 4 open, 8 deferred.**
