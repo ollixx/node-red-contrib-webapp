@@ -148,3 +148,59 @@ test.describe("ui-repeat — item/index inside a reactive expression (P185)", ()
         ]);
     });
 });
+
+/**
+ * P192 (renderer bug, Owner 2026-06-19) — the repeat item-scope must propagate
+ * THROUGH an intermediate child-bearing node, not just the direct template
+ * children. The Owner's repro: a `ui-container` (layout horizontal) inside a
+ * `ui-repeat`, holding two `ui-text` nodes bound to `item.name` / `item.city`.
+ *
+ * Before P192 the container's children were rendered by the general mount pass
+ * WITHOUT the item scope (and under the original, not the cloned id), so `item`
+ * resolved to `undefined` → the cells showed the `"?"` display fallback. After
+ * P192 the whole template subtree is cloned per item — scope + per-instance re-id
+ * propagate through the container — so each container clone shows its OWN row's
+ * name + city. The cloned container + its children carry the `<itemKey>#<id>`
+ * prefix (keyField = `name`), proving the keying is consistent through the
+ * container.
+ *
+ * Structure nodes (ui-app/ui-route/ui-dialog) are top-level mounted, never repeat
+ * children, so they are out of scope here.
+ */
+test.describe("ui-repeat — item-scope through a nested ui-container (P192)", () => {
+    test.beforeAll(async ({ request }) => {
+        const flow = await loadFlowFixture("tests/e2e/fixtures/ui-repeat-container.flow.json");
+        const response = await request.post("/flows", { data: flow });
+        expect(response.ok()).toBeTruthy();
+    });
+
+    test.afterAll(async ({ request }) => {
+        const baseline = await loadFlowFixture("examples/customers-crud/flow.json");
+        await request.post("/flows", { data: baseline });
+    });
+
+    test("two ui-text in a container inside the repeat resolve item.* per row", async ({ page }) => {
+        await page.goto("/webapp/repeatContainerApp/");
+
+        // One container clone per row, each holding name + city resolved against
+        // THAT row's item — interleaved in mount order. No `"?"` fallback.
+        await expect(page.locator(".webapp-text")).toHaveText([
+            "Ada",
+            "London",
+            "Linus",
+            "Helsinki"
+        ]);
+    });
+
+    test("the cloned container's children carry the per-instance id prefix", async ({ page }) => {
+        await page.goto("/webapp/repeatContainerApp/");
+
+        // keyField = name → itemKey = Ada/Linus. The children inside the cloned
+        // container resolve INSIDE the clone (id <itemKey>#<childId>), not back to
+        // the original node.
+        await expect(page.locator('[data-webapp-node="Ada#rowName"]')).toHaveText("Ada");
+        await expect(page.locator('[data-webapp-node="Ada#rowCity"]')).toHaveText("London");
+        await expect(page.locator('[data-webapp-node="Linus#rowName"]')).toHaveText("Linus");
+        await expect(page.locator('[data-webapp-node="Linus#rowCity"]')).toHaveText("Helsinki");
+    });
+});

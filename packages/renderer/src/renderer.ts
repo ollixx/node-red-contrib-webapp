@@ -1588,11 +1588,185 @@ function expandRepeat(
                     }));
                 }
 
+                // P192: a CHILD-BEARING template node (ui-container, ui-tabs/ui-tab,
+                // ui-accordion/ui-accordion-section) renders its OWN children through
+                // its container machinery (renderRegions / resolveSectionChildren),
+                // which enumerates the AppModel by the node's id + mount convention.
+                // The plain clone above changes only the node's id, so those children —
+                // still mounted at `<head>:<ORIGINAL id>/…` in the AppModel and rendered
+                // by the general mount pass WITHOUT this item scope — never see `item`.
+                // FIX: clone the ENTIRE template subtree per item (root + all
+                // transitive descendants), re-id'ing each node `<itemKey>#<id>` AND
+                // rewriting every intermediate mount so a cloned child points at its
+                // cloned parent. Render the cloned root against an AppModel augmented
+                // with those clones, so the existing per-kind resolvers find them under
+                // the cloned ids and render them in `scopedContext`. This generalises
+                // the two special cases above to every child-bearing node uniformly —
+                // no second render path. (A nested repeat / component-instance inside
+                // the subtree keeps expanding via its own branch against the augmented
+                // model + scope.)
+                if (isChildBearingTemplateNode(child)) {
+                    const subtreeClones = cloneTemplateSubtree(child, itemKey, appModel);
+                    const augmentedModel: AppModel = {
+                        ...appModel,
+                        components: [...appModel.components, ...subtreeClones]
+                    };
+                    const rendered = toRenderedComponent(clone, scopedContext, augmentedModel);
+                    return rendered === undefined ? [] : [rendered];
+                }
+
                 const rendered = toRenderedComponent(clone, scopedContext, appModel);
                 return rendered === undefined ? [] : [rendered];
             })
             .filter((component): component is RenderedComponent => component !== undefined);
     });
+}
+
+/**
+ * P192: the kinds whose CHILDREN hang off the node via a parent-id mount convention
+ * (`container:`/`ui-tabs:`/`ui-tab:`/`ui-accordion:`/`ui-accordion-section:`) and are
+ * rendered by the node's own container machinery — NOT inlined by `expandRepeat`'s
+ * direct-child clone. A repeat sitting between is handled by its own recursion; a
+ * component-instance likewise. Every other kind is a leaf (no descendants to scope).
+ */
+function isChildBearingTemplateNode(component: ComponentDefinition): boolean {
+    return (
+        component.kind === "container" ||
+        component.kind === "tabs" ||
+        component.kind === "tab" ||
+        component.kind === "accordion" ||
+        component.kind === "accordion-section"
+    );
+}
+
+/**
+ * P192: the mount heads that encode an explicit PARENT id as their first segment
+ * (`<head>:<parentId>/<rest>`). When a child-bearing template node is cloned, every
+ * descendant mounted under a cloned ancestor via one of these heads must have that
+ * parent-id segment rewritten to the cloned id so the mount resolves INSIDE the clone
+ * (not back to the original). `layout:` is intentionally absent — it addresses a
+ * layout id, not a container instance, so it is fixture-only and never re-targets a
+ * clone. `def:` is absent too — a definition is off-canvas and never part of a repeat
+ * template subtree (component-instances are expanded by their own branch).
+ */
+const PARENT_ID_MOUNT_HEADS = [
+    "container:",
+    "ui-tabs:",
+    "ui-tab:",
+    "ui-accordion:",
+    "ui-accordion-section:"
+] as const;
+
+/**
+ * P192: extract the PARENT id from a parent-id mount head (`<head>:<parentId>/<rest>`),
+ * or `undefined` if the mount uses no such head (e.g. a top-level `route:`/`app:`
+ * mount or the fixture `layout:` form). Used to walk a template subtree by mount
+ * convention.
+ */
+function mountParentId(mount: string): string | undefined {
+    const raw = mount.trim();
+    for (const head of PARENT_ID_MOUNT_HEADS) {
+        if (!raw.startsWith(head)) {
+            continue;
+        }
+        const separatorIndex = raw.indexOf("/");
+        if (separatorIndex < 0) {
+            return undefined;
+        }
+        return raw.slice(head.length, separatorIndex);
+    }
+    return undefined;
+}
+
+/**
+ * P192: rewrite a mount's parent-id segment to its cloned id when the parent is one
+ * of the cloned template nodes. `clonedIds` maps ORIGINAL id → cloned id. A mount
+ * whose parent id is not in the map (it points outside the cloned subtree) is left
+ * untouched.
+ */
+function rewriteMountParent(mount: string, clonedIds: Map<string, string>): string {
+    const raw = mount.trim();
+    for (const head of PARENT_ID_MOUNT_HEADS) {
+        if (!raw.startsWith(head)) {
+            continue;
+        }
+
+        const separatorIndex = raw.indexOf("/");
+        if (separatorIndex < 0) {
+            return mount;
+        }
+
+        const parentId = raw.slice(head.length, separatorIndex);
+        const cloned = clonedIds.get(parentId);
+        if (cloned === undefined) {
+            return mount;
+        }
+
+        return `${head}${cloned}${raw.slice(separatorIndex)}`;
+    }
+
+    return mount;
+}
+
+/**
+ * P192: deep-clone a child-bearing template node's ENTIRE subtree for one repeat
+ * instance. Walks the template node and every transitive descendant (found by the
+ * parent-id mount heads), re-id'ing each to `<itemKey>#<originalId>` and rewriting
+ * every intermediate mount so a cloned child points at its cloned parent. The cloned
+ * ROOT itself is rendered by the caller (with the item scope on context) against an
+ * AppModel augmented with these clones — so the existing container/tabs/accordion
+ * resolvers enumerate the cloned descendants under the cloned ids.
+ *
+ * A nested `ui-repeat` / `ui-component-instance` inside the subtree IS descended into
+ * and cloned too (id + mount rewrite), so the augmented model holds its template
+ * children mounted under the cloned repeat/instance id. Its own expansion branch then
+ * fires against the augmented model + scope and re-keys those children on top of the
+ * per-instance prefix — collision-free nested keying, the P164 semantics preserved.
+ * The returned list EXCLUDES the root (the caller already holds the root clone) but
+ * INCLUDES all descendants.
+ */
+function cloneTemplateSubtree(
+    root: ComponentDefinition,
+    itemKey: string,
+    appModel: AppModel
+): ComponentDefinition[] {
+    // First pass: collect every node in the subtree (root + transitive descendants)
+    // so the full set of original ids that get a cloned twin is known up front —
+    // needed to rewrite intermediate mounts consistently in one pass.
+    const subtree: ComponentDefinition[] = [];
+    const seen = new Set<string>();
+    const queue: ComponentDefinition[] = [root];
+
+    while (queue.length > 0) {
+        const node = queue.shift() as ComponentDefinition;
+        if (seen.has(node.id)) {
+            continue;
+        }
+        seen.add(node.id);
+        subtree.push(node);
+
+        const children = appModel.components.filter(
+            (candidate) => mountParentId(candidate.mount) === node.id
+        );
+        for (const child of children) {
+            queue.push(child);
+        }
+    }
+
+    const clonedIds = new Map<string, string>(
+        subtree.map((node) => [node.id, `${itemKey}#${node.id}`])
+    );
+
+    // Second pass: emit cloned twins for every DESCENDANT (skip the root — the caller
+    // owns it). Each clone gets the per-instance id and its mount re-targeted at the
+    // cloned parent.
+    return subtree
+        .filter((node) => node.id !== root.id)
+        .map((node) => ({
+            ...node,
+            id: `${itemKey}#${node.id}`,
+            mount: rewriteMountParent(node.mount, clonedIds)
+        }));
 }
 
 /**

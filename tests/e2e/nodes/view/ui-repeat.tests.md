@@ -126,6 +126,40 @@
   `Zeile 0: Ada`, `Zeile 1: Linus`, `Zeile 2: Grace` — der Beweis des Per-Instanz-
   Scopes (gleiche Expression, je Zeile eigener Wert).
 
+### Item-Scope durch verschachtelte Container (P192) — abgedeckt
+
+> Bugfix (Owner 2026-06-19): der Item-Scope erreichte nur die DIREKTEN
+> Template-Kinder (+ nested repeat/component-instance). Ein Kind-tragender Knoten
+> dazwischen (`ui-container`, `ui-tabs`/`ui-tab`, `ui-accordion`/`-section`) brach
+> die Kette — dessen Kinder wurden vom allgemeinen Mount-Pass OHNE itemScope und
+> ohne Re-Id gerendert → `item` undefined. Fix: `expandRepeat` klont das GANZE
+> Template-Subtree je Item (Scope + Per-Instanz-Re-Id propagieren durch JEDEN
+> Kind-tragenden Knoten über dessen Mount-Konvention). Unit:
+> `packages/renderer/test/p192-repeat-scope-through-containers.test.ts`
+> (ui-text mit `item.*` in ui-container, ui-tab, ui-accordion-section — je im
+> ui-repeat — löst je Instanz auf; tiefe/gemischte Schachtelung; nested repeat:
+> innerster Frame gewinnt; keine Regression bei direkten Kindern / 0-Item).
+> Browser: `tests/e2e/nodes/view/ui-repeat.spec.ts`
+> (Fixture `tests/e2e/fixtures/ui-repeat-container.flow.json`).
+
+- **Renderer:** ein Kind-tragender Template-Knoten (ui-container, ui-tabs/ui-tab,
+  ui-accordion/-section) propagiert Scope + Re-Id rekursiv an seine Kinder über die
+  jeweilige Mount-Konvention (`container:`/`ui-tabs:`/`ui-tab:`/`ui-accordion:`/
+  `ui-accordion-section:`) — Verallgemeinerung der zwei bisherigen Sonderfälle
+  (nested repeat/component-instance), kein zweiter Render-Pfad. Geklonter Container
+  UND alle Nachfahren tragen den `<itemKey>#…`-Präfix konsistent; innere Mounts
+  lösen INNERHALB des Klons auf. Beliebige Tiefe/Mischung; verschachtelte Repeats:
+  innerster Frame gewinnt. Strukturknoten (ui-app/ui-route/ui-dialog) sind keine
+  Repeat-Kinder → außerhalb des Scopes. Keine Regression: direkte Kinder / 0-Item
+  unverändert.
+- **End-to-End (browser):** Store-Array `[{name:'Ada',city:'London'},{name:'Linus',
+  city:'Helsinki'}]` + `ui-repeat` (keyed `name`) → `ui-container` (Layout
+  horizontal) mit zwei `ui-text`-Kindern (`value = item.name` / `item.city`)
+  rendert je Zeile die richtigen Werte (`Ada, London, Linus, Helsinki`); die Kinder
+  im geklonten Container tragen den Per-Instanz-Marker (`Ada#rowName`,
+  `Ada#rowCity`, `Linus#rowName`, `Linus#rowCity`) — der Beweis, dass Scope + Re-Id
+  durch den Container propagieren.
+
 ## Editor: Basis-Felder (P139, ADR 0015) — abgedeckt
 
 - `ui-repeat` ist ein Template-Container: `visible` anwendbar; `disabled`,
