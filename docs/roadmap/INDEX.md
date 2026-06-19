@@ -34,6 +34,7 @@ their blocker clears.
 - **P192** — nodes/ui-repeat — Item-Scope propagiert nicht durch verschachtelte Kind-tragende Knoten (ui-container, ui-tabs/ui-tab, ui-accordion/-section) — *Bug; Renderer expandRepeat; alle Container-Arten; Owner 2026-06-19* — [P192](nodes/ui-repeat/P192-repeat-scope-propagates-through-nested-containers.md)
 - **P193** — nodes/ui-repeat — benannte Repeat-Scopes (itemName-Alias + item/index scope-qualifiziert) → äußeres Repeat-item bei Verschachtelung adressierbar (ADR 0023) — *braucht P192; Owner 2026-06-19* — [P193](nodes/ui-repeat/P193-named-repeat-scopes.md)
 
+- **P195** — aspects/test-infra — Spec↔Code-Konformitäts-Check (Feldtabelle vs. Schema/Node-Defaults; fängt Doc-Drift automatisch) + Naht-Verträge als first-class Doc — *Owner Q1 2026-06-19; ADR 0024* — [P195](aspects/test-infra/P195-spec-code-conformance-and-seam-contracts.md)
 
 ## Deferred (parked, not abandoned)
 
@@ -99,4 +100,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 187 done, 6 open, 8 deferred.**
+**Total: 187 done, 7 open, 8 deferred.**
