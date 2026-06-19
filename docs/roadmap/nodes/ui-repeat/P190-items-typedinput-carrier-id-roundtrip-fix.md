@@ -16,7 +16,7 @@ verify: browser
 spec: docs/nodes/display/ui-repeat.md
 tests: tests/e2e/nodes/view/ui-repeat.tests.md
 dependencies: []
-status: pending
+status: in_progress
 ---
 # P190 — ui-repeat items-Round-trip (Träger-id-Fix)
 

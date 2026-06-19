@@ -13,7 +13,7 @@ verify: unit
 spec: docs/nodes/concepts/editor.md
 tests: tests/e2e/nodes/view/ui-repeat.tests.md
 dependencies: []
-status: pending
+status: in_progress
 ---
 # P195 — Spec↔Code-Konformität + Naht-Verträge
 
