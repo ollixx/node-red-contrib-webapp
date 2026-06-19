@@ -1,0 +1,63 @@
+[
+  {
+    "type": "tab",
+    "id": "repeatreactiveflow",
+    "label": "Repeat Reactive"
+  },
+  {
+    "type": "ui-app",
+    "id": "repeatReactiveApp",
+    "name": "Repeat Reactive App",
+    "root": "repeatReactiveApp",
+    "layout": "app",
+    "title": "Repeat Reactive",
+    "z": "repeatreactiveflow",
+    "wires": [],
+    "x": 200,
+    "y": 120
+  },
+  {
+    "type": "ui-store",
+    "id": "peopleStore",
+    "name": "People",
+    "parent": "repeatReactiveApp",
+    "statePath": "people",
+    "initialValue": "[{\"name\":\"Ada\"},{\"name\":\"Linus\"},{\"name\":\"Grace\"}]",
+    "z": "repeatreactiveflow",
+    "wires": [],
+    "x": 200,
+    "y": 180
+  },
+  {
+    "type": "ui-repeat",
+    "id": "peopleRepeat",
+    "name": "People Repeat",
+    "parent": "repeatReactiveApp",
+    "mount": "repeatReactiveApp.content",
+    "order": 0,
+    "items": {
+      "kind": "store",
+      "path": "peopleStore"
+    },
+    "z": "repeatreactiveflow",
+    "wires": [],
+    "x": 200,
+    "y": 240
+  },
+  {
+    "type": "ui-text",
+    "id": "reactiveRow",
+    "name": "Reactive row",
+    "parent": "peopleRepeat",
+    "mount": "container:peopleRepeat/content",
+    "order": 0,
+    "value": {
+      "kind": "reactive",
+      "value": "`Zeile ${index}: ${item.name}`"
+    },
+    "z": "repeatreactiveflow",
+    "wires": [],
+    "x": 200,
+    "y": 300
+  }
+]

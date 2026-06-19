@@ -548,11 +548,22 @@ function resolveBinding(binding: BindingDefinition | undefined, sources: Binding
             // return) never breaks the snapshot: it resolves to the invalid-value
             // marker (P104) and is reported once per distinct error.
             const source = typeof binding.value === "string" ? binding.value : "";
+            // P185 (ADR 0017/0020): inject the render-time scope-local values of the
+            // INNERMOST active repeat / component-instance so a reactive expression on
+            // a per-instance clone reads ITS `item`/`index`/`prop`. Outside any
+            // repeat/instance these are `undefined` — mirroring the item/index/prop
+            // binding kinds (no throw). One compiled fn, distinct bound values per
+            // clone (the clone calls resolveBinding with its own pushed frame).
+            const itemFrame = sources.itemScope?.[sources.itemScope.length - 1];
+            const propFrame = sources.propScope?.[sources.propScope.length - 1];
             const result = evaluateReactiveExpression(source, {
                 state: sources.state,
                 queries: sources.queries,
                 params: sources.params,
-                storeNamePaths: sources.storeNamePaths
+                storeNamePaths: sources.storeNamePaths,
+                item: itemFrame?.item,
+                index: itemFrame?.index,
+                prop: propFrame
             });
 
             if (result.error) {
