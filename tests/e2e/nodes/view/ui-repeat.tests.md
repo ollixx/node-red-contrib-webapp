@@ -187,6 +187,21 @@
   `Ada#rowCity`, `Linus#rowName`, `Linus#rowCity`) — der Beweis, dass Scope + Re-Id
   durch den Container propagieren.
 
+
+### items-typedInput Carrier-id Round-trip Fix (P190) — abgedeckt
+
+> Bug (Owner 2026-06-19): der items-typedInput lag auf `#node-input-items` (= gleiche id wie die
+> Property `items`). Node-REDs Auto-Feld-Handling schrieb den rohen Feldwert in `this.items` →
+> beim Wieder-Öffnen konnte `parseBindingValue` den raw String nicht als Binding lesen →
+> Feld blieb leer. Fix: separater Träger `#node-input-itemsBinding` (Spiegel zu ui-list / P171).
+> Browser: `tests/e2e/nodes/view/ui-repeat.spec.ts`
+> (describe „ui-repeat items typedInput round-trip (P190)").
+
+- **Editor:** `#node-input-itemsBinding` (NICHT `#node-input-items`) ist im Editor-Tray sichtbar
+  (accept: `itemsBinding`-Default in den defaults, kein `#node-input-items`-DOM-Feld).
+- **Round-trip:** ein items-Binding (Store-Binding) wird gespeichert; nach Schließen und
+  Wieder-Öffnen des Editor-Panels sind `type` und `value` unverändert und nicht leer.
+
 ## Editor: Basis-Felder (P139, ADR 0015) — abgedeckt
 
 - `ui-repeat` ist ein Template-Container: `visible` anwendbar; `disabled`,
@@ -201,6 +216,6 @@ Abgedeckte Features in benannten `test.step`-Kapiteln (→ Kapitel im Trace/Vide
 1. String-Array: whole-`item` + `index` → interleaved Sequenz (P184).
 2. Objekt-Array: `item.name` löst je Klon auf (P165).
 3. Keyed Update: drittes Element wird zugefügt; Ada und Linus behalten ihre per-instance-ids (P165).
-4. Config-Dialog-Cameo: `#node-input-items` + `#node-input-keyField` im Editor-Tray.
+4. Config-Dialog-Cameo: `#node-input-itemsBinding` (P190 fix — separater Träger) + `#node-input-keyField` im Editor-Tray.
 
 Laufbar unter `SHOWCASE=1 pnpm exec playwright test tests/e2e/showcase/ui-repeat.showcase.spec.ts`.

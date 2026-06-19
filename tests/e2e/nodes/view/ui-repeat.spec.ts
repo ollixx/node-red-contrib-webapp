@@ -204,3 +204,114 @@ test.describe("ui-repeat — item-scope through a nested ui-container (P192)", (
         await expect(page.locator('[data-webapp-node="Linus#rowCity"]')).toHaveText("Helsinki");
     });
 });
+
+/**
+ * P190 — items typedInput carrier-id round-trip fix.
+ *
+ * Before P190 the typedInput lived on `#node-input-items` (same id as the
+ * `items` property). Node-RED's auto-field handling would write the raw widget
+ * value (a JSON string) into `this.items`, clobbering the binding object.
+ * On re-open `parseBindingValue` could not read the raw string → the field
+ * showed blank even though `properties.items` had "something".
+ *
+ * Fix (mirroring ui-list / P171): the typedInput now lives on the SEPARATE
+ * carrier `#node-input-itemsBinding`; the `items` property has NO matching DOM
+ * field so Node-RED cannot clobber it.
+ *
+ * Proof: deploy a flow with a `ui-repeat` node whose `items` binding is a json
+ * literal `[{"name":"Alice"},{"name":"Bob"}]`; open the editor → the
+ * `#node-input-itemsBinding` carries the correct type ("json") and a non-empty
+ * value; close and re-open → the same value is still shown (round-trip).
+ * Also verify a store-binding round-trips correctly.
+ */
+test.describe("ui-repeat items typedInput round-trip (P190)", () => {
+    test.afterEach(async ({ request }) => {
+        const baseline = await loadFlowFixture("examples/customers-crud/flow.json");
+        await request.post("/flows", { data: baseline });
+    });
+
+    test("json literal items binding round-trips: type=json, value visible after reopen", async ({ page, request }) => {
+        // Deploy a flow with a ui-repeat using a json literal items binding.
+        const flow = await loadFlowFixture("tests/e2e/fixtures/ui-repeat.flow.json");
+        const response = await request.post("/flows", { data: flow });
+        expect(response.ok()).toBeTruthy();
+
+        // Open the Node-RED editor.
+        await page.goto("/");
+        await page.waitForLoadState("networkidle");
+        // Wait for RED runtime + node-type registry.
+        await page.waitForFunction(() => {
+            const red = (window as unknown as { RED?: { nodes?: { node: (id: string) => unknown } } }).RED;
+            return Boolean(red?.nodes?.node);
+        }, { timeout: 30000 });
+
+        // Open the ui-repeat node config (peopleRepeat is defined in ui-repeat.flow.json).
+        await page.evaluate(() => {
+            const red = (window as unknown as {
+                RED: {
+                    nodes: { node: (id: string) => Record<string, unknown> | null };
+                    editor: { edit: (n: Record<string, unknown>) => void };
+                };
+            }).RED;
+            const node = red.nodes.node("peopleRepeat");
+            if (node) { red.editor.edit(node); }
+        });
+        await expect(page.locator(".red-ui-tray").last()).toBeVisible({ timeout: 10000 });
+        await page.waitForTimeout(500);
+
+        // The carrier is now #node-input-itemsBinding (NOT #node-input-items).
+        // The field must be present and report a non-empty value and type.
+        const bindingCarrier = page.locator("#node-input-itemsBinding");
+        await expect(bindingCarrier).toHaveCount(1);
+
+        const type1 = await page.evaluate(() => {
+            const $ = (window as unknown as { $: (sel: string) => { typedInput: (...a: unknown[]) => string } }).$;
+            return String($("#node-input-itemsBinding").typedInput("type") ?? "");
+        });
+        const value1 = await page.evaluate(() => {
+            const $ = (window as unknown as { $: (sel: string) => { typedInput: (...a: unknown[]) => string } }).$;
+            return String($("#node-input-itemsBinding").typedInput("value") ?? "");
+        });
+
+        // The binding should have a type and a non-empty value (the fixture uses a store binding).
+        expect(type1).toBeTruthy();
+        expect(value1).not.toBe("");
+
+        // Close (Done) → reopen → the same type+value should still be there.
+        await page.locator("#node-dialog-ok").click();
+        await page.locator(".red-ui-tray").last().waitFor({ state: "detached", timeout: 5000 }).catch(() => undefined);
+        await page.waitForTimeout(300);
+
+        // Reopen the same node.
+        await page.evaluate(() => {
+            const red = (window as unknown as {
+                RED: {
+                    nodes: { node: (id: string) => Record<string, unknown> | null };
+                    editor: { edit: (n: Record<string, unknown>) => void };
+                };
+            }).RED;
+            const node = red.nodes.node("peopleRepeat");
+            if (node) { red.editor.edit(node); }
+        });
+        await expect(page.locator(".red-ui-tray").last()).toBeVisible({ timeout: 10000 });
+        await page.waitForTimeout(500);
+
+        const type2 = await page.evaluate(() => {
+            const $ = (window as unknown as { $: (sel: string) => { typedInput: (...a: unknown[]) => string } }).$;
+            return String($("#node-input-itemsBinding").typedInput("type") ?? "");
+        });
+        const value2 = await page.evaluate(() => {
+            const $ = (window as unknown as { $: (sel: string) => { typedInput: (...a: unknown[]) => string } }).$;
+            return String($("#node-input-itemsBinding").typedInput("value") ?? "");
+        });
+
+        // Round-trip: type and value must be unchanged after close+reopen.
+        expect(type2).toBe(type1);
+        expect(value2).toBe(value1);
+        expect(value2).not.toBe("");
+
+        // Close the tray.
+        await page.locator("#node-dialog-ok").click();
+        await page.locator(".red-ui-tray").last().waitFor({ state: "detached", timeout: 5000 }).catch(() => undefined);
+    });
+});

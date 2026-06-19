@@ -26,11 +26,14 @@
                 name: { value: "" },
                 parent: { value: "" },
                 mount: { value: "", required: true },
-                // P165: `items` REQUIRED collection binding (value typedInput).
-                // Persists the binding OBJECT on `items`; legacy `itemsPath` (plain
-                // state path) is migrated on open. The typedInput lives directly on
-                // #node-input-items so the minimal-coverage E2E check passes.
+                // P165 (ADR 0017): `items` REQUIRED collection binding (value typedInput).
+                // Persists the binding OBJECT on `items`; there is no matching
+                // #node-input-items element so Node-RED auto-save cannot clobber
+                // the binding object. The typedInput lives on #node-input-itemsBinding
+                // (mirror of ui-list / P171). Legacy `itemsPath` (plain state path)
+                // is migrated on open.
                 items: { value: null },
+                itemsBinding: { value: "" },
                 itemsPath: { value: "" },
                 // P165: optional stable per-instance key field (e.g. "id").
                 keyField: { value: "" },
@@ -74,7 +77,7 @@
                         ? { kind: "state", path: this.itemsPath }
                         : undefined);
                 const itemsEditor = common.readValueBinding(itemsBinding, "");
-                const itemsInput = $("#node-input-items");
+                const itemsInput = $("#node-input-itemsBinding");
                 itemsInput.typedInput({
                     default: itemsEditor.type,
                     types: common.valueBindingTypes({ category: "value", currentKind: itemsEditor.type })
@@ -86,9 +89,11 @@
                 // P139: persist the applicable base fields (visible) as a binding.
                 common.applyBaseFields(BASE_FIELDS).call(this);
                 // P165: persist `items` as a binding object; clear the legacy path.
+                // P190: read from the separate carrier input, NOT #node-input-items
+                // (which has no matching DOM field — Node-RED cannot clobber it).
                 this.items = common.applyValueBinding(
-                    $("#node-input-items").typedInput("type"),
-                    $("#node-input-items").typedInput("value")
+                    $("#node-input-itemsBinding").typedInput("type"),
+                    $("#node-input-itemsBinding").typedInput("value")
                 );
                 this.itemsPath = "";
             }
@@ -99,7 +104,10 @@
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
-    <div class="form-row"><label for="node-input-items">Items</label><input type="text" id="node-input-items"></div>
+    <!-- P190 fix: typedInput carrier is #node-input-itemsBinding; the `items` property
+         has NO matching DOM field so Node-RED auto-save cannot clobber the binding object.
+         Mirror of ui-list (P171). -->
+    <div class="form-row"><label for="node-input-itemsBinding">Items</label><input type="text" id="node-input-itemsBinding"></div>
     <div class="form-row"><label for="node-input-keyField">Key Field</label><input type="text" id="node-input-keyField" placeholder="optional, e.g. id"></div>
     <div class="form-tips" style="margin-top: 4px;">
         Children mounted into this node's <code>content</code> slot are the
