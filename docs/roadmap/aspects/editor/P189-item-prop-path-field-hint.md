@@ -18,7 +18,7 @@ verify: browser
 spec: docs/nodes/display/ui-repeat.md
 tests: tests/e2e/nodes/view/ui-repeat.tests.md
 dependencies: []
-status: pending
+status: in_progress
 ---
 # P189 — Item-/Prop-Pfadfeld erklären (Editor-UX)
 

@@ -15,7 +15,7 @@ verify: unit
 spec: docs/adr/0024-compositional-testing-seam-invariants-property-based.md
 tests: tests/e2e/nodes/view/ui-repeat.tests.md
 dependencies: [P192]
-status: pending
+status: in_progress
 ---
 # P194 — PBT-Pilot am Renderer
 
