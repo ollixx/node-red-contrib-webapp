@@ -82,3 +82,12 @@ status: done
   (P171), so it has no type-blind bug; the proof lives on ui-text/ui-button which offer both scope-local
   and state/query kinds. No renderer/ui-repeat.html/package.json touched.
 - **cost:** session agent-ad45e999ec0c5a6e3, ~14m.
+- **post-close regression fix (`fix/p189-reactive-validation`, session a607408d9ccc30239):** the
+  end-of-wave full E2E caught that swapping ui-text(`text`)/ui-button(`label`) `validate` for
+  `validateValueBindingField` had **dropped the reactive-expression validation** — a broken
+  `` `Kunde ${ `` or unknown `store("…")` no longer marked the node invalid
+  (`reactive-expression.spec.ts:120`/`:148` red). P189's targeted specs didn't cover the reactive kind.
+  Fixed by delegating: extracted the existing `validateReactiveSyntax`+`validateReactiveReferences`
+  into `isReactiveExpressionValid(value)` and calling it from `validateValueBindingField` for
+  `kind==="reactive"` (both live + persisted-binding branches); all other kinds unchanged. Re-verified
+  on develop: reactive-expression **7/7**, p189+base-fields **21/21** green.
