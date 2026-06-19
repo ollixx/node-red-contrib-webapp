@@ -15,7 +15,7 @@ verify: browser
 spec: docs/adr/0022-per-node-review-videos-fixture-driven-showcase.md
 tests: tests/e2e/nodes/view/ui-list.tests.md
 dependencies: [P186]
-status: pending
+status: in_progress
 ---
 # P187 — Showcase-Spec-Muster + Pilot
 
