@@ -188,6 +188,43 @@
   durch den Container propagieren.
 
 
+### Eigenes content-Slot-Layout (P191) — abgedeckt
+
+> Owner 2026-06-19: `ui-repeat` ist ein vollwertiger CONTAINER — sein `content`-Slot
+> (REPEAT_SLOT) bekommt ein EIGENES Layout-Preset (wie `ui-container`'s `layoutId`).
+> Die je Item geklonten Kinder werden in die Regionen dieses Layouts platziert, sodass
+> ihre Placement-Felder (order/row/col/colSize) greifen — konform zu ui-container/ui-route.
+> Schema: `packages/schema/test/p163-repeat-item-binding.test.ts` (optionales `layout`-Preset,
+> Default-migrierbar; unbekanntes Preset rot). Renderer:
+> `packages/renderer/test/p191-repeat-own-layout.test.ts` (je Item ein `container`-Komponente
+> mit `layoutId` + `regions`; Kinder unter der Layout-Region mit Item-Scope; keyed
+> `<itemKey>#<repeatId>`; 0-Item → 0 Container; OHNE layoutId → Legacy-Flach-Verhalten).
+> Browser: `tests/e2e/nodes/view/ui-repeat.spec.ts`
+> (Fixture `tests/e2e/fixtures/ui-repeat-layout.flow.json`).
+
+- **Schema:** das `ui-repeat`-Knotenschema trägt ein OPTIONALES `layout`-Preset (wie
+  ui-container, aber optional für Altflows); mapConfig migriert ein fehlendes Layout auf
+  das Default-Preset (`vertical`) und mappt `layout || layoutId` → `props.layoutId`. Das
+  referenzierte Layout wird in die `layouts`-Liste des Modells aufgenommen. Unbekanntes
+  Preset bleibt rot.
+- **Editor:** ein „Child Layout"-Selektor (verstecktes `#node-input-layoutId` +
+  `#node-input-layout-preset`) — identisch zu ui-container via `installLayoutSelector`;
+  ein leeres `layoutId` migriert beim Öffnen auf das erste Preset (kein roter
+  Pflichtfeld-Bruch bei Altflows). `ui-repeat` bleibt zugleich Kind: layoutX/Y +
+  Placement im Parent unverändert (zwei Rollen sauber getrennt).
+- **Renderer:** `expandRepeat` platziert je Item die geklonten Kinder in die Regionen des
+  Repeat-Layouts, indem es je Instanz eine `container`-Komponente
+  (`id = <itemKey>#<repeatId>`, `layoutId`, `regions`) rendert (über
+  `cloneTemplateSubtree` + `createContainerMountMatcher`, Wurzel = das Repeat). OHNE
+  Layout bleibt das Legacy-Flach-Verhalten (P164) unverändert — keine Regression in
+  p164/p192.
+- **End-to-End (browser):** Store-Array `[{name:'Ada',city:'London'},{name:'Linus',
+  city:'Helsinki'}]` + `ui-repeat` mit `layout:"grid"` und zwei direkten `ui-text`-Kindern
+  (`item.name` / `item.city`) rendert je Item einen `webapp-container`
+  (`Ada#gridRepeat` / `Linus#gridRepeat`), dessen Slot-Body den `--grid`-Modifier trägt;
+  die Kinder (`Ada#gridName`, `Ada#gridCity`, …) sitzen INNERHALB ihres Per-Item-Containers
+  und lösen `item.*` je Zeile auf.
+
 ### items-typedInput Carrier-id Round-trip Fix (P190) — abgedeckt
 
 > Bug (Owner 2026-06-19): der items-typedInput lag auf `#node-input-items` (= gleiche id wie die

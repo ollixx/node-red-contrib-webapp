@@ -206,6 +206,60 @@ test.describe("ui-repeat — item-scope through a nested ui-container (P192)", (
 });
 
 /**
+ * P191 (Owner 2026-06-19) — ui-repeat is a true CONTAINER: its `content` slot gets
+ * its OWN layout preset (like ui-container's `layoutId`). The fixture's `ui-repeat`
+ * declares `layout: "grid"` and holds two direct `ui-text` children (item.name /
+ * item.city). The renderer places each per-item clone-set into the repeat's layout
+ * regions — so each item renders as a `webapp-container` whose slot-body carries the
+ * `--grid` modifier, and the cloned children keep their per-instance `<itemKey>#<id>`
+ * ids (keyField = name). This conforms ui-repeat to ui-container/ui-route: the
+ * content slot is a real layout, not a layout-less flat list.
+ */
+test.describe("ui-repeat — own content-slot layout (P191)", () => {
+    test.beforeAll(async ({ request }) => {
+        const flow = await loadFlowFixture("tests/e2e/fixtures/ui-repeat-layout.flow.json");
+        const response = await request.post("/flows", { data: flow });
+        expect(response.ok()).toBeTruthy();
+    });
+
+    test.afterAll(async ({ request }) => {
+        const baseline = await loadFlowFixture("examples/customers-crud/flow.json");
+        await request.post("/flows", { data: baseline });
+    });
+
+    test("each item renders as a container under the repeat's chosen (grid) layout", async ({ page }) => {
+        await page.goto("/webapp/repeatLayoutApp/");
+
+        // One per-item container per row, keyed by `name` (itemKey × repeatId).
+        const adaBox = page.locator('[data-webapp-node="Ada#gridRepeat"]');
+        const linusBox = page.locator('[data-webapp-node="Linus#gridRepeat"]');
+        await expect(adaBox).toHaveCount(1);
+        await expect(linusBox).toHaveCount(1);
+
+        // The per-item container applies the repeat's OWN layout preset — its slot
+        // body carries the `--grid` modifier (conforming to ui-container).
+        await expect(adaBox.locator(".webapp-slot-body--grid")).toHaveCount(1);
+        await expect(linusBox.locator(".webapp-slot-body--grid")).toHaveCount(1);
+    });
+
+    test("the cloned children sit UNDER the per-item layout, resolving item.* per row", async ({ page }) => {
+        await page.goto("/webapp/repeatLayoutApp/");
+
+        // The children are placed into the per-item container's layout region and keep
+        // their per-instance ids — each resolves item.name / item.city for its row.
+        await expect(page.locator('[data-webapp-node="Ada#gridName"]')).toHaveText("Ada");
+        await expect(page.locator('[data-webapp-node="Ada#gridCity"]')).toHaveText("London");
+        await expect(page.locator('[data-webapp-node="Linus#gridName"]')).toHaveText("Linus");
+        await expect(page.locator('[data-webapp-node="Linus#gridCity"]')).toHaveText("Helsinki");
+
+        // Each grid child lives INSIDE its own per-item container (not flattened flat).
+        await expect(
+            page.locator('[data-webapp-node="Ada#gridRepeat"] [data-webapp-node="Ada#gridName"]')
+        ).toHaveCount(1);
+    });
+});
+
+/**
  * P190 — items typedInput carrier-id round-trip fix.
  *
  * Before P190 the typedInput lived on `#node-input-items` (same id as the

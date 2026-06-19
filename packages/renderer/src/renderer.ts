@@ -1547,6 +1547,18 @@ function expandRepeat(
         .filter((component) => childMatcher(component, [REPEAT_SLOT]))
         .sort(componentSort);
 
+    // P191: ui-repeat is a true CONTAINER — its `content` slot (REPEAT_SLOT) carries
+    // its OWN layout preset (like ui-container's `layoutId`). When present (and it
+    // resolves to a real layout), each per-item clone-set is placed into that layout's
+    // regions by rendering a `container`-kind component per item — the cloned children's
+    // placement fields (order/row/col/colSize) then take effect under the chosen preset.
+    // Absent / unresolvable → the legacy P164 behaviour: clones flatten into the host
+    // region (no wrapper), so pre-P191 fixtures and tests are unaffected.
+    const repeatLayoutId = typeof repeat.props.layoutId === "string" ? repeat.props.layoutId : undefined;
+    const repeatLayout = repeatLayoutId
+        ? appModel.layouts.find((candidate) => candidate.id === repeatLayoutId)
+        : undefined;
+
     return frames.flatMap((frame) => {
         const itemKey = repeatItemKey(frame, keyField);
         // Immutable scope extension — the new frame is the innermost (top) one.
@@ -1556,6 +1568,35 @@ function expandRepeat(
                 itemScope: [...(context.sources.itemScope ?? []), frame]
             }
         };
+
+        // P191: own content-slot layout. Re-point the template children at a cloned
+        // repeat id (`<itemKey>#<repeatId>`) and render the repeat itself as a
+        // `container` for this item, so its layout regions wrap the clones exactly
+        // like a ui-container does. Reuses cloneTemplateSubtree (root = the repeat).
+        if (repeatLayout) {
+            const cloneId = `${itemKey}#${repeat.id}`;
+            const subtreeClones = cloneTemplateSubtree(repeat, itemKey, appModel);
+            const augmentedModel: AppModel = {
+                ...appModel,
+                components: [...appModel.components, ...subtreeClones]
+            };
+
+            return [{
+                id: cloneId,
+                kind: "container" as const,
+                mount: repeat.mount,
+                props: { ...repeat.props, layoutId: repeatLayout.id },
+                events: repeat.events,
+                disabled: false,
+                layoutId: repeatLayout.id,
+                regions: renderRegions(
+                    repeatLayout.slots,
+                    createContainerMountMatcher(augmentedModel, cloneId, repeatLayout.id),
+                    augmentedModel,
+                    scopedContext
+                )
+            } as RenderedContainerComponent];
+        }
 
         return templateChildren
             .flatMap((child) => {

@@ -217,6 +217,13 @@ export const uiRepeatNodeDefinitionSchema = mountableNodeSchema.extend({
     // store/routeParam/reactive/msg/flow/global/jsonata/env). Resolution → array
     // happens in the renderer (P164), not here.
     items: bindingSchema,
+    // P191: ui-repeat is a true CONTAINER — its `content` slot (REPEAT_SLOT) gets
+    // its OWN layout preset, exactly like `ui-container`'s `layout`. The cloned
+    // per-item children are placed into that layout's regions, so their placement
+    // fields (order/row/col/colSize) take effect. OPTIONAL (unlike ui-container's
+    // required `layout`) so a legacy ui-repeat authored before P191 still validates;
+    // mapConfig migrates an absent layout to the default preset.
+    layout: standardLayoutPresetSchema.optional(),
     // Optional stable key field for the keyed morph (e.g. "id"). When omitted the
     // renderer keys instances by array index.
     keyField: z.string().min(1, "ui-repeat keyField must not be empty when set.").optional()

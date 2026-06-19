@@ -23,10 +23,18 @@ Listen-Optik) trägt `ui-repeat` **keine Chrome** und wiederholt einen
 
 - **Parent:** ein Slot eines `ui-app`-, `ui-route`-, `ui-dialog`- oder
   `ui-container`-Knotens. Deklariert über `mount` oder `parent`.
-- **Kinder:** **ja** — der **Default-Slot** hält die Schablone (ein oder mehrere
-  Knoten). Diese Kinder werden **pro Item** geklont.
+- **Kinder:** **ja** — der **Default-Slot** (`content`, `REPEAT_SLOT`) hält die
+  Schablone (ein oder mehrere Knoten). Diese Kinder werden **pro Item** geklont.
+- **Eigenes content-Layout (P191):** wie `ui-container`/`ui-route` trägt `ui-repeat`
+  ein **eigenes Layout-Preset** für seinen `content`-Slot (`layoutId`). Die je Item
+  geklonten Kinder werden in die **Regionen dieses Layouts** platziert — ihre
+  Placement-Felder (`order`/`row`/`col`/`colSize`) greifen entsprechend dem Preset
+  (horizontal/vertical/grid/absolute). Das ist eine **andere Rolle** als die
+  Platzierung von `ui-repeat` **im Parent** (`layoutX`/`layoutY` + Placement):
+  Kind-Platzierung vs. eigenes content-Layout sind sauber getrennt.
 - **Rolle zur Laufzeit:** der Renderer löst `items` auf, iteriert, schiebt pro
-  Element `{item, index}` auf den Scope, rendert die geklonte Schablone, poppt.
+  Element `{item, index}` auf den Scope, rendert die geklonte Schablone (in die
+  Regionen des content-Layouts), poppt.
 
 ## Felder
 
@@ -36,6 +44,7 @@ Listen-Optik) trägt `ui-repeat` **keine Chrome** und wiederholt einen
 |---|---|---|---|---|
 | `name` | „Name" | Textfeld | optional | Anzeigename. Default: `Repeat N`. |
 | `mount` | „Parent Slot" | Mount-Picker | **ja** | Mount-Ziel als `<type>:<id>/<slot>`. |
+| `layoutId` | „Child Layout" | Layout-Selektor | **ja** (default-migriert) | **Eigenes Layout-Preset für den `content`-Slot** (P191) — exakt wie `ui-container`. Die je Item geklonten Kinder werden in die Regionen dieses Layouts platziert; ihre Placement-Felder greifen gemäß Preset. Verstecktes `#node-input-layoutId` + `#node-input-layout-preset` via `installLayoutSelector`. Ein Altflow ohne `layoutId` migriert auf das Default-Preset (`vertical`) — kein roter Pflichtfeld-Bruch. |
 
 ### Gruppe „Inhalt"
 

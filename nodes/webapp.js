@@ -1401,6 +1401,13 @@ function toComponentDefinitions(components) {
                 order: toOptionalNumber(component.order),
                 bind: itemsBinding ? { items: itemsBinding } : {},
                 props: {
+                    // P191: ui-repeat's OWN content-slot layout, exactly like
+                    // ui-container's `layoutId`. The renderer places the cloned
+                    // per-item children into this layout's regions. A pre-P191
+                    // ui-repeat (no layout/layoutId) migrates to the default preset
+                    // ("vertical") — the same default the editor's layout selector
+                    // applies — so old flows render without a broken/missing layout.
+                    layoutId: blankToUndefined(component.layout) || blankToUndefined(component.layoutId) || "vertical",
                     ...(blankToUndefined(component.keyField) ? { keyField: component.keyField } : {}),
                     ...(Object.keys(layoutProps).length > 0 ? { layout: layoutProps } : {})
                 },
@@ -1891,7 +1898,11 @@ function getAppModelResult(appId, definitions) {
         buckets.app.layout,
         ...buckets.routes.map((route) => route.layout || route.layoutId),
         ...buckets.dialogs.map((dialog) => dialog.layout || dialog.layoutId),
-        ...buckets.components.filter((component) => component.type === "ui-container").map((component) => component.layout || component.layoutId)
+        ...buckets.components.filter((component) => component.type === "ui-container").map((component) => component.layout || component.layoutId),
+        // P191: ui-repeat carries its OWN content-slot layout (like ui-container).
+        // Register it so the standard preset is materialised into the model's
+        // `layouts` list and the renderer can resolve it. Absent → default preset.
+        ...buckets.components.filter((component) => component.type === "ui-repeat").map((component) => component.layout || component.layoutId || "vertical")
     ]);
     const standardLayouts = collectMissingStandardLayouts(
         referencedLayoutIds,
