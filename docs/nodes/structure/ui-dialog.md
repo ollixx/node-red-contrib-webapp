@@ -38,7 +38,7 @@ Node-Picker-Dialog, Event-Checkboxen).
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `layout` | „Parent Layout" | SelectBox (Layout-Preset) | **ja** | Layout des Dialogs. Auswahl aus den Standard-Presets (`vertical`, `horizontal`, `app`, `grid`, `absolute`, `dialog`). Default: `vertical`. Das `dialog`-Preset bildet seine Slots direkt auf die nativen Dialog-Slots ab (`header`/`header-actions`/`content`/`footer`) — siehe [layout.md](../concepts/layout.md). |
+| `layoutId` | „Parent Layout" | SelectBox (Layout-Preset) | **ja** | Layout des Dialogs (im Feld `layoutId` gespeichert). Auswahl aus den Standard-Presets (`vertical`, `horizontal`, `app`, `grid`, `absolute`, `dialog`). Default: `vertical`. Das `dialog`-Preset bildet seine Slots direkt auf die nativen Dialog-Slots ab (`header`/`header-actions`/`content`/`footer`) — siehe [layout.md](../concepts/layout.md). |
 
 ### Gruppe „Verhalten"
 

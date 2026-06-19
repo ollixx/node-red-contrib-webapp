@@ -44,7 +44,7 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `variant` | „Orientation" | SelectBox | optional | Ausrichtung der Schritt-Leiste: `horizontal` (nebeneinander, Standard), `vertical` (untereinander). Default: `horizontal`. Im Editor als „Orientation" beschriftet. |
+| `orientation` | „Orientation" | SelectBox | optional | Ausrichtung der Schritt-Leiste: `horizontal` (nebeneinander, Standard), `vertical` (untereinander). Default: `horizontal`. Im Feld `orientation` gespeichert, im Editor als „Orientation" beschriftet. |
 
 ### Gruppe „Events"
 

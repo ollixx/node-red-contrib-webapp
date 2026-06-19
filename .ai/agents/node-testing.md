@@ -87,6 +87,26 @@ Build a dedicated test flow per node:
 - Verify child elements are **positioned and laid out correctly** and still
   render correctly (test with **one** variant only).
 
+## Mandatory tripwire: spec↔code field conformance (`pnpm check:specs`)
+
+Every `ui-*` node's **field table** in its spec (`docs/nodes/<cat>/<node>.md`,
+the `## Felder` section) is held in sync with the node's actual `defaults` keys by
+a read-only tripwire — `scripts/check-specs.js`, run via `pnpm check:specs` (part
+of `pnpm validate`) and unit-tested by `scripts/check-specs.test.ts`. It checks
+**bidirectionally**: every `defaults` key must be **named** in the spec, and every
+field declared in the spec's canonical field-table must **exist** in `defaults`
+(no phantom fields). A small **curated allowlist** in `scripts/check-specs.js`
+carves out deliberate omissions: layout/placement boilerplate (`order`/`row`/…),
+the `parent`/`uiId`/`outputs` plumbing, the typedInput binding **carrier** twins
+(`<base>Binding`/`<base>Path`/…), and explicitly noted spec-ahead/back-compat
+fields.
+
+**When you build or change a node:** if you add, rename, or remove a field, update
+its spec field-table in the **same change** and run `pnpm check:specs` until green.
+If the green path is genuinely an allowlist entry (real boilerplate / spec-ahead
+field), add it **with a one-line reason** — keep the allowlist small; every entry
+weakens the check. Do **not** leave the tripwire red.
+
 ## Keep the suite from exploding
 
 Despite the breadth above, **keep permutations minimal** for expensive fields

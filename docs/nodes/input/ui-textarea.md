@@ -43,6 +43,7 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 | `placeholder` | „Placeholder" | Textfeld | optional | Platzhaltertext, der angezeigt wird, wenn das Feld leer ist. |
 | `rows` | „Rows" | Zahlfeld (≥ 1) | optional | Anzahl der sichtbaren Textzeilen (Höhe des Feldes). Wenn nicht gesetzt, verwendet das Backend seinen Standard-Default. |
 | `maxLength` | „Max Length" | Zahlfeld (≥ 1) | optional | Maximale Anzahl erlaubter Zeichen. Wenn gesetzt, wird ein Zeichenzähler eingeblendet; Eingaben über die Grenze hinaus werden verhindert. |
+| `size` | „Größe" | SelectBox (`small` / `medium` / `large`) | optional | Größe des Texteingabefeldes. Default: `medium`. |
 | `disabled` | „Disabled" | typedInput (alle Binding-Arten) | optional | Bindbare Bedingung, die das Feld deaktiviert (Nutzereingabe gesperrt). |
 
 ### Gruppe „Platzierung"

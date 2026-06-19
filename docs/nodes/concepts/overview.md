@@ -18,7 +18,7 @@ Querschnittliche Konzepte sind in eigenen Dateien zentral dokumentiert:
 [layout.md](layout.md), [stores.md](stores.md), [actions.md](actions.md),
 [events.md](events.md), [messages.md](messages.md), [inputs.md](inputs.md),
 [logs-errors.md](logs-errors.md), [theming.md](theming.md), [editor.md](editor.md),
-[multi-user.md](multi-user.md).
+[multi-user.md](multi-user.md), [composition.md](composition.md).
 
 ## Kategorien
 

@@ -45,7 +45,7 @@ Layout-Child-Props).
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `layout` | „Child Layout" | SelectBox (Layout-Preset) | **ja** | Preset, nach dem die direkten Kinder dieses Containers angeordnet werden. Auswahl aus `vertical`, `horizontal`, `app`, `grid`, `absolute`. Default: `vertical`. Bestimmt die verfügbaren Kinder-Slots und deren Platzierungs-Felder. Details: [layout.md](../concepts/layout.md). |
+| `layoutId` | „Child Layout" | SelectBox (Layout-Preset) | **ja** | Preset, nach dem die direkten Kinder dieses Containers angeordnet werden. Auswahl aus `vertical`, `horizontal`, `app`, `grid`, `absolute`. Default: `vertical`. Bestimmt die verfügbaren Kinder-Slots und deren Platzierungs-Felder. Die SelectBox schreibt den gewählten Preset in das Feld `layoutId`. Details: [layout.md](../concepts/layout.md). |
 
 ### Gruppe „Darstellung"
 
@@ -128,6 +128,7 @@ aussehen. Weitere Backends folgen demselben semantischen Contract. Details:
 - [events.md](../concepts/events.md) — Event-Format und Output-Ports
 - [inputs.md](../concepts/inputs.md) — Component-Ops (`show`/`hide`)
 - [editor.md](../concepts/editor.md) — Editor-Typen (Variant-SelectBox, Layout-SelectBox, Event-Checkboxen)
+- [composition.md](../concepts/composition.md) — Naht-Verträge: Scope-Propagation, Mount-Eindeutigkeit, Re-Id, Slot-Layout (ADR 0024)
 
 ## Offene Punkte
 

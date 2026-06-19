@@ -163,6 +163,7 @@ wird ausschließlich über Design-Tokens gesteuert. Details:
 - [inputs.md](../concepts/inputs.md) — `msg.payload`, `msg.ui.patch`, Component-Ops
 - [stores.md](../concepts/stores.md) — Binding-Arten für `openSection`
 - [editor.md](../concepts/editor.md) — Mount-Picker, typedInput, Event-Checkboxen
+- [composition.md](../concepts/composition.md) — Naht-Verträge der Container-Knoten (Scope/Mount/Re-Id/Slot-Layout, ADR 0024)
 
 ## Offene Punkte
 

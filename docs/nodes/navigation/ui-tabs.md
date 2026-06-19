@@ -53,6 +53,7 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
 | `variant` | „Variant" | Variant-SelectBox | optional | Visueller Stil der Tab-Leiste: `line` (Unterstrich-Indikator, Standard), `contained` (Pill-ähnlich mit Hintergrund), `pills` (freistehendes Pill-Design). Default: `line`. |
+| `events` | „Events" | Event-Checkboxen → Output-Ports | optional | Aktivierbares Ausgangs-Event: `tabChange`. Jedes aktive Event erzeugt einen Output-Port. Siehe Abschnitt „Output". |
 
 ### Gruppe „Layout" (Child-Platzierung im Parent)
 
@@ -160,6 +161,7 @@ Details: [theming.md](../concepts/theming.md).
 - [inputs.md](../concepts/inputs.md) — `msg.payload`, `msg.ui.patch`, Component-Ops
 - [stores.md](../concepts/stores.md) — Binding-Arten (`state`, `store`, `query`, `routeParam`)
 - [editor.md](../concepts/editor.md) — typedInput, Variant-SelectBox, Mount-Picker
+- [composition.md](../concepts/composition.md) — Naht-Verträge der Container-Knoten (Scope/Mount/Re-Id/Slot-Layout, ADR 0024)
 
 ## Offene Punkte
 
