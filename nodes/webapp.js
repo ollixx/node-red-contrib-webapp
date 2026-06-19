@@ -6352,6 +6352,13 @@ const runtimeNodeRegistry = {
             items: getBinding(config.items, config.itemsPath ? stateBinding(config.itemsPath) : undefined)
                 || (parseJsonList(config.items).length > 0 ? { kind: "literal", value: parseJsonList(config.items) } : undefined),
             keyField: config.keyField || undefined,
+            // P191: ui-repeat's OWN content-slot layout preset — carried through
+            // exactly like ui-container's `layout: config.layoutId`. The editor
+            // stores the preset id in `#node-input-layoutId`; the generated fixtures
+            // set `layout` directly. Without this the definition lost the preset and
+            // the bucket logic default-migrated every repeat to "vertical", so a
+            // chosen grid layout never reached the renderer's per-item container.
+            layout: config.layoutId || config.layout,
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
