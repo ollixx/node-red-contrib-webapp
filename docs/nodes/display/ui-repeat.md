@@ -66,6 +66,22 @@ Store-Nebeneffekt. **Außerhalb** eines `ui-repeat` löst `item`/`index` zu
   hängen, zeigt der Editor einen **sichtbaren Hinweis** (nicht deploy-blockierend):
   die Bindung löst zur Render-Zeit zu `undefined` auf.
 
+#### Das Wertfeld bei Typ „Item (Repeat)" / „Prop (Component)" (P189)
+
+- Bei Typ **„Item (Repeat)"** ist das Wertfeld der **Feldpfad NACH `item.`** — der
+  `item.`-Präfix **ist** der Typ. **Leer = das ganze Element** (ein Primitive wird
+  direkt gebunden); `name`, `address.city` liest ein Feld. Wer `item` als *Wert*
+  tippt, meint das Feld `item.item` (existiert i. d. R. nicht → `?`). Das Editor-
+  Wertfeld zeigt dazu einen Inline-Hinweis „Feldpfad … **leer = ganzes Element**".
+  „Prop (Component)" verhält sich analog (leer = ganze Prop); „Index (Repeat)" ist
+  **pfadlos** (nullbasierte Position).
+- **Typ-bewusste Validierung:** ein **leeres** Wertfeld ist bei `item`/`index`/`prop`
+  **gültig** (whole-element / bare-index / whole-prop, konsistent zur Schema-Toleranz
+  in P184) und markiert den Knoten **nicht** rot. Daten-Binding-Arten
+  (`state`/`query`/…) verlangen weiterhin einen nicht-leeren Pfad. Das frühere
+  typ-blinde `required: true` am Binding-Trägerfeld ist durch eine an den gewählten
+  Binding-Typ delegierende Validierung ersetzt (gemeinsamer Editor-Helfer).
+
 ### Basis-Felder (P139 / ADR 0015)
 
 `ui-repeat` ist ein Template-Container: **`visible`** ist anwendbar;

@@ -3986,10 +3986,14 @@
             label: "Prop (Component)",
             icon: "fa fa-plug",
             hasValue: true,
+            // P189 (Nebenbefund): align with `item` — an EMPTY path is the whole
+            // prop frame (a scope-local kind, not a required data path). The schema
+            // already tolerates a path-less `prop` (whole-prop); the editor now does
+            // too, so a bare `prop` no longer marks the node red.
             validate: function (value) {
                 var v = (value || "").trim();
                 if (v.length === 0) {
-                    return false;
+                    return true;
                 }
                 return /^[a-zA-Z_$][a-zA-Z0-9_$]*(\.[a-zA-Z_$][a-zA-Z0-9_$]*)*$/.test(v);
             }
@@ -4112,6 +4116,146 @@
             types.push(propType);
         }
         return types;
+    }
+
+    // ── P189: type-aware value-binding validation ────────────────────────────
+    // The scope-local binding kinds resolve against a RENDER-TIME frame (the
+    // repeat item / the component prop), not a data path. For these an EMPTY
+    // value is LEGITIMATE — it means the WHOLE element / index / prop, not a
+    // missing required path (P184 fixed the schema/serialisation side; this is
+    // the editor-validation side).
+    var SCOPE_LOCAL_BINDING_KINDS = { item: true, index: true, prop: true };
+
+    // Is a value-binding (type + raw string value) VALID for the deploy gate?
+    // Pure — unit-testable without a DOM.
+    //   - scope-local kinds (item/index/prop): empty is VALID (whole-element /
+    //     bare-index / whole-prop). A non-empty path must be a dotted field path.
+    //   - data-binding kinds (state/query/store/routeParam/… and the literals):
+    //     a non-empty value is REQUIRED (the old blunt `required: true` contract).
+    // `type` is the typedInput kind; `value` is the raw string in the input.
+    function isValueBindingValueValid(type, value) {
+        var v = value === undefined || value === null ? "" : String(value);
+        var kind = String(type || "");
+        if (SCOPE_LOCAL_BINDING_KINDS[kind]) {
+            // index is path-free (always valid); item/prop allow an empty path
+            // (whole element / whole prop) and otherwise a dotted field path.
+            if (kind === "index") {
+                return true;
+            }
+            if (v.trim().length === 0) {
+                return true;
+            }
+            return /^[a-zA-Z_$][a-zA-Z0-9_$]*(\.[a-zA-Z_$][a-zA-Z0-9_$]*)*$/.test(v.trim());
+        }
+        // Every data-binding/literal kind: a value is required (non-empty).
+        return v.length > 0;
+    }
+
+    // Build a TYPE-AWARE `validate` function for a value-binding carrier field,
+    // replacing the blunt `required: true` that is type-blind. The returned
+    // function reads the LIVE typedInput type from `fieldSelector` and delegates
+    // to `isValueBindingValueValid`, so an empty item/index/prop field stays
+    // green while an empty state/query/… field still flags red.
+    //
+    // Pre-open (before the typedInput is instantiated, e.g. during the initial
+    // validity pass) it falls back to the persisted binding object on the node,
+    // mirroring the contract the renderer/schema already honour (P184). The
+    // optional `bindingField` names the node property that holds the persisted
+    // binding OBJECT when it differs from the typedInput field (e.g. ui-text:
+    // typedInput `#node-input-text`, binding object `value`).
+    function validateValueBindingField(fieldSelector, bindingField) {
+        return function () {
+            var $el = (typeof $ === "function") ? $(fieldSelector) : null;
+            if ($el && $el.length && typeof $el.typedInput === "function") {
+                var hasType = false;
+                try {
+                    var t = $el.typedInput("type");
+                    hasType = t !== undefined && t !== null && t !== "";
+                    if (hasType) {
+                        return isValueBindingValueValid(t, $el.typedInput("value"));
+                    }
+                }
+                catch (_e) {
+                    // typedInput not ready — fall through to the persisted binding.
+                }
+            }
+            // Pre-open fallback: trust the persisted binding object (`this` is the
+            // node being validated). `fieldSelector` is `#node-input-<field>`.
+            var field = bindingField || String(fieldSelector).replace(/^#node-input-/, "");
+            var binding = this ? this[field] : null;
+            if (binding && typeof binding === "object" && typeof binding.kind === "string") {
+                if (SCOPE_LOCAL_BINDING_KINDS[binding.kind]) {
+                    // whole-element / bare-index / whole-prop or a dotted path.
+                    return isValueBindingValueValid(
+                        binding.kind,
+                        binding.path !== undefined ? binding.path : binding.value
+                    );
+                }
+                var raw = binding.value !== undefined && binding.value !== null
+                    ? binding.value
+                    : binding.path;
+                return raw !== undefined && raw !== null && String(raw).length > 0;
+            }
+            // Legacy plain string mirror or absent binding → require non-empty.
+            return typeof binding === "string" && binding.length > 0;
+        };
+    }
+
+    // ── P189: the item/prop PATH-field hint ──────────────────────────────────
+    // Mount a live hint under a value typedInput that explains the scope-local
+    // PATH sub-field: for `item`/`prop` the value is the field path AFTER the
+    // `item.`/`prop.` prefix (the prefix IS the kind), and an EMPTY path binds the
+    // WHOLE element / prop. Without this, users type `item` as the value and get
+    // `?` at render time. The hint shows only for item/prop; `index` is path-free
+    // (a short note). Advisory only; re-evaluates on type change.
+    function installValueBindingPathHint(fieldSelector) {
+        if (typeof $ !== "function") {
+            return;
+        }
+        var $field = $(fieldSelector);
+        if (!$field.length) {
+            return;
+        }
+        var hintId = "webapp-binding-path-hint-" + String(fieldSelector).replace(/[^a-zA-Z0-9]/g, "");
+        var $hint = $("#" + hintId);
+        if (!$hint.length) {
+            $hint = $("<div>")
+                .attr("id", hintId)
+                .addClass("form-tips")
+                .css({ display: "none", "margin-top": "4px" });
+            $field.closest(".form-row").after($hint);
+        }
+        function currentType() {
+            try {
+                return $field.typedInput("type");
+            }
+            catch (_e) {
+                return "";
+            }
+        }
+        function reevaluate() {
+            var type = currentType();
+            if (type === "item" || type === "prop") {
+                var whole = type === "item" ? "ganzes Element" : "ganze Prop";
+                $hint
+                    .html("<i class=\"fa fa-info-circle\"></i> "
+                        + "Feldpfad im " + (type === "item" ? "Element" : "Prop") + " "
+                        + "(z. B. <code>name</code>, <code>address.city</code>) — "
+                        + "<b>leer = " + whole + "</b>.")
+                    .show();
+            }
+            else if (type === "index") {
+                $hint
+                    .html("<i class=\"fa fa-info-circle\"></i> "
+                        + "Nullbasierte Position — kein Pfad.")
+                    .show();
+            }
+            else {
+                $hint.hide();
+            }
+        }
+        $field.on("change", reevaluate);
+        reevaluate();
     }
 
     // Serialise a typedInput (type + raw string value) into the stored binding.
@@ -5698,6 +5842,10 @@
         assetTypedInputType,
         bindingTypedInputTypes,
         valueBindingTypes,
+        // P189: type-aware value-binding validation + the item/prop path hint.
+        isValueBindingValueValid,
+        validateValueBindingField,
+        installValueBindingPathHint,
         readValueBinding,
         applyValueBinding,
         // P136: the ONE shared Options helper (ui-select + ui-radio).
