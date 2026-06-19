@@ -31,6 +31,7 @@ their blocker clears.
 - **P185** — nodes/ui-repeat — `item`/`index` in Reactive-Expressions erreichbar (Per-Instanz-Scope) + Autocomplete — *Feature; braucht P184* — [P185](nodes/ui-repeat/P185-item-index-in-reactive-scope.md)
 - **P186** — aspects/test-infra — Review-Video Quick-Win: Playwright video+trace+HTML-Report + on-demand `test:showcase` (sofort Videos der 74 Specs) — *ADR 0022, Stufe 1* — [P186](aspects/test-infra/P186-showcase-video-report-quickwin.md)
 - **P187** — aspects/test-infra — Showcase-Spec-Muster + Pilot (ui-list, ui-repeat, ui-query→ui-list): fixture-getriebene Feature-Tour mit Config-Dialog — *ADR 0022, Stufe 2; braucht P186* — [P187](aspects/test-infra/P187-showcase-spec-pattern-and-pilot.md)
+- **P188** — aspects/docs — Doc-Sync scope-lokale Binding-Arten: stores.md-Überblick + Per-Node-Value-Felder (ui-text …) auf editor.md §Scope-lokal verweisen statt 26× neu listen — *Owner-Drift 2026-06-19; editor.md §198 schon korrekt* — [P188](aspects/docs/P188-binding-kinds-doc-sync-scope-local.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -96,4 +97,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 183 done, 4 open, 8 deferred.**
+**Total: 183 done, 5 open, 8 deferred.**
