@@ -15,11 +15,11 @@ verify: unit
 spec: docs/adr/0024-compositional-testing-seam-invariants-property-based.md
 tests: tests/e2e/nodes/view/ui-repeat.tests.md
 dependencies: [P192]
-status: in_progress
+status: done
 ---
 # P194 — PBT-Pilot am Renderer
 
-> Stufe 1 aus [ADR 0024](../../../adr/0024-compositional-testing-seam-invariants-property-based.md).
+> Stufe 1 aus [ADR 0024](../../../../adr/0024-compositional-testing-seam-invariants-property-based.md).
 > Beweist den Ansatz **am realen Code**: der Generator + die Invarianten hätten
 > P190/P192 von selbst gemeldet. Setzt auf P192 auf, damit die Wrap-Invarianz grün
 > ist (vorher ist sie der rote Test, der P192 erzwingt — test-first).
@@ -53,3 +53,26 @@ status: in_progress
   Fehlerfall loggen.
 - Folgearbeit (separat): Pairwise-Matrizen, Editor-Round-trip-Property (P190-Klasse),
   Kitchen-Sink-Galerie an die Showcase-Videos (P187) koppeln.
+
+## Result
+
+- **delivered:** ADR 0024 PBT pilot on the renderer. New `packages/renderer/test/p194-invariants.property.test.ts`
+  (6 properties, fast-check 4.8.0 added as a **root devDependency** per repo convention). Generator: a
+  constrained small-tree `Arbitrary<AppModel>` — one route → a `ui-repeat` over 0–4 keyed rows
+  (`keyField:"id"`), template = a leaf subtree of `ui-text` bound to `item.<field>` + an `index` text,
+  optionally wrapped in 0–3 nested pass-through `ui-container`s. Values are non-empty, `?`-free scalars
+  so a correctly-resolved leaf can never alias the scope-loss marker; only schema-valid models are
+  produced. Invariants: (a) **scope resolution** — every item/index leaf resolves to its per-instance
+  frame, order-pinned, never `"?"`, no cross-instance leakage; (b) **mount uniqueness**; (c) **id
+  uniqueness** of cloned `<itemKey>#<childId>`; (d) **totality + determinism + idempotence** (no throw,
+  same in → same out, twice-rendered identical); (e) **wrap-invariance — the P192 law** — wrapping the
+  subtree in N pass-through containers inside the repeat leaves per-item values unchanged vs. unwrapped.
+- **stats:** 6 properties × numRuns 250; renderer suite **136** green; 3 files (package.json,
+  pnpm-lock.yaml, the new test) — no source touched. build + lint + full unit + tripwires green.
+- **notes:** CI seed pinned `0x9e3779b1` (fast-check still prints the failing seed + shrinks on red).
+  **Negative control verified end-to-end:** forcing item-scope loss in `renderer.ts` reddened exactly
+  the scope-resolution property and shrank to a minimal `['?','0']` repro; reverting left `renderer.ts`
+  pristine (`git diff` empty) — proving the property actually catches the regression class. No real
+  renderer invariant violation found (P192's `cloneTemplateSubtree` confirmed present → wrap-invariance
+  green as expected). verify: unit (no E2E).
+- **cost:** session agent-a58df203144c2213c, ~9m.
