@@ -3392,6 +3392,48 @@
         }
     ];
 
+    // P185: scope-local globals offered ONLY when the edited node sits inside the
+    // matching container. `item`/`index` inside a `ui-repeat`; `prop` inside a
+    // `ui-component-definition`. They mirror the render-time scope-local binding
+    // kinds (item/index/prop) — per-instance values injected by the renderer.
+    var REACTIVE_SCOPE_GLOBALS_REPEAT = [
+        {
+            name: "item",
+            insert: "item",
+            detail: "Wert — aktuelles Element der Repeat-Instanz",
+            doc: "item — das ganze aktuelle Element der innersten Repeat-Iteration; item.<feld> liest ein Feld. Außerhalb eines Repeats undefined.",
+            example: "`Zeile: ${item.name}`"
+        },
+        {
+            name: "index",
+            insert: "index",
+            detail: "Zahl — nullbasierte Position der Repeat-Instanz",
+            doc: "index — die nullbasierte Position des aktuellen Elements in der innersten Repeat-Iteration. Außerhalb eines Repeats undefined.",
+            example: "`Zeile ${index}`"
+        }
+    ];
+    var REACTIVE_SCOPE_GLOBALS_COMPONENT = [
+        {
+            name: "prop",
+            insert: "prop",
+            detail: "Objekt — aufgelöste Props der Component-Instanz",
+            doc: "prop — die aufgelösten Props der innersten ui-component-Instanz; prop.<name> liest eine Prop. Außerhalb einer Component-Definition undefined.",
+            example: "`${prop.label}`"
+        }
+    ];
+
+    // Build the list of scope-local globals active for a completion context.
+    function reactiveScopeGlobals(ctx) {
+        var out = [];
+        if (ctx && ctx.inRepeat) {
+            out = out.concat(REACTIVE_SCOPE_GLOBALS_REPEAT);
+        }
+        if (ctx && ctx.inComponentDef) {
+            out = out.concat(REACTIVE_SCOPE_GLOBALS_COMPONENT);
+        }
+        return out;
+    }
+
     // GitHub doc link, same pattern as the inline node helps.
     var REACTIVE_DOC_URL =
         "https://github.com/ollix/node-red-contrib-webapp/blob/master/docs/nodes/concepts/reactive-expressions.md";
@@ -3515,7 +3557,19 @@
             .map(function (s) { return String(s.name || "").trim(); })
             .filter(function (n) { return n.length > 0; });
 
-        return { routeParams: routeParams, storeNames: storeNames, underRoute: Boolean(route) };
+        // P185: the scope-local globals `item`/`index` (repeat) and `prop`
+        // (component definition) are only reachable when the edited node sits
+        // transitively inside the matching container. Reuse the P182 scope
+        // derivation so completion + doc panel offer them exactly in scope.
+        var scope = currentEditorScope();
+
+        return {
+            routeParams: routeParams,
+            storeNames: storeNames,
+            underRoute: Boolean(route),
+            inRepeat: Boolean(scope && scope.repeat),
+            inComponentDef: Boolean(scope && scope.componentDef)
+        };
     }
 
     function reactiveTypedInputType() {
@@ -3736,7 +3790,7 @@
             monaco.languages.registerCompletionItemProvider("javascript", {
                 triggerCharacters: [".", "\"", "("],
                 provideCompletionItems: function (model, position) {
-                    var live = reactiveCompletionContextHolder || { routeParams: [], storeNames: [], underRoute: false };
+                    var live = reactiveCompletionContextHolder || { routeParams: [], storeNames: [], underRoute: false, inRepeat: false, inComponentDef: false };
                     var textBefore = model.getValueInRange({
                         startLineNumber: position.lineNumber,
                         startColumn: 1,
@@ -3758,9 +3812,20 @@
                         });
                         return { suggestions: suggestions };
                     }
+                    // P185: `item.` member completion is a passthrough (the item shape
+                    // is not statically known) — offer no members but keep the dot
+                    // working without falling back to the global list. Same for `prop.`.
+                    if (/item\.$/.test(textBefore) || /prop\.$/.test(textBefore)) {
+                        return { suggestions: suggestions };
+                    }
 
                     REACTIVE_GLOBALS.forEach(function (g) {
                         suggestions.push({ label: g.name, kind: Kind.Function, insertText: g.insert, detail: g.detail });
+                    });
+                    // P185: scope-local globals (item/index inside a repeat, prop inside
+                    // a component definition) only when the edited node is in scope.
+                    reactiveScopeGlobals(live).forEach(function (g) {
+                        suggestions.push({ label: g.name, kind: Kind.Variable, insertText: g.insert, detail: g.detail });
                     });
                     return { suggestions: suggestions };
                 }
@@ -3783,7 +3848,10 @@
         $("<div>").css({ "margin-bottom": "8px" }).text("Eine einzelne JavaScript-Expression über den Client-Zustand. Nur lesen, kein Statement.").appendTo($doc);
 
         var $table = $("<table>").css({ width: "100%", "border-collapse": "collapse", "margin-bottom": "8px" }).appendTo($doc);
-        REACTIVE_GLOBALS.forEach(function (g) {
+        // P185: the base globals, plus the scope-local globals (item/index/prop)
+        // when the edited node sits inside a repeat / component definition.
+        var docGlobals = REACTIVE_GLOBALS.concat(reactiveScopeGlobals(ctx));
+        docGlobals.forEach(function (g) {
             var $tr = $("<tr>").appendTo($table);
             $("<td>").css({ "vertical-align": "top", padding: "3px 6px 3px 0", "white-space": "nowrap" })
                 .append($("<code>").text(g.name)).appendTo($tr);
@@ -5707,6 +5775,8 @@
         scanReactiveStoreLiterals,
         validateReactiveReferences,
         reactiveCompletionContext,
+        // P185: scope-local reactive globals (item/index/prop) offered in scope.
+        reactiveScopeGlobals,
         openReactiveExpressionDialog
     };
 })(window);

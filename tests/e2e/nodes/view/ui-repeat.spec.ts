@@ -116,3 +116,35 @@ test.describe("ui-repeat over a string array — whole-item + index (P184)", () 
         ]);
     });
 });
+
+/**
+ * P185 (ADR 0017) — `item`/`index` reachable INSIDE a reactive expression with
+ * PER-INSTANCE scope. The fixture binds a single `ui-text` in a repeat to a
+ * reactive value `` `Zeile ${index}: ${item.name}` `` over an object array
+ * `[{name:'Ada'},{name:'Linus'},{name:'Grace'}]`. One compiled expression yields
+ * each row its OWN item/index — the proof of per-instance scope (rows differ).
+ */
+test.describe("ui-repeat — item/index inside a reactive expression (P185)", () => {
+    test.beforeAll(async ({ request }) => {
+        const flow = await loadFlowFixture("tests/e2e/fixtures/ui-repeat-reactive.flow.json");
+        const response = await request.post("/flows", { data: flow });
+        expect(response.ok()).toBeTruthy();
+    });
+
+    test.afterAll(async ({ request }) => {
+        const baseline = await loadFlowFixture("examples/customers-crud/flow.json");
+        await request.post("/flows", { data: baseline });
+    });
+
+    test("a reactive `${index}: ${item.name}` resolves each row's own item/index", async ({ page }) => {
+        await page.goto("/webapp/repeatReactiveApp/");
+
+        // Same compiled expression, three clones → three DISTINCT per-instance
+        // values, proving the renderer injects each row's item/index.
+        await expect(page.locator(".webapp-text")).toHaveText([
+            "Zeile 0: Ada",
+            "Zeile 1: Linus",
+            "Zeile 2: Grace"
+        ]);
+    });
+});

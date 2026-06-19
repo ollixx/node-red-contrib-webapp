@@ -55,6 +55,30 @@ deklarativen Binding-Arten auflöst — nicht mehr:
 | `store(name)` | Funktion | Live-Wert des `ui-store` der Parent-App, dessen **Name** (`name`-Feld, getrimmt, exakter Vergleich) übergeben wird. Aufgelöst wird Name → `statePath` → Live-Wert im Client-State. | `store("customer").name` |
 | `query(pfad)` | Funktion | Wert am Pfad innerhalb der Query-Ergebnisse (gleiches Lookup wie das `query`-Binding). | `query("customers.total")` |
 
+### Scope-lokale Globals — `item` / `index` / `prop` (P185)
+
+> Entschieden in [ADR 0017](../../adr/0017-ui-repeat-template-container-render-time-scope.md)
+> (item/index) und [ADR 0020](../../adr/0020-component-model-dedicated-ui-component-node.md)
+> (prop); Reactive-Anbindung in P185 (baut auf P164/P178 auf).
+
+Steht der bearbeitete Knoten **innerhalb** eines `ui-repeat` bzw. einer
+`ui-component`-Definition, sieht die Expression zusätzlich die **scope-lokalen**
+Globals der jeweils **innersten** aktiven Instanz. Sie sind **pro Instanz**: der
+Renderer injiziert beim Klonen je Zeile die instanz-eigenen Werte in den
+Auswertungs-Kontext — dieselbe Expression liefert je Zeile ihr eigenes Ergebnis.
+
+| Global | Typ | Bedeutung | Beispiel |
+|---|---|---|---|
+| `item` | Wert | Das **ganze aktuelle Element** der innersten Repeat-Iteration; `item.<feld>` liest ein Feld. **Außerhalb** eines Repeats → `undefined`. | `` `Zeile: ${item.name}` `` |
+| `index` | Zahl | Die **nullbasierte Position** des aktuellen Elements in der innersten Repeat-Iteration. **Außerhalb** eines Repeats → `undefined`. | `` `Zeile ${index}` `` |
+| `prop` | Objekt | Die aufgelösten **Props** der innersten `ui-component`-Instanz; `prop.<name>` liest eine Prop. **Außerhalb** einer Component-Definition → `undefined`. | `` `${prop.label}` `` |
+
+Wie bei den scope-lokalen Binding-Arten (`item`/`index`/`prop`) ist der Zugriff
+**außerhalb** des passenden Containers kein Fehler, sondern `undefined` — die
+Expression bricht nicht, sie liefert nur keinen Wert. Die Editor-Completion und
+das Doku-Panel bieten `item`/`index`/`prop` **nur im passenden Scope** an
+(Gating-Logik wie bei den Binding-Arten, P182).
+
 **Bewusst nicht verfügbar:**
 
 - `msg` — zur Render-Zeit existiert kein Message-Kontext. Message-getriebene
@@ -112,7 +136,9 @@ den **Expression-Editor-Dialog** (Vorbild: Node-REDs JSONata-Editor):
   Completion weiter).
 - **Completion aus dem echten Graphen:** `store("` schlägt die tatsächlich
   existierenden Store-Namen der App vor; `routeParam.` die `:param`-Namen der
-  Route, unter der der Knoten gemountet ist; dazu die drei Globals selbst.
+  Route, unter der der Knoten gemountet ist; dazu die drei Globals selbst. Im
+  Repeat-/Component-Scope zusätzlich die scope-lokalen Globals `item`/`index`
+  bzw. `prop` (nur wenn der Knoten innerhalb des passenden Containers liegt).
 - **Validierung zweistufig:** beim Tippen Syntaxprüfung (Expression-Parse,
   Fehlermeldung inline unter dem Editor); beim Speichern/Deploy zusätzlich
   Referenzprüfung (unbekannter/mehrdeutiger Store-Name → Knoten ungültig,
@@ -134,6 +160,9 @@ den **Expression-Editor-Dialog** (Vorbild: Node-REDs JSONata-Editor):
 query("customers.total") > 0
     ? `${query("customers.total")} Kunden`
     : "Keine Kunden"
+
+// Scope-lokal in einem ui-repeat: jede Zeile bekommt ihren eigenen Wert
+`Zeile ${index}: ${item.name}`
 ```
 
 ## Abgrenzung — wann NICHT `reactive`

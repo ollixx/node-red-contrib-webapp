@@ -13,6 +13,14 @@
  *     `name` (trimmed, exact match) → its statePath → live state value.
  *   - `query(path)` — value at `path` inside the query results (same lookup as
  *     the `query` binding kind).
+ *   - `item` / `index` — P185 (ADR 0017): the render-time scope-local element and
+ *     its zero-based position of the INNERMOST active `ui-repeat`. Injected by the
+ *     renderer per-instance (one compiled fn, distinct bound values per clone).
+ *     OUTSIDE any repeat both are `undefined` (no throw), mirroring the
+ *     `item`/`index` binding kinds.
+ *   - `prop` — P185 (ADR 0020): the resolved props of the INNERMOST active
+ *     `ui-component-instance` (whole frame object; `prop.<name>` reaches a prop).
+ *     OUTSIDE any instance it is `undefined`.
  * Nothing else is exposed (no `msg`, no flow/global/env, no host objects).
  *
  * Error containment is by contract: a compile error, an evaluation throw, or a
@@ -23,7 +31,10 @@
 export type ReactiveCompiledFn = (
     routeParam: Record<string, string>,
     store: (name: unknown) => unknown,
-    query: (path: unknown) => unknown
+    query: (path: unknown) => unknown,
+    item: unknown,
+    index: number | undefined,
+    prop: unknown
 ) => unknown;
 
 /** Sources the reactive evaluator reads. */
@@ -33,6 +44,21 @@ export interface ReactiveSources {
     params: Record<string, string>;
     /** Store NAME → statePath. Built alongside the id→statePath map. */
     storeNamePaths: Record<string, string>;
+    /**
+     * P185 (ADR 0017): the render-time `item` of the innermost active `ui-repeat`,
+     * injected per-instance. `undefined` outside any repeat.
+     */
+    item?: unknown;
+    /**
+     * P185 (ADR 0017): the zero-based position of the current element in the
+     * innermost active repeat. `undefined` outside any repeat.
+     */
+    index?: number;
+    /**
+     * P185 (ADR 0020): the resolved prop frame of the innermost active
+     * `ui-component-instance`. `undefined` outside any instance.
+     */
+    prop?: unknown;
 }
 
 /** A distinct evaluation failure, surfaced to the caller for containment + logging. */
@@ -87,6 +113,9 @@ function compile(source: string): ReactiveCompiledFn | null {
             "routeParam",
             "store",
             "query",
+            "item",
+            "index",
+            "prop",
             '"use strict"; return ( ' + source + " );"
         ) as ReactiveCompiledFn;
     } catch {
@@ -162,7 +191,7 @@ export function evaluateReactiveExpression(source: string, sources: ReactiveSour
     let result: unknown;
 
     try {
-        result = compiled(sources.params, storeFn, queryFn);
+        result = compiled(sources.params, storeFn, queryFn, sources.item, sources.index, sources.prop);
     } catch (caught) {
         const message = caught instanceof Error ? caught.message : String(caught);
         return { value: undefined, error: makeError(source, message) };

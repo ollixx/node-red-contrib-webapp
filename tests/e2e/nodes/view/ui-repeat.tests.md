@@ -98,6 +98,34 @@
   nullbasiert) rendert die interleaved Sequenz `alpha,0, beta,1, gamma,2` —
   ganzes String-Element und Position lösen ohne Validierungsfehler auf.
 
+### item/index/prop in Reactive-Expressions (P185) — abgedeckt
+
+> Feature: `item`/`index` (und `prop`) sind INNERHALB einer Reactive-Expression
+> mit korrektem PER-INSTANZ-Scope erreichbar; die Reactive-Autocomplete bietet sie
+> im Repeat-/Component-Scope an. Unit:
+> `packages/renderer/test/p185-item-index-in-reactive.test.ts`
+> (Reactive `` `Zeile ${index}: ${item.name}` `` über ein Repeat → je Instanz
+> eigener Wert; außerhalb eines Repeats `item`/`index` → `undefined`, kein Crash) +
+> `packages/editor/test/p185-reactive-scope-globals.test.ts`
+> (`reactiveScopeGlobals` bietet item/index nur im Repeat-, prop nur im
+> Component-Scope; außerhalb nichts). Browser:
+> `tests/e2e/nodes/view/ui-repeat.spec.ts`
+> (Fixture `tests/e2e/fixtures/ui-repeat-reactive.flow.json`).
+
+- **Renderer:** der Renderer injiziert beim Klonen je Instanz die eigenen
+  `item`/`index`-Werte (bzw. `prop` aus dem Prop-Scope) in den Reactive-Eval-Scope;
+  dieselbe kompilierte Expression liefert je Zeile ihr eigenes Ergebnis. Außerhalb
+  eines Repeats/einer Component-Definition sind `item`/`index`/`prop` `undefined`
+  (kein Wurf, konsistent mit den scope-lokalen Binding-Arten).
+- **Editor-Autocomplete:** `reactiveScopeGlobals(ctx)` ergänzt die Globals-Liste
+  und das Doku-Panel scope-abhängig um `item`/`index` (Repeat) bzw. `prop`
+  (Component) — Gating wie bei den Binding-Arten (P182, via `currentEditorScope`).
+- **End-to-End (browser):** Store-Array `[{name:'Ada'},{name:'Linus'},{name:'Grace'}]`
+  + `ui-repeat` mit einem `ui-text`-Kind, dessen `value` ein Reactive-Binding
+  `` `Zeile ${index}: ${item.name}` `` ist, rendert drei DISTINKTE Zeilen
+  `Zeile 0: Ada`, `Zeile 1: Linus`, `Zeile 2: Grace` — der Beweis des Per-Instanz-
+  Scopes (gleiche Expression, je Zeile eigener Wert).
+
 ## Editor: Basis-Felder (P139, ADR 0015) — abgedeckt
 
 - `ui-repeat` ist ein Template-Container: `visible` anwendbar; `disabled`,
