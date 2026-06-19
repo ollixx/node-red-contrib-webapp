@@ -18,7 +18,7 @@ verify: browser
 spec: docs/nodes/display/ui-repeat.md
 tests: tests/e2e/nodes/view/ui-repeat.tests.md
 dependencies: []
-status: in_progress
+status: done
 ---
 # P189 — Item-/Prop-Pfadfeld erklären (Editor-UX)
 
@@ -56,3 +56,29 @@ status: in_progress
 - Nebenbefund prüfen: der Editor-`prop`-Typ verlangt aktuell einen **nicht-leeren**
   Pfad (validate), während das Schema `prop` ohne Pfad (ganzes Prop) erlaubt — ggf.
   hier mit angleichen (leerer prop-Pfad = ganzes Prop), konsistent zu `item`.
+
+## Result
+
+- **delivered:** Editor counterpart to P184 — type-aware validation + a path-field hint for scope-local
+  bindings. New shared helpers in `resources/lib/editor-common.js`: `isValueBindingValueValid(type,value)`
+  (pure core), `validateValueBindingField(fieldSelector, bindingField)` (a type-aware validate factory
+  reading the live typedInput kind, with a persisted-binding pre-open fallback), and
+  `installValueBindingPathHint(fieldSelector)` (inline hint — item/prop → "Feldpfad … leer = ganzes
+  Element"; index → "nullbasierte Position — kein Pfad"). The blunt type-blind `required:true` /
+  non-empty validate on the binding carrier was replaced with `validateValueBindingField` on
+  `ui-text` (`text`) and `ui-button` (`label`) as the proof nodes, and the path hint installed. Also
+  fixed (the spec's Nebenbefund) the editor `prop` typedInput validate to accept an empty path
+  (whole-prop), aligning it with `item`/the P184 schema contract.
+- **stats:** 7 files (5 changed, 2 new); +10 editor unit cases
+  (`p189-value-binding-validation.test.ts`) + 2 E2E
+  (`tests/e2e/nodes/editor/p189-item-prop-path-field.spec.ts`). Develop verification: build exit 0;
+  full unit green (editor **152**, incl. the 10 new); **E2E 21/21 green** — the 2 P189 proofs (hint
+  shows for `item`, hidden for `query`; empty item/index keeps node VALID while empty query flags
+  INVALID and a filled query goes green) **plus base-fields 19/19** (no regression in the shared
+  validation machinery the change touches); lint + validate + tripwires OK.
+- **notes:** Consumed P182 (`currentEditorScope`/gating) + P184 (whole-element/bare-index/whole-prop
+  schema contract) — both confirmed present before starting. Left `ui-list.html` untouched on purpose:
+  its `itemsBinding` is the `structural` category (no item/index kinds) and was never `required`
+  (P171), so it has no type-blind bug; the proof lives on ui-text/ui-button which offer both scope-local
+  and state/query kinds. No renderer/ui-repeat.html/package.json touched.
+- **cost:** session agent-ad45e999ec0c5a6e3, ~14m.
