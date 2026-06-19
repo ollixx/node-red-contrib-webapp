@@ -14,7 +14,7 @@ verify: unit
 spec: docs/nodes/concepts/stores.md
 tests: tests/e2e/nodes/view/ui-text.tests.md
 dependencies: []
-status: in_progress
+status: done
 ---
 # P188 — Doc-Sync: scope-lokale Binding-Arten
 
@@ -51,3 +51,21 @@ status: in_progress
   26× dieselbe erweiterte Liste (die nächste Drift ist sonst vorprogrammiert).
 - Folge-Kandidat (separat): prüfen, ob weitere Per-Node-Specs den Binding-Satz
   inline duplizieren und generell auf den kanonischen Abschnitt umstellen.
+
+## Result
+
+- **delivered:** Doc-sync for the scope-local binding kinds (pure docs). `docs/nodes/concepts/stores.md`
+  gained a "Scope-lokale Binding-Arten (P182, ADR 0017/0020)" sub-section — a table of `item`/`index`/
+  `prop`, the context-gating rule, and a canonical link to `editor.md`; the canonical-value-set
+  paragraph now mentions the scope-local kinds. Four per-node specs that **explicitly re-enumerated**
+  the binding kinds were de-duplicated to reference the canonical section: `ui-text.md` (exemplary
+  node — added the 5th "Scope-lokal" category with the gating note), `ui-alert.md` (message/title/icon),
+  `ui-avatar.md` (initials), `ui-select.md` (label/value/disabled).
+- **stats:** 5 files (+46/−13); 4 per-node specs de-duplicated. check:links green (103 md files, all
+  refs resolve), check:roadmap green, `pnpm validate` green.
+- **notes:** The other ~22 per-node specs use looser phrasing ("alle Binding-Arten", "voller
+  Binding-Satz") without enumerating the kinds — they were NOT duplicating the full list, so per the
+  package's "only de-duplicate the generic enumeration" guidance they were left unchanged (the
+  follow-up candidate noted in the package remains open if the owner wants a fuller sweep). Gate =
+  the doc-link tripwire (docs-only, no code/test impact).
+- **cost:** session agent-a7ed034cc400c2519, ~8m.
