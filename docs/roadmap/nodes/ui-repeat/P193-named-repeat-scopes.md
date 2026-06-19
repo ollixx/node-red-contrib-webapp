@@ -17,7 +17,7 @@ verify: browser
 spec: docs/nodes/display/ui-repeat.md
 tests: tests/e2e/nodes/view/ui-repeat.tests.md
 dependencies: [P192]
-status: pending
+status: in_progress
 ---
 # P193 — Benannte Repeat-Scopes
 
