@@ -27,12 +27,10 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P187** — aspects/test-infra — Showcase-Spec-Muster + Pilot (ui-list, ui-repeat, ui-query→ui-list): fixture-getriebene Feature-Tour mit Config-Dialog — *ADR 0022, Stufe 2; braucht P186* — [P187](aspects/test-infra/P187-showcase-spec-pattern-and-pilot.md)
 - **P189** — aspects/editor — Editor-UX **+ Validierung**: Item-/Prop-Pfadfeld erklären (Hinweis „leer = ganzes Element") UND leeres item/index-Feld nicht mehr rot (`required:true` ist typ-blind → typ-bewusst delegieren) — *Owner-Fallstrick 2026-06-19; P184-Editor-Entsprechung* — [P189](aspects/editor/P189-item-prop-path-field-hint.md)
 - **P190** — nodes/ui-repeat — items-Round-trip-Bug: typedInput auf `#node-input-items` (= Property-id) → Node-RED clobbert das Binding, beim Wieder-Öffnen leer; Fix = separater `itemsBinding`-Träger wie ui-list — *Owner-Bug 2026-06-19* — [P190](nodes/ui-repeat/P190-items-typedinput-carrier-id-roundtrip-fix.md)
 - **P191** — nodes/ui-repeat — eigenes Layout (layoutId + Child-Layout-Selektor) für den content-Slot — konform zu ui-container/ui-route; geklonte Kinder bekommen ein Slot-Layout — *Owner 2026-06-19* — [P191](nodes/ui-repeat/P191-repeat-own-layout-container-conformance.md)
 - **P193** — nodes/ui-repeat — benannte Repeat-Scopes (itemName-Alias + item/index scope-qualifiziert) → äußeres Repeat-item bei Verschachtelung adressierbar (ADR 0023) — *braucht P192; Owner 2026-06-19* — [P193](nodes/ui-repeat/P193-named-repeat-scopes.md)
-
 - **P194** — aspects/test-infra — PBT-Pilot am Renderer (fast-check): Baum-Generator + Kern-Invarianten (Scope/Mount/Id/Totalität) + Wrap-Invarianz (P192-Gesetz) — *ADR 0024; braucht P192* — [P194](aspects/test-infra/P194-renderer-property-based-invariants-pilot.md)
 - **P195** — aspects/test-infra — Spec↔Code-Konformitäts-Check (Feldtabelle vs. Schema/Node-Defaults; fängt Doc-Drift automatisch) + Naht-Verträge als first-class Doc — *Owner Q1 2026-06-19; ADR 0024* — [P195](aspects/test-infra/P195-spec-code-conformance-and-seam-contracts.md)
 
@@ -88,7 +86,7 @@ open the folder for the full history.
 | nodes/ui-icon | 2 |
 | nodes/ui-accordion | 2 |
 | nodes/ui-breadcrumb · ui-dialog · ui-progress · ui-skeleton | 1 each |
-| aspects/test-infra | 22 |
+| aspects/test-infra | 23 |
 | aspects/misc | 16 |
 | aspects/docs | 1 |
 | aspects/runtime | 7 |
@@ -100,4 +98,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 188 done, 7 open, 8 deferred.**
+**Total: 189 done, 6 open, 8 deferred.**

@@ -15,11 +15,11 @@ verify: browser
 spec: docs/adr/0022-per-node-review-videos-fixture-driven-showcase.md
 tests: tests/e2e/nodes/view/ui-list.tests.md
 dependencies: [P186]
-status: in_progress
+status: done
 ---
 # P187 — Showcase-Spec-Muster + Pilot
 
-> Stufe 2 aus [ADR 0022](../../../adr/0022-per-node-review-videos-fixture-driven-showcase.md).
+> Stufe 2 aus [ADR 0022](../../../../adr/0022-per-node-review-videos-fixture-driven-showcase.md).
 > Beweist das **paced Feature-Tour-Format** an drei Knoten, bevor wir auf ~37
 > ausrollen. Setzt auf das Video/Report-Target aus **P186** auf.
 
@@ -54,3 +54,31 @@ status: in_progress
 - Pilot hängt an **P186** (Video/Report-Target muss stehen); ui-list-Inhalte
   profitieren von P183 (Design) — aber das Showcase filmt den jeweils aktuellen
   Stand, unabhängig davon.
+
+## Result
+
+- **delivered:** ADR 0022 Stage-2 fixture-driven **showcase spec pattern** + 3 pilots. New
+  `tests/e2e/showcase/showcase-helpers.ts` — a thin `ShowcaseFlow` layer over the existing Playwright
+  harness (`deploy`/`openApp`/`openEditor`/`openNodeConfig`/`closeNodeConfig`, re-exporting
+  `FlowBuilder`/`deployFlow`/`resetFlow`/`WebappPage`) with the rollout pattern documented. Three
+  `*.showcase.spec.ts` pilots as paced `test.step` chapter tours: **ui-list** (displayType intents,
+  displayValue secondary/badge, per-item icon, single-select + selectedId state, itemClick, config
+  cameo), **ui-repeat** (string-array whole-item+index, object-array `item.name`, keyed-update stable
+  ids, config cameo), **ui-query→ui-list** (loading state, SSE first push fills, second push updates
+  live, itemClick from query-bound list, config cameo). Catalogues in `ui-list.tests.md` /
+  `ui-repeat.tests.md`; rollout checklist in `.ai/agents/node-testing.md`. They're ordinary specs that
+  also produce reviewable video under `SHOWCASE=1` (P186).
+- **stats:** ~10 new/changed files (+860). Develop verification: build exit 0; full unit 1671 green;
+  **showcase pilots 3/3 green** (run authoritatively on develop); lint + validate + tripwires OK.
+- **notes:** **Orchestrator follow-up fix required** — the original sub-agent committed the pilots but
+  **never ran them** (worktree Playwright), and all 3 FAILED in the authoritative E2E. A fix sub-agent
+  (which actually ran them to green) corrected three **spec** errors — wrong editor selector
+  (`#node-input-items` → `#node-input-itemsBinding`, the ui-list carrier id), a zero-height empty-list
+  visibility assumption (`toBeVisible` → `toBeAttached`), and a missing per-node render-order hint on
+  the ui-repeat string-array fixture (`order:0`/`order:1`). No product bugs. **Branch-tangle note:** the
+  P187 sub-agent's `git switch` leaked onto the main checkout, and the owner's out-of-band roadmap
+  commit (`f0ff112` — **ADR 0024** compositional testing + the new **P194** PBT-pilot package) sat on
+  this branch; both were untangled and folded onto develop via this phase's merge (INDEX reconciled to
+  carry P194 + P195). P194/P195 are now pending.
+- **cost:** session agent-ae0b127d5706a6f42 (~12m) + fix session a34c07a91459d7e80 (~4m) +
+  orchestrator untangle/merge.
