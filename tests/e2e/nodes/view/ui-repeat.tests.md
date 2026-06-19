@@ -165,3 +165,15 @@
 - `ui-repeat` ist ein Template-Container: `visible` anwendbar; `disabled`,
   `color`, `size` N/A (mit Hinweis deaktiviert). Verdrahtet via `installBaseFields`
   / `applyBaseFields` (`BASE_FIELDS` in `nodes/view/ui-repeat.html`).
+
+## Showcase-Spec (P187, ADR 0022 §2)
+
+Pilot-Showcase-Spec: `tests/e2e/showcase/ui-repeat.showcase.spec.ts`
+
+Abgedeckte Features in benannten `test.step`-Kapiteln (→ Kapitel im Trace/Video):
+1. String-Array: whole-`item` + `index` → interleaved Sequenz (P184).
+2. Objekt-Array: `item.name` löst je Klon auf (P165).
+3. Keyed Update: drittes Element wird zugefügt; Ada und Linus behalten ihre per-instance-ids (P165).
+4. Config-Dialog-Cameo: `#node-input-items` + `#node-input-keyField` im Editor-Tray.
+
+Laufbar unter `SHOWCASE=1 pnpm exec playwright test tests/e2e/showcase/ui-repeat.showcase.spec.ts`.
