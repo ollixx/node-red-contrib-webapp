@@ -35,6 +35,13 @@
                 items: { value: null },
                 itemsBinding: { value: "" },
                 itemsPath: { value: "" },
+                // P191: ui-repeat is a true CONTAINER — its `content` slot gets its
+                // OWN layout preset, exactly like ui-container's `layoutId`. The
+                // cloned per-item children are placed into that layout's regions, so
+                // their placement fields (order/row/col/colSize) take effect. The
+                // layout selector default-migrates an empty value to the first preset,
+                // so an old ui-repeat (no layoutId) opens green, not a red required-break.
+                layoutId: { value: "", required: true },
                 // P165: optional stable per-instance key field (e.g. "id").
                 keyField: { value: "" },
                 // P139 (ADR 0015): base fields. `visible` persists the binding
@@ -67,6 +74,16 @@
                 // applicable for a repeat; the rest render N/A with a hint.
                 common.installBaseFields(BASE_FIELDS).call(this);
                 common.installLayoutChildPropRows().call(this);
+                // P191: ui-repeat's OWN content-slot layout — identical wiring to
+                // ui-container (hidden #node-input-layoutId + #node-input-layout-preset
+                // select). Default-migrates an empty value to the first preset.
+                common.installLayoutSelector({
+                    valueSelector: "#node-input-layoutId",
+                    presetSelector: "#node-input-layout-preset",
+                    getValue: function () {
+                        return this.layoutId;
+                    }
+                }).call(this);
 
                 // P165 (ADR 0017): `items` value typedInput (full value-binding
                 // set). Migration: a legacy `itemsPath` opens as a `state` binding.
@@ -108,6 +125,8 @@
          has NO matching DOM field so Node-RED auto-save cannot clobber the binding object.
          Mirror of ui-list (P171). -->
     <div class="form-row"><label for="node-input-itemsBinding">Items</label><input type="text" id="node-input-itemsBinding"></div>
+    <input type="hidden" id="node-input-layoutId">
+    <div class="form-row"><label for="node-input-layout-preset">Child Layout</label><select id="node-input-layout-preset"></select></div>
     <div class="form-row"><label for="node-input-keyField">Key Field</label><input type="text" id="node-input-keyField" placeholder="optional, e.g. id"></div>
     <div class="form-tips" style="margin-top: 4px;">
         Children mounted into this node's <code>content</code> slot are the

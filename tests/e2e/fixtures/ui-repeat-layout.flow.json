@@ -1,0 +1,81 @@
+[
+  {
+    "type": "tab",
+    "id": "repeatLayoutFlow",
+    "label": "Repeat Layout"
+  },
+  {
+    "type": "ui-app",
+    "id": "repeatLayoutApp",
+    "name": "Repeat Layout App",
+    "root": "repeatLayoutApp",
+    "layout": "app",
+    "title": "Repeat Layout",
+    "z": "repeatLayoutFlow",
+    "wires": [],
+    "x": 200,
+    "y": 120
+  },
+  {
+    "type": "ui-store",
+    "id": "gridRowsStore",
+    "name": "Grid Rows",
+    "parent": "repeatLayoutApp",
+    "statePath": "gridRows",
+    "initialValue": "[{\"name\":\"Ada\",\"city\":\"London\"},{\"name\":\"Linus\",\"city\":\"Helsinki\"}]",
+    "z": "repeatLayoutFlow",
+    "wires": [],
+    "x": 200,
+    "y": 180
+  },
+  {
+    "type": "ui-repeat",
+    "id": "gridRepeat",
+    "name": "Grid Repeat",
+    "parent": "repeatLayoutApp",
+    "mount": "repeatLayoutApp.content",
+    "order": 0,
+    "items": {
+      "kind": "store",
+      "path": "gridRowsStore"
+    },
+    "layout": "grid",
+    "keyField": "name",
+    "z": "repeatLayoutFlow",
+    "wires": [],
+    "x": 200,
+    "y": 240
+  },
+  {
+    "type": "ui-text",
+    "id": "gridName",
+    "name": "Grid name",
+    "parent": "gridRepeat",
+    "mount": "container:gridRepeat/content",
+    "order": 0,
+    "value": {
+      "kind": "item",
+      "path": "name"
+    },
+    "z": "repeatLayoutFlow",
+    "wires": [],
+    "x": 200,
+    "y": 300
+  },
+  {
+    "type": "ui-text",
+    "id": "gridCity",
+    "name": "Grid city",
+    "parent": "gridRepeat",
+    "mount": "container:gridRepeat/content",
+    "order": 1,
+    "value": {
+      "kind": "item",
+      "path": "city"
+    },
+    "z": "repeatLayoutFlow",
+    "wires": [],
+    "x": 200,
+    "y": 360
+  }
+]
