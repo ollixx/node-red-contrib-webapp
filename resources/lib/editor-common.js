@@ -3562,6 +3562,19 @@
         return { ok: true };
     }
 
+    // Is a `reactive` typedInput value VALID? Combines the syntax check with the
+    // store-reference check against the edited node's app — the same pair the
+    // reactive typedInput's own `validate` and the dialog's footer run. Pulled out
+    // so the value-binding deploy gate (`validateValueBindingField`) can delegate
+    // to it for the `reactive` kind instead of the type-blind non-empty check.
+    function isReactiveExpressionValid(value) {
+        if (!validateReactiveSyntax(value).ok) {
+            return false;
+        }
+        var ctx = reactiveCompletionContext();
+        return validateReactiveReferences(value, ctx.storeNames).ok;
+    }
+
     // Resolve the enclosing route record of a mount value by walking the mount
     // chain upward (container → … → route). Returns the route reference object or
     // null when the node is not mounted under a route (e.g. an app slot). Reuses
@@ -3640,12 +3653,7 @@
             // dialog) so a broken/unknown-store expression marks the node invalid
             // and blocks deploy even when the dialog was never opened.
             validate: function (value) {
-                var syntax = validateReactiveSyntax(value);
-                if (!syntax.ok) {
-                    return false;
-                }
-                var ctx = reactiveCompletionContext();
-                return validateReactiveReferences(value, ctx.storeNames).ok;
+                return isReactiveExpressionValid(value);
             },
             expand: function () {
                 var that = this;
@@ -4273,6 +4281,13 @@
                     var t = $el.typedInput("type");
                     hasType = t !== undefined && t !== null && t !== "";
                     if (hasType) {
+                        // The `reactive` kind keeps its own syntax + reference
+                        // validation (P116): `isValueBindingValueValid` only checks
+                        // non-empty for data kinds, which would let a broken or
+                        // unknown-store expression pass (the P189 regression).
+                        if (t === "reactive") {
+                            return isReactiveExpressionValid($el.typedInput("value"));
+                        }
                         return isValueBindingValueValid(t, $el.typedInput("value"));
                     }
                 }
@@ -4291,6 +4306,11 @@
                         binding.kind,
                         binding.path !== undefined ? binding.path : binding.value
                     );
+                }
+                if (binding.kind === "reactive") {
+                    // Mirror the live branch: a reactive binding is only valid when
+                    // its expression passes the syntax + reference check (P116).
+                    return isReactiveExpressionValid(binding.value);
                 }
                 var raw = binding.value !== undefined && binding.value !== null
                     ? binding.value
@@ -6048,6 +6068,7 @@
         validateReactiveSyntax,
         scanReactiveStoreLiterals,
         validateReactiveReferences,
+        isReactiveExpressionValid,
         reactiveCompletionContext,
         // P185: scope-local reactive globals (item/index/prop) offered in scope.
         reactiveScopeGlobals,
