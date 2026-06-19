@@ -52,6 +52,7 @@ Listen-Optik) trägt `ui-repeat` **keine Chrome** und wiederholt einen
 |---|---|---|---|---|
 | `items` | „Items" | typedInput (Wert-Binding) | **ja** | Die zu iterierende Collection. Bindbar über alle Wert-Binding-Arten (literal/state/query/store/routeParam/reactive/msg/flow/global/jsonata/env). Auflösung zu einem **Array**; ein **Objekt** wird als Einträge `{key, value}` iteriert. Reaktiv: Änderung → Re-Render. |
 | `keyField` | „Key-Feld" | Textfeld | optional | Feldname im Element, der als **stabiler Key** dient (z. B. `id`). Fehlt er, ist der Key der Array-Index. Steuert das keyed Morphing (Fokus/Scroll-Erhalt). |
+| `itemName` | „Scope Name" | Textfeld | optional | **Alias für den Item-Scope dieses Repeats** (P193, [ADR 0023](../../adr/0023-named-repeat-scopes-for-nested-item-addressing.md)) — das `v-for="customer in customers"`-Modell. Gesetzt (z. B. `customer`) → ein Nachfahre adressiert das Element **dieses** Repeats **namentlich**, auch über innere Repeats hinweg, via die Binding-Art `Item (<alias>)` / `Index (<alias>)`. Leer = nur das generische innerste `item`/`index` (heutiges Verhalten, rückwärtskompatibel). Muss ein Identifier sein (`[a-zA-Z_$][a-zA-Z0-9_$]*`). |
 
 ## Item-Scope (Binding-Art `item` / `index`)
 
@@ -90,6 +91,33 @@ Store-Nebeneffekt. **Außerhalb** eines `ui-repeat` löst `item`/`index` zu
   (`state`/`query`/…) verlangen weiterhin einen nicht-leeren Pfad. Das frühere
   typ-blinde `required: true` am Binding-Trägerfeld ist durch eine an den gewählten
   Binding-Typ delegierende Validierung ersetzt (gemeinsamer Editor-Helfer).
+
+### Benannte Scopes (P193 / ADR 0023)
+
+Bei **verschachtelten** `ui-repeat`s gewinnt für das generische `item`/`index`
+weiterhin der **innerste** Frame. Um eine **äußere** Ebene zu erreichen, **benennt**
+ein Repeat seinen Scope über `itemName` (z. B. `customer`):
+
+- Ein `item`/`index`-Binding trägt optional einen `scope`-Qualifizierer (= ein
+  Repeat-Alias). `{kind:"item", scope:"customer", path:"name"}` löst gegen das mit
+  `customer` benannte Repeat auf — **unabhängig** von dazwischenliegenden inneren
+  Repeats. `{kind:"item", path:"name"}` (ohne `scope`) bleibt = **innerstes**.
+- Der Renderer hält einen **Stapel benannter Frames**; jeder Frame trägt den
+  `itemName` seines Repeats. Eine scope-qualifizierte Bindung löst gegen den
+  **nächst-höheren gleichnamigen** Frame auf (ein innerer gleichnamiger Repeat
+  **überschattet** einen äußeren); kein Treffer → `undefined` (greift den
+  `fallback`, sonst `?`) — **kein** Wurf.
+- **Im Editor:** die Aliase **aller umschließenden benannten** Repeats erscheinen
+  als eigene Binding-Arten **„Item (<alias>)"** / **„Index (<alias>)"** — gegated
+  wie die scope-lokalen Arten (P182, nur im Scope sichtbar). Unbenannte umschließende
+  Repeats tragen **keine** benannte Art bei (nur das generische innerste `item`/
+  `index`). Eine bereits gespeicherte benannte Art bleibt sichtbar, auch wenn der
+  Mount sie nicht mehr umschließt (kein stilles Verwerfen).
+- **Beispiel (nachweisbar):** outer `ui-repeat itemName="customer"`, inner
+  `ui-repeat itemName="order"`; ein tief verschachtelter `ui-text` zeigt via
+  `Item (customer) → name` das **äußere** und via `Item (order) → total` (oder
+  bare `Item (Repeat)`) das **innere** Element — je Instanz-Kombination korrekt.
+- **Rückwärtskompatibel:** ohne `itemName`/`scope` identisches Verhalten wie heute.
 
 ### Basis-Felder (P139 / ADR 0015)
 
@@ -140,8 +168,9 @@ P165):
 - **Verschachtelung:** Der Scope ist ein **Stapel** — der innerste Frame gewinnt
   für `item`/`index`. Verschachtelte Repeats expandieren rekursiv; die
   Per-Instanz-Ids verketten beide Ebenen (`<aussenKey>#<innenKey>#<childId>`),
-  kollisionsfrei. Eine **explizite** Benennung der äußeren Ebene ist Folgearbeit
-  (s. Offene Punkte).
+  kollisionsfrei. Eine **explizite** Benennung der äußeren Ebene ist über
+  `itemName` + scope-qualifizierte `item`/`index`-Bindings möglich (P193, ADR 0023 —
+  s. „Benannte Scopes").
 - **Scope durch Kind-tragende Knoten (P192):** Der Item-Scope erreicht **nicht nur
   die direkten** Template-Kinder, sondern propagiert durch **jeden Kind-tragenden
   Knoten** im Template — `ui-container`, `ui-tabs`/`ui-tab`,
@@ -159,9 +188,10 @@ P165):
 
 ## Offene Punkte
 
-- Verschachtelte `ui-repeat`: explizite **Benennung der äußeren Ebene** (heute
-  gewinnt der innerste `item`/`index`-Frame; eine äußere Ebene ist nicht direkt
-  adressierbar).
+- ~~Verschachtelte `ui-repeat`: explizite **Benennung der äußeren Ebene**~~ —
+  **gelöst** (P193, ADR 0023): `itemName`-Alias + scope-qualifizierte `item`/`index`
+  (s. „Benannte Scopes"). Reaktive Integration der benannten Scopes ([[P185]]) ist
+  Folgearbeit.
 - Schreiben aus der Zeile (Stufe 2): item-relatives Schreibziel + Input/Store-
   Vertrag im Repeat.
 - Leerzustand (kein Item) — Zusammenspiel mit `ui-empty-state` ([[P152]]).
@@ -169,5 +199,6 @@ P165):
 ## Referenzen
 
 - [ADR 0017](../../adr/0017-ui-repeat-template-container-render-time-scope.md)
+- [ADR 0023](../../adr/0023-named-repeat-scopes-for-nested-item-addressing.md) — benannte Repeat-Scopes (`itemName` + scope-qualifizierte `item`/`index`)
 - [stores.md](../concepts/stores.md) — Wert-Binding-Arten für `items`
 - [reactive-expressions.md](../concepts/reactive-expressions.md)

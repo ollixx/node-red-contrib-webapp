@@ -1409,6 +1409,9 @@ function toComponentDefinitions(components) {
                     // applies — so old flows render without a broken/missing layout.
                     layoutId: blankToUndefined(component.layout) || blankToUndefined(component.layoutId) || "vertical",
                     ...(blankToUndefined(component.keyField) ? { keyField: component.keyField } : {}),
+                    // P193 (ADR 0023): the optional alias naming this repeat's item
+                    // scope, so a descendant can address THIS level by name.
+                    ...(blankToUndefined(component.itemName) ? { itemName: component.itemName } : {}),
                     ...(Object.keys(layoutProps).length > 0 ? { layout: layoutProps } : {})
                 },
                 events: []
@@ -6352,6 +6355,10 @@ const runtimeNodeRegistry = {
             items: getBinding(config.items, config.itemsPath ? stateBinding(config.itemsPath) : undefined)
                 || (parseJsonList(config.items).length > 0 ? { kind: "literal", value: parseJsonList(config.items) } : undefined),
             keyField: config.keyField || undefined,
+            // P193 (ADR 0023): the optional alias naming this repeat's item scope,
+            // so a descendant can address THIS level by name (scope-qualified
+            // item/index). Empty/absent → only the generic innermost item/index.
+            itemName: config.itemName || undefined,
             // P191: ui-repeat's OWN content-slot layout preset — carried through
             // exactly like ui-container's `layout: config.layoutId`. The editor
             // stores the preset id in `#node-input-layoutId`; the generated fixtures

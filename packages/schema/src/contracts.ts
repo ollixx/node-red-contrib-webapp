@@ -194,6 +194,12 @@ export const leafBindingSchema = z
         path: z.string().optional(),
         value: z.unknown().optional(),
         fallback: z.unknown().optional(),
+        // P193 (ADR 0023): an `item`/`index` binding may carry an optional `scope`
+        // = a ui-repeat alias (`itemName`). It selects the NAMED enclosing repeat
+        // frame instead of the innermost one. Meaningful only for `item`/`index`;
+        // ignored elsewhere. FORM only — the renderer (P193) resolves it against
+        // the named frame in the scope stack, not here.
+        scope: z.string().optional(),
         // The structural recursion lock: a sub-path binding may not declare its
         // own sub-path. `subPath` is meaningful ONLY on the top-level store
         // binding; on a leaf it is always an error.
@@ -222,11 +228,24 @@ export const bindingSchema = z
         path: z.string().optional(),
         value: z.unknown().optional(),
         fallback: z.unknown().optional(),
+        // P193 (ADR 0023): an `item`/`index` binding may carry an optional `scope`
+        // = a ui-repeat alias (`itemName`). Selects the NAMED enclosing repeat
+        // frame instead of the innermost one. Meaningful only for `item`/`index`.
+        scope: z.string().optional(),
         // P131 (ADR 0013): optional one-level sub-path into a store slice. Only
         // valid on `kind:"store"`; itself a LEAF binding (no nested subPath).
         subPath: leafBindingSchema.optional()
     })
     .superRefine((binding, context) => {
+        // P193: a `scope` qualifier is only meaningful on `item`/`index`.
+        if (binding.scope !== undefined && binding.kind !== "item" && binding.kind !== "index") {
+            context.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "A scope qualifier is only valid on an 'item' or 'index' binding.",
+                path: ["scope"]
+            });
+        }
+
         // P131: `subPath` is only meaningful when reaching into a store slice.
         if (binding.subPath !== undefined && binding.kind !== "store") {
             context.addIssue({

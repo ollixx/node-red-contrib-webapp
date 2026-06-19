@@ -1,0 +1,117 @@
+[
+  {
+    "type": "tab",
+    "id": "repeatNamedFlow",
+    "label": "Repeat Named Scope"
+  },
+  {
+    "type": "ui-app",
+    "id": "repeatNamedApp",
+    "name": "Repeat Named App",
+    "root": "repeatNamedApp",
+    "layout": "app",
+    "title": "Repeat Named Scope",
+    "z": "repeatNamedFlow",
+    "wires": [],
+    "x": 200,
+    "y": 120
+  },
+  {
+    "type": "ui-store",
+    "id": "customersStore",
+    "name": "Customers",
+    "parent": "repeatNamedApp",
+    "statePath": "customers",
+    "initialValue": "[{\"id\":\"c1\",\"name\":\"Ada\",\"orders\":[{\"total\":10},{\"total\":20}]},{\"id\":\"c2\",\"name\":\"Linus\",\"orders\":[{\"total\":30}]}]",
+    "z": "repeatNamedFlow",
+    "wires": [],
+    "x": 200,
+    "y": 180
+  },
+  {
+    "type": "ui-repeat",
+    "id": "customerRepeat",
+    "name": "Customer Repeat",
+    "parent": "repeatNamedApp",
+    "mount": "repeatNamedApp.content",
+    "order": 0,
+    "items": {
+      "kind": "store",
+      "path": "customersStore"
+    },
+    "keyField": "id",
+    "itemName": "customer",
+    "z": "repeatNamedFlow",
+    "wires": [],
+    "x": 200,
+    "y": 240
+  },
+  {
+    "type": "ui-repeat",
+    "id": "orderRepeat",
+    "name": "Order Repeat",
+    "parent": "customerRepeat",
+    "mount": "container:customerRepeat/content",
+    "order": 0,
+    "items": {
+      "kind": "item",
+      "scope": "customer",
+      "path": "orders"
+    },
+    "itemName": "order",
+    "z": "repeatNamedFlow",
+    "wires": [],
+    "x": 200,
+    "y": 300
+  },
+  {
+    "type": "ui-text",
+    "id": "outerName",
+    "name": "Outer name",
+    "parent": "orderRepeat",
+    "mount": "container:orderRepeat/content",
+    "order": 0,
+    "value": {
+      "kind": "item",
+      "scope": "customer",
+      "path": "name"
+    },
+    "z": "repeatNamedFlow",
+    "wires": [],
+    "x": 200,
+    "y": 360
+  },
+  {
+    "type": "ui-text",
+    "id": "innerTotal",
+    "name": "Inner total",
+    "parent": "orderRepeat",
+    "mount": "container:orderRepeat/content",
+    "order": 1,
+    "value": {
+      "kind": "item",
+      "scope": "order",
+      "path": "total"
+    },
+    "z": "repeatNamedFlow",
+    "wires": [],
+    "x": 200,
+    "y": 420
+  },
+  {
+    "type": "ui-text",
+    "id": "bareTotal",
+    "name": "Bare total",
+    "parent": "orderRepeat",
+    "mount": "container:orderRepeat/content",
+    "order": 2,
+    "value": {
+      "kind": "item",
+      "path": "total"
+    },
+    "z": "repeatNamedFlow",
+    "wires": [],
+    "x": 200,
+    "y": 480
+  }
+]

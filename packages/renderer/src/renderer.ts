@@ -284,6 +284,41 @@ interface BindingSources {
 interface ItemScopeFrame {
     item: unknown;
     index: number;
+    // P193 (ADR 0023): the optional ALIAS of the repeat that pushed this frame
+    // (`ui-repeat.itemName`). When set, a scope-qualified `item`/`index` binding
+    // (`{kind:"item", scope:"<name>"}`) resolves against the matching named frame
+    // anywhere up the stack — making an OUTER repeat addressable past inner ones.
+    // Unnamed frames carry `undefined` and are reachable only as the innermost.
+    name?: string;
+}
+
+/**
+ * P193 (ADR 0023): pick the item-scope frame a binding resolves against. With no
+ * `scope` qualifier this is the INNERMOST (top) frame — today's behaviour. With a
+ * `scope` (= a repeat alias) it is the NEAREST enclosing frame whose `name`
+ * matches, scanning from the top down, so an inner same-named repeat shadows an
+ * outer one. No match → `undefined` (the binding then resolves to `undefined` /
+ * fallback, never a throw — symmetric with addressing item/index outside a repeat).
+ */
+function selectItemFrame(
+    stack: ItemScopeFrame[] | undefined,
+    scope: string | undefined
+): ItemScopeFrame | undefined {
+    if (stack === undefined || stack.length === 0) {
+        return undefined;
+    }
+
+    if (scope === undefined || scope === "") {
+        return stack[stack.length - 1];
+    }
+
+    for (let i = stack.length - 1; i >= 0; i -= 1) {
+        if (stack[i].name === scope) {
+            return stack[i];
+        }
+    }
+
+    return undefined;
 }
 
 /**
@@ -583,7 +618,10 @@ function resolveBinding(binding: BindingDefinition | undefined, sources: Binding
             // of it. OUTSIDE any repeat (empty scope stack) → `undefined`, NOT a
             // throw — a defined "no value" so the editor-validateable misuse renders
             // cleanly rather than crashing the snapshot.
-            const frame = sources.itemScope?.[sources.itemScope.length - 1];
+            // P193 (ADR 0023): an optional `scope` (= a repeat alias) selects the
+            // NAMED enclosing frame instead of the innermost — making an outer
+            // repeat's item addressable past inner ones.
+            const frame = selectItemFrame(sources.itemScope, binding.scope);
             resolvedValue = frame === undefined
                 ? undefined
                 : binding.path
@@ -595,7 +633,9 @@ function resolveBinding(binding: BindingDefinition | undefined, sources: Binding
             // P164 (ADR 0017): the zero-based position of the current element in the
             // innermost active repeat. Path-free (schema-enforced). Outside any
             // repeat → `undefined` (no throw), mirroring `item`.
-            const frame = sources.itemScope?.[sources.itemScope.length - 1];
+            // P193 (ADR 0023): an optional `scope` selects the NAMED enclosing
+            // frame's position instead of the innermost.
+            const frame = selectItemFrame(sources.itemScope, binding.scope);
             resolvedValue = frame === undefined ? undefined : frame.index;
             break;
         }
@@ -1272,6 +1312,10 @@ function resolveSectionChildren(
         const items = resolveStructuralBinding(repeat.bind.items, context.sources);
         const frames = resolveRepeatItems(items);
         const keyField = typeof repeat.props.keyField === "string" ? repeat.props.keyField : undefined;
+        // P193 (ADR 0023): the alias naming this section-repeat's item scope.
+        const itemName = typeof repeat.props.itemName === "string" && repeat.props.itemName !== ""
+            ? repeat.props.itemName
+            : undefined;
         const sectionTemplates = appModel.components
             .filter((candidate) =>
                 candidate.kind === sectionKind &&
@@ -1280,10 +1324,11 @@ function resolveSectionChildren(
 
         return frames.flatMap((frame) => {
             const itemKey = repeatItemKey(frame, keyField);
+            const namedFrame: ItemScopeFrame = { ...frame, name: itemName };
             const scopedContext: ComponentRenderContext = {
                 sources: {
                     ...context.sources,
-                    itemScope: [...(context.sources.itemScope ?? []), frame]
+                    itemScope: [...(context.sources.itemScope ?? []), namedFrame]
                 }
             };
             return sectionTemplates.map((template) => ({
@@ -1541,6 +1586,12 @@ function expandRepeat(
     const items = resolveStructuralBinding(repeat.bind.items, context.sources);
     const frames = resolveRepeatItems(items);
     const keyField = typeof repeat.props.keyField === "string" ? repeat.props.keyField : undefined;
+    // P193 (ADR 0023): the optional alias naming THIS repeat's item scope. When set
+    // it is stamped onto every frame this repeat pushes, so a descendant's
+    // scope-qualified `item`/`index` can find this level by name past inner repeats.
+    const itemName = typeof repeat.props.itemName === "string" && repeat.props.itemName !== ""
+        ? repeat.props.itemName
+        : undefined;
 
     const childMatcher = createRepeatChildMatcher(repeat.id);
     const templateChildren = appModel.components
@@ -1561,11 +1612,14 @@ function expandRepeat(
 
     return frames.flatMap((frame) => {
         const itemKey = repeatItemKey(frame, keyField);
+        // P193 (ADR 0023): stamp this repeat's alias onto the frame so a descendant
+        // can address THIS level by name past inner repeats.
+        const namedFrame: ItemScopeFrame = { ...frame, name: itemName };
         // Immutable scope extension — the new frame is the innermost (top) one.
         const scopedContext: ComponentRenderContext = {
             sources: {
                 ...context.sources,
-                itemScope: [...(context.sources.itemScope ?? []), frame]
+                itemScope: [...(context.sources.itemScope ?? []), namedFrame]
             }
         };
 

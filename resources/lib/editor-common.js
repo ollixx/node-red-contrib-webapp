@@ -833,7 +833,12 @@
                     // node has no layoutId; the slot is fixed by the schema.
                     layoutId: "vertical",
                     title: node.title || node.name || id,
-                    mount: node.mount || ""
+                    mount: node.mount || "",
+                    // P193 (ADR 0023): expose the node type + scope alias so the
+                    // alias collector can pick up enclosing repeats whose live node
+                    // isn't in RED.nodes yet (fall back to the reference record).
+                    type: "ui-repeat",
+                    itemName: node.itemName || ""
                 });
                 return;
             }
@@ -1090,6 +1095,56 @@
         return false;
     }
 
+    // P193 (ADR 0023): collect the ALIASES (`itemName`) of every ui-repeat that
+    // (transitively) encloses this mount, OUTERMOST-last — i.e. ordered nearest→
+    // farthest as we walk up. Only NAMED enclosing repeats contribute; an unnamed
+    // repeat (no `itemName`) adds nothing (its item is reachable only via the
+    // generic innermost `item`/`index`). Walks the container chain exactly like
+    // `mountIsInsideRepeat`. Pure except for the RED.nodes lookups. The returned
+    // list is de-duplicated by alias (an inner same-named repeat shadows an outer
+    // one — matching the renderer's nearest-frame resolution).
+    function collectEnclosingRepeatAliases(mountValue, references) {
+        var aliases = [];
+        if (!mountValue) {
+            return aliases;
+        }
+        var seenMounts = {};
+        var seenAliases = {};
+        var current = mountValue;
+        while (current && !seenMounts[current]) {
+            seenMounts[current] = true;
+            if (current.indexOf("container:") !== 0) {
+                break;
+            }
+            var sepIdx = current.lastIndexOf("/");
+            var containerId = sepIdx >= 0
+                ? current.slice("container:".length, sepIdx)
+                : current.slice("container:".length);
+            var ancestor = RED.nodes.node(containerId);
+            var aliasVal;
+            if (ancestor && ancestor.type === "ui-repeat") {
+                aliasVal = ancestor.itemName;
+            }
+            else {
+                var refContainer = references.containers.find(function (c) { return c.id === containerId; });
+                if (refContainer && refContainer.type === "ui-repeat") {
+                    aliasVal = refContainer.itemName;
+                }
+            }
+            if (typeof aliasVal === "string" && aliasVal.length > 0 && !seenAliases[aliasVal]) {
+                seenAliases[aliasVal] = true;
+                aliases.push(aliasVal);
+            }
+            var container = references.containers.find(function (c) { return c.id === containerId; });
+            if (container && container.mount) {
+                current = container.mount;
+                continue;
+            }
+            break;
+        }
+        return aliases;
+    }
+
     // P182 (ADR 0020): does this mount value sit (transitively) inside a
     // `ui-component-definition` template? A node mounts into a definition via the
     // `def:<id>/content` head (P179). A direct child therefore carries a mount
@@ -1147,20 +1202,23 @@
     // they only resolve inside their container).
     function currentEditorScope() {
         if (typeof $ === "undefined" || typeof RED === "undefined" || !RED.nodes) {
-            return { repeat: false, componentDef: false };
+            return { repeat: false, componentDef: false, repeatAliases: [] };
         }
         const $mount = $("#node-input-mount");
         if (!$mount || !$mount.length) {
-            return { repeat: false, componentDef: false };
+            return { repeat: false, componentDef: false, repeatAliases: [] };
         }
         const mountVal = String($mount.val() || "");
         if (!mountVal) {
-            return { repeat: false, componentDef: false };
+            return { repeat: false, componentDef: false, repeatAliases: [] };
         }
         const references = collectReferenceNodes();
         return {
             repeat: mountIsInsideRepeat(mountVal, references),
-            componentDef: mountIsInsideComponentDef(mountVal, references)
+            componentDef: mountIsInsideComponentDef(mountVal, references),
+            // P193 (ADR 0023): the aliases of all enclosing NAMED ui-repeats, so the
+            // value typedInput can offer a by-name binding per enclosing repeat.
+            repeatAliases: collectEnclosingRepeatAliases(mountVal, references)
         };
     }
 
@@ -4110,6 +4168,42 @@
             // P165 (ADR 0017): scope-local item/index (resolve only inside a repeat).
             types.push(itemType, indexType);
         }
+        // P193 (ADR 0023): one named binding type per ENCLOSING NAMED repeat alias —
+        // `item (<alias>)` (optional field path) and `index (<alias>)` (path-free).
+        // Encoded as typedInput type values `item:<alias>` / `index:<alias>`; the
+        // apply/readValueBinding pair translates them to a scope-qualified binding
+        // `{kind:"item"|"index", scope:"<alias>", path}`. Gated like P182 (only the
+        // in-scope enclosing aliases appear); a currently-selected named kind is
+        // always re-included so a saved binding never silently drops.
+        var aliasSet = {};
+        (scope.repeatAliases || []).forEach(function (alias) { aliasSet[alias] = true; });
+        // Re-include the alias carried by the field's current kind, even if the
+        // edited node's mount no longer resolves to that enclosing repeat.
+        var currentAliasMatch = /^(?:item|index):(.+)$/.exec(currentKind);
+        if (currentAliasMatch) {
+            aliasSet[currentAliasMatch[1]] = true;
+        }
+        Object.keys(aliasSet).forEach(function (alias) {
+            types.push({
+                value: "item:" + alias,
+                label: "Item (" + alias + ")",
+                icon: "fa fa-cube",
+                hasValue: true,
+                validate: function (value) {
+                    var v = (value || "").trim();
+                    if (v.length === 0) {
+                        return true;
+                    }
+                    return /^[a-zA-Z_$][a-zA-Z0-9_$]*(\.[a-zA-Z_$][a-zA-Z0-9_$]*)*$/.test(v);
+                }
+            });
+            types.push({
+                value: "index:" + alias,
+                label: "Index (" + alias + ")",
+                icon: "fa fa-list-ol",
+                hasValue: false
+            });
+        });
         if (includeComponentKind) {
             // P179 (ADR 0020): scope-local prop (resolves only inside a component
             // definition expanded by an instance).
@@ -4136,6 +4230,13 @@
     function isValueBindingValueValid(type, value) {
         var v = value === undefined || value === null ? "" : String(value);
         var kind = String(type || "");
+        // P193 (ADR 0023): a scope-qualified `item:<alias>` / `index:<alias>` type
+        // validates exactly like its bare `item` / `index` (empty path = whole
+        // element / bare index; otherwise a dotted field path).
+        var scopedMatch = /^(item|index):/.exec(kind);
+        if (scopedMatch) {
+            kind = scopedMatch[1] === "index" ? "index" : "item";
+        }
         if (SCOPE_LOCAL_BINDING_KINDS[kind]) {
             // index is path-free (always valid); item/prop allow an empty path
             // (whole element / whole prop) and otherwise a dotted field path.
@@ -4271,6 +4372,20 @@
     // subPath is ignored for every non-store kind (it has no meaning there).
     function applyValueBinding(type, value, subPath) {
         var raw = value === undefined || value === null ? "" : String(value);
+
+        // P193 (ADR 0023): a scope-qualified item/index type `item:<alias>` /
+        // `index:<alias>` → a binding with an explicit `scope` (the alias). An empty
+        // path on `item:<alias>` is the whole element (no `path` key); `index:<alias>`
+        // is always path-free.
+        var scopedMatch = /^(item|index):(.+)$/.exec(type);
+        if (scopedMatch) {
+            var scopedKind = scopedMatch[1];
+            var scopedAlias = scopedMatch[2];
+            if (scopedKind === "index" || raw.length === 0) {
+                return { kind: scopedKind, scope: scopedAlias };
+            }
+            return { kind: scopedKind, scope: scopedAlias, path: raw };
+        }
 
         if (VALUE_BINDING_LITERAL_TYPES.indexOf(type) !== -1) {
             return { kind: "literal", value: typedLiteralValue(type, raw) };
@@ -4419,6 +4534,14 @@
                 read.subPath = subPath;
             }
             return read;
+        }
+
+        // P193 (ADR 0023): a scope-qualified item/index binding restores to the
+        // named typedInput type `item:<alias>` / `index:<alias>` so the editor shows
+        // the by-name kind and round-trips the alias.
+        if ((parsed.kind === "item" || parsed.kind === "index")
+            && typeof parsed.scope === "string" && parsed.scope.length > 0) {
+            return { type: parsed.kind + ":" + parsed.scope, value: parsed.path || "" };
         }
 
         // All remaining kinds (query/routeParam/msg/jsonata/flow/global/env
@@ -5908,6 +6031,9 @@
         resolveAppFromMount,
         // P165 (ADR 0017): scope-local item/index repeat helpers.
         mountIsInsideRepeat,
+        // P193 (ADR 0023): collect enclosing named-repeat aliases for by-name
+        // item/index binding offering.
+        collectEnclosingRepeatAliases,
         // P182 (ADR 0020): scope-local prop component-definition helper +
         // the live-form scope resolver that gates the scope-local kinds.
         mountIsInsideComponentDef,

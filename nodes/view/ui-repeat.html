@@ -44,6 +44,14 @@
                 layoutId: { value: "", required: true },
                 // P165: optional stable per-instance key field (e.g. "id").
                 keyField: { value: "" },
+                // P193 (ADR 0023): optional ALIAS naming this repeat's item scope
+                // (the `v-for="customer in customers"` model). When set, a descendant
+                // can address THIS repeat's item by name — even past inner repeats —
+                // via the value-binding type `Item (<alias>)` / `Index (<alias>)`.
+                // Empty = only the generic innermost item/index (today's behaviour).
+                itemName: { value: "", validate: function (value) {
+                    return value === "" || /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(String(value).trim());
+                } },
                 // P139 (ADR 0015): base fields. `visible` persists the binding
                 // OBJECT; the typedInput lives on the *Binding carrier input so
                 // Node-RED auto-save cannot clobber it.
@@ -128,11 +136,15 @@
     <input type="hidden" id="node-input-layoutId">
     <div class="form-row"><label for="node-input-layout-preset">Child Layout</label><select id="node-input-layout-preset"></select></div>
     <div class="form-row"><label for="node-input-keyField">Key Field</label><input type="text" id="node-input-keyField" placeholder="optional, e.g. id"></div>
+    <div class="form-row"><label for="node-input-itemName">Scope Name</label><input type="text" id="node-input-itemName" placeholder="optional alias, e.g. customer"></div>
     <div class="form-tips" style="margin-top: 4px;">
         Children mounted into this node's <code>content</code> slot are the
         <b>template</b> — cloned once per item. In a child, bind a value to
         <b>Item (Repeat)</b> (optional field path, e.g. <code>name</code>) or
         <b>Index (Repeat)</b> to read the current element / position.
+        Give this repeat a <b>Scope Name</b> (e.g. <code>customer</code>) to address
+        its item by name from a child — even inside a nested repeat — via the
+        <b>Item (customer)</b> / <b>Index (customer)</b> binding types.
     </div>
 </script>
 <script type="text/html" data-help-name="ui-repeat">
@@ -149,5 +161,10 @@
   <li><b>Index (Repeat)</b> — the zero-based position of the current element.</li>
 </ul>
 <p>These scope-local bindings only resolve inside a <code>ui-repeat</code>; outside one they resolve to <i>undefined</i> (the editor shows a hint).</p>
+<h3>Named scopes (nested repeats)</h3>
+<ul>
+  <li><b>Scope Name</b> — an optional alias for this repeat's item (the <code>v-for="customer in customers"</code> model). When set, a descendant addresses THIS repeat's item <i>by name</i> via the <b>Item (&lt;alias&gt;)</b> / <b>Index (&lt;alias&gt;)</b> binding types — even past inner repeats.</li>
+  <li>Unscoped <b>Item (Repeat)</b> / <b>Index (Repeat)</b> always mean the <i>innermost</i> repeat. With an outer <code>customer</code> and inner <code>order</code>, a deep child reads <code>Item (customer)</code> for the outer row and <code>Item (order)</code> (or bare <b>Item (Repeat)</b>) for the inner one.</li>
+</ul>
 <p><b>Stage 1 is read-only</b> — writing back from a row (e.g. an input targeting <code>item.name</code>) is a later stage.</p>
 </script>
