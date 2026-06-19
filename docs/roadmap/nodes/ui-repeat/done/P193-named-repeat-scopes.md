@@ -17,11 +17,11 @@ verify: browser
 spec: docs/nodes/display/ui-repeat.md
 tests: tests/e2e/nodes/view/ui-repeat.tests.md
 dependencies: [P192]
-status: in_progress
+status: done
 ---
 # P193 — Benannte Repeat-Scopes
 
-> Setzt [ADR 0023](../../../adr/0023-named-repeat-scopes-for-nested-item-addressing.md)
+> Setzt [ADR 0023](../../../../adr/0023-named-repeat-scopes-for-nested-item-addressing.md)
 > um: ein `ui-repeat` kann seinen Scope **benennen** (`itemName`), und `item`/
 > `index` können einen **Alias** referenzieren → die äußere Ebene bei
 > verschachtelten Repeats ist adressierbar. **Braucht P192** (Scope muss erst alle
@@ -59,3 +59,29 @@ status: in_progress
   + P189 auf.
 - Reactive-Integration ([[P185]]) der benannten Scopes ist **Folgearbeit**, nicht
   hier.
+
+## Result
+
+- **delivered:** Named repeat scopes (ADR 0023, the v-for alias model) — the **outer** repeat level is
+  now addressable from a nested repeat. Schema: `ui-repeat.itemName` alias + an optional `scope`
+  qualifier on `item`/`index` bindings (`contracts.ts`, `node-definitions.ts`); `scope` is rejected on
+  non-item/index kinds. Backward compatible: no `itemName` / no `scope` → today's innermost behaviour.
+  Renderer: `ItemScopeFrame.name` + `selectItemFrame` (nearest matching named frame; inner shadows
+  outer), and EVERY repeat — including the tabs/accordion section-repeat path — stamps its alias onto
+  the pushed frame. Editor: `collectEnclosingRepeatAliases` (gated the P182 way), `valueBindingTypes`
+  offers `Item (<alias>)` / `Index (<alias>)`, apply/readValueBinding round-trip the scope-qualified
+  binding, and `ui-repeat.html` gains a "Scope Name" field + help. Spec updated (named-scopes section;
+  the ADR 0023 nested open-point is closed). Consumed P182/P184/P185/P192 machinery — all verified
+  present, none reimplemented.
+- **stats:** 13 files (+994/−15); new tests — schema 13, renderer 4, editor 20, +1 E2E + fixture.
+  Develop verification: build exit 0; full unit **1743** (schema 377, editor 172, renderer 145, runtime
+  1049); **ui-repeat E2E 10/10 green** incl. the new P193 nested-named proof (a nested child reads the
+  OUTER `customer` by alias and the INNER `order` by alias/bare → `Ada,10,10 / Ada,20,20 / Linus,30,30`);
+  check:specs + check:links + check:roadmap + lint green.
+- **notes:** The sub-agent **ran the E2E green in-worktree** (10 passed) rather than only `--list`-
+  parsing it — and itself found + fixed the same class of `mapConfig` drop bug seen in P191/P192 (both
+  ui-repeat mapping paths now carry `itemName` into the model; without it the inner repeat rendered
+  empty). Reactive integration of named scopes (P185 × aliases) is explicitly follow-up. With P190/P191/
+  P193 all landed, the P195 `check:specs` follow-up (reconcile the ui-repeat spec field-table + drop it
+  from the allowlist) is now actionable.
+- **cost:** session agent-acf4f12f6a15fe797, ~30m.

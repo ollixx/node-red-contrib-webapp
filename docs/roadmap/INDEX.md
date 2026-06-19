@@ -27,7 +27,8 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P193** — nodes/ui-repeat — benannte Repeat-Scopes (itemName-Alias + item/index scope-qualifiziert) → äußeres Repeat-item bei Verschachtelung adressierbar (ADR 0023) — *braucht P192; Owner 2026-06-19* — [P193](nodes/ui-repeat/P193-named-repeat-scopes.md)
+_No open work — the roadmap is drained. New work is added here as packages are authored._
+
 
 ## Deferred (parked, not abandoned)
 
@@ -72,7 +73,7 @@ open the folder for the full history.
 | nodes/ui-image | 2 |
 | nodes/ui-pagination | 2 |
 | nodes/ui-tabs | 3 |
-| nodes/ui-repeat | 8 |
+| nodes/ui-repeat | 9 |
 | nodes/ui-stepper | 1 |
 | nodes/ui-menu | 1 |
 | nodes/ui-list | 6 |
@@ -93,4 +94,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 194 done, 1 open, 8 deferred.**
+**Total: 195 done, 0 open, 8 deferred.**
