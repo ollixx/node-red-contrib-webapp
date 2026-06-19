@@ -314,6 +314,27 @@ aus (JSONata via `RED.util.prepareJSONataExpression` + asynchroner
 Live-Definition. Jedes Binding kann zusätzlich einen `fallback` tragen, der greift,
 wenn der aufgelöste Wert `undefined` ist.
 
+### Scope-lokale Binding-Arten (P182, ADR 0017 / ADR 0020)
+
+Zusätzlich zum globalen Satz gibt es **scope-lokale** Binding-Arten, die nur im
+jeweiligen Template-Container auflösen und daher **nur im Editor sichtbar sind,
+wenn der editierte Knoten (transitiv) in diesem Container hängt**:
+
+| `kind` | liest aus | Scope | sichtbar wenn … |
+|---|---|---|---|
+| `item` | aktuelles Listenelement des umgebenden `ui-repeat` | `ui-repeat`-Template | Knoten (transitiv) unter einem `ui-repeat` gemountet |
+| `index` | nullbasierter Index des aktuellen Elements | `ui-repeat`-Template | wie `item` |
+| `prop` | benannte Eigenschaft der umgebenden Komponenten-Definition | `ui-component-definition`-Template (`def:`-Scope) | Knoten (transitiv) in einer Komponenten-Definition gemountet |
+
+Außerhalb des passenden Scopes würden diese Arten zur Render-Zeit zu `undefined`
+auflösen — sie werden deshalb **aus dem Editor-Dropdown ausgeblendet** (kein
+Rauschen für Knoten, die nicht in einem Repeat oder einer Component-Definition
+hängen). **Ein freistehender `ui-text` zeigt `item`/`index`/`prop` by design
+nicht** — das ist kein Fehler, sondern absichtliches Kontext-Gating (P182).
+
+Details und Editor-Mechanik: [editor.md → „Scope-lokale Binding-Arten sind
+kontext-gated"](editor.md#scope-lokale-binding-arten-sind-kontext-gated-p182-adr-0017--adr-0020).
+
 ### Der kanonische Value-Binding-Typ-Satz (Editor) — ADR 0012 / ADR 0010
 
 Jedes Display-Wert-Feld (z. B. `ui-text` `value`, `ui-alert` `message`/`title`,
@@ -324,6 +345,11 @@ Jedes Display-Wert-Feld (z. B. `ui-text` `value`, `ui-alert` `message`/`title`,
 
 > **Store, Query, Route-Param, Reactive, msg, JSONata, string, number, boolean,
 > json, timestamp, Flow, Global, Env** (Default-Typ: `string`).
+
+Zusätzlich erscheinen **scope-lokale Typen** (`item`, `index`, `prop`) im
+Dropdown, wenn der editierte Knoten im passenden Template-Scope hängt — siehe
+[„Scope-lokale Binding-Arten"](#scope-lokale-binding-arten-p182-adr-0017--adr-0020)
+oben und [editor.md](editor.md#scope-lokale-binding-arten-sind-kontext-gated-p182-adr-0017--adr-0020).
 
 Die fünf Literaltypen (`str`/`num`/`bool`/`json`/`date`) serialisieren als
 `{ kind: "literal", value: <typisierter Wert> }`; `reactive` als
