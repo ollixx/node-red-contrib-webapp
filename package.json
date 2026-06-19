@@ -82,7 +82,9 @@
         "gen:node-examples": "node scripts/gen-node-examples.js",
         "check:roadmap": "node scripts/check-roadmap.js",
         "check:links": "node scripts/check-doc-links.js",
-        "validate": "pnpm check:roadmap && pnpm check:links && pnpm lint && pnpm test && pnpm build",
+        "check:specs": "node scripts/check-specs.js",
+        "test:specs": "vitest run scripts/check-specs.test.ts",
+        "validate": "pnpm check:roadmap && pnpm check:links && pnpm check:specs && pnpm lint && pnpm test && pnpm test:specs && pnpm build",
         "test:showcase": "SHOWCASE=1 playwright test",
         "show-report": "playwright show-report"
     },

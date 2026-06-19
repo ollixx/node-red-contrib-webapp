@@ -37,7 +37,7 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `layout` | „Layout" | SelectBox (Layout-Preset) | **ja** | Layout der Route. Auswahl aus den Standard-Presets (`vertical`, `horizontal`, `app`, `grid`, `absolute`). Default: `vertical`. Bestimmt die Slots und die Child-Platzierungs-Felder direkter Kinder — siehe [layout.md](../concepts/layout.md). |
+| `layoutId` | „Layout" | SelectBox (Layout-Preset) | **ja** | Layout der Route (im Feld `layoutId` gespeichert). Auswahl aus den Standard-Presets (`vertical`, `horizontal`, `app`, `grid`, `absolute`). Default: `vertical`. Bestimmt die Slots und die Child-Platzierungs-Felder direkter Kinder — siehe [layout.md](../concepts/layout.md). |
 
 ### Gruppe „Events"
 

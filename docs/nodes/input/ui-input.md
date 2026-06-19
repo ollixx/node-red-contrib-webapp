@@ -45,6 +45,7 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 | `inputType` | „Input Type" | SelectBox (`text` / `email` / `number`) | **ja** | Semantischer Eingabe-Typ. Steuert Tastatur-Typ und Browser-Validierung. Default: `text`. |
 | `placeholder` | „Placeholder" | Textfeld | optional | Platzhaltertext, der angezeigt wird, wenn das Feld leer ist. |
 | `variant` | „Variant" | SelectBox (Variant) | optional | Visuelle Feld-Rolle (`default`, `filled`, `outlined`). Default: `default`. Vocabulary: [theming.md](../concepts/theming.md). |
+| `size` | „Größe" | SelectBox (`small` / `medium` / `large`) | optional | Größe des Eingabefeldes. Default: `medium`. |
 | `disabled` | „Disabled" | typedInput (alle Binding-Arten) | optional | Bindbare Bedingung, die das Feld deaktiviert (Nutzereingabe gesperrt). |
 
 ### Gruppe „Store-Binding"
