@@ -52,7 +52,7 @@
     "parent": "rowsRepeat",
     "mount": "container:rowsRepeat/content",
     "order": 0,
-    "layout": "horizontal",
+    "layoutId": "horizontal",
     "z": "repeatContainerFlow",
     "wires": [],
     "x": 200,
