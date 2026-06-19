@@ -125,8 +125,10 @@ test.describe("ui-query → ui-list showcase (P187)", () => {
         await test.step("Step 1 — initial state: query has no data yet → list is empty", async () => {
             // Before any push the query binding resolves to no data → 0 items.
             await expect(items).toHaveCount(0);
-            // The list root is still rendered (no crash / no missing element).
-            await expect(page.locator("ul.webapp-list")).toBeVisible();
+            // The list root is present in the DOM (no crash / no missing element).
+            // An empty <ul> has zero height so toBeVisible() would fail; use
+            // toBeAttached() to confirm the element is rendered without data yet.
+            await expect(page.locator("ul.webapp-list")).toBeAttached();
         });
 
         // ── Step 2: Data state — push fills the list via SSE ──────────────────

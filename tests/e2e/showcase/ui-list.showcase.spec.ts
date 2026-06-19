@@ -224,8 +224,10 @@ test.describe("ui-list showcase (P187)", () => {
                 .build());
             await sf.openEditor(["ui-list", "ui-app"]);
             await sf.openNodeConfig("listShowcaseNode");
-            // The items typedInput field must be present in the editor panel.
-            await expect(page.locator("#node-input-items")).toHaveCount(1);
+            // The items typedInput carrier (#node-input-itemsBinding) must be present.
+            // Note: the `items` binding object is persisted via oneditsave and has no
+            // matching DOM input — the typedInput lives on #node-input-itemsBinding.
+            await expect(page.locator("#node-input-itemsBinding")).toHaveCount(1);
             await sf.closeNodeConfig();
         });
 

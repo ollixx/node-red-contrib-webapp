@@ -76,12 +76,14 @@ test.describe("ui-repeat showcase (P187)", () => {
                     id: "repeatPrimItem",
                     parent: "repeatPrimRepeat",
                     mount: "container:repeatPrimRepeat/content",
+                    order: 0,
                     value: { kind: "item" }
                 })
                 .node("ui-text", {
                     id: "repeatPrimIndex",
                     parent: "repeatPrimRepeat",
                     mount: "container:repeatPrimRepeat/content",
+                    order: 1,
                     value: { kind: "index" }
                 })
                 .build();
