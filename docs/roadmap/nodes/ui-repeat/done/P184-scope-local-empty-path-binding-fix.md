@@ -18,7 +18,7 @@ verify: browser
 spec: docs/nodes/display/ui-repeat.md
 tests: tests/e2e/nodes/view/ui-repeat.tests.md
 dependencies: []
-status: in_progress
+status: done
 ---
 # P184 — Scope-lokale Bindings mit leerem Pfad reparieren
 
@@ -56,3 +56,33 @@ leer) **und Frage 2** (index) zugleich.
   modellieren und `item.label` binden (item-MIT-Pfad ist nicht betroffen).
 - Reine Form-Validierung + Editor-Serialisierung — **kein** Renderer-/Scope-
   Auflösungs-Wechsel (P164 bleibt).
+
+## Result
+
+- **delivered:** Fixed the empty-path rejection that blocked basic repeat usage over primitive arrays.
+  Schema (`packages/schema/src/contracts.ts`): removed the field-level `path: z.string().min(1)` from
+  both `bindingSchema` and `leafBindingSchema`, moving empty-path enforcement into
+  `refineBindingKindShape` — it now **normalises `path:''` to "no path" for `item`/`index`/`prop`** (so
+  a whole-item binding over a string element, and a bare `index`, validate like the path-free form, and
+  old flows saved with `path:''` keep validating) while data-binding kinds (`state`/`query`/…) still
+  **reject** empty paths via the existing `!binding.path` guard. Editor
+  (`resources/lib/editor-common.js` `applyValueBinding`): omits the `path` key entirely for
+  `item`/`index`/`prop` when empty. The **renderer needed no change** — it already resolved a falsy
+  path as the whole item (P164 stands).
+- **stats:** 8 files (1 new fixture `tests/e2e/fixtures/ui-repeat-primitive.flow.json`). Unit suite
+  green (schema +8: accepts item/index/prop with empty path & tolerates `path:''`, data kinds stay
+  red; renderer +3: resolves whole-item + index over a string array; editor serialisation drops the
+  empty key). Develop verification (with P182 already merged): `pnpm build` exit 0; full unit **1651
+  passed**; lint + validate + both tripwires green; **ui-repeat E2E proof green** (`ui-repeat.spec.ts`
+  — a string-array repeat renders `alpha,0 / beta,1 / gamma,2`, whole item + zero-based index); the
+  P182 gating spec re-verified green after the shared-file (`editor-common.js`) merge.
+- **notes:** Spec `docs/nodes/display/ui-repeat.md` already documented `item` as the whole element and
+  `index` as path-free — the fix brought the implementation in line with the doc (no doc change).
+  Updated two pre-existing `p113-value-binding-types.test.ts` cases that asserted the OLD buggy
+  `path:''` serialisation to the corrected contract (empty path omitted) + added a `prop` case; these
+  merged cleanly with P182's gated-set update to the same file (combined unit suite green). The
+  supplementary full-suite final gate was interrupted twice (re-drive); the targeted ui-repeat +
+  gating E2E and the schema/renderer unit coverage are the authoritative gate for this narrowly-scoped
+  contract change. The only known full-suite red remains the pre-existing accordion-open defect
+  (predates this wave, filed separately).
+- **cost:** session agent-a1171413958fa144a, ~28m.
