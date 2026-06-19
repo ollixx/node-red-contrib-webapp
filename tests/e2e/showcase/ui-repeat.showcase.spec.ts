@@ -174,8 +174,9 @@ test.describe("ui-repeat showcase (P187)", () => {
             await deployFlow(request, buildObjectRepeatFlow());
             await sf.openEditor(["ui-repeat", "ui-app"]);
             await sf.openNodeConfig("repeatPeopleRepeat");
-            // The items typedInput and keyField text input must be present.
-            await expect(page.locator("#node-input-items")).toHaveCount(1);
+            // The items typedInput (carrier #node-input-itemsBinding, P190 fix) and
+            // keyField text input must be present.
+            await expect(page.locator("#node-input-itemsBinding")).toHaveCount(1);
             await expect(page.locator("#node-input-keyField")).toHaveCount(1);
             await sf.closeNodeConfig();
         });
