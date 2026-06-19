@@ -9,7 +9,11 @@
                 name: { value: "" },
                 parent: { value: "" },
                 mount: { value: "", required: true },
-                text: { value: "", required: true },
+                // P189: type-aware validation replaces the blunt `required: true`.
+                // For the scope-local kinds (item/index/prop) an empty path is
+                // legitimate (whole element / bare index / whole prop, per P184), so
+                // the binding carrier delegates to the selected typedInput kind.
+                text: { value: "", validate: common.validateValueBindingField("#node-input-text", "value") },
                 value: { value: { kind: "literal", value: "" } },
                 // P111: `style` = typographic role (→ HTML tag); `variant` = colour.
                 // The old `size` field was removed (sizing is governed by style).
@@ -55,6 +59,8 @@
                 // P165 (ADR 0017): warn when the scope-local item/index kind is
                 // selected but this node is not inside a ui-repeat template.
                 common.installRepeatScopeHint("#node-input-text");
+                // P189: explain the item/prop PATH sub-field — empty = whole element.
+                common.installValueBindingPathHint("#node-input-text");
             },
             oneditsave: function () {
                 const textInput = $("#node-input-text");

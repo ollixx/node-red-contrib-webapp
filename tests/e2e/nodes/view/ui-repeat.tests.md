@@ -98,6 +98,33 @@
   nullbasiert) rendert die interleaved Sequenz `alpha,0, beta,1, gamma,2` —
   ganzes String-Element und Position lösen ohne Validierungsfehler auf.
 
+### Editor-UX + typ-bewusste Validierung des Pfadfelds (P189) — abgedeckt
+
+> Editor-Entsprechung zu P184 (Owner 2026-06-19): das Wert-typedInput trägt für
+> die scope-lokalen Kinds einen **Pfad-Hinweis** („Feldpfad … leer = ganzes
+> Element"), und die Validierung des Binding-Trägerfelds ist **typ-bewusst** —
+> ein leeres `item`/`index`/`prop`-Pfadfeld ist gültig (whole-element / bare-index
+> / whole-prop, wie P184), während Daten-Kinds (state/query/…) weiterhin einen
+> nicht-leeren Pfad verlangen. Das blunt `required: true` am Binding-Feld ist durch
+> den gemeinsamen Helfer `validateValueBindingField` ersetzt. Unit:
+> `packages/editor/test/p189-value-binding-validation.test.ts`
+> (`isValueBindingValueValid`: item/index/prop leer = gültig, malformierter
+> item-Pfad rot, query/store/state/Literal leer = rot). Browser:
+> `tests/e2e/nodes/editor/p189-item-prop-path-field.spec.ts`.
+
+- **Editor-Hinweis:** `installValueBindingPathHint` mountet unter dem Wert-Feld
+  einen Hinweis, der nur bei Kind `item`/`prop` erscheint („Feldpfad … leer =
+  ganzes Element/ganze Prop") bzw. bei `index` einen Mini-Hinweis („nullbasierte
+  Position — kein Pfad"); für Daten-Kinds verborgen. An `ui-text`/`ui-button`
+  verdrahtet.
+- **Validierung typ-bewusst:** das Binding-Trägerfeld (`text`/`label`) delegiert
+  via `validateValueBindingField("#node-input-…")` an den gewählten typedInput-Typ;
+  `prop` mit leerem Pfad ist jetzt gültig (Angleich an `item`, P184-Vertrag).
+- **End-to-End (browser):** in einem `ui-repeat` gemountetes `ui-text`: (a) Wechsel
+  zu Kind `item` blendet den „leer = ganzes Element"-Hinweis ein, Kind `query`
+  blendet ihn aus; (b) `item`-Feld leer → Knoten bleibt grün (`node.valid`),
+  `index` leer → grün, `query` leer → rot, gefüllter `query`-Pfad → wieder grün.
+
 ### item/index/prop in Reactive-Expressions (P185) — abgedeckt
 
 > Feature: `item`/`index` (und `prop`) sind INNERHALB einer Reactive-Expression

@@ -13,24 +13,13 @@
                 // typedInput lives directly on #node-input-label so the
                 // minimal-coverage E2E check (`fields:["label"]`) still passes.
                 // A legacy plain-string `label` is migrated on open.
+                // P189: type-aware validation replaces the type-blind non-empty
+                // check, which marked an empty item/index/prop path red even though
+                // an empty path is legitimate there (whole element / bare index /
+                // whole prop, per P184). Delegate to the selected typedInput kind.
                 label: {
                     value: { kind: "literal", value: "" },
-                    required: true,
-                    validate: function () {
-                        var el = $("#node-input-label");
-                        if (el.length && typeof el.typedInput === "function") {
-                            var v = el.typedInput("value");
-                            return v !== undefined && v !== null && String(v).length > 0;
-                        }
-                        // Pre-open (no typedInput yet): trust the persisted binding.
-                        var b = this.label;
-                        if (b && typeof b === "object") {
-                            return b.value !== undefined && b.value !== null && String(b.value).length > 0
-                                ? true
-                                : (typeof b.path === "string" && b.path.length > 0);
-                        }
-                        return typeof b === "string" && b.length > 0;
-                    }
+                    validate: common.validateValueBindingField("#node-input-label", "label")
                 },
                 variant: { value: "neutral" },
                 size: { value: "" },
@@ -94,6 +83,8 @@
                 });
                 labelInput.typedInput("type", labelEditor.type);
                 labelInput.typedInput("value", labelEditor.value);
+                // P189: explain the item/prop PATH sub-field — empty = whole element.
+                common.installValueBindingPathHint("#node-input-label");
 
                 // P122 (ADR 0012 / boolean category): `disabled` typedInput.
                 // Migration: a legacy `disabledPath` plain string becomes a
