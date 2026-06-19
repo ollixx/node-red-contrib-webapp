@@ -111,3 +111,20 @@ Unit-Coverage: `packages/runtime/test/p183-list-visual-design-and-color.test.ts`
 
 E2E (`verify: browser`) wird im Haupt-Checkout durch den Orchestrator durchgeführt
 ([[orchestrator-must-verify-e2e-in-main-checkout]]).
+
+## Showcase-Spec (P187, ADR 0022 §2)
+
+Pilot-Showcase-Spec: `tests/e2e/showcase/ui-list.showcase.spec.ts`
+
+Abgedeckte Features in benannten `test.step`-Kapiteln (→ Kapitel im Trace/Video):
+1. String-Items → beschriftete Zeilen.
+2. `displayType=divided` → Separator-CSS-Klasse.
+3. `displayType=grouped` → Grouped-CSS-Klasse.
+4. `displayType=actionable` + `itemClick`-Event (mit `params.rowId`-Assertion).
+5. `displayValue=secondary` → trailing `<span class="webapp-list-value">`.
+6. `displayValue=badge` → `<sl-badge class="webapp-list-value" variant="…">`.
+7. Per-Item-Icon → führendes `<sl-icon class="webapp-list-item-icon">`.
+8. `selectable=true` + `selectedId`-State-Binding → markierte Zeile.
+9. Config-Dialog-Cameo: `#node-input-items` im Editor-Tray sichtbar.
+
+Laufbar unter `SHOWCASE=1 pnpm exec playwright test tests/e2e/showcase/ui-list.showcase.spec.ts`.

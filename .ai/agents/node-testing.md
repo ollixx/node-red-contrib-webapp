@@ -103,3 +103,42 @@ whenever the tests change.
 > Location convention: alongside the node's tests (e.g.
 > `tests/e2e/nodes/<category>/<node>.tests.md`), linked from the node's
 > requirement doc.
+
+## Showcase specs (P187, ADR 0022 §2)
+
+### What a showcase spec is
+
+A **showcase spec** is a regular Playwright spec (`*.showcase.spec.ts`) that
+exercises a node's features in a fixture-driven, paced "feature tour" format.
+Every step asserts a real outcome (fails on regression) and is wrapped in a
+named `test.step` — which appears as a labelled chapter in the Playwright trace
+and as readable footage under `SHOWCASE=1 pnpm exec playwright test` (P186).
+
+The config-dialog cameo (`openEditor` + `openNodeConfig`) opens the node's
+editor panel on camera so typedInput fields and editor-optic bugs are visible
+in the video.
+
+### Location + naming
+
+```
+tests/e2e/showcase/
+  showcase-helpers.ts          ← shared ShowcaseFlow class + re-exports
+  ui-list.showcase.spec.ts     ← Pilot 1 (P187)
+  ui-repeat.showcase.spec.ts   ← Pilot 2 (P187)
+  ui-query-list.showcase.spec.ts  ← Pilot 3 (P187)
+  <node>.showcase.spec.ts      ← future per-node rollout
+```
+
+### Rollout checklist for a new node
+
+1. Create `tests/e2e/showcase/<node>.showcase.spec.ts`.
+2. Build a self-contained flow (`FlowBuilder`: ui-app + the node + helpers).
+3. Wrap each feature in `await test.step("Step N — <description>", async () => { ... })`.
+4. Add a config-dialog cameo with `sf.openEditor([...])` + `sf.openNodeConfig(nodeId)`.
+5. Add `await sf.closeNodeConfig()` and optionally return to the webapp.
+6. Append a `## Showcase-Spec` section to the node's `*.tests.md` catalogue.
+7. Run `pnpm exec playwright test tests/e2e/showcase/<node>.showcase.spec.ts --list` to confirm parsing.
+8. Run once with `SHOWCASE=1` to confirm video is produced.
+
+See `tests/e2e/showcase/showcase-helpers.ts` for the `ShowcaseFlow` API and
+the P187 pilot specs as worked examples.
