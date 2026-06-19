@@ -16,7 +16,7 @@ verify: browser
 spec: docs/nodes/display/ui-repeat.md
 tests: tests/e2e/nodes/view/ui-repeat.tests.md
 dependencies: []
-status: in_progress
+status: done
 ---
 # P191 — ui-repeat: eigenes content-Layout (Container-Konformität)
 
@@ -56,3 +56,33 @@ status: in_progress
   bestehenden Presets/`installLayoutSelector` wiederverwenden.
 - Hängt nicht hart an P190, berührt aber dieselbe Datei (`ui-repeat.html`) —
   Reihenfolge im Orchestrator beachten.
+
+## Result
+
+- **delivered:** `ui-repeat` now owns a **content-slot layout** conforming to `ui-container`/`ui-route` —
+  a `layoutId` + a "Child Layout" preset selector. Schema gains the optional `layout` preset
+  (`packages/schema/src/node-definitions.ts`); the editor (`nodes/view/ui-repeat.html`) gets the hidden
+  `#node-input-layoutId` + `#node-input-layout-preset` selector via the existing `installLayoutSelector`
+  (1:1 with ui-container); `nodes/webapp.js` maps the chosen preset into `props.layoutId` and registers
+  the repeat's layout in the model's `layouts` list; the renderer (`expandRepeat`) renders one
+  `container`-kind component per item (`<itemKey>#<repeatId>`) wrapping the cloned children in the
+  layout's regions, **reusing** `cloneTemplateSubtree` + `createContainerMountMatcher` +
+  `standardLayoutPresets` (consumed, not reimplemented). No-layoutId keeps the legacy P164 flat path
+  (p164/p192 untouched); a legacy repeat default-migrates to `vertical` and opens green.
+- **stats:** 10 files (8 changed, 2 new — renderer unit `p191-repeat-own-layout.test.ts` + fixture
+  `ui-repeat-layout.flow.json`). Develop verification: build exit 0; full unit green (schema 364,
+  editor 152, renderer **141** incl. 5 new P191, runtime 1049); `check:specs` green (ui-repeat still
+  allowlisted); **ui-repeat E2E 9/9 green** incl. both P191 layout proofs (per-item container under the
+  chosen grid layout with the `--grid` slot-body modifier; cloned children resolve `item.*` per row);
+  lint + validate + tripwires OK.
+- **notes:** **Orchestrator follow-up fix** (`phase/P191`, `nodes/webapp.js` only) — the first cut
+  passed the renderer unit test but the authoritative E2E showed the per-item container always rendered
+  with `--vertical`, never the chosen `--grid`. Root cause: the ui-repeat `mapConfig` never copied the
+  layout preset into the definition (unlike ui-container's `layout: config.layoutId`), so `buildAppSnapshot`
+  read `component.layout` as undefined and default-migrated every repeat to `vertical`. The renderer,
+  fixture, and test selector were all correct; only the config→definition mapping dropped it. Fixed with
+  one line (`layout: config.layoutId || config.layout`). The renderer unit test missed it for the same
+  reason as P192 — it hand-builds the model, skipping `mapConfig`. **Follow-up:** P195's `check:specs`
+  allowlists ui-repeat ("reconcile after P190/P191/P193") — once **P193** lands, make the ui-repeat spec
+  field-table conformant and drop it from the allowlist.
+- **cost:** session agent-a28d7f7c7830c0d30 (~28m) + fix session aec02c65df459d313 (~7m).
