@@ -16,7 +16,7 @@ verify: browser
 spec: docs/nodes/display/ui-repeat.md
 tests: tests/e2e/nodes/view/ui-repeat.tests.md
 dependencies: []
-status: in_progress
+status: done
 ---
 # P190 — ui-repeat items-Round-trip (Träger-id-Fix)
 
@@ -50,3 +50,26 @@ In `nodes/view/ui-repeat.html`:
   haben (typedInput direkt auf `#node-input-<property>` statt `*Binding`-Träger) —
   ggf. separat melden/fixen. ui-list ist die Referenz.
 - Reine Editor-Verdrahtung — **kein** Schema-/Renderer-Wechsel.
+
+## Result
+
+- **delivered:** Fixed the ui-repeat items round-trip bug. The items typedInput carrier now lives on
+  `#node-input-itemsBinding` (a separate DOM id), NOT on `#node-input-items` which collided with the
+  `items` property name — that collision let Node-RED's auto field-handling overwrite the binding object
+  with the raw JSON string, so on reopen `parseBindingValue` read nothing and the field showed blank.
+  Mirrors the ui-list (P171) carrier pattern exactly: `itemsBinding:{value:""}` default, the template
+  uses `#node-input-itemsBinding`, `oneditprepare` reads `this.items`→carrier, `oneditsave` maps the
+  carrier→`this.items` binding object; the `items` property has no colliding DOM field. The old comment
+  ("`#node-input-items` so the minimal-coverage E2E check passes") was a false rationale and is removed.
+- **stats:** 4 files (+146/−11); pure editor wiring — no schema/renderer/runtime change. Develop
+  verification: build exit 0; full unit **1049** green; **ui-repeat E2E 7/7 green** incl. the new P190
+  round-trip proof (set items binding → save → reopen → type+value still present, non-empty); the
+  ui-repeat showcase pilot re-verified green after its Step-4 selector was updated to the new id; lint +
+  validate + tripwires OK.
+- **notes:** Consumed the ui-list/P171 `itemsBinding` pattern (confirmed present before starting). The
+  package's follow-up note (other nodes that may still bind a typedInput directly on
+  `#node-input-<property>` rather than a `*Binding` carrier) is left as a separate candidate — P195's new
+  spec↔code conformance check is a natural home to catch that class. **Orchestration note:** the P190
+  sub-agent's `git switch` again leaked onto the main checkout (recurring with worktree phases); caught
+  it (the no-op "already up to date" merge), switched back to develop, and merged properly — no work lost.
+- **cost:** session agent-ab185488df58fbb01, ~8m.

@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P190** — nodes/ui-repeat — items-Round-trip-Bug: typedInput auf `#node-input-items` (= Property-id) → Node-RED clobbert das Binding, beim Wieder-Öffnen leer; Fix = separater `itemsBinding`-Träger wie ui-list — *Owner-Bug 2026-06-19* — [P190](nodes/ui-repeat/P190-items-typedinput-carrier-id-roundtrip-fix.md)
 - **P191** — nodes/ui-repeat — eigenes Layout (layoutId + Child-Layout-Selektor) für den content-Slot — konform zu ui-container/ui-route; geklonte Kinder bekommen ein Slot-Layout — *Owner 2026-06-19* — [P191](nodes/ui-repeat/P191-repeat-own-layout-container-conformance.md)
 - **P193** — nodes/ui-repeat — benannte Repeat-Scopes (itemName-Alias + item/index scope-qualifiziert) → äußeres Repeat-item bei Verschachtelung adressierbar (ADR 0023) — *braucht P192; Owner 2026-06-19* — [P193](nodes/ui-repeat/P193-named-repeat-scopes.md)
 - **P195** — aspects/test-infra — Spec↔Code-Konformitäts-Check (Feldtabelle vs. Schema/Node-Defaults; fängt Doc-Drift automatisch) + Naht-Verträge als first-class Doc — *Owner Q1 2026-06-19; ADR 0024* — [P195](aspects/test-infra/P195-spec-code-conformance-and-seam-contracts.md)
@@ -75,7 +74,7 @@ open the folder for the full history.
 | nodes/ui-image | 2 |
 | nodes/ui-pagination | 2 |
 | nodes/ui-tabs | 3 |
-| nodes/ui-repeat | 6 |
+| nodes/ui-repeat | 7 |
 | nodes/ui-stepper | 1 |
 | nodes/ui-menu | 1 |
 | nodes/ui-list | 6 |
@@ -96,4 +95,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 191 done, 4 open, 8 deferred.**
+**Total: 192 done, 3 open, 8 deferred.**
