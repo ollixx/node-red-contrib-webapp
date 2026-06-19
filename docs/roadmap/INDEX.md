@@ -32,7 +32,7 @@ their blocker clears.
 - **P186** — aspects/test-infra — Review-Video Quick-Win: Playwright video+trace+HTML-Report + on-demand `test:showcase` (sofort Videos der 74 Specs) — *ADR 0022, Stufe 1* — [P186](aspects/test-infra/P186-showcase-video-report-quickwin.md)
 - **P187** — aspects/test-infra — Showcase-Spec-Muster + Pilot (ui-list, ui-repeat, ui-query→ui-list): fixture-getriebene Feature-Tour mit Config-Dialog — *ADR 0022, Stufe 2; braucht P186* — [P187](aspects/test-infra/P187-showcase-spec-pattern-and-pilot.md)
 - **P188** — aspects/docs — Doc-Sync scope-lokale Binding-Arten: stores.md-Überblick + Per-Node-Value-Felder (ui-text …) auf editor.md §Scope-lokal verweisen statt 26× neu listen — *Owner-Drift 2026-06-19; editor.md §198 schon korrekt* — [P188](aspects/docs/P188-binding-kinds-doc-sync-scope-local.md)
-- **P189** — aspects/editor — Editor-UX: Item-/Prop-Pfadfeld erklären (Hinweis „Feldpfad · leer = ganzes Element"), damit niemand `item` als Wert tippt (→ item.item → `?`) — *Owner-Fallstrick 2026-06-19; P184 trägt die Auflösung* — [P189](aspects/editor/P189-item-prop-path-field-hint.md)
+- **P189** — aspects/editor — Editor-UX **+ Validierung**: Item-/Prop-Pfadfeld erklären (Hinweis „leer = ganzes Element") UND leeres item/index-Feld nicht mehr rot (`required:true` ist typ-blind → typ-bewusst delegieren) — *Owner-Fallstrick 2026-06-19; P184-Editor-Entsprechung* — [P189](aspects/editor/P189-item-prop-path-field-hint.md)
 
 
 ## Deferred (parked, not abandoned)

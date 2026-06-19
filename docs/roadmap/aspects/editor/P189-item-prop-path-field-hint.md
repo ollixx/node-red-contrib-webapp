@@ -1,14 +1,18 @@
 ---
 id: P189
-title: "Editor-UX: Item-/Prop-Pfadfeld erklären — Hinweis/Placeholder 'Feldpfad · leer = ganzes Element', damit niemand 'item' als Wert tippt (→ item.item → ?)"
+title: "Editor-UX + Validierung: Item-/Prop-Pfadfeld erklären (Hinweis 'Feldpfad · leer = ganzes Element') UND typ-bewusste Validierung — leeres item/index-Feld nicht mehr rot (required:true ist typ-blind)"
 epic: aspects/editor
 findings:
   - "Owner (2026-06-19): 'wenn ich in ui-text mit Type item als wert item eingebe, wird nichts angezeigt, bzw. ?. Das entspricht nicht der Definition in ui-repeat.'"
-  - "Diagnose: bei Typ 'Item (Repeat)' ist das Wertfeld der FELDPFAD im Element (das item.-Präfix IST der Typ). Wert 'item' → Pfad 'item' → item.item → existiert nicht → '?'. Ganzes Element = Feld LEER (P184, bereits gemergt). Das Feld gibt aber keinerlei Hinweis darauf → Bedien-Fallstrick."
+  - "Owner (2026-06-19): 'Ergänze dort auch, dass die Validierung nicht dazu passt. ein leeres Feld an der Stelle wird rot markiert.'"
+  - "Diagnose UX: bei Typ 'Item (Repeat)' ist das Wertfeld der FELDPFAD im Element (das item.-Präfix IST der Typ). Wert 'item' → Pfad 'item' → item.item → existiert nicht → '?'. Ganzes Element = Feld LEER (P184, bereits gemergt). Das Feld gibt aber keinerlei Hinweis darauf → Bedien-Fallstrick."
+  - "Diagnose Validierung: das Wert-Binding-Trägerfeld trägt im Knoten-HTML required: true (z. B. ui-text 'text: { value: \"\", required: true }') — TYP-BLIND. Bei Typ item (ganzes Element) / index (pfadlos) ist der Feldwert leer, und required:true markiert ihn ROT, obwohl leer hier gültig ist. Editor-Entsprechung zum P184-Schema-Fix (Server erlaubt leer schon, Editor noch nicht)."
 acceptance:
   - "Bei gewähltem Typ 'Item (Repeat)' (und 'Prop (Component)') zeigt das Wertfeld einen klaren Hinweis/Placeholder: sinngemäß 'Feldpfad (z. B. name, address.city) — leer = ganzes Element'."
   - "Der Hinweis erscheint nur, wenn der Typ tatsächlich item/prop ist; er stört die anderen Typen nicht."
   - "'Index (Repeat)' bleibt pfadlos (kein Wertfeld) — unverändert; ggf. ein kurzer Hinweis 'nullbasierte Position, kein Pfad'."
+  - "Validierung: ein LEERES Wertfeld bei Typ item (ganzes Element) bzw. index (pfadlos) wird NICHT mehr rot markiert und blockiert den Deploy nicht — konsistent zur Schema-Toleranz (P184). Das blunt 'required: true' am Binding-Trägerfeld wird durch eine TYP-BEWUSSTE Validierung ersetzt, die an die validate-Funktion des gewählten Binding-Typs delegiert (item/index erlauben leer; Daten-Typen wie state/query bleiben pflicht)."
+  - "Zentral/alle Knoten: der Fix sitzt im gemeinsamen Helfer (statt 26× 'required: true' am *Binding-Feld); Stichprobe an ui-text/ui-button/ui-list zeigt: leeres item-Feld grün, leeres state/query-Feld weiterhin rot."
   - "Klarstellung dokumentiert (ui-repeat-Spec / editor.md): das Editor-Wertfeld ist der Pfad NACH dem item., leer = ganzes Element — gegen den 'item als Wert tippen'-Fehlschluss."
 verify: browser
 spec: docs/nodes/display/ui-repeat.md
@@ -28,8 +32,14 @@ status: pending
    „Feldpfad (z. B. `name`, `address.city`) — leer = ganzes Element". Mechanik wie
    `installRepeatScopeHint` (dynamischer Hinweis bei Typwechsel) oder ein
    Placeholder auf dem Value-Input des Typs.
-2. **`index`** bleibt pfadlos; optional ein Mini-Hinweis „nullbasierte Position".
-3. **Doku-Klarstellung** (ui-repeat-Spec §„Im Editor" + editor.md): das Wertfeld
+2. **Typ-bewusste Validierung:** das blunt `required: true` am Wert-Binding-
+   Trägerfeld (z. B. ui-text `text`) durch eine Validierung ersetzen, die an die
+   `validate`-Funktion des **gewählten Binding-Typs** delegiert — `item`/`index`
+   (und whole-`prop`) erlauben leer, `state`/`query`/… bleiben pflicht. Als
+   **gemeinsamer Helfer** (`validateValueBindingField` o. ä.) statt 26× `required:
+   true`; in den `*Binding`-Feldern der Knoten einsetzen.
+3. **`index`** bleibt pfadlos; optional ein Mini-Hinweis „nullbasierte Position".
+4. **Doku-Klarstellung** (ui-repeat-Spec §„Im Editor" + editor.md): das Wertfeld
    trägt **nur den Pfad nach `item.`**; **leer = ganzes Element**; `item` als Wert
    bedeutet das Feld `item` (nicht das Element).
 
