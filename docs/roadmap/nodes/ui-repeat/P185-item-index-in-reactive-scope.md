@@ -15,7 +15,7 @@ verify: browser
 spec: docs/nodes/concepts/reactive-expressions.md
 tests: tests/e2e/nodes/view/ui-repeat.tests.md
 dependencies: [P184]
-status: pending
+status: in_progress
 ---
 # P185 — item/index in Reactive-Expressions
 

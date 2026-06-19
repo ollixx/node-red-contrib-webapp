@@ -13,7 +13,7 @@ verify: browser
 spec: docs/adr/0022-per-node-review-videos-fixture-driven-showcase.md
 tests: tests/e2e/nodes/view/ui-list.tests.md
 dependencies: []
-status: pending
+status: in_progress
 ---
 # P186 — Review-Video Quick-Win
 

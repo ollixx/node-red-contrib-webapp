@@ -14,7 +14,7 @@ verify: unit
 spec: docs/nodes/concepts/stores.md
 tests: tests/e2e/nodes/view/ui-text.tests.md
 dependencies: []
-status: pending
+status: in_progress
 ---
 # P188 — Doc-Sync: scope-lokale Binding-Arten
 
