@@ -260,6 +260,44 @@ test.describe("ui-repeat — own content-slot layout (P191)", () => {
 });
 
 /**
+ * P193 (ADR 0023) — named repeat scopes: an OUTER repeat's item is addressable by
+ * alias from a deeply-nested child, past an inner repeat. The fixture nests an
+ * `orderRepeat` (itemName="order", items bound to the OUTER customer's orders via
+ * `{kind:item, scope:"customer", path:"orders"}`) inside a `customerRepeat`
+ * (itemName="customer"). A child `ui-text` reads the OUTER customer name via
+ * `{kind:item, scope:"customer", path:"name"}`, the INNER order total via
+ * `{kind:item, scope:"order", path:"total"}`, and the bare innermost via
+ * `{kind:item, path:"total"}` (== order). Ada has 2 orders (10, 20), Linus has 1
+ * (30) — so the per-order interleaved sequence proves the outer name repeats
+ * correctly for each inner order while the inner total varies.
+ */
+test.describe("ui-repeat — outer item addressable by alias from a nested repeat (P193)", () => {
+    test.beforeAll(async ({ request }) => {
+        const flow = await loadFlowFixture("tests/e2e/fixtures/ui-repeat-named-scope.flow.json");
+        const response = await request.post("/flows", { data: flow });
+        expect(response.ok()).toBeTruthy();
+    });
+
+    test.afterAll(async ({ request }) => {
+        const baseline = await loadFlowFixture("examples/customers-crud/flow.json");
+        await request.post("/flows", { data: baseline });
+    });
+
+    test("a nested child reads the OUTER customer by alias and the INNER order by alias / bare", async ({ page }) => {
+        await page.goto("/webapp/repeatNamedApp/");
+
+        // Per inner-order clone, three texts in mount order:
+        //   outerName (scope:customer) , innerTotal (scope:order) , bareTotal (innermost==order)
+        // Ada → orders 10,20 ; Linus → order 30.
+        await expect(page.locator(".webapp-text")).toHaveText([
+            "Ada", "10", "10",
+            "Ada", "20", "20",
+            "Linus", "30", "30"
+        ]);
+    });
+});
+
+/**
  * P190 — items typedInput carrier-id round-trip fix.
  *
  * Before P190 the typedInput lived on `#node-input-items` (same id as the

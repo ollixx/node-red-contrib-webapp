@@ -245,6 +245,34 @@
   `color`, `size` N/A (mit Hinweis deaktiviert). Verdrahtet via `installBaseFields`
   / `applyBaseFields` (`BASE_FIELDS` in `nodes/view/ui-repeat.html`).
 
+## Benannte Repeat-Scopes (P193, ADR 0023) — abgedeckt (unit + E2E)
+
+> Schema: `packages/schema/test/p193-named-repeat-scopes.test.ts` —
+> `ui-repeat.itemName` (optionaler Alias) validiert; `item`/`index` mit optionalem
+> `scope`-Qualifizierer validieren; `scope` auf einer Nicht-`item`/`index`-Art
+> bleibt rot; scoped-item roundtrippt durch parse/serialize.
+> Renderer: `packages/renderer/test/p193-named-repeat-scopes.test.ts` —
+> verschachtelte Repeats (outer `customer` × inner `order`): scoped
+> `item:customer` löst die **äußere** Zeile, scoped `item:order` und bare
+> `item` die **innere**; scoped `index` analog; unmatched scope → fallback (kein
+> Wurf); innerer gleichnamiger Repeat überschattet den äußeren.
+> Editor: `packages/editor/test/p193-named-repeat-scopes.test.ts` —
+> `collectEnclosingRepeatAliases` sammelt umschließende benannte Aliase
+> (nearest-first, unbenannte übersprungen, dedupliziert); `valueBindingTypes`
+> bietet `Item (<alias>)` / `Index (<alias>)` je Alias (gegated wie P182, current
+> kind re-included); `applyValueBinding`/`readValueBinding` roundtrippen die
+> scope-qualifizierte Bindung; scoped-Typen validieren wie ihre bare-Art.
+
+- **Browser:** `tests/e2e/nodes/view/ui-repeat.spec.ts`
+  (describe „ui-repeat — outer item addressable by alias from a nested repeat (P193)").
+  Fixture `tests/e2e/fixtures/ui-repeat-named-scope.flow.json`: outer
+  `customerRepeat itemName="customer"` → inner `orderRepeat itemName="order"`
+  (items = `item:customer.orders`) → drei `ui-text`: `item:customer.name` (äußere),
+  `item:order.total` (innere), bare `item.total` (innerste == order). Ada (Orders
+  10, 20) + Linus (Order 30) → interleavte Sequenz
+  `Ada,10,10, Ada,20,20, Linus,30,30` beweist: der äußere Name wird je innerer
+  Order korrekt wiederholt, die innere Summe variiert.
+
 ## Showcase-Spec (P187, ADR 0022 §2)
 
 Pilot-Showcase-Spec: `tests/e2e/showcase/ui-repeat.showcase.spec.ts`

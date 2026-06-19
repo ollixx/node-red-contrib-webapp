@@ -226,7 +226,14 @@ export const uiRepeatNodeDefinitionSchema = mountableNodeSchema.extend({
     layout: standardLayoutPresetSchema.optional(),
     // Optional stable key field for the keyed morph (e.g. "id"). When omitted the
     // renderer keys instances by array index.
-    keyField: z.string().min(1, "ui-repeat keyField must not be empty when set.").optional()
+    keyField: z.string().min(1, "ui-repeat keyField must not be empty when set.").optional(),
+    // P193 (ADR 0023): an optional ALIAS naming this repeat's item scope (the
+    // `v-for="customer in customers"` model). When set (e.g. "customer") any
+    // descendant can address THIS repeat's item by name via a scope-qualified
+    // `item`/`index` binding (`{kind:"item", scope:"customer", path:"name"}`),
+    // regardless of inner repeats sitting between. Empty/absent → only the generic
+    // innermost item/index sugar, today's behaviour verbatim (backward compatible).
+    itemName: z.string().min(1, "ui-repeat itemName must not be empty when set.").optional()
 });
 
 export type UiRepeatNodeDefinition = z.infer<typeof uiRepeatNodeDefinitionSchema>;
