@@ -15,7 +15,7 @@ verify: browser
 spec: docs/nodes/concepts/reactive-expressions.md
 tests: tests/e2e/nodes/view/ui-repeat.tests.md
 dependencies: [P184]
-status: in_progress
+status: done
 ---
 # P185 — item/index in Reactive-Expressions
 
@@ -55,3 +55,24 @@ Scope ist **pro Instanz**.
   **ADR-würdiger** Punkt (Reactive × Render-Zeit-Scope) — dann zurückmelden statt
   raten.
 - Scope-Gating der Anzeige folgt [[P182]] (item/index/prop nur im passenden Scope).
+
+## Result
+
+- **delivered:** `item`/`index`/`prop` are now reachable inside **reactive expressions** with correct
+  per-instance scope. (1) Renderer: `evaluateReactiveExpression` binds `item`/`index`/`prop` as locals,
+  and the `reactive` case in `renderer.ts` injects the innermost `itemScope`/`propScope` frame — one
+  compiled expression yields each clone its own value; outside any repeat/component the names resolve to
+  `undefined` (no throw). (2) Editor: autocomplete + the reactive doc-panel offer `item`/`index` (in a
+  `ui-repeat`) and `prop` (in a `ui-component-definition`) via a new `reactiveScopeGlobals(ctx)`,
+  scope-gated through P182's `currentEditorScope()`; `item.`/`prop.` member dots pass through. (3)
+  Doc `docs/nodes/concepts/reactive-expressions.md` updated (table + section + example + completion note).
+- **stats:** 9 files (6 changed, 3 new); +462/−7. Unit: new `p185-item-index-in-reactive.test.ts`
+  (renderer — per-instance resolution + outside-scope undefined) + `p185-reactive-scope-globals.test.ts`
+  (editor — scope-gating). Develop verification: build exit 0; full unit green (**renderer 122, editor
+  142, runtime 1046**); **ui-repeat E2E 4/4 green** incl. the P185 proof — a reactive
+  `${index}: ${item.name}` renders three distinct rows from one expression (fixture
+  `ui-repeat-reactive.flow.json`); lint + validate + tripwires OK.
+- **notes:** Builds on P184's `itemScope`/`propScope` plumbing (confirmed present before starting).
+  Reactive-syntax validation needed no change — `new Function` accepts `item`/`index`/`prop` as free
+  identifiers. Stayed within the wave's file ownership (no stores.md/editor.md/playwright/package.json).
+- **cost:** session agent-a4ccc553fdfcba33e, ~6m.
