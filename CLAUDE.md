@@ -41,6 +41,14 @@ pnpm exec playwright test
 # Run a specific E2E spec
 pnpm exec playwright test tests/e2e/customers-crud.spec.ts
 
+# Run the showcase (video + trace + HTML report) — on-demand review; NOT for CI
+# Produces test-results/ (videos per test) and playwright-report/ (HTML report
+# with embedded video + clickable trace). Set SHOWCASE=1 or use this script.
+pnpm test:showcase
+
+# Open the HTML report after a showcase run (or: open playwright-report/index.html)
+pnpm show-report
+
 # Start the dev Node-RED instance on port 1881
 pnpm dev:start
 

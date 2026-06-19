@@ -9,10 +9,16 @@ const seedStep = seedBaseline
     ? "cp examples/customers-crud/flow.json .node-red-e2e/flows.json && "
     : "";
 
+// P186: SHOWCASE=1 enables video + trace + HTML report for on-demand review runs.
+// Normal runs (CI, pnpm exec playwright test) stay video-free for speed.
+const isShowcase = process.env.SHOWCASE === "1";
+
 export default defineConfig({
     testDir: "./tests/e2e",
     fullyParallel: false,
     workers: 1,
+    // HTML reporter is used in showcase mode; default list reporter otherwise.
+    reporter: isShowcase ? [["html", { open: "never" }]] : [["list"]],
     // @integration-tagged specs (the customers-crud smoke + fixture guards) are
     // excluded from the default run and gated behind E2E_INTEGRATION=1 instead.
     // NOTE: a CLI `--grep` does NOT replace config grep/grepInvert — they AND
@@ -23,7 +29,13 @@ export default defineConfig({
         ? { grep: /@integration/ }
         : { grepInvert: /@integration/ }),
     use: {
-        baseURL: "http://127.0.0.1:1882"
+        baseURL: "http://127.0.0.1:1882",
+        // Showcase mode: record video + trace for every test so the HTML report
+        // embeds reviewable footage and a clickable step-by-step DOM trace.
+        // Default mode: no video/trace (fast, disk-friendly, safe for CI).
+        ...(isShowcase
+            ? { video: "on", trace: "on" }
+            : {})
     },
     webServer: {
         // The E2E userDir uses a committed, owner-private-free settings file
