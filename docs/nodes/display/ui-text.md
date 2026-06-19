@@ -42,7 +42,7 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `value` | (typedInput, Default `string`) | typedInput (Binding) | **ja** | Der anzuzeigende Wert. Nutzt den **kanonischen Value-Binding-Typ-Satz** (P113 / ADR 0012 / ADR 0010): Store, Query, Route-Param, Reactive, msg, JSONata, string, number, boolean, json, timestamp, Flow, Global, Env — Reihenfolge + Semantik in [editor.md](../concepts/editor.md) und [stores.md](../concepts/stores.md), Kategorien unter „Wert-Quellen" unten. Binding-Serialisierung kommt aus dem gemeinsamen Helfer (`valueBindingTypes`/`readValueBinding`/`applyValueBinding`). Leer-/`null`-/Non-Skalar-Verhalten (`""` → leerer Text; `null`/`undefined`/Objekt/Array → `"?"`; `0`/`false` sind gültig): siehe [value-rendering.md](../concepts/value-rendering.md). |
+| `value` | (typedInput, Default `string`) | typedInput (Binding) | **ja** | Der anzuzeigende Wert. Nutzt den **kanonischen Value-Binding-Typ-Satz** (P113 / ADR 0012 / ADR 0010) — Reihenfolge + Semantik in [editor.md](../concepts/editor.md) und [stores.md](../concepts/stores.md), Kategorien unter „Wert-Quellen" unten. Binding-Serialisierung kommt aus dem gemeinsamen Helfer (`valueBindingTypes`/`readValueBinding`/`applyValueBinding`). Scope-lokale Typen (`item`, `index` bei `ui-repeat`; `prop` in einer Component-Definition) erscheinen zusätzlich im Dropdown, wenn der Knoten im passenden Scope hängt — auf einem freistehenden `ui-text` sind sie by design ausgeblendet (P182, [stores.md → Scope-lokale Binding-Arten](../concepts/stores.md#scope-lokale-binding-arten-p182-adr-0017--adr-0020)). Leer-/`null`-/Non-Skalar-Verhalten (`""` → leerer Text; `null`/`undefined`/Objekt/Array → `"?"`; `0`/`false` sind gültig): siehe [value-rendering.md](../concepts/value-rendering.md). |
 | `style` | „Style" | SelectBox (`TEXT_STYLES`) | optional | Typografische **Rolle** des Textes; mappt 1:1 auf ein semantisches HTML-Element. Werte: `heading-1` (`<h1>`), `heading-2` (`<h2>`), `heading-3` (`<h3>`), `body` (`<p>`), `caption` (`<small>`), `label` (`<span>`), `code` (`<code>`). Default: `body`. Bestimmt Größe/Gewicht/Schriftfamilie, **nicht** die Farbe. |
 | `variant` | „Variante" | Variant-SelectBox (`TEXT_COLOR_VARIANTS`) | optional | Semantische **Farbe** des Textes — gleiches Vokabular-Prinzip wie `ui-button`/`ui-badge`/`ui-alert`. Werte: `default` (erbt die Textfarbe), `muted`, `primary`, `success`, `warning`, `danger`, `neutral`. Default: `default`. Mappt auf die `--wa-color-*` Tokens — Details: [theming.md](../concepts/theming.md). |
 
@@ -69,7 +69,7 @@ ein Link auf die ausführliche Doku. Empfohlener Link:
 Seit **P113 (ADR 0012 / ADR 0010)** nutzt `value` den **kanonischen
 Value-Binding-Typ-Satz** (14 Typen in fester Reihenfolge; Default `string`) —
 siehe [editor.md](../concepts/editor.md) und [stores.md](../concepts/stores.md).
-Die Quellen fallen konzeptionell in **vier Kategorien**:
+Die Quellen fallen konzeptionell in **fünf Kategorien**:
 
 1. **Reaktive Bindung** (`store`, `query`, `routeParam`, `reactive`) — der Text ist
    an einen *lebenden* Frontend-Wert gebunden und re-rendert, sobald sich dieser
@@ -87,6 +87,11 @@ Die Quellen fallen konzeptionell in **vier Kategorien**:
    `payload.user.name`). Vor der ersten passenden Message rendert das Feld **leer**
    (nicht `"?"`); der zuletzt gelesene/ausgewertete Wert wird **backend-seitig** in
    der Live-Definition gehalten und von allen Clients geteilt.
+5. **Scope-lokal** (`item`, `index`, `prop`) — erscheint **nur im Editor**, wenn der
+   Knoten (transitiv) in einem `ui-repeat` (`item`/`index`) oder einer
+   Component-Definition (`prop`) hängt. Auf einem freistehenden `ui-text` sind diese
+   Typen by design ausgeblendet — kein Fehler, sondern absichtliches Kontext-Gating
+   (P182). Details: [stores.md → Scope-lokale Binding-Arten](../concepts/stores.md#scope-lokale-binding-arten-p182-adr-0017--adr-0020).
 
 > **P113-Umkehr:** Die Editor-Option `jsonata` war mit P111 entfernt worden (damals
 > nicht auflösbar) und **kehrt mit P113 zurück** — nun **message-getrieben** (gegen

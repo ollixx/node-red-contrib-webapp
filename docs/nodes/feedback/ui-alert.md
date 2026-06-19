@@ -36,11 +36,11 @@ Binding-Arten, Node-Picker-Dialog, SelectBox).
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `message` | „Message" | typedInput (alle Binding-Arten inkl. `store`) | **ja** | Anzeigetext der Alert. Unterstützt `literal`, `state`, `store`, `query`, `routeParam`, `msg`, `flow`, `global`, `jsonata`, `env`. Der `store`-Typ referenziert einen `ui-store`-Knoten per Picker (P68); der Renderer löst ihn über dessen `statePath` auf. Leer-/`null`-/Non-Skalar-Verhalten des aufgelösten Werts (`""` → leer; `null`/`undefined`/Objekt/Array → `"?"`; `0`/`false` sind gültig): siehe [value-rendering.md](../concepts/value-rendering.md). |
-| `title` | „Title" | typedInput (alle Binding-Arten inkl. `store`) | optional | Optionaler Titel über dem Meldungstext. Gleiche Binding-Arten wie `message`. Leer gelassen → kein Titel-Bereich gerendert. |
+| `message` | „Message" | typedInput (voller Binding-Satz) | **ja** | Anzeigetext der Alert. Nutzt den kanonischen Value-Binding-Typ-Satz (inkl. scope-lokaler Typen im passenden Scope) — siehe [stores.md](../concepts/stores.md#der-kanonische-value-binding-typ-satz-editor--adr-0012--adr-0010). Der `store`-Typ referenziert einen `ui-store`-Knoten per Picker (P68); der Renderer löst ihn über dessen `statePath` auf. Leer-/`null`-/Non-Skalar-Verhalten des aufgelösten Werts (`""` → leer; `null`/`undefined`/Objekt/Array → `"?"`; `0`/`false` sind gültig): siehe [value-rendering.md](../concepts/value-rendering.md). |
+| `title` | „Title" | typedInput (voller Binding-Satz) | optional | Optionaler Titel über dem Meldungstext. Gleiche Binding-Arten wie `message`. Leer gelassen → kein Titel-Bereich gerendert. |
 | `severity` | „Severity" | SelectBox | optional | Semantische Farbrolle der Alert. Werte aus `SEVERITY_VARIANTS`: `primary` (Default), `success`, `warning`, `danger`, `neutral`, `info`. `info` ist ein eigenständiger Wert. Bestimmt gemeinsam mit den Design-Tokens des `ui-app` die Darstellungsfarbe. |
 | `dismissible` | „Dismissible" | Checkbox | optional | Wenn aktiv, zeigt die Alert ein Schließen-Icon; der Nutzer kann die Alert wegklicken. Das Dismiss-Ereignis wird auf dem Output-Port emittiert. Default: `false`. |
-| `icon` | „Icon" | SelectBox / Freitext | optional | Steuert das Icon im Shoelace-`icon`-Slot. `"auto"` → Severity-abhängiges Bootstrap-Icon: `primary`/`info` → `info-circle`, `success` → `check-circle`, `warning` → `exclamation-triangle`, `danger` → `x-circle`, `neutral` → `circle`. `"none"` oder leer (Default) → kein Icon. Jeder andere Wert wird als Icon-Name (z. B. `"bell"`) oder `{ library, name }`-Objekt interpretiert. Das Feld ist binding-fähig (alle Binding-Arten, wie `message`). |
+| `icon` | „Icon" | SelectBox / Freitext | optional | Steuert das Icon im Shoelace-`icon`-Slot. `"auto"` → Severity-abhängiges Bootstrap-Icon: `primary`/`info` → `info-circle`, `success` → `check-circle`, `warning` → `exclamation-triangle`, `danger` → `x-circle`, `neutral` → `circle`. `"none"` oder leer (Default) → kein Icon. Jeder andere Wert wird als Icon-Name (z. B. `"bell"`) oder `{ library, name }`-Objekt interpretiert. Das Feld ist binding-fähig (voller Binding-Satz wie `message`). |
 | `duration` | „Duration (ms)" | Zahlfeld (positiver Integer) | optional | Blendet die Alert nach der angegebenen Anzahl Millisekunden automatisch aus. Leer lassen = kein Auto-Hide. Shoelace-Backend: natives `duration`-Attribut auf `<sl-alert>`. Andere Backends ohne native Unterstützung nutzen einen JS-Timeout-Fallback. Backend-neutral und offen für weitere Backends. |
 | `countdown` | „Countdown" | Checkbox | optional | Zeigt einen Fortschrittsbalken, der die verbleibende Zeit anzeigt. Nur sinnvoll in Kombination mit `duration`. Shoelace-Backend: natives `countdown="ltr"`-Attribut auf `<sl-alert>`. Andere Backends nutzen einen JS/CSS-Animationsfallback (Bootstrap-Doku-Muster). Default: `false`. |
 
@@ -96,10 +96,12 @@ da Alerts eine Status-/Schweregrad-Semantik tragen.
 ## Besonderheiten
 
 - **Vollständige Bindbarkeit.** Sowohl `message` als auch `title` sind
-  typedInput-Bindings (alle Binding-Arten inkl. `store` per Picker P68). Statische
-  Strings werden als `{ kind: "literal", value }` persistiert — die Node-RED-Defaults-
-  Auto-Übernahme wird durch ein separates Binding-Feld verhindert (Muster wie bei
-  `ui-text`).
+  typedInput-Bindings (kanonischer Value-Binding-Typ-Satz inkl. `store` per Picker
+  P68; scope-lokale Typen `item`/`index`/`prop` erscheinen zusätzlich im passenden
+  Scope — [stores.md](../concepts/stores.md#scope-lokale-binding-arten-p182-adr-0017--adr-0020)).
+  Statische Strings werden als `{ kind: "literal", value }` persistiert — die
+  Node-RED-Defaults-Auto-Übernahme wird durch ein separates Binding-Feld verhindert
+  (Muster wie bei `ui-text`).
 - **`visible`-Binding.** Steuert die Sichtbarkeit deklarativ über den State oder
   einen Store, ohne explizite `show`/`hide`-Actions zu benötigen.
 - **Duration/Countdown — backend-neutral.** Das `duration`-Feld und `countdown`
