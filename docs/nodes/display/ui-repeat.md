@@ -117,6 +117,20 @@ P165):
   Per-Instanz-Ids verketten beide Ebenen (`<aussenKey>#<innenKey>#<childId>`),
   kollisionsfrei. Eine **explizite** Benennung der äußeren Ebene ist Folgearbeit
   (s. Offene Punkte).
+- **Scope durch Kind-tragende Knoten (P192):** Der Item-Scope erreicht **nicht nur
+  die direkten** Template-Kinder, sondern propagiert durch **jeden Kind-tragenden
+  Knoten** im Template — `ui-container`, `ui-tabs`/`ui-tab`,
+  `ui-accordion`/`ui-accordion-section` (sowie verschachtelte `ui-repeat` und
+  `ui-component-instance`). Der Renderer klont das **gesamte Template-Subtree** je
+  Item: Scope **und** die Per-Instanz-Re-Id (`<itemKey>#…`) propagieren über die
+  jeweilige Mount-Konvention bis zu den Blättern, sodass ein `ui-text` mit
+  `item.<feld>`/`index` **innerhalb** eines Containers (Tab, Accordion-Section …)
+  im Repeat gegen das Element des **nächst höheren** Repeats auflöst — je Instanz
+  unterschiedlich. Die geklonten Container und alle Nachfahren tragen den
+  `<itemKey>#…`-Präfix konsistent, sodass innere Mounts **innerhalb** des Klons
+  auflösen (kein Verweis aufs Original) und das keyed Morphing stabil bleibt.
+  Strukturknoten (`ui-app`/`ui-route`/`ui-dialog`) sind **keine** Repeat-Kinder
+  (top-level gemountet) und damit außerhalb dieses Scopes.
 
 ## Offene Punkte
 

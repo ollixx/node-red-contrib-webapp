@@ -1,0 +1,93 @@
+[
+  {
+    "type": "tab",
+    "id": "repeatContainerFlow",
+    "label": "Repeat Container"
+  },
+  {
+    "type": "ui-app",
+    "id": "repeatContainerApp",
+    "name": "Repeat Container App",
+    "root": "repeatContainerApp",
+    "layout": "app",
+    "title": "Repeat Container",
+    "z": "repeatContainerFlow",
+    "wires": [],
+    "x": 200,
+    "y": 120
+  },
+  {
+    "type": "ui-store",
+    "id": "rowsStore",
+    "name": "Rows",
+    "parent": "repeatContainerApp",
+    "statePath": "rows",
+    "initialValue": "[{\"name\":\"Ada\",\"city\":\"London\"},{\"name\":\"Linus\",\"city\":\"Helsinki\"}]",
+    "z": "repeatContainerFlow",
+    "wires": [],
+    "x": 200,
+    "y": 180
+  },
+  {
+    "type": "ui-repeat",
+    "id": "rowsRepeat",
+    "name": "Rows Repeat",
+    "parent": "repeatContainerApp",
+    "mount": "repeatContainerApp.content",
+    "order": 0,
+    "items": {
+      "kind": "store",
+      "path": "rowsStore"
+    },
+    "keyField": "name",
+    "z": "repeatContainerFlow",
+    "wires": [],
+    "x": 200,
+    "y": 240
+  },
+  {
+    "type": "ui-container",
+    "id": "rowBox",
+    "name": "Row Box",
+    "parent": "rowsRepeat",
+    "mount": "container:rowsRepeat/content",
+    "order": 0,
+    "layout": "horizontal",
+    "z": "repeatContainerFlow",
+    "wires": [],
+    "x": 200,
+    "y": 300
+  },
+  {
+    "type": "ui-text",
+    "id": "rowName",
+    "name": "Row name",
+    "parent": "rowBox",
+    "mount": "container:rowBox/content",
+    "order": 0,
+    "value": {
+      "kind": "item",
+      "path": "name"
+    },
+    "z": "repeatContainerFlow",
+    "wires": [],
+    "x": 200,
+    "y": 360
+  },
+  {
+    "type": "ui-text",
+    "id": "rowCity",
+    "name": "Row city",
+    "parent": "rowBox",
+    "mount": "container:rowBox/content",
+    "order": 1,
+    "value": {
+      "kind": "item",
+      "path": "city"
+    },
+    "z": "repeatContainerFlow",
+    "wires": [],
+    "x": 200,
+    "y": 420
+  }
+]
