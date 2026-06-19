@@ -13,7 +13,7 @@ verify: unit
 spec: docs/nodes/concepts/editor.md
 tests: tests/e2e/nodes/view/ui-repeat.tests.md
 dependencies: []
-status: in_progress
+status: done
 ---
 # P195 — Spec↔Code-Konformität + Naht-Verträge
 
@@ -54,3 +54,35 @@ status: in_progress
   als kurze Fix-Liste an die betroffenen Node-Epics, nicht hier alles miterledigen.
 - Ergänzt — ersetzt nicht — die ausführbaren Verträge aus ADR 0024/P194 (Verhalten)
   und das Zod-Schema (Datenform).
+
+## Result
+
+- **delivered:** (1) **Spec↔Code conformance tripwire** — `scripts/check-specs.js` (`pnpm check:specs`,
+  wired into `pnpm validate`) + a vitest unit `scripts/check-specs.test.ts` (6 tests incl. a deliberate-
+  drift fixture proving it goes red). Per `ui-*` node it parses the editor `defaults` keys from
+  `<node>.html` and checks **bidirectionally** against the spec's canonical field-table: every defaults
+  key is named in the spec, and every spec field exists in code (no phantoms). Header-gated parsing
+  ignores sub-tables (item schemas, enum/`Wert` tables), struck-through removed-field rows, and
+  binding-carrier twins. Result on develop: **39 nodes checked, 3 allowlisted, GREEN.** (2) **Seam-
+  contracts doc** — new `docs/nodes/concepts/composition.md` capturing the four container invariants
+  (scope propagation through every child-bearing node, unique mount, unique per-instance re-id, slot-
+  layout), linked to ADR 0024 + the P194 executable properties, and linked FROM ui-container/ui-tabs/
+  ui-accordion specs + the concepts index (deliberately NOT from ui-repeat.md — owned by concurrent
+  P190/P191/P193).
+- **drift caught & fixed (first run ~80 issues → reconciled):** real doc-drift corrected in specs —
+  `layout`→`layoutId` (ui-container/ui-dialog/ui-route), `variant`("Orientation")→`orientation`
+  (ui-stepper), `activeItem`→`activeRoute` (ui-menu), and added missing `size` (ui-input/select/
+  textarea) + `events` (ui-tabs) rows. The remainder went into a **curated allowlist** with one-line
+  reasons: category rules (layout/placement boilerplate, `parent`/`uiId`/`outputs` plumbing, typedInput
+  carrier suffixes only when their base key is real), node-level (`ui-repeat` "reconcile after P190/
+  P191/P193", the two ui-component stub docs), and 8 spec-ahead/planned fields.
+- **stats:** 16 files (2 new scripts, composition.md, 11 spec/doc edits, package.json, node-testing.md);
+  +6 unit tests; +1 friction-log line. Develop verification: build exit 0; `pnpm check:specs` green
+  (39/3 allowlisted); check:links (106 md) + check:roadmap green; full unit suite green; `pnpm validate`
+  (now incl. check:specs) GREEN. verify: unit (the check IS the verification).
+- **notes:** Lane-safe — no ui-repeat.md/.html, webapp.js, editor-common.js, packages/** source, or
+  docs/roadmap/** touched. **Follow-up:** once P190/P191/P193 land, remove `ui-repeat` from the
+  check:specs allowlist and make its spec field-table conformant (the allowlist comment flags this).
+  Spec docs are forward-looking requirement docs, so the phantom-direction is allowlisted for planned
+  fields while the undocumented-code-field direction stays strict.
+- **cost:** session agent-a60a401b60de86b85, ~25m.
