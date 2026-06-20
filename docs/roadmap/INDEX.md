@@ -27,8 +27,8 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
+_No open work — the roadmap is drained. New work is added here as packages are authored._
 
-- **P197** — nodes/ui-repeat — variant-Feld (CONTAINER_VARIANTS) wie ui-container, Default transparent — konform; braucht P198 — *Owner 2026-06-20* — [P197](nodes/ui-repeat/P197-repeat-variant-container-conformance.md)
 
 ## Deferred (parked, not abandoned)
 
@@ -73,7 +73,7 @@ open the folder for the full history.
 | nodes/ui-image | 2 |
 | nodes/ui-pagination | 2 |
 | nodes/ui-tabs | 3 |
-| nodes/ui-repeat | 10 |
+| nodes/ui-repeat | 11 |
 | nodes/ui-stepper | 1 |
 | nodes/ui-menu | 1 |
 | nodes/ui-list | 6 |
@@ -95,4 +95,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 197 done, 1 open, 8 deferred.**
+**Total: 198 done, 0 open, 8 deferred.**
