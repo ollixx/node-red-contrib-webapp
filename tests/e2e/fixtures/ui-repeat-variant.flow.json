@@ -1,0 +1,101 @@
+[
+  {
+    "type": "tab",
+    "id": "repeatVariantFlow",
+    "label": "Repeat Variant"
+  },
+  {
+    "type": "ui-app",
+    "id": "repeatVariantApp",
+    "name": "Repeat Variant App",
+    "root": "repeatVariantApp",
+    "layout": "app",
+    "title": "Repeat Variant",
+    "z": "repeatVariantFlow",
+    "wires": [],
+    "x": 200,
+    "y": 120
+  },
+  {
+    "type": "ui-store",
+    "id": "variantRowsStore",
+    "name": "Variant Rows",
+    "parent": "repeatVariantApp",
+    "statePath": "variantRows",
+    "initialValue": "[{\"name\":\"Ada\"},{\"name\":\"Linus\"}]",
+    "z": "repeatVariantFlow",
+    "wires": [],
+    "x": 200,
+    "y": 180
+  },
+  {
+    "type": "ui-repeat",
+    "id": "cardRepeat",
+    "name": "Card Repeat",
+    "parent": "repeatVariantApp",
+    "mount": "repeatVariantApp.content",
+    "order": 0,
+    "items": {
+      "kind": "store",
+      "path": "variantRowsStore"
+    },
+    "layout": "vertical",
+    "variant": "card",
+    "keyField": "name",
+    "z": "repeatVariantFlow",
+    "wires": [],
+    "x": 200,
+    "y": 240
+  },
+  {
+    "type": "ui-text",
+    "id": "cardName",
+    "name": "Card name",
+    "parent": "cardRepeat",
+    "mount": "container:cardRepeat/content",
+    "order": 0,
+    "value": {
+      "kind": "item",
+      "path": "name"
+    },
+    "z": "repeatVariantFlow",
+    "wires": [],
+    "x": 200,
+    "y": 300
+  },
+  {
+    "type": "ui-repeat",
+    "id": "transparentRepeat",
+    "name": "Transparent Repeat",
+    "parent": "repeatVariantApp",
+    "mount": "repeatVariantApp.content",
+    "order": 1,
+    "items": {
+      "kind": "store",
+      "path": "variantRowsStore"
+    },
+    "layout": "vertical",
+    "variant": "transparent",
+    "keyField": "name",
+    "z": "repeatVariantFlow",
+    "wires": [],
+    "x": 200,
+    "y": 360
+  },
+  {
+    "type": "ui-text",
+    "id": "transparentName",
+    "name": "Transparent name",
+    "parent": "transparentRepeat",
+    "mount": "container:transparentRepeat/content",
+    "order": 0,
+    "value": {
+      "kind": "item",
+      "path": "name"
+    },
+    "z": "repeatVariantFlow",
+    "wires": [],
+    "x": 200,
+    "y": 420
+  }
+]

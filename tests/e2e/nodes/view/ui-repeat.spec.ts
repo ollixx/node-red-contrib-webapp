@@ -260,6 +260,73 @@ test.describe("ui-repeat — own content-slot layout (P191)", () => {
 });
 
 /**
+ * P197 (Owner 2026-06-20) — ui-repeat is a full container after P191, so it carries
+ * the semantic container `variant` (CONTAINER_VARIANTS) like ui-container. The
+ * per-item content-layout-region wrapper renders through the SAME container-variant
+ * source as ui-container (P198): variant=card frames each item-region as an
+ * <sl-card>; variant=transparent adds NO chrome (plain <div>, webapp-container--
+ * transparent). The fixture has two repeats over the same store — `cardRepeat`
+ * (variant=card) and `transparentRepeat` (variant=transparent) — so a single page
+ * proves both: each Ada/Linus card-row is an sl-card, each transparent-row is a
+ * chrome-less div, keyed by `name` (itemKey × repeatId).
+ */
+test.describe("ui-repeat — container variant on the per-item wrapper (P197)", () => {
+    test.beforeAll(async ({ request }) => {
+        const flow = await loadFlowFixture("tests/e2e/fixtures/ui-repeat-variant.flow.json");
+        const response = await request.post("/flows", { data: flow });
+        expect(response.ok()).toBeTruthy();
+    });
+
+    test.afterAll(async ({ request }) => {
+        const baseline = await loadFlowFixture("examples/customers-crud/flow.json");
+        await request.post("/flows", { data: baseline });
+    });
+
+    test("variant=card frames each per-item region as an sl-card", async ({ page }) => {
+        await page.goto("/webapp/repeatVariantApp/");
+
+        // One per-item container per row, keyed by `name` (itemKey × repeatId).
+        const adaCard = page.locator('[data-webapp-node="Ada#cardRepeat"]');
+        const linusCard = page.locator('[data-webapp-node="Linus#cardRepeat"]');
+        await expect(adaCard).toHaveCount(1);
+        await expect(linusCard).toHaveCount(1);
+
+        // P198 card source: the per-item region is an <sl-card> with the card class.
+        await expect(adaCard.locator("sl-card.webapp-container--card")).toHaveCount(1);
+        await expect(linusCard.locator("sl-card.webapp-container--card")).toHaveCount(1);
+        await expect(adaCard.locator("sl-card")).toContainText("Ada");
+        await expect(linusCard.locator("sl-card")).toContainText("Linus");
+    });
+
+    test("variant=transparent adds NO card chrome around the clones (plain div)", async ({ page }) => {
+        await page.goto("/webapp/repeatVariantApp/");
+
+        const adaPlain = page.locator('[data-webapp-node="Ada#transparentRepeat"]');
+        const linusPlain = page.locator('[data-webapp-node="Linus#transparentRepeat"]');
+        await expect(adaPlain).toHaveCount(1);
+        await expect(linusPlain).toHaveCount(1);
+
+        // P198 transparent source: a plain <div> with the transparent class, and NO
+        // sl-card chrome inside the per-item wrapper.
+        await expect(adaPlain.locator("div.webapp-container--transparent")).toHaveCount(1);
+        await expect(adaPlain.locator("sl-card")).toHaveCount(0);
+        await expect(linusPlain.locator("sl-card")).toHaveCount(0);
+        await expect(adaPlain).toContainText("Ada");
+        await expect(linusPlain).toContainText("Linus");
+    });
+
+    test("round-trip: each chosen variant renders distinct chrome on the same page", async ({ page }) => {
+        await page.goto("/webapp/repeatVariantApp/");
+
+        // card repeat → sl-cards present; transparent repeat → none of its rows are cards.
+        await expect(page.locator('[data-webapp-node="Ada#cardRepeat"] sl-card')).toHaveCount(1);
+        await expect(page.locator('[data-webapp-node="Ada#transparentRepeat"] sl-card')).toHaveCount(0);
+        // Both repeats render their item.name text (same store, two looks).
+        await expect(page.locator(".webapp-text")).toContainText(["Ada", "Linus", "Ada", "Linus"]);
+    });
+});
+
+/**
  * P193 (ADR 0023) — named repeat scopes: an OUTER repeat's item is addressable by
  * alias from a deeply-nested child, past an inner repeat. The fixture nests an
  * `orderRepeat` (itemName="order", items bound to the OUTER customer's orders via
