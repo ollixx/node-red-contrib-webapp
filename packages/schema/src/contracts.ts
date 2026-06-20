@@ -790,7 +790,7 @@ export const TEXT_COLOR_VARIANTS = [
     "neutral"
 ] as const;
 
-export const CONTAINER_VARIANTS = ["card", "panel", "section", "transparent"] as const;
+export const CONTAINER_VARIANTS = ["card", "panel", "section", "transparent", "span"] as const;
 
 export const INPUT_VARIANTS = ["default", "filled", "outlined"] as const;
 

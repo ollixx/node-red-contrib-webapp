@@ -42,10 +42,10 @@
         // P111: ui-text `variant` is the semantic COLOUR axis (the typographic
         // role moved to the separate `style` field → TEXT_STYLE_OPTIONS below).
         text: ["default", "muted", "primary", "success", "warning", "danger", "neutral"],
-        container: ["card", "panel", "section", "transparent"],
-        card: ["card", "panel", "section", "transparent"],
+        container: ["card", "panel", "section", "transparent", "span"],
+        card: ["card", "panel", "section", "transparent", "span"],
         // P197: ui-repeat is a full container after P191 — same CONTAINER_VARIANTS.
-        repeat: ["card", "panel", "section", "transparent"],
+        repeat: ["card", "panel", "section", "transparent", "span"],
         input: ["default", "filled", "outlined"],
         badge: ["primary", "success", "warning", "danger", "neutral", "info"],
         alert: ["primary", "success", "warning", "danger", "neutral", "info"]
