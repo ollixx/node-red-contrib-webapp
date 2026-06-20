@@ -35,14 +35,38 @@ The renderer resolves a scoped binding against the **named frame** in the scope
 stack (each frame carries its repeat's `itemName`); an unscoped `item`/`index`
 resolves against the **top** frame as today.
 
-### 3. Editor: enclosing aliases appear as binding types (gated like P182)
+### 3. Editor: a validated Scope picker + a reactive `scope()` accessor (NOT one type per alias)
 
-The editor already walks the mount ancestry to gate scope-local kinds
-(`mountIsInsideRepeat`, P182). It now **collects the aliases** of all enclosing
-named repeats and offers each as a binding type (e.g. "customer (Repeat)") with a
-path field — exactly the P182 gating, one entry per enclosing named repeat. The
-generic `item`/`index` (innermost) stay as before. Unnamed enclosing repeats
-contribute no named type (only the innermost sugar).
+> **Correction (2026-06-20, → P196):** the original §3 below — *one binding type
+> per enclosing alias* — was **wrong**: it bloats the value typedInput's type list
+> (item/index ×N aliases) and conflates *names* with *types*. The owner caught it.
+> Replaced by the two surfaces below; the per-alias-type idea is dropped.
+
+The editor walks the mount ancestry (`mountIsInsideRepeat` /
+`collectEnclosingRepeatAliases`, already there for P182). It uses that **one
+ancestry list** in two places — never as types:
+
+1. **Guided binding (item/index):** the type list keeps exactly **two** Repeat
+   entries — `Item (Repeat)` and `Index (Repeat)` (innermost, the common case).
+   A separate small **Scope picker** sits beside the path field; its options are
+   **only the enclosing named repeats** (default = innermost). Picking an alias
+   sets the binding's `scope`. No clash (you pick, not type), and you **cannot**
+   select a scope you are not inside (correct **by construction**).
+2. **Composition (reactive):** a `scope("name")` accessor in the reactive scope
+   returns the named frame's item — `scope("customer").name`. Monaco autocompletes
+   the name from the **same** enclosing-alias list (mirroring the `store("…")`
+   completion); a static `scope("…")` whose name is **not** an enclosing alias
+   raises the soft reference warning (mirroring the `store("…")` validation). This
+   is the "as a variable" path, namespaced via `scope(…)` so it never collides
+   with the built-ins (`store`/`query`/`routeParam`/`item`/`index`).
+
+Generic `item`/`index` (innermost) and unnamed enclosing repeats are unchanged.
+
+#### Original §3 (superseded)
+
+> The editor … offers each [enclosing alias] as a binding type (e.g.
+> "customer (Repeat)"), one entry per enclosing named repeat. — **dropped**: type
+> list bloat; names are not types.
 
 ### 4. Backward compatible
 

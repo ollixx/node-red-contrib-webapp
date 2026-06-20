@@ -27,7 +27,7 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-_No open work — the roadmap is drained. New work is added here as packages are authored._
+- **P196** — nodes/ui-repeat — P193-Korrektur: Typ-Explosion raus → ein validierter Scope-Picker (item/index) + `scope('name')`-Accessor in Reactive — *Owner 2026-06-20; ADR 0023 §3 berichtigt* — [P196](nodes/ui-repeat/P196-named-scope-picker-and-reactive-scope-accessor.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -94,4 +94,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 195 done, 0 open, 8 deferred.**
+**Total: 195 done, 1 open, 8 deferred.**
