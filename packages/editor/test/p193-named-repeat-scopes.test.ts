@@ -5,12 +5,15 @@ import { fileURLToPath } from "node:url";
 import { beforeAll, describe, expect, it } from "vitest";
 
 /**
- * P193 (ADR 0023) — named repeat scopes, EDITOR layer. The value typedInput offers
- * each enclosing NAMED repeat alias as a by-name binding type (`item:<alias>` /
- * `index:<alias>`, labelled "Item (<alias>)" / "Index (<alias>)"), gated like P182.
- * The apply/read pair round-trips those types to a scope-qualified binding
- * (`{kind:"item"|"index", scope:"<alias>", path}`). `collectEnclosingRepeatAliases`
- * walks the container chain and gathers the aliases of enclosing ui-repeats.
+ * P196 (ADR 0023 §3, corrected 2026-06-20) — named repeat scopes, EDITOR layer.
+ * The P193 per-alias TYPE explosion is REMOVED: the value typedInput now offers
+ * exactly `item` + `index` (innermost) regardless of how many named enclosing
+ * repeats exist. An OUTER repeat is addressed via a guided SCOPE PICKER beside the
+ * path field whose options are 'innermost' + the enclosing aliases
+ * (`collectEnclosingRepeatAliases`), setting `binding.scope` via the 4th
+ * `applyValueBinding` arg. `readValueBinding` surfaces the alias as a separate
+ * `scope` field that pre-selects the picker. The schema `scope` field + renderer
+ * named-frame resolution from P193 are unchanged (covered by their own tests).
  */
 
 interface TypedInputType {
@@ -35,10 +38,11 @@ interface EditorCommon {
         scope?: { repeat?: boolean; componentDef?: boolean; repeatAliases?: string[] };
         currentKind?: string;
     }) => Array<TypedInputType | string>;
-    readValueBinding: (binding: unknown, fallbackLiteral?: string) => { type: string; value: string };
-    applyValueBinding: (type: string, value: string) => { kind: string; scope?: string; path?: string };
+    readValueBinding: (binding: unknown, fallbackLiteral?: string) => { type: string; value: string; scope?: string };
+    applyValueBinding: (type: string, value: string, subPath?: unknown, scope?: string) => { kind: string; scope?: string; path?: string };
     collectEnclosingRepeatAliases: (mount: string, references: References) => string[];
     isValueBindingValueValid: (type: string, value: string) => boolean;
+    valueBindingScopeOptions: (aliases: string[]) => Array<{ value: string; label: string }>;
 }
 
 let common: EditorCommon;
@@ -114,100 +118,117 @@ describe("P193: collectEnclosingRepeatAliases", () => {
     });
 });
 
-describe("P193: valueBindingTypes offers the enclosing aliases (gated like P182)", () => {
-    it("adds Item (<alias>) / Index (<alias>) per enclosing alias", () => {
+describe("P196 (ADR 0023 §3): valueBindingTypes has NO per-alias type explosion", () => {
+    // The correction to P193: the Repeat entries are EXACTLY `item` + `index`
+    // (innermost) regardless of how many named enclosing repeats exist. The alias
+    // surface moved to the guided SCOPE PICKER + the reactive scope() accessor.
+    it("offers exactly Item (Repeat) + Index (Repeat) — no Item (<alias>) types", () => {
         const types = common.valueBindingTypes({
             category: "value",
             scope: { repeat: true, repeatAliases: ["customer", "order"] }
         });
         const values = typeValues(types);
-        expect(values).toContain("item:customer");
-        expect(values).toContain("index:customer");
-        expect(values).toContain("item:order");
-        expect(values).toContain("index:order");
-        // The generic innermost item/index are still present.
+        // The generic innermost item/index are present…
         expect(values).toContain("item");
         expect(values).toContain("index");
+        // …and NO scope-qualified `item:<alias>` / `index:<alias>` types exist.
+        expect(values.some((v) => /^(item|index):/.test(v))).toBe(false);
+        // Exactly ONE item and ONE index entry, however many aliases there are.
+        expect(values.filter((v) => v === "item")).toHaveLength(1);
+        expect(values.filter((v) => v === "index")).toHaveLength(1);
     });
 
-    it("omits alias types when there are no enclosing named repeats", () => {
+    it("a currently-selected alias type no longer re-adds a per-alias type", () => {
         const values = typeValues(common.valueBindingTypes({
             category: "value",
-            scope: { repeat: false, repeatAliases: [] }
+            scope: { repeat: true, repeatAliases: ["customer"] },
+            currentKind: "item:customer"
         }));
         expect(values.some((v) => v.indexOf(":") >= 0)).toBe(false);
     });
+});
 
-    it("re-includes a currently-selected alias type even when out of scope", () => {
-        const values = typeValues(common.valueBindingTypes({
-            category: "value",
-            scope: { repeat: false, repeatAliases: [] },
-            currentKind: "item:customer"
-        }));
-        expect(values).toContain("item:customer");
+describe("P196: the guided scope-picker option set", () => {
+    // The options are 'innermost' (default, value='') + ONLY the real enclosing
+    // named repeats (collectEnclosingRepeatAliases). By construction a non-
+    // enclosing scope can never be offered.
+    it("is 'innermost' + the enclosing aliases (nearest-first)", () => {
+        expect(common.valueBindingScopeOptions(["order", "customer"])).toEqual([
+            { value: "", label: "innermost (default)" },
+            { value: "order", label: "order" },
+            { value: "customer", label: "customer" }
+        ]);
     });
 
-    it("labels the alias type 'Item (<alias>)'", () => {
-        const types = common.valueBindingTypes({
-            category: "value",
-            scope: { repeat: true, repeatAliases: ["customer"] }
-        });
-        const itemType = types.find((t) => typeof t !== "string" && t.value === "item:customer") as TypedInputType;
-        expect(itemType.label).toBe("Item (customer)");
+    it("is just 'innermost' when there is no enclosing named repeat", () => {
+        expect(common.valueBindingScopeOptions([])).toEqual([
+            { value: "", label: "innermost (default)" }
+        ]);
+    });
+
+    it("derives the options from the REAL enclosing repeats only", () => {
+        nodeTypes.outer = { type: "ui-repeat", itemName: "customer" };
+        nodeTypes.inner = { type: "ui-repeat", itemName: "order" };
+        const refs: References = {
+            containers: [
+                { id: "outer", mount: "route:/x/content", type: "ui-repeat", itemName: "customer" },
+                { id: "inner", mount: "container:outer/content", type: "ui-repeat", itemName: "order" }
+            ]
+        };
+        const aliases = common.collectEnclosingRepeatAliases("container:inner/content", refs);
+        const opts = common.valueBindingScopeOptions(aliases);
+        expect(opts.map((o) => o.value)).toEqual(["", "order", "customer"]);
     });
 });
 
-describe("P193: apply / read round-trip for scoped item/index", () => {
-    it("applyValueBinding('item:customer', 'name') → scoped item binding", () => {
-        expect(common.applyValueBinding("item:customer", "name")).toEqual({ kind: "item", scope: "customer", path: "name" });
+describe("P196: apply / read round-trip via the scope (4th arg), not a type", () => {
+    // The scope rides as the 4th `applyValueBinding` arg (set by the picker); the
+    // type stays the bare `item`/`index`. readValueBinding surfaces the alias as a
+    // separate `scope` field that pre-selects the picker.
+    it("applyValueBinding('item','name', _, 'customer') → scoped item binding", () => {
+        expect(common.applyValueBinding("item", "name", undefined, "customer"))
+            .toEqual({ kind: "item", scope: "customer", path: "name" });
     });
 
-    it("applyValueBinding('item:customer', '') → whole-element scoped binding (no path)", () => {
-        expect(common.applyValueBinding("item:customer", "")).toEqual({ kind: "item", scope: "customer" });
+    it("applyValueBinding('item','', _, 'customer') → whole-element scoped binding (no path)", () => {
+        expect(common.applyValueBinding("item", "", undefined, "customer"))
+            .toEqual({ kind: "item", scope: "customer" });
     });
 
-    it("applyValueBinding('index:customer', '') → scoped index (path-free)", () => {
-        expect(common.applyValueBinding("index:customer", "")).toEqual({ kind: "index", scope: "customer" });
+    it("applyValueBinding('index','', _, 'customer') → scoped index (path-free)", () => {
+        expect(common.applyValueBinding("index", "", undefined, "customer"))
+            .toEqual({ kind: "index", scope: "customer" });
     });
 
-    it("readValueBinding restores a scoped item to its named typedInput type", () => {
+    it("an empty/innermost scope leaves the binding UNSCOPED", () => {
+        expect(common.applyValueBinding("item", "name", undefined, ""))
+            .toEqual({ kind: "item", path: "name" });
+    });
+
+    it("readValueBinding restores a scoped item to {type:item, value:path, scope}", () => {
         expect(common.readValueBinding({ kind: "item", scope: "customer", path: "address.city" }, "")).toEqual({
-            type: "item:customer",
-            value: "address.city"
+            type: "item",
+            value: "address.city",
+            scope: "customer"
         });
     });
 
-    it("readValueBinding restores a scoped index to index:<alias>", () => {
+    it("readValueBinding restores a scoped index to {type:index, value:'', scope}", () => {
         expect(common.readValueBinding({ kind: "index", scope: "customer" }, "")).toEqual({
-            type: "index:customer",
-            value: ""
+            type: "index",
+            value: "",
+            scope: "customer"
         });
     });
 
-    it("a full apply → read round-trip preserves the alias and path", () => {
-        const binding = common.applyValueBinding("item:order", "total");
-        expect(common.readValueBinding(binding, "")).toEqual({ type: "item:order", value: "total" });
+    it("a full apply → read round-trip preserves the alias and path (picker='customer', path='name')", () => {
+        const binding = common.applyValueBinding("item", "name", undefined, "customer");
+        expect(common.readValueBinding(binding, "")).toEqual({ type: "item", value: "name", scope: "customer" });
     });
 
-    it("an UNSCOPED item still round-trips to the bare 'item' type (no regression)", () => {
-        expect(common.readValueBinding({ kind: "item", path: "name" }, "")).toEqual({ type: "item", value: "name" });
-    });
-});
-
-describe("P193: scoped types validate like their bare kind", () => {
-    it("empty path on item:<alias> is valid (whole element)", () => {
-        expect(common.isValueBindingValueValid("item:customer", "")).toBe(true);
-    });
-
-    it("a dotted path on item:<alias> is valid", () => {
-        expect(common.isValueBindingValueValid("item:customer", "address.city")).toBe(true);
-    });
-
-    it("index:<alias> is always valid (path-free)", () => {
-        expect(common.isValueBindingValueValid("index:customer", "")).toBe(true);
-    });
-
-    it("a malformed path on item:<alias> is invalid", () => {
-        expect(common.isValueBindingValueValid("item:customer", ".bad")).toBe(false);
+    it("an UNSCOPED item still round-trips to the bare 'item' type with no scope", () => {
+        const read = common.readValueBinding({ kind: "item", path: "name" }, "");
+        expect(read).toEqual({ type: "item", value: "name" });
+        expect((read as { scope?: string }).scope).toBeUndefined();
     });
 });

@@ -21,6 +21,11 @@
  *   - `prop` — P185 (ADR 0020): the resolved props of the INNERMOST active
  *     `ui-component-instance` (whole frame object; `prop.<name>` reaches a prop).
  *     OUTSIDE any instance it is `undefined`.
+ *   - `scope(name)` — P196 (ADR 0023): the item of the ENCLOSING `ui-repeat`
+ *     NAMED `name` (`ui-repeat.itemName`), so `scope("customer").name` reads an
+ *     OUTER repeat's element past inner ones. A namespaced FUNCTION (not a bare
+ *     global) so it never collides with `store`/`query`/`routeParam`/`item`/
+ *     `index`. Outside any matching named scope it returns `undefined` (no throw).
  * Nothing else is exposed (no `msg`, no flow/global/env, no host objects).
  *
  * Error containment is by contract: a compile error, an evaluation throw, or a
@@ -34,7 +39,8 @@ export type ReactiveCompiledFn = (
     query: (path: unknown) => unknown,
     item: unknown,
     index: number | undefined,
-    prop: unknown
+    prop: unknown,
+    scope: (name: unknown) => unknown
 ) => unknown;
 
 /** Sources the reactive evaluator reads. */
@@ -59,6 +65,14 @@ export interface ReactiveSources {
      * `ui-component-instance`. `undefined` outside any instance.
      */
     prop?: unknown;
+    /**
+     * P196 (ADR 0023): the item of each ENCLOSING NAMED `ui-repeat`, keyed by
+     * its `itemName` alias — the source for the reactive `scope(name)` accessor.
+     * An inner same-named repeat shadows an outer one (innermost wins), mirroring
+     * `selectItemFrame`. `scope("x")` for an absent name returns `undefined`
+     * (no throw). Absent/empty outside any named repeat.
+     */
+    scopeItems?: Record<string, unknown>;
 }
 
 /** A distinct evaluation failure, surfaced to the caller for containment + logging. */
@@ -116,6 +130,7 @@ function compile(source: string): ReactiveCompiledFn | null {
             "item",
             "index",
             "prop",
+            "scope",
             '"use strict"; return ( ' + source + " );"
         ) as ReactiveCompiledFn;
     } catch {
@@ -188,10 +203,23 @@ export function evaluateReactiveExpression(source: string, sources: ReactiveSour
 
     const queryFn = (path: unknown): unknown => getValueAtPath(sources.queries, typeof path === "string" ? path : String(path));
 
+    // P196 (ADR 0023): `scope(name)` returns the item of the enclosing named
+    // repeat. Unlike `store(...)`, an unknown/non-enclosing name is NOT an error —
+    // it returns `undefined` (symmetric with addressing item/index outside a
+    // repeat). A non-string name coerces to its string form before lookup.
+    const scopeFn = (name: unknown): unknown => {
+        const scopeName = typeof name === "string" ? name.trim() : String(name).trim();
+        const items = sources.scopeItems;
+        if (!items || !(scopeName in items)) {
+            return undefined;
+        }
+        return items[scopeName];
+    };
+
     let result: unknown;
 
     try {
-        result = compiled(sources.params, storeFn, queryFn, sources.item, sources.index, sources.prop);
+        result = compiled(sources.params, storeFn, queryFn, sources.item, sources.index, sources.prop, scopeFn);
     } catch (caught) {
         const message = caught instanceof Error ? caught.message : String(caught);
         return { value: undefined, error: makeError(source, message) };

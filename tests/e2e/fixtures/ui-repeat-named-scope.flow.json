@@ -113,5 +113,21 @@
     "wires": [],
     "x": 200,
     "y": 480
+  },
+  {
+    "type": "ui-text",
+    "id": "reactiveScope",
+    "name": "Reactive scope",
+    "parent": "orderRepeat",
+    "mount": "container:orderRepeat/content",
+    "order": 3,
+    "value": {
+      "kind": "reactive",
+      "value": "`${scope(\"customer\").name}=${scope(\"order\").total}`"
+    },
+    "z": "repeatNamedFlow",
+    "wires": [],
+    "x": 200,
+    "y": 540
   }
 ]

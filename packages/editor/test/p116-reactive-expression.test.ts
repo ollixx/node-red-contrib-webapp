@@ -27,7 +27,8 @@ interface RouteRef {
 interface EditorCommon {
     validateReactiveSyntax: (src: unknown) => Result;
     scanReactiveStoreLiterals: (src: unknown) => string[];
-    validateReactiveReferences: (src: unknown, storeNames: string[]) => Result;
+    scanReactiveScopeLiterals: (src: unknown) => string[];
+    validateReactiveReferences: (src: unknown, storeNames: string[], repeatAliases?: string[]) => Result;
     resolveRouteFromMount: (
         mount: string,
         references: { routes: RouteRef[]; containers: Array<{ id: string; mount: string }> }
@@ -117,6 +118,42 @@ describe("P116: stage-2 reference validation", () => {
         const result = common.validateReactiveReferences('store("dup").x', ["dup", "dup"]);
         expect(result.ok).toBe(false);
         expect(result.error).toContain("dup");
+    });
+});
+
+describe("P196 (ADR 0023 §3): scope(\"…\") literal scan + reference validation", () => {
+    it("extracts single- and double-quoted scope literals (mirrors store scan)", () => {
+        expect(common.scanReactiveScopeLiterals('scope("customer").name')).toEqual(["customer"]);
+        expect(common.scanReactiveScopeLiterals("scope( 'order' )")).toEqual(["order"]);
+        expect(common.scanReactiveScopeLiterals('scope("a").x + scope("b").y')).toEqual(["a", "b"]);
+    });
+
+    it("ignores a dynamic scope(name) (no static literal)", () => {
+        expect(common.scanReactiveScopeLiterals("scope(name).x")).toEqual([]);
+    });
+
+    it("passes when every scope literal is an enclosing alias", () => {
+        expect(common.validateReactiveReferences('scope("customer").name', [], ["customer", "order"]))
+            .toEqual({ ok: true });
+    });
+
+    it("fails (soft warning) when a scope literal is NOT an enclosing alias", () => {
+        const result = common.validateReactiveReferences('scope("nope").x', [], ["customer"]);
+        expect(result.ok).toBe(false);
+        expect(result.error).toContain("nope");
+    });
+
+    it("fails a scope() reference when there is no enclosing named repeat at all", () => {
+        const result = common.validateReactiveReferences('scope("customer").x', [], []);
+        expect(result.ok).toBe(false);
+        expect(result.error).toContain("customer");
+    });
+
+    it("validates store and scope literals together", () => {
+        const ok = common.validateReactiveReferences('store("s").v + scope("customer").n', ["s"], ["customer"]);
+        expect(ok.ok).toBe(true);
+        const bad = common.validateReactiveReferences('store("s").v + scope("nope").n', ["s"], ["customer"]);
+        expect(bad.ok).toBe(false);
     });
 });
 

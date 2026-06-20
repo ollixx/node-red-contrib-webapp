@@ -270,8 +270,13 @@ test.describe("ui-repeat — own content-slot layout (P191)", () => {
  * `{kind:item, path:"total"}` (== order). Ada has 2 orders (10, 20), Linus has 1
  * (30) — so the per-order interleaved sequence proves the outer name repeats
  * correctly for each inner order while the inner total varies.
+ *
+ * P196 (ADR 0023 §3) adds a 4th text per clone using the REACTIVE `scope()`
+ * accessor: `${scope("customer").name}=${scope("order").total}` — the reactive
+ * twin of the scope-qualified binding, proving the named frames reach the reactive
+ * eval per instance.
  */
-test.describe("ui-repeat — outer item addressable by alias from a nested repeat (P193)", () => {
+test.describe("ui-repeat — outer item addressable by alias from a nested repeat (P193 + P196)", () => {
     test.beforeAll(async ({ request }) => {
         const flow = await loadFlowFixture("tests/e2e/fixtures/ui-repeat-named-scope.flow.json");
         const response = await request.post("/flows", { data: flow });
@@ -283,16 +288,17 @@ test.describe("ui-repeat — outer item addressable by alias from a nested repea
         await request.post("/flows", { data: baseline });
     });
 
-    test("a nested child reads the OUTER customer by alias and the INNER order by alias / bare", async ({ page }) => {
+    test("a nested child reads the OUTER customer by alias and the INNER order by alias / bare / reactive scope()", async ({ page }) => {
         await page.goto("/webapp/repeatNamedApp/");
 
-        // Per inner-order clone, three texts in mount order:
-        //   outerName (scope:customer) , innerTotal (scope:order) , bareTotal (innermost==order)
+        // Per inner-order clone, four texts in mount order:
+        //   outerName (scope:customer), innerTotal (scope:order), bareTotal
+        //   (innermost==order), reactiveScope (`scope("customer").name=scope("order").total`).
         // Ada → orders 10,20 ; Linus → order 30.
         await expect(page.locator(".webapp-text")).toHaveText([
-            "Ada", "10", "10",
-            "Ada", "20", "20",
-            "Linus", "30", "30"
+            "Ada", "10", "10", "Ada=10",
+            "Ada", "20", "20", "Ada=20",
+            "Linus", "30", "30", "Linus=30"
         ]);
     });
 });
