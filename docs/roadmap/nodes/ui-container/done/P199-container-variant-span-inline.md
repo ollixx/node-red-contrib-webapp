@@ -17,7 +17,7 @@ verify: browser
 spec: docs/nodes/display/ui-container.md
 tests: tests/e2e/nodes/composite/ui-container.spec.ts
 dependencies: []
-status: in_progress
+status: done
 ---
 # P199 — Container-Variant `span` (inline Textkomposition)
 
@@ -58,3 +58,30 @@ status: in_progress
   `<span>` ist technisch unsauber; falls der Validator/Browser zickt, ui-text in
   der span-Variante auf ein inline-Tag (`<span>`) abbilden (Folge-Detail; zuerst
   via CSS lösen, sonst Tag-Wahl).
+
+## Result
+
+- **delivered:** Fifth container variant **`span`** — composes multiple `ui-text` (static OR per
+  ui-repeat item) into ONE inline text line via the shared P198 variant path (no second renderer).
+  Schema: `span` added to `CONTAINER_VARIANTS` (`contracts.ts`). Editor: `span` added to all three
+  variant SelectBox option lists in `editor-common.js` (the known contracts/editor duplication — both
+  kept honest). Serializer (`webapp-serializer.js` container block): `span` → `<span class="webapp-
+  container webapp-container--span">` (NOT sl-card, NOT div; the other 4 variants unchanged). CSS
+  (`nodes/webapp.js` page-shell `<style>`): `.webapp-container--span { display:inline }` **plus the
+  actual trick — forced-inline DESCENDANT rules** (`margin:0; display:inline`) on the intermediate
+  layout/slot/item wrappers, not just `> *`, because the P191/P197 per-item layout-wrapper divs sit
+  between the span container and the ui-text — overriding the base `.webapp-container` grid/gap. Doc
+  theming table extended 4→5. ui-repeat needed **no extra code**: with `variant=span` its per-item
+  wrapper goes through the shared source and becomes a `<span>` (no per-item div).
+- **stats:** 9 files (+198/−7; new fixture `ui-repeat-span.flow.json`); unit **1054** (+span serializer
+  assertion). Develop verification: build exit 0; full unit green; **E2E 24/24 green** — ui-container
+  10/10 (incl. 2 new P199: span renders a `<span>` not sl-card/div; 3 ui-text children flow inline on
+  one row ±4px) + ui-repeat (incl. the new P199: `variant=span` over `['a','b','c']` → per-item
+  `<span class="…--span">` wrappers, no divs, values inline); check:specs (39/3) + check:links +
+  check:roadmap + lint green.
+- **notes:** The **`<p>`-in-`<span>` inline-tag fallback was NOT needed** — the CSS forced-inline
+  overrides on all intermediate wrappers are sufficient; `<p>` inside `<span>` renders correctly inline.
+  **Orchestration:** the first agent stopped early (mid step 2, schema + partial editor uncommitted);
+  recovered from its worktree by a second agent that finished deliverables 3–6, ran the E2E green
+  in-worktree, and committed — no work lost.
+- **cost:** session agent-a8ce39d4901b71fb6 (partial) + recovery agent-a2becc01470a00178.

@@ -27,7 +27,7 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P199** — nodes/ui-container — Container-Variant `span`: rendert nur ein `<span>` (kein div/sl-card), inline; Kinder inline; pro Repeat-Item kein div → mehrere ui-text zu EINER Textzeile — *Owner 2026-06-20* — [P199](nodes/ui-container/P199-container-variant-span-inline.md)
+_No open work — the roadmap is drained. New work is added here as packages are authored._
 
 
 ## Deferred (parked, not abandoned)
@@ -79,7 +79,7 @@ open the folder for the full history.
 | nodes/ui-list | 6 |
 | nodes/ui-component | 3 |
 | nodes/ui-table | 2 |
-| nodes/ui-container | 1 |
+| nodes/ui-container | 2 |
 | nodes/ui-icon | 2 |
 | nodes/ui-accordion | 2 |
 | nodes/ui-breadcrumb · ui-dialog · ui-progress · ui-skeleton | 1 each |
@@ -95,4 +95,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 198 done, 1 open, 8 deferred.**
+**Total: 199 done, 0 open, 8 deferred.**
