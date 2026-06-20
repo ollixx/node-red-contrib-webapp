@@ -322,6 +322,28 @@ function selectItemFrame(
 }
 
 /**
+ * P196 (ADR 0023): collect the `itemName` → item map the reactive `scope(name)`
+ * accessor reads. Built from the SAME named-frame stack the `item`/`index` scope
+ * qualifier resolves against. Iterating bottom-up and overwriting means an INNER
+ * repeat with the same alias SHADOWS an outer one (innermost wins) — symmetric
+ * with `selectItemFrame`'s top-down scan. Unnamed frames are not addressable by
+ * name and are skipped. Returns an empty record outside any named repeat.
+ */
+function buildScopeItems(stack: ItemScopeFrame[] | undefined): Record<string, unknown> {
+    const items: Record<string, unknown> = {};
+    if (stack === undefined) {
+        return items;
+    }
+    for (let i = 0; i < stack.length; i += 1) {
+        const frame = stack[i];
+        if (typeof frame.name === "string" && frame.name.length > 0) {
+            items[frame.name] = frame.item;
+        }
+    }
+    return items;
+}
+
+/**
  * P178 (ADR 0020): one frame of the render-time prop scope — the resolved props of
  * the current `ui-component-instance` expansion, keyed by prop name. A `prop` (bare)
  * binding inside the definition subtree reads the whole map; a `prop.<path>` reaches
@@ -591,6 +613,12 @@ function resolveBinding(binding: BindingDefinition | undefined, sources: Binding
             // clone (the clone calls resolveBinding with its own pushed frame).
             const itemFrame = sources.itemScope?.[sources.itemScope.length - 1];
             const propFrame = sources.propScope?.[sources.propScope.length - 1];
+            // P196 (ADR 0023): the named-frame items for the reactive `scope(name)`
+            // accessor — the same named-frame stack the `item`/`index` scope
+            // qualifier resolves against (P193). Built bottom-up so an INNER repeat
+            // with the same `itemName` shadows an OUTER one (innermost wins),
+            // exactly matching `selectItemFrame`'s top-down scan.
+            const scopeItems = buildScopeItems(sources.itemScope);
             const result = evaluateReactiveExpression(source, {
                 state: sources.state,
                 queries: sources.queries,
@@ -598,7 +626,8 @@ function resolveBinding(binding: BindingDefinition | undefined, sources: Binding
                 storeNamePaths: sources.storeNamePaths,
                 item: itemFrame?.item,
                 index: itemFrame?.index,
-                prop: propFrame
+                prop: propFrame,
+                scopeItems
             });
 
             if (result.error) {

@@ -45,16 +45,18 @@ function names(ctx: { inRepeat?: boolean; inComponentDef?: boolean }): string[] 
 }
 
 describe("P185: reactive scope-local globals gating", () => {
-    it("offers item + index inside a repeat", () => {
-        expect(names({ inRepeat: true })).toEqual(["item", "index"]);
+    // P196 (ADR 0023 §3): inside a repeat the scope-local globals also include the
+    // namespaced `scope` accessor (scope("name") → an enclosing repeat's item).
+    it("offers item + index + scope inside a repeat", () => {
+        expect(names({ inRepeat: true })).toEqual(["item", "index", "scope"]);
     });
 
     it("offers prop inside a component definition", () => {
         expect(names({ inComponentDef: true })).toEqual(["prop"]);
     });
 
-    it("offers item/index AND prop when nested in both scopes", () => {
-        expect(names({ inRepeat: true, inComponentDef: true })).toEqual(["item", "index", "prop"]);
+    it("offers item/index/scope AND prop when nested in both scopes", () => {
+        expect(names({ inRepeat: true, inComponentDef: true })).toEqual(["item", "index", "scope", "prop"]);
     });
 
     it("offers nothing outside any scope-local container", () => {

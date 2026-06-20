@@ -1281,6 +1281,127 @@
         reevaluate();
     }
 
+    // ── P196 (ADR 0023 §3): the guided value-binding SCOPE PICKER ────────────
+    // Replaces the P193 per-alias type explosion. The option set is "innermost"
+    // (default, value="") + the aliases of the ENCLOSING NAMED repeats — i.e.
+    // ONLY the real parent repeats (collectEnclosingRepeatAliases), so a
+    // non-enclosing scope cannot be chosen BY CONSTRUCTION. Pure — unit-testable
+    // without a DOM. `aliases` is the enclosing-alias list (nearest-first).
+    function valueBindingScopeOptions(aliases) {
+        var out = [{ value: "", label: "innermost (default)" }];
+        (Array.isArray(aliases) ? aliases : []).forEach(function (alias) {
+            var a = String(alias == null ? "" : alias).trim();
+            if (a.length > 0) {
+                out.push({ value: a, label: a });
+            }
+        });
+        return out;
+    }
+
+    // Install the scope <select> next to a value typedInput's PATH field. It is
+    // shown ONLY when (a) the selected kind is `item`/`index` AND (b) ≥1 enclosing
+    // NAMED repeat exists (otherwise only "innermost" applies → no picker). Picking
+    // an alias sets the live scope (read at save via `valueBindingScopePicked`);
+    // "innermost" leaves it empty. `initialScope` pre-selects the saved alias so a
+    // stored `{kind:item, scope:'customer'}` opens with the picker on `customer`.
+    //
+    // The picker's chosen value is stashed on the field via jQuery `.data()`; the
+    // node's oneditsave passes it as the 4th arg to `applyValueBinding`. Auto-wired
+    // from `installRepeatScopeHint` so every binding node gets it without per-node
+    // HTML; a node may also call it directly to control placement/initial scope.
+    function installValueBindingScopePicker(fieldSelector, initialScope) {
+        if (typeof $ !== "function") {
+            return;
+        }
+        var $field = $(fieldSelector);
+        if (!$field.length) {
+            return;
+        }
+        var pickerId = "webapp-binding-scope-picker-" + String(fieldSelector).replace(/[^a-zA-Z0-9]/g, "");
+        var $row = $("#" + pickerId);
+        if (!$row.length) {
+            $row = $("<div>")
+                .attr("id", pickerId)
+                .addClass("form-row")
+                .css({ display: "none", "margin-top": "4px" });
+            $("<label>")
+                .css({ width: "auto", "margin-right": "6px" })
+                .html("<i class=\"fa fa-cube\"></i> Scope")
+                .appendTo($row);
+            $("<select>")
+                .attr("id", pickerId + "-select")
+                .css({ width: "auto", "min-width": "120px" })
+                .appendTo($row);
+            $field.closest(".form-row").after($row);
+        }
+        var $select = $("#" + pickerId + "-select");
+        // The picked scope is the source of truth for save; seed it from the saved
+        // binding so an unchanged dialog round-trips the alias.
+        $field.data("webappBindingScope", typeof initialScope === "string" ? initialScope : "");
+        $select.on("change", function () {
+            $field.data("webappBindingScope", String($select.val() || ""));
+        });
+        function currentType() {
+            try {
+                return $field.typedInput("type");
+            }
+            catch (_e) {
+                return "";
+            }
+        }
+        function rebuild() {
+            var type = currentType();
+            var isItemIndex = type === "item" || type === "index";
+            var references = collectReferenceNodes();
+            var mountVal = String($("#node-input-mount").val() || "");
+            var aliases = isItemIndex ? collectEnclosingRepeatAliases(mountVal, references) : [];
+            // The currently-picked scope must remain selectable even if the mount no
+            // longer resolves to that enclosing repeat (no silent drop on reopen).
+            var picked = String($field.data("webappBindingScope") || "");
+            if (picked.length > 0 && aliases.indexOf(picked) === -1) {
+                aliases = aliases.concat([picked]);
+            }
+            if (!isItemIndex || aliases.length === 0) {
+                // Only the innermost applies → no picker; clear any stale scope so a
+                // non-item kind never carries a scope.
+                if (!isItemIndex) {
+                    $field.data("webappBindingScope", "");
+                }
+                $row.hide();
+                return;
+            }
+            var options = valueBindingScopeOptions(aliases);
+            $select.empty();
+            options.forEach(function (opt) {
+                $("<option>").attr("value", opt.value).text(opt.label).appendTo($select);
+            });
+            $select.val(picked);
+            // The select may not hold `picked` if it was filtered out; fall back to
+            // the live select value so data() and the widget stay consistent.
+            $field.data("webappBindingScope", String($select.val() || ""));
+            $row.show();
+        }
+        $field.on("change", rebuild);
+        var $mount = $("#node-input-mount");
+        if ($mount.length) {
+            $mount.on("change", rebuild);
+        }
+        rebuild();
+    }
+
+    // Read the scope alias the picker currently holds for a value field (the 4th
+    // arg for `applyValueBinding` at save). Empty string = innermost (unscoped).
+    function valueBindingScopePicked(fieldSelector) {
+        if (typeof $ !== "function") {
+            return "";
+        }
+        var $field = $(fieldSelector);
+        if (!$field.length) {
+            return "";
+        }
+        return String($field.data("webappBindingScope") || "");
+    }
+
     function sortOptions(options) {
         return [...options].sort(function (left, right) {
             return left.label.localeCompare(right.label, undefined, { sensitivity: "base" });
@@ -3468,6 +3589,18 @@
             detail: "Zahl — nullbasierte Position der Repeat-Instanz",
             doc: "index — die nullbasierte Position des aktuellen Elements in der innersten Repeat-Iteration. Außerhalb eines Repeats undefined.",
             example: "`Zeile ${index}`"
+        },
+        // P196 (ADR 0023 §3): the namespaced `scope(name)` accessor — the item of an
+        // ENCLOSING repeat NAMED `name` (ui-repeat.itemName), so `scope("customer").name`
+        // reaches an OUTER item past inner repeats. A FUNCTION (not a bare global) so
+        // it never clashes with store/query/routeParam/item/index. Unknown/non-
+        // enclosing name → undefined (no throw).
+        {
+            name: "scope",
+            insert: "scope(\"\")",
+            detail: "Funktion — Item eines benannten Eltern-Repeats",
+            doc: "scope(name) — das Element des umschließenden ui-repeat mit dem itemName name; scope(\"customer\").name liest ein Feld des äußeren Elements. Außerhalb eines passenden benannten Scopes undefined.",
+            example: "scope(\"customer\").name"
         }
     ];
     var REACTIVE_SCOPE_GLOBALS_COMPONENT = [
@@ -3534,11 +3667,29 @@
         return out;
     }
 
+    // P196 (ADR 0023 §3): extract the string literals passed to scope(...) —
+    // mirroring `scanReactiveStoreLiterals`. Dynamic names (scope(x), template
+    // literals) are skipped. Pure — unit-testable without a DOM.
+    function scanReactiveScopeLiterals(src) {
+        var source = src == null ? "" : String(src);
+        var out = [];
+        var re = /scope\s*\(\s*(["'])((?:\\.|(?!\1).)*)\1\s*\)/g;
+        var m;
+        while ((m = re.exec(source)) !== null) {
+            var raw = m[2].replace(/\\(["'\\])/g, "$1");
+            out.push(raw);
+        }
+        return out;
+    }
+
     // Validate every static store("…") literal in the source against the app's
     // store names. Unknown name → error naming it; ambiguous name (two stores of
     // the same name in the app) → error. `storeNames` is the trimmed-name list of
-    // the parent app's stores. Pure — unit-testable without a DOM.
-    function validateReactiveReferences(src, storeNames) {
+    // the parent app's stores. P196 (ADR 0023 §3): the optional `repeatAliases`
+    // (enclosing named repeats) is the reference set for the `scope("…")` literals —
+    // a static scope name that is NOT an enclosing alias raises the same soft
+    // reference warning. Pure — unit-testable without a DOM.
+    function validateReactiveReferences(src, storeNames, repeatAliases) {
         var names = Array.isArray(storeNames) ? storeNames.map(function (n) { return String(n == null ? "" : n).trim(); }) : [];
         var literals = scanReactiveStoreLiterals(src);
         for (var i = 0; i < literals.length; i++) {
@@ -3559,6 +3710,18 @@
                 return { ok: false, error: "Store „" + lit + "“ ist in dieser App mehrdeutig (mehrere gleichnamige Stores)." };
             }
         }
+        // P196: scope("…") literals must name an ENCLOSING repeat alias.
+        var aliases = Array.isArray(repeatAliases) ? repeatAliases.map(function (a) { return String(a == null ? "" : a).trim(); }) : [];
+        var scopeLiterals = scanReactiveScopeLiterals(src);
+        for (var s = 0; s < scopeLiterals.length; s++) {
+            var scopeLit = scopeLiterals[s].trim();
+            if (scopeLit.length === 0) {
+                continue;
+            }
+            if (aliases.indexOf(scopeLit) === -1) {
+                return { ok: false, error: "Scope „" + scopeLit + "“ ist kein umschließendes benanntes Repeat." };
+            }
+        }
         return { ok: true };
     }
 
@@ -3572,7 +3735,7 @@
             return false;
         }
         var ctx = reactiveCompletionContext();
-        return validateReactiveReferences(value, ctx.storeNames).ok;
+        return validateReactiveReferences(value, ctx.storeNames, ctx.repeatAliases).ok;
     }
 
     // Resolve the enclosing route record of a mount value by walking the mount
@@ -3639,7 +3802,11 @@
             storeNames: storeNames,
             underRoute: Boolean(route),
             inRepeat: Boolean(scope && scope.repeat),
-            inComponentDef: Boolean(scope && scope.componentDef)
+            inComponentDef: Boolean(scope && scope.componentDef),
+            // P196 (ADR 0023 §3): the enclosing named-repeat aliases — the source
+            // for the `scope("…")` autocomplete and reference validation (mirroring
+            // storeNames for `store("…")`).
+            repeatAliases: (scope && scope.repeatAliases) ? scope.repeatAliases : []
         };
     }
 
@@ -3767,8 +3934,9 @@
                 setStatus("error", syntax.error);
                 return;
             }
-            // Stage-2 (references) — store("…") literals against the app stores.
-            var refs = validateReactiveReferences(src, ctx.storeNames);
+            // Stage-2 (references) — store("…") literals against the app stores and
+            // scope("…") literals against the enclosing named repeats (P196).
+            var refs = validateReactiveReferences(src, ctx.storeNames, ctx.repeatAliases);
             if (!refs.ok) {
                 setStatus("error", refs.error);
                 return;
@@ -3875,6 +4043,16 @@
                     if (/store\(\s*["']$/.test(textBefore)) {
                         live.storeNames.forEach(function (name) {
                             suggestions.push({ label: name, kind: Kind.Value, insertText: name, detail: "Store-Name" });
+                        });
+                        return { suggestions: suggestions };
+                    }
+                    // P196 (ADR 0023 §3): `scope("…` offers the enclosing named-repeat
+                    // aliases — mirroring the `store("…` completion. Only the REAL
+                    // parent repeats appear, so a non-enclosing scope cannot be typed
+                    // via completion.
+                    if (/scope\(\s*["']$/.test(textBefore)) {
+                        (live.repeatAliases || []).forEach(function (alias) {
+                            suggestions.push({ label: alias, kind: Kind.Value, insertText: alias, detail: "Repeat-Scope (Eltern)" });
                         });
                         return { suggestions: suggestions };
                     }
@@ -4176,42 +4354,17 @@
             // P165 (ADR 0017): scope-local item/index (resolve only inside a repeat).
             types.push(itemType, indexType);
         }
-        // P193 (ADR 0023): one named binding type per ENCLOSING NAMED repeat alias —
-        // `item (<alias>)` (optional field path) and `index (<alias>)` (path-free).
-        // Encoded as typedInput type values `item:<alias>` / `index:<alias>`; the
-        // apply/readValueBinding pair translates them to a scope-qualified binding
-        // `{kind:"item"|"index", scope:"<alias>", path}`. Gated like P182 (only the
-        // in-scope enclosing aliases appear); a currently-selected named kind is
-        // always re-included so a saved binding never silently drops.
-        var aliasSet = {};
-        (scope.repeatAliases || []).forEach(function (alias) { aliasSet[alias] = true; });
-        // Re-include the alias carried by the field's current kind, even if the
-        // edited node's mount no longer resolves to that enclosing repeat.
-        var currentAliasMatch = /^(?:item|index):(.+)$/.exec(currentKind);
-        if (currentAliasMatch) {
-            aliasSet[currentAliasMatch[1]] = true;
-        }
-        Object.keys(aliasSet).forEach(function (alias) {
-            types.push({
-                value: "item:" + alias,
-                label: "Item (" + alias + ")",
-                icon: "fa fa-cube",
-                hasValue: true,
-                validate: function (value) {
-                    var v = (value || "").trim();
-                    if (v.length === 0) {
-                        return true;
-                    }
-                    return /^[a-zA-Z_$][a-zA-Z0-9_$]*(\.[a-zA-Z_$][a-zA-Z0-9_$]*)*$/.test(v);
-                }
-            });
-            types.push({
-                value: "index:" + alias,
-                label: "Index (" + alias + ")",
-                icon: "fa fa-list-ol",
-                hasValue: false
-            });
-        });
+        // P196 (ADR 0023 §3, corrected 2026-06-20): NO per-alias binding types.
+        // P193 pushed an `Item (<alias>)` / `Index (<alias>)` type per enclosing
+        // named repeat — that bloats the typedInput's type list (item/index ×N
+        // aliases) and conflates NAMES with TYPES. The Repeat entries are now
+        // EXACTLY `Item (Repeat)` + `Index (Repeat)` (innermost), regardless of how
+        // many named enclosing repeats exist. An OUTER named repeat is addressed by
+        // the guided SCOPE PICKER beside the path field (installValueBindingScopePicker)
+        // which sets `binding.scope` — never via a type. In reactive expressions the
+        // namespaced `scope("name")` accessor plays the same role. The schema `scope`
+        // field and the renderer's named-frame resolution (P193) are unchanged; only
+        // this editor surface moved off the type list.
         if (includeComponentKind) {
             // P179 (ADR 0020): scope-local prop (resolves only inside a component
             // definition expanded by an instance).
@@ -4390,13 +4543,13 @@
     // is attached as `{ kind:"store", path, subPath }`; an empty/omitted subPath
     // (whole slice) leaves the binding as the bare `{ kind:"store", path }`. The
     // subPath is ignored for every non-store kind (it has no meaning there).
-    function applyValueBinding(type, value, subPath) {
+    function applyValueBinding(type, value, subPath, scope) {
         var raw = value === undefined || value === null ? "" : String(value);
 
         // P193 (ADR 0023): a scope-qualified item/index type `item:<alias>` /
-        // `index:<alias>` → a binding with an explicit `scope` (the alias). An empty
-        // path on `item:<alias>` is the whole element (no `path` key); `index:<alias>`
-        // is always path-free.
+        // `index:<alias>` → a binding with an explicit `scope` (the alias). Retained
+        // as a DEFENSIVE bridge so a legacy type-encoded value still round-trips; the
+        // P196 surface no longer produces these types (see below).
         var scopedMatch = /^(item|index):(.+)$/.exec(type);
         if (scopedMatch) {
             var scopedKind = scopedMatch[1];
@@ -4405,6 +4558,18 @@
                 return { kind: scopedKind, scope: scopedAlias };
             }
             return { kind: scopedKind, scope: scopedAlias, path: raw };
+        }
+
+        // P196 (ADR 0023 §3): the scope is now carried by the guided SCOPE PICKER as
+        // an explicit 4th argument (a repeat alias), NOT encoded in the type. It
+        // applies only to the bare `item`/`index` kinds (the picker is hidden for
+        // any other type). An empty/innermost scope leaves the binding unscoped.
+        var pickedScope = typeof scope === "string" ? scope.trim() : "";
+        if (pickedScope.length > 0 && (type === "item" || type === "index")) {
+            if (type === "index" || raw.length === 0) {
+                return { kind: type, scope: pickedScope };
+            }
+            return { kind: type, scope: pickedScope, path: raw };
         }
 
         if (VALUE_BINDING_LITERAL_TYPES.indexOf(type) !== -1) {
@@ -4556,12 +4721,16 @@
             return read;
         }
 
-        // P193 (ADR 0023): a scope-qualified item/index binding restores to the
-        // named typedInput type `item:<alias>` / `index:<alias>` so the editor shows
-        // the by-name kind and round-trips the alias.
+        // P196 (ADR 0023 §3, corrected 2026-06-20): a scope-qualified item/index
+        // binding restores to its BARE type (`item`/`index`) — NOT a per-alias type.
+        // The alias is surfaced as a separate `scope` field that the guided SCOPE
+        // PICKER reads to pre-select the enclosing repeat. `{kind:item,
+        // scope:'customer', path:'name'}` → `{type:'item', value:'name',
+        // scope:'customer'}` (the path field shows `name`, the picker shows
+        // `customer`). An unscoped item/index restores with no `scope` (innermost).
         if ((parsed.kind === "item" || parsed.kind === "index")
             && typeof parsed.scope === "string" && parsed.scope.length > 0) {
-            return { type: parsed.kind + ":" + parsed.scope, value: parsed.path || "" };
+            return { type: parsed.kind, value: parsed.path || "", scope: parsed.scope };
         }
 
         // All remaining kinds (query/routeParam/msg/jsonata/flow/global/env
@@ -6059,6 +6228,11 @@
         mountIsInsideComponentDef,
         currentEditorScope,
         installRepeatScopeHint,
+        // P196 (ADR 0023 §3): the guided value-binding scope picker (replaces the
+        // P193 per-alias type explosion) + its pure option/read helpers.
+        valueBindingScopeOptions,
+        installValueBindingScopePicker,
+        valueBindingScopePicked,
         resolveRouteFromMount,
         storeTypedInputType,
         defaultSliceKeySuggestions,
@@ -6067,6 +6241,8 @@
         decodeStoreFieldValue,
         validateReactiveSyntax,
         scanReactiveStoreLiterals,
+        // P196 (ADR 0023 §3): scope("…") literal scan for the reactive scope() accessor.
+        scanReactiveScopeLiterals,
         validateReactiveReferences,
         isReactiveExpressionValid,
         reactiveCompletionContext,

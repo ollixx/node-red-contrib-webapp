@@ -52,7 +52,7 @@ Listen-Optik) trägt `ui-repeat` **keine Chrome** und wiederholt einen
 |---|---|---|---|---|
 | `items` | „Items" | typedInput (Wert-Binding) | **ja** | Die zu iterierende Collection. Bindbar über alle Wert-Binding-Arten (literal/state/query/store/routeParam/reactive/msg/flow/global/jsonata/env). Auflösung zu einem **Array**; ein **Objekt** wird als Einträge `{key, value}` iteriert. Reaktiv: Änderung → Re-Render. |
 | `keyField` | „Key-Feld" | Textfeld | optional | Feldname im Element, der als **stabiler Key** dient (z. B. `id`). Fehlt er, ist der Key der Array-Index. Steuert das keyed Morphing (Fokus/Scroll-Erhalt). |
-| `itemName` | „Scope Name" | Textfeld | optional | **Alias für den Item-Scope dieses Repeats** (P193, [ADR 0023](../../adr/0023-named-repeat-scopes-for-nested-item-addressing.md)) — das `v-for="customer in customers"`-Modell. Gesetzt (z. B. `customer`) → ein Nachfahre adressiert das Element **dieses** Repeats **namentlich**, auch über innere Repeats hinweg, via die Binding-Art `Item (<alias>)` / `Index (<alias>)`. Leer = nur das generische innerste `item`/`index` (heutiges Verhalten, rückwärtskompatibel). Muss ein Identifier sein (`[a-zA-Z_$][a-zA-Z0-9_$]*`). |
+| `itemName` | „Scope Name" | Textfeld | optional | **Alias für den Item-Scope dieses Repeats** (P193, [ADR 0023](../../adr/0023-named-repeat-scopes-for-nested-item-addressing.md)) — das `v-for="customer in customers"`-Modell. Gesetzt (z. B. `customer`) → ein Nachfahre adressiert das Element **dieses** Repeats **namentlich**, auch über innere Repeats hinweg, über den **Scope-Picker** neben dem item/index-Pfadfeld (setzt `binding.scope`) bzw. den reaktiven Accessor `scope("customer")` (P196). Leer = nur das generische innerste `item`/`index` (heutiges Verhalten, rückwärtskompatibel). Muss ein Identifier sein (`[a-zA-Z_$][a-zA-Z0-9_$]*`). |
 
 ## Item-Scope (Binding-Art `item` / `index`)
 
@@ -92,7 +92,7 @@ Store-Nebeneffekt. **Außerhalb** eines `ui-repeat` löst `item`/`index` zu
   typ-blinde `required: true` am Binding-Trägerfeld ist durch eine an den gewählten
   Binding-Typ delegierende Validierung ersetzt (gemeinsamer Editor-Helfer).
 
-### Benannte Scopes (P193 / ADR 0023)
+### Benannte Scopes (P193 + P196 / ADR 0023 §3)
 
 Bei **verschachtelten** `ui-repeat`s gewinnt für das generische `item`/`index`
 weiterhin der **innerste** Frame. Um eine **äußere** Ebene zu erreichen, **benennt**
@@ -107,17 +107,32 @@ ein Repeat seinen Scope über `itemName` (z. B. `customer`):
   **nächst-höheren gleichnamigen** Frame auf (ein innerer gleichnamiger Repeat
   **überschattet** einen äußeren); kein Treffer → `undefined` (greift den
   `fallback`, sonst `?`) — **kein** Wurf.
-- **Im Editor:** die Aliase **aller umschließenden benannten** Repeats erscheinen
-  als eigene Binding-Arten **„Item (<alias>)"** / **„Index (<alias>)"** — gegated
-  wie die scope-lokalen Arten (P182, nur im Scope sichtbar). Unbenannte umschließende
-  Repeats tragen **keine** benannte Art bei (nur das generische innerste `item`/
-  `index`). Eine bereits gespeicherte benannte Art bleibt sichtbar, auch wenn der
-  Mount sie nicht mehr umschließt (kein stilles Verwerfen).
+- **Im Editor (P196, Korrektur zu P193):** die Binding-Art-Liste bleibt **genau**
+  `Item (Repeat)` + `Index (Repeat)` (innerstes) — **keine** Typ-Explosion pro
+  Alias mehr. Stattdessen sitzt **neben dem item/index-Pfadfeld** ein kleiner
+  **Scope-Picker** (`<select>`): Optionen = „innerstes" (Default) + die Aliase der
+  **tatsächlich umschließenden benannten** Repeats (`collectEnclosingRepeatAliases`).
+  Auswahl eines Alias setzt `binding.scope`; „innerstes" lässt `scope` leer. Der
+  Picker erscheint nur, wenn ≥1 benanntes Eltern-Repeat existiert; **by construction**
+  kann kein Nicht-Eltern-Scope gewählt werden. Ein gespeichertes
+  `{kind:item, scope:"customer", path:"name"}` öffnet mit Picker=`customer`,
+  Pfad=`name`. Unbenannte umschließende Repeats tragen keinen Alias bei.
+- **Reaktiv — `scope(name)` (P196):** in einer Reactive-Expression liefert der
+  **namespaced** Accessor `scope("customer")` das Element des umschließenden, mit
+  `customer` benannten Repeats — `scope("customer").name`. Eine **Funktion** (kein
+  bare Global) → **kein** Clash mit `store`/`query`/`routeParam`/`item`/`index`.
+  Außerhalb jedes passenden Scopes → `undefined` (**kein** Wurf). Die Monaco-
+  Autocomplete bietet bei `scope("` die Eltern-Aliase an (wie `store("`); ein
+  statisches `scope("x")`, dessen `x` **kein** Eltern-Alias ist, löst die weiche
+  Referenz-Warnung aus (wie die `store("…")`-Validierung).
 - **Beispiel (nachweisbar):** outer `ui-repeat itemName="customer"`, inner
-  `ui-repeat itemName="order"`; ein tief verschachtelter `ui-text` zeigt via
-  `Item (customer) → name` das **äußere** und via `Item (order) → total` (oder
-  bare `Item (Repeat)`) das **innere** Element — je Instanz-Kombination korrekt.
+  `ui-repeat itemName="order"`; ein tief verschachteltes Kind liest (a) via
+  Scope-Picker `customer` + Pfad `name` das **äußere** und (b) via Reactive
+  `scope("order").total` das **innere** Element — je Instanz-Kombination korrekt.
 - **Rückwärtskompatibel:** ohne `itemName`/`scope` identisches Verhalten wie heute.
+  Das Schema-`scope`-Feld und die Named-Frame-Auflösung im Renderer (P193) bleiben
+  unverändert; P196 ändert nur die **Editor-Fläche** (Picker statt Typen) und fügt
+  den reaktiven `scope()`-Accessor hinzu.
 
 ### Basis-Felder (P139 / ADR 0015)
 
@@ -189,9 +204,10 @@ P165):
 ## Offene Punkte
 
 - ~~Verschachtelte `ui-repeat`: explizite **Benennung der äußeren Ebene**~~ —
-  **gelöst** (P193, ADR 0023): `itemName`-Alias + scope-qualifizierte `item`/`index`
-  (s. „Benannte Scopes"). Reaktive Integration der benannten Scopes ([[P185]]) ist
-  Folgearbeit.
+  **gelöst** (P193 + P196, ADR 0023): `itemName`-Alias + scope-qualifizierte
+  `item`/`index` über den **Scope-Picker** und der reaktive **`scope(name)`**-
+  Accessor (s. „Benannte Scopes"). Die reaktive Integration ([[P185]]) ist mit P196
+  ausgeliefert.
 - Schreiben aus der Zeile (Stufe 2): item-relatives Schreibziel + Input/Store-
   Vertrag im Repeat.
 - Leerzustand (kein Item) — Zusammenspiel mit `ui-empty-state` ([[P152]]).

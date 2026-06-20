@@ -109,6 +109,15 @@
                 });
                 itemsInput.typedInput("type", itemsEditor.type);
                 itemsInput.typedInput("value", itemsEditor.value);
+                // P165: warn when item/index is bound but this repeat is not itself
+                // inside an enclosing repeat. P196 (ADR 0023 §3): the guided SCOPE
+                // PICKER lets a nested repeat bind its `items` to an OUTER repeat's
+                // item by name (e.g. inner `order` items = customer.orders) without
+                // an alias-type explosion. It appears only when ≥1 enclosing named
+                // repeat exists and the kind is item/index; it pre-selects the saved
+                // alias (itemsEditor.scope) and round-trips it via applyValueBinding.
+                common.installRepeatScopeHint("#node-input-itemsBinding");
+                common.installValueBindingScopePicker("#node-input-itemsBinding", itemsEditor.scope || "");
             },
             oneditsave: function () {
                 // P139: persist the applicable base fields (visible) as a binding.
@@ -118,7 +127,11 @@
                 // (which has no matching DOM field — Node-RED cannot clobber it).
                 this.items = common.applyValueBinding(
                     $("#node-input-itemsBinding").typedInput("type"),
-                    $("#node-input-itemsBinding").typedInput("value")
+                    $("#node-input-itemsBinding").typedInput("value"),
+                    undefined,
+                    // P196 (ADR 0023 §3): the picked enclosing-repeat alias (empty =
+                    // innermost). Sets `binding.scope` for an item/index kind.
+                    common.valueBindingScopePicked("#node-input-itemsBinding")
                 );
                 this.itemsPath = "";
             }
