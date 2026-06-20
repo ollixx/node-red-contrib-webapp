@@ -19,7 +19,7 @@ verify: browser
 spec: docs/nodes/display/ui-repeat.md
 tests: tests/e2e/nodes/view/ui-repeat.tests.md
 dependencies: []
-status: in_progress
+status: done
 ---
 # P196 — Named-Scope: Picker statt Typ-Explosion + scope() in Reactive
 
@@ -60,3 +60,33 @@ status: in_progress
   scope()-Autocomplete, nie als Typen.
 - `scope('name')` ist eine **Funktion** (namespaced) → kein Global-Clash.
 - Schema-`scope` + P193-Renderer bleiben; das ist reine Editor-/Reactive-Fläche.
+
+## Result
+
+- **delivered:** P193 correction (ADR 0023 §3 berichtigt) — the per-alias typedInput **type explosion is
+  gone**. `valueBindingTypes` (`resources/lib/editor-common.js`) now yields exactly `Item (Repeat)` +
+  `Index (Repeat)` (innermost) regardless of how many named enclosing repeats exist. In its place: a
+  **guided scope-picker** (`valueBindingScopeOptions` = innermost + the real enclosing aliases from
+  `collectEnclosingRepeatAliases`; `installValueBindingScopePicker`/`valueBindingScopePicked`;
+  `applyValueBinding` gains a 4th `scope` arg, `readValueBinding` surfaces the alias) wired next to the
+  item/index path field — shown only when ≥1 named enclosing repeat exists, and by construction only an
+  actual enclosing scope is selectable. A namespaced **reactive `scope(name)` accessor** —
+  `scope('customer').name` returns the enclosing `customer` repeat's item per instance, `undefined`
+  outside any matching scope (no throw, no clash with store/query/routeParam/item/index); injected via
+  `reactive-expression.ts` + `renderer.ts buildScopeItems`, with Monaco `scope("` autocomplete +
+  static `scope("x")` reference warning (both mirroring the `store("…")` pattern). **Schema `scope`
+  field + the P193 renderer named-frame resolution are untouched** — this is purely editor + reactive
+  surface.
+- **stats:** 11 files (10 changed, 1 new test `p196-reactive-scope-accessor.test.ts`). Develop
+  verification: build exit 0; full unit green (schema 377, editor 176, renderer 153, runtime 1049);
+  **E2E 26/26 green** — ui-repeat (incl. the P193+P196 nested proof: a deep child reads the OUTER
+  `customer` via the scope-picker binding and the INNER `order.total` via reactive `scope("order")`,
+  per instance), reactive-expression 7/7, p182 gating 4/4, p67 canonical-set, p189 — confirming the
+  `valueBindingTypes`/reactive changes regressed none of the type-list- or reactive-sensitive specs;
+  check:specs + check:links + check:roadmap + lint green.
+- **notes:** Replaced the P193 per-alias-TYPE editor test with scope-picker/option-set/4th-arg
+  round-trip tests; the P193 schema + renderer tests stay green (unchanged). The sub-agent **ran its
+  E2E green in-worktree** (10/10) before returning. Consumed `collectEnclosingRepeatAliases`, the
+  `store("…")` autocomplete+validation pattern, the P193 renderer + schema `scope` field — all
+  confirmed present.
+- **cost:** session agent-a9bdc10d13bc340a6, ~28m.
