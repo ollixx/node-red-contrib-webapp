@@ -140,4 +140,20 @@ describe("P49: non-button variants render the mapped Shoelace output", () => {
         expect(defaultHtml).toContain("<sl-card");
         expect(defaultHtml).toContain("webapp-container--card");
     });
+
+    it("span variant renders a <span> element, not sl-card or div container (P199)", () => {
+        const spanHtml = serializer.renderComponentHtml(
+            { kind: "container", id: "c6", layoutId: "vertical", regions: [], props: { variant: "span" } },
+            "vertical",
+            { appId: "app1", location: "/" }
+        );
+        // P199: span → <span class="webapp-container webapp-container--span">
+        // The outer webapp-item div is always present; the CONTAINER element itself must be a <span>.
+        expect(spanHtml).not.toContain("<sl-card");
+        expect(spanHtml).toContain("<span");
+        expect(spanHtml).toContain("webapp-container--span");
+        // The container class must appear on a span, not a div
+        expect(spanHtml).toContain('<span class="webapp-container webapp-container--span"');
+        expect(spanHtml).not.toContain('<div class="webapp-container');
+    });
 });

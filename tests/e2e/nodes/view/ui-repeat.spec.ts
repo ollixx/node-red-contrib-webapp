@@ -480,3 +480,33 @@ test.describe("ui-repeat items typedInput round-trip (P190)", () => {
         await page.locator(".red-ui-tray").last().waitFor({ state: "detached", timeout: 5000 }).catch(() => undefined);
     });
 });
+
+
+/**
+ * P199 — ui-repeat variant=span: inline per-item wrapper (no div per item).
+ *
+ * variant=span on a ui-repeat → each per-item container is a <span>, not a div.
+ * A repeat over ['a','b','c'] with one ui-text(item) → three texts inline.
+ */
+test.describe("ui-repeat variant=span — inline per-item wrapper (P199)", () => {
+    test.afterAll(async ({ request }) => {
+        const baseline = await loadFlowFixture("examples/customers-crud/flow.json");
+        await request.post("/flows", { data: baseline });
+    });
+
+    test("variant=span renders each per-item region as a <span>, not a div or sl-card", async ({ page, request }) => {
+        const flow = await loadFlowFixture("tests/e2e/fixtures/ui-repeat-span.flow.json");
+        const response = await request.post("/flows", { data: flow });
+        expect(response.ok()).toBeTruthy();
+
+        await page.goto("/webapp/repeatSpanApp/");
+
+        // Each per-item wrapper must be a <span.webapp-container--span>
+        const itemWrappers = page.locator("span.webapp-container--span");
+        await expect(itemWrappers).toHaveCount(3);
+        // Must NOT be plain divs
+        await expect(page.locator("div.webapp-container--span")).toHaveCount(0);
+        // Text content visible
+        await expect(page.locator(".webapp-text")).toContainText(["a", "b", "c"]);
+    });
+});

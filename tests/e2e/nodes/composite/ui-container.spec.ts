@@ -194,3 +194,70 @@ test.describe("ui-container variants (P198)", () => {
         expect(["transparent", "rgba(0, 0, 0, 0)"]).toContain(bg);
     });
 });
+
+
+/**
+ * P199 — ui-container variant=span: inline text composition.
+ *
+ * span → <span> wrapper (not sl-card, not div); children flow inline.
+ * Multiple ui-text children on ONE line (not stacked).
+ */
+test.describe("ui-container variant=span — inline wrapper (P199)", () => {
+    test.afterEach(async ({ request }) => {
+        await resetFlow(request);
+    });
+
+    test("span variant renders a <span> wrapper (not sl-card, not div)", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "ctnSpanApp1", root: "ctnSpanApp1" })
+            .node("ui-container", { id: "ctnSpan1", layoutId: "vertical", variant: "span" })
+            .node("ui-text", { id: "ctnSpanApp1Txt", text: "test", mount: "container:ctnSpan1/content" })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "ctnSpanApp1");
+        await webapp.navigate("/");
+
+        // span → <span> with webapp-container--span class
+        const el = page.locator("span.webapp-container--span");
+        await expect(el).toBeAttached();
+        await expect(el).toContainText("test");
+        // Must NOT be an sl-card or a div
+        await expect(page.locator("sl-card.webapp-container--span")).not.toBeAttached();
+        await expect(page.locator("div.webapp-container--span")).not.toBeAttached();
+    });
+
+    test("span container with 3 ui-text children renders them inline (not stacked)", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "ctnSpanApp2", root: "ctnSpanApp2" })
+            .node("ui-container", { id: "ctnSpan2", layoutId: "vertical", variant: "span" })
+            .node("ui-text", { id: "ctnSpanTxt1", text: "Hello", mount: "container:ctnSpan2/content" })
+            .node("ui-text", { id: "ctnSpanTxt2", text: " ", mount: "container:ctnSpan2/content" })
+            .node("ui-text", { id: "ctnSpanTxt3", text: "World", mount: "container:ctnSpan2/content" })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "ctnSpanApp2");
+        await webapp.navigate("/");
+
+        // All three texts visible inside the span wrapper
+        const wrapper = page.locator("span.webapp-container--span");
+        await expect(wrapper).toBeVisible();
+        await expect(wrapper).toContainText("Hello");
+        await expect(wrapper).toContainText("World");
+
+        // The span wrapper's direct children (webapp-item wrappers) are inline —
+        // check their top positions are identical (within a small tolerance).
+        const items = wrapper.locator(".webapp-item");
+        await expect(items).toHaveCount(3);
+        const boxes = await items.evaluateAll((els) =>
+            els.map((el) => el.getBoundingClientRect().top)
+        );
+        // All three should be on the same line (top within 4px of each other)
+        const minTop = Math.min(...boxes);
+        const maxTop = Math.max(...boxes);
+        expect(maxTop - minTop).toBeLessThan(4);
+    });
+});
