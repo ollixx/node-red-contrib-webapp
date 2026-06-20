@@ -647,6 +647,8 @@
             // card → <sl-card> (Shoelace chrome: border + padding + elevation).
             // panel/section/transparent → plain <div> + webapp-container--<v> class
             // (no sl-card chrome; CSS in the page shell provides the distinction).
+            // P199: span → <span> + webapp-container--span (inline flow; CSS
+            // overrides the base display:grid and forces all children inline too).
             // This is the single rendering source for ui-container AND ui-repeat
             // wrapper (P197). Default "card" when absent.
             const containerVariant = (component.props && typeof component.props.variant === "string" && component.props.variant)
@@ -654,7 +656,8 @@
                 : "card";
             const containerVariantClass = " webapp-container--" + sanitizeClassSuffix(containerVariant);
             const isCardVariant = containerVariant === "card";
-            const tag = isCardVariant ? "sl-card" : "div";
+            const isSpanVariant = containerVariant === "span";
+            const tag = isCardVariant ? "sl-card" : (isSpanVariant ? "span" : "div");
             const inner = "<" + tag + " class=\"webapp-container" + containerVariantClass + "\">"
                 + body + "</" + tag + ">";
             return wrapRenderedComponentHtml(component, layoutId, inner);

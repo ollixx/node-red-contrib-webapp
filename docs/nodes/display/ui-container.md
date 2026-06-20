@@ -51,7 +51,7 @@ Layout-Child-Props).
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `variant` | „Variante" | Variant-SelectBox (`CONTAINER_VARIANTS`) | optional | Semantische Flächen-Rolle des Containers: `card`, `panel`, `section`, `transparent`. Default: `card`. Das Rendering-Backend übersetzt die Variante in die passende visuelle Darstellung (Schatten, Hintergrund, Rahmen). Details: [theming.md](../concepts/theming.md). |
+| `variant` | „Variante" | Variant-SelectBox (`CONTAINER_VARIANTS`) | optional | Semantische Flächen-Rolle des Containers: `card`, `panel`, `section`, `transparent`, `span`. Default: `card`. Das Rendering-Backend übersetzt die Variante in die passende visuelle Darstellung (Schatten, Hintergrund, Rahmen). Details: [theming.md](../concepts/theming.md). |
 
 ### Gruppe „Events"
 
@@ -121,7 +121,7 @@ bildet sie auf die passende visuelle Darstellung ab. Das App-weite Theme
 aussehen. Weitere Backends folgen demselben semantischen Contract. Details:
 [theming.md](../concepts/theming.md).
 
-### Visuelle Bedeutung der 4 Varianten (Shoelace-Backend)
+### Visuelle Bedeutung der 5 Varianten (Shoelace-Backend)
 
 | Variante | Element | Optik | Einsatz |
 |---|---|---|---|
@@ -129,6 +129,7 @@ aussehen. Weitere Backends folgen demselben semantischen Contract. Details:
 | `panel` | `<div>` | 1 px Rand (`--wa-color-border`), moderates Padding, KEINE Elevation | Leichte Gruppenrahmen ohne Card-Schatten |
 | `section` | `<div>` | Kein Rand, kein Hintergrund — nur vertikaler Abstand | Logische Abschnitte ohne Box-Chrome |
 | `transparent` | `<div>` | Absolut kein Chrome: kein Rand, kein Padding, kein Hintergrund | Reines Layout-Grouping (Platzneutral) |
+| `span` | `<span>` | Inline-Fluss: Kinder fließen inline nebeneinander, kein Block-Wrapper | Mehrere `ui-text` zu einer Textzeile komponieren; Repeat-Items ohne div pro Item |
 
 `card` ist der Standard und bleibt rückwärtskompatibel. `transparent` ist das
 Gegenteil: es fügt im DOM **keinen visuellen Rahmen** hinzu und eignet sich

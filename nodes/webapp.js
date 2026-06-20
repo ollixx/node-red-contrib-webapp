@@ -2451,6 +2451,14 @@ ${tokenCss ? tokenCss.split("\n").map((line) => `    ${line}`).join("\n") : "   
       background:none;
       border:none;
     }
+    /* P199: span — inline text composition; ALL descendants (wrapper divs, layout,
+       slot, and text block elements) must be inline so content flows in one text run. */
+    .webapp-container--span { display:inline; }
+    .webapp-container--span .webapp-layout,
+    .webapp-container--span .webapp-slot,
+    .webapp-container--span .webapp-slot-body,
+    .webapp-container--span .webapp-item,
+    .webapp-container--span .webapp-text { display:inline; margin:0; padding:0; gap:0; }
     /* P64: dialogs are native <sl-dialog> (own overlay, backdrop, focus-trap).
        Only the slotted region wrappers need light layout; the footer lays its
        actions out in a row. */
