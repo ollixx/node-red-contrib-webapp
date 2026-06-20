@@ -27,7 +27,7 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-_No open work — the roadmap is drained. New work is added here as packages are authored._
+- **P199** — nodes/ui-container — Container-Variant `span`: rendert nur ein `<span>` (kein div/sl-card), inline; Kinder inline; pro Repeat-Item kein div → mehrere ui-text zu EINER Textzeile — *Owner 2026-06-20* — [P199](nodes/ui-container/P199-container-variant-span-inline.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -95,4 +95,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 198 done, 0 open, 8 deferred.**
+**Total: 198 done, 1 open, 8 deferred.**
