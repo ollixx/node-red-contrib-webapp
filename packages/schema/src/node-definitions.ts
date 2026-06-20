@@ -224,6 +224,14 @@ export const uiRepeatNodeDefinitionSchema = mountableNodeSchema.extend({
     // required `layout`) so a legacy ui-repeat authored before P191 still validates;
     // mapConfig migrates an absent layout to the default preset.
     layout: standardLayoutPresetSchema.optional(),
+    // P197: ui-repeat is a full container after P191 (own content-slot layout), so
+    // it also carries `variant` (CONTAINER_VARIANTS) exactly like `ui-container`.
+    // The per-item content-layout-region wrapper renders through the SAME container
+    // variant source as ui-container (P198). OPTIONAL with default `transparent`
+    // (a repeat is chrome-less per ADR 0017 — no wasted card around the clones);
+    // mapConfig migrates an absent variant to "transparent" so legacy ui-repeat
+    // configs open/render without a required-field break.
+    variant: z.enum(CONTAINER_VARIANTS).optional(),
     // Optional stable key field for the keyed morph (e.g. "id"). When omitted the
     // renderer keys instances by array index.
     keyField: z.string().min(1, "ui-repeat keyField must not be empty when set.").optional(),

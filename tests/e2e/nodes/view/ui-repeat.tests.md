@@ -225,6 +225,43 @@
   die Kinder (`Ada#gridName`, `Ada#gridCity`, …) sitzen INNERHALB ihres Per-Item-Containers
   und lösen `item.*` je Zeile auf.
 
+### Container-Variant auf dem Per-Item-Wrapper (P197) — abgedeckt
+
+> Owner 2026-06-20: `ui-repeat` ist nach P191 ein vollwertiger Container — wie
+> `ui-container` trägt es jetzt auch `variant` (`CONTAINER_VARIANTS`). **Default
+> `transparent`** (chrome-los, ADR 0017 — keine verschwenderische Card um die
+> Klone). Der je Item erzeugte content-Layout-Region-Wrapper (P191/P192) rendert
+> den Variant über DIESELBE Quelle wie `ui-container` (P198) — kein zweiter Pfad.
+> Schema: `packages/schema/test/p197-repeat-variant.test.ts` (jeder
+> CONTAINER_VARIANTS-Wert gültig; ohne `variant` validiert weiterhin = Migration,
+> kein Pflichtfeld-Bruch; Wert außerhalb der Vokabel rot; `repeat` in
+> `COMPONENT_VARIANT_VOCABULARY` = CONTAINER_VARIANTS, Default `transparent`).
+> Renderer: `packages/renderer/test/p197-repeat-variant-wrapper.test.ts` (der je
+> Item erzeugte `container` trägt `props.variant`; via gemeinsamen Serializer
+> `variant=card` → `<sl-card>`, `variant=transparent` → schlichtes `<div>` ohne
+> Card-Chrome). Browser: `tests/e2e/nodes/view/ui-repeat.spec.ts`
+> (Fixture `tests/e2e/fixtures/ui-repeat-variant.flow.json`).
+
+- **Schema:** `ui-repeat.variant` ist OPTIONAL (`CONTAINER_VARIANTS`); Default-
+  Quelle ist mapConfig/Editor (`transparent`), nicht ein Zod-`.default()`, sodass
+  ein Altflow ohne `variant` weiter validiert. mapConfig (`nodes/webapp.js`) trägt
+  `variant` (Default `transparent`) wie `layoutId` ins Modell.
+- **Editor:** ein „Variant"-SelectBox via `installVariantSelectBox("repeat")` —
+  identisch zu `ui-container`, an derselben Stelle; Default `transparent` (vs.
+  `card` bei ui-container). Ein reiner Optik-Zwischen-`ui-container` ist damit
+  nicht mehr nötig.
+- **Renderer:** `expandRepeat` spreizt `repeat.props` (inkl. `variant`) auf den je
+  Item erzeugten `container` — der gemeinsame Serializer-Block (P198) wählt
+  `<sl-card>` (card) bzw. `<div>` + `webapp-container--<v>` (panel/section/
+  transparent). Kein zweiter Render-Pfad.
+- **End-to-End (browser):** Store-Array `[{name:'Ada'},{name:'Linus'}]` + zwei
+  `ui-repeat` über denselben Store — `cardRepeat` (`variant=card`) und
+  `transparentRepeat` (`variant=transparent`), je mit einem `ui-text`-Kind
+  (`item.name`). `variant=card`: je Zeile (`Ada#cardRepeat`/`Linus#cardRepeat`)
+  rahmt ein `<sl-card>.webapp-container--card`. `variant=transparent`: je Zeile
+  (`Ada#transparentRepeat`/…) ein schlichtes `<div>.webapp-container--transparent`,
+  KEINE `<sl-card>`-Chrome. Round-trip: beide Looks auf derselben Seite.
+
 ### items-typedInput Carrier-id Round-trip Fix (P190) — abgedeckt
 
 > Bug (Owner 2026-06-19): der items-typedInput lag auf `#node-input-items` (= gleiche id wie die

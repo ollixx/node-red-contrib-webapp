@@ -1408,6 +1408,16 @@ function toComponentDefinitions(components) {
                     // ("vertical") — the same default the editor's layout selector
                     // applies — so old flows render without a broken/missing layout.
                     layoutId: blankToUndefined(component.layout) || blankToUndefined(component.layoutId) || "vertical",
+                    // P197: ui-repeat is a full container (after P191's own content-
+                    // slot layout), so it carries `variant` (CONTAINER_VARIANTS) just
+                    // like ui-container — flowed into the model like `layoutId`. The
+                    // renderer (expandRepeat) spreads these props onto the per-item
+                    // content-layout-region container, so the chosen variant renders
+                    // through the SAME container-variant source as ui-container (P198).
+                    // DEFAULT `transparent` (a repeat is chrome-less per ADR 0017 — no
+                    // wasted card around the clones); migration: an absent variant
+                    // renders as transparent, no required-field break.
+                    variant: blankToUndefined(component.variant) || "transparent",
                     ...(blankToUndefined(component.keyField) ? { keyField: component.keyField } : {}),
                     // P193 (ADR 0023): the optional alias naming this repeat's item
                     // scope, so a descendant can address THIS level by name.
@@ -6386,6 +6396,15 @@ const runtimeNodeRegistry = {
             // the bucket logic default-migrated every repeat to "vertical", so a
             // chosen grid layout never reached the renderer's per-item container.
             layout: config.layoutId || config.layout,
+            // P197: ui-repeat is a full container after P191, so it carries the
+            // semantic container `variant` (CONTAINER_VARIANTS) just like
+            // ui-container (`variant: config.variant`). toComponentDefinitions
+            // applies the chrome-less default (`transparent`, ADR 0017) when absent,
+            // and expandRepeat spreads it onto the per-item container so it renders
+            // through the shared container-variant source (P198). Without this the
+            // chosen variant never reached the renderer (every repeat defaulted to
+            // transparent).
+            variant: config.variant || undefined,
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {

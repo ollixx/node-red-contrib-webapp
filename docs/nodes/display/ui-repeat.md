@@ -32,6 +32,14 @@ Listen-Optik) trägt `ui-repeat` **keine Chrome** und wiederholt einen
   (horizontal/vertical/grid/absolute). Das ist eine **andere Rolle** als die
   Platzierung von `ui-repeat` **im Parent** (`layoutX`/`layoutY` + Placement):
   Kind-Platzierung vs. eigenes content-Layout sind sauber getrennt.
+- **Eigener content-Variant (P197):** zusätzlich zum content-Layout trägt
+  `ui-repeat` — als vollwertiger Container nach P191 — auch den semantischen
+  `variant` (`CONTAINER_VARIANTS`, siehe Feldtabelle) wie `ui-container`. Der je
+  Item erzeugte content-Region-Wrapper rendert darüber dieselbe Chrome wie ein
+  `ui-container` (P198: `card` → `<sl-card>`, sonst schlichtes `<div>`). **Default
+  `transparent`** (chrome-los, ADR 0017). **Folge:** man mountet die Kinder direkt
+  in den `ui-repeat` und wählt den Look am Repeat — ein reiner Optik-Zwischen-
+  `ui-container` nur fürs Aussehen ist nicht mehr nötig.
 - **Rolle zur Laufzeit:** der Renderer löst `items` auf, iteriert, schiebt pro
   Element `{item, index}` auf den Scope, rendert die geklonte Schablone (in die
   Regionen des content-Layouts), poppt.
@@ -45,6 +53,7 @@ Listen-Optik) trägt `ui-repeat` **keine Chrome** und wiederholt einen
 | `name` | „Name" | Textfeld | optional | Anzeigename. Default: `Repeat N`. |
 | `mount` | „Parent Slot" | Mount-Picker | **ja** | Mount-Ziel als `<type>:<id>/<slot>`. |
 | `layoutId` | „Child Layout" | Layout-Selektor | **ja** (default-migriert) | **Eigenes Layout-Preset für den `content`-Slot** (P191) — exakt wie `ui-container`. Die je Item geklonten Kinder werden in die Regionen dieses Layouts platziert; ihre Placement-Felder greifen gemäß Preset. Verstecktes `#node-input-layoutId` + `#node-input-layout-preset` via `installLayoutSelector`. Ein Altflow ohne `layoutId` migriert auf das Default-Preset (`vertical`) — kein roter Pflichtfeld-Bruch. |
+| `variant` | „Variant" | SelectBox (`CONTAINER_VARIANTS`) | optional | **Semantischer Container-Variant** (P197) — `card`/`panel`/`section`/`transparent`, exakt wie `ui-container` (`installVariantSelectBox("repeat")`). Der je Item erzeugte content-Layout-Region-Wrapper (P191/P192) trägt diesen Variant und rendert über **dieselbe** Container-Variant-Quelle wie `ui-container` (P198): `card` → `<sl-card>`-Chrome (Rahmen + Padding), `panel`/`section`/`transparent` → schlichtes `<div>` + `webapp-container--<v>`. **Default `transparent`** — ein Repeat ist per [ADR 0017](../../adr/0017-ui-repeat-template-container-render-time-scope.md) chrome-los, also keine verschwenderische Card um die Klone. Migration: ein Altflow ohne `variant` öffnet/rendert als `transparent` (kein Pflichtfeld-Bruch). |
 
 ### Gruppe „Inhalt"
 

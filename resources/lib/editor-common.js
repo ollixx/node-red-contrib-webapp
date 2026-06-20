@@ -44,6 +44,8 @@
         text: ["default", "muted", "primary", "success", "warning", "danger", "neutral"],
         container: ["card", "panel", "section", "transparent"],
         card: ["card", "panel", "section", "transparent"],
+        // P197: ui-repeat is a full container after P191 — same CONTAINER_VARIANTS.
+        repeat: ["card", "panel", "section", "transparent"],
         input: ["default", "filled", "outlined"],
         badge: ["primary", "success", "warning", "danger", "neutral", "info"],
         alert: ["primary", "success", "warning", "danger", "neutral", "info"]
@@ -54,6 +56,8 @@
         text: "default",
         container: "card",
         card: "card",
+        // P197: a repeat is chrome-less per ADR 0017 — default transparent.
+        repeat: "transparent",
         input: "default",
         badge: "neutral",
         alert: "primary"
