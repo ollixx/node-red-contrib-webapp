@@ -29,6 +29,8 @@ their blocker clears.
 
 - **P196** — nodes/ui-repeat — P193-Korrektur: Typ-Explosion raus → ein validierter Scope-Picker (item/index) + `scope('name')`-Accessor in Reactive — *Owner 2026-06-20; ADR 0023 §3 berichtigt* — [P196](nodes/ui-repeat/P196-named-scope-picker-and-reactive-scope-accessor.md)
 
+- **P197** — nodes/ui-repeat — variant-Feld (CONTAINER_VARIANTS) wie ui-container, Default transparent — konform; braucht P198 — *Owner 2026-06-20* — [P197](nodes/ui-repeat/P197-repeat-variant-container-conformance.md)
+- **P198** — nodes/ui-container — Container-Varianten rendern wirklich unterschiedlich (card/panel/section/transparent); transparent/section ohne Card-Chrome (Platzverschwendung) — *Owner-Bug 2026-06-20; CSS fehlte ganz* — [P198](nodes/ui-container/P198-container-variants-render-distinctly.md)
 
 ## Deferred (parked, not abandoned)
 
@@ -94,4 +96,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 195 done, 1 open, 8 deferred.**
+**Total: 195 done, 3 open, 8 deferred.**
