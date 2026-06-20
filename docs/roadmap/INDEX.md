@@ -29,7 +29,6 @@ their blocker clears.
 
 
 - **P197** — nodes/ui-repeat — variant-Feld (CONTAINER_VARIANTS) wie ui-container, Default transparent — konform; braucht P198 — *Owner 2026-06-20* — [P197](nodes/ui-repeat/P197-repeat-variant-container-conformance.md)
-- **P198** — nodes/ui-container — Container-Varianten rendern wirklich unterschiedlich (card/panel/section/transparent); transparent/section ohne Card-Chrome (Platzverschwendung) — *Owner-Bug 2026-06-20; CSS fehlte ganz* — [P198](nodes/ui-container/P198-container-variants-render-distinctly.md)
 
 ## Deferred (parked, not abandoned)
 
@@ -80,6 +79,7 @@ open the folder for the full history.
 | nodes/ui-list | 6 |
 | nodes/ui-component | 3 |
 | nodes/ui-table | 2 |
+| nodes/ui-container | 1 |
 | nodes/ui-icon | 2 |
 | nodes/ui-accordion | 2 |
 | nodes/ui-breadcrumb · ui-dialog · ui-progress · ui-skeleton | 1 each |
@@ -95,4 +95,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 196 done, 2 open, 8 deferred.**
+**Total: 197 done, 1 open, 8 deferred.**

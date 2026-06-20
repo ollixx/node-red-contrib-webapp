@@ -16,7 +16,7 @@ verify: browser
 spec: docs/nodes/display/ui-container.md
 tests: tests/e2e/nodes/composite/ui-container.spec.ts
 dependencies: []
-status: in_progress
+status: done
 ---
 # P198 — Container-Varianten wirklich unterscheiden
 
@@ -52,3 +52,29 @@ status: in_progress
   bestehende card-Container); nur die bisher faktisch identischen 3 ändern sich.
 - Backend-neutral denken (ADR 0021): die Variant-Namen bleiben semantisch; nur
   der Shoelace-Adapter (=dieser Serializer/CSS) bildet sie ab.
+
+## Result
+
+- **delivered:** The 4 `CONTAINER_VARIANTS` now render **visibly distinct** (they were all the same
+  `<sl-card>` because no `webapp-container--*` CSS shipped). Central fix in the container serializer
+  (`resources/lib/webapp-serializer.js`, the `kind==="container"` block): **element choice by variant** —
+  `card` → `<sl-card>` (unchanged, still the default & back-compatible); `panel`/`section`/`transparent`
+  → a plain `<div class="webapp-container webapp-container--<v>">` (no `<sl-card>`), and the bogus
+  `variant="…"` attribute crutch (which sl-card ignored) is dropped. Shipped CSS in the `nodes/webapp.js`
+  in-page `<style>` block: `--panel` = 1px border + 16px padding + surface bg, no card elevation;
+  `--section` = `padding:16px 0` (vertical spacing only, no border/bg); `--transparent` = explicit
+  `padding:0; background:none; border:none` (pure layout grouping, the wasted-space fix). Light/dark-safe
+  via `--wa-color-*`. ui-container theming doc extended with a 4-row variant table (element / chrome /
+  use-case).
+- **stats:** 5 files (+206/−11); unit **1053** (4 new variant assertions). Develop verification: build
+  exit 0; full unit green; **E2E 18/18 green** — ui-container 8/8 (incl. 4 new P198 proofs: card=sl-card,
+  panel/section=plain div with distinct chrome, transparent=plain div with no box chrome) + shoelace-
+  adapter 3/3 + ui-repeat 10/10 (no regression from the element change); check:specs (39/3) + check:links
+  + check:roadmap + lint green.
+- **notes:** Single rendering source — the **ui-repeat wrapper (P197, now unblocked) reuses this exact
+  `kind==="container"` path**, so both get the variants for free. Updated one stale `sl-card`-assuming
+  unit test (`p49-variant-serializer.test.ts` expected the removed `variant="card"` attribute → now
+  asserts the `<sl-card>` element + covers all 4 variants). The sub-agent ran its E2E green in-worktree
+  before returning. Backend-neutral per ADR 0021: the variant names stay semantic; only this Shoelace
+  serializer/CSS adapter maps them.
+- **cost:** session agent-a0fe3ccfb0a8b81d1, ~3m.
