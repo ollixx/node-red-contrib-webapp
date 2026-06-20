@@ -16,7 +16,7 @@ verify: browser
 spec: docs/nodes/display/ui-repeat.md
 tests: tests/e2e/nodes/view/ui-repeat.tests.md
 dependencies: [P198]
-status: pending
+status: in_progress
 ---
 # P197 — ui-repeat: variant-Feld (Container-Konformität)
 
