@@ -87,12 +87,57 @@ describe("P49: non-button variants render the mapped Shoelace output", () => {
         expect(html).toContain("webapp-text--color-danger");
     });
 
-    it("a ui-container variant 'card' renders an sl-card (panel/transparent differ)", () => {
+    it("a ui-container variant 'card' renders an sl-card element (P198)", () => {
         const cardHtml = serializer.renderComponentHtml(
             { kind: "container", id: "c1", layoutId: "vertical", regions: [], props: { variant: "card" } },
             "vertical",
             { appId: "app1", location: "/" }
         );
-        expect(cardHtml).toContain("variant=\"card\"");
+        // P198: card → <sl-card> element; no bogus variant="..." attribute (sl-card ignores it).
+        expect(cardHtml).toContain("<sl-card");
+        expect(cardHtml).toContain("webapp-container--card");
+    });
+
+    it("panel variant renders a plain <div>, not sl-card (P198)", () => {
+        const panelHtml = serializer.renderComponentHtml(
+            { kind: "container", id: "c2", layoutId: "vertical", regions: [], props: { variant: "panel" } },
+            "vertical",
+            { appId: "app1", location: "/" }
+        );
+        expect(panelHtml).not.toContain("<sl-card");
+        expect(panelHtml).toContain("<div");
+        expect(panelHtml).toContain("webapp-container--panel");
+    });
+
+    it("section variant renders a plain <div>, not sl-card (P198)", () => {
+        const sectionHtml = serializer.renderComponentHtml(
+            { kind: "container", id: "c3", layoutId: "vertical", regions: [], props: { variant: "section" } },
+            "vertical",
+            { appId: "app1", location: "/" }
+        );
+        expect(sectionHtml).not.toContain("<sl-card");
+        expect(sectionHtml).toContain("<div");
+        expect(sectionHtml).toContain("webapp-container--section");
+    });
+
+    it("transparent variant renders a plain <div>, not sl-card (P198)", () => {
+        const transparentHtml = serializer.renderComponentHtml(
+            { kind: "container", id: "c4", layoutId: "vertical", regions: [], props: { variant: "transparent" } },
+            "vertical",
+            { appId: "app1", location: "/" }
+        );
+        expect(transparentHtml).not.toContain("<sl-card");
+        expect(transparentHtml).toContain("<div");
+        expect(transparentHtml).toContain("webapp-container--transparent");
+    });
+
+    it("default (no variant) renders as sl-card (card is default) (P198)", () => {
+        const defaultHtml = serializer.renderComponentHtml(
+            { kind: "container", id: "c5", layoutId: "vertical", regions: [], props: {} },
+            "vertical",
+            { appId: "app1", location: "/" }
+        );
+        expect(defaultHtml).toContain("<sl-card");
+        expect(defaultHtml).toContain("webapp-container--card");
     });
 });

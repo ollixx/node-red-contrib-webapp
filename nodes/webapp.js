@@ -2421,6 +2421,26 @@ ${tokenCss ? tokenCss.split("\n").map((line) => `    ${line}`).join("\n") : "   
     .webapp-form { display:grid; gap:10px; }
     .webapp-field { display:grid; gap:6px; color:var(--wa-color-text-muted); font-size:0.95rem; }
     .webapp-container { display:grid; gap:12px; }
+    /* P198: semantic container variants. card=sl-card (default, unchanged).
+       panel/section/transparent are plain <div>s — CSS provides the distinction.
+       Uses --wa-color-* tokens so both light and dark themes are covered. */
+    /* panel: lightweight bordered block, moderate padding, NO card elevation */
+    .webapp-container--panel {
+      border:1px solid var(--wa-color-border);
+      border-radius:var(--wa-radius-md);
+      padding:16px;
+      background:var(--wa-color-surface);
+    }
+    /* section: no border/background, vertical breathing room only */
+    .webapp-container--section {
+      padding:16px 0;
+    }
+    /* transparent: pure layout grouping — no box chrome whatsoever */
+    .webapp-container--transparent {
+      padding:0;
+      background:none;
+      border:none;
+    }
     /* P64: dialogs are native <sl-dialog> (own overlay, backdrop, focus-trap).
        Only the slotted region wrappers need light layout; the footer lays its
        actions out in a row. */
