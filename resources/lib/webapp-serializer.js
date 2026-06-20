@@ -642,16 +642,21 @@
             const body = formId
                 ? "<form class=\"webapp-form\" id=\"" + escapeAttribute(formId) + "\" data-webapp-form-id=\"" + escapeAttribute(formId) + "\">" + content + "</form>"
                 : content;
-            const descriptor = mapComponentToShoelace(component.kind, component.props || {});
-            // P49: container's semantic Ebene-2 variant (card/panel/section/
-            // transparent) surfaces as a class modifier + a data hook. Default
-            // "card" when absent.
+            // P198: container's semantic Ebene-2 variant (card/panel/section/
+            // transparent) drives BOTH the element choice AND styling.
+            // card → <sl-card> (Shoelace chrome: border + padding + elevation).
+            // panel/section/transparent → plain <div> + webapp-container--<v> class
+            // (no sl-card chrome; CSS in the page shell provides the distinction).
+            // This is the single rendering source for ui-container AND ui-repeat
+            // wrapper (P197). Default "card" when absent.
             const containerVariant = (component.props && typeof component.props.variant === "string" && component.props.variant)
                 ? component.props.variant
                 : "card";
             const containerVariantClass = " webapp-container--" + sanitizeClassSuffix(containerVariant);
-            const inner = "<" + descriptor.tag + " class=\"webapp-container" + containerVariantClass
-                + "\" variant=\"" + escapeAttribute(containerVariant) + "\">" + body + "</" + descriptor.tag + ">";
+            const isCardVariant = containerVariant === "card";
+            const tag = isCardVariant ? "sl-card" : "div";
+            const inner = "<" + tag + " class=\"webapp-container" + containerVariantClass + "\">"
+                + body + "</" + tag + ">";
             return wrapRenderedComponentHtml(component, layoutId, inner);
         }
 

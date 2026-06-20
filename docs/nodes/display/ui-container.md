@@ -121,6 +121,20 @@ bildet sie auf die passende visuelle Darstellung ab. Das App-weite Theme
 aussehen. Weitere Backends folgen demselben semantischen Contract. Details:
 [theming.md](../concepts/theming.md).
 
+### Visuelle Bedeutung der 4 Varianten (Shoelace-Backend)
+
+| Variante | Element | Optik | Einsatz |
+|---|---|---|---|
+| `card` | `<sl-card>` | Shoelace-Card: Rand, Padding, leichte Elevation (Standard) | Inhaltsblöcke mit eigenem Gewicht |
+| `panel` | `<div>` | 1 px Rand (`--wa-color-border`), moderates Padding, KEINE Elevation | Leichte Gruppenrahmen ohne Card-Schatten |
+| `section` | `<div>` | Kein Rand, kein Hintergrund — nur vertikaler Abstand | Logische Abschnitte ohne Box-Chrome |
+| `transparent` | `<div>` | Absolut kein Chrome: kein Rand, kein Padding, kein Hintergrund | Reines Layout-Grouping (Platzneutral) |
+
+`card` ist der Standard und bleibt rückwärtskompatibel. `transparent` ist das
+Gegenteil: es fügt im DOM **keinen visuellen Rahmen** hinzu und eignet sich
+ausschließlich als Layout-Wrapper, wenn mehrere Kinder gemeinsam platziert
+werden sollen, ohne eine eigene Fläche zu erzeugen.
+
 ## Referenzen
 
 - [layout.md](../concepts/layout.md) — Presets, Slots und Child-Platzierungs-Felder
