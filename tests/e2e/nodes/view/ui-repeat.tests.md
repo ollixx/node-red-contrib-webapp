@@ -188,79 +188,18 @@
   durch den Container propagieren.
 
 
-### Eigenes content-Slot-Layout (P191) — abgedeckt
+### ui-repeat ist transparent (ADR 0025) — abgedeckt (E2E, gemessen)
 
-> Owner 2026-06-19: `ui-repeat` ist ein vollwertiger CONTAINER — sein `content`-Slot
-> (REPEAT_SLOT) bekommt ein EIGENES Layout-Preset (wie `ui-container`'s `layoutId`).
-> Die je Item geklonten Kinder werden in die Regionen dieses Layouts platziert, sodass
-> ihre Placement-Felder (order/row/col/colSize) greifen — konform zu ui-container/ui-route.
-> Schema: `packages/schema/test/p163-repeat-item-binding.test.ts` (optionales `layout`-Preset,
-> Default-migrierbar; unbekanntes Preset rot). Renderer:
-> `packages/renderer/test/p191-repeat-own-layout.test.ts` (je Item ein `container`-Komponente
-> mit `layoutId` + `regions`; Kinder unter der Layout-Region mit Item-Scope; keyed
-> `<itemKey>#<repeatId>`; 0-Item → 0 Container; OHNE layoutId → Legacy-Flach-Verhalten).
-> Browser: `tests/e2e/nodes/view/ui-repeat.spec.ts`
-> (Fixture `tests/e2e/fixtures/ui-repeat-layout.flow.json`).
+> ui-repeat trägt **kein** `layout` und **kein** `variant` — es iteriert nur und fügt
+> KEINEN Wrapper je Item ein (kehrt P191/P197 um). Layout/Chrome ist Sache eines
+> expliziten `ui-container`. Verifiziert per **Messung** (Bounding-Boxes), nicht per Tag.
 
-- **Schema:** das `ui-repeat`-Knotenschema trägt ein OPTIONALES `layout`-Preset (wie
-  ui-container, aber optional für Altflows); mapConfig migriert ein fehlendes Layout auf
-  das Default-Preset (`vertical`) und mappt `layout || layoutId` → `props.layoutId`. Das
-  referenzierte Layout wird in die `layouts`-Liste des Modells aufgenommen. Unbekanntes
-  Preset bleibt rot.
-- **Editor:** ein „Child Layout"-Selektor (verstecktes `#node-input-layoutId` +
-  `#node-input-layout-preset`) — identisch zu ui-container via `installLayoutSelector`;
-  ein leeres `layoutId` migriert beim Öffnen auf das erste Preset (kein roter
-  Pflichtfeld-Bruch bei Altflows). `ui-repeat` bleibt zugleich Kind: layoutX/Y +
-  Placement im Parent unverändert (zwei Rollen sauber getrennt).
-- **Renderer:** `expandRepeat` platziert je Item die geklonten Kinder in die Regionen des
-  Repeat-Layouts, indem es je Instanz eine `container`-Komponente
-  (`id = <itemKey>#<repeatId>`, `layoutId`, `regions`) rendert (über
-  `cloneTemplateSubtree` + `createContainerMountMatcher`, Wurzel = das Repeat). OHNE
-  Layout bleibt das Legacy-Flach-Verhalten (P164) unverändert — keine Regression in
-  p164/p192.
-- **End-to-End (browser):** Store-Array `[{name:'Ada',city:'London'},{name:'Linus',
-  city:'Helsinki'}]` + `ui-repeat` mit `layout:"grid"` und zwei direkten `ui-text`-Kindern
-  (`item.name` / `item.city`) rendert je Item einen `webapp-container`
-  (`Ada#gridRepeat` / `Linus#gridRepeat`), dessen Slot-Body den `--grid`-Modifier trägt;
-  die Kinder (`Ada#gridName`, `Ada#gridCity`, …) sitzen INNERHALB ihres Per-Item-Containers
-  und lösen `item.*` je Zeile auf.
-
-### Container-Variant auf dem Per-Item-Wrapper (P197) — abgedeckt
-
-> Owner 2026-06-20: `ui-repeat` ist nach P191 ein vollwertiger Container — wie
-> `ui-container` trägt es jetzt auch `variant` (`CONTAINER_VARIANTS`). **Default
-> `transparent`** (chrome-los, ADR 0017 — keine verschwenderische Card um die
-> Klone). Der je Item erzeugte content-Layout-Region-Wrapper (P191/P192) rendert
-> den Variant über DIESELBE Quelle wie `ui-container` (P198) — kein zweiter Pfad.
-> Schema: `packages/schema/test/p197-repeat-variant.test.ts` (jeder
-> CONTAINER_VARIANTS-Wert gültig; ohne `variant` validiert weiterhin = Migration,
-> kein Pflichtfeld-Bruch; Wert außerhalb der Vokabel rot; `repeat` in
-> `COMPONENT_VARIANT_VOCABULARY` = CONTAINER_VARIANTS, Default `transparent`).
-> Renderer: `packages/renderer/test/p197-repeat-variant-wrapper.test.ts` (der je
-> Item erzeugte `container` trägt `props.variant`; via gemeinsamen Serializer
-> `variant=card` → `<sl-card>`, `variant=transparent` → schlichtes `<div>` ohne
-> Card-Chrome). Browser: `tests/e2e/nodes/view/ui-repeat.spec.ts`
-> (Fixture `tests/e2e/fixtures/ui-repeat-variant.flow.json`).
-
-- **Schema:** `ui-repeat.variant` ist OPTIONAL (`CONTAINER_VARIANTS`); Default-
-  Quelle ist mapConfig/Editor (`transparent`), nicht ein Zod-`.default()`, sodass
-  ein Altflow ohne `variant` weiter validiert. mapConfig (`nodes/webapp.js`) trägt
-  `variant` (Default `transparent`) wie `layoutId` ins Modell.
-- **Editor:** ein „Variant"-SelectBox via `installVariantSelectBox("repeat")` —
-  identisch zu `ui-container`, an derselben Stelle; Default `transparent` (vs.
-  `card` bei ui-container). Ein reiner Optik-Zwischen-`ui-container` ist damit
-  nicht mehr nötig.
-- **Renderer:** `expandRepeat` spreizt `repeat.props` (inkl. `variant`) auf den je
-  Item erzeugten `container` — der gemeinsame Serializer-Block (P198) wählt
-  `<sl-card>` (card) bzw. `<div>` + `webapp-container--<v>` (panel/section/
-  transparent). Kein zweiter Render-Pfad.
-- **End-to-End (browser):** Store-Array `[{name:'Ada'},{name:'Linus'}]` + zwei
-  `ui-repeat` über denselben Store — `cardRepeat` (`variant=card`) und
-  `transparentRepeat` (`variant=transparent`), je mit einem `ui-text`-Kind
-  (`item.name`). `variant=card`: je Zeile (`Ada#cardRepeat`/`Linus#cardRepeat`)
-  rahmt ein `<sl-card>.webapp-container--card`. `variant=transparent`: je Zeile
-  (`Ada#transparentRepeat`/…) ein schlichtes `<div>.webapp-container--transparent`,
-  KEINE `<sl-card>`-Chrome. Round-trip: beide Looks auf derselben Seite.
+- **E2E (`tests/e2e/nodes/view/ui-repeat.spec.ts`):** `ui-container[variant=span]` →
+  `ui-repeat` → `ui-text(item)` über `[a,b,c]` rendert die 3 Werte **nebeneinander**
+  (gemessen: gleiches `y`, steigendes `x`), **kein** Element mit `…#<repeatId>`,
+  **kein** `webapp-container--transparent` je Item. Plus: ein nackter `ui-repeat`
+  klont die Kinder ohne Repeat-Wrapper-Element. Fixture
+  `tests/e2e/fixtures/ui-repeat-inline-compose.flow.json`.
 
 ### items-typedInput Carrier-id Round-trip Fix (P190) — abgedeckt
 

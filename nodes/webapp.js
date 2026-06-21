@@ -1401,23 +1401,9 @@ function toComponentDefinitions(components) {
                 order: toOptionalNumber(component.order),
                 bind: itemsBinding ? { items: itemsBinding } : {},
                 props: {
-                    // P191: ui-repeat's OWN content-slot layout, exactly like
-                    // ui-container's `layoutId`. The renderer places the cloned
-                    // per-item children into this layout's regions. A pre-P191
-                    // ui-repeat (no layout/layoutId) migrates to the default preset
-                    // ("vertical") — the same default the editor's layout selector
-                    // applies — so old flows render without a broken/missing layout.
-                    layoutId: blankToUndefined(component.layout) || blankToUndefined(component.layoutId) || "vertical",
-                    // P197: ui-repeat is a full container (after P191's own content-
-                    // slot layout), so it carries `variant` (CONTAINER_VARIANTS) just
-                    // like ui-container — flowed into the model like `layoutId`. The
-                    // renderer (expandRepeat) spreads these props onto the per-item
-                    // content-layout-region container, so the chosen variant renders
-                    // through the SAME container-variant source as ui-container (P198).
-                    // DEFAULT `transparent` (a repeat is chrome-less per ADR 0017 — no
-                    // wasted card around the clones); migration: an absent variant
-                    // renders as transparent, no required-field break.
-                    variant: blankToUndefined(component.variant) || "transparent",
+                    // ADR 0025: ui-repeat is TRANSPARENT — NO layoutId, NO variant.
+                    // The renderer flattens the cloned template children into the host
+                    // region with no wrapper. Layout/chrome = an explicit ui-container.
                     ...(blankToUndefined(component.keyField) ? { keyField: component.keyField } : {}),
                     // P193 (ADR 0023): the optional alias naming this repeat's item
                     // scope, so a descendant can address THIS level by name.
@@ -1911,11 +1897,8 @@ function getAppModelResult(appId, definitions) {
         buckets.app.layout,
         ...buckets.routes.map((route) => route.layout || route.layoutId),
         ...buckets.dialogs.map((dialog) => dialog.layout || dialog.layoutId),
-        ...buckets.components.filter((component) => component.type === "ui-container").map((component) => component.layout || component.layoutId),
-        // P191: ui-repeat carries its OWN content-slot layout (like ui-container).
-        // Register it so the standard preset is materialised into the model's
-        // `layouts` list and the renderer can resolve it. Absent → default preset.
-        ...buckets.components.filter((component) => component.type === "ui-repeat").map((component) => component.layout || component.layoutId || "vertical")
+        ...buckets.components.filter((component) => component.type === "ui-container").map((component) => component.layout || component.layoutId)
+        // ADR 0025: ui-repeat no longer registers a layout — it is transparent.
     ]);
     const standardLayouts = collectMissingStandardLayouts(
         referencedLayoutIds,

@@ -317,7 +317,7 @@ test.describe("editor panels — variant SelectBox (P50)", () => {
 
         await editor.expectFields(["variant"]);
         const options = await editor.selectOptionValues("variant");
-        expect(options).toEqual(["card", "panel", "section", "transparent"]);
+        expect(options).toEqual(["card", "panel", "section", "transparent", "span"]);
         expect(await editor.readField("variant")).toBe("panel");
     });
 

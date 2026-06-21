@@ -2,14 +2,12 @@
 <script type="text/javascript">
     (function () {
         const common = window.WebappEditorCommon;
-        // P165 (ADR 0017): ui-repeat is a TEMPLATE CONTAINER. Base-field
+        // P165 (ADR 0017): ui-repeat is a TRANSPARENT iterator. Base-field
         // applicability: `visible` applies (a container can be shown/hidden);
-        // `disabled` is N/A (no interactive state), `color`/`size` are N/A.
-        // P197: ui-repeat is a FULL container after P191 (own content-slot layout),
-        // so the semantic container `variant` DOES apply (its per-item content-layout
-        // region renders through the shared ui-container variant source, P198). The
-        // SelectBox is installed via installVariantSelectBox("repeat") below; the
-        // base-field group keeps `variant: false` so it is not double-injected here.
+        // `disabled` is N/A (no interactive state), `color`/`size`/`variant` are N/A.
+        // ADR 0025: ui-repeat carries NO layout and NO variant — it only clones the
+        // template N×. Layout/chrome is the job of an explicit enclosing/inner
+        // ui-container. (Reverts the P191/P197 "repeat-as-container" experiment.)
         const BASE_FIELDS = {
             visible: true,
             disabled: false,
@@ -39,19 +37,7 @@
                 items: { value: null },
                 itemsBinding: { value: "" },
                 itemsPath: { value: "" },
-                // P191: ui-repeat is a true CONTAINER — its `content` slot gets its
-                // OWN layout preset, exactly like ui-container's `layoutId`. The
-                // cloned per-item children are placed into that layout's regions, so
-                // their placement fields (order/row/col/colSize) take effect. The
-                // layout selector default-migrates an empty value to the first preset,
-                // so an old ui-repeat (no layoutId) opens green, not a red required-break.
-                layoutId: { value: "", required: true },
-                // P197: ui-repeat is a full container after P191, so it carries the
-                // same semantic container `variant` as ui-container (CONTAINER_VARIANTS).
-                // DEFAULT `transparent` — a repeat is chrome-less per ADR 0017, so the
-                // cloned per-item regions get no wasted card by default. The SelectBox
-                // is injected by installVariantSelectBox("repeat") in oneditprepare.
-                variant: { value: "transparent" },
+                // ADR 0025: ui-repeat is transparent — NO layoutId, NO variant fields.
                 // P165: optional stable per-instance key field (e.g. "id").
                 keyField: { value: "" },
                 // P193 (ADR 0023): optional ALIAS naming this repeat's item scope
@@ -88,24 +74,10 @@
             },
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
-                // P197: semantic container variant SelectBox — same helper/location
-                // as ui-container, keyed "repeat" (CONTAINER_VARIANTS, default
-                // transparent). Renders the per-item region through the P198 source.
-                common.installVariantSelectBox("repeat").call(this);
                 // P139: shared base-field group ("Allgemein") — only `visible` is
                 // applicable for a repeat; the rest render N/A with a hint.
                 common.installBaseFields(BASE_FIELDS).call(this);
                 common.installLayoutChildPropRows().call(this);
-                // P191: ui-repeat's OWN content-slot layout — identical wiring to
-                // ui-container (hidden #node-input-layoutId + #node-input-layout-preset
-                // select). Default-migrates an empty value to the first preset.
-                common.installLayoutSelector({
-                    valueSelector: "#node-input-layoutId",
-                    presetSelector: "#node-input-layout-preset",
-                    getValue: function () {
-                        return this.layoutId;
-                    }
-                }).call(this);
 
                 // P165 (ADR 0017): `items` value typedInput (full value-binding
                 // set). Migration: a legacy `itemsPath` opens as a `state` binding.
@@ -160,8 +132,6 @@
          has NO matching DOM field so Node-RED auto-save cannot clobber the binding object.
          Mirror of ui-list (P171). -->
     <div class="form-row"><label for="node-input-itemsBinding">Items</label><input type="text" id="node-input-itemsBinding"></div>
-    <input type="hidden" id="node-input-layoutId">
-    <div class="form-row"><label for="node-input-layout-preset">Child Layout</label><select id="node-input-layout-preset"></select></div>
     <div class="form-row"><label for="node-input-keyField">Key Field</label><input type="text" id="node-input-keyField" placeholder="optional, e.g. id"></div>
     <div class="form-row"><label for="node-input-itemName">Scope Name</label><input type="text" id="node-input-itemName" placeholder="optional alias, e.g. customer"></div>
     <div class="form-tips" style="margin-top: 4px;">

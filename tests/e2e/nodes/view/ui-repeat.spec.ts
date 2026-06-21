@@ -206,127 +206,6 @@ test.describe("ui-repeat — item-scope through a nested ui-container (P192)", (
 });
 
 /**
- * P191 (Owner 2026-06-19) — ui-repeat is a true CONTAINER: its `content` slot gets
- * its OWN layout preset (like ui-container's `layoutId`). The fixture's `ui-repeat`
- * declares `layout: "grid"` and holds two direct `ui-text` children (item.name /
- * item.city). The renderer places each per-item clone-set into the repeat's layout
- * regions — so each item renders as a `webapp-container` whose slot-body carries the
- * `--grid` modifier, and the cloned children keep their per-instance `<itemKey>#<id>`
- * ids (keyField = name). This conforms ui-repeat to ui-container/ui-route: the
- * content slot is a real layout, not a layout-less flat list.
- */
-test.describe("ui-repeat — own content-slot layout (P191)", () => {
-    test.beforeAll(async ({ request }) => {
-        const flow = await loadFlowFixture("tests/e2e/fixtures/ui-repeat-layout.flow.json");
-        const response = await request.post("/flows", { data: flow });
-        expect(response.ok()).toBeTruthy();
-    });
-
-    test.afterAll(async ({ request }) => {
-        const baseline = await loadFlowFixture("examples/customers-crud/flow.json");
-        await request.post("/flows", { data: baseline });
-    });
-
-    test("each item renders as a container under the repeat's chosen (grid) layout", async ({ page }) => {
-        await page.goto("/webapp/repeatLayoutApp/");
-
-        // One per-item container per row, keyed by `name` (itemKey × repeatId).
-        const adaBox = page.locator('[data-webapp-node="Ada#gridRepeat"]');
-        const linusBox = page.locator('[data-webapp-node="Linus#gridRepeat"]');
-        await expect(adaBox).toHaveCount(1);
-        await expect(linusBox).toHaveCount(1);
-
-        // The per-item container applies the repeat's OWN layout preset — its slot
-        // body carries the `--grid` modifier (conforming to ui-container).
-        await expect(adaBox.locator(".webapp-slot-body--grid")).toHaveCount(1);
-        await expect(linusBox.locator(".webapp-slot-body--grid")).toHaveCount(1);
-    });
-
-    test("the cloned children sit UNDER the per-item layout, resolving item.* per row", async ({ page }) => {
-        await page.goto("/webapp/repeatLayoutApp/");
-
-        // The children are placed into the per-item container's layout region and keep
-        // their per-instance ids — each resolves item.name / item.city for its row.
-        await expect(page.locator('[data-webapp-node="Ada#gridName"]')).toHaveText("Ada");
-        await expect(page.locator('[data-webapp-node="Ada#gridCity"]')).toHaveText("London");
-        await expect(page.locator('[data-webapp-node="Linus#gridName"]')).toHaveText("Linus");
-        await expect(page.locator('[data-webapp-node="Linus#gridCity"]')).toHaveText("Helsinki");
-
-        // Each grid child lives INSIDE its own per-item container (not flattened flat).
-        await expect(
-            page.locator('[data-webapp-node="Ada#gridRepeat"] [data-webapp-node="Ada#gridName"]')
-        ).toHaveCount(1);
-    });
-});
-
-/**
- * P197 (Owner 2026-06-20) — ui-repeat is a full container after P191, so it carries
- * the semantic container `variant` (CONTAINER_VARIANTS) like ui-container. The
- * per-item content-layout-region wrapper renders through the SAME container-variant
- * source as ui-container (P198): variant=card frames each item-region as an
- * <sl-card>; variant=transparent adds NO chrome (plain <div>, webapp-container--
- * transparent). The fixture has two repeats over the same store — `cardRepeat`
- * (variant=card) and `transparentRepeat` (variant=transparent) — so a single page
- * proves both: each Ada/Linus card-row is an sl-card, each transparent-row is a
- * chrome-less div, keyed by `name` (itemKey × repeatId).
- */
-test.describe("ui-repeat — container variant on the per-item wrapper (P197)", () => {
-    test.beforeAll(async ({ request }) => {
-        const flow = await loadFlowFixture("tests/e2e/fixtures/ui-repeat-variant.flow.json");
-        const response = await request.post("/flows", { data: flow });
-        expect(response.ok()).toBeTruthy();
-    });
-
-    test.afterAll(async ({ request }) => {
-        const baseline = await loadFlowFixture("examples/customers-crud/flow.json");
-        await request.post("/flows", { data: baseline });
-    });
-
-    test("variant=card frames each per-item region as an sl-card", async ({ page }) => {
-        await page.goto("/webapp/repeatVariantApp/");
-
-        // One per-item container per row, keyed by `name` (itemKey × repeatId).
-        const adaCard = page.locator('[data-webapp-node="Ada#cardRepeat"]');
-        const linusCard = page.locator('[data-webapp-node="Linus#cardRepeat"]');
-        await expect(adaCard).toHaveCount(1);
-        await expect(linusCard).toHaveCount(1);
-
-        // P198 card source: the per-item region is an <sl-card> with the card class.
-        await expect(adaCard.locator("sl-card.webapp-container--card")).toHaveCount(1);
-        await expect(linusCard.locator("sl-card.webapp-container--card")).toHaveCount(1);
-        await expect(adaCard.locator("sl-card")).toContainText("Ada");
-        await expect(linusCard.locator("sl-card")).toContainText("Linus");
-    });
-
-    test("variant=transparent adds NO card chrome around the clones (plain div)", async ({ page }) => {
-        await page.goto("/webapp/repeatVariantApp/");
-
-        const adaPlain = page.locator('[data-webapp-node="Ada#transparentRepeat"]');
-        const linusPlain = page.locator('[data-webapp-node="Linus#transparentRepeat"]');
-        await expect(adaPlain).toHaveCount(1);
-        await expect(linusPlain).toHaveCount(1);
-
-        // P198 transparent source: a plain <div> with the transparent class, and NO
-        // sl-card chrome inside the per-item wrapper.
-        await expect(adaPlain.locator("div.webapp-container--transparent")).toHaveCount(1);
-        await expect(adaPlain.locator("sl-card")).toHaveCount(0);
-        await expect(linusPlain.locator("sl-card")).toHaveCount(0);
-        await expect(adaPlain).toContainText("Ada");
-        await expect(linusPlain).toContainText("Linus");
-    });
-
-    test("round-trip: each chosen variant renders distinct chrome on the same page", async ({ page }) => {
-        await page.goto("/webapp/repeatVariantApp/");
-
-        // card repeat → sl-cards present; transparent repeat → none of its rows are cards.
-        await expect(page.locator('[data-webapp-node="Ada#cardRepeat"] sl-card')).toHaveCount(1);
-        await expect(page.locator('[data-webapp-node="Ada#transparentRepeat"] sl-card')).toHaveCount(0);
-        // Both repeats render their item.name text (same store, two looks).
-        await expect(page.locator(".webapp-text")).toContainText(["Ada", "Linus", "Ada", "Linus"]);
-    });
-});
-
-/**
  * P193 (ADR 0023) — named repeat scopes: an OUTER repeat's item is addressable by
  * alias from a deeply-nested child, past an inner repeat. The fixture nests an
  * `orderRepeat` (itemName="order", items bound to the OUTER customer's orders via
@@ -481,32 +360,61 @@ test.describe("ui-repeat items typedInput round-trip (P190)", () => {
     });
 });
 
-
 /**
- * P199 — ui-repeat variant=span: inline per-item wrapper (no div per item).
+ * ADR 0025 — ui-repeat is TRANSPARENT. It only iterates: the cloned template
+ * children flatten into the HOST region with NO per-item wrapper, no own layout,
+ * no variant. Layout/chrome is the job of an explicit enclosing ui-container.
  *
- * variant=span on a ui-repeat → each per-item container is a <span>, not a div.
- * A repeat over ['a','b','c'] with one ui-text(item) → three texts inline.
+ * The owner's real case: a ui-container[variant=span] holding a ui-repeat over a
+ * string array of a single ui-text(item) must render the values on ONE line,
+ * tight ("dicht hintereinander") — NOT stacked. This is asserted by MEASUREMENT
+ * (same y, increasing x), not by tag/class, because the previous P191/P197
+ * "repeat-as-container" tests passed on tags while the layout was actually broken.
  */
-test.describe("ui-repeat variant=span — inline per-item wrapper (P199)", () => {
+test.describe("ui-repeat is transparent — inline composition via ui-container[span] (ADR 0025)", () => {
     test.afterAll(async ({ request }) => {
         const baseline = await loadFlowFixture("examples/customers-crud/flow.json");
         await request.post("/flows", { data: baseline });
     });
 
-    test("variant=span renders each per-item region as a <span>, not a div or sl-card", async ({ page, request }) => {
-        const flow = await loadFlowFixture("tests/e2e/fixtures/ui-repeat-span.flow.json");
+    test("ui-container[span] > ui-repeat > ui-text(item) renders the 3 values SIDE BY SIDE (same row), tight", async ({ page, request }) => {
+        const flow = await loadFlowFixture("tests/e2e/fixtures/ui-repeat-inline-compose.flow.json");
         const response = await request.post("/flows", { data: flow });
         expect(response.ok()).toBeTruthy();
+        await page.goto("/webapp/riApp/");
+        await page.locator(".webapp-text").first().waitFor();
 
-        await page.goto("/webapp/repeatSpanApp/");
+        // The repeat adds NO wrapper of its own: there is no element keyed by the
+        // repeat id (`<itemKey>#<repeatId>`) and no nested container around items.
+        await expect(page.locator('[data-webapp-node$="#riRepeat"]')).toHaveCount(0);
+        await expect(page.locator(".webapp-container--transparent")).toHaveCount(0);
 
-        // Each per-item wrapper must be a <span.webapp-container--span>
-        const itemWrappers = page.locator("span.webapp-container--span");
-        await expect(itemWrappers).toHaveCount(3);
-        // Must NOT be plain divs
-        await expect(page.locator("div.webapp-container--span")).toHaveCount(0);
-        // Text content visible
-        await expect(page.locator(".webapp-text")).toContainText(["a", "b", "c"]);
+        // The three texts exist and read the item values.
+        const texts = page.locator(".webapp-text");
+        await expect(texts).toHaveCount(3);
+        await expect(texts).toHaveText(["a", "b", "c"]);
+
+        // MEASURED: all three are on the same line (identical top within 2px), and
+        // their left edges strictly increase (laid out left-to-right, not stacked).
+        const boxes = await texts.evaluateAll((els) =>
+            els.map((el) => {
+                const r = el.getBoundingClientRect();
+                return { x: Math.round(r.x), y: Math.round(r.y) };
+            })
+        );
+        const ys = boxes.map((b) => b.y);
+        expect(Math.max(...ys) - Math.min(...ys)).toBeLessThan(2); // same row
+        expect(boxes[0].x).toBeLessThan(boxes[1].x); // left-to-right
+        expect(boxes[1].x).toBeLessThan(boxes[2].x);
+    });
+
+    test("a plain ui-repeat (no enclosing span) clones children with NO repeat wrapper element", async ({ page, request }) => {
+        const flow = await loadFlowFixture("tests/e2e/fixtures/ui-repeat-primitive.flow.json");
+        const response = await request.post("/flows", { data: flow });
+        expect(response.ok()).toBeTruthy();
+        await page.goto("/webapp/repeatPrimApp/");
+        await page.locator(".webapp-text").first().waitFor();
+        // No element carries the repeat's id as a wrapper — the repeat is transparent.
+        await expect(page.locator('[data-webapp-node$="#wordsRepeat"]')).toHaveCount(0);
     });
 });

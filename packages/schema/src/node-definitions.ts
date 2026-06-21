@@ -217,21 +217,13 @@ export const uiRepeatNodeDefinitionSchema = mountableNodeSchema.extend({
     // store/routeParam/reactive/msg/flow/global/jsonata/env). Resolution → array
     // happens in the renderer (P164), not here.
     items: bindingSchema,
-    // P191: ui-repeat is a true CONTAINER — its `content` slot (REPEAT_SLOT) gets
-    // its OWN layout preset, exactly like `ui-container`'s `layout`. The cloned
-    // per-item children are placed into that layout's regions, so their placement
-    // fields (order/row/col/colSize) take effect. OPTIONAL (unlike ui-container's
-    // required `layout`) so a legacy ui-repeat authored before P191 still validates;
-    // mapConfig migrates an absent layout to the default preset.
-    layout: standardLayoutPresetSchema.optional(),
-    // P197: ui-repeat is a full container after P191 (own content-slot layout), so
-    // it also carries `variant` (CONTAINER_VARIANTS) exactly like `ui-container`.
-    // The per-item content-layout-region wrapper renders through the SAME container
-    // variant source as ui-container (P198). OPTIONAL with default `transparent`
-    // (a repeat is chrome-less per ADR 0017 — no wasted card around the clones);
-    // mapConfig migrates an absent variant to "transparent" so legacy ui-repeat
-    // configs open/render without a required-field break.
-    variant: z.enum(CONTAINER_VARIANTS).optional(),
+    // ADR 0025: ui-repeat is TRANSPARENT — it ONLY iterates. It carries NO `layout`
+    // and NO `variant`: the cloned children flatten into the host region with no
+    // wrapper. Layout/chrome is the job of an explicit enclosing/inner `ui-container`
+    // (which owns `layout` + `variant`). This reverses the P191/P197 direction that
+    // had briefly made ui-repeat a container — that produced per-item wrapper divs
+    // which broke inline composition (a repeat over ui-text could never render the
+    // texts side by side). `layout`/`variant` here are intentionally gone.
     // Optional stable key field for the keyed morph (e.g. "id"). When omitted the
     // renderer keys instances by array index.
     keyField: z.string().min(1, "ui-repeat keyField must not be empty when set.").optional(),

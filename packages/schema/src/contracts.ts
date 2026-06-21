@@ -849,10 +849,8 @@ export const COMPONENT_VARIANT_VOCABULARY: Readonly<Record<string, readonly stri
     text: TEXT_COLOR_VARIANTS,
     container: CONTAINER_VARIANTS,
     card: CONTAINER_VARIANTS,
-    // P197: ui-repeat is a full container after P191 (own content-slot layout), so
-    // it carries the same CONTAINER_VARIANTS vocabulary as ui-container (its
-    // per-item content-region wrapper renders through the shared P198 source).
-    repeat: CONTAINER_VARIANTS,
+    // ADR 0025: ui-repeat is transparent — NO variant (reverted from P197). Layout/
+    // chrome belongs to an explicit ui-container.
     input: INPUT_VARIANTS,
     badge: BADGE_VARIANTS,
     alert: ALERT_VARIANTS
@@ -869,9 +867,6 @@ export const COMPONENT_VARIANT_DEFAULT: Readonly<Record<string, string>> = {
     text: "default",
     container: "card",
     card: "card",
-    // P197: a repeat is chrome-less per ADR 0017 — default `transparent` (no
-    // wasted card around the cloned per-item regions), unlike ui-container=card.
-    repeat: "transparent",
     input: "default",
     badge: "neutral",
     alert: "primary"

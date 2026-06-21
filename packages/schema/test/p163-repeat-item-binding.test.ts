@@ -68,22 +68,12 @@ describe("P163 (ADR 0017): ui-repeat node definition", () => {
         expect(REPEAT_SLOT).toBe("content");
     });
 
-    // P191: ui-repeat is a true CONTAINER — its `content` slot gets its OWN layout
-    // preset (like ui-container's `layout`). OPTIONAL on the node (default-migrated
-    // by mapConfig / the editor selector) so legacy ui-repeat configs stay valid.
-    it("accepts an OPTIONAL content-slot `layout` preset (P191)", () => {
-        const result = uiRepeatNodeDefinitionSchema.safeParse({ ...baseRepeat, layout: "grid" });
-        expect(result.success).toBe(true);
-    });
-
-    it("still validates a ui-repeat WITHOUT a `layout` (optional — legacy configs, P191)", () => {
+    // ADR 0025: ui-repeat is TRANSPARENT — it carries NO `layout` and NO `variant`
+    // (reverted from P191/P197). It only iterates; layout/chrome is an explicit
+    // enclosing ui-container's job. A bare repeat (just `items`) validates.
+    it("validates a transparent ui-repeat (no layout / no variant fields)", () => {
         const result = uiRepeatNodeDefinitionSchema.safeParse(baseRepeat);
         expect(result.success).toBe(true);
-    });
-
-    it("rejects an UNKNOWN `layout` preset value (P191)", () => {
-        const result = uiRepeatNodeDefinitionSchema.safeParse({ ...baseRepeat, layout: "not-a-preset" });
-        expect(result.success).toBe(false);
     });
 });
 
