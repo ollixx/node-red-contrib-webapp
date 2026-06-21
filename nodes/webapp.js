@@ -2390,7 +2390,10 @@ ${tokenCss ? tokenCss.split("\n").map((line) => `    ${line}`).join("\n") : "   
     /* P36: buttons inside the navbar slot render as plain nav-style links, not pill buttons */
     .webapp-slot--navbar sl-button::part(base) { border:none; background:transparent; border-radius:0; width:100%; justify-content:flex-start; padding:10px 20px; font-size:0.95rem; font-weight:500; color:var(--wa-color-text); box-shadow:none; }
     .webapp-slot--navbar sl-button::part(base):hover { color:var(--wa-color-primary); background:color-mix(in srgb, var(--wa-color-primary) 8%, transparent); }
-    .webapp-slot--navbar .webapp-item { width:100%; }
+    /* ADR 0025: navbar items span full width — match both the placement wrapper
+       (.webapp-item) and a now-unwrapped plain leaf (direct child of the slot body). */
+    .webapp-slot--navbar .webapp-item,
+    .webapp-slot--navbar .webapp-slot-body > [data-webapp-node] { width:100%; }
     /* P111: ui-text typography. The 'style' (role) drives size/weight/family via
        the webapp-text--<role> class; 'variant' (colour) via webapp-text--color-<c>.
        Margins are reset so headings don't disturb the slot layout. */

@@ -58,6 +58,22 @@ from P198/P199). Two composition patterns:
 
 ## Consequences
 
+- **Leaner markup (KISS, owner follow-up):** even with the repeat transparent, the
+  rendered HTML was wrapper-heavy — every child was wrapped in a `<div class="webapp-item">`,
+  so a repeat of `ui-text` emitted `div.webapp-item > p` per item (a stack of wrapper
+  divs). The serializer now **drops that wrapper for a plain display leaf** (kinds
+  `text`/`badge`/`icon`/`image`/`divider`/`avatar`/`progress`/`skeleton`) that has **no
+  placement** — `data-webapp-node` is stamped onto the leaf's own element (at the end of
+  its open tag, preserving the `<tag class="…"` prefix). The keyed morph keys on
+  `[data-webapp-node]` wherever it sits, and the action overlay already resolves
+  `closest("[data-webapp-node]")`, so behaviour is unchanged. **Kept wrapped:**
+  containers/tabs/accordion/table (they *are* a box; their structural markup is matched
+  elsewhere), change-controls (their `data-webapp-source` change plumbing reads the
+  wrapper), and anything with grid/absolute placement (the wrapper carries the placement
+  style). Measured: the span subtree for a 3-item repeat of `ui-text` went from 9 to 6
+  descendant elements; the three `<p>` are now direct, attribute-stamped leaves.
+  *Stage 2 (collapsing the `layout`/`slot`/`slot-body` wrappers in the single-slot case)
+  is deliberately NOT done here — higher CSS risk, separate decision.*
 - **Trade-off (accepted by the owner):** multiple children per item are NOT
   auto-grouped — grouping requires an explicit inner `ui-container`. Less "magic",
   but unambiguous: the flow shows exactly which node produces which box.

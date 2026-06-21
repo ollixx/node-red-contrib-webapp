@@ -89,8 +89,10 @@ function innerText(kind: "text" | "badge", html: string): string {
     }
 
     // P111: the text element tag varies by `style` (defaults to <p>); capture the
-    // tag name and use a backreference so any role's element is matched.
-    const match = /<([a-z0-9]+) class="webapp-text[^"]*">([\s\S]*?)<\/\1>/i.exec(html);
+    // tag name and use a backreference so any role's element is matched. ADR 0025:
+    // the leaf now also carries `data-webapp-node` after its class (the per-item
+    // wrapper div was dropped), so tolerate further attributes before the `>`.
+    const match = /<([a-z0-9]+) class="webapp-text[^"]*"[^>]*>([\s\S]*?)<\/\1>/i.exec(html);
     return match ? match[2] : "<<no webapp-text>>";
 }
 

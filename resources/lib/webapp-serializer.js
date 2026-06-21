@@ -445,7 +445,46 @@
             ? " data-webapp-node=\"" + escapeAttribute(component.id) + "\""
             : "";
 
+        // ADR 0025 (KISS markup): the per-item `<div class="webapp-item">` wrapper is
+        // pure nesting for a plain DISPLAY LEAF with no placement — e.g. a ui-repeat of
+        // ui-text emitted `div.webapp-item > p` per item, a stack of wrapper divs. For
+        // those leaf kinds, drop the wrapper and stamp the hook attributes
+        // (`data-webapp-node`) directly onto the leaf's own element — the keyed morph
+        // keys on `[data-webapp-node]` wherever it sits, and the action overlay already
+        // resolves `closest("[data-webapp-node]")`. Scoped to display leaves only:
+        // containers/tabs/accordion/table keep their wrapper (they ARE a box, and their
+        // structural markup is matched elsewhere), and change-controls keep it (their
+        // `data-webapp-source` change plumbing reads the wrapper). Placement (grid/
+        // absolute) always keeps the wrapper — it carries the placement style.
+        const LEAF_DISPLAY_KINDS = ["text", "badge", "icon", "image", "divider", "avatar", "progress", "skeleton"];
+        const isLeafDisplay = component && LEAF_DISPLAY_KINDS.indexOf(component.kind) !== -1;
+        if (styles.length === 0 && isLeafDisplay && nodeAttribute && !sourceAttribute) {
+            const injected = injectLeafHookAttributes(innerHtml, nodeAttribute);
+            if (injected !== null) {
+                return injected;
+            }
+        }
+
         return "<div class=\"webapp-item webapp-item--" + escapeAttribute(layoutVariant) + "\"" + nodeAttribute + sourceAttribute + styleAttribute + ">" + innerHtml + "</div>";
+    }
+
+    // ADR 0025: insert hook attributes (already space-prefixed) at the END of the
+    // leaf's opening tag (before the closing `>`, or before `/` for a self-closing
+    // tag), so the leaf carries `data-webapp-node` instead of a wrapper div WHILE
+    // keeping the natural `<tag class="…"` prefix intact (no attribute-order churn for
+    // markup matchers). Returns null (→ caller keeps the wrapper) when the html does
+    // not begin with a single element open tag.
+    function injectLeafHookAttributes(html, attrs) {
+        const open = /^\s*<[a-zA-Z][a-zA-Z0-9-]*/.exec(html);
+        if (!open) {
+            return null;
+        }
+        const gt = html.indexOf(">", open.index + open[0].length);
+        if (gt === -1) {
+            return null;
+        }
+        const insertAt = html.charAt(gt - 1) === "/" ? gt - 1 : gt;
+        return html.slice(0, insertAt) + attrs + html.slice(insertAt);
     }
 
     function renderRegionHtml(region, layoutId, ctx) {

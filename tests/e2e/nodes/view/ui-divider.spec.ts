@@ -65,7 +65,10 @@ test.describe("ui-divider render (P83)", () => {
         const res = await request.get("/webapp/divApp3/");
         expect(res.ok()).toBeTruthy();
         const html = await res.text();
-        expect(html).toContain("<sl-divider>");
+        // ADR 0025: the divider leaf now carries data-webapp-node on the element
+        // itself (the per-item wrapper div was dropped), so the open tag may have
+        // attributes — match the tag start, not an exact `<sl-divider>`.
+        expect(html).toContain("<sl-divider");
         expect(html).toContain("Section");
     });
 

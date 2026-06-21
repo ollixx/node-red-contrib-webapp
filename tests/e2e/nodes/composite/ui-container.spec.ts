@@ -248,14 +248,14 @@ test.describe("ui-container variant=span — inline wrapper (P199)", () => {
         await expect(wrapper).toContainText("Hello");
         await expect(wrapper).toContainText("World");
 
-        // The span wrapper's direct children (webapp-item wrappers) are inline —
-        // check their top positions are identical (within a small tolerance).
-        const items = wrapper.locator(".webapp-item");
+        // ADR 0025: the per-item wrapper div is gone for display leaves — the three
+        // ui-text render as bare <p>. Measure the texts themselves: all on one line
+        // (top within 4px of each other), i.e. inline, not stacked.
+        const items = page.locator(".webapp-text");
         await expect(items).toHaveCount(3);
         const boxes = await items.evaluateAll((els) =>
             els.map((el) => el.getBoundingClientRect().top)
         );
-        // All three should be on the same line (top within 4px of each other)
         const minTop = Math.min(...boxes);
         const maxTop = Math.max(...boxes);
         expect(maxTop - minTop).toBeLessThan(4);
