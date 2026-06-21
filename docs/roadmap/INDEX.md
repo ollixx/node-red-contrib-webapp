@@ -73,7 +73,7 @@ open the folder for the full history.
 | nodes/ui-image | 2 |
 | nodes/ui-pagination | 2 |
 | nodes/ui-tabs | 3 |
-| nodes/ui-repeat | 11 |
+| nodes/ui-repeat | 12 |
 | nodes/ui-stepper | 1 |
 | nodes/ui-menu | 1 |
 | nodes/ui-list | 6 |
@@ -95,4 +95,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 199 done, 0 open, 8 deferred.**
+**Total: 200 done, 0 open, 8 deferred.**
