@@ -358,10 +358,10 @@ test.describe("editor panels — P181: boolean default type for empty visible/di
         expect(stored?.disabled).toBeNull();
     });
 
-    test("save-semantics: explicitly setting visible=true stores a bool literal", async ({ page, request }) => {
+    test("save-semantics: setting visible=true on a fresh node stores null or literal-true (both = visible)", async ({ page, request }) => {
         const { editor, nodeId } = await openFreshListPanel(page, request);
 
-        // Explicitly set visible to true via the typedInput.
+        // Set visible to true (the field's neutral) via the typedInput.
         await editor.fillTypedInput("visibleBinding", "true", "bool");
         await editor.save();
 
@@ -372,7 +372,131 @@ test.describe("editor panels — P181: boolean default type for empty visible/di
             return n ? { visible: n.visible } : null;
         }, nodeId);
 
-        // An intentionally-set bool literal must be persisted.
-        expect(stored?.visible).toEqual({ kind: "literal", value: true });
+        // P202 (ADR 0026): `visible`'s neutral is `true`. An originally-empty field
+        // still carrying its neutral may collapse to null OR persist literal-true —
+        // both mean "visible". (Contrast the deliberate `false` case below, which
+        // must NOT be swallowed.)
+        expect(
+            stored?.visible === null ||
+                JSON.stringify(stored?.visible) === JSON.stringify({ kind: "literal", value: true })
+        ).toBe(true);
+    });
+});
+
+/**
+ * P202 (ADR 0026, corrects P181) — a boolean-state base field's neutral value is
+ * its OWN semantic default (visible→true, disabled→false), not a blanket `false`.
+ * Two consequences P181 got wrong on `visible`:
+ *   1. empty display: an unbound `visible` must READ `true` (shown), not `false`;
+ *   2. swallowed deliberate false: `visible=false` on a fresh node must persist
+ *      `{kind:literal,value:false}` (and actually hide the node), not collapse to null.
+ * `disabled` behaviour is unchanged (its neutral was already `false`).
+ */
+test.describe("editor panels — P202: per-field neutral (visible→true, disabled→false)", () => {
+    test.afterEach(async ({ request }) => {
+        await resetFlow(request);
+    });
+
+    async function openFreshListPanel(page: import("@playwright/test").Page, request: import("@playwright/test").APIRequestContext) {
+        const nodeId = "list-p202";
+        const flow = new FlowBuilder()
+            .app({ id: "p202App", root: "p202App", name: "P202 App" })
+            .node("ui-list", { id: nodeId, items: [], visible: null, disabled: null })
+            .build();
+        await deployFlow(request, flow);
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode(nodeId);
+        return { editor, nodeId };
+    }
+
+    test("empty visible field displays 'true' (neutral = shown), disabled stays 'false'", async ({ page, request }) => {
+        const { editor } = await openFreshListPanel(page, request);
+
+        // The bool control must show the field's per-field neutral, not blanket false.
+        expect(await editor.readTypedInput("visibleBinding")).toBe("true");
+        expect(await editor.readTypedInput("disabledBinding")).toBe("false");
+    });
+
+    test("deliberate visible=false persists {kind:literal,value:false} (NOT swallowed to null)", async ({ page, request }) => {
+        const { editor, nodeId } = await openFreshListPanel(page, request);
+
+        await editor.fillTypedInput("visibleBinding", "false", "bool");
+        await editor.save();
+
+        const stored = await page.evaluate((id) => {
+            const n = (window as unknown as {
+                RED: { nodes: { node: (id: string) => Record<string, unknown> | null } };
+            }).RED.nodes.node(id);
+            return n ? { visible: n.visible } : null;
+        }, nodeId);
+
+        // The owner-found defect: a deliberate false must survive and hide the node.
+        expect(stored?.visible).toEqual({ kind: "literal", value: false });
+    });
+
+    test("deliberate disabled=true persists {kind:literal,value:true}", async ({ page, request }) => {
+        const { editor, nodeId } = await openFreshListPanel(page, request);
+
+        await editor.fillTypedInput("disabledBinding", "true", "bool");
+        await editor.save();
+
+        const stored = await page.evaluate((id) => {
+            const n = (window as unknown as {
+                RED: { nodes: { node: (id: string) => Record<string, unknown> | null } };
+            }).RED.nodes.node(id);
+            return n ? { disabled: n.disabled } : null;
+        }, nodeId);
+
+        expect(stored?.disabled).toEqual({ kind: "literal", value: true });
+    });
+
+    test("untouched empty visible/disabled still round-trip to null (P181 invariant preserved)", async ({ page, request }) => {
+        const { editor, nodeId } = await openFreshListPanel(page, request);
+
+        await editor.save();
+
+        const stored = await page.evaluate((id) => {
+            const n = (window as unknown as {
+                RED: { nodes: { node: (id: string) => Record<string, unknown> | null } };
+            }).RED.nodes.node(id);
+            return n ? { visible: n.visible, disabled: n.disabled } : null;
+        }, nodeId);
+
+        expect(stored?.visible).toBeNull();
+        expect(stored?.disabled).toBeNull();
+    });
+
+    test("a stored non-literal visible binding (state) re-opens in its own type and passes through on save", async ({ page, request }) => {
+        const nodeId = "list-p202-state";
+        const flow = new FlowBuilder()
+            .app({ id: "p202StateApp", root: "p202StateApp", name: "P202 State App" })
+            .node("ui-list", {
+                id: nodeId,
+                items: [],
+                visible: { kind: "state", path: "showList" },
+                disabled: null
+            })
+            .build();
+        await deployFlow(request, flow);
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode(nodeId);
+
+        // Re-opens in the 'state' type (not coerced to bool), carrying its path.
+        expect(await editor.readTypedInputType("visibleBinding")).toBe("state");
+
+        await editor.save();
+
+        const stored = await page.evaluate((id) => {
+            const n = (window as unknown as {
+                RED: { nodes: { node: (id: string) => Record<string, unknown> | null } };
+            }).RED.nodes.node(id);
+            return n ? { visible: n.visible } : null;
+        }, nodeId);
+
+        expect(stored?.visible).toEqual({ kind: "state", path: "showList" });
     });
 });

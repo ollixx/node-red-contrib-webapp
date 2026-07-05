@@ -334,6 +334,29 @@ geteilte Helfer dafür ist `installBaseFields(config)` in
 - **`disabled`** — **dasselbe** Boolean-Zustand-typedInput, das P122–P130
   ausgerollt haben (`#node-input-disabledBinding`, Binding-Objekt auf
   `disabled`, `disabledPath`-Migration) — zentralisiert, nicht dupliziert.
+
+**Boolean-Basis-Feld: neutraler Wert = eigener semantischer Default (P181/P202,
+[ADR 0026](../../adr/0026-boolean-state-base-field-neutral-equals-semantic-default.md)).**
+Ein leeres Boolean-Basis-Feld zeigt einen sauberen `bool`-True/False-Regler
+(P181, kein Store-Fallback). Der *neutrale* Wert eines solchen Feldes — sowohl
+die **Leer-Anzeige** als auch der **Save-Sentinel** — ist der **pro-Feld**
+semantische Default, nicht pauschal `false`:
+
+| Feld | leer ⇒ | Leer-Anzeige | Sentinel (⇒ `null` speichern) |
+|---|---|---|---|
+| `visible` | true (sichtbar) | **true** | ursprünglich leer **und** Wert === **true** |
+| `disabled` | false (aktiv) | **false** | ursprünglich leer **und** Wert === **false** |
+
+Ein ursprünglich leeres Feld, das noch seinen Neutralwert trägt, speichert `null`
+(„kein Binding"). **Jeder andere Literal — inkl. des entgegengesetzten Booleans —
+wird verbatim persistiert:** ein bewusstes `visible=false` speichert
+`{kind:literal,value:false}` und **versteckt** den Knoten wirklich (der Renderer
+lässt ihn aus dem DOM weg, nicht nur CSS-versteckt); ein bewusstes `disabled=true`
+speichert `{kind:literal,value:true}`. Gespeicherte Nicht-Literal-Bindings
+(state/store/reactive/…) öffnen unverändert im richtigen Typ und werden
+durchgereicht. `installBaseFields` seedet die Leer-Anzeige pro Feld;
+`applyBaseFields` prüft den Sentinel pro Feld — Knoten, die `visible`/`disabled`
+inline verwalten (z. B. `ui-skeleton` für `visible`), sind angeglichen.
 - **`color`** — allgemeiner Farb-typedInput (voller Wert-Binding-Satz),
   Binding-Objekt auf `color`, typedInput auf `#node-input-colorBinding`; ein
   Legacy-String wird als Literal migriert, ein leeres Literal als `null`

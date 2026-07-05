@@ -698,3 +698,81 @@ test.describe("ui-list — displayType semantic intents + ordered (P180)", () =>
         await expect(list).not.toHaveClass(/webapp-list--divided/);
     });
 });
+
+/**
+ * P202 (ADR 0026) — `visible=false` (bool literal) must ACTUALLY hide the node:
+ * the ui-list is ABSENT from the rendered DOM (locator count 0), not merely
+ * CSS-hidden. Proven by DOM MEASUREMENT (count), not by a class/tag assert — a
+ * display-only check would have missed the P181 swallowed-false defect. The same
+ * ui-list with an empty `visible` IS present (count > 0). This is the owner's
+ * "false really hides" red→green.
+ */
+test.describe("ui-list — P202 visible=false removes the node from the DOM (ADR 0026)", () => {
+    test.afterEach(async ({ request }) => {
+        await resetFlow(request);
+    });
+
+    // BLOCKED (P202 scope): this criterion cannot pass without RENDERER work,
+    // which P202 explicitly forbids ("Do NOT touch packages/** renderer"). The
+    // static `visible` binding is stored on the node and spread into the compiled
+    // model component, but NOTHING in the render path reads it: renderer.ts (2316
+    // lines) has zero `visible`/`hidden`/`display` references, runtime compile does
+    // not filter by it, webapp.js has no `visible`, and the client's `interaction.
+    // hidden` map is a SEPARATE runtime feature that CSS-hides (webapp-hidden), not
+    // fed by this binding and not DOM-absent. The ADR's premise that the renderer
+    // "correctly defaults visible→true at renderer.ts:932" is stale — that logic
+    // does not exist in the current codebase. The editor-side half of the owner's
+    // red IS fixed & green (deliberate visible=false now persists {literal,false}
+    // instead of being swallowed to null — see base-fields.spec.ts P202 block).
+    // Recovery: a follow-up renderer/runtime phase must map node `visible` →
+    // component visibleIf and OMIT a false-resolving component from the snapshot;
+    // then flip this test back to `test(...)`.
+    test.fixme("visible=false (literal) → ui-list ABSENT from DOM (count 0), not CSS-hidden", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "listHiddenApp", root: "listHiddenApp" })
+            // A sibling ui-text serves as the "app rendered" control: it proves the
+            // page is not simply blank when we assert the list's absence.
+            .node("ui-text", { id: "listHiddenMarker", text: "rendered-marker" })
+            .node("ui-list", {
+                id: "listHiddenNode",
+                items: { kind: "literal", value: ["Ada", "Alan"] },
+                visible: { kind: "literal", value: false }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "listHiddenApp");
+        // navigate() already awaits the app root + the SSE stream connection, so
+        // the initial render has been applied. (No networkidle wait: the SSE
+        // stream keeps the network permanently active and never idles.)
+        await webapp.navigate("/");
+
+        // Control: the sibling text IS rendered → the app is live, not blank.
+        await expect(page.getByText("rendered-marker")).toBeVisible();
+
+        // DOM MEASUREMENT: the hidden list element must not exist at all.
+        await expect(page.locator("ul.webapp-list")).toHaveCount(0);
+        await expect(page.locator("li.webapp-list-item")).toHaveCount(0);
+    });
+
+    test("empty visible → ui-list IS present in DOM (count > 0)", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "listShownApp", root: "listShownApp" })
+            .node("ui-list", {
+                id: "listShownNode",
+                items: { kind: "literal", value: ["Ada", "Alan"] },
+                visible: null
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "listShownApp");
+        await webapp.navigate("/");
+
+        // DOM MEASUREMENT: empty visible defaults to shown → present.
+        await expect(page.locator("ul.webapp-list")).toHaveCount(1);
+        await expect(page.locator("li.webapp-list-item")).toHaveCount(2);
+    });
+});

@@ -57,7 +57,11 @@
                     types: common.valueBindingTypes({ category: "boolean" })
                 });
                 visibleInput.typedInput("type", visibleType);
-                visibleInput.typedInput("value", visibleEditor.value);
+                // P202 (ADR 0026): `visible`'s per-field neutral is TRUE (empty =
+                // shown). Seed an originally-empty control to "true", matching the
+                // central installBaseFields behaviour.
+                var visibleValue = !visibleBinding ? "true" : visibleEditor.value;
+                visibleInput.typedInput("value", visibleValue);
                 // P181: track original-empty to preserve "no binding" on save.
                 visibleInput.data("base-field-originally-empty", !visibleBinding);
 
@@ -90,10 +94,13 @@
                     $visibleInput.typedInput("type"),
                     $visibleInput.typedInput("value")
                 );
+                // P202 (ADR 0026, corrects P181): `visible`'s neutral sentinel is
+                // bool literal `true`, not `false`. A deliberate `false` persists
+                // verbatim and hides the node.
                 var visibleOriginEmpty = $visibleInput.data("base-field-originally-empty");
-                var visibleIsBoolLiteral = visibleResult && visibleResult.kind === "literal"
-                    && visibleResult.value === false;
-                this.visible = (visibleOriginEmpty && visibleIsBoolLiteral) ? null : visibleResult;
+                var visibleIsSyntheticDefault = visibleResult && visibleResult.kind === "literal"
+                    && visibleResult.value === true;
+                this.visible = (visibleOriginEmpty && visibleIsSyntheticDefault) ? null : visibleResult;
                 this.visiblePath = "";
             }
         });
