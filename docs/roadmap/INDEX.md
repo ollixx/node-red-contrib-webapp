@@ -27,7 +27,7 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-_No open work — the roadmap is drained. New work is added here as packages are authored._
+- **P201** — nodes/ui-store — client-only Store: per-client-Update (mit clientId) aktualisiert store-gebundenen View NICHT live (bleibt Initial); test-first reproduzieren + fixen — *Owner-Bug 2026-06-20; Entity Editor* — [P201](nodes/ui-store/P201-client-only-store-per-client-live-update-bound-view.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -95,4 +95,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 200 done, 0 open, 8 deferred.**
+**Total: 200 done, 1 open, 8 deferred.**
