@@ -502,7 +502,14 @@
                     types: valueBindingTypes({ category: "boolean" })
                 });
                 visibleInput.typedInput("type", visibleType);
-                visibleInput.typedInput("value", visibleEditor.value);
+                // P202 (ADR 0026): the neutral value of `visible` is its own
+                // semantic default — TRUE (empty = shown). When the field is
+                // originally empty, seed the bool control to "true" instead of
+                // letting the bool type normalise it to "false" (which lied about
+                // the default and, worse, made a deliberate false indistinguishable
+                // from the empty default on save).
+                var visibleValue = !visibleBinding ? "true" : visibleEditor.value;
+                visibleInput.typedInput("value", visibleValue);
                 // P181: remember whether the field was originally absent so that
                 // applyBaseFields can preserve the "no binding" state on save when
                 // the user has not actively interacted with the field. We must NOT
@@ -531,7 +538,11 @@
                     types: valueBindingTypes({ category: "boolean" })
                 });
                 disabledInput.typedInput("type", disabledType);
-                disabledInput.typedInput("value", disabledEditor.value);
+                // P202 (ADR 0026): the neutral value of `disabled` is its own
+                // semantic default — FALSE (empty = enabled). Seed the bool control
+                // explicitly per-field so display and save use the same neutral.
+                var disabledValue = !disabledBinding ? "false" : disabledEditor.value;
+                disabledInput.typedInput("value", disabledValue);
                 // P181: remember whether the field was originally absent so that
                 // applyBaseFields can preserve the "no binding" state on save when
                 // the user has not actively interacted with the field. No `change`
@@ -589,15 +600,16 @@
                     $visibleInput.typedInput("type"),
                     $visibleInput.typedInput("value")
                 );
-                // P181: if the field was originally absent AND the result is the
-                // synthetic default the P181 'bool' type produces for an untouched
-                // (empty) control — bool literal `false` — keep it null ("no binding"
-                // semantics; visible defaults to true, disabled to false). A user who
-                // actively picks a value yields either a non-bool binding or bool
-                // literal `true`, both of which fall through and persist verbatim.
+                // P202 (ADR 0026, corrects P181): the synthetic-default sentinel is
+                // the field's per-field NEUTRAL value — for `visible` that is bool
+                // literal `true` (empty = shown), NOT `false`. An originally-empty
+                // field still carrying its neutral value persists as null ("no
+                // binding"). Any OTHER literal — including a deliberate bool `false`
+                // — falls through and persists verbatim, so `Visible = false` really
+                // hides the node instead of being swallowed to null.
                 var visibleOriginEmpty = $visibleInput.data("base-field-originally-empty");
                 var visibleIsSyntheticDefault = visibleResult && visibleResult.kind === "literal"
-                    && visibleResult.value === false;
+                    && visibleResult.value === true;
                 self.visible = (visibleOriginEmpty && visibleIsSyntheticDefault) ? null : visibleResult;
                 self.visiblePath = "";
             }
@@ -608,9 +620,10 @@
                     $disabledInput.typedInput("type"),
                     $disabledInput.typedInput("value")
                 );
-                // P181: same guard for disabled — preserve null when the field was
-                // originally absent and still carries the synthetic default bool
-                // literal `false`. An explicit value falls through and persists.
+                // P202 (ADR 0026): `disabled`'s per-field neutral is bool literal
+                // `false` (empty = enabled). Preserve null when originally absent and
+                // still carrying that neutral; any other literal — including a
+                // deliberate bool `true` — falls through and persists verbatim.
                 var disabledOriginEmpty = $disabledInput.data("base-field-originally-empty");
                 var disabledIsSyntheticDefault = disabledResult && disabledResult.kind === "literal"
                     && disabledResult.value === false;
