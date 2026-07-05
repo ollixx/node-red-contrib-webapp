@@ -712,22 +712,13 @@ test.describe("ui-list — P202 visible=false removes the node from the DOM (ADR
         await resetFlow(request);
     });
 
-    // BLOCKED (P202 scope): this criterion cannot pass without RENDERER work,
-    // which P202 explicitly forbids ("Do NOT touch packages/** renderer"). The
-    // static `visible` binding is stored on the node and spread into the compiled
-    // model component, but NOTHING in the render path reads it: renderer.ts (2316
-    // lines) has zero `visible`/`hidden`/`display` references, runtime compile does
-    // not filter by it, webapp.js has no `visible`, and the client's `interaction.
-    // hidden` map is a SEPARATE runtime feature that CSS-hides (webapp-hidden), not
-    // fed by this binding and not DOM-absent. The ADR's premise that the renderer
-    // "correctly defaults visible→true at renderer.ts:932" is stale — that logic
-    // does not exist in the current codebase. The editor-side half of the owner's
-    // red IS fixed & green (deliberate visible=false now persists {literal,false}
-    // instead of being swallowed to null — see base-fields.spec.ts P202 block).
-    // Recovery: a follow-up renderer/runtime phase must map node `visible` →
-    // component visibleIf and OMIT a false-resolving component from the snapshot;
-    // then flip this test back to `test(...)`.
-    test.fixme("visible=false (literal) → ui-list ABSENT from DOM (count 0), not CSS-hidden", async ({ page, request }) => {
+    // The render path DOES honour visibility: nodes/webapp.js maps a node's
+    // `visible` binding → the component's `visibleIf`, and the renderer omits a
+    // component whose `visibleIf` resolves false (toRenderedComponent returns
+    // undefined → DOM-absent). The gap the owner hit was that ui-list's mapConfig
+    // never EMITTED `visible` (it does now, P202) — so visibleIf stayed undefined
+    // and the list always rendered. Measured by DOM count, not a class/tag assert.
+    test("visible=false (literal) → ui-list ABSENT from DOM (count 0), not CSS-hidden", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "listHiddenApp", root: "listHiddenApp" })
             // A sibling ui-text serves as the "app rendered" control: it proves the

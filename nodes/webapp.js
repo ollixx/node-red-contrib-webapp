@@ -6358,6 +6358,12 @@ const runtimeNodeRegistry = {
             // `state` binding (leading `state.` stripped); a bare JSON array literal
             // (flow.json/tests) is kept as a static array.
             items: getBinding(config.items, migrateStatePath(config.itemsPath)) || parseJsonList(config.items),
+            // P202 (ADR 0026): the `visible` base-field binding — carried into the
+            // component so toComponentDefinitions wires it to `visibleIf` and the
+            // renderer OMITS the list when it resolves false (DOM-absent, not
+            // CSS-hidden). Was missing here → a deliberate visible=false never hid
+            // the list (the owner's 2026-07-05 bug). Mirrors ui-alert/ui-skeleton.
+            visible: getBinding(config.visible, config.visiblePath ? stateBinding(config.visiblePath) : undefined),
             displayType: config.displayType || config.variant || undefined,
             // P180: ordered (boolean, default false) — switches ul↔ol. Mirrors how
             // displayType is carried into the definition; absent/false → undefined.
