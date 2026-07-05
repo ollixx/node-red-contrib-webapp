@@ -1,0 +1,13 @@
+[
+  { "type": "tab", "id": "p201decoyTab", "label": "P201 Decoy" },
+  { "type": "ui-app", "id": "p201Decoy", "name": "Decoy App", "root": "p201decoy", "layout": "app", "title": "Decoy", "z": "p201decoyTab", "wires": [], "x": 200, "y": 80 },
+
+  { "type": "tab", "id": "p201flow", "label": "P201" },
+  { "type": "ui-app", "id": "p201App", "name": "P201 App", "root": "p201App", "layout": "app", "title": "P201", "z": "p201flow", "wires": [], "x": 200, "y": 120 },
+  { "type": "ui-store", "id": "p201Store", "name": "Entity", "parent": "p201App", "statePath": "entity", "scope": "any", "initialValue": "{\"name\":\"Alpha\"}", "z": "p201flow", "wires": [], "x": 200, "y": 180 },
+  { "type": "ui-container", "id": "p201Cont", "name": "Container 1", "parent": "p201App", "mount": "p201App.content", "layoutId": "vertical", "variant": "section", "order": 0, "z": "p201flow", "wires": [], "x": 200, "y": 210 },
+  { "type": "ui-text", "id": "p201TextStore", "name": "via store subPath", "parent": "p201Cont", "mount": "container:p201Cont/content", "order": 0, "value": { "kind": "store", "path": "p201Store", "subPath": { "kind": "literal", "value": "name" } }, "z": "p201flow", "wires": [], "x": 200, "y": 240 },
+  { "type": "ui-text", "id": "p201TextState", "name": "via state path", "parent": "p201App", "mount": "p201App.content", "order": 1, "value": { "kind": "state", "path": "entity.name" }, "z": "p201flow", "wires": [], "x": 200, "y": 260 },
+  { "type": "ui-list", "id": "p201List", "name": "List 2", "parent": "p201App", "mount": "p201App.content", "order": 2, "items": "[{\"id\":\"a\",\"label\":\"Apple\"},{\"id\":\"b\",\"label\":\"Banana\"}]", "events": "[\"itemClick\"]", "z": "p201flow", "wires": [["p201Fn"]], "x": 200, "y": 300 },
+  { "type": "function", "id": "p201Fn", "name": "set entity per-client", "func": "msg.ui.store = { id: 'p201Store', op: 'replace', value: { name: msg.ui.params.row.label } };\nreturn msg;", "outputs": 1, "noerr": 0, "z": "p201flow", "wires": [["p201Store"]], "x": 420, "y": 300 }
+]

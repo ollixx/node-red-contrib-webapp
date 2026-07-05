@@ -5703,7 +5703,13 @@ const runtimeNodeRegistry = {
         options: {
             inputHandler(node, msg, send, done) {
                 const storeDefinition = node.webappDefinition;
-                const activeAppId = getActiveRuntimeAppId();
+                // P201: route the update to the app that OWNS this store node
+                // (matched by flow tab), NOT getActiveRuntimeAppId() — which
+                // blindly returns the first-registered ui-app. In a multi-app
+                // deploy that misfiled per-client state + the live push under the
+                // wrong appId, so a store-bound view in any app other than the
+                // first never updated (stuck at its initial value).
+                const activeAppId = findAppIdForNode(node);
                 const operation = normalizeStoreOperationMessage(msg, storeDefinition);
 
                 if (!operation) {
