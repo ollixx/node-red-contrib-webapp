@@ -18,7 +18,7 @@ verify: browser
 spec: docs/nodes/concepts/editor.md
 tests: tests/e2e/nodes/editor/base-fields.spec.ts
 dependencies: [P181]
-status: pending
+status: in_progress
 ---
 # P202 — Base-Field `visible`: neutral = true, bewusstes `false` versteckt wirklich
 
