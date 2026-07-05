@@ -18,11 +18,11 @@ verify: browser
 spec: docs/nodes/concepts/editor.md
 tests: tests/e2e/nodes/editor/base-fields.spec.ts
 dependencies: [P181]
-status: in_progress
+status: done
 ---
 # P202 — Base-Field `visible`: neutral = true, bewusstes `false` versteckt wirklich
 
-> Entscheidung & Begründung: [ADR 0026](../../../adr/0026-boolean-state-base-field-neutral-equals-semantic-default.md)
+> Entscheidung & Begründung: [ADR 0026](../../../../adr/0026-boolean-state-base-field-neutral-equals-semantic-default.md)
 > (korrigiert P181). Zentraler Editor-Fix in `resources/lib/editor-common.js` —
 > eine Stelle, alle View-Knoten.
 
@@ -68,3 +68,38 @@ persistiert `{kind:literal,value:false}` und **versteckt** den Knoten;
   gespeichert werden (semantisch identisch) — kein Regressionsbruch.
 - Nicht mit **P174** (store-typedInput-Layout) und **P181** (Bool-Default-*Typ*)
   verwechseln: dies ist der **pro-Feld-Neutralwert** von Anzeige + Save-Sentinel.
+
+## Result
+
+- **delivered:** The owner's bug had **two** causes; both fixed. (1) **Editor (per-field neutral, ADR
+  0026)** — `resources/lib/editor-common.js`: `installBaseFields` now seeds an originally-empty
+  `visible` control to **true** (was `false`); `applyBaseFields`'s synthetic-default sentinel for
+  `visible` is `value===true` (was `false`), so a **deliberate `visible=false` persists
+  `{kind:literal,value:false}`** instead of being swallowed to `null`. `disabled` neutral is explicit
+  `false` (unchanged). `nodes/view/ui-skeleton.html` (the one inline `visible` manager) aligned; the
+  `disabled`-inline nodes already used the correct `false` neutral. (2) **Runtime (the real render
+  gap)** — `nodes/webapp.js` ui-list `mapConfig` now **emits `visible`** (mirroring
+  ui-alert/ui-skeleton), so `toComponentDefinitions` wires it to `visibleIf` and the renderer omits the
+  list when it resolves false. Before, ui-list's mapConfig dropped `visible` entirely → `visibleIf`
+  undefined → always rendered.
+- **verification (by DOM MEASUREMENT, per the acceptance):** `tests/e2e/nodes/view/ui-list.spec.ts` —
+  a ui-list with `visible={kind:literal,value:false}` is **absent** from the DOM (`ul.webapp-list`
+  count **0**, `li` count 0), a sibling ui-text control confirms the page is live; the same list with
+  empty `visible` is **present** (count > 0). `base-fields.spec.ts` gains the P202 block (empty
+  visible shows `true` / disabled `false`; deliberate `visible=false`→literal-false; deliberate
+  `disabled=true`→literal-true; untouched→`null`; stored non-literal binding passes through). Develop:
+  build 0; full unit **1054 runtime** (schema 375 / editor 176 / renderer 148); base-fields + ui-list
+  E2E **50/50**; full suite **643 passed** (only the pre-existing accordion red); check:specs/links +
+  lint green.
+- **notes:** The initial sub-agent returned `blocked` claiming "the renderer ignores visible / needs
+  renderer work" — that diagnosis was **wrong**: the renderer already omits `!visibleIf` components
+  (`toRenderedComponent` returns undefined) and `toComponentDefinitions` maps `visible→visibleIf`. The
+  real gap was a **one-line runtime miss** in ui-list's mapConfig, found by instrumenting the real
+  compile+render (measure, don't assume). Its editor commit was correct and was merged.
+- **SYSTEMIC follow-up (out of P202 scope, flagged to owner):** only **4** nodes (ui-alert,
+  ui-empty-state, ui-list, ui-skeleton) emit `visible` into their component — **all other view nodes**
+  (ui-text/button/badge/input/container/table/…) do NOT, so `visible=false` is silently ignored for
+  them too, though the schema/editor offer `visible` everywhere. Low-risk to fix (no pre-P202 flow
+  could persist a literal `false`). → **P203** (wire `visible` into every display-node mapConfig,
+  verified by DOM-count measurement).
+- **cost:** editor sub-agent a9704f2861f270284 (~14m) + orchestrator root-cause + one-line ui-list fix.
