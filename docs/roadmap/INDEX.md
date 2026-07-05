@@ -27,7 +27,7 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-_(keine offenen Pakete)_
+- **P202** — aspects/editor — Base-Field `visible`: leeres Feld zeigt/meint TRUE (nicht false) und ein bewusst gesetztes `visible=false` versteckt den Knoten wirklich (pro-Feld-Synthetik-Default, korrigiert P181) — *ADR 0026; Owner-Bug 2026-07-05 an ui-list* — [P202](aspects/editor/P202-visible-base-field-neutral-true-and-deliberate-false-hides.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -95,4 +95,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 201 done, 0 open, 8 deferred.**
+**Total: 201 done, 1 open, 8 deferred.**
