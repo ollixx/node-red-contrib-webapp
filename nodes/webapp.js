@@ -2851,6 +2851,18 @@ function validateUiAccordionSectionChildrenUniqueness(RED) {
     return issues;
 }
 
+// P201: the runtime keys per-client state AND SSE subscribers by the appId in the
+// request URL — which may be the app's `root` OR its node id (both route to the
+// same app via getDefinitionBuckets). A ui-store update, however, is keyed by the
+// OWNING app's node id (findAppIdForNode). When root !== id these disagree, so a
+// store-bound view never live-updates for a client that reached the app by root.
+// Normalise every request boundary to the canonical node id so writer and reader
+// always key the same app.
+function resolveCanonicalAppId(appId, definitions) {
+    const buckets = getDefinitionBuckets(appId, definitions);
+    return buckets && buckets.app ? buckets.app.id : appId;
+}
+
 function getDefinitionBuckets(appId, definitions) {
     const matchingApp = definitions.find((entry) => entry.type === "ui-app" && (entry.id === appId || entry.root === appId));
 
@@ -3849,7 +3861,7 @@ function registerEndpoints(RED) {
     // Thereafter, flow-driven ui-store updates push `snapshot` events and ui-action
     // interaction commands push `command` events to the relevant client(s).
     RED.httpNode.get("/webapp/:appId/stream", (req, res) => {
-        const { appId } = req.params;
+        const appId = resolveCanonicalAppId(req.params.appId, readDeployDefinitions(RED));
         const clientId = req.query.clientId ? String(req.query.clientId) : undefined;
         const location = req.query.location ? String(req.query.location) : "/";
         // The client passes the initial dialogId so the first snapshot mirrors the
@@ -3905,9 +3917,9 @@ function registerEndpoints(RED) {
     // The response echoes the emitted message and the CURRENT snapshot (unchanged —
     // a read-only re-render) so the thin client keeps a consistent view between pushes.
     RED.httpNode.post("/webapp/:appId/event", readJsonBody, (req, res) => {
-        const { appId } = req.params;
         const body = req.body && typeof req.body === "object" ? req.body : {};
         const definitions = readDeployDefinitions(RED);
+        const appId = resolveCanonicalAppId(req.params.appId, definitions);
 
         const dispatched = dispatchClientEvent(RED, appId, body, definitions);
 
@@ -4043,11 +4055,11 @@ function registerEndpoints(RED) {
     // in-place-vs-reload rule used for a live deploy push. MUST be registered
     // before the catch-all `/webapp/:appId/*` page route.
     RED.httpNode.get("/webapp/:appId/snapshot", (req, res) => {
-        const { appId } = req.params;
         const location = req.query.location ? String(req.query.location) : "/";
         const dialogId = req.query.dialog ? String(req.query.dialog) : undefined;
         const clientId = req.query.clientId ? String(req.query.clientId) : undefined;
         const definitions = readDeployDefinitions(RED);
+        const appId = resolveCanonicalAppId(req.params.appId, definitions);
 
         const built = buildAppSnapshot(appId, location, dialogId, definitions, clientId);
         if (!built.success) {

@@ -12,6 +12,7 @@ acceptance:
   - "Reproduktion (test-first, E2E): Fixture mit einer DECOY-ui-app registriert ZUERST (eigener Tab) + der eigentlichen App (Store + store-gebundener ui-text + ui-list-itemClick → per-client replace). Ohne Fix ist der Test ROT (Text bleibt beim Initialwert 'Alpha') — verifiziert: locator resolved to 'Alpha', unexpected. Mit Fix GRÜN ('Banana')."
   - "Fix an der Wurzel: getActiveRuntimeAppId() → findAppIdForNode(node) (webapp.js:4578, matcht node.z → besitzende ui-app, Fallback getActiveRuntimeAppId). Kein Symptom-Patch."
   - "Regression: Broadcast-Fall (scope='any', ohne clientId) aktualisiert store-gebundene Views weiterhin; Scope-Guard bleibt (client-only ohne clientId → scope-violation). Store-subPath- und whole-slice-Binding beide abgedeckt."
+  - "Der Client nutzt IMMER die def.id (data-webapp-app-id = model.id, webapp.js:2533; base()=/webapp/<appId>, webapp-client.js:54/164) für Stream/Events/localStorage — egal ob die Seite per root oder id geöffnet wurde. Darum reicht findAppIdForNode (def.id) im Browser. Zusätzlich als Sicherheitsgurt: resolveCanonicalAppId normalisiert die drei API-Grenzen (stream/snapshot/event) root→def.id, damit auch direkter API-Zugriff per root konsistent keyt (das war der Grund, warum der manuelle curl-Repro per root scheinbar weiter scheiterte)."
   - "Folgefund geflaggt: toastInputHandler (webapp.js:4299) hat denselben getActiveRuntimeAppId()-Multi-App-Misrouting-Bug — separat als Task ausgelagert (nicht in diesem Fix gebündelt)."
 verify: browser
 spec: docs/nodes/state/ui-store.md
