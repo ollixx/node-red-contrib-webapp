@@ -5415,13 +5415,19 @@
         return function () {
             const self = this;
             // The bound #node-input-parent stays the value carrier. The template
-            // ships an option-less <select>, so seed the stored value (falling
-            // back to the node's own id, the legacy default) into the picker.
+            // ships an option-less <select>, so seed the STORED app id into the
+            // picker. Never fall back to the node's own id: `parent` references
+            // the owning ui-app, and self.id is never an app — that legacy
+            // fallback silently corrupted `parent` to the node's own id when no
+            // app was chosen, so the node then filtered out of every reference
+            // picker (which matches `parent === appId`). An empty or already-
+            // self-corrupted `parent` seeds "" so the user picks the real app.
+            const seededParent = (self.parent && self.parent !== self.id) ? self.parent : "";
             installPickerField("#node-input-parent", {
                 filterPreset: "apps",
                 title: "App auswählen",
                 placeholder: "App auswählen",
-                seedValue: self.parent || self.id || ""
+                seedValue: seededParent
             });
         };
     }
