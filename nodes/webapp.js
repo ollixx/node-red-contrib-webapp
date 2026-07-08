@@ -2730,6 +2730,54 @@ function validateAppRootUniqueness(RED) {
     return issues;
 }
 
+// P205 (Owner 2026-07-06): an app-scoped node (store/query/action/navigation/
+// dialog/route) belongs to a ui-app via its `parent` field. Deploy groups nodes
+// into an app by flow tab (`z`), NOT by `parent`, so a node with an empty / own-id
+// / non-app `parent` renders silently and its editor reference-pickers (which match
+// `parent === appId`) drop it — with no error. This surfaces the misconfiguration
+// as a deploy error: `parent` must be the id of a real ui-app in the flow and never
+// the node's own id. Pure over a nodes array (unit-testable); the RED wrapper reads
+// the deployed flow file (mirrors validateAppRootUniqueness). Returns a list of
+// { nodeId, parent, message }.
+const APP_SCOPED_PARENT_TYPES = ["ui-store", "ui-query", "ui-action", "ui-navigation", "ui-dialog", "ui-route"];
+
+function collectAppScopedParentIssues(nodes) {
+    const issues = [];
+    if (!Array.isArray(nodes)) { return issues; }
+    const appIds = new Set();
+    for (const n of nodes) {
+        if (n && n.type === "ui-app") {
+            if (n.id) { appIds.add(n.id); }
+            if (n.uiId) { appIds.add(n.uiId); }
+            if (n.root) { appIds.add(n.root); }
+        }
+    }
+    for (const n of nodes) {
+        if (!n || APP_SCOPED_PARENT_TYPES.indexOf(n.type) === -1) { continue; }
+        const parent = typeof n.parent === "string" ? n.parent.trim() : "";
+        let reason;
+        if (!parent) { reason = "has no App parent — open it and pick the owning ui-app"; }
+        else if (parent === n.id) { reason = "has its own id as App parent (not a valid app) — pick the owning ui-app"; }
+        else if (!appIds.has(parent)) { reason = `App parent '${parent}' is not a ui-app in this flow`; }
+        if (reason) {
+            issues.push({ nodeId: n.id, parent, message: `${n.type} '${n.name || n.id}' ${reason}.` });
+        }
+    }
+    return issues;
+}
+
+function validateAppScopedNodeParent(RED) {
+    let nodes;
+    try {
+        const flowFilePath = getFlowFilePath(RED);
+        if (!fs.existsSync(flowFilePath)) { return []; }
+        const parsed = JSON.parse(fs.readFileSync(flowFilePath, 'utf8'));
+        nodes = Array.isArray(parsed) ? parsed : [];
+    }
+    catch { return []; }
+    return collectAppScopedParentIssues(nodes);
+}
+
 // P168 (ADR 0018 §1): cross-validate that the `ui-tab` children mounted into one
 // `ui-tabs` carry UNIQUE ids — the id is the slot key AND the `activeTab` token,
 // so a collision aliases two tabs onto one panel. Reads the flow file (like
@@ -4182,6 +4230,28 @@ function registerDeployHook(RED) {
             }
         }
         catch (_e4) {
+            // Never let validation crash the deploy.
+        }
+
+        // P205 (Owner 2026-07-06): an app-scoped node (store/query/action/navigation/
+        // dialog/route) must reference a real ui-app via `parent` — an empty / own-id
+        // / non-app parent is a misconfiguration that otherwise renders silently.
+        try {
+            const parentIssues = validateAppScopedNodeParent(RED);
+            for (const issue of parentIssues) {
+                const issueNode = RED.nodes.getNode(issue.nodeId);
+                if (issueNode) {
+                    issueNode.status({ fill: "red", shape: "ring", text: "no app parent" });
+                }
+                reportRuntimeError(issueNode || undefined, {
+                    severity: 'error',
+                    code: 'app-scoped-node-no-app-parent',
+                    message: issue.message,
+                    context: { nodeId: issue.nodeId, parent: issue.parent, op: 'deploy' }
+                });
+            }
+        }
+        catch (_e5) {
             // Never let validation crash the deploy.
         }
 
@@ -6580,6 +6650,9 @@ registerWebappNodes.__test__ = {
     getAppModelResult,
     migrateLegacyTabComponents,
     validateUiTabChildrenUniqueness,
+    // P205: app-scoped node → valid ui-app parent required (deploy error)
+    collectAppScopedParentIssues,
+    validateAppScopedNodeParent,
     migrateLegacyAccordionComponents,
     validateUiAccordionSectionChildrenUniqueness,
     renderAppPage,
