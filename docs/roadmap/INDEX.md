@@ -27,7 +27,8 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-_No open work — the roadmap is drained. New work is added here as packages are authored._
+- **P203** — aspects/editor — Input-Write-Back-Fundament: neues `writeTo`-Binding (Store/Flow/Global) + `writeTrigger` (change|submit, Default submit) symmetrisch zu `value`; Runtime persistiert die Nutzeränderung; ersetzt totes storeId/path/valuePath — bewiesen an ui-input — *ADR 0027; Owner 2026-07-08* — [P203](aspects/editor/P203-input-writeto-write-target-binding-foundation.md)
+- **P204** — aspects/editor — Rollout `writeTo`/`writeTrigger` + Write-Back auf select/checkbox/switch/textarea/slider/radio/datepicker + je Node-Tests + Doku — *ADR 0027; dep P203* — [P204](aspects/editor/P204-input-writeto-rollout-remaining-controls.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -95,4 +96,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 202 done, 0 open, 8 deferred.**
+**Total: 202 done, 2 open, 8 deferred.**
