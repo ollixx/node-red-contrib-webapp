@@ -42,4 +42,5 @@
 | W01 | `value=store(x).name` UND `writeTo=store(x).name`, `writeTrigger=submit`: Tippen + Enter/Blur schreibt per-client in den Store; ein ZWEITER an `store(x).name` gebundener `ui-text` zeigt den neuen Wert live (SSE-Re-Render, Textinhalt gemessen), ohne function-Knoten |
 | W02 | `writeTrigger=submit`: ein reines `change`-Event schreibt NICHT zurück (der Mirror-View bleibt auf dem Ausgangswert) |
 | W03 | `writeTrigger=change`: jedes `change`-Event schreibt zurück und aktualisiert den gebundenen View live |
+| W04 (P206) | `value=store(x).name` UND `writeTo=store(x).name`, `writeTrigger=none`: Tippen + Submit schreibt **NICHT** automatisch zurück — ein ZWEITER an `store(x).name` gebundener `ui-text` bleibt auf dem Ausgangswert (Textinhalt gemessen, UNVERÄNDERT); ABER das `change`-Output-Event des Knotens feuert mit dem neuen Wert (per Request/Event beobachtet). `writeTo` darf bei `none` auch leer sein (kein Validierungs-/Render-Fehler) |
 | M01 (editor) | Legacy `storeId`+`path` migriert beim Öffnen zu `writeTo={kind:"store", path:<storeId>, subPath:{kind:"literal", value:<path>}}`; Speichern lässt die Alt-Felder weg |

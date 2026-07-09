@@ -76,12 +76,20 @@ describe("P203 (ADR 0027): writeTo binding — the WRITE half, writable kinds on
             expect(writeTriggerSchema.parse("submit")).toBe("submit");
         });
 
+        it("accepts none (P206 — auto write-back opt-out)", () => {
+            expect(writeTriggerSchema.parse("none")).toBe("none");
+        });
+
+        it("still defaults to submit after adding none (P206)", () => {
+            expect(writeTriggerSchema.parse(undefined)).toBe("submit");
+        });
+
         it("rejects an unknown trigger", () => {
             expect(writeTriggerSchema.safeParse("blur").success).toBe(false);
         });
 
-        it("exposes exactly change/submit as triggers", () => {
-            expect([...WRITE_TRIGGERS]).toEqual(["change", "submit"]);
+        it("exposes exactly none/change/submit as triggers", () => {
+            expect([...WRITE_TRIGGERS]).toEqual(["none", "change", "submit"]);
         });
     });
 
