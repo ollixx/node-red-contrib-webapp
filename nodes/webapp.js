@@ -27,6 +27,25 @@ const CLIENT_RUNTIME_PATH = "/resources/node-red-contrib-webapp/lib/webapp-clien
 // server. Loaded before the client runtime.
 const CLIENT_SERIALIZER_PATH = "/resources/node-red-contrib-webapp/lib/webapp-serializer.js";
 
+// Cache-busting: the static resource handler serves these with only a weak ETag
+// (no Cache-Control), so a browser can keep an OLD client after a runtime update
+// until a hard-refresh. We append a CONTENT-hash query (`?v=<hash>`) computed once
+// at load; when a file's bytes change the URL changes → a normal reload re-fetches,
+// while an unchanged file keeps its URL (stays cached). Query strings are ignored
+// by the static file server, so the same file is served either way.
+const crypto = require("crypto");
+function assetContentVersion(relFromModule) {
+    try {
+        const buf = fs.readFileSync(path.join(__dirname, relFromModule));
+        return crypto.createHash("sha1").update(buf).digest("hex").slice(0, 12);
+    }
+    catch (_e) {
+        return "0";
+    }
+}
+const CLIENT_RUNTIME_SRC = CLIENT_RUNTIME_PATH + "?v=" + assetContentVersion("../resources/lib/webapp-client.js");
+const CLIENT_SERIALIZER_SRC = CLIENT_SERIALIZER_PATH + "?v=" + assetContentVersion("../resources/lib/webapp-serializer.js");
+
 // P106: snapshot/transport contract version. Baked into the shell signature so a
 // client whose code-contract predates a server upgrade falls back to a full
 // reload rather than an in-place apply that its serializer may not understand.
@@ -2733,8 +2752,8 @@ ${tokenCss ? tokenCss.split("\n").map((line) => `    ${line}`).join("\n") : "   
     <div class="webapp-grid">${pageBody}</div>
     ${dialogHtml}
   </div>
-  <script src="${CLIENT_SERIALIZER_PATH}" defer></script>
-  <script src="${CLIENT_RUNTIME_PATH}" defer></script>
+  <script src="${CLIENT_SERIALIZER_SRC}" defer></script>
+  <script src="${CLIENT_RUNTIME_SRC}" defer></script>
 </body>
 </html>`
     };
