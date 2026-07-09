@@ -2632,10 +2632,16 @@ ${tokenCss ? tokenCss.split("\n").map((line) => `    ${line}`).join("\n") : "   
       display:flex; align-items:center; gap:8px;
       padding:10px 14px; min-width:0;
     }
+    /* Interactive rows: the whole row is the click target — move the row padding
+       onto the anchor so it fills the ENTIRE <li> (icon+label+value stay inside).
+       Otherwise the <li> padding ring is a dead zone (the click hook lives on the
+       inner <a data-webapp-source>), so only the text reacted. */
+    .webapp-list-item:has(> a.webapp-link) { padding:0; }
     /* Anchor wrapper (interactive rows) inherits the item layout */
     .webapp-list-item > a.webapp-link {
       display:flex; align-items:center; gap:8px;
       flex:1; min-width:0;
+      padding:10px 14px;
       font-weight:inherit; color:inherit; text-decoration:none;
     }
     /* Leading icon: fixed 18 px, muted colour, no shrink */
