@@ -287,4 +287,115 @@ test.describe("ui-input (P123)", () => {
         expect(body.event).toBe("submit");
         expect((body.params as Record<string, unknown>).value).toBe("search term");
     });
+
+    // ─── writeTo write-back (P203 / ADR 0027) — true two-way, no wiring ────────
+
+    test("W01 — writeTo store + writeTrigger=submit: submit persists into the store and a second bound view updates live", async ({ page, request }) => {
+        // A ui-input reads AND writes store(wbStore).name; a second ui-text reads
+        // store(wbStore).name. Typing + submit must mutate the store slice
+        // per-client and re-render the ui-text over SSE — NO function wiring.
+        const flow = new FlowBuilder()
+            .app({ id: "wb01App", root: "wb01App" })
+            .node("ui-store", { id: "wb01Store", statePath: "form", initialValue: JSON.stringify({ name: "start" }) })
+            .node("ui-input", {
+                id: "wb01In",
+                label: "Name",
+                value: { kind: "store", path: "wb01Store", subPath: { kind: "literal", value: "name" } },
+                writeTo: { kind: "store", path: "wb01Store", subPath: { kind: "literal", value: "name" } },
+                writeTrigger: "submit"
+            })
+            .node("ui-text", {
+                id: "wb01Out",
+                value: { kind: "store", path: "wb01Store", subPath: { kind: "literal", value: "name" } }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "wb01App");
+        await webapp.navigate("/");
+
+        // Initial: both the input value and the mirror text show the seeded value.
+        await expect(webapp.root().locator(".webapp-text")).toContainText("start");
+
+        // Type a new value and SUBMIT (Enter). writeTrigger=submit → write-back fires.
+        await page.evaluate(() => {
+            const el = document.querySelector("sl-input") as HTMLElement & { value: string };
+            el.value = "Ada Lovelace";
+            el.dispatchEvent(new CustomEvent("sl-input-submit", { bubbles: true, composed: true }));
+        });
+
+        // MEASURED PROOF: the SECOND bound view's text CONTENT changes via SSE
+        // re-render, with no function node in the flow.
+        await expect(webapp.root().locator(".webapp-text")).toContainText("Ada Lovelace", { timeout: 5000 });
+    });
+
+    test("W02 — writeTrigger=submit does NOT write on an intermediate change event", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "wb02App", root: "wb02App" })
+            .node("ui-store", { id: "wb02Store", statePath: "form", initialValue: JSON.stringify({ name: "seed" }) })
+            .node("ui-input", {
+                id: "wb02In",
+                label: "Name",
+                value: { kind: "store", path: "wb02Store", subPath: { kind: "literal", value: "name" } },
+                writeTo: { kind: "store", path: "wb02Store", subPath: { kind: "literal", value: "name" } },
+                writeTrigger: "submit"
+            })
+            .node("ui-text", {
+                id: "wb02Out",
+                value: { kind: "store", path: "wb02Store", subPath: { kind: "literal", value: "name" } }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "wb02App");
+        await webapp.navigate("/");
+        await expect(webapp.root().locator(".webapp-text")).toContainText("seed");
+
+        // A change event alone must NOT write in submit mode.
+        await page.evaluate(() => {
+            const el = document.querySelector("sl-input") as HTMLElement & { value: string };
+            el.value = "changed-only";
+            el.dispatchEvent(new CustomEvent("sl-change", { bubbles: true, composed: true }));
+        });
+
+        // The mirror text stays at the seed — the change did not persist.
+        await page.waitForTimeout(500);
+        await expect(webapp.root().locator(".webapp-text")).toContainText("seed");
+        await expect(webapp.root().locator(".webapp-text")).not.toContainText("changed-only");
+    });
+
+    test("W03 — writeTrigger=change: every change persists and the bound view updates live", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "wb03App", root: "wb03App" })
+            .node("ui-store", { id: "wb03Store", statePath: "form", initialValue: JSON.stringify({ name: "init" }) })
+            .node("ui-input", {
+                id: "wb03In",
+                label: "Name",
+                value: { kind: "store", path: "wb03Store", subPath: { kind: "literal", value: "name" } },
+                writeTo: { kind: "store", path: "wb03Store", subPath: { kind: "literal", value: "name" } },
+                writeTrigger: "change"
+            })
+            .node("ui-text", {
+                id: "wb03Out",
+                value: { kind: "store", path: "wb03Store", subPath: { kind: "literal", value: "name" } }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "wb03App");
+        await webapp.navigate("/");
+        await expect(webapp.root().locator(".webapp-text")).toContainText("init");
+
+        // A change event now writes (writeTrigger=change).
+        await page.evaluate(() => {
+            const el = document.querySelector("sl-input") as HTMLElement & { value: string };
+            el.value = "live-change";
+            el.dispatchEvent(new CustomEvent("sl-change", { bubbles: true, composed: true }));
+        });
+
+        await expect(webapp.root().locator(".webapp-text")).toContainText("live-change", { timeout: 5000 });
+    });
 });

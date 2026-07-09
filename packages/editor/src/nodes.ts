@@ -5,6 +5,7 @@ import {
     SEVERITY_VARIANTS,
     type ActionParamEntry,
     type BindingDefinition,
+    type WriteToBindingDefinition,
     type StandardLayoutPresetId,
     type UiActionNodeDefinition,
     type UiAlertNodeDefinition,
@@ -168,6 +169,12 @@ export interface UiInputEditorConfig extends MountableEditorConfig {
     // P145 (ADR 0012): label accepts a binding object or a literal string.
     label?: string | BindingDefinition;
     valuePath?: string;
+    // P123 (ADR 0012): the `value` READ binding object.
+    value?: BindingDefinition | null;
+    // P203 (ADR 0027): the `writeTo` WRITE target (writable kinds only) and the
+    // `writeTrigger`. Replace the dead storeId/path pair (kept only for migration).
+    writeTo?: WriteToBindingDefinition | null;
+    writeTrigger?: "change" | "submit";
     storeId?: string;
     path?: string;
     inputType?: "text" | "email" | "number";
@@ -1115,34 +1122,22 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         rowSize: optionalInteger("Input grid row spans must be integers."),
         layoutX: optionalInteger("Input absolute x coordinates must be integers."),
         layoutY: optionalInteger("Input absolute y coordinates must be integers."),
-        inputType: optionalStringEnum(["text", "email", "number"], "Input types must be text, email, or number."),
-        storeId: {
-            validate(value, config) {
-                if (value === undefined && config.path === undefined) {
-                    return undefined;
-                }
-
-                return typeof value === "string" && value.trim().length > 0 ? undefined : "Inputs that write to a store must declare a store ID.";
-            }
-        },
-        path: {
-            validate(value, config) {
-                if (value === undefined && config.storeId === undefined) {
-                    return undefined;
-                }
-
-                return typeof value === "string" && value.trim().length > 0 ? undefined : "Inputs that write to a store must declare a relative path.";
-            }
-        }
+        inputType: optionalStringEnum(["text", "email", "number"], "Input types must be text, email, or number.")
     }, (config: UiInputEditorConfig): UiInputNodeDefinition => ({
         type: "ui-input",
         id: config.id ?? "",
         mount: config.mount ?? "",
         // P145: label is a binding (literal string or dynamic binding).
         label: bindingOrString(config.label) ?? "",
-        value: stateBinding(config.valuePath ?? ""),
-        storeId: config.storeId,
-        path: config.path,
+        // P123: prefer the persisted `value` binding object; fall back to a legacy
+        // valuePath (migrated to a state binding).
+        value: (config.value && typeof config.value === "object")
+            ? config.value
+            : stateBinding(config.valuePath ?? ""),
+        // P203 (ADR 0027): the writeTo/writeTrigger write half. Undefined when no
+        // write-back is configured (the legacy storeId/path pair is dropped).
+        ...(config.writeTo ? { writeTo: config.writeTo as WriteToBindingDefinition } : {}),
+        ...(config.writeTrigger ? { writeTrigger: config.writeTrigger } : {}),
         inputType: config.inputType ?? "text",
         placeholder: config.placeholder,
         variant: config.variant,

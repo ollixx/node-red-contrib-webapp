@@ -148,8 +148,11 @@ function toInputComponent(node: UiInputNodeDefinition): ComponentDefinition {
             label: node.label,
             inputType: node.inputType,
             placeholder: node.placeholder,
-            storeId: node.storeId,
-            path: node.path,
+            // P203 (ADR 0027): `writeTo` is the WRITE half of the value binding —
+            // the target the runtime persists the user's edit into on the
+            // `writeTrigger` event. Replaces the dead storeId/path pair.
+            ...(node.writeTo ? { writeTo: node.writeTo } : {}),
+            ...(node.writeTrigger ? { writeTrigger: node.writeTrigger } : {}),
             ...(node.variant ? { variant: node.variant } : {})
         },
         events: []

@@ -261,6 +261,73 @@ export const bindingSchema = z
 export type BindingDefinition = z.infer<typeof bindingSchema>;
 
 /**
+ * P203 (ADR 0027): the **writable** binding kinds — the target set for an input
+ * control's `writeTo` binding (the WRITE half of a bidirectional value binding).
+ * You can only persist a user edit into a real, writable target:
+ *  - `store`  → a `ui-store` node (path = store id) + optional one-level subPath.
+ *  - `flow`   → Node-RED flow context (path = context key).
+ *  - `global` → Node-RED global context (path = context key).
+ *
+ * The read-only / computed kinds (query, routeParam, reactive, literal, msg,
+ * jsonata, env, item, index, prop) are deliberately excluded — you cannot write
+ * a value back into a computed source.
+ */
+export const WRITABLE_BINDING_KINDS = ["store", "flow", "global"] as const;
+
+export type WritableBindingKind = (typeof WRITABLE_BINDING_KINDS)[number];
+
+/**
+ * P203 (ADR 0027): the `writeTo` binding — the symmetric WRITE half of an input's
+ * `value` binding. Structurally the same as {@link bindingSchema} (store node +
+ * optional one-level subPath), but the `kind` is restricted to the writable set.
+ * Zod REJECTS query/routeParam/reactive/literal/msg/jsonata/env/timestamp/item/
+ * index/prop for a `writeTo`.
+ */
+export const writeToBindingSchema = z
+    .object({
+        kind: z.enum(WRITABLE_BINDING_KINDS),
+        path: z.string().optional(),
+        value: z.unknown().optional(),
+        fallback: z.unknown().optional(),
+        // P131 (ADR 0013): optional one-level sub-path into a store slice. Only
+        // valid on `kind:"store"`; itself a LEAF binding (no nested subPath).
+        subPath: leafBindingSchema.optional()
+    })
+    .superRefine((binding, context) => {
+        // A subPath only reaches into a store slice.
+        if (binding.subPath !== undefined && binding.kind !== "store") {
+            context.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "A subPath is only valid on a 'store' writeTo target.",
+                path: ["subPath"]
+            });
+        }
+
+        // All writable kinds are path-bearing: store carries the store id, flow/
+        // global carry the context key.
+        if (!binding.path) {
+            context.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: `A '${binding.kind}' writeTo target requires a path.`
+            });
+        }
+    });
+
+export type WriteToBindingDefinition = z.infer<typeof writeToBindingSchema>;
+
+/**
+ * P203 (ADR 0027): when the runtime persists the field value into the `writeTo`
+ * target. `submit` (default) writes on Enter/blur; `change` writes on every
+ * keystroke. Non-text controls (checkbox/switch/select/radio/slider) have no
+ * submit gesture and effectively write on `change` regardless.
+ */
+export const WRITE_TRIGGERS = ["change", "submit"] as const;
+
+export const writeTriggerSchema = z.enum(WRITE_TRIGGERS).default("submit");
+
+export type WriteTrigger = (typeof WRITE_TRIGGERS)[number];
+
+/**
  * P69 — Icon system.
  *
  * Icon values are backend-neutral: an icon is identified by a `name` within an

@@ -79,13 +79,12 @@ test.describe("editor — picker dialog as sole reference selection (P114)", () 
 
         // The mount field is the dialog-only pattern: button visible, bound
         // control hidden, NO visible reference <select> in the wrapper.
+        // P203 (ADR 0027): ui-input's dedicated storeId picker was removed; the
+        // store target now lives inside the `writeTo` typedInput (store type's own
+        // expand dialog), so mount is the remaining reference-field on ui-input.
         await expect(pickerFieldButton(page, "mount")).toBeVisible();
         await expect(page.locator("#node-input-mount")).toBeHidden();
         await expect(pickerFieldDisplay(page, "mount")).toBeVisible();
-
-        // The store field (ui-input has one) is likewise dialog-only and clearable.
-        await expect(pickerFieldButton(page, "storeId")).toBeVisible();
-        await expect(page.locator("#node-input-storeId")).toBeHidden();
     });
 
     test("store preset lists only ui-store nodes; picking one round-trips", async ({ page, request }) => {

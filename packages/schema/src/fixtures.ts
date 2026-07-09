@@ -828,8 +828,11 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
             kind: "state",
             path: "draft.customer.name"
         },
-        storeId: "draftStore",
-        path: "name",
+        writeTo: {
+            kind: "store",
+            path: "draftStore",
+            subPath: { kind: "literal", value: "name" }
+        },
         row: 1,
         col: 1,
         colSize: 12,
@@ -844,8 +847,11 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
             kind: "state",
             path: "draft.customer.email"
         },
-        storeId: "draftStore",
-        path: "email",
+        writeTo: {
+            kind: "store",
+            path: "draftStore",
+            subPath: { kind: "literal", value: "email" }
+        },
         row: 2,
         col: 1,
         colSize: 12,
@@ -860,8 +866,11 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
             kind: "state",
             path: "draft.customer.status"
         },
-        storeId: "draftStore",
-        path: "status",
+        writeTo: {
+            kind: "store",
+            path: "draftStore",
+            subPath: { kind: "literal", value: "status" }
+        },
         row: 3,
         col: 1,
         colSize: 12,

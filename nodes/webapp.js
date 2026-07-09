@@ -363,6 +363,21 @@ function stateBinding(path) {
     };
 }
 
+// P203 (ADR 0027): migrate a legacy ui-input write-target pair (storeId + path)
+// into the new `writeTo` store binding. Returns undefined when no storeId is set.
+function legacyStoreWriteTo(storeId, path) {
+    const id = typeof storeId === "string" ? storeId.trim() : "";
+    if (!id) {
+        return undefined;
+    }
+    const rel = typeof path === "string" ? path.trim() : "";
+    return {
+        kind: "store",
+        path: id,
+        ...(rel ? { subPath: { kind: "literal", value: rel } } : {})
+    };
+}
+
 function queryBinding(path) {
     return {
         kind: "query",
@@ -2067,6 +2082,108 @@ function resolveTableRow(appId, location, tableId, rowId, definitions) {
 // params}); it never names or runs an action. There is no automatic event→action
 // link — the runtime takes NO domain action here. The wired Node-RED flow is the
 // only place that may react. See docs/nodes/concepts/events.md.
+// P203 (ADR 0027): the runtime WRITE-BACK. On an input's writeTrigger event
+// (change|submit, default submit) persist the field's current value into the
+// node's `writeTo` target. This is ADDITIVE — it runs alongside the normal
+// output-port event emission and never replaces it.
+//   - store  → a per-client op:set at the store's statePath + optional literal
+//     subPath, carrying clientId, then a fresh SSE snapshot push (real two-way).
+//   - flow / global → Node-RED flow/global context, server-side, no per-client
+//     scope and no auto re-render (documented ADR 0027 boundary).
+// Returns silently on any misconfiguration (unknown store, non-writable kind);
+// the write-back must never break the primary event path.
+function applyInputWriteBack(RED, appId, node, params, clientId, definitions) {
+    const def = node && node.webappDefinition;
+    if (!def || def.type !== "ui-input") {
+        return;
+    }
+    const writeTo = def.writeTo;
+    if (!writeTo || typeof writeTo !== "object" || typeof writeTo.kind !== "string") {
+        return;
+    }
+
+    // The trigger gate: default submit. A `change`-triggered input writes on every
+    // change event; a `submit`-triggered one only on submit. (Text controls emit
+    // both change and submit; gating here keeps submit-mode from writing on change.)
+    const trigger = def.writeTrigger === "change" ? "change" : "submit";
+    // The value the user just entered — the same value the change/submit event
+    // carried (params.value), or a boolean toggle (params.checked).
+    const value = params && Object.prototype.hasOwnProperty.call(params, "value")
+        ? params.value
+        : (params && Object.prototype.hasOwnProperty.call(params, "checked") ? params.checked : undefined);
+
+    if (writeTo.kind === "store") {
+        const storeId = typeof writeTo.path === "string" ? writeTo.path : "";
+        if (!storeId) {
+            return;
+        }
+        const storeDefinition = Array.isArray(definitions)
+            ? definitions.find((entry) => entry && entry.type === "ui-store" && entry.id === storeId)
+            : undefined;
+        if (!storeDefinition) {
+            return;
+        }
+        // The optional one-level subPath. Only a LITERAL subPath is a stable write
+        // key; a dynamic subPath cannot be resolved at write time here.
+        let relPath;
+        if (writeTo.subPath && typeof writeTo.subPath === "object" && writeTo.subPath.kind === "literal") {
+            relPath = writeTo.subPath.value !== undefined && writeTo.subPath.value !== null
+                ? String(writeTo.subPath.value)
+                : "";
+        }
+        const operation = relPath
+            ? { id: storeId, op: "set", path: relPath, value }
+            : { id: storeId, op: "replace", value };
+
+        const baseState = clientId
+            ? (getClientState(appId, clientId)?.state
+                || clone(runtimeState.liveState.get(appId) || initializeState([storeDefinition], [], appId)))
+            : clone(runtimeState.liveState.get(appId) || initializeState([storeDefinition], [], appId));
+
+        let applied;
+        try {
+            applied = applyStoreOperation(baseState, storeDefinition, operation);
+        }
+        catch (error) {
+            if (RED && RED.log && RED.log.warn) {
+                RED.log.warn(`[webapp] ui-input writeTo store failed (op=applyInputWriteBack): ${error instanceof Error ? error.message : String(error)}`);
+            }
+            return;
+        }
+        const now = Date.now();
+        if (clientId) {
+            setClientState(appId, clientId, applied.nextState, now);
+        }
+        else {
+            runtimeState.liveState.set(appId, applied.nextState);
+        }
+        // P31: live push — the bound view(s) re-render from the mutated state.
+        pushSnapshotToClients(appId, clientId, definitions);
+        return;
+    }
+
+    if (writeTo.kind === "flow" || writeTo.kind === "global") {
+        const key = typeof writeTo.path === "string" ? writeTo.path.trim() : "";
+        if (!key || !node || typeof node.context !== "function") {
+            return;
+        }
+        try {
+            const ctx = node.context();
+            const scoped = writeTo.kind === "flow" ? ctx.flow : ctx.global;
+            if (scoped && typeof scoped.set === "function") {
+                // Documented boundary: server-side context, no per-client scope and
+                // no automatic SSE re-render.
+                scoped.set(key, value);
+            }
+        }
+        catch (error) {
+            if (RED && RED.log && RED.log.warn) {
+                RED.log.warn(`[webapp] ui-input writeTo ${writeTo.kind} failed (op=applyInputWriteBack): ${error instanceof Error ? error.message : String(error)}`);
+            }
+        }
+    }
+}
+
 function dispatchClientEvent(RED, appId, body, definitions) {
     const sourceId = body && body.sourceId ? String(body.sourceId) : undefined;
     const event = body && body.event ? String(body.event) : undefined;
@@ -2124,6 +2241,25 @@ function dispatchClientEvent(RED, appId, body, definitions) {
                 : Array.from(subscribers.entries());
             writeDialogOpenState(appId, clientId, sourceId, false);
             pushSnapshotToTargets(appId, targets);
+        }
+    }
+
+    // P203 (ADR 0027): runtime write-back. Before (and independently of) the
+    // output-port emission, if this is a ui-input with a `writeTo` target and the
+    // event matches its `writeTrigger` (default submit), persist the current value
+    // into the target. ADDITIVE — the output event below still fires.
+    if (definitionType === "ui-input") {
+        const writeTrigger = node.webappDefinition && node.webappDefinition.writeTrigger === "change"
+            ? "change"
+            : "submit";
+        // change-mode writes on every change; submit-mode only on submit. (A text
+        // input emits both `change` and `submit`; this gate keeps submit-mode from
+        // also writing on the intermediate change events.)
+        const triggers = writeTrigger === "change"
+            ? (event === "change" || event === "submit")
+            : event === "submit";
+        if (triggers) {
+            applyInputWriteBack(RED, appId, node, params, clientId, definitions);
         }
     }
 
@@ -5589,8 +5725,11 @@ const runtimeNodeRegistry = {
             label: config.label,
             value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
             placeholder: config.placeholder || undefined,
-            storeId: config.storeId || undefined,
-            path: config.path || undefined,
+            // P203 (ADR 0027): the writeTo WRITE target + writeTrigger. Falls back
+            // to a migrated writeTo=store binding when only the legacy
+            // storeId(+path) pair is present on a pre-P203 deployed config.
+            writeTo: getBinding(config.writeTo, legacyStoreWriteTo(config.storeId, config.path)),
+            writeTrigger: config.writeTrigger || undefined,
             inputType: config.inputType || undefined,
             variant: config.variant || undefined,
             size: blankToUndefined(config.size),
@@ -6642,6 +6781,10 @@ registerWebappNodes.__test__ = {
     // emits msg.ui on its output port; takes no domain action.
     dispatchClientEvent,
     applyStoreOperation,
+    // P203 (ADR 0027): ui-input runtime write-back (store/flow/global) + legacy
+    // storeId/path → writeTo store migration.
+    applyInputWriteBack,
+    legacyStoreWriteTo,
     // P160: query live-state — push folding + snapshot source derivation.
     applyQueryMessage,
     buildQuerySources,

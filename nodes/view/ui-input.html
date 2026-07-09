@@ -50,6 +50,18 @@
                 valuePath: { value: "" },
                 value: { value: null },
                 valueBinding: { value: "" },
+                // P203 (ADR 0027): `writeTo` persists the WRITE half of the value
+                // binding — the target the runtime writes the user's edit into on
+                // the `writeTrigger` event. It replaces the dead storeId/path pair.
+                // Restricted to the writable kinds (store/flow/global). The
+                // typedInput lives on #node-input-writeToBinding. Legacy
+                // storeId/path are migrated to a writeTo=store binding on open and
+                // then dropped (not re-serialised).
+                writeTo: { value: null },
+                writeToBinding: { value: "" },
+                writeTrigger: { value: "submit" },
+                // Legacy write-target pair — kept in defaults only so a pre-P203
+                // node opens; migrated to `writeTo` on open, cleared on save.
                 storeId: { value: "" },
                 path: { value: "" },
                 inputType: { value: "text", required: true },
@@ -80,7 +92,7 @@
                 }
             },
             oneditprepare: function () {
-                common.installReferenceSelectors({ mount: true, store: true }).call(this);
+                common.installReferenceSelectors({ mount: true }).call(this);
                 common.installVariantSelectBox("input").call(this);
                 common.installSizeSelectBox().call(this);
                 common.installLayoutChildPropRows().call(this);
@@ -120,6 +132,38 @@
                 valueInput.typedInput("type", valueEditor.type);
                 valueInput.typedInput("value", valueEditor.value);
 
+                // P203 (ADR 0027 / writable category): `writeTo` typedInput —
+                // the WRITE half. Store/Flow/Global only. Migration: a legacy
+                // `storeId`+`path` pair opens as
+                // writeTo={kind:"store", path:<storeId>, subPath:{kind:"literal", value:<path>}};
+                // a stored `writeTo` binding object takes precedence.
+                const storedWriteTo = common.parseBindingValue(this.writeTo);
+                const writeToBinding = storedWriteTo
+                    ? storedWriteTo
+                    : (this.storeId
+                        ? {
+                            kind: "store",
+                            path: this.storeId,
+                            subPath: this.path ? { kind: "literal", value: this.path } : undefined
+                        }
+                        : undefined);
+                const writeToEditor = common.readValueBinding(writeToBinding, "");
+                // Restrict the default type to a writable kind (never a stray str).
+                const writeToType = ["store", "flow", "global"].indexOf(writeToEditor.type) !== -1
+                    ? writeToEditor.type
+                    : "store";
+                const writeToInput = $("#node-input-writeToBinding");
+                writeToInput.typedInput({
+                    default: writeToType,
+                    types: common.valueBindingTypes({ category: "writable" })
+                });
+                writeToInput.typedInput("type", writeToType);
+                writeToInput.typedInput("value", writeToEditor.value);
+                writeToInput.data("base-field-originally-empty", !writeToBinding);
+
+                // P203: writeTrigger select (change|submit, default submit).
+                $("#node-input-writeTrigger").val(this.writeTrigger || "submit");
+
                 // P123 (ADR 0012 / boolean category): `disabled` typedInput.
                 // No legacy to migrate (new field).
                 const storedDisabled = common.parseBindingValue(this.disabled);
@@ -150,6 +194,24 @@
                 );
                 this.valuePath = "";
 
+                // P203 (ADR 0027): persist writeTo as a binding object (or null when
+                // the field was left empty), then drop the legacy storeId/path pair
+                // so the migrated node never re-serialises them.
+                const $writeToInput = $("#node-input-writeToBinding");
+                const writeToType = $writeToInput.typedInput("type");
+                const writeToValue = $writeToInput.typedInput("value");
+                const writeToOriginEmpty = $writeToInput.data("base-field-originally-empty");
+                const writeToResult = common.applyValueBinding(writeToType, writeToValue);
+                // An empty writable target (no store id / no context key) is "no
+                // write-back": persist null, not a hollow binding.
+                const writeToHasTarget = writeToResult
+                    && ((writeToResult.kind === "store" && writeToResult.path)
+                        || ((writeToResult.kind === "flow" || writeToResult.kind === "global") && writeToResult.path));
+                this.writeTo = (writeToOriginEmpty && !writeToHasTarget) ? null : (writeToHasTarget ? writeToResult : null);
+                this.writeTrigger = $("#node-input-writeTrigger").val() || "submit";
+                this.storeId = "";
+                this.path = "";
+
                 // P123: persist disabled as binding object.
                 // P181: preserve null when field was originally absent and untouched.
                 const $disabledInput = $("#node-input-disabledBinding");
@@ -170,24 +232,30 @@
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <div class="form-row"><label for="node-input-label">Label</label><input type="text" id="node-input-label"></div>
-    <!-- P123 (ADR 0012 / value/display category): Value binding — typedInput managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-valueBinding">Value Path</label><input type="text" id="node-input-valueBinding"></div>
-    <div class="form-row"><label for="node-input-storeId">Store ID</label><select id="node-input-storeId"></select></div>
-    <div class="form-row"><label for="node-input-path">Store Path</label><input type="text" id="node-input-path"></div>
+    <!-- P123 (ADR 0012 / value/display category): Value binding (READ) — typedInput managed in oneditprepare/oneditsave. -->
+    <div class="form-row"><label for="node-input-valueBinding">Value</label><input type="text" id="node-input-valueBinding"></div>
+    <!-- P203 (ADR 0027 / writable category): writeTo target (WRITE) — Store/Flow/Global; typedInput managed in oneditprepare/oneditsave. -->
+    <div class="form-row"><label for="node-input-writeToBinding">Write To</label><input type="text" id="node-input-writeToBinding"></div>
+    <div class="form-row"><label for="node-input-writeTrigger">Write Trigger</label><select id="node-input-writeTrigger"><option value="submit">submit</option><option value="change">change</option></select></div>
     <div class="form-row"><label for="node-input-inputType">Input Type</label><select id="node-input-inputType"><option value="text">text</option><option value="email">email</option><option value="number">number</option></select></div>
     <!-- P123 (ADR 0012 / boolean category): Disabled binding — typedInput managed in oneditprepare/oneditsave. -->
     <div class="form-row"><label for="node-input-disabledBinding">Disabled</label><input type="text" id="node-input-disabledBinding"></div>
 </script>
 <script type="text/html" data-help-name="ui-input">
     <p>Mountet ein einzeiliges Eingabefeld und bindet seinen Wert an den Client-State.</p>
-    <h4>Value (P123)</h4>
+    <h4>Value (Lesen, P123)</h4>
     <p>Bindbare Quelle des Feldwerts (Anzeige/Initialwert) — voller kanonischer Satz (ADR 0012):
     Store, Query, Route-Param, Reactive, msg, JSONata, string, number, boolean, json, timestamp,
     Flow, Global, Env. Ein bestehender <code>valuePath</code> wird automatisch als
     <code>state</code>-Binding übernommen.</p>
-    <h4>Store-Binding</h4>
-    <p>Wenn <code>Store ID</code> und <code>Store Path</code> gesetzt sind, schreibt der Knoten
-    Nutzeränderungen direkt in den Store zurück.</p>
+    <h4>Write To (Schreiben, P203 / ADR 0027)</h4>
+    <p>Ziel, in das die Runtime die Nutzeränderung schreibt — nur <b>schreibbare</b> Kinds:
+    <code>Store</code> (ein <code>ui-store</code> + optionaler ein-Ebenen-Sub-Pfad, per-client,
+    live SSE-Re-Render), <code>Flow</code>- oder <code>Global</code>-Kontext (server-seitig, ohne
+    per-client-Scope und ohne Auto-Re-Render). <code>Write Trigger</code> (<code>submit</code> =
+    Enter/Blur, Default; <code>change</code> = jede Eingabe) legt fest, wann geschrieben wird.
+    Ersetzt die alten, wirkungslosen Felder <code>Store ID</code>/<code>Store Path</code>: ein
+    Alt-Knoten wird beim Öffnen automatisch nach <code>writeTo=store</code> migriert.</p>
     <h4>Disabled (P123)</h4>
     <p>Bindbar über den Boolean-Zustand-Satz (ADR 0012): Store, Query, Route-Param, Reactive,
     msg, JSONata, boolean, Flow, Global, Env. Ein Store-Binding deaktiviert das Feld live,
