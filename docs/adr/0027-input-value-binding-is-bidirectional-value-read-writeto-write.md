@@ -49,10 +49,14 @@ typedInputs that differ only in their kind set:**
    msg, JSONata, Env, timestamp) are omitted — you cannot persist a user edit
    into a computed/read-only source. Replaces `storeId` + `path`.
 
-3. **`writeTrigger`** (new) — `change` | `submit`, **default `submit`**. Text
-   controls persist on submit (Enter / blur); non-text controls (checkbox,
+3. **`writeTrigger`** (new) — `none` | `change` | `submit`, **default `submit`**.
+   Text controls persist on submit (Enter / blur); non-text controls (checkbox,
    switch, select, radio, slider — which have no submit gesture) persist on
-   `change` regardless of the setting.
+   `change` regardless of the setting. **`none` disables the automatic write-back
+   entirely** — the control emits its `change`/`submit` output events as usual, so
+   the flow author wires the persistence by hand (`change → function → ui-store`).
+   `writeTo` may be left empty when `writeTrigger=none` (added by the amendment
+   below, P206).
 
 4. **The runtime implements the write-back** (today missing). On the trigger
    event the control's current value is persisted to the `writeTo` target:
@@ -94,3 +98,18 @@ typedInputs that differ only in their kind set:**
 - **Verification is behavioural:** the proof is that typing into a bound input
   and submitting **mutates the store slice and live-updates a second bound view**
   (measured), not that an editor field exists.
+
+## Amendment (2026-07-09, P206) — `writeTrigger=none`
+
+The owner asked for an explicit **opt-out** of the automatic write-back, for the
+case where the persistence is wired by hand: *„wir sollten noch einen write
+trigger NONE haben, wenn man das manuell machen will."*
+
+`writeTrigger` gains a third value **`none`** (enum becomes `none | change |
+submit`, default still `submit`). `none` means the runtime performs **no**
+write-back at all; the `change`/`submit` output events still fire, so the flow
+author persists the value themselves (`change → function → ui-store`). With
+`none`, `writeTo` is optional (an empty write target is no longer a gap). Applies
+uniformly to all eight input controls; the runtime `applyInputWriteBack` returns
+early on `none`, and each control's `writeTrigger` select gains a `none` option.
+Tracked as **P206**.
