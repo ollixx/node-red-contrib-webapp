@@ -16,7 +16,7 @@ verify: browser
 spec: docs/nodes/input/ui-input.md
 tests: tests/e2e/nodes/view/ui-input.tests.md
 dependencies: [P203, P204]
-status: pending
+status: in_progress
 ---
 # P206 — writeTrigger `none` (Auto-Write-Back abschaltbar)
 
