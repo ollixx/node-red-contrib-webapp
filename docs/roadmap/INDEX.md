@@ -27,8 +27,7 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P204** — aspects/editor — Rollout `writeTo`/`writeTrigger` + Write-Back auf select/checkbox/switch/textarea/slider/radio/datepicker + je Node-Tests + Doku — *ADR 0027; dep P203* — [P204](aspects/editor/P204-input-writeto-rollout-remaining-controls.md)
-
+_No open work — the roadmap is drained. New work is added here as packages are authored._
 
 ## Deferred (parked, not abandoned)
 
@@ -88,11 +87,11 @@ open the folder for the full history.
 | aspects/docs | 1 |
 | aspects/runtime | 7 |
 | aspects/state | 8 |
-| aspects/editor | 21 |
+| aspects/editor | 22 |
 | schema | 5 |
 | aspects/rendering | 13 |
 | aspects/foundation | 5 |
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 204 done, 1 open, 8 deferred.**
+**Total: 205 done, 0 open, 8 deferred.**
