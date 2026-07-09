@@ -2120,6 +2120,17 @@ function applyInputWriteBack(RED, appId, node, params, clientId, definitions) {
     if (!def || !WRITE_BACK_INPUT_TYPES.has(def.type)) {
         return;
     }
+    // P206 (ADR 0027 amendment): `writeTrigger="none"` disables the automatic
+    // write-back ENTIRELY. Return BEFORE the submit-fallback mapping below — the
+    // fallback (`=== "change" ? "change" : "submit"`) would otherwise subsume
+    // `none` under `submit` and WRONGLY persist on submit. This is the P181/P202
+    // "a new enum value falls into the default branch" trap, avoided explicitly.
+    // Applies to text AND non-text controls alike: `none` means "never write".
+    // The `change`/`submit` OUTPUT events still fire (emitted by the caller).
+    if (def.writeTrigger === "none") {
+        return;
+    }
+
     const writeTo = def.writeTo;
     if (!writeTo || typeof writeTo !== "object" || typeof writeTo.kind !== "string") {
         return;
@@ -2273,11 +2284,19 @@ function dispatchClientEvent(RED, appId, body, definitions) {
     // target. ADDITIVE — the output event below still fires.
     if (WRITE_BACK_INPUT_TYPES.has(definitionType)) {
         const isTextLike = WRITE_BACK_TEXT_LIKE_TYPES.has(definitionType);
+        // P206 (ADR 0027 amendment): `none` disables auto write-back for EVERY
+        // control (text and non-text). Skip the trigger mapping entirely so the
+        // non-text `change` branch below cannot re-introduce a write. The output
+        // events still fire further down — this only suppresses the write-back.
+        const noWriteBack = node.webappDefinition && node.webappDefinition.writeTrigger === "none";
         const writeTrigger = node.webappDefinition && node.webappDefinition.writeTrigger === "change"
             ? "change"
             : "submit";
         let triggers;
-        if (!isTextLike) {
+        if (noWriteBack) {
+            triggers = false;
+        }
+        else if (!isTextLike) {
             // P204: toggles/selects/slider/radio have NO submit gesture. A
             // `writeTrigger=submit` there must NOT mean "never writes" — they
             // persist on `change` regardless of the setting. (They only emit

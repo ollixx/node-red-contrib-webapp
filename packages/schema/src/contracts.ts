@@ -320,8 +320,13 @@ export type WriteToBindingDefinition = z.infer<typeof writeToBindingSchema>;
  * target. `submit` (default) writes on Enter/blur; `change` writes on every
  * keystroke. Non-text controls (checkbox/switch/select/radio/slider) have no
  * submit gesture and effectively write on `change` regardless.
+ *
+ * P206 (ADR 0027 amendment): `none` disables the automatic write-back entirely —
+ * the control still emits its `change`/`submit` output events, so the flow author
+ * wires the persistence by hand (`change → function → ui-store`). With `none`,
+ * `writeTo` may be left empty (an empty write target is deliberate, not a gap).
  */
-export const WRITE_TRIGGERS = ["change", "submit"] as const;
+export const WRITE_TRIGGERS = ["none", "change", "submit"] as const;
 
 export const writeTriggerSchema = z.enum(WRITE_TRIGGERS).default("submit");
 

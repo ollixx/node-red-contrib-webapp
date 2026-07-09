@@ -171,6 +171,51 @@ describe("P203 (ADR 0027): ui-input runtime write-back", () => {
         });
     });
 
+    describe("P206 (ADR 0027 amendment): writeTrigger='none' disables auto write-back", () => {
+        function typedNode(type: string, writeTo: unknown, writeTrigger?: string) {
+            return { webappDefinition: { type, id: "in1", writeTo, writeTrigger } };
+        }
+
+        it("does NOT write back for a TEXT control (ui-input) even with a valid store writeTo", () => {
+            applyInputWriteBack(
+                null,
+                APP,
+                typedNode("ui-input", { kind: "store", path: "draftStore", subPath: { kind: "literal", value: "name" } }, "none"),
+                { value: "Ada" },
+                "c1",
+                definitions
+            );
+            // Early return BEFORE the submit-fallback mapping: nothing persisted.
+            expect(getClientState(APP, "c1")).toBeNull();
+            expect(runtimeState.liveState.get(APP)).toBeUndefined();
+        });
+
+        it("does NOT write back for a NON-TEXT control (ui-checkbox) — 'none' means never write", () => {
+            applyInputWriteBack(
+                null,
+                APP,
+                typedNode("ui-checkbox", { kind: "store", path: "draftStore", subPath: { kind: "literal", value: "agree" } }, "none"),
+                { checked: true },
+                "c1",
+                definitions
+            );
+            expect(getClientState(APP, "c1")).toBeNull();
+            expect(runtimeState.liveState.get(APP)).toBeUndefined();
+        });
+
+        it("still writes back when writeTrigger is submit (control test — none is the only opt-out)", () => {
+            applyInputWriteBack(
+                null,
+                APP,
+                typedNode("ui-input", { kind: "store", path: "draftStore", subPath: { kind: "literal", value: "name" } }, "submit"),
+                { value: "Grace" },
+                "c1",
+                definitions
+            );
+            expect(getClientState(APP, "c1")?.state).toMatchObject({ draft: { name: "Grace" } });
+        });
+    });
+
     describe("guard rails", () => {
         it("does nothing when the node has no writeTo", () => {
             applyInputWriteBack(null, APP, inputNode(undefined, "submit"), { value: "x" }, "c1", definitions);

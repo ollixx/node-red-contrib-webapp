@@ -398,4 +398,54 @@ test.describe("ui-input (P123)", () => {
 
         await expect(webapp.root().locator(".webapp-text")).toContainText("live-change", { timeout: 5000 });
     });
+
+    test("W04 (P206) — writeTrigger=none: no auto write-back (second view UNCHANGED) but the change event STILL fires", async ({ page, request }) => {
+        // ADR 0027 amendment: `writeTrigger=none` disables the automatic
+        // write-back entirely. A ui-input that reads AND targets store(x).name
+        // with writeTrigger=none must NOT mutate the store on change/submit — a
+        // second ui-text bound to the same slice stays on the seed (MEASURED
+        // content, unchanged) — while the node's `change` OUTPUT event still fires
+        // carrying the new value (the flow author wires persistence by hand).
+        const flow = new FlowBuilder()
+            .app({ id: "wb04App", root: "wb04App" })
+            .node("ui-store", { id: "wb04Store", statePath: "form", initialValue: JSON.stringify({ name: "untouched" }) })
+            .node("ui-input", {
+                id: "wb04In",
+                label: "Name",
+                value: { kind: "store", path: "wb04Store", subPath: { kind: "literal", value: "name" } },
+                writeTo: { kind: "store", path: "wb04Store", subPath: { kind: "literal", value: "name" } },
+                writeTrigger: "none"
+            })
+            .node("ui-text", {
+                id: "wb04Out",
+                value: { kind: "store", path: "wb04Store", subPath: { kind: "literal", value: "name" } }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "wb04App");
+        await webapp.navigate("/");
+        await expect(webapp.root().locator(".webapp-text")).toContainText("untouched");
+
+        // The node's change OUTPUT event must still fire (additive) — observe it.
+        const eventPromise = webapp.interceptNextEvent();
+
+        await page.evaluate(() => {
+            const el = document.querySelector("sl-input") as HTMLElement & { value: string };
+            el.value = "typed-but-not-persisted";
+            el.dispatchEvent(new CustomEvent("sl-change", { bubbles: true, composed: true }));
+        });
+
+        // (b) EVENT STILL FIRES carrying the new value.
+        const body = await eventPromise;
+        expect(body.event).toBe("change");
+        expect((body.params as Record<string, unknown>).value).toBe("typed-but-not-persisted");
+
+        // (a) MEASURED PROOF: the second bound view's text CONTENT is UNCHANGED —
+        // the runtime did NOT write back (no store mutation, no SSE re-render).
+        await page.waitForTimeout(500);
+        await expect(webapp.root().locator(".webapp-text")).toContainText("untouched");
+        await expect(webapp.root().locator(".webapp-text")).not.toContainText("typed-but-not-persisted");
+    });
 });

@@ -174,7 +174,8 @@ export interface UiInputEditorConfig extends MountableEditorConfig {
     // P203 (ADR 0027): the `writeTo` WRITE target (writable kinds only) and the
     // `writeTrigger`. Replace the dead storeId/path pair (kept only for migration).
     writeTo?: WriteToBindingDefinition | null;
-    writeTrigger?: "change" | "submit";
+    // P206 (ADR 0027 amendment): `none` disables the automatic write-back.
+    writeTrigger?: "none" | "change" | "submit";
     storeId?: string;
     path?: string;
     inputType?: "text" | "email" | "number";
