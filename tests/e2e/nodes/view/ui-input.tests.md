@@ -34,3 +34,12 @@
 |---|---|
 | E01 | `sl-change` → POST /event `{ event:"change", params:{ value } }` |
 | E02 | `sl-submit` → POST /event `{ event:"submit", params:{ value } }` |
+
+## writeTo Write-Back (P203 / ADR 0027 — echtes Two-Way ohne Verdrahtung)
+
+| ID | Testziel |
+|---|---|
+| W01 | `value=store(x).name` UND `writeTo=store(x).name`, `writeTrigger=submit`: Tippen + Enter/Blur schreibt per-client in den Store; ein ZWEITER an `store(x).name` gebundener `ui-text` zeigt den neuen Wert live (SSE-Re-Render, Textinhalt gemessen), ohne function-Knoten |
+| W02 | `writeTrigger=submit`: ein reines `change`-Event schreibt NICHT zurück (der Mirror-View bleibt auf dem Ausgangswert) |
+| W03 | `writeTrigger=change`: jedes `change`-Event schreibt zurück und aktualisiert den gebundenen View live |
+| M01 (editor) | Legacy `storeId`+`path` migriert beim Öffnen zu `writeTo={kind:"store", path:<storeId>, subPath:{kind:"literal", value:<path>}}`; Speichern lässt die Alt-Felder weg |

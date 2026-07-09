@@ -9,9 +9,12 @@
 
 `ui-input` rendert ein einzeiliges Texteingabefeld und bindet seinen Wert
 bidirektional an den Client-State. Drei Eingabe-Typen stehen zur Wahl
-(`text`, `email`, `number`). Über das optionale Store-Binding schreibt der Knoten
-Nutzeränderungen direkt in einen `ui-store` zurück; zusätzlich emittiert er bei
-jeder Änderung und bei Bestätigung (Enter/Submit) ein Event auf seinem Output-Port.
+(`text`, `email`, `number`). Die **Lese-Hälfte** ist das `value`-Binding
+(Anzeige/Initialwert, voller Binding-Satz); die **Schreib-Hälfte** ist das
+`writeTo`-Binding (ADR 0027) — das Ziel, in das die Runtime die Nutzeränderung
+beim `writeTrigger`-Event persistiert. Zusätzlich emittiert der Knoten bei jeder
+Änderung und bei Bestätigung (Enter/Submit) ein Event auf seinem Output-Port
+(der Write-Back ist **additiv**, ersetzt die Events nicht).
 
 ## Einordnung
 
@@ -21,9 +24,10 @@ jeder Änderung und bei Bestätigung (Enter/Submit) ein Event auf seinem Output-
 - **Erreichbarkeit:** im gerenderten Layout an der Position, die `mount`/`parent`
   und die Layout-Child-Felder (`order`, `row`/`col`, `layoutX`/`layoutY`)
   vorgeben.
-- **Rolle zur Laufzeit:** liest `value` aus dem Client-State; schreibt Änderungen
-  bei Nutzerinteraktion in den State zurück (direkt oder via `ui-store`). Gibt
-  `change`- und `submit`-Events auf dem Output-Port aus.
+- **Rolle zur Laufzeit:** liest `value` aus dem Client-State; schreibt die
+  Nutzeränderung beim `writeTrigger`-Event in das `writeTo`-Ziel zurück
+  (Store per-client mit SSE-Re-Render, Flow/Global server-seitig). Gibt
+  zusätzlich `change`- und `submit`-Events auf dem Output-Port aus.
 
 ## Felder
 
@@ -41,19 +45,26 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
 | `label` | „Label" | Textfeld | **ja** | Beschriftung des Eingabefeldes. Wird als Feld-Label über dem Input angezeigt. |
-| `value` | „Value Path" | typedInput (alle Binding-Arten) | **ja** | Bindbare Quelle des Feldwerts. Unterstützt alle Binding-Arten: `literal`, `state`, `store`, `query`, `routeParam`, `msg`, `flow`, `global`, `jsonata`, `env`. Details: [stores.md](../concepts/stores.md). |
+| `value` | „Value" | typedInput (alle Binding-Arten) | **ja** | Bindbare **Lese**-Quelle des Feldwerts (Anzeige/Initialwert). Unterstützt alle Binding-Arten: `literal`, `state`, `store`, `query`, `routeParam`, `msg`, `flow`, `global`, `jsonata`, `env`. Details: [stores.md](../concepts/stores.md). |
+| `writeTo` | „Write To" | typedInput (**nur schreibbare** Arten: Store/Flow/Global) | optional | Bindbares **Schreib**-Ziel (ADR 0027). Nur die schreibbaren Kinds sind zulässig: `store` (ein `ui-store` + optionaler ein-Ebenen-Sub-Pfad), `flow`, `global`. Nicht-schreibbare Kinds (query, routeParam, reactive, literal, msg, jsonata, env) sind ausgeschlossen. Die Runtime schreibt die Nutzeränderung beim `writeTrigger` in dieses Ziel. |
+| `writeTrigger` | „Write Trigger" | SelectBox (`change` / `submit`) | optional | Wann geschrieben wird: `submit` (Default) = bei Enter/Blur, `change` = bei jeder Eingabe. |
 | `inputType` | „Input Type" | SelectBox (`text` / `email` / `number`) | **ja** | Semantischer Eingabe-Typ. Steuert Tastatur-Typ und Browser-Validierung. Default: `text`. |
 | `placeholder` | „Placeholder" | Textfeld | optional | Platzhaltertext, der angezeigt wird, wenn das Feld leer ist. |
 | `variant` | „Variant" | SelectBox (Variant) | optional | Visuelle Feld-Rolle (`default`, `filled`, `outlined`). Default: `default`. Vocabulary: [theming.md](../concepts/theming.md). |
 | `size` | „Größe" | SelectBox (`small` / `medium` / `large`) | optional | Größe des Eingabefeldes. Default: `medium`. |
 | `disabled` | „Disabled" | typedInput (alle Binding-Arten) | optional | Bindbare Bedingung, die das Feld deaktiviert (Nutzereingabe gesperrt). |
 
-### Gruppe „Store-Binding"
+### Entfernte Felder (migriert, ADR 0027)
 
-| Feld | Label | Editor-Typ | Pflicht | Beschreibung |
-|---|---|---|---|---|
-| `storeId` | „Store ID" | Node-Picker-Dialog (Preset Stores) | optional | Referenz auf einen `ui-store`-Knoten. Wenn gesetzt, muss `path` ebenfalls gesetzt sein. |
-| `path` | „Store Path" | Textfeld | optional (Pflicht wenn `storeId` gesetzt) | Relativer Pfad im Store-Slice, unter dem die Nutzeränderung gespeichert wird. Leer darf er nicht sein, wenn `storeId` gesetzt ist. |
+| Feld (alt) | Status | Migration |
+|---|---|---|
+| `storeId` | **entfernt** | Ein Alt-Knoten mit `storeId`+`path` wird beim Öffnen im Editor verlustfrei nach `writeTo = {kind:"store", path:<storeId>, subPath:{kind:"literal", value:<path>}}` migriert. Beim Speichern werden die Alt-Felder nicht mehr erzeugt. Die Runtime führt dieselbe Migration für alt-deployte Configs durch. |
+| `path` | **entfernt** | Siehe `storeId` — wird zum `subPath` des migrierten `writeTo`. |
+| `valuePath` | **entfernt** | Legacy Pre-P123-State-Pfad → wird zu `value = {kind:"state", path:<valuePath>}` migriert. |
+
+> **Wichtig:** Die alten `storeId`/`path`-Felder schrieben **nie** tatsächlich
+> zurück (verifiziert 2026-07-05, ADR 0027). Der echte Write-Back läuft jetzt
+> über `writeTo` + `writeTrigger`.
 
 ### Gruppe „Platzierung"
 
@@ -67,8 +78,8 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 ### Inline-Hilfe (HTML)
 
 Der `data-help-name="ui-input"`-Hilfetext soll knapp sein: Zweck (einzeiliges
-Eingabefeld), Hinweis auf `value`-Binding und Store-Binding-Paar
-(`storeId` + `path`), `change`- und `submit`-Events und ein Link auf die
+Eingabefeld), Hinweis auf `value`-Binding (Lesen) und `writeTo` + `writeTrigger`
+(Schreiben, Store/Flow/Global), `change`- und `submit`-Events und ein Link auf die
 ausführliche Doku:
 `https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/input/ui-input.md`.
 
@@ -102,8 +113,11 @@ Komponentenzustand steuert.
 
 Gemeinsame `msg.ui`-Felder beider Events: `appId`, `clientId`, `event`, `sourceId`.
 
+Für das reine „Feld in einen Store schreiben" ist **keine** Verdrahtung mehr
+nötig — dafür ist `writeTo` da. Die Events bleiben für zusätzliche Seiteneffekte:
+
 **Antizipierte Wiring-Szenarien:**
-- `change` → `function` → Validierung → `ui-store` (Entwurf speichern).
+- `change` → `function` → Validierung (zusätzlich zum `writeTo`-Store-Update).
 - `submit` → `http request` → API-Aufruf mit dem eingegebenen Wert.
 - `submit` → `ui-action` (`navigate`) → Weiterleitung nach erfolgreichem Speichern.
 
@@ -117,12 +131,20 @@ Varianten werden auf `default` zurückgefallen. Details: [theming.md](../concept
 
 ## Besonderheiten
 
-- **Store-Binding-Paar.** `storeId` und `path` müssen immer gemeinsam gesetzt oder
-  gemeinsam leer gelassen werden. Das Schema (`uiInputNodeDefinitionSchema`)
-  erzwingt diese Invariante: ein partiell gesetztes Paar ist ein Fehler.
-- **Direkte vs. Store-gestützte Rückschreibung.** Ohne Store-Binding schreibt
-  Nutzerinteraktion via Events in den Flow; mit Store-Binding schreibt der Renderer
-  die Änderung direkt in den Store.
+- **Two-Way ohne Verdrahtung.** `value = store(x).name` (Lesen) **und**
+  `writeTo = store(x).name` (Schreiben) machen dasselbe Store-Slice les- und
+  schreibbar: Tippen + Trigger aktualisiert den Store, jeder an `store(x).name`
+  gebundene View re-rendert live (SSE) — **kein** `function`-Knoten nötig.
+- **Schreibbare Kinds nur.** `writeTo` akzeptiert ausschließlich `store`, `flow`
+  und `global`. Das Schema (`writeToBindingSchema`) lehnt nicht-schreibbare Kinds
+  (query/routeParam/reactive/literal/msg/jsonata/env) ab — man kann nicht in eine
+  berechnete Quelle zurückschreiben.
+- **Store vs. Flow/Global.** Ein `store`-Ziel wird als per-client `op:set`
+  (statePath + subPath, mit clientId) angewandt und löst einen SSE-Re-Render aus.
+  `flow`/`global` schreiben server-seitig in den Node-RED-Kontext — bewusst **ohne**
+  per-client-Scope und **ohne** automatischen Re-Render (dokumentierte Grenze).
+- **Write-Back ist additiv.** Der bestehende `change`/`submit`-Output-Event feuert
+  unverändert weiter; der Write-Back läuft zusätzlich.
 
 ## Referenzen
 
@@ -131,10 +153,13 @@ Varianten werden auf `default` zurückgefallen. Details: [theming.md](../concept
 - [inputs.md](../concepts/inputs.md) — `msg.payload`- und `msg.ui.patch`-Protokoll
 - [events.md](../concepts/events.md) — Event-Format und Output-Ports
 - [theming.md](../concepts/theming.md) — Variant-Vokabular
-- [`ui-store`](../state/ui-store.md) — Store-Knoten
+- [`ui-store`](../state/ui-store.md) — Store-Knoten (Ziel eines `writeTo=store`)
 - [`ui-container`](../display/ui-container.md) — möglicher Parent
+- [ADR 0027](../../adr/0027-input-value-binding-is-bidirectional-value-read-writeto-write.md) — `value` liest, `writeTo` schreibt
 
 ## Offene Punkte
 
 - Clientseitige Validierungsregeln (Required, Pattern, Min/Max für number) sind noch nicht modelliert.
-- Das Zusammenspiel von direktem State-Binding und Store-gestützter Rückschreibung bei gleichzeitigem Einsatz beider Mechanismen ist noch nicht vollständig spezifiziert.
+- Ein `writeTo=store` mit dynamischem (nicht-literalem) `subPath` wird beim
+  Write-Back noch nicht aufgelöst (nur ein literaler Sub-Pfad ist ein stabiler
+  Schreib-Schlüssel).

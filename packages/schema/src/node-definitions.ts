@@ -18,7 +18,9 @@ import {
     routePathSchema,
     SEVERITY_VARIANTS,
     TEXT_COLOR_VARIANTS,
-    TEXT_STYLES
+    TEXT_STYLES,
+    writeToBindingSchema,
+    writeTriggerSchema
 } from "./contracts";
 import { standardLayoutPresetIds } from "./layout-presets";
 import { formatValidationIssues } from "./validation";
@@ -570,8 +572,13 @@ export const uiInputNodeDefinitionSchema = mountableNodeSchema.extend({
     // pre-P145 flow is still accepted and treated as a literal label.
     label: z.union([bindingSchema, z.string().min(1, "Input labels must not be empty.")]),
     value: bindingSchema,
-    storeId: identifierSchema.optional(),
-    path: z.string().min(1, "Input store paths must not be empty.").optional(),
+    // P203 (ADR 0027): `writeTo` is the symmetric WRITE half of `value` — the
+    // target the runtime persists the user's edit into, restricted to the
+    // writable kinds (store/flow/global). It replaces the dead `storeId`+`path`
+    // write-back pair (removed). `writeTrigger` chooses when to persist
+    // (change|submit, default submit).
+    writeTo: writeToBindingSchema.optional(),
+    writeTrigger: writeTriggerSchema.optional(),
     inputType: z.enum(["text", "email", "number"]).default("text"),
     // P49: true Ebene-2 variant (field style). Default "default".
     variant: z.enum(INPUT_VARIANTS).optional(),
@@ -579,14 +586,6 @@ export const uiInputNodeDefinitionSchema = mountableNodeSchema.extend({
     size: componentSizeSchema.optional(),
     placeholder: z.string().min(1, "Input placeholders must not be empty.").optional(),
     disabled: bindingSchema.optional()
-}).superRefine((input, context) => {
-    if ((input.storeId && !input.path) || (!input.storeId && input.path)) {
-        context.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Inputs must declare both storeId and path when they write to a store.",
-            path: [input.storeId ? "path" : "storeId"]
-        });
-    }
 });
 
 export type UiInputNodeDefinition = z.infer<typeof uiInputNodeDefinitionSchema>;

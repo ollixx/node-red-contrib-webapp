@@ -37,7 +37,11 @@ test.describe("editor panels — view nodes (P47)", () => {
         await editor.open();
         await editor.openNode("inputEd");
 
-        await editor.expectFields(["name", "mount", "label", "valueBinding", "inputType", "disabledBinding"]);
+        // P203 (ADR 0027): the writeTo (WRITE) typedInput + writeTrigger select are
+        // present; the legacy storeId/path fields are gone.
+        await editor.expectFields(["name", "mount", "label", "valueBinding", "writeToBinding", "writeTrigger", "inputType", "disabledBinding"]);
+        await expect(page.locator("#node-input-storeId")).toHaveCount(0);
+        await expect(page.locator("#node-input-path")).toHaveCount(0);
 
         // mount is auto-set but required label is empty → invalid.
         expect(await editor.getValidationState("inputEd")).toBe("invalid");
@@ -66,6 +70,44 @@ test.describe("editor panels — view nodes (P47)", () => {
         const editor = new NodeEditorPage(page);
         await editor.open();
         expect(await editor.inputPortCount("inputEd2")).toBe(1);
+    });
+
+    test("ui-input — P203: legacy storeId/path migrates to a writeTo store binding on open; save drops the old pair", async ({ page, request }) => {
+        // A pre-P203 node carrying the dead storeId+path write-target pair.
+        const flow = appWithRoute(new FlowBuilder(), "inputMigApp")
+            .node("ui-input", { id: "inputMig", label: "Name", storeId: "migStore", path: "name" })
+            .build();
+        await deployFlow(request, flow);
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode("inputMig");
+
+        // The writeTo typedInput opens as a `store` target seeded with the store id.
+        expect(await editor.readTypedInputType("writeToBinding")).toBe("store");
+        const writeToValue = await editor.readTypedInput("writeToBinding");
+        expect(writeToValue).toContain("migStore");
+        // The literal path migrates into the store binding's subPath envelope.
+        expect(writeToValue).toContain("name");
+
+        await editor.save();
+
+        // The saved node carries writeTo (kind store, migrated subPath) and NO
+        // legacy storeId/path.
+        const saved = await page.evaluate(() => {
+            const n = (window as unknown as {
+                RED: { nodes: { node: (id: string) => Record<string, unknown> | null } };
+            }).RED.nodes.node("inputMig");
+            return n ? { writeTo: n.writeTo, storeId: n.storeId, path: n.path } : null;
+        });
+        expect(saved).not.toBeNull();
+        expect(saved?.writeTo).toMatchObject({
+            kind: "store",
+            path: "migStore",
+            subPath: { kind: "literal", value: "name" }
+        });
+        expect(saved?.storeId).toBe("");
+        expect(saved?.path).toBe("");
     });
 
     test("ui-checkbox — P97: labelBinding + valueBinding + disabledBinding + size fields present", async ({ page, request }) => {

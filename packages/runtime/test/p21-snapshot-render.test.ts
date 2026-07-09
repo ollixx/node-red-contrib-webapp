@@ -54,7 +54,7 @@ const rawNodes = [
     { type: "ui-button", id: "newButton", name: "New", mount: "renderApp.content", label: "New", action: "newButton", order: 2, z: "flow1" },
     { type: "ui-table", id: "peopleTable", name: "People", mount: "renderApp.content", rows: { kind: "literal", value: [{ id: "1", name: "Ada" }, { id: "2", name: "Linus" }] }, columns: [{ key: "name", label: "Name" }], order: 3, z: "flow1" },
     { type: "ui-container", id: "formContainer", name: "Form", mount: "renderApp.content", layoutId: "vertical", order: 4, z: "flow1" },
-    { type: "ui-input", id: "nameInput", name: "Name", mount: "container:formContainer/content", label: "Name", path: "draft.name", value: { kind: "literal", value: "Ada" }, z: "flow1" },
+    { type: "ui-input", id: "nameInput", name: "Name", mount: "container:formContainer/content", label: "Name", writeTo: { kind: "store", path: "draftStore", subPath: { kind: "literal", value: "name" } }, value: { kind: "literal", value: "Ada" }, z: "flow1" },
     { type: "ui-text", id: "nested", name: "Nested", mount: "container:formContainer/content", value: { kind: "literal", value: "Nested text" }, z: "flow1" }
 ];
 
@@ -93,7 +93,9 @@ describe("P21: webapp HTML output matches the RenderSnapshot tree", () => {
         expect(occurrences("<table class=\"webapp-table\">")).toBe(1); // table
         expect(occurrences("<form class=\"webapp-form\"")).toBe(1); // exactly one container <form>
         expect(occurrences("Nested text")).toBe(1); // nested text inside container
-        expect(occurrences("name=\"draft.name\"")).toBe(1); // input inside container
+        // P203 (ADR 0027): the legacy storeId/path write-target pair is gone; the
+        // input's form-field `name` now falls back to the node id.
+        expect(occurrences("name=\"nameInput\"")).toBe(1); // input inside container
 
         // Table rows from the snapshot are all present.
         const peopleTable = components.find((component) => component.id === "peopleTable");

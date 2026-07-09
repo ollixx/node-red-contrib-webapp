@@ -4344,6 +4344,22 @@
             ];
         }
 
+        // ── P203 (ADR 0027): the `writable` category — the target set for an
+        // input control's `writeTo` binding (the WRITE half of a bidirectional
+        // value binding). Only the kinds you can actually persist a user edit
+        // into: Store (a ui-store node + optional one-level subPath, rendered by
+        // the full non-leaf store type), Flow context, Global context. The
+        // read-only / computed kinds (query, routeParam, reactive, literal, msg,
+        // jsonata, env, item, index, prop, timestamp) are deliberately omitted —
+        // you cannot write a value back into a computed source.
+        if (category === "writable") {
+            return [
+                storeType,
+                "flow",
+                "global"
+            ];
+        }
+
         // Default — value/display full set (14 kinds). The scope-local kinds are
         // appended ONLY when the edited node is inside the matching container (or
         // the field already carries that kind) — see the P182 gating above. They
