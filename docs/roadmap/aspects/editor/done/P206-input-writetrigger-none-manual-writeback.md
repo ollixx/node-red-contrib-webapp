@@ -16,11 +16,11 @@ verify: browser
 spec: docs/nodes/input/ui-input.md
 tests: tests/e2e/nodes/view/ui-input.tests.md
 dependencies: [P203, P204]
-status: in_progress
+status: done
 ---
 # P206 — writeTrigger `none` (Auto-Write-Back abschaltbar)
 
-> Entscheidung & Begründung: [ADR 0027](../../../adr/0027-input-value-binding-is-bidirectional-value-read-writeto-write.md)
+> Entscheidung & Begründung: [ADR 0027](../../../../adr/0027-input-value-binding-is-bidirectional-value-read-writeto-write.md)
 > (Amendment „writeTrigger=none"). Erweitert den in P203/P204 gebauten Vertrag um
 > einen expliziten Opt-out.
 
@@ -53,3 +53,29 @@ enum-Wert fällt in den Default-Zweig") explizit vermeiden.
   ergänzen, nicht nur ui-input.
 - Nicht mit `change` verwechseln: `change` schreibt bei jeder Eingabe, `none`
   schreibt nie (Events bleiben in beiden Fällen).
+
+## Result
+
+- **delivered:** `writeTrigger` gains a third value **`none`** (opt out of auto write-back — wire
+  persistence manually), across all 8 input controls (ADR 0027 amendment). Schema
+  (`contracts.ts`): `WRITE_TRIGGERS = ['none','change','submit']`, default stays `'submit'`;
+  `writeTriggerSchema` accepts `'none'`; `writeTo` was already `.optional()` so a `none` input with an
+  empty `writeTo` validates. **Runtime critical fix** (`nodes/webapp.js` `applyInputWriteBack`): an
+  **early return on `def.writeTrigger === 'none'` BEFORE** the `=== "change" ? "change" : "submit"`
+  fallback (the P181/P202 default-branch trap), AND the `dispatchClientEvent` gate short-circuited
+  (`noWriteBack` → `triggers=false`) so the non-text `change` branch can't re-introduce a write — so
+  `none` = "never write" for BOTH text and non-text controls. The `change`/`submit` OUTPUT events fire
+  unchanged (additive). Editor: `<option value="none">none</option>` added to all 8 node HTMLs;
+  `installWriteToField`/`saveWriteToField` round-trip `'none'` losslessly. Docs (ui-input + 7 siblings)
+  describe `none|change|submit` incl. "none = wire it manually".
+- **stats:** 23 files. Develop verification: build 0; full unit green (**schema 452 / runtime 1099**);
+  **ui-input W04 measured green** — with `writeTo` set + `writeTrigger='none'`, after change the SECOND
+  bound `ui-text` stays `"untouched"` (asserted content unchanged after a settle) while the node's
+  `change` output event fires carrying the new value; W01–W03 + select/checkbox/slider write-backs
+  unregressed by the gate change (60/60 in the targeted batch). Full suite **664 passed** (only the
+  pre-existing accordion + flaky ui-tabs race, both chipped). check:specs/links/roadmap + lint green.
+- **notes:** Explicitly avoided the "new enum value falls into the default branch" trap the package
+  called out (from P181/P202) — the fix is TWO guards (the write-back early return + the dispatch gate),
+  not just one. With P203/P204/P206, the `writeTrigger` contract is complete (`none|change|submit`)
+  across every input control.
+- **cost:** session agent-af36b513b7b104884, ~14m.

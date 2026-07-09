@@ -27,7 +27,8 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P206** — aspects/editor — writeTrigger-Wert `none`: automatischen Write-Back abschalten (manuell verdrahten); enum none|change|submit, Default submit; über alle 8 Input-Knoten — *ADR 0027 Amendment; Owner 2026-07-09; dep P203/P204* — [P206](aspects/editor/P206-input-writetrigger-none-manual-writeback.md)
+_No open work — the roadmap is drained. New work is added here as packages are authored._
+
 
 ## Deferred (parked, not abandoned)
 
@@ -87,11 +88,11 @@ open the folder for the full history.
 | aspects/docs | 1 |
 | aspects/runtime | 7 |
 | aspects/state | 8 |
-| aspects/editor | 22 |
+| aspects/editor | 23 |
 | schema | 5 |
 | aspects/rendering | 13 |
 | aspects/foundation | 5 |
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 205 done, 1 open, 8 deferred.**
+**Total: 206 done, 0 open, 8 deferred.**
