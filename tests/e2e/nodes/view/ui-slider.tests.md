@@ -34,3 +34,9 @@
 | ID  | Testziel |
 |-----|----------|
 | E01 | `sl-change` → POST `/event` mit `{ event:"change", params:{ value: number } }`. |
+
+### writeTo Write-Back (P204 / ADR 0027 — gemessen, keine Verdrahtung)
+
+| ID  | Testziel |
+|-----|----------|
+| W01 | `value=store(x).vol` UND `writeTo=store(x).vol`: Ziehen (`sl-change`, `value="73"`) schreibt per-client in den Store; ein ZWEITER an `store(x).vol` gebundener `ui-text` zeigt live (SSE, Textinhalt `10`→`73`), ohne function-Knoten. Slider hat keine Submit-Geste → schreibt bei `change` unabhängig vom `writeTrigger`; Sondermodell: Wert als numerischer String. |

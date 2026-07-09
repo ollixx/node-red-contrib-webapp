@@ -23,6 +23,15 @@
                 // clobber it. The typedInput lives on #node-input-disabledBinding.
                 disabled: { value: null },
                 disabledBinding: { value: "" },
+                // P204 (ADR 0027): `writeTo` — WRITE half (store/flow/global). A
+                // datepicker renders an sl-input (text-like): it honours
+                // writeTrigger (submit = Enter/blur, change = on pick). Legacy
+                // storeId/path migrate to writeTo=store.
+                writeTo: { value: null },
+                writeToBinding: { value: "" },
+                writeTrigger: { value: "submit" },
+                storeId: { value: "" },
+                path: { value: "" },
                 mode: { value: "date" },
                 min: { value: "" },
                 max: { value: "" },
@@ -116,8 +125,14 @@
                 });
                 placeholderInput.typedInput("type", placeholderEditor.type);
                 placeholderInput.typedInput("value", placeholderEditor.value);
+
+                // P204 (ADR 0027 / writable category): `writeTo` typedInput.
+                common.installWriteToField.call(this);
             },
             oneditsave: function () {
+                // P204: persist writeTo + writeTrigger; drop legacy storeId/path.
+                common.saveWriteToField.call(this);
+
                 // P130: persist label as binding object.
                 this.label = common.applyValueBinding(
                     $("#node-input-labelBinding").typedInput("type"),
@@ -160,6 +175,9 @@
     <div class="form-row"><label for="node-input-labelBinding">Label</label><input type="text" id="node-input-labelBinding"></div>
     <!-- P98 / P130: Value binding — typedInput managed in oneditprepare/oneditsave. -->
     <div class="form-row"><label for="node-input-valueBinding">Value Path</label><input type="text" id="node-input-valueBinding"></div>
+    <!-- P204 (ADR 0027 / writable category): writeTo target (WRITE) — Store/Flow/Global. -->
+    <div class="form-row"><label for="node-input-writeToBinding">Write To</label><input type="text" id="node-input-writeToBinding"></div>
+    <div class="form-row"><label for="node-input-writeTrigger">Write Trigger</label><select id="node-input-writeTrigger"><option value="submit">submit</option><option value="change">change</option></select></div>
     <!-- P130 (ADR 0012 / boolean category): Disabled binding — typedInput managed in oneditprepare/oneditsave. -->
     <div class="form-row"><label for="node-input-disabledBinding">Disabled</label><input type="text" id="node-input-disabledBinding"></div>
     <div class="form-row">
@@ -183,6 +201,11 @@ Route-Param, Reactive, msg, JSONata, string/boolean/number/json/timestamp,
 Flow, Global, Env.</p>
 <h3>Value Path</h3>
 <p>Bindbare Quelle des Datumswerts als ISO-8601-String — alle Binding-Arten werden unterstützt.</p>
+<h3>Write To (Schreiben, P204 / ADR 0027)</h3>
+<p>Ziel, in das die Runtime das gewählte Datum schreibt — nur <b>schreibbare</b> Kinds
+(<code>Store</code>/<code>Flow</code>/<code>Global</code>). Der Datepicker ist text-artig
+(<code>sl-input</code>) und honoriert den <code>Write Trigger</code>: <code>submit</code>
+schreibt bei Enter/Blur, <code>change</code> bei jeder Auswahl.</p>
 <h3>Disabled (P130)</h3>
 <p>Bindbare Bedingung zum Deaktivieren des Datepickers (sperrt Nutzerinteraktion).
 Boolean-Zustand-Satz (ADR 0012): Store, Query, Route-Param, Reactive, msg,

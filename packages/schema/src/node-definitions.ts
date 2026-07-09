@@ -824,6 +824,11 @@ export const uiSelectNodeDefinitionSchema = mountableNodeSchema.extend({
     // non-empty string OR a binding object (store/query/route-param/…).
     label: z.union([bindingSchema, z.string().min(1, "Select labels must not be empty.")]),
     value: bindingSchema,
+    // P204 (ADR 0027): the symmetric WRITE half of `value` — writable kinds only
+    // (store/flow/global). A select has no submit gesture, so it persists on
+    // `change` regardless of `writeTrigger` (see the runtime write-back gate).
+    writeTo: writeToBindingSchema.optional(),
+    writeTrigger: writeTriggerSchema.optional(),
     options: z.union([z.array(selectOptionSchema), bindingSchema]).optional(),
     // P133: placeholder and label accept the canonical value-binding set (ADR
     // 0012) — a literal string, a store/query/route-param/… binding object, etc.
@@ -842,6 +847,11 @@ export const uiCheckboxNodeDefinitionSchema = mountableNodeSchema.extend({
     // P97: label is now a full binding (literal string or dynamic binding).
     label: z.union([bindingSchema, z.string().min(1, "Checkbox labels must not be empty.")]),
     value: bindingSchema,
+    // P204 (ADR 0027): symmetric WRITE half of `value` — writable kinds only.
+    // A checkbox has no submit gesture → persists on `change` regardless of
+    // `writeTrigger` (see the runtime write-back gate).
+    writeTo: writeToBindingSchema.optional(),
+    writeTrigger: writeTriggerSchema.optional(),
     // P97: size — xs / sm / md (default) / lg / xl (Shoelace size tokens).
     size: z.enum(["xs", "sm", "md", "lg", "xl"]).optional(),
     disabled: bindingSchema.optional()
@@ -856,6 +866,11 @@ export const uiRadioNodeDefinitionSchema = mountableNodeSchema.extend({
     // ui-select (P133).
     label: z.union([bindingSchema, z.string().min(1, "Radio labels must not be empty.")]),
     value: bindingSchema,
+    // P204 (ADR 0027): symmetric WRITE half of `value` — writable kinds only.
+    // A radio group has no submit gesture → persists on `change` regardless of
+    // `writeTrigger` (see the runtime write-back gate).
+    writeTo: writeToBindingSchema.optional(),
+    writeTrigger: writeTriggerSchema.optional(),
     // P136: options is the SHARED model with ui-select — a normalised
     // `{label,value}[]` array (json type) or a binding object (store type).
     // Optional so an as-yet-unconfigured radio (empty/null options) stays valid,
@@ -870,6 +885,11 @@ export type UiRadioNodeDefinition = z.infer<typeof uiRadioNodeDefinitionSchema>;
 export const uiSwitchNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-switch"),
     value: bindingSchema,
+    // P204 (ADR 0027): symmetric WRITE half of `value` — writable kinds only.
+    // A switch has no submit gesture → persists on `change` regardless of
+    // `writeTrigger` (see the runtime write-back gate).
+    writeTo: writeToBindingSchema.optional(),
+    writeTrigger: writeTriggerSchema.optional(),
     // P147 (ADR 0012): label/labelOn/labelOff accept the canonical value-binding
     // set — a literal string binding or a plain string (legacy). All three are
     // optional (spec says labels are optional on ui-switch).
@@ -888,6 +908,11 @@ export const uiTextareaNodeDefinitionSchema = mountableNodeSchema.extend({
     // pre-P148 flow is still accepted and treated as a literal label.
     label: z.union([bindingSchema, z.string().min(1, "Textarea labels must not be empty.")]),
     value: bindingSchema,
+    // P204 (ADR 0027): symmetric WRITE half of `value` — writable kinds only.
+    // A textarea is text-like: it honours `writeTrigger` (submit=Enter/blur,
+    // change=every keystroke) via the runtime write-back gate.
+    writeTo: writeToBindingSchema.optional(),
+    writeTrigger: writeTriggerSchema.optional(),
     // P148 (ADR 0012): placeholder accepts the canonical value-binding set.
     // Back-compat: a plain string from a pre-P148 flow is still accepted.
     placeholder: z.union([bindingSchema, z.string().min(1, "Textarea placeholders must not be empty.")]).optional(),
@@ -905,6 +930,11 @@ export const uiDatepickerNodeDefinitionSchema = mountableNodeSchema.extend({
     // P98: label is now a full binding (literal string or dynamic binding).
     label: z.union([bindingSchema, z.string().min(1, "Datepicker labels must not be empty.")]),
     value: bindingSchema,
+    // P204 (ADR 0027): symmetric WRITE half of `value` — writable kinds only.
+    // A datepicker is text-like: it honours `writeTrigger` (submit=Enter/blur,
+    // change=on pick) via the runtime write-back gate.
+    writeTo: writeToBindingSchema.optional(),
+    writeTrigger: writeTriggerSchema.optional(),
     mode: z.enum(["date", "datetime", "time"]).optional(),
     min: z.string().optional(),
     max: z.string().optional(),
@@ -919,6 +949,11 @@ export type UiDatepickerNodeDefinition = z.infer<typeof uiDatepickerNodeDefiniti
 export const uiSliderNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-slider"),
     value: bindingSchema,
+    // P204 (ADR 0027): symmetric WRITE half of `value` — writable kinds only.
+    // A slider has no submit gesture → persists on `change` (drag end) regardless
+    // of `writeTrigger`. Its value is numeric (see the special-model note).
+    writeTo: writeToBindingSchema.optional(),
+    writeTrigger: writeTriggerSchema.optional(),
     // P146 (ADR 0012): label accepts the canonical value-binding set — a literal
     // string or a dynamic binding object. Back-compat: a plain string from a
     // pre-P146 flow is still accepted and treated as a literal label.

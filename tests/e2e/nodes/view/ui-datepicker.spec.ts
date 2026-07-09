@@ -230,4 +230,82 @@ test.describe("ui-datepicker (P98/P130)", () => {
         expect(body.event).toBe("change");
         expect((body.params as Record<string, unknown>).value).toBe("2024-06-01");
     });
+
+    // ─── writeTo write-back (P204 / ADR 0027) — measured, no wiring ────────────
+
+    test("W01 — writeTrigger=submit: confirming a date persists it and a second bound view updates live", async ({ page, request }) => {
+        // A datepicker renders an sl-input (text-like): submit mode confirms via
+        // the sl-input-submit gesture (Enter/blur). Measured proof: a second
+        // ui-text bound to the same store slice shows the new date over SSE.
+        const flow = new FlowBuilder()
+            .app({ id: "dpWbApp", root: "dpWbApp" })
+            .node("ui-store", { id: "dpWbStore", statePath: "form", initialValue: JSON.stringify({ when: "2024-01-01" }) })
+            .node("ui-datepicker", {
+                id: "dpWbIn",
+                label: "When",
+                value: { kind: "store", path: "dpWbStore", subPath: { kind: "literal", value: "when" } },
+                writeTo: { kind: "store", path: "dpWbStore", subPath: { kind: "literal", value: "when" } },
+                writeTrigger: "submit"
+            })
+            .node("ui-text", {
+                id: "dpWbOut",
+                value: { kind: "store", path: "dpWbStore", subPath: { kind: "literal", value: "when" } }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "dpWbApp");
+        await webapp.navigate("/");
+        await expect(webapp.root().locator(".webapp-text")).toContainText("2024-01-01");
+
+        // A change alone must NOT write in submit mode.
+        await page.evaluate(() => {
+            const el = document.querySelector('sl-input[type="date"]') as HTMLElement & { value: string };
+            el.value = "2025-05-05";
+            el.dispatchEvent(new CustomEvent("sl-change", { bubbles: true, composed: true }));
+        });
+        await page.waitForTimeout(400);
+        await expect(webapp.root().locator(".webapp-text")).toContainText("2024-01-01");
+
+        // The submit gesture (sl-input-submit) confirms → write-back fires.
+        await page.evaluate(() => {
+            const el = document.querySelector('sl-input[type="date"]') as HTMLElement & { value: string };
+            el.value = "2026-12-31";
+            el.dispatchEvent(new CustomEvent("sl-input-submit", { bubbles: true, composed: true }));
+        });
+        await expect(webapp.root().locator(".webapp-text")).toContainText("2026-12-31", { timeout: 5000 });
+    });
+
+    test("W02 — writeTrigger=change: picking a date persists on change and the bound view updates live", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "dpWb2App", root: "dpWb2App" })
+            .node("ui-store", { id: "dpWb2Store", statePath: "form", initialValue: JSON.stringify({ when: "2024-02-02" }) })
+            .node("ui-datepicker", {
+                id: "dpWb2In",
+                label: "When",
+                value: { kind: "store", path: "dpWb2Store", subPath: { kind: "literal", value: "when" } },
+                writeTo: { kind: "store", path: "dpWb2Store", subPath: { kind: "literal", value: "when" } },
+                writeTrigger: "change"
+            })
+            .node("ui-text", {
+                id: "dpWb2Out",
+                value: { kind: "store", path: "dpWb2Store", subPath: { kind: "literal", value: "when" } }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "dpWb2App");
+        await webapp.navigate("/");
+        await expect(webapp.root().locator(".webapp-text")).toContainText("2024-02-02");
+
+        await page.evaluate(() => {
+            const el = document.querySelector('sl-input[type="date"]') as HTMLElement & { value: string };
+            el.value = "2027-07-07";
+            el.dispatchEvent(new CustomEvent("sl-change", { bubbles: true, composed: true }));
+        });
+
+        await expect(webapp.root().locator(".webapp-text")).toContainText("2027-07-07", { timeout: 5000 });
+    });
 });

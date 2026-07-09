@@ -32,3 +32,9 @@ Per `.ai/agents/node-testing.md`: outcome-based tests only. Updated by P97, P129
 | serializer — disabled | 2 | disabled:true → attribute; disabled:false → no attribute |
 | serializer — size | 3 | sm→small, lg→large, absent→no size= |
 | serializer — checked | 2 | value:true → checked; value:false → no checked |
+
+## writeTo Write-Back (P204 / ADR 0027 — gemessen, keine Verdrahtung)
+
+| ID | Beschreibung |
+|---|---|
+| W01 | `value=store(x).on` UND `writeTo=store(x).on`: Toggle (`sl-change`, `checked=true`) schreibt per-client in den Store; ein ZWEITER an `store(x).on` gebundener `ui-text` flippt live (SSE, Textinhalt `false`→`true`), ohne function-Knoten. Checkbox hat keine Submit-Geste → schreibt bei `change` unabhängig vom `writeTrigger`. |

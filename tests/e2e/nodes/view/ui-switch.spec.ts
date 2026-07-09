@@ -82,4 +82,41 @@ test.describe("ui-switch (P44)", () => {
         expect((body.params as Record<string, unknown>).checked).toBe(true);
     });
 
+    // ─── writeTo write-back (P204 / ADR 0027) — measured, no wiring ────────────
+
+    test("W01 — toggling a switch with writeTo=store persists checked and a second bound view updates live", async ({ page, request }) => {
+        // A switch has no submit gesture → it writes on change regardless of
+        // writeTrigger (submit). Measured proof: a second ui-text bound to the same
+        // store slice flips its CONTENT over SSE, with NO function wiring.
+        const flow = new FlowBuilder()
+            .app({ id: "swWbApp", root: "swWbApp" })
+            .node("ui-store", { id: "swWbStore", statePath: "form", initialValue: JSON.stringify({ on: false }) })
+            .node("ui-switch", {
+                id: "swWbIn",
+                label: "Enable",
+                value: { kind: "store", path: "swWbStore", subPath: { kind: "literal", value: "on" } },
+                writeTo: { kind: "store", path: "swWbStore", subPath: { kind: "literal", value: "on" } },
+                writeTrigger: "submit"
+            })
+            .node("ui-text", {
+                id: "swWbOut",
+                value: { kind: "store", path: "swWbStore", subPath: { kind: "literal", value: "on" } }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "swWbApp");
+        await webapp.navigate("/");
+        await expect(webapp.root().locator(".webapp-text")).toContainText("false");
+
+        await page.evaluate(() => {
+            const el = document.querySelector("sl-switch") as HTMLElement & { checked: boolean };
+            el.checked = true;
+            el.dispatchEvent(new CustomEvent("sl-change", { bubbles: true, composed: true }));
+        });
+
+        await expect(webapp.root().locator(".webapp-text")).toContainText("true", { timeout: 5000 });
+    });
+
 });

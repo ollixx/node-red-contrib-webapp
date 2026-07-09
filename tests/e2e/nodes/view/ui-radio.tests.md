@@ -47,3 +47,9 @@
 | ID  | Beschreibung | Aktion | Erwartung |
 |-----|---|---|---|
 | E01 | `sl-change` → POST `/event` `{event:"change",params:{value:string}}` | Dispatch `sl-change` nach Wert-Änderung | `body.event === "change"`, `params.value === "blue"` |
+
+## W — writeTo Write-Back (P204 / ADR 0027 — gemessen, keine Verdrahtung)
+
+| ID  | Beschreibung | Aktion | Erwartung |
+|-----|---|---|---|
+| W01 | `value=store(x).color` UND `writeTo=store(x).color`: Auswahl schreibt per-client in den Store; ZWEITER gebundener `ui-text` ändert sich live | Dispatch `sl-change` mit `value="blue"` | Textinhalt `red`→`blue` (SSE), ohne function-Knoten. Radio hat keine Submit-Geste → schreibt bei `change` unabhängig vom `writeTrigger`. |

@@ -28,6 +28,14 @@
                 // cannot clobber it. The typedInput lives on #node-input-disabledBinding.
                 disabled: { value: null },
                 disabledBinding: { value: "" },
+                // P204 (ADR 0027): `writeTo` — WRITE half (store/flow/global). A
+                // switch has no submit gesture → writes on change regardless of
+                // writeTrigger. Legacy storeId/path migrate to writeTo=store.
+                writeTo: { value: null },
+                writeToBinding: { value: "" },
+                writeTrigger: { value: "submit" },
+                storeId: { value: "" },
+                path: { value: "" },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
                 col: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
@@ -142,8 +150,14 @@
                 disabledInput.typedInput("type", disabledType);
                 disabledInput.typedInput("value", disabledEditor.value);
                 disabledInput.data("base-field-originally-empty", !disabledBinding);
+
+                // P204 (ADR 0027 / writable category): `writeTo` typedInput.
+                common.installWriteToField.call(this);
             },
             oneditsave: function () {
+                // P204: persist writeTo + writeTrigger; drop legacy storeId/path.
+                common.saveWriteToField.call(this);
+
                 // P147: persist label as binding object.
                 this.label = common.applyValueBinding(
                     $("#node-input-label").typedInput("type"),
@@ -190,6 +204,9 @@
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <!-- P125 (ADR 0012 / value category): Value binding — typedInput managed in oneditprepare/oneditsave. -->
     <div class="form-row"><label for="node-input-valueBinding">Value Path</label><input type="text" id="node-input-valueBinding"></div>
+    <!-- P204 (ADR 0027 / writable category): writeTo target (WRITE) — Store/Flow/Global. -->
+    <div class="form-row"><label for="node-input-writeToBinding">Write To</label><input type="text" id="node-input-writeToBinding"></div>
+    <div class="form-row"><label for="node-input-writeTrigger">Write Trigger</label><select id="node-input-writeTrigger"><option value="submit">submit</option><option value="change">change</option></select></div>
     <!-- P147 (ADR 0012 / value category): Label bindings — typedInputs managed in oneditprepare/oneditsave. -->
     <div class="form-row"><label for="node-input-label">Label</label><input type="text" id="node-input-label"></div>
     <div class="form-row"><label for="node-input-labelOn">Label On</label><input type="text" id="node-input-labelOn"></div>
@@ -206,6 +223,10 @@ auf dem Output-Port.</p>
 Route-Param, Reactive, msg, JSONata, boolean, string, number, json, timestamp,
 Flow, Global, Env (ADR 0012). Ein bestehender <code>valuePath</code> wird
 automatisch als <code>state</code>-Binding übernommen.</p>
+<h3>Write To (Schreiben, P204 / ADR 0027)</h3>
+<p>Ziel, in das die Runtime den Toggle-Zustand schreibt — nur <b>schreibbare</b> Kinds
+(<code>Store</code>/<code>Flow</code>/<code>Global</code>). Ein Switch hat keine Submit-Geste:
+er schreibt bei <code>change</code>, unabhängig vom <code>Write Trigger</code>.</p>
 <h3>Disabled (P125)</h3>
 <p>Bindbare Bedingung zum Deaktivieren des Switch (sperrt Nutzerinteraktion).
 Boolean-Zustand-Satz (ADR 0012): Store, Query, Route-Param, Reactive, msg,

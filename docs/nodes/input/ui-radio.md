@@ -39,7 +39,9 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
 | `label` | „Label" | typedInput (kanonischer Wert-Satz) | **ja** | Gruppen-Beschriftung der Radio-Gruppe. P136 (ADR 0012): literaler Text **oder** ein Binding (`store`, `query`, `routeParam`, `state`/Reactive, `msg`, `jsonata`, `flow`, `global`, `env`) — derselbe Satz wie `ui-select`. Ein Store-/State-Binding zeigt den Live-Wert. |
-| `value` | „Value" | typedInput (alle Binding-Arten) | **ja** | Bindbare Quelle des aktuell gewählten Werts. Unterstützt alle Binding-Arten: `literal`, `state`, `store`, `query`, `routeParam`, `msg`, `flow`, `global`, `jsonata`, `env`. Details: [stores.md](../concepts/stores.md). |
+| `value` | „Value" | typedInput (alle Binding-Arten) | **ja** | Bindbare **Lese**-Quelle des aktuell gewählten Werts. Unterstützt alle Binding-Arten: `literal`, `state`, `store`, `query`, `routeParam`, `msg`, `flow`, `global`, `jsonata`, `env`. Details: [stores.md](../concepts/stores.md). |
+| `writeTo` | „Write To" | typedInput (**nur schreibbare** Arten: Store/Flow/Global, P204) | optional | Bindbares **Schreib**-Ziel (ADR 0027). Nur `store`/`flow`/`global`. Die Runtime schreibt den gewählten Wert beim Trigger hierhin zurück (Store per-client + SSE-Re-Render; Flow/Global server-seitig). Eine Radiogruppe hat **keine Submit-Geste** → schreibt bei `change`, unabhängig vom `writeTrigger`. |
+| `writeTrigger` | „Write Trigger" | SelectBox (`change` / `submit`) | optional | Default `submit`; bei einer Radiogruppe ohne Wirkung — es wird effektiv immer bei `change` geschrieben (nie „nie"). |
 | `options` | „Options" | **ein** typedInput `{ json \| store }` | optional | P136 (ADR 0012): **ein** Feld mit dem **geteilten Options-Helfer** (eine Quelle für `ui-select` **und** `ui-radio`). Typ `json` öffnet den NR-JSON-Editor und validiert genau eine von drei Formen — Objekt `{ "<label>": "<value>" }`, String-Array `["A","B"]` oder Objekt-Array `[{ label, value }]`; andere Strukturen markieren den Knoten vor Deploy als ungültig (sprechende Meldung). Typ `store` liest die Optionen reaktiv aus einem Store(-Pfad) (P134-Layout). Es gibt **kein** separates `optionsBinding`-Feld mehr. Legacy `optionsJson`/`optionsBinding` migrieren verlustfrei. |
 | `orientation` | „Orientation" | SelectBox (`vertical` / `horizontal`) | optional | Ausrichtung der Radio-Gruppe. `vertical` = Optionen untereinander; `horizontal` = nebeneinander. Default: `vertical`. |
 | `disabled` | „Disabled" | typedInput (alle Binding-Arten) | optional | Bindbare Bedingung, die die gesamte Radio-Gruppe deaktiviert (Nutzerinteraktion gesperrt). |
@@ -52,6 +54,13 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 | `row` / `col` | „Row" / „Col" | Zahlfeld (≥ 1) | optional | Startposition im Grid-Layout (1-basiert). |
 | `colSize` / `rowSize` | „Col Span" / „Row Span" | Zahlfeld (≥ 1) | optional | Spalten-/Zeilenspanne im Grid-Layout. |
 | `layoutX` / `layoutY` | „X" / „Y" | Zahlfeld | optional | Pixelkoordinaten im Absolute-Layout. |
+
+### Entfernte Felder (migriert, ADR 0027)
+
+| Feld (alt) | Status | Migration |
+|---|---|---|
+| `storeId` | **entfernt** | Ein Alt-Knoten mit `storeId`+`path` wird beim Öffnen im Editor verlustfrei nach `writeTo = {kind:"store", path:<storeId>, subPath:{kind:"literal", value:<path>}}` migriert; beim Speichern werden die Alt-Felder nicht mehr erzeugt. Die Runtime führt dieselbe Migration für alt-deployte Configs durch. |
+| `path` | **entfernt** | Siehe `storeId` — wird zum `subPath` des migrierten `writeTo`. |
 
 ### Inline-Hilfe (HTML)
 
@@ -117,15 +126,20 @@ das Backend bildet sie auf die Radio-Darstellung ab. Details:
   `z.union([z.array(selectOptionSchema), bindingSchema]).optional()` — ein
   noch-nicht-konfigurierter Radio (leere/`null`-Optionen) bleibt gültig
   (gespiegelt von `ui-select`).
+- **Write-Back (P204 / ADR 0027).** `value` liest, `writeTo` schreibt. Ist ein
+  `writeTo`-Ziel gesetzt, persistiert die Runtime den gewählten Wert **zusätzlich**
+  zum `change`-Event (additiv): Store per-client + SSE-Re-Render, Flow/Global
+  server-seitig. Ohne Submit-Geste schreibt die Radiogruppe immer bei `change`.
 
 ## Referenzen
 
 - [layout.md](../concepts/layout.md) — Platzierungsfelder und Presets
-- [stores.md](../concepts/stores.md) — Binding-Arten
+- [stores.md](../concepts/stores.md) — Binding-Arten; Ziel eines `writeTo=store`
 - [inputs.md](../concepts/inputs.md) — `msg.payload`- und `msg.ui.patch`-Protokoll
 - [events.md](../concepts/events.md) — Event-Format und Output-Ports
 - [theming.md](../concepts/theming.md) — Design-Tokens
 - [`ui-select`](ui-select.md) — Alternative für Mehrfachauswahl oder lange Optionslisten
+- [ADR 0027](../../adr/0027-input-value-binding-is-bidirectional-value-read-writeto-write.md) — `value` liest, `writeTo` schreibt
 
 ## Offene Punkte
 

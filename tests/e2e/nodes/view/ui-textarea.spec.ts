@@ -148,6 +148,84 @@ test.describe("ui-textarea (P44)", () => {
         await expect(page.locator("sl-textarea[disabled]")).toHaveCount(0);
     });
 
+    // ─── writeTo write-back (P204 / ADR 0027) — measured, no wiring ────────────
+
+    test("W01 — writeTrigger=submit: blur persists the text and a second bound view updates live", async ({ page, request }) => {
+        // A textarea is text-like: submit mode confirms on BLUR (Enter inserts a
+        // newline). Measured proof: a second ui-text bound to the same store slice
+        // shows the new text over SSE, with NO function wiring.
+        const flow = new FlowBuilder()
+            .app({ id: "taWbApp", root: "taWbApp" })
+            .node("ui-store", { id: "taWbStore", statePath: "form", initialValue: JSON.stringify({ notes: "seed" }) })
+            .node("ui-textarea", {
+                id: "taWbIn",
+                label: "Notes",
+                value: { kind: "store", path: "taWbStore", subPath: { kind: "literal", value: "notes" } },
+                writeTo: { kind: "store", path: "taWbStore", subPath: { kind: "literal", value: "notes" } },
+                writeTrigger: "submit"
+            })
+            .node("ui-text", {
+                id: "taWbOut",
+                value: { kind: "store", path: "taWbStore", subPath: { kind: "literal", value: "notes" } }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "taWbApp");
+        await webapp.navigate("/");
+        await expect(webapp.root().locator(".webapp-text")).toContainText("seed");
+
+        // A change event alone must NOT write in submit mode.
+        await page.evaluate(() => {
+            const el = document.querySelector("sl-textarea") as HTMLElement & { value: string };
+            el.value = "typed";
+            el.dispatchEvent(new CustomEvent("sl-change", { bubbles: true, composed: true }));
+        });
+        await page.waitForTimeout(400);
+        await expect(webapp.root().locator(".webapp-text")).toContainText("seed");
+
+        // Blur (focusout) is the textarea's submit gesture → write-back fires.
+        await page.evaluate(() => {
+            const el = document.querySelector("sl-textarea") as HTMLElement & { value: string };
+            el.value = "committed";
+            el.dispatchEvent(new FocusEvent("focusout", { bubbles: true, composed: true }));
+        });
+        await expect(webapp.root().locator(".webapp-text")).toContainText("committed", { timeout: 5000 });
+    });
+
+    test("W02 — writeTrigger=change: every change persists and the bound view updates live", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "taWb2App", root: "taWb2App" })
+            .node("ui-store", { id: "taWb2Store", statePath: "form", initialValue: JSON.stringify({ notes: "init" }) })
+            .node("ui-textarea", {
+                id: "taWb2In",
+                label: "Notes",
+                value: { kind: "store", path: "taWb2Store", subPath: { kind: "literal", value: "notes" } },
+                writeTo: { kind: "store", path: "taWb2Store", subPath: { kind: "literal", value: "notes" } },
+                writeTrigger: "change"
+            })
+            .node("ui-text", {
+                id: "taWb2Out",
+                value: { kind: "store", path: "taWb2Store", subPath: { kind: "literal", value: "notes" } }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "taWb2App");
+        await webapp.navigate("/");
+        await expect(webapp.root().locator(".webapp-text")).toContainText("init");
+
+        await page.evaluate(() => {
+            const el = document.querySelector("sl-textarea") as HTMLElement & { value: string };
+            el.value = "live-typing";
+            el.dispatchEvent(new CustomEvent("sl-change", { bubbles: true, composed: true }));
+        });
+
+        await expect(webapp.root().locator(".webapp-text")).toContainText("live-typing", { timeout: 5000 });
+    });
+
 });
 
 // ─── P128: editor panel ───────────────────────────────────────────────────────

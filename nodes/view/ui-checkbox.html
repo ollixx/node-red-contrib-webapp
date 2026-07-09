@@ -23,6 +23,14 @@
                 // clobber it. The typedInput lives on #node-input-disabledBinding.
                 disabled: { value: null },
                 disabledBinding: { value: "" },
+                // P204 (ADR 0027): `writeTo` — WRITE half (store/flow/global). A
+                // checkbox has no submit gesture → writes on change regardless of
+                // writeTrigger. Legacy storeId/path migrate to writeTo=store.
+                writeTo: { value: null },
+                writeToBinding: { value: "" },
+                writeTrigger: { value: "submit" },
+                storeId: { value: "" },
+                path: { value: "" },
                 // P97: size field.
                 size: { value: "" },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
@@ -96,8 +104,14 @@
                 disabledInput.typedInput("type", disabledType);
                 disabledInput.typedInput("value", disabledEditor.value);
                 disabledInput.data("base-field-originally-empty", !disabledBinding);
+
+                // P204 (ADR 0027 / writable category): `writeTo` typedInput.
+                common.installWriteToField.call(this);
             },
             oneditsave: function () {
+                // P204: persist writeTo + writeTrigger; drop legacy storeId/path.
+                common.saveWriteToField.call(this);
+
                 // P129: persist label as binding object.
                 this.label = common.applyValueBinding(
                     $("#node-input-labelBinding").typedInput("type"),
@@ -134,6 +148,9 @@
     <div class="form-row"><label for="node-input-labelBinding">Label</label><input type="text" id="node-input-labelBinding"></div>
     <!-- P97 / P129: Value binding — typedInput managed in oneditprepare/oneditsave. -->
     <div class="form-row"><label for="node-input-valueBinding">Value Path</label><input type="text" id="node-input-valueBinding"></div>
+    <!-- P204 (ADR 0027 / writable category): writeTo target (WRITE) — Store/Flow/Global. -->
+    <div class="form-row"><label for="node-input-writeToBinding">Write To</label><input type="text" id="node-input-writeToBinding"></div>
+    <div class="form-row"><label for="node-input-writeTrigger">Write Trigger</label><select id="node-input-writeTrigger"><option value="submit">submit</option><option value="change">change</option></select></div>
     <!-- P129 (ADR 0012 / boolean category): Disabled binding — typedInput managed in oneditprepare/oneditsave. -->
     <div class="form-row"><label for="node-input-disabledBinding">Disabled</label><input type="text" id="node-input-disabledBinding"></div>
     <div class="form-row"><label for="node-input-size">Size</label>
@@ -155,6 +172,10 @@ Route-Param, Reactive, msg, JSONata, string/boolean/number/json/timestamp,
 Flow, Global, Env.</p>
 <h3>Value Path</h3>
 <p>Bindbare Boolean-Quelle des Checked-Zustands — alle Binding-Arten werden unterstützt.</p>
+<h3>Write To (Schreiben, P204 / ADR 0027)</h3>
+<p>Ziel, in das die Runtime den Checked-Zustand schreibt — nur <b>schreibbare</b> Kinds
+(<code>Store</code>/<code>Flow</code>/<code>Global</code>). Eine Checkbox hat keine Submit-Geste:
+sie schreibt bei <code>change</code>, unabhängig vom <code>Write Trigger</code>.</p>
 <h3>Disabled (P129)</h3>
 <p>Bindbare Bedingung zum Deaktivieren der Checkbox (sperrt Nutzerinteraktion).
 Boolean-Zustand-Satz (ADR 0012): Store, Query, Route-Param, Reactive, msg,

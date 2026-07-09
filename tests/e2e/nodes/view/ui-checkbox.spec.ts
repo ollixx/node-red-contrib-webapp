@@ -271,4 +271,41 @@ test.describe("ui-checkbox (P97)", () => {
         expect(body.event).toBe("change");
         expect((body.params as Record<string, unknown>).checked).toBe(false);
     });
+
+    // ─── writeTo write-back (P204 / ADR 0027) — measured, no wiring ────────────
+
+    test("W01 — toggling a checkbox with writeTo=store persists checked and a second bound view updates live", async ({ page, request }) => {
+        // A ui-checkbox writes store(cbWbStore).on; a second ui-text reads it. A
+        // checkbox has no submit gesture → it writes on change regardless of
+        // writeTrigger (submit). Measured proof: the ui-text CONTENT flips over SSE.
+        const flow = new FlowBuilder()
+            .app({ id: "cbWbApp", root: "cbWbApp" })
+            .node("ui-store", { id: "cbWbStore", statePath: "form", initialValue: JSON.stringify({ on: false }) })
+            .node("ui-checkbox", {
+                id: "cbWbIn",
+                label: "Accept",
+                value: { kind: "store", path: "cbWbStore", subPath: { kind: "literal", value: "on" } },
+                writeTo: { kind: "store", path: "cbWbStore", subPath: { kind: "literal", value: "on" } },
+                writeTrigger: "submit"
+            })
+            .node("ui-text", {
+                id: "cbWbOut",
+                value: { kind: "store", path: "cbWbStore", subPath: { kind: "literal", value: "on" } }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "cbWbApp");
+        await webapp.navigate("/");
+        await expect(webapp.root().locator(".webapp-text")).toContainText("false");
+
+        await page.evaluate(() => {
+            const el = document.querySelector("sl-checkbox") as HTMLElement & { checked: boolean };
+            el.checked = true;
+            el.dispatchEvent(new CustomEvent("sl-change", { bubbles: true, composed: true }));
+        });
+
+        await expect(webapp.root().locator(".webapp-text")).toContainText("true", { timeout: 5000 });
+    });
 });

@@ -2082,6 +2082,28 @@ function resolveTableRow(appId, location, tableId, rowId, definitions) {
 // params}); it never names or runs an action. There is no automatic event→action
 // link — the runtime takes NO domain action here. The wired Node-RED flow is the
 // only place that may react. See docs/nodes/concepts/events.md.
+// P203/P204 (ADR 0027): the input controls that carry a `writeTo` write-back.
+// Text-like controls (ui-input, ui-textarea, and ui-datepicker in text mode)
+// honour the `writeTrigger` (submit=Enter/blur | change); the non-text controls
+// (checkbox/switch/select/radio/slider) have no submit gesture and persist on
+// `change` regardless of the trigger setting.
+const WRITE_BACK_INPUT_TYPES = new Set([
+    "ui-input",
+    "ui-textarea",
+    "ui-datepicker",
+    "ui-select",
+    "ui-checkbox",
+    "ui-switch",
+    "ui-radio",
+    "ui-slider"
+]);
+
+// The controls that DO offer a submit gesture — the only ones for which a
+// `writeTrigger=submit` means "write on submit, not on change". Every other
+// control has no submit gesture, so a `submit` setting effectively falls back to
+// writing on `change` (never "never writes").
+const WRITE_BACK_TEXT_LIKE_TYPES = new Set(["ui-input", "ui-textarea", "ui-datepicker"]);
+
 // P203 (ADR 0027): the runtime WRITE-BACK. On an input's writeTrigger event
 // (change|submit, default submit) persist the field's current value into the
 // node's `writeTo` target. This is ADDITIVE — it runs alongside the normal
@@ -2094,7 +2116,8 @@ function resolveTableRow(appId, location, tableId, rowId, definitions) {
 // the write-back must never break the primary event path.
 function applyInputWriteBack(RED, appId, node, params, clientId, definitions) {
     const def = node && node.webappDefinition;
-    if (!def || def.type !== "ui-input") {
+    // P203/P204 (ADR 0027): write-back is uniform across all input controls.
+    if (!def || !WRITE_BACK_INPUT_TYPES.has(def.type)) {
         return;
     }
     const writeTo = def.writeTo;
@@ -2146,7 +2169,7 @@ function applyInputWriteBack(RED, appId, node, params, clientId, definitions) {
         }
         catch (error) {
             if (RED && RED.log && RED.log.warn) {
-                RED.log.warn(`[webapp] ui-input writeTo store failed (op=applyInputWriteBack): ${error instanceof Error ? error.message : String(error)}`);
+                RED.log.warn(`[webapp] ${def.type} writeTo store failed (op=applyInputWriteBack): ${error instanceof Error ? error.message : String(error)}`);
             }
             return;
         }
@@ -2178,7 +2201,7 @@ function applyInputWriteBack(RED, appId, node, params, clientId, definitions) {
         }
         catch (error) {
             if (RED && RED.log && RED.log.warn) {
-                RED.log.warn(`[webapp] ui-input writeTo ${writeTo.kind} failed (op=applyInputWriteBack): ${error instanceof Error ? error.message : String(error)}`);
+                RED.log.warn(`[webapp] ${def.type} writeTo ${writeTo.kind} failed (op=applyInputWriteBack): ${error instanceof Error ? error.message : String(error)}`);
             }
         }
     }
@@ -2244,20 +2267,32 @@ function dispatchClientEvent(RED, appId, body, definitions) {
         }
     }
 
-    // P203 (ADR 0027): runtime write-back. Before (and independently of) the
-    // output-port emission, if this is a ui-input with a `writeTo` target and the
-    // event matches its `writeTrigger` (default submit), persist the current value
-    // into the target. ADDITIVE — the output event below still fires.
-    if (definitionType === "ui-input") {
+    // P203/P204 (ADR 0027): runtime write-back. Before (and independently of) the
+    // output-port emission, if this is an input control with a `writeTo` target and
+    // the event matches its trigger semantics, persist the current value into the
+    // target. ADDITIVE — the output event below still fires.
+    if (WRITE_BACK_INPUT_TYPES.has(definitionType)) {
+        const isTextLike = WRITE_BACK_TEXT_LIKE_TYPES.has(definitionType);
         const writeTrigger = node.webappDefinition && node.webappDefinition.writeTrigger === "change"
             ? "change"
             : "submit";
-        // change-mode writes on every change; submit-mode only on submit. (A text
-        // input emits both `change` and `submit`; this gate keeps submit-mode from
-        // also writing on the intermediate change events.)
-        const triggers = writeTrigger === "change"
-            ? (event === "change" || event === "submit")
-            : event === "submit";
+        let triggers;
+        if (!isTextLike) {
+            // P204: toggles/selects/slider/radio have NO submit gesture. A
+            // `writeTrigger=submit` there must NOT mean "never writes" — they
+            // persist on `change` regardless of the setting. (They only emit
+            // `change`, never `submit`.)
+            triggers = event === "change";
+        }
+        else {
+            // Text-like (ui-input/ui-textarea/ui-datepicker): change-mode writes on
+            // every change; submit-mode only on submit. (A text input emits both
+            // `change` and `submit`; the submit-mode gate keeps it from also writing
+            // on the intermediate change events.)
+            triggers = writeTrigger === "change"
+                ? (event === "change" || event === "submit")
+                : event === "submit";
+        }
         if (triggers) {
             applyInputWriteBack(RED, appId, node, params, clientId, definitions);
         }
@@ -5750,6 +5785,10 @@ const runtimeNodeRegistry = {
             // P133: label is now a binding (literal string or dynamic binding).
             label: getBinding(config.label, undefined) || config.label,
             value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
+            // P204 (ADR 0027): writeTo WRITE target + writeTrigger. Legacy
+            // storeId/path migrate to a writeTo=store binding.
+            writeTo: getBinding(config.writeTo, legacyStoreWriteTo(config.storeId, config.path)),
+            writeTrigger: config.writeTrigger || undefined,
             // P133: single Options field — json (literal array) | store binding,
             // with legacy optionsJson / optionsBinding migration.
             options: mapSelectOptions(config, undefined),
@@ -5775,6 +5814,10 @@ const runtimeNodeRegistry = {
             // P97: label is now a binding object when set via typedInput; legacy plain string is preserved.
             label: config.label,
             value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
+            // P204 (ADR 0027): writeTo WRITE target + writeTrigger. Legacy
+            // storeId/path migrate to a writeTo=store binding.
+            writeTo: getBinding(config.writeTo, legacyStoreWriteTo(config.storeId, config.path)),
+            writeTrigger: config.writeTrigger || undefined,
             // P97: size field (xs/sm/md/lg/xl).
             size: config.size || undefined,
             disabled: getBinding(config.disabled, undefined),
@@ -5795,6 +5838,10 @@ const runtimeNodeRegistry = {
             // mirroring ui-select.
             label: getBinding(config.label, undefined) || config.label,
             value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
+            // P204 (ADR 0027): writeTo WRITE target + writeTrigger. Legacy
+            // storeId/path migrate to a writeTo=store binding.
+            writeTo: getBinding(config.writeTo, legacyStoreWriteTo(config.storeId, config.path)),
+            writeTrigger: config.writeTrigger || undefined,
             // P136: single Options field — json (literal array) | store binding,
             // via the SAME shared resolver as ui-select, with legacy
             // optionsJson / optionsBinding migration.
@@ -5815,6 +5862,10 @@ const runtimeNodeRegistry = {
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
             value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
+            // P204 (ADR 0027): writeTo WRITE target + writeTrigger. Legacy
+            // storeId/path migrate to a writeTo=store binding.
+            writeTo: getBinding(config.writeTo, legacyStoreWriteTo(config.storeId, config.path)),
+            writeTrigger: config.writeTrigger || undefined,
             // P147 (ADR 0012): label/labelOn/labelOff may now be binding objects
             // or plain strings (legacy). Use the same pattern as ui-radio: try
             // getBinding first (returns the object when it has .kind), then fall
@@ -5841,6 +5892,10 @@ const runtimeNodeRegistry = {
             // as-is via the fallback: a non-object label stays as a string.
             label: getBinding(config.label, typeof config.label === "string" && config.label ? config.label : undefined),
             value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
+            // P204 (ADR 0027): writeTo WRITE target + writeTrigger. Legacy
+            // storeId/path migrate to a writeTo=store binding.
+            writeTo: getBinding(config.writeTo, legacyStoreWriteTo(config.storeId, config.path)),
+            writeTrigger: config.writeTrigger || undefined,
             // P148 (ADR 0012): placeholder may be a binding object or a legacy plain string.
             placeholder: getBinding(config.placeholder, typeof config.placeholder === "string" && config.placeholder ? config.placeholder : undefined),
             rows: toOptionalNumber(config.rows),
@@ -5866,6 +5921,10 @@ const runtimeNodeRegistry = {
             // puts plain strings into props.label directly and the renderer reads props.label.
             label: config.label,
             value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
+            // P204 (ADR 0027): writeTo WRITE target + writeTrigger. Legacy
+            // storeId/path migrate to a writeTo=store binding.
+            writeTo: getBinding(config.writeTo, legacyStoreWriteTo(config.storeId, config.path)),
+            writeTrigger: config.writeTrigger || undefined,
             mode: config.mode || undefined,
             min: config.min || undefined,
             max: config.max || undefined,
@@ -5886,6 +5945,11 @@ const runtimeNodeRegistry = {
             mount: config.mount || config.parent,
             order: toOptionalNumber(config.order),
             value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
+            // P204 (ADR 0027): writeTo WRITE target + writeTrigger. A slider value
+            // is numeric-as-string from the client; the store gets it as-is (same as
+            // ui-input number). Legacy storeId/path migrate to a writeTo=store binding.
+            writeTo: getBinding(config.writeTo, legacyStoreWriteTo(config.storeId, config.path)),
+            writeTrigger: config.writeTrigger || undefined,
             // P146 (ADR 0012): label may be a binding object or a legacy plain string.
             // getBinding passes a binding object through; for a plain string, we keep it
             // as-is via the fallback: a non-object label stays as a string.

@@ -4771,6 +4771,68 @@
         return { type: parsed.kind, value: parsed.path || "" };
     }
 
+    // ── P203/P204 (ADR 0027): the shared `writeTo` (+ `writeTrigger`) editor
+    // helper — the WRITE half of an input's value binding. Every input control
+    // (ui-input, ui-select, ui-checkbox, ui-switch, ui-textarea, ui-slider,
+    // ui-radio, ui-datepicker) uses THIS one helper so the field looks and behaves
+    // identically. It backs three fixed element ids:
+    //   #node-input-writeToBinding — the writable typedInput (Store/Flow/Global)
+    //   #node-input-writeTrigger   — a change|submit <select>
+    // and reads/writes these node fields: writeTo (binding object|null),
+    // writeTrigger (string), and the legacy storeId/path pair (migrated then
+    // dropped). Call with `.call(this)` from oneditprepare / oneditsave.
+    function installWriteToField() {
+        var node = this;
+        // Migration: a stored writeTo binding object wins; otherwise a legacy
+        // storeId(+path) pair opens as writeTo={kind:"store", path:<storeId>,
+        // subPath:{kind:"literal", value:<path>}}.
+        var storedWriteTo = parseBindingValue(node.writeTo);
+        var writeToBinding = storedWriteTo
+            ? storedWriteTo
+            : (node.storeId
+                ? {
+                    kind: "store",
+                    path: node.storeId,
+                    subPath: node.path ? { kind: "literal", value: node.path } : undefined
+                }
+                : undefined);
+        var writeToEditor = readValueBinding(writeToBinding, "");
+        // Restrict the default type to a writable kind (never a stray str).
+        var writeToType = ["store", "flow", "global"].indexOf(writeToEditor.type) !== -1
+            ? writeToEditor.type
+            : "store";
+        var writeToInput = $("#node-input-writeToBinding");
+        writeToInput.typedInput({
+            default: writeToType,
+            types: valueBindingTypes({ category: "writable" })
+        });
+        writeToInput.typedInput("type", writeToType);
+        writeToInput.typedInput("value", writeToEditor.value);
+        writeToInput.data("base-field-originally-empty", !writeToBinding);
+
+        $("#node-input-writeTrigger").val(node.writeTrigger || "submit");
+    }
+
+    // Persist the writeTo/writeTrigger fields and drop the migrated legacy pair.
+    // Mirrors installWriteToField. Call with `.call(this)` from oneditsave.
+    function saveWriteToField() {
+        var node = this;
+        var $writeToInput = $("#node-input-writeToBinding");
+        var writeToType = $writeToInput.typedInput("type");
+        var writeToValue = $writeToInput.typedInput("value");
+        var writeToOriginEmpty = $writeToInput.data("base-field-originally-empty");
+        var writeToResult = applyValueBinding(writeToType, writeToValue);
+        // An empty writable target (no store id / no context key) is "no write-back":
+        // persist null, not a hollow binding.
+        var writeToHasTarget = writeToResult
+            && ((writeToResult.kind === "store" && writeToResult.path)
+                || ((writeToResult.kind === "flow" || writeToResult.kind === "global") && writeToResult.path));
+        node.writeTo = (writeToOriginEmpty && !writeToHasTarget) ? null : (writeToHasTarget ? writeToResult : null);
+        node.writeTrigger = $("#node-input-writeTrigger").val() || "submit";
+        node.storeId = "";
+        node.path = "";
+    }
+
     // Pick the editor literal sub-type for a stored literal value by its JS type.
     function literalSubType(value) {
         if (typeof value === "number") {
@@ -6199,6 +6261,10 @@
         installValueBindingPathHint,
         readValueBinding,
         applyValueBinding,
+        // P203/P204 (ADR 0027): the ONE shared writeTo (+ writeTrigger) helper —
+        // the WRITE half of an input's value binding, used by every input control.
+        installWriteToField,
+        saveWriteToField,
         // P136: the ONE shared Options helper (ui-select + ui-radio).
         normalizeOptionsStructure,
         validateOptionsJson,

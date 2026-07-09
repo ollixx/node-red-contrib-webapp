@@ -387,4 +387,42 @@ test.describe("ui-radio (P127)", () => {
         await webapp.navigate("/");
         await expect(page.locator("sl-radio-group")).toHaveAttribute("label", "Choose a size");
     });
+
+    // ─── writeTo write-back (P204 / ADR 0027) — measured, no wiring ────────────
+
+    test("W01 — choosing a radio with writeTo=store persists it and a second bound view updates live", async ({ page, request }) => {
+        // A radio group has no submit gesture → it writes on change regardless of
+        // writeTrigger (submit). Measured proof: a second ui-text bound to the same
+        // store slice shows the chosen value over SSE, with NO function wiring.
+        const flow = new FlowBuilder()
+            .app({ id: "rdWbApp", root: "rdWbApp" })
+            .node("ui-store", { id: "rdWbStore", statePath: "form", initialValue: JSON.stringify({ color: "red" }) })
+            .node("ui-radio", {
+                id: "rdWbIn",
+                label: "Color",
+                optionsJson: JSON.stringify([{ label: "Red", value: "red" }, { label: "Blue", value: "blue" }]),
+                value: { kind: "store", path: "rdWbStore", subPath: { kind: "literal", value: "color" } },
+                writeTo: { kind: "store", path: "rdWbStore", subPath: { kind: "literal", value: "color" } },
+                writeTrigger: "submit"
+            })
+            .node("ui-text", {
+                id: "rdWbOut",
+                value: { kind: "store", path: "rdWbStore", subPath: { kind: "literal", value: "color" } }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "rdWbApp");
+        await webapp.navigate("/");
+        await expect(webapp.root().locator(".webapp-text")).toContainText("red");
+
+        await page.evaluate(() => {
+            const el = document.querySelector("sl-radio-group") as HTMLElement & { value: string };
+            el.value = "blue";
+            el.dispatchEvent(new CustomEvent("sl-change", { bubbles: true, composed: true }));
+        });
+
+        await expect(webapp.root().locator(".webapp-text")).toContainText("blue", { timeout: 5000 });
+    });
 });

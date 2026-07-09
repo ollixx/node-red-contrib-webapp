@@ -422,4 +422,43 @@ test.describe("ui-select (P44 + P124)", () => {
         await expect(webapp.root()).toBeVisible();
         await expect(page.locator("sl-select")).toBeVisible();
     });
+
+    // ─── writeTo write-back (P204 / ADR 0027) — measured, no wiring ────────────
+
+    test("W01 — selecting an option with writeTo=store persists it and a second bound view updates live", async ({ page, request }) => {
+        // A ui-select writes store(wbStore).choice; a second ui-text reads
+        // store(wbStore).choice. A select has no submit gesture → it writes on
+        // change regardless of writeTrigger (here submit). Measured proof: the
+        // ui-text CONTENT changes over SSE with NO function wiring.
+        const flow = new FlowBuilder()
+            .app({ id: "selWbApp", root: "selWbApp" })
+            .node("ui-store", { id: "selWbStore", statePath: "form", initialValue: JSON.stringify({ choice: "a" }) })
+            .node("ui-select", {
+                id: "selWbIn",
+                label: "Choose",
+                optionsJson: JSON.stringify([{ label: "A", value: "a" }, { label: "B", value: "b" }]),
+                value: { kind: "store", path: "selWbStore", subPath: { kind: "literal", value: "choice" } },
+                writeTo: { kind: "store", path: "selWbStore", subPath: { kind: "literal", value: "choice" } },
+                writeTrigger: "submit"
+            })
+            .node("ui-text", {
+                id: "selWbOut",
+                value: { kind: "store", path: "selWbStore", subPath: { kind: "literal", value: "choice" } }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "selWbApp");
+        await webapp.navigate("/");
+        await expect(webapp.root().locator(".webapp-text")).toContainText("a");
+
+        await page.evaluate(() => {
+            const el = document.querySelector("sl-select") as HTMLElement & { value: string };
+            el.value = "b";
+            el.dispatchEvent(new CustomEvent("sl-change", { bubbles: true, composed: true }));
+        });
+
+        await expect(webapp.root().locator(".webapp-text")).toContainText("b", { timeout: 5000 });
+    });
 });
