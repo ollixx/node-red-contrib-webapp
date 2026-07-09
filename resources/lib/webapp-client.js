@@ -630,6 +630,12 @@
     // event that reliably crosses the shadow boundary for sl-checkbox/sl-switch).
     // The handler is identical; deduplication is not needed because Shoelace
     // fires either one or the other depending on the component version.
+    // Per-source signature of the last emitted change, so the trailing commit
+    // event (native `change` / `sl-change`, fired on blur AFTER the last keystroke
+    // with the SAME value) does not double-emit. A genuine new value always
+    // differs and emits.
+    const lastChangeSig = Object.create(null);
+
     function handleChangeEvent(eventObject) {
         const wrapper = eventObject.target.closest("[data-webapp-source][data-webapp-event=\"change\"]");
 
@@ -644,13 +650,26 @@
             ? { checked: Boolean(field.checked) }
             : { value: field.value };
 
+        const source = wrapper.getAttribute("data-webapp-source");
+        const sig = source + " " + JSON.stringify(params);
+        if (lastChangeSig[source] === sig) {
+            return;
+        }
+        lastChangeSig[source] = sig;
+
         dispatch({
-            source: wrapper.getAttribute("data-webapp-source"),
+            source: source,
             event: "change",
             params: params
         });
     }
 
+    // `change` fires on EVERY change (docs: „jede Änderung des Feldwerts"). For
+    // text controls that means per keystroke — Shoelace fires `sl-input` (and
+    // native `input`) then, not `change`/`sl-change` (blur/commit only). Listen to
+    // all four; the value-dedupe above collapses the trailing commit duplicate.
+    root.addEventListener("input", handleChangeEvent);
+    root.addEventListener("sl-input", handleChangeEvent);
     root.addEventListener("change", handleChangeEvent);
     root.addEventListener("sl-change", handleChangeEvent);
 
