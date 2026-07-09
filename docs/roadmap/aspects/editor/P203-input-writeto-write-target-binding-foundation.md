@@ -18,7 +18,7 @@ verify: browser
 spec: docs/nodes/input/ui-input.md
 tests: tests/e2e/nodes/view/ui-input.tests.md
 dependencies: []
-status: pending
+status: in_progress
 ---
 # P203 — Input-Write-Back-Fundament (`writeTo` + `writeTrigger`), bewiesen an ui-input
 
