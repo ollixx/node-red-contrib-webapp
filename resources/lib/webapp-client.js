@@ -669,8 +669,13 @@
         const field = eventObject.target;
         const tag = field.tagName ? field.tagName.toLowerCase() : "";
 
-        // Only text-style inputs confirm via submit; toggles/selects do not.
-        if (tag !== "sl-input" && !(tag === "input" && field.type !== "checkbox")) {
+        // P204: text-style inputs (sl-input / native text input) AND multi-line
+        // textareas (sl-textarea / native textarea) confirm via submit; toggles,
+        // selects, sliders and radios do not. A single-line input submits on Enter;
+        // a textarea (Enter inserts a newline) submits on blur.
+        const isTextInput = tag === "sl-input" || (tag === "input" && field.type !== "checkbox");
+        const isTextArea = tag === "sl-textarea" || tag === "textarea";
+        if (!isTextInput && !isTextArea) {
             return;
         }
 
@@ -681,15 +686,33 @@
         });
     }
 
-    // Real-user gesture: Enter inside a text input → submit.
+    // Real-user gesture: Enter inside a single-line text input → submit. A textarea
+    // treats Enter as a newline, so it does NOT submit here (it submits on blur).
     root.addEventListener("keydown", function (eventObject) {
         if (eventObject.key !== "Enter") {
+            return;
+        }
+        const t = eventObject.target;
+        const tag = t && t.tagName ? t.tagName.toLowerCase() : "";
+        if (tag === "sl-textarea" || tag === "textarea") {
             return;
         }
         handleSubmitEvent(eventObject);
     });
     // Shoelace forwards a confirmed value as the `sl-input-submit` custom event.
     root.addEventListener("sl-input-submit", handleSubmitEvent);
+    // P204: a textarea's submit gesture is blur (loss of focus). `focusout` bubbles
+    // (unlike `blur`), so it reaches the delegated root listener. Only textareas
+    // submit on blur — single-line inputs already submit on Enter, and re-adding a
+    // blur submit for them would double-fire.
+    root.addEventListener("focusout", function (eventObject) {
+        const t = eventObject.target;
+        const tag = t && t.tagName ? t.tagName.toLowerCase() : "";
+        if (tag !== "sl-textarea" && tag !== "textarea") {
+            return;
+        }
+        handleSubmitEvent(eventObject);
+    });
 
     // P38: tabs — sl-tab-group fires `sl-tab-show` (Shoelace custom event) when a
     // tab is activated. Find the closest [data-webapp-event="sl-tab-show"] ancestor

@@ -40,7 +40,9 @@ Binding-Kategorien (Value/display, Boolean-Zustand): [ADR 0012](../../adr/0012-b
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
 | `label` | „Label" | typedInput (voller Binding-Satz, P133) | **ja** | Beschriftung des Auswahlfeldes. Bindbar (ADR 0012, Value/display-Kategorie) — kanonischer Satz, siehe [stores.md](../concepts/stores.md#der-kanonische-value-binding-typ-satz-editor--adr-0012--adr-0010). Ein bestehender plain-string `label` wird automatisch als Literal-Binding übernommen. Pflicht: das Feld darf nicht leer sein. |
-| `value` | „Value" | typedInput (voller Binding-Satz, P124) | **ja** | Bindbare Quelle des aktuell gewählten Werts (Anzeige-/Initialwert). Voller Binding-Satz (ADR 0012, Value/display-Kategorie, inkl. scope-lokaler Typen im passenden Scope) — siehe [stores.md](../concepts/stores.md#der-kanonische-value-binding-typ-satz-editor--adr-0012--adr-0010). Migration: ein bestehender `valuePath` wird automatisch als `state`-Binding übernommen. |
+| `value` | „Value" | typedInput (voller Binding-Satz, P124) | **ja** | Bindbare **Lese**-Quelle des aktuell gewählten Werts (Anzeige-/Initialwert). Voller Binding-Satz (ADR 0012, Value/display-Kategorie, inkl. scope-lokaler Typen im passenden Scope) — siehe [stores.md](../concepts/stores.md#der-kanonische-value-binding-typ-satz-editor--adr-0012--adr-0010). Migration: ein bestehender `valuePath` wird automatisch als `state`-Binding übernommen. |
+| `writeTo` | „Write To" | typedInput (**nur schreibbare** Arten: Store/Flow/Global, P204) | optional | Bindbares **Schreib**-Ziel (ADR 0027). Nur die schreibbaren Kinds: `store` (ein `ui-store` + optionaler ein-Ebenen-Sub-Pfad, per-client, live SSE-Re-Render), `flow`, `global` (server-seitig). Die Runtime schreibt die Auswahl beim Trigger hierhin zurück. Ein `ui-select` hat **keine Submit-Geste** → schreibt bei `change`, unabhängig vom `writeTrigger`. |
+| `writeTrigger` | „Write Trigger" | SelectBox (`change` / `submit`) | optional | Default `submit`. Bei Nicht-Text-Kontrollen wie `ui-select` ohne Wirkung: es wird effektiv immer bei `change` geschrieben (nie „nie"). |
 | `options` | „Options" | typedInput `{ json \| store }` (P133) | optional | **Ein** Feld mit zwei Typen. Typ `json` nutzt den NR-JSON-Editor und validiert die Struktur vor dem Deploy (Knoten rot bei Fehler) — genau eine von drei Formen: Objekt `{ "<label>": "<value>" }`, String-Array `["A","B"]` (Value = Label) oder Objekt-Array `[{ "label":…, "value":… }]`. Typ `store` liest die Optionen reaktiv aus einem Store(-Pfad). Migration: ein bestehender `optionsJson`-String öffnet im `json`-Typ; ein bestehender `optionsBinding` öffnet im `store`-Typ. Wenn leer, zeigt das Feld keine Optionen. |
 | `placeholder` | „Placeholder" | typedInput (voller Binding-Satz, P133) | optional | Hinweistext, der angezeigt wird, wenn kein Wert ausgewählt ist. Bindbar (ADR 0012, Value/display-Kategorie); ein Store-/state-Binding zeigt den Live-Wert. |
 | `multiple` | „Multiple" | Checkbox | optional | Erlaubt Mehrfachauswahl. Bei `true` ist `value` ein Array der gewählten Werte. Default: `false`. |
@@ -55,6 +57,13 @@ Binding-Kategorien (Value/display, Boolean-Zustand): [ADR 0012](../../adr/0012-b
 | `row` / `col` | „Row" / „Col" | Zahlfeld (≥ 1) | optional | Startposition im Grid-Layout (1-basiert). |
 | `colSize` / `rowSize` | „Col Span" / „Row Span" | Zahlfeld (≥ 1) | optional | Spalten-/Zeilenspanne im Grid-Layout. |
 | `layoutX` / `layoutY` | „X" / „Y" | Zahlfeld | optional | Pixelkoordinaten im Absolute-Layout. |
+
+### Entfernte Felder (migriert, ADR 0027)
+
+| Feld (alt) | Status | Migration |
+|---|---|---|
+| `storeId` | **entfernt** | Ein Alt-Knoten mit `storeId`+`path` wird beim Öffnen im Editor verlustfrei nach `writeTo = {kind:"store", path:<storeId>, subPath:{kind:"literal", value:<path>}}` migriert; beim Speichern werden die Alt-Felder nicht mehr erzeugt. Die Runtime führt dieselbe Migration für alt-deployte Configs durch. |
+| `path` | **entfernt** | Siehe `storeId` — wird zum `subPath` des migrierten `writeTo`. |
 
 ### Inline-Hilfe (HTML)
 
@@ -112,6 +121,11 @@ das Backend bildet sie auf die Dropdown-Darstellung ab. Details:
   Feld ist optional; leer rendert ein Auswahlfeld ohne Optionen.
 - **Mehrfachauswahl.** Bei `multiple: true` ist `value` ein Array; das
   `change`-Event liefert entsprechend ein Array unter `msg.ui.params.value`.
+- **Write-Back (P204 / ADR 0027).** `value` liest, `writeTo` schreibt. Ist ein
+  `writeTo`-Ziel gesetzt, persistiert die Runtime die Auswahl **zusätzlich** zum
+  `change`-Output-Event (additiv, keine Verdrahtung nötig): Store per-client mit
+  `clientId` + SSE-Re-Render, Flow/Global server-seitig ohne Auto-Re-Render. Ein
+  Select hat keine Submit-Geste → es schreibt immer bei `change`.
 
 ## Referenzen
 
@@ -120,7 +134,8 @@ das Backend bildet sie auf die Dropdown-Darstellung ab. Details:
 - [inputs.md](../concepts/inputs.md) — `msg.payload`- und `msg.ui.patch`-Protokoll
 - [events.md](../concepts/events.md) — Event-Format und Output-Ports
 - [theming.md](../concepts/theming.md) — Design-Tokens
-- [`ui-store`](../state/ui-store.md) — Optionen dynamisch aus dem Store
+- [`ui-store`](../state/ui-store.md) — Optionen dynamisch aus dem Store; Ziel eines `writeTo=store`
+- [ADR 0027](../../adr/0027-input-value-binding-is-bidirectional-value-read-writeto-write.md) — `value` liest, `writeTo` schreibt
 
 ## Offene Punkte
 

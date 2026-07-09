@@ -39,6 +39,15 @@ Replaces P44 (presence-only) and P73 (mode-mapping-only) tests.
 | label as literal binding → sl-input label attribute matches | Label binding resolves to correct label attribute |
 | sl-change → POST /event with value param | change event dispatched with ISO-8601 date string |
 
+## writeTo Write-Back (P204 / ADR 0027 — measured, no wiring)
+
+Der Datepicker rendert ein `sl-input` (text-artig) und honoriert den `writeTrigger`.
+
+| Test | Ziel |
+|---|---|
+| W01 | `writeTrigger=submit`: ein reines `change` schreibt NICHT (Mirror bleibt `2024-01-01`); erst die Submit-Geste (`sl-input-submit`, Enter/Blur) persistiert per-client → ZWEITER an `store(x).when` gebundener `ui-text` zeigt `2026-12-31` live (SSE, Textinhalt gemessen), ohne function-Knoten. |
+| W02 | `writeTrigger=change`: jede Auswahl (`sl-change`) schreibt zurück und aktualisiert den gebundenen View live (`2024-02-02`→`2027-07-07`). |
+
 ## Coverage notes
 
 - `msg.payload → value` update is covered by `p82-input-nodes-behaviour.test.ts`.

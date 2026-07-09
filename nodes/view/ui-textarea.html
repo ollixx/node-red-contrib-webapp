@@ -63,6 +63,15 @@
                 // #node-input-disabledBinding.
                 disabled: { value: null },
                 disabledBinding: { value: "" },
+                // P204 (ADR 0027): `writeTo` — WRITE half (store/flow/global). A
+                // textarea is text-like: it honours writeTrigger (submit = blur,
+                // change = every keystroke). Legacy storeId/path migrate to
+                // writeTo=store.
+                writeTo: { value: null },
+                writeToBinding: { value: "" },
+                writeTrigger: { value: "submit" },
+                storeId: { value: "" },
+                path: { value: "" },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
                 col: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
@@ -154,8 +163,14 @@
                 disabledInput.typedInput("type", disabledType);
                 disabledInput.typedInput("value", disabledEditor.value);
                 disabledInput.data("base-field-originally-empty", !disabledBinding);
+
+                // P204 (ADR 0027 / writable category): `writeTo` typedInput.
+                common.installWriteToField.call(this);
             },
             oneditsave: function () {
+                // P204: persist writeTo + writeTrigger; drop legacy storeId/path.
+                common.saveWriteToField.call(this);
+
                 // P148: persist label as binding object.
                 this.label = common.applyValueBinding(
                     $("#node-input-label").typedInput("type"),
@@ -198,6 +213,9 @@
     <div class="form-row"><label for="node-input-label">Label</label><input type="text" id="node-input-label"></div>
     <!-- P128 (ADR 0012 / value/display category): Value binding — typedInput managed in oneditprepare/oneditsave. -->
     <div class="form-row"><label for="node-input-valueBinding">Value</label><input type="text" id="node-input-valueBinding"></div>
+    <!-- P204 (ADR 0027 / writable category): writeTo target (WRITE) — Store/Flow/Global. -->
+    <div class="form-row"><label for="node-input-writeToBinding">Write To</label><input type="text" id="node-input-writeToBinding"></div>
+    <div class="form-row"><label for="node-input-writeTrigger">Write Trigger</label><select id="node-input-writeTrigger"><option value="submit">submit</option><option value="change">change</option></select></div>
     <!-- P148 (ADR 0012 / display category): Placeholder binding — typedInput managed in oneditprepare/oneditsave. -->
     <div class="form-row"><label for="node-input-placeholder">Placeholder</label><input type="text" id="node-input-placeholder"></div>
     <div class="form-row"><label for="node-input-rows">Rows</label><input type="number" id="node-input-rows" min="1"></div>
@@ -219,6 +237,11 @@
     Store, Query, Route-Param, Reactive, msg, JSONata, string, number, boolean, json, timestamp,
     Flow, Global, Env. Ein bestehender <code>valuePath</code> wird automatisch als
     <code>state</code>-Binding übernommen.</p>
+    <h4>Write To (Schreiben, P204 / ADR 0027)</h4>
+    <p>Ziel, in das die Runtime den Text schreibt — nur <b>schreibbare</b> Kinds
+    (<code>Store</code>/<code>Flow</code>/<code>Global</code>). Eine Textarea ist text-artig und
+    honoriert den <code>Write Trigger</code>: <code>submit</code> schreibt beim Verlassen des
+    Feldes (Blur), <code>change</code> bei jeder Eingabe.</p>
     <h4>Disabled (P128)</h4>
     <p>Bindbar über den Boolean-Zustand-Satz (ADR 0012): Store, Query, Route-Param, Reactive,
     msg, JSONata, boolean, Flow, Global, Env. Ein Store-Binding deaktiviert die Textarea live,

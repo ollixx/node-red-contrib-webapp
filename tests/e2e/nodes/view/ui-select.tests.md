@@ -63,3 +63,9 @@
 | Test | Ziel |
 |---|---|
 | label/value/options/placeholder typedInputs vorhanden, required-label-Validierung | Ein Options-Feld, keine optionsJson/searchable; leeres Label → invalid, gefüllt → valid |
+
+## writeTo Write-Back (P204 / ADR 0027 — gemessen, keine Verdrahtung)
+
+| ID | Beschreibung |
+|---|---|
+| W01 | `value=store(x).choice` UND `writeTo=store(x).choice`: eine Auswahländerung (`sl-change`) schreibt per-client in den Store; ein ZWEITER an `store(x).choice` gebundener `ui-text` zeigt den neuen Wert live (SSE, Textinhalt gemessen `a`→`b`), ohne function-Knoten. Select hat keine Submit-Geste → schreibt bei `change` unabhängig vom `writeTrigger`. |

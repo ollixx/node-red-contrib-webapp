@@ -250,4 +250,43 @@ test.describe("ui-slider (P126)", () => {
         const val = (body.params as Record<string, unknown>).value;
         expect(Number(val)).toBe(55);
     });
+
+    // ─── writeTo write-back (P204 / ADR 0027) — measured, no wiring ────────────
+
+    test("W01 — sliding with writeTo=store persists the value and a second bound view updates live", async ({ page, request }) => {
+        // A slider has no submit gesture → it writes on change (drag) regardless of
+        // writeTrigger (submit). Its value is numeric-as-string. Measured proof: a
+        // second ui-text bound to the same store slice shows the new value over SSE.
+        const flow = new FlowBuilder()
+            .app({ id: "slWbApp", root: "slWbApp" })
+            .node("ui-store", { id: "slWbStore", statePath: "form", initialValue: JSON.stringify({ vol: 10 }) })
+            .node("ui-slider", {
+                id: "slWbIn",
+                min: 0,
+                max: 100,
+                step: 1,
+                value: { kind: "store", path: "slWbStore", subPath: { kind: "literal", value: "vol" } },
+                writeTo: { kind: "store", path: "slWbStore", subPath: { kind: "literal", value: "vol" } },
+                writeTrigger: "submit"
+            })
+            .node("ui-text", {
+                id: "slWbOut",
+                value: { kind: "store", path: "slWbStore", subPath: { kind: "literal", value: "vol" } }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "slWbApp");
+        await webapp.navigate("/");
+        await expect(webapp.root().locator(".webapp-text")).toContainText("10");
+
+        await page.evaluate(() => {
+            const el = document.querySelector("sl-range") as HTMLElement & { value: string };
+            el.value = "73";
+            el.dispatchEvent(new CustomEvent("sl-change", { bubbles: true, composed: true }));
+        });
+
+        await expect(webapp.root().locator(".webapp-text")).toContainText("73", { timeout: 5000 });
+    });
 });

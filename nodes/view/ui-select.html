@@ -61,6 +61,16 @@
                 // clobber it. The typedInput lives on #node-input-disabledBinding.
                 disabled: { value: null },
                 disabledBinding: { value: "" },
+                // P204 (ADR 0027): `writeTo` persists the WRITE half of the value
+                // binding (store/flow/global). The typedInput lives on
+                // #node-input-writeToBinding. A select has no submit gesture, so it
+                // writes on `change` regardless of writeTrigger. Legacy storeId/path
+                // migrate to a writeTo=store binding on open and are then dropped.
+                writeTo: { value: null },
+                writeToBinding: { value: "" },
+                writeTrigger: { value: "submit" },
+                storeId: { value: "" },
+                path: { value: "" },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
                 col: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
@@ -152,8 +162,16 @@
                 disabledInput.typedInput("type", disabledType);
                 disabledInput.typedInput("value", disabledEditor.value);
                 disabledInput.data("base-field-originally-empty", !disabledBinding);
+
+                // P204 (ADR 0027 / writable category): `writeTo` typedInput —
+                // Store/Flow/Global only. Legacy storeId+path migrate to a
+                // writeTo=store binding; a stored writeTo object takes precedence.
+                common.installWriteToField.call(this);
             },
             oneditsave: function () {
+                // P204: persist writeTo + writeTrigger; drop legacy storeId/path.
+                common.saveWriteToField.call(this);
+
                 // P124: persist value as binding object; clear legacy valuePath.
                 this.value = common.applyValueBinding(
                     $("#node-input-valueBinding").typedInput("type"),
@@ -202,6 +220,9 @@
     <div class="form-row"><label for="node-input-labelBinding">Label</label><input type="text" id="node-input-labelBinding"></div>
     <!-- P124 (ADR 0012 / value category): Value binding — typedInput managed in oneditprepare/oneditsave. -->
     <div class="form-row"><label for="node-input-valueBinding">Value</label><input type="text" id="node-input-valueBinding"></div>
+    <!-- P204 (ADR 0027 / writable category): writeTo target (WRITE) — Store/Flow/Global; typedInput managed in oneditprepare/oneditsave. -->
+    <div class="form-row"><label for="node-input-writeToBinding">Write To</label><input type="text" id="node-input-writeToBinding"></div>
+    <div class="form-row"><label for="node-input-writeTrigger">Write Trigger</label><select id="node-input-writeTrigger"><option value="submit">submit</option><option value="change">change</option></select></div>
     <!-- P124 (ADR 0012 / boolean category): Disabled binding — typedInput managed in oneditprepare/oneditsave. -->
     <div class="form-row"><label for="node-input-disabledBinding">Disabled</label><input type="text" id="node-input-disabledBinding"></div>
     <!-- P133 (ADR 0012): single Options field — json (NR JSON editor) | store. -->
@@ -216,6 +237,11 @@
 <p>Bindbare Quelle des aktuell gewählten Werts — voller Binding-Satz (ADR 0012): Store, Query,
 Route-Param, Reactive, msg, JSONata, string, number, boolean, json, timestamp, Flow, Global, Env.
 Ein bestehender <code>valuePath</code> wird automatisch als <code>state</code>-Binding übernommen.</p>
+<h3>Write To (Schreiben, P204 / ADR 0027)</h3>
+<p>Ziel, in das die Runtime die Auswahl schreibt — nur <b>schreibbare</b> Kinds:
+<code>Store</code> (ein <code>ui-store</code> + optionaler Sub-Pfad, per-client, live SSE-Re-Render),
+<code>Flow</code>- oder <code>Global</code>-Kontext (server-seitig). Ein Select hat keine
+Submit-Geste: es schreibt bei <code>change</code>, unabhängig vom <code>Write Trigger</code>.</p>
 <h3>Disabled (P124)</h3>
 <p>Bindbare Bedingung zum Deaktivieren des Auswahlfeldes (Boolean-Zustand-Satz, ADR 0012):
 Store, Query, Route-Param, Reactive, msg, JSONata, boolean, Flow, Global, Env.

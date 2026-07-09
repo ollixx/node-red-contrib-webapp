@@ -37,7 +37,9 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `value` | „Value Path" | typedInput (alle Binding-Arten) | **ja** | Bindbare numerische Quelle des Slider-Werts. Unterstützt alle Binding-Arten: `literal`, `state`, `store`, `query`, `routeParam`, `msg`, `flow`, `global`, `jsonata`, `env`. Details: [stores.md](../concepts/stores.md). |
+| `value` | „Value Path" | typedInput (alle Binding-Arten) | **ja** | Bindbare **Lese**-Quelle des Slider-Werts (numerisch). Unterstützt alle Binding-Arten: `literal`, `state`, `store`, `query`, `routeParam`, `msg`, `flow`, `global`, `jsonata`, `env`. Details: [stores.md](../concepts/stores.md). |
+| `writeTo` | „Write To" | typedInput (**nur schreibbare** Arten: Store/Flow/Global, P204) | optional | Bindbares **Schreib**-Ziel (ADR 0027). Nur `store`/`flow`/`global`. Die Runtime schreibt den Slider-Wert beim Trigger hierhin zurück (Store per-client + SSE-Re-Render; Flow/Global server-seitig). Ein Slider hat **keine Submit-Geste** → schreibt bei `change`, unabhängig vom `writeTrigger`. Der Wert wird als numerischer String übergeben (**Sondermodell**: kein Textwert). |
+| `writeTrigger` | „Write Trigger" | SelectBox (`change` / `submit`) | optional | Default `submit`; bei einem Slider ohne Wirkung — es wird effektiv immer bei `change` (Ziehen) geschrieben (nie „nie"). |
 | `label` | „Label" | Textfeld | optional | Beschriftung des Schiebereglers. Wird als Feld-Label angezeigt. Wenn leer, wird kein Label angezeigt. |
 | `min` | „Min" | Zahlfeld | optional | Minimaler Wert des Schiebereglers. Wenn nicht gesetzt, verwendet das Backend seinen Standard-Default. |
 | `max` | „Max" | Zahlfeld | optional | Maximaler Wert des Schiebereglers. Wenn nicht gesetzt, verwendet das Backend seinen Standard-Default. |
@@ -53,6 +55,13 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 | `row` / `col` | „Row" / „Col" | Zahlfeld (≥ 1) | optional | Startposition im Grid-Layout (1-basiert). |
 | `colSize` / `rowSize` | „Col Span" / „Row Span" | Zahlfeld (≥ 1) | optional | Spalten-/Zeilenspanne im Grid-Layout. |
 | `layoutX` / `layoutY` | „X" / „Y" | Zahlfeld | optional | Pixelkoordinaten im Absolute-Layout. |
+
+### Entfernte Felder (migriert, ADR 0027)
+
+| Feld (alt) | Status | Migration |
+|---|---|---|
+| `storeId` | **entfernt** | Ein Alt-Knoten mit `storeId`+`path` wird beim Öffnen im Editor verlustfrei nach `writeTo = {kind:"store", path:<storeId>, subPath:{kind:"literal", value:<path>}}` migriert; beim Speichern werden die Alt-Felder nicht mehr erzeugt. Die Runtime führt dieselbe Migration für alt-deployte Configs durch. |
+| `path` | **entfernt** | Siehe `storeId` — wird zum `subPath` des migrierten `writeTo`. |
 
 ### Inline-Hilfe (HTML)
 
@@ -110,14 +119,21 @@ das Backend bildet sie auf die Schieberegler-Darstellung ab. Details:
 - **Event-Frequenz.** Der Slider emittiert `change`-Events kontinuierlich während
   des Ziehens. Flussdämpfung (Debounce/Throttle) ist Aufgabe des verdrahteten
   Flows, nicht des Knotens.
+- **Write-Back (P204 / ADR 0027).** `value` liest, `writeTo` schreibt. Ist ein
+  `writeTo`-Ziel gesetzt, persistiert die Runtime den Slider-Wert **zusätzlich**
+  zum `change`-Event (additiv): Store per-client + SSE-Re-Render, Flow/Global
+  server-seitig. Ohne Submit-Geste schreibt der Slider immer bei `change`. Der
+  geschriebene Wert ist ein numerischer String (Sondermodell — der Slider hat
+  keinen Textwert).
 
 ## Referenzen
 
 - [layout.md](../concepts/layout.md) — Platzierungsfelder und Presets
-- [stores.md](../concepts/stores.md) — Binding-Arten
+- [stores.md](../concepts/stores.md) — Binding-Arten; Ziel eines `writeTo=store`
 - [inputs.md](../concepts/inputs.md) — `msg.payload`- und `msg.ui.patch`-Protokoll
 - [events.md](../concepts/events.md) — Event-Format und Output-Ports
 - [theming.md](../concepts/theming.md) — Design-Tokens
+- [ADR 0027](../../adr/0027-input-value-binding-is-bidirectional-value-read-writeto-write.md) — `value` liest, `writeTo` schreibt
 
 ## Offene Punkte
 

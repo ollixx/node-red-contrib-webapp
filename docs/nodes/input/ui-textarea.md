@@ -39,7 +39,9 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
 | `label` | „Label" | Textfeld | **ja** | Beschriftung des Texteingabefeldes. Wird als Feld-Label über dem Textarea angezeigt. |
-| `value` | „Value Path" | typedInput (alle Binding-Arten) | **ja** | Bindbare Quelle des Textinhalts. Unterstützt alle Binding-Arten: `literal`, `state`, `store`, `query`, `routeParam`, `msg`, `flow`, `global`, `jsonata`, `env`. Details: [stores.md](../concepts/stores.md). |
+| `value` | „Value Path" | typedInput (alle Binding-Arten) | **ja** | Bindbare **Lese**-Quelle des Textinhalts. Unterstützt alle Binding-Arten: `literal`, `state`, `store`, `query`, `routeParam`, `msg`, `flow`, `global`, `jsonata`, `env`. Details: [stores.md](../concepts/stores.md). |
+| `writeTo` | „Write To" | typedInput (**nur schreibbare** Arten: Store/Flow/Global, P204) | optional | Bindbares **Schreib**-Ziel (ADR 0027). Nur `store`/`flow`/`global`. Eine Textarea ist **text-artig** und honoriert den `writeTrigger`: `submit` schreibt beim Verlassen des Feldes (Blur), `change` bei jeder Eingabe. Store per-client + SSE-Re-Render; Flow/Global server-seitig. |
+| `writeTrigger` | „Write Trigger" | SelectBox (`change` / `submit`) | optional | Default `submit` (= Blur). `change` schreibt bei jeder Eingabe. |
 | `placeholder` | „Placeholder" | Textfeld | optional | Platzhaltertext, der angezeigt wird, wenn das Feld leer ist. |
 | `rows` | „Rows" | Zahlfeld (≥ 1) | optional | Anzahl der sichtbaren Textzeilen (Höhe des Feldes). Wenn nicht gesetzt, verwendet das Backend seinen Standard-Default. |
 | `maxLength` | „Max Length" | Zahlfeld (≥ 1) | optional | Maximale Anzahl erlaubter Zeichen. Wenn gesetzt, wird ein Zeichenzähler eingeblendet; Eingaben über die Grenze hinaus werden verhindert. |
@@ -54,6 +56,13 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 | `row` / `col` | „Row" / „Col" | Zahlfeld (≥ 1) | optional | Startposition im Grid-Layout (1-basiert). |
 | `colSize` / `rowSize` | „Col Span" / „Row Span" | Zahlfeld (≥ 1) | optional | Spalten-/Zeilenspanne im Grid-Layout. |
 | `layoutX` / `layoutY` | „X" / „Y" | Zahlfeld | optional | Pixelkoordinaten im Absolute-Layout. |
+
+### Entfernte Felder (migriert, ADR 0027)
+
+| Feld (alt) | Status | Migration |
+|---|---|---|
+| `storeId` | **entfernt** | Ein Alt-Knoten mit `storeId`+`path` wird beim Öffnen im Editor verlustfrei nach `writeTo = {kind:"store", path:<storeId>, subPath:{kind:"literal", value:<path>}}` migriert; beim Speichern werden die Alt-Felder nicht mehr erzeugt. Die Runtime führt dieselbe Migration für alt-deployte Configs durch. |
+| `path` | **entfernt** | Siehe `storeId` — wird zum `subPath` des migrierten `writeTo`. |
 
 ### Inline-Hilfe (HTML)
 
@@ -109,18 +118,24 @@ das Backend bildet sie auf die Textarea-Darstellung ab. Details:
 - **Zeichenzähler.** Wenn `maxLength` gesetzt ist, zeigt das Feld einen
   Zeichenzähler (z. B. „43 / 200"). Die Eingabe wird bei Erreichen der
   Grenze verhindert.
-- **Submit-Geste.** Die `submit`-Geste (Strg+Enter) ist neben der normalen
-  Zeilenumbruch-Eingabe (Enter) verfügbar, damit mehrzeilige Texte komfortabel
-  eingegeben werden können, ohne versehentlich ein Submit auszulösen.
+- **Submit-Geste = Blur.** Bei einer Textarea fügt Enter einen Zeilenumbruch ein;
+  die Submit-Geste (für `writeTrigger=submit` und das `submit`-verwandte
+  Write-Back) ist daher das **Verlassen des Feldes** (Blur/`focusout`).
+- **Write-Back (P204 / ADR 0027).** `value` liest, `writeTo` schreibt. Ist ein
+  `writeTo`-Ziel gesetzt, persistiert die Runtime den Text **zusätzlich** zum
+  `change`-Event (additiv, keine Verdrahtung): bei `writeTrigger=submit` beim Blur,
+  bei `change` bei jeder Eingabe. Store per-client + SSE-Re-Render; Flow/Global
+  server-seitig ohne Auto-Re-Render.
 
 ## Referenzen
 
 - [layout.md](../concepts/layout.md) — Platzierungsfelder und Presets
-- [stores.md](../concepts/stores.md) — Binding-Arten
+- [stores.md](../concepts/stores.md) — Binding-Arten; Ziel eines `writeTo=store`
 - [inputs.md](../concepts/inputs.md) — `msg.payload`- und `msg.ui.patch`-Protokoll
 - [events.md](../concepts/events.md) — Event-Format und Output-Ports
 - [theming.md](../concepts/theming.md) — Design-Tokens
 - [`ui-input`](ui-input.md) — Alternative für einzeilige Texteingabe
+- [ADR 0027](../../adr/0027-input-value-binding-is-bidirectional-value-read-writeto-write.md) — `value` liest, `writeTo` schreibt
 
 ## Offene Punkte
 
