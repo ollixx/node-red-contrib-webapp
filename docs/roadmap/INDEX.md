@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P203** — aspects/editor — Input-Write-Back-Fundament: neues `writeTo`-Binding (Store/Flow/Global) + `writeTrigger` (change|submit, Default submit) symmetrisch zu `value`; Runtime persistiert die Nutzeränderung; ersetzt totes storeId/path/valuePath — bewiesen an ui-input — *ADR 0027; Owner 2026-07-08* — [P203](aspects/editor/P203-input-writeto-write-target-binding-foundation.md)
 - **P204** — aspects/editor — Rollout `writeTo`/`writeTrigger` + Write-Back auf select/checkbox/switch/textarea/slider/radio/datepicker + je Node-Tests + Doku — *ADR 0027; dep P203* — [P204](aspects/editor/P204-input-writeto-rollout-remaining-controls.md)
 
 
@@ -89,11 +88,11 @@ open the folder for the full history.
 | aspects/docs | 1 |
 | aspects/runtime | 7 |
 | aspects/state | 8 |
-| aspects/editor | 20 |
+| aspects/editor | 21 |
 | schema | 5 |
 | aspects/rendering | 13 |
 | aspects/foundation | 5 |
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 203 done, 2 open, 8 deferred.**
+**Total: 204 done, 1 open, 8 deferred.**
