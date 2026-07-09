@@ -18,7 +18,6 @@
       "Write(//Users/ollix/repos/node-red-contrib-webapp/**)"
     ],
     "deny": [
-      "Read(//Users/ollix/repos/node-red-contrib-webapp/.node-red-dev/flows.json)",
       "Edit(//Users/ollix/repos/node-red-contrib-webapp/.node-red-dev/flows.json)",
       "Write(//Users/ollix/repos/node-red-contrib-webapp/.node-red-dev/flows.json)"
     ]

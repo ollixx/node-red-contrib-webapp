@@ -23,7 +23,7 @@ Do not read `prd.md` or `docs/implementation-plan.md` unless explicitly instruct
 3. Never overwrite user changes unless explicitly asked.
 4. Minimal-invasive patches only — no unrequested reformatting or restructuring.
 5. Flow files — `examples/customers-crud/flow.json` is **generated** by `pnpm gen:example`. Do not hand-edit it. After any phase that renames or adds node fields, run `pnpm gen:example` as the final step. See `.ai/instructions/flow-files.instructions.md`.
-   **`.node-red-dev/flows.json` is the owner's personal dev environment and is completely off-limits for agents.** Never read, write, or regenerate it — not even via `pnpm gen:example`. Changes to the dev flows are the owner's responsibility alone.
+   **`.node-red-dev/flows.json` is the owner's personal dev environment. Agents MAY READ it** (owner-authorised 2026-07-08 — e.g. to diagnose a flow the owner points at) **but must NEVER write, edit, or regenerate it** — not even via `pnpm gen:example`. Changing the dev flows is the owner's responsibility alone.
 6. Before any new code: commit existing uncommitted changes with a meaningful message.
 7. Before marking a phase done: run `pnpm test` and `pnpm exec playwright test`. Both must pass.
 7a. **Node tests follow `.ai/agents/node-testing.md`.** For any phase that builds or changes a `ui-*` node, the node's tests are written **fresh** to that standard (unit + Playwright, outcome-based) and the node's **old tests are discarded** — this does **not** apply to cross-cutting/feature tests. A "renders without crashing" / DOM-presence-only test is never acceptable, and a per-node test-catalogue `.md` is kept current.

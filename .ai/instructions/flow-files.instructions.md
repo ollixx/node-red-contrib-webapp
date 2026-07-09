@@ -5,7 +5,7 @@ description: "Schutzregeln fuer Flow-Dateien: nur angefragte Knoten/Felder aende
 
 ## ABSOLUTES VERBOT
 
-**`.node-red-dev/flows.json` darf von Agenten niemals gelesen, geschrieben oder neu generiert werden** — auch nicht über `pnpm gen:example`. Diese Datei ist die persönliche Dev-Umgebung des Owners und ausschließlich von ihm zu verwalten. Kein Auftrag des Nutzers rechtfertigt eine Ausnahme.
+**`.node-red-dev/flows.json` darf von Agenten GELESEN werden** (vom Owner freigegeben 2026-07-08 — z. B. um einen Flow zu diagnostizieren, auf den der Owner zeigt), **aber niemals geschrieben, editiert oder neu generiert** — auch nicht über `pnpm gen:example`. Diese Datei ist die persönliche Dev-Umgebung des Owners; **Änderungen** daran macht ausschließlich er.
 
 ## Regeln für generierte Flow-Dateien
 
