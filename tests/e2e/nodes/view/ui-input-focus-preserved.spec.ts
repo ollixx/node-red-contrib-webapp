@@ -6,9 +6,11 @@ import { WebappPage } from "../../../helpers/webapp-page";
 
 /**
  * Owner (2026-07-10): with writeTrigger=change the store update pushes a fresh
- * snapshot over SSE on every keystroke; the client morph replaced the focused
- * <sl-input> → focus (and cursor) were lost, making typing impossible. A
- * snapshot apply must PRESERVE focus + caret on the control the user is editing.
+ * snapshot over SSE on every keystroke; the client morph disturbed the focused
+ * <sl-input> — focus was lost and, more insidiously, the caret jumped to 0 so
+ * "hello" typed as "olleh". Typing into a bound input must be lossless: the
+ * focused control's DOM node (and its caret) survive the re-render untouched
+ * while sibling views still update.
  */
 
 test.describe("ui-input keeps focus + caret across a store-driven re-render", () => {
@@ -16,10 +18,10 @@ test.describe("ui-input keeps focus + caret across a store-driven re-render", ()
         await resetFlow(request);
     });
 
-    test("typing with writeTrigger=change does not steal focus", async ({ page, request }) => {
+    test("sequential typing with writeTrigger=change is lossless (caret not reset)", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "fcApp", root: "fcApp" })
-            .node("ui-store", { id: "fcStore", parent: "fcApp", statePath: "e", initialValue: JSON.stringify({ name: "A" }) })
+            .node("ui-store", { id: "fcStore", parent: "fcApp", statePath: "e", initialValue: JSON.stringify({ name: "" }) })
             .node("ui-input", {
                 id: "fcInput",
                 parent: "fcApp",
@@ -41,36 +43,27 @@ test.describe("ui-input keeps focus + caret across a store-driven re-render", ()
 
         const input = page.locator("sl-input");
         await expect(input).toBeVisible();
-
-        // Give the field real focus, then simulate a keystroke (value + sl-input,
-        // the per-keystroke event) and place the caret at the end.
         await input.click();
-        await expect.poll(() => page.evaluate(() => (document.activeElement && document.activeElement.tagName || "").toLowerCase())).toBe("sl-input");
 
-        await page.evaluate(() => {
-            const el = document.querySelector("sl-input") as (HTMLElement & { value: string; setSelectionRange?: (a: number, b: number) => void }) | null;
-            if (el) {
-                el.value = "AB";
-                if (el.setSelectionRange) { try { el.setSelectionRange(2, 2); } catch { /* ignore */ } }
-                el.dispatchEvent(new CustomEvent("sl-input", { bubbles: true, composed: true }));
-            }
+        // Type real characters one at a time; each triggers a store write + SSE
+        // morph. A caret reset would scramble the order ("hello" → "olleh").
+        for (const ch of ["h", "e", "l", "l", "o"]) {
+            await page.keyboard.type(ch);
+            await page.waitForTimeout(120);
+        }
+
+        // The value landed in order — caret was preserved across every morph.
+        const value = await page.evaluate(() => {
+            const el = document.querySelector("sl-input") as (HTMLElement & { value: string }) | null;
+            return el ? el.value : null;
         });
+        expect(value).toBe("hello");
 
-        // The round-trip completed once the store-bound text reflects the new value
-        // — that is exactly the morph that used to steal focus.
-        await expect(webapp.root().locator(".webapp-text")).toContainText("AB", { timeout: 5000 });
+        // Focus is still on the input.
+        const activeTag = await page.evaluate(() => (document.activeElement && document.activeElement.tagName || "").toLowerCase());
+        expect(activeTag).toBe("sl-input");
 
-        // Focus must STILL be on the input after that re-render (was the bug).
-        // Poll to absorb the rAF-deferred focus restore.
-        await expect
-            .poll(() => page.evaluate(() => (document.activeElement && document.activeElement.tagName || "").toLowerCase()), { timeout: 3000 })
-            .toBe("sl-input");
-
-        // And the caret is preserved at the end (position 2), not reset.
-        const caret = await page.evaluate(() => {
-            const el = document.querySelector("sl-input") as (HTMLElement & { selectionStart?: number }) | null;
-            return el && typeof el.selectionStart === "number" ? el.selectionStart : null;
-        });
-        expect(caret === null || caret === 2).toBeTruthy();
+        // And the store-bound sibling view reflects the final value (the morph ran).
+        await expect(webapp.root().locator(".webapp-text")).toContainText("hello", { timeout: 5000 });
     });
 });

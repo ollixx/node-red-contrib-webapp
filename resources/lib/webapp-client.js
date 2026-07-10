@@ -182,9 +182,42 @@
     function morph(target, html) {
         const next = document.createElement("div");
         next.innerHTML = html;
+        morphChildren(target, next);
+    }
 
+    // Shallow-by-default child morph, with ONE exception: never replace the element
+    // the user is actively editing (or an ancestor of it). Replacing it destroys
+    // focus AND resets the caret — with writeTrigger=change that turns "hello" into
+    // "olleh" as each keystroke re-renders and drops the caret to 0. When a changed
+    // subtree contains the focused control we recurse into it so siblings (e.g. a
+    // store-bound text) still update while the focused element's own DOM node — and
+    // thus its caret — survives untouched. Its value already reflects what the user
+    // typed, so leaving it is correct.
+    // A control with a text CARET (where replacing the node loses the cursor). Only
+    // these must be preserved across a morph — a focused button/anchor/checkbox/
+    // select has no caret and MUST still re-render (e.g. a clicked list row taking
+    // its selected class), so it is NOT preserved.
+    function isCaretControl(el) {
+        if (!el || !el.tagName) {
+            return false;
+        }
+        const t = el.tagName.toLowerCase();
+        if (t === "sl-input" || t === "sl-textarea" || t === "textarea") {
+            return true;
+        }
+        if (t === "input") {
+            const it = (el.getAttribute("type") || "text").toLowerCase();
+            return it !== "checkbox" && it !== "radio" && it !== "button" && it !== "submit" && it !== "range";
+        }
+        return false;
+    }
+
+    function morphChildren(target, next) {
         const oldNodes = Array.prototype.slice.call(target.children);
         const newNodes = Array.prototype.slice.call(next.children);
+        const active = document.activeElement && root.contains(document.activeElement) && isCaretControl(document.activeElement)
+            ? document.activeElement
+            : null;
 
         for (let i = 0; i < newNodes.length; i++) {
             const newNode = newNodes[i];
@@ -195,9 +228,26 @@
                 continue;
             }
 
-            if (oldNode.outerHTML !== newNode.outerHTML) {
-                target.replaceChild(newNode.cloneNode(true), oldNode);
+            if (oldNode.outerHTML === newNode.outerHTML) {
+                continue;
             }
+
+            // The focused control itself changed (e.g. its value attribute) — leave
+            // its DOM node in place; the live value is already what the user typed.
+            if (active && oldNode === active) {
+                continue;
+            }
+
+            // A changed subtree that CONTAINS the focused control: recurse so we
+            // update its other children but never re-create the focused element.
+            // Only safe when the wrapper's own tag matches (value-only change); a
+            // tag change falls through to a full replace.
+            if (active && oldNode.contains(active) && oldNode.tagName === newNode.tagName) {
+                morphChildren(oldNode, newNode);
+                continue;
+            }
+
+            target.replaceChild(newNode.cloneNode(true), oldNode);
         }
 
         for (let j = oldNodes.length - 1; j >= newNodes.length; j--) {
@@ -338,7 +388,7 @@
         // the very control the user is editing, which would drop focus and reset the
         // caret (typing became impossible). Capture the focused control's node id +
         // text selection now; restore them after the morph below.
-        const activeEl = document.activeElement && root.contains(document.activeElement)
+        const activeEl = document.activeElement && root.contains(document.activeElement) && isCaretControl(document.activeElement)
             ? document.activeElement
             : null;
         let focusNodeId = null;
@@ -400,8 +450,15 @@
                     try { focusEl.focus({ preventScroll: true }); }
                     catch (_e) { try { focusEl.focus(); } catch (_e2) { /* ignore */ } }
                 }
-                if (caretStart !== null && focusEl && typeof focusEl.setSelectionRange === "function") {
-                    try { focusEl.setSelectionRange(caretStart, caretEnd === null ? caretStart : caretEnd); }
+                // Only when we actually captured a numeric caret. NOTE: sl-input's
+                // host exposes NO selectionStart (it lives on the inner input), so
+                // caretStart is `undefined` there — calling setSelectionRange with it
+                // would RESET the caret to 0 (turning "hello" into "olleh"). The
+                // recursive morph already keeps the focused node (and thus its caret)
+                // intact, so this branch is a no-op for sl-input and only helps a
+                // plain <input>/<textarea> that genuinely got replaced.
+                if (typeof caretStart === "number" && focusEl && typeof focusEl.setSelectionRange === "function") {
+                    try { focusEl.setSelectionRange(caretStart, typeof caretEnd === "number" ? caretEnd : caretStart); }
                     catch (_e) { /* control does not support caret */ }
                 }
             };
