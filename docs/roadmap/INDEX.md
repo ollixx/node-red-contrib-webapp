@@ -27,7 +27,7 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-_No open work — the roadmap is drained. New work is added here as packages are authored._
+- **P207** — aspects/layout — order-Default = Canvas-y: leeres `order` übernimmt die Node-RED-y-Position als Reihenfolge (visuelle = gerenderte Anordnung); explizit sortiert vor y-Fallback (Mischen ok) — *Owner-Feature 2026-07-10* — [P207](aspects/layout/P207-order-defaults-to-canvas-y.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -95,4 +95,4 @@ open the folder for the full history.
 | aspects/layout | 3 |
 | aspects/app-model | 1 |
 
-**Total: 206 done, 0 open, 8 deferred.**
+**Total: 206 done, 1 open, 8 deferred.**
