@@ -332,6 +332,30 @@
     function applySnapshot(snapshot) {
         currentSnapshot = snapshot;
         location = snapshot.location;
+
+        // Preserve focus + caret across the re-render. A store-driven morph — e.g.
+        // an input with writeTrigger=change persisting on every keystroke — replaces
+        // the very control the user is editing, which would drop focus and reset the
+        // caret (typing became impossible). Capture the focused control's node id +
+        // text selection now; restore them after the morph below.
+        const activeEl = document.activeElement && root.contains(document.activeElement)
+            ? document.activeElement
+            : null;
+        let focusNodeId = null;
+        let caretStart = null;
+        let caretEnd = null;
+        if (activeEl && activeEl.closest) {
+            const wrap = activeEl.closest("[data-webapp-node]");
+            if (wrap) {
+                focusNodeId = wrap.getAttribute("data-webapp-node");
+                try {
+                    caretStart = activeEl.selectionStart;
+                    caretEnd = activeEl.selectionEnd;
+                }
+                catch (_e) { /* not a text-caret control (select/checkbox/…) */ }
+            }
+        }
+
         const rendered = renderSnapshot(snapshot);
 
         const gridEl = root.querySelector(".webapp-grid");
@@ -355,6 +379,39 @@
         // P53: re-stamp interaction state on the freshly rendered markup so a
         // store-driven re-render does not wipe a prior show/hide/enable/disable.
         applyInteractionOverlay();
+
+        // Restore focus + caret onto the re-rendered control (see the capture at
+        // the top of this function). The clone is a fresh element, so focus/caret
+        // were lost by the morph; re-apply them to the node with the same id.
+        // Deferred to the next frame: a freshly-morphed <sl-input> renders its inner
+        // input asynchronously (Lit), so a synchronous focus() on the host would hit
+        // an element with no focusable inner control yet.
+        if (focusNodeId) {
+            const restoreFocus = function () {
+                const wrap = root.querySelector('[data-webapp-node="' + cssEscapeAttr(focusNodeId) + '"]');
+                if (!wrap) {
+                    return;
+                }
+                const control = (wrap.matches && wrap.matches("input,textarea,select,sl-input,sl-textarea,sl-select"))
+                    ? wrap
+                    : (wrap.querySelector && wrap.querySelector("sl-input,sl-textarea,sl-select,input,textarea"));
+                const focusEl = control || wrap;
+                if (focusEl && document.activeElement !== focusEl) {
+                    try { focusEl.focus({ preventScroll: true }); }
+                    catch (_e) { try { focusEl.focus(); } catch (_e2) { /* ignore */ } }
+                }
+                if (caretStart !== null && focusEl && typeof focusEl.setSelectionRange === "function") {
+                    try { focusEl.setSelectionRange(caretStart, caretEnd === null ? caretStart : caretEnd); }
+                    catch (_e) { /* control does not support caret */ }
+                }
+            };
+            if (typeof requestAnimationFrame === "function") {
+                requestAnimationFrame(restoreFocus);
+            }
+            else {
+                restoreFocus();
+            }
+        }
 
         // P100 regression workaround: apply countdown="ltr" to sl-alert elements after
         // their custom element's first LitElement render completes. The Shoelace sl-alert
