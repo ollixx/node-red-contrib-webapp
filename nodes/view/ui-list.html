@@ -324,9 +324,17 @@ Zeile <code>"?"</code>. Die String-Kurzform setzt genau dieses Feld.</li>
 in <code>badgeVariant</code>.</li>
 <li><code>icon</code> — führendes Icon (Icon-Name).</li>
 </ul>
-<p>Gemischte Arrays (Strings + Objekte) rendern. <strong>Kein implizites Mapping</strong> —
-Zusatzfelder werden ignoriert; bringe deine Daten vorher in diese Form. Nicht-Array-Wurzel
-→ leere Liste (kein Crash).</p>
+<p>Gemischte Arrays (Strings + Objekte) rendern. Nicht-Array-Wurzel → leere Liste (kein Crash).</p>
+<h4>Item-Feld-Mapping (P208)</h4>
+<p>Statt die Daten vorher zu reshapen, kannst du <strong>rohe Entities direkt binden</strong> und
+festlegen, <strong>welches Feld</strong> das Label/Value/Id/Icon ist:
+<code>Label Field</code>/<code>Value Field</code>/<code>Id Field</code>/<code>Icon Field</code>.
+Leer/Default = die historischen Namen <code>label</code>/<code>value</code>/<code>id</code>/<code>icon</code>
+(rückwärtskompatibel). Beispiel: eine Entity <code>{_id, name, city}</code> mit
+<code>Label Field = name</code> und <code>Id Field = _id</code> rendert <code>name</code> als Zeilentext,
+<code>_id</code> als <code>rowId</code>. <strong>Nur flache Feldnamen</strong> (kein <code>a.b</code>-Pfad).
+<code>itemClick.row</code> trägt weiterhin die <strong>volle</strong> Entity — nur die abgeleiteten
+Label/Id/Value/Icon nutzen das Mapping.</p>
 <h4>Single-Select (P173)</h4>
 <p><b>Auswählbar</b> (<code>selectable</code>, Checkbox, Default aus) schaltet Single-Select ein:
 ein Klick auf eine Zeile markiert sie sichtbar als ausgewählt. Bei aus ist die Liste rein

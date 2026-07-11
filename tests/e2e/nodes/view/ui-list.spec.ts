@@ -767,3 +767,141 @@ test.describe("ui-list — P202 visible=false removes the node from the DOM (ADR
         await expect(page.locator("li.webapp-list-item")).toHaveCount(2);
     });
 });
+
+/**
+ * P208 — ui-list: item-field mapping (labelField/valueField/idField/iconField).
+ *
+ * A ui-list binds RAW query entities directly — configure WHICH entity field is
+ * the label/value/id/icon instead of requiring shaped {id,label,value,icon}
+ * items. Absent ⇒ the historical defaults (label/value/id/icon) → existing
+ * shaped-item lists render unchanged. FLAT field names only in this stage.
+ * `itemClick.row` keeps the FULL raw entity; only the derived label/id/value/
+ * icon use the mapping. idField feeds rowId (itemClick), selectedId marking and
+ * the itemSelect roundtrip consistently.
+ */
+test.describe("ui-list — item-field mapping (P208)", () => {
+    test.afterEach(async ({ request }) => {
+        await resetFlow(request);
+    });
+
+    // Raw entities: no `.label`/`.id` — the label lives in `name`, the id in `_id`.
+    const RAW_ENTITIES = [
+        { _id: "e1", name: "Alpha" },
+        { _id: "e2", name: "Bravo" }
+    ];
+
+    test("FM01 — labelField/idField render raw-entity rows (measured DOM text)", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "listFmApp", root: "listFmApp" })
+            .node("ui-list", {
+                id: "listFmNode",
+                items: { kind: "literal", value: RAW_ENTITIES },
+                labelField: "name",
+                idField: "_id"
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "listFmApp");
+        await webapp.navigate("/");
+
+        const items = page.locator("ul.webapp-list li.webapp-list-item");
+        await expect(items).toHaveCount(2);
+        // MEASURED DOM TEXT — the rows render the mapped `name` field, not "?".
+        await expect(items.nth(0)).toHaveText("Alpha");
+        await expect(items.nth(1)).toHaveText("Bravo");
+    });
+
+    test("FM02 — itemClick rowId comes from idField; row stays the FULL raw entity", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "listFmClickApp", root: "listFmClickApp" })
+            .node("ui-list", {
+                id: "listFmClickNode",
+                items: { kind: "literal", value: RAW_ENTITIES },
+                labelField: "name",
+                idField: "_id",
+                events: JSON.stringify(["itemClick"])
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "listFmClickApp");
+        await webapp.navigate("/");
+
+        const eventPromise = webapp.interceptNextEvent();
+        await page.locator("ul.webapp-list li.webapp-list-item a.webapp-link").first().click();
+
+        const body = await eventPromise;
+        expect(body.event).toBe("itemClick");
+        expect(body.sourceId).toBe("listFmClickNode");
+        const params = body.params as Record<string, unknown>;
+        // rowId derives from idField (_id), NOT the absent `.id`.
+        expect(params.rowId).toBe("e1");
+        // row is the UNCHANGED full raw entity (no reshape).
+        const row = params.row as Record<string, unknown>;
+        expect(row).toEqual({ _id: "e1", name: "Alpha" });
+    });
+
+    test("FM03 — selectable + idField: selectedId marks the matching raw-entity row", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "listFmSelApp", root: "listFmSelApp" })
+            .node("ui-store", {
+                id: "listFmSelStore",
+                statePath: "sel",
+                initialValue: JSON.stringify({ id: "e2" })
+            })
+            .node("ui-list", {
+                id: "listFmSelNode",
+                items: { kind: "literal", value: RAW_ENTITIES },
+                labelField: "name",
+                idField: "_id",
+                selectable: true,
+                selectedId: { kind: "state", path: "sel.id" }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "listFmSelApp");
+        await webapp.navigate("/");
+
+        // The row whose _id === selectedId ("e2" → Bravo) is the single selected row.
+        await expect(page.locator("ul.webapp-list li.webapp-list-item--selected")).toHaveCount(1);
+        await expect(page.locator("ul.webapp-list li[aria-selected='true']")).toHaveText("Bravo");
+    });
+
+    test("FM04 — backward-compat: shaped items with NO *Field options render via defaults", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "listFmBcApp", root: "listFmBcApp" })
+            .node("ui-list", {
+                id: "listFmBcNode",
+                // classic shaped items — no labelField/idField set → defaults apply.
+                items: { kind: "literal", value: [
+                    { id: "s-1", label: "Legacy One" },
+                    { id: "s-2", label: "Legacy Two" }
+                ] },
+                events: JSON.stringify(["itemClick"])
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "listFmBcApp");
+        await webapp.navigate("/");
+
+        const items = page.locator("ul.webapp-list li.webapp-list-item");
+        await expect(items).toHaveCount(2);
+        await expect(items.nth(0)).toHaveText("Legacy One");
+        await expect(items.nth(1)).toHaveText("Legacy Two");
+
+        // rowId still comes from the default `id` field.
+        const eventPromise = webapp.interceptNextEvent();
+        await page.locator("ul.webapp-list li.webapp-list-item a.webapp-link").first().click();
+        const body = await eventPromise;
+        const params = body.params as Record<string, unknown>;
+        expect(params.rowId).toBe("s-1");
+        expect((params.row as Record<string, unknown>).label).toBe("Legacy One");
+    });
+});
