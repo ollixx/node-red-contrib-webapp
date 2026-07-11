@@ -59,6 +59,29 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 | `displayValue` | „Value-Anzeige" | SelectBox (Enum) | optional | Wie der `value` einer Zeile **dargestellt** wird: `none` („nicht anzeigen" — `value` bleibt rein Daten, wird nur im Event geliefert), `secondary` („sekundär darstellen" — trailing Text), `badge` („als Badge" — `value` als Badge-Pille, z. B. „Anzahl"/„Preis"). Default: `none`. Betrifft nur die **Anzeige**; `value` wird unabhängig davon stets im Event mitgeliefert. **Node-weit** (gilt für alle Zeilen gleich). |
 | `badgeVariant` | „Badge Variant" | Variant-SelectBox | optional | **Nur sichtbar, wenn `displayValue = badge`.** Semantische Farbrolle der Badge — `SEVERITY_VARIANTS` (`primary`/`success`/`warning`/`danger`/`neutral`/`info`), identisch zu [ui-badge](../feedback/ui-badge.md). Default: `neutral`. Node-weit (eine Farbe für alle Badges; pro-Zeile-Farbe wäre Folgearbeit). |
 
+### Gruppe „Item-Feld-Mapping" (P208)
+
+Bestimmt, **welches Feld einer rohen Entity** das Label/Value/Id/Icon einer Zeile
+ist — damit eine ui-list **rohe Query-Entities direkt binden** kann, ohne
+Reshape/Function und ohne DB-Projection. Alle vier sind einfache Textfelder mit
+sichtbarem Default; **absent ⇒ die historischen fest codierten Namen**
+(`label`/`value`/`id`/`icon`), sodass bestehende geformte Item-Listen
+**unverändert** rendern. **Nur die abgeleiteten** Label/Id/Value/Icon nutzen das
+Mapping — `items` bleibt die rohe Liste und `itemClick.row` trägt weiterhin die
+**volle** Entity (kein Reshape).
+
+| Feld | Label | Editor-Typ | Default | Wirkung |
+|---|---|---|---|---|
+| `labelField` | „Label Field" | Textfeld | `label` | Angezeigter Zeilentext = `row[labelField]`. Fehlt das Feld/leer → „?" für **diese** Zeile (P104-Hinweis). |
+| `valueField` | „Value Field" | Textfeld | `value` | Anwendungswert der Zeile = `row[valueField]`; stets im Event (`row.value` bleibt der volle-Entity-Wert), Anzeige über `displayValue`. |
+| `idField` | „Id Field" | Textfeld | `id` | `rowId` = `row[idField]`. **Derselbe Schlüssel** speist `itemClick.rowId`, die `selectedId`-Markierung **und** den `itemSelect`-Roundtrip (Konsistenz). Fehlt → Array-Index. |
+| `iconField` | „Icon Field" | Textfeld | `icon` | Leading-Icon = `row[iconField]` (bare String **oder** `{library?,name}`). |
+
+> **Nur flache Feldnamen** in dieser Stufe — **kein** Dot-Pfad (`a.b`). Für
+> verschachtelte Entities vorerst reshapen (ui-repeat/Function) oder auf einen
+> späteren Dot-Pfad-Ausbau warten. Kein Bezug zu DB-Projection: das Shaping
+> gehört an die Liste, nicht an die Query.
+
 ### Gruppe „Auswahl"
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |

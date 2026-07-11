@@ -49,6 +49,32 @@ Umgesetzt in `tests/e2e/nodes/view/ui-list.spec.ts` (`describe` „single-select
 Ergänzende Renderer-Unit-Coverage: `packages/runtime/test/p173-list-single-select-behaviour.test.ts`
 (mapConfig-Pass-through/Migration + Selected-State-Markierung inkl. Index-Fallback-`rowId`).
 
+### Item-Feld-Mapping (P208)
+
+`labelField`/`valueField`/`idField`/`iconField` bestimmen, **welches Feld einer
+rohen Entity** Label/Value/Id/Icon einer Zeile ist. Absent ⇒ Defaults
+`label`/`value`/`id`/`icon` (rückwärtskompatibel, flache Feldnamen). Der
+Serializer liest `row[labelField]`/`row[idField]`/`row[valueField]`/
+`row[iconField]`; `items` bleibt roh und `itemClick.row` trägt die **volle**
+Entity. `idField` speist konsistent `rowId` (itemClick), `selectedId`-Markierung
+und den `itemSelect`-Roundtrip.
+
+Unit-Coverage: `packages/schema/test/schema.test.ts` (P208 — Defaults gesetzt
+wenn absent; explizite Werte übernommen).
+
+Umgesetzt in `tests/e2e/nodes/view/ui-list.spec.ts` (`describe` „item-field mapping (P208)"):
+
+- **FM01** `labelField='name'` + `idField='_id'` auf rohen Entities
+  `[{_id:'e1',name:'Alpha'},{_id:'e2',name:'Bravo'}]` → Zeilen-Labels rendern
+  **gemessen** als „Alpha"/„Bravo" (DOM-Text, kein „?").
+- **FM02** `itemClick` → `params.rowId = 'e1'` (aus `idField`) und `params.row`
+  = die **volle** rohe Entity `{_id:'e1',name:'Alpha'}` (unverändert).
+- **FM03** `selectable` + `idField='_id'`: `selectedId='e2'` markiert die
+  passende rohe-Entity-Zeile (Bravo) — idField-Konsistenz mit der Markierung.
+- **FM04** Rückwärtskompatibel: geformte Items `{id,label}` **ohne** gesetzte
+  *Field-Optionen rendern unverändert (Defaults greifen); `rowId` kommt weiter
+  aus dem Default-`id`-Feld.
+
 ### Basis-Felder (P172, ADR 0015)
 
 - „Allgemein"-Gruppe injiziert (idempotent).

@@ -1840,6 +1840,13 @@ function toComponentDefinitions(components) {
                     // P171: ui-list node-wide value display + badge colour role.
                     ...(component.displayValue !== undefined ? { displayValue: component.displayValue } : {}),
                     ...(component.badgeVariant !== undefined ? { badgeVariant: component.badgeVariant } : {}),
+                    // P208: ui-list item-field mapping → props so the serializer reads
+                    // row[labelField]/row[idField]/row[valueField]/row[iconField]. Absent
+                    // → the serializer's own defaults (label/value/id/icon) apply.
+                    ...(component.labelField !== undefined ? { labelField: component.labelField } : {}),
+                    ...(component.valueField !== undefined ? { valueField: component.valueField } : {}),
+                    ...(component.idField !== undefined ? { idField: component.idField } : {}),
+                    ...(component.iconField !== undefined ? { iconField: component.iconField } : {}),
                     // P173: single-select switch (plain boolean). `selectedId` only goes
                     // into props as a STATIC fallback when no binding resolved (a binding
                     // routes through bind.selectedId → resolvedProps.selectedId above).
@@ -6698,6 +6705,13 @@ const runtimeNodeRegistry = {
             // P171: node-wide value display + badge colour role.
             displayValue: config.displayValue || undefined,
             badgeVariant: config.badgeVariant || undefined,
+            // P208: item-field mapping — WHICH raw-entity field is the label/value/id/
+            // icon of a row. Absent ⇒ the serializer's defaults (label/value/id/icon),
+            // so shaped-item lists are unaffected. Flat field names only in this stage.
+            labelField: config.labelField || undefined,
+            valueField: config.valueField || undefined,
+            idField: config.idField || undefined,
+            iconField: config.iconField || undefined,
             // P173: single-select switch + two-way selectedId binding (analogous to
             // ui-tabs `activeTab`). `selectable` is a plain boolean; `selectedId` is a
             // binding object (a stored binding wins, else a legacy `selectedIdPath`

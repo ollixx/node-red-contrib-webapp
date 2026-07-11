@@ -462,6 +462,12 @@ export interface UiListEditorConfig extends MountableEditorConfig {
     ordered?: boolean;
     displayValue?: "none" | "secondary" | "badge";
     badgeVariant?: (typeof SEVERITY_VARIANTS)[number];
+    // P208: item-field mapping — WHICH raw-entity field is the label/value/id/icon of
+    // a row. Absent ⇒ the schema defaults (label/value/id/icon). Flat names only.
+    labelField?: string;
+    valueField?: string;
+    idField?: string;
+    iconField?: string;
     // P173: single-select. `selectable` turns on selection; `selectedId` is the
     // two-way binding on the selected row's id (mirror of ui-tabs `activeTab`); the
     // legacy `selectedIdPath` plain state path migrates to a state binding.
@@ -1738,6 +1744,12 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         ...(config.ordered === true ? { ordered: true } : {}),
         displayValue: config.displayValue,
         badgeVariant: config.badgeVariant,
+        // P208: item-field mapping — carried through with the schema defaults so a
+        // raw-entity list can bind label/value/id/icon by field name.
+        labelField: config.labelField ?? "label",
+        valueField: config.valueField ?? "value",
+        idField: config.idField ?? "id",
+        iconField: config.iconField ?? "icon",
         // P173: single-select. `selectable` passes through; `selectedId` prefers the
         // canonical binding object, else migrates a legacy `selectedIdPath` plain
         // state path to a state binding (mirror of ui-tabs `activeTab`).

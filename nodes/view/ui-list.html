@@ -46,6 +46,13 @@
                 // P171: node-wide value display (none/secondary/badge) + badge colour.
                 displayValue: { value: "none" },
                 badgeVariant: { value: "neutral" },
+                // P208: item-field mapping — WHICH raw-entity field is the label/value/
+                // id/icon of a row. Visible defaults match the historical hard-coded
+                // names, so shaped-item lists ({id,label,value,icon}) are unaffected.
+                labelField: { value: "label" },
+                valueField: { value: "value" },
+                idField: { value: "id" },
+                iconField: { value: "icon" },
                 // P173: single-select. `selectable` is a plain boolean checkbox.
                 // `selectedId` is the two-way binding OBJECT (mirror of ui-tabs
                 // `activeTab`); there is no #node-input-selectedId element so Node-RED
@@ -199,6 +206,13 @@
                 this.ordered = $("#node-input-ordered").is(":checked");
                 this.displayValue = $("#node-input-displayValue").val();
                 this.badgeVariant = $("#node-input-badgeVariant").val();
+                // P208: persist the item-field mapping (flat field names). Empty input
+                // falls back to the historical default so a blanked field never breaks
+                // an existing shaped-item list.
+                this.labelField = $("#node-input-labelField").val() || "label";
+                this.valueField = $("#node-input-valueField").val() || "value";
+                this.idField = $("#node-input-idField").val() || "id";
+                this.iconField = $("#node-input-iconField").val() || "icon";
                 // P173: persist selectable + selectedId binding object; clear the
                 // legacy path.
                 this.selectable = $("#node-input-selectable").is(":checked");
@@ -248,6 +262,14 @@
             <option value="danger">Danger</option>
         </select>
     </div>
+    <!-- P208: item-field mapping — WHICH raw-entity field is the label/value/id/icon
+         of a row. Defaults (label/value/id/icon) reproduce the historical hard-coded
+         behaviour, so shaped-item lists are unaffected. Flat field names only. -->
+    <hr style="margin: 8px 0;">
+    <div class="form-row"><label for="node-input-labelField">Label Field</label><input type="text" id="node-input-labelField" placeholder="label"></div>
+    <div class="form-row"><label for="node-input-valueField">Value Field</label><input type="text" id="node-input-valueField" placeholder="value"></div>
+    <div class="form-row"><label for="node-input-idField">Id Field</label><input type="text" id="node-input-idField" placeholder="id"></div>
+    <div class="form-row"><label for="node-input-iconField">Icon Field</label><input type="text" id="node-input-iconField" placeholder="icon"></div>
     <!-- P173: single-select — selectable checkbox + two-way selectedId typedInput. -->
     <hr style="margin: 8px 0;">
     <div class="form-row">
@@ -302,9 +324,17 @@ Zeile <code>"?"</code>. Die String-Kurzform setzt genau dieses Feld.</li>
 in <code>badgeVariant</code>.</li>
 <li><code>icon</code> — führendes Icon (Icon-Name).</li>
 </ul>
-<p>Gemischte Arrays (Strings + Objekte) rendern. <strong>Kein implizites Mapping</strong> —
-Zusatzfelder werden ignoriert; bringe deine Daten vorher in diese Form. Nicht-Array-Wurzel
-→ leere Liste (kein Crash).</p>
+<p>Gemischte Arrays (Strings + Objekte) rendern. Nicht-Array-Wurzel → leere Liste (kein Crash).</p>
+<h4>Item-Feld-Mapping (P208)</h4>
+<p>Statt die Daten vorher zu reshapen, kannst du <strong>rohe Entities direkt binden</strong> und
+festlegen, <strong>welches Feld</strong> das Label/Value/Id/Icon ist:
+<code>Label Field</code>/<code>Value Field</code>/<code>Id Field</code>/<code>Icon Field</code>.
+Leer/Default = die historischen Namen <code>label</code>/<code>value</code>/<code>id</code>/<code>icon</code>
+(rückwärtskompatibel). Beispiel: eine Entity <code>{_id, name, city}</code> mit
+<code>Label Field = name</code> und <code>Id Field = _id</code> rendert <code>name</code> als Zeilentext,
+<code>_id</code> als <code>rowId</code>. <strong>Nur flache Feldnamen</strong> (kein <code>a.b</code>-Pfad).
+<code>itemClick.row</code> trägt weiterhin die <strong>volle</strong> Entity — nur die abgeleiteten
+Label/Id/Value/Icon nutzen das Mapping.</p>
 <h4>Single-Select (P173)</h4>
 <p><b>Auswählbar</b> (<code>selectable</code>, Checkbox, Default aus) schaltet Single-Select ein:
 ein Klick auf eine Zeile markiert sie sichtbar als ausgewählt. Bei aus ist die Liste rein

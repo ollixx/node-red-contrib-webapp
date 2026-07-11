@@ -1161,6 +1161,15 @@
                 : (Array.isArray(component.value) ? component.value : []);
             const displayValue = component.props.displayValue ? String(component.props.displayValue) : "none";
             const badgeVariant = component.props.badgeVariant ? String(component.props.badgeVariant) : "neutral";
+            // P208: item-field mapping — WHICH raw-entity field is the label/value/id/
+            // icon. Absent ⇒ the historical hard-coded names, so shaped-item lists render
+            // unchanged. FLAT field names only (no dot-path) in this stage. Only the
+            // DERIVED label/id/value/icon read through the mapping; the row payload
+            // (data-webapp-row → itemClick.row) stays the FULL raw entity.
+            const labelField = component.props.labelField ? String(component.props.labelField) : "label";
+            const valueField = component.props.valueField ? String(component.props.valueField) : "value";
+            const idField = component.props.idField ? String(component.props.idField) : "id";
+            const iconField = component.props.iconField ? String(component.props.iconField) : "icon";
             const src = " data-webapp-source=\"" + escapeAttribute(component.id) + "\"";
             // Events are stored in props.componentEvents (to avoid Zod uiEventName validation).
             const allEvents = Array.isArray(component.props.componentEvents) ? component.props.componentEvents
@@ -1228,13 +1237,17 @@
                 // String shorthand → {label:<string>}. Anything else is read as an
                 // object; the whole element (incl. value) is the event row payload.
                 const row = (typeof item === "string") ? { label: item } : item;
-                const hasLabel = row && typeof row === "object" && typeof row.label === "string" && row.label.length > 0;
+                // P208: the DERIVED label/id/value/icon read through the configured
+                // field mapping (labelField/idField/valueField/iconField). `row` itself
+                // is untouched — data-webapp-row below carries the FULL raw entity.
+                const rawLabel = (row && typeof row === "object") ? row[labelField] : undefined;
+                const hasLabel = typeof rawLabel === "string" && rawLabel.length > 0;
                 // Missing label → "?" for THAT row only (P104 non-displayable hint).
-                const label = hasLabel ? escapeHtml(String(row.label)) : "?";
-                const rowId = (row && typeof row === "object" && row.id !== undefined) ? String(row.id) : String(index);
+                const label = hasLabel ? escapeHtml(String(rawLabel)) : "?";
+                const rowId = (row && typeof row === "object" && row[idField] !== undefined) ? String(row[idField]) : String(index);
                 // `value` is ALWAYS in the event payload (row.value). Its DISPLAY is
                 // node-wide via displayValue.
-                const value = (row && typeof row === "object") ? row.value : undefined;
+                const value = (row && typeof row === "object") ? row[valueField] : undefined;
                 let valueHtml = "";
                 if (value !== undefined && value !== null) {
                     if (displayValue === "secondary") {
@@ -1251,8 +1264,8 @@
                 // Inject webapp-list-item-icon CSS class for spacing by replacing the
                 // first occurrence of class=" in the returned tag (which always starts
                 // with `<sl-icon class="webapp-icon…"`).
-                const rawIconHtml = (row && typeof row === "object" && row.icon !== undefined)
-                    ? renderIconHtml(row.icon, {})
+                const rawIconHtml = (row && typeof row === "object" && row[iconField] !== undefined)
+                    ? renderIconHtml(row[iconField], {})
                     : "";
                 const leadingIcon = rawIconHtml
                     ? rawIconHtml.replace("class=\"webapp-icon", "class=\"webapp-list-item-icon webapp-icon")

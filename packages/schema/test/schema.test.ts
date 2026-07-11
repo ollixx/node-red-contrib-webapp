@@ -959,6 +959,44 @@ describe("P16c navigation and structure nodes", () => {
         expect(result.success).toBe(true);
     });
 
+    it("P208: ui-list item-field mapping defaults to label/value/id/icon when absent", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-list",
+            id: "listFieldsDefault",
+            mount: "route:/customers/content",
+            items: { kind: "state", path: "customers" }
+        });
+
+        expect(result.success).toBe(true);
+        if (result.success && result.data.type === "ui-list") {
+            expect(result.data.labelField).toBe("label");
+            expect(result.data.valueField).toBe("value");
+            expect(result.data.idField).toBe("id");
+            expect(result.data.iconField).toBe("icon");
+        }
+    });
+
+    it("P208: ui-list carries explicit item-field mapping values", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-list",
+            id: "listFieldsExplicit",
+            mount: "route:/customers/content",
+            items: { kind: "state", path: "customers" },
+            labelField: "name",
+            valueField: "city",
+            idField: "_id",
+            iconField: "avatar"
+        });
+
+        expect(result.success).toBe(true);
+        if (result.success && result.data.type === "ui-list") {
+            expect(result.data.labelField).toBe("name");
+            expect(result.data.valueField).toBe("city");
+            expect(result.data.idField).toBe("_id");
+            expect(result.data.iconField).toBe("avatar");
+        }
+    });
+
     it("compiles ui-avatar with src binding and initials fallback", () => {
         const result = validateUiNodeDefinition({
             type: "ui-avatar",
