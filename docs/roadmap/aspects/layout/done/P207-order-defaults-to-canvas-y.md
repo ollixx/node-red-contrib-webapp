@@ -17,7 +17,7 @@ verify: browser
 spec: docs/nodes/concepts/layout.md
 tests: tests/e2e/layout-apps.spec.ts
 dependencies: []
-status: in_progress
+status: done
 ---
 # P207 — order-Default = Canvas-y (leeres order übernimmt die y-Position)
 
@@ -64,3 +64,28 @@ Verhalten dokumentieren.
 - Alle order-tragenden view-Knoten erfassen (die vollständige Liste ist die Menge
   der mapConfigs mit `order: toOptionalNumber(component.order)` in nodes/webapp.js)
   — keinen auslassen, sonst inkonsistente Reihenfolge zwischen Knotentypen.
+
+## Result
+
+- **delivered:** A central `resolveOrder(config)` helper in `nodes/webapp.js` (`toOptionalNumber(config.order)`,
+  falling back to `toOptionalNumber(config.y)` — the raw Node-RED canvas y, NEVER `layoutY`), and swept
+  **all 45** order-bearing mapConfigs from `order: toOptionalNumber(<var>.order)` → `order: resolveOrder(<var>)`
+  (matched to the correct local var per site). Post-sweep `grep -c "order: toOptionalNumber(" nodes/webapp.js`
+  = **0**; `grep -c "order: resolveOrder(" nodes/webapp.js` = **45**. The two legacy `order: index`
+  sites (tab/accordion-section migration synthesis, a different code path) were correctly left untouched.
+  The renderer/registry sort (`order ?? MAX_SAFE_INTEGER`) is unchanged — only the mapped default value
+  of `order` changes, so an absent y still falls to the end there. Docs: a new "`order`-Default (P207):
+  leer ⇒ Canvas-y" section in `docs/nodes/concepts/layout.md` (helper, explicit-wins, the mixed-slot
+  literal semantics with the `order=5` vs `y=120` example), cross-referenced from all 24 per-node `order`
+  field descriptions; fixed the now-stale ui-tab/ui-accordion-section "order-less children sort to the
+  end" wording.
+- **verification (measured, not by tag):** unit `p207-order-defaults-to-canvas-y.test.ts` (8: explicit
+  wins, empty→y, both empty→undefined, layoutY untouched, + ui-text/ui-button mapConfig integration);
+  E2E in `layout-apps.spec.ts` (3 new fixture apps) — **order-less siblings render in canvas-y DOM order,
+  swapping the two nodes' y swaps the rendered order, and an explicit `order=5` sorts before a y=120
+  fallback sibling** — all asserted by DOM order / `boundingBox().y`. Develop: build 0; full unit **1107
+  runtime** + 8 new; **layout E2E 3/3**; full suite **668 passed** (only the pre-existing accordion +
+  flaky ui-tabs, both chipped — no ordering shift in any existing flow); check:specs/links/roadmap + lint green.
+- **notes:** The sweep was the whole risk (miss one → inconsistent ordering between node types); the
+  grep-count-0 gate proves completeness. Committed incrementally (4 commits) for outage-resilience.
+- **cost:** session agent-a82e0e466f53a7729, ~35m.
