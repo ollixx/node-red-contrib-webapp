@@ -17,7 +17,7 @@ verify: browser
 spec: docs/nodes/concepts/layout.md
 tests: tests/e2e/layout-apps.spec.ts
 dependencies: []
-status: pending
+status: in_progress
 ---
 # P207 — order-Default = Canvas-y (leeres order übernimmt die y-Position)
 
