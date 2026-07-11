@@ -6945,6 +6945,9 @@ registerWebappNodes.__test__ = {
     parseParamsObject,
     runtimeNodeRegistry,
     runtimeState,
+    // P207: order default = canvas y when order is empty
+    toOptionalNumber,
+    resolveOrder,
     // P39 / P52: view-node input patch handler + deploy-definition reader
     viewNodePatchInputHandler,
     readDeployDefinitions,
