@@ -27,7 +27,7 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-_No open work — the roadmap is drained. New work is added here as packages are authored._
+- **P208** — nodes/ui-list — Item-Feld-Mapping: `labelField`/`valueField`/`idField`/`iconField` — rohe Entities direkt binden ohne Reshape (Default label/value/id/icon = rückwärtskompatibel) — *Owner-Feature 2026-07-10* — [P208](nodes/ui-list/P208-ui-list-item-field-mapping.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -95,4 +95,4 @@ open the folder for the full history.
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 207 done, 0 open, 8 deferred.**
+**Total: 207 done, 1 open, 8 deferred.**
