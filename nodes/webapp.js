@@ -430,6 +430,16 @@ function toOptionalNumber(value) {
     return value === "" || value === undefined || value === null ? undefined : Number(value);
 }
 
+// P207: a node with an empty `order` field falls back to its raw Node-RED
+// canvas y-position, so the visual arrangement on the canvas becomes the
+// rendered order in the slot. Explicit `order` always wins. `config.y` is the
+// raw canvas y (NOT `layoutY`, which is the absolute-layout field and stays
+// separate/untouched).
+function resolveOrder(config) {
+    const o = toOptionalNumber(config.order);
+    return o !== undefined ? o : toOptionalNumber(config.y);
+}
+
 function collectNodeConfigLayoutProps(source) {
     const row = toOptionalNumber(source.row);
     const col = toOptionalNumber(source.col);
@@ -1256,7 +1266,7 @@ function toComponentDefinitions(components) {
                 id: component.id,
                 kind: "text",
                 mount: component.mount || component.parent,
-                order: toOptionalNumber(component.order),
+                order: resolveOrder(component),
                 bind: {
                     value: getBinding(component.value, literalBinding(component.text || ""))
                 },
@@ -1317,7 +1327,7 @@ function toComponentDefinitions(components) {
                 id: component.id,
                 kind: "button",
                 mount: component.mount || component.parent,
-                order: toOptionalNumber(component.order),
+                order: resolveOrder(component),
                 bind: buttonBind,
                 props: {
                     label: labelProp,
@@ -1341,7 +1351,7 @@ function toComponentDefinitions(components) {
                 id: component.id,
                 kind: "table",
                 mount: component.mount || component.parent,
-                order: toOptionalNumber(component.order),
+                order: resolveOrder(component),
                 footer: component.footer === true || component.footer === "true",
                 bind: {
                     rows: resolveTableRows(component)
@@ -1362,7 +1372,7 @@ function toComponentDefinitions(components) {
                 id: component.id,
                 kind: "container",
                 mount: component.mount || component.parent,
-                order: toOptionalNumber(component.order),
+                order: resolveOrder(component),
                 bind: {},
                 props: {
                     layoutId: component.layout || component.layoutId,
@@ -1401,7 +1411,7 @@ function toComponentDefinitions(components) {
                 id: component.id,
                 kind: "input",
                 mount: component.mount || component.parent,
-                order: toOptionalNumber(component.order),
+                order: resolveOrder(component),
                 bind,
                 props: {
                     label: inputLabelProp,
@@ -1432,7 +1442,7 @@ function toComponentDefinitions(components) {
                 id: component.id,
                 kind: "repeat",
                 mount: component.mount || component.parent,
-                order: toOptionalNumber(component.order),
+                order: resolveOrder(component),
                 bind: itemsBinding ? { items: itemsBinding } : {},
                 props: {
                     // ADR 0025: ui-repeat is TRANSPARENT — NO layoutId, NO variant.
@@ -1461,7 +1471,7 @@ function toComponentDefinitions(components) {
                 id: component.id,
                 kind: "tab",
                 mount: component.mount || component.parent,
-                order: toOptionalNumber(component.order),
+                order: resolveOrder(component),
                 bind: labelBinding ? { label: labelBinding } : {},
                 props: {
                     ...(blankToUndefined(component.icon) ? { icon: component.icon } : {}),
@@ -1486,7 +1496,7 @@ function toComponentDefinitions(components) {
                 // renderer finds the definition by id, never by mount. The definition
                 // therefore never renders on its own.
                 mount: `def:${component.id}`,
-                order: toOptionalNumber(component.order),
+                order: resolveOrder(component),
                 bind: {},
                 props: {
                     ...(blankToUndefined(component.name) ? { name: component.name } : {})
@@ -1514,7 +1524,7 @@ function toComponentDefinitions(components) {
                 id: component.id,
                 kind: "component-instance",
                 mount: component.mount || component.parent,
-                order: toOptionalNumber(component.order),
+                order: resolveOrder(component),
                 bind,
                 props: {
                     definitionId: component.definitionId
@@ -1537,7 +1547,7 @@ function toComponentDefinitions(components) {
                 id: component.id,
                 kind: "accordion-section",
                 mount: component.mount || component.parent,
-                order: toOptionalNumber(component.order),
+                order: resolveOrder(component),
                 bind: labelBinding ? { label: labelBinding } : {},
                 props: {
                     ...(blankToUndefined(component.icon) ? { icon: component.icon } : {}),
@@ -1784,7 +1794,7 @@ function toComponentDefinitions(components) {
                 id: component.id,
                 kind: p16Kind,
                 mount: component.mount || component.parent,
-                order: toOptionalNumber(component.order),
+                order: resolveOrder(component),
                 // P172 (ADR 0015): `visible` base field — when a binding object is
                 // stored, it becomes the ComponentDefinition's `visibleIf` field so
                 // the renderer's matchesCondition() can gate rendering on it.
@@ -1906,7 +1916,7 @@ function toComponentDefinitions(components) {
             id: component.id,
             kind: "text",
             mount: component.mount || component.parent,
-            order: toOptionalNumber(component.order),
+            order: resolveOrder(component),
             bind: {
                 value: literalBinding(component.id)
             },
@@ -5722,7 +5732,7 @@ const runtimeNodeRegistry = {
                 id: getUiId(config),
                 parent: config.parent || undefined,
                 mount: config.mount || config.parent,
-                order: toOptionalNumber(config.order),
+                order: resolveOrder(config),
                 value: getBinding(config.value, literalBinding(config.text || "")),
                 style: text.style,
                 variant: text.variant,
@@ -5739,7 +5749,7 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
-            order: toOptionalNumber(config.order),
+            order: resolveOrder(config),
             label: config.label,
             variant: config.variant || undefined,
             action: blankToUndefined(config.action),
@@ -5766,7 +5776,7 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
-            order: toOptionalNumber(config.order),
+            order: resolveOrder(config),
             columns: parseColumns(config.columns),
             rows: resolveTableRows(config),
             footer: config.footer === true || config.footer === "true",
@@ -5784,7 +5794,7 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
-            order: toOptionalNumber(config.order),
+            order: resolveOrder(config),
             layout: config.layoutId,
             variant: config.variant || undefined,
             events: parseJsonList(config.events).length > 0 ? parseJsonList(config.events) : undefined,
@@ -5800,7 +5810,7 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
-            order: toOptionalNumber(config.order),
+            order: resolveOrder(config),
             label: config.label,
             value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
             placeholder: config.placeholder || undefined,
@@ -5825,7 +5835,7 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
-            order: toOptionalNumber(config.order),
+            order: resolveOrder(config),
             // P133: label is now a binding (literal string or dynamic binding).
             label: getBinding(config.label, undefined) || config.label,
             value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
@@ -5854,7 +5864,7 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
-            order: toOptionalNumber(config.order),
+            order: resolveOrder(config),
             // P97: label is now a binding object when set via typedInput; legacy plain string is preserved.
             label: config.label,
             value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
@@ -5877,7 +5887,7 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
-            order: toOptionalNumber(config.order),
+            order: resolveOrder(config),
             // P136: label is now a binding (literal string or dynamic binding),
             // mirroring ui-select.
             label: getBinding(config.label, undefined) || config.label,
@@ -5904,7 +5914,7 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
-            order: toOptionalNumber(config.order),
+            order: resolveOrder(config),
             value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
             // P204 (ADR 0027): writeTo WRITE target + writeTrigger. Legacy
             // storeId/path migrate to a writeTo=store binding.
@@ -5930,7 +5940,7 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
-            order: toOptionalNumber(config.order),
+            order: resolveOrder(config),
             // P148 (ADR 0012): label may be a binding object or a legacy plain string.
             // getBinding passes a binding object through; for a plain string, we keep it
             // as-is via the fallback: a non-object label stays as a string.
@@ -5958,7 +5968,7 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
-            order: toOptionalNumber(config.order),
+            order: resolveOrder(config),
             // P98: label is now a full binding (literal/state/store/…) or a plain string (legacy).
             // getBinding handles both: if config.label is a binding object it is returned as-is;
             // if it is a plain string a literal binding is NOT needed — the P16X handler already
@@ -5987,7 +5997,7 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
-            order: toOptionalNumber(config.order),
+            order: resolveOrder(config),
             value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
             // P204 (ADR 0027): writeTo WRITE target + writeTrigger. A slider value
             // is numeric-as-string from the client; the store gets it as-is (same as
@@ -6263,7 +6273,7 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
-            order: toOptionalNumber(config.order),
+            order: resolveOrder(config),
             message: getBinding(config.message, config.messagePath ? stateBinding(config.messagePath) : undefined),
             severity: config.severity || undefined,
             // P67: title is a binding. Back-compat: a plain-string title (legacy
@@ -6304,7 +6314,7 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
-            order: toOptionalNumber(config.order),
+            order: resolveOrder(config),
             displayType: config.displayType || config.variant || undefined,
             value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
             // P137 (ADR 0012): label is now a full binding (literal string or dynamic binding).
@@ -6324,7 +6334,7 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
-            order: toOptionalNumber(config.order),
+            order: resolveOrder(config),
             visible: getBinding(config.visible, config.visiblePath ? stateBinding(config.visiblePath) : undefined),
             displayType: config.displayType || config.variant || undefined,
             lines: toOptionalNumber(config.lines),
@@ -6340,7 +6350,7 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
-            order: toOptionalNumber(config.order),
+            order: resolveOrder(config),
             value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
             // P92: displayType is now shape (square/rounded/pill). Back-compat:
             // map old count/dot/status display type values to new shape values.
@@ -6373,7 +6383,7 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
-            order: toOptionalNumber(config.order),
+            order: resolveOrder(config),
             visible: getBinding(config.visible, config.visiblePath ? stateBinding(config.visiblePath) : undefined),
             icon: config.icon || undefined,
             title: config.title || undefined,
@@ -6408,7 +6418,7 @@ const runtimeNodeRegistry = {
                 id: getUiId(config),
                 parent: config.parent || undefined,
                 mount: config.mount || config.parent,
-                order: toOptionalNumber(config.order),
+                order: resolveOrder(config),
                 activeTab: getBinding(config.activeTab, config.activeTabPath ? stateBinding(config.activeTabPath) : undefined),
                 variant: config.variant || undefined,
                 events: parseJsonList(config.events),
@@ -6431,7 +6441,7 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
-            order: toOptionalNumber(config.order),
+            order: resolveOrder(config),
             label: getBinding(config.label, config.labelPath ? stateBinding(config.labelPath) : literalBinding(config.labelPath || "")),
             icon: config.icon || undefined,
             ...collectNodeConfigLayoutProps(config)
@@ -6463,7 +6473,7 @@ const runtimeNodeRegistry = {
                 id: getUiId(config),
                 parent: config.parent || undefined,
                 mount: config.mount || config.parent,
-                order: toOptionalNumber(config.order),
+                order: resolveOrder(config),
                 openSection: getBinding(config.openSection, config.openSectionPath ? stateBinding(config.openSectionPath) : undefined),
                 multiple: config.multiple === true || config.multiple === "true" || undefined,
                 events: parseJsonList(config.events),
@@ -6486,7 +6496,7 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
-            order: toOptionalNumber(config.order),
+            order: resolveOrder(config),
             label: getBinding(config.label, config.labelPath ? stateBinding(config.labelPath) : literalBinding(config.labelPath || "")),
             icon: config.icon || undefined,
             ...collectNodeConfigLayoutProps(config)
@@ -6535,7 +6545,7 @@ const runtimeNodeRegistry = {
                 id: getUiId(config),
                 parent: config.parent || undefined,
                 mount: config.mount || config.parent,
-                order: toOptionalNumber(config.order),
+                order: resolveOrder(config),
                 // P95: layout="breadcrumb" activates child-node slot mode (c & d).
                 layout: config.layout === "breadcrumb" ? "breadcrumb" : undefined,
                 items: resolvedItems,
@@ -6557,7 +6567,7 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
-            order: toOptionalNumber(config.order),
+            order: resolveOrder(config),
             displayType: config.displayType || config.variant || undefined,
             // P157 (ADR 0012): `items` is a STRUCTURAL array source (store/query/
             // reactive/json-literal) — the menu renders its entries itself (NOT a
@@ -6584,7 +6594,7 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
-            order: toOptionalNumber(config.order),
+            order: resolveOrder(config),
             // P154 (ADR 0012): `currentPage` (canonical, two-way value typedInput)
             // is the page source; it maps to the schema `page` binding. Legacy
             // order: canonical `currentPage` binding object → legacy `page` →
@@ -6608,7 +6618,7 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
-            order: toOptionalNumber(config.order),
+            order: resolveOrder(config),
             steps: (parseJsonList(config.steps).length > 0 ? parseJsonList(config.steps) : parseList(config.steps)).map((t) => {
                 if (typeof t === "string") {
                     try { return JSON.parse(t); } catch { return { id: t, label: t }; }
@@ -6630,7 +6640,7 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
-            order: toOptionalNumber(config.order),
+            order: resolveOrder(config),
             src: getBinding(config.src, config.srcPath ? stateBinding(config.srcPath) : undefined),
             // P151 (ADR 0012): alt and fallback are binding-capable. getBinding
             // returns the object when it has .kind; a plain string is kept as-is
@@ -6653,7 +6663,7 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
-            order: toOptionalNumber(config.order),
+            order: resolveOrder(config),
             icon: mapIconField(config.icon) || "",
             size: config.size || undefined,
             color: config.color || undefined,
@@ -6669,7 +6679,7 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
-            order: toOptionalNumber(config.order),
+            order: resolveOrder(config),
             // P171: `items` is a STRUCTURAL value-binding (typedInput). A stored
             // binding object wins; a legacy `itemsPath` plain path migrates to a
             // `state` binding (leading `state.` stripped); a bare JSON array literal
@@ -6714,7 +6724,7 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
-            order: toOptionalNumber(config.order),
+            order: resolveOrder(config),
             // items: full value-binding (typedInput). Back-compat fallbacks mirror
             // ui-list: a plain itemsPath state path, or a JSON literal array.
             items: getBinding(config.items, config.itemsPath ? stateBinding(config.itemsPath) : undefined)
@@ -6752,7 +6762,7 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
-            order: toOptionalNumber(config.order),
+            order: resolveOrder(config),
             // P94: `src` is now a full binding (image typedInput). Back-compat: old
             // `srcPath` (plain state path, pre-P94) is still accepted.
             src: getBinding(config.src, config.srcPath ? stateBinding(config.srcPath) : undefined),
@@ -6779,7 +6789,7 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
-            order: toOptionalNumber(config.order),
+            order: resolveOrder(config),
             orientation: config.orientation || undefined,
             label: config.label || undefined,
             ...collectNodeConfigLayoutProps(config)
@@ -6796,7 +6806,7 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
-            order: toOptionalNumber(config.order),
+            order: resolveOrder(config),
             minSeverity: config.minSeverity || undefined,
             maxEntries: toOptionalNumber(config.maxEntries),
             collapsed: config.collapsed === true || config.collapsed === "true" || undefined,
@@ -6829,7 +6839,7 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
-            order: toOptionalNumber(config.order),
+            order: resolveOrder(config),
             definitionId: config.definitionId || "",
             // `props` is a map name → value-binding (any binding kind). The editor
             // persists it as a JSON string or an object; normalise to an object of
@@ -6935,6 +6945,9 @@ registerWebappNodes.__test__ = {
     parseParamsObject,
     runtimeNodeRegistry,
     runtimeState,
+    // P207: order default = canvas y when order is empty
+    toOptionalNumber,
+    resolveOrder,
     // P39 / P52: view-node input patch handler + deploy-definition reader
     viewNodePatchInputHandler,
     readDeployDefinitions,

@@ -42,7 +42,7 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `order` | „Order" | Zahlenfeld | optional | Reihenfolge der Tabs innerhalb des `ui-tabs`. Das erste `ui-tab` nach `order` ist der Default-`activeTab`. Tabs ohne `order` werden nach geordneten Tabs einsortiert (Stabilität nach Deklarationsreihenfolge). |
+| `order` | „Order" | Zahlenfeld | optional | Reihenfolge der Tabs innerhalb des `ui-tabs`. Das erste `ui-tab` nach `order` ist der Default-`activeTab`. Default bei leerem Feld: Canvas-y (siehe layout.md) — Tabs ohne `order` sortieren also nach ihrer Canvas-y-Position, nicht mehr pauschal ans Ende. |
 | `row` / `col` / `colSize` / `rowSize` / `layoutX` / `layoutY` | — | Zahlenfelder | optional | Werden für `ui-tab` i. d. R. nicht genutzt (der Parent ordnet die Tabs); folgen dem Layout-Preset-Mechanismus. |
 
 ### Inline-Hilfe (HTML)

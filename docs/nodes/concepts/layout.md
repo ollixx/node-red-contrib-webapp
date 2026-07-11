@@ -43,6 +43,42 @@ Die Grid-Child-Props `row`, `col`, `colSize` und `rowSize` sind **positive Integ
 
 Im Editor erzwingen die Eingabefelder für `row`, `col`, `colSize` und `rowSize` `min="1"` und `step="1"`. Ein Wert ausserhalb dieses Bereichs markiert den Knoten sofort als ungültig (roter Badge), bevor er deployed werden kann.
 
+### `order`-Default (P207): leer ⇒ Canvas-y
+
+Jeder order-tragende Knoten (die view-Knoten, deren Mount-Ziel `horizontal`
+oder `vertical` ist) mappt seinen Sortierschlüssel über den zentralen Helper
+`resolveOrder(config)` in `nodes/webapp.js`:
+
+```js
+function resolveOrder(config) {
+    const o = toOptionalNumber(config.order);
+    return o !== undefined ? o : toOptionalNumber(config.y);
+}
+```
+
+- **Explizit gesetztes `order`** gewinnt immer und wird unverändert als
+  Sortierschlüssel verwendet.
+- **Leeres `order`** übernimmt stattdessen die rohe Node-RED-Canvas-y-Position
+  des Knotens (`config.y`, **nicht** `layoutY` — das ist das separate
+  Absolute-Layout-Feld und bleibt davon unberührt). Dadurch entspricht die
+  visuelle Anordnung der Knoten auf dem Canvas ohne manuelles `order` der
+  gerenderten Reihenfolge im Slot.
+- **Misch-Semantik (bewusst, kein Sonderfall):** In einem Slot, in dem manche
+  Knoten explizites `order` und andere leeres `order` (⇒ y-Fallback) haben,
+  gilt weiterhin die literale Sortierung `order ?? Number.MAX_SAFE_INTEGER`
+  aus Renderer/Registry. Ein kleiner expliziter `order`-Wert sortiert also vor
+  einem y-Fallback-Knoten mit großem Pixelwert. Beispiel: Knoten A hat
+  `order=5`, Knoten B hat kein `order` und steht bei `y=120` auf dem Canvas —
+  A rendert vor B, weil `5 < 120`. Es gibt keine slot-weite Umschaltung
+  zwischen „alle explizit" und „alle y-basiert".
+- Ist ein Slot komplett ohne `order`-Werte und ohne Canvas-y (z. B. bei
+  synthetisierten Sub-Knoten wie Tab-/Accordion-Sections, die intern über den
+  Array-Index sortieren), bleibt das bestehende Verhalten unverändert.
+
+Die per-Node-`order`-Feldbeschreibungen (z. B. in `docs/nodes/input/*.md`,
+`docs/nodes/display/*.md`) verweisen auf diesen Abschnitt statt das Verhalten
+zu duplizieren.
+
 ## Referenzierende Knoten
 
 - `ui-app`: Basis-Layout der Anwendung
