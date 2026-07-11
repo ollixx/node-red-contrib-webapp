@@ -76,4 +76,57 @@ test.describe("layout rendering", () => {
         await expect(page.getByText("Node messages")).toHaveCount(0);
         await expect(page.getByText("Snapshot")).toHaveCount(0);
     });
+
+    // P207: order defaults to canvas y when order is empty. Measured proof —
+    // DOM order (not tag/class) of the two order-less ui-text nodes in the
+    // same vertical slot must follow their canvas y-position, and swapping
+    // which node has the smaller y swaps which text renders first.
+    test("order-less nodes render in canvas-y order; swapping y swaps the render order", async ({ page }) => {
+        await page.goto("/webapp/layoutOrderYApp");
+        const contentTexts = page.locator(".webapp-slot--content [data-webapp-node]");
+        await expect(contentTexts).toHaveCount(2);
+        // layoutOrderYSmallY (y=1040) has no `order` field and a smaller canvas y
+        // than layoutOrderYLargeY (y=1200) — it must render first.
+        await expect.poll(() => contentTexts.allTextContents()).toEqual([
+            "Order Y small-y",
+            "Order Y large-y"
+        ]);
+        const firstBox = await contentTexts.nth(0).boundingBox();
+        const secondBox = await contentTexts.nth(1).boundingBox();
+        expect(firstBox).not.toBeNull();
+        expect(secondBox).not.toBeNull();
+        expect(firstBox!.y).toBeLessThan(secondBox!.y);
+
+        // layoutOrderYSwappedApp has the SAME two order-less texts, but with the
+        // canvas y-positions swapped relative to layoutOrderYApp — the smaller-y
+        // node here is the one labelled "Order Y large-y", proving that swapping
+        // y swaps which text renders first.
+        await page.goto("/webapp/layoutOrderYSwappedApp");
+        const swappedTexts = page.locator(".webapp-slot--content [data-webapp-node]");
+        await expect(swappedTexts).toHaveCount(2);
+        await expect.poll(() => swappedTexts.allTextContents()).toEqual([
+            "Order Y large-y",
+            "Order Y small-y"
+        ]);
+    });
+
+    // P207: mixed slot — an explicit `order` still wins over a y-fallback
+    // sibling, even when the y-fallback node's canvas y-position is much
+    // smaller in pixel terms than the explicit order value would suggest.
+    test("explicit order sorts before a y-fallback sibling (mixed slot)", async ({ page }) => {
+        await page.goto("/webapp/layoutOrderMixedApp");
+        const mixedTexts = page.locator(".webapp-slot--content [data-webapp-node]");
+        await expect(mixedTexts).toHaveCount(2);
+        // layoutOrderMixedExplicit has order=5 (and canvas y=1900);
+        // layoutOrderMixedYFallback has no order and canvas y=120 (5 < 120).
+        await expect.poll(() => mixedTexts.allTextContents()).toEqual([
+            "Order Mixed explicit-order",
+            "Order Mixed y-fallback"
+        ]);
+        const firstBox = await mixedTexts.nth(0).boundingBox();
+        const secondBox = await mixedTexts.nth(1).boundingBox();
+        expect(firstBox).not.toBeNull();
+        expect(secondBox).not.toBeNull();
+        expect(firstBox!.y).toBeLessThan(secondBox!.y);
+    });
 });

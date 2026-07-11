@@ -288,5 +288,138 @@
             []
         ],
         "z": "flowLayoutDemos"
+    },
+    {
+        "id": "layoutOrderYApp",
+        "type": "ui-app",
+        "name": "Order-Y Layout Demo",
+        "title": "Order-Y Layout Demo",
+        "root": "layoutOrderYApp",
+        "layout": "vertical",
+        "x": 160,
+        "y": 1060,
+        "wires": [
+            []
+        ],
+        "z": "flowLayoutDemos"
+    },
+    {
+        "id": "layoutOrderYSmallY",
+        "type": "ui-text",
+        "mount": "layoutOrderYApp.content",
+        "value": {
+            "kind": "literal",
+            "value": "Order Y small-y"
+        },
+        "x": 420,
+        "y": 1040,
+        "wires": [
+            []
+        ],
+        "z": "flowLayoutDemos"
+    },
+    {
+        "id": "layoutOrderYLargeY",
+        "type": "ui-text",
+        "mount": "layoutOrderYApp.content",
+        "value": {
+            "kind": "literal",
+            "value": "Order Y large-y"
+        },
+        "x": 420,
+        "y": 1200,
+        "wires": [
+            []
+        ],
+        "z": "flowLayoutDemos"
+    },
+    {
+        "id": "layoutOrderYSwappedApp",
+        "type": "ui-app",
+        "name": "Order-Y Swapped Layout Demo",
+        "title": "Order-Y Swapped Layout Demo",
+        "root": "layoutOrderYSwappedApp",
+        "layout": "vertical",
+        "x": 160,
+        "y": 1300,
+        "wires": [
+            []
+        ],
+        "z": "flowLayoutDemos"
+    },
+    {
+        "id": "layoutOrderYSwappedSmallY",
+        "type": "ui-text",
+        "mount": "layoutOrderYSwappedApp.content",
+        "value": {
+            "kind": "literal",
+            "value": "Order Y large-y"
+        },
+        "x": 420,
+        "y": 1280,
+        "wires": [
+            []
+        ],
+        "z": "flowLayoutDemos"
+    },
+    {
+        "id": "layoutOrderYSwappedLargeY",
+        "type": "ui-text",
+        "mount": "layoutOrderYSwappedApp.content",
+        "value": {
+            "kind": "literal",
+            "value": "Order Y small-y"
+        },
+        "x": 420,
+        "y": 1440,
+        "wires": [
+            []
+        ],
+        "z": "flowLayoutDemos"
+    },
+    {
+        "id": "layoutOrderMixedApp",
+        "type": "ui-app",
+        "name": "Order Mixed Layout Demo",
+        "title": "Order Mixed Layout Demo",
+        "root": "layoutOrderMixedApp",
+        "layout": "vertical",
+        "x": 160,
+        "y": 1540,
+        "wires": [
+            []
+        ],
+        "z": "flowLayoutDemos"
+    },
+    {
+        "id": "layoutOrderMixedExplicit",
+        "type": "ui-text",
+        "mount": "layoutOrderMixedApp.content",
+        "order": 5,
+        "value": {
+            "kind": "literal",
+            "value": "Order Mixed explicit-order"
+        },
+        "x": 420,
+        "y": 1900,
+        "wires": [
+            []
+        ],
+        "z": "flowLayoutDemos"
+    },
+    {
+        "id": "layoutOrderMixedYFallback",
+        "type": "ui-text",
+        "mount": "layoutOrderMixedApp.content",
+        "value": {
+            "kind": "literal",
+            "value": "Order Mixed y-fallback"
+        },
+        "x": 420,
+        "y": 120,
+        "wires": [
+            []
+        ],
+        "z": "flowLayoutDemos"
     }
 ]
