@@ -44,7 +44,7 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `order` | „Order" | Zahlenfeld | optional | Reihenfolge der Sektionen innerhalb des `ui-accordion`. Die erste Sektion nach `order` ist die Default-`openSection`. Sektionen ohne `order` werden nach geordneten Sektionen einsortiert (Stabilität nach Deklarationsreihenfolge). |
+| `order` | „Order" | Zahlenfeld | optional | Reihenfolge der Sektionen innerhalb des `ui-accordion`. Die erste Sektion nach `order` ist die Default-`openSection`. Default bei leerem Feld: Canvas-y (siehe layout.md) — Sektionen ohne `order` sortieren also nach ihrer Canvas-y-Position, nicht mehr pauschal ans Ende. |
 | `row` / `col` / `colSize` / `rowSize` / `layoutX` / `layoutY` | — | Zahlenfelder | optional | Werden für `ui-accordion-section` i. d. R. nicht genutzt (der Parent ordnet die Sektionen); folgen dem Layout-Preset-Mechanismus. |
 
 ### Inline-Hilfe (HTML)
