@@ -1639,6 +1639,16 @@ export const uiListNodeDefinitionSchema = mountableNodeSchema.extend({
     // write-back loop. An absent/empty/unmatched id marks no row. Only meaningful when
     // `selectable`.
     selectedId: bindingSchema.optional(),
+    // P208: item-field mapping — WHICH raw-entity field is the label/value/id/icon
+    // of a row. Lets a ui-list bind raw query entities ({_id, name, …}) directly,
+    // without a reshape/Function. FLAT field names only (no dot-path) in this stage.
+    // Absent ⇒ the historical hard-coded names (label/value/id/icon), so existing
+    // shaped-item lists are unaffected. Only the DERIVED label/id/value/icon use the
+    // mapping — `items` stays the raw list and `itemClick.row` keeps the full entity.
+    labelField: z.string().min(1).default("label"),
+    valueField: z.string().min(1).default("value"),
+    idField: z.string().min(1).default("id"),
+    iconField: z.string().min(1).default("icon"),
     events: z.array(z.enum(["itemClick", "itemSelect"])).optional(),
     // P172 (ADR 0015): common base fields — visible (boolean-state binding, absent
     // = always visible), disabled (boolean-state binding, locks row interaction)
