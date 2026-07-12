@@ -17,7 +17,7 @@ verify: browser
 spec: docs/nodes/state/ui-query-action.md
 tests: tests/e2e/nodes/state/ui-query-action.tests.md
 dependencies: []
-status: pending
+status: in_progress
 ---
 # P212 — neuer Knoten `ui-query-action` (typisierter Query-Trigger, hybrid)
 
