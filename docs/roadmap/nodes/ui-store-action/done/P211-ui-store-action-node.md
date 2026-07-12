@@ -18,11 +18,11 @@ verify: browser
 spec: docs/nodes/state/ui-store-action.md
 tests: tests/e2e/nodes/state/ui-store-action.tests.md
 dependencies: []
-status: in_progress
+status: done
 ---
 # P211 — neuer Knoten `ui-store-action` (typisierte Store-Mutation, hybrid)
 
-> Entscheidung: [ADR 0029](../../../adr/0029-state-action-nodes-store-action-query-action-hybrid.md).
+> Entscheidung: [ADR 0029](../../../../adr/0029-state-action-nodes-store-action-query-action-hybrid.md).
 > Vier-Datei-Muster — vor dem Lesen von Quellcode `/node-red-node` aufrufen.
 
 ## Kern
@@ -43,3 +43,19 @@ Referenz auf einen `ui-store` + Op-Selector. Zwei Modi (immer beide verfügbar):
 
 - `parent` required (P205). Nicht mit `ui-store-read` (Getter) verwechseln.
 - Sub-Pfad EINE Ebene relativ zum statePath (ADR 0013).
+
+## Result
+
+**Delivered.** Neuer Knoten `ui-store-action` (Vier-Datei-Muster) — typisierte Store-Mutation, hybrid `reference|wire`.
+- **Schema** `packages/schema/src/node-definitions.ts` + `index.ts`: `uiStoreActionNodeDefinitionSchema` (`store` req, `op` enum `set|patch|delete|replace|reset` default `set`, optional `path`, `mode` enum `reference|wire` default `reference`), in Union + Type-Map + Exports.
+- **Runtime** `nodes/webapp.js`: `storeActionInputHandler` + Registry-Eintrag; `ui-store-action` in `WEBAPP_NODE_TYPES` **und** `APP_SCOPED_PARENT_TYPES` (P205 deploy-validiert).
+- **Editor** `nodes/state/ui-store-action.{js,html}` (native op/mode-Selects, `installParentAppSelector` + `installReferenceSelectors({store})`, Inline-Hilfe); `packages/editor/src/nodes.ts` Config-Typ + `nodeSet`. `package.json` `node-red.nodes` registriert.
+- **Spec** `docs/nodes/state/ui-store-action.md` (Feld-für-Feld, Op-Enum, Path-Präzedenz, beide Modi, per-client/Scope, Fehlercodes, Abgrenzung zu `ui-store`/`ui-store-read`). **Test-Katalog** `tests/e2e/nodes/state/ui-store-action.tests.md`.
+
+**Semantik.** Ops über den geteilten `applyStoreOperation` (set/patch an path, delete an path, replace = ganzes Slice, reset = Initialwert, payload ignoriert). Wert aus `msg.payload`; Path-Präzedenz `msg.ui.store.path` › `msg.path` › config, leer = statePath-Root. **reference**: mutiert direkt server-seitig, per-client via `msg.ui.clientId` (Scope-Regel → `server.store.scope-violation`), persistiert + `pushSnapshotToClients` + Query-Refresh + `changed`-Notification, kein Wire. **wire**: emittiert `msg.ui.store = {id, op, path, value}`, mutiert NICHT.
+
+**Verify (browser, gemessen — Haupt-Checkout).** `tests/e2e/nodes/state/ui-store-action.spec.ts` **1 passed** (2.9s): reference-mode → an den Store gebundener Text `A`→`B` live (kein Wire); wire-mode → Result-Text zeigt `{"id":…,"op":"set","path":"name","value":"C"}` und der Entity-Text bleibt `B` (kein Mutieren).
+
+**Stats.** Unit grün: schema 475 (+15 P211), editor 176, renderer 148, runtime 1143 (+21 P211, P205 +2). `pnpm build`/`lint`/`check:specs` (41 Knoten)/`check:links`/`check:roadmap` grün. E2E P211-Spec grün.
+
+**Cost.** Sub-Agent `phase/P211` (worktree), ~17 min (18:05:58Z→18:23:05Z), session `d58245ce…`; Token-Zeile in `.ai/agent-runs.jsonl`.
