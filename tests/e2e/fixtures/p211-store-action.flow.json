@@ -1,0 +1,22 @@
+[
+  { "type": "tab", "id": "p211flow", "label": "P211" },
+  { "type": "ui-app", "id": "p211App", "name": "P211 App", "root": "p211root", "layout": "app", "title": "P211", "z": "p211flow", "wires": [], "x": 200, "y": 120 },
+
+  { "type": "ui-store", "id": "p211Store", "name": "Entity", "parent": "p211App", "statePath": "entity", "scope": "client-only", "initialValue": "{\"name\":\"A\",\"city\":\"X\"}", "z": "p211flow", "wires": [], "x": 200, "y": 160 },
+  { "type": "ui-store", "id": "p211Result", "name": "Result", "parent": "p211App", "statePath": "result", "scope": "client-only", "initialValue": "{\"text\":\"\"}", "z": "p211flow", "wires": [], "x": 200, "y": 190 },
+
+  { "type": "ui-container", "id": "p211Cont", "name": "Container 1", "parent": "p211App", "mount": "p211App.content", "layoutId": "vertical", "variant": "section", "order": 0, "z": "p211flow", "wires": [], "x": 200, "y": 220 },
+  { "type": "ui-text", "id": "p211EntityText", "name": "entity readout", "parent": "p211Cont", "mount": "container:p211Cont/content", "order": 0, "value": { "kind": "store", "path": "p211Store", "subPath": { "kind": "literal", "value": "name" } }, "z": "p211flow", "wires": [], "x": 200, "y": 250 },
+  { "type": "ui-text", "id": "p211ResultText", "name": "wire envelope readout", "parent": "p211Cont", "mount": "container:p211Cont/content", "order": 1, "value": { "kind": "store", "path": "p211Result", "subPath": { "kind": "literal", "value": "text" } }, "z": "p211flow", "wires": [], "x": 200, "y": 280 },
+
+  { "type": "ui-list", "id": "p211ListRefSet", "name": "RefSet", "parent": "p211Cont", "mount": "container:p211Cont/content", "order": 2, "items": "[{\"id\":\"refset\",\"label\":\"REFSET\"}]", "events": "[\"itemClick\"]", "z": "p211flow", "wires": [["p211FnRefSet"]], "x": 200, "y": 310 },
+  { "type": "ui-list", "id": "p211ListWireSet", "name": "WireSet", "parent": "p211Cont", "mount": "container:p211Cont/content", "order": 3, "items": "[{\"id\":\"wireset\",\"label\":\"WIRESET\"}]", "events": "[\"itemClick\"]", "z": "p211flow", "wires": [["p211FnWireSet"]], "x": 200, "y": 340 },
+
+  { "type": "function", "id": "p211FnRefSet", "name": "payload=B", "func": "msg.payload = 'B';\nif (msg.ui && msg.ui.store) { delete msg.ui.store; }\ndelete msg.path;\nreturn msg;", "outputs": 1, "noerr": 0, "z": "p211flow", "wires": [["p211ActionRef"]], "x": 420, "y": 310 },
+  { "type": "function", "id": "p211FnWireSet", "name": "payload=C", "func": "msg.payload = 'C';\nif (msg.ui && msg.ui.store) { delete msg.ui.store; }\ndelete msg.path;\nreturn msg;", "outputs": 1, "noerr": 0, "z": "p211flow", "wires": [["p211ActionWire"]], "x": 420, "y": 340 },
+
+  { "type": "ui-store-action", "id": "p211ActionRef", "name": "set name (reference)", "parent": "p211App", "store": "p211Store", "op": "set", "path": "name", "mode": "reference", "z": "p211flow", "wires": [[]], "x": 640, "y": 310 },
+  { "type": "ui-store-action", "id": "p211ActionWire", "name": "set name (wire)", "parent": "p211App", "store": "p211Store", "op": "set", "path": "name", "mode": "wire", "z": "p211flow", "wires": [["p211FnStringify"]], "x": 640, "y": 340 },
+
+  { "type": "function", "id": "p211FnStringify", "name": "stringify wire envelope into result store", "func": "var env = (msg.ui && msg.ui.store) ? msg.ui.store : {};\nvar text = JSON.stringify({ id: env.id, op: env.op, path: env.path, value: env.value });\nmsg.ui.store = { id: 'p211Result', op: 'replace', value: { text: text } };\nreturn msg;", "outputs": 1, "noerr": 0, "z": "p211flow", "wires": [["p211Result"]], "x": 900, "y": 340 }
+]
