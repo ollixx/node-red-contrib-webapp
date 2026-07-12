@@ -19,7 +19,7 @@ verify: browser
 spec: docs/nodes/state/ui-store-read.md
 tests: tests/e2e/nodes/state/ui-store-read.tests.md
 dependencies: []
-status: pending
+status: in_progress
 ---
 # P209 — neuer Knoten `ui-store-read` (On-Demand-Store-Leser)
 
