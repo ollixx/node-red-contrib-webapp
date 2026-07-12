@@ -14,7 +14,7 @@
   { "type": "ui-list", "id": "p209ListReadAll", "name": "ReadAll", "parent": "p209Cont", "mount": "container:p209Cont/content", "order": 2, "items": "[{\"id\":\"rall\",\"label\":\"READALL\"}]", "events": "[\"itemClick\"]", "z": "p209flow", "wires": [["p209FnReadAll"]], "x": 200, "y": 320 },
   { "type": "ui-list", "id": "p209ListReadName", "name": "ReadName", "parent": "p209Cont", "mount": "container:p209Cont/content", "order": 3, "items": "[{\"id\":\"rname\",\"label\":\"READNAME\"}]", "events": "[\"itemClick\"]", "z": "p209flow", "wires": [["p209FnReadName"]], "x": 200, "y": 350 },
 
-  { "type": "function", "id": "p209FnSetB", "name": "patch name=B per-client", "func": "msg.ui.store = { id: 'p209Store', op: 'patch', value: { name: 'B' } };\nreturn msg;", "outputs": 1, "noerr": 0, "z": "p209flow", "wires": [["p209Store"]], "x": 420, "y": 290 },
+  { "type": "function", "id": "p209FnSetB", "name": "set name=B per-client", "func": "msg.ui.store = { id: 'p209Store', op: 'set', path: 'name', value: 'B' };\nreturn msg;", "outputs": 1, "noerr": 0, "z": "p209flow", "wires": [["p209Store"]], "x": 420, "y": 290 },
   { "type": "function", "id": "p209FnReadAll", "name": "trigger read (whole slice)", "func": "delete msg.path;\nif (msg.ui && msg.ui.store) { delete msg.ui.store; }\nreturn msg;", "outputs": 1, "noerr": 0, "z": "p209flow", "wires": [["p209Read"]], "x": 420, "y": 320 },
   { "type": "function", "id": "p209FnReadName", "name": "trigger read (msg.path=name)", "func": "if (msg.ui && msg.ui.store) { delete msg.ui.store; }\nmsg.path = 'name';\nreturn msg;", "outputs": 1, "noerr": 0, "z": "p209flow", "wires": [["p209Read"]], "x": 420, "y": 350 },
 
