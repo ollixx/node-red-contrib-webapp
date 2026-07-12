@@ -134,6 +134,8 @@ const WEBAPP_NODE_TYPES = new Set([
     "ui-query",
     // P209 (ADR 0028): reference-based, on-demand, non-mutating store reader.
     "ui-store-read",
+    // P211 (ADR 0029): reference-based, typed store MUTATION (hybrid wire|reference).
+    "ui-store-action",
     "ui-action",
     "ui-navigation",
     "ui-alert",
@@ -2973,7 +2975,7 @@ function validateAppRootUniqueness(RED) {
 // the node's own id. Pure over a nodes array (unit-testable); the RED wrapper reads
 // the deployed flow file (mirrors validateAppRootUniqueness). Returns a list of
 // { nodeId, parent, message }.
-const APP_SCOPED_PARENT_TYPES = ["ui-store", "ui-store-read", "ui-query", "ui-action", "ui-navigation", "ui-dialog", "ui-route"];
+const APP_SCOPED_PARENT_TYPES = ["ui-store", "ui-store-read", "ui-store-action", "ui-query", "ui-action", "ui-navigation", "ui-dialog", "ui-route"];
 
 function collectAppScopedParentIssues(nodes) {
     const issues = [];
@@ -4925,6 +4927,199 @@ function storeReadInputHandler(node, msg, send, done) {
     }
 }
 
+// P211 (ADR 0029): typed, reference-based store MUTATION. Two modes mirror
+// ui-action.targetMode:
+//   - reference: apply the op DIRECTLY to the referenced store, server-side
+//     (per-client via msg.ui.clientId, same scope rule as writing), persist the
+//     new state, push a fresh snapshot so a store-bound view updates live, and
+//     emit the store `changed` notification on the out-port. No wire needed.
+//   - wire: do NOT mutate; emit msg.ui.store = { id, op, path, value } on the
+//     out-port for the flow to wire to the ui-store (or a dispatcher).
+// Value comes from msg.payload (set/patch/replace); `reset` ignores it. Path
+// precedence: msg.ui.store.path › msg.path › config path › whole slice.
+function storeActionInputHandler(node, msg, send, done) {
+    const actionDefinition = node.webappDefinition;
+    const op = (actionDefinition && actionDefinition.op) || "set";
+    const mode = actionDefinition && actionDefinition.mode === "wire" ? "wire" : "reference";
+    const storeId = actionDefinition && actionDefinition.store;
+
+    // Path precedence: msg.ui.store.path › msg.path › config path › (none).
+    const msgStorePath = msg && msg.ui && msg.ui.store && typeof msg.ui.store === "object"
+        ? blankToUndefined(msg.ui.store.path)
+        : undefined;
+    const msgPath = msg ? blankToUndefined(msg.path) : undefined;
+    const configPath = blankToUndefined(actionDefinition && actionDefinition.path);
+    const subPath = msgStorePath !== undefined
+        ? msgStorePath
+        : (msgPath !== undefined ? msgPath : configPath);
+
+    // Value from payload; `reset` ignores it.
+    const value = op === "reset" ? undefined : (msg ? msg.payload : undefined);
+
+    // -- wire mode: emit the command envelope; do NOT mutate. --
+    if (mode === "wire") {
+        const outMsg = {
+            ...msg,
+            ui: {
+                ...(msg && msg.ui && typeof msg.ui === "object" ? msg.ui : {}),
+                store: {
+                    id: storeId,
+                    op,
+                    path: subPath,
+                    value
+                }
+            }
+        };
+        send(outMsg);
+        if (done) {
+            done();
+        }
+        return;
+    }
+
+    // -- reference mode: apply directly, server-side. --
+    const activeAppId = findAppIdForNode(node);
+    const clientId = msg && msg.ui && msg.ui.clientId ? String(msg.ui.clientId) : undefined;
+
+    const storeDefinition = findStoreDefinitionById(storeId);
+    if (!storeDefinition) {
+        const errMsg = `ui-store-action references an unknown store '${storeId}'.`;
+        reportRuntimeError(node, {
+            severity: "error",
+            code: "server.store.action-missing-store",
+            message: errMsg,
+            context: { appId: activeAppId || undefined, nodeId: node.id, op: `store:${op}` },
+            clientId
+        });
+        if (done) {
+            done(new Error(errMsg));
+        }
+        return;
+    }
+
+    // Scope guard — mirror the ui-store write path. "any" (default) never rejects.
+    const scope = storeDefinition.scope;
+    if (scope === "broadcast-only" && clientId) {
+        const errMsg = "ClientID auf Broadcast-Only-Store nicht erlaubt. Broadcast Only store does not accept per-client messages.";
+        reportRuntimeError(node, {
+            severity: "error",
+            code: "server.store.scope-violation",
+            message: errMsg,
+            context: { appId: activeAppId || undefined, nodeId: node.id, op: `store:${op}` },
+            clientId
+        });
+        if (done) {
+            done(new Error(errMsg));
+        }
+        return;
+    }
+    if (scope === "client-only" && !clientId) {
+        const errMsg = "Broadcast nicht erlaubt: Store ist Client Only. Client Only store requires a clientId.";
+        reportRuntimeError(node, {
+            severity: "error",
+            code: "server.store.scope-violation",
+            message: errMsg,
+            context: { appId: activeAppId || undefined, nodeId: node.id, op: `store:${op}` },
+            clientId: undefined
+        });
+        if (done) {
+            done(new Error(errMsg));
+        }
+        return;
+    }
+
+    // Value presence — set/patch/replace require a value (from payload).
+    // delete/reset do not. (Path is NOT required: an empty path targets the
+    // whole slice at statePath, per the P211 precedence rule.)
+    if (["set", "patch", "replace"].includes(op) && value === undefined) {
+        const errMsg = `Store operation '${op}' requires a value (msg.payload).`;
+        reportRuntimeError(node, {
+            severity: "error",
+            code: "server.store.invalid-operation",
+            message: errMsg,
+            context: { appId: activeAppId || undefined, nodeId: node.id, op: `store:${op}` },
+            clientId
+        });
+        if (done) {
+            done(new Error(errMsg));
+        }
+        return;
+    }
+
+    if (!activeAppId) {
+        reportRuntimeError(node, {
+            severity: "error",
+            code: "server.store.no-active-app",
+            message: "No active ui-app is registered for ui-store-action writes.",
+            context: { nodeId: node.id, op: `store:${op}` },
+            clientId
+        });
+        if (done) {
+            done(new Error("No active ui-app is registered for ui-store-action writes."));
+        }
+        return;
+    }
+
+    const operation = { id: storeDefinition.id, op, path: subPath, value };
+
+    const baseState = clientId
+        ? (getClientState(activeAppId, clientId)?.state || clone(runtimeState.liveState.get(activeAppId) || initializeState([storeDefinition], [], activeAppId)))
+        : clone(runtimeState.liveState.get(activeAppId) || initializeState([storeDefinition], [], activeAppId));
+
+    let applied;
+    try {
+        applied = applyStoreOperation(baseState, storeDefinition, operation);
+    }
+    catch (error) {
+        reportRuntimeError(node, {
+            severity: "error",
+            code: "server.store.operation-failed",
+            message: `ui-store-action operation failed: ${error instanceof Error ? error.message : String(error)}`,
+            context: { appId: activeAppId, nodeId: node.id, op: `store:${op}` },
+            clientId
+        });
+        if (done) {
+            done(error instanceof Error ? error : new Error(String(error)));
+        }
+        return;
+    }
+
+    const now = Date.now();
+    if (clientId) {
+        setClientState(activeAppId, clientId, applied.nextState, now);
+    }
+    else {
+        runtimeState.liveState.set(activeAppId, applied.nextState);
+    }
+
+    const notificationMsg = {
+        ...msg,
+        ui: {
+            ...(msg && msg.ui && typeof msg.ui === "object" ? msg.ui : {}),
+            store: {
+                ...applied.notification.ui.store,
+                clientId: clientId || undefined
+            }
+        }
+    };
+    send(notificationMsg);
+
+    // P161 (ADR 0016 §3): a query observing THIS store re-fetches via its out-port.
+    const paramsValue = getValueAtPath(applied.nextState, storeDefinition.statePath);
+    triggerParamQueryRefresh(storeDefinition.id, paramsValue, activeAppId, clientId);
+
+    // Live push — the state changed; push a fresh snapshot to the targeted client
+    // (per-client) or every subscriber (broadcast).
+    const RED = runtimeState.RED;
+    if (RED) {
+        pushSnapshotToClients(activeAppId, clientId, readDeployDefinitions(RED));
+    }
+
+    if (done) {
+        done();
+    }
+}
+
 function componentStateInputHandler(node, msg, send, done) {
     const componentMsg = msg && msg.ui && typeof msg.ui === "object" ? msg.ui.component : undefined;
 
@@ -6347,6 +6542,23 @@ const runtimeNodeRegistry = {
         }),
         options: {
             inputHandler: storeReadInputHandler
+        }
+    },
+    // P211 (ADR 0029): typed, reference-based store MUTATION node (hybrid
+    // wire|reference). Op set/patch/delete/replace/reset; value from msg.payload;
+    // path override precedence like ui-store-read.
+    "ui-store-action": {
+        mapConfig: (config) => ({
+            type: "ui-store-action",
+            id: getUiId(config),
+            parent: config.parent || undefined,
+            store: config.store || undefined,
+            op: typeof config.op === "string" && config.op ? config.op : "set",
+            path: blankToUndefined(config.path),
+            mode: config.mode === "wire" ? "wire" : "reference"
+        }),
+        options: {
+            inputHandler: storeActionInputHandler
         }
     },
     "ui-query": {

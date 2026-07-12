@@ -40,6 +40,7 @@ describe("editor node set", () => {
             "ui-stepper",
             "ui-store",
             "ui-store-read",
+            "ui-store-action",
             "ui-switch",
             "ui-tab",
             "ui-table",
@@ -188,6 +189,12 @@ describe("editor node set", () => {
             emitNodeDefinition("ui-query", {
                 id: "customersQuery",
                 queryPath: "customers.list"
+            }),
+            emitNodeDefinition("ui-store-action", {
+                id: "resetDraft",
+                store: "draftStore",
+                op: "reset",
+                mode: "reference"
             }),
             emitNodeDefinition("ui-action", {
                 id: "saveCustomer"
