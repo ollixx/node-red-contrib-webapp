@@ -785,6 +785,9 @@
             containers: [],
             actions: [],
             stores: [],
+            // P212 (ADR 0029): ui-query nodes — surfaced for the ui-query-action
+            // `query` reference picker (preset "queries").
+            queries: [],
             // P179 (ADR 0020): ui-component-definition nodes — surfaced for the
             // instance's definitionId picker.
             componentDefinitions: []
@@ -974,6 +977,16 @@
                     // P132: the JSON default-slice source — used (parsed) for the
                     // soft sub-path autocomplete (keys/indices), never to restrict.
                     initialValue: node.initialValue || "",
+                    parent: node.parent || ""
+                });
+                return;
+            }
+
+            if (node.type === "ui-query") {
+                references.queries.push({
+                    id,
+                    name: node.name || "",
+                    queryPath: node.queryPath || "",
                     parent: node.parent || ""
                 });
             }
@@ -1534,6 +1547,22 @@
                 const label = store.name ? store.name + " — " + detail : detail;
                 const secondary = !appId && store.parent ? appTitleById(references, store.parent) : "";
                 return { value: store.id, label: label, name: name, id: store.id, type: "ui-store", secondary: secondary };
+            });
+        },
+        // P212 (ADR 0029): the ui-query reference preset — for ui-query-action's
+        // `query` field. Same shape as stores; app-scoped when a context appId is
+        // given, else global with the app title as a secondary line.
+        queries: function (references, context) {
+            const appId = context && context.appId ? context.appId : null;
+            const candidates = appId
+                ? (references.queries || []).filter(function (q) { return q.parent === appId; })
+                : (references.queries || []);
+            return candidates.map(function (query) {
+                const name = query.name || query.id;
+                const detail = query.queryPath ? query.id + " (" + query.queryPath + ")" : query.id;
+                const label = query.name ? query.name + " — " + detail : detail;
+                const secondary = !appId && query.parent ? appTitleById(references, query.parent) : "";
+                return { value: query.id, label: label, name: name, id: query.id, type: "ui-query", secondary: secondary };
             });
         },
         // P114 / ADR 0009: the mount (parent-slot) preset. The hierarchical
@@ -5580,6 +5609,20 @@
                     placeholder: "Optional: Store auswählen",
                     clearable: true,
                     seedValue: self.storeId || self.params || "",
+                    getAppId: getAppId
+                });
+            }
+
+            // P212 (ADR 0029): the ui-query reference picker for ui-query-action.
+            if (config.query) {
+                const querySelector = typeof config.query === "string" && config.query.startsWith("#")
+                    ? config.query
+                    : "#node-input-queryId";
+                installPickerField(querySelector, {
+                    filterPreset: "queries",
+                    title: "Query auswählen",
+                    placeholder: "Query auswählen",
+                    seedValue: self.query || "",
                     getAppId: getAppId
                 });
             }
