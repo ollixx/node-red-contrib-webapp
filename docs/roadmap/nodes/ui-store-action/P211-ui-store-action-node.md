@@ -18,7 +18,7 @@ verify: browser
 spec: docs/nodes/state/ui-store-action.md
 tests: tests/e2e/nodes/state/ui-store-action.tests.md
 dependencies: []
-status: pending
+status: in_progress
 ---
 # P211 — neuer Knoten `ui-store-action` (typisierte Store-Mutation, hybrid)
 
