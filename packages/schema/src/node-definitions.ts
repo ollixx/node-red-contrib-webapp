@@ -632,6 +632,26 @@ export const uiStoreReadNodeDefinitionSchema = identifiedNodeSchema.extend({
 
 export type UiStoreReadNodeDefinition = z.infer<typeof uiStoreReadNodeDefinitionSchema>;
 
+// P211 (ADR 0029): a typed, reference-based MUTATION node for a `ui-store`. It
+// references a ui-store by id (`store`) and carries an op selector
+// (`set|patch|delete|replace|reset`) plus an optional one-level sub-path (`path`,
+// relative to the store's statePath, ADR 0013). `mode` mirrors
+// `ui-action.targetMode`: `reference` applies the op directly server-side (per
+// client via msg.ui.clientId, SSE re-render); `wire` emits the
+// `msg.ui.store = {id,op,path,value}` envelope on the out-port instead. `parent`
+// is the owning app (required at deploy via the P205 parent validation). The
+// value comes from `msg.payload` (set/patch/replace); `reset` ignores it.
+export const uiStoreActionNodeDefinitionSchema = identifiedNodeSchema.extend({
+    type: z.literal("ui-store-action"),
+    parent: identifierSchema.optional(),
+    store: z.string().min(1, "ui-store-action must reference a ui-store node."),
+    op: z.enum(["set", "patch", "delete", "replace", "reset"]).default("set"),
+    path: z.string().min(1, "Store action paths must not be empty.").optional(),
+    mode: z.enum(["reference", "wire"]).default("reference")
+});
+
+export type UiStoreActionNodeDefinition = z.infer<typeof uiStoreActionNodeDefinitionSchema>;
+
 // P118 (ADR 0011 §1): navigate target-mode exclusivity. The stored `targetMode`
 // declares the single intent; only that mode's fields may be set so a config can
 // never carry a double configuration:
@@ -1747,6 +1767,7 @@ export const uiNodeDefinitionSchema = z.union([
     uiStoreNodeDefinitionSchema,
     uiQueryNodeDefinitionSchema,
     uiStoreReadNodeDefinitionSchema,
+    uiStoreActionNodeDefinitionSchema,
     uiActionNodeDefinitionSchema,
     uiNavigationNodeDefinitionSchema,
     uiAlertNodeDefinitionSchema,
@@ -1793,6 +1814,7 @@ const uiNodeSchemaByType: Record<string, z.ZodTypeAny> = {
     "ui-store": uiStoreNodeDefinitionSchema,
     "ui-query": uiQueryNodeDefinitionSchema,
     "ui-store-read": uiStoreReadNodeDefinitionSchema,
+    "ui-store-action": uiStoreActionNodeDefinitionSchema,
     "ui-action": uiActionNodeDefinitionSchema,
     "ui-navigation": uiNavigationNodeDefinitionSchema,
     "ui-alert": uiAlertNodeDefinitionSchema,

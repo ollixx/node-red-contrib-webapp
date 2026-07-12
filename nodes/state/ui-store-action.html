@@ -1,0 +1,91 @@
+<script type="text/javascript" src="resources/node-red-contrib-webapp/lib/editor-common.js"></script>
+<script type="text/javascript">
+    (function () {
+        const common = window.WebappEditorCommon;
+        common.registerNodeType("ui-store-action", {
+            category: "webapp state",
+            color: "#d8e8f8",
+            defaults: {
+                name: { value: "" },
+                parent: { value: "", required: true },
+                store: { value: "", required: true },
+                op: { value: "set", required: true },
+                path: { value: "" },
+                mode: { value: "reference", required: true }
+            },
+            inputs: 1,
+            outputs: 1,
+            icon: "font-awesome/fa-bolt",
+            label: common.labelWithName("ui-store-action"),
+            onadd: function () {
+                if (!this.name) {
+                    this.name = common.getNextNameDefault("ui-store-action", "Store Action");
+                }
+            },
+            oneditprepare: function () {
+                common.installParentAppSelector().call(this);
+                common.installReferenceSelectors({ store: "#node-input-store" }).call(this);
+            }
+        });
+    })();
+</script>
+<script type="text/html" data-template-name="ui-store-action">
+    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <hr style="margin: 8px 0;">
+    <div class="form-row"><label for="node-input-parent">App</label><select id="node-input-parent"></select></div>
+    <div class="form-row"><label for="node-input-store">Store</label><select id="node-input-store"></select></div>
+    <div class="form-row"><label for="node-input-op">Operation</label>
+        <select id="node-input-op">
+            <option value="set">set</option>
+            <option value="patch">patch</option>
+            <option value="delete">delete</option>
+            <option value="replace">replace</option>
+            <option value="reset">reset</option>
+        </select>
+    </div>
+    <div class="form-row"><label for="node-input-path">Path</label><input type="text" id="node-input-path" placeholder="(optional sub-path, e.g. name)"></div>
+    <div class="form-row"><label for="node-input-mode">Mode</label>
+        <select id="node-input-mode">
+            <option value="reference">reference (apply directly)</option>
+            <option value="wire">wire (emit envelope)</option>
+        </select>
+    </div>
+</script>
+<script type="text/html" data-help-name="ui-store-action">
+    <p>Typed, reference-based <strong>mutation</strong> of a <code>ui-store</code>. Pick the store, an
+    operation, and a mode in the editor instead of hand-building <code>msg.ui.store</code>. Unlike
+    <code>ui-store</code> (which holds state and writes via its own input protocol) and
+    <code>ui-store-read</code> (a non-mutating getter), this node <em>triggers</em> a write.</p>
+    <h4>Config</h4>
+    <ul>
+        <li><strong>Store</strong> — reference to the target <code>ui-store</code> node (node picker, preset Stores).</li>
+        <li><strong>Operation</strong> — <code>set</code> | <code>patch</code> | <code>delete</code> |
+            <code>replace</code> | <code>reset</code>. <code>set</code>/<code>patch</code> write at the
+            resolved path; <code>delete</code> removes at the path; <code>replace</code> swaps the whole
+            slice; <code>reset</code> restores the store's <code>initialValue</code> and <em>ignores</em> the value.</li>
+        <li><strong>Path</strong> — optional one-level sub-path relative to the store's
+            <code>statePath</code> (ADR 0013). Overridable at runtime (see below). Empty = the whole slice.</li>
+        <li><strong>Mode</strong> — <code>reference</code> applies the op directly, server-side (per-client,
+            SSE re-render); <code>wire</code> emits the envelope on the out-port instead.</li>
+        <li><strong>App</strong> — the owning <code>ui-app</code> (required; a deploy error when empty, P205).</li>
+    </ul>
+    <h4>Value &amp; path precedence</h4>
+    <p>The value to write comes from <code>msg.payload</code> (for <code>set</code>/<code>patch</code>/<code>replace</code>);
+    <code>reset</code> takes no value. Path precedence:
+    <code>msg.ui.store.path</code> &rsaquo; <code>msg.path</code> &rsaquo; config <strong>Path</strong>
+    &rsaquo; (none = the whole slice at <code>statePath</code>).</p>
+    <h4>Modes</h4>
+    <ul>
+        <li><strong>reference</strong> — every input applies the op DIRECTLY to the referenced store,
+            per-client via <code>msg.ui.clientId</code> (same scope rule as writing: a
+            <code>client-only</code> op without a clientId is a
+            <code>server.store.scope-violation</code> error), and pushes a fresh snapshot so a
+            store-bound view updates live. No wire to the <code>ui-store</code> needed. The out-port emits
+            the <code>changed</code> notification.</li>
+        <li><strong>wire</strong> — the node does NOT mutate; it emits
+            <code>msg.ui.store = { id, op, path, value }</code> on the out-port, which you wire to the
+            <code>ui-store</code> node (or a dispatcher) that applies it.</li>
+    </ul>
+    <p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/state/ui-store-action.md"
+        target="_blank">Full documentation</a></p>
+</script>

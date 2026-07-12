@@ -29,6 +29,7 @@ import {
     type UiSliderNodeDefinition,
     type UiStoreNodeDefinition,
     type UiStoreReadNodeDefinition,
+    type UiStoreActionNodeDefinition,
     type UiSwitchNodeDefinition,
     type UiTableNodeDefinition,
     type UiTextareaNodeDefinition,
@@ -198,6 +199,14 @@ export interface UiQueryEditorConfig extends IdentifiedEditorConfig {
 export interface UiStoreReadEditorConfig extends IdentifiedEditorConfig {
     store?: string;
     path?: string;
+}
+
+// P211 (ADR 0029): the typed store-mutation node (hybrid wire|reference).
+export interface UiStoreActionEditorConfig extends IdentifiedEditorConfig {
+    store?: string;
+    op?: string;
+    path?: string;
+    mode?: string;
 }
 
 export interface UiSelectEditorConfig extends MountableEditorConfig {
@@ -530,6 +539,7 @@ export type NodeEditorConfig =
     | UiStoreEditorConfig
     | UiQueryEditorConfig
     | UiStoreReadEditorConfig
+    | UiStoreActionEditorConfig
     | UiActionEditorConfig
     | UiNavigationEditorConfig
     | UiAlertEditorConfig
@@ -574,6 +584,7 @@ export type NodeEditorDefinition =
     | BaseEditorNodeDefinition<UiStoreEditorConfig, UiStoreNodeDefinition>
     | BaseEditorNodeDefinition<UiQueryEditorConfig, UiQueryNodeDefinition>
     | BaseEditorNodeDefinition<UiStoreReadEditorConfig, UiStoreReadNodeDefinition>
+    | BaseEditorNodeDefinition<UiStoreActionEditorConfig, UiStoreActionNodeDefinition>
     | BaseEditorNodeDefinition<UiActionEditorConfig, UiActionNodeDefinition>
     | BaseEditorNodeDefinition<UiNavigationEditorConfig, UiNavigationNodeDefinition>
     | BaseEditorNodeDefinition<UiAlertEditorConfig, UiAlertNodeDefinition>
@@ -1360,6 +1371,22 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         id: config.id ?? "",
         store: config.store ?? "",
         path: config.path
+    })),
+    // P211 (ADR 0029): the typed store-mutation node. References a ui-store id, an
+    // op (set|patch|delete|replace|reset), an optional sub-path, and a hybrid mode
+    // (reference|wire). `parent` is the owning app (required at deploy).
+    "ui-store-action": createDefinition("ui-store-action", "state", {
+        id: requiredString("Store-action IDs are required before deploy."),
+        store: requiredString("A ui-store-action must reference a store."),
+        op: optionalStringEnum(["set", "patch", "delete", "replace", "reset"], "Store actions must use a known operation."),
+        mode: optionalStringEnum(["reference", "wire"], "Store action mode must be reference or wire.")
+    }, (config: UiStoreActionEditorConfig): UiStoreActionNodeDefinition => ({
+        type: "ui-store-action",
+        id: config.id ?? "",
+        store: config.store ?? "",
+        op: (config.op as UiStoreActionNodeDefinition["op"]) ?? "set",
+        path: config.path,
+        mode: (config.mode as UiStoreActionNodeDefinition["mode"]) ?? "reference"
     })),
     "ui-action": createDefinition("ui-action", "behavior", {
         id: requiredString("Action IDs are required before deploy."),
