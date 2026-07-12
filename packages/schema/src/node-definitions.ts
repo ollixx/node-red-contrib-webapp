@@ -652,6 +652,26 @@ export const uiStoreActionNodeDefinitionSchema = identifiedNodeSchema.extend({
 
 export type UiStoreActionNodeDefinition = z.infer<typeof uiStoreActionNodeDefinitionSchema>;
 
+// P212 (ADR 0029): a typed, reference-based TRIGGER node for a `ui-query`. It
+// references a ui-query by id (`query`) and carries an action selector
+// (`refresh`, an extensible enum — the only value today). `mode` mirrors
+// `ui-action.targetMode`: `reference` fires the referenced query's refresh
+// directly server-side (via fireQueryRefresh, per client via msg.ui.clientId) so
+// its out-port emits the retrieval; `wire` emits the
+// `msg.ui.query = {queryPath, refresh:true, params}` envelope on the out-port
+// instead, for the flow to wire to the ui-query. `parent` is the owning app
+// (required at deploy via the P205 parent validation). Optional query params come
+// from `msg.payload` (or `msg.ui.query.params`).
+export const uiQueryActionNodeDefinitionSchema = identifiedNodeSchema.extend({
+    type: z.literal("ui-query-action"),
+    parent: identifierSchema.optional(),
+    query: z.string().min(1, "ui-query-action must reference a ui-query node."),
+    action: z.enum(["refresh"]).default("refresh"),
+    mode: z.enum(["reference", "wire"]).default("reference")
+});
+
+export type UiQueryActionNodeDefinition = z.infer<typeof uiQueryActionNodeDefinitionSchema>;
+
 // P118 (ADR 0011 §1): navigate target-mode exclusivity. The stored `targetMode`
 // declares the single intent; only that mode's fields may be set so a config can
 // never carry a double configuration:
@@ -1768,6 +1788,7 @@ export const uiNodeDefinitionSchema = z.union([
     uiQueryNodeDefinitionSchema,
     uiStoreReadNodeDefinitionSchema,
     uiStoreActionNodeDefinitionSchema,
+    uiQueryActionNodeDefinitionSchema,
     uiActionNodeDefinitionSchema,
     uiNavigationNodeDefinitionSchema,
     uiAlertNodeDefinitionSchema,
@@ -1815,6 +1836,7 @@ const uiNodeSchemaByType: Record<string, z.ZodTypeAny> = {
     "ui-query": uiQueryNodeDefinitionSchema,
     "ui-store-read": uiStoreReadNodeDefinitionSchema,
     "ui-store-action": uiStoreActionNodeDefinitionSchema,
+    "ui-query-action": uiQueryActionNodeDefinitionSchema,
     "ui-action": uiActionNodeDefinitionSchema,
     "ui-navigation": uiNavigationNodeDefinitionSchema,
     "ui-alert": uiAlertNodeDefinitionSchema,

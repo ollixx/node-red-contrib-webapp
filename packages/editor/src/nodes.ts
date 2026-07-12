@@ -30,6 +30,7 @@ import {
     type UiStoreNodeDefinition,
     type UiStoreReadNodeDefinition,
     type UiStoreActionNodeDefinition,
+    type UiQueryActionNodeDefinition,
     type UiSwitchNodeDefinition,
     type UiTableNodeDefinition,
     type UiTextareaNodeDefinition,
@@ -206,6 +207,13 @@ export interface UiStoreActionEditorConfig extends IdentifiedEditorConfig {
     store?: string;
     op?: string;
     path?: string;
+    mode?: string;
+}
+
+// P212 (ADR 0029): the typed query-trigger node (hybrid wire|reference).
+export interface UiQueryActionEditorConfig extends IdentifiedEditorConfig {
+    query?: string;
+    action?: string;
     mode?: string;
 }
 
@@ -540,6 +548,7 @@ export type NodeEditorConfig =
     | UiQueryEditorConfig
     | UiStoreReadEditorConfig
     | UiStoreActionEditorConfig
+    | UiQueryActionEditorConfig
     | UiActionEditorConfig
     | UiNavigationEditorConfig
     | UiAlertEditorConfig
@@ -585,6 +594,7 @@ export type NodeEditorDefinition =
     | BaseEditorNodeDefinition<UiQueryEditorConfig, UiQueryNodeDefinition>
     | BaseEditorNodeDefinition<UiStoreReadEditorConfig, UiStoreReadNodeDefinition>
     | BaseEditorNodeDefinition<UiStoreActionEditorConfig, UiStoreActionNodeDefinition>
+    | BaseEditorNodeDefinition<UiQueryActionEditorConfig, UiQueryActionNodeDefinition>
     | BaseEditorNodeDefinition<UiActionEditorConfig, UiActionNodeDefinition>
     | BaseEditorNodeDefinition<UiNavigationEditorConfig, UiNavigationNodeDefinition>
     | BaseEditorNodeDefinition<UiAlertEditorConfig, UiAlertNodeDefinition>
@@ -1387,6 +1397,21 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         op: (config.op as UiStoreActionNodeDefinition["op"]) ?? "set",
         path: config.path,
         mode: (config.mode as UiStoreActionNodeDefinition["mode"]) ?? "reference"
+    })),
+    // P212 (ADR 0029): the typed query-trigger node. References a ui-query id, an
+    // action (refresh; extensible enum) and a hybrid mode (reference|wire).
+    // `parent` is the owning app (required at deploy).
+    "ui-query-action": createDefinition("ui-query-action", "state", {
+        id: requiredString("Query-action IDs are required before deploy."),
+        query: requiredString("A ui-query-action must reference a query."),
+        action: optionalStringEnum(["refresh"], "Query actions must use a known action."),
+        mode: optionalStringEnum(["reference", "wire"], "Query action mode must be reference or wire.")
+    }, (config: UiQueryActionEditorConfig): UiQueryActionNodeDefinition => ({
+        type: "ui-query-action",
+        id: config.id ?? "",
+        query: config.query ?? "",
+        action: (config.action as UiQueryActionNodeDefinition["action"]) ?? "refresh",
+        mode: (config.mode as UiQueryActionNodeDefinition["mode"]) ?? "reference"
     })),
     "ui-action": createDefinition("ui-action", "behavior", {
         id: requiredString("Action IDs are required before deploy."),

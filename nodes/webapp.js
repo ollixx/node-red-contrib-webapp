@@ -136,6 +136,8 @@ const WEBAPP_NODE_TYPES = new Set([
     "ui-store-read",
     // P211 (ADR 0029): reference-based, typed store MUTATION (hybrid wire|reference).
     "ui-store-action",
+    // P212 (ADR 0029): reference-based, typed query TRIGGER (hybrid wire|reference).
+    "ui-query-action",
     "ui-action",
     "ui-navigation",
     "ui-alert",
@@ -2975,7 +2977,7 @@ function validateAppRootUniqueness(RED) {
 // the node's own id. Pure over a nodes array (unit-testable); the RED wrapper reads
 // the deployed flow file (mirrors validateAppRootUniqueness). Returns a list of
 // { nodeId, parent, message }.
-const APP_SCOPED_PARENT_TYPES = ["ui-store", "ui-store-read", "ui-store-action", "ui-query", "ui-action", "ui-navigation", "ui-dialog", "ui-route"];
+const APP_SCOPED_PARENT_TYPES = ["ui-store", "ui-store-read", "ui-store-action", "ui-query", "ui-query-action", "ui-action", "ui-navigation", "ui-dialog", "ui-route"];
 
 function collectAppScopedParentIssues(nodes) {
     const issues = [];
@@ -4683,6 +4685,89 @@ function fireQueryRefresh(nodeId, queryPath, params, appId, clientId) {
     // wired fetch returns.
     if (pushedLoading && appId) {
         pushSnapshotToClients(appId, clientId, readDeployDefinitions(RED));
+    }
+}
+
+// P212 (ADR 0029): resolve a referenced ui-query by its definition id to the
+// runtime node id (needed by fireQueryRefresh / RED.nodes.getNode) and its
+// declared queryPath (needed for the wire-mode envelope). Returns undefined when
+// no ui-query with that id is registered.
+function findQueryRegistrationById(queryId) {
+    if (!queryId) {
+        return undefined;
+    }
+    for (const registration of runtimeState.definitions.values()) {
+        const def = registration.definition;
+        if (def && def.type === "ui-query" && def.id === queryId) {
+            return { nodeId: registration.nodeId, queryPath: def.queryPath };
+        }
+    }
+    return undefined;
+}
+
+// P212 (ADR 0029): typed, reference-based TRIGGER for a ui-query (hybrid
+// wire|reference). Every input message fires the referenced query's `refresh`.
+//   - reference: call fireQueryRefresh DIRECTLY (server-side, per-client via
+//     msg.ui.clientId) so the query's out-port emits its retrieval. No wire.
+//   - wire: do NOT trigger; emit msg.ui.query = { queryPath, refresh:true, params }
+//     on the out-port, for the flow to wire to the ui-query input.
+// Optional query params come from msg.ui.query.params › msg.payload; when neither
+// is present NO `params` key is emitted (never params:undefined / params:{}).
+function queryActionInputHandler(node, msg, send, done) {
+    const actionDefinition = node.webappDefinition;
+    const mode = actionDefinition && actionDefinition.mode === "wire" ? "wire" : "reference";
+    const queryId = actionDefinition && actionDefinition.query;
+
+    // Params source: msg.ui.query.params › msg.payload; absent → omit the key.
+    const uiQuery = msg && msg.ui && typeof msg.ui === "object" ? msg.ui.query : undefined;
+    const uiQueryParams = uiQuery && typeof uiQuery === "object" ? uiQuery.params : undefined;
+    const params = uiQueryParams !== undefined
+        ? uiQueryParams
+        : (msg ? msg.payload : undefined);
+
+    const activeAppId = findAppIdForNode(node);
+    const clientId = msg && msg.ui && msg.ui.clientId ? String(msg.ui.clientId) : undefined;
+
+    const queryRegistration = findQueryRegistrationById(queryId);
+    if (!queryRegistration) {
+        const errMsg = `ui-query-action references an unknown query '${queryId}'.`;
+        reportRuntimeError(node, {
+            severity: "error",
+            code: "server.query.action-missing-query",
+            message: errMsg,
+            context: { appId: activeAppId || undefined, nodeId: node.id, op: "query:refresh" },
+            clientId
+        });
+        if (done) {
+            done(new Error(errMsg));
+        }
+        return;
+    }
+
+    // -- wire mode: emit the refresh envelope; do NOT trigger. --
+    if (mode === "wire") {
+        const query = { queryPath: queryRegistration.queryPath, refresh: true };
+        if (params !== undefined) {
+            query.params = params;
+        }
+        const outMsg = {
+            ...msg,
+            ui: {
+                ...(msg && msg.ui && typeof msg.ui === "object" ? msg.ui : {}),
+                query
+            }
+        };
+        send(outMsg);
+        if (done) {
+            done();
+        }
+        return;
+    }
+
+    // -- reference mode: fire the referenced query's refresh directly. --
+    fireQueryRefresh(queryRegistration.nodeId, queryRegistration.queryPath, params, activeAppId, clientId);
+    if (done) {
+        done();
     }
 }
 
@@ -6559,6 +6644,23 @@ const runtimeNodeRegistry = {
         }),
         options: {
             inputHandler: storeActionInputHandler
+        }
+    },
+    // P212 (ADR 0029): typed, reference-based query TRIGGER node (hybrid
+    // wire|reference). Action refresh (extensible); reference mode fires the
+    // referenced query's refresh directly (fireQueryRefresh), wire mode emits the
+    // { queryPath, refresh:true, params } envelope. Params from msg.payload.
+    "ui-query-action": {
+        mapConfig: (config) => ({
+            type: "ui-query-action",
+            id: getUiId(config),
+            parent: config.parent || undefined,
+            query: config.query || undefined,
+            action: typeof config.action === "string" && config.action ? config.action : "refresh",
+            mode: config.mode === "wire" ? "wire" : "reference"
+        }),
+        options: {
+            inputHandler: queryActionInputHandler
         }
     },
     "ui-query": {
