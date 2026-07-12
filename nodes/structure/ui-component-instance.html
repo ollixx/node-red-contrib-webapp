@@ -112,6 +112,9 @@
                 Object.keys(stored).forEach(function (name) {
                     propsList.editableList("addItem", { name: name, binding: stored[name] });
                 });
+                // Keep the hidden carrier in sync with the seeded list so the field
+                // never round-trips through an empty value (see oneditsave).
+                $("#node-input-props").val(JSON.stringify(stored));
             },
             oneditsave: function () {
                 const out = {};
@@ -125,7 +128,15 @@
                         out[row.name] = row.binding;
                     }
                 });
-                this.props = JSON.stringify(out);
+                const serialised = JSON.stringify(out);
+                // `props` is a `defaults` field WITH a hidden `#node-input-props`
+                // input, so Node-RED's field-copy overwrites `this.props` with that
+                // input's value AFTER oneditsave runs. Setting only `this.props` here
+                // is therefore clobbered back to the empty hidden input, wiping the
+                // whole props map. Serialise into the hidden input so the framework
+                // copy carries the real value.
+                $("#node-input-props").val(serialised);
+                this.props = serialised;
             }
         });
     })();
