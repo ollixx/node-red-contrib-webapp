@@ -27,7 +27,7 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-_No open work — the roadmap is drained. New work is added here as packages are authored._
+- **P209** — nodes/ui-store-read — neuer Knoten: referenz-basierter On-Demand-Leser eines ui-store (jeder Input → Read; Path-Override `msg.ui.store.path`›`msg.path`›config; per-client, nicht-mutierend; `payload` + `msg.ui.store`) — *ADR 0028; Owner 2026-07-10* — [P209](nodes/ui-store-read/P209-ui-store-read-node.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -95,4 +95,4 @@ open the folder for the full history.
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 208 done, 0 open, 8 deferred.**
+**Total: 208 done, 1 open, 8 deferred.**
