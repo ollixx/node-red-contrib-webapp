@@ -27,7 +27,8 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-_No open work — the roadmap is drained. New work is added here as packages are authored._
+- **P211** — nodes/ui-store-action — neuer Knoten: typisierte Store-Mutation (Op set/patch/delete/replace/reset) per Referenz, hybrid `reference|wire`; Wert aus `msg.payload`, Path-Override, per-client — *ADR 0029; Owner 2026-07-12* — [P211](nodes/ui-store-action/P211-ui-store-action-node.md)
+- **P212** — nodes/ui-query-action — neuer Knoten: typisierter Query-Trigger (action refresh) per Referenz, hybrid `reference|wire`; optional Params aus `msg.payload` — *ADR 0029; Owner 2026-07-12* — [P212](nodes/ui-query-action/P212-ui-query-action-node.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -97,4 +98,4 @@ open the folder for the full history.
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 208 done, 1 open, 9 deferred.**
+**Total: 208 done, 2 open, 9 deferred.**
