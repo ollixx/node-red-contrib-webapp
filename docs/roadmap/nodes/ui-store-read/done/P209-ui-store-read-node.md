@@ -19,11 +19,11 @@ verify: browser
 spec: docs/nodes/state/ui-store-read.md
 tests: tests/e2e/nodes/state/ui-store-read.tests.md
 dependencies: []
-status: in_progress
+status: done
 ---
 # P209 — neuer Knoten `ui-store-read` (On-Demand-Store-Leser)
 
-> Entscheidung & Begründung: [ADR 0028](../../../adr/0028-store-reads-are-a-separate-reference-node.md).
+> Entscheidung & Begründung: [ADR 0028](../../../../adr/0028-store-reads-are-a-separate-reference-node.md).
 > Vier-Datei-Muster — vor dem Lesen von Quellcode den `/node-red-node`-Skill
 > aufrufen (Templates + Checkliste).
 
@@ -55,3 +55,34 @@ Nadelöhr auf ui-store). `ui-store` bleibt unangetastet.
   liest **eigenen Client-Zustand**.
 - Sub-Pfad ist EINE Ebene relativ zum `statePath` (ADR 0013), konsistent mit den
   Schreib-Ops und store-Bindings.
+
+## Result
+
+- **delivered:** New node **`ui-store-read`** (ADR 0028) — a reference-based, on-demand, **non-mutating**
+  reader of a `ui-store` (`ui-store` itself untouched — no read-op, no 2nd port; drop in as many readers
+  as needed, no fan-out bottleneck). Four-file pattern via the `/node-red-node` skill. Schema
+  `uiStoreReadNodeDefinitionSchema` (`store` required, `path` optional, `parent`) added to the union +
+  byType map + exports. Node files `nodes/state/ui-store-read.{js,html}` (editor: parent-app selector +
+  store node-picker + help). `nodes/webapp.js`: registered in `WEBAPP_NODE_TYPES`, added to the P205
+  `APP_SCOPED_PARENT_TYPES` set (so `parent` is deploy-required), a `runtimeNodeRegistry` mapConfig, and
+  a `storeReadInputHandler` (+`findStoreDefinitionById`) — **every input → read** the current server
+  state at the store's `statePath` (+ sub-path), **path precedence `msg.ui.store.path › msg.path › config
+  path › whole slice`**, **per-client** via `msg.ui.clientId` (getClientState; no clientId → broadcast/
+  liveState), scope guards mirroring the write path (`client-only` without clientId → structured
+  `server.store.scope-violation`, no silent empty read). Emits `msg.payload=<value>` +
+  `msg.ui.store={id,event:'read',path,fullPath,value,clientId}`, no state write / no snapshot push.
+  `package.json` `node-red.nodes` registration + editor nodeSet entry. Spec `docs/nodes/state/ui-store-read.md`
+  (fields, precedence, per-client/scope, output form, vs ui-store/ui-query) + editor help + test catalogue.
+- **stats:** new node (4 files) + schema/editor/runtime wiring + docs; +new tests (schema 6, runtime 12,
+  P205 extended). Develop verification: build 0; full unit green (**schema 460 / editor 176 / renderer
+  148 / runtime 1120**); **ui-store-read E2E green (measured)** — after a per-client `name` edit, a read
+  emits `msg.payload = {"name":"B","city":"X"}` (current per-client slice); with `msg.path='name'` the
+  reader emits `payload='B'` (override) — asserted via the emitted message, not registration. check:specs
+  now covers **40** nodes; check:links + check:roadmap + lint green. Full suite 674 passed (only the
+  pre-existing accordion + flaky ui-tabs + one editor-registration-race flake that **passes in
+  isolation** — none a P209 regression).
+- **notes:** `ui-store` left untouched (ADR 0028). `parent` required is auto-enforced by the P205 deploy
+  validation (ui-store-read added to that set). Distinct from ui-query (external read-only data) —
+  ui-store-read reads the app's OWN per-client state. The agent found + fixed a fixture bug en route
+  (`patch` needs a path per P80). No branch leak; committed incrementally (4 commits).
+- **cost:** session agent-a0111880a508108bb, ~45m.

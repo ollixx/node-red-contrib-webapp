@@ -27,7 +27,7 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P209** — nodes/ui-store-read — neuer Knoten: referenz-basierter On-Demand-Leser eines ui-store (jeder Input → Read; Path-Override `msg.ui.store.path`›`msg.path`›config; per-client, nicht-mutierend; `payload` + `msg.ui.store`) — *ADR 0028; Owner 2026-07-10* — [P209](nodes/ui-store-read/P209-ui-store-read-node.md)
+_No open work — the roadmap is drained. New work is added here as packages are authored._
 
 
 ## Deferred (parked, not abandoned)
@@ -58,6 +58,7 @@ open the folder for the full history.
 | nodes/ui-log | 2 |
 | nodes/ui-query | 5 |
 | nodes/ui-store | 3 |
+| nodes/ui-store-read | 1 |
 | nodes/ui-badge | 3 |
 | nodes/ui-route | 2 |
 | nodes/ui-text | 2 |
