@@ -618,6 +618,20 @@ export const uiQueryNodeDefinitionSchema = identifiedNodeSchema.extend({
 
 export type UiQueryNodeDefinition = z.infer<typeof uiQueryNodeDefinitionSchema>;
 
+// P209 (ADR 0028): a reference-based, on-demand, NON-mutating reader of a
+// `ui-store`. `store` references a ui-store node id; `path` is an optional
+// default one-level sub-path (relative to the store's statePath, ADR 0013) that
+// a runtime `msg.ui.store.path` / `msg.path` can override. `parent` is the
+// owning app (required at deploy via the P205 parent validation).
+export const uiStoreReadNodeDefinitionSchema = identifiedNodeSchema.extend({
+    type: z.literal("ui-store-read"),
+    parent: identifierSchema.optional(),
+    store: z.string().min(1, "ui-store-read must reference a ui-store node."),
+    path: z.string().min(1, "Store read paths must not be empty.").optional()
+});
+
+export type UiStoreReadNodeDefinition = z.infer<typeof uiStoreReadNodeDefinitionSchema>;
+
 // P118 (ADR 0011 §1): navigate target-mode exclusivity. The stored `targetMode`
 // declares the single intent; only that mode's fields may be set so a config can
 // never carry a double configuration:
@@ -1732,6 +1746,7 @@ export const uiNodeDefinitionSchema = z.union([
     uiDialogNodeDefinitionSchema,
     uiStoreNodeDefinitionSchema,
     uiQueryNodeDefinitionSchema,
+    uiStoreReadNodeDefinitionSchema,
     uiActionNodeDefinitionSchema,
     uiNavigationNodeDefinitionSchema,
     uiAlertNodeDefinitionSchema,
@@ -1777,6 +1792,7 @@ const uiNodeSchemaByType: Record<string, z.ZodTypeAny> = {
     "ui-dialog": uiDialogNodeDefinitionSchema,
     "ui-store": uiStoreNodeDefinitionSchema,
     "ui-query": uiQueryNodeDefinitionSchema,
+    "ui-store-read": uiStoreReadNodeDefinitionSchema,
     "ui-action": uiActionNodeDefinitionSchema,
     "ui-navigation": uiNavigationNodeDefinitionSchema,
     "ui-alert": uiAlertNodeDefinitionSchema,

@@ -1,0 +1,63 @@
+<script type="text/javascript" src="resources/node-red-contrib-webapp/lib/editor-common.js"></script>
+<script type="text/javascript">
+    (function () {
+        const common = window.WebappEditorCommon;
+        common.registerNodeType("ui-store-read", {
+            category: "webapp state",
+            color: "#d8e8f8",
+            defaults: {
+                name: { value: "" },
+                parent: { value: "", required: true },
+                store: { value: "", required: true },
+                path: { value: "" }
+            },
+            inputs: 1,
+            outputs: 1,
+            icon: "font-awesome/fa-download",
+            label: common.labelWithName("ui-store-read"),
+            onadd: function () {
+                if (!this.name) {
+                    this.name = common.getNextNameDefault("ui-store-read", "Store Read");
+                }
+            },
+            oneditprepare: function () {
+                common.installParentAppSelector().call(this);
+                common.installReferenceSelectors({ store: "#node-input-store" }).call(this);
+            }
+        });
+    })();
+</script>
+<script type="text/html" data-template-name="ui-store-read">
+    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <hr style="margin: 8px 0;">
+    <div class="form-row"><label for="node-input-parent">App</label><select id="node-input-parent"></select></div>
+    <div class="form-row"><label for="node-input-store">Store</label><select id="node-input-store"></select></div>
+    <div class="form-row"><label for="node-input-path">Default Path</label><input type="text" id="node-input-path" placeholder="(optional sub-path, e.g. name)"></div>
+</script>
+<script type="text/html" data-help-name="ui-store-read">
+    <p>On-demand, <strong>non-mutating</strong> reader of a <code>ui-store</code>. Every
+    incoming message triggers a read of the <em>current</em> server state at the referenced
+    store's <code>statePath</code> (plus an optional sub-path). It never changes state and never
+    pushes a snapshot — unlike <code>ui-store</code> (which writes and emits <code>changed</code>).
+    It reads your app's <em>own client state</em> — unlike <code>ui-query</code> (external, read-only data).</p>
+    <h4>Config</h4>
+    <ul>
+        <li><strong>Store</strong> — reference to the <code>ui-store</code> node to read (node picker).</li>
+        <li><strong>Default Path</strong> — optional one-level sub-path relative to the store's
+            <code>statePath</code>. Overridden at runtime (see below).</li>
+        <li><strong>App</strong> — the owning <code>ui-app</code> (required; a deploy error when empty).</li>
+    </ul>
+    <h4>Path precedence</h4>
+    <p><code>msg.ui.store.path</code> &rsaquo; <code>msg.path</code> &rsaquo; config
+    <strong>Default Path</strong> &rsaquo; (none = the whole slice at <code>statePath</code>).</p>
+    <h4>Per-client &amp; scope</h4>
+    <p>With <code>msg.ui.clientId</code> the read returns that client's per-client slice; without a
+    clientId it reads the shared broadcast state. A <strong>client-only</strong> store read with no
+    clientId is a structured <code>server.store.scope-violation</code> error — never a silent empty read.</p>
+    <h4>Output</h4>
+    <p>Emits <code>msg.payload = &lt;value&gt;</code> and
+    <code>msg.ui.store = { id, event: "read", path, fullPath, value, clientId }</code>. <code>value</code>
+    is the whole slice or the sub-value per the resolved path.</p>
+    <p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/state/ui-store-read.md"
+        target="_blank">Full documentation</a></p>
+</script>
