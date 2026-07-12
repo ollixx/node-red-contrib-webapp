@@ -47,7 +47,7 @@ Different tasks use different entry prompts. Start from the right one:
 | Task | Entry prompt |
 |---|---|
 | Implement a single phase (one fresh session) | `.ai/prompts/run-next-phase.prompt.md` |
-| Run many phases — context-efficient | `.ai/prompts/run-roadmap-orchestrated.prompt.md` |
+| Run many phases — context-efficient (say **"watch"** to poll the roadmap every 270s and auto-run newly-planned work forever) | `.ai/prompts/run-roadmap-orchestrated.prompt.md` |
 | Only validate a completed phase | `.ai/prompts/validate-phase.prompt.md` |
 | Only write missing tests for a phase | `.ai/prompts/write-tests.prompt.md` |
 | Fix a bug / regression that is not a phase | `.ai/prompts/fix-bug.prompt.md` |

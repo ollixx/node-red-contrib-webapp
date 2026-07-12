@@ -112,6 +112,47 @@ For each such phase:
 - No pending phase has all dependencies satisfied.
 - The roadmap is complete.
 
+In **watch mode** (below) the last three conditions become *reschedule and
+re-check* instead of hard stops.
+
+## Watch mode (opt-in — poll the roadmap forever)
+
+By default the orchestrator drains the currently-open roadmap **once** and ends.
+**When the run is asked to watch** (the invocation says *watch / poll / keep
+running / run continuously / every N minutes*), it instead **polls for new open
+work forever**, until the user stops it in chat. This is the self-draining queue:
+whatever gets planned into `INDEX.md` is picked up on the next tick.
+
+In watch mode the stop conditions above change:
+
+- **"No pending phase" / "roadmap complete"** → NOT a stop. Instead: leave HEAD on
+  `develop`, run `pnpm check:roadmap` (must pass), then call
+  **`ScheduleWakeup(270s, …)`** (reason e.g. *"watching roadmap for new open
+  work"*) and go idle. On wake, re-run `pnpm check:roadmap`, **re-read
+  `docs/roadmap/INDEX.md` fresh** (not from memory), and re-enter the Loop from
+  step 1. Use **270s**, not 300s — 270s stays inside the 5-minute prompt-cache
+  window, a literal 300s just misses the cache for no benefit.
+- **A candidate phase is `in_progress`** (another session/orchestrator holds it)
+  → do **not** spawn and do **not** hard-stop: another writer is on it.
+  `ScheduleWakeup(270s)` and re-check next tick — it may finish and leave more work.
+- **`blocked` sub-agent / unresolvable merge conflict** → still mark *that phase*
+  `blocked` and **report it in chat once**. But a `blocked` package is no longer
+  `pending`, so the picker skips it and the watcher keeps polling for **other**
+  pending work — a block does not halt the loop. (A human clears the block
+  separately via the roadmap-evolution role.)
+
+Rules that still hold in watch mode (do not relax these):
+- **Single writer + concurrency guard, unchanged:** set `in_progress` before each
+  spawn; verify the **full E2E on `develop`** before closing; one bookkeeping
+  commit at a time; never let a sub-agent touch `docs/roadmap/**`.
+- **Report every pickup and close-out in chat** (one line each) so the user sees
+  progress and can stop the loop at any point.
+- **No idle timeout — runs forever.** It ends only when the user stops it (in chat,
+  or `ScheduleWakeup` with `stop: true`) or on a genuine unrecoverable error.
+  Between ticks the session stays warm and HEAD stays on `develop`.
+- Keep the idle wake-up line short so *"still watching, nothing open"* is easy to
+  tell apart from *"picked up P###"*.
+
 ## Optional parallelism
 
 Safe only because sub-agents never write the roadmap and each has its own worktree. You MAY spawn sub-agents for **two or more phases whose dependencies are all `done` and that are mutually independent** (no shared deliverable files). Still:
