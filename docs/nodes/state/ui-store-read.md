@@ -1,8 +1,9 @@
 # ui-store-read
 
-> **Status:** geplant (P209, [ADR 0028](../../adr/0028-store-reads-are-a-separate-reference-node.md)).
-> Diese Spec ist der Vertrags-Rahmen; die Umsetzung (P209) füllt Feld-Details,
-> Validierung und Beispiele nach dem Detail-Bar (AGENTS.md Regel 11) aus.
+> **Status:** implementiert (P209, [ADR 0028](../../adr/0028-store-reads-are-a-separate-reference-node.md)).
+> Vier-Datei-Muster: `nodes/state/ui-store-read.{js,html}`, Schema-Vertrag in
+> `packages/schema` (`uiStoreReadNodeDefinitionSchema`), Registrierung + Runtime-
+> Handler (`storeReadInputHandler`) in `nodes/webapp.js`. 1 Input, 1 Output.
 
 On-Demand-Leser eines [`ui-store`](ui-store.md): referenziert einen Store per ID
 und emittiert dessen aktuellen Zustand (ganz oder als Teil-Pfad) bei jedem Input.
