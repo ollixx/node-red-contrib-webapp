@@ -28,6 +28,7 @@ import {
     type UiSkeletonNodeDefinition,
     type UiSliderNodeDefinition,
     type UiStoreNodeDefinition,
+    type UiStoreReadNodeDefinition,
     type UiSwitchNodeDefinition,
     type UiTableNodeDefinition,
     type UiTextareaNodeDefinition,
@@ -191,6 +192,12 @@ export interface UiStoreEditorConfig extends IdentifiedEditorConfig {
 export interface UiQueryEditorConfig extends IdentifiedEditorConfig {
     queryPath?: string;
     refreshAction?: string;
+}
+
+// P209 (ADR 0028): the on-demand store reader.
+export interface UiStoreReadEditorConfig extends IdentifiedEditorConfig {
+    store?: string;
+    path?: string;
 }
 
 export interface UiSelectEditorConfig extends MountableEditorConfig {
@@ -522,6 +529,7 @@ export type NodeEditorConfig =
     | UiSliderEditorConfig
     | UiStoreEditorConfig
     | UiQueryEditorConfig
+    | UiStoreReadEditorConfig
     | UiActionEditorConfig
     | UiNavigationEditorConfig
     | UiAlertEditorConfig
@@ -565,6 +573,7 @@ export type NodeEditorDefinition =
     | BaseEditorNodeDefinition<UiSliderEditorConfig, UiSliderNodeDefinition>
     | BaseEditorNodeDefinition<UiStoreEditorConfig, UiStoreNodeDefinition>
     | BaseEditorNodeDefinition<UiQueryEditorConfig, UiQueryNodeDefinition>
+    | BaseEditorNodeDefinition<UiStoreReadEditorConfig, UiStoreReadNodeDefinition>
     | BaseEditorNodeDefinition<UiActionEditorConfig, UiActionNodeDefinition>
     | BaseEditorNodeDefinition<UiNavigationEditorConfig, UiNavigationNodeDefinition>
     | BaseEditorNodeDefinition<UiAlertEditorConfig, UiAlertNodeDefinition>
@@ -1340,6 +1349,17 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         id: config.id ?? "",
         queryPath: config.queryPath ?? "",
         refreshAction: config.refreshAction
+    })),
+    // P209 (ADR 0028): the on-demand store reader references a ui-store id and an
+    // optional default sub-path; `parent` is the owning app (required at deploy).
+    "ui-store-read": createDefinition("ui-store-read", "state", {
+        id: requiredString("Store-read IDs are required before deploy."),
+        store: requiredString("A ui-store-read must reference a store.")
+    }, (config: UiStoreReadEditorConfig): UiStoreReadNodeDefinition => ({
+        type: "ui-store-read",
+        id: config.id ?? "",
+        store: config.store ?? "",
+        path: config.path
     })),
     "ui-action": createDefinition("ui-action", "behavior", {
         id: requiredString("Action IDs are required before deploy."),

@@ -1,0 +1,22 @@
+[
+  { "type": "tab", "id": "p209flow", "label": "P209" },
+  { "type": "ui-app", "id": "p209App", "name": "P209 App", "root": "p209root", "layout": "app", "title": "P209", "z": "p209flow", "wires": [], "x": 200, "y": 120 },
+
+  { "type": "ui-store", "id": "p209Store", "name": "Entity", "parent": "p209App", "statePath": "entity", "scope": "client-only", "initialValue": "{\"name\":\"A\",\"city\":\"X\"}", "z": "p209flow", "wires": [], "x": 200, "y": 160 },
+  { "type": "ui-store", "id": "p209Result", "name": "Result", "parent": "p209App", "statePath": "result", "scope": "client-only", "initialValue": "{\"text\":\"\"}", "z": "p209flow", "wires": [], "x": 200, "y": 190 },
+
+  { "type": "ui-store-read", "id": "p209Read", "name": "Read Entity", "parent": "p209App", "store": "p209Store", "z": "p209flow", "wires": [["p209StoreResult"]], "x": 620, "y": 300 },
+
+  { "type": "ui-container", "id": "p209Cont", "name": "Container 1", "parent": "p209App", "mount": "p209App.content", "layoutId": "vertical", "variant": "section", "order": 0, "z": "p209flow", "wires": [], "x": 200, "y": 220 },
+  { "type": "ui-text", "id": "p209ResultText", "name": "result readout", "parent": "p209Cont", "mount": "container:p209Cont/content", "order": 0, "value": { "kind": "store", "path": "p209Result", "subPath": { "kind": "literal", "value": "text" } }, "z": "p209flow", "wires": [], "x": 200, "y": 250 },
+
+  { "type": "ui-list", "id": "p209ListSetB", "name": "SetB", "parent": "p209Cont", "mount": "container:p209Cont/content", "order": 1, "items": "[{\"id\":\"setb\",\"label\":\"SETB\"}]", "events": "[\"itemClick\"]", "z": "p209flow", "wires": [["p209FnSetB"]], "x": 200, "y": 290 },
+  { "type": "ui-list", "id": "p209ListReadAll", "name": "ReadAll", "parent": "p209Cont", "mount": "container:p209Cont/content", "order": 2, "items": "[{\"id\":\"rall\",\"label\":\"READALL\"}]", "events": "[\"itemClick\"]", "z": "p209flow", "wires": [["p209FnReadAll"]], "x": 200, "y": 320 },
+  { "type": "ui-list", "id": "p209ListReadName", "name": "ReadName", "parent": "p209Cont", "mount": "container:p209Cont/content", "order": 3, "items": "[{\"id\":\"rname\",\"label\":\"READNAME\"}]", "events": "[\"itemClick\"]", "z": "p209flow", "wires": [["p209FnReadName"]], "x": 200, "y": 350 },
+
+  { "type": "function", "id": "p209FnSetB", "name": "set name=B per-client", "func": "msg.ui.store = { id: 'p209Store', op: 'set', path: 'name', value: 'B' };\nreturn msg;", "outputs": 1, "noerr": 0, "z": "p209flow", "wires": [["p209Store"]], "x": 420, "y": 290 },
+  { "type": "function", "id": "p209FnReadAll", "name": "trigger read (whole slice)", "func": "delete msg.path;\nif (msg.ui && msg.ui.store) { delete msg.ui.store; }\nreturn msg;", "outputs": 1, "noerr": 0, "z": "p209flow", "wires": [["p209Read"]], "x": 420, "y": 320 },
+  { "type": "function", "id": "p209FnReadName", "name": "trigger read (msg.path=name)", "func": "if (msg.ui && msg.ui.store) { delete msg.ui.store; }\nmsg.path = 'name';\nreturn msg;", "outputs": 1, "noerr": 0, "z": "p209flow", "wires": [["p209Read"]], "x": 420, "y": 350 },
+
+  { "type": "function", "id": "p209StoreResult", "name": "stringify read into result store", "func": "var v = msg.payload;\nvar text = (v !== null && typeof v === 'object') ? JSON.stringify(v) : String(v);\nmsg.ui.store = { id: 'p209Result', op: 'replace', value: { text: text } };\nreturn msg;", "outputs": 1, "noerr": 0, "z": "p209flow", "wires": [["p209Result"]], "x": 860, "y": 300 }
+]

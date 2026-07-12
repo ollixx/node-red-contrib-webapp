@@ -43,10 +43,11 @@ describe("P205: app-scoped node requires a valid ui-app parent", () => {
         expect(issues[0].message).toContain("not a ui-app");
     });
 
-    it("applies to ALL app-scoped types (store/query/action/navigation/dialog/route)", () => {
+    it("applies to ALL app-scoped types (store/store-read/query/action/navigation/dialog/route)", () => {
         const nodes = [
             app,
             { type: "ui-store", id: "s1", parent: "" },
+            { type: "ui-store-read", id: "sr1", parent: "" },
             { type: "ui-query", id: "q1", parent: "" },
             { type: "ui-action", id: "a1", parent: "" },
             { type: "ui-navigation", id: "n1", parent: "" },
@@ -54,7 +55,14 @@ describe("P205: app-scoped node requires a valid ui-app parent", () => {
             { type: "ui-route", id: "r1", parent: "" },
         ];
         const issues = collectAppScopedParentIssues(nodes);
-        expect(issues.map((i) => i.nodeId).sort()).toEqual(["a1", "d1", "n1", "q1", "r1", "s1"]);
+        expect(issues.map((i) => i.nodeId).sort()).toEqual(["a1", "d1", "n1", "q1", "r1", "s1", "sr1"]);
+    });
+
+    it("P209: a ui-store-read with NO parent → one issue (deploy error)", () => {
+        const issues = collectAppScopedParentIssues([app, { type: "ui-store-read", id: "sr1", parent: "" }]);
+        expect(issues).toHaveLength(1);
+        expect(issues[0].nodeId).toBe("sr1");
+        expect(issues[0].message).toContain("no App parent");
     });
 
     it("a plain display node (ui-text) is NOT app-scoped → never flagged", () => {

@@ -132,6 +132,8 @@ const WEBAPP_NODE_TYPES = new Set([
     "ui-slider",
     "ui-store",
     "ui-query",
+    // P209 (ADR 0028): reference-based, on-demand, non-mutating store reader.
+    "ui-store-read",
     "ui-action",
     "ui-navigation",
     "ui-alert",
@@ -2971,7 +2973,7 @@ function validateAppRootUniqueness(RED) {
 // the node's own id. Pure over a nodes array (unit-testable); the RED wrapper reads
 // the deployed flow file (mirrors validateAppRootUniqueness). Returns a list of
 // { nodeId, parent, message }.
-const APP_SCOPED_PARENT_TYPES = ["ui-store", "ui-query", "ui-action", "ui-navigation", "ui-dialog", "ui-route"];
+const APP_SCOPED_PARENT_TYPES = ["ui-store", "ui-store-read", "ui-query", "ui-action", "ui-navigation", "ui-dialog", "ui-route"];
 
 function collectAppScopedParentIssues(nodes) {
     const issues = [];
@@ -4795,6 +4797,134 @@ function queryInputHandler(node, msg, send, done) {
     }
 }
 
+// P209 (ADR 0028): resolve the referenced ui-store DEFINITION (statePath, scope,
+// initialValue) by node id from the live registry.
+function findStoreDefinitionById(storeId) {
+    if (!storeId) {
+        return undefined;
+    }
+    for (const registration of runtimeState.definitions.values()) {
+        const def = registration.definition;
+        if (def && def.type === "ui-store" && def.id === storeId) {
+            return def;
+        }
+    }
+    return undefined;
+}
+
+// P209 (ADR 0028): the on-demand store reader. Every incoming message triggers a
+// read; the node is NON-mutating (no setClientState / liveState write, no
+// pushSnapshotToClients). Path precedence: msg.ui.store.path › msg.path › config
+// path › whole slice. Per-client via msg.ui.clientId; a client-only store read
+// without a clientId is a structured scope error (mirrors the write path).
+function storeReadInputHandler(node, msg, send, done) {
+    const readDefinition = node.webappDefinition;
+    const activeAppId = findAppIdForNode(node);
+    const clientId = msg && msg.ui && msg.ui.clientId ? String(msg.ui.clientId) : undefined;
+
+    const storeDefinition = findStoreDefinitionById(readDefinition && readDefinition.store);
+    if (!storeDefinition) {
+        const errMsg = `ui-store-read references an unknown store '${readDefinition && readDefinition.store}'.`;
+        reportRuntimeError(node, {
+            severity: "error",
+            code: "server.store.read-missing-store",
+            message: errMsg,
+            context: { appId: activeAppId || undefined, nodeId: node.id, op: "store:read" },
+            clientId
+        });
+        if (done) {
+            done(new Error(errMsg));
+        }
+        return;
+    }
+
+    // Scope guard — mirror the ui-store write path. "any" (default) never rejects.
+    const scope = storeDefinition.scope;
+    if (scope === "broadcast-only" && clientId) {
+        const errMsg = "ClientID auf Broadcast-Only-Store nicht erlaubt. Broadcast Only store does not accept per-client reads.";
+        reportRuntimeError(node, {
+            severity: "error",
+            code: "server.store.scope-violation",
+            message: errMsg,
+            context: { appId: activeAppId || undefined, nodeId: node.id, op: "store:read" },
+            clientId
+        });
+        if (done) {
+            done(new Error(errMsg));
+        }
+        return;
+    }
+    if (scope === "client-only" && !clientId) {
+        const errMsg = "Broadcast nicht erlaubt: Store ist Client Only. Client Only store requires a clientId.";
+        reportRuntimeError(node, {
+            severity: "error",
+            code: "server.store.scope-violation",
+            message: errMsg,
+            context: { appId: activeAppId || undefined, nodeId: node.id, op: "store:read" },
+            clientId: undefined
+        });
+        if (done) {
+            done(new Error(errMsg));
+        }
+        return;
+    }
+
+    if (!activeAppId) {
+        reportRuntimeError(node, {
+            severity: "error",
+            code: "server.store.no-active-app",
+            message: "No active ui-app is registered for ui-store-read reads.",
+            context: { nodeId: node.id, op: "store:read" },
+            clientId
+        });
+        if (done) {
+            done(new Error("No active ui-app is registered for ui-store-read reads."));
+        }
+        return;
+    }
+
+    // Path precedence: msg.ui.store.path › msg.path › config path › (none).
+    const msgStorePath = msg && msg.ui && msg.ui.store && typeof msg.ui.store === "object"
+        ? blankToUndefined(msg.ui.store.path)
+        : undefined;
+    const msgPath = msg ? blankToUndefined(msg.path) : undefined;
+    const configPath = blankToUndefined(readDefinition.path);
+    const subPath = msgStorePath !== undefined
+        ? msgStorePath
+        : (msgPath !== undefined ? msgPath : configPath);
+
+    const rootPath = storeDefinition.statePath;
+    const fullPath = joinStatePath(rootPath, subPath) || rootPath;
+
+    // Read the CURRENT state — per-client when addressed, else broadcast. Falls
+    // back to the initial slice if the client/app has no state yet. NON-mutating.
+    const baseState = clientId
+        ? (getClientState(activeAppId, clientId)?.state || clone(runtimeState.liveState.get(activeAppId) || initializeState([storeDefinition], [], activeAppId)))
+        : clone(runtimeState.liveState.get(activeAppId) || initializeState([storeDefinition], [], activeAppId));
+
+    const value = clone(getValueAtPath(baseState, fullPath));
+
+    const outMsg = {
+        ...msg,
+        payload: value,
+        ui: {
+            ...(msg && msg.ui && typeof msg.ui === "object" ? msg.ui : {}),
+            store: {
+                id: storeDefinition.id,
+                event: "read",
+                path: subPath,
+                fullPath,
+                value,
+                clientId: clientId || undefined
+            }
+        }
+    };
+    send(outMsg);
+    if (done) {
+        done();
+    }
+}
+
 function componentStateInputHandler(node, msg, send, done) {
     const componentMsg = msg && msg.ui && typeof msg.ui === "object" ? msg.ui.component : undefined;
 
@@ -6200,6 +6330,23 @@ const runtimeNodeRegistry = {
                     done();
                 }
             }
+        }
+    },
+    // P209 (ADR 0028): on-demand, NON-mutating reader of a ui-store. References a
+    // store by id; every incoming message triggers a read of the CURRENT server
+    // state at that store's statePath (+ optional sub-path). Emits the value on
+    // msg.payload and mirrors the store-notification shape on msg.ui.store with
+    // event:"read". No state change, no snapshot push.
+    "ui-store-read": {
+        mapConfig: (config) => ({
+            type: "ui-store-read",
+            id: getUiId(config),
+            parent: config.parent || undefined,
+            store: config.store || undefined,
+            path: blankToUndefined(config.path)
+        }),
+        options: {
+            inputHandler: storeReadInputHandler
         }
     },
     "ui-query": {
