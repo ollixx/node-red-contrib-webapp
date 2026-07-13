@@ -2,7 +2,7 @@
 id: P219
 title: "Rendering: pro-Feld `onMissing`-Selektor (Foundation) — Werte `marker` (Default, heutiges '?') + `ignore` (leer); Schema + Renderer + Editor"
 epic: aspects/rendering
-status: pending
+status: in_progress
 dependencies: [P131]
 verify: browser
 spec: docs/nodes/concepts/reactive-expressions.md
