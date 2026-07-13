@@ -2,7 +2,7 @@
 id: P217
 title: "Test-Infra: backfill editor open→save round-trip tests for all remaining reference/picker/editableList nodes — drive the check:roundtrip allowlist to empty"
 epic: aspects/test-infra
-status: pending
+status: in_progress
 dependencies: [P215, P216]
 verify: browser
 spec: .ai/agents/node-testing.md
