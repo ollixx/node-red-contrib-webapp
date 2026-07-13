@@ -30,6 +30,7 @@ their blocker clears.
 - **P217** — aspects/test-infra — Backfill open→save Round-Trip-Tests für alle übrigen reference/picker/editableList-Knoten; `check:roundtrip`-Allowlist auf leer treiben — *ADR 0031; dep P215/P216* — [P217](aspects/test-infra/P217-backfill-round-trip-tests.md)
 - **P219** — aspects/rendering — pro-Feld `onMissing`-Selektor (Foundation): `marker` (Default '?') + `ignore` (leer); Schema + Renderer + Editor — *ADR 0034; Owner 2026-07-13; dep P131* — [P219](aspects/rendering/P219-onmissing-selector-foundation.md)
 - **P222** — aspects/editor — Base-Field-Rollout (ADR 0015) vervollständigen: visible/disabled/color/size fehlen auf ~26 der 33 View-Knoten; Applicability-Audit + Retrofit — *ADR 0015; Owner 2026-07-13* — [P222](aspects/editor/P222-base-field-rollout-completion.md)
+- **P223** — aspects/runtime — Message mode treibt JEDES msg-gebundene Feld (nicht nur Primärfeld); `ui-alert.visible = msg.<prop>` schaltet live; Live-Patch trägt visible/disabled — *ADR 0036; Owner 2026-07-13* — [P223](aspects/runtime/P223-message-mode-all-msg-bound-fields.md)
 
 
 ## Deferred (parked, not abandoned)
