@@ -54,30 +54,14 @@ const PKG = require(path.join(ROOT, "package.json"));
 /* ------------------------------------------------------------------ *
  * Allowlist — currently-unconverted qualifying nodes. Keep it SMALL.
  * Format: { "<node>": { "<field>": "one-line reason" } }.
- * Seeded 2026-07-13 from the enumeration over the real tree
- * (qualifying set minus the P215-covered ui-store-action / ui-component-instance).
- * P217 backfills the round-trip tests and drives this to {}.
+ * P217 (2026-07-13) backfilled the round-trip tests for every qualifying node
+ * (ui-query `params`/`refreshAction`, ui-query-action `query`, ui-store-read
+ * `store`, ui-dialog `routeId`) and drove this to {} — every reference/picker/
+ * editableList carrier is now provably covered by a real round-trip test.
+ * Keep it EMPTY: a new entry is only ever justified by an ADR reason a
+ * round-trip is genuinely N/A, never "not written yet".
  * ------------------------------------------------------------------ */
-const ALLOWLIST = {
-    // ui-query: two reference pickers — `params` (store the query reads) and
-    // `refreshAction` (the action that re-runs it). No round-trip test yet (P214/P217).
-    "ui-query": {
-        params: "P217 backlog: `params` store-picker round-trip test not written yet",
-        refreshAction: "P217 backlog: `refreshAction` picker round-trip test not written yet",
-    },
-    // ui-query-action: the `query` reference picker (ADR 0029). P217 backlog.
-    "ui-query-action": {
-        query: "P217 backlog: `query` reference-picker round-trip test not written yet",
-    },
-    // ui-store-read: the `store` reference picker (ADR 0028). P217 backlog.
-    "ui-store-read": {
-        store: "P217 backlog: `store` reference-picker round-trip test not written yet",
-    },
-    // ui-dialog: the `routeId` parent-route reference picker. P217 backlog.
-    "ui-dialog": {
-        routeId: "P217 backlog: `routeId` route-picker round-trip test not written yet",
-    },
-};
+const ALLOWLIST = {};
 
 /* ------------------------------------------------------------------ *
  * Node -> html -> tests.md mapping
