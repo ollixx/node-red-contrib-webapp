@@ -3,6 +3,23 @@
     (function () {
         const common = window.WebappEditorCommon;
 
+        // ADR 0015 base fields for ui-alert: `visible` is applicable (declarative
+        // visibility via a boolean-state typedInput — the field that was missing);
+        // `disabled` is N/A (an alert has no interactive disabled state); `color`
+        // is N/A (the alert's colour comes from its `severity`); `size` is N/A.
+        const BASE_FIELDS = {
+            visible: true,
+            disabled: false,
+            color: false,
+            size: false,
+            variant: false,
+            hints: {
+                disabled: "Eine Alert hat keinen interaktiven Deaktiviert-Zustand.",
+                color: "Die Farbe der Alert kommt aus der Severity.",
+                size: "Eine Alert hat keine Größen-Stufen."
+            }
+        };
+
         // P113 (ADR 0012 / ADR 0010): message and title are display-value bindings
         // driven by the ONE canonical value-binding type set. Type list AND
         // (de)serialisation come from the shared helper — Store, Query, Route-Param,
@@ -99,7 +116,12 @@
                     }
                     return true;
                 } },
+                // ADR 0015: `visible` base field — persists the binding OBJECT; the
+                // typedInput lives on the `visibleBinding` carrier (no #node-input-visible
+                // element) so Node-RED auto-save cannot clobber it. Installed via
+                // installBaseFields / applyBaseFields below.
                 visible: { value: null },
+                visibleBinding: { value: "" },
                 order: { value: "", validate: function (value) { return value == null || value === "" || RED.validators.number()(value); } },
                 row: { value: "", validate: function (value) { return value == null || value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
                 col: { value: "", validate: function (value) { return value == null || value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
@@ -119,6 +141,10 @@
             },
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
+                // ADR 0015: the shared base-field group ("Allgemein") — `visible`
+                // (applicable) + disabled/color/size (N/A with hints). This is the
+                // visibility field the node was missing.
+                common.installBaseFields(BASE_FIELDS).call(this);
                 common.installLayoutChildPropRows().call(this);
 
                 // Back-compat: a legacy messagePath maps to a state binding. A node
@@ -162,6 +188,9 @@
                 });
             },
             oneditsave: function () {
+                // ADR 0015: persist the applicable base fields (visible) as binding objects.
+                common.applyBaseFields(BASE_FIELDS).call(this);
+
                 this.message = readBinding("#node-input-messageBinding");
                 this.messagePath = "";
 

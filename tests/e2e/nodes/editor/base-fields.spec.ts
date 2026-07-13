@@ -274,6 +274,85 @@ test.describe("editor panels — ui-list base fields (P172, ADR 0015)", () => {
 });
 
 /**
+ * ui-alert — base fields retrofitted (the `visible` field was missing entirely).
+ * `visible` applicable (boolean-state typedInput); disabled/color/size N/A
+ * (colour comes from `severity`, an alert has no interactive/size state).
+ */
+
+test.describe("editor panels — ui-alert base fields", () => {
+    test.afterEach(async ({ request }) => {
+        await resetFlow(request);
+    });
+
+    async function openAlertPanel(page: import("@playwright/test").Page, request: import("@playwright/test").APIRequestContext) {
+        const nodeId = "alert-bf";
+        const flow = new FlowBuilder()
+            .app({ id: "bfAlertApp", root: "bfAlertApp", name: "Base Fields Alert App" })
+            .node("ui-alert", { id: nodeId })
+            .build();
+        await deployFlow(request, flow);
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode(nodeId);
+        return { editor, nodeId };
+    }
+
+    test("ui-alert — base-field group with 'Allgemein' heading is injected", async ({ page, request }) => {
+        await openAlertPanel(page, request);
+
+        await expect(page.locator('[data-field-group="base-fields"]')).toHaveCount(1);
+        const heading = page.locator('[data-group-heading="base-fields"]');
+        await expect(heading).toHaveText("Allgemein");
+        for (const field of ["visible", "disabled", "color", "size"]) {
+            await expect(
+                page.locator(`[data-base-field="${field}"]`),
+                `expected base-field row for ${field}`
+            ).toHaveCount(1);
+        }
+    });
+
+    test("ui-alert — visible (applicable) is a boolean-state typedInput", async ({ page, request }) => {
+        await openAlertPanel(page, request);
+
+        const row = page.locator('[data-base-field="visible"]');
+        await expect(row).toBeVisible();
+        await expect(row).not.toHaveAttribute("data-base-field-na", "true");
+        await expect(row.locator(".red-ui-typedInput-container")).toHaveCount(1);
+        await expect(page.locator("#node-input-visibleBinding")).toHaveCount(1);
+    });
+
+    test("ui-alert — color is N/A (colour comes from severity)", async ({ page, request }) => {
+        await openAlertPanel(page, request);
+
+        const row = page.locator('[data-base-field="color"]');
+        await expect(row).toHaveAttribute("data-base-field-na", "true");
+        await expect(row.locator("[data-base-field-hint]")).toContainText("Severity");
+    });
+
+    test("ui-alert — visible binding round-trips through save", async ({ page, request }) => {
+        const { editor, nodeId } = await openAlertPanel(page, request);
+
+        // Bind visibility to a reactive expression, save, reopen — the binding
+        // must survive (this is the whole point: `visible` is now persistable).
+        await editor.fillTypedInput("visibleBinding", "state.showAlert", "reactive");
+        await editor.save();
+
+        const stored = await page.evaluate((id) => {
+            const n = (window as unknown as {
+                RED: { nodes: { node: (id: string) => Record<string, unknown> | null } };
+            }).RED.nodes.node(id);
+            return n ? n.visible : null;
+        }, nodeId);
+        expect(stored).toEqual({ kind: "reactive", value: "state.showAlert" });
+
+        await editor.openNode(nodeId);
+        expect(await editor.readTypedInputType("visibleBinding")).toBe("reactive");
+        expect(await editor.readTypedInput("visibleBinding")).toBe("state.showAlert");
+    });
+});
+
+/**
  * P181 — empty visible/disabled must render a clean boolean typedInput (type
  * 'bool', no store fallback, no extra dropdown, no '…' expand button).
  * Tested on ui-list (uses installBaseFields) and ui-list visible field as the

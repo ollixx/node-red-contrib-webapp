@@ -60,3 +60,16 @@ All tests are in `ui-alert.spec.ts` (E2E, Playwright), `packages/runtime/test/p9
 | explicit icon='bell' → sl-icon name='bell' | Custom icon name visible in browser |
 | dismissible=true → closable attribute | Dismiss affordance rendered correctly |
 | title binding → `<strong>` inside sl-alert | Title binding rendered in browser |
+
+## Base fields (ADR 0015) — `tests/e2e/nodes/editor/base-fields.spec.ts`
+
+Retrofitted: ui-alert previously had **no** `visible` editor field (the declarative
+visibility foundation the spec describes). It now installs the shared base-field
+group.
+
+| Test | Goal |
+|---|---|
+| base-field group with 'Allgemein' heading is injected | ui-alert now exposes the shared base-field group |
+| visible (applicable) is a boolean-state typedInput | `visible` is configurable (the missing field) |
+| color is N/A (colour comes from severity) | `color` correctly marked N/A with the severity hint |
+| visible binding round-trips through save | a `visible` binding persists open→save→reopen (ADR 0031) |

@@ -102,16 +102,23 @@ da Alerts eine Status-/Schweregrad-Semantik tragen.
   Statische Strings werden als `{ kind: "literal", value }` persistiert — die
   Node-RED-Defaults-Auto-Übernahme wird durch ein separates Binding-Feld verhindert
   (Muster wie bei `ui-text`).
-- **`visible`-Binding.** Steuert die Sichtbarkeit deklarativ über den State oder
-  einen Store, ohne explizite `show`/`hide`-Actions zu benötigen.
-- **Duration/Countdown — backend-neutral.** Das `duration`-Feld und `countdown`
-  sind backend-agnostisch spezifiziert. Das Shoelace-Backend unterstützt beide
-  nativ über die Attribute `duration` und `countdown="ltr"` auf `<sl-alert>`.
-  Backends ohne native Unterstützung können einen Fallback implementieren:
-  JS-Timeout für Auto-Hide + CSS/JS-Animation für den Countdown — analog dem
-  [Bootstrap-Alert-Doku-Beispiel](https://getbootstrap.com/docs/5.3/components/alerts/#dismissing).
-  Das Feld ist bewusst offen gehalten, damit zukünftige Backends sich einklinken
-  können.
+- **`visible` (Base-Field, ADR 0015).** Steuert die Sichtbarkeit deklarativ über
+  State oder Store, ohne explizite `show`/`hide`-Actions. Es ist ein **Base-Field**
+  in der „Allgemein"-Gruppe des Editors (Boolean-State-typedInput; leer = sichtbar).
+  Fehlt ein Binding, ist die Alert sichtbar.
+- **Duration/Countdown — backend-neutral, aber client-seitig und von `visible`
+  entkoppelt.** Das `duration`-Feld und `countdown` sind backend-agnostisch
+  spezifiziert; Shoelace unterstützt beide nativ (`duration`, `countdown="ltr"` auf
+  `<sl-alert>`). **Wichtig:** `duration` ist **kein** Zustandsübergang von `visible`.
+  Der Serializer rendert die Alert immer als `open`; nach Ablauf der Duration
+  schließt Shoelace das `<sl-alert>` **client-seitig einmalig**, und der Client
+  merkt sich das Auto-Dismiss (`autoDismissed`), damit die nächste Snapshot die
+  Alert nicht wieder einblendet. Folge: eine per Duration ausgeblendete Alert wird
+  **nicht** automatisch wieder gezeigt; erneutes Anzeigen erfordert eine Änderung
+  des `visible`-Bindings. Ein kohärentes deklaratives Duration↔`visible`-Modell ist
+  als eigenes Redesign vorgesehen (Roadmap). Backends ohne native Unterstützung
+  können einen Fallback implementieren (JS-Timeout + CSS/JS-Animation, analog dem
+  [Bootstrap-Alert-Doku-Beispiel](https://getbootstrap.com/docs/5.3/components/alerts/#dismissing)).
 
 ## Referenzen
 
@@ -124,4 +131,7 @@ da Alerts eine Status-/Schweregrad-Semantik tragen.
 
 ## Offene Punkte
 
-- Das `visible`-Binding hat kein eigenes Editor-Feld; es wird ausschließlich via `msg.ui.patch` oder Store-gesteuertem Wert gesetzt.
+- `duration` ist derzeit ein client-seitiger Einweg-Close, entkoppelt vom
+  deklarativen `visible`-Zustand (siehe Verhalten oben). Ein kohärentes
+  Duration↔`visible`-Modell (Duration setzt `visible=false` server-seitig; Show/
+  Re-Show-Semantik) ist als Redesign in der Roadmap erfasst.
