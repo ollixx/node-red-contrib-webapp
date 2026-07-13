@@ -511,11 +511,36 @@
         ctx = ctx || {};
 
         if (component.kind === "text") {
+            const props = component.props || {};
+
+            // P221 (ADR 0035): read-only FORM-FIELD presentation. When
+            // `display === "formField"`, render the SAME bound value as a
+            // labelled, read-only row using the very same <sl-input> element as
+            // ui-input (readonly) — so the label column and value baseline line
+            // up pixel-for-pixel with an adjacent ui-input. `component.text` is
+            // the already-normalised display value (ADR 0032: a missing store
+            // key resolves to "" and stays empty here, never "?"). Read-only:
+            // no name (no form value), no event/source attrs → no emission.
+            if (props.display === "formField") {
+                const fieldLabel = (props.label === undefined || props.label === null)
+                    ? ""
+                    : String(props.label);
+                const fieldValue = (component.text === undefined || component.text === null)
+                    ? ""
+                    : String(component.text);
+                return wrapRenderedComponentHtml(
+                    component,
+                    layoutId,
+                    "<sl-input class=\"webapp-text-field\" label=\"" + escapeAttribute(fieldLabel)
+                        + "\" value=\"" + escapeAttribute(fieldValue) + "\" readonly"
+                        + " data-webapp-text-field=\"true\"></sl-input>"
+                );
+            }
+
             // P111: two orthogonal axes. `style` (typographic role) selects a
             // semantic HTML element AND a webapp-text--<role> class; `variant`
             // (semantic colour) adds a webapp-text--color-<c> class. Defaults:
             // style → "body" (<p>); colour → "default" (inherit, no colour class).
-            const props = component.props || {};
             const textStyle = (typeof props.style === "string" && props.style) ? props.style : "body";
             const tag = TEXT_STYLE_TAG[textStyle] || "p";
             let classes = "webapp-text webapp-text--" + sanitizeClassSuffix(textStyle);

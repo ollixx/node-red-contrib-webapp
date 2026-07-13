@@ -69,7 +69,13 @@ function toTextComponent(node: UiTextNodeDefinition): ComponentDefinition {
         bind: {
             value: node.value
         },
-        props: node.variant ? { variant: node.variant } : {},
+        props: {
+            ...(node.variant ? { variant: node.variant } : {}),
+            // P221 (ADR 0035): form-field presentation mode + its label, carried
+            // only when active so the default free-text path is unchanged.
+            ...(node.display === "formField" ? { display: "formField" } : {}),
+            ...(node.display === "formField" && node.label ? { label: node.label } : {})
+        },
         events: []
     };
 }
