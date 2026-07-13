@@ -5988,12 +5988,17 @@ function viewNodePatchInputHandler(node, msg, send, done) {
         // Back-compat: when the PRIMARY field is NOT msg/jsonata-bound, a bare
         // msg.payload updates it (pre-P223 behaviour). Skipped when the primary
         // field is itself msg/jsonata-bound (it was handled above / below from its
-        // own configured source).
+        // own configured source). ALSO skipped when the node has ANY explicit
+        // msg-bound field: the author has opted into explicit per-field routing, so
+        // the incoming payload is feeding one of those fields (e.g. a literal
+        // `message` next to `visible = msg.payload`) — the legacy magic must not
+        // also clobber the primary with that same payload.
         const primaryBound = primaryField && (
             msgFields.some((f) => f.field === primaryField)
             || jsonFields.some((f) => f.field === primaryField)
         );
-        if (primaryField && !primaryBound && msg.payload !== undefined && msg.payload !== null) {
+        if (primaryField && !primaryBound && msgFields.length === 0
+            && msg.payload !== undefined && msg.payload !== null) {
             // P70 Ebene 2: ui-image accepts a Buffer / Base64 / data: payload —
             // convert it to a usable src string before it is wrapped in a binding.
             const resolved = coerceViewFieldValue(primaryField, msg.payload, nodeType, msg);
