@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { deployFlow, resetFlow } from "../../../helpers/admin-api";
+import { deployFlow, injectMessage, resetFlow } from "../../../helpers/admin-api";
 import { FlowBuilder } from "../../../helpers/flow-builder";
 import { NodeEditorPage } from "../../../helpers/node-editor-page";
 import { WebappPage } from "../../../helpers/webapp-page";
@@ -423,5 +423,45 @@ test.describe("ui-alert (P100)", () => {
 
         await page.locator("#node-input-icon").selectOption("custom");
         await expect(page.locator("#node-input-icon-custom-row")).toBeVisible();
+    });
+
+    // ── P223 (ADR 0036): Message mode drives the `visible` base field ─────────
+    //
+    // Owner bug: `ui-alert.visible = msg.<prop>` was inert — the message-mode
+    // push only ever updated the primary field (`message`). Now EVERY msg-bound
+    // field is driven, so an incoming message toggles the alert's visibility.
+    // (The msg path is configurable; here it reads `payload`, driven by an inject.)
+
+    test("visible = msg: an incoming message toggles the alert on and off", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "alApp21", root: "alApp21" })
+            .node("ui-alert", {
+                id: "alNode21",
+                message: { kind: "literal", value: "Toggle me" },
+                severity: "info",
+                visible: { kind: "msg", path: "payload" }
+            })
+            // Two inject nodes wired to the alert: one pushes `true` (show), the
+            // other `false` (hide). Boolean payloads exercise the boolean coercion.
+            .withInjectNode("alShow21", "alNode21", true)
+            .withInjectNode("alHide21", "alNode21", false)
+            .build();
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "alApp21");
+        await webapp.navigate("/");
+
+        // Default: no message yet → a `msg` visible binding resolves false →
+        // the alert is not shown (DOM-absent or hidden — both satisfy toBeHidden).
+        await expect(page.locator("sl-alert")).toBeHidden();
+
+        // msg → true: the alert appears.
+        await injectMessage(request, "alShow21");
+        await expect(page.locator("sl-alert")).toBeVisible();
+        await expect(page.locator("sl-alert")).toContainText("Toggle me");
+
+        // msg → false: the alert is hidden again (the owner's exact scenario).
+        await injectMessage(request, "alHide21");
+        await expect(page.locator("sl-alert")).toBeHidden();
     });
 });
