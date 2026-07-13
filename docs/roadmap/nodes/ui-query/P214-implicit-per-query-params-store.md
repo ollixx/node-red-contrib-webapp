@@ -20,7 +20,7 @@ verify: browser
 spec: docs/nodes/state/ui-query.md
 tests: tests/e2e/nodes/state/ui-query.tests.md
 dependencies: [P209, P211]
-status: pending
+status: in_progress
 ---
 # P214 — ui-query: impliziter per-Query Params-Store
 

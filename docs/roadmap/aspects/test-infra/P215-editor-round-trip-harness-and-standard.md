@@ -2,7 +2,7 @@
 id: P215
 title: "Test-Infra: shared editor open→save round-trip harness + mandate in node-testing standard (reference/picker/editableList carrier fields)"
 epic: aspects/test-infra
-status: pending
+status: in_progress
 dependencies: [P81]
 verify: browser
 spec: .ai/agents/node-testing.md
