@@ -2880,34 +2880,7 @@ function readDeployDefinitions(RED) {
                 const liveRegistration = runtimeState.definitions.get(entry.id);
                 if (liveRegistration && liveRegistration.definition
                         && liveRegistration.definition.type === entry.type) {
-                    const liveDef = liveRegistration.definition;
-                    const patch = {};
-                    if (liveDef.value !== undefined && liveDef.value !== baseDefinition.value) {
-                        patch.value = liveDef.value;
-                    }
-                    if (liveDef.rows !== undefined && liveDef.rows !== baseDefinition.rows) {
-                        patch.rows = liveDef.rows;
-                    }
-                    if (liveDef.items !== undefined && liveDef.items !== baseDefinition.items) {
-                        patch.items = liveDef.items;
-                    }
-                    // src (ui-image, ui-avatar) and message (ui-alert) are binding
-                    // fields listed in VIEW_NODE_BINDING_FIELDS — carry live patches
-                    // so msg.payload → src/message updates reach the pushed snapshot.
-                    if (liveDef.src !== undefined && liveDef.src !== baseDefinition.src) {
-                        patch.src = liveDef.src;
-                    }
-                    if (liveDef.message !== undefined && liveDef.message !== baseDefinition.message) {
-                        patch.message = liveDef.message;
-                    }
-                    // P52 / ADR 0004: carry a live placement patch (row/col/colSize/
-                    // rowSize/layoutX/layoutY) into the pushed snapshot so a runtime
-                    // re-placement actually reaches the client and the element reflows.
-                    ["row", "col", "colSize", "rowSize", "layoutX", "layoutY"].forEach((field) => {
-                        if (liveDef[field] !== undefined && liveDef[field] !== baseDefinition[field]) {
-                            patch[field] = liveDef[field];
-                        }
-                    });
+                    const patch = computeLiveViewPatch(baseDefinition, liveRegistration.definition);
                     if (Object.keys(patch).length > 0) {
                         return Object.assign({}, baseDefinition, patch);
                     }
@@ -5706,6 +5679,105 @@ const VIEW_NODE_BINDING_FIELDS = new Set([
     "value", "src", "message", "rows", "items"
 ]);
 
+// P223 (ADR 0036): the base fields `visible`/`disabled` are stored as binding
+// objects and wired to `visibleIf`/`enabledIf` by toComponentDefinitions. When a
+// message drives one of them, the value must be re-wrapped as a literal binding
+// (like the VIEW_NODE_BINDING_FIELDS) so the merge + renderer carry it.
+const VIEW_NODE_BOOLEAN_FIELDS = new Set(["visible", "disabled"]);
+
+// P223: the full set of fields whose message-driven value must be wrapped in a
+// literalBinding (the serializer/renderer read these as binding objects). This
+// is the existing primary/binding set plus the boolean base fields. Any other
+// message-driven field (e.g. ui-button `label`) is stored raw, exactly as before.
+const VIEW_NODE_LITERAL_WRAP_FIELDS = new Set([
+    ...VIEW_NODE_BINDING_FIELDS,
+    ...VIEW_NODE_BOOLEAN_FIELDS
+]);
+
+// P223 (ADR 0036): coerce a message value for a boolean base field
+// (`visible`/`disabled`). Accepts real booleans and the "true"/"false" strings
+// (the editor's boolean-state typedInput / an inject node's string payload);
+// everything else falls back to JS truthiness.
+function coerceViewBoolean(value) {
+    if (value === true) { return true; }
+    if (value === false) { return false; }
+    if (typeof value === "string") {
+        const trimmed = value.trim().toLowerCase();
+        if (trimmed === "true") { return true; }
+        if (trimmed === "false") { return false; }
+    }
+    return Boolean(value);
+}
+
+// P223: coerce a raw message value to the shape the field expects before it is
+// wrapped/stored — boolean coercion for visible/disabled, image-src conversion
+// for ui-image `src`, otherwise pass-through.
+function coerceViewFieldValue(field, rawValue, nodeType, msg) {
+    if (VIEW_NODE_BOOLEAN_FIELDS.has(field)) {
+        return coerceViewBoolean(rawValue);
+    }
+    if (nodeType === "ui-image" && field === "src") {
+        return payloadToImageSrc(rawValue, msg);
+    }
+    return rawValue;
+}
+
+// P223: wrap a message-driven field value as a literalBinding when the field is
+// binding-shaped (VIEW_NODE_LITERAL_WRAP_FIELDS); otherwise store it raw.
+function wrapViewFieldValue(field, value) {
+    return VIEW_NODE_LITERAL_WRAP_FIELDS.has(field) ? literalBinding(value) : value;
+}
+
+// P223 (ADR 0036): scan a stored view-node definition for EVERY field whose
+// saved binding is `{ kind, path }` (msg or jsonata) — not only the primary
+// field. Returns `[{ field, path }]`. A msg binding with no path defaults to
+// `payload` (standard Node-RED typedInput default); a jsonata binding needs a
+// non-empty expression to be usable.
+function collectBoundViewFields(definition, kind) {
+    const out = [];
+    if (!definition || typeof definition !== "object") {
+        return out;
+    }
+    for (const field of Object.keys(definition)) {
+        const binding = definition[field];
+        if (!binding || typeof binding !== "object" || binding.kind !== kind) {
+            continue;
+        }
+        const rawPath = typeof binding.path === "string" ? binding.path : "";
+        if (kind === "msg") {
+            out.push({ field, path: rawPath || "payload" });
+        }
+        else if (kind === "jsonata" && rawPath) {
+            out.push({ field, path: rawPath });
+        }
+    }
+    return out;
+}
+
+// P39 / P45 / P52 / P223: compute the live-patch that carries a view node's
+// runtime-updated fields from the in-memory definition (`liveDef`) into the
+// flow-file-derived `baseDefinition`, so an SSE snapshot reflects msg.payload /
+// msg-bound-field updates. Returns a (possibly empty) patch object.
+//
+//   - value / rows / items — primary binding fields (P39/P45).
+//   - src (ui-image, ui-avatar) / message (ui-alert) — binding fields (P70/P67).
+//   - visible / disabled — base fields wired to visibleIf/enabledIf (P223,
+//     ADR 0036): a msg-bound `visible` toggle must reach the client.
+//   - row/col/colSize/rowSize/layoutX/layoutY — live grid placement (P52).
+function computeLiveViewPatch(baseDefinition, liveDef) {
+    const patch = {};
+    if (!liveDef || !baseDefinition) {
+        return patch;
+    }
+    ["value", "rows", "items", "src", "message", "visible", "disabled",
+        "row", "col", "colSize", "rowSize", "layoutX", "layoutY"].forEach((field) => {
+        if (liveDef[field] !== undefined && liveDef[field] !== baseDefinition[field]) {
+            patch[field] = liveDef[field];
+        }
+    });
+    return patch;
+}
+
 // P70 Ebene 2 (wiring-first): sniff the image content-type from the leading
 // magic bytes of a Buffer. Returns a MIME type, or undefined when unrecognised.
 function sniffImageContentType(buffer) {
@@ -5760,24 +5832,31 @@ function payloadToImageSrc(payload, msg) {
 // P113: evaluate a JSONata-bound view field against the incoming msg, write the
 // result as a literal into the live definition, push a snapshot, then forward.
 //
-// JSONata is message-driven: the expression (captured once on registration as
-// `jsonataSource`) is prepared and evaluated against `msg`. On Node-RED v3+ the
-// runtime's evaluateJSONataExpression is ASYNC-ONLY — a synchronous call returns
-// undefined — so the async callback form is mandatory. The patch + snapshot push
-// + send/done all happen inside the callback; the caller returns immediately
-// after invoking this so the synchronous tail does not double-fire.
-function applyJsonataBinding(node, registration, field, msg, send, done) {
+// JSONata is message-driven: each expression (captured once on registration) is
+// prepared and evaluated against `msg`. On Node-RED v3+ the runtime's
+// evaluateJSONataExpression is ASYNC-ONLY — a synchronous call returns undefined
+// — so the async callback form is mandatory. The patch + snapshot push +
+// send/done all happen inside the callback; the caller returns immediately after
+// invoking this so the synchronous tail does not double-fire.
+//
+// P223 (ADR 0036): generalised to evaluate EVERY jsonata-bound field of a node
+// (`jsonFields = [{ field, path }]`), each against the same incoming `msg`. The
+// snapshot push + send/done fire exactly ONCE, after all expressions settle.
+// `alreadyPatched` carries whether the synchronous (msg-bound) pass already
+// mutated the definition, so the single push still happens even if no jsonata
+// field resolves.
+function applyJsonataViewFields(node, registration, jsonFields, msg, send, done, alreadyPatched) {
     const RED = runtimeState.RED;
-    const source = registration.jsonataSource;
+    const nodeType = registration.definition.type;
 
-    const finish = (resolved) => {
-        if (resolved !== undefined && resolved !== null) {
-            const newValue = VIEW_NODE_BINDING_FIELDS.has(field)
-                ? literalBinding(resolved)
-                : resolved;
-            registration.definition = Object.assign({}, registration.definition, { [field]: newValue });
-            node.webappDefinition = registration.definition;
+    let remaining = jsonFields.length;
+    let anyPatched = Boolean(alreadyPatched);
+    let finished = false;
 
+    const finish = () => {
+        if (finished) { return; }
+        finished = true;
+        if (anyPatched) {
             const appId = findAppIdForNode(node);
             if (RED && appId) {
                 pushSnapshotToClients(appId, undefined, readDeployDefinitions(RED));
@@ -5787,38 +5866,51 @@ function applyJsonataBinding(node, registration, field, msg, send, done) {
         if (done) { done(); }
     };
 
+    const settle = () => {
+        remaining -= 1;
+        if (remaining <= 0) { finish(); }
+    };
+
     if (!RED || !RED.util || typeof RED.util.prepareJSONataExpression !== "function"
         || typeof RED.util.evaluateJSONataExpression !== "function") {
         // No JSONata engine available — forward unchanged (never crash the flow).
-        finish(undefined);
+        finish();
         return;
     }
 
-    let expr;
-    try {
-        expr = RED.util.prepareJSONataExpression(source, node);
-    }
-    catch (err) {
-        if (done) { done(err); } else { node.error(err, msg); }
-        return;
-    }
-
-    // Async callback form (Node-RED v3+: evaluateJSONataExpression is async-only).
-    try {
-        RED.util.evaluateJSONataExpression(expr, msg, (err, result) => {
-            if (err) {
-                // A bad expression must not crash the flow; report once and forward.
-                node.error(err, msg);
-                finish(undefined);
-                return;
-            }
-            finish(result);
-        });
-    }
-    catch (err) {
-        node.error(err, msg);
-        finish(undefined);
-    }
+    jsonFields.forEach(({ field, path }) => {
+        let expr;
+        try {
+            expr = RED.util.prepareJSONataExpression(path, node);
+        }
+        catch (err) {
+            node.error(err, msg);
+            settle();
+            return;
+        }
+        // Async callback form (Node-RED v3+: evaluateJSONataExpression is async-only).
+        try {
+            RED.util.evaluateJSONataExpression(expr, msg, (err, result) => {
+                if (err) {
+                    // A bad expression must not crash the flow; report once and skip.
+                    node.error(err, msg);
+                }
+                else if (result !== undefined && result !== null) {
+                    const resolved = coerceViewFieldValue(field, result, nodeType, msg);
+                    registration.definition = Object.assign({}, registration.definition, {
+                        [field]: wrapViewFieldValue(field, resolved)
+                    });
+                    node.webappDefinition = registration.definition;
+                    anyPatched = true;
+                }
+                settle();
+            });
+        }
+        catch (err) {
+            node.error(err, msg);
+            settle();
+        }
+    });
 }
 
 // P39: handle incoming msg.payload / msg.ui.patch on view nodes.
@@ -5851,80 +5943,75 @@ function viewNodePatchInputHandler(node, msg, send, done) {
         node.webappDefinition = registration.definition;
         patched = true;
     } else {
-        // Incoming message → update the primary mutable field for this node type.
+        // P223 (ADR 0036): Message mode drives EVERY msg-bound field, not only the
+        // node's primary field. On the first message we capture (once) the set of
+        // msg-bound and jsonata-bound fields — the first update overwrites each
+        // binding with a literal, so the source paths/expressions must be captured
+        // up front.
         const nodeType = registration.definition.type;
-        const field = VIEW_NODE_PRIMARY_FIELD[nodeType];
-        if (field) {
-            // P111: capture the field's msg source path ONCE. A standard Node-RED
-            // `msg` typedInput stores { kind:"msg", path:"payload"|"payload.x"|… };
-            // read that property from the incoming message. The first update
-            // overwrites the live binding with a literal, so the path is captured
-            // up front. `null` means the field is NOT msg-bound.
-            if (registration.msgSourcePath === undefined) {
-                const savedBinding = registration.definition[field];
-                registration.msgSourcePath = (savedBinding && typeof savedBinding === "object" && savedBinding.kind === "msg")
-                    ? (typeof savedBinding.path === "string" && savedBinding.path ? savedBinding.path : "payload")
-                    : null;
-            }
+        const primaryField = VIEW_NODE_PRIMARY_FIELD[nodeType];
 
-            // P113: capture the field's JSONata expression source ONCE (same
-            // capture-up-front rationale as msgSourcePath: the first update
-            // overwrites the live binding with a literal). `null` means the field
-            // is NOT jsonata-bound. JSONata is message-driven — the prepared
-            // expression is evaluated against the incoming `msg`.
-            if (registration.jsonataSource === undefined) {
-                const savedBinding = registration.definition[field];
-                registration.jsonataSource = (savedBinding && typeof savedBinding === "object"
-                    && savedBinding.kind === "jsonata" && typeof savedBinding.path === "string" && savedBinding.path)
-                    ? savedBinding.path
-                    : null;
-            }
+        if (registration.msgBoundFields === undefined) {
+            registration.msgBoundFields = collectBoundViewFields(registration.definition, "msg");
+            registration.jsonataBoundFields = collectBoundViewFields(registration.definition, "jsonata");
+        }
+        const msgFields = registration.msgBoundFields;
+        const jsonFields = registration.jsonataBoundFields;
 
-            const RED = runtimeState.RED;
+        const RED = runtimeState.RED;
 
-            // P113: jsonata-bound field. Evaluate the prepared expression against
-            // the incoming msg, then patch + push from the async callback. On the
-            // E2E Node-RED (v3+) evaluateJSONataExpression is async-only — calling
-            // it synchronously returns undefined — so the callback form is used.
-            // We return early so the synchronous tail below does not double-fire
-            // send()/done().
-            if (registration.jsonataSource) {
-                return applyJsonataBinding(node, registration, field, msg, send, done);
-            }
-
+        // Each msg-bound field is updated from its OWN configured message property
+        // (P111's capture-once, generalised to every field). visible/disabled are
+        // coerced to a boolean; ui-image src is converted; binding-shaped fields are
+        // wrapped in a literal binding.
+        for (const { field, path } of msgFields) {
             let rawValue;
-            let hasValue = false;
-            if (registration.msgSourcePath) {
-                // msg-bound: read the configured message property (standard binding).
-                try {
-                    rawValue = RED && RED.util && typeof RED.util.evaluateNodeProperty === "function"
-                        ? RED.util.evaluateNodeProperty(registration.msgSourcePath, "msg", node, msg)
-                        : getValueAtPath(msg, registration.msgSourcePath);
-                }
-                catch (_e) {
-                    rawValue = undefined;
-                }
-                hasValue = rawValue !== undefined && rawValue !== null;
+            try {
+                rawValue = RED && RED.util && typeof RED.util.evaluateNodeProperty === "function"
+                    ? RED.util.evaluateNodeProperty(path, "msg", node, msg)
+                    : getValueAtPath(msg, path);
             }
-            else if (msg.payload !== undefined && msg.payload !== null) {
-                // Not msg-bound: legacy behaviour — any payload updates the value.
-                rawValue = msg.payload;
-                hasValue = true;
+            catch (_e) {
+                rawValue = undefined;
             }
+            if (rawValue === undefined || rawValue === null) {
+                continue;
+            }
+            const resolved = coerceViewFieldValue(field, rawValue, nodeType, msg);
+            registration.definition = Object.assign({}, registration.definition, {
+                [field]: wrapViewFieldValue(field, resolved)
+            });
+            node.webappDefinition = registration.definition;
+            patched = true;
+        }
 
-            if (hasValue) {
-                // P70 Ebene 2: ui-image accepts a Buffer / Base64 / data: payload —
-                // convert it to a usable src string before it is wrapped in a binding.
-                const resolved = (nodeType === "ui-image" && field === "src")
-                    ? payloadToImageSrc(rawValue, msg)
-                    : rawValue;
-                const newValue = VIEW_NODE_BINDING_FIELDS.has(field)
-                    ? literalBinding(resolved)
-                    : resolved;
-                registration.definition = Object.assign({}, registration.definition, { [field]: newValue });
-                node.webappDefinition = registration.definition;
-                patched = true;
-            }
+        // Back-compat: when the PRIMARY field is NOT msg/jsonata-bound, a bare
+        // msg.payload updates it (pre-P223 behaviour). Skipped when the primary
+        // field is itself msg/jsonata-bound (it was handled above / below from its
+        // own configured source).
+        const primaryBound = primaryField && (
+            msgFields.some((f) => f.field === primaryField)
+            || jsonFields.some((f) => f.field === primaryField)
+        );
+        if (primaryField && !primaryBound && msg.payload !== undefined && msg.payload !== null) {
+            // P70 Ebene 2: ui-image accepts a Buffer / Base64 / data: payload —
+            // convert it to a usable src string before it is wrapped in a binding.
+            const resolved = coerceViewFieldValue(primaryField, msg.payload, nodeType, msg);
+            registration.definition = Object.assign({}, registration.definition, {
+                [primaryField]: wrapViewFieldValue(primaryField, resolved)
+            });
+            node.webappDefinition = registration.definition;
+            patched = true;
+        }
+
+        // P113/P223: jsonata-bound fields. Each prepared expression is evaluated
+        // against the incoming msg, then patch + push from the async callback. On
+        // the E2E Node-RED (v3+) evaluateJSONataExpression is async-only — calling
+        // it synchronously returns undefined — so the callback form is used. We
+        // return early so the synchronous tail below does not double-fire
+        // send()/done(); the single push there carries the msg-bound patches too.
+        if (jsonFields.length > 0) {
+            return applyJsonataViewFields(node, registration, jsonFields, msg, send, done, patched);
         }
     }
 
@@ -7790,6 +7877,13 @@ registerWebappNodes.__test__ = {
     // P39 / P52: view-node input patch handler + deploy-definition reader
     viewNodePatchInputHandler,
     readDeployDefinitions,
+    // P223 (ADR 0036): Message mode drives every msg-bound field — bound-field
+    // scan, boolean coercion, literal-wrap, and the live-patch merge helper.
+    collectBoundViewFields,
+    coerceViewBoolean,
+    coerceViewFieldValue,
+    wrapViewFieldValue,
+    computeLiveViewPatch,
     // P111: server-side resolution of flow/global/env value bindings → literal
     resolveContextBindingsForDef,
     // P70 Ebene 2: ui-image msg.payload → src (Buffer/Base64 → data:)
