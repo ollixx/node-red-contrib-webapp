@@ -29,7 +29,6 @@ their blocker clears.
 
 - **P217** — aspects/test-infra — Backfill open→save Round-Trip-Tests für alle übrigen reference/picker/editableList-Knoten; `check:roundtrip`-Allowlist auf leer treiben — *ADR 0031; dep P215/P216* — [P217](aspects/test-infra/P217-backfill-round-trip-tests.md)
 - **P219** — aspects/rendering — pro-Feld `onMissing`-Selektor (Foundation): `marker` (Default '?') + `ignore` (leer); Schema + Renderer + Editor — *ADR 0034; Owner 2026-07-13; dep P131* — [P219](aspects/rendering/P219-onmissing-selector-foundation.md)
-- **P221** — nodes/ui-text — read-only Form-Feld-Modus (Label + Wert wie Control gestylt), z.B. ID-Feld im Entity Editor — *ADR 0035; Owner 2026-07-13* — [P221](nodes/ui-text/P221-ui-text-form-field-readonly-mode.md)
 - **P222** — aspects/editor — Base-Field-Rollout (ADR 0015) vervollständigen: visible/disabled/color/size fehlen auf ~26 der 33 View-Knoten; Applicability-Audit + Retrofit — *ADR 0015; Owner 2026-07-13* — [P222](aspects/editor/P222-base-field-rollout-completion.md)
 
 
@@ -67,7 +66,7 @@ open the folder for the full history.
 | nodes/ui-query-action | 2 |
 | nodes/ui-badge | 3 |
 | nodes/ui-route | 2 |
-| nodes/ui-text | 2 |
+| nodes/ui-text | 3 |
 | nodes/ui-button | 3 |
 | nodes/ui-input | 2 |
 | nodes/ui-select | 2 |
@@ -103,4 +102,4 @@ open the folder for the full history.
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 216 done, 4 open, 10 deferred.**
+**Total: 217 done, 3 open, 10 deferred.**
