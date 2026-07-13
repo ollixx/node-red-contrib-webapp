@@ -37,7 +37,7 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `params` | „Params Store" | Node-Picker-Dialog (Preset Stores) | optional | Referenz auf einen `ui-store` derselben App, der die Abfrageparameter (Seite, Sortierung, Suchbegriff) hält. Die Query **beobachtet** diesen Store und feuert bei Änderung einen Refresh am **Out-Port** — siehe [Reaktives Paging](#reaktives-paging--params-store--out-port-refresh). |
+| `params` | „Params Store" | Node-Picker-Dialog (Preset Stores) | optional | Referenz auf einen **externen, geteilten** `ui-store` derselben App, der die Abfrageparameter (Seite, Sortierung, Suchbegriff) hält. **Optionaler Override:** ist das Feld **leer**, nutzt die Query ihren **impliziten per-Query Params-Store** (neuer Default, ADR 0030 — siehe [Impliziter Params-Store](#impliziter-params-store-adr-0030)); ist es **gesetzt**, teilt die Query die Params über den externen Store (wie bisher). In beiden Fällen **beobachtet** die Query den Store und feuert bei Änderung einen Refresh am **Out-Port** — siehe [Reaktives Paging](#reaktives-paging--params-store--out-port-refresh). |
 | `debounceMs` | „Debounce (ms)" | Zahlfeld | optional | Verzögerung (ms), mit der schnelle `params`-Änderungen für den Out-Port-Refresh gebündelt werden (Such-Tippen). Leer / `0` = sofort (Default). |
 | `refreshAction` | „Refresh Action" | Node-Picker-Dialog (Preset Actions) | optional | Referenz auf eine `ui-action` derselben App, die **manuell** einen Query-Refresh auslöst (Zusatz-Trigger neben dem `params`-Store). |
 
@@ -185,6 +185,67 @@ eigentliche Datenquelle (DB-Node, HTTP-Request etc.) und schickt das Ergebnis al
 - `params`-Store ändert sich → reaktiver Refresh → neue Daten an die gebundene
   `ui-table`.
 
+## Impliziter Params-Store (ADR 0030)
+
+Folgt [ADR 0030](../../adr/0030-ui-query-implicit-per-query-params-store.md):
+**jede `ui-query` besitzt implizit ihren eigenen Params-Store** — **kein extra
+Knoten, kein Wiring**. Die Params leben in einem **per-client**-Slice unter
+`ui.queries.<queryPath>.params` (per-client über `clientId`), direkt neben den
+Query-Daten (`.data`) und dem Ladezustand.
+
+**Adressierung wie jeder Store — über die Query-ID.** Ein `store`-Bezug, der auf
+die **`ui-query`-Knoten-ID** zeigt, löst auf genau diesen Params-Slice auf. Die
+Knoten-ID ist der „Store", der Sub-Pfad ist relativ zu `params`
+([ADR 0013](../../adr/0013-store-binding-subpath.md): id + einstufiger Sub-Pfad).
+Konkret schreibt/liest `store(<queryId>).page` den Wert unter
+`ui.queries.<queryPath>.params.page`. Das gilt **konsistent in allen drei**
+Store-Konsumenten:
+
+- **`ui-store-action`** (schreiben) — z. B. `set page=2` auf die Query.
+- **`ui-store-read`** (lesen) — die aktuellen Params der Query auslesen.
+- **`store`-Value-Bindings** (Anzeige) — z. B. ein `ui-text` bindet
+  `store(<queryId>).page`.
+
+**Store-Picker.** Das `stores`-Preset (Node-Picker in `ui-store-action` /
+`ui-store-read` und die `store`-typedInputs) listet die impliziten
+Query-Params-Ziele **neben** den echten `ui-store`-Knoten, sichtbar
+unterscheidbar als **„Query &lt;Name&gt; · Params"**. Die Auswahl speichert die
+**Query-ID** als Referenz.
+
+**Reaktiver Refresh.** Eine Änderung am impliziten Params-Slice (z. B. via
+`ui-store-action set page=2` auf die Query) feuert den Out-Port-Refresh der Query
+**genau wie ein expliziter `params`-Store** (P161-Mechanismus, siehe unten) — mit
+den aktuellen Params am `msg.ui.query.params`.
+
+**Params bei JEDEM Out-Port-Refresh.** Egal **wodurch** ein Refresh-Emit
+ausgelöst wird — eine Params-Store-Änderung (P161), ein `onEnter`, eine **schlichte
+Refresh-Message** (`msg.ui.query = { queryPath, refresh: true }`) oder ein
+[`ui-query-action`](ui-query-action.md)-Refresh — hängt die Query die
+**AKTUELLEN Params** (aus ihrem aufgelösten Params-Store — implizit **oder**
+explizit — für diesen `clientId`) an `msg.ui.query.params`, sodass der verdrahtete
+Fetch **immer** Paging/Sortierung/Suche kennt. So trägt auch ein schlichter
+Refresh **ohne** eigene Params am Out-Port die aktuellen Params. Regeln:
+
+- Bringt die auslösende Message bereits `params` mit, werden diese **respektiert**
+  (nicht überschrieben) — explizit übergebene Params gewinnen.
+- Existieren (noch) keine Params, bleibt der `params`-Schlüssel **weg** (nichts
+  anzuhängen) — kein leeres Objekt.
+- Eine **fachfremde** Durchreich-Message (kein `msg.ui.query`, kein `onEnter`)
+  bleibt **unverändert** (keine Params-Anreicherung; Terminal-Regel für
+  `data`/`error` unberührt).
+
+**Override.** Das explizite `params`-Feld bleibt **optional**: **gesetzt** ⇒
+externer, geteilter `ui-store` (Params über mehrere Queries teilen, wie bisher);
+**leer** ⇒ impliziter per-Query-Store (neuer Default). Bestehende Flows mit
+explizitem `params`-Store brechen nicht.
+
+```text
+[Button] → [ui-store-action • store=<queryId>, set path=page value=2]
+                                     │  (Params-Änderung, per-client)
+                                     ▼
+                               ui-query re-fetcht (Out-Port-Refresh + params)
+```
+
 ## Reaktives Paging — `params`-Store → Out-Port-Refresh
 
 Folgt [ADR 0016](../../adr/0016-ui-query-trigger-model-visible-no-auto-fire.md):
@@ -324,7 +385,10 @@ Siehe auch [stores.md](../concepts/stores.md) für das gemeinsame Binding-Vokabu
   Daten geändert haben — DB-Timestamp, Version, Hash). Fehlt `etag`, wird immer
   gepusht.
 - **Query-Parameter leben im Store.** Paging/Sortierung/Suche werden über einen
-  `params`-Store referenziert und lösen die Query reaktiv neu aus.
+  `params`-Store referenziert und lösen die Query reaktiv neu aus. Ohne
+  explizites `params`-Feld nutzt die Query ihren **impliziten per-Query
+  Params-Store** (`ui.queries.<queryPath>.params`, per-client), adressierbar über
+  die Query-ID — siehe [Impliziter Params-Store](#impliziter-params-store-adr-0030).
 
 ## Referenzen
 
