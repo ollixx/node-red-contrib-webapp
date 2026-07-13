@@ -125,6 +125,28 @@ Eine Expression darf das Rendering **niemals** brechen:
   Re-Render erneut), damit die Ursache in `ui-log`/Debug sichtbar ist, ohne zu
   fluten.
 
+## `onMissing` — pro Feld wählbares Verhalten bei fehlendem Wert (P219, ADR 0034)
+
+Jedes bindbare Wert-Feld trägt ein **optionales** `onMissing`-Verhalten, das
+bestimmt, was passiert, wenn dieser Binding-Wert **nicht auflösbar** ist — eine
+`reactive`-Expression scheitert oder ein `store`-Sub-Pfad trifft auf einen Skalar
+bzw. wird nicht gefunden:
+
+| Wert | Wirkung | Report |
+|---|---|---|
+| `marker` (**Default**, fehlt → dies) | rendert den Invalid-Value-Marker `"?"` (P104) | einmaliger Report wie bisher |
+| `ignore` | rendert **leer** (`""`) | **kein** Report |
+
+- **Default unverändert:** ohne gesetztes `onMissing` verhält sich jedes Feld
+  exakt wie zuvor (`marker`/`"?"`, inkl. der bestehenden Reports) — rein additiv,
+  bestehende Flows ändern ihr Verhalten nicht.
+- `ignore` liefert dasselbe „leer statt `?`", das [ADR 0032](../../adr/0032-store-subpath-missing-key-is-transient-not-an-error.md)
+  dem transienten Objekt-Slice-Fall gibt — jetzt **pro Feld** wählbar.
+- Im Editor steht der Selektor als schlichtes `<select>` in der Feld-Zeile neben
+  dem Binding (Default `marker`).
+- Dies ist das Foundation-Paket (nur `marker`/`ignore`); die reicheren Verhalten
+  (`errorPort`, `throw`/Catch, Fallback-Slot) folgen in P220 (ADR 0034 §Decision).
+
 ## Editor-Erlebnis (P116)
 
 Der typedInput-Typ **`Reactive`** (Position 4 im kanonischen Typsatz, siehe
@@ -178,6 +200,7 @@ query("customers.total") > 0
 ## Referenzen
 
 - [ADR 0010](../../adr/0010-reactive-binding-client-expressions.md) — Entscheidung und Begründung
+- [ADR 0034](../../adr/0034-per-field-missing-binding-behavior-selector.md) — pro Feld wählbares `onMissing`-Verhalten (P219: `marker`/`ignore`)
 - [editor.md](editor.md) — typedInput-Typen und Editor-Helfer
 - [stores.md](stores.md) — Stores, `store`-Binding, State-Modell
 - [value-rendering.md](value-rendering.md) — Anzeige-Regeln und Invalid-Value-Konvention

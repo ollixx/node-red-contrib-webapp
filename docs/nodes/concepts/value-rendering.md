@@ -65,6 +65,23 @@ Typ kam an). Das ersetzt dann das nackte `"?"`.
 
 > **Deferred** — eigenes Paket, zurückgestellt. Bis dahin gilt `"?"` (§1).
 
+## 2b. `onMissing` — pro Feld wählbares Verhalten bei **nicht auflösbarem** Wert (P219, ADR 0034)
+
+Die zentrale Normalisierung (§1) bleibt konfigurationsfrei. Davon **getrennt** ist
+der Fall, dass ein Binding **gar nicht auflösbar** ist (eine `reactive`-Expression
+scheitert, ein `store`-Sub-Pfad trifft einen Skalar / wird nicht gefunden). Für
+genau diesen „missing/unresolvable"-Fall trägt jedes bindbare Wert-Feld ein
+**optionales** `onMissing`:
+
+- `marker` (**Default**, fehlt → dies) → der Invalid-Value-Marker `"?"` (§1) plus
+  der bestehende einmalige Report — unverändertes heutiges Verhalten.
+- `ignore` → **leer** (`""`), **kein** Report — dasselbe „leer statt `?`" wie beim
+  transienten Objekt-Slice-Fall ([ADR 0032](../../adr/0032-store-subpath-missing-key-is-transient-not-an-error.md)),
+  jetzt pro Feld wählbar.
+
+Foundation-Paket (nur `marker`/`ignore`); `errorPort`/`throw`/Fallback-Slot folgen
+(P220). Details: [reactive-expressions.md](reactive-expressions.md) §`onMissing`.
+
 ---
 
 ## 3. Referenzierungs-Regel
@@ -91,6 +108,10 @@ Beispiel: „Leer-/Non-Skalar-Verhalten: siehe
   Ergebniswert dann dieselbe Regel.
 - **§2a elegantere Signalisierung** (Achtung-Icon + Alert/Dialog statt nacktem `"?"`) —
   **deferred**, eigenes Paket (P105).
+- **§2b `onMissing` (`marker`/`ignore`) — implementiert (P219, ADR 0034).** Der
+  Renderer verzweigt an beiden Invalid-Value-Punkten (`reactive`-Fehler,
+  `store`-Sub-Pfad) auf `binding.onMissing`; der Editor zeigt den Selektor an der
+  Wert-Feldzeile (ui-text). `errorPort`/`throw` folgen (P220).
 
 ## Offene Punkte
 
