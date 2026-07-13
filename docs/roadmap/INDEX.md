@@ -29,6 +29,9 @@ their blocker clears.
 
 - **P214** — nodes/ui-query — impliziter per-client Params-Store pro Query (kein extra Knoten), adressierbar wie jeder Store via ui-store-action/-read/store-Binding; explizites `params` bleibt Override — *ADR 0030; Owner 2026-07-13; dep P209/P211* — [P214](nodes/ui-query/P214-implicit-per-query-params-store.md)
 - **P217** — aspects/test-infra — Backfill open→save Round-Trip-Tests für alle übrigen reference/picker/editableList-Knoten; `check:roundtrip`-Allowlist auf leer treiben — *ADR 0031; dep P215/P216* — [P217](aspects/test-infra/P217-backfill-round-trip-tests.md)
+- **P218** — aspects/runtime — konsumierte `msg.ui.<command>`-Envelope nach erfolgreicher Verarbeitung entfernen (nur Sub-Key); behebt refresh→replace-Doppelverarbeitung — *ADR 0033; Owner 2026-07-13; dep P213* — [P218](aspects/runtime/P218-consumed-msg-ui-envelope-cleanup.md)
+- **P219** — aspects/rendering — pro-Feld `onMissing`-Selektor (Foundation): `marker` (Default '?') + `ignore` (leer); Schema + Renderer + Editor — *ADR 0034; Owner 2026-07-13; dep P131* — [P219](aspects/rendering/P219-onmissing-selector-foundation.md)
+- **P221** — nodes/ui-text — read-only Form-Feld-Modus (Label + Wert wie Control gestylt), z.B. ID-Feld im Entity Editor — *ADR 0035; Owner 2026-07-13* — [P221](nodes/ui-text/P221-ui-text-form-field-readonly-mode.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -37,7 +40,8 @@ Reason in each package's `deferred_reason`. Picked up once the blocker clears.
 
 - **P102** — aspects/editor — Backend-Support-Helfer + Capability-Map + Rollout — *braucht ein zweites, real renderndes Backend (eigenes Epic)* — [P102](aspects/editor/deferred/P102-backend-support-helper-and-rollout.md)
 - **P101** — nodes/ui-avatar — size/variant Backend-Warnung + Render-Garantie — *hängt an P102 + zweitem Backend* — [P101](nodes/ui-avatar/deferred/P101-size-variant-backend-warning.md)
-- **P105** — aspects/rendering — nicht-darstellbarer Wert: Achtung-Icon + Alert/Dialog statt nacktem `"?"` — *Stufe 2 über P104* — [P105](aspects/rendering/deferred/P105-invalid-value-warning-affordance.md)
+- **P105** — aspects/rendering — nicht-darstellbarer Wert: Achtung-Icon + Alert/Dialog statt nacktem `"?"` — *Stufe 2 über P104; re-scopet unter ADR 0034 → P220* — [P105](aspects/rendering/deferred/P105-invalid-value-warning-affordance.md)
+- **P220** — aspects/rendering — `onMissing` Folgeverhalten: `errorPort` + `throw`/Catch + Fallback-Slot + P105-Affordance — *ADR 0034; baut auf P219; absorbiert Catch-Follow-up + P105* — [P220](aspects/rendering/deferred/P220-onmissing-errorport-throw-and-affordance.md)
 - **P107** — nodes/ui-app — App-weite Auth/Authz (OAuth2/OIDC) modellieren — *eigenes Epic, ADR + Owner-Entscheidung nötig* — [P107](nodes/ui-app/deferred/P107-auth-authz.md)
 - **P121** — aspects/docs — Konzept Nutzer-Doku: Wo/Wie die zwei Wege (Wire vs. Referenz) mit Beispielen dokumentieren — *Owner-Entscheidung zu Ort + Form nötig* — [P121](aspects/docs/deferred/P121-user-docs-concept-two-ways.md)
 - **P143** — aspects/editor — Konzept: Enums dynamisch bindbar (Pro-Feld-typedInput mit Enum-Default statt globalem Advanced-Mode) — *ADR + Owner-Entscheidung nötig; Empfehlung steht* — [P143](aspects/editor/deferred/P143-enums-dynamic-binding-vs-advanced-mode.md)
