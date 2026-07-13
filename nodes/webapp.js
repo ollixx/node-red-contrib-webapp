@@ -4870,7 +4870,17 @@ function triggerParamQueryRefresh(storeId, paramsValue, appId, clientId) {
     const params = paramsValue !== undefined ? clone(paramsValue) : undefined;
     for (const registration of runtimeState.definitions.values()) {
         const def = registration.definition;
-        if (def.type !== "ui-query" || def.params !== storeId) {
+        if (def.type !== "ui-query") {
+            continue;
+        }
+        // P161 (ADR 0016 §3): the query OBSERVES an explicit external params-store.
+        // P214 (ADR 0030): with NO explicit params store, the query observes its OWN
+        // implicit per-query params store — addressed by the query's own node id. A
+        // write to either fires this query's out-port refresh identically.
+        const explicitParams = blankToUndefined(def.params);
+        const observesExplicit = explicitParams !== undefined && explicitParams === storeId;
+        const observesImplicit = explicitParams === undefined && def.id === storeId;
+        if (!observesExplicit && !observesImplicit) {
             continue;
         }
         const debounceMs = typeof def.debounceMs === "number" && def.debounceMs > 0 ? def.debounceMs : 0;
@@ -4980,6 +4990,44 @@ function findStoreDefinitionById(storeId) {
     return undefined;
 }
 
+// P214 (ADR 0030): every ui-query implicitly owns a per-client params store slice
+// at `ui.queries.<queryPath>.params` — no separate node. Resolve a store reference
+// id that points at a ui-query into a SYNTHETIC store definition targeting that
+// slice, so ui-store-action (write), ui-store-read (read) and applyStoreOperation
+// treat it exactly like a real ui-store (id + one-level sub-path, ADR 0013). The
+// synthetic def carries no `scope` (⇒ "any", never rejects) and an empty-object
+// initialValue so `reset` clears the params. `__queryParamsStore` marks it so the
+// action handler can fire the query's reactive refresh after a write.
+function findQueryParamsStoreDefinitionById(storeId) {
+    if (!storeId) {
+        return undefined;
+    }
+    for (const registration of runtimeState.definitions.values()) {
+        const def = registration.definition;
+        if (def && def.type === "ui-query" && def.id === storeId && def.queryPath) {
+            return {
+                type: "ui-store",
+                id: def.id,
+                name: def.name || undefined,
+                statePath: `ui.queries.${def.queryPath}.params`,
+                initialValue: {},
+                __queryParamsStore: true,
+                queryPath: def.queryPath,
+                queryNodeId: registration.nodeId
+            };
+        }
+    }
+    return undefined;
+}
+
+// P214 (ADR 0030): resolve a `store` reference id to its definition — a real
+// ui-store first (unchanged), else a ui-query's implicit params-store slice. A real
+// ui-store and a ui-query can never share an id, so the order only matters for the
+// (impossible) collision; real stores win by construction.
+function resolveStoreReferenceById(storeId) {
+    return findStoreDefinitionById(storeId) || findQueryParamsStoreDefinitionById(storeId);
+}
+
 // P209 (ADR 0028): the on-demand store reader. Every incoming message triggers a
 // read; the node is NON-mutating (no setClientState / liveState write, no
 // pushSnapshotToClients). Path precedence: msg.ui.store.path › msg.path › config
@@ -4990,7 +5038,7 @@ function storeReadInputHandler(node, msg, send, done) {
     const activeAppId = findAppIdForNode(node);
     const clientId = msg && msg.ui && msg.ui.clientId ? String(msg.ui.clientId) : undefined;
 
-    const storeDefinition = findStoreDefinitionById(readDefinition && readDefinition.store);
+    const storeDefinition = resolveStoreReferenceById(readDefinition && readDefinition.store);
     if (!storeDefinition) {
         const errMsg = `ui-store-read references an unknown store '${readDefinition && readDefinition.store}'.`;
         reportRuntimeError(node, {
@@ -5147,7 +5195,7 @@ function storeActionInputHandler(node, msg, send, done) {
     const activeAppId = findAppIdForNode(node);
     const clientId = msg && msg.ui && msg.ui.clientId ? String(msg.ui.clientId) : undefined;
 
-    const storeDefinition = findStoreDefinitionById(storeId);
+    const storeDefinition = resolveStoreReferenceById(storeId);
     if (!storeDefinition) {
         const errMsg = `ui-store-action references an unknown store '${storeId}'.`;
         reportRuntimeError(node, {
@@ -7480,6 +7528,15 @@ registerWebappNodes.__test__ = {
     dialogInputHandler,
     queryInputHandler,
     triggerParamQueryRefresh,
+    // P209/P211/P214: reference-based store nodes + store-reference resolution
+    // (real ui-store first, else a ui-query's implicit per-query params store).
+    storeActionInputHandler,
+    storeReadInputHandler,
+    findStoreDefinitionById,
+    findQueryParamsStoreDefinitionById,
+    resolveStoreReferenceById,
+    findQueryRegistrationById,
+    fireQueryRefresh,
     // P20a
     buttonInputHandler,
     actionInputHandler,

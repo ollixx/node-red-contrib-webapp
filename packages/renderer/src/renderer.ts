@@ -2114,6 +2114,21 @@ export function createRendererApp(appModel: AppModel, options: RendererAppOption
         }
         return names;
     }, {});
+    // P214 (ADR 0030): every ui-query implicitly owns a per-client params store
+    // slice at `ui.queries.<queryPath>.params`, addressable by the query's node id
+    // exactly like a real ui-store. Register each query id → its params statePath so
+    // a `store` binding (display or structural) pointing at a ui-query resolves to
+    // that query's params slice. A real ui-store never shares an id with a ui-query,
+    // and the explicit store entries above win where an id already exists.
+    for (const query of integration.queries as Array<{ id?: string; queryPath?: string }>) {
+        if (!query || !query.id || !query.queryPath || storePaths[query.id] !== undefined) {
+            continue;
+        }
+        storePaths[query.id] = `ui.queries.${query.queryPath}.params`;
+        if (storeNames[query.id] === undefined) {
+            storeNames[query.id] = `Query ${query.queryPath} · Params`;
+        }
+    }
     // P115: dedup distinct reactive failures per app instance, so a broken
     // expression is reported once — not on every re-render. The set persists
     // across render()/navigate()/replaceState()/replaceQueries() calls.

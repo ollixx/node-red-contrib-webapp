@@ -1541,13 +1541,37 @@
             const candidates = appId
                 ? references.stores.filter(function (s) { return s.parent === appId; })
                 : references.stores;
-            return candidates.map(function (store) {
+            const storeEntries = candidates.map(function (store) {
                 const name = store.name || store.id;
                 const detail = store.statePath ? store.id + " (" + store.statePath + ")" : store.id;
                 const label = store.name ? store.name + " — " + detail : detail;
                 const secondary = !appId && store.parent ? appTitleById(references, store.parent) : "";
                 return { value: store.id, label: label, name: name, id: store.id, type: "ui-store", secondary: secondary };
             });
+            // P214 (ADR 0030): every ui-query implicitly owns a per-client params
+            // store slice, addressable by the query's node id exactly like a real
+            // ui-store. Surface each query's implicit params target ALONGSIDE the real
+            // stores, visibly distinguished ("Query X · Params"), so it is selectable
+            // in the ui-store-action / ui-store-read pickers and `store` typedInputs.
+            // Selecting one stores the query id as the reference (value = query.id).
+            const queryCandidates = appId
+                ? (references.queries || []).filter(function (q) { return q.parent === appId; })
+                : (references.queries || []);
+            const queryParamsEntries = queryCandidates.map(function (query) {
+                const queryName = query.name || query.id;
+                const paramsPath = query.queryPath ? "ui.queries." + query.queryPath + ".params" : "";
+                const detail = paramsPath ? query.id + " (" + paramsPath + ")" : query.id;
+                const secondary = !appId && query.parent ? appTitleById(references, query.parent) : "";
+                return {
+                    value: query.id,
+                    label: "Query " + queryName + " · Params — " + detail,
+                    name: "Query " + queryName + " · Params",
+                    id: query.id,
+                    type: "ui-query-params",
+                    secondary: secondary
+                };
+            });
+            return storeEntries.concat(queryParamsEntries);
         },
         // P212 (ADR 0029): the ui-query reference preset — for ui-query-action's
         // `query` field. Same shape as stores; app-scoped when a context appId is
@@ -3271,7 +3295,29 @@
                 break;
             }
         }
-        return match;
+        if (match) {
+            return match;
+        }
+        // P214 (ADR 0030): a `store` reference may point at a ui-query's implicit
+        // per-query params store (id = the query node id). Resolve it to a synthetic
+        // ref so the store typedInput paints "Query X · Params" (not "<id> (bestehend)")
+        // and offers no default-slice autocomplete (params have no declared shape).
+        var queries = references.queries || [];
+        for (var j = 0; j < queries.length; j++) {
+            if (queries[j].id === storeId) {
+                var q = queries[j];
+                var qName = q.name || q.id;
+                return {
+                    id: q.id,
+                    name: "Query " + qName + " · Params",
+                    statePath: q.queryPath ? "ui.queries." + q.queryPath + ".params" : "",
+                    initialValue: "",
+                    parent: q.parent || "",
+                    __queryParamsStore: true
+                };
+            }
+        }
+        return null;
     }
     function resolveStoreName(storeId) {
         if (!storeId) {
