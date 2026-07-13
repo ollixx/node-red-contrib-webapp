@@ -2,7 +2,7 @@
 id: P217
 title: "Test-Infra: backfill editor open→save round-trip tests for all remaining reference/picker/editableList nodes — drive the check:roundtrip allowlist to empty"
 epic: aspects/test-infra
-status: in_progress
+status: done
 dependencies: [P215, P216]
 verify: browser
 spec: .ai/agents/node-testing.md
@@ -10,7 +10,7 @@ tests: tests/e2e/nodes/state/ui-query.tests.md
 ---
 # P217 — Backfill round-trip tests; empty the allowlist
 
-> Rationale: [ADR 0031](../../../adr/0031-editor-open-save-round-trip-test-standard.md)
+> Rationale: [ADR 0031](../../../../adr/0031-editor-open-save-round-trip-test-standard.md)
 > — completes the standard by covering the existing reference/picker/editableList
 > nodes. Depends on P215 (harness) and P216 (tripwire that defines the worklist).
 
@@ -73,3 +73,17 @@ node) — each lists its editor open→save round-trip test.
 - If the set is large, this may be split into sub-batches by epic/category, but a
   package is only `done` when its portion of the allowlist is emptied and the
   tripwire is green for those nodes.
+
+## Result
+
+**Delivered.** Editor open→save Round-Trip-Tests für ALLE verbliebenen qualifizierenden Carrier-Felder nachgezogen; die `check:roundtrip`-Allowlist ist jetzt **leer** (`{}`) — die ADR-0031-Enforcement hat keine Ausnahmen mehr.
+- **4 neue Specs** (je Knoten einer, `assertEditorRoundTrip`, Muster von `ui-store-action.roundtrip.spec.ts`): `tests/e2e/nodes/state/ui-store-read.roundtrip.spec.ts` (`store`), `ui-query-action.roundtrip.spec.ts` (`query`), `ui-query.roundtrip.spec.ts` (`params` + `refreshAction` in einem Aufruf), `tests/e2e/nodes/structure/ui-dialog.roundtrip.spec.ts` (`routeId`).
+- **Seed-Korrektheit:** alle 5 Carrier seeden bereits aus dem EIGENEN Feld des Knotens (kein store-artiger Seed-Bug mehr) → keine editor-common/HTML-Korrektur nötig. `ui-store-read.store`←`self.store`; `ui-query.params`←fällt auf `self.params` durch; `ui-query.refreshAction`←`self.refreshAction`; `ui-query-action.query`←`self.query`; `ui-dialog.routeId`←`self.routeId` (clearable, korrekt by construction).
+- **Allowlist geleert:** `scripts/check-roundtrip.js` `ALLOWLIST` = `{}` (war 5 Einträge), keine Exemptions.
+- **Kataloge:** Round-Trip-Sektion (Marker-Format) an `ui-store-read.tests.md`, `ui-query-action.tests.md`, `ui-query.tests.md` angehängt; `tests/e2e/nodes/structure/ui-dialog.tests.md` neu angelegt (existierte nicht).
+
+**Verify (browser, gemessen — Haupt-Checkout).** Alle **4 Specs 4 passed** (22s): jeder Carrier ist beim Öffnen aus dem Feld geseedet (nicht leer), überlebt Done unverändert, und ein Wertwechsel persistiert + re-seedet beim Wiederöffnen — inkl. der vom Agent zur Prüfung markierten `ui-query` (Fall-through-Seed) und `ui-dialog` (Route-Picker, vorher ohne Katalog). `pnpm check:roundtrip`: **6 Knoten / 7 Felder, 0 allowlisted**.
+
+**Stats.** Unit grün (runtime 1240). `pnpm build`/`lint`/`check:specs`/`check:links`/`check:roadmap` grün. Damit ist die ADR-0031-Trilogie komplett: P215 (Harness + Standard) · P216 (Tripwire) · P217 (Backfill → Allowlist leer).
+
+**Cost.** Sub-Agent `phase/P217` (worktree), ~8 min (19:54Z→20:02Z); Token-Zeile in `.ai/agent-runs.jsonl`.
