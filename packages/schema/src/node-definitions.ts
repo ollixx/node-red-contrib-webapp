@@ -652,21 +652,25 @@ export const uiStoreActionNodeDefinitionSchema = identifiedNodeSchema.extend({
 
 export type UiStoreActionNodeDefinition = z.infer<typeof uiStoreActionNodeDefinitionSchema>;
 
-// P212 (ADR 0029): a typed, reference-based TRIGGER node for a `ui-query`. It
-// references a ui-query by id (`query`) and carries an action selector
-// (`refresh`, an extensible enum — the only value today). `mode` mirrors
-// `ui-action.targetMode`: `reference` fires the referenced query's refresh
-// directly server-side (via fireQueryRefresh, per client via msg.ui.clientId) so
-// its out-port emits the retrieval; `wire` emits the
-// `msg.ui.query = {queryPath, refresh:true, params}` envelope on the out-port
-// instead, for the flow to wire to the ui-query. `parent` is the owning app
-// (required at deploy via the P205 parent validation). Optional query params come
-// from `msg.payload` (or `msg.ui.query.params`).
+// P212 (ADR 0029): a typed, reference-based node for a `ui-query`. It references a
+// ui-query by id (`query`) and carries an action selector (`refresh` | `replace`,
+// an extensible enum). `mode` mirrors `ui-action.targetMode`:
+//   - `refresh` (P212, trigger-out): `reference` fires the referenced query's
+//     refresh directly server-side (via fireQueryRefresh, per client via
+//     msg.ui.clientId) so its out-port emits the retrieval; `wire` emits the
+//     `msg.ui.query = {queryPath, refresh:true, params}` envelope on the out-port.
+//   - `replace` (P213, data-in): the typed form of `msg.ui.query.data`. `reference`
+//     writes `msg.payload` DIRECTLY into `ui.queries.<queryPath>.data` (per-client,
+//     SSE re-render); `wire` emits `msg.ui.query = {queryPath, data}` on the
+//     out-port for the flow to wire to the ui-query input.
+// `parent` is the owning app (required at deploy via the P205 parent validation).
+// Optional query params (refresh) come from `msg.payload`/`msg.ui.query.params`;
+// the replace data comes from `msg.payload`.
 export const uiQueryActionNodeDefinitionSchema = identifiedNodeSchema.extend({
     type: z.literal("ui-query-action"),
     parent: identifierSchema.optional(),
     query: z.string().min(1, "ui-query-action must reference a ui-query node."),
-    action: z.enum(["refresh"]).default("refresh"),
+    action: z.enum(["refresh", "replace"]).default("refresh"),
     mode: z.enum(["reference", "wire"]).default("reference")
 });
 
