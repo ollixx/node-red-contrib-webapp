@@ -2,7 +2,7 @@
 id: P222
 title: "Editor: Base-Field-Rollout (ADR 0015) vervollständigen — visible/disabled/color/size fehlen auf ~26 der 33 View-Knoten; Applicability-Audit + Retrofit"
 epic: aspects/editor
-status: in_progress
+status: done
 dependencies: []
 verify: browser
 spec: docs/nodes/concepts/editor.md
@@ -10,7 +10,7 @@ tests: tests/e2e/nodes/editor/base-fields.spec.ts
 ---
 # P222 — Base-Field-Rollout vervollständigen
 
-> Rationale: [ADR 0015](../../../adr/0015-common-base-fields-and-editor-structure.md).
+> Rationale: [ADR 0015](../../../../adr/0015-common-base-fields-and-editor-structure.md).
 > Owner-Befund 2026-07-13 (bei der ui-alert-Analyse): der Base-Field-Rollout ist
 > weit unvollständig.
 
@@ -82,3 +82,17 @@ alle Knoten ausgebaut (Gruppe injiziert, applicable/N/A korrekt, visible-Round-T
   Schritt und muss zuerst stehen, damit die Batches ohne Interpretation umsetzbar
   sind. Jeder Batch ist erst `done`, wenn seine Knoten den Editor-Beweis bestehen.
 - Kein Runtime-Umbau nötig (visible→visibleIf-Mapping existiert, P172).
+
+## Result
+
+**Delivered.** Base-Field-Rollout (ADR 0015) vervollständigt — alle 26 fehlenden View-Knoten haben jetzt den „Allgemein"-Block (`visible`/`disabled`/`color` + `size` je nach Anwendbarkeit). Kein Runtime-Umbau.
+- **Audit zuerst.** Autoritative Anwendbarkeits-Tabelle in `docs/nodes/concepts/editor.md` („Rollout-Status und Anwendbarkeits-Audit P139→P222"): `visible` überall applicable (die dokumentierte Fundament-Lücke); `disabled` N/A auf nicht-interaktiven Display-Knoten; `color` N/A wenn `variant`/`severity` die Farbe regelt oder keine Farbfläche existiert; `size` meist N/A/eigen. Die irreführende „every node offers…"-Aussage mit der Realität in Einklang gebracht.
+- **Retrofit — 26 Knoten** rufen `installBaseFields`/`applyBaseFields` mit Carrier-Defaults: input (input/textarea/select/checkbox/radio/switch/slider/datepicker), display (button/text/avatar/icon/image/container/table), feedback (badge/progress/log/empty-state/toast), navigation (accordion/breadcrumb/menu/pagination/stepper/tabs).
+- **Helper** `resources/lib/editor-common.js`: neue `omit`-Option — Knoten mit eigenem dediziertem Control für ein Base-Feld lassen es aus der „Allgemein"-Gruppe fallen statt auf der `#node-input-<field>`-Carrier-ID zu kollidieren (die 9 Form-Knoten behalten ihr inline `disabledBinding`; avatar/checkbox + die 5 `installSizeSelectBox`-Knoten behalten ihre Size-UI; icon behält sein Color-Feld; empty-state seinen Visible-Path).
+- **Tripwires ohne wachsende Allowlist.** `check-specs.js`: `visible`/`disabled`/`color` in `COMMON_BOILERPLATE` (universelle Base-Felder, zentral in editor.md dokumentiert — wie Layout-Boilerplate) → keine 78 Per-Knoten-Felder-Zeilen; Carrier per Suffix-Regel auto-allowlisted. **`check:roundtrip` unberührt** (6 Knoten/7 Felder/5 allowlisted): Base-Feld-Carrier laufen über `installBaseFields`, nicht `installReferenceSelectors`/`editableList`, werden also gar nicht enumeriert — der Round-Trip ist trotzdem bewiesen (durch die Base-Fields-E2E-Matrix, nicht durch Stilllegen).
+
+**Verify (browser, gemessen — Haupt-Checkout).** `tests/e2e/nodes/editor/base-fields.spec.ts` **54 passed** (3,4 min): datengetriebene `BASE_FIELD_MATRIX` (26 Zeilen = die Audit-Tabelle) — je Knoten: „Allgemein"-Gruppe injiziert, jedes Feld `active`/`na`(gegraut+Hint)/`omit` korrekt, und das Leit-Base-Feld round-trippt open→save (`visible` überall; `color` für empty-state). Plus die 28 bestehenden Base-Field-Tests (divider/list/alert/P181/P202) grün.
+
+**Stats.** Unit unverändert grün (schema 497, editor 178, renderer 158, runtime 1240) — reine Editor-Änderung. `pnpm build`/`lint`/`check:specs` (42)/`check:roundtrip`/`check:links`/`check:roadmap` grün.
+
+**Cost.** Sub-Agent `phase/P222` (worktree), ~28 min (19:13Z→19:41Z); erster Anlauf am Session-Rate-Limit gestorben (0 Commits, kein Verlust), nach Reset neu gestartet. Token-Zeile in `.ai/agent-runs.jsonl`. (Dieser Sub-Agent löste ebenfalls `git reset --hard develop` im Haupt-Checkout aus; der Schaden — dieselben 3 Katalog-Dateien — war zu dem Zeitpunkt bereits vom Orchestrator rekonstruiert + committed.)

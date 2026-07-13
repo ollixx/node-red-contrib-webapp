@@ -28,7 +28,6 @@ their blocker clears.
 ## Open work (pending / in_progress)
 
 - **P217** — aspects/test-infra — Backfill open→save Round-Trip-Tests für alle übrigen reference/picker/editableList-Knoten; `check:roundtrip`-Allowlist auf leer treiben — *ADR 0031; dep P215/P216* — [P217](aspects/test-infra/P217-backfill-round-trip-tests.md)
-- **P222** — aspects/editor — Base-Field-Rollout (ADR 0015) vervollständigen: visible/disabled/color/size fehlen auf ~26 der 33 View-Knoten; Applicability-Audit + Retrofit — *ADR 0015; Owner 2026-07-13* — [P222](aspects/editor/P222-base-field-rollout-completion.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -94,11 +93,11 @@ open the folder for the full history.
 | aspects/docs | 1 |
 | aspects/runtime | 9 |
 | aspects/state | 8 |
-| aspects/editor | 23 |
+| aspects/editor | 24 |
 | schema | 5 |
 | aspects/rendering | 14 |
 | aspects/foundation | 5 |
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 219 done, 2 open, 10 deferred.**
+**Total: 220 done, 1 open, 10 deferred.**
