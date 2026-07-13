@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P212** — nodes/ui-query-action — neuer Knoten: typisierter Query-Trigger (action refresh) per Referenz, hybrid `reference|wire`; optional Params aus `msg.payload` — *ADR 0029; Owner 2026-07-12* — [P212](nodes/ui-query-action/P212-ui-query-action-node.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -60,6 +59,7 @@ open the folder for the full history.
 | nodes/ui-store | 3 |
 | nodes/ui-store-read | 1 |
 | nodes/ui-store-action | 1 |
+| nodes/ui-query-action | 1 |
 | nodes/ui-badge | 3 |
 | nodes/ui-route | 2 |
 | nodes/ui-text | 2 |
@@ -98,4 +98,4 @@ open the folder for the full history.
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 209 done, 1 open, 9 deferred.**
+**Total: 210 done, 0 open, 9 deferred.**

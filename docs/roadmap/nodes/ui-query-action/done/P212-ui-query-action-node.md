@@ -17,11 +17,11 @@ verify: browser
 spec: docs/nodes/state/ui-query-action.md
 tests: tests/e2e/nodes/state/ui-query-action.tests.md
 dependencies: []
-status: in_progress
+status: done
 ---
 # P212 — neuer Knoten `ui-query-action` (typisierter Query-Trigger, hybrid)
 
-> Entscheidung: [ADR 0029](../../../adr/0029-state-action-nodes-store-action-query-action-hybrid.md).
+> Entscheidung: [ADR 0029](../../../../adr/0029-state-action-nodes-store-action-query-action-hybrid.md).
 > Vier-Datei-Muster — vor dem Lesen von Quellcode `/node-red-node` aufrufen.
 
 ## Kern
@@ -42,3 +42,21 @@ Optional Params aus `msg.payload`.
 
 - `parent` required (P205). Nicht mit `ui-query.refreshAction` verwechseln (das ist
   eine UI-Action-Referenz IN der Query; dieser Knoten ist ein eigenständiger Trigger).
+
+## Result
+
+**Delivered.** Neuer Knoten `ui-query-action` (Vier-Datei-Muster) — typisierter Query-Trigger, hybrid `reference|wire`. Spiegelt P211 `ui-store-action`.
+- **Schema** `packages/schema/src/node-definitions.ts` + `index.ts`: `uiQueryActionNodeDefinitionSchema` (`query` req, `action` enum `refresh` default `refresh` (erweiterbar), `mode` enum `reference|wire` default `reference`), in Union + Type-Map + Exports.
+- **Runtime** `nodes/webapp.js`: `queryActionInputHandler` + `findQueryRegistrationById` (löst Query-Def-id → Runtime-nodeId + `queryPath`) + Registry-Eintrag; `ui-query-action` in `WEBAPP_NODE_TYPES` **und** `APP_SCOPED_PARENT_TYPES` (P205 deploy-validiert).
+- **Editor** `nodes/state/ui-query-action.{js,html}` (native action/mode-Selects, `installParentAppSelector` + `installReferenceSelectors({query})`, Inline-Hilfe); `resources/lib/editor-common.js` um den `queries`-Referenzsammler + Preset + Picker erweitert (spiegelt `stores`); `packages/editor/src/nodes.ts` Config-Typ + `nodeSet`. `package.json` `node-red.nodes` registriert.
+- **Spec** `docs/nodes/state/ui-query-action.md` (Feld-für-Feld, action-Enum, beide Modi, Params-Quelle + Weglass-Regel, per-client, Abgrenzung zu `ui-query`/`refreshAction`). **Test-Katalog** `tests/e2e/nodes/state/ui-query-action.tests.md`.
+
+**Semantik.** **reference**: feuert den Refresh der referenzierten Query DIREKT (`fireQueryRefresh`, server-seitig, per-client via `msg.ui.clientId`) → deren Out-Port emittiert den Retrieval; kein Wire, der Action-Knoten selbst emittiert nichts. **wire**: emittiert `msg.ui.query = {queryPath, refresh:true, params}`, triggert NICHT. Params aus `msg.ui.query.params` › `msg.payload`; fehlt beides → **kein** `params`-Schlüssel. Unbekannte Query → `server.query.action-missing-query` (beide Modi, `done(error)`).
+
+**Verify (browser, gemessen — Haupt-Checkout).** `tests/e2e/nodes/state/ui-query-action.spec.ts` **1 passed** (2.9s): wire-mode → Envelope-Readout `{"queryPath":"items","refresh":true,"params":{"page":2}}` und Query-Readout bleibt NICHT `LOADED` (kein Trigger); reference-mode → nach REFRESH füllt sich der Query-Readout live mit `LOADED` (Retrieval-Pipeline lief, kein Wire).
+
+**Stats.** Unit grün: schema 485 (+10 P212), editor 176 (node-set-Katalog +1 Zeile), renderer 148, runtime 1163 (+18 P212, P205 +2). `pnpm build`/`lint`/`check:specs` (42 Knoten)/`check:links`/`check:roadmap` grün. E2E P212-Spec grün.
+
+**Recovery-Hinweis.** Der Sub-Agent starb mitten im Lauf (API-Verbindungsabbruch) beim Schreiben des Test-Katalogs; der gesamte Code lag committfertig im Worktree. Der Orchestrator hat die Arbeit aus dem Worktree geborgen, den fehlenden Katalog + die Node-Set-Katalog-Zeile ergänzt und im Haupt-Checkout verifiziert.
+
+**Cost.** Sub-Agent `phase/P212` (worktree), ~30 min bis Abbruch, session `d58245ce…`; Token-Zeile in `.ai/agent-runs.jsonl`.

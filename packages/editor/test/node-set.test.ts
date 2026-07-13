@@ -31,6 +31,7 @@ describe("editor node set", () => {
             "ui-pagination",
             "ui-progress",
             "ui-query",
+            "ui-query-action",
             "ui-radio",
             "ui-repeat",
             "ui-route",
