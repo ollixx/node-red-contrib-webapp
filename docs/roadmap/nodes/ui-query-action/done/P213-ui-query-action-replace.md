@@ -16,12 +16,12 @@ verify: browser
 spec: docs/nodes/state/ui-query-action.md
 tests: tests/e2e/nodes/state/ui-query-action.tests.md
 dependencies: [P212]
-status: in_progress
+status: done
 ---
 # P213 — ui-query-action `replace` (Daten-rein-Seite)
 
-> Erweitert [P212](../ui-query-action/done/P212-ui-query-action-node.md) um die
-> zweite Action. Vertrag: [ADR 0029](../../../adr/0029-state-action-nodes-store-action-query-action-hybrid.md).
+> Erweitert [P212](P212-ui-query-action-node.md) um die
+> zweite Action. Vertrag: [ADR 0029](../../../../adr/0029-state-action-nodes-store-action-query-action-hybrid.md).
 
 ## Kern
 
@@ -43,3 +43,18 @@ Damit ist der Loop typisiert:
 
 - `replace` ist die typisierte Form von `msg.ui.query.data` (P160/applyQueryMessage);
   Terminal-Regel bleibt (data absorbiert die Query, kein Loop).
+
+## Result
+
+**Delivered.** Zweite Action `replace` (Daten-rein-Seite zu `refresh`) auf `ui-query-action` — rein additiv, hybrid `reference|wire`.
+- **Schema** `packages/schema/src/node-definitions.ts`: `action`-Enum → `z.enum(["refresh","replace"])`, Default bleibt `refresh`. **Editor** `packages/editor/src/nodes.ts` (action-Union) + `nodes/state/ui-query-action.html` (`<option value="replace">` + Hilfe für beide Actions).
+- **Runtime** `nodes/webapp.js`: neuer Helper `applyQueryDataDirect` (nutzt den bestehenden P160-`applyQueryMessage`-Fold — dieselbe Apply-Bahn wie `queryInputHandler`); `queryActionInputHandler` verzweigt nach `action`. `mapConfig` reichte `action` schon durch.
+- **Spec** `docs/nodes/state/ui-query-action.md` + **Katalog** `tests/e2e/nodes/state/ui-query-action.tests.md` um `replace` erweitert.
+
+**Semantik.** **reference+replace**: schreibt `msg.payload` direkt in `ui.queries.<queryPath>.data` (per-client via `msg.ui.clientId`, sonst Broadcast), SSE-Re-Render; Knoten emittiert nichts; `totalCount`/`pageCount` aus `msg.ui.query.*` übernommen. **wire+replace**: emittiert `msg.ui.query = {queryPath, data, totalCount?, pageCount?}`, mutiert nicht. **Kein payload → `data = []`** (expliziter Replace-auf-leer, Status `success` — dokumentiert; ein Payload-omit-No-op wurde als überraschend verworfen). **refresh** (P212) byte-genau erhalten (2 Regressionstests: refresh feuert weiter, schreibt nie Query-Daten). Terminal-Regel (data absorbiert, kein Loop) gilt.
+
+**Verify (browser, gemessen — Haupt-Checkout).** `tests/e2e/nodes/state/ui-query-action-replace.spec.ts` **1 passed** (2.7s): wire → Envelope-Readout `{"queryPath":"items","data":[{"id":1,"name":"Ada"}]}`, Query-Readout bleibt leer (kein Mutieren); reference → Query-Readout füllt sich live mit `REPLACED` (Daten direkt, per-client SSE).
+
+**Stats.** Unit grün: schema 486 (+1), runtime 1168 (+11 P213). `pnpm build`/`lint`/`check:specs` (42 Knoten)/`check:links`/`check:roadmap` grün. E2E P213-Spec grün.
+
+**Cost.** Sub-Agent `phase/P213` (worktree), ~15 min (14:50:12Z→15:05:35Z); Token-Zeile in `.ai/agent-runs.jsonl`. (Worktree-Anomalie: stale base `db4f4ff` — Branch korrekt auf develop rebasiert, kein Datenverlust.)

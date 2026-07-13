@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P213** — nodes/ui-query-action — action `replace`: eingehende Daten (`msg.payload`) als Query-Daten setzen (Daten-rein-Seite zu `refresh`), reference|wire — *ADR 0029; Owner 2026-07-13; dep P212* — [P213](nodes/ui-query-action/P213-ui-query-action-replace.md)
 - **P214** — nodes/ui-query — impliziter per-client Params-Store pro Query (kein extra Knoten), adressierbar wie jeder Store via ui-store-action/-read/store-Binding; explizites `params` bleibt Override — *ADR 0030; Owner 2026-07-13; dep P209/P211* — [P214](nodes/ui-query/P214-implicit-per-query-params-store.md)
 - **P215** — aspects/test-infra — shared editor open→save round-trip harness + Mandat in node-testing standard (reference/picker/editableList Carrier-Felder) — *ADR 0031; Owner 2026-07-13; dep P81* — [P215](aspects/test-infra/P215-editor-round-trip-harness-and-standard.md)
 - **P216** — aspects/test-infra — read-only Tripwire `pnpm check:roundtrip`: jeder reference/picker/editableList-Knoten braucht einen open→save-Round-Trip-Test (seeded Allowlist hält validate grün) — *ADR 0031; dep P215* — [P216](aspects/test-infra/P216-check-roundtrip-tripwire.md)
@@ -64,7 +63,7 @@ open the folder for the full history.
 | nodes/ui-store | 3 |
 | nodes/ui-store-read | 1 |
 | nodes/ui-store-action | 1 |
-| nodes/ui-query-action | 1 |
+| nodes/ui-query-action | 2 |
 | nodes/ui-badge | 3 |
 | nodes/ui-route | 2 |
 | nodes/ui-text | 2 |
@@ -103,4 +102,4 @@ open the folder for the full history.
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 210 done, 2 open, 9 deferred.**
+**Total: 211 done, 4 open, 9 deferred.**
