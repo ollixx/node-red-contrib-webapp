@@ -75,3 +75,12 @@ emittierte Message wird über einen HTTP-Rück-Kanal beobachtet.
 
 Beweis über den EMITTIERTEN Message-Inhalt (verdrahtet an einen Rück-Kanal),
 nicht über bloße Knoten-Registrierung.
+
+## E2E — Editor open→save round-trip (`tests/e2e/nodes/state/ui-store-read.roundtrip.spec.ts`)
+
+Standard: `.ai/agents/node-testing.md` „Editor open→save round-trip", [ADR 0031](../../../../docs/adr/0031-editor-open-save-round-trip-test-standard.md).
+`assertEditorRoundTrip`-Aufruf für das `store`-Referenz-Picker-Feld (P217).
+
+| Test | Ziel |
+|---|---|
+| `store` open→Done Round-Trip | Der Store-Reference-Picker (hidden `#node-input-store`) ist beim Öffnen aus `store` **geseedet** (nicht leer), **überlebt** Done unverändert (`RED.nodes.node().store` bleibt `srStore`, kein Clobber zu `""`), und ein **Wertwechsel** auf `srStore2` persistiert und re-seedet beim Wiederöffnen. Entfernen des `store`-Seeds in `installReferenceSelectors` macht den Test rot. |

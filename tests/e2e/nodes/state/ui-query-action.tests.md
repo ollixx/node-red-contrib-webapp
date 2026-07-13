@@ -104,3 +104,12 @@ E2E (Playwright, vom Orchestrator ausgeführt):
 `tests/e2e/nodes/state/ui-query-refresh-replace-cleanup.spec.ts`
 (Fixture `tests/e2e/fixtures/p218-refresh-replace-cleanup.flow.json`) — nach einem
 REFRESH mit vergiftetem Payload zeigt der Query-Readout `CLEAN` und **nie** `POISON`.
+
+## E2E — Editor open→save round-trip (`tests/e2e/nodes/state/ui-query-action.roundtrip.spec.ts`)
+
+Standard: `.ai/agents/node-testing.md` „Editor open→save round-trip", [ADR 0031](../../../../docs/adr/0031-editor-open-save-round-trip-test-standard.md).
+`assertEditorRoundTrip`-Aufruf für das `query`-Referenz-Picker-Feld (P217).
+
+| Test | Ziel |
+|---|---|
+| `query` open→Done Round-Trip | Der Query-Reference-Picker (hidden `#node-input-query`) ist beim Öffnen aus `query` **geseedet** (nicht leer), **überlebt** Done unverändert (`RED.nodes.node().query` bleibt `qaQuery`, kein Clobber zu `""`), und ein **Wertwechsel** auf `qaQuery2` persistiert und re-seedet beim Wiederöffnen. Entfernen des `query`-Seeds in `installReferenceSelectors` macht den Test rot. |

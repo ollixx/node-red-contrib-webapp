@@ -177,3 +177,13 @@ aber die stale `msg.payload` des Triggers wird VERWORFEN, damit sie nicht
 nachgelagert als Query-DATEN (`replace`) doppelt-konsumiert wird.
 Unit: `packages/runtime/test/p218-consumed-envelope-cleanup.test.ts`;
 E2E-Repro: `tests/e2e/nodes/state/ui-query-refresh-replace-cleanup.spec.ts`.
+
+## E2E — Editor open→save round-trip (`tests/e2e/nodes/state/ui-query.roundtrip.spec.ts`)
+
+Standard: `.ai/agents/node-testing.md` „Editor open→save round-trip", [ADR 0031](../../../../docs/adr/0031-editor-open-save-round-trip-test-standard.md).
+`assertEditorRoundTrip`-Aufruf für die beiden Referenz-Picker-Felder `params` (Params-Store) und `refreshAction` (Refresh-Action) (P217).
+
+| Test | Ziel |
+|---|---|
+| `params` open→Done Round-Trip | Der Store-Reference-Picker (hidden `#node-input-params`) ist beim Öffnen aus `params` **geseedet** (nicht leer), **überlebt** Done unverändert (`RED.nodes.node().params` bleibt `qStore`, kein Clobber zu `""`), und ein **Wertwechsel** auf `qStore2` persistiert und re-seedet beim Wiederöffnen. Entfernen des Store-Seeds in `installReferenceSelectors` macht den Test rot. |
+| `refreshAction` open→Done Round-Trip | Der Action-Reference-Picker (hidden `#node-input-refreshAction`) ist beim Öffnen aus `refreshAction` **geseedet** (nicht leer), **überlebt** Done unverändert (`RED.nodes.node().refreshAction` bleibt `qAction`, kein Clobber zu `""`), und ein **Wertwechsel** auf `qAction2` persistiert und re-seedet beim Wiederöffnen. Entfernen des Action-Seeds macht den Test rot. |
