@@ -458,8 +458,15 @@ function applyStatePatch(currentState: Record<string, unknown>, statePatch: Reco
 function resolveStoreBinding(binding: BindingDefinition, sources: BindingSources, depth: number): unknown {
     const storeId = binding.path;
     const storeName = (storeId && sources.storeNames[storeId]) || storeId || "?";
+    // P219 (ADR 0034): `onMissing:ignore` turns EVERY unresolvable store-sub-path
+    // outcome into an empty render with NO report — the per-field, selectable form
+    // of the transient-empty rule ADR 0032 already applies to a missing object key.
+    const ignoreMissing = binding.onMissing === "ignore";
 
     if (depth > STORE_SUBPATH_MAX_DEPTH) {
+        if (ignoreMissing) {
+            return "";
+        }
         reportStoreSubPathError(
             sources,
             `store binding "${storeName}": sub-path nesting too deep / cycle`
@@ -487,6 +494,10 @@ function resolveStoreBinding(binding: BindingDefinition, sources: BindingSources
     // object/array slice is a configuration error → marker + speaking message.
     if (pathValue === undefined || pathValue === null || pathValue === "") {
         if (isObjectSlice) {
+            // P219 (ADR 0034): `ignore` → empty, no report.
+            if (ignoreMissing) {
+                return "";
+            }
             reportStoreSubPathError(
                 sources,
                 `Store "${storeName}": Wert ist ein Objekt — gib einen Pfad zu einer anzeigbaren Property an`
@@ -517,6 +528,13 @@ function resolveStoreBinding(binding: BindingDefinition, sources: BindingSources
         // content — the same "empty until a value arrives" convention the msg/jsonata
         // bindings use above.
         if (isObjectSlice) {
+            return "";
+        }
+
+        // P219 (ADR 0034): a SCALAR slice + sub-path is the genuine-error case that
+        // still produces `"?"` by default — but `onMissing:ignore` makes the author
+        // opt into an empty render with no report for this field too.
+        if (ignoreMissing) {
             return "";
         }
 
@@ -664,6 +682,13 @@ function resolveBinding(binding: BindingDefinition | undefined, sources: Binding
             });
 
             if (result.error) {
+                // P219 (ADR 0034): honour this field's `onMissing` behaviour. With
+                // `ignore` the failed value renders EMPTY and reports NOTHING (the
+                // same "absent value" semantics ADR 0032 gives a transient store
+                // miss). Default/`marker` keeps today's behaviour below.
+                if (binding.onMissing === "ignore") {
+                    return "";
+                }
                 // ADR 0032: attribute the failure to the node being resolved so the
                 // host can badge it. Severity is left unset → the host treats a
                 // genuine reactive-expression failure as an error (not a warn).

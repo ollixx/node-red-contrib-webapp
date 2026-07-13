@@ -142,3 +142,38 @@ ui-text is the lead node of the canonical value-binding set, so the `Reactive`
 | completion provider: registered with the live route-param + store names | completion context resolves real `:id` + `customer` from the graph |
 | ace-fallback: dialog opens + validates with NO console error when Monaco is absent | fallback path is an acceptance criterion, not an error case |
 | end-to-end: editor-set `Kunde ${routeParam.id}` renders + re-evaluates on navigation | the gedankenspiel proof, driven through the editor (not a fixture) |
+
+## P219 — per-field `onMissing` selector (foundation: `marker` | `ignore`, ADR 0034)
+
+Every bindable value field gains an optional `onMissing` behaviour for the
+**unresolvable-value** case (a `reactive` expression fails, a `store` sub-path
+hits a scalar / is not found): `marker` (default) → today's `"?"` + one-time
+report; `ignore` → empty (`""`) + no report. Absent = `marker`, so existing
+flows are unchanged. ui-text is the lead node carrying the editor selector.
+
+### Unit — schema (`packages/schema/test/p219-onmissing.test.ts`)
+
+| Test | Goal |
+|---|---|
+| ON_MISSING_BEHAVIORS === [marker, ignore] | foundation vocabulary (extensible for P220 errorPort/throw) |
+| accepts onMissing marker/ignore on binding + leaf | the enum validates on both the value binding and a store sub-path leaf |
+| onMissing optional — binding without it validates | absence is the default; existing definitions unchanged |
+| unknown onMissing rejected | only the two behaviours are valid |
+
+### Unit — renderer (`packages/renderer/test/p219-onmissing.test.ts`)
+
+| Test | Goal |
+|---|---|
+| reactive fail + ignore → empty, no report | branch at the reactive invalid point |
+| reactive fail + marker (explicit) / absent → '?' + one report | default behaviour unchanged at the reactive point |
+| store scalar+subPath + ignore → empty, no report | branch at the store-sub-path invalid point |
+| store scalar+subPath absent → '?' + speaking report | default behaviour unchanged at the store point |
+| object slice without sub-path + ignore → empty, no report | ignore also covers the whole-object display-error case |
+
+### E2E — editor selector + browser proof (`tests/e2e/nodes/editor/onmissing.spec.ts`)
+
+| Test | Goal |
+|---|---|
+| On Missing selector present, defaults to marker, round-trips ignore | plain-select persistence onto the binding (no hidden carrier → no ADR-0031 harness); marker not persisted |
+| browser proof: marker renders '?' for an unresolvable binding | running app shows `"?"` for a whole-object store binding |
+| browser proof: ignore renders EMPTY for the same binding | running app shows empty (`""`) for the identical binding under `ignore` |
