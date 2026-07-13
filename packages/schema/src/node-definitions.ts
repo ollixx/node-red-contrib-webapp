@@ -18,6 +18,7 @@ import {
     routePathSchema,
     SEVERITY_VARIANTS,
     TEXT_COLOR_VARIANTS,
+    TEXT_DISPLAY_MODES,
     TEXT_STYLES,
     writeToBindingSchema,
     writeTriggerSchema
@@ -505,7 +506,17 @@ export const uiTextNodeDefinitionSchema = mountableNodeSchema.extend({
     // P111: `variant` is the semantic COLOUR (aligned with ui-button/badge/alert
     // and Shoelace/Bootstrap-Vue). Default "default" (inherit). The old size
     // field (P71) was removed — typographic sizing is governed by `style`.
-    variant: z.enum(TEXT_COLOR_VARIANTS).optional()
+    variant: z.enum(TEXT_COLOR_VARIANTS).optional(),
+    // P221 (ADR 0035): presentation mode. Absent / "text" (default) = the
+    // historic free display text. "formField" = a read-only LABELLED form row
+    // (label left / value right) styled like the input controls, so ui-text
+    // lines up next to ui-input/ui-select in a form. Read-only: no editing, no
+    // value emission. Optional (like `style`/`variant`) so existing flows and
+    // fixtures stay valid; consumers treat absence as "text".
+    display: z.enum(TEXT_DISPLAY_MODES).optional(),
+    // P221 (ADR 0035): the row label used in `display: "formField"` mode (the
+    // form label slot). Ignored in the default free-text mode.
+    label: z.string().optional()
 });
 
 export type UiTextNodeDefinition = z.infer<typeof uiTextNodeDefinitionSchema>;

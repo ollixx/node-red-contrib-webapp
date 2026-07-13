@@ -45,6 +45,8 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 | `value` | (typedInput, Default `string`) | typedInput (Binding) | **ja** | Der anzuzeigende Wert. Nutzt den **kanonischen Value-Binding-Typ-Satz** (P113 / ADR 0012 / ADR 0010) — Reihenfolge + Semantik in [editor.md](../concepts/editor.md) und [stores.md](../concepts/stores.md), Kategorien unter „Wert-Quellen" unten. Binding-Serialisierung kommt aus dem gemeinsamen Helfer (`valueBindingTypes`/`readValueBinding`/`applyValueBinding`). Scope-lokale Typen (`item`, `index` bei `ui-repeat`; `prop` in einer Component-Definition) erscheinen zusätzlich im Dropdown, wenn der Knoten im passenden Scope hängt — auf einem freistehenden `ui-text` sind sie by design ausgeblendet (P182, [stores.md → Scope-lokale Binding-Arten](../concepts/stores.md#scope-lokale-binding-arten-p182-adr-0017--adr-0020)). Leer-/`null`-/Non-Skalar-Verhalten (`""` → leerer Text; `null`/`undefined`/Objekt/Array → `"?"`; `0`/`false` sind gültig): siehe [value-rendering.md](../concepts/value-rendering.md). |
 | `style` | „Style" | SelectBox (`TEXT_STYLES`) | optional | Typografische **Rolle** des Textes; mappt 1:1 auf ein semantisches HTML-Element. Werte: `heading-1` (`<h1>`), `heading-2` (`<h2>`), `heading-3` (`<h3>`), `body` (`<p>`), `caption` (`<small>`), `label` (`<span>`), `code` (`<code>`). Default: `body`. Bestimmt Größe/Gewicht/Schriftfamilie, **nicht** die Farbe. |
 | `variant` | „Variante" | Variant-SelectBox (`TEXT_COLOR_VARIANTS`) | optional | Semantische **Farbe** des Textes — gleiches Vokabular-Prinzip wie `ui-button`/`ui-badge`/`ui-alert`. Werte: `default` (erbt die Textfarbe), `muted`, `primary`, `success`, `warning`, `danger`, `neutral`. Default: `default`. Mappt auf die `--wa-color-*` Tokens — Details: [theming.md](../concepts/theming.md). |
+| `display` | „Display" | SelectBox (`TEXT_DISPLAY_MODES`) | optional | **Präsentationsmodus** (P221, [ADR 0035](../../adr/0035-ui-text-form-field-readonly-mode.md)). Werte: `text` (Default) = bisheriger **freier Anzeigetext** (`style`/`variant` bestimmen Element + Farbe); `formField` = **read-only gelabelte Formular-Zeile** (`label` links, gebundener Wert rechts) mit **derselben Feld-Layout- und Typo-Optik wie die Input-Controls** (gerendert als `<sl-input readonly>`), sodass der Knoten in einem Formular neben `ui-input`/`ui-select` bündig sitzt. Der Modus ist reine Anzeige: **keine Editierbarkeit, keine Wert-Emission, kein Input-Event**. Der Wert wird wie im Textmodus über `value` gebunden (inkl. `store`-subPath), z. B. `store:EntityEditor._id`. Leer-Verhalten folgt ADR 0032: ist der gebundene Wert (noch) leer, bleibt die Wert-Zelle **leer** (kein `"?"`), das `label` bleibt sichtbar. Rendert als plain natives `<select>` (kein Hidden-Carrier → kein ADR-0031-Round-Trip nötig). |
+| `label` | „Field Label" | Textfeld | optional | **Nur relevant bei `display: "formField"`** (Abhängigkeit von `display` — der Editor blendet die Zeile nur im Form-Feld-Modus ein). Beschriftung links neben dem Wert, füllt den Label-Slot des Controls (analog `ui-input`-`label`). Im Default-Modus (`text`) ohne Wirkung. Default: leer. |
 
 ### Gruppe „Platzierung"
 
@@ -139,6 +141,13 @@ System-Defaults zurück. Details: [theming.md](../concepts/theming.md).
   das Binding-Objekt durch den rohen typedInput-String überschreibt.
 - **Kein Markup.** `ui-text` gibt Plaintext aus. Formatierter Inline-HTML ist
   nicht Teil des Contracts; strukturierte Inhalte gehören in spezialisierte Knoten.
+- **Form-Feld-Modus (P221, [ADR 0035](../../adr/0035-ui-text-form-field-readonly-mode.md)).**
+  `display: "formField"` gibt denselben `value`-Wert als **read-only gelabelte
+  Zeile** aus, gestylt wie die Input-Controls (`<sl-input readonly>`), damit ein
+  Anzeigewert (z. B. das `_id`-Feld im Entity Editor) bündig neben `ui-input`/
+  `ui-select` in ein Formular passt. Es bleibt reine Anzeige (keine Editierbarkeit,
+  keine Emission). `label` liefert die linke Beschriftung und ist nur in diesem
+  Modus relevant. Im Default `display: "text"` ist das Rendering unverändert.
 
 ## Referenzen
 

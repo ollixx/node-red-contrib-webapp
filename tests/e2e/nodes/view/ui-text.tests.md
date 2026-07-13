@@ -74,6 +74,60 @@ element) and `variant` (semantic colour) — and removed the `size` field. Legac
 | msg binding (payload): empty until a message is pushed | empty before push; updates + SSE-shared after inject |
 | msg binding respects a nested path (payload.label) | standard msg binding reads the configured message property, not just payload |
 
+## P221 — read-only form-field mode (ADR 0035)
+
+`display: text | formField`. `text` (default) = free display text; `formField` =
+a read-only labelled row rendered as `<sl-input readonly>` matching ui-input's
+label/value optics. `label` is relevant only in formField mode. Empty bound
+value stays empty (ADR 0032), never `"?"`.
+
+### Unit — schema (`packages/schema/test/p221-ui-text-display-mode.test.ts`)
+
+| Test | Goal |
+|---|---|
+| TEXT_DISPLAY_MODES === [text, formField] | display vocabulary is exactly the two modes |
+| display absent → undefined (treated as text) | existing flows unchanged; absence is the free-text default |
+| explicit display: 'text' accepted | the default value validates |
+| display: 'formField' + label accepted | form-field mode with a label validates |
+| unknown display rejected | only the two modes are valid |
+| label optional | label only relevant in formField mode |
+
+### Unit — serializer (`packages/runtime/test/p221-ui-text-form-field-serializer.test.ts`)
+
+| Test | Goal |
+|---|---|
+| formField → `<sl-input readonly>`, not a `<p>` | form-field mode adopts the input control optics |
+| label → sl-input label slot; value → value attr | the bound value + label populate the control cell |
+| formField is read-only: no name, no data-webapp source/event | pure display — no form value, no emission |
+| empty bound value → `value=""`, never `"?"` (ADR 0032) | empty value renders empty; label stays visible |
+| label/value HTML-escaped | no attribute injection |
+| no display prop → historic `<p class=webapp-text>` free text | default free-text rendering unchanged |
+| display: 'text' → free-text default (e.g. heading-2 → `<h2>`) | explicit text mode is the free-text path |
+
+### Unit — runtime passthrough (`packages/runtime/test/node-set-runtime.test.ts`)
+
+| Test | Goal |
+|---|---|
+| ui-text display:formField + label carried into component props | the compiled render source receives the mode + label |
+| default free-text ui-text omits the form-field props | no phantom props on the default path |
+
+### E2E — form-field rendering (`tests/e2e/nodes/view/ui-text-form-field.spec.ts`)
+
+Measured, not tag-asserted (memory: verify-rendering-by-measurement-not-tags).
+
+| Test | Goal |
+|---|---|
+| formField ui-text aligns with an adjacent ui-input (same label/value axes) | bounding-box: label-column x, value-cell x + width, and field width match the input control |
+| formField mode is read-only: readonly, no name, no change plumbing | `readonly` set, no `name`, no `data-webapp-source` → no emission |
+| empty bound value → empty value cell (no '?'), label stays visible (ADR 0032) | store `_id` missing → value `""`, label `Entity ID` still present |
+
+### E2E — editor display mode (`tests/e2e/nodes/editor/ui-text-display-mode.spec.ts`)
+
+| Test | Goal |
+|---|---|
+| display select present, defaults to text; label row hidden until formField | the mode switch + the documented label-depends-on-display toggle |
+| formField + label persist through open→save→reopen | plain-select persistence (no hidden carrier → no ADR-0031 harness needed) |
+
 ## E2E tests — Reactive binding type #4 (P116, `tests/e2e/nodes/editor/reactive-expression.spec.ts`)
 
 ui-text is the lead node of the canonical value-binding set, so the `Reactive`

@@ -862,6 +862,17 @@ export const TEXT_COLOR_VARIANTS = [
     "neutral"
 ] as const;
 
+/**
+ * P221 (ADR 0035) — ui-text presentation mode. `text` (default) is the historic
+ * free-display-text rendering. `formField` renders the same bound value as a
+ * read-only, LABELLED form row (label left / value right) styled like the input
+ * controls, so a ui-text can line up next to ui-input/ui-select in a form (e.g.
+ * a read-only `_id` field in an Entity Editor). Read-only: no editing, no value
+ * emission. In `formField` mode the `label` field becomes relevant.
+ */
+export const TEXT_DISPLAY_MODES = ["text", "formField"] as const;
+export type TextDisplayMode = (typeof TEXT_DISPLAY_MODES)[number];
+
 export const CONTAINER_VARIANTS = ["card", "panel", "section", "transparent", "span"] as const;
 
 export const INPUT_VARIANTS = ["default", "filled", "outlined"] as const;

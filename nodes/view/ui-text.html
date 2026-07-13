@@ -19,6 +19,13 @@
                 // The old `size` field was removed (sizing is governed by style).
                 style: { value: "body" },
                 variant: { value: "default" },
+                // P221 (ADR 0035): presentation mode. "text" (default) = free
+                // display text; "formField" = read-only labelled form row styled
+                // like the input controls. Plain native <select> — no hidden
+                // carrier, so no ADR-0031 round-trip harness needed.
+                display: { value: "text" },
+                // P221: the row label used only in formField mode.
+                label: { value: "" },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
                 col: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
@@ -61,6 +68,21 @@
                 common.installRepeatScopeHint("#node-input-text");
                 // P189: explain the item/prop PATH sub-field — empty = whole element.
                 common.installValueBindingPathHint("#node-input-text");
+
+                // P221 (ADR 0035): the "Field Label" row is only relevant in
+                // form-field mode — it depends on `display`. Toggle its
+                // visibility from the plain native <select> (no hidden carrier).
+                const displaySelect = $("#node-input-display");
+                const labelRow = $("#ui-text-label-row");
+                const syncLabelRow = function () {
+                    if (displaySelect.val() === "formField") {
+                        labelRow.show();
+                    } else {
+                        labelRow.hide();
+                    }
+                };
+                displaySelect.on("change", syncLabelRow);
+                syncLabelRow();
             },
             oneditsave: function () {
                 const textInput = $("#node-input-text");
@@ -82,6 +104,17 @@
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <div class="form-row"><label for="node-input-text">Text</label><input type="text" id="node-input-text"></div>
+    <div class="form-row">
+        <label for="node-input-display">Display</label>
+        <select id="node-input-display">
+            <option value="text">Text (free display text)</option>
+            <option value="formField">Form field (read-only labelled row)</option>
+        </select>
+    </div>
+    <div class="form-row" id="ui-text-label-row">
+        <label for="node-input-label">Field Label</label>
+        <input type="text" id="node-input-label" placeholder="Label shown left of the value (form-field mode)">
+    </div>
 </script>
 <script type="text/html" data-help-name="ui-text">
 <p>Displays text at a mount point. The value comes from one of three kinds of source.</p>
@@ -101,6 +134,11 @@
 <h3>Message (msg — standard Node-RED binding)</h3>
 <ul>
   <li><b>msg</b> — the text is read from the configured message property (e.g. <code>payload</code>, <code>payload.label</code>, <code>topic</code>) of messages sent to this node. It renders empty until the first matching message arrives; the last value is held on the server and shared with all clients.</li>
+</ul>
+<h3>Display mode (P221)</h3>
+<ul>
+  <li><b>Text</b> (default) — free display text; <code>style</code>/<code>variant</code> pick the element and colour.</li>
+  <li><b>Form field</b> — a read-only, labelled row styled like the input controls (renders as a read-only field), so the value lines up next to <code>ui-input</code>/<code>ui-select</code> in a form. Set <b>Field Label</b> for the left-hand label. The value binds exactly as above (incl. a store sub-path); an empty value renders empty (no <code>?</code>).</li>
 </ul>
 <h3>Query path syntax</h3>
 <p>Query paths use dot-bracket notation to address nested data:</p>

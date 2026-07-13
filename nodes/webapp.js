@@ -1309,6 +1309,13 @@ function toComponentDefinitions(components) {
                     // (semantic colour) are distinct axes. `size` was removed.
                     ...(blankToUndefined(component.style) ? { style: component.style } : {}),
                     ...(blankToUndefined(component.variant) ? { variant: component.variant } : {}),
+                    // P221 (ADR 0035): form-field presentation mode + its label.
+                    // Only carried when active so the default free-text path is
+                    // byte-for-byte unchanged.
+                    ...(component.display === "formField" ? { display: "formField" } : {}),
+                    ...(component.display === "formField" && blankToUndefined(component.label)
+                        ? { label: component.label }
+                        : {}),
                     ...(Object.keys(layoutProps).length > 0 ? { layout: layoutProps } : {})
                 },
                 events: []
@@ -6487,6 +6494,11 @@ const runtimeNodeRegistry = {
                 value: getBinding(config.value, literalBinding(config.text || "")),
                 style: text.style,
                 variant: text.variant,
+                // P221 (ADR 0035): presentation mode + the form-field row label.
+                // Default "text" (free display text); "formField" renders a
+                // read-only labelled row styled like the input controls.
+                display: config.display === "formField" ? "formField" : "text",
+                label: blankToUndefined(config.label),
                 ...collectNodeConfigLayoutProps(config)
             };
         },
