@@ -74,6 +74,12 @@
                 // visibility from the plain native <select> (no hidden carrier).
                 const displaySelect = $("#node-input-display");
                 const labelRow = $("#ui-text-label-row");
+                // A node saved before P221 (or otherwise without `display`) opens
+                // with an empty carrier; show the explicit default mode ("text")
+                // rather than a blank selector.
+                if (!displaySelect.val()) {
+                    displaySelect.val("text");
+                }
                 const syncLabelRow = function () {
                     if (displaySelect.val() === "formField") {
                         labelRow.show();
