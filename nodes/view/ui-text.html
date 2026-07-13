@@ -135,6 +135,11 @@
 <ul>
   <li><b>msg</b> — the text is read from the configured message property (e.g. <code>payload</code>, <code>payload.label</code>, <code>topic</code>) of messages sent to this node. It renders empty until the first matching message arrives; the last value is held on the server and shared with all clients.</li>
 </ul>
+<h3>Display mode (P221)</h3>
+<ul>
+  <li><b>Text</b> (default) — free display text; <code>style</code>/<code>variant</code> pick the element and colour.</li>
+  <li><b>Form field</b> — a read-only, labelled row styled like the input controls (renders as a read-only field), so the value lines up next to <code>ui-input</code>/<code>ui-select</code> in a form. Set <b>Field Label</b> for the left-hand label. The value binds exactly as above (incl. a store sub-path); an empty value renders empty (no <code>?</code>).</li>
+</ul>
 <h3>Query path syntax</h3>
 <p>Query paths use dot-bracket notation to address nested data:</p>
 <ul>
