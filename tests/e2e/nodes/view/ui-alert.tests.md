@@ -60,6 +60,16 @@ All tests are in `ui-alert.spec.ts` (E2E, Playwright), `packages/runtime/test/p9
 | explicit icon='bell' → sl-icon name='bell' | Custom icon name visible in browser |
 | dismissible=true → closable attribute | Dismiss affordance rendered correctly |
 | title binding → `<strong>` inside sl-alert | Title binding rendered in browser |
+| visible = msg: an incoming message toggles the alert on and off | P223 (ADR 0036) — a `msg`-bound `visible` toggles live: `msg`→true shows, `msg`→false hides (the owner's bug). Also proves boolean coercion + the live-patch merge carrying `visible`→`visibleIf`. |
+
+## Message mode — every msg-bound field (P223, ADR 0036)
+
+Unit coverage lives in `packages/runtime/test/p223-message-mode-all-fields.test.ts`:
+a non-primary `msg`-bound field (`visible`) updates from its own message prop;
+boolean coercion (`true`/`false` + `"true"`/`"false"`); multiple msg-bound fields
+on one node each from their own path; a JSONata non-primary field; primary-field +
+legacy bare-payload back-compat; and the live-patch merge (`computeLiveViewPatch`)
+carrying `visible`/`disabled`.
 
 ## Base fields (ADR 0015) — `tests/e2e/nodes/editor/base-fields.spec.ts`
 

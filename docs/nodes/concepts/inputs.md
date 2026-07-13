@@ -35,6 +35,30 @@ Example — update a text label from an inject node:
 { "payload": "Hello updated" }
 ```
 
+## Message mode (`msg`) — drives EVERY msg-bound field
+
+The value typedInput offers a **`msg`** ("Message mode") type on **every** field,
+including the base fields **`visible`** and **`disabled`**. Message mode is not
+limited to the primary field: when a message arrives, **each** field whose saved
+binding is `msg` is updated from its **own** configured message property, and a
+fresh snapshot is pushed (ADR 0036).
+
+- `ui-alert.visible = msg.show` → sending `msg.show = true` shows the alert,
+  `msg.show = false` hides it (the element is added/removed, not just styled).
+- `ui-input.disabled = msg.locked` → `msg.locked = true` disables the field.
+- Any number of fields on one node can be `msg`-bound at once; each reads its own
+  path (e.g. `message` from `msg.text`, `visible` from `msg.show`).
+
+`visible`/`disabled` are **boolean** fields: the incoming value is coerced to a
+boolean, so `true`/`false` and the strings `"true"`/`"false"` all work.
+
+A **JSONata**-bound field behaves the same way — the expression is evaluated
+against the incoming `msg` and the result drives the field (boolean-coerced for
+`visible`/`disabled`).
+
+Back-compat: when a node's **primary** field is *not* explicitly `msg`-bound, a
+bare `msg.payload` still updates it (the table above).
+
 ## msg.ui.patch — update arbitrary fields
 
 Send `msg.ui.patch` as an object to override any combination of fields on
