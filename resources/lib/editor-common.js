@@ -5608,7 +5608,10 @@
                     title: "Store auswählen",
                     placeholder: "Optional: Store auswählen",
                     clearable: true,
-                    seedValue: self.storeId || self.params || "",
+                    // P211: this node's field is `store`; the legacy `storeId`/`params`
+                    // (ui-query) fall-backs must NOT shadow it, or the picker seeds ""
+                    // and Node-RED's field-copy clobbers `store` to "" on save.
+                    seedValue: self.store || self.storeId || self.params || "",
                     getAppId: getAppId
                 });
             }
