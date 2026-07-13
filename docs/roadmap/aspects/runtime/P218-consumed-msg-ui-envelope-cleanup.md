@@ -2,7 +2,7 @@
 id: P218
 title: "Runtime: konsumierte msg.ui.<command>-Envelope nach erfolgreicher Verarbeitung entfernen (nur den Sub-Key) — behebt refresh→replace-Doppelverarbeitung"
 epic: aspects/runtime
-status: pending
+status: in_progress
 dependencies: [P213]
 verify: browser
 spec: docs/nodes/concepts/events.md

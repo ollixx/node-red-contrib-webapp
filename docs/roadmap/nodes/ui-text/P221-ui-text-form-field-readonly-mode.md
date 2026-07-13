@@ -3,7 +3,7 @@ id: P221
 node: ui-text
 title: "ui-text: read-only Form-Feld-Modus — Label + Wert wie ein Control gestylt, für Formulare (Beispiel: ID-Feld im Entity Editor)"
 epic: nodes/ui-text
-status: pending
+status: in_progress
 dependencies: []
 verify: browser
 spec: docs/nodes/display/ui-text.md
