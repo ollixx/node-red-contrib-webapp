@@ -200,32 +200,65 @@ describe("P12: component state message handler", () => {
     });
 });
 
-describe("P12: dialog message handler", () => {
-    it("passes through msg.ui.dialog.op=open", () => {
+describe("P12 + P218 (ADR 0033): dialog message handler strips the consumed envelope", () => {
+    it("forwards op=open with msg.ui.dialog STRIPPED (consumed = removed)", () => {
         const send = vi.fn();
         const msg = { ui: { dialog: { id: "dialog1", op: "open" } } };
 
         dialogInputHandler({}, msg, send, undefined);
 
-        expect(send).toHaveBeenCalledWith(msg);
+        expect(send).toHaveBeenCalledTimes(1);
+        const out = (send.mock.calls[0] as unknown[])[0] as { ui: Record<string, unknown> };
+        expect(out.ui.dialog).toBeUndefined();
+        // Never mutate the caller's message.
+        expect(msg.ui.dialog).toEqual({ id: "dialog1", op: "open" });
     });
 
-    it("passes through msg.ui.dialog.op=close", () => {
+    it("forwards op=close with msg.ui.dialog STRIPPED", () => {
         const send = vi.fn();
         const msg = { ui: { dialog: { id: "dialog1", op: "close" } } };
 
         dialogInputHandler({}, msg, send, undefined);
 
-        expect(send).toHaveBeenCalledWith(msg);
+        const out = (send.mock.calls[0] as unknown[])[0] as { ui: Record<string, unknown> };
+        expect(out.ui.dialog).toBeUndefined();
     });
 
-    it("passes through msg.ui.dialog.op=toggle", () => {
+    it("forwards op=toggle with msg.ui.dialog STRIPPED", () => {
         const send = vi.fn();
         const msg = { ui: { dialog: { id: "dialog1", op: "toggle" } } };
 
         dialogInputHandler({}, msg, send, undefined);
 
-        expect(send).toHaveBeenCalledWith(msg);
+        const out = (send.mock.calls[0] as unknown[])[0] as { ui: Record<string, unknown> };
+        expect(out.ui.dialog).toBeUndefined();
+    });
+
+    it("PRESERVES context (clientId + outgoing event) while removing only dialog", () => {
+        const send = vi.fn();
+        const msg = { ui: { clientId: "c1", event: "onOpen", dialog: { id: "dialog1", op: "open" } } };
+
+        dialogInputHandler({}, msg, send, undefined);
+
+        const out = (send.mock.calls[0] as unknown[])[0] as { ui: Record<string, unknown> };
+        expect(out.ui.dialog).toBeUndefined();
+        expect(out.ui.clientId).toBe("c1");
+        expect(out.ui.event).toBe("onOpen");
+    });
+
+    it("apply-once: a second dialog consumer sees NO dialog envelope", () => {
+        const send1 = vi.fn();
+        const msg = { ui: { dialog: { id: "dialog1", op: "open" } } };
+        dialogInputHandler({}, msg, send1, undefined);
+        const forwarded = (send1.mock.calls[0] as unknown[])[0];
+
+        const send2 = vi.fn();
+        dialogInputHandler({}, forwarded, send2, undefined);
+        // The second consumer has no dialog.op → it treats it as a foreign
+        // pass-through (still sends once), applying nothing.
+        expect(send2).toHaveBeenCalledTimes(1);
+        const out2 = (send2.mock.calls[0] as unknown[])[0] as { ui: Record<string, unknown> };
+        expect(out2.ui.dialog).toBeUndefined();
     });
 
     it("discards dialog messages with unknown op", () => {

@@ -614,12 +614,40 @@ function joinStatePath(rootPath, relativePath) {
     return `${normalizedRoot}.${normalizedRelative}`;
 }
 
+// P218 (ADR 0033): after a node SUCCESSFULLY consumes a `msg.ui.<command>`
+// envelope, strip exactly that sub-key so the spent command cannot be
+// double-processed by a downstream consumer. Returns a shallow COPY — the
+// caller's `msg` is never mutated (the P175/P214 pass-through contracts rely on
+// byte-identity for messages we DON'T touch, so only touched messages are cloned).
+// Context keys are preserved: `msg.ui.clientId` and an outgoing `msg.ui.event`
+// stay. The whole `msg.ui` is NEVER deleted; an emptied `msg.ui` is left as `{}`
+// (documented choice — see docs/nodes/concepts/events.md).
+function stripConsumedUiEnvelope(msg, key) {
+    if (!msg || typeof msg !== "object" || !msg.ui || typeof msg.ui !== "object") {
+        return msg;
+    }
+    if (!Object.prototype.hasOwnProperty.call(msg.ui, key)) {
+        return msg;
+    }
+    const nextUi = { ...msg.ui };
+    delete nextUi[key];
+    return { ...msg, ui: nextUi };
+}
+
 function normalizeStoreOperationMessage(msg, storeDefinition) {
     const candidate = msg && msg.ui && msg.ui.store && typeof msg.ui.store === "object"
         ? msg.ui.store
         : undefined;
 
     if (!candidate || candidate.id !== storeDefinition.id || typeof candidate.op !== "string") {
+        return undefined;
+    }
+
+    // P218 (ADR 0033): a store envelope that carries an `event` field is a spent
+    // NOTIFICATION (`changed` / `read`) that a consuming node already emitted — NOT
+    // a fresh command. Refuse to re-apply it, so a chain of ui-store consumers
+    // applies a command EXACTLY ONCE (the notification passes through untouched).
+    if (typeof candidate.event === "string" && candidate.event) {
         return undefined;
     }
 
@@ -4968,6 +4996,10 @@ function queryInputHandler(node, msg, send, done) {
     // forwarded to the out-port (would cause out→source→in→out→… infinite loop).
     // Only triggers / refresh / loading / foreign messages pass through (send).
     let isTerminalReturn = false;
+    // P218 (ADR 0033): true when a refresh/loading COMMAND was recognised and
+    // applied here (lifecycle → loading). That command is now consumed, so the
+    // trigger we forward to the datasource must be a CLEAN re-emit — see below.
+    let appliedTrigger = false;
     if (queryMsg && typeof queryMsg === "object" && queryMsg.queryPath) {
         const appId = findAppIdForNode(node);
         if (appId) {
@@ -4998,6 +5030,10 @@ function queryInputHandler(node, msg, send, done) {
                 ) {
                     isTerminalReturn = true;
                 }
+                else {
+                    // A recognised refresh / loading command was applied (consumed).
+                    appliedTrigger = true;
+                }
             }
         }
     }
@@ -5009,7 +5045,22 @@ function queryInputHandler(node, msg, send, done) {
         // sorts/searches correctly. A foreign pass-through is returned unchanged
         // (same object) so the P175 contract holds; the data/error terminal path
         // above is never reached here.
-        send(enrichTriggerWithCurrentParams(node, msg));
+        let outMsg = enrichTriggerWithCurrentParams(node, msg);
+        // P218 (ADR 0033): when the incoming message was a CONSUMED refresh/loading
+        // command, re-emit a CLEAN fetch trigger. `enrichTriggerWithCurrentParams`
+        // already builds a fresh `msg.ui.query` = { queryPath, refresh, params };
+        // additionally DROP the incoming `msg.payload` so the stale trigger payload
+        // is NOT re-consumed downstream as query DATA (a `replace`) — the owner's
+        // refresh→replace double-processing bug. Foreign / unrecognised pass-throughs
+        // are NOT consumed commands and keep their payload untouched (byte-identical).
+        if (appliedTrigger && outMsg && typeof outMsg === "object"
+            && Object.prototype.hasOwnProperty.call(outMsg, "payload")) {
+            if (outMsg === msg) {
+                outMsg = { ...msg, ui: { ...(msg.ui && typeof msg.ui === "object" ? msg.ui : {}) } };
+            }
+            delete outMsg.payload;
+        }
+        send(outMsg);
     }
     if (done) {
         done();
@@ -5525,13 +5576,18 @@ function dialogInputHandler(node, msg, send, done) {
         const validOps = ["open", "close", "toggle"];
 
         if (!validOps.includes(op)) {
+            // Unknown op → NOT successful processing → discard (no send); the
+            // envelope is irrelevant (nothing forwarded).
             if (done) {
                 done();
             }
             return;
         }
 
-        send(msg);
+        // P218 (ADR 0033): the dialog op was successfully consumed — strip
+        // `msg.ui.dialog` before forwarding so a downstream ui-dialog cannot
+        // re-open/close from the spent command. `clientId` / `event` are preserved.
+        send(stripConsumedUiEnvelope(msg, "dialog"));
         if (done) {
             done();
         }
@@ -7675,6 +7731,9 @@ registerWebappNodes.__test__ = {
     renderComponentHtml,
     componentStateInputHandler,
     dialogInputHandler,
+    // P218 (ADR 0033): strip a consumed msg.ui.<command> sub-key after success.
+    stripConsumedUiEnvelope,
+    normalizeStoreOperationMessage,
     queryInputHandler,
     queryActionInputHandler,
     triggerParamQueryRefresh,
