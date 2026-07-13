@@ -50,6 +50,66 @@ declare global {
     var RED: REDGlobal;
 }
 
+/**
+ * The DOM shape of a hidden-carrier field, per ADR 0031. Both persist their
+ * value through a hidden `#node-input-<field>` control, but they are seeded and
+ * driven differently:
+ *
+ *  - `"picker"`     — an `installReferenceSelectors` / `installPickerField`
+ *                     reference field. The carrier is an option-less `<select>`
+ *                     (or `<input>`) that `oneditprepare` seeds from the saved
+ *                     property; a new value is driven by setting the carrier and
+ *                     firing `change` (exactly what the picker dialog's onSelect
+ *                     does). No `oneditsave` rebuilds it — the carrier IS the
+ *                     source of truth on Done.
+ *  - `"editableList"` — an `editableList` widget (`#node-input-<field>-list`)
+ *                     whose rows `oneditsave` serialises into the hidden
+ *                     `#node-input-<field>` input. The seeded value is JSON; a
+ *                     new value is driven by repopulating the list via the
+ *                     widget's own `addItem` so `oneditsave` re-serialises it.
+ */
+export type RoundTripCarrier = "picker" | "editableList";
+
+export interface RoundTripField {
+    /** Carrier field id, e.g. `"store"` or `"props"` (drives `#node-input-<field>`). */
+    field: string;
+    /**
+     * The value the field was deployed with (pre-set via the admin API). For a
+     * `"picker"` this is the referenced node id; for an `"editableList"` it is
+     * the serialised JSON carrier string. The harness asserts the carrier is
+     * seeded to this on open and that it survives Done unchanged.
+     */
+    expected: string;
+    /** Carrier DOM shape. Defaults to `"picker"`. */
+    carrier?: RoundTripCarrier;
+    /**
+     * Optional value-change to round-trip. When present the harness drives this
+     * NEW value through the editor, saves, reopens, and asserts it persisted —
+     * proving the round-trip in both directions, not only initial preservation.
+     * For a `"picker"` it is the new node id. For an `"editableList"` it is the
+     * expected serialised carrier string AND `newItems` supplies the widget rows.
+     */
+    newValue?: string;
+    /**
+     * For an `"editableList"` value-change: the item-data objects to feed the
+     * widget's `addItem` (the same shape the node's `addItem` expects, e.g.
+     * `{ name, binding }`). Ignored for `"picker"` carriers.
+     */
+    newItems?: unknown[];
+}
+
+type EditorWindow = Window & {
+    RED?: REDGlobal;
+    $?: (sel: string) => {
+        is: (sel: string) => boolean;
+        find: (sel: string) => { length: number };
+        append: (html: string) => unknown;
+        val: (v?: string) => string;
+        trigger: (evt: string) => unknown;
+        editableList: (...a: unknown[]) => unknown;
+    };
+};
+
 export class NodeEditorPage {
     constructor(private readonly page: Page) {}
 
@@ -278,5 +338,203 @@ export class NodeEditorPage {
             }
             return labels;
         }, nodeId);
+    }
+
+    // ───────────────────────────────────────────────────────────────────────
+    // Editor open→save round-trip harness (ADR 0031 / P215)
+    //
+    // The editor open→save clobber bug class: a reference/picker/editableList
+    // field lives in a hidden `#node-input-<field>` carrier; if `oneditprepare`
+    // fails to seed that carrier from the saved config, Node-RED's field-copy on
+    // Done writes the empty carrier back over the real property — silently losing
+    // the value on the first edit. Runtime/behaviour specs never catch it because
+    // they deploy config pre-set via the admin API and never drive the editor.
+    //
+    // assertEditorRoundTrip drives the FULL round-trip through the real editor so
+    // specs do not re-implement open/save/re-read. See ADR 0031 and
+    // `.ai/agents/node-testing.md` for the standard this enforces.
+    // ───────────────────────────────────────────────────────────────────────
+
+    /** Read the raw string value of the hidden `#node-input-<field>` carrier. */
+    private async readCarrier(field: string): Promise<string> {
+        return this.page.evaluate((id) => {
+            const el = document.querySelector(`#node-input-${id}`) as
+                | HTMLInputElement
+                | HTMLSelectElement
+                | null;
+            return el ? String(el.value ?? "") : "";
+        }, field);
+    }
+
+    /** Read the persisted `RED.nodes.node(id)[field]` value after Done. */
+    private async readPersisted(nodeId: string, field: string): Promise<string> {
+        return this.page.evaluate(
+            (args: { nodeId: string; field: string }) => {
+                const node = RED.nodes.node(args.nodeId) as Record<string, unknown> | null;
+                const value = node ? node[args.field] : undefined;
+                return value == null ? "" : String(value);
+            },
+            { nodeId, field }
+        );
+    }
+
+    /**
+     * Assert two carrier values are equal. For editableList carriers the value is
+     * a serialised JSON object, so compare structurally (key order is irrelevant);
+     * pickers compare as plain strings.
+     */
+    private assertCarrierEquals(
+        carrier: RoundTripCarrier,
+        actual: string,
+        expected: string,
+        message: string
+    ): void {
+        if (carrier === "editableList") {
+            expect(JSON.parse(actual || "{}"), message).toEqual(JSON.parse(expected || "{}"));
+        } else {
+            expect(actual, message).toBe(expected);
+        }
+    }
+
+    /** Force the open panel dirty via the node's Name field (a field NOT under test). */
+    private async forceDirty(): Promise<void> {
+        const name = this.page.locator("#node-input-name");
+        const current = await name.inputValue().catch(() => "");
+        await name.fill(`${current} ~rt`);
+    }
+
+    /** Drive a NEW value into a `"picker"` carrier (mirrors the picker dialog's onSelect). */
+    private async drivePicker(field: string, value: string): Promise<void> {
+        await this.page.evaluate(
+            (args: { field: string; value: string }) => {
+                const $ = (window as EditorWindow).$;
+                if (!$) {
+                    return;
+                }
+                const el = $(`#node-input-${args.field}`);
+                // A <select> only holds a value it has an <option> for; the picker
+                // template ships option-less, so add the option before selecting.
+                if (el.is("select") && args.value && el.find(`option[value="${args.value}"]`).length === 0) {
+                    el.append(`<option value="${args.value}">${args.value}</option>`);
+                }
+                el.val(args.value);
+                el.trigger("change");
+            },
+            { field, value }
+        );
+    }
+
+    /** Drive a NEW value into an `"editableList"` carrier via the widget's own addItem. */
+    private async driveEditableList(field: string, items: unknown[]): Promise<void> {
+        await this.page.evaluate(
+            (args: { field: string; items: unknown[] }) => {
+                const $ = (window as EditorWindow).$;
+                if (!$) {
+                    return;
+                }
+                const list = $(`#node-input-${args.field}-list`);
+                list.editableList("empty");
+                for (const item of args.items) {
+                    list.editableList("addItem", item);
+                }
+            },
+            { field, items }
+        );
+    }
+
+    /**
+     * Editor open→save round-trip proof for hidden-carrier reference/picker/
+     * editableList fields (ADR 0031). The node must already be deployed with each
+     * field pre-set (via the admin API). For every field this call:
+     *
+     *   (a) seeded-on-open — after `openNode`, fails if `#node-input-<field>` is
+     *       EMPTY (proves `oneditprepare` seeded the carrier);
+     *   (b) survives Done — forces the panel dirty (Name field), clicks Done, and
+     *       asserts the persisted `RED.nodes.node(id)[field]` still equals the
+     *       pre-set value (not `""`) — removing the seed logic turns this red;
+     *   (c) value-change round-trips — for fields with a `newValue`, drives the new
+     *       value through the picker/editableList, saves, reopens, and asserts the
+     *       new value persisted (both directions).
+     *
+     * One call performs the whole round-trip; specs must not re-implement
+     * open/save/re-read. `open()` must have been called first.
+     */
+    async assertEditorRoundTrip(nodeId: string, fields: RoundTripField[]): Promise<void> {
+        // ── Phase A: seeded-on-open + survives Done unchanged ──────────────────
+        await this.openNode(nodeId);
+        for (const f of fields) {
+            const carrier = f.carrier ?? "picker";
+            const seeded = await this.readCarrier(f.field);
+            expect(
+                seeded,
+                `#node-input-${f.field} must be seeded on open (oneditprepare) — a regression of the open→save clobber makes it empty`
+            ).not.toBe("");
+            this.assertCarrierEquals(
+                carrier,
+                seeded,
+                f.expected,
+                `#node-input-${f.field} must be seeded to the deployed value on open`
+            );
+        }
+
+        await this.forceDirty();
+        await this.save();
+
+        for (const f of fields) {
+            const carrier = f.carrier ?? "picker";
+            const persisted = await this.readPersisted(nodeId, f.field);
+            expect(
+                persisted,
+                `${f.field} must survive Done (not clobbered to "" by the field-copy)`
+            ).not.toBe("");
+            this.assertCarrierEquals(
+                carrier,
+                persisted,
+                f.expected,
+                `${f.field} must equal the pre-set value after Done`
+            );
+        }
+
+        // ── Phase B: value-change round-trips (both directions) ────────────────
+        const changed = fields.filter((f) => f.newValue !== undefined);
+        if (changed.length === 0) {
+            return;
+        }
+
+        await this.openNode(nodeId);
+        for (const f of changed) {
+            const carrier = f.carrier ?? "picker";
+            if (carrier === "editableList") {
+                await this.driveEditableList(f.field, f.newItems ?? []);
+            } else {
+                await this.drivePicker(f.field, f.newValue as string);
+            }
+        }
+        await this.save();
+
+        for (const f of changed) {
+            const carrier = f.carrier ?? "picker";
+            const persisted = await this.readPersisted(nodeId, f.field);
+            this.assertCarrierEquals(
+                carrier,
+                persisted,
+                f.newValue as string,
+                `${f.field} must persist the new value after Done`
+            );
+        }
+
+        // Reopen: the new value must re-seed the carrier (proves seed-on-open works
+        // for the changed value too, i.e. the round-trip closes in both directions).
+        await this.openNode(nodeId);
+        for (const f of changed) {
+            const carrier = f.carrier ?? "picker";
+            const reseeded = await this.readCarrier(f.field);
+            this.assertCarrierEquals(
+                carrier,
+                reseeded,
+                f.newValue as string,
+                `${f.field} must re-seed the carrier with the new value on reopen`
+            );
+        }
     }
 }

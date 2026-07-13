@@ -107,6 +107,62 @@ If the green path is genuinely an allowlist entry (real boilerplate / spec-ahead
 field), add it **with a one-line reason** — keep the allowlist small; every entry
 weakens the check. Do **not** leave the tripwire red.
 
+## Mandatory: editor open→save round-trip (reference/picker/editableList fields)
+
+> Rationale: [ADR 0031](../../docs/adr/0031-editor-open-save-round-trip-test-standard.md).
+
+**The bug class this catches — the editor open→save clobber.** A field that
+persists through a **hidden `#node-input-<field>` carrier** must be *seeded* from
+the saved config by the node's `oneditprepare`. If it is not, Node-RED's automatic
+field-copy on **Done** writes the empty carrier back over the real property and the
+value is **silently lost on the first edit** of the node. Runtime/behaviour specs
+never catch this: they deploy the node with its config **pre-set via the admin API
+and never drive the editor**, so the field is correct at deploy time and the
+regression is invisible until a human opens the node, saves, and loses the value
+(confirmed hits: `ui-store-action`/`ui-store-read` `store`, `ui-component-instance`
+`props`, `ui-query` `params`).
+
+**The rule (mandatory).** Every `ui-*` node field that persists through a hidden
+carrier of one of these **qualifying shapes** MUST have an editor open→save
+round-trip test:
+
+1. **reference pickers** — `installReferenceSelectors` / `installPickerField`
+   fields that serialise a selected node id into `#node-input-<field>` (e.g.
+   `store`, `query`, `definitionId`), **other than** the ubiquitous `parent`/`mount`
+   picker, which is already covered by `parent-selector.spec.ts` /
+   `editor-mount-options.spec.ts` — do **not** widen the round-trip test to those;
+2. **editableList fields** — a widget (`#node-input-<field>-list`) whose rows
+   `oneditsave` serialises into a hidden `#node-input-<field>` input (e.g.
+   `ui-component-instance` `props`);
+3. any future field of the same hidden-carrier shape.
+
+A "renders / deploys correctly" test does **not** satisfy this — the clobber
+happens on the editor open→save path, not the runtime path.
+
+**The harness (the one canonical way).** Use
+`NodeEditorPage.assertEditorRoundTrip(nodeId, fields[])`
+(`tests/helpers/node-editor-page.ts`). Deploy the node with each field **pre-set**
+via the admin API, then call the harness once — it performs the full round-trip and
+specs must **not** re-implement open/save/re-read:
+
+- **(a) seeded-on-open** — after `openNode`, fails if `#node-input-<field>` reads
+  EMPTY (proves `oneditprepare` seeded the carrier);
+- **(b) survives Done** — forces the panel dirty (via the Name field, not the field
+  under test), clicks Done, and asserts the persisted `RED.nodes.node(id)[field]`
+  still equals the pre-set value (not `""`);
+- **(c) value-change round-trips** — for a field given a `newValue`, drives the new
+  value through the picker/editableList, saves, reopens, and asserts it persisted
+  (both directions).
+
+Each `fields[]` entry names the carrier `field`, its `carrier` shape (`"picker"` |
+`"editableList"`, default `"picker"`), the `expected` pre-set value, and optionally
+a `newValue` (plus `newItems` for editableList). Mutation rule: removing the node's
+carrier-seed logic in `oneditprepare` must turn the test **red**.
+
+**Catalogue.** List the round-trip test in the node's `.tests.md` catalogue with
+its goal. Worked examples: `tests/e2e/nodes/state/ui-store-action.roundtrip.spec.ts`
+(picker) and `tests/e2e/nodes/view/ui-component.roundtrip.spec.ts` (editableList).
+
 ## Keep the suite from exploding
 
 Despite the breadth above, **keep permutations minimal** for expensive fields

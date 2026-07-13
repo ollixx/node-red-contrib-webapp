@@ -37,3 +37,12 @@
 - **instance identity**: both inner button clones exist as `inst1#cardCta` / `inst2#cardCta` (the click sourceId); the bare definition ids (`cardTitle`/`cardBody`) never render.
 - **live store-bound prop**: clicking "Update body" replaces `card.body`; only inst1 (store-bound body) updates live to "First-updated"; inst2's literal body ("Second") and inst1's literal title ("Alpha") are untouched.
 - **editor (manual / mount-tree)**: the definition appears in the mount picker under "Komponenten" with a `content` slot (children mount via `def:<id>/content`); the instance's `definitionId` button-picker lists `ui-component-definition` nodes; the props editableList persists name→value-binding pairs; a missing `definitionId` blocks deploy (required-field validation), and `validateComponentAcyclic` surfaces a self-reference as a deploy error.
+
+## P215 — Editor open→save round-trip (e2e) — `tests/e2e/nodes/view/ui-component.roundtrip.spec.ts`
+
+Standard: `.ai/agents/node-testing.md` "Editor open→save round-trip", [ADR 0031](../../../../docs/adr/0031-editor-open-save-round-trip-test-standard.md).
+The mandatory round-trip test for the `ui-component-instance` `props` **editableList**
+carrier, via `assertEditorRoundTrip` (folds in the former bespoke
+`component-instance-props-save.spec.ts`).
+
+- **`props` open→Done round-trip**: an instance deployed with `props` pre-set to `{title:{kind:literal,value:"Alpha"}}` — on open the editableList's hidden carrier (`#node-input-props`) is **seeded non-empty** (proves `oneditprepare` seeds both list and carrier), **survives Done** unchanged (`RED.nodes.node().props` is not clobbered to `""`/`{}`), and a **value-change** (repopulating the list to `{greeting:{kind:literal,value:"Hello"}}` via the widget's `addItem`) persists through `oneditsave` and re-seeds on reopen. Removing the `$("#node-input-props").val(JSON.stringify(stored))` carrier-seed in `oneditprepare` turns it red.

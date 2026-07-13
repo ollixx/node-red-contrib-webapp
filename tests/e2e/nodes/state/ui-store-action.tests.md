@@ -57,3 +57,13 @@ Fixture: `tests/e2e/fixtures/p211-store-action.flow.json`.
 | **reference mode** mutiert live | nach REFSET zeigt der an `store(entity).name` gebundene View live `B` (op direkt angewandt, **kein** Wire zum Store) |
 | **wire mode** Envelope | nach WIRESET zeigt der Ergebnis-View das korrekte Envelope `{"id":"p211Store","op":"set","path":"name","value":"C"}` |
 | **wire mode** mutiert nicht | nach WIRESET bleibt der entity-View bei `B` (wire mutiert nicht) |
+
+## E2E — Editor open→save round-trip (`tests/e2e/nodes/state/ui-store-action.roundtrip.spec.ts`)
+
+Standard: `.ai/agents/node-testing.md` „Editor open→save round-trip", [ADR 0031](../../../../docs/adr/0031-editor-open-save-round-trip-test-standard.md).
+Ersetzt den bespoke `ui-store-action-store-save.spec.ts` durch einen einzigen
+`assertEditorRoundTrip`-Aufruf für das `store`-Referenz-Picker-Feld.
+
+| Test | Ziel |
+|---|---|
+| `store` open→Done Round-Trip | Der Store-Reference-Picker (hidden `#node-input-store`) ist beim Öffnen aus `store` **geseedet** (nicht leer), **überlebt** Done unverändert (`RED.nodes.node().store` bleibt `saStore`, kein Clobber zu `""`), und ein **Wertwechsel** auf `saStore2` persistiert und re-seedet beim Wiederöffnen. Entfernen des `store`-Seeds in `installReferenceSelectors` macht den Test rot. |
