@@ -2,10 +2,29 @@
 <script type="text/javascript">
     (function () {
         const common = window.WebappEditorCommon;
+
+        // P222 (ADR 0015): common base fields. See the applicability table in
+        // docs/nodes/concepts/editor.md. `omit` drops a field the node already
+        // owns a dedicated control for (avoids duplicate #node-input carrier ids).
+        const BASE_FIELDS = {
+            visible: true,
+            disabled: false,
+            color: true,
+            size: false,
+            variant: false,
+            advanced: ["size"],
+            omit: ["visible"],
+            hints: {
+                disabled: "Ein Empty-State hat keinen interaktiven Zustand.",
+                size: "Dieser Knoten hat keine Größen-Stufen."
+            }
+        };
         common.registerNodeType("ui-empty-state", {
             category: "webapp view",
             color: "#f4efcf",
             defaults: {
+                color: { value: null },
+                colorBinding: { value: "" },
                 name: { value: "" },
                 parent: { value: "" },
                 mount: { value: "", required: true },
@@ -33,8 +52,12 @@
                     this.name = common.getNextNameDefault("ui-empty-state", "Empty State");
                 }
             },
+            oneditsave: function () {
+                common.applyBaseFields(BASE_FIELDS).call(this);
+            },
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
+                common.installBaseFields(BASE_FIELDS).call(this);
                 common.installLayoutChildPropRows().call(this);
             }
         });

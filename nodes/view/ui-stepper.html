@@ -2,10 +2,31 @@
 <script type="text/javascript">
     (function () {
         const common = window.WebappEditorCommon;
+
+        // P222 (ADR 0015): common base fields. See the applicability table in
+        // docs/nodes/concepts/editor.md. `omit` drops a field the node already
+        // owns a dedicated control for (avoids duplicate #node-input carrier ids).
+        const BASE_FIELDS = {
+            visible: true,
+            disabled: false,
+            color: true,
+            size: false,
+            variant: false,
+            advanced: ["size"],
+            omit: [],
+            hints: {
+                disabled: "Ein Stepper zeigt den Fortschritt und hat keinen Deaktiviert-Zustand.",
+                size: "Dieser Knoten hat keine Größen-Stufen."
+            }
+        };
         common.registerNodeType("ui-stepper", {
             category: "webapp view",
             color: "#f4efcf",
             defaults: {
+                visible: { value: null },
+                visibleBinding: { value: "" },
+                color: { value: null },
+                colorBinding: { value: "" },
                 name: { value: "" },
                 parent: { value: "" },
                 mount: { value: "", required: true },
@@ -40,6 +61,7 @@
             },
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
+                common.installBaseFields(BASE_FIELDS).call(this);
                 common.installLayoutChildPropRows().call(this);
 
                 // P156 (ADR 0012 / value category): `activeStep` typedInput — full
@@ -62,6 +84,7 @@
                 activeInput.typedInput("value", activeEditor.value);
             },
             oneditsave: function () {
+                common.applyBaseFields(BASE_FIELDS).call(this);
                 // P156: persist activeStep as a binding object; clear the legacy path.
                 this.activeStep = common.applyValueBinding(
                     $("#node-input-activeStepBinding").typedInput("type"),

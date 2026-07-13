@@ -2,10 +2,30 @@
 <script type="text/javascript">
     (function () {
         const common = window.WebappEditorCommon;
+
+        // P222 (ADR 0015): common base fields. See the applicability table in
+        // docs/nodes/concepts/editor.md. `omit` drops a field the node already
+        // owns a dedicated control for (avoids duplicate #node-input carrier ids).
+        const BASE_FIELDS = {
+            visible: true,
+            disabled: false,
+            color: false,
+            size: false,
+            variant: false,
+            advanced: ["size"],
+            omit: [],
+            hints: {
+                disabled: "Ein Log hat keinen interaktiven Zustand.",
+                color: "Ein Log rendert keine eigene Farbe.",
+                size: "Dieser Knoten hat keine Größen-Stufen."
+            }
+        };
         common.registerNodeType("ui-log", {
             category: "webapp view",
             color: "#f4efcf",
             defaults: {
+                visible: { value: null },
+                visibleBinding: { value: "" },
                 name:        { value: "" },
                 uiId:        { value: "", required: true },
                 parent:      { value: "" },
@@ -30,8 +50,12 @@
                     this.name = common.getNextNameDefault("ui-log", "Log");
                 }
             },
+            oneditsave: function () {
+                common.applyBaseFields(BASE_FIELDS).call(this);
+            },
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
+                common.installBaseFields(BASE_FIELDS).call(this);
                 common.installLayoutChildPropRows().call(this);
             }
         });

@@ -579,3 +579,152 @@ test.describe("editor panels — P202: per-field neutral (visible→true, disabl
         expect(stored?.visible).toEqual({ kind: "state", path: "showList" });
     });
 });
+
+/**
+ * P222 (ADR 0015) — the base-field rollout COMPLETION, driven data-first from the
+ * applicability table in docs/nodes/concepts/editor.md. For every View node that
+ * P222 retrofitted, the ONE matrix below asserts, in the live editor:
+ *   1. the shared "Allgemein" base-field group is injected;
+ *   2. each of visible/disabled/color/size is `active` / `na` (greyed + hint) /
+ *      `omit` (not rendered — the node owns its own control) exactly per the table;
+ *   3. the node's headline base field round-trips open→save (ADR 0031) — `visible`
+ *      for all but ui-empty-state (which owns visible via a required Visible-Path,
+ *      so its headline binding is `color`).
+ *
+ * This is deliberately ONE parametrised matrix, not 26 hand-copied describe blocks:
+ * the applicability table is the single source of truth and the matrix follows it.
+ */
+
+type BaseFieldState = "active" | "na" | "omit";
+
+interface BaseFieldMatrixRow {
+    type: string;
+    visible: BaseFieldState;
+    disabled: BaseFieldState;
+    color: BaseFieldState;
+    size: BaseFieldState;
+    /** The headline reference/binding base field to round-trip open→save. */
+    roundTrip: "visible" | "color";
+}
+
+// Mirrors docs/nodes/concepts/editor.md → "Rollout-Status und Anwendbarkeits-Audit".
+const BASE_FIELD_MATRIX: BaseFieldMatrixRow[] = [
+    // input — disabled owned inline (P122–P130), color N/A (form field), size owned/absent.
+    { type: "ui-input", visible: "active", disabled: "omit", color: "na", size: "omit", roundTrip: "visible" },
+    { type: "ui-textarea", visible: "active", disabled: "omit", color: "na", size: "omit", roundTrip: "visible" },
+    { type: "ui-select", visible: "active", disabled: "omit", color: "na", size: "omit", roundTrip: "visible" },
+    { type: "ui-checkbox", visible: "active", disabled: "omit", color: "na", size: "omit", roundTrip: "visible" },
+    { type: "ui-radio", visible: "active", disabled: "omit", color: "na", size: "na", roundTrip: "visible" },
+    { type: "ui-switch", visible: "active", disabled: "omit", color: "na", size: "na", roundTrip: "visible" },
+    { type: "ui-slider", visible: "active", disabled: "omit", color: "na", size: "na", roundTrip: "visible" },
+    { type: "ui-datepicker", visible: "active", disabled: "omit", color: "na", size: "na", roundTrip: "visible" },
+    // display
+    { type: "ui-button", visible: "active", disabled: "omit", color: "na", size: "omit", roundTrip: "visible" },
+    { type: "ui-text", visible: "active", disabled: "na", color: "na", size: "na", roundTrip: "visible" },
+    { type: "ui-avatar", visible: "active", disabled: "na", color: "active", size: "omit", roundTrip: "visible" },
+    { type: "ui-icon", visible: "active", disabled: "na", color: "omit", size: "omit", roundTrip: "visible" },
+    { type: "ui-image", visible: "active", disabled: "na", color: "na", size: "na", roundTrip: "visible" },
+    { type: "ui-container", visible: "active", disabled: "na", color: "active", size: "na", roundTrip: "visible" },
+    { type: "ui-table", visible: "active", disabled: "active", color: "active", size: "na", roundTrip: "visible" },
+    // feedback
+    { type: "ui-badge", visible: "active", disabled: "na", color: "na", size: "na", roundTrip: "visible" },
+    { type: "ui-progress", visible: "active", disabled: "na", color: "active", size: "na", roundTrip: "visible" },
+    { type: "ui-log", visible: "active", disabled: "na", color: "na", size: "na", roundTrip: "visible" },
+    { type: "ui-empty-state", visible: "omit", disabled: "na", color: "active", size: "na", roundTrip: "color" },
+    { type: "ui-toast", visible: "active", disabled: "na", color: "na", size: "na", roundTrip: "visible" },
+    // navigation
+    { type: "ui-accordion", visible: "active", disabled: "active", color: "active", size: "na", roundTrip: "visible" },
+    { type: "ui-breadcrumb", visible: "active", disabled: "na", color: "active", size: "na", roundTrip: "visible" },
+    { type: "ui-menu", visible: "active", disabled: "active", color: "active", size: "na", roundTrip: "visible" },
+    { type: "ui-pagination", visible: "active", disabled: "active", color: "active", size: "na", roundTrip: "visible" },
+    { type: "ui-stepper", visible: "active", disabled: "na", color: "active", size: "na", roundTrip: "visible" },
+    { type: "ui-tabs", visible: "active", disabled: "active", color: "active", size: "na", roundTrip: "visible" },
+];
+
+test.describe("editor panels — P222 base-field rollout matrix (ADR 0015)", () => {
+    test.afterEach(async ({ request }) => {
+        await resetFlow(request);
+    });
+
+    async function assertFieldState(
+        page: import("@playwright/test").Page,
+        field: string,
+        state: BaseFieldState
+    ) {
+        // Scope every base-field assertion to the injected group so a node's own
+        // (non-base) control for the same concept — e.g. a form node's inline
+        // Disabled row — never satisfies or breaks the check.
+        const row = page.locator(`[data-field-group="base-fields"] [data-base-field="${field}"]`);
+        if (state === "omit") {
+            await expect(row, `${field} must be omitted from the base group`).toHaveCount(0);
+            return;
+        }
+        await expect(row, `${field} row must be present`).toHaveCount(1);
+        if (state === "na") {
+            await expect(row).toHaveAttribute("data-base-field-na", "true");
+            // A non-applicable field carries a visible hint (text + row tooltip).
+            await expect(row.locator("[data-base-field-hint]")).toHaveCount(1);
+        } else {
+            await expect(row).not.toHaveAttribute("data-base-field-na", "true");
+            // An applicable base field is an initialised typedInput — its carrier
+            // control is active (not greyed), so the typedInput container exists.
+            await expect(row.locator(".red-ui-typedInput-container")).toHaveCount(1);
+        }
+    }
+
+    for (const row of BASE_FIELD_MATRIX) {
+        test(`${row.type} — base-field group matches the applicability table + headline round-trip`, async ({ page, request }) => {
+            const nodeId = `${row.type}-p222`;
+            const flow = new FlowBuilder()
+                .app({ id: `${row.type}App`, root: `${row.type}App`, name: `${row.type} P222` })
+                .node(row.type, { id: nodeId })
+                .build();
+            await deployFlow(request, flow);
+
+            const editor = new NodeEditorPage(page);
+            await editor.open();
+            await editor.openNode(nodeId);
+
+            // 1. The shared "Allgemein" base-field group is injected exactly once.
+            await expect(page.locator('[data-field-group="base-fields"]')).toHaveCount(1);
+            await expect(page.locator('[data-group-heading="base-fields"]')).toHaveText("Allgemein");
+
+            // 2. Each base field is active / N/A / omitted per the table.
+            await assertFieldState(page, "visible", row.visible);
+            await assertFieldState(page, "disabled", row.disabled);
+            await assertFieldState(page, "color", row.color);
+            await assertFieldState(page, "size", row.size);
+
+            // 3. Headline base field round-trips open→save (ADR 0031).
+            if (row.roundTrip === "visible") {
+                await editor.fillTypedInput("visibleBinding", "state.p222Visible", "reactive");
+                await editor.save();
+                const stored = await page.evaluate((id) => {
+                    const n = (window as unknown as {
+                        RED: { nodes: { node: (id: string) => Record<string, unknown> | null } };
+                    }).RED.nodes.node(id);
+                    return n ? n.visible : null;
+                }, nodeId);
+                expect(stored).toEqual({ kind: "reactive", value: "state.p222Visible" });
+
+                await editor.openNode(nodeId);
+                expect(await editor.readTypedInputType("visibleBinding")).toBe("reactive");
+                expect(await editor.readTypedInput("visibleBinding")).toBe("state.p222Visible");
+            } else {
+                await editor.fillTypedInput("colorBinding", "#abcdef", "str");
+                await editor.save();
+                const stored = await page.evaluate((id) => {
+                    const n = (window as unknown as {
+                        RED: { nodes: { node: (id: string) => Record<string, unknown> | null } };
+                    }).RED.nodes.node(id);
+                    return n ? n.color : null;
+                }, nodeId);
+                expect(stored).toEqual({ kind: "literal", value: "#abcdef" });
+
+                await editor.openNode(nodeId);
+                expect(await editor.readTypedInputType("colorBinding")).toBe("str");
+                expect(await editor.readTypedInput("colorBinding")).toBe("#abcdef");
+            }
+        });
+    }
+});

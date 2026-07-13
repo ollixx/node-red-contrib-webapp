@@ -2,10 +2,29 @@
 <script type="text/javascript">
     (function () {
         const common = window.WebappEditorCommon;
+
+        // P222 (ADR 0015): common base fields. See the applicability table in
+        // docs/nodes/concepts/editor.md. `omit` drops a field the node already
+        // owns a dedicated control for (avoids duplicate #node-input carrier ids).
+        const BASE_FIELDS = {
+            visible: true,
+            disabled: false,
+            color: false,
+            size: false,
+            variant: true,
+            advanced: ["size"],
+            omit: [],
+            hints: {
+                disabled: "Ein Text-Knoten hat keinen interaktiven Zustand.",
+                size: "Dieser Knoten hat keine Größen-Stufen."
+            }
+        };
         common.registerNodeType("ui-text", {
             category: "webapp view",
             color: "#f4efcf",
             defaults: {
+                visible: { value: null },
+                visibleBinding: { value: "" },
                 name: { value: "" },
                 parent: { value: "" },
                 mount: { value: "", required: true },
@@ -45,6 +64,7 @@
             },
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
+                common.installBaseFields(BASE_FIELDS).call(this);
                 // P111: Style (typographic role) first, then Variant (semantic colour).
                 common.installTextStyleSelectBox().call(this);
                 common.installVariantSelectBox("text").call(this);
@@ -96,6 +116,7 @@
                 syncLabelRow();
             },
             oneditsave: function () {
+                common.applyBaseFields(BASE_FIELDS).call(this);
                 const textInput = $("#node-input-text");
                 const bindingType = textInput.typedInput("type");
                 const bindingValue = textInput.typedInput("value");

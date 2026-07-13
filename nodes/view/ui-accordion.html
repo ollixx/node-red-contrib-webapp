@@ -2,10 +2,32 @@
 <script type="text/javascript">
     (function () {
         const common = window.WebappEditorCommon;
+
+        // P222 (ADR 0015): common base fields. See the applicability table in
+        // docs/nodes/concepts/editor.md. `omit` drops a field the node already
+        // owns a dedicated control for (avoids duplicate #node-input carrier ids).
+        const BASE_FIELDS = {
+            visible: true,
+            disabled: true,
+            color: true,
+            size: false,
+            variant: false,
+            advanced: ["size"],
+            omit: [],
+            hints: {
+                size: "Dieser Knoten hat keine Größen-Stufen."
+            }
+        };
         common.registerNodeType("ui-accordion", {
             category: "webapp view",
             color: "#f4efcf",
             defaults: {
+                visible: { value: null },
+                visibleBinding: { value: "" },
+                disabled: { value: null },
+                disabledBinding: { value: "" },
+                color: { value: null },
+                colorBinding: { value: "" },
                 name: { value: "" },
                 parent: { value: "" },
                 mount: { value: "", required: true },
@@ -38,6 +60,7 @@
             },
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
+                common.installBaseFields(BASE_FIELDS).call(this);
                 common.installLayoutChildPropRows().call(this);
 
                 // P169 (ADR 0012 / value category): `openSection` typedInput — full
@@ -59,6 +82,7 @@
                 openInput.typedInput("value", openEditor.value);
             },
             oneditsave: function () {
+                common.applyBaseFields(BASE_FIELDS).call(this);
                 // P169: persist openSection as a binding object; clear the legacy path.
                 this.openSection = common.applyValueBinding(
                     $("#node-input-openSectionBinding").typedInput("type"),

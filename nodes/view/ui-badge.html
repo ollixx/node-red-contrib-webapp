@@ -2,10 +2,29 @@
 <script type="text/javascript">
     (function () {
         const common = window.WebappEditorCommon;
+
+        // P222 (ADR 0015): common base fields. See the applicability table in
+        // docs/nodes/concepts/editor.md. `omit` drops a field the node already
+        // owns a dedicated control for (avoids duplicate #node-input carrier ids).
+        const BASE_FIELDS = {
+            visible: true,
+            disabled: false,
+            color: false,
+            size: false,
+            variant: true,
+            advanced: ["size"],
+            omit: [],
+            hints: {
+                disabled: "Ein Badge hat keinen interaktiven Zustand.",
+                size: "Dieser Knoten hat keine Größen-Stufen."
+            }
+        };
         common.registerNodeType("ui-badge", {
             category: "webapp view",
             color: "#f4efcf",
             defaults: {
+                visible: { value: null },
+                visibleBinding: { value: "" },
                 name: { value: "" },
                 parent: { value: "" },
                 mount: { value: "", required: true },
@@ -44,6 +63,7 @@
             },
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
+                common.installBaseFields(BASE_FIELDS).call(this);
                 common.installLayoutChildPropRows().call(this);
 
                 // P153 (ADR 0012 / value/display category): `value` typedInput — full
@@ -64,6 +84,7 @@
                 valueInput.typedInput("value", valueEditor.value);
             },
             oneditsave: function () {
+                common.applyBaseFields(BASE_FIELDS).call(this);
                 // P153: persist value as binding object; clear legacy valuePath.
                 this.value = common.applyValueBinding(
                     $("#node-input-valueBinding").typedInput("type"),

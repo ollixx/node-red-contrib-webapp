@@ -68,7 +68,22 @@ const LAYOUT_BOILERPLATE = new Set([
 //                 `events` config by the editor. Pure wiring plumbing (how many
 //                 output ports the node draws), never a user-authored field — the
 //                 user-facing surface is `events`, which IS documented per node.
-const COMMON_BOILERPLATE = new Set(["parent", "uiId", "outputs"]);
+//   - `visible`/`disabled`/`color` — the ADR 0015 common BASE FIELDS. After the
+//                 P222 rollout they are a UNIVERSAL, standardised group ("Allgemein")
+//                 installed by `installBaseFields`, documented centrally in
+//                 docs/nodes/concepts/editor.md (with the per-node applicability
+//                 table) rather than re-listed in every node's Felder table — the
+//                 same central-doc treatment as the layout/placement boilerplate.
+//                 (`size` stays per-node: it is only a default on the few nodes with
+//                 a genuine size axis, and each already documents it.)
+const COMMON_BOILERPLATE = new Set([
+    "parent",
+    "uiId",
+    "outputs",
+    "visible",
+    "disabled",
+    "color",
+]);
 
 // Editor-only typedInput binding CARRIER fields. A binding `<base>` lives in the
 // node as a binding OBJECT plus, by convention, editor-only sibling carriers:

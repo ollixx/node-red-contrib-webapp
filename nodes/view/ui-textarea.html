@@ -2,10 +2,28 @@
 <script type="text/javascript">
     (function () {
         const common = window.WebappEditorCommon;
+
+        // P222 (ADR 0015): common base fields. See the applicability table in
+        // docs/nodes/concepts/editor.md. `omit` drops a field the node already
+        // owns a dedicated control for (avoids duplicate #node-input carrier ids).
+        const BASE_FIELDS = {
+            visible: true,
+            disabled: true,
+            color: false,
+            size: false,
+            variant: false,
+            advanced: [],
+            omit: ["disabled","size"],
+            hints: {
+                color: "Ein Formularfeld hat keine allgemeine Farbe (Zustandsfarben kommen aus Validierung/Variant)."
+            }
+        };
         common.registerNodeType("ui-textarea", {
             category: "webapp view",
             color: "#f4efcf",
             defaults: {
+                visible: { value: null },
+                visibleBinding: { value: "" },
                 name: { value: "" },
                 parent: { value: "" },
                 mount: { value: "", required: true },
@@ -92,6 +110,7 @@
             },
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
+                common.installBaseFields(BASE_FIELDS).call(this);
                 common.installSizeSelectBox().call(this);
                 common.installLayoutChildPropRows().call(this);
 
@@ -168,6 +187,7 @@
                 common.installWriteToField.call(this);
             },
             oneditsave: function () {
+                common.applyBaseFields(BASE_FIELDS).call(this);
                 // P204: persist writeTo + writeTrigger; drop legacy storeId/path.
                 common.saveWriteToField.call(this);
 

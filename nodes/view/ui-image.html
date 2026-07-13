@@ -3,6 +3,24 @@
     (function () {
         const common = window.WebappEditorCommon;
 
+        // P222 (ADR 0015): common base fields. See the applicability table in
+        // docs/nodes/concepts/editor.md. `omit` drops a field the node already
+        // owns a dedicated control for (avoids duplicate #node-input carrier ids).
+        const BASE_FIELDS = {
+            visible: true,
+            disabled: false,
+            color: false,
+            size: false,
+            variant: false,
+            advanced: ["size"],
+            omit: [],
+            hints: {
+                disabled: "Ein Bild hat keinen interaktiven Zustand.",
+                color: "Ein Bild hat keine Farbe.",
+                size: "Dieser Knoten hat keine Größen-Stufen."
+            }
+        };
+
         // P113 (ADR 0012 / ADR 0010): `src` is a display-value binding driven by the
         // ONE canonical value-binding type set (Store, Query, Route-Param, Reactive,
         // msg, JSONata, str, num, bool, json, date, Flow, Global, Env). Beyond those
@@ -68,6 +86,8 @@
             category: "webapp view",
             color: "#f4efcf",
             defaults: {
+                visible: { value: null },
+                visibleBinding: { value: "" },
                 name: { value: "" },
                 parent: { value: "" },
                 mount: { value: "", required: true },
@@ -104,6 +124,7 @@
             },
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
+                common.installBaseFields(BASE_FIELDS).call(this);
                 common.installLayoutChildPropRows().call(this);
 
                 // Back-compat: a legacy srcPath maps to a state binding when no
@@ -122,6 +143,7 @@
                 applyDisplayTypedInput("#node-input-fallback", this.fallback);
             },
             oneditsave: function () {
+                common.applyBaseFields(BASE_FIELDS).call(this);
                 this.src = readBinding("#node-input-srcBinding");
                 this.srcPath = "";
 
