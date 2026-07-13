@@ -67,3 +67,17 @@ Ersetzt den bespoke `ui-store-action-store-save.spec.ts` durch einen einzigen
 | Test | Ziel |
 |---|---|
 | `store` open→Done Round-Trip | Der Store-Reference-Picker (hidden `#node-input-store`) ist beim Öffnen aus `store` **geseedet** (nicht leer), **überlebt** Done unverändert (`RED.nodes.node().store` bleibt `saStore`, kein Clobber zu `""`), und ein **Wertwechsel** auf `saStore2` persistiert und re-seedet beim Wiederöffnen. Entfernen des `store`-Seeds in `installReferenceSelectors` macht den Test rot. |
+
+## P218 (ADR 0033) — consumed store command is not double-processed
+
+Handler-level unit tests: `packages/runtime/test/p218-consumed-envelope-cleanup.test.ts`.
+
+| Test | Ziel (gemessener Effekt) |
+|---|---|
+| notification is not a command | `normalizeStoreOperationMessage` lehnt ein `msg.ui.store` mit gesetztem `event` (`changed`/`read`) ab — eine verbrauchte Notification wird nie erneut angewendet |
+| apply-once | die `changed`-Notification eines `ui-store`-Writes wird von einem zweiten `ui-store`-Hop NICHT erneut angewendet (State unverändert, Pass-Through) |
+| real command still applies | ein echtes Kommando (ohne `event`) wird weiterhin angewendet (Guard greift nicht zu weit) |
+
+Anmerkung: `ui-store-action` (reference) emittiert weiterhin seine `changed`-Notification
+und `ui-store-read` seine `read`-Notification auf `msg.ui.store` — das sind AUSGEHENDE
+Ereignisse, keine verbrauchten Kommandos; der Guard verhindert nur deren Re-Konsum.

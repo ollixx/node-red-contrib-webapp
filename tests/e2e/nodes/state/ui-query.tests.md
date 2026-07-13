@@ -168,3 +168,12 @@ E2E `tests/e2e/nodes/state/ui-query-implicit-params-store.spec.ts` (2. Test):
   die Mock-DB liefert erneut Seite 2 → die Tabelle bleibt Bob (nicht Alice).
   Gemessen an den gerenderten Zeilen. Ohne Anreicherung (Vor-P214-Lücke) würde die
   DB auf Seite 1 zurückfallen (Alice).
+
+## P218 (ADR 0033) — refresh forwards a clean trigger (no stale payload)
+
+Ein von `ui-query` konsumierter `refresh` wird als SAUBERER Fetch-Trigger
+weitergereicht: `msg.ui.query` (`queryPath/refresh/params`) bleibt für den Fetch,
+aber die stale `msg.payload` des Triggers wird VERWORFEN, damit sie nicht
+nachgelagert als Query-DATEN (`replace`) doppelt-konsumiert wird.
+Unit: `packages/runtime/test/p218-consumed-envelope-cleanup.test.ts`;
+E2E-Repro: `tests/e2e/nodes/state/ui-query-refresh-replace-cleanup.spec.ts`.

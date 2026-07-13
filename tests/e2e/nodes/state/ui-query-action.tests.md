@@ -87,3 +87,20 @@ Wire-Envelope. Zwei Trigger (beide tragen die Browser-clientId).
 | **wire mode** Envelope | nach REPLACE-WIRE zeigt der Envelope-Readout `{"queryPath":"items","data":[{"id":1,"name":"Ada"}]}` |
 | **wire mode** mutiert nicht | nach REPLACE-WIRE bleibt der Query-Readout leer (kein `REPLACED`) — Wire schreibt den Query-State nicht |
 | **reference mode** setzt Daten live | nach REPLACE-REF füllt sich der Query-Readout mit `REPLACED` (Daten direkt gesetzt, per-client SSE-Re-Render, **kein** Wire) |
+
+## P218 (ADR 0033) — consumed-envelope cleanup + refresh→replace repro
+
+Handler-level unit tests: `packages/runtime/test/p218-consumed-envelope-cleanup.test.ts`.
+
+| Test | Ziel (gemessener Effekt) |
+|---|---|
+| refresh drops stale payload | ein `ui-query` `refresh` reicht einen SAUBEREN Trigger weiter — `msg.ui.query` bleibt (`queryPath/refresh/params`), aber die stale `msg.payload` ist WEG (nicht nachgelagert als `replace`-DATEN konsumierbar) |
+| params unregressed (P214) | der saubere Trigger trägt weiterhin die aktuellen `params` |
+| not-applied lässt stehen | ohne aktive App (nicht angewendet) bleibt Envelope + Payload byte-identisch erhalten |
+| clientId erhalten | `msg.ui.clientId` bleibt auf dem sauberen Trigger |
+| **refresh→replace Repro** | refresh-Action(wire) → `ui-query` → replace-Konsument: der Replace foldet `[]` statt der stale Trigger-Rows (Query wird NICHT überschrieben) |
+
+E2E (Playwright, vom Orchestrator ausgeführt):
+`tests/e2e/nodes/state/ui-query-refresh-replace-cleanup.spec.ts`
+(Fixture `tests/e2e/fixtures/p218-refresh-replace-cleanup.flow.json`) — nach einem
+REFRESH mit vergiftetem Payload zeigt der Query-Readout `CLEAN` und **nie** `POISON`.
