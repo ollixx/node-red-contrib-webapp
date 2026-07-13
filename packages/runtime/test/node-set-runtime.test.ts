@@ -605,4 +605,51 @@ describe("P11a: parent field compilation", () => {
 
         expect(assembly.success).toBe(true);
     });
+
+    // P221 (ADR 0035): the ui-text form-field presentation mode + its label are
+    // carried into the compiled component props (the render source reads them).
+    it("carries ui-text display:formField + label into component props", () => {
+        const assembly = assembleNodeSet([
+            { type: "ui-app", id: "app", name: "A", root: "app", layout: "app" },
+            { type: "ui-route", id: "home", path: "/home", layout: "vertical" },
+            {
+                type: "ui-text",
+                id: "idField",
+                mount: "route:/home/content",
+                display: "formField",
+                label: "Entity ID",
+                value: { kind: "literal", value: "abc-123" }
+            }
+        ]);
+
+        expect(assembly.success).toBe(true);
+        const registry = createRuntimeRegistry();
+        registry.registerMany(assembly.data.contributions);
+        const result = registry.compile("app");
+        const text = result.model?.components.find((c) => c.id === "idField");
+        expect(text?.props.display).toBe("formField");
+        expect(text?.props.label).toBe("Entity ID");
+    });
+
+    it("omits the form-field props for a default free-text ui-text", () => {
+        const assembly = assembleNodeSet([
+            { type: "ui-app", id: "app", name: "A", root: "app", layout: "app" },
+            { type: "ui-route", id: "home", path: "/home", layout: "vertical" },
+            {
+                type: "ui-text",
+                id: "plain",
+                mount: "route:/home/content",
+                value: { kind: "literal", value: "hi" }
+            }
+        ]);
+
+        expect(assembly.success).toBe(true);
+        const registry = createRuntimeRegistry();
+        registry.registerMany(assembly.data.contributions);
+        const result = registry.compile("app");
+        const text = result.model?.components.find((c) => c.id === "plain");
+        expect(text).toBeDefined();
+        expect(text?.props.display).toBeUndefined();
+        expect(text?.props.label).toBeUndefined();
+    });
 });
