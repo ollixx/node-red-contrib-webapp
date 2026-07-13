@@ -31,6 +31,7 @@ their blocker clears.
 - **P218** — aspects/runtime — konsumierte `msg.ui.<command>`-Envelope nach erfolgreicher Verarbeitung entfernen (nur Sub-Key); behebt refresh→replace-Doppelverarbeitung — *ADR 0033; Owner 2026-07-13; dep P213* — [P218](aspects/runtime/P218-consumed-msg-ui-envelope-cleanup.md)
 - **P219** — aspects/rendering — pro-Feld `onMissing`-Selektor (Foundation): `marker` (Default '?') + `ignore` (leer); Schema + Renderer + Editor — *ADR 0034; Owner 2026-07-13; dep P131* — [P219](aspects/rendering/P219-onmissing-selector-foundation.md)
 - **P221** — nodes/ui-text — read-only Form-Feld-Modus (Label + Wert wie Control gestylt), z.B. ID-Feld im Entity Editor — *ADR 0035; Owner 2026-07-13* — [P221](nodes/ui-text/P221-ui-text-form-field-readonly-mode.md)
+- **P222** — aspects/editor — Base-Field-Rollout (ADR 0015) vervollständigen: visible/disabled/color/size fehlen auf ~26 der 33 View-Knoten; Applicability-Audit + Retrofit — *ADR 0015; Owner 2026-07-13* — [P222](aspects/editor/P222-base-field-rollout-completion.md)
 
 
 ## Deferred (parked, not abandoned)

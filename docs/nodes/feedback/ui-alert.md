@@ -115,8 +115,9 @@ da Alerts eine Status-/Schweregrad-Semantik tragen.
   merkt sich das Auto-Dismiss (`autoDismissed`), damit die nächste Snapshot die
   Alert nicht wieder einblendet. Folge: eine per Duration ausgeblendete Alert wird
   **nicht** automatisch wieder gezeigt; erneutes Anzeigen erfordert eine Änderung
-  des `visible`-Bindings. Ein kohärentes deklaratives Duration↔`visible`-Modell ist
-  als eigenes Redesign vorgesehen (Roadmap). Backends ohne native Unterstützung
+  des `visible`-Bindings. Ein kohärentes deklaratives Duration↔`visible`-Modell
+  (Duration setzt `visible=false` server-seitig) ist eine **bekannte offene
+  Frage**, aber noch nicht als Arbeitspaket geplant. Backends ohne native Unterstützung
   können einen Fallback implementieren (JS-Timeout + CSS/JS-Animation, analog dem
   [Bootstrap-Alert-Doku-Beispiel](https://getbootstrap.com/docs/5.3/components/alerts/#dismissing)).
 
@@ -134,4 +135,5 @@ da Alerts eine Status-/Schweregrad-Semantik tragen.
 - `duration` ist derzeit ein client-seitiger Einweg-Close, entkoppelt vom
   deklarativen `visible`-Zustand (siehe Verhalten oben). Ein kohärentes
   Duration↔`visible`-Modell (Duration setzt `visible=false` server-seitig; Show/
-  Re-Show-Semantik) ist als Redesign in der Roadmap erfasst.
+  Re-Show-Semantik) ist eine bekannte offene Frage, aber noch nicht als
+  Arbeitspaket geplant.
