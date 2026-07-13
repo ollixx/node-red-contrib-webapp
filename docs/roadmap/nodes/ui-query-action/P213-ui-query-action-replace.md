@@ -16,7 +16,7 @@ verify: browser
 spec: docs/nodes/state/ui-query-action.md
 tests: tests/e2e/nodes/state/ui-query-action.tests.md
 dependencies: [P212]
-status: pending
+status: in_progress
 ---
 # P213 — ui-query-action `replace` (Daten-rein-Seite)
 
