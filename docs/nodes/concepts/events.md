@@ -104,6 +104,45 @@ Es gibt **keine automatische Verknüpfung** zwischen einem Event und einer Aktio
 
 ---
 
+## Envelope-Lifecycle: konsumiert = entfernt
+
+> Rationale: [ADR 0033](../../adr/0033-consumed-msg-ui-command-envelope-is-deleted-after-processing.md).
+
+Eine Message trägt unter `msg.ui.*` zwei sehr verschiedene Arten von Sub-Keys:
+
+| Sub-Key | Art | Lebensdauer |
+|---|---|---|
+| `msg.ui.store` `{id, op, path, value}` | **Kommando** | wird vom konsumierenden Knoten **angewendet und entfernt** |
+| `msg.ui.query` `{queryPath, refresh\|data\|error, params}` | **Kommando** | dito |
+| `msg.ui.dialog` `{id, op}` | **Kommando** | dito |
+| `msg.ui.clientId` | **Kontext** | bleibt über alle Hops erhalten (per-Client-Zielsteuerung) |
+| `msg.ui.event` (ausgehend, z.B. `click`, `onOpen`) | **Event** | bleibt — es ist kein Eingangs-Kommando |
+
+**Regel:** Ein Knoten, der ein `msg.ui.<command>`-Kommando **erfolgreich** verarbeitet,
+löscht **genau diesen** Sub-Key aus der Message, bevor er sie weiterreicht. Ein
+verbrauchtes Kommando kann so **nicht** von einem nachgelagerten Knoten erneut
+angewendet werden (keine Doppelverarbeitung), und `msg.ui` bleibt ein sauberer Kanal,
+der nach einem Hop nur noch Kontext (`clientId`) und **neu** emittierte Envelopes trägt.
+
+- **Kontext bleibt.** `msg.ui.clientId` und ein ausgehendes `msg.ui.event` werden nie
+  entfernt; das ganze `msg.ui` wird nie gelöscht. Ist `msg.ui` nach dem Entfernen leer,
+  bleibt es als `{}` stehen (bewusste Wahl — es wird nicht auf `undefined` gesetzt).
+- **Fehlerpfad lässt stehen.** Schlägt die Verarbeitung fehl (unbekannte Query/Store,
+  ungültige Operation), bleibt der Sub-Key erhalten — diagnostizierbar und retry-fähig.
+- **Emitter sind keine Konsumenten.** Ein Wire-Mode-Knoten wie `ui-store-action` oder
+  `ui-query-action`, der ein Kommando **erzeugt**, räumt nicht auf — der **anwendende**
+  (konsumierende) Knoten am Ende der Kette tut das.
+- **`refresh`-Pass-Through.** `ui-query` wendet ein `refresh` an (Lifecycle → `loading`)
+  und reicht einen **frisch gebauten, sauberen** Trigger weiter (`msg.ui.query` mit
+  `queryPath`/`refresh`/`params` für den Fetch) — die eingehende `msg.payload` des
+  Triggers wird dabei **verworfen**, damit sie nicht nachgelagert erneut als Query-DATEN
+  (`replace`) konsumiert wird.
+- **Store-Notifications.** Eine von `ui-store`/`ui-store-action`/`ui-store-read`
+  emittierte `changed`/`read`-Notification (`msg.ui.store.event` gesetzt) ist ein
+  **Ereignis**, kein Kommando — konsumierende Knoten wenden sie nie erneut an.
+
+---
+
 ## Abgrenzung
 
 | Konzept | Richtung | Zweck |
