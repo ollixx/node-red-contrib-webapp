@@ -28,7 +28,6 @@ their blocker clears.
 ## Open work (pending / in_progress)
 
 - **P217** — aspects/test-infra — Backfill open→save Round-Trip-Tests für alle übrigen reference/picker/editableList-Knoten; `check:roundtrip`-Allowlist auf leer treiben — *ADR 0031; dep P215/P216* — [P217](aspects/test-infra/P217-backfill-round-trip-tests.md)
-- **P218** — aspects/runtime — konsumierte `msg.ui.<command>`-Envelope nach erfolgreicher Verarbeitung entfernen (nur Sub-Key); behebt refresh→replace-Doppelverarbeitung — *ADR 0033; Owner 2026-07-13; dep P213* — [P218](aspects/runtime/P218-consumed-msg-ui-envelope-cleanup.md)
 - **P219** — aspects/rendering — pro-Feld `onMissing`-Selektor (Foundation): `marker` (Default '?') + `ignore` (leer); Schema + Renderer + Editor — *ADR 0034; Owner 2026-07-13; dep P131* — [P219](aspects/rendering/P219-onmissing-selector-foundation.md)
 - **P221** — nodes/ui-text — read-only Form-Feld-Modus (Label + Wert wie Control gestylt), z.B. ID-Feld im Entity Editor — *ADR 0035; Owner 2026-07-13* — [P221](nodes/ui-text/P221-ui-text-form-field-readonly-mode.md)
 - **P222** — aspects/editor — Base-Field-Rollout (ADR 0015) vervollständigen: visible/disabled/color/size fehlen auf ~26 der 33 View-Knoten; Applicability-Audit + Retrofit — *ADR 0015; Owner 2026-07-13* — [P222](aspects/editor/P222-base-field-rollout-completion.md)
@@ -95,7 +94,7 @@ open the folder for the full history.
 | aspects/test-infra | 27 |
 | aspects/misc | 16 |
 | aspects/docs | 1 |
-| aspects/runtime | 7 |
+| aspects/runtime | 8 |
 | aspects/state | 8 |
 | aspects/editor | 23 |
 | schema | 5 |
@@ -104,4 +103,4 @@ open the folder for the full history.
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 214 done, 4 open, 10 deferred.**
+**Total: 215 done, 3 open, 10 deferred.**

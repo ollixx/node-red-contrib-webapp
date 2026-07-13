@@ -2,7 +2,7 @@
 id: P218
 title: "Runtime: konsumierte msg.ui.<command>-Envelope nach erfolgreicher Verarbeitung entfernen (nur den Sub-Key) — behebt refresh→replace-Doppelverarbeitung"
 epic: aspects/runtime
-status: in_progress
+status: done
 dependencies: [P213]
 verify: browser
 spec: docs/nodes/concepts/events.md
@@ -10,7 +10,7 @@ tests: tests/e2e/nodes/state/ui-query-action.tests.md
 ---
 # P218 — Konsumierte `msg.ui.<command>`-Envelope nach Verarbeitung entfernen
 
-> Rationale: [ADR 0033](../../../adr/0033-consumed-msg-ui-command-envelope-is-deleted-after-processing.md).
+> Rationale: [ADR 0033](../../../../adr/0033-consumed-msg-ui-command-envelope-is-deleted-after-processing.md).
 > Behebt gleichzeitig den vom Owner gemeldeten refresh→replace-Bug (Punkt 2).
 
 ## findings
@@ -82,3 +82,18 @@ entfernt"-Abschnitt (welche `msg.ui.<key>` Kommandos sind, welche Kontext).
 - Für den refresh-Pass-Through: der ui-query forwardet einen **sauberen** Trigger
   (frisch gebautes `msg.ui.query` mit `queryPath/refresh/params` für den Fetch),
   nicht die eingehende Message verbatim mit stale Kommando/`payload`.
+
+## Result
+
+**Delivered.** Konsumierte `msg.ui.<command>`-Envelopes werden nach erfolgreicher Verarbeitung nicht mehr weiterverschmutzt (ADR 0033); behebt den Owner-`refresh→replace`-Doppelverarbeitungs-Bug.
+- **`nodes/webapp.js`**: neuer Helfer `stripConsumedUiEnvelope(msg, key)` (shallow-copy, löscht genau einen Sub-Key, mutiert Input nie, behält `clientId`/`event`, nukt `msg.ui` nie). `queryInputHandler`: `appliedTrigger`-Flag; beim Forward wird ein SAUBERER Fetch-Trigger re-emittiert (`enrichTriggerWithCurrentParams` baut frisches `msg.ui.query`) und die stale `msg.payload` VERWORFEN (kann downstream nicht als `replace`-Daten re-konsumiert werden); fremde/unerkannte Pass-Throughs bleiben byte-identisch (P175/P214). `normalizeStoreOperationMessage`: weist ein Store-Envelope mit `event`-Feld ab (verbrauchte `changed`/`read`-Notification ist kein re-konsumierbares Kommando → Store apply-once). `dialogInputHandler`: strippt `msg.ui.dialog` nach Erfolg.
+- **Empty-`msg.ui`-Wahl:** als `{}` belassen (dokumentiert + getestet).
+- **Doku** `docs/nodes/concepts/events.md` (Abschnitt „Envelope-Lifecycle: konsumiert = entfernt"). Kataloge (ui-query-action/ui-query/ui-store-action) mit Cleanup- + Repro-Einträgen.
+
+**Reconciliation (validiert gegen ADR 0033 Decision).** Acceptance #4 wörtlich „Out-Port ohne `msg.ui.query`" ist mit P175/P214 nicht möglich — der Fetch-Trigger MUSS `msg.ui.query` (`queryPath/refresh/params`) tragen. ADR 0033 Decision schreibt genau die umgesetzte Form vor: sauberer, frisch gebauter Trigger; die eingehende **stale** `msg.ui.query`/`payload` wird nicht verbatim in eine re-verarbeitbare Position getragen. Store-Handler können analog nicht `delete msg.ui.store` (P211/P209 erwarten die `changed`/`read`-Notification auf `msg.ui.store`) — stattdessen ersetzt das frische Event das Kommando + der Consumer-Guard macht es nicht-re-konsumierbar.
+
+**Verify (browser, gemessen — Haupt-Checkout).** `tests/e2e/nodes/state/ui-query-refresh-replace-cleanup.spec.ts` **1 passed** (2.6s): nach einem REFRESH mit vergiftetem Payload zeigt der Query-Readout `CLEAN`, nie `POISON` (stale Payload überschreibt die Query nicht).
+
+**Stats.** Unit grün: runtime 1211 (+16 P218). Cross-cutting explizit grün gehalten: P175/P160/P161/P212/P213/P214/P211/P209/P110/P80/P12/P81. `pnpm build`/`test`/`lint`/`check:specs`/`check:roundtrip`/`check:links`/`check:roadmap` grün.
+
+**Cost.** Sub-Agent `phase/P218` (worktree), ~28 min (16:41:42Z→17:09:53Z); nach einem Netz-Ausfall (ConnectionRefused) aus dem Transkript fortgesetzt, kein Verlust. Token-Zeile in `.ai/agent-runs.jsonl`.
