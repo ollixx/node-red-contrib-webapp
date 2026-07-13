@@ -83,6 +83,19 @@ export interface ReactiveError {
     message: string;
     /** A stable dedup key (source + message). */
     key: string;
+    /**
+     * ADR 0032: the id of the node whose binding produced this error, so the host
+     * can surface it ON that node (status badge) and attribute the log line, rather
+     * than emitting an anonymous app-level error. Optional — absent when the render
+     * context has no owning node (e.g. a synthetic/cloned component).
+     */
+    nodeId?: string;
+    /**
+     * ADR 0032: severity hint. Store sub-path config problems are `warn` (non-fatal:
+     * the snapshot still renders, the node shows a yellow status). A general reactive
+     * expression failure is left unset and the host treats it as `error`.
+     */
+    severity?: "warn" | "error";
 }
 
 export interface ReactiveEvalResult {

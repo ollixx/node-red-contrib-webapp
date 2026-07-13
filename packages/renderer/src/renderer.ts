@@ -258,6 +258,11 @@ interface BindingSources {
     // P115: invoked with a distinct reactive failure (already deduped upstream).
     // P131: also the sink for store sub-path speaking errors — same dedup/pipeline.
     reportReactiveError?: ReactiveErrorReporter;
+    // ADR 0032: the id of the component whose bindings are CURRENTLY being resolved.
+    // Set per component immediately before its bindings resolve (render is a single
+    // synchronous depth-first walk), so a reactive / store-sub-path error can name
+    // the offending node. Absent → the error is reported without a node origin.
+    currentNodeId?: string;
     // P164 (ADR 0017): the render-time ITEM SCOPE — a STACK of `{item, index}`
     // frames the renderer pushes as it clones a `ui-repeat` template per element.
     // `item` / `item.<path>` / `index` bindings resolve against the TOP (innermost)
@@ -468,6 +473,12 @@ function resolveStoreBinding(binding: BindingDefinition, sources: BindingSources
     let pathValue: unknown;
     if (binding.subPath !== undefined) {
         pathValue = resolveBinding(binding.subPath as BindingDefinition, sources, depth + 1);
+        // The sub-path itself failed to resolve (its own error was already reported,
+        // or the depth guard tripped). Propagate the invalid marker instead of
+        // stringifying the marker symbol into a bogus path lookup.
+        if (pathValue === STORE_SUBPATH_INVALID) {
+            return STORE_SUBPATH_INVALID;
+        }
     }
 
     const isObjectSlice = typeof slice === "object" && slice !== null;
@@ -492,6 +503,23 @@ function resolveStoreBinding(binding: BindingDefinition, sources: BindingSources
     const resolved = getValueAtPath(slice, pathString);
 
     if (resolved === undefined) {
+        // ADR 0032 (refines 0013): distinguish a genuine misconfiguration from a
+        // not-yet-populated value.
+        //  - OBJECT/ARRAY slice + missing key/index → a transient "no value yet"
+        //    (e.g. an entity's `_id` before it is saved). Resolve EMPTY (undefined),
+        //    report NOTHING — this is the normal lifecycle of a mutable store slice
+        //    (ADR 0013 already states the runtime shape is populated over time).
+        //  - SCALAR slice + a sub-path → a real type error (a string/number has no
+        //    addressable property). Keep the speaking error + invalid marker.
+        //
+        // Return "" (empty), NOT undefined: the display normalizer maps undefined →
+        // "?" (the "cannot display" signal), whereas an empty string renders as no
+        // content — the same "empty until a value arrives" convention the msg/jsonata
+        // bindings use above.
+        if (isObjectSlice) {
+            return "";
+        }
+
         reportStoreSubPathError(
             sources,
             `Store "${storeName}": Pfad "${pathString}" nicht gefunden (Slice ist ${describeSliceType(slice)})`
@@ -512,7 +540,12 @@ function reportStoreSubPathError(sources: BindingSources, message: string): void
     sources.reportReactiveError?.({
         source: "store-subpath",
         message,
-        key: `store-subpath ${message}`
+        key: `store-subpath ${message}`,
+        // ADR 0032: attribute the error to the node being resolved, and mark it a
+        // warning — a store sub-path misconfiguration is non-fatal (the snapshot
+        // still renders `?`); the host shows a yellow status + warns.
+        nodeId: sources.currentNodeId,
+        severity: "warn"
     });
 }
 
@@ -631,7 +664,10 @@ function resolveBinding(binding: BindingDefinition | undefined, sources: Binding
             });
 
             if (result.error) {
-                sources.reportReactiveError?.(result.error);
+                // ADR 0032: attribute the failure to the node being resolved so the
+                // host can badge it. Severity is left unset → the host treats a
+                // genuine reactive-expression failure as an error (not a warn).
+                sources.reportReactiveError?.({ ...result.error, nodeId: sources.currentNodeId });
                 // Bypass the fallback substitution below — a failed reactive value
                 // is an explicit invalid-value, not an absent one.
                 return REACTIVE_INVALID;
@@ -929,6 +965,12 @@ function resolveNavigationTarget(
 }
 
 function toRenderedComponent(component: ComponentDefinition, context: ComponentRenderContext, appModel: AppModel): RenderedComponent | undefined {
+    // ADR 0032: attribute any reactive / store-sub-path error raised while resolving
+    // THIS component's bindings to its node, so the host can badge the node and log
+    // the origin. Render is synchronous & depth-first, so a plain field on the shared
+    // sources is correct: each component sets it before its own bindings resolve.
+    context.sources.currentNodeId = component.id;
+
     const visible = matchesCondition(component.visibleIf, context.sources, true);
 
     if (!visible) {

@@ -219,13 +219,27 @@ Stabilitätsverhalten:
 
 #### Sprechende Laufzeitfehler
 
-Editor permissiv, Laufzeit validiert (Owner-Entscheid). Bei Fehlkonfiguration
+Editor permissiv, Laufzeit validiert (Owner-Entscheid). Bei **Fehlkonfiguration**
 gibt der Renderer den Invalid-Value-Marker `"?"` aus und meldet **einmalig**:
 
-- `subPath` gesetzt, aber **unauflösbar** (Key fehlt / Slice ist Skalar) →
+- `subPath` gesetzt, aber der Slice ist ein **Skalar** (String/Zahl/Bool hat keine
+  adressierbare Property) →
   `Store "<name>": Pfad "<p>" nicht gefunden (Slice ist <typ/wert>)`.
 - **kein** `subPath`, aber Slice ist ein nicht-darstellbares Objekt/Array →
   `Store "<name>": Wert ist ein Objekt — gib einen Pfad zu einer anzeigbaren Property an`.
+
+**Kein Fehler (ADR 0032):** Ein **fehlender Key/Index in einem Objekt-/Array-Slice**
+ist *keine* Fehlkonfiguration, sondern ein noch-nicht-befüllter Wert (z.B. `_id`
+einer Entität vor dem Speichern). Der Renderer liefert dann **leer** (kein `"?"`)
+und meldet **nichts** — genau wie eine `msg`/`jsonata`-Bindung „leer bis zur
+nächsten Nachricht". Der veränderbare Slice darf zur Laufzeit erst nach und nach
+befüllt werden.
+
+**Fehler-Herkunft (ADR 0032/0006):** Die verbleibenden echten Meldungen tragen die
+**`nodeId`** des bindenden Knotens, erscheinen als **Knotenstatus** (gelber Ring +
+Kurztext) und werden als **`warn`** über den Knoten (`node.warn`) gemeldet. (Das
+Abfangen über einen Catch-Knoten wird später ergänzt — Catch fängt nur
+`node.error(_, msg)`.)
 
 > Die Editor-Seite (Store-**Name** statt ID, Pfad-typedInput mit Autocomplete aus
 > der Default-Shape) liefert **P132**. P131 ist der Unterbau (Schema, Renderer,

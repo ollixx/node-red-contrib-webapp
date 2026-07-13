@@ -2450,16 +2450,33 @@ function buildAppSnapshot(appId, location, dialogId, definitions, clientId) {
                 reportedKeys = new Set();
                 runtimeState.reactiveErrorKeys.set(appId, reportedKeys);
             }
-            const dedupKey = error.key || `${error.source} ${error.message}`;
+            const dedupKey = error.key || `${error.source} ${error.message}`;
             if (reportedKeys.has(dedupKey)) {
                 return;
             }
             reportedKeys.add(dedupKey);
-            reportRuntimeError(undefined, {
-                severity: "error",
+            // ADR 0032: attribute the failure to the offending node. If the renderer
+            // supplied a nodeId, resolve the live node so the error is logged/warned
+            // ON it (and, later, a Catch node can react — deferred) and its status
+            // badge shows the problem. Store sub-path config problems are `warn`
+            // (non-fatal); a general reactive-expression failure stays `error`.
+            const RED = runtimeState.RED;
+            const offendingNode = error.nodeId && RED && RED.nodes && typeof RED.nodes.getNode === "function"
+                ? RED.nodes.getNode(error.nodeId)
+                : undefined;
+            const severity = error.severity === "warn" ? "warn" : "error";
+            if (offendingNode && typeof offendingNode.status === "function") {
+                offendingNode.status({
+                    fill: severity === "warn" ? "yellow" : "red",
+                    shape: severity === "warn" ? "ring" : "dot",
+                    text: reactiveStatusText(error.message)
+                });
+            }
+            reportRuntimeError(offendingNode, {
+                severity,
                 code: "reactive_expression_failed",
                 message: `Reactive expression failed: ${error.message}`,
-                context: { appId, expression: error.source },
+                context: { appId, nodeId: error.nodeId, expression: error.source },
                 clientId
             });
         }
@@ -3838,6 +3855,15 @@ function pushErrorToClients(appId, clientId, structuredError) {
         delivered = true;
     }
     return delivered;
+}
+
+// ADR 0032: a compact one-line status text for the offending node's status badge.
+// The full message goes to the log/forwarding; the badge only needs a short hint,
+// so it is trimmed (Node-RED renders a node status inline, long text is unusable).
+function reactiveStatusText(message) {
+    const text = String(message == null ? "" : message).replace(/\s+/g, " ").trim();
+    const MAX = 48;
+    return text.length > MAX ? `${text.slice(0, MAX - 1)}…` : text;
 }
 
 // Central runtime error reporter (ADR 0006). Logs the failure WITH CONTEXT via

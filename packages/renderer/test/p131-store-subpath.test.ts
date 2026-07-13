@@ -148,8 +148,12 @@ describe("P131 store subPath — empty / missing sub-path", () => {
     });
 });
 
-describe("P131 store subPath — unresolvable", () => {
-    it("missing key in the slice → invalid-value marker + speaking error; snapshot intact", () => {
+// ADR 0032 (refines 0013): a missing key in an OBJECT/ARRAY slice is a transient
+// "not yet populated" value (e.g. an entity's `_id` before it is saved), NOT a
+// misconfiguration — the binding resolves EMPTY and reports NOTHING. Only a
+// sub-path against a SCALAR slice stays a real (config) error.
+describe("P131/ADR-0032 store subPath — missing key in an object/array slice is transient, not an error", () => {
+    it("missing key in an OBJECT slice → resolves empty; NO error reported; snapshot intact", () => {
         const onReactiveError = vi.fn();
         const app = createRendererApp(
             appWithStoreText({ kind: "store", path: "monsterStore", subPath: { kind: "literal", value: "x" } }),
@@ -162,12 +166,28 @@ describe("P131 store subPath — unresolvable", () => {
 
         const snapshot = app.render();
         expect(findComponentInSnapshot(snapshot, "storeText")).toBeDefined();
-        expect(textOf(app)).toBe("?");
-        expect(onReactiveError).toHaveBeenCalled();
-        expect(onReactiveError.mock.calls[0][0].message).toContain('Pfad "x" nicht gefunden');
+        expect(textOf(app)).toBe("");
+        expect(onReactiveError).not.toHaveBeenCalled();
     });
 
-    it("sub-path against a scalar slice → speaking error mentioning the scalar", () => {
+    it("out-of-range index on an ARRAY slice → resolves empty; NO error reported", () => {
+        const onReactiveError = vi.fn();
+        const app = createRendererApp(
+            appWithStoreText({ kind: "store", path: "monsterStore", subPath: { kind: "literal", value: 9 } }),
+            {
+                integration: integrationWith("items"),
+                state: { items: ["a", "b"] },
+                onReactiveError
+            }
+        );
+
+        expect(textOf(app)).toBe("");
+        expect(onReactiveError).not.toHaveBeenCalled();
+    });
+});
+
+describe("P131 store subPath — a sub-path against a SCALAR slice stays a speaking error", () => {
+    it("sub-path against a scalar slice → invalid-value marker + speaking error mentioning the scalar", () => {
         const onReactiveError = vi.fn();
         const app = createRendererApp(
             appWithStoreText({ kind: "store", path: "monsterStore", subPath: { kind: "literal", value: "c" } }),
@@ -179,7 +199,24 @@ describe("P131 store subPath — unresolvable", () => {
         );
 
         expect(textOf(app)).toBe("?");
+        expect(onReactiveError).toHaveBeenCalled();
         expect(onReactiveError.mock.calls[0][0].message).toContain('der String "eins"');
+    });
+
+    it("ADR 0032: the reported store sub-path error carries the offending node id + warn severity", () => {
+        const onReactiveError = vi.fn();
+        const app = createRendererApp(
+            appWithStoreText({ kind: "store", path: "monsterStore", subPath: { kind: "literal", value: "c" } }),
+            {
+                integration: integrationWith("scalar"),
+                state: { scalar: "eins" },
+                onReactiveError
+            }
+        );
+
+        app.render();
+        expect(onReactiveError.mock.calls[0][0].nodeId).toBe("storeText");
+        expect(onReactiveError.mock.calls[0][0].severity).toBe("warn");
     });
 });
 
