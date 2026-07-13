@@ -27,6 +27,8 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
+- **P213** — nodes/ui-query-action — action `replace`: eingehende Daten (`msg.payload`) als Query-Daten setzen (Daten-rein-Seite zu `refresh`), reference|wire — *ADR 0029; Owner 2026-07-13; dep P212* — [P213](nodes/ui-query-action/P213-ui-query-action-replace.md)
+- **P214** — nodes/ui-query — impliziter per-client Params-Store pro Query (kein extra Knoten), adressierbar wie jeder Store via ui-store-action/-read/store-Binding; explizites `params` bleibt Override — *ADR 0030; Owner 2026-07-13; dep P209/P211* — [P214](nodes/ui-query/P214-implicit-per-query-params-store.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -98,4 +100,4 @@ open the folder for the full history.
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 210 done, 0 open, 9 deferred.**
+**Total: 210 done, 2 open, 9 deferred.**
