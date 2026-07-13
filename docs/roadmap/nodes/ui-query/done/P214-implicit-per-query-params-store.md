@@ -20,11 +20,11 @@ verify: browser
 spec: docs/nodes/state/ui-query.md
 tests: tests/e2e/nodes/state/ui-query.tests.md
 dependencies: [P209, P211]
-status: in_progress
+status: done
 ---
 # P214 — ui-query: impliziter per-Query Params-Store
 
-> Entscheidung: [ADR 0030](../../../adr/0030-ui-query-implicit-per-query-params-store.md).
+> Entscheidung: [ADR 0030](../../../../adr/0030-ui-query-implicit-per-query-params-store.md).
 
 ## Kern
 
@@ -53,3 +53,19 @@ Explizites `params`-Feld bleibt Override (externer, geteilter Store); leer ⇒ i
 - Kollisionsfrei zu ADR 0013 (id + Sub-Pfad): die Query-ID ist der „Store", `params.*`
   der Sub-Pfad.
 - Nicht mit `ui-query-action` (Trigger/replace) verwechseln — das hier ist der Params-Speicher.
+
+## Result
+
+**Delivered.** Jede `ui-query` besitzt implizit einen per-client Params-Store, adressierbar wie jeder Store; zusätzlich hängt die Query bei **jedem** Out-Port-Refresh ihre aktuellen Params an (ADR 0030). Kein neuer Knoten.
+- **Renderer** `packages/renderer/src/renderer.ts`: in `createRendererApp` jede ui-query-id → `ui.queries.<queryPath>.params` in `storePaths`/`storeNames` registriert, sodass `store`-Display/-Bindings auf eine Query auf deren Params-Slice auflösen.
+- **Runtime** `nodes/webapp.js`: `findQueryParamsStoreDefinitionById` + `resolveStoreReferenceById` (echter ui-store zuerst, sonst synthetische Query-Params-Store-Def); `ui-store-action`/`ui-store-read` lösen darüber auf; `triggerParamQueryRefresh` feuert eine Query auch über ihre EIGENE id (impliziter Target) wenn kein explizites `params` gesetzt. **Params bei JEDEM Refresh:** `resolveCurrentQueryParams` (explizit-store-Slice wenn `params` gesetzt, sonst implizit; per-client; clone; `undefined`→Key weglassen) + `enrichTriggerWithCurrentParams` in `queryInputHandler`s nicht-terminalem `send` (plain refresh + onEnter) + Fallback in `queryActionInputHandler` (reference & wire). Alle vier Emit-Routen tragen aktuelle Params, auch beim expliziten Store (bisherige Lücke).
+- **Editor** `resources/lib/editor-common.js`: `stores`-Preset listet implizite Query-Params-Ziele (`type:"ui-query-params"`, Label `"Query <name> · Params"`, value=Query-id, app-scoped); `resolveStoreReference` löst Query-id auf freundlichen Namen.
+- **Doku** `docs/nodes/state/ui-query.md` (impliziter Params-Store; „Params bei JEDEM Out-Port-Refresh" mit no-clobber / omit-when-empty / foreign-unchanged) + `ui-query.tests.md`.
+
+**P175 grün gehalten:** Enrichment nur auf dem nicht-terminalen Pfad (Daten-/Error-Absorb unangetastet → kein Loop); wirklich fremde Message byte-identisch zurück (`.toBe(msg)`); ohne Params unverändert. Cross-cutting explizit geprüft: P175(9)/P161(8)/P212(12)/P213(11)/P209(12)/P211(21) grün.
+
+**Verify (browser, gemessen — Haupt-Checkout).** `tests/e2e/nodes/state/ui-query-implicit-params-store.spec.ts` **2 passed** (2.1s), self-contained, mit Guard „kein ui-store-Knoten im Flow": (1) `ui-store-action(store=<queryId>, set page=2)` → Query re-fetcht → Tabelle zeigt Bob (Seite 2); (2) ein PLAIN refresh ohne Params in der Message → Tabelle bleibt Bob (Query hängt aktuelle Params an; ohne Enrichment fiele sie auf Alice/Seite 1 zurück).
+
+**Stats.** Unit grün: schema 486, editor 178 (+2), renderer 152 (+2), runtime 1195 (+31 P214 in zwei Teilen). `pnpm build`/`lint`/`check:specs` (42)/`check:roundtrip`/`check:links`/`check:roadmap` grün. Sauber 3-way-gemerged über die parallele ADR-0032-Arbeit des Owners in denselben Dateien (webapp.js/renderer.ts) — kein Konflikt, verifiziert.
+
+**Cost.** Sub-Agent `phase/P214` (worktree), zwei Runs (Impliziter Store ~22 min + Params-auf-jedem-Refresh ~11 min); Token-Zeilen in `.ai/agent-runs.jsonl`. (Branch-Leak einmal korrigiert; Haupt-Checkout blieb sauber.)

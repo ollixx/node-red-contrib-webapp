@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P214** — nodes/ui-query — impliziter per-client Params-Store pro Query (kein extra Knoten), adressierbar wie jeder Store via ui-store-action/-read/store-Binding; explizites `params` bleibt Override — *ADR 0030; Owner 2026-07-13; dep P209/P211* — [P214](nodes/ui-query/P214-implicit-per-query-params-store.md)
 - **P217** — aspects/test-infra — Backfill open→save Round-Trip-Tests für alle übrigen reference/picker/editableList-Knoten; `check:roundtrip`-Allowlist auf leer treiben — *ADR 0031; dep P215/P216* — [P217](aspects/test-infra/P217-backfill-round-trip-tests.md)
 - **P218** — aspects/runtime — konsumierte `msg.ui.<command>`-Envelope nach erfolgreicher Verarbeitung entfernen (nur Sub-Key); behebt refresh→replace-Doppelverarbeitung — *ADR 0033; Owner 2026-07-13; dep P213* — [P218](aspects/runtime/P218-consumed-msg-ui-envelope-cleanup.md)
 - **P219** — aspects/rendering — pro-Feld `onMissing`-Selektor (Foundation): `marker` (Default '?') + `ignore` (leer); Schema + Renderer + Editor — *ADR 0034; Owner 2026-07-13; dep P131* — [P219](aspects/rendering/P219-onmissing-selector-foundation.md)
@@ -61,7 +60,7 @@ open the folder for the full history.
 | nodes/ui-alert | 4 |
 | nodes/ui-avatar | 2 |
 | nodes/ui-log | 2 |
-| nodes/ui-query | 5 |
+| nodes/ui-query | 6 |
 | nodes/ui-store | 3 |
 | nodes/ui-store-read | 1 |
 | nodes/ui-store-action | 1 |
@@ -104,4 +103,4 @@ open the folder for the full history.
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 213 done, 2 open, 9 deferred.**
+**Total: 214 done, 4 open, 10 deferred.**
