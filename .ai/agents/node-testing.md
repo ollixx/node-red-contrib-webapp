@@ -163,6 +163,15 @@ carrier-seed logic in `oneditprepare` must turn the test **red**.
 its goal. Worked examples: `tests/e2e/nodes/state/ui-store-action.roundtrip.spec.ts`
 (picker) and `tests/e2e/nodes/view/ui-component.roundtrip.spec.ts` (editableList).
 
+**Enforced by `pnpm check:roundtrip`.** A read-only tripwire (`scripts/check-roundtrip.js`,
+unit-tested by `scripts/check-roundtrip.test.ts`, part of `pnpm validate` next to
+`check:specs`) enumerates every node whose editor `.html` declares a qualifying
+carrier field (non-`parent`/`mount` `installReferenceSelectors` picker, or an
+`editableList`) and **fails** if that node has no round-trip entry naming the field
+in its `.tests.md` catalogue. A small curated allowlist (same idiom as
+`check-specs.js`) carries the currently-unconverted nodes and is driven to empty by
+the backfill — so a new qualifying field cannot ship without a round-trip test.
+
 ## Keep the suite from exploding
 
 Despite the breadth above, **keep permutations minimal** for expensive fields
