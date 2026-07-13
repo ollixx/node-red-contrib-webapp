@@ -217,6 +217,23 @@ unterscheidbar als **„Query &lt;Name&gt; · Params"**. Die Auswahl speichert d
 **genau wie ein expliziter `params`-Store** (P161-Mechanismus, siehe unten) — mit
 den aktuellen Params am `msg.ui.query.params`.
 
+**Params bei JEDEM Out-Port-Refresh.** Egal **wodurch** ein Refresh-Emit
+ausgelöst wird — eine Params-Store-Änderung (P161), ein `onEnter`, eine **schlichte
+Refresh-Message** (`msg.ui.query = { queryPath, refresh: true }`) oder ein
+[`ui-query-action`](ui-query-action.md)-Refresh — hängt die Query die
+**AKTUELLEN Params** (aus ihrem aufgelösten Params-Store — implizit **oder**
+explizit — für diesen `clientId`) an `msg.ui.query.params`, sodass der verdrahtete
+Fetch **immer** Paging/Sortierung/Suche kennt. So trägt auch ein schlichter
+Refresh **ohne** eigene Params am Out-Port die aktuellen Params. Regeln:
+
+- Bringt die auslösende Message bereits `params` mit, werden diese **respektiert**
+  (nicht überschrieben) — explizit übergebene Params gewinnen.
+- Existieren (noch) keine Params, bleibt der `params`-Schlüssel **weg** (nichts
+  anzuhängen) — kein leeres Objekt.
+- Eine **fachfremde** Durchreich-Message (kein `msg.ui.query`, kein `onEnter`)
+  bleibt **unverändert** (keine Params-Anreicherung; Terminal-Regel für
+  `data`/`error` unberührt).
+
 **Override.** Das explizite `params`-Feld bleibt **optional**: **gesetzt** ⇒
 externer, geteilter `ui-store` (Params über mehrere Queries teilen, wie bisher);
 **leer** ⇒ impliziter per-Query-Store (neuer Default). Bestehende Flows mit

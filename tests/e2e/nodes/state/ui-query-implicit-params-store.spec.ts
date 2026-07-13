@@ -58,6 +58,47 @@ function mockDbNode(id: string, queryNodeId: string, queryPath: string, y: numbe
     };
 }
 
+/**
+ * A "plain refresh" trigger: inject → function that builds
+ * `msg.ui.query = { queryPath, refresh: true }` (NO params of its own) → wired to
+ * the query's IN-PORT. Proves the query enriches the out-port emit with its
+ * CURRENT params even when the triggering message carried none. Returns the
+ * inject id to fire plus the two nodes.
+ */
+function plainRefreshNodes(injectId: string, queryNodeId: string, queryPath: string, y: number): NodeDef[] {
+    const funcId = `${injectId}__fn`;
+    return [
+        {
+            type: "inject",
+            id: injectId,
+            name: injectId,
+            props: [{ p: "payload" }],
+            repeat: "",
+            crontab: "",
+            once: false,
+            onceDelay: "0.1",
+            topic: "",
+            payload: "",
+            payloadType: "date",
+            z: TAB_ID,
+            x: 100,
+            y,
+            wires: [[funcId]]
+        },
+        {
+            type: "function",
+            id: funcId,
+            name: funcId,
+            func: `msg.ui = { query: { queryPath: ${JSON.stringify(queryPath)}, refresh: true } }; return msg;`,
+            outputs: 1,
+            z: TAB_ID,
+            x: 300,
+            y,
+            wires: [[queryNodeId]]
+        }
+    ];
+}
+
 test.describe("ui-query implicit per-query params store (P214)", () => {
     test.afterEach(async ({ request }) => {
         await resetFlow(request);
@@ -126,6 +167,66 @@ test.describe("ui-query implicit per-query params store (P214)", () => {
         await injectMessage(request, "ipsNext");
         await expect(page.locator("table.webapp-table tbody")).toContainText("Bob", { timeout: 5000 });
         // No loop: page-1 row is gone, replaced by page 2 (not appended forever).
+        await expect(page.locator("table.webapp-table tbody")).not.toContainText("Alice");
+    });
+
+    test("a PLAIN refresh (no params in the message) carries the query's CURRENT params to the datasource", async ({ page, request }) => {
+        const appId = "ipsApp2";
+        const queryId = "ipsQuery2";
+        const actionId = "ipsAction2";
+        const dbId = "ipsDb2";
+        const queryPath = "entities";
+
+        const builder = new FlowBuilder()
+            .app({ id: appId, root: appId })
+            .node("ui-query", { id: queryId, queryPath, wires: [[dbId]] })
+            .node("ui-table", {
+                id: "ipsTable2",
+                columns: JSON.stringify([{ key: "name", label: "Name" }]),
+                rows: { kind: "query", path: queryPath }
+            })
+            // Sets the implicit params page=2 (and fires its own refresh).
+            .node("ui-store-action", {
+                id: actionId,
+                parent: appId,
+                store: queryId,
+                op: "set",
+                path: "page",
+                mode: "reference"
+            })
+            .withInjectNode("ipsInitial2", queryId)
+            .withInjectNode("ipsSetPage2", actionId, 2);
+
+        const nodes = [
+            ...builder.build(),
+            mockDbNode(dbId, queryId, queryPath, 350),
+            // The plain-refresh trigger: msg.ui.query = { queryPath, refresh:true }
+            // with NO params → the query must enrich it with the stored page=2.
+            ...plainRefreshNodes("ipsPlainRefresh", queryId, queryPath, 480)
+        ];
+
+        // Still no ui-store node — the params live only in the implicit slice.
+        expect(nodes.some((n) => n.type === "ui-store")).toBe(false);
+
+        await deployFlow(request, nodes);
+
+        const webapp = new WebappPage(page, appId);
+        await webapp.navigate("/");
+
+        // Initial load → page 1 (Alice).
+        await injectMessage(request, "ipsInitial2");
+        await expect(page.locator("table.webapp-table tbody")).toContainText("Alice", { timeout: 5000 });
+
+        // Set page=2 (implicit params) → query re-fetches → Bob.
+        await injectMessage(request, "ipsSetPage2");
+        await expect(page.locator("table.webapp-table tbody")).toContainText("Bob", { timeout: 5000 });
+
+        // A PLAIN refresh carrying NO params of its own: the query attaches its
+        // CURRENT params (page=2), so the datasource returns page 2 again → the
+        // table STAYS Bob. Had the refresh reached the datasource WITHOUT params
+        // (the pre-P214 gap), the mock DB would default to page 1 and flip to Alice.
+        await injectMessage(request, "ipsPlainRefresh");
+        await expect(page.locator("table.webapp-table tbody")).toContainText("Bob", { timeout: 5000 });
         await expect(page.locator("table.webapp-table tbody")).not.toContainText("Alice");
     });
 });

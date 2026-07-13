@@ -4821,9 +4821,18 @@ function queryActionInputHandler(node, msg, send, done) {
     // -- action=refresh (P212): trigger the referenced query. --
     // Params source: msg.ui.query.params › msg.payload; absent → omit the key.
     const uiQueryParams = uiQuery && typeof uiQuery === "object" ? uiQuery.params : undefined;
-    const params = uiQueryParams !== undefined
+    let params = uiQueryParams !== undefined
         ? uiQueryParams
         : (msg ? msg.payload : undefined);
+    // P214 (ADR 0030): a ui-query-action refresh must ALSO carry the query's
+    // CURRENT params (from its resolved params store — implicit slice or explicit
+    // ui-store — for this clientId) when the message supplied none, so every refresh
+    // route pages/sorts/searches. When no params exist yet the key stays omitted
+    // (P212 contract), because resolveCurrentQueryParams returns undefined.
+    if (params === undefined) {
+        const queryDef = findQueryDefinitionById(queryId);
+        params = resolveCurrentQueryParams(queryDef, activeAppId, clientId);
+    }
 
     // -- wire mode: emit the refresh envelope; do NOT trigger. --
     if (mode === "wire") {
@@ -4968,7 +4977,13 @@ function queryInputHandler(node, msg, send, done) {
     }
 
     if (!isTerminalReturn) {
-        send(msg);
+        // P214 (ADR 0030): every trigger heading to the datasource carries the
+        // query's CURRENT params (implicit slice or explicit store, per clientId),
+        // so a plain refresh / onEnter that arrived WITHOUT params still pages/
+        // sorts/searches correctly. A foreign pass-through is returned unchanged
+        // (same object) so the P175 contract holds; the data/error terminal path
+        // above is never reached here.
+        send(enrichTriggerWithCurrentParams(node, msg));
     }
     if (done) {
         done();
@@ -5026,6 +5041,114 @@ function findQueryParamsStoreDefinitionById(storeId) {
 // (impossible) collision; real stores win by construction.
 function resolveStoreReferenceById(storeId) {
     return findStoreDefinitionById(storeId) || findQueryParamsStoreDefinitionById(storeId);
+}
+
+// P214: fetch a ui-query DEFINITION by its definition id (params field, queryPath).
+function findQueryDefinitionById(queryId) {
+    if (!queryId) {
+        return undefined;
+    }
+    for (const registration of runtimeState.definitions.values()) {
+        const def = registration.definition;
+        if (def && def.type === "ui-query" && def.id === queryId) {
+            return def;
+        }
+    }
+    return undefined;
+}
+
+// P214: fetch a ui-query DEFINITION by its runtime node id (the queryInputHandler
+// receives a `node`, whose webappDefinition is the def when present, but test
+// doubles register the def only in the definitions map).
+function findQueryDefinitionByNodeId(nodeId) {
+    if (!nodeId) {
+        return undefined;
+    }
+    for (const registration of runtimeState.definitions.values()) {
+        if (registration.nodeId === nodeId && registration.definition && registration.definition.type === "ui-query") {
+            return registration.definition;
+        }
+    }
+    return undefined;
+}
+
+// P214 (ADR 0030, acceptance „Params bei JEDEM Out-Port-Refresh"): resolve a
+// query's CURRENT params value from its RESOLVED params store — the explicit
+// `ui-store` when the `params` field is set, else the implicit per-query slice at
+// `ui.queries.<queryPath>.params` — read for the given `clientId` (per-client) or
+// the broadcast state. Returns a clone, or undefined when no params exist yet (so
+// callers can OMIT the key rather than attach an empty object). This is the single
+// lookup every out-port refresh route uses to enrich `msg.ui.query.params`.
+function resolveCurrentQueryParams(queryDef, appId, clientId) {
+    if (!queryDef || !appId) {
+        return undefined;
+    }
+    const explicitStoreId = blankToUndefined(queryDef.params);
+    let statePath;
+    if (explicitStoreId) {
+        const storeDef = findStoreDefinitionById(explicitStoreId);
+        if (!storeDef) {
+            return undefined;
+        }
+        statePath = storeDef.statePath;
+    }
+    else if (queryDef.queryPath) {
+        statePath = `ui.queries.${queryDef.queryPath}.params`;
+    }
+    else {
+        return undefined;
+    }
+    const base = clientId
+        ? (getClientState(appId, clientId)?.state || runtimeState.liveState.get(appId))
+        : runtimeState.liveState.get(appId);
+    if (!base) {
+        return undefined;
+    }
+    const value = getValueAtPath(base, statePath);
+    return value !== undefined ? clone(value) : undefined;
+}
+
+// P214 (ADR 0030): enrich a query TRIGGER heading to the datasource with the
+// query's CURRENT params, so EVERY out-port refresh (onEnter, plain refresh
+// message, unrecognised pass-through trigger) carries paging/sort/search — not
+// only the reactive params-store path. Rules that keep the P175 pass-through
+// contract intact:
+//   • a truly FOREIGN message (no `msg.ui`, or `msg.ui` without a `query` object
+//     and not an `onEnter` lifecycle) is returned BYTE-IDENTICAL (same ref);
+//   • params a caller ALREADY supplied on `msg.ui.query.params` are never
+//     clobbered (explicit incoming wins over stored);
+//   • when no params exist yet, the message is returned unchanged (nothing to
+//     attach). Only when there ARE params AND the message is a recognised trigger
+//     is an enriched COPY returned (the caller's object is not mutated).
+function enrichTriggerWithCurrentParams(node, msg) {
+    if (!msg || typeof msg !== "object" || !msg.ui || typeof msg.ui !== "object") {
+        return msg;
+    }
+    const ui = msg.ui;
+    const hasQuery = ui.query && typeof ui.query === "object";
+    const isOnEnter = ui.event === "onEnter";
+    if (!hasQuery && !isOnEnter) {
+        return msg;
+    }
+    if (hasQuery && Object.prototype.hasOwnProperty.call(ui.query, "params") && ui.query.params !== undefined) {
+        return msg;
+    }
+    const queryDef = node && node.webappDefinition && node.webappDefinition.type === "ui-query"
+        ? node.webappDefinition
+        : findQueryDefinitionByNodeId(node && node.id);
+    if (!queryDef || !queryDef.queryPath) {
+        return msg;
+    }
+    const appId = findAppIdForNode(node);
+    const clientId = ui.clientId ? String(ui.clientId) : undefined;
+    const params = resolveCurrentQueryParams(queryDef, appId, clientId);
+    if (params === undefined) {
+        return msg;
+    }
+    const nextQuery = hasQuery
+        ? { ...ui.query, params }
+        : { queryPath: queryDef.queryPath, params };
+    return { ...msg, ui: { ...ui, query: nextQuery } };
 }
 
 // P209 (ADR 0028): the on-demand store reader. Every incoming message triggers a
@@ -7527,6 +7650,7 @@ registerWebappNodes.__test__ = {
     componentStateInputHandler,
     dialogInputHandler,
     queryInputHandler,
+    queryActionInputHandler,
     triggerParamQueryRefresh,
     // P209/P211/P214: reference-based store nodes + store-reference resolution
     // (real ui-store first, else a ui-query's implicit per-query params store).
@@ -7536,7 +7660,12 @@ registerWebappNodes.__test__ = {
     findQueryParamsStoreDefinitionById,
     resolveStoreReferenceById,
     findQueryRegistrationById,
+    findQueryDefinitionById,
     fireQueryRefresh,
+    // P214 (ADR 0030, „Params bei JEDEM Out-Port-Refresh"): current-params
+    // resolution + trigger enrichment used across all out-port refresh routes.
+    resolveCurrentQueryParams,
+    enrichTriggerWithCurrentParams,
     // P20a
     buttonInputHandler,
     actionInputHandler,

@@ -127,3 +127,44 @@ browser`, Orchestrator-Lauf im Haupt-Checkout):
   `ui-store-action(store=<queryId>, set page)` schreibt die impliziten Params;
   die Query re-fetcht mit `params.page=2` und die Tabelle wechselt Alice → Bob.
   Gemessen an den gerenderten Zeilen; kein Loop (Seite 1 verschwindet).
+
+## Testziele (P214, Teil 2) — Params bei JEDEM Out-Port-Refresh — umgesetzt
+
+Owner-Nachtrag zur P214-Acceptance: löst **irgendetwas** einen Refresh-Emit der
+Query aus (Params-Store-Änderung P161, `onEnter`, schlichte Refresh-Message durch
+`queryInputHandler`, `ui-query-action`-Refresh), hängt die Query die AKTUELLEN
+Params (aus ihrem aufgelösten Params-Store — implizit ODER explizit — für den
+`clientId`) an `msg.ui.query.params`. Schließt die Lücke, dass ein schlichter
+Refresh die Datenquelle bisher OHNE Params erreichte — **gilt auch für den
+expliziten Params-Store**.
+
+Unit `packages/runtime/test/p214-params-on-every-refresh.test.ts`:
+
+- `resolveCurrentQueryParams`: liest den impliziten Slice
+  `ui.queries.<path>.params` (implizit) bzw. den expliziten Store-Slice (bei
+  gesetztem `params`), per-client bzw. broadcast; `undefined`, wenn keine Params
+  existieren (Schlüssel bleibt weg).
+- `queryInputHandler`: eine schlichte Refresh-Message ohne Params trägt am
+  Out-Port die aktuellen impliziten Params; ein `onEnter` (ohne `msg.ui.query`)
+  bekommt eine Query-Hülle mit aktuellen Params; der **explizite** Params-Store
+  wird ebenso angehängt (Lücke geschlossen); vom Aufrufer mitgegebene Params
+  werden NICHT überschrieben; eine fachfremde Message geht **unverändert** (gleiche
+  Objekt-Referenz) durch; ohne Params bleibt der `params`-Schlüssel weg;
+  per-client trägt der Refresh die Params DIESES Clients.
+- `ui-query-action`-Refresh (reference + wire): ohne Payload trägt der Refresh die
+  aktuellen impliziten Params; ein expliziter Payload gewinnt weiterhin; ohne
+  gespeicherte Params UND ohne Payload bleibt der `params`-Schlüssel weg
+  (P212-Vertrag gewahrt).
+
+**P175 bleibt grün:** die Anreicherung ist orthogonal zur Terminal-Regel — der
+`data`/`error`-Absorptionspfad wird nie berührt, und die fachfremde
+Durchreich-Message bleibt byte-identisch (`toBe(msg)`).
+
+E2E `tests/e2e/nodes/state/ui-query-implicit-params-store.spec.ts` (2. Test):
+
+- Nach `set page=2` (impliziter Store) → Tabelle zeigt Bob (Seite 2). Ein
+  **schlichter Refresh** (`msg.ui.query={queryPath,refresh:true}`, KEINE eigenen
+  Params) über den In-Port → die Query hängt die aktuellen Params (`page=2`) an →
+  die Mock-DB liefert erneut Seite 2 → die Tabelle bleibt Bob (nicht Alice).
+  Gemessen an den gerenderten Zeilen. Ohne Anreicherung (Vor-P214-Lücke) würde die
+  DB auf Seite 1 zurückfallen (Alice).
