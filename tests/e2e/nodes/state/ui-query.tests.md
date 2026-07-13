@@ -78,3 +78,52 @@ E2E-Nachweis (Orchestrator-Lauf im Haupt-Checkout, `verify: browser`):
   im verdrahteten Datenpfad.
 - `tests/e2e/nodes/state/ui-query-paging-loop.spec.ts` bleibt grün — `params`-Out-
   Port-Refresh feuert weiterhin; die Datenrückgabe schließt die Schleife nicht mehr.
+
+## Testziele (P214) — impliziter per-Query Params-Store (ADR 0030) — umgesetzt
+
+Jede `ui-query` besitzt implizit ihren per-client Params-Store unter
+`ui.queries.<queryPath>.params` (kein extra Knoten). Adressierbar wie jeder Store
+über die **Query-ID** — in `ui-store-action` (schreiben), `ui-store-read` (lesen)
+und `store`-Value-Bindings (lesen). Das explizite `params`-Feld bleibt Override:
+gesetzt ⇒ externer geteilter `ui-store`, leer ⇒ impliziter Store (neuer Default).
+
+Unit `packages/runtime/test/p214-query-params-store.test.ts`:
+
+- **Auflösung:** `resolveStoreReferenceById(<queryId>)` /
+  `findQueryParamsStoreDefinitionById` liefern einen synthetischen Store mit
+  `statePath = ui.queries.<queryPath>.params`; eine echte `ui-store`-ID löst
+  unverändert auf den echten Store; unbekannte ID → `undefined`; eine Query ohne
+  `queryPath` ist kein Ziel.
+- **Schreiben:** `ui-store-action(store=<queryId>, set page=2)` schreibt
+  `ui.queries.<path>.params.page` (Broadcast); `patch` mergt in `params` ohne die
+  `data`-Hülle zu zerstören; per-client landet der Wert nur im Client-Slice.
+- **Lesen:** `ui-store-read(store=<queryId>)` liefert den Params-Wert (Sub-Pfad
+  und ganzer `params`-Block), per-client.
+- **Reaktiver Refresh:** ein `ui-store-action`-Write auf die impliziten Params
+  feuert den Out-Port-Refresh der Query mit den aktuellen Params;
+  `triggerParamQueryRefresh` matcht die Query über ihre EIGENE ID (impliziter
+  Ziel); `clientId` wird an die Refresh-Nachricht durchgereicht.
+- **Override:** ist ein explizites `params`-Feld gesetzt, ist die Query-ID KEIN
+  impliziter Refresh-Ziel; der externe Store treibt den Refresh weiter (P161).
+
+Unit `packages/renderer/test/p214-query-params-store-binding.test.ts`:
+
+- Ein `store`-Binding auf eine `ui-query`-ID (`store(<queryId>).page`) löst auf
+  `ui.queries.<path>.params.page` auf (gemessen am gerenderten Text).
+- Ein echtes `ui-store`-Binding bleibt unbeeinflusst (die Query-Params-Registrierung
+  überschattet es nicht).
+
+Unit `packages/editor/test/p214-stores-preset-query-params.test.ts`:
+
+- Das `stores`-Picker-Preset listet je Query ein Params-Ziel, beschriftet
+  „Query &lt;Name&gt; · Params" und mit der Query-ID als Wert; echte Stores bleiben
+  vorhanden; App-Scoping filtert die Query-Ziele wie echte Stores.
+
+E2E `tests/e2e/nodes/state/ui-query-implicit-params-store.spec.ts` (`verify:
+browser`, Orchestrator-Lauf im Haupt-Checkout):
+
+- Paged `ui-table` an `query:entities`, KEIN manuell angelegter/verdrahteter
+  params-Store im Flow (Guard: kein `ui-store`-Knoten vorhanden). Ein
+  `ui-store-action(store=<queryId>, set page)` schreibt die impliziten Params;
+  die Query re-fetcht mit `params.page=2` und die Tabelle wechselt Alice → Bob.
+  Gemessen an den gerenderten Zeilen; kein Loop (Seite 1 verschwindet).
