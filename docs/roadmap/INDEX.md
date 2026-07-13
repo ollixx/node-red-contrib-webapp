@@ -29,6 +29,9 @@ their blocker clears.
 
 - **P213** — nodes/ui-query-action — action `replace`: eingehende Daten (`msg.payload`) als Query-Daten setzen (Daten-rein-Seite zu `refresh`), reference|wire — *ADR 0029; Owner 2026-07-13; dep P212* — [P213](nodes/ui-query-action/P213-ui-query-action-replace.md)
 - **P214** — nodes/ui-query — impliziter per-client Params-Store pro Query (kein extra Knoten), adressierbar wie jeder Store via ui-store-action/-read/store-Binding; explizites `params` bleibt Override — *ADR 0030; Owner 2026-07-13; dep P209/P211* — [P214](nodes/ui-query/P214-implicit-per-query-params-store.md)
+- **P215** — aspects/test-infra — shared editor open→save round-trip harness + Mandat in node-testing standard (reference/picker/editableList Carrier-Felder) — *ADR 0031; Owner 2026-07-13; dep P81* — [P215](aspects/test-infra/P215-editor-round-trip-harness-and-standard.md)
+- **P216** — aspects/test-infra — read-only Tripwire `pnpm check:roundtrip`: jeder reference/picker/editableList-Knoten braucht einen open→save-Round-Trip-Test (seeded Allowlist hält validate grün) — *ADR 0031; dep P215* — [P216](aspects/test-infra/P216-check-roundtrip-tripwire.md)
+- **P217** — aspects/test-infra — Backfill open→save Round-Trip-Tests für alle übrigen reference/picker/editableList-Knoten; `check:roundtrip`-Allowlist auf leer treiben — *ADR 0031; dep P215/P216* — [P217](aspects/test-infra/P217-backfill-round-trip-tests.md)
 
 
 ## Deferred (parked, not abandoned)
