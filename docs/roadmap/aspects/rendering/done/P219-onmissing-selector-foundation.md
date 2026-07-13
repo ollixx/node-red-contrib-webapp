@@ -2,7 +2,7 @@
 id: P219
 title: "Rendering: pro-Feld `onMissing`-Selektor (Foundation) — Werte `marker` (Default, heutiges '?') + `ignore` (leer); Schema + Renderer + Editor"
 epic: aspects/rendering
-status: in_progress
+status: done
 dependencies: [P131]
 verify: browser
 spec: docs/nodes/concepts/reactive-expressions.md
@@ -10,7 +10,7 @@ tests: tests/e2e/nodes/editor/reactive-expression.spec.ts
 ---
 # P219 — `onMissing`-Selektor (Foundation): `marker` + `ignore`
 
-> Rationale: [ADR 0034](../../../adr/0034-per-field-missing-binding-behavior-selector.md).
+> Rationale: [ADR 0034](../../../../adr/0034-per-field-missing-binding-behavior-selector.md).
 > Foundation-Paket: das pro-Feld-Verhalten + die zwei nicht-visuellen Werte. Die
 > reicheren Verhalten (`errorPort`, `throw`/Catch, Fallback-Slot, P105-Affordance)
 > sind Folgepakete (P220 ff.).
@@ -73,3 +73,17 @@ packages/renderer) — Selektor-Auswahl + `ignore`/`marker`-Renderwirkung.
   ADR 0032 verfügbar (für spätere `errorPort`/`throw`).
 - **NICHT** in diesem Paket: `errorPort`, `throw`/Catch, Fallback-Slot,
   P105-Affordance — die sind P220/P105 (deferred).
+
+## Result
+
+**Delivered.** Pro-Feld `onMissing`-Selektor (Foundation) mit `marker` (Default = heutiges `"?"`) + `ignore` (leer). Default-Verhalten byte-unverändert.
+- **Schema** `packages/schema/src/contracts.ts`: `ON_MISSING_BEHAVIORS = ["marker","ignore"]` + `OnMissingBehavior`; optionales `onMissing: enum(...).optional()` auf **beiden** `bindingSchema` + `leafBindingSchema` (`.optional()` statt `.default()` → bestehende Fixtures validieren unverändert; fehlt → `marker`; ungültig → Zod-Reject; Enum als benannte Konstante → P220 erweitert um `errorPort`/`throw` ohne Vertragsbruch). `index.ts` Exports.
+- **Renderer** `packages/renderer/src/renderer.ts`: am Reactive-Fail-Punkt UND in `resolveStoreBinding` (alle drei `STORE_SUBPATH_INVALID`-Returns: Depth-Guard, Whole-Object, Scalar-Miss) verzweigt auf `binding.onMissing`: `ignore` → `""` ohne Report; `marker`/absent → `"?"` + bestehender einmaliger Report unverändert. Baut auf ADR 0032 (`currentNodeId`, transient-empty) ohne es rückgängig zu machen.
+- **Editor** `resources/lib/editor-common.js`: wiederverwendbare `readOnMissing`/`applyOnMissing`-Helfer; `nodes/view/ui-text.html`: Plain-`<select id="node-input-onMissing">` (marker/ignore), in `oneditprepare`/`oneditsave` verdrahtet — `marker` wird NICHT geschrieben, nur `ignore` (Flows bleiben byte-identisch). **Plain-Select, kein Hidden-Carrier → keine ADR-0031-Harness nötig; `check:roundtrip` unberührt.**
+- **Doku** `docs/nodes/concepts/reactive-expressions.md` + `value-rendering.md` (§`onMissing`); `ui-text.tests.md`.
+
+**Verify (browser, gemessen — Haupt-Checkout).** `tests/e2e/nodes/editor/onmissing.spec.ts` **3 passed** (6.8s): Selektor vorhanden, Default `marker`, round-trippt `ignore` (open→save→reopen, `marker` fällt aus dem Binding); **Browser-Beweis** dasselbe unauflösbare Whole-Object-Store-Binding rendert `"?"` unter `marker` und **leer** (`""`) unter `ignore`.
+
+**Stats.** Unit grün: schema 497 (+5), renderer 158 (+6). Default-unverändert-Garantie geprüft: gesamte Suite grün inkl. P131/ADR-0032. `pnpm build`/`lint`/`check:specs` (42)/`check:roundtrip`/`check:links`/`check:roadmap` grün.
+
+**Cost.** Sub-Agent `phase/P219` (worktree), ~15 min (17:22:08Z→17:37:12Z); Token-Zeile in `.ai/agent-runs.jsonl`.
