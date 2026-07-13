@@ -2,7 +2,7 @@
 id: P216
 title: "Test-Infra: read-only tripwire `pnpm check:roundtrip` — every reference/picker/editableList node must have an editor open→save round-trip test (seeded allowlist keeps validate green)"
 epic: aspects/test-infra
-status: pending
+status: in_progress
 dependencies: [P215]
 verify: unit
 spec: .ai/agents/node-testing.md
