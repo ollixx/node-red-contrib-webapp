@@ -437,6 +437,15 @@
             var cfg = config || {};
             var applicability = resolveBaseFieldApplicability(cfg);
             var advanced = Array.isArray(cfg.advanced) ? cfg.advanced : [];
+            // P222: a field listed in `omit` is NOT rendered in the "Allgemein"
+            // group at all (no row, no carrier input). Used by nodes that already
+            // own a dedicated control for that base field — an inline Disabled
+            // typedInput (the P122–P130 form-input nodes), a bespoke Size select
+            // (ui-avatar), a plain Color field (ui-icon) or a required Visible-Path
+            // (ui-empty-state) — so the base-field group adds only the genuinely
+            // missing fields (usually `visible`) without duplicating the node's
+            // existing #node-input-<field> carrier id.
+            var omit = Array.isArray(cfg.omit) ? cfg.omit : [];
 
             var target = resolveEditFormTarget();
             if (!target.length) {
@@ -447,6 +456,9 @@
                 var mainRows = "";
                 var advancedRows = "";
                 BASE_FIELD_ORDER.forEach(function (field) {
+                    if (omit.indexOf(field) !== -1) {
+                        return;
+                    }
                     var row = buildBaseFieldRowMarkup(field, applicability[field]);
                     if (advanced.indexOf(field) !== -1) {
                         advancedRows += row;
@@ -485,7 +497,7 @@
             // visible — boolean-state typedInput (ADR 0012 boolean set; the P138
             // shape incl. legacy visiblePath → state-binding migration). Default
             // (empty) = visible.
-            if (applicability.visible.applicable) {
+            if (applicability.visible.applicable && omit.indexOf("visible") === -1) {
                 var storedVisible = parseBindingValue(self.visible);
                 var visibleBinding = storedVisible
                     ? storedVisible
@@ -524,7 +536,7 @@
 
             // disabled — THE P122–P130 boolean-state typedInput, centralised
             // (legacy disabledPath → state-binding migration).
-            if (applicability.disabled.applicable) {
+            if (applicability.disabled.applicable && omit.indexOf("disabled") === -1) {
                 var storedDisabled = parseBindingValue(self.disabled);
                 var disabledBinding = storedDisabled
                     ? storedDisabled
@@ -554,7 +566,7 @@
 
             // color — general value typedInput (full canonical set); a legacy
             // plain-string colour becomes a literal binding.
-            if (applicability.color.applicable) {
+            if (applicability.color.applicable && omit.indexOf("color") === -1) {
                 var storedColor = parseBindingValue(self.color);
                 var colorBinding = storedColor
                     ? storedColor
@@ -577,7 +589,7 @@
             // size — the existing token select. Node-RED binds defaults before
             // this row exists, so bind the stored value manually; auto-save
             // persists it through the node's `size` default.
-            if (applicability.size.applicable) {
+            if (applicability.size.applicable && omit.indexOf("size") === -1) {
                 var sizeSelect = $("#node-input-size");
                 if (sizeSelect.length) {
                     sizeSelect.val(self.size || "");
@@ -592,9 +604,13 @@
     function applyBaseFields(config) {
         return function () {
             var self = this;
-            var applicability = resolveBaseFieldApplicability(config);
+            var cfg = config || {};
+            var applicability = resolveBaseFieldApplicability(cfg);
+            // P222: omitted fields are never persisted here — the node owns its
+            // own control for them (see installBaseFields' `omit` note).
+            var omit = Array.isArray(cfg.omit) ? cfg.omit : [];
 
-            if (applicability.visible.applicable) {
+            if (applicability.visible.applicable && omit.indexOf("visible") === -1) {
                 var $visibleInput = $("#node-input-visibleBinding");
                 var visibleResult = applyValueBinding(
                     $visibleInput.typedInput("type"),
@@ -614,7 +630,7 @@
                 self.visiblePath = "";
             }
 
-            if (applicability.disabled.applicable) {
+            if (applicability.disabled.applicable && omit.indexOf("disabled") === -1) {
                 var $disabledInput = $("#node-input-disabledBinding");
                 var disabledResult = applyValueBinding(
                     $disabledInput.typedInput("type"),
@@ -631,7 +647,7 @@
                 self.disabledPath = "";
             }
 
-            if (applicability.color.applicable) {
+            if (applicability.color.applicable && omit.indexOf("color") === -1) {
                 var colorBinding = applyValueBinding(
                     $("#node-input-colorBinding").typedInput("type"),
                     $("#node-input-colorBinding").typedInput("value")

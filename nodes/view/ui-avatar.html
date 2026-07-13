@@ -3,6 +3,22 @@
     (function () {
         const common = window.WebappEditorCommon;
 
+        // P222 (ADR 0015): common base fields. See the applicability table in
+        // docs/nodes/concepts/editor.md. `omit` drops a field the node already
+        // owns a dedicated control for (avoids duplicate #node-input carrier ids).
+        const BASE_FIELDS = {
+            visible: true,
+            disabled: false,
+            color: true,
+            size: false,
+            variant: false,
+            advanced: [],
+            omit: ["size"],
+            hints: {
+                disabled: "Ein Avatar hat keinen interaktiven Zustand."
+            }
+        };
+
         // P113 (ADR 0012 / ADR 0010): `image` and `initials` are display-value
         // bindings driven by the ONE canonical value-binding type set (Store, Query,
         // Route-Param, Reactive, msg, JSONata, str, num, bool, json, date, Flow,
@@ -53,6 +69,10 @@
             category: "webapp view",
             color: "#f4efcf",
             defaults: {
+                visible: { value: null },
+                visibleBinding: { value: "" },
+                color: { value: null },
+                colorBinding: { value: "" },
                 name: { value: "" },
                 parent: { value: "" },
                 mount: { value: "", required: true },
@@ -92,6 +112,7 @@
             },
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
+                common.installBaseFields(BASE_FIELDS).call(this);
                 common.installLayoutChildPropRows().call(this);
                 common.installIconField("#node-input-icon", { title: "Avatar-Icon auswählen" });
 
@@ -116,6 +137,7 @@
                 applyInitialsTypedInput("#node-input-initialsBinding", initialsBinding);
             },
             oneditsave: function () {
+                common.applyBaseFields(BASE_FIELDS).call(this);
                 this.src = readImageBinding("#node-input-imageBinding");
                 this.srcPath = "";
                 this.initials = readInitialsBinding("#node-input-initialsBinding");

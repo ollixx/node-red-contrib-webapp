@@ -382,9 +382,79 @@ disabled** (Zeile `data-base-field-na="true"`), mit kurzer Begründung aus
 eingeklappt) wandern; ohne `advanced` sind **alle Basis-Felder sichtbar**
 (Default). Der Zustand ist reine Editor-Affordanz, nicht persistiert.
 
-**Rollout:** P139 liefert nur die Mechanik + den Referenzknoten **`ui-divider`**
-(non-variant → `color` aktiv; nicht interaktiv → `disabled` N/A). Die Umstellung
-aller übrigen Knoten folgt als eigene Pakete (ADR 0015 „Consequences").
+**Feld auslassen (`omit`, P222):** Trägt ein Knoten bereits ein **eigenes,
+dediziertes** Control für ein Basis-Feld — ein inline `#node-input-disabledBinding`
+(die P122–P130-Formularfelder), ein eigenes Größen-Select (`ui-avatar`), ein
+einfaches Farb-Feld (`ui-icon`) oder ein Pflicht-Visible-Path (`ui-empty-state`) —,
+dann listet die Config das Feld in `config.omit: ["disabled", …]`. Das Feld wird
+dann **gar nicht** im „Allgemein"-Block gerendert (keine Zeile, kein Carrier-Input),
+sodass keine doppelte `#node-input-<feld>`-ID entsteht und die bestehende
+Steuerung unangetastet bleibt. `omit` ist orthogonal zur Anwendbarkeit: ein
+per `omit` ausgelassenes Feld bleibt semantisch anwendbar, es wird nur an anderer
+Stelle im Panel bedient.
+
+### Rollout-Status und Anwendbarkeits-Audit (P139 → P222)
+
+P139 lieferte die Mechanik + den Referenzknoten **`ui-divider`**; P172 zog
+`ui-list` nach; ADR 0015 / P222 vervollständigt den Rollout über **alle** View-
+Knoten. Die folgende Tabelle ist die **autoritative** Anwendbarkeits-Vorlage: pro
+Knoten, welche der vier Basis-Felder anwendbar sind. Legende:
+
+- **✓** — anwendbar: aktives typedInput/Select im „Allgemein"-Block.
+- **N/A** — angezeigt, aber deaktiviert (grau) mit Hinweis (`data-base-field-na`).
+- **eigen** — der Knoten hat ein eigenes dediziertes Feld dafür und lässt das
+  Basis-Feld per `omit` aus dem Block aus (semantisch anwendbar, an anderer
+  Stelle bedient).
+
+Regeln (ADR 0015 §1): `color` ist N/A, wenn eine semantische **`variant`/`severity`**
+die Farbe bestimmt oder der Knoten **keine eigene Farb-Fläche** rendert; `disabled`
+ist N/A auf **nicht-interaktiven** (Anzeige-)Knoten; `size` ist nur dort anwendbar,
+wo es eine echte Größen-Achse gibt (sonst N/A oder eigen). `visible` ist **überall**
+anwendbar (die deklarative Sichtbarkeit ist das Fundament — genau die Lücke, die
+P222 schließt).
+
+| Knoten | Kategorie | `visible` | `disabled` | `color` | `size` | N/A-Begründungen |
+|---|---|:--:|:--:|:--:|:--:|---|
+| ui-input | input | ✓ | eigen | N/A | eigen | color: Formularfeld ohne freie Farbe |
+| ui-textarea | input | ✓ | eigen | N/A | eigen | color: Formularfeld ohne freie Farbe |
+| ui-select | input | ✓ | eigen | N/A | eigen | color: Formularfeld ohne freie Farbe |
+| ui-checkbox | input | ✓ | eigen | N/A | eigen | color: Formularfeld ohne freie Farbe |
+| ui-radio | input | ✓ | eigen | N/A | N/A | color: Formularfeld; size: keine Größen-Stufen |
+| ui-switch | input | ✓ | eigen | N/A | N/A | color: Formularfeld; size: keine Größen-Stufen |
+| ui-slider | input | ✓ | eigen | N/A | N/A | color: Formularfeld; size: keine Größen-Stufen |
+| ui-datepicker | input | ✓ | eigen | N/A | N/A | color: Formularfeld; size: keine Größen-Stufen |
+| ui-button | display | ✓ | eigen | N/A | eigen | color: Variant regelt Farbe |
+| ui-text | display | ✓ | N/A | N/A | N/A | disabled: nicht interaktiv; color: Variant |
+| ui-avatar | display | ✓ | N/A | ✓ | eigen | disabled: nicht interaktiv |
+| ui-icon | display | ✓ | N/A | eigen | eigen | disabled: nicht interaktiv |
+| ui-image | display | ✓ | N/A | N/A | N/A | disabled: nicht interaktiv; color: ein Bild hat keine Farbe |
+| ui-container | display | ✓ | N/A | ✓ | N/A | disabled: ein Container ist kein Steuerelement; size: keine Größen-Stufen |
+| ui-table | display | ✓ | ✓ | ✓ | N/A | size: keine Größen-Stufen |
+| ui-badge | feedback | ✓ | N/A | N/A | N/A | disabled: nicht interaktiv; color: Variant |
+| ui-progress | feedback | ✓ | N/A | ✓ | N/A | disabled: nicht interaktiv; size: keine Größen-Stufen |
+| ui-log | feedback | ✓ | N/A | N/A | N/A | disabled: nicht interaktiv; color: kein Farb-Surface |
+| ui-empty-state | feedback | eigen | N/A | ✓ | N/A | visible: eigenes Pflicht-Visible-Path; disabled: nicht interaktiv |
+| ui-toast | feedback | ✓ | N/A | N/A | N/A | disabled: nicht interaktiv; color: Severity regelt Farbe |
+| ui-accordion | navigation | ✓ | ✓ | ✓ | N/A | size: keine Größen-Stufen |
+| ui-breadcrumb | navigation | ✓ | N/A | ✓ | N/A | disabled: spiegelt die Navigation, kein Deaktiviert-Zustand |
+| ui-menu | navigation | ✓ | ✓ | ✓ | N/A | size: keine Größen-Stufen |
+| ui-pagination | navigation | ✓ | ✓ | ✓ | N/A | size: keine Größen-Stufen |
+| ui-stepper | navigation | ✓ | N/A | ✓ | N/A | disabled: Fortschrittsanzeige, kein Deaktiviert-Zustand |
+| ui-tabs | navigation | ✓ | ✓ | ✓ | N/A | size: keine Größen-Stufen |
+
+Bereits vor P222 umgestellt (P139/P172, eigene Configs, hier zur Vollständigkeit):
+`ui-divider` (color ✓), `ui-list` (visible/disabled/color ✓, size N/A), `ui-alert`
+(visible ✓, color N/A weil Severity), `ui-repeat`, `ui-skeleton`, `ui-tab`,
+`ui-accordion-section` (visible N/A — die Sichtbarkeit steuert `openSection`).
+
+> Hinweis zur „every node offers…"-Aussage: ADR 0015 formuliert die vier Basis-
+> Felder als **universelles Konzept**. Bis P222 war das nur die *Absicht* — nur
+> 7 von 33 View-Knoten riefen `installBaseFields` auf. P222 macht die Aussage zur
+> Realität: jeder View-Knoten hat den „Allgemein"-Block; **anwendbar** heißt aktiv,
+> **N/A** heißt sichtbar-aber-deaktiviert-mit-Hinweis, **eigen** heißt an anderer
+> Stelle im Panel bedient. Weil die Basis-Felder damit universell und zentral hier
+> dokumentiert sind, listet `check-specs.js` sie als `COMMON_BOILERPLATE` (nicht in
+> jeder Felder-Tabelle wiederholt) — analog zu den Layout-Feldern.
 
 ---
 

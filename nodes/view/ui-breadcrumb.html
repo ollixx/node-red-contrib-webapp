@@ -3,6 +3,23 @@
     (function () {
         const common = window.WebappEditorCommon;
 
+        // P222 (ADR 0015): common base fields. See the applicability table in
+        // docs/nodes/concepts/editor.md. `omit` drops a field the node already
+        // owns a dedicated control for (avoids duplicate #node-input carrier ids).
+        const BASE_FIELDS = {
+            visible: true,
+            disabled: false,
+            color: true,
+            size: false,
+            variant: false,
+            advanced: ["size"],
+            omit: [],
+            hints: {
+                disabled: "Ein Breadcrumb spiegelt die Navigation und hat keinen Deaktiviert-Zustand.",
+                size: "Dieser Knoten hat keine Größen-Stufen."
+            }
+        };
+
         // P95: breadcrumb typedInput binding helpers (mirrors ui-text / ui-alert pattern).
         // Items can be a literal JSON array or a dynamic binding.
         function makeItemsTypes() {
@@ -22,6 +39,10 @@
             category: "webapp view",
             color: "#f4efcf",
             defaults: {
+                visible: { value: null },
+                visibleBinding: { value: "" },
+                color: { value: null },
+                colorBinding: { value: "" },
                 name:      { value: "" },
                 parent:    { value: "" },
                 mount:     { value: "", required: true },
@@ -52,6 +73,7 @@
             },
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
+                common.installBaseFields(BASE_FIELDS).call(this);
                 common.installLayoutChildPropRows().call(this);
 
                 // Determine current typedInput state from stored node properties.
@@ -87,6 +109,7 @@
                 $("#breadcrumb-items-row").toggle(!isSlotMode);
             },
             oneditsave: function () {
+                common.applyBaseFields(BASE_FIELDS).call(this);
                 const itemsInput = $("#node-input-items");
                 const bindingType = itemsInput.typedInput("type");
                 const bindingValue = itemsInput.typedInput("value");
