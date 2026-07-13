@@ -33,6 +33,15 @@ describe("P212: ui-query-action schema", () => {
         expect(makeAction({ action: "refresh" }).success).toBe(true);
     });
 
+    // P213: the symmetric data-in action.
+    it("accepts action=replace", () => {
+        const result = makeAction({ action: "replace" });
+        expect(result.success).toBe(true);
+        if (result.success && result.data.type === "ui-query-action") {
+            expect(result.data.action).toBe("replace");
+        }
+    });
+
     it.each(["reference", "wire"])("accepts mode=%s", (mode) => {
         expect(makeAction({ mode }).success).toBe(true);
     });
