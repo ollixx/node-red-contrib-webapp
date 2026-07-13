@@ -4717,6 +4717,36 @@
         return { kind: type, path: raw };
     }
 
+    // ── P219 (ADR 0034): per-field `onMissing` behaviour ──────────────────────
+    // A plain native <select> (NOT a hidden carrier) persists onto the value
+    // BINDING object itself, so an absent value = the schema default `marker`
+    // (today's "?"). These two tiny helpers keep read/apply symmetric with
+    // readValueBinding/applyValueBinding, so any node's value field adopts the
+    // selector the same way: read the current behaviour to seed the <select>, then
+    // merge the chosen behaviour back onto the freshly-built binding at save.
+    var ON_MISSING_DEFAULT = "marker";
+    function readOnMissing(binding) {
+        if (binding && typeof binding === "object" && binding.onMissing === "ignore") {
+            return "ignore";
+        }
+        return ON_MISSING_DEFAULT;
+    }
+    // Merge the chosen behaviour onto a binding. `marker` is the default, so it is
+    // NOT persisted (keeps existing / generated flows byte-identical) — only a
+    // non-default `ignore` is written onto the binding.
+    function applyOnMissing(binding, behavior) {
+        if (!binding || typeof binding !== "object") {
+            return binding;
+        }
+        if (behavior === "ignore") {
+            binding.onMissing = "ignore";
+        }
+        else {
+            delete binding.onMissing;
+        }
+        return binding;
+    }
+
     // ── P132: store typedInput value <-> {path, subPath} envelope ─────────────
     // The rich store field encodes both halves of the binding into the single
     // typedInput string value so the canonical apply/read helpers keep their
@@ -6353,6 +6383,9 @@
         installValueBindingPathHint,
         readValueBinding,
         applyValueBinding,
+        // P219 (ADR 0034): per-field `onMissing` behaviour (plain-select persistence).
+        readOnMissing,
+        applyOnMissing,
         // P203/P204 (ADR 0027): the ONE shared writeTo (+ writeTrigger) helper —
         // the WRITE half of an input's value binding, used by every input control.
         installWriteToField,

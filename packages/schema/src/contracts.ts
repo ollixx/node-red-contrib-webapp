@@ -59,6 +59,27 @@ export const SCOPE_LOCAL_BINDING_KINDS = ["item", "index", "prop"] as const;
 const BINDING_KINDS = ["state", "query", "routeParam", "literal", "msg", "flow", "global", "jsonata", "env", "store", "reactive", "item", "index", "prop"] as const;
 
 /**
+ * P219 (ADR 0034): per-field behaviour when this binding's value is
+ * missing/unresolvable (a `reactive` expression fails, a store sub-path hits a
+ * scalar / is not found). The FOUNDATION package delivers only the two
+ * non-visual outcomes; the enum is intentionally named + extensible so the
+ * richer P220 behaviours (`errorPort`, `throw`) slot in without changing the
+ * contract or existing definitions.
+ *
+ *  - `marker` (**default**, absent → this) → render the invalid-value marker
+ *    `"?"` (P104) and fire the existing one-time report — today's behaviour, so
+ *    nothing changes for an existing flow.
+ *  - `ignore` → render EMPTY (`""`) and report NOTHING — the same "absent value"
+ *    semantics ADR 0032 gives a transient object-slice miss, now selectable for
+ *    any field.
+ *
+ * P220 will extend this to `["marker", "ignore", "errorPort", "throw"]`.
+ */
+export const ON_MISSING_BEHAVIORS = ["marker", "ignore"] as const;
+
+export type OnMissingBehavior = (typeof ON_MISSING_BEHAVIORS)[number];
+
+/**
  * P163: validates the FIELD-PATH form of an `item.<path>` binding — a dotted path
  * of one or more segments, each a JS-identifier-ish word (letters, digits, `_`,
  * `$`), e.g. `name`, `address.city`. No leading/trailing/double dots. The `item.`
@@ -200,6 +221,9 @@ export const leafBindingSchema = z
         // ignored elsewhere. FORM only — the renderer (P193) resolves it against
         // the named frame in the scope stack, not here.
         scope: z.string().optional(),
+        // P219 (ADR 0034): per-field missing-value behaviour. Optional (absent →
+        // `marker`, today's `"?"`), so existing leaf bindings validate unchanged.
+        onMissing: z.enum(ON_MISSING_BEHAVIORS).optional(),
         // The structural recursion lock: a sub-path binding may not declare its
         // own sub-path. `subPath` is meaningful ONLY on the top-level store
         // binding; on a leaf it is always an error.
@@ -232,6 +256,11 @@ export const bindingSchema = z
         // = a ui-repeat alias (`itemName`). Selects the NAMED enclosing repeat
         // frame instead of the innermost one. Meaningful only for `item`/`index`.
         scope: z.string().optional(),
+        // P219 (ADR 0034): per-field missing-value behaviour. Optional (absent →
+        // `marker`, today's `"?"`), so every existing definition/fixture validates
+        // unchanged. Invalid values are rejected by the enum. Extensible: P220 adds
+        // `errorPort`/`throw` to ON_MISSING_BEHAVIORS with no contract change.
+        onMissing: z.enum(ON_MISSING_BEHAVIORS).optional(),
         // P131 (ADR 0013): optional one-level sub-path into a store slice. Only
         // valid on `kind:"store"`; itself a LEAF binding (no nested subPath).
         subPath: leafBindingSchema.optional()

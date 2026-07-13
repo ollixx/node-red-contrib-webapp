@@ -69,6 +69,11 @@
                 // P189: explain the item/prop PATH sub-field — empty = whole element.
                 common.installValueBindingPathHint("#node-input-text");
 
+                // P219 (ADR 0034): seed the per-field `onMissing` selector from the
+                // stored binding (absent → the default `marker`, today's "?"). Plain
+                // native <select>, no hidden carrier — no ADR-0031 harness needed.
+                $("#node-input-onMissing").val(common.readOnMissing(this.value));
+
                 // P221 (ADR 0035): the "Field Label" row is only relevant in
                 // form-field mode — it depends on `display`. Toggle its
                 // visibility from the plain native <select> (no hidden carrier).
@@ -96,6 +101,10 @@
                 const bindingValue = textInput.typedInput("value");
 
                 this.value = common.applyValueBinding(bindingType, bindingValue);
+                // P219 (ADR 0034): merge the per-field missing-value behaviour onto
+                // the binding. `marker` (default) is not persisted; only `ignore` is
+                // written, so existing/generated flows stay byte-identical.
+                common.applyOnMissing(this.value, $("#node-input-onMissing").val());
                 // Keep the legacy `text` mirror in sync for the plain-string literal
                 // (back-compat); any other kind clears it (the bound value wins).
                 this.text = (this.value.kind === "literal" && typeof this.value.value === "string")
@@ -110,6 +119,13 @@
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <div class="form-row"><label for="node-input-text">Text</label><input type="text" id="node-input-text"></div>
+    <div class="form-row">
+        <label for="node-input-onMissing">On Missing</label>
+        <select id="node-input-onMissing">
+            <option value="marker">Marker (show "?")</option>
+            <option value="ignore">Ignore (render empty)</option>
+        </select>
+    </div>
     <div class="form-row">
         <label for="node-input-display">Display</label>
         <select id="node-input-display">
