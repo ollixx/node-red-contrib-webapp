@@ -1398,13 +1398,13 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         path: config.path,
         mode: (config.mode as UiStoreActionNodeDefinition["mode"]) ?? "reference"
     })),
-    // P212 (ADR 0029): the typed query-trigger node. References a ui-query id, an
-    // action (refresh; extensible enum) and a hybrid mode (reference|wire).
-    // `parent` is the owning app (required at deploy).
+    // P212 (ADR 0029): the typed query node. References a ui-query id, an action
+    // (refresh trigger-out | replace data-in; extensible enum) and a hybrid mode
+    // (reference|wire). `parent` is the owning app (required at deploy).
     "ui-query-action": createDefinition("ui-query-action", "state", {
         id: requiredString("Query-action IDs are required before deploy."),
         query: requiredString("A ui-query-action must reference a query."),
-        action: optionalStringEnum(["refresh"], "Query actions must use a known action."),
+        action: optionalStringEnum(["refresh", "replace"], "Query actions must use a known action."),
         mode: optionalStringEnum(["reference", "wire"], "Query action mode must be reference or wire.")
     }, (config: UiQueryActionEditorConfig): UiQueryActionNodeDefinition => ({
         type: "ui-query-action",

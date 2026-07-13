@@ -4705,26 +4705,56 @@ function findQueryRegistrationById(queryId) {
     return undefined;
 }
 
-// P212 (ADR 0029): typed, reference-based TRIGGER for a ui-query (hybrid
-// wire|reference). Every input message fires the referenced query's `refresh`.
-//   - reference: call fireQueryRefresh DIRECTLY (server-side, per-client via
-//     msg.ui.clientId) so the query's out-port emits its retrieval. No wire.
-//   - wire: do NOT trigger; emit msg.ui.query = { queryPath, refresh:true, params }
-//     on the out-port, for the flow to wire to the ui-query input.
-// Optional query params come from msg.ui.query.params › msg.payload; when neither
-// is present NO `params` key is emitted (never params:undefined / params:{}).
+// P213 (ADR 0029): reference-mode `replace` — write a query's data DIRECTLY into
+// the live envelope at `ui.queries.<queryPath>`, per-client via clientId (else the
+// broadcast state), then push a fresh snapshot so every `query:`-bound view shows
+// the new rows live. Reuses applyQueryMessage (the P160 fold) — the SAME apply path
+// as the wired data return in queryInputHandler, so `replace` is the typed form of
+// `msg.ui.query.data`. data absorption stays terminal (no loop). `queryMsg` is a
+// { queryPath, data, totalCount?, pageCount? } envelope.
+function applyQueryDataDirect(queryMsg, appId, clientId) {
+    const RED = runtimeState.RED;
+    if (!RED || !appId) {
+        return;
+    }
+    const definitions = readDeployDefinitions(RED);
+    const queryDefs = getDefinitionBuckets(appId, definitions).queries;
+    const seed = () => initializeState([], queryDefs, appId);
+    const base = clientId
+        ? (getClientState(appId, clientId)?.state || clone(runtimeState.liveState.get(appId) || seed()))
+        : clone(runtimeState.liveState.get(appId) || seed());
+    const nextState = applyQueryMessage(base, queryMsg);
+    if (nextState) {
+        if (clientId) {
+            setClientState(appId, clientId, nextState, Date.now());
+        }
+        else {
+            runtimeState.liveState.set(appId, nextState);
+        }
+        pushSnapshotToClients(appId, clientId, definitions);
+    }
+}
+
+// P212/P213 (ADR 0029): typed, reference-based node for a ui-query (hybrid
+// wire|reference). The `action` selector picks the direction:
+//   - `refresh` (P212, trigger-out): every input fires the referenced query's
+//     refresh. reference → fireQueryRefresh DIRECTLY (server-side, per-client via
+//     msg.ui.clientId) so the query's out-port emits its retrieval; wire → emit
+//     msg.ui.query = { queryPath, refresh:true, params }. Params source:
+//     msg.ui.query.params › msg.payload; absent → NO `params` key.
+//   - `replace` (P213, data-in): msg.payload becomes the query's data. reference →
+//     write ui.queries.<queryPath>.data DIRECTLY (per-client, SSE re-render);
+//     wire → emit msg.ui.query = { queryPath, data, totalCount?, pageCount? }. Data
+//     source: msg.payload; NO payload (undefined/null) → data is [] (an explicit
+//     replace-to-empty; replace always writes a data envelope). Optional
+//     totalCount/pageCount ride along when present on msg.ui.query.*.
 function queryActionInputHandler(node, msg, send, done) {
     const actionDefinition = node.webappDefinition;
     const mode = actionDefinition && actionDefinition.mode === "wire" ? "wire" : "reference";
+    const action = actionDefinition && actionDefinition.action === "replace" ? "replace" : "refresh";
     const queryId = actionDefinition && actionDefinition.query;
 
-    // Params source: msg.ui.query.params › msg.payload; absent → omit the key.
     const uiQuery = msg && msg.ui && typeof msg.ui === "object" ? msg.ui.query : undefined;
-    const uiQueryParams = uiQuery && typeof uiQuery === "object" ? uiQuery.params : undefined;
-    const params = uiQueryParams !== undefined
-        ? uiQueryParams
-        : (msg ? msg.payload : undefined);
-
     const activeAppId = findAppIdForNode(node);
     const clientId = msg && msg.ui && msg.ui.clientId ? String(msg.ui.clientId) : undefined;
 
@@ -4735,7 +4765,11 @@ function queryActionInputHandler(node, msg, send, done) {
             severity: "error",
             code: "server.query.action-missing-query",
             message: errMsg,
-            context: { appId: activeAppId || undefined, nodeId: node.id, op: "query:refresh" },
+            context: {
+                appId: activeAppId || undefined,
+                nodeId: node.id,
+                op: action === "replace" ? "query:replace" : "query:refresh"
+            },
             clientId
         });
         if (done) {
@@ -4743,6 +4777,53 @@ function queryActionInputHandler(node, msg, send, done) {
         }
         return;
     }
+
+    // -- action=replace: the DATA-IN side. msg.payload becomes the query's data. --
+    if (action === "replace") {
+        // Data source: msg.payload. No payload (undefined/null) → replace with an
+        // empty list ([]); replace always writes a data envelope (documented P213).
+        const payload = msg ? msg.payload : undefined;
+        const data = payload !== undefined && payload !== null ? payload : [];
+        const query = { queryPath: queryRegistration.queryPath, data };
+        // Optional paging metadata rides along when present on msg.ui.query.*.
+        if (uiQuery && typeof uiQuery === "object") {
+            if (Object.prototype.hasOwnProperty.call(uiQuery, "totalCount")) {
+                query.totalCount = uiQuery.totalCount;
+            }
+            if (Object.prototype.hasOwnProperty.call(uiQuery, "pageCount")) {
+                query.pageCount = uiQuery.pageCount;
+            }
+        }
+        if (mode === "wire") {
+            // wire: EMIT the data envelope; do NOT mutate the query state.
+            const outMsg = {
+                ...msg,
+                ui: {
+                    ...(msg && msg.ui && typeof msg.ui === "object" ? msg.ui : {}),
+                    query
+                }
+            };
+            send(outMsg);
+            if (done) {
+                done();
+            }
+            return;
+        }
+        // reference: write the query's data DIRECTLY (per-client, SSE re-render).
+        // The action node itself does not emit in reference mode.
+        applyQueryDataDirect(query, activeAppId, clientId);
+        if (done) {
+            done();
+        }
+        return;
+    }
+
+    // -- action=refresh (P212): trigger the referenced query. --
+    // Params source: msg.ui.query.params › msg.payload; absent → omit the key.
+    const uiQueryParams = uiQuery && typeof uiQuery === "object" ? uiQuery.params : undefined;
+    const params = uiQueryParams !== undefined
+        ? uiQueryParams
+        : (msg ? msg.payload : undefined);
 
     // -- wire mode: emit the refresh envelope; do NOT trigger. --
     if (mode === "wire") {
