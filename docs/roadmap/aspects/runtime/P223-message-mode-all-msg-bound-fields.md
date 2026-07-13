@@ -3,7 +3,7 @@ id: P223
 node: ui-alert
 title: "Runtime: Message mode treibt JEDES msg-gebundene Feld (nicht nur das Primärfeld) — `ui-alert.visible = msg.<prop>` funktioniert; Live-Patch trägt visible/disabled"
 epic: aspects/runtime
-status: pending
+status: in_progress
 dependencies: []
 verify: browser
 spec: docs/nodes/concepts/inputs.md

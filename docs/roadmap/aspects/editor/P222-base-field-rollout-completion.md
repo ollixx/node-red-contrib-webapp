@@ -2,7 +2,7 @@
 id: P222
 title: "Editor: Base-Field-Rollout (ADR 0015) vervollständigen — visible/disabled/color/size fehlen auf ~26 der 33 View-Knoten; Applicability-Audit + Retrofit"
 epic: aspects/editor
-status: pending
+status: in_progress
 dependencies: []
 verify: browser
 spec: docs/nodes/concepts/editor.md
