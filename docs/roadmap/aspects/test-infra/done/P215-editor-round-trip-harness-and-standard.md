@@ -2,7 +2,7 @@
 id: P215
 title: "Test-Infra: shared editor open→save round-trip harness + mandate in node-testing standard (reference/picker/editableList carrier fields)"
 epic: aspects/test-infra
-status: in_progress
+status: done
 dependencies: [P81]
 verify: browser
 spec: .ai/agents/node-testing.md
@@ -10,7 +10,7 @@ tests: tests/e2e/nodes/state/ui-store-action.tests.md
 ---
 # P215 — Editor open→save round-trip harness + node-testing mandate
 
-> Rationale: [ADR 0031](../../../adr/0031-editor-open-save-round-trip-test-standard.md)
+> Rationale: [ADR 0031](../../../../adr/0031-editor-open-save-round-trip-test-standard.md)
 > — the editor open→save clobber bug class (owner 2026-07-13). Foundation package:
 > ships the reusable harness and codifies the standard; the tripwire (P216) and
 > backfill (P217) build on it.
@@ -100,3 +100,17 @@ The harness itself lives in `tests/helpers/node-editor-page.ts`.
   `RED.nodes.node(id)` used in `ui-store-action-store-save.spec.ts`.
 - Fold the bespoke `ui-store-action-store-save.spec.ts` into the harness so there
   is one canonical way, per the `.ai/agents/node-testing.md` "fresh tests" rule.
+
+## Result
+
+**Delivered.** Wiederverwendbare Editor-Round-Trip-Harness + kodifizierter Standard (ADR 0031). Kein `ui-*`-Laufzeitverhalten geändert.
+- **Harness** `tests/helpers/node-editor-page.ts`: `assertEditorRoundTrip(nodeId, fields[])` + Typen `RoundTripCarrier` (`"picker"|"editableList"`), `RoundTripField` (`{field, expected, carrier?, newValue?, newItems?}`); private Helfer `readCarrier`/`readPersisted`/`assertCarrierEquals`/`forceDirty`/`drivePicker`/`driveEditableList`. Ein Aufruf: open→seeded-non-empty→dirty→Done→re-read==preset→value-change→reopen persists. Carrier-bewusst: Picker setzen `<select>`+`change`; editableList repopuliert über `addItem` (damit `oneditsave` re-serialisiert — direktes Setzen des Hidden-Input würde von `oneditsave` geklobbert).
+- **Zwei Formen bewiesen**: Picker `ui-store-action.roundtrip.spec.ts` (`store`, `saStore`→`saStore2`) und editableList `ui-component.roundtrip.spec.ts` (`ui-component-instance.props`, `{title}`→`{greeting}`). Die zwei bespoke Specs (`ui-store-action-store-save.spec.ts`, `component-instance-props-save.spec.ts`) gefaltet + gelöscht — eine kanonische Form.
+- **Standard** `.ai/agents/node-testing.md`: neue Pflicht-Sektion „Mandatory: editor open→save round-trip" (Regel, zwei Carrier-Formen, `parent`/`mount` explizit ausgenommen, Harness-Entry, Listung in `.tests.md`).
+- **Kataloge** `tests/e2e/nodes/state/ui-store-action.tests.md` + `tests/e2e/nodes/view/ui-component.tests.md` listen den Round-Trip-Test.
+
+**Verify (browser, gemessen — Haupt-Checkout).** Beide Specs **2 passed** (12.1s) am echten Node-RED :1882: `store` überlebt open→Done + value-change; `props`-editableList überlebt open→Done + value-change. (Mutations-Regel laut ADR: je Spec rot, wenn die Carrier-Seed-Zeile im `oneditprepare` des Knotens entfernt wird.)
+
+**Stats.** `pnpm build`/`test`/`lint`/`check:specs`/`check:links`/`check:roadmap` grün; beide Specs in `playwright --list`. Scope-Notiz: zusätzlich zum genannten store-save-Spec wurde das duplikative `component-instance-props-save.spec.ts` gefaltet (exakte props-Klobber-Teilmenge). P216 (Tripwire) + P217 (Backfill) bauen darauf auf.
+
+**Cost.** Sub-Agent `phase/P215` (worktree), ~9,5 min (15:11:00Z→15:20:33Z); Token-Zeile in `.ai/agent-runs.jsonl`.
