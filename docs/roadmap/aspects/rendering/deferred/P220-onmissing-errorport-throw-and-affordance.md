@@ -12,7 +12,7 @@ tests: tests/e2e/nodes/editor/reactive-expression.spec.ts
 # P220 — `onMissing`: `errorPort`, `throw`/Catch, Fallback-Slot + Affordance
 
 > Rationale: [ADR 0034](../../../../adr/0034-per-field-missing-binding-behavior-selector.md).
-> Folgepaket zu [P219](../P219-onmissing-selector-foundation.md) — die reicheren,
+> Folgepaket zu [P219](../done/P219-onmissing-selector-foundation.md) — die reicheren,
 > visuell/verdrahtungs-seitigen `onMissing`-Verhalten. Absorbiert den deferierten
 > „Catch-fähig"-Task und re-scopet die Invalid-Value-Affordance
 > [P105](P105-invalid-value-warning-affordance.md) unter ADR 0034.
