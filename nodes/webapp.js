@@ -3178,6 +3178,16 @@ function readDeployDefinitions(RED) {
                 }
 
                 const baseDefinition = {
+                    // P231: source the common base fields (visible/disabled/color) from
+                    // the flow config GENERICALLY, so every applicable node carries them
+                    // into the component even when its own mapConfig does not list them.
+                    // Spread FIRST so a node-specific mapConfig (e.g. ui-list emits its
+                    // own visible/color) wins. The editor only emits these on applicable
+                    // nodes and the schema mixin matches, so non-applicable nodes never
+                    // carry them. Downstream: visible→visibleIf, color→bind.color (generic).
+                    ...(entry.visible !== undefined && entry.visible !== null ? { visible: entry.visible } : {}),
+                    ...(entry.disabled !== undefined && entry.disabled !== null ? { disabled: entry.disabled } : {}),
+                    ...(entry.color !== undefined && entry.color !== null ? { color: entry.color } : {}),
                     ...registration.mapConfig(entry),
                     z: entry.z
                 };
