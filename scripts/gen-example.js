@@ -169,7 +169,7 @@ const flowNodes = [
     node("ui-route", "customers", "structure", 2, {
         name:    "Customers",
         uiId:    "customers",
-        parent:  APP,
+        app:  APP,
         path:    "/customers",
         title:   "Customers",
         layoutId: "app"
@@ -177,7 +177,7 @@ const flowNodes = [
     node("ui-route", "customerDetail", "structure", 3, {
         name:    "Customer detail",
         uiId:    "customerDetail",
-        parent:  APP,
+        app:  APP,
         path:    "/customers/:id",
         title:   "Customer detail",
         layoutId: "app"
@@ -185,7 +185,7 @@ const flowNodes = [
     node("ui-dialog", "customerEditor", "structure", 4, {
         name:    "Edit customer",
         uiId:    "customerEditor",
-        parent:  APP,
+        app:  APP,
         title:   "Edit customer",
         // P64: native <sl-dialog> with the dialog layout preset (header / content /
         // footer slots). closable → native X / ESC / overlay dismissal emits
@@ -204,7 +204,7 @@ const flowNodes = [
     node("ui-store", "customersStore", "state", 0, {
         name:         "Customers store",
         uiId:         "customersStore",  // required
-        parent:       APP,
+        app:       APP,
         statePath:    "customers",       // required
         initialValue: JSON.stringify({
             list: [
@@ -218,7 +218,7 @@ const flowNodes = [
     node("ui-store", "draftStore", "state", 1, {
         name:         "Draft store",
         uiId:         "draftStore",     // required
-        parent:       APP,
+        app:       APP,
         statePath:    "draft.customer", // required
         initialValue: JSON.stringify({ name: "", email: "", status: "draft" })
     }),
@@ -228,14 +228,14 @@ const flowNodes = [
     node("ui-store", "dialogStore", "state", 4, {
         name:         "Dialog store",
         uiId:         "dialogStore",
-        parent:       APP,
+        app:       APP,
         statePath:    "ui.dialogs.customerEditor",
         initialValue: JSON.stringify({ open: false })
     }),
     node("ui-query", "customersQuery", "state", 2, {
         name:          "Customers query",
         uiId:          "customersQuery", // required
-        parent:        APP,
+        app:        APP,
         queryPath:     "customers.list", // required
         refreshAction: "refreshCustomers",
         // Declarative seed data — the runtime no longer hard-codes demo data.
@@ -251,7 +251,7 @@ const flowNodes = [
     node("ui-query", "customerDetailQuery", "state", 3, {
         name:      "Customer detail query",
         uiId:      "customerDetailQuery",
-        parent:    APP,
+        app:    APP,
         queryPath: "customers.current"   // required
     }),
 
@@ -266,7 +266,7 @@ const flowNodes = [
     node("ui-action", "openCustomerDetail", "actions", 1, {
         name:       "Open detail",
         uiId:       "openCustomerDetail",
-        parent:     APP,
+        app:     APP,
         actionType: "navigate",
         targetMode: "path",
         target:     "app",
@@ -275,7 +275,7 @@ const flowNodes = [
     node("ui-action", "goToCustomers", "actions", 2, {
         name:       "Go to customers",
         uiId:       "goToCustomers",
-        parent:     APP,
+        app:     APP,
         actionType: "navigate",
         targetMode: "path",
         target:     "app",
@@ -284,7 +284,7 @@ const flowNodes = [
     node("ui-action", "deleteCustomer", "actions", 3, {
         name:       "Delete customer",
         uiId:       "deleteCustomer",
-        parent:     APP,
+        app:     APP,
         actionType: "navigate",
         targetMode: "path",
         target:     "app",
@@ -293,7 +293,7 @@ const flowNodes = [
     node("ui-navigation", "navToCustomers", "actions", 4, {
         name:   "Nav to customers",
         uiId:   "navToCustomers",  // required
-        parent: APP,
+        app: APP,
         to:     "/customers"       // required
     }),
 
@@ -305,7 +305,7 @@ const flowNodes = [
     node("ui-button", "navCustomersButton", "viewApp", 0, {
         name:   "Customers nav link",
         uiId:   "navCustomersButton",
-        parent: APP,
+        app: APP,
         mount:  "layout:app/navbar",
         order:  0,
         label:  "Customers",
@@ -316,7 +316,7 @@ const flowNodes = [
     node("ui-text", "pageTitle", "viewHome", 0, {
         name:    "Page title",
         uiId:    "pageTitle",              // required
-        parent:  APP,
+        app:  APP,
         mount:   "customersApp.content",      // home route heading
         order:   -1,
         text:    "Customers CRM",          // required (editor field for literal text)
@@ -326,7 +326,7 @@ const flowNodes = [
     node("ui-text", "homeWelcomeHeading", "viewHome", 0, {
         name:    "Welcome heading",
         uiId:    "homeWelcomeHeading",
-        parent:  APP,
+        app:  APP,
         mount:   "customersApp.content",
         order:   0,
         text:    "Welcome to Customers CRM",
@@ -336,7 +336,7 @@ const flowNodes = [
     node("ui-text", "homeWelcomeBody", "viewHome", 1, {
         name:    "Welcome body",
         uiId:    "homeWelcomeBody",
-        parent:  APP,
+        app:  APP,
         mount:   "customersApp.content",
         order:   1,
         text:    "Manage your customer relationships in one place.",
@@ -345,7 +345,7 @@ const flowNodes = [
     node("ui-button", "homeGoToCustomersButton", "viewHome", 2, {
         name:   "Go to customers",
         uiId:   "homeGoToCustomersButton",
-        parent: APP,
+        app: APP,
         mount:   "customersApp.content",
         order:  2,
         label:  "Go to customers",
@@ -354,7 +354,7 @@ const flowNodes = [
     node("ui-alert", "homeTipAlert", "viewHome", 3, {
         name:     "Home tip",
         uiId:     "homeTipAlert",
-        parent:   APP,
+        app:   APP,
         mount:    "customersApp.content",
         order:    3,
         // P67: message and title are bindings (typedInput). Pass binding objects
@@ -368,7 +368,7 @@ const flowNodes = [
     node("ui-button", "newCustomerButton", "viewCustomers", 0, {
         name:   "New customer",
         uiId:   "newCustomerButton",        // required
-        parent: APP,
+        app: APP,
         mount:  "route:/customers/content", // required
         order:  0,
         label:  "New customer"              // required; wired → fnNewCustomer which opens dialog via dialogStore
@@ -376,7 +376,7 @@ const flowNodes = [
     node("ui-button", "refreshCustomersButton", "viewCustomers", 1, {
         name:         "Refresh",
         uiId:         "refreshCustomersButton",
-        parent:       APP,
+        app:       APP,
         mount:        "route:/customers/content",
         order:        1,
         label:        "Refresh",
@@ -387,7 +387,7 @@ const flowNodes = [
     node("ui-text", "editorStatus", "viewCustomers", 2, {
         name:   "Editor status",
         uiId:   "editorStatus",
-        parent: APP,
+        app: APP,
         mount:  "route:/customers/content",
         order:  2,
         text:   "Editing customer",
@@ -396,7 +396,7 @@ const flowNodes = [
     node("ui-table", "customersTable", "viewCustomers", 3, {
         name:         "Customers table",
         uiId:         "customersTable",
-        parent:       APP,
+        app:       APP,
         mount:        "route:/customers/content",
         order:        3,
         columns:      "name,email,status",       // required (comma-separated)
@@ -414,7 +414,7 @@ const flowNodes = [
     node("ui-text", "detailRouteTitle", "viewDetail", 0, {
         name:    "Detail title",
         uiId:    "detailRouteTitle",
-        parent:  APP,
+        app:  APP,
         mount:   "route:/customers/:id/content",
         order:   0,
         text:    "Customer detail",
@@ -424,7 +424,7 @@ const flowNodes = [
     node("ui-button", "backToCustomersButton", "viewDetail", 1, {
         name:   "Back",
         uiId:   "backToCustomersButton",
-        parent: APP,
+        app: APP,
         mount:  "route:/customers/:id/content",
         order:  1,
         label:  "Back to customers",
@@ -433,7 +433,7 @@ const flowNodes = [
     node("ui-button", "editCustomerButton", "viewDetail", 2, {
         name:   "Edit",
         uiId:   "editCustomerButton",
-        parent: APP,
+        app: APP,
         mount:  "route:/customers/:id/content",
         order:  2,
         label:  "Edit customer"
@@ -442,7 +442,7 @@ const flowNodes = [
     node("ui-button", "deleteCustomerButton", "viewDetail", 3, {
         name:         "Delete",
         uiId:         "deleteCustomerButton",
-        parent:       APP,
+        app:       APP,
         mount:        "route:/customers/:id/content",
         order:        3,
         label:        "Delete customer",
@@ -453,7 +453,7 @@ const flowNodes = [
     node("ui-text", "detailCustomerId", "viewDetail", 4, {
         name:   "Customer ID",
         uiId:   "detailCustomerId",
-        parent: APP,
+        app: APP,
         mount:  "route:/customers/:id/content",
         order:  4,
         // editor text field must be non-empty to pass validation;
@@ -464,7 +464,7 @@ const flowNodes = [
     node("ui-badge", "customerStatusBadge", "viewDetail", 5, {
         name:        "Status badge",
         uiId:        "customerStatusBadge",
-        parent:      APP,
+        app:      APP,
         mount:       "route:/customers/:id/content",
         order:       5,
         valuePath:   "customers.current.status",
@@ -479,14 +479,14 @@ const flowNodes = [
     node("ui-container", "customerEditorContainer", "viewDialog", 0, {
         name:     "Editor container",
         uiId:     "customerEditorContainer",
-        parent:   APP,
+        app:   APP,
         mount:    "dialog:customerEditor/content", // required
         layoutId: "grid"                           // required
     }),
     node("ui-input", "customerNameInput", "viewDialog", 1, {
         name:      "Name input",
         uiId:      "customerNameInput",
-        parent:    APP,
+        app:    APP,
         mount:     "layout:grid/content", // required
         label:     "Name",               // required
         valuePath: "draft.customer.name", // required (editor field for state binding)
@@ -499,7 +499,7 @@ const flowNodes = [
     node("ui-input", "customerEmailInput", "viewDialog", 2, {
         name:      "Email input",
         uiId:      "customerEmailInput",
-        parent:    APP,
+        app:    APP,
         mount:     "layout:grid/content",
         label:     "Email",
         valuePath: "draft.customer.email",
@@ -512,7 +512,7 @@ const flowNodes = [
     node("ui-input", "customerStatusInput", "viewDialog", 3, {
         name:      "Status input",
         uiId:      "customerStatusInput",
-        parent:    APP,
+        app:    APP,
         mount:     "layout:grid/content",
         label:     "Status",
         valuePath: "draft.customer.status",
@@ -529,14 +529,14 @@ const flowNodes = [
     node("ui-button", "cancelCustomerButton", "viewDialog", 4, {
         name:   "Cancel",
         uiId:   "cancelCustomerButton",
-        parent: APP,
+        app: APP,
         mount:  "dialog:customerEditor/footer",
         label:  "Cancel"
     }),
     node("ui-button", "saveCustomerButton", "viewDialog", 5, {
         name:         "Save",
         uiId:         "saveCustomerButton",
-        parent:       APP,
+        app:       APP,
         mount:        "dialog:customerEditor/footer",
         label:        "Save",
         // no action ref — wired to fnSaveCustomer which closes dialog via dialogStore

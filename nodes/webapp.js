@@ -3323,7 +3323,9 @@ function collectAppScopedParentIssues(nodes) {
     }
     for (const n of nodes) {
         if (!n || APP_SCOPED_PARENT_TYPES.indexOf(n.type) === -1) { continue; }
-        const parent = typeof n.parent === "string" ? n.parent.trim() : "";
+        // P228: the owning-app field is canonical `app`; legacy flows carry `parent`.
+        const rawParent = (typeof n.app === "string" && n.app.trim()) ? n.app : n.parent;
+        const parent = typeof rawParent === "string" ? rawParent.trim() : "";
         let reason;
         if (!parent) { reason = "has no App parent — open it and pick the owning ui-app"; }
         else if (parent === n.id) { reason = "has its own id as App parent (not a valid app) — pick the owning ui-app"; }
@@ -6923,7 +6925,7 @@ const runtimeNodeRegistry = {
             return {
                 type: "ui-route",
                 id: getUiId(config),
-                parent: config.parent || undefined,
+                parent: (config.app || config.parent) || undefined,
                 path: config.path,
                 title: resolvedTitle,
                 layout: config.layoutId,
@@ -6940,7 +6942,7 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-dialog",
             id: getUiId(config),
-            parent: config.parent || undefined,
+            parent: (config.app || config.parent) || undefined,
             title: config.title || undefined,
             layout: config.layoutId,
             routeId: config.routeId || undefined,
@@ -6961,8 +6963,8 @@ const runtimeNodeRegistry = {
             return {
                 type: "ui-text",
                 id: getUiId(config),
-                parent: config.parent || undefined,
-                mount: config.mount || config.parent,
+                parent: (config.app || config.parent) || undefined,
+                mount: config.mount || config.app || config.parent,
                 order: resolveOrder(config),
                 value: getBinding(config.value, literalBinding(config.text || "")),
                 style: text.style,
@@ -6983,8 +6985,8 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-button",
             id: getUiId(config),
-            parent: config.parent || undefined,
-            mount: config.mount || config.parent,
+            parent: (config.app || config.parent) || undefined,
+            mount: config.mount || config.app || config.parent,
             order: resolveOrder(config),
             label: config.label,
             variant: config.variant || undefined,
@@ -7010,8 +7012,8 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-table",
             id: getUiId(config),
-            parent: config.parent || undefined,
-            mount: config.mount || config.parent,
+            parent: (config.app || config.parent) || undefined,
+            mount: config.mount || config.app || config.parent,
             order: resolveOrder(config),
             columns: parseColumns(config.columns),
             rows: resolveTableRows(config),
@@ -7028,8 +7030,8 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-container",
             id: getUiId(config),
-            parent: config.parent || undefined,
-            mount: config.mount || config.parent,
+            parent: (config.app || config.parent) || undefined,
+            mount: config.mount || config.app || config.parent,
             order: resolveOrder(config),
             layout: config.layoutId,
             variant: config.variant || undefined,
@@ -7044,8 +7046,8 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-input",
             id: getUiId(config),
-            parent: config.parent || undefined,
-            mount: config.mount || config.parent,
+            parent: (config.app || config.parent) || undefined,
+            mount: config.mount || config.app || config.parent,
             order: resolveOrder(config),
             label: config.label,
             value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
@@ -7069,8 +7071,8 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-select",
             id: getUiId(config),
-            parent: config.parent || undefined,
-            mount: config.mount || config.parent,
+            parent: (config.app || config.parent) || undefined,
+            mount: config.mount || config.app || config.parent,
             order: resolveOrder(config),
             // P133: label is now a binding (literal string or dynamic binding).
             label: getBinding(config.label, undefined) || config.label,
@@ -7098,8 +7100,8 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-checkbox",
             id: getUiId(config),
-            parent: config.parent || undefined,
-            mount: config.mount || config.parent,
+            parent: (config.app || config.parent) || undefined,
+            mount: config.mount || config.app || config.parent,
             order: resolveOrder(config),
             // P97: label is now a binding object when set via typedInput; legacy plain string is preserved.
             label: config.label,
@@ -7121,8 +7123,8 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-radio",
             id: getUiId(config),
-            parent: config.parent || undefined,
-            mount: config.mount || config.parent,
+            parent: (config.app || config.parent) || undefined,
+            mount: config.mount || config.app || config.parent,
             order: resolveOrder(config),
             // P136: label is now a binding (literal string or dynamic binding),
             // mirroring ui-select.
@@ -7148,8 +7150,8 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-switch",
             id: getUiId(config),
-            parent: config.parent || undefined,
-            mount: config.mount || config.parent,
+            parent: (config.app || config.parent) || undefined,
+            mount: config.mount || config.app || config.parent,
             order: resolveOrder(config),
             value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
             // P204 (ADR 0027): writeTo WRITE target + writeTrigger. Legacy
@@ -7174,8 +7176,8 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-textarea",
             id: getUiId(config),
-            parent: config.parent || undefined,
-            mount: config.mount || config.parent,
+            parent: (config.app || config.parent) || undefined,
+            mount: config.mount || config.app || config.parent,
             order: resolveOrder(config),
             // P148 (ADR 0012): label may be a binding object or a legacy plain string.
             // getBinding passes a binding object through; for a plain string, we keep it
@@ -7202,8 +7204,8 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-datepicker",
             id: getUiId(config),
-            parent: config.parent || undefined,
-            mount: config.mount || config.parent,
+            parent: (config.app || config.parent) || undefined,
+            mount: config.mount || config.app || config.parent,
             order: resolveOrder(config),
             // P98: label is now a full binding (literal/state/store/…) or a plain string (legacy).
             // getBinding handles both: if config.label is a binding object it is returned as-is;
@@ -7231,8 +7233,8 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-slider",
             id: getUiId(config),
-            parent: config.parent || undefined,
-            mount: config.mount || config.parent,
+            parent: (config.app || config.parent) || undefined,
+            mount: config.mount || config.app || config.parent,
             order: resolveOrder(config),
             value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
             // P204 (ADR 0027): writeTo WRITE target + writeTrigger. A slider value
@@ -7265,7 +7267,7 @@ const runtimeNodeRegistry = {
             return {
                 type: "ui-store",
                 id: getUiId(config),
-                parent: config.parent || undefined,
+                parent: (config.app || config.parent) || undefined,
                 // P115 (ADR 0010): carry the store's authoring name through so a
                 // `reactive` expression can resolve store("<name>") → statePath.
                 name: typeof config.name === "string" ? config.name : undefined,
@@ -7440,7 +7442,7 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-store-read",
             id: getUiId(config),
-            parent: config.parent || undefined,
+            parent: (config.app || config.parent) || undefined,
             store: config.store || undefined,
             path: blankToUndefined(config.path)
         }),
@@ -7455,7 +7457,7 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-store-action",
             id: getUiId(config),
-            parent: config.parent || undefined,
+            parent: (config.app || config.parent) || undefined,
             store: config.store || undefined,
             op: typeof config.op === "string" && config.op ? config.op : "set",
             path: blankToUndefined(config.path),
@@ -7473,7 +7475,7 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-query-action",
             id: getUiId(config),
-            parent: config.parent || undefined,
+            parent: (config.app || config.parent) || undefined,
             query: config.query || undefined,
             action: typeof config.action === "string" && config.action ? config.action : "refresh",
             mode: config.mode === "wire" ? "wire" : "reference"
@@ -7486,7 +7488,7 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-query",
             id: getUiId(config),
-            parent: config.parent || undefined,
+            parent: (config.app || config.parent) || undefined,
             queryPath: config.queryPath,
             params: config.params || undefined,
             refreshAction: config.refreshAction || undefined,
@@ -7519,7 +7521,7 @@ const runtimeNodeRegistry = {
             return {
                 type: "ui-action",
                 id: getUiId(config),
-                parent: config.parent || undefined,
+                parent: (config.app || config.parent) || undefined,
                 actionType: blankToUndefined(config.actionType),
                 // P118 (ADR 0011 §1): the stored navigate target SOURCE.
                 targetMode,
@@ -7547,7 +7549,7 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-navigation",
             id: getUiId(config),
-            parent: config.parent || undefined,
+            parent: (config.app || config.parent) || undefined,
             to: config.to
         }),
         options: {
@@ -7558,8 +7560,8 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-alert",
             id: getUiId(config),
-            parent: config.parent || undefined,
-            mount: config.mount || config.parent,
+            parent: (config.app || config.parent) || undefined,
+            mount: config.mount || config.app || config.parent,
             order: resolveOrder(config),
             message: getBinding(config.message, config.messagePath ? stateBinding(config.messagePath) : undefined),
             severity: config.severity || undefined,
@@ -7590,7 +7592,7 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-toast",
             id: getUiId(config),
-            parent: config.parent || undefined,
+            parent: (config.app || config.parent) || undefined,
             severity: config.severity || undefined,
             duration: toOptionalNumber(config.duration),
             position: config.position || undefined
@@ -7603,8 +7605,8 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-progress",
             id: getUiId(config),
-            parent: config.parent || undefined,
-            mount: config.mount || config.parent,
+            parent: (config.app || config.parent) || undefined,
+            mount: config.mount || config.app || config.parent,
             order: resolveOrder(config),
             displayType: config.displayType || config.variant || undefined,
             value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
@@ -7623,8 +7625,8 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-skeleton",
             id: getUiId(config),
-            parent: config.parent || undefined,
-            mount: config.mount || config.parent,
+            parent: (config.app || config.parent) || undefined,
+            mount: config.mount || config.app || config.parent,
             order: resolveOrder(config),
             visible: getBinding(config.visible, config.visiblePath ? stateBinding(config.visiblePath) : undefined),
             displayType: config.displayType || config.variant || undefined,
@@ -7639,8 +7641,8 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-badge",
             id: getUiId(config),
-            parent: config.parent || undefined,
-            mount: config.mount || config.parent,
+            parent: (config.app || config.parent) || undefined,
+            mount: config.mount || config.app || config.parent,
             order: resolveOrder(config),
             value: getBinding(config.value, config.valuePath ? stateBinding(config.valuePath) : undefined),
             // P92: displayType is now shape (square/rounded/pill). Back-compat:
@@ -7672,8 +7674,8 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-empty-state",
             id: getUiId(config),
-            parent: config.parent || undefined,
-            mount: config.mount || config.parent,
+            parent: (config.app || config.parent) || undefined,
+            mount: config.mount || config.app || config.parent,
             order: resolveOrder(config),
             visible: getBinding(config.visible, config.visiblePath ? stateBinding(config.visiblePath) : undefined),
             icon: config.icon || undefined,
@@ -7707,8 +7709,8 @@ const runtimeNodeRegistry = {
             return {
                 type: "ui-tabs",
                 id: getUiId(config),
-                parent: config.parent || undefined,
-                mount: config.mount || config.parent,
+                parent: (config.app || config.parent) || undefined,
+                mount: config.mount || config.app || config.parent,
                 order: resolveOrder(config),
                 activeTab: getBinding(config.activeTab, config.activeTabPath ? stateBinding(config.activeTabPath) : undefined),
                 variant: config.variant || undefined,
@@ -7730,8 +7732,8 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-tab",
             id: getUiId(config),
-            parent: config.parent || undefined,
-            mount: config.mount || config.parent,
+            parent: (config.app || config.parent) || undefined,
+            mount: config.mount || config.app || config.parent,
             order: resolveOrder(config),
             label: getBinding(config.label, config.labelPath ? stateBinding(config.labelPath) : literalBinding(config.labelPath || "")),
             icon: config.icon || undefined,
@@ -7762,8 +7764,8 @@ const runtimeNodeRegistry = {
             return {
                 type: "ui-accordion",
                 id: getUiId(config),
-                parent: config.parent || undefined,
-                mount: config.mount || config.parent,
+                parent: (config.app || config.parent) || undefined,
+                mount: config.mount || config.app || config.parent,
                 order: resolveOrder(config),
                 openSection: getBinding(config.openSection, config.openSectionPath ? stateBinding(config.openSectionPath) : undefined),
                 multiple: config.multiple === true || config.multiple === "true" || undefined,
@@ -7785,8 +7787,8 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-accordion-section",
             id: getUiId(config),
-            parent: config.parent || undefined,
-            mount: config.mount || config.parent,
+            parent: (config.app || config.parent) || undefined,
+            mount: config.mount || config.app || config.parent,
             order: resolveOrder(config),
             label: getBinding(config.label, config.labelPath ? stateBinding(config.labelPath) : literalBinding(config.labelPath || "")),
             icon: config.icon || undefined,
@@ -7834,8 +7836,8 @@ const runtimeNodeRegistry = {
             return {
                 type: "ui-breadcrumb",
                 id: getUiId(config),
-                parent: config.parent || undefined,
-                mount: config.mount || config.parent,
+                parent: (config.app || config.parent) || undefined,
+                mount: config.mount || config.app || config.parent,
                 order: resolveOrder(config),
                 // P95: layout="breadcrumb" activates child-node slot mode (c & d).
                 layout: config.layout === "breadcrumb" ? "breadcrumb" : undefined,
@@ -7856,8 +7858,8 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-menu",
             id: getUiId(config),
-            parent: config.parent || undefined,
-            mount: config.mount || config.parent,
+            parent: (config.app || config.parent) || undefined,
+            mount: config.mount || config.app || config.parent,
             order: resolveOrder(config),
             displayType: config.displayType || config.variant || undefined,
             // P157 (ADR 0012): `items` is a STRUCTURAL array source (store/query/
@@ -7883,8 +7885,8 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-pagination",
             id: getUiId(config),
-            parent: config.parent || undefined,
-            mount: config.mount || config.parent,
+            parent: (config.app || config.parent) || undefined,
+            mount: config.mount || config.app || config.parent,
             order: resolveOrder(config),
             // P154 (ADR 0012): `currentPage` (canonical, two-way value typedInput)
             // is the page source; it maps to the schema `page` binding. Legacy
@@ -7907,8 +7909,8 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-stepper",
             id: getUiId(config),
-            parent: config.parent || undefined,
-            mount: config.mount || config.parent,
+            parent: (config.app || config.parent) || undefined,
+            mount: config.mount || config.app || config.parent,
             order: resolveOrder(config),
             steps: (parseJsonList(config.steps).length > 0 ? parseJsonList(config.steps) : parseList(config.steps)).map((t) => {
                 if (typeof t === "string") {
@@ -7929,8 +7931,8 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-image",
             id: getUiId(config),
-            parent: config.parent || undefined,
-            mount: config.mount || config.parent,
+            parent: (config.app || config.parent) || undefined,
+            mount: config.mount || config.app || config.parent,
             order: resolveOrder(config),
             src: getBinding(config.src, config.srcPath ? stateBinding(config.srcPath) : undefined),
             // P151 (ADR 0012): alt and fallback are binding-capable. getBinding
@@ -7952,8 +7954,8 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-icon",
             id: getUiId(config),
-            parent: config.parent || undefined,
-            mount: config.mount || config.parent,
+            parent: (config.app || config.parent) || undefined,
+            mount: config.mount || config.app || config.parent,
             order: resolveOrder(config),
             icon: mapIconField(config.icon) || "",
             size: config.size || undefined,
@@ -7968,8 +7970,8 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-list",
             id: getUiId(config),
-            parent: config.parent || undefined,
-            mount: config.mount || config.parent,
+            parent: (config.app || config.parent) || undefined,
+            mount: config.mount || config.app || config.parent,
             order: resolveOrder(config),
             // P171: `items` is a STRUCTURAL value-binding (typedInput). A stored
             // binding object wins; a legacy `itemsPath` plain path migrates to a
@@ -8020,8 +8022,8 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-repeat",
             id: getUiId(config),
-            parent: config.parent || undefined,
-            mount: config.mount || config.parent,
+            parent: (config.app || config.parent) || undefined,
+            mount: config.mount || config.app || config.parent,
             order: resolveOrder(config),
             // items: full value-binding (typedInput). Back-compat fallbacks mirror
             // ui-list: a plain itemsPath state path, or a JSON literal array.
@@ -8058,8 +8060,8 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-avatar",
             id: getUiId(config),
-            parent: config.parent || undefined,
-            mount: config.mount || config.parent,
+            parent: (config.app || config.parent) || undefined,
+            mount: config.mount || config.app || config.parent,
             order: resolveOrder(config),
             // P94: `src` is now a full binding (image typedInput). Back-compat: old
             // `srcPath` (plain state path, pre-P94) is still accepted.
@@ -8085,8 +8087,8 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-divider",
             id: getUiId(config),
-            parent: config.parent || undefined,
-            mount: config.mount || config.parent,
+            parent: (config.app || config.parent) || undefined,
+            mount: config.mount || config.app || config.parent,
             order: resolveOrder(config),
             orientation: config.orientation || undefined,
             label: config.label || undefined,
@@ -8102,8 +8104,8 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-log",
             id: getUiId(config),
-            parent: config.parent || undefined,
-            mount: config.mount || config.parent,
+            parent: (config.app || config.parent) || undefined,
+            mount: config.mount || config.app || config.parent,
             order: resolveOrder(config),
             minSeverity: config.minSeverity || undefined,
             maxEntries: toOptionalNumber(config.maxEntries),
@@ -8123,8 +8125,8 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             // Off-canvas: an outer mount/parent is NOT required. If one happens to be
             // set it is harmless — the def: subtree is matched by id, not by mount.
-            parent: config.parent || undefined,
-            mount: config.mount || config.parent || undefined,
+            parent: (config.app || config.parent) || undefined,
+            mount: config.mount || config.app || config.parent || undefined,
             name: blankToUndefined(config.name)
         }),
         options: {}
@@ -8135,8 +8137,8 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => ({
             type: "ui-component-instance",
             id: getUiId(config),
-            parent: config.parent || undefined,
-            mount: config.mount || config.parent,
+            parent: (config.app || config.parent) || undefined,
+            mount: config.mount || config.app || config.parent,
             order: resolveOrder(config),
             definitionId: config.definitionId || "",
             // `props` is a map name → value-binding (any binding kind). The editor

@@ -46,7 +46,7 @@ function uiApp(id, tabId, overrides = {}) {
 }
 
 function uiRoute(id, path, appId, tabId, overrides = {}) {
-    return { id, type: "ui-route", name: id, uiId: id, path, parent: appId, layoutId: "vertical", z: tabId, x: 120, y: 180, wires: [[]], ...overrides };
+    return { id, type: "ui-route", name: id, uiId: id, path, app: appId, layoutId: "vertical", z: tabId, x: 120, y: 180, wires: [[]], ...overrides };
 }
 
 // Inject node that sends msg.payload (updates primary field of any view node)
@@ -101,7 +101,7 @@ function viewNode(type, id, appId, routeId, tabId, overrides = {}) {
     delete overrides.x; delete overrides.y;
     return {
         id, type, name: overrides.name ?? id, uiId: id,
-        parent: appId, mount: `${routeId}.content`,
+        app: appId, mount: `${routeId}.content`,
         z: tabId, x, y, wires: [[]], ...overrides
     };
 }
@@ -113,7 +113,7 @@ function stateNode(type, id, appId, tabId, overrides = {}) {
     delete overrides.x; delete overrides.y;
     return {
         id, type, name: overrides.name ?? id, uiId: id,
-        parent: appId,
+        app: appId,
         z: tabId, x, y, wires: [[]], ...overrides
     };
 }
@@ -182,7 +182,7 @@ const examples = [];
             }),
             {
                 id: "navToDetail", type: "ui-action", name: "navigate → /item/42",
-                uiId: "navToDetail", parent: A, actionType: "navigate", target: "/item/42",
+                uiId: "navToDetail", app: A, actionType: "navigate", target: "/item/42",
                 z: T, x: 700, y: 360, wires: [[]]
             }
         ]
@@ -201,7 +201,7 @@ const examples = [];
             // The dialog — mounts to the app, not a route
             {
                 id: "myDialog", type: "ui-dialog", name: "Confirm Action",
-                uiId: "myDialog", parent: A, title: "Confirm Action",
+                uiId: "myDialog", app: A, title: "Confirm Action",
                 z: T, x: 120, y: 360, wires: [[]]
             },
 
@@ -223,12 +223,12 @@ const examples = [];
             // Actions
             {
                 id: "openDlgAction", type: "ui-action", name: "openDialog",
-                uiId: "openDlgAction", parent: A, actionType: "openDialog", target: "myDialog",
+                uiId: "openDlgAction", app: A, actionType: "openDialog", target: "myDialog",
                 z: T, x: 700, y: 280, wires: [[]]
             },
             {
                 id: "closeDlgAction", type: "ui-action", name: "closeDialog",
-                uiId: "closeDlgAction", parent: A, actionType: "closeDialog", target: "myDialog",
+                uiId: "closeDlgAction", app: A, actionType: "closeDialog", target: "myDialog",
                 z: T, x: 900, y: 520, wires: [[]]
             }
         ]
@@ -1119,7 +1119,7 @@ examples.push(inputNodeExample({
 
             // A dialog
             { id: "infoDialog", type: "ui-dialog", name: "Info", uiId: "infoDialog",
-              parent: A, title: "Information", z: T, x: 120, y: 360, wires: [[]] },
+              app: A, title: "Information", z: T, x: 120, y: 360, wires: [[]] },
 
             // Home page (app content slot): navigate button + show/hide toggle buttons
             viewNode("ui-button", "goDetailBtn", A, A, T, { name: "go to detail", label: "Go to Detail" }),
@@ -1166,7 +1166,7 @@ examples.push(inputNodeExample({
             // Navigation mounted in the app nav slot — output: navigate event
             {
                 id: "mainNav", type: "ui-navigation", name: "Main Nav",
-                uiId: "mainNav", parent: A, mount: `${A}.nav`,
+                uiId: "mainNav", app: A, mount: `${A}.nav`,
                 links: JSON.stringify([
                     { label: "Home", to: "/" },
                     { label: "Products", to: "/products" },

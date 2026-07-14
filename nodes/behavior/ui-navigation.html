@@ -7,7 +7,7 @@
             color: "#f8ddd0",
             defaults: {
                 name: { value: "" },
-                parent: { value: "" },
+                app: { value: "" },
                 // P119 (ADR 0011): ui-navigation gets the same target-source mode as
                 // ui-action navigate — wire | route | url. Same central helper.
                 targetMode: { value: "" },
@@ -71,7 +71,7 @@
 <script type="text/html" data-template-name="ui-navigation">
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-parent">App</label><select id="node-input-parent"></select></div>
+    <div class="form-row"><label for="node-input-app">App</label><select id="node-input-app"></select></div>
     <!-- P119 (ADR 0011): the same three-mode navigate target switch as ui-action. -->
     <div class="form-row" style="display:block;">
         <label style="display:block; margin-bottom:6px;">Ziel</label>
