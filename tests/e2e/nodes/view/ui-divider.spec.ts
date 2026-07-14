@@ -57,11 +57,11 @@ test.describe("ui-divider — orientation + label", () => {
     });
 });
 
-// BLOCKED by P231: the base-field `visible`/`disabled`/`color` are missing from the
-// ui-divider SCHEMA (packages/schema/src/node-definitions.ts), so Zod strips them at
-// validation and they never reach the runtime. The serializer + mapConfig fix is
-// proven; the schema carry is the systemic fix. Un-fixme once P231 lands.
-test.describe.fixme("ui-divider — base-field color on the line (blocked: P231)", () => {
+// P231: the base-field `visible`/`disabled`/`color` are now declared in the
+// ui-divider SCHEMA (packages/schema/src/node-definitions.ts, baseFieldsSchema
+// mixin), so Zod PRESERVES them at validation; mapConfig routes `color` →
+// bind.color generically and the serializer applies the Shoelace `--color`.
+test.describe("ui-divider — base-field color on the line (P231)", () => {
     test.afterEach(async ({ request }) => { await resetFlow(request); });
 
     test("bound color emits the Shoelace --color custom property", async ({ request }) => {
@@ -85,9 +85,9 @@ test.describe.fixme("ui-divider — base-field color on the line (blocked: P231)
     });
 });
 
-// BLOCKED by P231 (same schema-strip root cause as color): `visible` is not in the
-// ui-divider schema, so a bound visible is stripped and the render-gate never fires.
-test.describe.fixme("ui-divider — visible render-gate (bound; ADR 0037) (blocked: P231)", () => {
+// P231: `visible` is now in the ui-divider schema (baseFieldsSchema mixin), so a
+// bound visible survives validation and reaches `visibleIf` — the render-gate fires.
+test.describe("ui-divider — visible render-gate (bound; ADR 0037) (P231)", () => {
     test.afterEach(async ({ request }) => { await resetFlow(request); });
 
     // A store-bound `visible` governs the render (a plain literal is treated as an

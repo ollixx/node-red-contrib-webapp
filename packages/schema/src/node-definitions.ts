@@ -56,6 +56,40 @@ const mountableNodeSchema = identifiedNodeSchema.extend({
     }
 });
 
+// ── P231 (ADR 0015 §1 / ADR 0037): the common BASE FIELDS mixin ──────────────
+//
+// P139/P172/P222 rolled the editor controls (`visible`/`disabled`/`color`) out
+// across every view node, but the SCHEMAS declared them almost nowhere — so Zod
+// STRIPPED them at validation and they never reached the runtime. The result:
+// `visible`/`disabled`/`color` were inert on ~29 nodes even though the editor and
+// docs offer them (P231 finding, exposed by the P230 ui-divider pilot). This
+// shared mixin declares the three as OPTIONAL value-bindings ONCE; every
+// applicable mountable view node mixes it in by SPREADING it as the first entry
+// of its `mountableNodeSchema.extend({ ...baseFieldsSchema, … })` shape, so a
+// deployed binding is PRESERVED (not stripped) and flows through mapConfig into
+// `visibleIf` / `bind.disabled` / `bind.color`.
+//
+// The spread is applied FIRST inside the SAME object literal, so a node that
+// already declares one of these with node-specific semantics — e.g.
+// ui-empty-state's REQUIRED `visible`, ui-icon's plain-string `color`, the input
+// nodes' `disabled` — overrides it with its own later key in that literal (JS
+// last-key-wins). Doing it in ONE `.extend()` (rather than chaining a second
+// `.extend`) is REQUIRED under Zod v4: a chained extend that re-declares a key
+// throws "Cannot overwrite keys on object schemas containing refinements"
+// (`mountableNodeSchema` carries a `.superRefine`). A single merged shape only
+// ADDS new keys to the refined base, which Zod allows.
+//
+// Per the P222 applicability table a field may be N/A on a given node (the editor
+// greys it out and never emits it); the schema stays permissive-optional so
+// nothing is stripped if it ever is emitted. `size` is intentionally NOT here: it
+// is a static enum token (COMPONENT_SIZES / per-node scale) declared per-node
+// where applicable, not a value-binding.
+const baseFieldsSchema = {
+    visible: bindingSchema.optional(),
+    disabled: bindingSchema.optional(),
+    color: bindingSchema.optional()
+};
+
 // ── P17: Design token schema ─────────────────────────────────────────────────
 
 export const designTokensSchema = z.object({
@@ -191,6 +225,7 @@ export const uiAppNodeDefinitionSchema = z.object({
 export type UiAppNodeDefinition = z.infer<typeof uiAppNodeDefinitionSchema>;
 
 export const uiContainerNodeDefinitionSchema = mountableNodeSchema.extend({
+    ...baseFieldsSchema,
     type: z.literal("ui-container"),
     layout: standardLayoutPresetSchema,
     // P49: true Ebene-2 variant (surface role). Default "card".
@@ -215,6 +250,7 @@ export type UiContainerNodeDefinition = z.infer<typeof uiContainerNodeDefinition
 export const REPEAT_SLOT = "content";
 
 export const uiRepeatNodeDefinitionSchema = mountableNodeSchema.extend({
+    ...baseFieldsSchema,
     type: z.literal("ui-repeat"),
     // REQUIRED collection binding — full value-binding set (literal/state/query/
     // store/routeParam/reactive/msg/flow/global/jsonata/env). Resolution → array
@@ -497,6 +533,7 @@ export const uiDialogNodeDefinitionSchema = identifiedNodeSchema.extend({
 export type UiDialogNodeDefinition = z.infer<typeof uiDialogNodeDefinitionSchema>;
 
 export const uiTextNodeDefinitionSchema = mountableNodeSchema.extend({
+    ...baseFieldsSchema,
     type: z.literal("ui-text"),
     value: bindingSchema,
     // P111: `style` is the typographic ROLE (maps to an HTML element). Default
@@ -522,6 +559,7 @@ export const uiTextNodeDefinitionSchema = mountableNodeSchema.extend({
 export type UiTextNodeDefinition = z.infer<typeof uiTextNodeDefinitionSchema>;
 
 export const uiButtonNodeDefinitionSchema = mountableNodeSchema.extend({
+    ...baseFieldsSchema,
     type: z.literal("ui-button"),
     // P144 (ADR 0012): label accepts the canonical value-binding set — a literal
     // string or a dynamic binding object. Back-compat: a plain string from a
@@ -566,6 +604,7 @@ export const tableColumnDefinitionSchema = z.union([
 export type TableColumnDefinition = z.infer<typeof tableColumnDefinitionSchema>;
 
 export const uiTableNodeDefinitionSchema = mountableNodeSchema.extend({
+    ...baseFieldsSchema,
     type: z.literal("ui-table"),
     columns: z.array(tableColumnDefinitionSchema).min(1, "Tables must declare at least one column."),
     rows: bindingSchema,
@@ -577,6 +616,7 @@ export const uiTableNodeDefinitionSchema = mountableNodeSchema.extend({
 export type UiTableNodeDefinition = z.infer<typeof uiTableNodeDefinitionSchema>;
 
 export const uiInputNodeDefinitionSchema = mountableNodeSchema.extend({
+    ...baseFieldsSchema,
     type: z.literal("ui-input"),
     // P145 (ADR 0012): label accepts the canonical value-binding set — a literal
     // string or a dynamic binding object. Back-compat: a plain string from a
@@ -888,6 +928,7 @@ export function normalizeSelectOptions(input: unknown): SelectOptionsResult {
 }
 
 export const uiSelectNodeDefinitionSchema = mountableNodeSchema.extend({
+    ...baseFieldsSchema,
     type: z.literal("ui-select"),
     // P133: label accepts the canonical value-binding set (ADR 0012) — a literal
     // non-empty string OR a binding object (store/query/route-param/…).
@@ -912,6 +953,7 @@ export const uiSelectNodeDefinitionSchema = mountableNodeSchema.extend({
 export type UiSelectNodeDefinition = z.infer<typeof uiSelectNodeDefinitionSchema>;
 
 export const uiCheckboxNodeDefinitionSchema = mountableNodeSchema.extend({
+    ...baseFieldsSchema,
     type: z.literal("ui-checkbox"),
     // P97: label is now a full binding (literal string or dynamic binding).
     label: z.union([bindingSchema, z.string().min(1, "Checkbox labels must not be empty.")]),
@@ -929,6 +971,7 @@ export const uiCheckboxNodeDefinitionSchema = mountableNodeSchema.extend({
 export type UiCheckboxNodeDefinition = z.infer<typeof uiCheckboxNodeDefinitionSchema>;
 
 export const uiRadioNodeDefinitionSchema = mountableNodeSchema.extend({
+    ...baseFieldsSchema,
     type: z.literal("ui-radio"),
     // P136 (ADR 0012): label accepts the canonical value-binding set — a literal
     // non-empty string OR a binding object (store/query/route-param/…), mirroring
@@ -952,6 +995,7 @@ export const uiRadioNodeDefinitionSchema = mountableNodeSchema.extend({
 export type UiRadioNodeDefinition = z.infer<typeof uiRadioNodeDefinitionSchema>;
 
 export const uiSwitchNodeDefinitionSchema = mountableNodeSchema.extend({
+    ...baseFieldsSchema,
     type: z.literal("ui-switch"),
     value: bindingSchema,
     // P204 (ADR 0027): symmetric WRITE half of `value` — writable kinds only.
@@ -971,6 +1015,7 @@ export const uiSwitchNodeDefinitionSchema = mountableNodeSchema.extend({
 export type UiSwitchNodeDefinition = z.infer<typeof uiSwitchNodeDefinitionSchema>;
 
 export const uiTextareaNodeDefinitionSchema = mountableNodeSchema.extend({
+    ...baseFieldsSchema,
     type: z.literal("ui-textarea"),
     // P148 (ADR 0012): label accepts the canonical value-binding set — a literal
     // string or a dynamic binding object. Back-compat: a plain string from a
@@ -995,6 +1040,7 @@ export const uiTextareaNodeDefinitionSchema = mountableNodeSchema.extend({
 export type UiTextareaNodeDefinition = z.infer<typeof uiTextareaNodeDefinitionSchema>;
 
 export const uiDatepickerNodeDefinitionSchema = mountableNodeSchema.extend({
+    ...baseFieldsSchema,
     type: z.literal("ui-datepicker"),
     // P98: label is now a full binding (literal string or dynamic binding).
     label: z.union([bindingSchema, z.string().min(1, "Datepicker labels must not be empty.")]),
@@ -1016,6 +1062,7 @@ export const uiDatepickerNodeDefinitionSchema = mountableNodeSchema.extend({
 export type UiDatepickerNodeDefinition = z.infer<typeof uiDatepickerNodeDefinitionSchema>;
 
 export const uiSliderNodeDefinitionSchema = mountableNodeSchema.extend({
+    ...baseFieldsSchema,
     type: z.literal("ui-slider"),
     value: bindingSchema,
     // P204 (ADR 0027): symmetric WRITE half of `value` — writable kinds only.
@@ -1039,6 +1086,7 @@ export type UiSliderNodeDefinition = z.infer<typeof uiSliderNodeDefinitionSchema
 // ── P16b: feedback and status nodes ─────────────────────────────────────────
 
 export const uiAlertNodeDefinitionSchema = mountableNodeSchema.extend({
+    ...baseFieldsSchema,
     type: z.literal("ui-alert"),
     message: bindingSchema,
     // P49b: unified with SEVERITY_VARIANTS — the single source of truth.
@@ -1088,6 +1136,7 @@ export const uiToastNodeDefinitionSchema = identifiedNodeSchema.extend({
 export type UiToastNodeDefinition = z.infer<typeof uiToastNodeDefinitionSchema>;
 
 export const uiProgressNodeDefinitionSchema = mountableNodeSchema.extend({
+    ...baseFieldsSchema,
     type: z.literal("ui-progress"),
     // P49: this is a DISPLAY TYPE (rendering form), not an Ebene-2 semantic
     // variant — renamed from `variant` so the variant SelectBox (P50) stays
@@ -1107,6 +1156,7 @@ export const uiProgressNodeDefinitionSchema = mountableNodeSchema.extend({
 export type UiProgressNodeDefinition = z.infer<typeof uiProgressNodeDefinitionSchema>;
 
 export const uiSkeletonNodeDefinitionSchema = mountableNodeSchema.extend({
+    ...baseFieldsSchema,
     type: z.literal("ui-skeleton"),
     // P138 (ADR 0012): `visible` is now the standard boolean-state binding
     // (optional — absent/null ⇒ always visible = true). Legacy `visiblePath`
@@ -1120,6 +1170,7 @@ export const uiSkeletonNodeDefinitionSchema = mountableNodeSchema.extend({
 export type UiSkeletonNodeDefinition = z.infer<typeof uiSkeletonNodeDefinitionSchema>;
 
 export const uiBadgeNodeDefinitionSchema = mountableNodeSchema.extend({
+    ...baseFieldsSchema,
     type: z.literal("ui-badge"),
     value: bindingSchema,
     // P92: displayType = shape of the badge (square/rounded/pill). This is a
@@ -1145,6 +1196,7 @@ export const uiBadgeNodeDefinitionSchema = mountableNodeSchema.extend({
 export type UiBadgeNodeDefinition = z.infer<typeof uiBadgeNodeDefinitionSchema>;
 
 export const uiEmptyStateNodeDefinitionSchema = mountableNodeSchema.extend({
+    ...baseFieldsSchema,
     type: z.literal("ui-empty-state"),
     visible: bindingSchema,
     icon: z.string().optional(),
@@ -1181,6 +1233,7 @@ export const TAB_SLOT = "content";
 // is no second source of truth (no orphan problem). `ui-tab` is children-allowed
 // (container-kind), registered analogously to `ui-container`/`ui-repeat`.
 export const uiTabNodeDefinitionSchema = mountableNodeSchema.extend({
+    ...baseFieldsSchema,
     type: z.literal("ui-tab"),
     // The tab's label. Full value-binding set (literal/state/store/query/…) so a
     // tab title may be static or bound. The editor's value typedInput persists a
@@ -1197,6 +1250,7 @@ export const uiTabNodeDefinitionSchema = mountableNodeSchema.extend({
 export type UiTabNodeDefinition = z.infer<typeof uiTabNodeDefinitionSchema>;
 
 export const uiTabsNodeDefinitionSchema = mountableNodeSchema.extend({
+    ...baseFieldsSchema,
     type: z.literal("ui-tabs"),
     // P167 (ADR 0018, Model 1a): the `tabs` JSON config-array is REMOVED. The
     // tabs are derived from the mounted `ui-tab` children (one slot per child,
@@ -1380,6 +1434,7 @@ export const ACCORDION_SECTION_SLOT = "content";
 // declaration of the section — there is no second source of truth (no orphan
 // problem). Mirrors `ui-tab` (P167).
 export const uiAccordionSectionNodeDefinitionSchema = mountableNodeSchema.extend({
+    ...baseFieldsSchema,
     type: z.literal("ui-accordion-section"),
     // The section's summary/header label. Full value-binding set
     // (literal/state/store/query/…) so a section title may be static or bound.
@@ -1394,6 +1449,7 @@ export const uiAccordionSectionNodeDefinitionSchema = mountableNodeSchema.extend
 export type UiAccordionSectionNodeDefinition = z.infer<typeof uiAccordionSectionNodeDefinitionSchema>;
 
 export const uiAccordionNodeDefinitionSchema = mountableNodeSchema.extend({
+    ...baseFieldsSchema,
     type: z.literal("ui-accordion"),
     // P169 (ADR 0018, Model 1a): the `sections` JSON config-array is REMOVED. The
     // sections are derived from the mounted `ui-accordion-section` children (one
@@ -1546,6 +1602,7 @@ export const breadcrumbItemSchema = z.union([
 export type BreadcrumbItem = z.infer<typeof breadcrumbItemSchema>;
 
 export const uiBreadcrumbNodeDefinitionSchema = mountableNodeSchema.extend({
+    ...baseFieldsSchema,
     type: z.literal("ui-breadcrumb"),
     // Optional layout field: set to "breadcrumb" to enable child-node slots (modes c & d).
     layout: standardLayoutPresetSchema.optional(),
@@ -1573,6 +1630,7 @@ const menuItemSchema: z.ZodType<{ label: string; route?: string; href?: string; 
 });
 
 export const uiMenuNodeDefinitionSchema = mountableNodeSchema.extend({
+    ...baseFieldsSchema,
     type: z.literal("ui-menu"),
     // P49: sidebar/topbar/dropdown is a DISPLAY TYPE (layout mode), not a
     // semantic variant.
@@ -1595,6 +1653,7 @@ export const uiMenuNodeDefinitionSchema = mountableNodeSchema.extend({
 export type UiMenuNodeDefinition = z.infer<typeof uiMenuNodeDefinitionSchema>;
 
 export const uiPaginationNodeDefinitionSchema = mountableNodeSchema.extend({
+    ...baseFieldsSchema,
     type: z.literal("ui-pagination"),
     // P154 (ADR 0012): the canonical editor field `currentPage` (two-way value
     // typedInput: read source + change-event write-back) compiles to this `page`
@@ -1613,6 +1672,7 @@ export const uiPaginationNodeDefinitionSchema = mountableNodeSchema.extend({
 export type UiPaginationNodeDefinition = z.infer<typeof uiPaginationNodeDefinitionSchema>;
 
 export const uiStepperNodeDefinitionSchema = mountableNodeSchema.extend({
+    ...baseFieldsSchema,
     type: z.literal("ui-stepper"),
     steps: z.array(z.object({ id: z.string().min(1), label: z.string().min(1) })).min(2, "Stepper must declare at least two steps."),
     // P156 (ADR 0012): the canonical editor field `activeStep` (two-way value
@@ -1631,6 +1691,7 @@ export type UiStepperNodeDefinition = z.infer<typeof uiStepperNodeDefinitionSche
 // ── P16d: display nodes ──────────────────────────────────────────────────────
 
 export const uiImageNodeDefinitionSchema = mountableNodeSchema.extend({
+    ...baseFieldsSchema,
     type: z.literal("ui-image"),
     src: bindingSchema,
     // P151 (ADR 0012): alt and fallbackSrc are now binding-capable. A plain
@@ -1645,6 +1706,7 @@ export const uiImageNodeDefinitionSchema = mountableNodeSchema.extend({
 export type UiImageNodeDefinition = z.infer<typeof uiImageNodeDefinitionSchema>;
 
 export const uiIconNodeDefinitionSchema = mountableNodeSchema.extend({
+    ...baseFieldsSchema,
     type: z.literal("ui-icon"),
     // P69: backend-neutral { library, name } icon value; binding-capable. A bare
     // string is still accepted (back-compat — maps to the default library).
@@ -1678,6 +1740,7 @@ const listItemObjectSchema = z.object({
 const listItemSchema = z.union([z.string(), listItemObjectSchema]);
 
 export const uiListNodeDefinitionSchema = mountableNodeSchema.extend({
+    ...baseFieldsSchema,
     type: z.literal("ui-list"),
     items: z.union([z.array(listItemSchema), bindingSchema]),
     // P180 (ADR 0021): displayType is a SEMANTIC INTENT enum — backend-neutral,
@@ -1730,6 +1793,7 @@ export const uiListNodeDefinitionSchema = mountableNodeSchema.extend({
 export type UiListNodeDefinition = z.infer<typeof uiListNodeDefinitionSchema>;
 
 export const uiAvatarNodeDefinitionSchema = mountableNodeSchema.extend({
+    ...baseFieldsSchema,
     type: z.literal("ui-avatar"),
     // P94: `src` (runtime field name) is a full binding. In the editor it is labelled
     // "Image" and accepts all binding kinds including "store" and "literal asset:<id>".
@@ -1753,6 +1817,7 @@ export const uiAvatarNodeDefinitionSchema = mountableNodeSchema.extend({
 export type UiAvatarNodeDefinition = z.infer<typeof uiAvatarNodeDefinitionSchema>;
 
 export const uiDividerNodeDefinitionSchema = mountableNodeSchema.extend({
+    ...baseFieldsSchema,
     type: z.literal("ui-divider"),
     orientation: z.enum(["horizontal", "vertical"]).optional(),
     // P150 (ADR 0012): `label` accepts the canonical value-binding set — a
@@ -1769,6 +1834,7 @@ export type UiDividerNodeDefinition = z.infer<typeof uiDividerNodeDefinitionSche
 // ui-log is persistent and aimed at operator inspection, not end-user toasts.
 
 export const uiLogNodeDefinitionSchema = mountableNodeSchema.extend({
+    ...baseFieldsSchema,
     type: z.literal("ui-log"),
     // Which severity levels to display. Defaults to all levels when unset.
     minSeverity: errorSeveritySchema.optional(),

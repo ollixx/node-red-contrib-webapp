@@ -1320,9 +1320,16 @@
             const orientation = (component.props && component.props.orientation) ? String(component.props.orientation) : "horizontal";
             const label = (component.props && component.props.label) ? String(component.props.label) : "";
             const orientationAttr = orientation === "vertical" ? " vertical" : "";
+            // P231 (ADR 0015): the base-field `color` colours the line. sl-divider
+            // exposes its line colour as the `--color` custom property, so a resolved
+            // colour is applied as an inline `--color` style (semantic tokens map to
+            // --wa-color-* vars via resolveColorValue; a bare CSS colour passes
+            // through). Absent/unknown → no style attr (unchanged markup).
+            const dividerColor = resolveColorValue(component.props && component.props.color);
+            const colorStyle = dividerColor ? " style=\"--color:" + escapeAttribute(dividerColor) + "\"" : "";
             const inner = label
-                ? "<sl-divider" + orientationAttr + ">" + escapeHtml(label) + "</sl-divider>"
-                : "<sl-divider" + orientationAttr + "></sl-divider>";
+                ? "<sl-divider" + orientationAttr + colorStyle + ">" + escapeHtml(label) + "</sl-divider>"
+                : "<sl-divider" + orientationAttr + colorStyle + "></sl-divider>";
             return wrapRenderedComponentHtml(component, layoutId, inner);
         }
 
