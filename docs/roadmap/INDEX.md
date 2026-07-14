@@ -28,6 +28,7 @@ their blocker clears.
 ## Open work (pending / in_progress)
 
 - **P226** — nodes/ui-action — show/hide (+ enable/disable) schreiben den EINEN dynamic-state-Wert (P224-API) statt Client-Overlay; ui-alert einbinden — *ADR 0037; baut auf P224 (done); dep P224* — [P226](nodes/ui-action/P226-interaction-verbs-write-dynamic-state.md)
+- **P227** — aspects/editor — Feld-Konsistenz-Guardrail (`pnpm check:fields`) + dokumentierte Feld-Namens-/Carrier-Konvention (stoppt weitere Drift) — *ADR 0038; Owner 2026-07-14* — [P227](aspects/editor/P227-field-consistency-guardrail-and-convention.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -44,6 +45,8 @@ Reason in each package's `deferred_reason`. Picked up once the blocker clears.
 - **P152** — nodes/ui-empty-state — Redesign: Container mit Slot(s) + visible-Binding (statt fester icon/title/message/action-Felder) — *Vertragswechsel; ADR + Restfragen nötig; Richtung steht* — [P152](nodes/ui-empty-state/deferred/P152-empty-state-as-container-with-visible-binding.md)
 - **P162** — nodes/ui-event — Konzept: referenzbasierter lokaler Tap der App/Route-Lifecycle-Events (onEnter/onLeave) neben dem Consumer — *neuer Knoten + Vertrag; ADR-würdig (Scope/Events/Output-Form); löst Lange-Leitung aus ADR 0016* — [P162](nodes/ui-event/deferred/P162-ui-event-local-lifecycle-tap.md)
 - **P210** — aspects/state — Tech-Debt: per-client-State produktionsreif skalieren — externer geteilter Store (Redis) und/oder Multi-Instanz + Sticky-Sessions; TTL/Eviction gegen unbegrenztes Wachstum — *großer Umbau; ADR + Owner-Entscheidung; erst bei realem Skalierungs-/Durability-Bedarf* — [P210](aspects/state/deferred/P210-per-client-state-production-scale.md)
+- **P228** — aspects/editor — Referenz-Feld-Namen normalisieren: parent→app, layoutId→layout, routeId→route, definitionId→definition (back-compat) — *ADR 0038; baut auf P227* — [P228](aspects/editor/deferred/P228-reference-field-naming-normalization.md)
+- **P229** — aspects/editor — Legacy-Feld-Sweep (residuale *Path-Zwillinge, *Json, totes storeId/path, pagination-Aliase) + rows-Kollision (textarea→lines) — *ADR 0038; baut auf P227* — [P229](aspects/editor/deferred/P229-legacy-field-sweep-and-rows-collision.md)
 
 ## Done (rollup — history lives in the epic folders)
 
