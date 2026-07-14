@@ -67,15 +67,12 @@
     // every subsequent deploy while the user has not yet reloaded.
     let versionAlertShown = false;
 
-    // P53: per-client interaction-state overlay (ADR 0005). A ui-action verb
-    // (show/hide/enable/disable/open/close) mutates this overlay, and the overlay
-    // is RE-APPLIED after every snapshot render so a flow-driven snapshot push
-    // (e.g. a ui-store update) does not wipe a prior interaction command. The
-    // overlay is INTERACTION state only — never business data, never sent to the
-    // server (ADR 0003): it lives in this tab and is re-stamped on the freshly
-    // rendered markup.
-    //   visibility:  nodeId -> true (hidden)
-    //   disabled:    nodeId -> true (disabled)
+    // P53: per-client interaction-state overlay (ADR 0005). An open/close/select
+    // verb mutates this overlay, and the overlay is RE-APPLIED after every snapshot
+    // render so a flow-driven snapshot push (e.g. a ui-store update) does not wipe a
+    // prior interaction command. The overlay is INTERACTION state only — never
+    // business data, never sent to the server (ADR 0003): it lives in this tab and
+    // is re-stamped on the freshly rendered markup.
     //   open:        "<target>" or "<target>#<part>" -> true (disclosed)
     //   selected:    "<target>" -> "<part>" (active sub-part of a single-active
     //                set: tabs / stepper / menu — survives a snapshot re-render)
@@ -83,9 +80,12 @@
     // auto-hide is now a real `visible=false` value transition (POSTed to
     // /dynamic-state → setDynamicStateField), so the alert is absent from the next
     // snapshot; no per-client overlay is needed to keep it hidden across morphs.
+    // P226 (ADR 0037): the `hidden` / `disabled` overlays are GONE too. show/hide
+    // and enable/disable are now dynamic-state WRITERS (visible/disabled written via
+    // setDynamicStateField on the server); visibility/enabled follow the ONE value a
+    // snapshot re-renders, not a `.webapp-hidden` / [disabled] CSS layer. Only the
+    // open/selected disclosure overlays remain (open/close/select verbs).
     const interaction = {
-        hidden: Object.create(null),
-        disabled: Object.create(null),
         open: Object.create(null),
         selected: Object.create(null)
     };
@@ -272,24 +272,13 @@
     }
 
     // P53: stamp the interaction overlay onto the freshly rendered DOM. Called
-    // after every snapshot render so a show/hide/enable/disable survives a
-    // re-render. The overlay is ADDITIVE-ONLY: it never clears a component's
-    // intrinsic state (e.g. a server-rendered sl-input[disabled] from its own
-    // `disabled` prop). Clearing an overlay flag (show/enable) is done by
-    // re-rendering from the snapshot — which restores the intrinsic markup — and
-    // then re-stamping only the still-flagged overlay entries on top.
+    // after every snapshot render so an open/close/select survives a re-render. The
+    // overlay is ADDITIVE-ONLY: it never clears a component's intrinsic state.
+    // P226 (ADR 0037): visibility/enabled are NO LONGER overlay flags — show/hide
+    // and enable/disable write the ONE visible/disabled value on the server, so the
+    // snapshot itself carries the presence/enabled state. Only the disclosure
+    // (open) and single-active (selected) overlays are re-stamped here.
     function applyInteractionOverlay() {
-        root.querySelectorAll("[data-webapp-node]").forEach(function (element) {
-            const id = element.getAttribute("data-webapp-node");
-            if (interaction.hidden[id]) {
-                element.classList.add("webapp-hidden");
-                element.setAttribute("hidden", "");
-            }
-            if (interaction.disabled[id]) {
-                applyDisabledState(element, true);
-            }
-        });
-
         // Disclosure (open/close) of a sub-part of a target element — additive:
         // only opens flagged sections; closing is handled by removing the flag
         // and re-applying (the fresh markup is closed by default).
@@ -339,22 +328,6 @@
         else {
             partEl.setAttribute("active", "");
         }
-    }
-
-    // P53: set the disabled state on a wrapper and its inner control(s). The
-    // [disabled] attribute on form controls (sl-* / native) is what the browser
-    // reads. ADDITIVE — only ever called with disabled=true from the overlay; an
-    // `enable` clears the flag and re-renders rather than removing the attribute
-    // here (so a component's intrinsic disabled prop is never stripped).
-    function applyDisabledState(element, disabled) {
-        const controls = element.matches("sl-button, button, input, textarea, select, sl-input, sl-textarea, sl-select, sl-checkbox, sl-switch, sl-radio-group, sl-range")
-            ? [element]
-            : Array.prototype.slice.call(element.querySelectorAll("sl-button, button, input, textarea, select, sl-input, sl-textarea, sl-select, sl-checkbox, sl-switch, sl-radio-group, sl-range"));
-        controls.forEach(function (control) {
-            if (disabled) {
-                control.setAttribute("disabled", "");
-            }
-        });
     }
 
     // P53: find an openable sub-part within a target (accordion section, tree
@@ -1100,43 +1073,13 @@
                 }
                 break;
 
-            // ── presence ──────────────────────────────────────────────────────
-            case "show":
-                if (target) {
-                    // Clearing a flag → re-render from snapshot to restore the
-                    // intrinsic markup, then re-stamp the remaining overlay.
-                    delete interaction.hidden[target];
-                    reRenderWithOverlay();
-                }
-                break;
-            case "hide":
-                // P53: `hide` is ELEMENT visibility. A target-less `hide` keeps the
-                // legacy "close the open dialog" behaviour for back-compat.
-                if (target) {
-                    interaction.hidden[target] = true;
-                    applyInteractionOverlay(); // additive — no re-render needed
-                }
-                else {
-                    dialogId = undefined;
-                    if (currentSnapshot) {
-                        applySnapshot(currentSnapshot);
-                    }
-                }
-                break;
-
-            // ── enabled state ─────────────────────────────────────────────────
-            case "enable":
-                if (target) {
-                    delete interaction.disabled[target];
-                    reRenderWithOverlay();
-                }
-                break;
-            case "disable":
-                if (target) {
-                    interaction.disabled[target] = true;
-                    applyInteractionOverlay(); // additive
-                }
-                break;
+            // ── presence & enabled state ──────────────────────────────────────
+            // P226 (ADR 0037): show/hide and enable/disable are NO LONGER client
+            // commands — they are dynamic-state writers handled on the SERVER
+            // (setDynamicStateField writes visible/disabled; the value drives the
+            // next snapshot). The client receives the effect as an ordinary snapshot
+            // re-render, so there is no `show`/`hide`/`enable`/`disable` case here
+            // and no `.webapp-hidden` / [disabled] overlay to stamp.
 
             // ── disclosure (open/close) — dialogs + sub-parts ─────────────────
             case "open":
@@ -1198,10 +1141,11 @@
                 break;
             case "reset":
                 if (target) {
-                    // Clear all overlay flags for this target (back to the
-                    // snapshot's own intrinsic state) and re-render.
-                    delete interaction.hidden[target];
-                    delete interaction.disabled[target];
+                    // Clear the disclosure/selection overlay flags for this target
+                    // (back to the snapshot's own intrinsic state) and re-render.
+                    // P226 (ADR 0037): visibility/enabled are not overlay flags any
+                    // more — they live in the snapshot value, so there is nothing to
+                    // clear here for show/enable.
                     delete interaction.selected[target];
                     Object.keys(interaction.open).forEach(function (key) {
                         if (key === target || key.indexOf(target + "#") === 0) {

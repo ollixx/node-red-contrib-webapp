@@ -48,3 +48,25 @@ Unit-Belege (nicht-Browser):
   ui-navigation (no `to`)…").
 - Zentrale Editor-Helfer (`parseRoutePlaceholders`, `scanWiredNavigationTargets`)
   sind browser-only und werden über `page.evaluate` in der Editor-Spec geprüft.
+
+## P226 — Interaktions-Verben schreiben den dynamic-state-Wert (ADR 0037)
+
+Browser-E2E: `p226-verbs-write-dynamic-state.spec.ts` (+ die bestehenden
+Sicht-/Enabled-Verben in `ui-action-verbs.spec.ts`, jetzt wertbasiert).
+
+| Ziel | Spec / Test | Beobachtung |
+|---|---|---|
+| show/hide auf UNGEBUNDENER Alert = per-Client `visible`-Wert | `p226-…spec.ts` → „hide → unbound alert disappears; show → it reappears" | hide → Alert-Element verschwindet aus dem Snapshot (detached), show → Element wieder da. Kein `.webapp-hidden`-Overlay. |
+| hide auf STORE-gebundener Alert schreibt DURCH den Store | `p226-…spec.ts` → „hide on a store-bound alert changes the STORE value…" | Ein an dieselbe Store-Slice gebundener ui-text kippt „true"→„false"; der Alert verschwindet gleichzeitig; show setzt beides zurück. |
+| show/hide (Element-Präsenz), wertbasiert | `ui-action-verbs.spec.ts` → „hide → target element disappears; show → it reappears" | hide → `visible=false` → Element aus dem Snapshot entfernt; show → wieder sichtbar. |
+| enable/disable schreiben `disabled` | `ui-action-verbs.spec.ts` → „disable → target control gets [disabled]; enable → it loses it" | disable → `disabled=true` → `[disabled]` am `sl-button`; enable → Attribut weg (der interaktive Control erhält einen `disabled`-Slot). |
+| Hidden-Wert überlebt eine ui-store-Snapshot-Neuberechnung | `ui-action-verbs.spec.ts` → „a hide stays applied after a later ui-store snapshot push…" | Nach hide bleibt das Element auch nach einem ui-store-Update ausgeblendet — die Sichtbarkeit ist der per-Client-Wert, kein neu zu stempelndes Overlay. |
+
+Unit-Belege (nicht-Browser):
+- `show`/`hide`→`visible`, `enable`/`disable`→`disabled` über `setDynamicStateField`
+  (ungebunden → per-Client-Slot; gebunden → Store-Durchschreiben, scope-korrekt);
+  ui-alert als gültiges Verb-Ziel; per-Client-Scoping; msg-Durchreichung:
+  `packages/runtime/test/p226-interaction-verbs-write-state.test.ts`.
+- Sicht-/Enabled-Verben schreiben den Wert statt eines Command-Frames (kein
+  `command`-Push), übrige Verben (select/focus/reset) weiter als Command:
+  `packages/runtime/test/p82-…`, `p83-…`, `p85-navigation-nodes-behaviour.test.ts`.

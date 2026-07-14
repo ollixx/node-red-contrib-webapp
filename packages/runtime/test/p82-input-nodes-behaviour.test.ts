@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { NodeBehaviourHarness } from "./helpers/node-behaviour-harness";
+import { NodeBehaviourHarness, webappTest } from "./helpers/node-behaviour-harness";
 
 /**
  * P82 — Classic behaviour tests for the 8 input-category nodes:
@@ -158,24 +158,69 @@ describe("P82: pass-through when node has no registered definition", () => {
 });
 
 // ---------------------------------------------------------------------------
-// 4. Interaction verbs → SSE command push
+// 4. Interaction verbs.
+//   - P226 (ADR 0037): show/hide + enable/disable are dynamic-state WRITERS — they
+//     set the target's ONE visible/disabled value via setDynamicStateField (unbound
+//     → per-client slot), NOT a client `command` overlay.
+//   - focus/reset stay client commands (transient effects, no server value).
 // ---------------------------------------------------------------------------
 
-describe("P82: interaction verbs push an SSE command frame", () => {
-    // Verbs owned by each type (from INTERACTION_VERBS_BY_TYPE)
-    const verbOwnership: Record<string, string[]> = {
+// P226: the (field, value) each visibility/enabled verb writes.
+const DS_VERB_WRITES: Record<string, [string, boolean]> = {
+    show: ["visible", true],
+    hide: ["visible", false],
+    enable: ["disabled", false],
+    disable: ["disabled", true]
+};
+
+const dsTest = webappTest as unknown as {
+    getClientState: (appId: string, clientId: string) => { state: Record<string, unknown> } | null;
+};
+
+function slotValue(state: Record<string, unknown> | undefined, nodeId: string, field: string): unknown {
+    const root = state && (state.__dynamicState as Record<string, Record<string, unknown>> | undefined);
+    return root && root[nodeId] ? root[nodeId][field] : undefined;
+}
+
+describe("P226: input-node visibility/enabled verbs write the dynamic-state value", () => {
+    const dsVerbsByType: Record<string, string[]> = {
         "ui-checkbox": ["show", "hide", "enable", "disable"],
-        "ui-datepicker": ["show", "hide", "enable", "disable", "focus", "reset"],
-        "ui-input": ["show", "hide", "enable", "disable", "focus", "reset"],
+        "ui-datepicker": ["show", "hide", "enable", "disable"],
+        "ui-input": ["show", "hide", "enable", "disable"],
         "ui-radio": ["show", "hide", "enable", "disable"],
         "ui-select": ["show", "hide", "enable", "disable"],
         "ui-slider": ["show", "hide", "enable", "disable"],
         "ui-switch": ["show", "hide", "enable", "disable"],
-        "ui-textarea": ["show", "hide", "enable", "disable", "focus", "reset"]
+        "ui-textarea": ["show", "hide", "enable", "disable"]
+    };
+
+    for (const [type, verbs] of Object.entries(dsVerbsByType)) {
+        for (const verb of verbs) {
+            const [field, value] = DS_VERB_WRITES[verb];
+            it(`${type}: '${verb}' writes ${field}=${value} to the per-client slot, pushes no command`, () => {
+                const nodeId = `dsverb-${type}-${verb}`;
+                const client = h.connectClient("c1");
+                registerNode(type, nodeId);
+
+                const node = h.makeNode(type, nodeId, h.state.definitions.get(nodeId)!.definition);
+                h.drive(type, node, { ui: { clientId: "c1", action: { type: verb } } });
+
+                expect(client.eventsOfType("command")).toHaveLength(0);
+                expect(slotValue(dsTest.getClientState(h.appId, "c1")!.state, nodeId, field)).toBe(value);
+            });
+        }
+    }
+});
+
+describe("P82: focus/reset verbs still push an SSE command frame", () => {
+    // Only the input nodes that own focus/reset (transient effects, not dynamic state).
+    const verbOwnership: Record<string, string[]> = {
+        "ui-datepicker": ["focus", "reset"],
+        "ui-input": ["focus", "reset"],
+        "ui-textarea": ["focus", "reset"]
     };
 
     for (const [type, verbs] of Object.entries(verbOwnership)) {
-        // Test the first owned verb for each type (representative)
         const verb = verbs[0];
         it(`${type}: owned verb '${verb}' pushes an SSE command frame`, () => {
             const nodeId = `verb-${type}`;
@@ -189,7 +234,22 @@ describe("P82: interaction verbs push an SSE command frame", () => {
             expect(commands).toHaveLength(1);
             expect(commands[0].data).toMatchObject({ command: { type: verb, target: nodeId } });
         });
+    }
+});
 
+describe("P82: a non-owned verb passes through without pushing a command", () => {
+    const inputTypes = [
+        "ui-checkbox",
+        "ui-datepicker",
+        "ui-input",
+        "ui-radio",
+        "ui-select",
+        "ui-slider",
+        "ui-switch",
+        "ui-textarea"
+    ];
+
+    for (const type of inputTypes) {
         // Test a verb NOT owned by this node → pass-through, no command push
         const notOwned = "open"; // "open" is a ui-dialog verb, no input node owns it
         it(`${type}: non-owned verb '${notOwned}' passes through without pushing a command`, () => {

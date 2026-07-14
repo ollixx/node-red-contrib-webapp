@@ -104,11 +104,18 @@ im Panel entfällt — nur eine schlichte Überschrift (ADR 0011 §4).
 
 Die Verben (`actionTypeSchema`) sind in drei semantische Klassen getrennt:
 
-- **Sichtbarkeit (Präsenz):** `show` / `hide` — blendet ein beliebiges Element ein/aus.
+- **Sichtbarkeit (Präsenz):** `show` / `hide` — schreiben den EINEN `visible`-Wert
+  des Zielknotens ([ADR 0037](../../adr/0037-unified-dynamic-state-fields-one-value-many-writers.md)):
+  ist `visible` an einen Store gebunden, wird **durch den Store durchgeschrieben**
+  (dieselbe Wahrheit wie ein direkter Store-Write); ungebunden landet der Wert im
+  **internen per-Client-Slot** des Knotens. Die Sichtbarkeit folgt dem Wert (ein
+  Snapshot-Re-Render entfernt/zeigt das Element), **nicht** einer separaten
+  Client-Overlay-Schicht. `ui-alert` ist ein gültiges Ziel.
 - **Offenlegung (Disclosure):** `open` / `close` — öffnet/schließt ein bereits sichtbares, aufklappbares Element (Dialog, Drawer, Accordion-Sektion, Details/Collapse, Tree-Branch). Nutzt optional `part`. Ersetzt `openDialog`/`closeDialog`, die als Aliase erhalten bleiben.
 - **Einzelauswahl:** `select` — genau eines aus einer Geschwister-Gruppe aktiv (Tab, Stepper-Schritt, Menü). Nutzt `part`.
 
-plus `navigate`, `enable` / `disable`, `focus`, `reset`. (`trigger` bleibt als
+plus `navigate`, `enable` / `disable` (schreiben analog den `disabled`-Wert, ADR
+0037), `focus`, `reset`. (`trigger` bleibt als
 Legacy-Pass-Through-Verb erhalten.) Es gibt **keine** CRUD-Verben — die früheren
 `submit`/`remove` wurden in P29 entfernt; Daten gehören in den verdrahteten Flow.
 
@@ -179,8 +186,11 @@ msg.ui.clientId      = <client>   ← schränkt die Action auf einen bestimmten 
 Der Output-Port emittiert die **mit `msg.ui.action` angereicherte `msg`**: der
 typisierte Befehl wird aus Konfiguration + msg-Overrides gebaut und in
 `msg.ui.action` geschrieben; alle fremden Felder reisen unverändert mit. Der
-verdrahtete Zielknoten verarbeitet das ihm bekannte Verb und führt den SSE-Push
-aus; ein Verb, das der Knoten nicht besitzt, wird unverändert durchgereicht.
+verdrahtete Zielknoten verarbeitet das ihm bekannte Verb: `show`/`hide` und
+`enable`/`disable` **schreiben den dynamic-state-Wert** (`visible`/`disabled`) und
+lösen darüber den Re-Render aus; die Offenlegungs-/Auswahl-Verben (`open`/`close`/
+`select`, `focus`) führen einen SSE-Command-Push aus. Ein Verb, das der Knoten
+nicht besitzt, wird unverändert durchgereicht.
 
 **Antizipierte Wiring-Szenarien:**
 - `ui-button` (Klick) → `function` → `ui-action (open)` → `ui-dialog`.
@@ -189,13 +199,20 @@ aus; ein Verb, das der Knoten nicht besitzt, wird unverändert durchgereicht.
 
 ## Besonderheiten
 
-- Den SSE-Push führt der **Zielknoten** aus, nicht `ui-action` (P59 / ADR 0007 §2).
+- Den SSE-Push (für `open`/`close`/`select`/`focus`) bzw. den dynamic-state-Write
+  (für `show`/`hide`/`enable`/`disable`) führt der **Zielknoten** aus, nicht
+  `ui-action` (P59 / ADR 0007 §2; ADR 0037).
 - `openDialog` / `closeDialog` werden als Aliase von `open` / `close` (ohne `part`)
   weiterhin akzeptiert.
-- Sichtbarkeit / enabled / open-Zustand werden client-seitig in einer
-  Interaktions-Overlay gehalten, die nach jedem Snapshot-Re-Render erneut
-  angewandt wird — ein `show`/`hide` überlebt also einen store-getriebenen
-  Snapshot-Push.
+- **Sichtbarkeit / enabled sind der EINE dynamic-state-Wert** des Zielknotens
+  ([ADR 0037](../../adr/0037-unified-dynamic-state-fields-one-value-many-writers.md)):
+  gebunden lebt er im Store (Durchschreiben), ungebunden im internen per-Client-Slot
+  des Knotens. `show`/`hide`/`enable`/`disable` sind nur weitere „von außen"-Schreiber
+  auf denselben Wert — wie eine Bindung, eine `msg` (P223) oder die Duration (P225).
+  Ein `hide` überlebt daher einen store-getriebenen Snapshot-Push automatisch (der
+  Wert bleibt), **ohne** eine separate Client-Overlay-Schicht. Nur der
+  Offenlegungs-/Auswahl-Zustand (`open`/`selected`) wird weiterhin client-seitig in
+  einer Interaktions-Overlay gehalten und nach jedem Re-Render erneut angewandt.
 
 ## Referenzen
 
