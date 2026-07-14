@@ -28,7 +28,7 @@ test.describe("ui-action verbs write dynamic-state value (P226)", () => {
     test("hide → unbound alert disappears; show → it reappears", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "p226App1", root: "p226App1" })
-            .node("ui-alert", { id: "p226Alert1", message: "Unbound alert" })
+            .node("ui-alert", { id: "p226Alert1", message: { kind: "literal", value: "Unbound alert" } })
             .node("ui-action", { id: "p226Hide1", actionType: "hide", target: "p226Alert1" })
             .node("ui-action", { id: "p226Show1", actionType: "show", target: "p226Alert1" })
             .withInjectNode("p226HideInj1", "p226Hide1")
@@ -67,7 +67,7 @@ test.describe("ui-action verbs write dynamic-state value (P226)", () => {
             .node("ui-store", { id: "p226Store2", statePath: "vis", initialValue: "true" })
             .node("ui-alert", {
                 id: "p226Alert2",
-                message: "Bound alert",
+                message: { kind: "literal", value: "Bound alert" },
                 visible: { kind: "store", path: "p226Store2" }
             })
             // A ui-text bound to the SAME store slice — its text mirrors the store
