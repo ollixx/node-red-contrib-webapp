@@ -2,7 +2,7 @@
 id: P224
 title: "State: Foundation für dynamische Zustandsfelder (visible/disabled) — EIN Wert pro Komponente: gebunden→Store, ungebunden→interner per-Client-Slot; Renderer liest den aufgelösten Wert"
 epic: aspects/state
-status: pending
+status: in_progress
 dependencies: [P201]
 verify: browser
 spec: docs/nodes/concepts/stores.md
