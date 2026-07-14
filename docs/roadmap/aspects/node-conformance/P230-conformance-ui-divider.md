@@ -18,7 +18,7 @@ tests: tests/e2e/nodes/view/ui-divider.tests.md
 > orientation, label (Literal + Store-Binding), ports. 🔴 **color + visible blockiert
 > durch einen systemischen Bug:** Base-Fields fehlen im Schema → Zod strippt sie →
 > `component.color === undefined` zur Laufzeit. Cross-Cutting, eigenes Paket
-> **[P231](../../aspects/editor/P231-base-fields-in-schema-and-runtime.md)**; die
+> **[P231](../../aspects/editor/done/P231-base-fields-in-schema-and-runtime.md)**; die
 > color/visible-Divider-Tests sind `test.fixme` (Verweis P231) und werden dort grün
 > gezogen. Kalibrierung: ein per-Knoten-Pass deckt systemische Bugs auf; E2E nicht
 > parallel zum Orchestrator fahren (Port 1882).
