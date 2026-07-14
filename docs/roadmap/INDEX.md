@@ -27,6 +27,7 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
+- **P230** — aspects/node-conformance — Konformitäts-Pass **ui-divider** (Pilot): Felder/Spec/Inline-Hilfe/Akzeptanz/Tests neu — *Owner 2026-07-14; Epic-Start* — [P230](aspects/node-conformance/P230-conformance-ui-divider.md)
 
 
 ## Deferred (parked, not abandoned)
