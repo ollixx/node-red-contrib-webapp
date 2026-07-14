@@ -2,7 +2,7 @@
 id: P227
 title: "Editor/Schema: Feld-Konsistenz-Guardrail (`pnpm check:fields`) + dokumentierte Feld-Namens-/Carrier-Konvention — stoppt weitere Drift"
 epic: aspects/editor
-status: pending
+status: in_progress
 dependencies: []
 verify: unit
 spec: docs/nodes/concepts/editor.md
