@@ -25,7 +25,7 @@
     "type": "ui-checkbox",
     "name": "cbNode",
     "uiId": "cbNode",
-    "app": "cbApp",
+    "parent": "cbApp",
     "mount": "cbApp.content",
     "z": "ex-ui-checkbox",
     "x": 480,

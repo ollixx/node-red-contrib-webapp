@@ -29,7 +29,7 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
 | `name` | „Name" | Textfeld | optional | Anzeigename im Editor und in Auswahllisten. Default: fortlaufend `Route N`; ist er leer, dient der `path` als Fallback-Anzeige. |
-| `app` | „App" | Node-Picker-Dialog (Preset Apps) | **ja** | Die Parent-`ui-app`. Auswahl aus einer filter- und scrollbaren Liste der Apps. |
+| `parent` | „App" | Node-Picker-Dialog (Preset Apps) | **ja** | Die Parent-`ui-app`. Auswahl aus einer filter- und scrollbaren Liste der Apps. |
 | `path` | „Pfad" | Textfeld | **ja** | Das URL-Segment der Route (`/<root>/<path>`), Parameter via `:name`. Eindeutig **innerhalb derselben App**. Darf **nicht leer** und **nicht `/`** sein — `/` ist der impliziten Root-Route vorbehalten. |
 | `title` | „Titel" | typedInput (literal/state/store/query/routeParam/msg/flow/global/jsonata/env) | optional | Sprechender Titel der Route (z. B. für Navigations-/Breadcrumb-Beschriftung). Literal-Bindungen erscheinen im Browser-Tab; dynamische Bindungen werden zur Render-Zeit nicht aufgelöst (Browser-Tab zeigt Routen-ID als Fallback). |
 
@@ -37,7 +37,7 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `layout` | „Layout" | SelectBox (Layout-Preset) | **ja** | Layout der Route (im Feld `layout` gespeichert). Auswahl aus den Standard-Presets (`vertical`, `horizontal`, `app`, `grid`, `absolute`). Default: `vertical`. Bestimmt die Slots und die Child-Platzierungs-Felder direkter Kinder — siehe [layout.md](../concepts/layout.md). |
+| `layoutId` | „Layout" | SelectBox (Layout-Preset) | **ja** | Layout der Route (im Feld `layoutId` gespeichert). Auswahl aus den Standard-Presets (`vertical`, `horizontal`, `app`, `grid`, `absolute`). Default: `vertical`. Bestimmt die Slots und die Child-Platzierungs-Felder direkter Kinder — siehe [layout.md](../concepts/layout.md). |
 
 ### Gruppe „Events"
 

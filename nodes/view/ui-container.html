@@ -28,9 +28,9 @@
                 color: { value: null },
                 colorBinding: { value: "" },
                 name: { value: "" },
-                app: { value: "" },
+                parent: { value: "" },
                 mount: { value: "", required: true },
-                layout: { value: "", required: true },
+                layoutId: { value: "", required: true },
                 variant: { value: "card" },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
@@ -69,10 +69,10 @@
                 common.installVariantSelectBox("container").call(this);
                 common.installLayoutChildPropRows().call(this);
                 common.installLayoutSelector({
-                    valueSelector: "#node-input-layout",
+                    valueSelector: "#node-input-layoutId",
                     presetSelector: "#node-input-layout-preset",
                     getValue: function () {
-                        return this.layout || this.layoutId;
+                        return this.layoutId;
                     }
                 }).call(this);
             }
@@ -83,7 +83,7 @@
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
-    <input type="hidden" id="node-input-layout">
+    <input type="hidden" id="node-input-layoutId">
     <div class="form-row"><label for="node-input-layout-preset">Child Layout</label><select id="node-input-layout-preset"></select></div>
     <input type="hidden" id="node-input-events">
     <input type="hidden" id="node-input-outputs">

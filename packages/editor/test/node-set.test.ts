@@ -327,7 +327,7 @@ describe("editor node set", () => {
         expect(issues).toEqual(
             expect.arrayContaining([
                 expect.objectContaining({
-                    field: "layout"
+                    field: "layoutId"
                 })
             ])
         );
@@ -363,7 +363,7 @@ describe("editor node set", () => {
         expect(issues).toEqual(
             expect.arrayContaining([
                 expect.objectContaining({
-                    field: "layout"
+                    field: "layoutId"
                 })
             ])
         );

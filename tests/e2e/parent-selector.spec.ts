@@ -59,15 +59,13 @@ test.describe("P11b/P114: parent + parent-slot pickers in editors", () => {
         await deployFlow(request, baselineFlow);
     });
 
-    test("ui-store app field is the dialog picker; dialog lists app entries", async ({ page }) => {
+    test("ui-store parent field is the dialog picker; dialog lists app entries", async ({ page }) => {
         await gotoEditor(page);
         await openEditor(page, "mountStore");
 
-        // P228: the owning-app field is now `app` (was `parent`). A legacy fixture
-        // carrying `parent` still opens — withUiIdMigration lifts it into `app`.
         // Dialog-only pattern: button present, bound control hidden.
-        await expect(pickerFieldButton(page, "app")).toBeVisible();
-        await expect(page.locator("#node-input-app")).toBeHidden();
+        await expect(pickerFieldButton(page, "parent")).toBeVisible();
+        await expect(page.locator("#node-input-parent")).toBeHidden();
 
         // The apps preset (what the dialog renders from) has app candidates.
         const appCount = await page.evaluate(() => {
@@ -77,7 +75,7 @@ test.describe("P11b/P114: parent + parent-slot pickers in editors", () => {
         expect(appCount).toBeGreaterThan(0);
 
         // Opening the dialog shows app rows.
-        await openPicker(page, "app");
+        await openPicker(page, "parent");
         await expect(page.locator(".webapp-node-picker-row").first()).toBeVisible();
     });
 

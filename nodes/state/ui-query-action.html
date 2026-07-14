@@ -7,7 +7,7 @@
             color: "#d8e8f8",
             defaults: {
                 name: { value: "" },
-                app: { value: "", required: true },
+                parent: { value: "", required: true },
                 query: { value: "", required: true },
                 action: { value: "refresh", required: true },
                 mode: { value: "reference", required: true }
@@ -31,7 +31,7 @@
 <script type="text/html" data-template-name="ui-query-action">
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-app">App</label><select id="node-input-app"></select></div>
+    <div class="form-row"><label for="node-input-parent">App</label><select id="node-input-parent"></select></div>
     <div class="form-row"><label for="node-input-query">Query</label><select id="node-input-query"></select></div>
     <div class="form-row"><label for="node-input-action">Action</label>
         <select id="node-input-action">

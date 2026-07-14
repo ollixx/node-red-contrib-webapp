@@ -25,7 +25,7 @@
     "type": "ui-datepicker",
     "name": "dpNode",
     "uiId": "dpNode",
-    "app": "dpApp",
+    "parent": "dpApp",
     "mount": "dpApp.content",
     "z": "ex-ui-datepicker",
     "x": 480,

@@ -25,7 +25,7 @@
     "type": "ui-switch",
     "name": "swNode",
     "uiId": "swNode",
-    "app": "swApp",
+    "parent": "swApp",
     "mount": "swApp.content",
     "z": "ex-ui-switch",
     "x": 480,

@@ -21,7 +21,7 @@ Seit **P119 (ADR 0011 §5)** zeigt `ui-navigation` im Editor **denselben
 Drei-Modus-Umschalter** wie `ui-action` (via Wire · Route · URL) mit denselben
 zentralen Helfern (kein Zweit-Code). Zur Laufzeit wird `ui-navigation` weiterhin
 als **Modus `url`**-Ziel über `to` behandelt; `to` ist daher jetzt **optional**
-(eine Route-Modus-`ui-navigation` adressiert über `route` und trägt kein `to`,
+(eine Route-Modus-`ui-navigation` adressiert über `routeId` und trägt kein `to`,
 fällt damit aus der `to`-gekeyeden navigations-Liste). Den vollwertigen `wire`-/
 `route`-Laufzeit-Pfad mit typisierten `params` liefert `ui-action`.
 
@@ -36,9 +36,9 @@ fällt damit aus der `to`-gekeyeden navigations-Liste). Den vollwertigen `wire`-
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
 | `name` | „Name" | Textfeld | optional | Anzeigename im Editor und in Auswahllisten. Default: fortlaufend `Navigation N`. |
-| `app` | „App" | Node-Picker-Dialog (Preset Apps) | **ja** | Die Parent-`ui-app`. |
+| `parent` | „App" | Node-Picker-Dialog (Preset Apps) | **ja** | Die Parent-`ui-app`. |
 | `targetMode` | „Zielquelle" | Segment-Schalter (`wire`/`route`/`url`) | optional | Wie bei `ui-action`. Default per Migration (Legacy `to` → `url`). |
-| `route` | „Ziel-Route" | Picker (Preset `routes`) | nur Modus `route` | Per Referenz gewählte `ui-route` (Editor-Komfort). |
+| `routeId` | „Ziel-Route" | Picker (Preset `routes`) | nur Modus `route` | Per Referenz gewählte `ui-route` (Editor-Komfort). |
 | `to` / `toType` | „Zielpfad" | typedInput | nur Modus `url` | Der Ziel-Routenpfad (entspricht `to` einer `navigate`-Action). **Optional** seit P119. |
 | `params` | „Parameter" | typisierte Liste | optional | Wie bei `ui-action`. |
 

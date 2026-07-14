@@ -13,14 +13,13 @@ Feld heißt und welches Carrier-Muster es verwendet. Sie ergänzt
 > Konvention macht den Zielzustand explizit; der Tripwire `pnpm check:fields`
 > (`scripts/check-fields.js`) erzwingt ihn.
 
-> **Migrations-Reihenfolge.** Dieses Dokument beschreibt den **Zielzustand**. Die
-> Referenz-Umbenennungen (`parent` → `app`, `layoutId`/`routeId`/`definitionId` →
-> bloßer Name) sind in **P228 gelandet** (back-compat: der Runtime liest kanonisch
-> mit Legacy-Fallback, der Editor migriert beim Öffnen/Speichern). Der Legacy-Sweep
-> (`*Path`/`*Json`/totes `storeId`/`path`/Pagination-Aliase) folgt in **P229**. Bis
-> dahin trägt eine **kuratierte Allowlist** in `scripts/check-fields.js` die heutigen
-> P229-Verstöße mit je einer Ein-Zeilen-Begründung, damit `pnpm validate` grün
-> bleibt; die Liste schrumpft mit P229 auf leer.
+> **Migrations-Reihenfolge.** Dieses Dokument beschreibt den **Zielzustand**. Der
+> Baum entspricht ihm heute noch nicht vollständig: die Umbenennungen (`parent` →
+> `app`, `*Id` → bloßer Name) folgen in **P228**, der Legacy-Sweep (`*Path`/`*Json`/
+> totes `storeId`/`path`/Pagination-Aliase) in **P229**. Bis dahin trägt eine
+> **kuratierte Allowlist** in `scripts/check-fields.js` die heutigen Verstöße mit je
+> einer Ein-Zeilen-Begründung, damit `pnpm validate` grün bleibt; die Liste
+> schrumpft mit P228/P229 auf leer.
 
 ---
 
@@ -32,16 +31,12 @@ Ein Feld, dessen Wert die **Id eines anderen Knotens** ist, heißt wie das
 Konzept — **ohne** `Id`-Suffix; der Wert *ist* die Id, wie bei `store` und
 `mount`:
 
-| Kanonisch   | Legacy-Alias (nur lesend) | referenziert |
+| Zielzustand | statt (Legacy) | referenziert |
 |---|---|---|
 | `store`     | `storeId`      | einen `ui-store` |
 | `layout`    | `layoutId`     | ein Layout-Preset |
 | `route`     | `routeId`      | eine `ui-route` |
 | `definition`| `definitionId` | eine `ui-component-definition` |
-
-Die Legacy-Aliase (`layoutId`/`routeId`/`definitionId`) werden nach P228 nur noch
-**lesend** akzeptiert (Back-compat); der Editor schreibt ausschließlich den
-kanonischen Namen. (`storeId` ist ein toter P229-Kandidat, kein bloßer Rename.)
 
 **Ausnahmen (kein Referenz-Feld, `Id`-Suffix bleibt):**
 
@@ -53,8 +48,7 @@ kanonischen Namen. (`storeId` ist ein toter P229-Kandidat, kein bloßer Rename.)
 
 - **`app`** benennt die **besitzende App-Id** (auf jedem Nicht-App-Knoten). Das
   frühere `parent` war irreführend benannt — es hielt nie einen Slot-Parent,
-  sondern die App-Id. (Umbenannt in P228; `parent` bleibt als Legacy-Alias nur
-  lesend erhalten, der Editor migriert es beim Öffnen/Speichern auf `app`.)
+  sondern die App-Id. (Rename in P228; bis dahin heißt das Feld noch `parent`.)
 - **`mount`** ist der **Render-Slot** (`<typ>:<id>/<slot>`), siehe
   [layout.md](layout.md). Ein Knoten deklariert entweder `mount` (Render-Knoten)
   oder trägt `app` (Logik-Knoten); Render-Knoten dürfen zusätzlich `app` für

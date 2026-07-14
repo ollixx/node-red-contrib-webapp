@@ -25,7 +25,7 @@
     "type": "ui-radio",
     "name": "radioNode",
     "uiId": "radioNode",
-    "app": "radioApp",
+    "parent": "radioApp",
     "mount": "radioApp.content",
     "z": "ex-ui-radio",
     "x": 480,

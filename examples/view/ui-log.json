@@ -27,7 +27,7 @@
     "type": "ui-log",
     "name": "log",
     "uiId": "logNode",
-    "app": "logApp",
+    "parent": "logApp",
     "mount": "logApp.content",
     "z": "ex-ui-log",
     "x": 480,

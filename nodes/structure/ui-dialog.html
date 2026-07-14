@@ -7,10 +7,10 @@
             color: "#d9efe2",
             defaults: {
                 name: { value: "" },
-                app: { value: "", required: true },
+                parent: { value: "", required: true },
                 title: { value: "" },
-                layout: { value: "", required: true },
-                route: { value: "" },
+                layoutId: { value: "", required: true },
+                routeId: { value: "" },
                 modal: { value: true },
                 closable: { value: true },
                 events: { value: "[]" },
@@ -37,10 +37,10 @@
             oneditprepare: function () {
                 common.installParentAppSelector().call(this);
                 common.installLayoutSelector({
-                    valueSelector: "#node-input-layout",
+                    valueSelector: "#node-input-layoutId",
                     presetSelector: "#node-input-layout-preset",
                     getValue: function () {
-                        return this.layout || this.layoutId;
+                        return this.layoutId;
                     }
                 }).call(this);
                 common.installReferenceSelectors({ route: true }).call(this);
@@ -51,11 +51,11 @@
 <script type="text/html" data-template-name="ui-dialog">
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-app">App</label><select id="node-input-app"></select></div>
+    <div class="form-row"><label for="node-input-parent">App</label><select id="node-input-parent"></select></div>
     <div class="form-row"><label for="node-input-title">Titel</label><input type="text" id="node-input-title"></div>
-    <input type="hidden" id="node-input-layout">
+    <input type="hidden" id="node-input-layoutId">
     <div class="form-row"><label for="node-input-layout-preset">Parent Layout</label><select id="node-input-layout-preset"></select></div>
-    <div class="form-row"><label for="node-input-route">Parent Route</label><select id="node-input-route"></select></div>
+    <div class="form-row"><label for="node-input-routeId">Parent Route</label><select id="node-input-routeId"></select></div>
     <div class="form-row"><label for="node-input-modal">Modal</label><input type="checkbox" id="node-input-modal" style="width:auto"></div>
     <div class="form-row"><label for="node-input-closable">Schließbar</label><input type="checkbox" id="node-input-closable" style="width:auto"></div>
     <input type="hidden" id="node-input-events">

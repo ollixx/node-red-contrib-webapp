@@ -2003,8 +2003,7 @@ describe("P64: generated example uses a native closable dialog (no closeCustomer
                 typeof n === "object" && n !== null && (n as Record<string, unknown>).type === "ui-dialog"
         );
         expect(dialogNode).toBeDefined();
-        // P228 (ADR 0038): the generated example uses the canonical `layout` field.
-        expect(dialogNode?.layout).toBe("dialog");
+        expect(dialogNode?.layoutId).toBe("dialog");
         expect(dialogNode?.closable).not.toBe(false);
     });
 

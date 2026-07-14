@@ -25,7 +25,7 @@
     "type": "ui-slider",
     "name": "sliderNode",
     "uiId": "sliderNode",
-    "app": "sliderApp",
+    "parent": "sliderApp",
     "mount": "sliderApp.content",
     "z": "ex-ui-slider",
     "x": 480,

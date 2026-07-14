@@ -7,7 +7,7 @@
             color: "#f8ddd0",
             defaults: {
                 name: { value: "" },
-                app: { value: "" },
+                parent: { value: "" },
                 actionType: { value: "" },
                 // P118/P119 (ADR 0011): the navigate target SOURCE mode (wire | route
                 // | url). Empty until the panel resolves it (wire-scan pre-select).
@@ -15,7 +15,7 @@
                 // P118/P119: referenced ui-route id (route mode). Its validator
                 // back-stops the whole navigate config (ADR 0011 §3): route mode
                 // requires a resolvable routeId + a value for each :placeholder.
-                route: { value: "", validate: function () { return window.WebappEditorCommon.validateNavigateConfig(this); } },
+                routeId: { value: "", validate: function () { return window.WebappEditorCommon.validateNavigateConfig(this); } },
                 // P66 (ADR 0007): navigate `to` is a typedInput — `to` holds the
                 // value, `toType` the type (str = literal path, or msg/flow/global/
                 // jsonata). Only meaningful in url mode (the URL is built whole).
@@ -124,7 +124,7 @@
 <script type="text/html" data-template-name="ui-action">
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-app">App</label><select id="node-input-app"></select></div>
+    <div class="form-row"><label for="node-input-parent">App</label><select id="node-input-parent"></select></div>
     <div class="form-row"><label for="node-input-actionType">Action-Typ</label><select id="node-input-actionType"><option value="">unspezifiziert</option><option value="navigate">navigate</option><option value="show">show</option><option value="hide">hide</option><option value="open">open</option><option value="close">close</option><option value="select">select</option><option value="enable">enable</option><option value="disable">disable</option><option value="focus">focus</option><option value="reset">reset</option></select></div>
     <!-- P119 (ADR 0011): navigate target-source mode UI (built by
          installNavigateTargetMode into .webapp-navigate-target-mode). The `to`
@@ -135,7 +135,7 @@
         <div class="webapp-navigate-target-mode"></div>
     </div>
     <div class="form-row" id="node-input-to-row" style="display:none;"><label for="node-input-to">Navigation zu</label><input type="text" id="node-input-to" style="width: 70%;" placeholder="z.B. /customers/:id"><input type="hidden" id="node-input-toType"></div>
-    <div class="form-row" id="node-input-route-row" style="display:none;"><label for="node-input-route">Ziel-Route</label><input type="text" id="node-input-route"></div>
+    <div class="form-row" id="node-input-routeId-row" style="display:none;"><label for="node-input-routeId">Ziel-Route</label><input type="text" id="node-input-routeId"></div>
     <input type="hidden" id="node-input-targetMode">
     <input type="hidden" id="node-input-params">
     <div class="form-row">

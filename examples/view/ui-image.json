@@ -25,7 +25,7 @@
     "type": "ui-image",
     "name": "hero image",
     "uiId": "imgNode",
-    "app": "imgApp",
+    "parent": "imgApp",
     "mount": "imgApp.content",
     "z": "ex-ui-image",
     "x": 480,

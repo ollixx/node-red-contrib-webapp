@@ -37,7 +37,7 @@
             color: "#d9efe2",
             defaults: {
                 name: { value: "" },
-                app: { value: "", required: true },
+                parent: { value: "", required: true },
                 path: {
                     value: "",
                     required: true,
@@ -52,7 +52,7 @@
                 // element so Node-RED's post-save auto-read cannot clobber it).
                 title: { value: null },
                 titleBinding: { value: "" },
-                layout: { value: "", required: true },
+                layoutId: { value: "", required: true },
                 events: { value: "[]" },
                 outputs: { value: 0 }
             },
@@ -79,10 +79,10 @@
             oneditprepare: function () {
                 common.installParentAppSelector().call(this);
                 common.installLayoutSelector({
-                    valueSelector: "#node-input-layout",
+                    valueSelector: "#node-input-layoutId",
                     presetSelector: "#node-input-layout-preset",
                     getValue: function () {
-                        return this.layout || this.layoutId;
+                        return this.layoutId;
                     }
                 }).call(this);
 
@@ -127,7 +127,7 @@
 <script type="text/html" data-template-name="ui-route">
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-app">App</label><select id="node-input-app"></select></div>
+    <div class="form-row"><label for="node-input-parent">App</label><select id="node-input-parent"></select></div>
     <!-- P89 (a): path field with info button (analog ui-app logging info button) -->
     <div class="form-row">
         <label for="node-input-path">Pfad</label>
@@ -141,7 +141,7 @@
     </div>
     <!-- P89 (b): title as typedInput binding (all types) -->
     <div class="form-row"><label for="node-input-titleBinding">Titel</label><input type="text" id="node-input-titleBinding"></div>
-    <input type="hidden" id="node-input-layout">
+    <input type="hidden" id="node-input-layoutId">
     <div class="form-row"><label for="node-input-layout-preset">Parent Layout</label><select id="node-input-layout-preset"></select></div>
     <input type="hidden" id="node-input-events">
     <input type="hidden" id="node-input-outputs">

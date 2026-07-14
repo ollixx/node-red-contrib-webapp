@@ -158,9 +158,8 @@ const EXCLUDED_KEYS = new Set(["parent", "mount"]);
 const DEFAULT_CARRIER = {
     store: "storeId",
     query: "queryId",
-    // P228 (ADR 0038): reference carriers use the bare concept name.
-    route: "route",
-    layout: "layout",
+    route: "routeId",
+    layout: "layoutId",
 };
 
 function selectorToField(sel) {

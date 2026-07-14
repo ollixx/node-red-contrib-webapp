@@ -14,8 +14,7 @@ machinery ([ADR 0017](../../adr/0017-ui-repeat-template-container-render-time-sc
 
 - **`ui-component-definition`** — container-kind, off-canvas; children mount into
   `def:<componentId>/content`; never renders on its own. *(P177 schema; P179 node/editor.)*
-- **`ui-component-instance`** — leaf with an outer `mount`, a `definition` reference
-  (P228/ADR 0038 rename of the legacy `definitionId`; read back-compat), and a
+- **`ui-component-instance`** — leaf with an outer `mount`, a `definitionId`, and a
   `props` map (name → value typedInput, any binding kind). *(P177 schema; P179 editor picker + props map.)*
 - **`def:` mount scope** — new scope in the mount grammar. *(P177.)*
 - **`prop` / `prop.<name>` binding kind** — scope-local, resolved at render time
@@ -41,12 +40,10 @@ display `name` for the editor/structure sidebar.
 ### `ui-component-instance`
 
 A **leaf-shaped** node (no children of its own) that **must** carry an outer
-`mount`/`app` into a real route/container (like any mounted node). Fields:
+`mount`/`parent` into a real route/container (like any mounted node). Fields:
 
-- **`definition`** *(required string)* — the id of the `ui-component-definition`
-  it instantiates. (P228/ADR 0038 rename of the legacy `definitionId`; the editor
-  reads either and writes `definition`. The compiled instance still carries the id
-  in `props.definitionId` — see below.)
+- **`definitionId`** *(required string)* — the id of the `ui-component-definition`
+  it instantiates.
 - **`props`** *(map `name → value-binding`, default `{}`)* — each value is an
   ordinary value-binding of **any** binding kind (literal/state/store/query/item/…).
   Optional and may be empty.
@@ -186,7 +183,7 @@ button-first mount picker). Fields:
 
 ### Visible validation
 
-- A missing/empty `definition` fails the editor's required-field check (the node is
+- A missing/empty `definitionId` fails the editor's required-field check (the node is
   marked invalid, deploy blocked).
 - `validateComponentAcyclic` (P177) is the deploy-time guard for a definition that
   instantiates itself directly or transitively — surfaced as a deploy error.

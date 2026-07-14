@@ -25,7 +25,7 @@
     "type": "ui-empty-state",
     "name": "no results",
     "uiId": "noResults",
-    "app": "emptyApp",
+    "parent": "emptyApp",
     "mount": "emptyApp.content",
     "z": "ex-ui-empty-state",
     "x": 480,
