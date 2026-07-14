@@ -3,8 +3,7 @@ id: P226
 node: ui-action
 title: "ui-action: show/hide (+ enable/disable) schreiben den EINEN dynamic-state-Wert statt Client-Overlay; ui-alert einbinden"
 epic: nodes/ui-action
-status: deferred
-deferred_reason: "Baut auf P224 (dynamic-state Foundation: der EINE Wert + Schreib-API). Erst umsetzbar, wenn die Foundation steht."
+status: pending
 dependencies: [P224]
 verify: browser
 spec: docs/nodes/behavior/ui-action.md
@@ -12,7 +11,7 @@ tests: tests/e2e/nodes/behavior/ui-action.tests.md
 ---
 # P226 — Interaktions-Verben schreiben den dynamic-state-Wert
 
-> Rationale: [ADR 0037](../../../../adr/0037-unified-dynamic-state-fields-one-value-many-writers.md).
+> Rationale: [ADR 0037](../../../adr/0037-unified-dynamic-state-fields-one-value-many-writers.md).
 > Vereinheitlicht den imperativen show/hide-Pfad mit dem deklarativen Wert.
 
 ## findings

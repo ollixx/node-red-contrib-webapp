@@ -3,8 +3,7 @@ id: P225
 node: ui-alert
 title: "ui-alert: Duration als deklarativer visible=false-Übergang (schreibt den EINEN Sichtbarkeits-Wert) statt Client-Einweg-Close"
 epic: nodes/ui-alert
-status: deferred
-deferred_reason: "Baut auf P224 (dynamic-state Foundation: der EINE Wert + Schreib-API). Erst umsetzbar, wenn die Foundation steht."
+status: in_progress
 dependencies: [P224]
 verify: browser
 spec: docs/nodes/feedback/ui-alert.md
@@ -12,8 +11,8 @@ tests: tests/e2e/nodes/view/ui-alert.tests.md
 ---
 # P225 — Duration als visible-Zustandsübergang
 
-> Rationale: [ADR 0037](../../../../adr/0037-unified-dynamic-state-fields-one-value-many-writers.md).
-> Löst den in [ADR 0032](../../../../adr/0032-store-subpath-missing-key-is-transient-not-an-error.md)/
+> Rationale: [ADR 0037](../../../adr/0037-unified-dynamic-state-fields-one-value-many-writers.md).
+> Löst den in [ADR 0032](../../../adr/0032-store-subpath-missing-key-is-transient-not-an-error.md)/
 > ui-alert-Doku vermerkten Duration↔visible-Redesign auf.
 
 ## findings
