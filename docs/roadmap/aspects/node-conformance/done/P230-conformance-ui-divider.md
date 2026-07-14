@@ -11,14 +11,14 @@ tests: tests/e2e/nodes/view/ui-divider.tests.md
 ---
 # P230 — Konformitäts-Pass ui-divider (Pilot)
 
-> Ablauf/Checkliste: [epic.md](epic.md). Pilot zum Kalibrieren.
+> Ablauf/Checkliste: [epic.md](../epic.md). Pilot zum Kalibrieren.
 
 > **Pilot-Ergebnis (2026-07-14):** ✅ Spec-Drifts (label bindbar; visible/color-
 > Laufzeit) + Inline-Hilfe (Doku-Link, Bindbarkeit) korrigiert. ✅ Tests grün:
 > orientation, label (Literal + Store-Binding), ports. 🔴 **color + visible blockiert
 > durch einen systemischen Bug:** Base-Fields fehlen im Schema → Zod strippt sie →
 > `component.color === undefined` zur Laufzeit. Cross-Cutting, eigenes Paket
-> **[P231](../../aspects/editor/done/P231-base-fields-in-schema-and-runtime.md)**; die
+> **[P231](../../editor/done/P231-base-fields-in-schema-and-runtime.md)**; die
 > color/visible-Divider-Tests sind `test.fixme` (Verweis P231) und werden dort grün
 > gezogen. Kalibrierung: ein per-Knoten-Pass deckt systemische Bugs auf; E2E nicht
 > parallel zum Orchestrator fahren (Port 1882).

@@ -10,7 +10,7 @@ tests: tests/e2e/nodes/view/ui-divider.spec.ts
 ---
 # P231 — Base-Fields in Schema + Laufzeit
 
-> Aufgedeckt vom Node-Konformitäts-Pilot [P230](../../node-conformance/P230-conformance-ui-divider.md).
+> Aufgedeckt vom Node-Konformitäts-Pilot [P230](../../node-conformance/done/P230-conformance-ui-divider.md).
 > Hochpriorer Cross-Cutting-Fix — Prerequisit für ADR 0037 (dynamic-state/visible).
 
 ## findings (verifiziert 2026-07-14)
