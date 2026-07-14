@@ -3,6 +3,8 @@ import path from "node:path";
 
 import { expect, test } from "@playwright/test";
 
+import { waitForNodeTypes } from "../../../helpers/editor-ready";
+
 /**
  * P165 (ADR 0017) — ui-repeat end-to-end browser proof.
  *
@@ -283,11 +285,10 @@ test.describe("ui-repeat items typedInput round-trip (P190)", () => {
         // Open the Node-RED editor.
         await page.goto("/");
         await page.waitForLoadState("networkidle");
-        // Wait for RED runtime + node-type registry.
-        await page.waitForFunction(() => {
-            const red = (window as unknown as { RED?: { nodes?: { node: (id: string) => unknown } } }).RED;
-            return Boolean(red?.nodes?.node);
-        }, { timeout: 30000 });
+        // Wait for the node-type REGISTRY (getType + editor.edit), not just
+        // RED.nodes.node — otherwise red.editor.edit() below races template
+        // registration and the tray never builds ([[e2e-editor-registration-race]]).
+        await waitForNodeTypes(page, ["ui-repeat"]);
 
         // Open the ui-repeat node config (peopleRepeat is defined in ui-repeat.flow.json).
         await page.evaluate(() => {
