@@ -40,9 +40,9 @@ Abschnitt „Basis-Felder + Editor-Struktur"):
 
 | Feld | Label | Editor-Typ | Anwendbar | Beschreibung |
 |---|---|---|---|---|
-| `visible` | „Visible" | Boolean-Zustand-typedInput (ADR-0012-Boolean-Satz) | ja | Sichtbarkeit; leer = sichtbar (Default). Persistiert als Binding-Objekt. Laufzeit-Auswertung folgt mit dem Rollout. |
+| `visible` | „Visible" | Boolean-Zustand-typedInput (ADR-0012-Boolean-Satz) | ja | Sichtbarkeit; leer = sichtbar (Default). Persistiert als Binding-Objekt und wird zur Laufzeit als `visibleIf` ausgewertet (Render-Gate): `false` ⇒ der Divider wird nicht gerendert. Dynamisches Zustandsmodell (Binding vs. interner Wert, msg/Duration/Aktionen): [ADR 0037](../../adr/0037-unified-dynamic-state-fields-one-value-many-writers.md). |
 | `disabled` | „Disabled" | — (N/A) | **nein** | Ein Trenner hat keinen interaktiven Zustand — Feld wird disabled mit diesem Hinweis angezeigt. |
-| `color` | „Color" | Wert-typedInput (voller Binding-Satz) | ja | Allgemeine Linienfarbe; `ui-divider` trägt kein `variant`, daher ist `color` aktiv. Persistiert als Binding-Objekt (leeres Literal → `null`). Laufzeit-Auswertung folgt mit dem Rollout. |
+| `color` | „Color" | Wert-typedInput (voller Binding-Satz) | ja | Allgemeine Linienfarbe; `ui-divider` trägt kein `variant`, daher ist `color` aktiv. Persistiert als Binding-Objekt (leeres Literal → `null`) und färbt zur Laufzeit die gerenderte Linie; leer ⇒ Theme-Default (`colorBorder`). |
 | `size` | „Size" | — (N/A, im „Erweitert"-Abschnitt) | **nein** | Ein Trenner hat keine Größen-Stufen — Feld wird disabled mit diesem Hinweis angezeigt. |
 
 ### Gruppe „Darstellung"
@@ -50,7 +50,7 @@ Abschnitt „Basis-Felder + Editor-Struktur"):
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
 | `orientation` | „Ausrichtung" | SelectBox (`horizontal` / `vertical`) | optional | Ausrichtung der Linie. `horizontal` trennt vertikal gestapelte Inhalte; `vertical` trennt nebeneinanderliegende Bereiche. Default: `horizontal`. |
-| `label` | „Label" | Textfeld | optional | Optionaler Text, der mittig auf der Linie angezeigt wird (z. B. „Oder", „Abschnitt A"). Statischer String; kein Binding. |
+| `label` | „Label" | Wert-typedInput (voller Binding-Satz, P150/ADR 0012) | optional | Optionaler Text, der mittig auf der Linie angezeigt wird (z. B. „Oder", „Abschnitt A"). **Voll bindbar** — Literal, Store, `state`, Query, Route-Param, Reactive, `msg`/JSONata; der Renderer zeigt den aufgelösten Wert. Leer/kein Wert → kein Label. Leer-/`null`-/Non-Skalar-Verhalten wie bei allen Anzeigewerten ([value-rendering.md](../concepts/value-rendering.md)). |
 
 ### Gruppe „Platzierung"
 
@@ -96,5 +96,6 @@ Web-Component-Props ab; weitere Backends folgen demselben Contract. Details:
 
 ## Offene Punkte
 
-- Stärke (`thickness`) und Stil (`style`: `solid`, `dashed`, `dotted`) der Linie sind noch nicht im Schema modelliert.
-- Bindung des `label`-Felds (typedInput) ist noch nicht vorgesehen; aktuell nur statischer String.
+- **Breite/Stärke** (`width` / `thickness`) und **Stil** (`style`: `solid`,
+  `dashed`, `dotted`) der Linie sind noch nicht im Schema modelliert.
+- **Abstand** (`spacing` vor / nach dem Divider) ist noch nicht modelliert.

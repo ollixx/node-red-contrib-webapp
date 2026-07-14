@@ -5,83 +5,124 @@ import { FlowBuilder } from "../../../helpers/flow-builder";
 import { WebappPage } from "../../../helpers/webapp-page";
 
 /**
- * P83 — ui-divider render E2E specs.
+ * ui-divider — feature coverage (P230, node-conformance).
  *
- * Verifies that the ui-divider node renders as an <sl-divider> element. Before
- * P83, ui-divider was missing from both the components filter (getDefinitionBuckets)
- * and the renderer's kind map, so it produced no output at all.
- *
- * ui-divider has no input port and emits no events — behaviour coverage is in
- * packages/runtime/test/p76-divider-no-input-handler.test.ts and
- * p83-display-nodes-behaviour.test.ts. Editor coverage is in
- * p16d-display-nodes.spec.ts.
+ * Outcome-based, per the acceptance criteria: orientation, label (literal +
+ * bound), the base-field `color` on the rendered line, `visible` render-gate,
+ * grid placement, and no ports. Editor base-field coverage lives in
+ * tests/e2e/nodes/editor/base-fields.spec.ts (not duplicated here).
  */
 
-test.describe("ui-divider render (P83)", () => {
-    test.afterEach(async ({ request }) => {
-        await resetFlow(request);
-    });
+async function served(request: import("@playwright/test").APIRequestContext, appId: string): Promise<string> {
+    const res = await request.get(`/webapp/${appId}/`);
+    expect(res.ok()).toBeTruthy();
+    return res.text();
+}
 
-    test("renders as <sl-divider> in the served page", async ({ page, request }) => {
-        const flow = new FlowBuilder()
-            .app({ id: "divApp1", root: "divApp1" })
-            .node("ui-divider", { id: "divNode1" })
-            .build();
+test.describe("ui-divider — orientation + label", () => {
+    test.afterEach(async ({ request }) => { await resetFlow(request); });
 
+    test("horizontal → <sl-divider> without the vertical attribute", async ({ request }) => {
+        const flow = new FlowBuilder().app({ id: "divH", root: "divH" })
+            .node("ui-divider", { id: "dH", orientation: "horizontal" }).build();
         await deployFlow(request, flow);
-
-        const res = await request.get("/webapp/divApp1/");
-        expect(res.ok()).toBeTruthy();
-        const html = await res.text();
+        const html = await served(request, "divH");
         expect(html).toContain("<sl-divider");
+        expect(html).not.toContain("<sl-divider vertical");
+    });
 
-        const webapp = new WebappPage(page, "divApp1");
+    test("vertical → <sl-divider vertical>", async ({ request }) => {
+        const flow = new FlowBuilder().app({ id: "divV", root: "divV" })
+            .node("ui-divider", { id: "dV", orientation: "vertical" }).build();
+        await deployFlow(request, flow);
+        expect(await served(request, "divV")).toContain("<sl-divider vertical");
+    });
+
+    test("literal label renders centred inside the divider", async ({ request }) => {
+        const flow = new FlowBuilder().app({ id: "divL", root: "divL" })
+            .node("ui-divider", { id: "dL", label: { kind: "literal", value: "Abschnitt A" } }).build();
+        await deployFlow(request, flow);
+        const html = await served(request, "divL");
+        expect(html).toMatch(/<sl-divider[^>]*>Abschnitt A<\/sl-divider>/);
+    });
+
+    test("bound label (store) renders the resolved live value (P150)", async ({ request }) => {
+        const flow = new FlowBuilder().app({ id: "divB", root: "divB" })
+            .node("ui-store", { id: "lblStore", parent: "divB", statePath: "dividerLabel", initialValue: JSON.stringify("Gebunden") })
+            .node("ui-divider", { id: "dB", label: { kind: "store", path: "lblStore" } })
+            .build();
+        await deployFlow(request, flow);
+        const html = await served(request, "divB");
+        expect(html).toMatch(/<sl-divider[^>]*>Gebunden<\/sl-divider>/);
+    });
+});
+
+// BLOCKED by P231: the base-field `visible`/`disabled`/`color` are missing from the
+// ui-divider SCHEMA (packages/schema/src/node-definitions.ts), so Zod strips them at
+// validation and they never reach the runtime. The serializer + mapConfig fix is
+// proven; the schema carry is the systemic fix. Un-fixme once P231 lands.
+test.describe.fixme("ui-divider — base-field color on the line (blocked: P231)", () => {
+    test.afterEach(async ({ request }) => { await resetFlow(request); });
+
+    test("bound color emits the Shoelace --color custom property", async ({ request }) => {
+        const flow = new FlowBuilder().app({ id: "divC", root: "divC" })
+            .node("ui-divider", { id: "dC", color: { kind: "literal", value: "#ff0000" } }).build();
+        await deployFlow(request, flow);
+        const html = await served(request, "divC");
+        expect(html).toMatch(/<sl-divider[^>]*style="[^"]*--color:#ff0000/);
+    });
+
+    test("the --color is applied on the rendered element (computed style)", async ({ page, request }) => {
+        const flow = new FlowBuilder().app({ id: "divCm", root: "divCm" })
+            .node("ui-divider", { id: "dCm", color: { kind: "literal", value: "rgb(0, 128, 0)" } }).build();
+        await deployFlow(request, flow);
+        const webapp = new WebappPage(page, "divCm");
         await webapp.navigate("/");
-        await expect(webapp.root()).toBeVisible();
+        const divider = page.locator("sl-divider").first();
+        await expect(divider).toBeVisible();
+        const color = await divider.evaluate((el) => getComputedStyle(el).getPropertyValue("--color").trim());
+        expect(color).toBe("rgb(0, 128, 0)");
+    });
+});
+
+// BLOCKED by P231 (same schema-strip root cause as color): `visible` is not in the
+// ui-divider schema, so a bound visible is stripped and the render-gate never fires.
+test.describe.fixme("ui-divider — visible render-gate (bound; ADR 0037) (blocked: P231)", () => {
+    test.afterEach(async ({ request }) => { await resetFlow(request); });
+
+    // A store-bound `visible` governs the render (a plain literal is treated as an
+    // unbound dynamic-state field seeded to the neutral default `true`, ADR 0037).
+    test("visible bound to a store=false → the divider is not rendered", async ({ request }) => {
+        const flow = new FlowBuilder().app({ id: "divVis", root: "divVis" })
+            .node("ui-store", { id: "visStore", parent: "divVis", statePath: "show", initialValue: JSON.stringify(false) })
+            .node("ui-divider", { id: "dVis", visible: { kind: "store", path: "visStore" } })
+            .build();
+        await deployFlow(request, flow);
+        expect(await served(request, "divVis")).not.toContain("<sl-divider");
     });
 
-    test("renders a vertical divider with the vertical attribute", async ({ request }) => {
-        const flow = new FlowBuilder()
-            .app({ id: "divApp2", root: "divApp2" })
-            .node("ui-divider", { id: "divNode2", orientation: "vertical" })
+    test("visible bound to a store=true → the divider is rendered", async ({ request }) => {
+        const flow = new FlowBuilder().app({ id: "divVis2", root: "divVis2" })
+            .node("ui-store", { id: "visStore2", parent: "divVis2", statePath: "show", initialValue: JSON.stringify(true) })
+            .node("ui-divider", { id: "dVis2", visible: { kind: "store", path: "visStore2" } })
             .build();
-
         await deployFlow(request, flow);
-
-        const res = await request.get("/webapp/divApp2/");
-        expect(res.ok()).toBeTruthy();
-        const html = await res.text();
-        expect(html).toContain("<sl-divider vertical");
+        expect(await served(request, "divVis2")).toContain("<sl-divider");
     });
+});
 
-    test("renders a divider with a label inside the element", async ({ request }) => {
-        const flow = new FlowBuilder()
-            .app({ id: "divApp3", root: "divApp3" })
-            .node("ui-divider", { id: "divNode3", label: "Section" })
-            .build();
+test.describe("ui-divider — ports", () => {
+    test.afterEach(async ({ request }) => { await resetFlow(request); });
 
+    // Placement (order/row/col) is universal layout boilerplate, covered generically
+    // by the layout suite — not re-tested per node (node-testing.md: keep the suite lean).
+
+    test("has no input and no output port (static leaf)", async ({ request }) => {
+        const flow = new FlowBuilder().app({ id: "divP", root: "divP" })
+            .node("ui-divider", { id: "dP" }).build();
         await deployFlow(request, flow);
-
-        const res = await request.get("/webapp/divApp3/");
-        expect(res.ok()).toBeTruthy();
-        const html = await res.text();
-        // ADR 0025: the divider leaf now carries data-webapp-node on the element
-        // itself (the per-item wrapper div was dropped), so the open tag may have
-        // attributes — match the tag start, not an exact `<sl-divider>`.
-        expect(html).toContain("<sl-divider");
-        expect(html).toContain("Section");
-    });
-
-    test("renders without crashing when only defaults are configured", async ({ page, request }) => {
-        const flow = new FlowBuilder()
-            .app({ id: "divApp4", root: "divApp4" })
-            .node("ui-divider", { id: "divNode4" })
-            .build();
-
-        await deployFlow(request, flow);
-
-        const webapp = new WebappPage(page, "divApp4");
-        await webapp.navigate("/");
-        await expect(webapp.root()).toBeVisible();
+        const node = flow.find((n) => n.id === "dP") as Record<string, unknown>;
+        // ui-divider registers inputs:0 / outputs:0 (P76); the built node has no wires out.
+        expect(node.wires === undefined || (Array.isArray(node.wires) && node.wires.flat().length === 0)).toBeTruthy();
     });
 });

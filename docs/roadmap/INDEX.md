@@ -27,7 +27,8 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P230** — aspects/node-conformance — Konformitäts-Pass **ui-divider** (Pilot): Felder/Spec/Inline-Hilfe/Akzeptanz/Tests neu — *Owner 2026-07-14; Epic-Start* — [P230](aspects/node-conformance/P230-conformance-ui-divider.md)
+- **P231** — aspects/editor — **Base-Fields (visible/disabled/color) in ALLE Node-Schemas + Laufzeit** — heute vom Schema gestrippt, daher auf ~30 Knoten wirkungslos; Prerequisit für ADR 0037 — *ADR 0015/0037; Owner 2026-07-14; dep P222* — [P231](aspects/editor/P231-base-fields-in-schema-and-runtime.md)
+- **P230** — aspects/node-conformance — Konformitäts-Pass **ui-divider** (Pilot): Doc/Hilfe ✅, color/visible blockiert durch P231 — *Owner 2026-07-14; Epic-Start* — [P230](aspects/node-conformance/P230-conformance-ui-divider.md)
 
 
 ## Deferred (parked, not abandoned)
