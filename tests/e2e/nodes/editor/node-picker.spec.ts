@@ -115,7 +115,11 @@ test.describe("editor — picker dialog as sole reference selection (P114)", () 
         expect(ids).toContain("storeA");
         expect(ids).toContain("storeB");
         expect(ids).not.toContain("actX");
-        expect(entries.every((e) => e.type === "ui-store")).toBe(true);
+        // P214 (ADR 0030): the store preset now ALSO lists each ui-query's implicit
+        // params-store target (type "ui-query-params"), which is addressable like any
+        // store. So the preset is real stores + query-params targets — and NEVER
+        // actions or unrelated node types.
+        expect(entries.every((e) => e.type === "ui-store" || e.type === "ui-query-params")).toBe(true);
 
         // Pick "Beta" through the dialog; the hidden carrier holds the id.
         await pickReference(page, "params", { search: "Beta", expectValue: "storeB" });
