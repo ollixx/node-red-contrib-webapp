@@ -2,7 +2,7 @@
 id: P227
 title: "Editor/Schema: Feld-Konsistenz-Guardrail (`pnpm check:fields`) + dokumentierte Feld-Namens-/Carrier-Konvention — stoppt weitere Drift"
 epic: aspects/editor
-status: in_progress
+status: done
 dependencies: []
 verify: unit
 spec: docs/nodes/concepts/editor.md
@@ -10,7 +10,7 @@ tests: scripts/check-fields.test.ts
 ---
 # P227 — Feld-Konsistenz-Guardrail + Konvention
 
-> Rationale: [ADR 0038](../../../adr/0038-field-model-consistency-naming-and-carrier-normalization.md).
+> Rationale: [ADR 0038](../../../../adr/0038-field-model-consistency-naming-and-carrier-normalization.md).
 > Foundation-Paket: macht den Zielzustand explizit + verhindert neue Drift, BEVOR
 > die eigentlichen Umbenennungen (P228) und der Legacy-Sweep (P229) laufen.
 
@@ -67,3 +67,17 @@ Skript-Header + Unit-Test.
   robust parsen). Der Generator/Parser aus der Audit-Session kann als Basis dienen.
 - Dieses Paket **entfernt/renamt nichts** — es dokumentiert + erzwingt nur. Die
   Umsetzung ist P228 (Renames) + P229 (Legacy-Sweep).
+
+## Result
+
+**Delivered.** Cross-Node-Feld-Konsistenz-Guardrail (ADR 0038) — dokumentiert die Konvention + erzwingt sie read-only; **renamt/entfernt nichts** (das sind P228/P229).
+- **Tripwire** `scripts/check-fields.js` (read-only, non-zero Exit mit Knoten+Feld-Meldung; pure `fieldViolations`/`analyzeNodes`-Kern über In-Memory-defaults, Muster von check-specs/check-roundtrip). Drei Regeln: **(a)** hat ein Knoten `<base>Binding`, darf kein `<base>Path`-Zwilling existieren; **(b)** kein wiedereingeführtes Legacy-Feld (`*Json`; totes `storeId`+`path`-Paar; `page`/`currentPagePath`-Aliase); **(c)** Referenz-Felder tragen den bloßen Namen (jedes `*Id` außer Keep-Liste `uiId`/`selectedId` ist ein Verstoß, schlägt bare-Name vor).
+- **Unit-Test** `scripts/check-fields.test.ts` (13 Tests: Regel-für-Regel pass/fail + Allowlist + real-tree grün).
+- **Doku** `docs/nodes/concepts/field-conventions.md` (ADR-0038-Regeln + Tripwire-Vertrag + Audit-Referenz), aus `editor.md` „Siehe auch" verlinkt.
+- **`package.json`**: `check:fields` Script, in `validate` + `test:specs` eingehängt.
+
+**Seeded Allowlist — 53 (Knoten, Feld)-Verstöße** (aus der Ist-Enumeration, nicht geraten), die P228/P229 auf leer treiben: (c) 7 `*Id`-Renames (`ui-route.layoutId`, `ui-dialog.layoutId`/`routeId`, `ui-container.layoutId`, `ui-component-instance.definitionId`, `ui-action.routeId`, `ui-navigation.routeId`); (a) 27 residuale `<base>Path`-Zwillinge; (b) `optionsJson`×2 + `itemsJson` + totes `storeId`+`path` auf 8 Input-Knoten.
+
+**Verify (unit).** `pnpm check:fields` grün (45 Knoten, 53 allowlisted), `scripts/check-fields.test.ts` 13/13, `pnpm validate` end-to-end grün (build+lint+5 Tripwires+alle Tests). Damit ist die ADR-0038-Grundlage gelegt; P228 (Renames) + P229 (Legacy-Sweep) treiben die Allowlist auf leer.
+
+**Cost.** Sub-Agent `phase/P227` (worktree), ~8 min (12:10:06Z→12:17:53Z); Token-Zeile in `.ai/agent-runs.jsonl`.

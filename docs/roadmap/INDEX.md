@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P227** — aspects/editor — Feld-Konsistenz-Guardrail (`pnpm check:fields`) + dokumentierte Feld-Namens-/Carrier-Konvention (stoppt weitere Drift) — *ADR 0038; Owner 2026-07-14* — [P227](aspects/editor/P227-field-consistency-guardrail-and-convention.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -95,11 +94,11 @@ open the folder for the full history.
 | aspects/docs | 1 |
 | aspects/runtime | 9 |
 | aspects/state | 9 |
-| aspects/editor | 24 |
+| aspects/editor | 25 |
 | schema | 5 |
 | aspects/rendering | 14 |
 | aspects/foundation | 5 |
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 224 done, 1 open, 12 deferred.**
+**Total: 225 done, 0 open, 12 deferred.**
