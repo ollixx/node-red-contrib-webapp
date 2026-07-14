@@ -25,8 +25,9 @@ async function loadFlow(rel: string): Promise<FlowNode[]> {
     return JSON.parse(await readFile(path.resolve(process.cwd(), rel), "utf8")) as FlowNode[];
 }
 
-const unboundAlert = (root: ReturnType<typeof rootOf>) => root.locator("sl-alert").filter({ hasText: "Unbound alert" });
-const boundAlert = (root: ReturnType<typeof rootOf>) => root.locator("sl-alert").filter({ hasText: "Bound alert" });
+// Distinct, non-overlapping messages so each filter matches exactly one alert.
+const unboundAlert = (root: ReturnType<typeof rootOf>) => root.locator("sl-alert").filter({ hasText: "Slot alert" });
+const boundAlert = (root: ReturnType<typeof rootOf>) => root.locator("sl-alert").filter({ hasText: "Store alert" });
 
 function rootOf(page: import("@playwright/test").Page) {
     return page.locator("#webapp-client-root");

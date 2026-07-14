@@ -6,9 +6,9 @@
 
   { "type": "ui-container", "id": "p224Cont", "name": "Container", "parent": "p224App", "mount": "p224App.content", "layoutId": "vertical", "variant": "section", "order": 0, "z": "p224flow", "wires": [], "x": 200, "y": 180 },
 
-  { "type": "ui-alert", "id": "p224AlertUnbound", "name": "Unbound alert", "parent": "p224Cont", "mount": "container:p224Cont/content", "order": 0, "message": { "kind": "literal", "value": "Unbound alert" }, "severity": "info", "z": "p224flow", "wires": [], "x": 200, "y": 220 },
+  { "type": "ui-alert", "id": "p224AlertUnbound", "name": "Slot alert", "parent": "p224Cont", "mount": "container:p224Cont/content", "order": 0, "message": { "kind": "literal", "value": "Slot alert" }, "severity": "info", "z": "p224flow", "wires": [], "x": 200, "y": 220 },
 
-  { "type": "ui-alert", "id": "p224AlertBound", "name": "Bound alert", "parent": "p224Cont", "mount": "container:p224Cont/content", "order": 1, "message": { "kind": "literal", "value": "Bound alert" }, "severity": "warning", "visible": { "kind": "store", "path": "p224VisStore" }, "z": "p224flow", "wires": [], "x": 200, "y": 260 },
+  { "type": "ui-alert", "id": "p224AlertBound", "name": "Store alert", "parent": "p224Cont", "mount": "container:p224Cont/content", "order": 1, "message": { "kind": "literal", "value": "Store alert" }, "severity": "warning", "visible": { "kind": "store", "path": "p224VisStore" }, "z": "p224flow", "wires": [], "x": 200, "y": 260 },
 
   { "type": "ui-text", "id": "p224StoreText", "name": "store value", "parent": "p224Cont", "mount": "container:p224Cont/content", "order": 2, "value": { "kind": "store", "path": "p224VisStore" }, "z": "p224flow", "wires": [], "x": 200, "y": 300 },
 
