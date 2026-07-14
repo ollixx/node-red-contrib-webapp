@@ -373,6 +373,72 @@ Altbestände bestehen). Reduzierte Feld-Kategorien (Boolean-Zustand für `disabl
 URL/Pfad für `href`/`to`) deklarieren ihre Kategorie und erhalten eine Teilmenge —
 siehe ADR 0012.
 
+## Dynamische Zustandsfelder (`visible`/`disabled`) — EIN Wert pro Komponente
+
+> Grundlage: [ADR 0037](../../adr/0037-unified-dynamic-state-fields-one-value-many-writers.md)
+> (Foundation: P224). Die Schreiber (msg → P223, Duration → P225, show/hide-Verben
+> → P226) sind eigene Slices.
+
+Manche bindbaren Felder bilden nicht einen **Anzeigewert**, sondern einen
+**Laufzeit-Zustand** des Knotens ab. Diese **dynamischen Zustandsfelder** sind
+autoritativ in `packages/schema` gelistet (`DYNAMIC_STATE_FIELDS`) — zunächst:
+
+- `visible` (neutraler Default `true`)
+- `disabled` (neutraler Default `false`)
+
+**Statische, präsentationale Felder** (`color`, `size`, `variant`, …) sind
+**keine** dynamischen Zustandsfelder und behalten ihr heutiges Modell.
+
+### Ein aufgelöster Wert, eine Quelle
+
+Für jedes dynamische Zustandsfeld liest der Renderer **genau EINEN** Wert
+(`visible` → `visibleIf`, `disabled` → `bind.disabled`). Woher dieser Wert kommt,
+entscheidet die **Bindung**:
+
+- **Gebunden** (`store`/`state`/`query`/`routeParam`/`reactive`,
+  `DYNAMIC_STATE_BOUND_KINDS`): die **gebundene Quelle ist die Wahrheit**, pro
+  Snapshot reaktiv aufgelöst — unverändert.
+- **Ungebunden** (`literal` oder gar keine Bindung): der Knoten hält den Wert in
+  einem **internen per-Client-Slot** — dieselbe per-Client-State-Maschinerie wie
+  ein Store ([multi-user.md](multi-user.md)), unter dem reservierten Pfad
+  `__dynamicState.<knotenId>.<feld>`. Ohne Schreiber gilt der **konfigurierte
+  Literalwert** (z. B. ein bewusst gesetztes `visible=false`) bzw. der **neutrale
+  Default** — d. h. alles verhält sich wie bisher.
+
+Die msg-/JSONata-getriebenen und server-aufgelösten Bindungen (`msg`, `jsonata`,
+`flow`, `global`, `env`) behalten ihre eigene Semantik (z. B. bleibt ein
+`msg`-gebundenes `visible` bis zur ersten Nachricht verborgen) und werden von
+ihren eigenen Writer-Slices bedient.
+
+### Die einheitliche Schreib-API
+
+Eine interne Funktion setzt den einen Wert — egal welcher Schreiber sie aufruft:
+
+```
+setDynamicStateField(knotenId, feld, wert, clientId?)
+```
+
+- **Gebunden an einen Store** → schreibt **durch** in den gebundenen Store-Slice
+  (dessen Scope respektierend: per-Client bei gesetztem `clientId`, sonst
+  Broadcast), sodass der Store die einzige Wahrheit bleibt.
+- **Ungebunden** → schreibt den **internen per-Client-Slot**; mit `clientId` nur
+  für diesen Client, sonst als Broadcast-Default. **Zwei Clients sind isoliert.**
+- **Gebunden an eine berechnete Quelle** (`query`/`routeParam`/`reactive`) → wird
+  abgelehnt (der Wert ist berechnet, nicht setzbar).
+
+Nach jedem Schreiben wird ein Snapshot gepusht, sodass der Re-Render den neuen
+Wert zeigt.
+
+Flow-erreichbar ist die API über den Umschlag
+`msg.ui.dynamicState = { field, value, id? }` an einem View-Knoten (Standard-Ziel:
+der Knoten selbst; `msg.ui.clientId` scopet per-Client). Die späteren
+Writer-Slices (Duration, show/hide-Verben) rufen dieselbe Funktion.
+
+> Slot-Lebenszyklus (Eviction/TTL) ist bewusst minimal gehalten — der Slot teilt
+> den Lebenszyklus der per-Client-State-Map; die Skalierungs-Frage ist als
+> Tech-Debt [P210](../../roadmap/aspects/state/deferred/P210-per-client-state-production-scale.md)
+> erfasst.
+
 ## Siehe auch
 
 - [`ui-store`](../state/ui-store.md) — Knoten-Referenz (Felder, Editor, In-/Out-Port)

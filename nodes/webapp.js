@@ -422,10 +422,22 @@ function dynamicStateSlotPath(nodeId, field) {
 
 // A binding is BOUND (reactive from its source) when its kind is in the
 // dynamic-state bound set; everything else (literal / msg / jsonata / flow /
-// global / env) — and an absent binding — is UNBOUND (slot-backed).
+// global / env) — and an absent binding — is UNBOUND for the WRITE rule
+// (setDynamicStateField).
 function isBoundDynamicStateBinding(binding) {
     return Boolean(binding && typeof binding === "object"
         && DYNAMIC_STATE_BOUND_KINDS.indexOf(binding.kind) !== -1);
+}
+
+// A dynamic-state field is SLOT-BACKED at RENDER time only when it is a plain
+// literal or absent ("unbound" per ADR 0037: literal/none). The message-driven
+// (`msg`/`jsonata`) and server-resolved (`flow`/`global`/`env`) kinds keep their
+// existing render semantics — they are handled by their own writer slices (msg →
+// P223) and must NOT default to the neutral slot value (a `msg`-bound `visible`
+// renders EMPTY/hidden until a message arrives — see the P223 ui-alert E2E).
+function isSlotBackedDynamicStateBinding(binding) {
+    return binding === undefined || binding === null
+        || (typeof binding === "object" && binding.kind === "literal");
 }
 
 // Coerce any stored value to the boolean a dynamic-state field represents.
@@ -474,17 +486,20 @@ function applyDynamicStateSlots(componentDefinition) {
     }
     const nodeId = componentDefinition.id;
 
-    // visible → visibleIf
+    // visible → visibleIf. Only a literal / absent (truly unbound) field is
+    // routed to the slot; bound and msg/jsonata/server-resolved bindings keep
+    // their own semantics.
     const visibleIf = componentDefinition.visibleIf;
-    if (!isBoundDynamicStateBinding(visibleIf)) {
+    if (isSlotBackedDynamicStateBinding(visibleIf)) {
         componentDefinition.visibleIf = unboundDynamicStateBinding(nodeId, "visible", visibleIf);
     }
 
-    // disabled → bind.disabled (only when the node already carries one)
+    // disabled → bind.disabled (only when the node already carries one, and only
+    // when that binding is literal/absent).
     if (componentDefinition.bind && typeof componentDefinition.bind === "object"
         && componentDefinition.bind.disabled !== undefined) {
         const disabledBinding = componentDefinition.bind.disabled;
-        if (!isBoundDynamicStateBinding(disabledBinding)) {
+        if (isSlotBackedDynamicStateBinding(disabledBinding)) {
             componentDefinition.bind.disabled = unboundDynamicStateBinding(nodeId, "disabled", disabledBinding);
         }
     }
@@ -6146,6 +6161,23 @@ function viewNodePatchInputHandler(node, msg, send, done) {
     // Delegate component-op messages (show/hide/enable/disable/…) as before.
     if (uiMsg && uiMsg.component && typeof uiMsg.component.op === "string") {
         return componentStateInputHandler(node, msg, send, done);
+    }
+
+    // P224 (ADR 0037): the flow-reachable seam onto the unified dynamic-state
+    // write API. `msg.ui.dynamicState = { field, value, id? }` invokes
+    // setDynamicStateField on the addressed node (default: this node), honouring
+    // `msg.ui.clientId` (per-client) vs a broadcast write. This is the foundation
+    // surface the later writer slices (duration → P225, verbs → P226) build on.
+    if (uiMsg && uiMsg.dynamicState && typeof uiMsg.dynamicState === "object"
+        && typeof uiMsg.dynamicState.field === "string") {
+        const ds = uiMsg.dynamicState;
+        const targetId = typeof ds.id === "string" && ds.id ? ds.id : node.id;
+        const clientId = uiMsg.clientId ? String(uiMsg.clientId) : undefined;
+        setDynamicStateField(targetId, ds.field, ds.value, clientId);
+        // ADR 0033: strip the spent command so a downstream consumer can't reapply it.
+        send(stripConsumedUiEnvelope(msg, "dynamicState"));
+        if (done) { done(); }
+        return;
     }
 
     const registration = runtimeState.definitions.get(node.id);

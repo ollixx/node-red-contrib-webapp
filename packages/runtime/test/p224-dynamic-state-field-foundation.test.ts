@@ -110,6 +110,21 @@ describe("P224: toComponentDefinitions normalises unbound dynamic-state fields",
         expect(c.visibleIf).toEqual({ kind: "store", path: "visStore" });
     });
 
+    it("a msg-bound visible is LEFT untouched (P223 semantics: hidden until a message)", () => {
+        // msg/jsonata/flow/global/env are NOT slot-backed — their own writer
+        // slices drive them, and they must not default to the neutral slot value.
+        const [c] = wt.toComponentDefinitions([
+            {
+                type: "ui-alert",
+                id: "al",
+                mount: "route:/x/content",
+                message: "hi",
+                visible: { kind: "msg", path: "payload" }
+            }
+        ]);
+        expect(c.visibleIf).toEqual({ kind: "msg", path: "payload" });
+    });
+
     it("an unbound disabled (present) becomes a slot state-binding with neutral fallback false", () => {
         const [c] = wt.toComponentDefinitions([
             {
@@ -217,6 +232,43 @@ describe("P224: setDynamicStateField writes through to a bound store", () => {
         const ok = wt.setDynamicStateField("al", "visible", false, "c1");
         expect(ok.ok).toBe(true);
         expect(wt.getClientState(h.appId, "c1")!.state.vis).toBe(false);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// 3b. The flow-reachable seam: msg.ui.dynamicState → setDynamicStateField
+// ---------------------------------------------------------------------------
+
+describe("P224: msg.ui.dynamicState drives the write API (per-client)", () => {
+    it("an incoming msg.ui.dynamicState writes THIS node's slot for its clientId", () => {
+        const definition = registerAlert("al");
+        const node = h.makeNode("ui-alert", "al", definition);
+        const { sent, done } = h.drive("ui-alert", node, {
+            ui: { clientId: "c1", dynamicState: { field: "visible", value: false } }
+        });
+
+        expect(slotValue(wt.getClientState(h.appId, "c1")!.state, "al", "visible")).toBe(false);
+        // the spent command is stripped before the msg passes through
+        const out = sent[0] as { ui: Record<string, unknown> };
+        expect(out.ui.dynamicState).toBeUndefined();
+        expect(out.ui.clientId).toBe("c1");
+        expect(done).toHaveBeenCalledTimes(1);
+    });
+
+    it("an explicit id targets another node; two clients stay isolated", () => {
+        registerAlert("al");
+        const other = registerAlert("other");
+        const node = h.makeNode("ui-alert", "other", other);
+
+        h.drive("ui-alert", node, {
+            ui: { clientId: "c1", dynamicState: { field: "visible", value: false, id: "al" } }
+        });
+        h.drive("ui-alert", node, {
+            ui: { clientId: "c2", dynamicState: { field: "visible", value: true, id: "al" } }
+        });
+
+        expect(slotValue(wt.getClientState(h.appId, "c1")!.state, "al", "visible")).toBe(false);
+        expect(slotValue(wt.getClientState(h.appId, "c2")!.state, "al", "visible")).toBe(true);
     });
 });
 
