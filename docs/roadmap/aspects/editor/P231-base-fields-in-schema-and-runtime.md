@@ -2,7 +2,7 @@
 id: P231
 title: "Schema/Runtime: Base-Fields (visible/disabled/color) in ALLE Node-Schemas + Laufzeit-Verdrahtung — heute vom Schema gestrippt, daher auf ~30 Knoten wirkungslos"
 epic: aspects/editor
-status: pending
+status: in_progress
 dependencies: [P222]
 verify: browser
 spec: docs/nodes/concepts/editor.md
