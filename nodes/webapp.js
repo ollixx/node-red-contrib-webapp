@@ -2744,12 +2744,26 @@ function buildAppSnapshot(appId, location, dialogId, definitions, clientId) {
         stores: buckets.stores
     };
     const state = initializeState(integration.stores, integration.queries, appId);
-    // Per-client state wins when a clientId is given and that client has its own
-    // state (P15 multi-user model); otherwise fall back to the shared broadcast state.
+    // State layering (P15 multi-user model + P226 / ADR 0037):
+    //   defaults ← broadcast (shared) ← per-client (override).
+    // A per-client value still WINS (two-client isolation preserved), but a client
+    // that has its own per-client state now also SEES a shared/broadcast value it
+    // has NOT overridden. This is essential for ADR 0037's "Msg von außen": a
+    // SERVER-triggered (client-less) dynamic-state / store write is a BROADCAST — it
+    // lands in the shared state, and every client must observe it unless it holds
+    // its own override for that exact key. Resolution is therefore
+    // per-client-slot ?? broadcast-slot ?? default. (Previously a client WITH a
+    // per-client entry saw ONLY that entry and never the broadcast layer, so a
+    // broadcast write made after the entry was created stayed invisible to it.)
     const clientStateEntry = clientId ? getClientState(appId, clientId) : null;
     const broadcastState = runtimeState.liveState.get(appId);
-    const resolvedState = clientStateEntry ? clientStateEntry.state : broadcastState;
-    const hydratedState = resolvedState ? mergeDeep(state, resolvedState) : state;
+    let hydratedState = state;
+    if (broadcastState) {
+        hydratedState = mergeDeep(hydratedState, broadcastState);
+    }
+    if (clientStateEntry) {
+        hydratedState = mergeDeep(hydratedState, clientStateEntry.state);
+    }
     const effectiveState = dialogId ? setValueAtPath(hydratedState, `ui.dialogs.${dialogId}.open`, true) : hydratedState;
 
     // P160: derive the renderer's `queries` (DATA tree keyed by queryPath) and

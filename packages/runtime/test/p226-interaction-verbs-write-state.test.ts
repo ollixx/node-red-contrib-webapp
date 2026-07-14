@@ -28,11 +28,39 @@ import { INTERACTION_VERBS_BY_TYPE, NodeBehaviourHarness, webappTest } from "./h
 
 const wt = webappTest as unknown as {
     getClientState: (appId: string, clientId: string) => { state: Record<string, unknown> } | null;
+    setDynamicStateField: (
+        nodeId: string,
+        field: string,
+        value: unknown,
+        clientId?: string
+    ) => { ok: boolean; mode?: string; reason?: string; clientId?: string };
+    buildAppSnapshot: (
+        appId: string,
+        location: string,
+        dialogId: string | undefined,
+        definitions: Record<string, unknown>[],
+        clientId?: string
+    ) => { success: boolean; snapshot?: unknown; message?: string };
     runtimeState: {
         liveState: Map<string, Record<string, unknown>>;
         definitions: Map<string, { nodeId: string; appId?: string; definition: Record<string, unknown> }>;
     };
 };
+
+// Walk a built snapshot and report whether a component with `nodeId` is present.
+// The renderer OMITS a component whose resolved `visible` value is false, so
+// "present in the snapshot" === "visible on the rendered page".
+function snapshotHasNode(snapshot: unknown, nodeId: string): boolean {
+    let found = false;
+    JSON.stringify(snapshot, (key, value) => {
+        if (value && typeof value === "object" && (value as { id?: unknown }).id === nodeId
+            && typeof (value as { kind?: unknown }).kind === "string") {
+            found = true;
+        }
+        return value;
+    });
+    return found;
+}
 
 const h = new NodeBehaviourHarness("verbApp");
 
@@ -194,5 +222,76 @@ describe("P226: a store-bound `visible` is written THROUGH the store (durchgesch
         h.drive("ui-alert", node, { ui: { action: { type: "hide" } } });
 
         expect(wt.runtimeState.liveState.get(h.appId)!.vis).toBe(false);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// 5. Render-level proof (ADR 0037 "Msg von außen"): a SERVER-triggered
+//    (client-less) write is a BROADCAST that every viewing client observes,
+//    while a per-client override still wins (isolation preserved).
+//
+// The render state layers as: defaults ← broadcast (shared) ← per-client. A
+// component whose resolved `visible` is false is OMITTED from the snapshot, so
+// "present in the snapshot" === "visible on the page".
+// ---------------------------------------------------------------------------
+
+describe("P226: broadcast dynamic-state writes reach a viewing client (per-client ?? broadcast ?? default)", () => {
+    // A full app (with layout) + an unbound alert + a sibling view node, mapped the
+    // way deploy does. Registers the alert so setDynamicStateField can resolve it,
+    // and returns the definitions array to feed buildAppSnapshot.
+    function buildRenderApp(): Record<string, unknown>[] {
+        const app = h.mapConfig("ui-app", { id: h.appId, uiId: h.appId, root: h.appId, name: "A", layout: "app" });
+        const alert = h.mapConfig("ui-alert", { id: "al", uiId: "al", parent: h.appId, mount: `${h.appId}.content`, message: "hi" });
+        const text = h.mapConfig("ui-text", { id: "tx", uiId: "tx", parent: h.appId, mount: `${h.appId}.content`, text: "sibling" });
+        h.state.definitions.set(h.appId, { nodeId: h.appId, appId: h.appId, definition: app });
+        h.state.definitions.set("al", { nodeId: "al", appId: h.appId, definition: alert });
+        h.state.definitions.set("tx", { nodeId: "tx", appId: h.appId, definition: text });
+        return [{ ...app, z: "f" }, { ...alert, z: "f" }, { ...text, z: "f" }];
+    }
+
+    function alertVisibleFor(defs: Record<string, unknown>[], clientId?: string): boolean {
+        const built = wt.buildAppSnapshot(h.appId, "/", undefined, defs, clientId);
+        expect(built.success).toBe(true);
+        return snapshotHasNode(built.snapshot, "al");
+    }
+
+    it("a broadcast hide hides the alert for an entry-less client; show re-shows it", () => {
+        const defs = buildRenderApp();
+        // Default (no writer): the unbound alert is visible (neutral true).
+        expect(alertVisibleFor(defs, "browserX")).toBe(true);
+
+        // Server-triggered hide (no clientId) → broadcast.
+        wt.setDynamicStateField("al", "visible", false, undefined);
+        expect(alertVisibleFor(defs, "browserX")).toBe(false);
+
+        wt.setDynamicStateField("al", "visible", true, undefined);
+        expect(alertVisibleFor(defs, "browserX")).toBe(true);
+    });
+
+    it("a client that already holds its OWN per-client state still sees a later broadcast hide", () => {
+        const defs = buildRenderApp();
+        // The client acquires a per-client entry BEFORE the broadcast (e.g. it set
+        // some unrelated per-client dynamic-state). Its clone lacks the visible slot.
+        wt.setDynamicStateField("al", "disabled", false, "browserY");
+        expect(alertVisibleFor(defs, "browserY")).toBe(true);
+
+        // A later server broadcast hide must STILL reach this client (per-client
+        // slot absent for `visible` ?? broadcast false ?? default) — the stale-clone
+        // no longer shadows the shared value.
+        wt.setDynamicStateField("al", "visible", false, undefined);
+        expect(alertVisibleFor(defs, "browserY")).toBe(false);
+    });
+
+    it("a per-client override wins over the broadcast (two-client isolation preserved)", () => {
+        const defs = buildRenderApp();
+        // c1 hides its OWN copy; c2 does nothing.
+        wt.setDynamicStateField("al", "visible", false, "c1");
+        expect(alertVisibleFor(defs, "c1")).toBe(false);
+        expect(alertVisibleFor(defs, "c2")).toBe(true);
+
+        // A broadcast SHOW does not override c1's explicit per-client hide.
+        wt.setDynamicStateField("al", "visible", true, undefined);
+        expect(alertVisibleFor(defs, "c1")).toBe(false); // c1's own value wins
+        expect(alertVisibleFor(defs, "c2")).toBe(true);
     });
 });
