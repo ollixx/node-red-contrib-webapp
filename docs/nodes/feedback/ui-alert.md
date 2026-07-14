@@ -106,20 +106,25 @@ da Alerts eine Status-/Schweregrad-Semantik tragen.
   State oder Store, ohne explizite `show`/`hide`-Actions. Es ist ein **Base-Field**
   in der „Allgemein"-Gruppe des Editors (Boolean-State-typedInput; leer = sichtbar).
   Fehlt ein Binding, ist die Alert sichtbar.
-- **Duration/Countdown — backend-neutral, aber client-seitig und von `visible`
-  entkoppelt.** Das `duration`-Feld und `countdown` sind backend-agnostisch
-  spezifiziert; Shoelace unterstützt beide nativ (`duration`, `countdown="ltr"` auf
-  `<sl-alert>`). **Wichtig:** `duration` ist **kein** Zustandsübergang von `visible`.
-  Der Serializer rendert die Alert immer als `open`; nach Ablauf der Duration
-  schließt Shoelace das `<sl-alert>` **client-seitig einmalig**, und der Client
-  merkt sich das Auto-Dismiss (`autoDismissed`), damit die nächste Snapshot die
-  Alert nicht wieder einblendet. Folge: eine per Duration ausgeblendete Alert wird
-  **nicht** automatisch wieder gezeigt; erneutes Anzeigen erfordert eine Änderung
-  des `visible`-Bindings. Ein kohärentes deklaratives Duration↔`visible`-Modell
-  (Duration setzt `visible=false` server-seitig) ist eine **bekannte offene
-  Frage**, aber noch nicht als Arbeitspaket geplant. Backends ohne native Unterstützung
-  können einen Fallback implementieren (JS-Timeout + CSS/JS-Animation, analog dem
+- **Duration = deklarativer `visible=false`-Übergang (ADR 0037, P225).** `duration`
+  ist ein **Schreiber** auf den EINEN Sichtbarkeits-Wert der Alert — kein Sonderweg
+  und nicht von `visible` entkoppelt. Nach Ablauf der Duration setzt der Knoten
+  `visible = false` über die vereinheitlichte Schreib-API
+  ([`setDynamicStateField`](../concepts/stores.md), P224): ist `visible` an einen
+  Store **gebunden**, wird der Wert **in den Store durchgeschrieben**; ist es
+  **ungebunden**, landet er im internen **per-Client-Slot**. Der Renderer liefert
+  danach keine Alert mehr (ihr Sichtbarkeits-Wert ist `false`) — konsistent über
+  alle Snapshots, ohne client-seitigen `autoDismissed`-Merker. **Re-triggerbar:**
+  den Wert wieder auf `true` schreiben (`msg.ui.dynamicState`, ein `show`-Verb oder
+  ein Store-Update) zeigt die Alert erneut — ohne Reload. Der **Countdown** läuft
+  unverändert über die Duration (Shoelace `duration` + `countdown="ltr"` treiben den
+  Fortschrittsbalken und den client-seitigen Timer, dessen Ablauf den Wert-Übergang
+  auslöst). Backend-neutral: Backends ohne native Unterstützung nutzen einen
+  JS-Timeout-Fallback, der denselben Wert-Übergang auslöst (analog dem
   [Bootstrap-Alert-Doku-Beispiel](https://getbootstrap.com/docs/5.3/components/alerts/#dismissing)).
+  Der benutzerinitiierte Dismiss (`×`, nur bei `dismissible: true`) bleibt ein
+  **separater** Pfad (emittiert das `dismiss`-Event) und ist von der Duration
+  unberührt.
 
 ## Referenzen
 
@@ -132,8 +137,6 @@ da Alerts eine Status-/Schweregrad-Semantik tragen.
 
 ## Offene Punkte
 
-- `duration` ist derzeit ein client-seitiger Einweg-Close, entkoppelt vom
-  deklarativen `visible`-Zustand (siehe Verhalten oben). Das kohärente
-  Duration↔`visible`-Modell (Duration setzt den EINEN Sichtbarkeits-Wert auf
-  `false`) ist als **ADR 0037 / P225** geplant (Teil des vereinheitlichten
-  dynamic-state-Modells).
+- Keine offenen Punkte zum Duration↔`visible`-Modell mehr: Duration ist seit
+  **P225 (ADR 0037)** ein Schreiber auf den EINEN Sichtbarkeits-Wert (siehe
+  „Besonderheiten"). Die frühere „bekannte offene Frage" ist damit aufgelöst.

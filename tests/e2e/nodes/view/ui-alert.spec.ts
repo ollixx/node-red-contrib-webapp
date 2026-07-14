@@ -6,13 +6,11 @@ import { NodeEditorPage } from "../../../helpers/node-editor-page";
 import { WebappPage } from "../../../helpers/webapp-page";
 
 /**
- * P100 — ui-alert: Duration/Countdown im Frontend, Icon-Custom-Option,
- * Editor-Reihenfolge + Validierung.
+ * P225 — ui-alert: Duration is a declarative `visible=false` state transition
+ * (ADR 0037). Fresh per-node tests (node-testing.md: per-node-phase → discard the
+ * node's old tests). Outcome-based, mutation-red.
  *
- * Replaces P90 tests (node-testing.md: per-node-phase → fresh tests).
- * Tests follow .ai/agents/node-testing.md: outcome-based, mutation-red.
- *
- * Covered (P90 baseline retained):
+ * Covered (baseline retained — still-valid rendering/editor contract):
  *   1.  severity → correct sl-alert variant.
  *   2.  message literal rendered as content.
  *   3-6. icon='auto' → severity-appropriate sl-icon.
@@ -21,19 +19,22 @@ import { WebappPage } from "../../../helpers/webapp-page";
  *   9.  explicit icon name → sl-icon[name].
  *  10.  dismissible → closable attribute.
  *  11.  title binding → <strong>.
+ *  14-15. Editor: countdown/duration cross-field validation.
+ *  16-17. Editor: Title-above-Message + separator <hr>.
+ *  18-19. Editor: Icon 'custom' option + picker row.
+ *  P223. visible=msg toggles the alert on/off.
  *
- * P100 new:
- *  12. duration=2000 → alert auto-hides within ~3 s (acceptance #1).
- *  13. countdown=true + duration → countdown="ltr" attr present, alert hides (acceptance #2).
- *  14. Editor: countdown ON without duration → node invalid (acceptance #3).
- *  15. Editor: countdown + duration set → node valid.
- *  16. Editor: Title field appears above Message field (acceptance #4).
- *  17. Editor: separator <hr> appears directly after Message row (acceptance #4).
- *  18. Editor: Icon select has 'custom' option, no double empty/none (acceptance #5).
- *  19. Editor: selecting 'custom' reveals the icon picker button row (acceptance #5).
+ * P225 new (Duration as a value transition):
+ *  D1. duration → after elapse the alert is REMOVED from the DOM (a real
+ *      visible=false transition, not a Shoelace-only close: a hidden-but-present
+ *      element would be the old autoDismissed hack). (acceptance #1, #2, #5)
+ *  D2. countdown=true + duration → countdown="ltr" bar runs, then the alert is
+ *      removed via the same value transition. (acceptance #4)
+ *  D3. re-triggerable — after the duration hide, writing visible=true again
+ *      (msg.ui.dynamicState) re-shows the alert, no reload. (acceptance #3, #5)
  */
 
-test.describe("ui-alert (P100)", () => {
+test.describe("ui-alert (P225)", () => {
     test.afterEach(async ({ request }) => {
         await resetFlow(request);
     });
@@ -228,9 +229,9 @@ test.describe("ui-alert (P100)", () => {
         await expect(page.locator("sl-alert strong")).toContainText("Alert Title");
     });
 
-    // ── P100 new: duration + countdown in the browser ─────────────────────────
+    // ── P225: duration as a declarative visible=false value transition ─────────
 
-    test("duration=2000 → alert auto-hides within ~3 s", async ({ page, request }) => {
+    test("D1 duration → after elapse the alert is REMOVED from the DOM (value transition, not a Shoelace-only close)", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "alApp12", root: "alApp12" })
             .node("ui-alert", {
@@ -243,26 +244,16 @@ test.describe("ui-alert (P100)", () => {
         await deployFlow(request, flow);
         const webapp = new WebappPage(page, "alApp12");
         await webapp.navigate("/");
-        // Initially visible
+        // Initially visible.
         await expect(page.locator("sl-alert")).toBeVisible();
-        // After duration + grace period, the alert must be hidden (sl-alert.open = false)
-        await page.waitForFunction(
-            () => {
-                const el = document.querySelector("sl-alert");
-                if (!el) { return true; }
-                const slEl = el as HTMLElement & { open?: boolean };
-                return slEl.open === false || !el.hasAttribute("open") || el.hasAttribute("hidden");
-            },
-            { timeout: 5000 }
-        );
-        const isOpen = await page.locator("sl-alert").evaluate((el) => {
-            const slEl = el as HTMLElement & { open?: boolean };
-            return slEl.open !== false && el.hasAttribute("open") && !el.hasAttribute("hidden");
-        });
-        expect(isOpen).toBe(false);
+        // After the duration, the alert's ONE visibility value becomes false, so the
+        // server re-renders WITHOUT it and the morph removes it: the element is
+        // DETACHED (count 0), not merely open=false-but-present. A revert to the old
+        // client-side autoDismissed close would leave the element in the DOM → red.
+        await expect(page.locator("sl-alert")).toHaveCount(0, { timeout: 6000 });
     });
 
-    test("countdown=true + duration → countdown='ltr' attribute present and alert hides after countdown", async ({ page, request }) => {
+    test("D2 countdown=true + duration → countdown='ltr' bar runs, then the alert is removed via the value transition", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "alApp13", root: "alApp13" })
             .node("ui-alert", {
@@ -277,23 +268,56 @@ test.describe("ui-alert (P100)", () => {
         const webapp = new WebappPage(page, "alApp13");
         await webapp.navigate("/");
         await expect(page.locator("sl-alert")).toBeVisible();
-        // Shoelace countdown="ltr" attribute must be present (bar depletes left-to-right)
-        expect(await page.locator("sl-alert").getAttribute("countdown")).toBe("ltr");
-        // Wait for auto-hide after countdown depletes
-        await page.waitForFunction(
-            () => {
-                const el = document.querySelector("sl-alert");
-                if (!el) { return true; }
-                const slEl = el as HTMLElement & { open?: boolean };
-                return slEl.open === false || !el.hasAttribute("open");
-            },
-            { timeout: 6000 }
-        );
-        const isHidden = await page.locator("sl-alert").evaluate((el) => {
-            const slEl = el as HTMLElement & { open?: boolean };
-            return slEl.open === false || !el.hasAttribute("open");
+        // The P100 countdown bar still runs: Shoelace countdown="ltr" is active.
+        await expect(page.locator("sl-alert")).toHaveAttribute("countdown", "ltr", { timeout: 3000 });
+        // After the countdown depletes, the hide is a value transition → the alert
+        // is removed from the DOM.
+        await expect(page.locator("sl-alert")).toHaveCount(0, { timeout: 7000 });
+    });
+
+    test("D3 re-triggerable — after the duration hide, writing visible=true re-shows the alert (no reload)", async ({ page, request }) => {
+        // Alert with a duration + a button that re-shows it by writing the ONE
+        // visibility value back to true (msg.ui.dynamicState, the P224 seam). The
+        // button click carries this client's id, so the re-show is per-client —
+        // exactly the write path the duration hide used to set it false.
+        const flow = new FlowBuilder()
+            .app({ id: "alApp14", root: "alApp14" })
+            .node("ui-alert", {
+                id: "alNode14",
+                message: { kind: "literal", value: "Re-show me" },
+                severity: "info",
+                duration: 2000
+            })
+            .node("ui-button", {
+                id: "alReshowBtn",
+                label: "Show again",
+                wires: [["alReshowFn"]]
+            })
+            .build();
+        flow.push({
+            type: "function",
+            id: "alReshowFn",
+            name: "reshow alert",
+            func: "msg.ui = msg.ui || {}; msg.ui.dynamicState = { field: 'visible', value: true, id: 'alNode14' }; return msg;",
+            outputs: 1,
+            noerr: 0,
+            z: "e2e-flow",
+            x: 400,
+            y: 200,
+            wires: [["alNode14"]]
         });
-        expect(isHidden).toBe(true);
+        await deployFlow(request, flow);
+        const webapp = new WebappPage(page, "alApp14");
+        await webapp.navigate("/");
+
+        // Shown, then auto-hidden by the duration value transition (removed).
+        await expect(page.locator("sl-alert")).toBeVisible();
+        await expect(page.locator("sl-alert")).toHaveCount(0, { timeout: 6000 });
+
+        // Writing visible=true again re-shows the alert — no reload.
+        await page.getByRole("button", { name: "Show again" }).click();
+        await expect(page.locator("sl-alert")).toBeVisible({ timeout: 6000 });
+        await expect(page.locator("sl-alert")).toContainText("Re-show me");
     });
 
     // ── P100 new: editor validation ──────────────────────────────────────────

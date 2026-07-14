@@ -1,8 +1,8 @@
 # ui-alert — Test Catalogue
 
-Phase: **P91** (duration + countdown fields). Extends P90 (icon field + icon logic). Replaces the P43 presence-only tests.
+Phase: **P225** (Duration as a declarative `visible=false` state transition, ADR 0037). Supersedes the P100/P91 duration auto-hide mechanism (client-side one-way close + `autoDismissed`). Extends P90 (icon field + icon logic).
 
-All tests are in `ui-alert.spec.ts` (E2E, Playwright), `packages/runtime/test/p90-alert-icon.test.ts` (unit), and `packages/runtime/test/p91-alert-duration-countdown.test.ts` (unit).
+All tests are in `ui-alert.spec.ts` (E2E, Playwright), `packages/runtime/test/p90-alert-icon.test.ts` (unit), `packages/runtime/test/p91-alert-duration-countdown.test.ts` (unit — duration/countdown attribute emission), and `packages/runtime/test/p225-duration-visible-transition.test.ts` (unit — the duration→`visible=false` value transition via `setDynamicStateField`).
 
 ## Unit tests (`p90-alert-icon.test.ts`)
 
@@ -61,6 +61,19 @@ All tests are in `ui-alert.spec.ts` (E2E, Playwright), `packages/runtime/test/p9
 | dismissible=true → closable attribute | Dismiss affordance rendered correctly |
 | title binding → `<strong>` inside sl-alert | Title binding rendered in browser |
 | visible = msg: an incoming message toggles the alert on and off | P223 (ADR 0036) — a `msg`-bound `visible` toggles live: `msg`→true shows, `msg`→false hides (the owner's bug). Also proves boolean coercion + the live-patch merge carrying `visible`→`visibleIf`. |
+| D1 duration → after elapse the alert is REMOVED from the DOM | P225 (ADR 0037) — the duration hide is a real `visible=false` value transition: the element is DETACHED (count 0), not open=false-but-present. Mutation-red against a revert to the client-side `autoDismissed` close. |
+| D2 countdown=true + duration → bar runs, then removed | The P100 countdown (`countdown="ltr"`) still runs across the duration; only the hide is now a value transition (element removed). |
+| D3 re-triggerable — writing visible=true re-shows the alert | After the duration hide, a `msg.ui.dynamicState` write of `visible=true` (per-client, via a button→function) re-shows the alert with no reload. |
+
+## Duration = `visible` value transition (P225, ADR 0037)
+
+Unit coverage in `packages/runtime/test/p225-duration-visible-transition.test.ts`:
+the browser-reachable `dispatchDynamicStateWrite` seam routes the duration hide
+through `setDynamicStateField` — UNBOUND `visible` → the per-client slot flips to
+false; BOUND `visible` → the store slice is written through; re-triggerable by
+writing `true` again; per-client isolation; and the dispatch guards (missing
+id/field → 400, unknown node → 400, read-only bound source → 409). No
+`autoDismissed` flag; no "always emit open" overlay.
 
 ## Message mode — every msg-bound field (P223, ADR 0036)
 
