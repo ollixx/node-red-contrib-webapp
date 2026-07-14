@@ -39,7 +39,8 @@ Graphen nicht mehr auflösbar ist, bleibt erhalten und wird als
 
 **Verhalten des Dialogs:**
 - **App-Scope (P117):** Die Kandidaten sind auf die **App des editierten
-  Knotens** gefiltert (bestimmt über dessen `parent` bzw. die Mount-Kette,
+  Knotens** gefiltert (bestimmt über dessen `app` — bzw. das Legacy-`parent` —
+  bzw. die Mount-Kette,
   jeweils nach dem aktuellen Stand des offenen Panels). Ist keine App
   bestimmbar (neuer Knoten ohne parent/mount), werden alle Kandidaten gezeigt
   und jede Zeile nennt zusätzlich ihre App. Das `apps`-Preset ist naturgemäß
@@ -564,8 +565,8 @@ nicht selbst aufrufen.
 
 Erster Konsument der Zwei-Wege-Codierung ist die Navigations-Konfiguration von
 `ui-action` (Verb `navigate`) und `ui-navigation`. `installNavigateTargetMode()`
-baut aus drei Hidden-Carriern (`targetMode`, `routeId`, `params`) und dem
-`to`-typedInput eine Modus-UI:
+baut aus drei Hidden-Carriern (`targetMode`, `route` — P228-Rename von `routeId`,
+Legacy-Alias nur lesend —, `params`) und dem `to`-typedInput eine Modus-UI:
 
 - **Segment-Schalter** mit drei Modi (Icon + Label): **via Wire** · **Route** ·
   **URL**. Genau ein Modus ist aktiv; die Felder der anderen Modi werden
@@ -585,7 +586,7 @@ baut aus drei Hidden-Carriern (`targetMode`, `routeId`, `params`) und dem
   (Scan ≥1 → `wire`, sonst `route`); danach gewinnt die gespeicherte Absicht —
   spätere Wire-Änderungen schalten den Modus nicht um (kein UI-Flackern).
 - **`validateNavigateConfig(node)`** — Field-Validator: nur der `route`-Modus
-  wird **hart** geprüft (auflösbare `routeId` + jeder `:platzhalter` mit Wert);
+  wird **hart** geprüft (auflösbare `route` + jeder `:platzhalter` mit Wert);
   `wire`/`url` blockieren nie. Wirkt sowohl bei offenem Panel (über den
   Controller) als auch zur Deploy-Zeit (liest die gespeicherten Felder).
 
