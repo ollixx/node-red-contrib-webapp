@@ -603,6 +603,7 @@ Beide Knoten verdrahten **dieselbe** zentrale Funktion — keine Zweit-Implement
 
 ## Siehe auch
 
+- [field-conventions.md](field-conventions.md) — knotenübergreifende Feld-Namens-/Carrier-Konvention (ADR 0038) + der `pnpm check:fields`-Tripwire
 - [stores.md](stores.md) — Semantik des `store`-Bindings (Auflösung, Robustheit)
 - [layout.md](layout.md) — Presets und Child-Platzierungs-Felder
 - [theming.md](theming.md) — Variant-Vokabular (Quelle der Variant-SelectBox)
