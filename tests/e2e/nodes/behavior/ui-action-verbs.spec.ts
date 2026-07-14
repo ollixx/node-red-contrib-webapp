@@ -7,10 +7,13 @@ import { WebappPage } from "../../../helpers/webapp-page";
 /**
  * P53 (ADR 0005) — the full ui-action interaction verb set, end to end.
  *
- * Each verb travels from the flow to the browser over the SSE `command` channel
- * (NOT in the wire msg). The client maintains an interaction-state overlay that
- * is re-applied after every snapshot render, so show/hide/enable/disable survive
- * a subsequent ui-store-driven snapshot push.
+ * P226 (ADR 0037): the VISIBILITY / ENABLED verbs (show/hide/enable/disable) are
+ * dynamic-state WRITERS — they set the target's ONE `visible`/`disabled` value on
+ * the server (setDynamicStateField; unbound → per-client slot), and the value
+ * drives the next snapshot re-render. There is no `.webapp-hidden` overlay layer:
+ * a hidden element is simply absent from the snapshot, and the per-client value
+ * survives later ui-store snapshot pushes (server-side truth). The disclosure /
+ * selection verbs (open/close/select) still travel over the SSE `command` channel.
  *
  * Pattern: deploy a target element + a ui-action(verb, target) wired to an
  * inject node; navigate; fire the inject; assert the DOM reflects the verb.
@@ -186,12 +189,14 @@ test.describe("ui-action interaction verbs (P53)", () => {
         await expect(secA).not.toHaveAttribute("open", /.*/);
     });
 
-    // ─── overlay survives a ui-store-driven snapshot re-render ────────────────
+    // ─── hidden value survives a ui-store-driven snapshot re-render ───────────
 
-    test("a show stays applied after a later ui-store snapshot push (overlay survives re-render)", async ({ page, request }) => {
+    test("a hide stays applied after a later ui-store snapshot push (value survives re-render)", async ({ page, request }) => {
         // Start with the target hidden via a hide action; then push a ui-store
         // update (which re-renders the whole grid). The element must STAY hidden —
-        // the interaction overlay is re-stamped after the snapshot render.
+        // P226 (ADR 0037): the hidden state is the target's per-client `visible`
+        // VALUE (false), so every subsequent snapshot omits the element (no overlay
+        // re-stamp needed).
         const flow = new FlowBuilder()
             .app({ id: "verbApp5", root: "verbApp5" })
             .node("ui-store", { id: "verbStore5", statePath: "greeting", initialValue: `"hello"` })

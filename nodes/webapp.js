@@ -410,6 +410,16 @@ function stateBinding(path) {
 // scale concern is tracked as tech-debt [P210].
 const DYNAMIC_STATE_STATE_ROOT = "__dynamicState";
 
+// P226 (ADR 0037): the interactive-control component kinds that own the
+// enable/disable verbs. These get a `disabled` per-client slot binding even when
+// the editor configured no `disabled` binding, so the imperative enable/disable
+// verbs (and a future declarative disabled) can drive their ONE `disabled` value.
+// The neutral slot value is `false` (enabled) → the serialized markup is unchanged
+// until a writer sets it, so non-disabled controls render exactly as before.
+const DYNAMIC_STATE_DISABLED_KINDS = new Set([
+    "button", "input", "select", "textarea", "checkbox", "radio", "switch", "slider", "datepicker"
+]);
+
 function isDynamicStateFieldName(field) {
     return DYNAMIC_STATE_FIELDS.indexOf(field) !== -1;
 }
@@ -494,14 +504,26 @@ function applyDynamicStateSlots(componentDefinition) {
         componentDefinition.visibleIf = unboundDynamicStateBinding(nodeId, "visible", visibleIf);
     }
 
-    // disabled → bind.disabled (only when the node already carries one, and only
-    // when that binding is literal/absent).
-    if (componentDefinition.bind && typeof componentDefinition.bind === "object"
-        && componentDefinition.bind.disabled !== undefined) {
-        const disabledBinding = componentDefinition.bind.disabled;
-        if (isSlotBackedDynamicStateBinding(disabledBinding)) {
-            componentDefinition.bind.disabled = unboundDynamicStateBinding(nodeId, "disabled", disabledBinding);
+    // disabled → bind.disabled.
+    //   - A node that ALREADY carries a `disabled` binding: a literal/absent one is
+    //     routed to the slot; a bound one stays reactive from its source.
+    //   - P226 (ADR 0037): an interactive control (DYNAMIC_STATE_DISABLED_KINDS)
+    //     with NO disabled binding also gets a neutral (false) slot binding, so the
+    //     enable/disable verbs write its ONE `disabled` value. Neutral false keeps
+    //     the serialized markup unchanged until a writer flips it.
+    const bind = componentDefinition.bind && typeof componentDefinition.bind === "object"
+        ? componentDefinition.bind
+        : undefined;
+    if (bind && bind.disabled !== undefined) {
+        if (isSlotBackedDynamicStateBinding(bind.disabled)) {
+            bind.disabled = unboundDynamicStateBinding(nodeId, "disabled", bind.disabled);
         }
+    }
+    else if (DYNAMIC_STATE_DISABLED_KINDS.has(componentDefinition.kind)) {
+        if (!componentDefinition.bind || typeof componentDefinition.bind !== "object") {
+            componentDefinition.bind = {};
+        }
+        componentDefinition.bind.disabled = unboundDynamicStateBinding(nodeId, "disabled", undefined);
     }
 
     return componentDefinition;
