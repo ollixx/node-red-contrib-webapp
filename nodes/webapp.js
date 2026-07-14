@@ -2534,6 +2534,39 @@ function setDynamicStateField(nodeId, field, value, clientId) {
     return { ok: true, mode, clientId: scopedClientId };
 }
 
+// P225 (ADR 0037): the browser-reachable dynamic-state write. A duration-driven
+// auto-hide (and any other client-initiated dynamic-state change) POSTs
+// `{ clientId, id, field, value }` to `/webapp/:appId/dynamic-state`; this routes
+// it through the ONE unified write API (`setDynamicStateField`), so the value
+// transition is identical whether it is driven by a flow message
+// (`msg.ui.dynamicState`), a binding, or the browser. Bound → write-through to the
+// store; unbound → the internal per-client slot (scoped by the reported clientId).
+// The write already pushes a fresh snapshot; the alert is hidden because its
+// visibility VALUE is now false — no client-side overlay, no `autoDismissed`.
+function dispatchDynamicStateWrite(body) {
+    const nodeId = body && body.id ? String(body.id) : undefined;
+    const field = body && body.field ? String(body.field) : undefined;
+    const clientId = body && body.clientId ? String(body.clientId) : undefined;
+
+    if (!nodeId) {
+        return { success: false, status: 400, body: "Missing id." };
+    }
+    if (!field) {
+        return { success: false, status: 400, body: "Missing field." };
+    }
+
+    const result = setDynamicStateField(nodeId, field, body ? body.value : undefined, clientId);
+    if (!result.ok) {
+        // An unknown node / non-dynamic-state field is a bad request; a read-only
+        // bound source or a scope violation is a conflict.
+        const status = (result.reason === "unknown-node" || result.reason === "not-a-dynamic-state-field")
+            ? 400
+            : 409;
+        return { success: false, status, body: result.reason, result };
+    }
+    return { success: true, result };
+}
+
 function dispatchClientEvent(RED, appId, body, definitions) {
     const sourceId = body && body.sourceId ? String(body.sourceId) : undefined;
     const event = body && body.event ? String(body.event) : undefined;
@@ -4500,6 +4533,25 @@ function registerEndpoints(RED) {
             location,
             snapshot: built.snapshot
         });
+    });
+
+    // P225 (ADR 0037): browser-initiated dynamic-state write. A ui-alert whose
+    // `duration` elapsed (and, in future, any client-side dynamic-state change)
+    // POSTs `{ clientId, id, field, value }` here; we route it through the unified
+    // `setDynamicStateField` write API so the hide is a real value transition
+    // (bound → store write-through, unbound → per-client slot), not a DOM close.
+    // MUST be registered before the catch-all `/webapp/:appId/*` page route.
+    RED.httpNode.post("/webapp/:appId/dynamic-state", readJsonBody, (req, res) => {
+        const body = req.body && typeof req.body === "object" ? req.body : {};
+        const written = dispatchDynamicStateWrite(body);
+        if (!written.success) {
+            res.status(written.status).json({ error: written.body });
+            return;
+        }
+        // setDynamicStateField already pushed a fresh snapshot to the affected
+        // client(s); the response is a fire-and-report ack (the SSE stream is the
+        // single source of re-renders — mirrors the /event contract).
+        res.json({ ok: true, mode: written.result.mode });
     });
 
     // P70 Ebene 3: app-scoped media proxy. A ui-image src of `asset:<id>` is
@@ -8144,6 +8196,9 @@ registerWebappNodes.__test__ = {
     applyDynamicStateSlots,
     dynamicStateSlotPath,
     toComponentDefinitions,
+    // P225 (ADR 0037): browser-reachable dynamic-state write dispatch (duration
+    // auto-hide routes through this to setDynamicStateField).
+    dispatchDynamicStateWrite,
     // P223 (ADR 0036): Message mode drives every msg-bound field — bound-field
     // scan, boolean coercion, literal-wrap, and the live-patch merge helper.
     collectBoundViewFields,

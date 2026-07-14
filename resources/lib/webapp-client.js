@@ -79,14 +79,15 @@
     //   open:        "<target>" or "<target>#<part>" -> true (disclosed)
     //   selected:    "<target>" -> "<part>" (active sub-part of a single-active
     //                set: tabs / stepper / menu — survives a snapshot re-render)
-    //   autoDismissed: nodeId -> true (alert auto-hid via duration; must not be
-    //                re-opened by morph — P100)
+    // P225 (ADR 0037): the alert `autoDismissed` overlay is GONE. A duration-driven
+    // auto-hide is now a real `visible=false` value transition (POSTed to
+    // /dynamic-state → setDynamicStateField), so the alert is absent from the next
+    // snapshot; no per-client overlay is needed to keep it hidden across morphs.
     const interaction = {
         hidden: Object.create(null),
         disabled: Object.create(null),
         open: Object.create(null),
-        selected: Object.create(null),
-        autoDismissed: Object.create(null)
+        selected: Object.create(null)
     };
 
     // P30: a per-tab client id so the flow can address actions back to this
@@ -286,19 +287,6 @@
             }
             if (interaction.disabled[id]) {
                 applyDisabledState(element, true);
-            }
-            // P100: alert auto-dismiss — a duration-based auto-hide must survive a
-            // snapshot morph. The serializer always emits `open` on sl-alert; after
-            // the morph replaces the element we set open=false again so Shoelace does
-            // not restart the timer and the alert stays visually hidden.
-            if (interaction.autoDismissed[id]) {
-                const slAlert = element.tagName && element.tagName.toLowerCase() === "sl-alert"
-                    ? element
-                    : element.querySelector("sl-alert");
-                if (slAlert) {
-                    slAlert.removeAttribute("open");
-                    slAlert.open = false;
-                }
             }
         });
 
@@ -575,6 +563,27 @@
             log.warn("dispatch", "POST /event failed — UI event not delivered to flow", {
                 event: eventPayload.event,
                 sourceId: eventPayload.sourceId,
+                error: err && err.message ? err.message : String(err)
+            });
+        });
+    }
+
+    // P225 (ADR 0037): write a node's dynamic-state field (visible/disabled) from
+    // the browser. POSTs to /dynamic-state, which routes through the unified
+    // setDynamicStateField write API (bound → store write-through, unbound →
+    // per-client slot, scoped by this tab's clientId). Fire-and-report: the
+    // authoritative re-render arrives over the SSE stream once the value flips.
+    function writeDynamicState(nodeId, field, value) {
+        const payload = { clientId: clientId, id: nodeId, field: field, value: value };
+        log.debug("dynamic-state", "→ POST /dynamic-state " + field + "=" + value, { id: nodeId });
+        return fetch(base() + "/dynamic-state", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        }).catch(function (err) {
+            log.warn("dynamic-state", "POST /dynamic-state failed — value transition not delivered", {
+                id: nodeId,
+                field: field,
                 error: err && err.message ? err.message : String(err)
             });
         });
@@ -897,12 +906,15 @@
             return;
         }
 
-        // ── alert auto-hide via duration (P100) ───────────────────────────
-        // When sl-alert hides because its `duration` timer expired, we record
-        // the owning node id in interaction.autoDismissed so applyInteractionOverlay
-        // can suppress the `open` attribute after every subsequent snapshot morph.
-        // We only track duration-driven hides (the alert has a duration attribute);
-        // user-initiated dismiss (closable click) is handled by the dismiss event.
+        // ── alert auto-hide via duration (P225, ADR 0037) ─────────────────
+        // When sl-alert hides because its Shoelace `duration` timer expired (the
+        // same timer that ran the P100 countdown bar), this is a real state
+        // transition: we set the alert's ONE visibility value to `false` through
+        // the unified write API. The server re-renders WITHOUT the alert (its
+        // `visible` value is now false) and the morph removes it — no client-side
+        // `autoDismissed` overlay. Writing the value back to `true` (msg / verb /
+        // store) re-shows it, no reload. User-initiated dismiss (closable ×) stays
+        // a separate path (the dismiss event), untouched here.
         if (target.tagName && target.tagName.toLowerCase() === "sl-alert" && target.hasAttribute("duration")) {
             // Walk up to find the data-webapp-node wrapper (the serializer wraps sl-alert in a div).
             let nodeEl = target.closest("[data-webapp-node]");
@@ -913,7 +925,7 @@
             if (nodeEl && root.contains(nodeEl)) {
                 const nodeId = nodeEl.getAttribute("data-webapp-node");
                 if (nodeId) {
-                    interaction.autoDismissed[nodeId] = true;
+                    writeDynamicState(nodeId, "visible", false);
                 }
             }
         }
