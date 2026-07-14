@@ -27,6 +27,7 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
+- **P224** — aspects/state — Foundation dynamische Zustandsfelder (visible/disabled): EIN Wert pro Komponente, gebunden→Store / ungebunden→interner per-Client-Slot; Renderer liest den aufgelösten Wert — *ADR 0037; Owner 2026-07-14; dep P201* — [P224](aspects/state/P224-dynamic-state-field-foundation.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -43,6 +44,8 @@ Reason in each package's `deferred_reason`. Picked up once the blocker clears.
 - **P152** — nodes/ui-empty-state — Redesign: Container mit Slot(s) + visible-Binding (statt fester icon/title/message/action-Felder) — *Vertragswechsel; ADR + Restfragen nötig; Richtung steht* — [P152](nodes/ui-empty-state/deferred/P152-empty-state-as-container-with-visible-binding.md)
 - **P162** — nodes/ui-event — Konzept: referenzbasierter lokaler Tap der App/Route-Lifecycle-Events (onEnter/onLeave) neben dem Consumer — *neuer Knoten + Vertrag; ADR-würdig (Scope/Events/Output-Form); löst Lange-Leitung aus ADR 0016* — [P162](nodes/ui-event/deferred/P162-ui-event-local-lifecycle-tap.md)
 - **P210** — aspects/state — Tech-Debt: per-client-State produktionsreif skalieren — externer geteilter Store (Redis) und/oder Multi-Instanz + Sticky-Sessions; TTL/Eviction gegen unbegrenztes Wachstum — *großer Umbau; ADR + Owner-Entscheidung; erst bei realem Skalierungs-/Durability-Bedarf* — [P210](aspects/state/deferred/P210-per-client-state-production-scale.md)
+- **P225** — nodes/ui-alert — Duration als deklarativer visible=false-Übergang (schreibt den EINEN Wert) statt Client-Einweg-Close — *ADR 0037; baut auf P224* — [P225](nodes/ui-alert/deferred/P225-duration-as-visible-state-transition.md)
+- **P226** — nodes/ui-action — show/hide (+ enable/disable) schreiben den EINEN dynamic-state-Wert statt Client-Overlay; ui-alert einbinden — *ADR 0037; baut auf P224* — [P226](nodes/ui-action/deferred/P226-interaction-verbs-write-dynamic-state.md)
 
 ## Done (rollup — history lives in the epic folders)
 

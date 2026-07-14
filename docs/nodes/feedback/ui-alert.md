@@ -133,7 +133,7 @@ da Alerts eine Status-/Schweregrad-Semantik tragen.
 ## Offene Punkte
 
 - `duration` ist derzeit ein client-seitiger Einweg-Close, entkoppelt vom
-  deklarativen `visible`-Zustand (siehe Verhalten oben). Ein kohärentes
-  Duration↔`visible`-Modell (Duration setzt `visible=false` server-seitig; Show/
-  Re-Show-Semantik) ist eine bekannte offene Frage, aber noch nicht als
-  Arbeitspaket geplant.
+  deklarativen `visible`-Zustand (siehe Verhalten oben). Das kohärente
+  Duration↔`visible`-Modell (Duration setzt den EINEN Sichtbarkeits-Wert auf
+  `false`) ist als **ADR 0037 / P225** geplant (Teil des vereinheitlichten
+  dynamic-state-Modells).
