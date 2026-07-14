@@ -1781,11 +1781,16 @@ function toComponentDefinitions(components) {
             // applyBaseFields) has it wired into visibleIf on the ComponentDefinition
             // (the renderer checks component.visibleIf to decide whether to render).
             const visibleBinding = getBinding(component.visible, undefined);
-            // P172 (ADR 0015): `color` as a binding — for non-variant nodes (e.g.
-            // ui-list) the color is a bindable active-value (literal colour string or
-            // a dynamic binding). When it is a binding object it routes through
-            // bind.color so the renderer resolves it; a plain string stays in props.
-            const colorBinding = p16Kind === "list" ? getBinding(component.color, undefined) : undefined;
+            // P172 (ADR 0015) + P231: `color` as a binding — for non-variant nodes
+            // the color is a bindable active-value (literal colour string or a
+            // dynamic binding). Routed GENERICALLY (P231, no longer list-only): any
+            // p16Kind node that stores a `color` BINDING object (installBaseFields /
+            // applyBaseFields on the color-applicable nodes — ui-divider, ui-avatar,
+            // ui-progress, ui-list, …) has it wired through bind.color so the renderer
+            // resolves it into resolvedProps.color. `getBinding` only returns a
+            // binding OBJECT, so a plain-string `color` (ui-icon's dedicated field)
+            // stays in props untouched — no behaviour change for those.
+            const colorBinding = getBinding(component.color, undefined);
             // For alert/badge nodes that use `message`/`value` as primary binding fields
             // (not `value`), fall back to those fields as the value binding so the
             // renderer resolves them and the serializer can read the string from

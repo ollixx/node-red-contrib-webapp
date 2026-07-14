@@ -456,6 +456,22 @@ Bereits vor P222 umgestellt (P139/P172, eigene Configs, hier zur Vollständigkei
 > dokumentiert sind, listet `check-specs.js` sie als `COMMON_BOILERPLATE` (nicht in
 > jeder Felder-Tabelle wiederholt) — analog zu den Layout-Feldern.
 
+**Schema + Laufzeit (P231, ADR 0015 §1 / ADR 0037).** Das Konzept greift auf drei
+Ebenen: **Editor** (die „Allgemein"-Gruppe, P222), **Schema** und **Laufzeit**. Bis
+P231 deklarierten die Node-Definition-Schemas (`packages/schema/src/node-definitions.ts`)
+`visible`/`disabled`/`color` fast nirgends — Zod **strippte** die Felder bei der
+Validierung, sodass sie die Laufzeit nie erreichten (auf ~29 Knoten wirkungslos, vom
+P230-`ui-divider`-Pilot aufgedeckt). P231 schließt die Lücke mit einem gemeinsamen
+`baseFieldsSchema`-Mixin (die drei als optionale Wert-Bindings), das jeder anwendbare
+mountable View-Knoten in seinem `mountableNodeSchema.extend({ ...baseFieldsSchema, … })`
+mitführt; knotenspezifische Deklarationen (ui-empty-state `visible` erforderlich,
+ui-icon `color` als String, die Input-Knoten mit `disabled`) überschreiben das Mixin
+im selben Objekt-Literal. In der Laufzeit (`nodes/webapp.js`) wird `color` → `bind.color`
+nun **generisch** geroutet (vorher nur `list`), `visible` → `visibleIf` (Render-Gate)
+und `disabled` → `bind.disabled` (bereits P172). `size` gehört nicht ins Mixin — es ist
+ein statisches Enum-Token, kein Wert-Binding. Damit **wirken** die Basis-Felder zur
+Laufzeit (Divider: `--color` auf `sl-divider`, `visible=false` blendet aus).
+
 ---
 
 ## Layout-Felder
