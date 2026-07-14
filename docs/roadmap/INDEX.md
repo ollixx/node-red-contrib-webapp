@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P225** — nodes/ui-alert — Duration als deklarativer visible=false-Übergang (schreibt den EINEN Wert über die P224-API) statt Client-Einweg-Close — *ADR 0037; baut auf P224 (done); dep P224* — [P225](nodes/ui-alert/P225-duration-as-visible-state-transition.md)
 - **P226** — nodes/ui-action — show/hide (+ enable/disable) schreiben den EINEN dynamic-state-Wert (P224-API) statt Client-Overlay; ui-alert einbinden — *ADR 0037; baut auf P224 (done); dep P224* — [P226](nodes/ui-action/P226-interaction-verbs-write-dynamic-state.md)
 
 
@@ -55,7 +54,7 @@ open the folder for the full history.
 |---|---|
 | nodes/ui-action | 6 |
 | nodes/ui-app | 6 |
-| nodes/ui-alert | 4 |
+| nodes/ui-alert | 5 |
 | nodes/ui-avatar | 2 |
 | nodes/ui-log | 2 |
 | nodes/ui-query | 6 |
@@ -101,4 +100,4 @@ open the folder for the full history.
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 222 done, 2 open, 10 deferred.**
+**Total: 223 done, 1 open, 10 deferred.**

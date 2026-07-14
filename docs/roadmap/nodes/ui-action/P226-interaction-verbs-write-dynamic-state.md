@@ -3,7 +3,7 @@ id: P226
 node: ui-action
 title: "ui-action: show/hide (+ enable/disable) schreiben den EINEN dynamic-state-Wert statt Client-Overlay; ui-alert einbinden"
 epic: nodes/ui-action
-status: pending
+status: in_progress
 dependencies: [P224]
 verify: browser
 spec: docs/nodes/behavior/ui-action.md
