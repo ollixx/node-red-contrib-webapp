@@ -157,7 +157,7 @@ test.describe("ui-action interaction verbs (P53)", () => {
 
     // ─── open / close with target granularity (accordion section) ────────────
 
-    test("open with target+part → only that accordion section opens", async ({ page, request }) => {
+    test("open with target+part discloses that accordion section", async ({ page, request }) => {
         const items = JSON.stringify([
             { id: "secA", label: "Section A" },
             { id: "secB", label: "Section B" }
@@ -178,15 +178,18 @@ test.describe("ui-action interaction verbs (P53)", () => {
         const secB = page.locator('[data-webapp-node="verbAcc4"] sl-details[data-webapp-part="secB"]');
         await expect(secA).toBeVisible();
         await expect(secB).toBeVisible();
-        // Neither open initially.
-        await expect(secA).not.toHaveAttribute("open", /.*/);
+        // The FIRST section is open by default (ui-accordion resolves its open
+        // section to the first child when none is bound — P169 / defaultOpenSectionId);
+        // the second is closed. The `open` verb then discloses the targeted section.
+        await expect(secA).toHaveAttribute("open", "");
         await expect(secB).not.toHaveAttribute("open", /.*/);
 
         await injectMessage(request, "verbOpenSecInj4");
 
-        // Only section B opens.
+        // The open verb discloses section B (disclosure is additive per section).
         await expect(secB).toHaveAttribute("open", "", { timeout: 5000 });
-        await expect(secA).not.toHaveAttribute("open", /.*/);
+        // Section A (the default-open first section) is unaffected — still open.
+        await expect(secA).toHaveAttribute("open", "");
     });
 
     // ─── hidden value survives a ui-store-driven snapshot re-render ───────────
