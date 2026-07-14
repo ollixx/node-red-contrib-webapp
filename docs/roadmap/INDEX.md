@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P224** — aspects/state — Foundation dynamische Zustandsfelder (visible/disabled): EIN Wert pro Komponente, gebunden→Store / ungebunden→interner per-Client-Slot; Renderer liest den aufgelösten Wert — *ADR 0037; Owner 2026-07-14; dep P201* — [P224](aspects/state/P224-dynamic-state-field-foundation.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -94,7 +93,7 @@ open the folder for the full history.
 | aspects/misc | 16 |
 | aspects/docs | 1 |
 | aspects/runtime | 9 |
-| aspects/state | 8 |
+| aspects/state | 9 |
 | aspects/editor | 24 |
 | schema | 5 |
 | aspects/rendering | 14 |
@@ -102,4 +101,4 @@ open the folder for the full history.
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 221 done, 0 open, 10 deferred.**
+**Total: 222 done, 0 open, 12 deferred.**

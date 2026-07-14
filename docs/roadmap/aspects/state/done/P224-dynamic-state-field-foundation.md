@@ -2,7 +2,7 @@
 id: P224
 title: "State: Foundation für dynamische Zustandsfelder (visible/disabled) — EIN Wert pro Komponente: gebunden→Store, ungebunden→interner per-Client-Slot; Renderer liest den aufgelösten Wert"
 epic: aspects/state
-status: in_progress
+status: done
 dependencies: [P201]
 verify: browser
 spec: docs/nodes/concepts/stores.md
@@ -10,7 +10,7 @@ tests: tests/e2e/nodes/state/dynamic-state-field.spec.ts
 ---
 # P224 — Dynamic-State-Field Foundation
 
-> Rationale: [ADR 0037](../../../adr/0037-unified-dynamic-state-fields-one-value-many-writers.md).
+> Rationale: [ADR 0037](../../../../adr/0037-unified-dynamic-state-fields-one-value-many-writers.md).
 > Foundation-Slice: der EINE Wert + Quelle/Schreib-Regel. Die Schreiber (msg,
 > Duration, Verben) folgen als eigene Slices (P223 msg, P225 Duration, P226 Verben).
 
@@ -80,4 +80,19 @@ per-Client-Isolation + Default.
 - Nur die **Foundation** (der Wert + Quelle/Schreib-Regel). Schreiber sind eigene
   Slices: P223 (msg), P225 (Duration), P226 (show/hide-Verben).
 - Slot-Lifecycle (Eviction/TTL) bewusst minimal halten; verweist auf die
-  per-Client-Scale-Tech-Debt [P210](deferred/P210-per-client-state-production-scale.md).
+  per-Client-Scale-Tech-Debt [P210](../deferred/P210-per-client-state-production-scale.md).
+
+## Result
+
+**Delivered.** Foundation für dynamische Zustandsfelder (ADR 0037): EIN aufgelöster Wert pro Komponente für `visible`/`disabled` — gebunden→Store-Durchschreiben, ungebunden→interner per-Client-Slot; einheitliche `setDynamicStateField`-API. Die Schreiber (msg/Duration/Verben) bleiben eigene Slices (P223/P225/P226).
+- **Schema** `packages/schema/src/contracts.ts` + `index.ts`: Feld-Klasse `DYNAMIC_STATE_FIELDS` (`visible`/`disabled`), `DYNAMIC_STATE_FIELD_NEUTRAL` (visible→true, disabled→false), `DYNAMIC_STATE_BOUND_KINDS`, `isDynamicStateField`, `DynamicStateField`-Typ — autoritativ + erweiterbar, statische Felder (color/size) ausgeschlossen.
+- **Runtime** `nodes/webapp.js`: `applyDynamicStateSlots` (Post-Pass in `toComponentDefinitions`) schreibt ein UNGEBUNDENES `visible`/`disabled` auf ein `state`-Binding am reservierten per-Client-Pfad `__dynamicState.<id>.<field>` um, mit dem konfigurierten Literal (oder Neutralwert) als `fallback` → ein leerer Slot ist byte-äquivalent zu heute (P202 gewahrt). `setDynamicStateField(nodeId, field, value, clientId)`: gebundener Store → Durchschreiben (scope-korrekt), gebundener State → State-Pfad, read-only gebunden (query/routeParam/reactive) → verweigert, ungebunden → per-Client-Slot; danach Snapshot-Push. `msg.ui.dynamicState = {field, value, id?}`-Seam in `viewNodePatchInputHandler` (honoriert `msg.ui.clientId`) als flow-erreichbarer Einstieg.
+- **Doku** `docs/nodes/concepts/stores.md` (Feld-Klasse + Ein-Wert-Modell + Slot-vs-Store-Durchschreiben).
+
+**P223-Entscheidung: parallel gelassen** (nicht auf `setDynamicStateField` umverdrahtet). P223s Unit-Tests + die `visible=msg`-E2E verlangen, dass ein msg-gebundenes `visible` bis zur Message VERSTECKT rendert — das widerspricht dem neutral-sichtbaren Slot-Default. Daher sind `msg`/`jsonata`/`flow`/`global`/`env` NICHT slot-backed beim Render (nur `literal`/absent routen in den Slot); P223 bleibt intakt, die API steht für P225/P226 bereit.
+
+**Verify (browser, gemessen — Haupt-Checkout).** `tests/e2e/nodes/state/dynamic-state-field.spec.ts` grün (Teil von 23 passed inkl. ui-alert-Regression): ui-button→function→`msg.ui.dynamicState` (clientId-tragend) → ungebundener `ui-alert.visible`-Toggle (DOM-Sichtbarkeit), gebundenes `visible` (Store) Durchschreiben (Store-Wert ändert sich + Re-Render), Zwei-Client-Isolation.
+
+**Stats.** Unit grün: schema 501 (+?), editor 178, renderer 163 (+5), runtime 1258 (+18, 27 neue P224-Unit-Tests gesamt). Cross-cutting explizit grün: P223 (20)/P110 (13)/P175 (9)/P214. `pnpm build`/`lint`/`check:specs` (42)/`check:roundtrip` (0 allowlisted)/`check:links`/`check:roadmap` grün.
+
+**Cost.** Sub-Agent `phase/P224` (worktree), ~32 min (09:47:57Z→10:20:08Z); Token-Zeile in `.ai/agent-runs.jsonl`.
