@@ -3,7 +3,7 @@ id: P230
 node: ui-divider
 title: "Konformitäts-Pass ui-divider — Felder/Spec/Inline-Hilfe/Akzeptanz/Tests"
 epic: aspects/node-conformance
-status: in_progress
+status: done
 dependencies: []
 verify: browser
 spec: docs/nodes/display/ui-divider.md
@@ -100,3 +100,16 @@ node-testing.md; Katalog aktualisiert.
 2. Inline-Hilfe: Voll-Doku-Link + bindbares label/color erwähnen.
 3. Tests: No-Crash raus, Feature-Tests neu, Katalog aktuell.
 4. Felder: keine Änderung (sauber).
+
+## Result
+
+**Delivered.** Konformitäts-Pass ui-divider (Pilot der `node-conformance`-Epic) — Spec-Drift korrigiert, Inline-Hilfe vervollständigt, Tests von No-Crash auf gemessene Feature-Tests umgestellt.
+- **Spec** `docs/nodes/display/ui-divider.md`: `label` = voller Wert-typedInput-Binding (P150, war „kein Binding"); stale „Laufzeit folgt mit dem Rollout" für visible/color + „Offene Punkte" korrigiert.
+- **Inline-Hilfe** `nodes/view/ui-divider.html`: Orientation/label/color bindbar erwähnt + **Link zur Voll-Doku** (fehlte).
+- **Tests** `tests/e2e/nodes/view/ui-divider.spec.ts`: der verbotene „renders without crashing"-Test raus; frische Feature-Tests (orientation, label literal + gebunden P150, ports). Die color- + visible-Render-Tests waren `test.fixme` (Base-Fields vom Schema gestrippt) — der Pilot deckte damit den **systemischen Fehler** auf → eigenes Paket **[P231](../../editor/done/P231-base-fields-in-schema-and-runtime.md)**. Nach P231 ent-fixmed + grün.
+
+**Verify (browser, gemessen — Haupt-Checkout).** `ui-divider.spec.ts` **9/9 passed** (nach P231): orientation (h/v im DOM), label literal + gebunden (P150 Live-Wert), **color** gebunden → `sl-divider --color` (computed-style gemessen), **visible=false** → nicht gerendert (Render-Gate), 0 In-/Out-Ports. Katalog `ui-divider.tests.md` aktualisiert.
+
+**Epic-Ertrag.** Der Pilot hat seinen Zweck erfüllt: er kalibrierte den Konformitäts-Ablauf UND fand den Cross-Cutting-Schema-Strip-Bug (P231), der ADR 0037 auf ~30 Knoten untergrub.
+
+**Cost.** Owner-WIP (Doc/Hilfe/Tests) + Orchestrator (P231-Diagnose/Fix, Katalog, E2E-Verifikation). Token-Zeilen in `.ai/agent-runs.jsonl`.

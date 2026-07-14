@@ -14,12 +14,11 @@
 | Store-gebundenes Label → aufgelöster Live-Wert (P150) | `label`-Binding wird vom Renderer aufgelöst und gerendert |
 | kein Input-/Output-Port (statisches Blatt) | ui-divider ist ein statischer Leaf-Knoten (P76) |
 
-## Blockiert durch P231 (`test.fixme`)
+## Base-Fields color/visible (entblockt durch P231, grün)
 
-Base-Fields `visible`/`color` fehlen im ui-divider-**Schema** → Zod strippt sie →
-zur Laufzeit wirkungslos. Systemischer Fix: **P231**. Nach P231 ent-fixmen:
+Vormals `test.fixme` — die Base-Fields fehlten im Schema (Zod strippte sie). **P231** deklariert sie im Schema + sourcet sie generisch in den Deploy-Pfad; die Tests sind ent-fixmed und **grün** (gemessen):
 
-| Test (fixme) | Testziel |
+| Test | Testziel |
 |---|---|
 | gebundenes `color` → `sl-divider style="--color:…"` | Base-Field color emittiert die Shoelace-`--color`-Property |
 | `--color` am gerenderten Element (computed style) | color wirkt auf die Linie (gemessen) |
