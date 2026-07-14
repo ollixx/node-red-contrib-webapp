@@ -109,6 +109,20 @@ kanonischer Auszug.
 
 ---
 
+## Feld-Matrix (generiert)
+
+Eine knotenübergreifende Übersicht aller ui-Knoten × ihrer Felder — mit den
+Konsistenz-Findings (geplante Umbenennungen P228 / Legacy-Entfernungen P229) als
+Overlay — wird generiert nach [`field-matrix.html`](../field-matrix.html):
+
+```bash
+pnpm gen:field-matrix
+```
+
+Die Findings werden aus denselben Regeln wie `pnpm check:fields` auf den
+Live-`defaults` abgeleitet, räumen sich also mit P228/P229 selbst auf. Die HTML-Datei
+ist **generiert** — nicht von Hand bearbeiten, sondern neu generieren.
+
 ## Siehe auch
 
 - [editor.md](editor.md) — Editor-Helfer, Node-Picker, Binding-typedInputs

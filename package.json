@@ -83,6 +83,7 @@
         "test": "pnpm -r test",
         "gen:example": "node scripts/gen-example.js",
         "gen:node-examples": "node scripts/gen-node-examples.js",
+        "gen:field-matrix": "node scripts/gen-field-matrix.js",
         "check:roadmap": "node scripts/check-roadmap.js",
         "check:links": "node scripts/check-doc-links.js",
         "check:specs": "node scripts/check-specs.js",
