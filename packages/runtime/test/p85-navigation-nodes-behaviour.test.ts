@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { NodeBehaviourHarness } from "./helpers/node-behaviour-harness";
+import { NodeBehaviourHarness, webappTest } from "./helpers/node-behaviour-harness";
 
 /**
  * P85 — Classic behaviour tests for the navigation-category nodes:
@@ -78,30 +78,41 @@ describe("P85: select verb → SSE command push (tabs / stepper / menu)", () => 
     }
 });
 
-describe("P85: show / hide verbs → SSE command push (all interaction navigation nodes)", () => {
+// P226 (ADR 0037): show/hide on navigation nodes are dynamic-state WRITERS — they
+// set the node's ONE `visible` value via setDynamicStateField (unbound → per-client
+// slot), NOT a client overlay `command`. Assert the slot write + no command frame.
+const dsNav = webappTest as unknown as {
+    getClientState: (appId: string, clientId: string) => { state: Record<string, unknown> } | null;
+};
+function navSlotValue(state: Record<string, unknown> | undefined, nodeId: string, field: string): unknown {
+    const root = state && (state.__dynamicState as Record<string, Record<string, unknown>> | undefined);
+    return root && root[nodeId] ? root[nodeId][field] : undefined;
+}
+
+describe("P226: show / hide verbs write the `visible` value (all interaction navigation nodes)", () => {
     for (const type of ["ui-tabs", "ui-stepper", "ui-menu", "ui-accordion"] as const) {
-        it(`${type}: owned 'show' verb pushes SSE command frame`, () => {
+        it(`${type}: 'show' writes visible=true to the per-client slot, no command`, () => {
             const nodeId = `show-${type}`;
             const client = h.connectClient("c1");
+            h.state.definitions.set(nodeId, { nodeId, appId: h.appId, definition: { type, id: nodeId } });
             const node = h.makeNode(type, nodeId);
 
             h.drive(type, node, { ui: { clientId: "c1", action: { type: "show" } } });
 
-            const commands = client.eventsOfType("command");
-            expect(commands).toHaveLength(1);
-            expect(commands[0].data).toMatchObject({ command: { type: "show", target: nodeId } });
+            expect(client.eventsOfType("command")).toHaveLength(0);
+            expect(navSlotValue(dsNav.getClientState(h.appId, "c1")!.state, nodeId, "visible")).toBe(true);
         });
 
-        it(`${type}: owned 'hide' verb pushes SSE command frame`, () => {
+        it(`${type}: 'hide' writes visible=false to the per-client slot, no command`, () => {
             const nodeId = `hide-${type}`;
             const client = h.connectClient("c2");
+            h.state.definitions.set(nodeId, { nodeId, appId: h.appId, definition: { type, id: nodeId } });
             const node = h.makeNode(type, nodeId);
 
             h.drive(type, node, { ui: { clientId: "c2", action: { type: "hide" } } });
 
-            const commands = client.eventsOfType("command");
-            expect(commands).toHaveLength(1);
-            expect(commands[0].data).toMatchObject({ command: { type: "hide", target: nodeId } });
+            expect(client.eventsOfType("command")).toHaveLength(0);
+            expect(navSlotValue(dsNav.getClientState(h.appId, "c2")!.state, nodeId, "visible")).toBe(false);
         });
     }
 });

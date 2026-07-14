@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { NodeBehaviourHarness } from "./helpers/node-behaviour-harness";
+import { NodeBehaviourHarness, webappTest } from "./helpers/node-behaviour-harness";
 
 /**
  * P83 — Classic behaviour tests for the display-category nodes:
@@ -145,16 +145,71 @@ describe("P83: pass-through when node has no registered definition", () => {
 });
 
 // ---------------------------------------------------------------------------
-// 4. Interaction verbs owned by display nodes → SSE command push
+// 4. Interaction verbs owned by display nodes.
+//   - P226 (ADR 0037): the VISIBILITY / ENABLED verbs (show/hide/enable/disable)
+//     are dynamic-state WRITERS — they set the target's ONE visible/disabled value
+//     through setDynamicStateField (unbound → per-client slot), NOT a client
+//     overlay `command`. No `command` frame is pushed for them.
+//   - Other owned verbs (select, …) still push an SSE `command` frame.
 // ---------------------------------------------------------------------------
 
-describe("P83: owned interaction verbs push an SSE command frame", () => {
-    // Verbs owned by each type (from INTERACTION_VERBS_BY_TYPE)
+// P226: the (field, value) each visibility/enabled verb writes.
+const DS_VERB_WRITES: Record<string, [string, boolean]> = {
+    show: ["visible", true],
+    hide: ["visible", false],
+    enable: ["disabled", false],
+    disable: ["disabled", true]
+};
+
+const dsTest = webappTest as unknown as {
+    getClientState: (appId: string, clientId: string) => { state: Record<string, unknown> } | null;
+};
+
+function slotValue(state: Record<string, unknown> | undefined, nodeId: string, field: string): unknown {
+    const root = state && (state.__dynamicState as Record<string, Record<string, unknown>> | undefined);
+    return root && root[nodeId] ? root[nodeId][field] : undefined;
+}
+
+describe("P226: visibility/enabled verbs write the dynamic-state value (no overlay command)", () => {
     const verbOwnership: Record<string, string[]> = {
         "ui-text": ["show", "hide"],
         "ui-button": ["show", "hide", "enable", "disable"],
-        "ui-table": ["show", "hide", "select"],
+        "ui-table": ["show", "hide"],
         "ui-container": ["show", "hide"]
+    };
+
+    for (const [type, verbs] of Object.entries(verbOwnership)) {
+        for (const verb of verbs) {
+            const [field, value] = DS_VERB_WRITES[verb];
+            it(`${type}: '${verb}' writes ${field}=${value} to the per-client slot and pushes no command`, () => {
+                const nodeId = `dsverb-${type}-${verb}`;
+                const client = h.connectClient("c1");
+
+                if (type === "ui-container") {
+                    // setDynamicStateField needs the node registered; a bare
+                    // definition is enough (an unbound visible/disabled → slot).
+                    h.state.definitions.set(nodeId, { nodeId, appId: h.appId, definition: { type, id: nodeId } });
+                    const node = h.makeNode(type, nodeId);
+                    h.drive(type, node, { ui: { clientId: "c1", action: { type: verb } } });
+                } else {
+                    registerNode(type, nodeId, { label: "Test", text: "Test", columns: "[]" });
+                    const node = h.makeNode(type, nodeId, h.state.definitions.get(nodeId)!.definition);
+                    h.drive(type, node, { ui: { clientId: "c1", action: { type: verb } } });
+                }
+
+                // No client overlay command was pushed for a dynamic-state verb.
+                expect(client.eventsOfType("command")).toHaveLength(0);
+                // The ONE value was written to this client's slot (scope-correct).
+                expect(slotValue(dsTest.getClientState(h.appId, "c1")!.state, nodeId, field)).toBe(value);
+            });
+        }
+    }
+});
+
+describe("P83: owned NON-visibility verbs push an SSE command frame", () => {
+    // ui-table still owns `select` (a genuine client command, not dynamic-state).
+    const verbOwnership: Record<string, string[]> = {
+        "ui-table": ["select"]
     };
 
     for (const [type, verbs] of Object.entries(verbOwnership)) {
@@ -163,21 +218,26 @@ describe("P83: owned interaction verbs push an SSE command frame", () => {
             const nodeId = `verb-${type}`;
             const client = h.connectClient("c1");
 
-            if (type === "ui-container") {
-                // ui-container uses componentStateInputHandler, no definition needed
-                const node = h.makeNode(type, nodeId);
-                h.drive(type, node, { ui: { clientId: "c1", action: { type: verb } } });
-            } else {
-                registerNode(type, nodeId, { label: "Test", text: "Test", columns: "[]" });
-                const node = h.makeNode(type, nodeId, h.state.definitions.get(nodeId)!.definition);
-                h.drive(type, node, { ui: { clientId: "c1", action: { type: verb } } });
-            }
+            registerNode(type, nodeId, { label: "Test", text: "Test", columns: "[]" });
+            const node = h.makeNode(type, nodeId, h.state.definitions.get(nodeId)!.definition);
+            h.drive(type, node, { ui: { clientId: "c1", action: { type: verb } } });
 
             const commands = client.eventsOfType("command");
             expect(commands).toHaveLength(1);
             expect(commands[0].data).toMatchObject({ command: { type: verb, target: nodeId } });
         });
+    }
+});
 
+describe("P83: a non-owned verb passes through without pushing a command", () => {
+    const verbOwnership: Record<string, string[]> = {
+        "ui-text": ["show", "hide"],
+        "ui-button": ["show", "hide", "enable", "disable"],
+        "ui-table": ["show", "hide", "select"],
+        "ui-container": ["show", "hide"]
+    };
+
+    for (const type of Object.keys(verbOwnership)) {
         // Non-owned verb → pass-through
         const notOwned = "focus"; // "focus" is owned by input nodes, not display nodes
         it(`${type}: non-owned verb '${notOwned}' passes through without pushing a command`, () => {

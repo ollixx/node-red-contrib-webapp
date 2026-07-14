@@ -2936,8 +2936,6 @@ ${tokenCss ? tokenCss.split("\n").map((line) => `    ${line}`).join("\n") : "   
     .webapp-slot-body--grid { display:grid; grid-template-columns:repeat(12, minmax(0, 1fr)); gap:12px; }
     .webapp-slot-body--absolute { position:relative; min-height:320px; }
     .webapp-item--absolute { position:absolute; }
-    /* P53: a ui-action hide command toggles this class on a component wrapper */
-    .webapp-hidden { display:none !important; }
     /* P36: navbar — frameless stacked nav links; active state via color */
     .webapp-nav-list { display:flex; flex-direction:column; gap:0; list-style:none; margin:0; padding:0; }
     .webapp-nav-item a, .webapp-nav-link { display:block; padding:10px 20px; font-size:0.95rem; font-weight:500; color:var(--wa-color-text); text-decoration:none; transition:color 0.15s, background 0.15s; }
@@ -6387,7 +6385,26 @@ const INTERACTION_VERBS_BY_TYPE = {
     "ui-menu": ["show", "hide", "select"],
     "ui-accordion": ["show", "hide", "open", "close"],
     // P95: breadcrumb supports show/hide visibility control
-    "ui-breadcrumb": ["show", "hide"]
+    "ui-breadcrumb": ["show", "hide"],
+    // P226 (ADR 0037): ui-alert joins the visibility verbs — show/hide now write
+    // the alert's ONE `visible` dynamic-state value (bound → store, unbound → the
+    // per-client slot), so a flow can imperatively re-show / hide an alert the same
+    // way its declarative `visible` value or a duration transition does.
+    "ui-alert": ["show", "hide"]
+};
+
+// P226 (ADR 0037): the visibility / enabled verbs are WRITERS on a component's ONE
+// dynamic-state value — NOT a separate client overlay. `show`/`hide` set `visible`;
+// `enable`/`disable` set `disabled`. Each routes through `setDynamicStateField`
+// (bound → store write-through, unbound → per-client slot), and the resulting
+// snapshot re-render reflects the new value. No `.webapp-hidden` overlay command is
+// pushed for these verbs. Every other verb (navigate / open / close / select /
+// focus / reset) keeps its client command.
+const DYNAMIC_STATE_VERB_WRITES = {
+    show: { field: "visible", value: true },
+    hide: { field: "visible", value: false },
+    enable: { field: "disabled", value: false },
+    disable: { field: "disabled", value: true }
 };
 
 // Build the interaction command for a target node from msg.ui.action. The target
@@ -6630,6 +6647,26 @@ function interactionInputHandler(ownedVerbs, next) {
             const RED = runtimeState.RED;
             const appId = findAppIdForNode(node);
             const clientId = uiMsg && uiMsg.clientId ? String(uiMsg.clientId) : undefined;
+
+            // P226 (ADR 0037): show/hide (+ enable/disable) are dynamic-state
+            // WRITERS — they set the target's ONE visible/disabled value through the
+            // unified write API (bound → store write-through, unbound → per-client
+            // slot) rather than pushing a client-side `.webapp-hidden` overlay. The
+            // write itself pushes the fresh snapshot, so visibility follows the value
+            // (a re-render), not a separate CSS layer.
+            const stateWrite = DYNAMIC_STATE_VERB_WRITES[uiAction.type];
+            if (stateWrite) {
+                const targetId = (typeof uiAction.target === "string" && uiAction.target)
+                    ? uiAction.target
+                    : node.id;
+                setDynamicStateField(targetId, stateWrite.field, stateWrite.value, clientId);
+                send(msg);
+                if (done) {
+                    done();
+                }
+                return;
+            }
+
             const command = buildInteractionCommand(node, uiAction);
             if (RED && appId) {
                 pushActionCommandToClients(appId, clientId, command);
@@ -7506,7 +7543,11 @@ const runtimeNodeRegistry = {
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
-            inputHandler: viewNodePatchInputHandler
+            // P226 (ADR 0037): ui-alert joins the interaction-verb system. show/hide
+            // route through interactionInputHandler → setDynamicStateField (writing
+            // the alert's ONE `visible` value); everything else falls back to the
+            // view-node patch handler (message / title binding updates).
+            inputHandler: interactionInputHandler(INTERACTION_VERBS_BY_TYPE["ui-alert"], viewNodePatchInputHandler)
         }
     },
     "ui-toast": {
