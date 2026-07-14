@@ -25,7 +25,7 @@
     "type": "ui-textarea",
     "name": "taNode",
     "uiId": "taNode",
-    "parent": "taApp",
+    "app": "taApp",
     "mount": "taApp.content",
     "z": "ex-ui-textarea",
     "x": 480,

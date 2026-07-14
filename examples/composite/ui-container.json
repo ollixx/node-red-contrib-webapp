@@ -25,7 +25,7 @@
     "type": "ui-container",
     "name": "card",
     "uiId": "ctNode",
-    "parent": "ctApp",
+    "app": "ctApp",
     "mount": "ctApp.content",
     "z": "ex-ui-container",
     "x": 480,
@@ -35,14 +35,14 @@
         "ctDbg"
       ]
     ],
-    "layoutId": "vertical"
+    "layout": "vertical"
   },
   {
     "id": "ctTitle",
     "type": "ui-text",
     "name": "card title",
     "uiId": "ctTitle",
-    "parent": "ctApp",
+    "app": "ctApp",
     "mount": "ctNode.content",
     "z": "ex-ui-container",
     "x": 700,
@@ -57,7 +57,7 @@
     "type": "ui-text",
     "name": "card body",
     "uiId": "ctBody",
-    "parent": "ctApp",
+    "app": "ctApp",
     "mount": "ctNode.content",
     "z": "ex-ui-container",
     "x": 700,
@@ -72,7 +72,7 @@
     "type": "ui-button",
     "name": "card button",
     "uiId": "ctBtn",
-    "parent": "ctApp",
+    "app": "ctApp",
     "mount": "ctNode.content",
     "z": "ex-ui-container",
     "x": 700,

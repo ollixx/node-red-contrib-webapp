@@ -765,6 +765,18 @@
                 node[legacy] !== undefined && node[legacy] !== null && node[legacy] !== "") {
                 node[canonical] = node[legacy];
             }
+            // Node-RED binds `#node-input-<canonical>` ← node[canonical] BEFORE
+            // oneditprepare runs, so a legacy-only flow (canonical still empty at
+            // bind time) leaves the carrier blank. Re-seed the carrier from the
+            // migrated value so downstream installers (navigate route picker,
+            // layout hidden input, definition picker) read the correct value.
+            if (typeof $ === "function") {
+                var el = $("#node-input-" + canonical);
+                if (el.length && node[canonical] !== undefined && node[canonical] !== null &&
+                    String(el.val() || "") === "") {
+                    el.val(node[canonical]);
+                }
+            }
         });
     }
 
@@ -881,7 +893,7 @@
                 references.routes.push({
                     id,
                     path: node.path || "",
-                    layoutId: node.layoutId || "",
+                    layoutId: node.layout || node.layoutId || "",
                     title: node.title || node.name || id,
                     parent: node.app || node.parent || ""
                 });
@@ -891,7 +903,7 @@
             if (node.type === "ui-dialog") {
                 references.dialogs.push({
                     id,
-                    layoutId: node.layoutId || "",
+                    layoutId: node.layout || node.layoutId || "",
                     title: node.title || node.name || id,
                     parent: node.app || node.parent || ""
                 });
@@ -901,7 +913,7 @@
             if (node.type === "ui-container") {
                 references.containers.push({
                     id,
-                    layoutId: node.layoutId || "",
+                    layoutId: node.layout || node.layoutId || "",
                     title: node.title || node.name || id,
                     mount: node.mount || ""
                 });
@@ -2327,7 +2339,7 @@
      *
      * Required hidden fields in the template (carriers Node-RED binds + saves):
      *   #node-input-targetMode   (str: wire|route|url)
-     *   #node-input-routeId      (str: referenced ui-route id)
+     *   #node-input-route      (str: referenced ui-route id)
      *   #node-input-params       (str: JSON array of {name,value,valueType})
      *   #node-input-to / #node-input-toType  (url typedInput)
      * Required container in the template:
@@ -2347,7 +2359,7 @@
         }
 
         var $modeField = $("#node-input-targetMode");
-        var $routeField = $("#node-input-routeId");
+        var $routeField = $("#node-input-route");
         var $paramsField = $("#node-input-params");
 
         // The initial mode: a stored value wins absolutely (ADR 0011 §1 — once
@@ -2487,7 +2499,7 @@
                 return;
             }
             routePickerInstalled = true;
-            installPickerField("#node-input-routeId", {
+            installPickerField("#node-input-route", {
                 filterPreset: "routes",
                 title: "Ziel-Route auswählen",
                 placeholder: "Route auswählen…",
@@ -2650,7 +2662,7 @@
                 ensureRoutePicker();
                 if (!$routeRowMoved) {
                     $routeRowMoved = true;
-                    var $routeRow = $("#node-input-routeId").closest(".form-row");
+                    var $routeRow = $("#node-input-route").closest(".form-row");
                     $routeRow.addClass("webapp-path-field-inset").show().appendTo($routeBody);
                     $("<div>").addClass("webapp-nav-route-table").css({ "margin-top": "8px" }).appendTo($routeBody);
                 }
@@ -2730,14 +2742,16 @@
         }
         // Panel closed / deploy time: derive the mode + check stored fields.
         var mode = node.targetMode;
+        // P228: canonical `route`; legacy flows carry `routeId`.
+        var routeRef = node.route || node.routeId;
         if (mode !== "wire" && mode !== "route" && mode !== "url") {
             // Legacy migration mirror of deriveNavigateTargetMode().
-            mode = node.routeId ? "route" : (node.to ? "url" : "wire");
+            mode = routeRef ? "route" : (node.to ? "url" : "wire");
         }
         if (mode !== "route") {
             return true;
         }
-        var routeId = node.routeId ? String(node.routeId) : "";
+        var routeId = routeRef ? String(routeRef) : "";
         if (!routeId) {
             return false;
         }
@@ -5705,21 +5719,23 @@
             }
 
             if (config.layout) {
-                installPickerField("#node-input-layoutId", {
+                installPickerField("#node-input-layout", {
                     filterPreset: "layouts",
                     title: "Layout auswählen",
                     placeholder: "Parent-Layout auswählen",
-                    seedValue: self.layoutId || ""
+                    // P228: canonical `layout`; legacy `layoutId` fallback.
+                    seedValue: self.layout || self.layoutId || ""
                 });
             }
 
             if (config.route) {
-                installPickerField("#node-input-routeId", {
+                installPickerField("#node-input-route", {
                     filterPreset: "routes",
                     title: "Route auswählen",
                     placeholder: "Optional: Parent-Route auswählen",
                     clearable: true,
-                    seedValue: self.routeId || "",
+                    // P228: canonical `route`; legacy `routeId` fallback.
+                    seedValue: self.route || self.routeId || "",
                     getAppId: getAppId
                 });
             }

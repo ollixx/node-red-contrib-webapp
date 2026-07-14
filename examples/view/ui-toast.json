@@ -25,7 +25,7 @@
     "type": "ui-toast",
     "name": "toast",
     "uiId": "toastNode",
-    "parent": "toastApp",
+    "app": "toastApp",
     "mount": "toastApp.content",
     "z": "ex-ui-toast",
     "x": 480,

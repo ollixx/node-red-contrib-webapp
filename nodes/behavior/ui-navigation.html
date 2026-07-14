@@ -14,7 +14,7 @@
                 // P119: referenced ui-route id (route mode). Validator back-stops the
                 // whole config: route mode needs a resolvable routeId + every
                 // :placeholder filled.
-                routeId: { value: "", validate: function () { return window.WebappEditorCommon.validateNavigateConfig(this); } },
+                route: { value: "", validate: function () { return window.WebappEditorCommon.validateNavigateConfig(this); } },
                 // P66/P119: url-mode destination typedInput (str/msg/flow/global/jsonata).
                 to: { value: "" },
                 toType: { value: "str" },
@@ -78,7 +78,7 @@
         <div class="webapp-navigate-target-mode"></div>
     </div>
     <div class="form-row" id="node-input-to-row" style="display:none;"><label for="node-input-to">Zielpfad</label><input type="text" id="node-input-to" style="width:70%;" placeholder="z.B. /customers/:id"><input type="hidden" id="node-input-toType"></div>
-    <div class="form-row" id="node-input-routeId-row" style="display:none;"><label for="node-input-routeId">Ziel-Route</label><input type="text" id="node-input-routeId"></div>
+    <div class="form-row" id="node-input-route-row" style="display:none;"><label for="node-input-route">Ziel-Route</label><input type="text" id="node-input-route"></div>
     <input type="hidden" id="node-input-targetMode">
     <input type="hidden" id="node-input-params">
 </script>

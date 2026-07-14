@@ -172,7 +172,7 @@ const flowNodes = [
         app:  APP,
         path:    "/customers",
         title:   "Customers",
-        layoutId: "app"
+        layout: "app"
     }),
     node("ui-route", "customerDetail", "structure", 3, {
         name:    "Customer detail",
@@ -180,7 +180,7 @@ const flowNodes = [
         app:  APP,
         path:    "/customers/:id",
         title:   "Customer detail",
-        layoutId: "app"
+        layout: "app"
     }),
     node("ui-dialog", "customerEditor", "structure", 4, {
         name:    "Edit customer",
@@ -190,7 +190,7 @@ const flowNodes = [
         // P64: native <sl-dialog> with the dialog layout preset (header / content /
         // footer slots). closable → native X / ESC / overlay dismissal emits
         // onClose; no wired close action needed.
-        layoutId: "dialog",
+        layout: "dialog",
         modal:   true,
         closable: true
     }),
@@ -481,7 +481,7 @@ const flowNodes = [
         uiId:     "customerEditorContainer",
         app:   APP,
         mount:    "dialog:customerEditor/content", // required
-        layoutId: "grid"                           // required
+        layout: "grid"                           // required
     }),
     node("ui-input", "customerNameInput", "viewDialog", 1, {
         name:      "Name input",

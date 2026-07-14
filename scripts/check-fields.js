@@ -62,18 +62,10 @@ const PKG = require(path.join(ROOT, "package.json"));
  * `storeId`/`path`/pagination-alias sweep) drive this to {}.
  * ------------------------------------------------------------------ */
 const ALLOWLIST = {
-    // ---- (c) reference id-suffix → bare name (P228 rename) -------------------
-    "ui-route": { layoutId: "P228: rename `layoutId` → `layout` (bare reference name)" },
-    "ui-dialog": {
-        layoutId: "P228: rename `layoutId` → `layout` (bare reference name)",
-        routeId: "P228: rename `routeId` → `route` (bare reference name)",
-    },
-    "ui-container": { layoutId: "P228: rename `layoutId` → `layout` (bare reference name)" },
-    "ui-component-instance": {
-        definitionId: "P228: rename `definitionId` → `definition` (bare reference name)",
-    },
-    "ui-action": { routeId: "P228: rename `routeId` → `route` (bare reference name)" },
-    "ui-navigation": { routeId: "P228: rename `routeId` → `route` (bare reference name)" },
+    // ---- (c) reference id-suffix → bare name: DONE in P228 (parent→app,
+    //          layoutId→layout, routeId→route, definitionId→definition). The
+    //          former ui-route/ui-dialog/ui-container/ui-component-instance/
+    //          ui-action/ui-navigation entries were removed as the rename landed.
 
     // ---- (a) residual `<base>Path` twin alongside `<base>Binding` (P229) -----
     "ui-button": { disabledPath: "P229: residual `<base>Path` twin of `disabledBinding`" },

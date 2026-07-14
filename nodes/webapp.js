@@ -312,7 +312,7 @@ function deriveNavigateTargetMode(config) {
     if (stored === "wire" || stored === "route" || stored === "url") {
         return stored;
     }
-    if (blankToUndefined(config.routeId)) {
+    if (blankToUndefined(config.route || config.routeId)) {
         return "route";
     }
     if (blankToUndefined(config.to)) {
@@ -6928,7 +6928,7 @@ const runtimeNodeRegistry = {
                 parent: (config.app || config.parent) || undefined,
                 path: config.path,
                 title: resolvedTitle,
-                layout: config.layoutId,
+                layout: config.layout || config.layoutId,
                 events: parseJsonList(config.events).length > 0 ? parseJsonList(config.events) : undefined
             };
         },
@@ -6944,8 +6944,8 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: (config.app || config.parent) || undefined,
             title: config.title || undefined,
-            layout: config.layoutId,
-            routeId: config.routeId || undefined,
+            layout: config.layout || config.layoutId,
+            routeId: (config.route || config.routeId) || undefined,
             modal: config.modal !== false && config.modal !== "false",
             // P64: closable defaults to true; only an explicit false disables it.
             closable: config.closable !== false && config.closable !== "false",
@@ -7033,7 +7033,7 @@ const runtimeNodeRegistry = {
             parent: (config.app || config.parent) || undefined,
             mount: config.mount || config.app || config.parent,
             order: resolveOrder(config),
-            layout: config.layoutId,
+            layout: config.layout || config.layoutId,
             variant: config.variant || undefined,
             events: parseJsonList(config.events).length > 0 ? parseJsonList(config.events) : undefined,
             ...collectNodeConfigLayoutProps(config)
@@ -7510,7 +7510,7 @@ const runtimeNodeRegistry = {
             // migrated here: `to` → url, `routeId` → route, otherwise wire; legacy
             // params object → str-typed list.
             const targetMode = deriveNavigateTargetMode(config);
-            const routeId = targetMode === "route" ? blankToUndefined(config.routeId) : undefined;
+            const routeId = targetMode === "route" ? blankToUndefined(config.route || config.routeId) : undefined;
             const to = targetMode === "url" ? blankToUndefined(config.to) : undefined;
             const toType = targetMode === "url"
                 ? (blankToUndefined(config.toType) || (to ? "str" : undefined))
@@ -8040,7 +8040,7 @@ const runtimeNodeRegistry = {
             // set `layout` directly. Without this the definition lost the preset and
             // the bucket logic default-migrated every repeat to "vertical", so a
             // chosen grid layout never reached the renderer's per-item container.
-            layout: config.layoutId || config.layout,
+            layout: config.layout || config.layoutId,
             // P197: ui-repeat is a full container after P191, so it carries the
             // semantic container `variant` (CONTAINER_VARIANTS) just like
             // ui-container (`variant: config.variant`). toComponentDefinitions
@@ -8140,7 +8140,7 @@ const runtimeNodeRegistry = {
             parent: (config.app || config.parent) || undefined,
             mount: config.mount || config.app || config.parent,
             order: resolveOrder(config),
-            definitionId: config.definitionId || "",
+            definitionId: (config.definition || config.definitionId) || "",
             // `props` is a map name → value-binding (any binding kind). The editor
             // persists it as a JSON string or an object; normalise to an object of
             // binding objects so toComponentDefinitions can route each into bind.
