@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P226** — nodes/ui-action — show/hide (+ enable/disable) schreiben den EINEN dynamic-state-Wert (P224-API) statt Client-Overlay; ui-alert einbinden — *ADR 0037; baut auf P224 (done); dep P224* — [P226](nodes/ui-action/P226-interaction-verbs-write-dynamic-state.md)
 - **P227** — aspects/editor — Feld-Konsistenz-Guardrail (`pnpm check:fields`) + dokumentierte Feld-Namens-/Carrier-Konvention (stoppt weitere Drift) — *ADR 0038; Owner 2026-07-14* — [P227](aspects/editor/P227-field-consistency-guardrail-and-convention.md)
 
 
@@ -55,7 +54,7 @@ open the folder for the full history.
 
 | Epic | done |
 |---|---|
-| nodes/ui-action | 6 |
+| nodes/ui-action | 7 |
 | nodes/ui-app | 6 |
 | nodes/ui-alert | 5 |
 | nodes/ui-avatar | 2 |
@@ -103,4 +102,4 @@ open the folder for the full history.
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 223 done, 1 open, 10 deferred.**
+**Total: 224 done, 1 open, 12 deferred.**
