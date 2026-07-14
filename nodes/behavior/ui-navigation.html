@@ -7,14 +7,14 @@
             color: "#f8ddd0",
             defaults: {
                 name: { value: "" },
-                parent: { value: "" },
+                app: { value: "" },
                 // P119 (ADR 0011): ui-navigation gets the same target-source mode as
                 // ui-action navigate — wire | route | url. Same central helper.
                 targetMode: { value: "" },
                 // P119: referenced ui-route id (route mode). Validator back-stops the
                 // whole config: route mode needs a resolvable routeId + every
                 // :placeholder filled.
-                routeId: { value: "", validate: function () { return window.WebappEditorCommon.validateNavigateConfig(this); } },
+                route: { value: "", validate: function () { return window.WebappEditorCommon.validateNavigateConfig(this); } },
                 // P66/P119: url-mode destination typedInput (str/msg/flow/global/jsonata).
                 to: { value: "" },
                 toType: { value: "str" },
@@ -71,14 +71,14 @@
 <script type="text/html" data-template-name="ui-navigation">
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-parent">App</label><select id="node-input-parent"></select></div>
+    <div class="form-row"><label for="node-input-app">App</label><select id="node-input-app"></select></div>
     <!-- P119 (ADR 0011): the same three-mode navigate target switch as ui-action. -->
     <div class="form-row" style="display:block;">
         <label style="display:block; margin-bottom:6px;">Ziel</label>
         <div class="webapp-navigate-target-mode"></div>
     </div>
     <div class="form-row" id="node-input-to-row" style="display:none;"><label for="node-input-to">Zielpfad</label><input type="text" id="node-input-to" style="width:70%;" placeholder="z.B. /customers/:id"><input type="hidden" id="node-input-toType"></div>
-    <div class="form-row" id="node-input-routeId-row" style="display:none;"><label for="node-input-routeId">Ziel-Route</label><input type="text" id="node-input-routeId"></div>
+    <div class="form-row" id="node-input-route-row" style="display:none;"><label for="node-input-route">Ziel-Route</label><input type="text" id="node-input-route"></div>
     <input type="hidden" id="node-input-targetMode">
     <input type="hidden" id="node-input-params">
 </script>

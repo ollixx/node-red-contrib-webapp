@@ -57,10 +57,11 @@ const LAYOUT_BOILERPLATE = new Set([
 
 // Universal placement / identity boilerplate carried by (almost) every node and
 // documented centrally, not per-node:
-//   - `parent`  — the direct-parent-id ALTERNATIVE to `mount` (the "Einordnung"
-//                 prose of every spec covers "mount ODER parent"; the mount grammar
-//                 lives in docs/nodes/concepts/ and ../../README). Not a per-node
-//                 semantic field.
+//   - `app`     — the owning-app id ALTERNATIVE to `mount` (P228/ADR 0038 rename of
+//                 the legacy `parent`; the "Einordnung" prose of every spec covers
+//                 "mount ODER app"; the mount grammar lives in docs/nodes/concepts/
+//                 and ../../README). Not a per-node semantic field. `parent` is kept
+//                 too as the read-time legacy alias (back-compat).
 //   - `uiId`    — stable instance id carrier on the few nodes that need to address
 //                 themselves at runtime (ui-log, ui-component-*). Plumbing, not a
 //                 user-facing field.
@@ -77,6 +78,7 @@ const LAYOUT_BOILERPLATE = new Set([
 //                 (`size` stays per-node: it is only a default on the few nodes with
 //                 a genuine size axis, and each already documents it.)
 const COMMON_BOILERPLATE = new Set([
+    "app",
     "parent",
     "uiId",
     "outputs",

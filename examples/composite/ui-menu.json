@@ -25,7 +25,7 @@
     "type": "ui-menu",
     "name": "side menu",
     "uiId": "menuNode",
-    "parent": "menuApp",
+    "app": "menuApp",
     "mount": "menuApp.content",
     "z": "ex-ui-menu",
     "x": 480,

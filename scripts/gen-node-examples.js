@@ -46,7 +46,7 @@ function uiApp(id, tabId, overrides = {}) {
 }
 
 function uiRoute(id, path, appId, tabId, overrides = {}) {
-    return { id, type: "ui-route", name: id, uiId: id, path, parent: appId, layoutId: "vertical", z: tabId, x: 120, y: 180, wires: [[]], ...overrides };
+    return { id, type: "ui-route", name: id, uiId: id, path, app: appId, layout: "vertical", z: tabId, x: 120, y: 180, wires: [[]], ...overrides };
 }
 
 // Inject node that sends msg.payload (updates primary field of any view node)
@@ -101,7 +101,7 @@ function viewNode(type, id, appId, routeId, tabId, overrides = {}) {
     delete overrides.x; delete overrides.y;
     return {
         id, type, name: overrides.name ?? id, uiId: id,
-        parent: appId, mount: `${routeId}.content`,
+        app: appId, mount: `${routeId}.content`,
         z: tabId, x, y, wires: [[]], ...overrides
     };
 }
@@ -113,7 +113,7 @@ function stateNode(type, id, appId, tabId, overrides = {}) {
     delete overrides.x; delete overrides.y;
     return {
         id, type, name: overrides.name ?? id, uiId: id,
-        parent: appId,
+        app: appId,
         z: tabId, x, y, wires: [[]], ...overrides
     };
 }
@@ -163,7 +163,7 @@ const examples = [];
 
             // The app is the implicit root route ("/"). One explicit sub-route
             // with a :id param demonstrates the ui-route node.
-            uiRoute("routeDetail", "/item/:id", A, T, { layoutId: "vertical", x: 120, y: 260 }),
+            uiRoute("routeDetail", "/item/:id", A, T, { layout: "vertical", x: 120, y: 260 }),
 
             // Home page content mounts directly into the ui-app content slot.
             viewNode("ui-text", "homeText", A, A, T, {
@@ -182,7 +182,7 @@ const examples = [];
             }),
             {
                 id: "navToDetail", type: "ui-action", name: "navigate → /item/42",
-                uiId: "navToDetail", parent: A, actionType: "navigate", target: "/item/42",
+                uiId: "navToDetail", app: A, actionType: "navigate", target: "/item/42",
                 z: T, x: 700, y: 360, wires: [[]]
             }
         ]
@@ -201,7 +201,7 @@ const examples = [];
             // The dialog — mounts to the app, not a route
             {
                 id: "myDialog", type: "ui-dialog", name: "Confirm Action",
-                uiId: "myDialog", parent: A, title: "Confirm Action",
+                uiId: "myDialog", app: A, title: "Confirm Action",
                 z: T, x: 120, y: 360, wires: [[]]
             },
 
@@ -223,12 +223,12 @@ const examples = [];
             // Actions
             {
                 id: "openDlgAction", type: "ui-action", name: "openDialog",
-                uiId: "openDlgAction", parent: A, actionType: "openDialog", target: "myDialog",
+                uiId: "openDlgAction", app: A, actionType: "openDialog", target: "myDialog",
                 z: T, x: 700, y: 280, wires: [[]]
             },
             {
                 id: "closeDlgAction", type: "ui-action", name: "closeDialog",
-                uiId: "closeDlgAction", parent: A, actionType: "closeDialog", target: "myDialog",
+                uiId: "closeDlgAction", app: A, actionType: "closeDialog", target: "myDialog",
                 z: T, x: 900, y: 520, wires: [[]]
             }
         ]
@@ -764,7 +764,7 @@ examples.push(inputNodeExample({
             uiApp(A, T, { name: "Container App" }),
 
             // Output: onShow / onHide (if configured)
-            { ...viewNode("ui-container", NODE, A, R, T, { name: "card", layoutId: "vertical" }), wires: [[DBG]] },
+            { ...viewNode("ui-container", NODE, A, R, T, { name: "card", layout: "vertical" }), wires: [[DBG]] },
 
             // Children mounted inside the container
             viewNode("ui-text", "ctTitle", A, R, T, { name: "card title", mount: "ctNode.content", text: "Card title", x: 700, y: 200 }),
@@ -1115,11 +1115,11 @@ examples.push(inputNodeExample({
             uiApp(A, T, { name: "Action App", layout: "app" }),
 
             // The app is the implicit root route ("/"); one explicit sub-route.
-            uiRoute("detailRoute", "/detail", A, T, { layoutId: "vertical", x: 120, y: 260 }),
+            uiRoute("detailRoute", "/detail", A, T, { layout: "vertical", x: 120, y: 260 }),
 
             // A dialog
             { id: "infoDialog", type: "ui-dialog", name: "Info", uiId: "infoDialog",
-              parent: A, title: "Information", z: T, x: 120, y: 360, wires: [[]] },
+              app: A, title: "Information", z: T, x: 120, y: 360, wires: [[]] },
 
             // Home page (app content slot): navigate button + show/hide toggle buttons
             viewNode("ui-button", "goDetailBtn", A, A, T, { name: "go to detail", label: "Go to Detail" }),
@@ -1128,7 +1128,7 @@ examples.push(inputNodeExample({
             viewNode("ui-button", "showCardBtn", A, A, T, { name: "show card", label: "Show Card", x: 480, y: 520 }),
 
             // A container that gets shown/hidden
-            viewNode("ui-container", "toggleCard", A, A, T, { name: "toggle card", layoutId: "vertical", x: 480, y: 600 }),
+            viewNode("ui-container", "toggleCard", A, A, T, { name: "toggle card", layout: "vertical", x: 480, y: 600 }),
             viewNode("ui-text", "cardContent", A, A, T, { name: "card content", mount: "toggleCard.content", text: "This card can be shown/hidden.", x: 700, y: 600 }),
 
             // Detail page content
@@ -1160,13 +1160,13 @@ examples.push(inputNodeExample({
             uiApp(A, T, { name: "Navigation App", layout: "app" }),
 
             // The app is the implicit root route ("/"); two explicit sub-routes.
-            uiRoute("navProducts", "/products", A, T, { layoutId: "vertical", x: 120, y: 260 }),
-            uiRoute("navAbout", "/about", A, T, { layoutId: "vertical", x: 120, y: 340 }),
+            uiRoute("navProducts", "/products", A, T, { layout: "vertical", x: 120, y: 260 }),
+            uiRoute("navAbout", "/about", A, T, { layout: "vertical", x: 120, y: 340 }),
 
             // Navigation mounted in the app nav slot — output: navigate event
             {
                 id: "mainNav", type: "ui-navigation", name: "Main Nav",
-                uiId: "mainNav", parent: A, mount: `${A}.nav`,
+                uiId: "mainNav", app: A, mount: `${A}.nav`,
                 links: JSON.stringify([
                     { label: "Home", to: "/" },
                     { label: "Products", to: "/products" },

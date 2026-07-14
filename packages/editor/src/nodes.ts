@@ -88,6 +88,7 @@ export interface IdentifiedEditorConfig {
 }
 
 export interface UiContainerEditorConfig extends MountableEditorConfig {
+    layout?: StandardLayoutPresetId;
     layoutId?: StandardLayoutPresetId;
     title?: string;
     variant?: "card" | "panel" | "section" | "transparent";
@@ -111,6 +112,7 @@ export interface UiComponentDefinitionEditorConfig extends IdentifiedEditorConfi
 }
 
 export interface UiComponentInstanceEditorConfig extends MountableEditorConfig {
+    definition?: string;
     definitionId?: string;
     props?: Record<string, BindingDefinition>;
 }
@@ -118,11 +120,14 @@ export interface UiComponentInstanceEditorConfig extends MountableEditorConfig {
 export interface UiRouteEditorConfig extends IdentifiedEditorConfig {
     path?: string;
     title?: string;
+    layout?: StandardLayoutPresetId;
     layoutId?: StandardLayoutPresetId;
 }
 
 export interface UiDialogEditorConfig extends IdentifiedEditorConfig {
     title?: string;
+    layout?: StandardLayoutPresetId;
+    route?: string;
     layoutId?: StandardLayoutPresetId;
     routeId?: string;
     modal?: boolean;
@@ -290,6 +295,7 @@ export interface UiActionEditorConfig extends IdentifiedEditorConfig {
     // P118 (ADR 0011 §1): navigate target SOURCE — wire | route | url.
     targetMode?: "wire" | "route" | "url";
     // P118: referenced ui-route id (route mode).
+    route?: string;
     routeId?: string;
     target?: string;
     to?: string;
@@ -320,6 +326,8 @@ export interface UiAlertEditorConfig extends MountableEditorConfig {
 }
 
 export interface UiToastEditorConfig extends IdentifiedEditorConfig {
+    // P228: canonical owning-app field is `app`; `parent` is the legacy alias.
+    app?: string;
     parent?: string;
     // P49b: unified with SEVERITY_VARIANTS — primary|success|warning|danger|neutral|info
     severity?: "primary" | "success" | "warning" | "danger" | "neutral" | "info";
@@ -947,6 +955,35 @@ function collectLayoutChildConfig(config: MountableEditorConfig) {
     };
 }
 
+// P228 (ADR 0038): reference-field naming normalization. The canonical config
+// fields are `app` / `layout` / `route` / `definition`; pre-rename flows carry
+// the legacy `parent` / `layoutId` / `routeId` / `definitionId`. Lift each legacy
+// value into its canonical slot (when the canonical is absent) so every validator
+// + mapper below reads ONLY the canonical name while old configs still validate.
+const LEGACY_REFERENCE_CONFIG_FIELDS: Record<string, string> = {
+    app: "parent",
+    layout: "layoutId",
+    route: "routeId",
+    definition: "definitionId"
+};
+
+function normalizeLegacyReferenceConfig<TConfig extends object>(config: TConfig): TConfig {
+    const record = config as Record<string, unknown>;
+    let copy: Record<string, unknown> | null = null;
+    for (const [canonical, legacy] of Object.entries(LEGACY_REFERENCE_CONFIG_FIELDS)) {
+        const current = record[canonical];
+        const legacyValue = record[legacy];
+        if ((current === undefined || current === null || current === "") &&
+            legacyValue !== undefined && legacyValue !== null && legacyValue !== "") {
+            if (!copy) {
+                copy = { ...record };
+            }
+            copy[canonical] = legacyValue;
+        }
+    }
+    return (copy ?? record) as TConfig;
+}
+
 function createDefinition<TConfig extends object, TDefinition extends UiNodeDefinition>(
     type: TDefinition["type"],
     category: BaseEditorNodeDefinition<TConfig, TDefinition>["category"],
@@ -958,11 +995,12 @@ function createDefinition<TConfig extends object, TDefinition extends UiNodeDefi
         category,
         defaults,
         validate(config) {
-            return collectIssues(config as Record<string, unknown>, defaults);
+            return collectIssues(normalizeLegacyReferenceConfig(config) as Record<string, unknown>, defaults);
         },
         emit(config) {
-            const issues = collectIssues(config as Record<string, unknown>, defaults);
-            return emitDefinition(factory(config), issues);
+            const normalized = normalizeLegacyReferenceConfig(config);
+            const issues = collectIssues(normalized as Record<string, unknown>, defaults);
+            return emitDefinition(factory(normalized), issues);
         }
     };
 }
@@ -982,23 +1020,23 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
     "ui-route": createDefinition("ui-route", "structure", {
         id: requiredString("Route IDs are required before deploy."),
         path: requiredString("Routes must declare a path."),
-        layoutId: requiredStringEnum([...standardLayoutPresetIds], "Routes must reference a layout.", "Routes must reference a known layout.")
+        layout: requiredStringEnum([...standardLayoutPresetIds], "Routes must reference a layout.", "Routes must reference a known layout.")
     }, (config: UiRouteEditorConfig): UiRouteNodeDefinition => ({
         type: "ui-route",
         id: config.id ?? "",
         path: config.path ?? "",
         title: config.title,
-        layout: config.layoutId ?? "vertical"
+        layout: config.layout ?? "vertical"
     })),
     "ui-dialog": createDefinition("ui-dialog", "structure", {
         id: requiredString("Dialog IDs are required before deploy."),
-        layoutId: requiredStringEnum([...standardLayoutPresetIds], "Dialogs must reference a layout.", "Dialogs must reference a known layout.")
+        layout: requiredStringEnum([...standardLayoutPresetIds], "Dialogs must reference a layout.", "Dialogs must reference a known layout.")
     }, (config: UiDialogEditorConfig): UiDialogNodeDefinition => ({
         type: "ui-dialog",
         id: config.id ?? "",
         title: config.title,
-        layout: config.layoutId ?? "vertical",
-        routeId: config.routeId,
+        layout: config.layout ?? "vertical",
+        routeId: config.route,
         modal: config.modal ?? true,
         closable: config.closable ?? true
     })),
@@ -1081,7 +1119,7 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
     "ui-container": createDefinition("ui-container", "view", {
         id: requiredString("Container IDs are required before deploy."),
         mount: requiredString("Containers must declare a mount target."),
-        layoutId: requiredStringEnum([...standardLayoutPresetIds], "Containers must reference a child layout.", "Containers must reference a known child layout."),
+        layout: requiredStringEnum([...standardLayoutPresetIds], "Containers must reference a child layout.", "Containers must reference a known child layout."),
         order: optionalInteger("Container order must be an integer."),
         row: optionalInteger("Container grid rows must be integers."),
         col: optionalInteger("Container grid columns must be integers."),
@@ -1093,7 +1131,7 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         type: "ui-container",
         id: config.id ?? "",
         mount: config.mount ?? "",
-        layout: config.layoutId ?? "vertical",
+        layout: config.layout ?? "vertical",
         variant: config.variant,
         ...collectLayoutChildConfig(config)
     })),
@@ -1131,7 +1169,7 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
     "ui-component-instance": createDefinition("ui-component-instance", "structure", {
         id: requiredString("Component instance IDs are required before deploy."),
         mount: requiredString("Component instances must declare a mount target."),
-        definitionId: requiredString("Component instances must reference a component definition."),
+        definition: requiredString("Component instances must reference a component definition."),
         order: optionalInteger("Component instance order must be an integer."),
         row: optionalInteger("Component instance grid rows must be integers."),
         col: optionalInteger("Component instance grid columns must be integers."),
@@ -1143,7 +1181,7 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         type: "ui-component-instance",
         id: config.id ?? "",
         mount: config.mount ?? "",
-        definitionId: config.definitionId ?? "",
+        definitionId: config.definition ?? "",
         props: config.props ?? {},
         ...collectLayoutChildConfig(config)
     })),
@@ -1438,7 +1476,7 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         },
         // P118: `routeId` is the referenced ui-route id (route mode). The picker
         // (P119) supplies it; per-node validation only checks it is a string.
-        routeId: {
+        route: {
             validate(value) {
                 if (value === undefined || value === "") {
                     return undefined;
@@ -1500,14 +1538,14 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         const isNavigate = config.actionType === "navigate";
         const targetMode: UiActionNodeDefinition["targetMode"] = isNavigate
             ? (config.targetMode
-                ?? (config.routeId ? "route" : (config.to ? "url" : "wire")))
+                ?? (config.route ? "route" : (config.to ? "url" : "wire")))
             : undefined;
         return {
             type: "ui-action",
             id: config.id ?? "",
             actionType: config.actionType,
             targetMode,
-            routeId: targetMode === "route" ? (config.routeId || undefined) : undefined,
+            routeId: targetMode === "route" ? (config.route || undefined) : undefined,
             target: config.target,
             to: targetMode === "url" ? (config.to || undefined) : undefined,
             toType: targetMode === "url" ? config.toType : undefined,
@@ -1559,7 +1597,7 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
     }, (config: UiToastEditorConfig): UiToastNodeDefinition => ({
         type: "ui-toast",
         id: config.id ?? "",
-        parent: config.parent,
+        parent: config.app ?? config.parent,
         severity: config.severity,
         duration: config.duration,
         position: config.position

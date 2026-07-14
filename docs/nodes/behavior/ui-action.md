@@ -34,7 +34,7 @@ Node-Picker-Dialog, typedInput, Canvas-Knoten-Picker).
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
 | `name` | „Name" | Textfeld | optional | Anzeigename im Editor und in Auswahllisten. Default: fortlaufend `Action N`. |
-| `parent` | „App" | Node-Picker-Dialog (Preset Apps) | **ja** | Die Parent-`ui-app`. Bestimmt den Routing-Kontext. |
+| `app` | „App" | Node-Picker-Dialog (Preset Apps) | **ja** | Die Parent-`ui-app`. Bestimmt den Routing-Kontext. |
 | `actionType` | „Action-Typ" | SelectBox (Verb-Set) | optional | Das voreingestellte Interaktions-Verb. Auswahl aus dem kanonischen Verb-Set (siehe unten). Überschreibbar via `msg.ui.action.type`. Leer = unspezifiziert (Typ kommt dann aus der `msg`). |
 | `description` | „Beschreibung" | Textfeld | optional | Freitext-Beschreibung der Aktion (Dokumentation im Editor). |
 
@@ -49,12 +49,12 @@ seit **P119** umgesetzt (siehe „Editor-UX" unten).
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
 | `targetMode` | „Zielquelle" | `wire` \| `route` \| `url` | optional (Default per Migration) | Gespeicherte Absicht. `wire` = Ziel kommt über die Verdrahtung; `route` = per Referenz gewählte `ui-route`; `url` = ganze URL als `to`. |
-| `routeId` | „Ziel-Route" | Referenz auf eine `ui-route` (Picker, P119) | nur Modus `route` | App-global zur Routen-`path` aufgelöst. Im Modus `route` **kein** `to`. |
+| `route` | „Ziel-Route" | Referenz auf eine `ui-route` (Picker, P119) | nur Modus `route` | App-global zur Routen-`path` aufgelöst. Im Modus `route` **kein** `to`. |
 | `params` | „Parameter" | typisierte Liste `[{ name, value, valueType }]` | optional (Modus `route`/`wire`) | Benannte Parameter, die die `:platzhalter` der Ziel-Route füllen. `valueType` ∈ `str` \| `msg` \| `jsonata` \| `flow` \| `global` \| `env`; jeder Wert wird **zur Action-Zeit gegen die auslösende msg** ausgewertet. Im Modus `url` ignoriert (die URL trägt ihre Werte selbst). |
-| `to` / `toType` | „Navigation zu" | typedInput (`str` \| `msg` \| `flow` \| `global` \| `jsonata`) | nur Modus `url` | Ganze URL/Pfad. `str` = literaler Pfad (ggf. mit `:platzhaltern`); `msg`/`flow`/`global` lesen ihn aus Kontext; `jsonata` berechnet ihn. Im Modus `url` **kein** `routeId`. Default-Typ: `str`. |
+| `to` / `toType` | „Navigation zu" | typedInput (`str` \| `msg` \| `flow` \| `global` \| `jsonata`) | nur Modus `url` | Ganze URL/Pfad. `str` = literaler Pfad (ggf. mit `:platzhaltern`); `msg`/`flow`/`global` lesen ihn aus Kontext; `jsonata` berechnet ihn. Im Modus `url` **kein** `route`. Default-Typ: `str`. |
 
 > **Migration (Lade-Shim).** Bestands-Configs ohne `targetMode`: `to` gesetzt →
-> `url`; `routeId` gesetzt → `route`; sonst → `wire`. Ein Legacy-`params`-Objekt
+> `url`; `route` gesetzt → `route`; sonst → `wire`. Ein Legacy-`params`-Objekt
 > `{k:"v"}` wird verlustfrei in eine Liste mit `valueType: "str"` migriert.
 
 #### Editor-UX (P119, ADR 0011)
@@ -84,7 +84,7 @@ im Panel entfällt — nur eine schlichte Überschrift (ADR 0011 §4).
   Route trägt (aus dem `path` geparst), rechte Spalte je ein typedInput
   (`str`/`msg`/`jsonata`/`flow`/`global`/`env`). Routen-Wechsel baut die Tabelle
   neu auf; gleichnamige Werte bleiben erhalten. **Validierung:** Platzhalter ohne
-  Wert oder eine gelöschte/unbekannte `routeId` → Knoten ungültig vor Deploy.
+  Wert oder eine gelöschte/unbekannte `route` → Knoten ungültig vor Deploy.
 - **URL-Modus:** nur das `to`-typedInput, **keine** Parameter-Sektion. Ein
   `str`-Pfad mit `:platzhaltern` ohne Werte erzeugt eine **sanfte Warnung**
   (keine Blockade).
@@ -160,7 +160,7 @@ msg.ui.clientId      = <client>   ← schränkt die Action auf einen bestimmten 
   - `wire` — kein explizites Ziel in der msg; die empfangende `ui-route` baut die
     Location aus ihrem eigenen `path` (heutiges Verhalten). Macht Verzweigung
     wohldefiniert: die Route, die die msg empfängt, gewinnt.
-  - `route` — `routeId` wird app-global zur Routen-`path` aufgelöst, die
+  - `route` — `route` wird app-global zur Routen-`path` aufgelöst, die
     typisierten `params` werden gegen die auslösende msg ausgewertet, daraus die
     Location gebaut und als **explizites Ziel** in `msg.ui.action.to` getragen.
   - `url` — `to`/`toType` liefern die ganze URL; `params` entfällt.

@@ -17,7 +17,7 @@ zusammengesetzt — View-Knoten mounten über `dialog:<id>/<slot>` in den Dialog
 
 - **Parent:** genau eine `ui-app`. Dialoge gehören zu einer App und werden in deren Routing-Kontext geöffnet/geschlossen.
 - **Kinder:** View-Knoten mounten über `mount` in die Slots des Dialogs (`dialog:<id>/content`, beim `dialog`-Preset zusätzlich `header`/`header-actions`/`footer`).
-- **Erreichbarkeit:** der Dialog ist kein eigener URL-Pfad — er wird über `open`/`close` ein- und ausgeblendet, optional an eine Route gekoppelt (`routeId`).
+- **Erreichbarkeit:** der Dialog ist kein eigener URL-Pfad — er wird über `open`/`close` ein- und ausgeblendet, optional an eine Route gekoppelt (`route`).
 - **Rolle zur Laufzeit:** der Server hält den autoritativen Offen-Zustand (`ui.dialogs.<id>.open`) und pusht ihn per Snapshot an die Clients.
 
 ## Felder
@@ -30,15 +30,15 @@ Node-Picker-Dialog, Event-Checkboxen).
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
 | `name` | „Name" | Textfeld | optional | Anzeigename im Editor und in Auswahllisten. Default: fortlaufend `Dialog N`. |
-| `parent` | „App" | Node-Picker-Dialog (Preset Apps) | **ja** | Die Parent-`ui-app`. Auswahl aus einer filter- und scrollbaren Liste der Apps. |
+| `app` | „App" | Node-Picker-Dialog (Preset Apps) | **ja** | Die Parent-`ui-app`. Auswahl aus einer filter- und scrollbaren Liste der Apps. |
 | `title` | „Titel" | Textfeld | optional | Sichtbarer Titel des Dialogs (Header). Entfällt bei `closable: false` (kein Header). |
-| `routeId` | „Parent Route" | Node-Picker-Dialog (Preset Routes) | optional | Optionale Kopplung an eine `ui-route` derselben App (Routing-Kontext des Dialogs). |
+| `route` | „Parent Route" | Node-Picker-Dialog (Preset Routes) | optional | Optionale Kopplung an eine `ui-route` derselben App (Routing-Kontext des Dialogs). |
 
 ### Gruppe „Layout"
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `layoutId` | „Parent Layout" | SelectBox (Layout-Preset) | **ja** | Layout des Dialogs (im Feld `layoutId` gespeichert). Auswahl aus den Standard-Presets (`vertical`, `horizontal`, `app`, `grid`, `absolute`, `dialog`). Default: `vertical`. Das `dialog`-Preset bildet seine Slots direkt auf die nativen Dialog-Slots ab (`header`/`header-actions`/`content`/`footer`) — siehe [layout.md](../concepts/layout.md). |
+| `layout` | „Parent Layout" | SelectBox (Layout-Preset) | **ja** | Layout des Dialogs (im Feld `layout` gespeichert). Auswahl aus den Standard-Presets (`vertical`, `horizontal`, `app`, `grid`, `absolute`, `dialog`). Default: `vertical`. Das `dialog`-Preset bildet seine Slots direkt auf die nativen Dialog-Slots ab (`header`/`header-actions`/`content`/`footer`) — siehe [layout.md](../concepts/layout.md). |
 
 ### Gruppe „Verhalten"
 
@@ -131,5 +131,5 @@ wird von der Parent-App geerbt. Siehe [theming.md](../concepts/theming.md).
 
 - Ob eine deklarative Kopplung des Offen-Zustands an ein Store-Flag
   (Schema `<store>:<flag>`) sinnvoll ist, ist noch nicht entschieden.
-- Die explizite Modellierung der Route-/Dialog-Kopplung (`routeId`-Lebenszyklus)
+- Die explizite Modellierung der Route-/Dialog-Kopplung (`route`-Lebenszyklus)
   ist noch nicht ausspezifiziert.

@@ -7,7 +7,7 @@
             color: "#d8e8f8",
             defaults: {
                 name: { value: "" },
-                parent: { value: "", required: true },
+                app: { value: "", required: true },
                 statePath: { value: "", required: true },
                 initialValue: { value: "" },
                 persist: { value: false },
@@ -29,7 +29,7 @@
 <script type="text/html" data-template-name="ui-store">
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-parent">App</label><select id="node-input-parent"></select></div>
+    <div class="form-row"><label for="node-input-app">App</label><select id="node-input-app"></select></div>
     <div class="form-row"><label for="node-input-statePath">State Path</label><input type="text" id="node-input-statePath"></div>
     <div class="form-row"><label for="node-input-initialValue">Initial Value JSON</label><input type="text" id="node-input-initialValue"></div>
     <div class="form-row"><label for="node-input-persist">Persist</label><input type="checkbox" id="node-input-persist" style="width:auto;margin-top:6px;"></div>

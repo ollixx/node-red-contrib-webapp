@@ -25,7 +25,7 @@
     "type": "ui-select",
     "name": "selNode",
     "uiId": "selNode",
-    "parent": "selApp",
+    "app": "selApp",
     "mount": "selApp.content",
     "z": "ex-ui-select",
     "x": 480,

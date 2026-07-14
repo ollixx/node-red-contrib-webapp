@@ -745,8 +745,72 @@
         };
     }
 
+    // P228 (ADR 0038): reference-field naming normalisation. Legacy flows carry
+    // `parent` (owning app), `layoutId`, `routeId`, `definitionId`; the canonical
+    // fields are `app`, `layout`, `route`, `definition`. Every node registration is
+    // wrapped so that — for EVERY node, including the many view nodes that carry
+    // `parent` with no dedicated selector — the legacy value is lifted into the
+    // canonical field on open and the legacy alias is dropped on save (so only the
+    // canonical field is re-serialised). Fields WITH a dedicated picker (layout /
+    // route / definition) additionally seed their carrier from the canonical value
+    // in their installer; this wrapper is the universal safety net + the sole
+    // migration path for `parent` → `app` on non-selector nodes.
+    var LEGACY_REFERENCE_FIELDS = { app: "parent", layout: "layoutId", route: "routeId", definition: "definitionId" };
+
+    function migrateLegacyReferenceFields(node) {
+        Object.keys(LEGACY_REFERENCE_FIELDS).forEach(function (canonical) {
+            var legacy = LEGACY_REFERENCE_FIELDS[canonical];
+            var current = node[canonical];
+            if ((current === undefined || current === null || current === "") &&
+                node[legacy] !== undefined && node[legacy] !== null && node[legacy] !== "") {
+                node[canonical] = node[legacy];
+            }
+            // Node-RED binds `#node-input-<canonical>` ← node[canonical] BEFORE
+            // oneditprepare runs, so a legacy-only flow (canonical still empty at
+            // bind time) leaves the carrier blank. Re-seed the carrier from the
+            // migrated value so downstream installers (navigate route picker,
+            // layout hidden input, definition picker) read the correct value.
+            if (typeof $ === "function") {
+                var el = $("#node-input-" + canonical);
+                if (el.length && node[canonical] !== undefined && node[canonical] !== null &&
+                    String(el.val() || "") === "") {
+                    el.val(node[canonical]);
+                }
+            }
+        });
+    }
+
+    function dropLegacyReferenceFields(node) {
+        Object.keys(LEGACY_REFERENCE_FIELDS).forEach(function (canonical) {
+            var legacy = LEGACY_REFERENCE_FIELDS[canonical];
+            // Only the ones this node type actually renamed matter; deleting an
+            // absent property is a harmless no-op. Removing the legacy alias keeps
+            // the saved node carrying ONLY the canonical field (migrate-on-save).
+            if (Object.prototype.hasOwnProperty.call(node, legacy)) {
+                try { delete node[legacy]; } catch (_e) { node[legacy] = undefined; }
+            }
+        });
+    }
+
     function withUiIdMigration(definition) {
-        return { ...definition };
+        var base = { ...definition };
+        var originalPrepare = base.oneditprepare;
+        var originalSave = base.oneditsave;
+        return {
+            ...base,
+            oneditprepare: function () {
+                migrateLegacyReferenceFields(this);
+                if (originalPrepare) {
+                    originalPrepare.call(this);
+                }
+            },
+            oneditsave: function () {
+                if (originalSave) {
+                    originalSave.call(this);
+                }
+                dropLegacyReferenceFields(this);
+            }
+        };
     }
 
     function required(value) {
@@ -829,9 +893,9 @@
                 references.routes.push({
                     id,
                     path: node.path || "",
-                    layoutId: node.layoutId || "",
+                    layoutId: node.layout || node.layoutId || "",
                     title: node.title || node.name || id,
-                    parent: node.parent || ""
+                    parent: node.app || node.parent || ""
                 });
                 return;
             }
@@ -839,9 +903,9 @@
             if (node.type === "ui-dialog") {
                 references.dialogs.push({
                     id,
-                    layoutId: node.layoutId || "",
+                    layoutId: node.layout || node.layoutId || "",
                     title: node.title || node.name || id,
-                    parent: node.parent || ""
+                    parent: node.app || node.parent || ""
                 });
                 return;
             }
@@ -849,7 +913,7 @@
             if (node.type === "ui-container") {
                 references.containers.push({
                     id,
-                    layoutId: node.layoutId || "",
+                    layoutId: node.layout || node.layoutId || "",
                     title: node.title || node.name || id,
                     mount: node.mount || ""
                 });
@@ -980,7 +1044,7 @@
                     label: node.name || id,
                     type: node.type,
                     to: node.to || "",
-                    parent: node.parent || ""
+                    parent: node.app || node.parent || ""
                 });
                 return;
             }
@@ -993,7 +1057,7 @@
                     // P132: the JSON default-slice source — used (parsed) for the
                     // soft sub-path autocomplete (keys/indices), never to restrict.
                     initialValue: node.initialValue || "",
-                    parent: node.parent || ""
+                    parent: node.app || node.parent || ""
                 });
                 return;
             }
@@ -1003,7 +1067,7 @@
                     id,
                     name: node.name || "",
                     queryPath: node.queryPath || "",
-                    parent: node.parent || ""
+                    parent: node.app || node.parent || ""
                 });
             }
         });
@@ -1018,7 +1082,7 @@
     //   2. The node has a `mount` → walk the mount chain upward to find the app.
     //   3. Neither known → return null (fallback: show all candidates).
     //
-    // "Currently edited" means we look at the live panel values (#node-input-parent
+    // "Currently edited" means we look at the live panel values (#node-input-app
     // / #node-input-mount) first, then fall back to the node object's fields, so
     // that changing the app in an open panel immediately scopes the picker.
     function resolveEditedNodeApp(node, references) {
@@ -1034,8 +1098,10 @@
             return el.length ? (String(el.val() || "")) : null;
         }
 
-        // Case 1: direct parent field.
-        const parentVal = liveVal("parent") || (node.parent ? String(node.parent) : "");
+        // Case 1: direct owning-app field (P228: canonical `app`, legacy `parent`).
+        const parentVal = liveVal("app") || liveVal("parent")
+            || (node.app ? String(node.app) : "")
+            || (node.parent ? String(node.parent) : "");
         if (parentVal && appIds.has(parentVal)) {
             return parentVal;
         }
@@ -2273,7 +2339,7 @@
      *
      * Required hidden fields in the template (carriers Node-RED binds + saves):
      *   #node-input-targetMode   (str: wire|route|url)
-     *   #node-input-routeId      (str: referenced ui-route id)
+     *   #node-input-route      (str: referenced ui-route id)
      *   #node-input-params       (str: JSON array of {name,value,valueType})
      *   #node-input-to / #node-input-toType  (url typedInput)
      * Required container in the template:
@@ -2293,7 +2359,7 @@
         }
 
         var $modeField = $("#node-input-targetMode");
-        var $routeField = $("#node-input-routeId");
+        var $routeField = $("#node-input-route");
         var $paramsField = $("#node-input-params");
 
         // The initial mode: a stored value wins absolutely (ADR 0011 §1 — once
@@ -2433,7 +2499,7 @@
                 return;
             }
             routePickerInstalled = true;
-            installPickerField("#node-input-routeId", {
+            installPickerField("#node-input-route", {
                 filterPreset: "routes",
                 title: "Ziel-Route auswählen",
                 placeholder: "Route auswählen…",
@@ -2596,7 +2662,7 @@
                 ensureRoutePicker();
                 if (!$routeRowMoved) {
                     $routeRowMoved = true;
-                    var $routeRow = $("#node-input-routeId").closest(".form-row");
+                    var $routeRow = $("#node-input-route").closest(".form-row");
                     $routeRow.addClass("webapp-path-field-inset").show().appendTo($routeBody);
                     $("<div>").addClass("webapp-nav-route-table").css({ "margin-top": "8px" }).appendTo($routeBody);
                 }
@@ -2676,14 +2742,16 @@
         }
         // Panel closed / deploy time: derive the mode + check stored fields.
         var mode = node.targetMode;
+        // P228: canonical `route`; legacy flows carry `routeId`.
+        var routeRef = node.route || node.routeId;
         if (mode !== "wire" && mode !== "route" && mode !== "url") {
             // Legacy migration mirror of deriveNavigateTargetMode().
-            mode = node.routeId ? "route" : (node.to ? "url" : "wire");
+            mode = routeRef ? "route" : (node.to ? "url" : "wire");
         }
         if (mode !== "route") {
             return true;
         }
-        var routeId = node.routeId ? String(node.routeId) : "";
+        var routeId = routeRef ? String(routeRef) : "";
         if (!routeId) {
             return false;
         }
@@ -3202,7 +3270,7 @@
             if (typeof cfg.getAppId === "function") {
                 return cfg.getAppId();
             }
-            // Auto-derive: look at the live #node-input-parent or #node-input-mount
+            // Auto-derive: look at the live #node-input-app or #node-input-mount
             // values to find the current app. We pass a minimal node proxy.
             const references = collectReferenceNodes();
             const nodeProxy = {};
@@ -5613,16 +5681,19 @@
     function installParentAppSelector() {
         return function () {
             const self = this;
-            // The bound #node-input-parent stays the value carrier. The template
+            // The bound #node-input-app stays the value carrier. The template
             // ships an option-less <select>, so seed the STORED app id into the
-            // picker. Never fall back to the node's own id: `parent` references
-            // the owning ui-app, and self.id is never an app — that legacy
-            // fallback silently corrupted `parent` to the node's own id when no
-            // app was chosen, so the node then filtered out of every reference
-            // picker (which matches `parent === appId`). An empty or already-
-            // self-corrupted `parent` seeds "" so the user picks the real app.
-            const seededParent = (self.parent && self.parent !== self.id) ? self.parent : "";
-            installPickerField("#node-input-parent", {
+            // picker. P228: read the canonical `app` field, falling back to the
+            // legacy `parent` for flows authored before the rename. Never fall
+            // back to the node's own id: `app` references the owning ui-app, and
+            // self.id is never an app — that legacy fallback silently corrupted
+            // the field to the node's own id when no app was chosen, so the node
+            // then filtered out of every reference picker (which matches
+            // `app === appId`). An empty / self-corrupted value seeds "" so the
+            // user picks the real app.
+            const storedApp = self.app || self.parent;
+            const seededParent = (storedApp && storedApp !== self.id) ? storedApp : "";
+            installPickerField("#node-input-app", {
                 filterPreset: "apps",
                 title: "App auswählen",
                 placeholder: "App auswählen",
@@ -5648,21 +5719,23 @@
             }
 
             if (config.layout) {
-                installPickerField("#node-input-layoutId", {
+                installPickerField("#node-input-layout", {
                     filterPreset: "layouts",
                     title: "Layout auswählen",
                     placeholder: "Parent-Layout auswählen",
-                    seedValue: self.layoutId || ""
+                    // P228: canonical `layout`; legacy `layoutId` fallback.
+                    seedValue: self.layout || self.layoutId || ""
                 });
             }
 
             if (config.route) {
-                installPickerField("#node-input-routeId", {
+                installPickerField("#node-input-route", {
                     filterPreset: "routes",
                     title: "Route auswählen",
                     placeholder: "Optional: Parent-Route auswählen",
                     clearable: true,
-                    seedValue: self.routeId || "",
+                    // P228: canonical `route`; legacy `routeId` fallback.
+                    seedValue: self.route || self.routeId || "",
                     getAppId: getAppId
                 });
             }
