@@ -2,8 +2,7 @@
 id: P228
 title: "Editor/Schema/Runtime: Referenz-Feld-Namen normalisieren — parent→app, layoutId→layout, routeId→route, definitionId→definition (back-compat Migration)"
 epic: aspects/editor
-status: deferred
-deferred_reason: "Große, knotenübergreifende Umbenennung mit Flow-Migrationen; erst nach P227 (Guardrail + Konvention) und bewusst als eigener, gut getesteter Zug."
+status: in_progress
 dependencies: [P227]
 verify: browser
 spec: docs/nodes/concepts/editor.md
@@ -11,7 +10,7 @@ tests: tests/e2e/nodes/editor/field-naming.spec.ts
 ---
 # P228 — Referenz-Feld-Namen normalisieren
 
-> Rationale: [ADR 0038](../../../../adr/0038-field-model-consistency-naming-and-carrier-normalization.md).
+> Rationale: [ADR 0038](../../../adr/0038-field-model-consistency-naming-and-carrier-normalization.md).
 
 ## findings
 
