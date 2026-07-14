@@ -2,7 +2,8 @@
 id: P228
 title: "Editor/Schema/Runtime: Referenz-Feld-Namen normalisieren — parent→app, layoutId→layout, routeId→route, definitionId→definition (back-compat Migration)"
 epic: aspects/editor
-status: in_progress
+status: deferred
+deferred_reason: "Erster Umsetzungsversuch (Agent) landete mit ~35 kaputten Editor-E2E + migrate-on-save-Bug (app nicht befüllt); revertet 2026-07-14. Braucht einen E2E-iterierten Redo im Haupt-Checkout (Worktree-Agenten können E2E nicht verifizieren). Attempt-Branch phase/P228 erhalten."
 dependencies: [P227]
 verify: browser
 spec: docs/nodes/concepts/editor.md
@@ -10,7 +11,7 @@ tests: tests/e2e/nodes/editor/field-naming.spec.ts
 ---
 # P228 — Referenz-Feld-Namen normalisieren
 
-> Rationale: [ADR 0038](../../../adr/0038-field-model-consistency-naming-and-carrier-normalization.md).
+> Rationale: [ADR 0038](../../../../adr/0038-field-model-consistency-naming-and-carrier-normalization.md).
 
 ## findings
 
