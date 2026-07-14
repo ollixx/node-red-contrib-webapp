@@ -12,11 +12,12 @@
             color: false,
             size: false,
             variant: true,
-            advanced: ["size"],
-            omit: [],
+            // P111: ui-text sizing is governed by `style` (typographic role); the
+            // `size` field was removed. OMIT it entirely rather than show a disabled
+            // N/A control, so ui-text carries no #node-input-size element.
+            omit: ["size"],
             hints: {
-                disabled: "Ein Text-Knoten hat keinen interaktiven Zustand.",
-                size: "Dieser Knoten hat keine Größen-Stufen."
+                disabled: "Ein Text-Knoten hat keinen interaktiven Zustand."
             }
         };
         common.registerNodeType("ui-text", {

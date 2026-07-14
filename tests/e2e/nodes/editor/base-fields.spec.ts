@@ -620,7 +620,7 @@ const BASE_FIELD_MATRIX: BaseFieldMatrixRow[] = [
     { type: "ui-datepicker", visible: "active", disabled: "omit", color: "na", size: "na", roundTrip: "visible" },
     // display
     { type: "ui-button", visible: "active", disabled: "omit", color: "na", size: "omit", roundTrip: "visible" },
-    { type: "ui-text", visible: "active", disabled: "na", color: "na", size: "na", roundTrip: "visible" },
+    { type: "ui-text", visible: "active", disabled: "na", color: "na", size: "omit", roundTrip: "visible" },
     { type: "ui-avatar", visible: "active", disabled: "na", color: "active", size: "omit", roundTrip: "visible" },
     { type: "ui-icon", visible: "active", disabled: "na", color: "omit", size: "omit", roundTrip: "visible" },
     { type: "ui-image", visible: "active", disabled: "na", color: "na", size: "na", roundTrip: "visible" },
