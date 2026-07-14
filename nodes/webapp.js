@@ -9,7 +9,13 @@ const {
     normalizeSelectOptions,
     storeOperationSchema,
     uiEventMessageSchema,
-    validateUiNodeDefinition
+    validateUiNodeDefinition,
+    // P224 (ADR 0037): the dynamic-state field class + neutral values + the
+    // bound-kind set drive the one-value model (bound source vs internal
+    // per-client slot) and the unified setDynamicStateField write API.
+    DYNAMIC_STATE_FIELDS,
+    DYNAMIC_STATE_FIELD_NEUTRAL,
+    DYNAMIC_STATE_BOUND_KINDS
 } = require("../packages/schema/dist/index.js");
 const { createRendererApp, mapComponentToShoelace, buildShoelaceTokenBridgeCss } = require("../packages/renderer/dist/index.js");
 const { buildDesignTokenCss } = require("../packages/schema/dist/index.js");
@@ -386,6 +392,119 @@ function stateBinding(path) {
         kind: "state",
         path
     };
+}
+
+// ---------------------------------------------------------------------------
+// P224 (ADR 0037): dynamic-state fields — ONE resolved value per component.
+// ---------------------------------------------------------------------------
+// A dynamic-state field (`visible`/`disabled`, see DYNAMIC_STATE_FIELDS) has a
+// single source rule: BOUND (state/store/query/routeParam/reactive) → the bound
+// source is the truth; UNBOUND (literal/none/msg/…) → the node holds the value
+// in an INTERNAL per-client slot. The slot lives at a reserved path in the SAME
+// per-client state tree as ui-store (P201), keyed by component id + field, so the
+// renderer reads it through an ordinary `state` binding (with the configured
+// literal, or the field's neutral value, as the fallback when the slot is empty).
+//
+// Slot lifecycle (eviction/TTL) is intentionally left minimal here — a slot is a
+// key in the per-client state map and shares that map's lifecycle; the per-client
+// scale concern is tracked as tech-debt [P210].
+const DYNAMIC_STATE_STATE_ROOT = "__dynamicState";
+
+function isDynamicStateFieldName(field) {
+    return DYNAMIC_STATE_FIELDS.indexOf(field) !== -1;
+}
+
+// The reserved per-client state path holding a node's unbound dynamic-state slot
+// for one field, e.g. `__dynamicState.<nodeId>.visible`.
+function dynamicStateSlotPath(nodeId, field) {
+    return `${DYNAMIC_STATE_STATE_ROOT}.${nodeId}.${field}`;
+}
+
+// A binding is BOUND (reactive from its source) when its kind is in the
+// dynamic-state bound set; everything else (literal / msg / jsonata / flow /
+// global / env) — and an absent binding — is UNBOUND for the WRITE rule
+// (setDynamicStateField).
+function isBoundDynamicStateBinding(binding) {
+    return Boolean(binding && typeof binding === "object"
+        && DYNAMIC_STATE_BOUND_KINDS.indexOf(binding.kind) !== -1);
+}
+
+// A dynamic-state field is SLOT-BACKED at RENDER time only when it is a plain
+// literal or absent ("unbound" per ADR 0037: literal/none). The message-driven
+// (`msg`/`jsonata`) and server-resolved (`flow`/`global`/`env`) kinds keep their
+// existing render semantics — they are handled by their own writer slices (msg →
+// P223) and must NOT default to the neutral slot value (a `msg`-bound `visible`
+// renders EMPTY/hidden until a message arrives — see the P223 ui-alert E2E).
+function isSlotBackedDynamicStateBinding(binding) {
+    return binding === undefined || binding === null
+        || (typeof binding === "object" && binding.kind === "literal");
+}
+
+// Coerce any stored value to the boolean a dynamic-state field represents.
+// Accepts real booleans and the "true"/"false" strings (editor typedInput / an
+// inject node's string payload); otherwise JS truthiness. Mirrors P223's
+// coerceViewBoolean (kept separate so the schema-facing helper has no P223 dep).
+function coerceDynamicStateBoolean(value) {
+    if (value === true) { return true; }
+    if (value === false) { return false; }
+    if (typeof value === "string") {
+        const trimmed = value.trim().toLowerCase();
+        if (trimmed === "true") { return true; }
+        if (trimmed === "false") { return false; }
+    }
+    return Boolean(value);
+}
+
+// Build the render binding for an UNBOUND dynamic-state field: a `state` binding
+// pointing at the reserved per-client slot, whose `fallback` is the configured
+// literal (when one was set) or the field's neutral value. The renderer then
+// reads exactly ONE value — the per-client slot when a writer set it, else the
+// fallback — so back-compat (no writer) is byte-equivalent to today.
+function unboundDynamicStateBinding(nodeId, field, configuredBinding) {
+    const neutral = DYNAMIC_STATE_FIELD_NEUTRAL[field];
+    const fallback = configuredBinding && configuredBinding.kind === "literal"
+        ? coerceDynamicStateBoolean(configuredBinding.value)
+        : neutral;
+    return { kind: "state", path: dynamicStateSlotPath(nodeId, field), fallback };
+}
+
+// Rewrite a compiled ComponentDefinition so every UNBOUND dynamic-state field
+// reads from its internal per-client slot. Bound fields (a live source) are left
+// untouched — they stay reactive from that source. `visible` lives on
+// `visibleIf`; `disabled` lives on `bind.disabled`.
+//
+//   - `visible`: always normalised (absent → a slot binding with neutral `true`),
+//     so ANY view component's visibility is settable per-client via the write API.
+//   - `disabled`: normalised only when a `bind.disabled` binding is already
+//     present (a node that opted into a disabled binding). An absent disabled is
+//     left absent (neutral not-disabled) to keep the serialized markup unchanged
+//     for the many nodes that never carry one; the imperative enable/disable
+//     verbs (P226) address those later.
+function applyDynamicStateSlots(componentDefinition) {
+    if (!componentDefinition || typeof componentDefinition !== "object" || !componentDefinition.id) {
+        return componentDefinition;
+    }
+    const nodeId = componentDefinition.id;
+
+    // visible → visibleIf. Only a literal / absent (truly unbound) field is
+    // routed to the slot; bound and msg/jsonata/server-resolved bindings keep
+    // their own semantics.
+    const visibleIf = componentDefinition.visibleIf;
+    if (isSlotBackedDynamicStateBinding(visibleIf)) {
+        componentDefinition.visibleIf = unboundDynamicStateBinding(nodeId, "visible", visibleIf);
+    }
+
+    // disabled → bind.disabled (only when the node already carries one, and only
+    // when that binding is literal/absent).
+    if (componentDefinition.bind && typeof componentDefinition.bind === "object"
+        && componentDefinition.bind.disabled !== undefined) {
+        const disabledBinding = componentDefinition.bind.disabled;
+        if (isSlotBackedDynamicStateBinding(disabledBinding)) {
+            componentDefinition.bind.disabled = unboundDynamicStateBinding(nodeId, "disabled", disabledBinding);
+        }
+    }
+
+    return componentDefinition;
 }
 
 // P203 (ADR 0027): migrate a legacy ui-input write-target pair (storeId + path)
@@ -1971,7 +2090,12 @@ function toComponentDefinitions(components) {
             props: {},
             events: []
         };
-    });
+    })
+    // P224 (ADR 0037): normalise every compiled component's dynamic-state fields
+    // so an UNBOUND `visible`/`disabled` reads from its internal per-client slot
+    // (bound fields stay reactive from their source). Applied as a single
+    // post-pass so every per-type branch above is covered uniformly.
+    .map(applyDynamicStateSlots);
 }
 
 function getAppModelResult(appId, definitions) {
@@ -2293,6 +2417,121 @@ function applyInputWriteBack(RED, appId, node, params, clientId, definitions) {
             }
         }
     }
+}
+
+// P224 (ADR 0037): the UNIFIED write API for dynamic-state fields. Every writer
+// (msg → P223, duration → P225, show/hide verbs → P226) converges here so a
+// component's visibility/enabled is ONE value, however it is changed.
+//
+//   - BOUND to a store → write THROUGH into the bound store slice (scope-correct:
+//     per-client when a clientId is present, else broadcast), keeping the store
+//     the single source of truth; the change re-renders every store-bound view.
+//   - BOUND to a bare state path → write that path in the same per-client /
+//     broadcast state tree (the renderer reads it back via the `state` binding).
+//   - BOUND to a read-only source (query/routeParam/reactive) → refused; that
+//     value is computed, not settable.
+//   - UNBOUND (literal/none/msg/…) → write the node's INTERNAL per-client slot
+//     (`__dynamicState.<nodeId>.<field>`); a clientId scopes it to that client,
+//     otherwise it is a broadcast default. Two clients are isolated because the
+//     slot lives in each client's own per-client state entry.
+//
+// After the write a snapshot is pushed so the re-render shows the new value.
+// Returns a small result (chiefly for tests): { ok, mode, clientId } or
+// { ok:false, reason }.
+function setDynamicStateField(nodeId, field, value, clientId) {
+    if (!isDynamicStateFieldName(field)) {
+        return { ok: false, reason: "not-a-dynamic-state-field" };
+    }
+    const registration = runtimeState.definitions.get(nodeId);
+    if (!registration || !registration.definition) {
+        return { ok: false, reason: "unknown-node" };
+    }
+    const RED = runtimeState.RED;
+    const node = RED && RED.nodes && typeof RED.nodes.getNode === "function"
+        ? RED.nodes.getNode(nodeId)
+        : undefined;
+    const appId = node ? findAppIdForNode(node) : getActiveRuntimeAppId();
+    if (!appId) {
+        return { ok: false, reason: "no-active-app" };
+    }
+
+    const binding = registration.definition[field];
+    const coerced = coerceDynamicStateBoolean(value);
+    const scopedClientId = clientId ? String(clientId) : undefined;
+
+    // --- BOUND to a store: write THROUGH, scope-correct. ---
+    if (binding && binding.kind === "store") {
+        const storeDefinition = resolveStoreReferenceById(binding.path);
+        if (!storeDefinition) {
+            return { ok: false, reason: "unknown-store" };
+        }
+        // Scope guard mirrors the ui-store write path ("any" (default) never rejects).
+        const scope = storeDefinition.scope;
+        if (scope === "broadcast-only" && scopedClientId) {
+            return { ok: false, reason: "scope-violation" };
+        }
+        if (scope === "client-only" && !scopedClientId) {
+            return { ok: false, reason: "scope-violation" };
+        }
+
+        let relPath;
+        if (binding.subPath && typeof binding.subPath === "object" && binding.subPath.kind === "literal") {
+            relPath = binding.subPath.value !== undefined && binding.subPath.value !== null
+                ? String(binding.subPath.value)
+                : "";
+        }
+        const operation = relPath
+            ? { id: storeDefinition.id, op: "set", path: relPath, value: coerced }
+            : { id: storeDefinition.id, op: "replace", value: coerced };
+
+        const baseState = scopedClientId
+            ? (getClientState(appId, scopedClientId)?.state || clone(runtimeState.liveState.get(appId) || initializeState([storeDefinition], [], appId)))
+            : clone(runtimeState.liveState.get(appId) || initializeState([storeDefinition], [], appId));
+        let applied;
+        try {
+            applied = applyStoreOperation(baseState, storeDefinition, operation);
+        }
+        catch (error) {
+            return { ok: false, reason: "store-op-failed", error };
+        }
+        const now = Date.now();
+        if (scopedClientId) {
+            setClientState(appId, scopedClientId, applied.nextState, now);
+        }
+        else {
+            runtimeState.liveState.set(appId, applied.nextState);
+        }
+        if (RED) {
+            pushSnapshotToClients(appId, scopedClientId, readDeployDefinitions(RED));
+        }
+        return { ok: true, mode: "store", clientId: scopedClientId };
+    }
+
+    // --- BOUND to a read-only computed source: cannot be set. ---
+    if (isBoundDynamicStateBinding(binding) && binding.kind !== "state") {
+        return { ok: false, reason: "read-only-bound" };
+    }
+
+    // --- BOUND to a bare state path (write it) OR UNBOUND (write the slot). ---
+    const isStatePath = binding && binding.kind === "state" && typeof binding.path === "string" && binding.path;
+    const targetPath = isStatePath ? binding.path : dynamicStateSlotPath(nodeId, field);
+    const mode = isStatePath ? "state" : "slot";
+
+    const baseState = scopedClientId
+        ? (getClientState(appId, scopedClientId)?.state || clone(runtimeState.liveState.get(appId) || {}) || {})
+        : (clone(runtimeState.liveState.get(appId) || {}) || {});
+    const nextState = setValueAtPath(baseState, targetPath, coerced);
+    const now = Date.now();
+    if (scopedClientId) {
+        setClientState(appId, scopedClientId, nextState, now);
+    }
+    else {
+        runtimeState.liveState.set(appId, nextState);
+    }
+    if (RED) {
+        pushSnapshotToClients(appId, scopedClientId, readDeployDefinitions(RED));
+    }
+    return { ok: true, mode, clientId: scopedClientId };
 }
 
 function dispatchClientEvent(RED, appId, body, definitions) {
@@ -5924,6 +6163,23 @@ function viewNodePatchInputHandler(node, msg, send, done) {
         return componentStateInputHandler(node, msg, send, done);
     }
 
+    // P224 (ADR 0037): the flow-reachable seam onto the unified dynamic-state
+    // write API. `msg.ui.dynamicState = { field, value, id? }` invokes
+    // setDynamicStateField on the addressed node (default: this node), honouring
+    // `msg.ui.clientId` (per-client) vs a broadcast write. This is the foundation
+    // surface the later writer slices (duration → P225, verbs → P226) build on.
+    if (uiMsg && uiMsg.dynamicState && typeof uiMsg.dynamicState === "object"
+        && typeof uiMsg.dynamicState.field === "string") {
+        const ds = uiMsg.dynamicState;
+        const targetId = typeof ds.id === "string" && ds.id ? ds.id : node.id;
+        const clientId = uiMsg.clientId ? String(uiMsg.clientId) : undefined;
+        setDynamicStateField(targetId, ds.field, ds.value, clientId);
+        // ADR 0033: strip the spent command so a downstream consumer can't reapply it.
+        send(stripConsumedUiEnvelope(msg, "dynamicState"));
+        if (done) { done(); }
+        return;
+    }
+
     const registration = runtimeState.definitions.get(node.id);
     if (!registration) {
         send(msg);
@@ -7882,6 +8138,12 @@ registerWebappNodes.__test__ = {
     // P39 / P52: view-node input patch handler + deploy-definition reader
     viewNodePatchInputHandler,
     readDeployDefinitions,
+    // P224 (ADR 0037): dynamic-state field foundation — the unified write API,
+    // the compiled-component slot normaliser, and the reserved slot-path helper.
+    setDynamicStateField,
+    applyDynamicStateSlots,
+    dynamicStateSlotPath,
+    toComponentDefinitions,
     // P223 (ADR 0036): Message mode drives every msg-bound field — bound-field
     // scan, boolean coercion, literal-wrap, and the live-patch merge helper.
     collectBoundViewFields,

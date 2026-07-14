@@ -306,6 +306,51 @@ export const WRITABLE_BINDING_KINDS = ["store", "flow", "global"] as const;
 export type WritableBindingKind = (typeof WRITABLE_BINDING_KINDS)[number];
 
 /**
+ * P224 (ADR 0037): the **dynamic-state fields** — the authoritative, extensible
+ * set of bindable component fields that represent a *runtime state* of a node
+ * (as opposed to a *static presentational* field such as `color`/`size`/`variant`,
+ * which are deliberately NOT dynamic-state fields and keep today's model).
+ *
+ * Each dynamic-state field is ONE resolved value per component (what the renderer
+ * reads — `visibleIf` / `enabledIf` / `bind.disabled`), with a single source rule
+ * (bound → the bound source is the truth; unbound → an internal per-client slot on
+ * the node) and a single write rule (`setDynamicStateField`: bound → write through
+ * to the bound store; unbound → write the per-client slot). See ADR 0037.
+ *
+ * Extend this list (never inline the strings) when a new runtime-state field is
+ * introduced; the write API + renderer slot mechanism generalise to every member.
+ */
+export const DYNAMIC_STATE_FIELDS = ["visible", "disabled"] as const;
+
+export type DynamicStateField = (typeof DYNAMIC_STATE_FIELDS)[number];
+
+/**
+ * P224 (ADR 0037): the **neutral** (default) value of each dynamic-state field —
+ * what an unbound field with no writer resolves to (`visible` → true, `disabled`
+ * → false), i.e. the back-compat "everything behaves as today" value.
+ */
+export const DYNAMIC_STATE_FIELD_NEUTRAL: Record<DynamicStateField, boolean> = {
+    visible: true,
+    disabled: false
+};
+
+/**
+ * P224 (ADR 0037): the binding kinds that count as **bound** for a dynamic-state
+ * field — the value is reactive from that source (and a write goes THROUGH to it).
+ * Every other kind (`literal`, `msg`, `jsonata`, `flow`, `global`, `env`) — and an
+ * absent binding — is **unbound**: the value lives in the node's internal
+ * per-client slot, defaulting to the field's neutral value.
+ */
+export const DYNAMIC_STATE_BOUND_KINDS = ["state", "store", "query", "routeParam", "reactive"] as const;
+
+/**
+ * P224 (ADR 0037): true when `field` is a dynamic-state field.
+ */
+export function isDynamicStateField(field: string): field is DynamicStateField {
+    return (DYNAMIC_STATE_FIELDS as readonly string[]).includes(field);
+}
+
+/**
  * P203 (ADR 0027): the `writeTo` binding — the symmetric WRITE half of an input's
  * `value` binding. Structurally the same as {@link bindingSchema} (store node +
  * optional one-level subPath), but the `kind` is restricted to the writable set.
