@@ -28,6 +28,7 @@ their blocker clears.
 ## Open work (pending / in_progress)
 
 - **P233** — aspects/node-conformance — Sweep: verbotene „renders without crashing"-Tests durch echte Outcome-Assertions ersetzen (~12 Knoten) + Guardrail — *Owner 2026-07-14; Cross-Cutting-Cleanup* — [P233](aspects/node-conformance/P233-remove-no-crash-tests-sweep.md)
+- **P234** — aspects/node-conformance — Konformitäts-Pass **ui-progress**: Spec-Drift/Base-Fields-Doku, Akzeptanz, Testabdeckung neu — *Owner 2026-07-16; node-conformance* — [P234](aspects/node-conformance/P234-conformance-ui-progress.md)
 
 
 ## Deferred (parked, not abandoned)
