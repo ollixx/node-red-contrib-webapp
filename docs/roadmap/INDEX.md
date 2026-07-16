@@ -28,7 +28,6 @@ their blocker clears.
 ## Open work (pending / in_progress)
 
 - **P234** — aspects/node-conformance — Konformitäts-Pass **ui-progress**: Spec-Drift/Base-Fields-Doku, Akzeptanz, Testabdeckung neu — *Owner 2026-07-16; node-conformance* — [P234](aspects/node-conformance/P234-conformance-ui-progress.md)
-- **P235** — aspects/node-conformance — Konformitäts-Pass **ui-icon**: visible-Doku + Testabdeckung (icon-Binding/color/visible/msg) — *Owner 2026-07-16; node-conformance* — [P235](aspects/node-conformance/P235-conformance-ui-icon.md)
 - **P236** — aspects/node-conformance — Konformitäts-Pass **ui-button**: Label-Spec-Drift + fehlende Tests (label-Binding/icon/color/visible/msg) — *Owner 2026-07-16; node-conformance* — [P236](aspects/node-conformance/P236-conformance-ui-button.md)
 
 
@@ -93,7 +92,7 @@ open the folder for the full history.
 | nodes/ui-accordion | 2 |
 | nodes/ui-breadcrumb · ui-dialog · ui-progress · ui-skeleton | 1 each |
 | aspects/test-infra | 28 |
-| aspects/node-conformance | 3 |
+| aspects/node-conformance | 4 |
 | aspects/misc | 16 |
 | aspects/docs | 1 |
 | aspects/runtime | 9 |
@@ -105,4 +104,4 @@ open the folder for the full history.
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 229 done, 2 open, 12 deferred.**
+**Total: 230 done, 2 open, 12 deferred.**

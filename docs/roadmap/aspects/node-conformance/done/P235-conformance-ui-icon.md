@@ -3,7 +3,7 @@ id: P235
 node: ui-icon
 title: "Konformitäts-Pass ui-icon — visible-Doku + Testabdeckung (icon-Binding/color/visible/msg)"
 epic: aspects/node-conformance
-status: in_progress
+status: done
 dependencies: []
 verify: browser
 spec: docs/nodes/display/ui-icon.md
@@ -11,7 +11,7 @@ tests: tests/e2e/nodes/view/ui-icon.tests.md
 ---
 # P235 — Konformitäts-Pass ui-icon
 
-> Ablauf/Checkliste: [epic.md](epic.md). Cross-Cutting-Anteile: Hilfe-Doku-Link →
+> Ablauf/Checkliste: [epic.md](../epic.md). Cross-Cutting-Anteile: Hilfe-Doku-Link →
 > **P232** (bereits ergänzt), No-Crash → **P233** (hier keiner echt vorhanden, s.u.).
 
 ## findings (Audit 2026-07-14)
@@ -71,3 +71,15 @@ msg.payload ergänzen (bestehende Tests bleiben); Katalog aktualisieren.
 
 1. Spec: `visible` in „Allgemein" ergänzen.
 2. Tests: icon-Store-Binding, color (gemessen), visible-Gate, msg.payload-Input.
+
+## Result
+
+**Delivered.** ui-icon Konformitäts-Pass (leicht — Knoten war in gutem Zustand).
+- **Spec** `docs/nodes/display/ui-icon.md`: `visible` (Base-Field, P231/ADR 0037, Render-Gate) in „Allgemein" dokumentiert (Muster ui-divider); `disabled`=N/A, `color`/`size` als eigene dedizierte Controls vermerkt.
+- **Tests** `tests/e2e/nodes/view/ui-icon.spec.ts`: 9 bestehende unberührt, **7 neue gemessene** ergänzt — jede erwartete Wert aus dem Serializer/Renderer ABGELEITET (nicht geraten): icon state-Binding (live) + Store-`replace` via SSE, `color` Literal → inline `style="color:…"` + computed-style gemessen, `visible=false` → Komponente ausgeblendet (renderer gate) / `true` → gerendert. Katalog `ui-icon.tests.md` aktualisiert.
+
+**Verify (browser, gemessen — Haupt-Checkout).** `tests/e2e/nodes/view/ui-icon.spec.ts` **16 passed** (inkl. der geflaggten C02-computed-style-Farbe). `check:specs`/`check:fields`/`check:help`/`check:no-crash`/`check:roundtrip`/`check:links`/`pnpm validate` grün.
+
+**Aufgedeckter Spec↔Code-Bug (Konformitäts-Ertrag, Follow-up):** Die Acceptance forderte „`msg.payload` → Icon-Update live". **Der Code macht das NICHT** — `componentStateInputHandler` erkennt nur `msg.ui.component.op` und reicht `msg.payload` durch (kein Feld-Setter; auch kein `msg.ui.patch` trotz Spec-Input-Abschnitt). Der Agent hat KEINEN grünen Fake-Test geschrieben, sondern das REALE Verhalten getestet (Payload ändert das Icon nicht — Mutations-Guard) + geflaggt. Der echte Live-Pfad ist das store-gebundene Icon. **Entscheidung offen (eigene Phase):** entweder `msg.payload`/`msg.ui.patch` als Icon-Setter implementieren, ODER den Spec-Input-Abschnitt korrigieren. Als Task-Chip herausgelöst.
+
+**Cost.** Sub-Agent `phase/P235` (worktree), ~9 min; Orchestrator-E2E-Verifikation. Token-Zeile in `.ai/agent-runs.jsonl`.
