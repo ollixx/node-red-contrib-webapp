@@ -7628,6 +7628,10 @@ const runtimeNodeRegistry = {
             // back to the raw label value (plain string, back-compat for pre-P137 flows).
             label: getBinding(config.label, undefined) || config.label || undefined,
             showValue: config.showValue === true || config.showValue === "true" || undefined,
+            // P234: upper bound of the progress range (Default 100 applied by the
+            // serializer when absent/invalid). Carried into props.max via the generic
+            // props block so the serializer scales value/max.
+            max: toOptionalNumber(config.max),
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {

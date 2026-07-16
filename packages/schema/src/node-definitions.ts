@@ -1150,7 +1150,13 @@ export const uiProgressNodeDefinitionSchema = mountableNodeSchema.extend({
     // binding) so the progress bar label can be reactive. Back-compat: a plain
     // string is still accepted (legacy flows).
     label: z.union([bindingSchema, z.string()]).optional(),
-    showValue: z.boolean().optional()
+    showValue: z.boolean().optional(),
+    // P234 (owner decision 2026-07-16): the upper bound of the progress range.
+    // Optional, default `100` (applied by the serializer when absent/invalid). The
+    // rendered fill scales as `value / max` (e.g. value=50, max=200 → 25 %), and
+    // `showValue` shows the percentage relative to `max`. A non-positive/NaN max
+    // degrades to 100 in the serializer rather than dividing by zero.
+    max: z.number().optional()
 });
 
 export type UiProgressNodeDefinition = z.infer<typeof uiProgressNodeDefinitionSchema>;
