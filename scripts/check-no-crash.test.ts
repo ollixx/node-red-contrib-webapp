@@ -34,10 +34,20 @@ describe("check-no-crash presence-only tripwire", () => {
 
     // ---- findForbiddenMarkers (pure) ----------------------------------------
     it("flags a `without crashing` test title", () => {
-        const hits = check.findForbiddenMarkers(`test("renders ${CRASH}", async () => {});`);
+        // "state without crashing" matches ONLY the without-crashing marker (no
+        // "render" word before "without"), so exactly one hit.
+        const hits = check.findForbiddenMarkers(`test("default state ${CRASH}", async () => {});`);
         expect(hits).toHaveLength(1);
         expect(hits[0].marker).toBe("without-crashing");
         expect(hits[0].line).toBe(1);
+    });
+
+    it("flags BOTH markers when a title says `renders without crashing`", () => {
+        const hits = check.findForbiddenMarkers(`test("renders ${CRASH}", async () => {});`);
+        expect(hits.map((h: { marker: string }) => h.marker).sort()).toEqual([
+            "renders-without",
+            "without-crashing",
+        ]);
     });
 
     it("flags a `renders without` test title", () => {
@@ -60,7 +70,7 @@ describe("check-no-crash presence-only tripwire", () => {
     // ---- analyzeSpecs (pure) ------------------------------------------------
     it("FAILS a spec list containing a forbidden marker", () => {
         const { errors, checked } = check.analyzeSpecs(
-            [{ path: "tests/e2e/x.spec.ts", source: `test("renders ${CRASH}", () => {});` }],
+            [{ path: "tests/e2e/x.spec.ts", source: `test("default state ${CRASH}", () => {});` }],
             {}
         );
         expect(checked).toBe(1);
