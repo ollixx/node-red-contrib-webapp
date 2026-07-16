@@ -124,3 +124,25 @@ All tests run against the live Node-RED E2E instance.
 |---|---|
 | click on sl-button → POST /event with event='click' and sourceId | Click event dispatched to flow |
 | disabled button does NOT emit click event when clicked | Disabled button does not fire |
+
+## P236 conformance additions (`tests/e2e/nodes/view/ui-button.spec.ts`)
+
+Node-conformance pass. Every assertion is derived from the mapConfig `ui-button`
+block (`nodes/webapp.js`) + the serializer `kind === "button"` branch
+(`resources/lib/webapp-serializer.js`) and confirmed against the live served HTML.
+
+### Working features (green, measured)
+
+| Test | Goal / derived outcome |
+|---|---|
+| store-bound label renders resolved value + updates via SSE | `bind.label` → resolvedProps.label → button slot text; store replace re-renders (LiveLabel → ChangedLabel) |
+| icon {library,name} → `<sl-icon slot="prefix" name="gear">` before the label | Icon in the button's prefix slot (HTML regex + measured DOM count) |
+| store-bound href (linkMode=url) → sl-button[href] | Dynamic href → `bind.href` → resolvedProps.href → `sl-button[href]` hyperlink |
+
+### Known gaps — asserted as REAL current behaviour (DISCREPANCY, flip on fix)
+
+| Test | Real behaviour asserted | Root cause |
+|---|---|---|
+| bound `color` emits NO colour style on the button | Button renders, no `--color`/inline colour | `color` is N/A for a button (colour is `variant`; editor `color:false`); neither mapConfig nor serializer touches button colour |
+| store-bound `visible=false` STILL renders the button | Render-gate does NOT fire | `ui-button` mapConfig never wires `visible → visibleIf` (unlike p16Kind nodes) — genuine gap; editor DOES offer `visible` |
+| `msg.payload` does NOT change the rendered label | Label stays `OrigLabel` after inject | `computeLiveViewPatch` (nodes/webapp.js) omits "label" from carried snapshot fields; proven with a ui-text control on the same inject |
