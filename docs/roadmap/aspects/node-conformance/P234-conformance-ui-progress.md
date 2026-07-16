@@ -19,9 +19,10 @@ tests: tests/e2e/nodes/view/ui-progress.tests.md
 
 **1 · Felder** — Base-Fields wirken jetzt (Schema `...baseFieldsSchema`, P231);
 `value`/`label` sind volle Bindings (P137); `displayType` (bar/spinner/circular);
-`showValue`; Input-Port (msg.payload→value). **Offen:** **kein `max`-Feld** — der
-Wert ist „0…100" hart, die Hilfe sagt aber „0…max" (Inkonsistenz); kein `min`/
-`severity` (bewusste offene Punkte).
+`showValue`; Input-Port (msg.payload→value). **Fehlt: `max`-Feld** — der Wert ist
+„0…100" hart, die Hilfe sagt aber „0…max" (Inkonsistenz). **Owner-Entscheid
+2026-07-16: `max`-Feld ergänzen** (Default 100). `min`/`severity` bleiben bewusst
+offene Punkte.
 
 **2 · Spec-Drift** (`docs/nodes/feedback/ui-progress.md`):
 - `label` ist als **statisches „Textfeld"** dokumentiert (Z.39) + „Offene Punkte:
@@ -63,8 +64,10 @@ Beobachtbar, im laufenden App zu beweisen:
 - **Base-Field `visible=false` (gebunden)** → nicht gerendert (Render-Gate, ADR 0037).
 - **msg.payload-Input** → aktualisiert `value` live (SSE).
 - **Ports:** 1 Input, 0 Output.
-- **max:** Wertebereich 0…100 dokumentiert (bzw. `max`-Feld als bewusster offener
-  Punkt — Owner-Entscheid im Review).
+- **`max`-Feld (NEU, Owner-Entscheid 2026-07-16):** optionales Feld, Default `100`;
+  Wert-Bereich 0…`max`. Der Balken skaliert korrekt (z.B. `value=50, max=200` →
+  25 % gefüllt); `showValue` zeigt den Prozentwert relativ zu `max`. Schema + Editor
+  + Renderer + Test.
 
 ## verify
 
@@ -84,6 +87,6 @@ showValue, Base-Fields, msg.payload); Katalog aus dem Stub befüllen.
 
 ## geplante Fixes (nach Review)
 
-1. Spec: label-Binding; value-Name/Range; Base-Fields dokumentieren; offene Punkte.
+1. Spec: label-Binding; value-Name/Range (0…max); Base-Fields dokumentieren; offene Punkte.
 2. Tests: frisch (Feature-Coverage oben); No-Crash raus (P233), Hilfe-Link (P232).
-3. `max`: Owner-Entscheid — fix 100 dokumentieren **oder** `max`-Feld ergänzen.
+3. **`max`-Feld ergänzen** (Schema/Editor/Renderer/Serializer + Test; Default 100).
