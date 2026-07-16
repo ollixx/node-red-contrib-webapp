@@ -39,6 +39,31 @@ Pilot **ui-divider** (Base-Field-Referenzknoten, minimal) zum Kalibrieren von
 Template + Aufwand; danach Reihenfolge festlegen (voraussichtlich nach Familie:
 display → input → feedback → navigation → structure → state → behavior).
 
+## Verfeinerter Prozess (nach dem Pilot P230, Owner 2026-07-14)
+
+- **Rollenteilung:** *ich (mit dem Owner)* mache pro Knoten den **Audit** →
+  Konformitäts-Paket (Findings + beobachtbare Akzeptanz), Owner reviewt; der
+  **Orchestrator setzt um** (Fixes + frische Tests, **E2E im Haupt-Checkout**
+  verifiziert). Löst den Port-1882-E2E-Konflikt (Worktree-Agenten können E2E nicht
+  fahren; der Orchestrator verifiziert am Close-out).
+- **Cross-Cutting zuerst:** systemische Muster werden gebündelt gefixt, **bevor**
+  per-Knoten-Pässe darauf bauen — bereits erledigt/geplant: **P231** (Base-Fields
+  in Schema+Laufzeit, done), **P232** (Voll-Doku-Link in alle Inline-Hilfen),
+  **P233** (verbotene „renders without crashing\"-Tests ersetzen).
+- **Discovery-Sweep:** ein schneller heuristischer Audit über alle 45 Knoten
+  (Spec-Drift, fehlender Hilfe-Link, No-Crash-Tests, Katalog-Stubs, Testabdeckung)
+  liefert die **priorisierte Reihenfolge** (worst-first) statt blinder Familien-
+  Reihenfolge. Die Flags sind Startpunkte, nicht bestätigte Findings — jeder Knoten
+  bekommt den echten Audit.
+
+## Sonderfall Component-Knoten
+
+`ui-component-definition` / `ui-component-instance` sind **off-canvas Config-Knoten**
+(rendern nichts eigenständig; die Definition/Instanz-Mechanik ist über die
+ui-component-Tests abgedeckt). Sie werden **leichter** behandelt: kurze Spec + gute
+Inline-Hilfe (+ Doku-Link), **aber keine Render-Feature-Tests** — als bewusste
+dokumentierte Ausnahme.
+
 > Goal: jeder `ui-*`-Knoten hat ein bestätigtes Feld-Set, eine detail-vollständige
 > Spec, eine gute Inline-Hilfe, beobachtbare Akzeptanzkriterien und eine frische,
 > outcome-basierte Testabdeckung.
