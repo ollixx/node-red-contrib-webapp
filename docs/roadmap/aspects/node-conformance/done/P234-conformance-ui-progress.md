@@ -3,7 +3,7 @@ id: P234
 node: ui-progress
 title: "Konformitäts-Pass ui-progress — Spec-Drift/Base-Fields-Doku, Akzeptanz, Testabdeckung neu"
 epic: aspects/node-conformance
-status: in_progress
+status: done
 dependencies: []
 verify: browser
 spec: docs/nodes/feedback/ui-progress.md
@@ -11,7 +11,7 @@ tests: tests/e2e/nodes/view/ui-progress.tests.md
 ---
 # P234 — Konformitäts-Pass ui-progress
 
-> Ablauf/Checkliste: [epic.md](epic.md). Cross-Cutting-Anteile: Hilfe-Doku-Link →
+> Ablauf/Checkliste: [epic.md](../epic.md). Cross-Cutting-Anteile: Hilfe-Doku-Link →
 > **[P232](done/P232-help-doc-links-sweep.md)**, „renders without crashing"-Test →
 > **[P233](done/P233-remove-no-crash-tests-sweep.md)** (hier nicht duplizieren).
 
@@ -90,3 +90,15 @@ showValue, Base-Fields, msg.payload); Katalog aus dem Stub befüllen.
 1. Spec: label-Binding; value-Name/Range (0…max); Base-Fields dokumentieren; offene Punkte.
 2. Tests: frisch (Feature-Coverage oben); No-Crash raus (P233), Hilfe-Link (P232).
 3. **`max`-Feld ergänzen** (Schema/Editor/Renderer/Serializer + Test; Default 100).
+
+## Result
+
+**Delivered.** ui-progress Konformitäts-Pass + NEUES `max`-Feld (Owner-Entscheid).
+- **`max`-Feld** (Schema `uiProgressNodeDefinitionSchema` `z.number().optional()`; mapConfig `toOptionalNumber`; Editor `<input type=number>` Default 100; Serializer: `max` default 100, `percent = round(value/max*100)` clamped 0–100).
+- **Serializer-Rework** (jede Ausgabeform aus dem Code abgeleitet): `bar` determinate → `<sl-progress-bar value=<pct>>`; `bar` ohne Wert → `indeterminate`; `spinner` → `<sl-spinner>`; `circular` → `<sl-progress-ring value=<pct>>` (ohne Wert → sl-spinner); `showValue` → Slot `"<pct>%"` (relativ zu max), sonst label; Base-Field `color` → `--indicator-color`.
+- **Spec** `docs/nodes/feedback/ui-progress.md`: `label` als P137-Binding; `value` „Value/Wert" number-Default Range 0…max; `max`-Zeile; Base-Fields `visible`/`color` Sub-Tabelle; Offene Punkte → severity/min.
+- **Tests** frisch, gemessen (24): displayType-Varianten, value literal/store/indeterminate, label literal/store, showValue, max-Skalierung, color (`--indicator-color` computed-style), visible-Gate, msg.payload live, ports. Katalog aus Stub befüllt.
+
+**Verify (browser, gemessen — Haupt-Checkout).** `tests/e2e/nodes/view/ui-progress.spec.ts` **20 passed** — inkl. der drei vom Agent geflaggten Laufzeit-Assertions (store-gebundener Zahlwert live, `--indicator-color` computed-style, value-Attr nach Lit-Upgrade): alle grün, Ableitungen korrekt. `check:specs` (42)/`check:fields`/`check:help`/`check:no-crash`/`check:roundtrip`/`check:links`/`pnpm validate` grün. `gen:example` ohne Diff (customers-crud hat keinen ui-progress).
+
+**Cost.** Sub-Agent `phase/P234` (worktree), ~17 min; Orchestrator-E2E-Verifikation. Token-Zeile in `.ai/agent-runs.jsonl`.
