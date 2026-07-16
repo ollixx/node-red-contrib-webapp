@@ -27,6 +27,8 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
+- **P232** — aspects/node-conformance — Sweep: Voll-Doku-Link in JEDEN Inline-Hilfe-Block (~12 Knoten fehlt er) + Guardrail — *Owner 2026-07-14; Cross-Cutting-Cleanup* — [P232](aspects/node-conformance/P232-help-doc-links-sweep.md)
+- **P233** — aspects/node-conformance — Sweep: verbotene „renders without crashing"-Tests durch echte Outcome-Assertions ersetzen (~12 Knoten) + Guardrail — *Owner 2026-07-14; Cross-Cutting-Cleanup* — [P233](aspects/node-conformance/P233-remove-no-crash-tests-sweep.md)
 
 
 ## Deferred (parked, not abandoned)

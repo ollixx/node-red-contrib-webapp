@@ -2,7 +2,7 @@
 id: P232
 title: "Node-Konformität (Sweep): Voll-Doku-Link in JEDEN Inline-Hilfe-Block (data-help-name) — ~12 Knoten fehlt er"
 epic: aspects/node-conformance
-status: pending
+status: in_progress
 dependencies: []
 verify: browser
 spec: docs/nodes/concepts/editor.md
