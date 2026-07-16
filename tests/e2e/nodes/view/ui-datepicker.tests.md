@@ -53,3 +53,12 @@ Der Datepicker rendert ein `sl-input` (text-artig) und honoriert den `writeTrigg
 - `msg.payload → value` update is covered by `p82-input-nodes-behaviour.test.ts`.
 - show/hide/enable/disable verbs are covered by `ui-action-verbs.spec.ts` (cross-cutting).
 - state binding for `value` and `label` is covered by unit tests above.
+
+## P237 — placeholder Binding-Auflösung (Muster 4, ADR 0012)
+
+Unit (`packages/runtime/test/p237-datepicker-placeholder-binding.test.ts`):
+
+| Test | Ziel |
+|---|---|
+| state-gebundener placeholder → `sl-input[placeholder]` = aufgelöster Wert | Beweist, dass eine `state`-Bindung auf `placeholder` durch renderer→serializer aufgelöst UND als `placeholder`-Attribut gerendert wird (rot, wenn Auflösung bricht). Deckt den P237-Serializer-Fix ab (der Block emittierte das Attribut vorher nicht). |
+| Pfad-String leakt nicht ins Attribut | Der rohe Binding-Pfad (`form.ph`) erscheint nicht im Markup; kein `[object Object]`. |
