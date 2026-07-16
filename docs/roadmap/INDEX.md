@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P237** — aspects/node-conformance — Sweep **Muster 4**: bindbares Feld als „statischer String / kein Binding" fehl-dokumentiert (datepicker `placeholder` / slider `label` / image `alt`+`fallbackSrc`) + Guardrail — *Owner 2026-07-16; node-conformance* — [P237](aspects/node-conformance/P237-binding-doc-drift-sweep.md)
 
 
 ## Deferred (parked, not abandoned)
@@ -91,7 +90,7 @@ open the folder for the full history.
 | nodes/ui-accordion | 2 |
 | nodes/ui-breadcrumb · ui-dialog · ui-progress · ui-skeleton | 1 each |
 | aspects/test-infra | 28 |
-| aspects/node-conformance | 6 |
+| aspects/node-conformance | 7 |
 | aspects/misc | 16 |
 | aspects/docs | 1 |
 | aspects/runtime | 9 |
@@ -103,4 +102,4 @@ open the folder for the full history.
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 232 done, 1 open, 12 deferred.**
+**Total: 233 done, 0 open, 12 deferred.**

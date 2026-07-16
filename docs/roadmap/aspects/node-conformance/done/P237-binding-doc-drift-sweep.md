@@ -2,7 +2,7 @@
 id: P237
 title: "Node-Konformität (Sweep): bindbares Feld als „statischer String / kein Binding\" fehl-dokumentiert — datepicker/slider/image (Muster 4) + Guardrail"
 epic: aspects/node-conformance
-status: in_progress
+status: done
 dependencies: [P234, P236]
 verify: browser
 spec: docs/nodes/concepts/field-conventions.md
@@ -137,3 +137,17 @@ Unit-Testdatei analog `scripts/check-no-crash.test.ts`.
   leerer Allowlist grün landet (kein Cross-Package-Flag). Sollten P234/P236 ihre
   Felder doch nicht abdecken, seed die Allowlist minimal + schrumpfend statt zu
   blockieren.
+
+## Result
+
+**Delivered.** Muster-4-Sweep: 4 bindbare Felder als bindbar dokumentiert + je eine gemessene Auflösungs-Assertion + Schema-Wahrheits-Guardrail. Jedes Feld empirisch geprüft (bound flow → renderer→serializer, nicht angenommen).
+- **`ui-datepicker.placeholder` — CODE-FIX:** der Renderer löste die Bindung nach `props.placeholder` auf, aber der datepicker-Serializer emittierte das `placeholder`-Attribut nie (anders als ui-input/select). Emit ergänzt (`resources/lib/webapp-serializer.js`) → rendert jetzt `placeholder="<aufgelöst>"`. Ein *live* Bug (Autor konnte binden, wurde nie gerendert).
+- **`ui-slider.label` / `ui-image.alt` / `ui-image.fallbackSrc` — bereits aufgelöst** (nur Doku + Test-Lock). `ui-image.fallbackSrc`: der falsche „Kein Binding"-Satz entfernt + durch die bindbare Aussage ersetzt; Carrier-Relabel `fallback`↔`fallbackSrc` in der Spec benannt + stale check-specs-Allowlist-Grund korrigiert.
+- **Tests** `packages/runtime/test/p237-{datepicker-placeholder,slider-label,image-alt-fallback}-binding.test.ts` (8 Assertions): `state`-gebundener Wert → renderer→serializer → aufgelöster Wert im Attribut, Pfad-String leakt nie. Kataloge aktualisiert.
+- **Guardrail** `scripts/check-binding-docs.js` (+ `.test.ts`, 12 Unit-Tests; Comment-Stripping-Bug beim Entwickeln selbst gefangen + gelockt): Schema als Wahrheit — flaggt jedes `bindingSchema`-fähige Feld, dessen Spec-Zeile „Textfeld"/„kein Binding" sagt. In `check:binding-docs`+`validate`+`test:specs`.
+
+**Guardrail-Ertrag (Schema-Wahrheit fand mehr als das manuelle Audit):** dieselbe Muster-4-Drift auf **3 weiteren Knoten** — `ui-input.label`, `ui-switch.label/labelOn/labelOff`, `ui-textarea.label/placeholder` (alle per Probe bestätigt: Bindung löst auf; **Ausnahme `ui-textarea.placeholder`**: löst auf, aber `sl-textarea`-Serializer omittiert das Attribut → braucht denselben datepicker-artigen Fix). Per Escape-Hatch mit 6 Einträgen allowlisted (Grund = je eigener Konformitäts-Pass), NICHT Scope-Creep. **Empfohlene Follow-ups:** Muster-4-Doku-Fix für ui-input/ui-switch/ui-textarea + ui-textarea.placeholder Serializer-Emit + Test → Allowlist auf leer. Als Task-Chip herausgelöst.
+
+**Verify (browser + unit, gemessen — Haupt-Checkout).** `check:binding-docs` grün (31 Knoten, 6 allowlisted); p237-Unit-Tests grün; E2E `ui-datepicker`/`ui-slider`/`ui-image` **34 passed** (datepicker-placeholder-Fix im Browser bestätigt). `check:specs`/`check:fields`/`check:help`/`check:no-crash`/`check:roundtrip`/`check:links`/`pnpm validate` grün.
+
+**Cost.** Sub-Agent `phase/P237` (worktree), ~17 min (empirisch verifiziert; ein Anlauf am Rate-Limit ohne Commits gestorben, neu gestartet). Token-Zeile in `.ai/agent-runs.jsonl`.
