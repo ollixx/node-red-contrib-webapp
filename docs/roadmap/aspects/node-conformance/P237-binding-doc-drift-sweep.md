@@ -2,7 +2,7 @@
 id: P237
 title: "Node-Konformität (Sweep): bindbares Feld als „statischer String / kein Binding\" fehl-dokumentiert — datepicker/slider/image (Muster 4) + Guardrail"
 epic: aspects/node-conformance
-status: pending
+status: in_progress
 dependencies: [P234, P236]
 verify: browser
 spec: docs/nodes/concepts/field-conventions.md
