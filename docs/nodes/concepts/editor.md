@@ -609,6 +609,40 @@ Beide Knoten verdrahten **dieselbe** zentrale Funktion — keine Zweit-Implement
 
 ---
 
+## Inline-Hilfe (`data-help-name`)
+
+Jeder Knoten liefert im `.html` einen Hilfe-Block
+`<script type="text/html" data-help-name="ui-<node>">…</script>`. Node-RED rendert
+ihn in der Info-Sidebar ("Hilfe") und im Paletten-Popover
+(`RED.nodes.getNodeHelp(type)`). Die Konvention — **knapp**, kein Duplikat der
+Voll-Doku:
+
+1. **Zweck** — 1–2 Sätze, was der Knoten tut.
+2. **Wichtigste Felder** — nur die nicht-offensichtlichen (Bindungen, Modi,
+   Sonderfälle); Referenz-Muster: `nodes/view/ui-divider.html`, `ui-alert.html`.
+3. **Voll-Doku-Link** — als letztes ein Link auf die vollständige Spec:
+
+   ```html
+   <p>Vollständige Doku: <a
+     href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/<cat>/<node>.md"
+     target="_blank">docs/nodes/<cat>/<node>.md</a></p>
+   ```
+
+   `<cat>` ist die Doku-Taxonomie (`display`/`input`/`feedback`/`navigation`/
+   `structure`/`behavior`/`state`), **nicht** der Laufzeit-Ordner unter `nodes/`.
+   Knoten ohne eigene Spec (das Component-Paar `ui-component-definition`/
+   `-instance`) verlinken das Konzept-Doc `docs/nodes/structure/ui-component.md`.
+
+**Guardrail:** `pnpm check:help` (`scripts/check-help.js`, unit-getestet in
+`scripts/check-help.test.ts`, Teil von `pnpm validate`) prüft read-only, dass
+jeder `data-help-name`-Block einen kanonischen Voll-Doku-Link enthält, der auf
+der Platte auflöst **und** auf die eigene Spec zeigt — so kann ein neuer Knoten
+den Link nicht vergessen. Der Browser-Beweis ist
+`tests/e2e/nodes/editor/help-docs-link.spec.ts` (liest die Hilfe über Node-REDs
+`getNodeHelp`).
+
+---
+
 ## Weitere gemeinsame Helfer
 
 - `registerNodeType(type, definition)` — Registrierung inkl. uiId-Migrations-Shim.
@@ -620,6 +654,7 @@ Beide Knoten verdrahten **dieselbe** zentrale Funktion — keine Zweit-Implement
 ## Siehe auch
 
 - [field-conventions.md](field-conventions.md) — knotenübergreifende Feld-Namens-/Carrier-Konvention (ADR 0038) + der `pnpm check:fields`-Tripwire
+- Inline-Hilfe-Konvention (oben) + der `pnpm check:help`-Tripwire (Voll-Doku-Link in jedem `data-help-name`-Block)
 - [stores.md](stores.md) — Semantik des `store`-Bindings (Auflösung, Robustheit)
 - [layout.md](layout.md) — Presets und Child-Platzierungs-Felder
 - [theming.md](theming.md) — Variant-Vokabular (Quelle der Variant-SelectBox)

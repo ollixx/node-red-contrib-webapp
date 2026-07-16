@@ -89,8 +89,9 @@
         "check:specs": "node scripts/check-specs.js",
         "check:roundtrip": "node scripts/check-roundtrip.js",
         "check:fields": "node scripts/check-fields.js",
-        "test:specs": "vitest run scripts/check-specs.test.ts scripts/check-roundtrip.test.ts scripts/check-fields.test.ts",
-        "validate": "pnpm check:roadmap && pnpm check:links && pnpm check:specs && pnpm check:roundtrip && pnpm check:fields && pnpm lint && pnpm test && pnpm test:specs && pnpm build",
+        "check:help": "node scripts/check-help.js",
+        "test:specs": "vitest run scripts/check-specs.test.ts scripts/check-roundtrip.test.ts scripts/check-fields.test.ts scripts/check-help.test.ts",
+        "validate": "pnpm check:roadmap && pnpm check:links && pnpm check:specs && pnpm check:roundtrip && pnpm check:fields && pnpm check:help && pnpm lint && pnpm test && pnpm test:specs && pnpm build",
         "test:showcase": "SHOWCASE=1 playwright test",
         "show-report": "playwright show-report"
     },

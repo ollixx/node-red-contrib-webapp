@@ -1,0 +1,124 @@
+import { execFileSync } from "node:child_process";
+import path from "node:path";
+
+import { describe, it, expect } from "vitest";
+
+// The check script is plain CommonJS; require it for the pure-function assertions
+// and invoke it as a child process for the end-to-end (exit-code) proof. Modelled
+// on scripts/check-fields.test.ts — the core logic (`helpViolation` /
+// `analyzeNodes`) is pure over an in-memory { type, help } list, so the per-rule
+// pass/fail cases need no real tree and no shelling out. Rules (3)/(4) resolve a
+// doc path on disk; the pure tests inject a `docExists` stub so they stay
+// hermetic.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const check = require("./check-help.js");
+
+const ROOT = path.resolve(__dirname, "..");
+const SCRIPT = path.join(ROOT, "scripts", "check-help.js");
+
+const LINK = (rel: string) =>
+    `https://github.com/ollixx/node-red-contrib-webapp/blob/develop/${rel}`;
+
+// A help block that links the node's own spec, resolvable per the stub below.
+const okHelp = (type: string, cat = "display") =>
+    `<p>Purpose.</p><p>Doku: <a href="${LINK(`docs/nodes/${cat}/${type}.md`)}" target="_blank">${type}.md</a></p>`;
+
+// docExists stub: treat any `docs/nodes/**.md` we explicitly list as present.
+const stubExists = (present: string[]) => (rel: string) => present.includes(rel);
+
+describe("check-help inline-help doc-link tripwire", () => {
+    it("is GREEN on the real tree (every ui-* node links its own resolvable spec)", () => {
+        const { errors, checked, allowlisted } = check.checkHelp();
+        expect(errors).toEqual([]);
+        expect(checked).toBeGreaterThan(0);
+        expect(allowlisted).toBe(0);
+    });
+
+    it("exits 0 when run as the CI tripwire", () => {
+        expect(() => execFileSync(process.execPath, [SCRIPT], { cwd: ROOT })).not.toThrow();
+    });
+
+    it("passes a node whose help links its own resolvable spec", () => {
+        const v = check.helpViolation(
+            { type: "ui-table", help: okHelp("ui-table") },
+            { docExists: stubExists(["docs/nodes/display/ui-table.md"]) }
+        );
+        expect(v).toBeNull();
+    });
+
+    // ---- Rule (1): help block present ---------------------------------------
+    it("FAILS a node with no help block at all", () => {
+        const v = check.helpViolation({ type: "ui-x", help: null }, {});
+        expect(v.rule).toBe("no-help-block");
+        const { errors } = check.analyzeNodes([{ type: "ui-x", help: null }], {}, {});
+        expect(errors.length).toBe(1);
+        expect(errors[0]).toContain("ui-x");
+    });
+
+    // ---- Rule (2): doc link present -----------------------------------------
+    it("FAILS a help block with a purpose but no doc link", () => {
+        const v = check.helpViolation(
+            { type: "ui-x", help: "<p>Just a purpose, no link.</p>" },
+            {}
+        );
+        expect(v.rule).toBe("no-doc-link");
+    });
+
+    it("does NOT accept a non-canonical (wrong org/branch) link as the doc link", () => {
+        // The legacy `ollix/blob/master/...concepts/reactive-expressions.md` shape
+        // must NOT satisfy the own-spec rule.
+        const help = `<p>See <a href="https://github.com/ollix/node-red-contrib-webapp/blob/master/docs/nodes/concepts/reactive-expressions.md">x</a></p>`;
+        const v = check.helpViolation({ type: "ui-text", help }, {});
+        expect(v.rule).toBe("no-doc-link");
+    });
+
+    // ---- Rule (3): link resolves on disk ------------------------------------
+    it("FAILS a canonical link whose doc does not exist on disk", () => {
+        // Build the (deliberately non-existent) doc path from split literals so the
+        // check:links Tier-2 scanner never sees a contiguous `docs/...md` path.
+        const ghost = "docs/nodes/display/" + "ui-ghost.md";
+        const v = check.helpViolation(
+            { type: "ui-x", help: `<p><a href="${LINK(ghost)}">x</a></p>` },
+            { docExists: stubExists([]) }
+        );
+        expect(v.rule).toBe("dangling-doc-link");
+    });
+
+    // ---- Rule (4): links its OWN spec ---------------------------------------
+    it("FAILS a node that links a resolvable doc that is NOT its own spec", () => {
+        // ui-divider.md is a REAL doc (so the link resolves) but not ui-table's spec.
+        const help = `<p><a href="${LINK("docs/nodes/display/ui-divider.md")}">divider</a></p>`;
+        const v = check.helpViolation(
+            { type: "ui-table", help },
+            { docExists: stubExists(["docs/nodes/display/ui-divider.md"]) }
+        );
+        expect(v.rule).toBe("not-own-spec");
+    });
+
+    it("accepts the component pair linking the shared ui-component concept doc", () => {
+        const help = `<p><a href="${LINK("docs/nodes/structure/ui-component.md")}">component</a></p>`;
+        const v = check.helpViolation(
+            { type: "ui-component-instance", help },
+            { docExists: stubExists(["docs/nodes/structure/ui-component.md"]) }
+        );
+        expect(v).toBeNull();
+    });
+
+    // ---- Allowlist ----------------------------------------------------------
+    it("PASSES an allowlisted node even with no help block", () => {
+        const { errors, allowlisted } = check.analyzeNodes(
+            [{ type: "ui-x", help: null }],
+            { "ui-x": "temporary exception" },
+            {}
+        );
+        expect(errors).toEqual([]);
+        expect(allowlisted).toBe(1);
+    });
+
+    // ---- extractHelpBlock ---------------------------------------------------
+    it("extractHelpBlock returns the inner HTML for a matching type, null otherwise", () => {
+        const src = `<script type="text/html" data-help-name="ui-foo"><p>Hi</p></script>`;
+        expect(check.extractHelpBlock(src, "ui-foo")).toBe("<p>Hi</p>");
+        expect(check.extractHelpBlock(src, "ui-bar")).toBeNull();
+    });
+});
