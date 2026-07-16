@@ -3,7 +3,7 @@ id: P234
 node: ui-progress
 title: "Konformitäts-Pass ui-progress — Spec-Drift/Base-Fields-Doku, Akzeptanz, Testabdeckung neu"
 epic: aspects/node-conformance
-status: pending
+status: in_progress
 dependencies: []
 verify: browser
 spec: docs/nodes/feedback/ui-progress.md

@@ -3,7 +3,7 @@ id: P235
 node: ui-icon
 title: "Konformitäts-Pass ui-icon — visible-Doku + Testabdeckung (icon-Binding/color/visible/msg)"
 epic: aspects/node-conformance
-status: pending
+status: in_progress
 dependencies: []
 verify: browser
 spec: docs/nodes/display/ui-icon.md
