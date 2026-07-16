@@ -79,7 +79,7 @@ test.describe("ui-list (P45)", () => {
         expect((params.row as Record<string, unknown>).label).toBe("Cherry");
     });
 
-    test("empty items renders <ul> without crashing", async ({ page, request }) => {
+    test("empty items → renders <ul> with zero list items", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "lstApp3", root: "lstApp3" })
             .node("ui-list", { id: "lstNode3", items: JSON.stringify([]) })
@@ -89,6 +89,10 @@ test.describe("ui-list (P45)", () => {
 
         const webapp = new WebappPage(page, "lstApp3");
         await webapp.navigate("/");
-        await expect(webapp.root()).toBeVisible();
+        // Outcome: an empty items array still emits the <ul> container but with NO
+        // <li> rows. Goes red if empty items drop the list element or emit a stray
+        // row.
+        await expect(page.locator("ul.webapp-list")).toHaveCount(1);
+        await expect(page.locator("ul.webapp-list li.webapp-list-item")).toHaveCount(0);
     });
 });

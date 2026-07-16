@@ -120,7 +120,7 @@ test.describe("ui-query (P46)", () => {
 
     // ─── queryPath config is preserved ───────────────────────────────────────
 
-    test("query node renders without error and table with literal rows shows data independently", async ({ page, request }) => {
+    test("ui-query present alongside a literal-row ui-table → the table rows render independently", async ({ page, request }) => {
         // Verify that deploying a ui-query node alongside a ui-table with literal
         // rows does not break rendering — the query node is inert unless messages
         // flow through it.

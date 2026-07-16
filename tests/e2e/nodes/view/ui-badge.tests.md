@@ -83,7 +83,7 @@ All tests are in `ui-badge.spec.ts` (E2E, Playwright) and `packages/runtime/test
 | Test | Goal |
 |---|---|
 | renders sl-badge with literal value | sl-badge element is present with correct text |
-| renders without explicit variant or displayType | Default rendering works end-to-end |
+| default state (no variant/displayType) → sl-badge shows the literal value | Default rendering shows the bound value ("0") end-to-end |
 | displayType 'pill' → sl-badge has pill attribute | Shoelace pill attribute visible in browser |
 | displayType 'rounded' → no pill attribute | No pill attr for default shape |
 | displayType 'square' → data-display-type='square' | Custom attr for square shape |

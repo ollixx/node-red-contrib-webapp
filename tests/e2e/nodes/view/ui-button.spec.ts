@@ -47,7 +47,7 @@ test.describe("ui-button (P96)", () => {
         await expect(page.locator("sl-button")).toContainText("Click me");
     });
 
-    test("default state renders without error (no label → node id used)", async ({ page, request }) => {
+    test("default state (no label) → sl-button label falls back to the node id", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "btnApp2", root: "btnApp2" })
             .node("ui-button", { id: "btnDefault" })
@@ -56,9 +56,10 @@ test.describe("ui-button (P96)", () => {
         await deployFlow(request, flow);
         const webapp = new WebappPage(page, "btnApp2");
         await webapp.navigate("/");
-        // The app shell must be visible; sl-button must be present.
-        await expect(webapp.root()).toBeVisible();
-        await expect(page.locator("sl-button")).toBeVisible();
+        // Outcome: with no label the renderer uses the node id as the button text
+        // (`label: String(resolvedProps.label ?? component.id)`). Goes red if that
+        // fallback is dropped (the button would render empty).
+        await expect(page.locator("sl-button")).toContainText("btnDefault");
     });
 
     // ── Variant ───────────────────────────────────────────────────────────────

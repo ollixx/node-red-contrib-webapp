@@ -50,7 +50,7 @@ test.describe("ui-icon render (P83)", () => {
         expect(html).toContain("library=\"lucide\"");
     });
 
-    test("renders without crashing when no icon is configured", async ({ page, request }) => {
+    test("no icon configured → renders the node wrapper but no sl-icon element", async ({ request }) => {
         const flow = new FlowBuilder()
             .app({ id: "iconApp3", root: "iconApp3" })
             .node("ui-icon", { id: "iconNode3" })
@@ -58,10 +58,15 @@ test.describe("ui-icon render (P83)", () => {
 
         await deployFlow(request, flow);
 
-        const webapp = new WebappPage(page, "iconApp3");
-        await webapp.navigate("/");
-        // Renders the app root without a server error.
-        await expect(webapp.root()).toBeVisible();
+        const res = await request.get("/webapp/iconApp3/");
+        expect(res.ok()).toBeTruthy();
+        const html = await res.text();
+        // Outcome: an unconfigured icon degrades to an EMPTY leaf wrapper — the
+        // node's hook attribute is present and the wrapper closes immediately with
+        // NO <sl-icon> child. Asserted on the node's own fragment (not the whole
+        // page, which links the Shoelace autoloader). Goes red if a default icon
+        // starts rendering (`…"iconNode3"><sl-icon…`) or the node drops out.
+        expect(html).toContain("data-webapp-node=\"iconNode3\"></div>");
     });
 });
 

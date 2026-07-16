@@ -41,7 +41,7 @@ test.describe("ui-avatar (P94)", () => {
         await expect(page.locator("sl-avatar")).toBeVisible();
     });
 
-    test("renders without error when no fields are set (default state)", async ({ page, request }) => {
+    test("default state (no fields) → sl-avatar with no initials attribute", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "avApp2", root: "avApp2" })
             .node("ui-avatar", { id: "av2" })

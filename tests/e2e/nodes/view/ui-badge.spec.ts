@@ -39,7 +39,7 @@ test.describe("ui-badge (P92/P103)", () => {
         await expect(page.locator("sl-badge")).toContainText("42");
     });
 
-    test("renders without explicit variant or displayType (defaults)", async ({ page, request }) => {
+    test("default state (no variant/displayType) → sl-badge shows the literal value", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "badgeApp2", root: "badgeApp2" })
             .node("ui-badge", { id: "badge2", value: { kind: "literal", value: "0" } })

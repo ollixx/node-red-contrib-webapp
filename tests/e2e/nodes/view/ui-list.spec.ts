@@ -11,7 +11,7 @@ import { WebappPage } from "../../../helpers/webapp-page";
  * renders its rows ITSELF — NOT a repeats case), exactly like ui-menu `items`.
  * Each element is a String shorthand (→ {label}) OR an object
  * {id?,label,value?,icon?}. `label` is required (object form); a missing label
- * renders "?" for THAT row only; a non-array root → empty list (no crash). The
+ * renders "?" for THAT row only; a non-array root → empty list (zero items). The
  * node-wide `displayValue` (none/secondary/badge) controls how a row's `value`
  * is DISPLAYED; `value` is ALWAYS carried in the itemClick event (row.value).
  * The itemClick event emits params { rowId, row }. Legacy `itemsPath` migrates
@@ -121,7 +121,7 @@ test.describe("ui-list — items typedInput + item schema (P171)", () => {
         await expect(page.locator("ul.webapp-list li.webapp-list-item").first()).toContainText("Grace");
     });
 
-    test("non-array root resolves to an empty list without crashing", async ({ page, request }) => {
+    test("non-array root resolves to an empty list (zero list items)", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "listScalarApp", root: "listScalarApp" })
             .node("ui-store", {
