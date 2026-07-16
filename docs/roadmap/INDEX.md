@@ -28,6 +28,7 @@ their blocker clears.
 ## Open work (pending / in_progress)
 
 - **P234** — aspects/node-conformance — Konformitäts-Pass **ui-progress**: Spec-Drift/Base-Fields-Doku, Akzeptanz, Testabdeckung neu — *Owner 2026-07-16; node-conformance* — [P234](aspects/node-conformance/P234-conformance-ui-progress.md)
+- **P235** — aspects/node-conformance — Konformitäts-Pass **ui-icon**: visible-Doku + Testabdeckung (icon-Binding/color/visible/msg) — *Owner 2026-07-16; node-conformance* — [P235](aspects/node-conformance/P235-conformance-ui-icon.md)
 
 
 ## Deferred (parked, not abandoned)
