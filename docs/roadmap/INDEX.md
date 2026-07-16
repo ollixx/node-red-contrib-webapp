@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P233** — aspects/node-conformance — Sweep: verbotene „renders without crashing"-Tests durch echte Outcome-Assertions ersetzen (~12 Knoten) + Guardrail — *Owner 2026-07-14; Cross-Cutting-Cleanup* — [P233](aspects/node-conformance/P233-remove-no-crash-tests-sweep.md)
 - **P234** — aspects/node-conformance — Konformitäts-Pass **ui-progress**: Spec-Drift/Base-Fields-Doku, Akzeptanz, Testabdeckung neu — *Owner 2026-07-16; node-conformance* — [P234](aspects/node-conformance/P234-conformance-ui-progress.md)
 
 
@@ -92,7 +91,7 @@ open the folder for the full history.
 | nodes/ui-accordion | 2 |
 | nodes/ui-breadcrumb · ui-dialog · ui-progress · ui-skeleton | 1 each |
 | aspects/test-infra | 28 |
-| aspects/node-conformance | 2 |
+| aspects/node-conformance | 3 |
 | aspects/misc | 16 |
 | aspects/docs | 1 |
 | aspects/runtime | 9 |
@@ -104,4 +103,4 @@ open the folder for the full history.
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 228 done, 2 open, 12 deferred.**
+**Total: 229 done, 2 open, 12 deferred.**
