@@ -247,8 +247,8 @@ test.describe("ui-alert (P225)", () => {
         // Initially visible.
         await expect(page.locator("sl-alert")).toBeVisible();
         // After the duration, the alert's ONE visibility value becomes false, so the
-        // server re-renders WITHOUT it and the morph removes it: the element is
-        // DETACHED (count 0), not merely open=false-but-present. A revert to the old
+        // server re-renders that region omitting the alert and the morph removes it:
+        // the element is DETACHED (count 0), not merely open=false-but-present. A revert to the old
         // client-side autoDismissed close would leave the element in the DOM → red.
         await expect(page.locator("sl-alert")).toHaveCount(0, { timeout: 6000 });
     });

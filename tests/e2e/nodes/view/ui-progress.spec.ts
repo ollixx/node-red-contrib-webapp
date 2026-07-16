@@ -11,7 +11,7 @@ import { WebappPage } from "../../../helpers/webapp-page";
  *   1. Renders the correct Shoelace element (sl-progress-bar).
  *   2. value binding (literal) maps to the progress bar value attribute.
  *   3. label prop maps to the label attribute.
- *   4. Default/empty state renders without crashing.
+ *   4. Default/empty state: value attribute defaults to 0.
  *
  * The value field must be a binding object (e.g. { kind: "literal", value: 75 })
  * for it to survive Zod schema validation and reach the serializer.
@@ -64,8 +64,10 @@ test.describe("ui-progress (P43)", () => {
         expect(label).toBe("Loading...");
     });
 
-    test("default state (no value) renders without crashing", async ({ page, request }) => {
-        // value is optional in the schema — omitting it is valid.
+    test("default state (no value) → sl-progress-bar value defaults to 0", async ({ page, request }) => {
+        // value is optional in the schema — omitting it is valid; the serializer
+        // emits value="0" as the documented default. Outcome: the rendered value
+        // attribute is exactly "0" (goes red if the default is dropped/changed).
         const flow = new FlowBuilder()
             .app({ id: "progressApp4", root: "progressApp4" })
             .node("ui-progress", { id: "progressNode4" })
@@ -75,7 +77,9 @@ test.describe("ui-progress (P43)", () => {
 
         const webapp = new WebappPage(page, "progressApp4");
         await webapp.navigate("/");
-        await expect(webapp.root()).toBeVisible();
-        await expect(page.locator("sl-progress-bar")).toBeVisible();
+        const value = await page
+            .locator("sl-progress-bar")
+            .evaluate((el) => el.getAttribute("value") ?? String((el as unknown as { value?: unknown }).value ?? ""));
+        expect(value).toBe("0");
     });
 });

@@ -10,7 +10,7 @@
 |---|---|---|
 | P83-R01 | Rendert als `<sl-icon>` mit konfiguriertem Icon-Namen | ui-icon.spec.ts |
 | P83-R02 | Rendert mit `library`-Attribut für namespace Icons | ui-icon.spec.ts |
-| P83-R03 | Kein Crash wenn kein Icon konfiguriert | ui-icon.spec.ts |
+| P83-R03 | Kein Icon konfiguriert → Node-Wrapper gerendert, aber KEIN `<sl-icon>` (leerer Leaf) | ui-icon.spec.ts |
 | P159-S01 | `size="xs"` → CSS-Klasse `webapp-icon--xs` | ui-icon.spec.ts |
 | P159-S02 | `size="sm"` → CSS-Klasse `webapp-icon--sm` | ui-icon.spec.ts |
 | P159-S03 | `size="md"` → CSS-Klasse `webapp-icon--md` | ui-icon.spec.ts |

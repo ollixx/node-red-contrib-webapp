@@ -28,7 +28,7 @@ typedInput binding, `variant` → `data-variant` attribute (Shoelace has no nati
 | Test | Goal |
 |---|---|
 | renders sl-avatar in DOM | node registers and renders sl-avatar element |
-| default state renders without error | no crash, no initials/image attr by default |
+| default state (no fields) → sl-avatar with no initials attribute | no initials attribute present by default |
 | size 'sm' → data-size='sm' | size rendered in browser via data attribute |
 | size 'lg' → data-size='lg' | size rendered in browser |
 | no size → no data-size | absent size produces no data-size attr |

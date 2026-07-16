@@ -17,7 +17,7 @@
   (String + Objekt) rendert.
 - Item-Schema `{id?,label,value?,icon?}`: `label` Pflicht rendert; fehlendes
   `label` (Objektform) → `"?"` nur für diese Zeile; Nicht-Array-Wurzel → leere
-  Liste, kein Crash; Zusatzfelder ignoriert.
+  Liste (null `li.webapp-list-item`); Zusatzfelder ignoriert.
 - **value/displayValue:** Default `none` → `value` nicht sichtbar, aber im Event;
   `secondary` → trailing Text; `badge` → Badge in `badgeVariant`-Farbe
   (Variant-SelectBox, `SEVERITY_VARIANTS`; Feld nur bei `badge` sichtbar). `value`

@@ -76,7 +76,7 @@ test.describe("ui-container (P45)", () => {
         await expect(page.locator("sl-card")).toContainText("Second");
     });
 
-    test("layout preset 'grid' — container renders without crashing", async ({ page, request }) => {
+    test("layout preset 'grid' → container renders the grid layout wrapper", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "ctnApp4", root: "ctnApp4" })
             .node("ui-container", { id: "ctnNode4", layoutId: "grid" })
@@ -86,8 +86,10 @@ test.describe("ui-container (P45)", () => {
 
         const webapp = new WebappPage(page, "ctnApp4");
         await webapp.navigate("/");
-        await expect(webapp.root()).toBeVisible();
-        await expect(page.locator("sl-card")).toBeVisible();
+        // Outcome: the "grid" preset drives a `.webapp-layout--grid` wrapper inside
+        // the container's sl-card (a "vertical" container would emit
+        // `.webapp-layout--vertical`). Goes red if the preset is not applied.
+        await expect(page.locator("sl-card .webapp-layout--grid")).toHaveCount(1);
     });
 });
 

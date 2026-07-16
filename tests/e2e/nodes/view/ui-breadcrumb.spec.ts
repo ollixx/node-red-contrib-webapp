@@ -14,7 +14,7 @@ import { WebappPage } from "../../../helpers/webapp-page";
  *  4. Active item has aria-current="page" and is still clickable.
  *  5. Item without explicit action defaults action to label.
  *  6. All items emit click event (no positional selectivity — last item clickable too).
- *  7. Empty items array renders without crashing.
+ *  7. Empty items array → sl-breadcrumb with zero items (sibling still renders).
  *
  * See tests/e2e/nodes/view/ui-breadcrumb.tests.md for the test catalogue.
  */
@@ -183,7 +183,7 @@ test.describe("ui-breadcrumb (P95)", () => {
     });
 
     // ── 7. Empty items ──────────────────────────────────────────────────────
-    test("empty items array renders without crashing", async ({ page, request }) => {
+    test("empty items array → sl-breadcrumb with zero items (sibling still renders)", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "bcEmp1", root: "bcEmp1" })
             .node("ui-breadcrumb", { id: "bcEmpNode1", items: [] })
@@ -194,7 +194,12 @@ test.describe("ui-breadcrumb (P95)", () => {
 
         const webapp = new WebappPage(page, "bcEmp1");
         await webapp.navigate("/");
-        await expect(webapp.root()).toBeVisible();
+        // Outcome: the breadcrumb container is rendered but carries NO items, and
+        // the sibling text still renders (empty items neither drop the element nor
+        // break the surrounding layout). Goes red if empty items emit stray items
+        // or break the render.
         await expect(page.locator("sl-breadcrumb")).toHaveCount(1);
+        await expect(page.locator("sl-breadcrumb sl-breadcrumb-item")).toHaveCount(0);
+        await expect(webapp.root()).toContainText("Sibling");
     });
 });

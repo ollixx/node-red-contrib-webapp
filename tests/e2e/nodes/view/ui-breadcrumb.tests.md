@@ -36,4 +36,4 @@ Per-node test catalogue as required by `.ai/agents/node-testing.md`.
 | active item has aria-current=page in DOM and is still clickable | Active item: DOM + clickability |
 | item without explicit action: label is used as action | Default action fallback |
 | last item is also clickable (no positional selectivity in P95) | P95 key contract: all items clickable |
-| empty items array renders without crashing | Robustness: empty state |
+| empty items array → sl-breadcrumb with zero items (sibling still renders) | Empty items emit the container with zero `sl-breadcrumb-item`; sibling text still renders |
