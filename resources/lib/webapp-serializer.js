@@ -808,9 +808,17 @@
             // mode=datetime → type="datetime-local", mode=time → type="time", default → type="date"
             const mode = component.props.mode;
             const inputType = mode === "datetime" ? "datetime-local" : mode === "time" ? "time" : "date";
+            // P149/P237 (ADR 0012): `placeholder` is a bindable value — the renderer
+            // resolves a state/store binding into component.props.placeholder. Emit it
+            // as the sl-input `placeholder` attribute when present (empty/undefined →
+            // omitted), mirroring ui-input / ui-select.
+            const placeholderValue = component.props.placeholder;
+            const placeholder = placeholderValue !== undefined && placeholderValue !== null && String(placeholderValue).length > 0
+                ? " placeholder=\"" + escapeAttribute(String(placeholderValue)) + "\""
+                : "";
             const attrs = shoelaceAttrs(mapComponentToShoelace("datepicker", component.props || {}).attributes);
             return wrapRenderedComponentHtml(component, layoutId, "<sl-input" + attrs + " type=\"" + inputType + "\" label=\"" + escapeAttribute(label)
-                + "\" name=\"" + escapeAttribute(name) + "\" value=\"" + escapeAttribute(value) + "\"" + disabled + "></sl-input>");
+                + "\" name=\"" + escapeAttribute(name) + "\" value=\"" + escapeAttribute(value) + "\"" + placeholder + disabled + "></sl-input>");
         }
 
         if (component.kind === "slider") {
