@@ -14,8 +14,8 @@ tests: tests/e2e/nodes/view/ui-image.tests.md
 > das per-Knoten-Audit fand **dasselbe** wiederholt: ein Feld, das laut Schema
 > **und Editor** bindbar ist (`z.union([bindingSchema, z.string()])`, typedInput
 > mit `valueBindingTypes`), wird in der Spec noch als reines „Textfeld" bzw.
-> ausdrücklich „kein Binding" beschrieben. Das verletzt **[ADR 0012](../../../adr/0012-binding-ubiquity-every-value-field-offers-bindings.md)**
-> (Binding-Ubiquität) und die [Feld-Konventionen](../../../nodes/concepts/field-conventions.md).
+> ausdrücklich „kein Binding" beschrieben. Das verletzt **[ADR 0012](../../../../adr/0012-binding-ubiquity-every-value-field-offers-bindings.md)**
+> (Binding-Ubiquität) und die [Feld-Konventionen](../../../../nodes/concepts/field-conventions.md).
 > Gebündelt fixen, **nicht** pro Knoten. Kein neuer ADR — Muster 4 setzt eine
 > bereits getroffene Entscheidung durch (ADR 0012), analog zu P232/P233.
 
