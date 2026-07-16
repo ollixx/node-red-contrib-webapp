@@ -2,7 +2,7 @@
 id: P233
 title: "Node-Konformität (Sweep): verbotene „renders without crashing\"-Tests durch echte Outcome-Assertions ersetzen — ~12 Knoten"
 epic: aspects/node-conformance
-status: pending
+status: in_progress
 dependencies: []
 verify: browser
 spec: .ai/agents/node-testing.md
