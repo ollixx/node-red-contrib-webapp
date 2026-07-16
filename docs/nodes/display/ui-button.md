@@ -33,11 +33,28 @@ typedInput, Variant-SelectBox, Mount-Baum, Layout-Child-Props).
 | `name` | „Name" | Textfeld | optional | Anzeigename im Editor und in Auswahllisten. Default: fortlaufend `Button N`. |
 | `mount` | „Parent Slot" | Mount-Baum (Node-Picker-Dialog) | **ja** | Slot-Pfad des Parents (`<type>:<id>/<slot>`). Bestimmt die sichtbaren Layout-Child-Props (Gruppe „Platzierung"). |
 
+#### Basis-Felder (ADR 0015 — gemeinsame Feld-Gruppe)
+
+`ui-button` rendert die gemeinsame Basis-Feld-Gruppe über `installBaseFields(config)`
+(siehe [editor.md](../concepts/editor.md), Abschnitt „Basis-Felder + Editor-Struktur").
+Anwendbarkeit für den Button: `visible` + `variant` aktiv; `disabled` und `size`
+haben eigene dedizierte Controls (deshalb `omit`, siehe Gruppen „Inhalt" /
+„Darstellung"); `color` ist **nicht** anwendbar (die Button-Farbe wird über
+`variant` ausgedrückt — „variant = Farbe"-Konvention).
+
+| Feld | Label | Editor-Typ | Anwendbar | Beschreibung |
+|---|---|---|---|---|
+| `visible` | „Visible" | Boolean-Zustand-typedInput (ADR-0012-Boolean-Satz) | ja | Sichtbarkeit; leer = sichtbar (Default). Persistiert als Binding-Objekt und wird zur Laufzeit als `visibleIf` ausgewertet (Render-Gate): `false` ⇒ der Button wird nicht gerendert. Dynamisches Zustandsmodell: [ADR 0037](../../adr/0037-unified-dynamic-state-fields-one-value-many-writers.md). |
+| `disabled` | „Deaktiviert" | dediziertes typedInput (Boolean-Satz) | ja | Interaktiver Zustand — über das eigene Control in Gruppe „Inhalt" (deshalb aus der Basis-Gruppe `omit`). Siehe dort. |
+| `color` | „Color" | — (N/A) | **nein** | Die Button-Farbe wird über `variant` (semantische Rolle) gesetzt, nicht über ein allgemeines `color`-Feld — daher ist `color` für den Button nicht aktiv. |
+| `size` | „Size" | dedizierte Size-SelectBox | ja | Dreistufige Größe — über das eigene Control in Gruppe „Darstellung" (deshalb aus der Basis-Gruppe `omit`). Siehe dort. |
+| `variant` | „Variante" | Variant-SelectBox (`BUTTON_VARIANTS`) | ja | Semantische Rolle **und Farbe** des Buttons — siehe Gruppe „Darstellung". |
+
 ### Gruppe „Inhalt"
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `label` | „Label" | Textfeld | **ja** | Beschriftung des Buttons. Darf nicht leer sein. Statischer String; kein typedInput. |
+| `label` | „Label" | Wert-typedInput (voller Binding-Satz, ADR 0012) | **ja** | Beschriftung des Buttons. **Volles Wert-Binding** (nicht bloß ein statischer String): ein Literal (`{ kind: "literal", value: … }`) ODER ein dynamisches Binding (Store / Query / Route-Param / Reactive / msg / JSONata / Flow / Global / Env). Der typedInput lebt direkt auf `#node-input-label`; ein Legacy-Plain-String wird beim Öffnen als `literal` migriert. Validierung über `validateValueBindingField`. Als Literal darf das Label nicht leer sein. |
 | `icon` | „Icon" | Textfeld + Icon-Picker (P69) | optional | Backend-neutraler Icon-Wert `{ library, name }` (bzw. `library:name`, Default-Library bei nacktem Namen), gerendert im Prefix-Slot des Buttons. Bindbar (literal via Picker ODER dynamisch). Details: [ui-icon.md](./ui-icon.md). |
 | `disabled` | „Deaktiviert" | typedInput (alle Binding-Arten) | optional | Bindbare boolesche Bedingung. Ist der aufgelöste Wert `true`, ist der Button deaktiviert und emittiert keine Click-Events. |
 
