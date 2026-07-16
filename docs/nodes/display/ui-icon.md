@@ -32,6 +32,21 @@ Layout-Child-Props).
 | `name` | „Name" | Textfeld | optional | Anzeigename im Editor und in Auswahllisten. Default: fortlaufend `Icon N`. |
 | `mount` | „Parent Slot" | Mount-Baum (Node-Picker-Dialog) | **ja** | Slot-Pfad des Parents (`<type>:<id>/<slot>`). Bestimmt die sichtbaren Layout-Child-Props (Gruppe „Platzierung"). |
 
+#### Basis-Felder (P231, ADR 0015 — Schema + Runtime)
+
+`ui-icon` mischt die gemeinsame Basis-Feld-Gruppe über
+`installBaseFields(config)` ein (siehe [editor.md](../concepts/editor.md),
+Abschnitt „Basis-Felder + Editor-Struktur"). Der Knoten führt für `color` und
+`size` **eigene** Controls (Gruppen „Darstellung"), daher blendet er diese beiden
+aus dem Basis-Satz aus (`omit`); `disabled` ist N/A:
+
+| Feld | Label | Editor-Typ | Anwendbar | Beschreibung |
+|---|---|---|---|---|
+| `visible` | „Visible" | Boolean-Zustand-typedInput (ADR-0012-Boolean-Satz) | ja | Sichtbarkeit; leer = sichtbar (Default). Persistiert als Binding-Objekt und wird zur Laufzeit als `visibleIf` ausgewertet (Render-Gate): `false` ⇒ das Icon wird nicht gerendert. Dynamisches Zustandsmodell (Binding vs. interner Wert, msg/Duration/Aktionen): [ADR 0037](../../adr/0037-unified-dynamic-state-fields-one-value-many-writers.md). |
+| `disabled` | „Disabled" | — (N/A) | **nein** | Ein Icon hat keinen interaktiven Zustand — Feld wird disabled mit diesem Hinweis angezeigt. |
+| `color` | „Color" | — (eigenes Control, „Darstellung") | **eigen** | Farbe des Icons — als **eigenes** Feld (Plain-CSS-Wert) unter „Darstellung" geführt, nicht über den Basis-Satz. |
+| `size` | „Size" | — (eigenes Control, „Darstellung") | **eigen** | Größe des Icons — als **eigenes** Token-SelectBox unter „Darstellung" geführt, nicht über den Basis-Satz. |
+
 ### Gruppe „Inhalt"
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
