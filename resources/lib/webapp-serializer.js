@@ -902,10 +902,70 @@
         }
 
         if (component.kind === "progress") {
-            const value = component.value === undefined || component.value === null ? 0 : Number(component.value);
-            const label = component.props.label ? " label=\"" + escapeAttribute(String(component.props.label)) + "\"" : "";
-            const attrs = shoelaceAttrs(mapComponentToShoelace("progress", component.props || {}).attributes);
-            return wrapRenderedComponentHtml(component, layoutId, "<sl-progress-bar" + attrs + " value=\"" + escapeAttribute(String(value)) + "\"" + label + "></sl-progress-bar>");
+            // P234: ui-progress conformance. Three display forms + indeterminate +
+            // showValue + max scaling. Everything derives from the resolved props:
+            //   displayType  "bar" (Default) | "spinner" | "circular"
+            //   value        resolved binding (number). Missing/null/NaN → indeterminate
+            //   max          upper bound of the range (Default 100; non-positive → 100)
+            //   showValue    render the percentage (relative to max) as visible text
+            //   label        a11y label + visible fallback text (when showValue off)
+            //   color        base-field colour → Shoelace `--indicator-color` (fill)
+            const props = component.props || {};
+            const displayType = props.displayType ? String(props.displayType) : "bar";
+
+            // Base-field `color` colours the fill/indicator. All three Shoelace
+            // progress elements (sl-progress-bar / sl-progress-ring / sl-spinner)
+            // expose the indicator colour as the `--indicator-color` custom property.
+            const progressColor = resolveColorValue(props.color);
+            const colorStyle = progressColor ? " style=\"--indicator-color:" + escapeAttribute(progressColor) + "\"" : "";
+
+            // `label` is the a11y label (attribute) and, when showValue is off, the
+            // visible slot text (P137: resolved value, literal or bound).
+            const labelText = (props.label === undefined || props.label === null) ? "" : String(props.label);
+            const labelAttr = labelText ? " label=\"" + escapeAttribute(labelText) + "\"" : "";
+
+            // Determinate value + max scaling. hasValue is false for undefined/null/
+            // empty-string/NaN → indeterminate (NOT value 0).
+            const rawValue = component.value;
+            const hasValue = !(rawValue === undefined || rawValue === null
+                || (typeof rawValue === "string" && rawValue.trim() === "")
+                || Number.isNaN(Number(rawValue)));
+            const maxNum = (props.max === undefined || props.max === null
+                || Number.isNaN(Number(props.max)) || Number(props.max) <= 0)
+                ? 100 : Number(props.max);
+            let percent = 0;
+            if (hasValue) {
+                percent = (Number(rawValue) / maxNum) * 100;
+                if (percent < 0) { percent = 0; }
+                if (percent > 100) { percent = 100; }
+            }
+            const percentValue = Math.round(percent);
+            const showValue = props.showValue === true;
+
+            // displayType "spinner" → always the indeterminate Shoelace spinner
+            // (no value bar, showValue ignored — a spinner has no percentage).
+            if (displayType === "spinner") {
+                return wrapRenderedComponentHtml(component, layoutId, "<sl-spinner" + labelAttr + colorStyle + "></sl-spinner>");
+            }
+
+            // No value → indeterminate. A bar animates endlessly (Shoelace
+            // `indeterminate` attribute); a circular has no indeterminate mode, so
+            // the indeterminate circular loader IS a spinner. showValue is ignored.
+            if (!hasValue) {
+                if (displayType === "circular") {
+                    return wrapRenderedComponentHtml(component, layoutId, "<sl-spinner" + labelAttr + colorStyle + "></sl-spinner>");
+                }
+                return wrapRenderedComponentHtml(component, layoutId, "<sl-progress-bar indeterminate" + labelAttr + colorStyle + "></sl-progress-bar>");
+            }
+
+            // Determinate: slot text is the percentage when showValue is on, else the
+            // resolved label (visible), else empty.
+            const slotText = showValue ? (percentValue + "%") : escapeHtml(labelText);
+            const valueAttr = " value=\"" + escapeAttribute(String(percentValue)) + "\"";
+            if (displayType === "circular") {
+                return wrapRenderedComponentHtml(component, layoutId, "<sl-progress-ring" + valueAttr + labelAttr + colorStyle + ">" + slotText + "</sl-progress-ring>");
+            }
+            return wrapRenderedComponentHtml(component, layoutId, "<sl-progress-bar" + valueAttr + labelAttr + colorStyle + ">" + slotText + "</sl-progress-bar>");
         }
 
         if (component.kind === "breadcrumb") {
