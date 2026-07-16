@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P236** — aspects/node-conformance — Konformitäts-Pass **ui-button**: Label-Spec-Drift + fehlende Tests (label-Binding/icon/color/visible/msg) — *Owner 2026-07-16; node-conformance* — [P236](aspects/node-conformance/P236-conformance-ui-button.md)
 - **P237** — aspects/node-conformance — Sweep **Muster 4**: bindbares Feld als „statischer String / kein Binding" fehl-dokumentiert (datepicker `placeholder` / slider `label` / image `alt`+`fallbackSrc`) + Guardrail — *Owner 2026-07-16; node-conformance* — [P237](aspects/node-conformance/P237-binding-doc-drift-sweep.md)
 
 
@@ -92,7 +91,7 @@ open the folder for the full history.
 | nodes/ui-accordion | 2 |
 | nodes/ui-breadcrumb · ui-dialog · ui-progress · ui-skeleton | 1 each |
 | aspects/test-infra | 28 |
-| aspects/node-conformance | 5 |
+| aspects/node-conformance | 6 |
 | aspects/misc | 16 |
 | aspects/docs | 1 |
 | aspects/runtime | 9 |
@@ -104,4 +103,4 @@ open the folder for the full history.
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 231 done, 1 open, 12 deferred.**
+**Total: 232 done, 1 open, 12 deferred.**

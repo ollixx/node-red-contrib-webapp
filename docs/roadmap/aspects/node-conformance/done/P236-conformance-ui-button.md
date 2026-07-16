@@ -3,7 +3,7 @@ id: P236
 node: ui-button
 title: "Konformitäts-Pass ui-button — Label-Spec-Drift + fehlende Tests (label-Binding/icon/color/visible/msg)"
 epic: aspects/node-conformance
-status: in_progress
+status: done
 dependencies: []
 verify: browser
 spec: docs/nodes/display/ui-button.md
@@ -11,7 +11,7 @@ tests: tests/e2e/nodes/view/ui-button.tests.md
 ---
 # P236 — Konformitäts-Pass ui-button
 
-> Ablauf/Checkliste: [epic.md](epic.md). Cross-Cutting: Hilfe-Link → **P232**,
+> Ablauf/Checkliste: [epic.md](../epic.md). Cross-Cutting: Hilfe-Link → **P232**,
 > No-Crash → **P233** (bei ui-button keiner gefunden), `disabledPath`-Legacy →
 > **P229** (nicht hier).
 
@@ -73,3 +73,18 @@ color (gemessen), visible-Gate, href-Binding, msg.payload ergänzen; Katalog akt
 
 1. Spec: label-Binding-Korrektur; Base-Fields dokumentieren.
 2. Tests: label-Binding, icon, color, visible, href-Binding, msg.payload.
+
+## Result
+
+**Delivered.** ui-button Konformitäts-Pass (leicht) — Spec-Drift gefixt + gemessene Tests; jede Assertion vom Agent EMPIRISCH gegen ein Wegwerf-Node-RED verifiziert (nicht geraten).
+- **Spec** `docs/nodes/display/ui-button.md`: `label`-Drift korrigiert (voller Wert-Binding, nicht „statischer String"); Basis-Felder-Sub-Abschnitt (`visible` Render-Gate + `variant` aktiv; `disabled`/`size` eigene Controls; `color` N/A — Farbe via `variant`).
+- **Tests** (12 bestehende unberührt): Working-Feature-Tests grün (label Store-Binding live via SSE, icon im Prefix-Slot, href Store-Binding). Katalog aktualisiert.
+
+**Konformitäts-Ertrag — 2 ECHTE Bugs aufgedeckt (Gap-Locks: Tests asserten das reale kaputte Verhalten, KEIN Fake-Grün; „flip on fix"):**
+1. **`visible`-Render-Gate ungenwired für ui-button (GAP, breit)** — `toComponentDefinitions` behandelt ui-button (und weitere hand-branched Knoten: input/select/table/…) in EIGENEN Zweigen VOR dem generischen `p16Kind`-Block (der `visible→visibleIf` verdrahtet). Diese Zweige verdrahten `visibleIf` NICHT (0 Vorkommen im Special-Branch-Bereich). Ein gebundenes `visible=false` wird verworfen → Knoten rendert immer. **P231s „visible wirkt überall" ist für hand-branched Knoten unvollständig.** → eigene Fix-Phase (Scope-Audit nötig).
+2. **`msg.payload`→`label` erreicht den Snapshot nicht** — `computeLiveViewPatch` listet `label` nicht unter den getragenen Feldern; msg-getriebene Label-Updates gehen verloren (mit ui-text-Control bewiesen). → eigene Fix-Phase.
+`color`-N/A ist KEIN Bug (by design). Beide Gaps als Task-Chips herausgelöst.
+
+**Verify (browser, gemessen — Haupt-Checkout).** `tests/e2e/nodes/view/ui-button.spec.ts` **18 passed** (12 alt + Working-Features + Gap-Locks). `check:specs`/`check:fields`/`check:help`/`check:no-crash`/`check:roundtrip`/`check:links`/`pnpm validate` grün.
+
+**Cost.** Sub-Agent `phase/P236` (worktree), ~16 min (empirisch verifiziert); Orchestrator-E2E + Scope-Analyse Gap A. Token-Zeile in `.ai/agent-runs.jsonl`.
