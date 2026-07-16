@@ -40,3 +40,12 @@
 | ID  | Testziel |
 |-----|----------|
 | W01 | `value=store(x).vol` UND `writeTo=store(x).vol`: Ziehen (`sl-change`, `value="73"`) schreibt per-client in den Store; ein ZWEITER an `store(x).vol` gebundener `ui-text` zeigt live (SSE, Textinhalt `10`→`73`), ohne function-Knoten. Slider hat keine Submit-Geste → schreibt bei `change` unabhängig vom `writeTrigger`; Sondermodell: Wert als numerischer String. |
+
+## P237 — label Binding-Auflösung (Muster 4, ADR 0012)
+
+Unit (`packages/runtime/test/p237-slider-label-binding.test.ts`):
+
+| ID  | Testziel |
+|-----|----------|
+| B01 | state-gebundenes `label` → `sl-range[label]` = aufgelöster Wert (renderer→serializer); rot, wenn die Auflösung bricht. |
+| B02 | Der rohe Binding-Pfad (`form.lbl`) leakt nicht ins `label`-Attribut; kein `[object Object]`. |

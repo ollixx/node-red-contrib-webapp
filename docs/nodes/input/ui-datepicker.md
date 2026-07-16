@@ -45,7 +45,7 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 | `mode` | „Mode" | SelectBox (`date` / `datetime` / `time`) | optional | Eingabe-Modus. `date` = nur Datum; `datetime` = Datum und Uhrzeit; `time` = nur Uhrzeit. Default: `date`. |
 | `min` | „Min" | Textfeld (`YYYY-MM-DD`) | optional | Frühestes erlaubtes Datum. Tage vor diesem Datum werden im Kalender deaktiviert und können nicht gewählt werden. |
 | `max` | „Max" | Textfeld (`YYYY-MM-DD`) | optional | Spätestes erlaubtes Datum. Tage nach diesem Datum werden im Kalender deaktiviert und können nicht gewählt werden. |
-| `placeholder` | „Placeholder" | Textfeld | optional | Platzhaltertext, der angezeigt wird, wenn kein Datum gewählt ist. |
+| `placeholder` | „Placeholder" | typedInput (alle Binding-Arten) | optional | Platzhaltertext, der angezeigt wird, wenn kein Datum gewählt ist. Unterstützt alle Binding-Arten: `literal`, `state`, `store`, `query`, `routeParam`, `msg`, `flow`, `global`, `jsonata`, `env`. |
 | `disabled` | „Disabled" | typedInput (alle Binding-Arten) | optional | Bindbare Bedingung, die das Feld deaktiviert (Nutzerinteraktion gesperrt). |
 
 ### Gruppe „Platzierung"

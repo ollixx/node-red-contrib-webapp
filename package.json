@@ -91,8 +91,9 @@
         "check:fields": "node scripts/check-fields.js",
         "check:help": "node scripts/check-help.js",
         "check:no-crash": "node scripts/check-no-crash.js",
-        "test:specs": "vitest run scripts/check-specs.test.ts scripts/check-roundtrip.test.ts scripts/check-fields.test.ts scripts/check-help.test.ts scripts/check-no-crash.test.ts",
-        "validate": "pnpm check:roadmap && pnpm check:links && pnpm check:specs && pnpm check:roundtrip && pnpm check:fields && pnpm check:help && pnpm check:no-crash && pnpm lint && pnpm test && pnpm test:specs && pnpm build",
+        "check:binding-docs": "node scripts/check-binding-docs.js",
+        "test:specs": "vitest run scripts/check-specs.test.ts scripts/check-roundtrip.test.ts scripts/check-fields.test.ts scripts/check-help.test.ts scripts/check-no-crash.test.ts scripts/check-binding-docs.test.ts",
+        "validate": "pnpm check:roadmap && pnpm check:links && pnpm check:specs && pnpm check:roundtrip && pnpm check:fields && pnpm check:help && pnpm check:no-crash && pnpm check:binding-docs && pnpm lint && pnpm test && pnpm test:specs && pnpm build",
         "test:showcase": "SHOWCASE=1 playwright test",
         "show-report": "playwright show-report"
     },

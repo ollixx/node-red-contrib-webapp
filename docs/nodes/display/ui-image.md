@@ -41,8 +41,8 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
 | `src` | „Src" | typedInput (Binding) | **ja** | URL des Bildes. Bindbar über alle Standard-Binding-Arten: `literal` (statische URL), `state` (State-Pfad), `query` (Query-Pfad), `routeParam` (Routenparameter-Name), `store` (Store-Picker), `msg`/`flow`/`global`/`jsonata`/`env` sowie **`asset`** (verwaltetes Medium). Der `asset`-Typ öffnet den Media-Picker (Durchsuchen/Upload) und speichert die Auswahl als `literal` `asset:<id>`; sie wird zur Laufzeit über den Backend-Proxy der App aufgelöst (`ui-app.mediaStoreUrl`). Binding-Arten: [stores.md](../concepts/stores.md). |
-| `alt` | „Alt Text" | Textfeld | optional | Alternativer Text für Barrierefreiheit (`alt`-Attribut). Sollte bei inhaltlich relevanten Bildern gesetzt sein; für rein dekorative Bilder leer lassen. |
-| `fallbackSrc` | „Fallback URL" | Textfeld | optional | Statische URL, die angezeigt wird, wenn das Laden der `src` fehlschlägt. Kein Binding — muss eine zur Deploy-Zeit bekannte URL sein. |
+| `alt` | „Alt Text" | typedInput (Binding) | optional | Alternativer Text für Barrierefreiheit (`alt`-Attribut). Sollte bei inhaltlich relevanten Bildern gesetzt sein; für rein dekorative Bilder leer lassen. Bindbar über alle Standard-Binding-Arten: `literal`, `state`, `store`, `query`, `routeParam`, `msg`, `flow`, `global`, `jsonata`, `env`. |
+| `fallbackSrc` | „Fallback URL" | typedInput (Binding) | optional | URL, die angezeigt wird, wenn das Laden der `src` fehlschlägt. Bindbar über alle Standard-Binding-Arten: `literal` (statische URL als ein Fall), `state`, `store`, `query`, `routeParam`, `msg`, `flow`, `global`, `jsonata`, `env`. Der Editor-typedInput-Carrier heißt `fallback` (persistiert das Binding-Objekt); mapConfig bildet ihn auf das Definitionsfeld `fallbackSrc` ab. |
 | `width` | „Width" | Textfeld | optional | Breite der Bildkomponente. Ganzzahl (Pixel) oder CSS-String (z. B. `"100%"`, `"12rem"`). Fehlt das Feld, bestimmt das Parent-Layout die Breite. |
 | `height` | „Height" | Textfeld | optional | Höhe der Bildkomponente. Ganzzahl (Pixel) oder CSS-String. Fehlt das Feld, ergibt sich die Höhe aus dem natürlichen Seitenverhältnis des Bildes bzw. dem Parent-Layout. |
 | `fit` | „Fit" | SelectBox | optional | Object-Fit-Modus: `contain` (Bild vollständig sichtbar, Leerraum möglich), `cover` (Bild füllt den Bereich, ggf. abgeschnitten), `fill` (Strecken auf den Bereich), `none` (Originalgröße). Default: Browser-Default (`fill`). |
@@ -105,9 +105,11 @@ das Bild selbst. Details: [theming.md](../concepts/theming.md).
 
 ## Besonderheiten
 
-- **Fallback-URL ist statisch.** `fallbackSrc` ist kein Binding, sondern eine
-  zur Deploy-Zeit feststehende URL. Dynamische Fallbacks sind über das allgemeine
-  `fallback`-Feld des Binding-Objekts erreichbar.
+- **Fallback-URL ist bindbar (ADR 0012).** `fallbackSrc` unterstützt alle
+  Standard-Binding-Arten. Ein `literal` ist der statische Fall (eine
+  zur Deploy-Zeit feststehende URL); `state`/`store`/`query`/… liefern die
+  Fallback-URL dynamisch. Der Renderer löst das Binding auf und trägt die
+  resultierende URL in den `onerror`-Handler des `<img>` ein.
 - **Dimensionsangaben sind flexibel.** `width` und `height` akzeptieren Ganzzahlen
   (Pixel) oder CSS-Strings. Das erlaubt responsive Angaben (`"100%"`, `"50vw"`)
   neben absoluten Werten.

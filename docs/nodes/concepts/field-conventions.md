@@ -97,6 +97,27 @@ migriert".
 Der Vertrag ist Regel-für-Regel durch `scripts/check-fields.test.ts` bewiesen
 (konform → grün, je Regel ein Verstoß → rot, allowlisted → grün).
 
+## Der Tripwire `pnpm check:binding-docs`
+
+Ein **bindbares Feld wird in seiner Spec als bindbar dokumentiert** — nie als
+statisches „Textfeld" bzw. mit „kein Binding" / „nicht bindbar" (ADR 0012,
+Binding-Ubiquität). `scripts/check-binding-docs.js` (P237) ist **read-only** und
+in `pnpm validate` + `pnpm test:specs` eingehängt. Er liest die **Schema-Wahrheit**
+(`packages/schema/src/node-definitions.ts`): ist ein Feld binding-fähig (Union mit
+`bindingSchema` bzw. direktes `bindingSchema`; das `writeToBindingSchema` der
+Schreib-Hälfte zählt bewusst **nicht**) und hat es eine Zeile in der
+kanonischen „Felder"-Tabelle der Spec, deren „Editor-Typ"-Spalte „Textfeld" sagt
+(oder deren Text „kein Binding"/„nicht bindbar" behauptet), meldet er
+**Knoten + Feld**. Felder ohne eigene Feldzeile (die zentral dokumentierten
+Basis-Felder `visible`/`disabled`/`color`) werden nicht geprüft.
+
+**Allowlist-Semantik.** Wie bei `check:fields`: jeder Eintrag schwächt genau ein
+`(Knoten, Feld)`-Paar und braucht eine ADR-Begründung; die Liste ist schrumpfend.
+P237 fixte seine vier Ziel-Felder (nie allowlisted); die vom Guardrail zusätzlich
+entdeckte Muster-4-Drift anderer Knoten ist an deren eigene Konformitäts-Pässe
+delegiert (kein Doppelfix). Der Vertrag ist durch `scripts/check-binding-docs.test.ts`
+bewiesen.
+
 ---
 
 ## Audit-Referenz

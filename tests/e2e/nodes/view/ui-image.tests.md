@@ -47,3 +47,14 @@ Per `.ai/agents/node-testing.md`. Written fresh for P99.
 
 - `packages/runtime/test/p70-image-payload.test.ts` — `payloadToImageSrc()` function:
   Buffer→data: conversion, JPEG/PNG/WEBP sniffing, contentType hint, fallback image/png.
+
+## P237 — alt / fallbackSrc Binding-Auflösung (Muster 4, ADR 0012)
+
+Unit (`packages/runtime/test/p237-image-alt-fallback-binding.test.ts`):
+
+| Test | Goal |
+|---|---|
+| state-bound `alt` → `<img alt>` = resolved value | A `state` binding on `alt` is resolved (renderer→serializer) and rendered as the `alt` attribute; red if resolution breaks. |
+| alt path string never leaks | Raw binding path (`form.altText`) absent from markup; no `[object Object]`. |
+| state-bound `fallbackSrc` → `onerror` fallback URL = resolved value | A `state` binding on `fallbackSrc` is resolved and carried into the `<img>` `onerror` handler. |
+| fallbackSrc path string never leaks | Raw binding path (`form.fb`) absent from the `onerror` handler. |

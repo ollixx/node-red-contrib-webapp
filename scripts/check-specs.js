@@ -146,7 +146,12 @@ const FIELD_ALLOWLIST = {
     // until the code catches up. (The MISSING direction — undocumented CODE fields —
     // stays strict; that is the high-value drift this tripwire guards.)
     "ui-image": {
-        fallbackSrc: "spec-ahead: planned static fallback URL; code today carries `fallback`",
+        // P151/P237: `fallbackSrc` is the DEFINITION field (schema union with
+        // bindingSchema); its editor typedInput CARRIER is named `fallback`
+        // (persists the binding object), which mapConfig maps to `fallbackSrc`.
+        // The spec documents the definition field `fallbackSrc` and names the
+        // `fallback` carrier in that row (carrier relabel, like ui-avatar image→src).
+        fallbackSrc: "editor carrier is `fallback`; mapConfig maps it to the `fallbackSrc` definition field",
     },
     "ui-input": {
         placeholder: "spec-ahead: planned placeholder field, not yet in node defaults",
