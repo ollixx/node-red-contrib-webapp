@@ -12,8 +12,8 @@ tests: tests/e2e/nodes/view/ui-progress.tests.md
 # P234 — Konformitäts-Pass ui-progress
 
 > Ablauf/Checkliste: [epic.md](../epic.md). Cross-Cutting-Anteile: Hilfe-Doku-Link →
-> **[P232](done/P232-help-doc-links-sweep.md)**, „renders without crashing"-Test →
-> **[P233](done/P233-remove-no-crash-tests-sweep.md)** (hier nicht duplizieren).
+> **[P232](P232-help-doc-links-sweep.md)**, „renders without crashing"-Test →
+> **[P233](P233-remove-no-crash-tests-sweep.md)** (hier nicht duplizieren).
 
 ## findings (Audit 2026-07-14)
 
