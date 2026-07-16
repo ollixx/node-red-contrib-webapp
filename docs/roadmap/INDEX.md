@@ -29,6 +29,7 @@ their blocker clears.
 
 - **P234** — aspects/node-conformance — Konformitäts-Pass **ui-progress**: Spec-Drift/Base-Fields-Doku, Akzeptanz, Testabdeckung neu — *Owner 2026-07-16; node-conformance* — [P234](aspects/node-conformance/P234-conformance-ui-progress.md)
 - **P235** — aspects/node-conformance — Konformitäts-Pass **ui-icon**: visible-Doku + Testabdeckung (icon-Binding/color/visible/msg) — *Owner 2026-07-16; node-conformance* — [P235](aspects/node-conformance/P235-conformance-ui-icon.md)
+- **P236** — aspects/node-conformance — Konformitäts-Pass **ui-button**: Label-Spec-Drift + fehlende Tests (label-Binding/icon/color/visible/msg) — *Owner 2026-07-16; node-conformance* — [P236](aspects/node-conformance/P236-conformance-ui-button.md)
 
 
 ## Deferred (parked, not abandoned)
