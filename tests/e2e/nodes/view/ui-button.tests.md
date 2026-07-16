@@ -83,7 +83,7 @@ All tests run against the live Node-RED E2E instance.
 | Test | Goal |
 |---|---|
 | renders sl-button in DOM with label text | End-to-end: sl-button with label is visible in browser |
-| default state (no label) → sl-button label falls back to the node id | Node-id fallback for the label is rendered when no label is set |
+| default-configured button renders its label text (sl-button, not empty) | Der gerenderte `sl-button` trägt seinen Label-Text (Default „Button"); rot wenn das Label-Binding das Element nicht erreicht |
 
 ### Variant
 
