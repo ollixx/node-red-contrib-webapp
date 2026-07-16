@@ -3,7 +3,7 @@ id: P236
 node: ui-button
 title: "Konformitäts-Pass ui-button — Label-Spec-Drift + fehlende Tests (label-Binding/icon/color/visible/msg)"
 epic: aspects/node-conformance
-status: pending
+status: in_progress
 dependencies: []
 verify: browser
 spec: docs/nodes/display/ui-button.md

@@ -28,6 +28,7 @@ their blocker clears.
 ## Open work (pending / in_progress)
 
 - **P236** — aspects/node-conformance — Konformitäts-Pass **ui-button**: Label-Spec-Drift + fehlende Tests (label-Binding/icon/color/visible/msg) — *Owner 2026-07-16; node-conformance* — [P236](aspects/node-conformance/P236-conformance-ui-button.md)
+- **P237** — aspects/node-conformance — Sweep **Muster 4**: bindbares Feld als „statischer String / kein Binding" fehl-dokumentiert (datepicker `placeholder` / slider `label` / image `alt`+`fallbackSrc`) + Guardrail — *Owner 2026-07-16; node-conformance* — [P237](aspects/node-conformance/P237-binding-doc-drift-sweep.md)
 
 
 ## Deferred (parked, not abandoned)
