@@ -3,7 +3,7 @@ id: P238
 node: ui-icon
 title: "`color`-Standard-Control: Theme-Token + Color-Selector + Binding im Base-Field-Helper; ui-icon-Override entfernt"
 epic: aspects/editor
-status: pending
+status: in_progress
 dependencies: []
 verify: browser
 spec: docs/nodes/display/ui-icon.md
