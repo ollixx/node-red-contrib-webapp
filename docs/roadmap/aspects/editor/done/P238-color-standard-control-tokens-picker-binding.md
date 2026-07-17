@@ -3,7 +3,7 @@ id: P238
 node: ui-icon
 title: "`color`-Standard-Control: Theme-Token + Color-Selector + Binding im Base-Field-Helper; ui-icon-Override entfernt"
 epic: aspects/editor
-status: in_progress
+status: done
 dependencies: []
 verify: browser
 spec: docs/nodes/display/ui-icon.md
@@ -11,10 +11,10 @@ tests: tests/e2e/nodes/view/ui-icon.tests.md
 ---
 # P238 — `color`-Standard-Control (Token + Picker + Binding) + ui-icon angleichen
 
-> Rationale: **[ADR 0039](../../../adr/0039-colour-field-model-color-is-tokens-plus-any-colour-variant-is-the-reduction.md)**
-> §1 + §4. Verfeinert [ADR 0015](../../../adr/0015-common-base-fields-and-editor-structure.md)
+> Rationale: **[ADR 0039](../../../../adr/0039-colour-field-model-color-is-tokens-plus-any-colour-variant-is-the-reduction.md)**
+> §1 + §4. Verfeinert [ADR 0015](../../../../adr/0015-common-base-fields-and-editor-structure.md)
 > (Base-Fields; `color` generell, `variant` node-spezifisch, wechselseitig exklusiv)
-> unter [ADR 0012](../../../adr/0012-binding-ubiquity-every-value-field-offers-bindings.md).
+> unter [ADR 0012](../../../../adr/0012-binding-ubiquity-every-value-field-offers-bindings.md).
 
 ## findings
 
@@ -115,3 +115,78 @@ die Plain-String-Migration.
   aufgelöst wird — genau das Muster für `token:<name>`.
 - ui-icon rendert `color` heute als inline `style="color:…"` (in P235 per computed
   style gemessen) — dort setzt die Token-Auflösung an.
+
+## Result
+
+**Done 2026-07-17.** Alle Akzeptanzpunkte erfüllt und **gemessen** (nicht per Klasse/Tag).
+
+### Was landete
+
+- **Ein Control, drei Wege** im geteilten `installBaseFields`
+  (`resources/lib/editor-common.js`): Theme-Token (eigener typedInput-Typ,
+  persistiert als `token:<name>` nach der `asset:`-Präzedenz), Color-Selector
+  (freie Farbe), plus der unveränderte kanonische Binding-Satz (ADR 0012).
+- **ui-icon-Override entfernt**: das Schema-Override `color: z.string()` **und**
+  der `omit:["color"]`-Opt-out sind weg; ui-icon nutzt Base-`color:
+  bindingSchema.optional()`.
+- **Token-Auflösung** im Serializer (`resolveColorValue`, +53 Zeilen) +
+  Back-Compat-Migration für deployte Plain-Strings.
+
+### Gemessene Werte (die Kern-Evidenz)
+
+**Abweichung von der Package-Prosa oben:** §Akzeptanz nennt „z. B.
+`var(--sl-color-primary-600)`" — das war eine *illustrative* Shoelace-Annahme.
+Der real gemessene Namespace ist der **projekteigene `--wa-color-*`**
+(`:root` in `nodes/webapp.js:2957`, pro App via ui-app `designTokens`
+überschreibbar). Der Implementer hat das empirisch ermittelt statt der Prosa zu
+folgen — und gegen die Quelle verifiziert:
+
+| Weg | Serialisiert | Computed |
+|---|---|---|
+| `token:primary` | `color:var(--wa-color-primary)` | `rgb(59, 130, 246)` |
+| `token:success` | `color:var(--wa-color-success)` | `rgb(34, 197, 94)` |
+| `token:danger` | `color:var(--wa-color-danger)` | `rgb(239, 68, 68)` |
+| freie Farbe `#ff0000` | `color:#ff0000` | `rgb(255, 0, 0)` |
+| Back-Compat Plain-String `"#ff0000"` | unverändert | `rgb(255, 0, 0)` |
+| keine Farbe | kein `style`-Attr | `rgb(17, 24, 39)` (geerbt) |
+
+Nie roh: weder `color:primary` noch `color:token:primary` erscheinen im HTML.
+
+**Headline-Beweis** (vorher unmöglich): ein **store-gebundenes** `color` färbt das
+Icon und ändert es **live via SSE ohne Reload** — computed `rgb(34, 197, 94)` →
+`rgb(239, 68, 68)`. Nebenbefund: ein als *Daten* gespeichertes Token löst
+identisch auf wie ein im Editor gesetztes (der gebundene Wert passiert
+`resolveColorValue`).
+
+### Verifikation
+
+- **E2E Voll-Suite im Haupt-Checkout** (P238 ändert den *geteilten* Helper →
+  cross-cutting auf ~30 farbfähige Knoten): **775 passed, 0 failed**, 1 flaky
+  (`ui-tabs.spec.ts:226` E01 sl-tab-show — Timing, grün im Retry, farb-unabhängig
+  und vorbestehend).
+- Unit **2.201** grün (runtime 1357, +36 aus `p238-color-standard-control.test.ts`);
+  `pnpm validate` + alle Tripwires grün.
+- Neue E2E: 7 Tests in `ui-icon.spec.ts` (23/23) + `base-fields.spec.ts` (54/54).
+
+### Bewusste Test-Änderung (geprüft, kein Workaround)
+
+Die P222-Matrix in `base-fields.spec.ts` hatte ui-icon `color: "omit"` → jetzt
+`"active"`. Der alte Wert **kodierte genau den Opt-out, den dieses Paket
+entfernt**; ihn stehenzulassen hätte den neuen Vertrag verdeckt. `size: "omit"`
+bleibt (eigenes xs..xl-Control).
+
+### Nebenbefund (kein P238-Defekt) → Folgearbeit
+
+`findAppIdForNode` (P201) ordnet ein Store-Update der **ersten** App des
+Flow-Tabs zu. Mehrere ui-apps auf einem Tab → das Update wird fehlgeleitet und
+gebundene Werte aktualisieren nicht. Im Test-Harness unsichtbar (FlowBuilder +
+`resetFlow` geben eine App pro Test), in echten Flows mit mehreren Apps pro Tab
+aber real. In Spec + `ui-icon.tests.md` dokumentiert; verdient ein eigenes Paket.
+
+### Prozess-Korrektur
+
+Der Implementer konnte **Playwright im Worktree ausführen** — entgegen der
+bisherigen Orchestrator-Annahme (die Briefs behaupteten das Gegenteil, weshalb
+frühere Agents es gar nicht erst versuchten). Gilt, solange Port 1882 frei ist;
+bei parallelen Runs kollidiert es. Für E2E-lastige Pakete heißt das: Agents
+können selbst verifizieren statt zu raten.
