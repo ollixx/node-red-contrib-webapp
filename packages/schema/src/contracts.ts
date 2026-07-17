@@ -961,6 +961,44 @@ export const BADGE_VARIANTS = SEVERITY_VARIANTS;
 export const ALERT_VARIANTS = SEVERITY_VARIANTS;
 
 /**
+ * P238 (ADR 0039 §1) — the semantic COLOUR-token vocabulary offered by the base
+ * field `color`. `variant` is the node-specific REDUCTION to these tokens;
+ * `color` offers the same tokens AND, beyond them, any colour (picker/CSS value)
+ * AND any binding kind — one shared control, three author paths.
+ *
+ * This list is COLOUR-ONLY. The non-colour `variant` appearances (`ghost`/`link`
+ * on BUTTON_VARIANTS, `line`/`contained`/`pills` on ui-tabs) are deliberately
+ * ABSENT: a colour cannot express them, so they belong to `variant`, never to
+ * `color` (ADR 0039 §2). Derived as the colour union of SEVERITY_VARIANTS and
+ * TEXT_COLOR_VARIANTS, minus TEXT_COLOR_VARIANTS' `default` — "inherit the
+ * surrounding colour" is what an EMPTY `color` already means, so a `default`
+ * token would be a second spelling of "unset".
+ *
+ * REPRESENTATION (ADR 0039 §1): a token is persisted as the PREFIXED LITERAL
+ * `token:<name>` — a plain `{kind:"literal"}` binding, no new schema kind —
+ * mirroring the proven `asset:<id>` type on `ui-image.src`. The prefix keeps
+ * token-vs-colour unambiguous: a bare `primary` is NOT a valid CSS colour and
+ * must never reach the DOM raw.
+ *
+ * MIRRORED (no imports possible — both files are served to the browser):
+ *   - resources/lib/webapp-serializer.js → COLOR_TOKEN_VARS (token → CSS var)
+ *   - resources/lib/editor-common.js     → COLOR_TOKEN_OPTIONS (the typedInput)
+ */
+export const COLOR_TOKENS = [
+    "primary",
+    "success",
+    "warning",
+    "danger",
+    "neutral",
+    "info",
+    "muted"
+] as const;
+export type ColorToken = (typeof COLOR_TOKENS)[number];
+
+/** P238 (ADR 0039 §1) — the `token:<name>` literal prefix. */
+export const COLOR_TOKEN_PREFIX = "token:";
+
+/**
  * P71 — component size vocabulary.
  *
  * Shoelace exposes only three native sizes (small / medium / large). Nodes whose

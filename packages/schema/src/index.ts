@@ -46,6 +46,10 @@ export {
     structuredErrorSchema,
     INPUT_VARIANTS,
     SEVERITY_VARIANTS,
+    // P238 (ADR 0039 §1): the semantic colour-token vocabulary offered by the base
+    // field `color`, and its `token:<name>` literal prefix.
+    COLOR_TOKENS,
+    COLOR_TOKEN_PREFIX,
     TEXT_STYLES,
     TEXT_COLOR_VARIANTS,
     TEXT_DISPLAY_MODES,

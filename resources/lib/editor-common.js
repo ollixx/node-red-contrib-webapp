@@ -564,8 +564,16 @@
                 disabledInput.data("base-field-originally-empty", !disabledBinding);
             }
 
-            // color — general value typedInput (full canonical set); a legacy
-            // plain-string colour becomes a literal binding.
+            // color — the P238 standard control (ADR 0039 §1): Theme-Token +
+            // colour selector + the full canonical binding set.
+            //
+            // BACK-COMPAT (P238, ADR 0039 §4): a legacy plain-string colour becomes
+            // a literal binding on open — this is what keeps a DEPLOYED ui-icon
+            // (`color: "#ff0000"`, the pre-P238 plain-string field) from losing its
+            // colour. `applyBaseFields` then saves the binding object and no legacy
+            // plain string is ever written back. The runtime performs the same
+            // migration (normalizeColorField in nodes/webapp.js) so a flow that is
+            // never re-opened renders identically.
             if (applicability.color.applicable && omit.indexOf("color") === -1) {
                 var storedColor = parseBindingValue(self.color);
                 var colorBinding = storedColor
@@ -573,14 +581,16 @@
                     : (typeof self.color === "string" && self.color.length > 0
                         ? { kind: "literal", value: self.color }
                         : undefined);
-                var colorEditor = readValueBinding(colorBinding, "");
+                // P238: readColorBinding == readValueBinding, except that a
+                // `token:<name>` literal surfaces as the Theme-Token type.
+                var colorEditor = readColorBinding(colorBinding);
                 var colorInput = $("#node-input-colorBinding");
                 colorInput.typedInput({
                     default: colorEditor.type,
                     // P182: gate the scope-local kinds by the edited node's scope;
                     // keep the current kind so an existing item/index/prop colour
                     // binding stays editable even when re-opened outside its scope.
-                    types: valueBindingTypes({ category: "value", currentKind: colorEditor.type })
+                    types: valueBindingTypes({ category: "color", currentKind: colorEditor.type })
                 });
                 colorInput.typedInput("type", colorEditor.type);
                 colorInput.typedInput("value", colorEditor.value);
@@ -648,7 +658,9 @@
             }
 
             if (applicability.color.applicable && omit.indexOf("color") === -1) {
-                var colorBinding = applyValueBinding(
+                // P238: applyColorBinding == applyValueBinding, except that the
+                // Theme-Token type is written back as the `token:<name>` literal.
+                var colorBinding = applyColorBinding(
                     $("#node-input-colorBinding").typedInput("type"),
                     $("#node-input-colorBinding").typedInput("value")
                 );
@@ -3578,6 +3590,203 @@
         };
     }
 
+    // ── P238 (ADR 0039 §1): the `color` standard control ─────────────────────
+    //
+    // ONE control, THREE author paths — Theme-Token, any colour, any binding:
+    //
+    //   1. `token`  — the semantic colour vocabulary, persisted as the PREFIXED
+    //                 LITERAL `token:<name>` (exactly the `asset:<id>` precedent
+    //                 above). Resolved to `var(--wa-color-<token>)` at render.
+    //   2. `str`    — a free colour: the text field holds any CSS value and the
+    //                 expand button opens the colour selector (HSB/RGB/web).
+    //   3. bindings — the full canonical set (ADR 0012), unchanged.
+    //
+    // MIRRORS packages/schema COLOR_TOKENS (this file is served to the browser and
+    // cannot import the schema) and resources/lib/webapp-serializer.js
+    // COLOR_TOKEN_VARS, which owns the token→CSS-var mapping.
+    var COLOR_TOKEN_PREFIX = "token:";
+    var COLOR_TOKEN_OPTIONS = [
+        { value: "primary", label: "Primary" },
+        { value: "success", label: "Success" },
+        { value: "warning", label: "Warning" },
+        { value: "danger", label: "Danger" },
+        { value: "neutral", label: "Neutral" },
+        { value: "info", label: "Info" },
+        { value: "muted", label: "Muted" }
+    ];
+
+    // The Theme-Token type. `options` makes the typedInput render the vocabulary as
+    // a dropdown, so the author can never type an invalid token. The typedInput
+    // VALUE is the bare token name; the `token:` prefix is added on save and
+    // stripped on read (see applyBaseFields / installBaseFields).
+    function colorTokenTypedInputType(options) {
+        var opts = options || {};
+        return {
+            value: "token",
+            label: opts.label || "Theme Token",
+            icon: "fa fa-tint",
+            options: COLOR_TOKEN_OPTIONS
+        };
+    }
+
+    // The free-colour type. It deliberately re-uses the type value `"str"` — it
+    // REPLACES the builtin string entry for the colour field rather than adding a
+    // new type beside it. Consequences (all intended):
+    //   - the PERSISTED shape is unchanged: `{kind:"literal", value:"<css>"}`;
+    //   - `typedInput("type")` still returns `"str"`, so every existing colour
+    //     value round-trips to the same type it does today (no migration, no
+    //     churn on the ~30 base-colour nodes);
+    //   - the field simply GAINS a colour selector on its expand button.
+    // Node-RED resolves a type entry that is an object as the definition itself
+    // (a string entry is looked up in its builtin table), so overriding `str` for
+    // THIS field only is supported and local.
+    function colorLiteralTypedInputType(options) {
+        var opts = options || {};
+        return {
+            value: "str",
+            label: opts.label || "Farbe",
+            icon: "fa fa-paint-brush",
+            hasValue: true,
+            expand: function () {
+                var that = this;
+                openColorPickerDialog({
+                    value: String(that.value() || ""),
+                    onSelect: function (value) {
+                        that.value(value);
+                    }
+                });
+            }
+        };
+    }
+
+    // The colour selector dialog. A native <input type="color"> opens the OS colour
+    // panel (HSB / RGB / web values — what the owner asked for) and a text field
+    // takes any exact CSS value (#hex, rgb(), hsl(), a keyword) so the picker is
+    // never a CEILING: anything CSS accepts can still be typed. Dependency-free —
+    // the editor may not load anything external (see the file header).
+    function openColorPickerDialog(options) {
+        ensurePickerStylesheet();
+
+        var opts = options || {};
+        var current = String(opts.value || "");
+
+        var $overlay = $("<div>").addClass("webapp-color-picker-overlay webapp-node-picker-overlay");
+        var $dialog = $("<div>")
+            .addClass("webapp-color-picker-dialog webapp-node-picker-dialog")
+            .css({ width: "340px", "max-width": "95vw" })
+            .appendTo($overlay);
+
+        $("<div>").addClass("webapp-node-picker-header").text(opts.title || "Farbe wählen").appendTo($dialog);
+
+        var $body = $("<div>").css({ padding: "12px", display: "flex", "flex-direction": "column", gap: "10px" }).appendTo($dialog);
+
+        var $row = $("<div>").css({ display: "flex", "align-items": "center", gap: "8px" }).appendTo($body);
+        // Seed the native picker from the current value only when it is a hex — the
+        // control accepts nothing else. Any other CSS form stays in the text field.
+        var hexSeed = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(current.trim()) ? current.trim() : "#000000";
+        var $native = $("<input type=\"color\">")
+            .addClass("webapp-color-picker-native")
+            .val(hexSeed)
+            .css({ width: "48px", height: "32px", padding: "0", border: "none", background: "none", cursor: "pointer" })
+            .appendTo($row);
+        var $text = $("<input type=\"text\">")
+            .addClass("webapp-color-picker-value")
+            .attr("placeholder", "#ff0000, rgb(255,0,0), hsl(0 100% 50%), red")
+            .val(current)
+            .css({ flex: "1 1 auto" })
+            .appendTo($row);
+
+        var $preview = $("<div>")
+            .addClass("webapp-color-picker-preview")
+            .css({ height: "28px", "border-radius": "3px", border: "1px solid var(--red-ui-secondary-border-color, #ddd)" })
+            .appendTo($body);
+
+        function refreshPreview() {
+            $preview.css("background", String($text.val() || "transparent"));
+        }
+        refreshPreview();
+
+        // The native panel is the SOURCE for a picked colour; the text field is the
+        // source for a typed one. Each drives the other so the dialog has exactly
+        // one visible answer at any moment.
+        $native.on("input change", function () {
+            $text.val(String($native.val() || ""));
+            refreshPreview();
+        });
+        $text.on("input", function () {
+            var v = String($text.val() || "").trim();
+            if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v)) {
+                $native.val(v);
+            }
+            refreshPreview();
+        });
+
+        var $footer = $("<div>").addClass("webapp-node-picker-footer").appendTo($dialog);
+
+        function close() {
+            $overlay.remove();
+            $(document).off("keydown.webappColorPicker");
+        }
+        function confirm(value) {
+            close();
+            if (typeof opts.onSelect === "function") {
+                opts.onSelect(value);
+            }
+        }
+
+        $("<button type=\"button\" class=\"red-ui-button\">")
+            .text("Leeren").css({ "margin-right": "6px" })
+            .on("click", function (e) { e.preventDefault(); confirm(""); })
+            .appendTo($footer);
+        $("<button type=\"button\" class=\"red-ui-button\">")
+            .text("Abbrechen").css({ "margin-right": "6px" })
+            .on("click", function (e) { e.preventDefault(); close(); })
+            .appendTo($footer);
+        $("<button type=\"button\" class=\"red-ui-button\">")
+            .text("Übernehmen")
+            .on("click", function (e) { e.preventDefault(); confirm(String($text.val() || "").trim()); })
+            .appendTo($footer);
+
+        $(document).on("keydown.webappColorPicker", function (e) {
+            if (e.key === "Escape") {
+                close();
+            }
+        });
+        $overlay.on("click", function (e) {
+            if (e.target === $overlay[0]) {
+                close();
+            }
+        });
+
+        $("body").append($overlay);
+        $text.trigger("focus");
+    }
+
+    // Read a stored `color` binding into the typedInput { type, value } pair.
+    // The ONLY difference from the generic readValueBinding is the `token:<name>`
+    // literal, which surfaces as the dedicated Theme-Token type with the bare name
+    // as its value (mirrors how ui-image surfaces an `asset:<id>` literal).
+    function readColorBinding(binding) {
+        var parsed = parseBindingValue(binding) || binding;
+        if (parsed && typeof parsed === "object" && parsed.kind === "literal"
+            && typeof parsed.value === "string"
+            && parsed.value.toLowerCase().indexOf(COLOR_TOKEN_PREFIX) === 0) {
+            return { type: "token", value: parsed.value.slice(COLOR_TOKEN_PREFIX.length).trim().toLowerCase() };
+        }
+        return readValueBinding(binding, "");
+    }
+
+    // Persist a `color` typedInput (type + raw value) as a binding object.
+    // The Theme-Token type is written back as the prefixed literal; everything else
+    // is the generic applyValueBinding.
+    function applyColorBinding(type, value) {
+        if (type === "token") {
+            var token = String(value || "").trim().toLowerCase();
+            return { kind: "literal", value: token ? COLOR_TOKEN_PREFIX + token : "" };
+        }
+        return applyValueBinding(type, value);
+    }
+
     // P67: the full typedInput `types` array for a bindable value field — the
     // canonical ui-text type set PLUS the `store` type. literal label is
     // configurable (e.g. "Text", "Message", "Title"). P70: pass
@@ -4457,7 +4666,17 @@
         // sit at the tail so they never shift the established ordering of the
         // global kinds. Outside their scope they are absent (they would resolve to
         // undefined there — pure noise; ADR 0017 / ADR 0020).
+        //
+        // P238 (ADR 0039 §1): the `color` category is this SAME set, made
+        // colour-aware — it is deliberately a DELTA on the default, not a separate
+        // list, so the canonical binding kinds cannot drift apart from every other
+        // value field. Exactly two ADDITIONS, no removals:
+        //   - the Theme-Token type is prepended (the idiomatic first choice);
+        //   - the builtin `str` entry is replaced by the colour type — same type
+        //     VALUE ("str") and same persisted literal, plus a colour selector.
+        var isColorCategory = category === "color";
         var types = [
+            ...(isColorCategory ? [colorTokenTypedInputType()] : []),
             storeType,
             queryType,
             routeParamType,
@@ -4465,7 +4684,7 @@
             "msg",
             "jsonata",
             ...assetTypes,
-            "str",
+            isColorCategory ? colorLiteralTypedInputType() : "str",
             "num",
             "bool",
             "json",
@@ -6391,6 +6610,14 @@
 
     global.WebappEditorCommon = {
         assetTypedInputType,
+        // P238 (ADR 0039 §1): the `color` standard control. Exported so a node with
+        // a DEDICATED colour field (rather than the base one) can reuse the exact
+        // same three author paths instead of hand-rolling a fourth variant.
+        colorTokenTypedInputType,
+        colorLiteralTypedInputType,
+        openColorPickerDialog,
+        readColorBinding,
+        applyColorBinding,
         bindingTypedInputTypes,
         valueBindingTypes,
         // P189: type-aware value-binding validation + the item/prop path hint.

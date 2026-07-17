@@ -71,9 +71,12 @@ const mountableNodeSchema = identifiedNodeSchema.extend({
 //
 // The spread is applied FIRST inside the SAME object literal, so a node that
 // already declares one of these with node-specific semantics — e.g.
-// ui-empty-state's REQUIRED `visible`, ui-icon's plain-string `color`, the input
-// nodes' `disabled` — overrides it with its own later key in that literal (JS
-// last-key-wins). Doing it in ONE `.extend()` (rather than chaining a second
+// ui-empty-state's REQUIRED `visible`, the input nodes' `disabled` — overrides it
+// with its own later key in that literal (JS last-key-wins). NOTE (P238/ADR 0039
+// §4): ui-icon USED to override `color` with a plain `z.string()`, which silently
+// downgraded a base field to a non-bindable one; that override is removed and no
+// node may re-introduce one — `color` is bindable everywhere it applies.
+// Doing it in ONE `.extend()` (rather than chaining a second
 // `.extend`) is REQUIRED under Zod v4: a chained extend that re-declares a key
 // throws "Cannot overwrite keys on object schemas containing refinements"
 // (`mountableNodeSchema` carries a `.superRefine`). A single merged shape only
@@ -1722,8 +1725,13 @@ export const uiIconNodeDefinitionSchema = mountableNodeSchema.extend({
     // value (e.g. "24", "1.5rem") — those round-trip through the editor via the
     // "(bestehend)" option and render as-is. The editor SelectBox only offers the
     // five tokens; the free value is preserved until the user actively picks a token.
-    size: z.union([z.enum(["xs", "sm", "md", "lg", "xl"]), z.string()]).optional(),
-    color: z.string().optional()
+    size: z.union([z.enum(["xs", "sm", "md", "lg", "xl"]), z.string()]).optional()
+    // P238 (ADR 0039 §4): the plain-string `color: z.string()` OVERRIDE is GONE.
+    // ui-icon now uses the BASE `color: bindingSchema.optional()` (the spread
+    // above) — tokens + any colour + every binding kind, like every other node.
+    // A deployed plain-string colour is migrated to a literal binding by the
+    // ui-icon mapConfig BEFORE validation (nodes/webapp.js), so no deployed flow
+    // loses its colour (P146/P149/P151 pattern).
 });
 
 export type UiIconNodeDefinition = z.infer<typeof uiIconNodeDefinitionSchema>;
