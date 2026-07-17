@@ -27,6 +27,9 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
+- **P238** — aspects/editor — **`color`-Standard-Control**: Theme-Token + Color-Selector + Binding im Base-Field-Helper; ui-icon-Override (plain string) entfernt — *Owner 2026-07-17; ADR 0039* — [P238](aspects/editor/P238-color-standard-control-tokens-picker-binding.md)
+- **P239** — aspects/node-conformance — **ui-icon**: Icon-Name im Editor bindbar (typedInput), Auswahl-Dialog bleibt — *Owner 2026-07-17; ADR 0039* — [P239](aspects/node-conformance/P239-ui-icon-name-bindable-editor.md)
+- **P240** — aspects/node-conformance — **Review variant-vs-color pro Knoten** (backend-getrieben): Entscheidungstabelle + Findings; Umklassifizierung erst als Folge-Pakete — *Owner 2026-07-17; ADR 0039* — [P240](aspects/node-conformance/P240-variant-vs-color-per-node-review.md)
 
 
 ## Deferred (parked, not abandoned)
