@@ -6,14 +6,21 @@
         // P222 (ADR 0015): common base fields. See the applicability table in
         // docs/nodes/concepts/editor.md. `omit` drops a field the node already
         // owns a dedicated control for (avoids duplicate #node-input carrier ids).
+        // P238 (ADR 0039 §4): ui-icon no longer opts out of `color`. It used to set
+        // `color: false` + `omit: ["color"]` and carry a bare text field — the
+        // colour was not bindable at all, a silent downgrade of a base field. Now it
+        // uses the SHARED standard control: Theme-Token + colour selector + every
+        // canonical binding kind (so a store/state-bound colour drives the icon
+        // live). `size` keeps its own control (installIconSizeSelectBox) and stays
+        // omitted to avoid a duplicate #node-input carrier id.
         const BASE_FIELDS = {
             visible: true,
             disabled: false,
-            color: false,
+            color: true,
             size: false,
             variant: false,
             advanced: [],
-            omit: ["color","size"],
+            omit: ["size"],
             hints: {
                 disabled: "Ein Icon hat keinen interaktiven Zustand."
             }
@@ -33,7 +40,11 @@
                 mount: { value: "", required: true },
                 icon: { value: "", required: true },
                 size: { value: "md" },
-                color: { value: "" },
+                // P238: `color` persists the binding OBJECT. There is no matching
+                // #node-input-color element any more (the typedInput lives on the
+                // colorBinding carrier), so Node-RED auto-save cannot clobber it.
+                color: { value: null },
+                colorBinding: { value: "" },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
                 col: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
@@ -71,7 +82,15 @@
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <div class="form-row"><label for="node-input-icon">Icon Name</label><input type="text" id="node-input-icon" placeholder="e.g. home, user, check"></div>
-    <div class="form-row"><label for="node-input-color">Color</label><input type="text" id="node-input-color" placeholder="e.g. #ff0000 or red"></div>
+    <!-- P238: the "Color" row is no longer hand-written here. installBaseFields
+         injects the shared standard control on #node-input-colorBinding. -->
 </script>
 <script type="text/html" data-help-name="ui-icon"><p>Zeigt ein Icon anhand seines Namens (icon-set-agnostisch).</p>
+<p><b>Color</b> — die Farbe des Icons. Drei Wege in einem Control:</p>
+<ul>
+  <li><b>Theme Token</b> — die semantischen Farb-Tokens der App (<code>primary</code>, <code>success</code>, <code>warning</code>, <code>danger</code>, <code>neutral</code>, <code>info</code>, <code>muted</code>). Folgt dem Theme: gespeichert als <code>token:&lt;name&gt;</code>, gerendert als <code>var(--wa-color-&lt;token&gt;)</code>.</li>
+  <li><b>Farbe</b> — beliebige Farbe über den Color-Selector (HSB/RGB/Web) oder als CSS-Wert getippt (<code>#ff0000</code>, <code>rgb(255,0,0)</code>, <code>red</code>).</li>
+  <li><b>Binding</b> — jede kanonische Binding-Art (State/Store/Query/Route-Param/msg/JSONata/Flow/Global/Env …). Eine gebundene Farbe ändert das Icon live (SSE).</li>
+</ul>
+<p>Leer = keine Farbe (das Icon erbt die umgebende Textfarbe). Ein unbekannter Wert wird ignoriert — es wird nie ungültiges CSS ausgegeben.</p>
 <p>Vollständige Doku: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/display/ui-icon.md" target="_blank">docs/nodes/display/ui-icon.md</a></p></script>

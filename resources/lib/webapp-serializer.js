@@ -91,6 +91,13 @@
 
     // Render an icon value as an <sl-icon> element. opts: { size, color, slot }.
     // Returns "" for an empty/undefined icon.
+    //
+    // P238 (ADR 0039 §4): `color` goes through the SHARED resolveColorValue (as
+    // ui-divider/ui-list already did) instead of being emitted raw. So a
+    // `token:primary` becomes `color:var(--wa-color-primary)` — never the invalid
+    // `color:token:primary` — a free colour (#ff0000 / rgb(…)) passes through
+    // unchanged, and an unknown bare word now yields NO style instead of a broken
+    // one. (resolveColorValue is a hoisted function declaration below.)
     function renderIconHtml(icon, opts) {
         const value = normalizeIcon(icon);
         if (!value) {
@@ -104,8 +111,9 @@
         const classAttr = options.size
             ? " class=\"webapp-icon webapp-icon--" + sanitizeClassSuffix(String(options.size)) + "\""
             : " class=\"webapp-icon\"";
-        const styleAttr = options.color
-            ? " style=\"color:" + escapeAttribute(String(options.color)) + "\""
+        const resolvedIconColor = resolveColorValue(options.color);
+        const styleAttr = resolvedIconColor
+            ? " style=\"color:" + escapeAttribute(resolvedIconColor) + "\""
             : "";
         return "<sl-icon" + slotAttr + classAttr + " name=\"" + escapeAttribute(value.name) + "\""
             + libraryAttr + styleAttr + "></sl-icon>";
@@ -114,15 +122,17 @@
     // P183: resolveColorValue — shared color-resolution helper for base-field `color`.
     // Maps a raw color value to a safe CSS value or undefined (no style attr).
     //
-    //   semantic token  → var(--wa-color-<token>)
+    //   token:<name>    → var(--wa-color-<token>)          (P238 — the EXPLICIT form)
+    //   semantic token  → var(--wa-color-<token>)          (bare word, pre-P238)
     //     "primary" | "success" | "warning" | "danger" | "neutral" | "info"
     //   valid CSS value → passed through unchanged
     //     #hex, rgb(), hsl(), CSS named color, var(...), etc.
     //   empty / unknown → undefined (no style attribute emitted — no broken CSS)
     //
-    // Detection strategy: a semantic token is any of the six known words. Everything
-    // else is classified: CSS functions (#hex, rgb(...), var(...)) pass through;
-    // known CSS keyword names pass through; unknown bare words are IGNORED.
+    // Detection strategy: the `token:` prefix is authoritative (P238). Otherwise a
+    // semantic token is any of the six known bare words. Everything else is
+    // classified: CSS functions (#hex, rgb(...), var(...)) pass through; known CSS
+    // keyword names pass through; unknown bare words are IGNORED.
     var SEMANTIC_COLOR_TOKENS = {
         primary: "var(--wa-color-primary)",
         success: "var(--wa-color-success)",
@@ -130,6 +140,29 @@
         danger:  "var(--wa-color-danger)",
         neutral: "var(--wa-color-neutral)",
         info:    "var(--wa-color-primary)"   // info → primary (no separate --wa-color-info token)
+    };
+
+    // P238 (ADR 0039 §1) — the token→CSS-custom-property map for the EXPLICIT
+    // `token:<name>` form written by the editor's Theme-Token typedInput.
+    // MIRRORS packages/schema COLOR_TOKENS (this file is served to the browser and
+    // cannot import it). The design tokens are defined on :root in nodes/webapp.js
+    // and overridden by ui-app's `designTokens` — so a token FOLLOWS the app theme.
+    //
+    // It is a SUPERSET of SEMANTIC_COLOR_TOKENS by exactly one entry: `muted`
+    // (→ --wa-color-text-muted). `muted` is deliberately NOT added to the bare-word
+    // map above: doing so would change what an existing bare `color: "muted"`
+    // renders on the ~30 base-colour nodes (today: nothing). Reachable only via the
+    // new token path → strictly additive (P238 acceptance: "Additiv auf den
+    // übrigen ~30 Knoten").
+    var COLOR_TOKEN_PREFIX = "token:";
+    var COLOR_TOKEN_VARS = {
+        primary: "var(--wa-color-primary)",
+        success: "var(--wa-color-success)",
+        warning: "var(--wa-color-warning)",
+        danger:  "var(--wa-color-danger)",
+        neutral: "var(--wa-color-neutral)",
+        info:    "var(--wa-color-primary)",  // info → primary (no separate --wa-color-info token)
+        muted:   "var(--wa-color-text-muted)"
     };
 
     // A small set of always-safe CSS colour keywords. Extended keywords (rebeccapurple
@@ -150,8 +183,14 @@
         if (s === "") {
             return undefined;
         }
-        // 1. Semantic token?
         var lower = s.toLowerCase();
+        // 0. P238: the EXPLICIT `token:<name>` form. Authoritative — an unknown
+        // token yields NO style (never `color:token:foo`, never a raw bare word).
+        if (lower.indexOf(COLOR_TOKEN_PREFIX) === 0) {
+            var tokenName = lower.slice(COLOR_TOKEN_PREFIX.length).trim();
+            return COLOR_TOKEN_VARS[tokenName] || undefined;
+        }
+        // 1. Semantic token?
         if (SEMANTIC_COLOR_TOKENS[lower]) {
             return SEMANTIC_COLOR_TOKENS[lower];
         }

@@ -71,6 +71,41 @@ ist kanonisch. Es darf **kein** `<base>Path`-Default mehr geben, wenn
 
 ---
 
+## Das Basis-Feld `color`: Tokens + jede Farbe + Binding (P238, ADR 0039)
+
+`color` ist ein **Basis-Feld** ([ADR 0015](../../adr/0015-common-base-fields-and-editor-structure.md))
+und folgt der Carrier-Regel oben: `color` (Binding-Objekt) + `colorBinding`
+(typedInput-Carrier). Es hat darüber hinaus eine **feste Ausprägung** — ein
+**Standard-Control** aus dem gemeinsamen Helper `installBaseFields`
+(`resources/lib/editor-common.js`), das auf **allen** Knoten mit `color` identisch
+ist ([ADR 0039](../../adr/0039-colour-field-model-color-is-tokens-plus-any-colour-variant-is-the-reduction.md) §1):
+
+| Weg | typedInput-Typ | persistiert als |
+|---|---|---|
+| **Theme-Token** | `token` (SelectBox über `COLOR_TOKENS`) | `{kind:"literal", value:"token:<name>"}` |
+| **Farbe** | `str` (Textfeld + Color-Selector auf dem Expand-Button) | `{kind:"literal", value:"<css>"}` |
+| **Binding** | der volle kanonische Satz (ADR 0012) | das jeweilige Binding-Objekt |
+
+**Konventionen, die daraus folgen:**
+
+- **`color` ist überall bindbar, wo es gilt.** Ein Knoten darf das Basis-Feld
+  **nicht** auf einen Plain-String herunterstufen — genau das hatte `ui-icon` bis
+  P238 getan (`color: z.string()`-Override + `omit:["color"]`), womit die Farbe
+  dort gar nicht bindbar war. Solche Overrides sind unzulässig.
+- **`variant` und `color` schließen einander aus.** `variant` ist die Reduktion
+  auf die Tokens, `color` die Obermenge (Tokens **und** jede Farbe). Welcher der
+  beiden ein Knoten führt, ist **Backend-getrieben** und wird node-lokal begründet
+  (ADR 0039 §3). Vokabular + Auflösung: [theming.md](theming.md).
+- **Ein Token wird nie roh ausgegeben.** Das `token:`-Präfix hält Token und Farbe
+  eindeutig auseinander; aufgelöst wird zentral in `resolveColorValue`
+  (`resources/lib/webapp-serializer.js`), nie im einzelnen Knoten.
+- **Plain-String-Back-Compat.** Ein deployter Plain-String-`color` wird verlustfrei
+  als `literal`-Binding übernommen — im Editor beim Öffnen und zur Laufzeit in
+  `mapConfig` (`normalizeColorField`), damit auch ein nie wieder geöffneter Flow
+  unverändert rendert.
+
+---
+
 ## Der Tripwire `pnpm check:fields`
 
 `scripts/check-fields.js` ist **read-only** (schreibt nichts) und in

@@ -924,6 +924,29 @@ function getBinding(bindingCandidate, fallbackBinding) {
     return fallbackBinding;
 }
 
+// P238 (ADR 0039 §4) — BACK-COMPAT for a base-field `color`.
+//
+// Until P238 ui-icon overrode the base `color` with a plain `z.string()`, so
+// DEPLOYED ui-icon nodes carry a bare string (`"#ff0000"`, `"red"`). The override
+// is gone and the base schema is `bindingSchema.optional()` — a bare string would
+// now FAIL validation and the node would drop out of the app. This normalises a
+// legacy plain string into the equivalent `{kind:"literal"}` binding BEFORE the
+// schema sees it, so a deployed flow keeps rendering EXACTLY the same colour
+// without being re-opened (the editor performs the same migration on open; this is
+// the runtime half). Mirrors P146/P149/P151.
+//
+// A binding object passes through untouched; empty/absent → undefined (no colour).
+function normalizeColorField(rawColor) {
+    const binding = getBinding(rawColor, undefined);
+    if (binding) {
+        return binding;
+    }
+    if (typeof rawColor === "string" && rawColor.trim().length > 0) {
+        return { kind: "literal", value: rawColor };
+    }
+    return undefined;
+}
+
 // P171: migrate a legacy ui-list `itemsPath` (a plain state path) into a `state`
 // binding on `items` (mirrors ui-tabs `activeTabPath`→`activeTab`). PRECISE
 // mapping: a leading `state.` prefix is stripped (`state.foo.bar` → path
@@ -7976,7 +7999,10 @@ const runtimeNodeRegistry = {
             order: resolveOrder(config),
             icon: mapIconField(config.icon) || "",
             size: config.size || undefined,
-            color: config.color || undefined,
+            // P238 (ADR 0039 §4): `color` is the BASE bindable field now (the
+            // plain-string override is gone). A legacy deployed plain string is
+            // migrated to a literal binding here, before validation.
+            color: normalizeColorField(config.color),
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {

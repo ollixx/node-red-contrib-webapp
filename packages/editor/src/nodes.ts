@@ -470,7 +470,10 @@ export interface UiImageEditorConfig extends MountableEditorConfig {
 export interface UiIconEditorConfig extends MountableEditorConfig {
     icon?: string;
     size?: string;
-    color?: string;
+    // P238 (ADR 0039 §4): `color` is the base bindable field. A plain string is
+    // still accepted here — that is what a DEPLOYED pre-P238 node carries — and is
+    // migrated to a literal binding by colorFromConfig.
+    color?: string | BindingDefinition;
 }
 
 export interface UiListEditorConfig extends MountableEditorConfig {
@@ -842,6 +845,23 @@ function selectOptionsFromConfig(
 // either is passed through to the schema (which accepts both).
 function bindingOrString(value: string | BindingDefinition | undefined): string | BindingDefinition | undefined {
     return value;
+}
+
+// P238 (ADR 0039 §4): resolve a base-field `color` editor config into the schema
+// `color` value — always a BINDING (the base field is `bindingSchema.optional()`).
+// A binding object passes through; a legacy plain-string colour (what a DEPLOYED
+// pre-P238 ui-icon carries, back when `color` was overridden to `z.string()`)
+// migrates losslessly to the equivalent literal binding, so no deployed flow loses
+// its colour. Mirrors normalizeColorField in nodes/webapp.js — the two run on the
+// same configs and must agree. Empty/absent → undefined (no colour).
+function colorFromConfig(candidate: unknown): BindingDefinition | undefined {
+    if (isBindingObject(candidate)) {
+        return candidate;
+    }
+    if (typeof candidate === "string" && candidate.trim().length > 0) {
+        return { kind: "literal", value: candidate };
+    }
+    return undefined;
 }
 
 // P157 (ADR 0012): resolve a ui-menu `items` editor config into the schema
@@ -1795,7 +1815,9 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         mount: config.mount ?? "",
         icon: config.icon ?? "",
         size: config.size as "xs" | "sm" | "md" | "lg" | "xl" | undefined,
-        color: config.color || undefined,
+        // P238 (ADR 0039 §4): `color` is the base bindable field; a legacy
+        // plain-string colour migrates to a literal binding.
+        color: colorFromConfig(config.color),
         ...collectLayoutChildConfig(config)
     })),
     "ui-list": createDefinition("ui-list", "view", {
