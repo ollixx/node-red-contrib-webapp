@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 import { deployFlow, injectMessage, resetFlow } from "../../../helpers/admin-api";
 import { FlowBuilder } from "../../../helpers/flow-builder";
+import { NodeEditorPage } from "../../../helpers/node-editor-page";
 import { WebappPage } from "../../../helpers/webapp-page";
 
 /**
@@ -488,4 +489,218 @@ test.describe("ui-icon color: bound to a store (P238)", () => {
         await expect.poll(async () => icon.evaluate((el) => getComputedStyle(el).color), { timeout: 5000 })
             .toBe("rgb(239, 68, 68)");
     });
+});
+
+/**
+ * P239 — the icon NAME is bindable IN THE EDITOR (ADR 0012 §Binding-Ubiquität).
+ *
+ * The gap this closes is EDITOR EXPOSURE, not runtime: `iconFieldSchema` has always
+ * been binding-capable and P235 proved a state-bound icon resolves + swaps live —
+ * but `installIconField` rendered a plain text input, so an author had no UI way to
+ * set a binding (only hand-edited flow JSON, which is what every test above does).
+ * These specs drive the REAL editor instead: pick a binding type in the typedInput,
+ * Deploy, and measure the resolved `name` on the real <sl-icon>.
+ *
+ * All expected values are MEASURED against the running instance, not derived.
+ */
+test.describe("ui-icon icon name — editor binding (P239)", () => {
+    test.afterEach(async ({ request }) => { await resetFlow(request); });
+
+    test("the icon field offers the canonical binding set — `str` replaced by the icon literal type", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "iconEdApp0", root: "iconEdApp0" })
+            .node("ui-icon", { id: "iconEdNode0", icon: "gear" })
+            .build();
+        await deployFlow(request, flow);
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode("iconEdNode0");
+
+        // The control is a typedInput on the `iconBinding` carrier (ADR 0031): the
+        // persisted `icon` may be a binding OBJECT, so it must NOT have a
+        // #node-input-icon element — Node-RED's post-oneditsave field-copy would
+        // clobber the object back to a bare string.
+        await expect(page.locator("#node-input-icon")).toHaveCount(0);
+        await expect(page.locator("#node-input-iconBinding + .red-ui-typedInput-container")).toHaveCount(1);
+
+        // Open the type menu and read what the AUTHOR is actually offered.
+        await page.locator("#node-input-iconBinding")
+            .locator("+ .red-ui-typedInput-container .red-ui-typedInput-type-label").click();
+        // Every typedInput on the panel appends its own (hidden) menu to <body>, so
+        // scope to the one that is actually open — the icon field's.
+        const offered = await page.locator(".red-ui-typedInput-options:visible a").evaluateAll(
+            (els) => els.map((e) => e.getAttribute("value") || "")
+        );
+        // MEASURED against the live editor. The `icon` category is the canonical
+        // value set with exactly one delta: `str` → `icon` (see valueBindingTypes).
+        expect(offered).toEqual([
+            "store", "query", "routeParam", "reactive", "msg", "jsonata",
+            "icon", "num", "bool", "json", "date", "flow", "global", "env"
+        ]);
+        expect(offered).not.toContain("str");
+    });
+
+    test("author binds the icon name to a store in the EDITOR → deploy → resolved name renders and swaps live", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "iconEdApp1", root: "iconEdApp1" })
+            .node("ui-store", { id: "iconEdStore", parent: "iconEdApp1", statePath: "iconName", initialValue: JSON.stringify("house") })
+            // Starts as a LITERAL — the binding below is authored purely through the UI.
+            .node("ui-icon", { id: "iconEdNode1", icon: "gear" })
+            .withStoreInject("iconEdInj", "iconEdStore", "star")
+            .build();
+        await deployFlow(request, flow);
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode("iconEdNode1");
+
+        // The author picks the Store type and the store node — no flow-JSON surgery.
+        await editor.fillTypedInput("iconBinding", "iconEdStore", "store");
+        await editor.save();
+
+        // The typedInput's type+value serialise to the canonical binding object.
+        const stored = await page.evaluate(() => {
+            const n = (window as unknown as {
+                RED: { nodes: { node: (id: string) => Record<string, unknown> | null } };
+            }).RED.nodes.node("iconEdNode1");
+            return n ? n.icon : null;
+        });
+        expect(stored).toEqual({ kind: "store", path: "iconEdStore" });
+
+        await editor.deploy();
+
+        // MEASURED on the real element: the rendered name is the RESOLVED store
+        // value ("house"), not the literal the node was deployed with ("gear").
+        const webapp = new WebappPage(page, "iconEdApp1");
+        await webapp.navigate("/");
+        await expect(page.locator("sl-icon")).toHaveAttribute("name", "house", { timeout: 5000 });
+
+        // The P235 live path is now reachable from the editor: a store change
+        // morphs the icon via SSE, without a reload.
+        await injectMessage(request, "iconEdInj");
+        await expect(page.locator("sl-icon")).toHaveAttribute("name", "star", { timeout: 5000 });
+    });
+
+    test("picker + preview are literal-only: they disappear on a binding type and return on the literal", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "iconEdApp2", root: "iconEdApp2" })
+            .node("ui-icon", { id: "iconEdNode2", icon: "house" })
+            .build();
+        await deployFlow(request, flow);
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode("iconEdNode2");
+
+        const button = page.locator(".webapp-icon-field-button");
+        const preview = page.locator(".webapp-icon-field-preview");
+
+        // Literal mode (the stored "house"): button + preview are there, and the
+        // preview really points at the icon's SVG.
+        expect(await editor.readTypedInputType("iconBinding")).toBe("icon");
+        await expect(button).toBeVisible();
+        await expect(preview).toBeVisible();
+        await expect(preview).toHaveAttribute(
+            "src",
+            "resources/node-red-contrib-webapp/shoelace/assets/icons/house.svg"
+        );
+
+        // A binding has no literal to pick or preview — both go away.
+        await editor.fillTypedInput("iconBinding", "someStore", "store");
+        await expect(button).toBeHidden();
+        await expect(preview).toBeHidden();
+
+        // Back to the literal path — both return.
+        await editor.fillTypedInput("iconBinding", "gear", "icon");
+        await expect(button).toBeVisible();
+        await expect(preview).toBeVisible();
+        await expect(preview).toHaveAttribute(
+            "src",
+            "resources/node-red-contrib-webapp/shoelace/assets/icons/gear.svg"
+        );
+    });
+
+    test("the picker still works in literal mode: pick → save → deploy → the picked icon renders", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "iconEdApp3", root: "iconEdApp3" })
+            .node("ui-icon", { id: "iconEdNode3", icon: "gear" })
+            .build();
+        await deployFlow(request, flow);
+
+        const editor = new NodeEditorPage(page);
+        await editor.open();
+        await editor.openNode("iconEdNode3");
+
+        // Really open the dialog and really pick a tile.
+        await page.locator(".webapp-icon-field-button").click();
+        const dialog = page.locator(".webapp-icon-picker-dialog");
+        await expect(dialog).toBeVisible();
+        await page.locator(".webapp-icon-picker-search").fill("house");
+        await page.locator(".webapp-icon-picker-tile[data-icon-name=\"house\"]").first().click();
+        await expect(dialog).toHaveCount(0);
+
+        // The pick lands in the typedInput's literal value (not some other type).
+        expect(await editor.readTypedInputType("iconBinding")).toBe("icon");
+        expect(await editor.readTypedInput("iconBinding")).toBe("house");
+
+        await editor.save();
+        // A picked literal persists as the PLAIN icon name — the historical shape,
+        // never a {kind:"literal"} wrapper. Back-compat for every existing flow.
+        const stored = await page.evaluate(() => {
+            const n = (window as unknown as {
+                RED: { nodes: { node: (id: string) => Record<string, unknown> | null } };
+            }).RED.nodes.node("iconEdNode3");
+            return n ? n.icon : null;
+        });
+        expect(stored).toBe("house");
+
+        await editor.deploy();
+        const webapp = new WebappPage(page, "iconEdApp3");
+        await webapp.navigate("/");
+        await expect(page.locator("sl-icon")).toHaveAttribute("name", "house", { timeout: 5000 });
+    });
+});
+
+/**
+ * P239 — lossless open→save round-trip for all THREE iconFieldSchema shapes.
+ *
+ * `icon` is the field ADR 0031's clobber bug class is most dangerous for: it has a
+ * bare-string back-compat shape, a literal object shape AND a binding shape. Open →
+ * Done without touching anything must drift NONE of them.
+ */
+test.describe("ui-icon icon round-trip (P239)", () => {
+    test.afterEach(async ({ request }) => { await resetFlow(request); });
+
+    const cases: Array<{ id: string; label: string; icon: unknown }> = [
+        { id: "rtBare", label: "a back-compat BARE STRING", icon: "house" },
+        { id: "rtShorthand", label: "a `library:name` shorthand string", icon: "lucide:star" },
+        { id: "rtLiteral", label: "a literal {library,name}", icon: { library: "lucide", name: "star" } },
+        { id: "rtDefaultLib", label: "a literal {library:'default',name}", icon: { library: "default", name: "house" } },
+        { id: "rtBinding", label: "a BINDING object", icon: { kind: "state", path: "iconName" } }
+    ];
+
+    for (const testCase of cases) {
+        test(`${testCase.label} survives open→save unchanged`, async ({ page, request }) => {
+            const flow = new FlowBuilder()
+                .app({ id: `${testCase.id}App`, root: `${testCase.id}App` })
+                .node("ui-icon", { id: `${testCase.id}Node`, icon: testCase.icon })
+                .build();
+            await deployFlow(request, flow);
+
+            const editor = new NodeEditorPage(page);
+            await editor.open();
+            await editor.openNode(`${testCase.id}Node`);
+            // Touch nothing.
+            await editor.save();
+
+            const stored = await page.evaluate((id) => {
+                const n = (window as unknown as {
+                    RED: { nodes: { node: (id: string) => Record<string, unknown> | null } };
+                }).RED.nodes.node(id);
+                return n ? n.icon : null;
+            }, `${testCase.id}Node`);
+            expect(stored).toEqual(testCase.icon);
+        });
+    }
 });

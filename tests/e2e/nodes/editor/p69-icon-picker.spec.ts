@@ -70,8 +70,17 @@ test.describe("editor — icon picker dialog (P69)", () => {
         await page.locator(".webapp-icon-picker-tile[data-icon-name=\"house\"]").first().click();
 
         // Dialog closed; the field now holds the picked value.
+        // P239: on ui-icon the control is a typedInput on the `iconBinding` carrier
+        // (the persisted `icon` may be a binding object, so it must not have a
+        // #node-input-icon element — see ui-icon.html). The picker still writes a
+        // plain literal into the field's value.
         await expect(dialog).toHaveCount(0);
-        expect(await page.locator("#node-input-icon").inputValue()).toBe("house");
+        const picked = await page.evaluate(() => {
+            const $ = (window as unknown as { $: (s: string) => { typedInput: (k: string) => string } }).$;
+            const field = $("#node-input-iconBinding");
+            return { type: field.typedInput("type"), value: field.typedInput("value") };
+        });
+        expect(picked).toEqual({ type: "icon", value: "house" });
 
         // Save — the value round-trips onto the node config.
         await editor.save();
