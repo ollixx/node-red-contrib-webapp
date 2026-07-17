@@ -36,15 +36,15 @@ Layout-Child-Props).
 
 `ui-icon` mischt die gemeinsame Basis-Feld-Gruppe über
 `installBaseFields(config)` ein (siehe [editor.md](../concepts/editor.md),
-Abschnitt „Basis-Felder + Editor-Struktur"). Der Knoten führt für `color` und
-`size` **eigene** Controls (Gruppen „Darstellung"), daher blendet er diese beiden
-aus dem Basis-Satz aus (`omit`); `disabled` ist N/A:
+Abschnitt „Basis-Felder + Editor-Struktur"). Der Knoten führt für `size` ein
+**eigenes** Control (Gruppe „Darstellung") und blendet es daher aus dem
+Basis-Satz aus (`omit`); `disabled` ist N/A:
 
 | Feld | Label | Editor-Typ | Anwendbar | Beschreibung |
 |---|---|---|---|---|
 | `visible` | „Visible" | Boolean-Zustand-typedInput (ADR-0012-Boolean-Satz) | ja | Sichtbarkeit; leer = sichtbar (Default). Persistiert als Binding-Objekt und wird zur Laufzeit als `visibleIf` ausgewertet (Render-Gate): `false` ⇒ das Icon wird nicht gerendert. Dynamisches Zustandsmodell (Binding vs. interner Wert, msg/Duration/Aktionen): [ADR 0037](../../adr/0037-unified-dynamic-state-fields-one-value-many-writers.md). |
 | `disabled` | „Disabled" | — (N/A) | **nein** | Ein Icon hat keinen interaktiven Zustand — Feld wird disabled mit diesem Hinweis angezeigt. |
-| `color` | „Color" | — (eigenes Control, „Darstellung") | **eigen** | Farbe des Icons — als **eigenes** Feld (Plain-CSS-Wert) unter „Darstellung" geführt, nicht über den Basis-Satz. |
+| `color` | „Color" | `color`-Standard-Control (Theme-Token / Farbe / Bindings) | **ja** | Farbe des Icons — seit **P238** ([ADR 0039](../../adr/0039-colour-field-model-color-is-tokens-plus-any-colour-variant-is-the-reduction.md) §4) das **gemeinsame Basis-Feld**, nicht mehr ein eigenes Plain-String-Feld. Siehe „Darstellung" unten. |
 | `size` | „Size" | — (eigenes Control, „Darstellung") | **eigen** | Größe des Icons — als **eigenes** Token-SelectBox unter „Darstellung" geführt, nicht über den Basis-Satz. |
 
 ### Gruppe „Inhalt"
@@ -58,7 +58,7 @@ aus dem Basis-Satz aus (`omit`); `disabled` ist N/A:
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
 | `size` | „Größe" | SelectBox (`xs` / `sm` / `md` / `lg` / `xl`) | optional | Größe des Icons. Default: `md`. Das Backend übersetzt die Größenstufe in eine konkrete Pixel- oder em-Größe. **Migration:** Knoten mit alten freien CSS-Werten (z. B. `24`, `1.5rem`) werden im Editor als `<wert> (bestehend)` angezeigt und brechen nicht — der Wert bleibt erhalten bis der Nutzer aktiv einen Token wählt. |
-| `color` | „Farbe" | Textfeld | optional | Farbe des Icons als CSS-Wert (z. B. `#ff0000`, `red`) oder Design-Token-Name. Ist kein Wert gesetzt, erbt das Icon die Text-/Icon-Farbe des umgebenden Themes (`colorText`). |
+| `color` | „Color" | `color`-Standard-Control: **Theme-Token** (SelectBox) \| **Farbe** (Textfeld + Color-Selector) \| **Bindings** (voller kanonischer Satz) | optional | Farbe des Icons. **Bindbar** (P238, [ADR 0039](../../adr/0039-colour-field-model-color-is-tokens-plus-any-colour-variant-is-the-reduction.md) §1/§4) — ein `state`/`store`/`query`-gebundener Wert färbt das Icon **live** (SSE-Re-Render). Drei Wege in einem Control: **Theme-Token** (`primary`, `success`, `warning`, `danger`, `neutral`, `info`, `muted`) — persistiert als `token:<name>`, gerendert als `var(--wa-color-<token>)`, folgt also dem App-Theme (`designTokens` auf `ui-app`); **Farbe** — beliebiger CSS-Wert (`#ff0000`, `rgb(255,0,0)`, `hsl(0 100% 50%)`, `red`), über den Color-Selector (HSB/RGB/Web) wählbar oder direkt getippt; **Binding** — jede kanonische Binding-Art ([ADR 0012](../../adr/0012-binding-ubiquity-every-value-field-offers-bindings.md)). Default: leer ⇒ das Icon erbt die Text-/Icon-Farbe des umgebenden Themes (`colorText`). Beobachtbare Wirkung: inline `style="color:…"` am `<sl-icon>`. Ein unbekannter Wert wird **ignoriert** (kein Style-Attribut) — es wird nie ungültiges CSS ausgegeben. **Migration:** ein deployter Plain-String (`"#ff0000"`, das Feld vor P238) wird verlustfrei als `literal`-Binding übernommen und rendert unverändert. |
 
 ### Gruppe „Platzierung"
 
@@ -99,9 +99,15 @@ emittiert keine Events.
 
 ## Theming
 
-`ui-icon` trägt kein eigenes `variant`-Feld. Größe und Farbe werden über `size`
-und `color` gesteuert; nicht gesetzte Farbe erbt das Icon aus dem App-weiten
-Theme (`colorText`, [theming.md](../concepts/theming.md)). Das Rendering-Backend
+`ui-icon` trägt kein eigenes `variant`-Feld — die Farbe wird vom Basis-Feld
+`color` bedient, das die Theme-Tokens **und** darüber hinaus jede Farbe anbietet
+(`variant` ist die Reduktion auf die Tokens, `color` die Obermenge;
+[ADR 0039](../../adr/0039-colour-field-model-color-is-tokens-plus-any-colour-variant-is-the-reduction.md)
+§1/§2). Größe und Farbe werden über `size` und `color` gesteuert; nicht gesetzte
+Farbe erbt das Icon aus dem App-weiten Theme (`colorText`,
+[theming.md](../concepts/theming.md)). Ein **Theme-Token** (`token:<name>`) wird
+als `var(--wa-color-<token>)` gerendert und folgt damit den `designTokens` der
+App — im Gegensatz zu einer freien Farbe, die fix ist. Das Rendering-Backend
 (heute Shoelace) bildet die Konfiguration auf seinen Icon-Mechanismus ab; weitere
 Backends folgen demselben semantischen Contract.
 

@@ -79,6 +79,57 @@ Listen spiegeln sie nur wider.
 > `info` ist in beiden Fällen ein **eigenständiger** Wert (kein Alias von `primary`).
 > `ui-badge` trägt die semantische Farbrolle seit P92 im Feld `variant` (früher `severity`).
 
+### `variant` vs. `color` — die Reduktion und die Obermenge (P238, ADR 0039)
+
+`variant` ist die **Reduktion** auf die üblichen Theme-Tokens. Das Basis-Feld
+`color` bietet **dieselben Tokens und darüber hinaus jede Farbe** — es ist damit
+die **Obermenge** von `variant`. Beide sind **wechselseitig exklusiv**
+([ADR 0015](../../adr/0015-common-base-fields-and-editor-structure.md) §1): ein
+Knoten bietet `variant` **oder** `color`, nie beides. Trägt ein Knoten `variant`,
+zeigt der Editor `color` als N/A („Nutzt die semantische Variant").
+
+**Das `color`-Standard-Control — ein Control, drei Autoren-Wege**
+([ADR 0039](../../adr/0039-colour-field-model-color-is-tokens-plus-any-colour-variant-is-the-reduction.md)
+§1). Überall, wo `color` gilt (~30 Knoten, gemeinsamer Helper
+`installBaseFields`), bietet das Feld:
+
+1. **Theme-Token** — das semantische Farb-Vokabular (`COLOR_TOKENS` in
+   `packages/schema/src/contracts.ts`), aufgelöst gegen die Design-Tokens der App.
+2. **Farbe** — beliebige Farbe über den Color-Selector (HSB/RGB/Web) oder als
+   getippter CSS-Wert.
+3. **Binding** — der volle kanonische Satz
+   ([ADR 0012](../../adr/0012-binding-ubiquity-every-value-field-offers-bindings.md)).
+   Eine gebundene Farbe ändert sich **live** (SSE-Re-Render).
+
+**Repräsentation.** Ein Token wird als **präfixiertes Literal** `token:<name>`
+persistiert — ein gewöhnliches `{kind:"literal"}`-Binding, keine neue Schema-Art
+(Präzedenz: `asset:<id>` auf `ui-image.src`). Das Präfix hält Token und Farbe
+**eindeutig** auseinander: ein nacktes `primary` ist **kein** gültiger CSS-Wert
+und darf nie roh ins DOM gelangen.
+
+**Auflösung** (`resolveColorValue`, `resources/lib/webapp-serializer.js` — der
+gemeinsame Helper für alle Knoten):
+
+| `color`-Wert | gerendert als |
+|---|---|
+| `token:primary` / `token:success` / `token:warning` / `token:danger` / `token:neutral` | `var(--wa-color-<token>)` |
+| `token:info` | `var(--wa-color-primary)` (Alias — es gibt kein `--wa-color-info`) |
+| `token:muted` | `var(--wa-color-text-muted)` |
+| `#ff0000`, `rgb(…)`, `hsl(…)`, `red`, `var(…)` | unverändert durchgereicht |
+| leer / unbekannt | **kein** Style-Attribut (nie ungültiges CSS) |
+
+Ein Token folgt damit dem Theme: `designTokens` am `ui-app` überschreiben
+`--wa-color-*` (Ebene 1 oben), also ändert sich die Token-Farbe mit dem Theme —
+eine freie Farbe ist fix.
+
+**Vokabular.** `COLOR_TOKENS` = `primary`, `success`, `warning`, `danger`,
+`neutral`, `info`, `muted` — **nur Farben**. Die Nicht-Farb-Ausprägungen der
+Variant-Vokabulare (`ghost`/`link` bei `ui-button`, `line`/`contained`/`pills`
+bei `ui-tabs`) gehören **nicht** dazu: eine Farbe kann sie nicht ausdrücken, sie
+sind `variant`-Sache (ADR 0039 §2). `default` aus `TEXT_COLOR_VARIANTS` fehlt
+bewusst — „erbt die umgebende Farbe" ist genau das, was ein **leeres** `color`
+bereits bedeutet.
+
 ### Variant vs. displayType
 
 Einige Knoten haben ein Feld, das in Wahrheit ein **Darstellungstyp** ist, keine
