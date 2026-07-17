@@ -38,7 +38,17 @@
                 name: { value: "" },
                 parent: { value: "" },
                 mount: { value: "", required: true },
+                // P239 (ADR 0012): `icon` is BINDABLE and therefore persists the
+                // raw iconFieldSchema value — a bare string ("home"), a literal
+                // {library,name} or a binding OBJECT. Like `color` above it has NO
+                // matching #node-input-icon element any more: the typedInput lives
+                // on the iconBinding carrier, so Node-RED's post-oneditsave
+                // field-copy cannot clobber the object back to a bare string
+                // (ADR 0031, the open→save clobber bug class). `required` still
+                // gates an EMPTY icon on the canvas (validateNodeProperty reads the
+                // property, not the DOM).
                 icon: { value: "", required: true },
+                iconBinding: { value: "" },
                 size: { value: "md" },
                 // P238: `color` persists the binding OBJECT. There is no matching
                 // #node-input-color element any more (the typedInput lives on the
@@ -64,12 +74,24 @@
             },
             oneditsave: function () {
                 common.applyBaseFields(BASE_FIELDS).call(this);
+                // P239: persist the icon field. An untouched literal is written back
+                // verbatim (lossless round-trip for a bare string AND {library,name});
+                // a binding type persists the binding object.
+                this.icon = common.readIconField("#node-input-iconBinding");
             },
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
                 common.installBaseFields(BASE_FIELDS).call(this);
                 common.installLayoutChildPropRows().call(this);
-                common.installIconField("#node-input-icon", { title: "Icon auswählen" });
+                // P239 (ADR 0012 §Binding-Ubiquität): the icon NAME is bindable.
+                // `binding: true` turns the shared control into a typedInput over the
+                // canonical binding set; the P69 picker + preview stay on the literal
+                // type. Seeded from the stored value (the carrier starts empty).
+                common.installIconField("#node-input-iconBinding", {
+                    title: "Icon auswählen",
+                    binding: true,
+                    value: this.icon
+                });
                 // P159: inject the xs..xl size SelectBox (mirrors installSizeSelectBox
                 // mechanism; uses the wider ICON_SIZE_OPTIONS set).
                 common.installIconSizeSelectBox().call(this);
@@ -81,11 +103,19 @@
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
-    <div class="form-row"><label for="node-input-icon">Icon Name</label><input type="text" id="node-input-icon" placeholder="e.g. home, user, check"></div>
+    <!-- P239: the Icon-Name row carries the iconBinding CARRIER (installIconField
+         turns it into a typedInput). The persisted `icon` property deliberately has
+         no #node-input-icon element — see the defaults block. -->
+    <div class="form-row"><label for="node-input-iconBinding">Icon Name</label><input type="text" id="node-input-iconBinding" placeholder="e.g. home, user, check"></div>
     <!-- P238: the "Color" row is no longer hand-written here. installBaseFields
          injects the shared standard control on #node-input-colorBinding. -->
 </script>
 <script type="text/html" data-help-name="ui-icon"><p>Zeigt ein Icon anhand seines Namens (icon-set-agnostisch).</p>
+<p><b>Icon Name</b> — der Icon-Name. Zwei Wege in einem Control:</p>
+<ul>
+  <li><b>Icon</b> (literal) — ein nackter Name (<code>home</code>) nutzt die Default-Library, die Kurzform <code>library:name</code> (<code>lucide:user</code>) eine registrierte Zusatz-Library. Der Button „Icon wählen…" (bzw. der Expand-Button am Feld) öffnet den Icon-Picker; daneben steht eine Vorschau.</li>
+  <li><b>Binding</b> — jede kanonische Binding-Art (Store/Query/Route-Param/Reactive/msg/JSONata/Flow/Global/Env …). Ein gebundener Icon-Name tauscht das Icon live (SSE). Der aufgelöste Wert ist derselbe String wie im literalen Modus (<code>house</code> oder <code>lucide:user</code>).</li>
+</ul>
 <p><b>Color</b> — die Farbe des Icons. Drei Wege in einem Control:</p>
 <ul>
   <li><b>Theme Token</b> — die semantischen Farb-Tokens der App (<code>primary</code>, <code>success</code>, <code>warning</code>, <code>danger</code>, <code>neutral</code>, <code>info</code>, <code>muted</code>). Folgt dem Theme: gespeichert als <code>token:&lt;name&gt;</code>, gerendert als <code>var(--wa-color-&lt;token&gt;)</code>.</li>

@@ -51,7 +51,7 @@ Basis-Satz aus (`omit`); `disabled` ist N/A:
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `icon` | „Icon" | Textfeld + Icon-Picker (P69) | **ja** | Backend-neutraler Icon-Wert `{ library, name }`. Im Editor als Textfeld mit „Icon wählen…"-Button gespeichert: ein nackter Name (`home`) nutzt die Default-Library (das vendorte Bootstrap-Set), die Kurzform `library:name` (`lucide:user`) wählt eine registrierte Zusatz-Library. Darf nicht leer sein. Bindbar (literal via Picker ODER dynamisch via state/msg/store/…). Das Renderer-Backend löst `{ library, name }` gegen sein Icon-Set auf (`<sl-icon library name>`). |
+| `icon` | „Icon Name" | typedInput: **Icon** (literal, mit Icon-Picker P69 + Vorschau) \| **Bindings** (voller kanonischer Satz) | **ja** | Backend-neutraler Icon-Wert. **Bindbar** (P239, [ADR 0012](../../adr/0012-binding-ubiquity-every-value-field-offers-bindings.md)) — bis P239 war das Feld ein reines Textfeld, die Binding-Fähigkeit des Schemas also im Editor **unerreichbar**. Zwei Wege in einem Control: **Icon** (literal) — ein nackter Name (`home`) nutzt die Default-Library (das vendorte Bootstrap-Set), die Kurzform `library:name` (`lucide:user`) wählt eine registrierte Zusatz-Library; der Button „Icon wählen…" (und der Expand-Button am Feld) öffnet den Icon-Picker, daneben steht eine Vorschau. **Binding** — jede kanonische Binding-Art (Store/Query/Route-Param/Reactive/msg/JSONata/Flow/Global/Env; `state` bleibt für bestehende Bindings gültig, ist aber per Owner-Entscheidung nicht mehr autorierbar). Ein gebundener Name tauscht das Icon **live** (SSE-Re-Render); der aufgelöste Wert ist derselbe String wie im literalen Modus. Picker + Vorschau sind **literal-only** (eine Store-Pfad-Angabe hat nichts zu picken oder zu zeigen). Darf nicht leer sein. **Persistenz:** die drei Formen des `iconFieldSchema` — Bare-String (`"home"`), Literal `{ library, name }`, Binding-Objekt — werden **verlustfrei** round-getrippt: ein unverändert geöffnetes Literal wird exakt in seiner ursprünglichen Form zurückgeschrieben. Beobachtbare Wirkung: das Renderer-Backend löst `{ library, name }` gegen sein Icon-Set auf (`<sl-icon library name>`). |
 
 ### Gruppe „Darstellung"
 
@@ -75,7 +75,8 @@ Die Felder dieser Gruppe werden vom Editor **abhängig vom gewählten Mount** ei
 
 Der `data-help-name="ui-icon"`-Hilfetext soll **knapp, aber ausreichend** sein:
 Zweck (Icon per symbolischen Namen, backend-agnostisch), Hinweis auf Icon-Name-Vokabular,
-`size` und `color` und ein Link auf die ausführliche Doku:
+die beiden Wege des `icon`-Controls (literaler Picker vs. Binding), `size` und `color`
+und ein Link auf die ausführliche Doku:
 `https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/display/ui-icon.md`.
 
 ## Input
@@ -119,6 +120,14 @@ Backends folgen demselben semantischen Contract.
   `<sl-icon library name>`); ein anderes Backend kann dasselbe Paar auf seinen
   eigenen Icon-Mechanismus mappen (ADR 0002). Portabilität von `{ library, name }`
   setzt voraus, dass die Library im Ziel-Backend registriert ist.
+- **Bindbarer Icon-Name (P239, ADR 0012).** `icon` ist ein Wert-Feld wie jedes
+  andere und bietet daher den vollen Binding-Satz an. Ein gebundener Icon-Name
+  löst zur Laufzeit auf denselben String auf, den der literale Modus speichert
+  (`house` oder `lucide:user`), und wird identisch gerendert. Das Feld persistiert
+  über den `iconBinding`-**Carrier** (`<base>`/`<base>Binding`, ADR 0031): die
+  persistierte Property `icon` hat bewusst **kein** `#node-input-icon`-Element,
+  weil Node-REDs Feld-Kopie nach `oneditsave` ein Binding-Objekt sonst wieder auf
+  einen nackten String zurückschreiben würde (Clobber-Bug-Klasse).
 - **Global registrierbare Icon-Libraries (P69).** Zusätzlich zur Default-Library
   (vendortes Bootstrap-Set) lassen sich weitere Libraries auf Modul-/globaler
   Ebene registrieren (`RED.settings.webappIconLibraries`, lokal ausgeliefert,

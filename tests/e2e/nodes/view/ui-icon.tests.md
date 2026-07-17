@@ -58,3 +58,55 @@ Gemessene Defaults: `--wa-color-primary:#3b82f6`, `--wa-color-success:#22c55e`,
 > über den Flow-Tab, `findAppIdForNode`). Mehrere Apps auf **einem** Tab filen das
 > Update unter der ersten App ab — das Icon aktualisiert dann nie. FlowBuilder +
 > `resetFlow` liefern ohnehin eine App pro Test.
+
+## Ergänzt (P239 — Icon-Name bindbar im Editor, ADR 0012)
+
+P235 hatte den **Laufzeit**-Pfad eines gebundenen Icon-Namens bereits bewiesen
+(P235-B01/B02) — die Bindung war dort aber nur durch **Hand-Edit am Flow-JSON**
+erreichbar. P239 schließt den **Editor-Exposure-Gap**: `installIconField` rendert
+statt eines reinen Textfelds einen typedInput über den kanonischen Binding-Satz.
+Die Tests unten fahren deshalb den **echten Editor** (nicht die Admin-API).
+
+### Unit (packages/editor/test/p239-icon-binding.test.ts — 18 Tests)
+
+Laden `resources/lib/editor-common.js` in einer vm (wie P113) und prüfen die reine
+Serialisierung ohne DOM.
+
+| ID | Beschreibung | Testziel |
+|---|---|---|
+| P239-U01 | `valueBindingTypes({category:"icon"})` == der `value`-Satz mit **genau einem** Delta: `str` → `icon` (positionsgleich, keine Additions/Removals) | Das `icon`-Category ist ein **Delta** auf dem kanonischen Satz (wie `color`, P238), keine Parallel-Liste — die Binding-Arten können nicht pro Feld auseinanderdriften. |
+| P239-U02 | Der `icon`-Literal-Typ trägt den P69-Picker auf seinem `expand`-Button | Das `ui-image.src`-Muster (Picker-Typ schreibt ein Literal zurück). |
+| P239-U03–U07 | `readIconBinding` öffnet alle drei `iconFieldSchema`-Formen korrekt (Bare-String, `library:name`, `{library,name}`, Binding-Objekt, leer) | Back-Compat: kein deployter Wert öffnet falsch. |
+| P239-U08–U14 | `applyIconBinding` ist **verlustfrei**: ein unverändertes Literal wird **identisch** (`toBe`) zurückgeschrieben — auch `{library:'default',name:'house'}`, dessen String-Form (`house`) die Library verschluckt | Der Kern der Round-trip-Akzeptanz; ein naives Save würde `{library,name}` → `"house"` driften. |
+| P239-U15–U18 | Literal→Binding persistiert das Binding-Objekt; Binding→Literal persistiert den nackten Namen (**nie** ein `{kind:"literal"}`-Wrapper); Whitespace wird getrimmt | Die Form-Grenze zwischen den beiden Autoren-Wegen. |
+
+### E2E: Editor-Weg (tests/e2e/nodes/view/ui-icon.spec.ts)
+
+Alle Erwartungswerte sind **gemessen** (laufendes Node-RED auf 1882), nicht hergeleitet.
+
+| ID | Beschreibung | Testziel |
+|---|---|---|
+| P239-E01 | Das Typ-Menü des Felds bietet **gemessen** genau `store, query, routeParam, reactive, msg, jsonata, icon, num, bool, json, date, flow, global, env` — **kein** `str`. Zusätzlich: `#node-input-icon` existiert **nicht**, `#node-input-iconBinding` trägt den typedInput-Container | Beweist die Editor-Exposure am **echten** Typ-Menü (nicht am Quelltext) und die Carrier-Form (ADR 0031). Gemessen aus dem geöffneten Menü (`.red-ui-typedInput-options:visible`) — jeder typedInput hängt sein eigenes Menü an `<body>`. |
+| P239-E02 | Autor wählt im Editor Typ **Store** + Store-Knoten → Save → gespeichert ist `{kind:"store", path:"iconEdStore"}` → Deploy → gerendertes `<sl-icon name>` == **`house`** (der aufgelöste Store-Wert), **nicht** das deployte Literal `gear`; danach Inject `replace` → `name` wechselt live auf **`star`** | **Die Kern-Akzeptanz.** Vor P239 unmöglich ohne Flow-JSON-Handarbeit. Misst das echte `name`-Attribut und den SSE-Live-Tausch — der in P235 belegte Laufzeitpfad, jetzt aus dem Editor erreichbar. |
+| P239-E03 | Literaler Modus: Button „Icon wählen…" + Vorschau sichtbar, Vorschau-`src` == `resources/node-red-contrib-webapp/shoelace/assets/icons/house.svg`; nach Wechsel auf Typ `store` **beide verschwunden**; zurück auf `icon` → beide wieder da (`gear.svg`) | Akzeptanz „Vorschau bleibt erhalten" + Picker/Vorschau sind literal-only (ein Store-Pfad hat nichts zu picken/zeigen). Gemessen an der echten Preview-URL, nicht an einem Tag. |
+| P239-E04 | Picker im literalen Modus **real geöffnet**: Suche → Tile `house` klicken → Feld-Typ bleibt `icon`, Wert `house` → Save → gespeichert `"house"` (**nackter String**, kein `{kind:"literal"}`-Wrapper) → Deploy → gerendertes `<sl-icon name="house">` | Akzeptanz „Der Auswahl-Dialog bleibt" — end-to-end bis aufs gerenderte Element, inkl. Back-Compat der persistierten Form. |
+
+### E2E: Round-trip (verlustfrei, ADR 0031)
+
+Öffnen→Done **ohne Änderung**; danach wird `RED.nodes.node(id).icon` gelesen.
+
+| ID | Beschreibung | Testziel |
+|---|---|---|
+| P239-R01 | Bare-String `"house"` überlebt unverändert | Back-Compat-Form (Muster jedes bestehenden Flows). |
+| P239-R02 | Shorthand `"lucide:star"` überlebt unverändert | Die Library-Kurzform wird nicht zerlegt. |
+| P239-R03 | Literal `{library:"lucide", name:"star"}` überlebt unverändert | Die Objekt-Form wird nicht zum String geplättet. |
+| P239-R04 | Literal `{library:"default", name:"house"}` überlebt unverändert | Schärfster Fall: die String-Form (`house`) verliert die Library — ein naives Save würde driften. |
+| P239-R05 | Binding `{kind:"state", path:"iconName"}` überlebt unverändert | Die neue Form clobbert nicht (die Bug-Klasse, gegen die der Carrier schützt). |
+
+> **Muster-Hinweis (P239):** `ui-button` und `ui-avatar` rufen `installIconField`
+> ebenfalls auf, steigen aber **nicht** in den Binding-Modus ein (`binding` ist
+> opt-in) und behalten das literale Textfeld — ihre Binding-Exposure gehört in
+> ihre eigenen Konformitäts-Pässe (ui-button: P236). Abgedeckt durch
+> `tests/e2e/nodes/editor/p69-icon-picker.spec.ts` (Library-Filter-Test auf
+> ui-button) — der Test läuft unverändert weiter und beweist damit, dass die
+> Erweiterung **additiv** ist.

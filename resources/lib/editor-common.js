@@ -4675,6 +4675,18 @@
         //   - the builtin `str` entry is replaced by the colour type — same type
         //     VALUE ("str") and same persisted literal, plus a colour selector.
         var isColorCategory = category === "color";
+        // P239 (ADR 0012 §Binding-Ubiquität, ADR 0039 §5): the `icon` category is
+        // the SAME set, made icon-aware — exactly like the `color` category above,
+        // and for the same reason: a DELTA on the default, never a separate list,
+        // so the canonical binding kinds cannot drift apart per field. Exactly ONE
+        // replacement, no additions and no removals:
+        //   - the builtin `str` entry is replaced by the icon literal type — same
+        //     literal author path, plus the P69 icon picker on its expand button.
+        // The icon literal does NOT serialise as `{kind:"literal"}` (that is what
+        // makes it its own type, not a `str` override like the colour one): the
+        // icon field's literal shape is the ICON-NATIVE `"name"` / `"library:name"`
+        // / `{library,name}` (iconFieldSchema) — see readIconBinding/applyIconBinding.
+        var isIconCategory = category === "icon";
         var types = [
             ...(isColorCategory ? [colorTokenTypedInputType()] : []),
             storeType,
@@ -4684,7 +4696,9 @@
             "msg",
             "jsonata",
             ...assetTypes,
-            isColorCategory ? colorLiteralTypedInputType() : "str",
+            isColorCategory
+                ? colorLiteralTypedInputType()
+                : (isIconCategory ? iconLiteralTypedInputType() : "str"),
             "num",
             "bool",
             "json",
@@ -6376,9 +6390,109 @@
         return { close: close };
     }
 
-    // Enhance a text input (#node-input-<field>) with an "Icon wählen…" button +
-    // a small live preview. Stores the chosen value ("name" or "library:name")
-    // back into the input and fires change.
+    // ── P239 (ADR 0012): the bindable icon field ─────────────────────────────
+    //
+    // `iconFieldSchema` is binding-capable (bare string | {library,name} | binding)
+    // and the renderer resolves a bound icon name live (proved by P235). Until
+    // P239 the editor offered a PLAIN TEXT input + picker button, so a state/store/
+    // query-bound icon name was unreachable for the author — an editor-exposure
+    // gap, not a runtime gap. The field is now a typedInput carrying the canonical
+    // binding set, with the picker kept as the LITERAL author path.
+    //
+    // The `icon` literal type. Mirrors colorLiteralTypedInputType / the P70 asset
+    // type: the picker lives on the typedInput's `expand` button and writes a
+    // literal back. Unlike the colour type it does NOT re-use the `str` value — an
+    // icon literal persists in its ICON-NATIVE shape ("home" / "library:name" /
+    // {library,name}), not as `{kind:"literal", value}`, so it needs its own kind.
+    function iconLiteralTypedInputType(options) {
+        var opts = options || {};
+        return {
+            value: "icon",
+            label: opts.label || "Icon",
+            icon: "fa fa-star-o",
+            hasValue: true,
+            expand: function () {
+                var that = this;
+                openIconPickerDialog({
+                    title: opts.pickerTitle || "Icon auswählen",
+                    value: String(that.value() || ""),
+                    onSelect: function (value) {
+                        that.value(value);
+                    }
+                });
+            }
+        };
+    }
+
+    // The STRING form of a stored icon LITERAL — the form the text field, the
+    // picker and the preview all speak. `{library,name}` → "library:name" (or the
+    // bare name for the default library); a bare string passes through trimmed.
+    // A binding object has no string form here (callers check first) → "".
+    function iconLiteralStringForm(stored) {
+        if (stored && typeof stored === "object") {
+            return typeof stored.name === "string" ? formatIconValue(stored) : "";
+        }
+        if (typeof stored === "string") {
+            return stored.trim();
+        }
+        return "";
+    }
+
+    // oneditprepare half: a stored `icon` (any of the three iconFieldSchema shapes)
+    // → the typedInput's {type, value}. A binding object surfaces as its own kind;
+    // everything else is the icon literal.
+    function readIconBinding(stored) {
+        var binding = parseBindingValue(stored);
+        if (binding) {
+            return readValueBinding(binding, "");
+        }
+        return { type: "icon", value: iconLiteralStringForm(stored) };
+    }
+
+    // oneditsave half: the typedInput's {type, value} → the persisted `icon`.
+    // `original` is the value the field was OPENED with; it is what makes the
+    // round-trip lossless. An untouched literal is written back VERBATIM in its
+    // original representation, so open→save drifts neither a back-compat bare
+    // string ("home") nor a literal {library,name} into some other shape. A
+    // genuinely changed literal persists as the plain string form (mapIconField in
+    // nodes/webapp.js splits "library:name" and applies the default library).
+    function applyIconBinding(type, value, original) {
+        if (type !== "icon") {
+            return applyValueBinding(type, value);
+        }
+        var text = String(value === undefined || value === null ? "" : value).trim();
+        var originalIsLiteral = original !== undefined && original !== null && !parseBindingValue(original);
+        if (originalIsLiteral && iconLiteralStringForm(original) === text) {
+            return original;
+        }
+        return text;
+    }
+
+    // Read the persisted `icon` value out of an installIconField control that was
+    // installed with `binding: true`. The oneditsave counterpart of installIconField.
+    function readIconField(fieldSelector) {
+        var $input = $(fieldSelector);
+        return applyIconBinding(
+            $input.typedInput("type"),
+            $input.typedInput("value"),
+            $input.data("webappIconFieldOriginal")
+        );
+    }
+
+    // Enhance an icon field (#node-input-<field>) with an "Icon wählen…" button +
+    // a small live preview. Stores the chosen value ("name" or "library:name").
+    //
+    // TWO MODES — the binding mode is OPT-IN, so this shared helper stays additive
+    // for every existing caller:
+    //   - default (ui-button, ui-avatar): the historical plain-text control. The
+    //     value lives in `#node-input-<field>` and Node-RED's own field-copy
+    //     persists it as a bare string. Unchanged.
+    //   - `binding: true` (ui-icon, P239): the field is a CARRIER (the `<base>` +
+    //     `<base>Binding` pattern of ADR 0031 — the persisted property must NOT
+    //     have a `#node-input-<base>` element, or Node-RED's post-oneditsave
+    //     field-copy would clobber the binding object back to a bare string). The
+    //     caller seeds it via `value:` and persists with readIconField().
+    //     Picker + preview stay, scoped to the literal type.
     function installIconField(fieldSelector, config) {
         const cfg = config || {};
         const $input = $(fieldSelector);
@@ -6387,14 +6501,64 @@
         }
         $input.data("webappIconFieldEnhanced", true);
 
+        const bindingMode = cfg.binding === true;
+
+        if (bindingMode) {
+            // Remember the opened-with value — applyIconBinding needs it to write an
+            // untouched literal back verbatim (lossless round-trip).
+            $input.data("webappIconFieldOriginal", cfg.value);
+            const editor = readIconBinding(cfg.value);
+            $input.typedInput({
+                default: editor.type,
+                // P182: gate the scope-local kinds by the edited node's scope; keep
+                // the current kind so an existing item/index/prop icon binding stays
+                // editable even when re-opened outside its scope.
+                types: valueBindingTypes({ category: "icon", currentKind: editor.type })
+            });
+            $input.typedInput("type", editor.type);
+            $input.typedInput("value", editor.value);
+        }
+
         const $preview = $("<img class=\"webapp-icon-field-preview\">").css({ width: "20px", height: "20px", "vertical-align": "middle", "margin-right": "6px" }).hide();
         const $button = $("<button type=\"button\" class=\"red-ui-button webapp-icon-field-button\">").text("Icon wählen…").css({ "margin-left": "6px" });
 
+        // typedInput keeps the original input in the DOM (hidden) and renders its
+        // container AFTER it — so the preview still goes before the input, but the
+        // button must go after the CONTAINER, not after the (hidden) input.
         $input.before($preview);
-        $input.after($button);
+        if (bindingMode) {
+            $input.next(".red-ui-typedInput-container").after($button);
+        }
+        else {
+            $input.after($button);
+        }
+
+        // Is the control currently on its literal author path? (Always, outside
+        // binding mode.) Picker + preview are literal-only: there is nothing to
+        // preview for a state/store path, and the picker writes a literal.
+        function isLiteralMode() {
+            return !bindingMode || $input.typedInput("type") === "icon";
+        }
+        function currentText() {
+            return bindingMode ? String($input.typedInput("value") || "") : String($input.val() || "");
+        }
+        function setText(value) {
+            if (bindingMode) {
+                $input.typedInput("value", value);
+            }
+            else {
+                $input.val(value).trigger("change");
+            }
+        }
 
         function refreshPreview() {
-            const parsed = parseIconValue($input.val());
+            if (!isLiteralMode()) {
+                $preview.hide();
+                $button.hide();
+                return;
+            }
+            $button.show();
+            const parsed = parseIconValue(currentText());
             if (!parsed) {
                 $preview.hide();
                 return;
@@ -6412,9 +6576,9 @@
             e.preventDefault();
             openIconPickerDialog({
                 title: cfg.title || "Icon auswählen",
-                value: $input.val(),
+                value: currentText(),
                 onSelect: function (value) {
-                    $input.val(value).trigger("change");
+                    setText(value);
                     refreshPreview();
                 }
             });
@@ -6653,6 +6817,12 @@
         installEventCheckboxes,
         installLayoutChildPropRows,
         installIconField,
+        // P239: the oneditsave counterpart of installIconField({binding:true}),
+        // plus its pure read/apply pair (unit-testable without a DOM).
+        readIconField,
+        readIconBinding,
+        applyIconBinding,
+        iconLiteralStringForm,
         installLayoutSelector,
         installNodePicker,
         installParentAppSelector,
