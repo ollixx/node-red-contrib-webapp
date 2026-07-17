@@ -130,6 +130,11 @@ sind `variant`-Sache (ADR 0039 §2). `default` aus `TEXT_COLOR_VARIANTS` fehlt
 bewusst — „erbt die umgebende Farbe" ist genau das, was ein **leeres** `color`
 bereits bedeutet.
 
+**Welcher Knoten welche Seite trägt** — die vollständige, backend-begründete
+Entscheidungstabelle über **alle** `ui-*`-Knoten (inkl. Backend-Minimum je Knoten
+und der gemessenen Abweichungen) steht in
+[field-conventions.md → `variant` vs. `color` — die Entscheidungstabelle pro Knoten](field-conventions.md#variant-vs-color--die-entscheidungstabelle-pro-knoten-p240-adr-0039-3).
+
 ### Variant vs. displayType
 
 Einige Knoten haben ein Feld, das in Wahrheit ein **Darstellungstyp** ist, keine
