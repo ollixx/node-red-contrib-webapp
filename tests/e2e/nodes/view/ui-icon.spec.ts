@@ -172,12 +172,15 @@ test.describe("ui-icon icon binding (P235)", () => {
     });
 });
 
-// ui-icon's `color` is a dedicated PLAIN-STRING field (schema: z.string()) — NOT
-// a binding object like ui-divider's base-field color. The serializer emits it
-// RAW as an inline `style="color:<value>"` on the <sl-icon> (renderIconHtml), so
-// the rendered element's computed `color` equals the configured value. (It does
-// NOT go through resolveColorValue / the Shoelace `--color` custom property — that
-// path is ui-divider's; do not assert `--color` here.)
+// NOTE (P238, ADR 0039 §4): the comment that stood here described ui-icon's
+// `color` as a dedicated PLAIN-STRING field (schema: z.string()) emitted RAW.
+// That override is GONE — `color` is now the shared BASE field (a binding), and
+// the value is resolved through resolveColorValue like every other node's colour.
+// The two P235 tests below still pass unchanged and are deliberately KEPT: their
+// `color: "rgb(0, 128, 0)"` is a plain string, i.e. exactly the pre-P238 DEPLOYED
+// shape, so they now double as back-compat coverage (the value passes through
+// resolveColorValue untouched). The P238 block further down adds the token,
+// binding, free-colour and #ff0000 back-compat proofs.
 test.describe("ui-icon color literal (P235)", () => {
     test.afterEach(async ({ request }) => { await resetFlow(request); });
 
@@ -280,5 +283,209 @@ test.describe("ui-icon msg.payload is pass-through (no icon setter) (P235)", () 
         await injectMessage(request, "iconMsgInj");
         await page.waitForTimeout(500);
         await expect(page.locator("sl-icon")).toHaveAttribute("name", "house");
+    });
+});
+
+/**
+ * P238 (ADR 0039) — the `color` standard control on ui-icon: tokens + any colour
+ * + binding, and the removal of the plain-string override.
+ *
+ * Every expected value below was MEASURED against a real Node-RED serving this
+ * exact flow (computed style read in the browser), never derived on paper:
+ *
+ *   token:primary  → style="color:var(--wa-color-primary)"     → rgb(59, 130, 246)
+ *   token:success  → style="color:var(--wa-color-success)"     → rgb(34, 197, 94)
+ *   token:danger   → style="color:var(--wa-color-danger)"      → rgb(239, 68, 68)
+ *   #ff0000        → style="color:#ff0000"                     → rgb(255, 0, 0)
+ *   (no colour)    → no style attribute                        → rgb(17, 24, 39)
+ *
+ * The `--wa-color-*` custom properties are THIS project's design tokens, defined
+ * on `:root` (nodes/webapp.js) and overridable per app via ui-app `designTokens`
+ * — that is why a token FOLLOWS the theme while a free colour is fixed. They are
+ * NOT Shoelace's `--sl-color-*-600`; the roadmap/ADR prose used that only as an
+ * illustrative "e.g.". The defaults measured above come from that :root block
+ * (--wa-color-primary:#3b82f6, --wa-color-success:#22c55e, --wa-color-danger:#ef4444,
+ * --wa-color-text:#111827).
+ *
+ * The unit-level twin (token→CSS-var resolution + the plain-string migration) is
+ * packages/runtime/test/p238-color-standard-control.test.ts.
+ */
+test.describe("ui-icon color: theme token (P238)", () => {
+    test.afterEach(async ({ request }) => { await resetFlow(request); });
+
+    test("token:primary → the design-token CSS custom property (computed style)", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "tokApp1", root: "tokApp1" })
+            .node("ui-icon", { id: "tokIcon1", icon: "house", color: { kind: "literal", value: "token:primary" } })
+            .build();
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "tokApp1");
+        await webapp.navigate("/");
+        const icon = page.locator("sl-icon").first();
+        await expect(icon).toBeVisible();
+
+        const color = await icon.evaluate((el) => getComputedStyle(el).color);
+        // MEASURED: var(--wa-color-primary) → :root --wa-color-primary:#3b82f6.
+        expect(color).toBe("rgb(59, 130, 246)");
+        // …and it is NOT the default text colour — i.e. the token actually applied
+        // rather than the icon simply inheriting (--wa-color-text:#111827).
+        expect(color).not.toBe("rgb(17, 24, 39)");
+    });
+
+    test("token:primary is rendered as a CSS var, never as raw `color: primary`", async ({ request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "tokApp2", root: "tokApp2" })
+            .node("ui-icon", { id: "tokIcon2", icon: "house", color: { kind: "literal", value: "token:primary" } })
+            .build();
+        await deployFlow(request, flow);
+
+        const res = await request.get("/webapp/tokApp2/");
+        expect(res.ok()).toBeTruthy();
+        const html = await res.text();
+        expect(html).toMatch(/<sl-icon[^>]*style="color:var\(--wa-color-primary\)"/);
+        // The whole point of the `token:` prefix (ADR 0039 §1): a bare token is not
+        // a valid CSS colour and must never reach the DOM.
+        expect(html).not.toContain("color:primary");
+        expect(html).not.toContain("color:token:primary");
+    });
+
+    test("an icon with NO colour has no style attribute (inherits the theme text colour)", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "tokApp3", root: "tokApp3" })
+            .node("ui-icon", { id: "tokIcon3", icon: "house" })
+            .build();
+        await deployFlow(request, flow);
+
+        const res = await request.get("/webapp/tokApp3/");
+        const html = await res.text();
+        expect(html).toMatch(/<sl-icon class="webapp-icon" name="house" data-webapp-node="tokIcon3">/);
+
+        const webapp = new WebappPage(page, "tokApp3");
+        await webapp.navigate("/");
+        // MEASURED: inherits body colour (--wa-color-text:#111827). This is the
+        // baseline the token test above asserts it is NOT.
+        expect(await page.locator("sl-icon").first().evaluate((el) => getComputedStyle(el).color))
+            .toBe("rgb(17, 24, 39)");
+    });
+});
+
+test.describe("ui-icon color: free colour via the selector (P238)", () => {
+    test.afterEach(async ({ request }) => { await resetFlow(request); });
+
+    // The colour selector persists a plain literal binding — `{kind:"literal",
+    // value:"<css>"}` — so THIS is the shape the picker produces. (P235's literal
+    // test above covers the pre-P238 PLAIN-STRING shape, which is a different
+    // input: it is the back-compat path, not what the selector writes.)
+    test("a selector colour (#ff0000) renders as that colour (computed style)", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "freeApp1", root: "freeApp1" })
+            .node("ui-icon", { id: "freeIcon1", icon: "house", color: { kind: "literal", value: "#ff0000" } })
+            .build();
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "freeApp1");
+        await webapp.navigate("/");
+        const icon = page.locator("sl-icon").first();
+        await expect(icon).toBeVisible();
+        // MEASURED: style="color:#ff0000" → computed rgb(255, 0, 0).
+        expect(await icon.evaluate((el) => getComputedStyle(el).color)).toBe("rgb(255, 0, 0)");
+    });
+});
+
+test.describe("ui-icon color: back-compat with a deployed plain string (P238)", () => {
+    test.afterEach(async ({ request }) => { await resetFlow(request); });
+
+    // The migration guard for ADR 0039 §4. Before P238 ui-icon's `color` was a
+    // plain string (`z.string()`), so every DEPLOYED ui-icon carries one. With the
+    // override removed the base schema is `bindingSchema.optional()` — a bare
+    // string would now FAIL validation and the icon would drop out of the app.
+    // normalizeColorField (nodes/webapp.js mapConfig) migrates it to a literal
+    // binding before validation, so the flow renders unchanged without being
+    // re-opened. Goes red if that migration is ever dropped.
+    test("a deployed plain-string colour still renders unchanged (computed style)", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "bcApp1", root: "bcApp1" })
+            .node("ui-icon", { id: "bcIcon1", icon: "house", color: "#ff0000" })
+            .build();
+        await deployFlow(request, flow);
+
+        const res = await request.get("/webapp/bcApp1/");
+        expect(res.ok()).toBeTruthy();
+        const html = await res.text();
+        // The node did not drop out (it would if the plain string failed validation).
+        expect(html).toMatch(/<sl-icon[^>]*style="color:#ff0000"/);
+
+        const webapp = new WebappPage(page, "bcApp1");
+        await webapp.navigate("/");
+        const icon = page.locator("sl-icon").first();
+        await expect(icon).toBeVisible();
+        // MEASURED: identical to the literal-binding path — no flow loses its colour.
+        expect(await icon.evaluate((el) => getComputedStyle(el).color)).toBe("rgb(255, 0, 0)");
+    });
+});
+
+/**
+ * THE headline P238 proof (ADR 0039 §4): a state/store-BOUND colour on ui-icon.
+ * This was IMPOSSIBLE before P238 — `color` was a plain string, so getBinding()
+ * never matched it, bind.color stayed empty and no binding could ever drive the
+ * icon's colour. Both tests below would fail on the pre-P238 code.
+ *
+ * Note the flow keeps ONE ui-app: a store update is routed to the app that owns
+ * the store node by flow tab (P201, findAppIdForNode), so several apps sharing a
+ * tab would misfile the update under the first app and the icon would never
+ * update. FlowBuilder + resetFlow already give one app per test.
+ */
+test.describe("ui-icon color: bound to a store (P238)", () => {
+    test.afterEach(async ({ request }) => { await resetFlow(request); });
+
+    test("a store-bound colour colours the icon", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "colBindApp1", root: "colBindApp1" })
+            .node("ui-store", { id: "colStore1", parent: "colBindApp1", statePath: "iconColor", initialValue: JSON.stringify("token:success") })
+            .node("ui-icon", { id: "colBindIcon1", icon: "house", color: { kind: "store", path: "colStore1" } })
+            .build();
+        await deployFlow(request, flow);
+
+        const res = await request.get("/webapp/colBindApp1/");
+        const html = await res.text();
+        // The renderer resolves bind.color (store → "token:success") into
+        // resolvedProps.color, and the serializer resolves the TOKEN from there —
+        // so a token stored as data works exactly like one configured in the editor.
+        expect(html).toMatch(/<sl-icon[^>]*style="color:var\(--wa-color-success\)"/);
+
+        const webapp = new WebappPage(page, "colBindApp1");
+        await webapp.navigate("/");
+        const icon = page.locator("sl-icon").first();
+        await expect(icon).toBeVisible();
+        // MEASURED: var(--wa-color-success) → :root --wa-color-success:#22c55e.
+        expect(await icon.evaluate((el) => getComputedStyle(el).color)).toBe("rgb(34, 197, 94)");
+    });
+
+    test("a store change recolours the icon live via SSE", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "colBindApp2", root: "colBindApp2" })
+            .node("ui-store", { id: "colStore2", parent: "colBindApp2", statePath: "iconColor", initialValue: JSON.stringify("token:success") })
+            .node("ui-icon", { id: "colBindIcon2", icon: "house", color: { kind: "store", path: "colStore2" } })
+            .withStoreInject("colInj2", "colStore2", "token:danger")
+            .build();
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "colBindApp2");
+        await webapp.navigate("/");
+        const icon = page.locator("sl-icon").first();
+        await expect(icon).toBeVisible();
+
+        // MEASURED initial value (--wa-color-success:#22c55e).
+        await expect.poll(async () => icon.evaluate((el) => getComputedStyle(el).color), { timeout: 5000 })
+            .toBe("rgb(34, 197, 94)");
+
+        // Replace the store value; the store handler pushes an SSE snapshot that
+        // morphs the DOM — WITHOUT a page reload.
+        await injectMessage(request, "colInj2");
+
+        // MEASURED after the SSE morph (--wa-color-danger:#ef4444).
+        await expect.poll(async () => icon.evaluate((el) => getComputedStyle(el).color), { timeout: 5000 })
+            .toBe("rgb(239, 68, 68)");
     });
 });

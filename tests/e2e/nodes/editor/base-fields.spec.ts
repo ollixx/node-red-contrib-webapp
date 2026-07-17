@@ -622,7 +622,11 @@ const BASE_FIELD_MATRIX: BaseFieldMatrixRow[] = [
     { type: "ui-button", visible: "active", disabled: "omit", color: "na", size: "omit", roundTrip: "visible" },
     { type: "ui-text", visible: "active", disabled: "na", color: "na", size: "omit", roundTrip: "visible" },
     { type: "ui-avatar", visible: "active", disabled: "na", color: "active", size: "omit", roundTrip: "visible" },
-    { type: "ui-icon", visible: "active", disabled: "na", color: "omit", size: "omit", roundTrip: "visible" },
+    // P238 (ADR 0039 §4): `color` is ACTIVE — ui-icon dropped its `omit:["color"]`
+    // opt-out and its plain-string schema override, and now uses the shared
+    // standard control (theme token / colour selector / any binding kind) like
+    // every other colour-capable node. `size` keeps its own xs..xl control.
+    { type: "ui-icon", visible: "active", disabled: "na", color: "active", size: "omit", roundTrip: "visible" },
     { type: "ui-image", visible: "active", disabled: "na", color: "na", size: "na", roundTrip: "visible" },
     { type: "ui-container", visible: "active", disabled: "na", color: "active", size: "na", roundTrip: "visible" },
     { type: "ui-table", visible: "active", disabled: "active", color: "active", size: "na", roundTrip: "visible" },
