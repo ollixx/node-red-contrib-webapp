@@ -911,6 +911,11 @@ describe("P16c navigation and structure nodes", () => {
         }
     });
 
+    // P238 (ADR 0039 §4): ui-icon dropped its plain-string `color` override and
+    // uses the BASE `color: bindingSchema.optional()`. At DEFINITION level the
+    // colour is therefore a binding object — a deployed plain string is migrated
+    // to a literal binding by the ui-icon mapConfig (nodes/webapp.js) / the editor
+    // package before it ever reaches this schema.
     it("compiles ui-icon with name", () => {
         const result = validateUiNodeDefinition({
             type: "ui-icon",
@@ -918,7 +923,31 @@ describe("P16c navigation and structure nodes", () => {
             mount: "route:/customers/content",
             icon: "home",
             size: "md",
-            color: "#333"
+            color: { kind: "literal", value: "#333" }
+        });
+
+        expect(result.success).toBe(true);
+    });
+
+    it("compiles ui-icon with a theme-token colour (token:<name> literal)", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-icon",
+            id: "icon1",
+            mount: "route:/customers/content",
+            icon: "home",
+            color: { kind: "literal", value: "token:primary" }
+        });
+
+        expect(result.success).toBe(true);
+    });
+
+    it("compiles ui-icon with a store-bound colour (was impossible before P238)", () => {
+        const result = validateUiNodeDefinition({
+            type: "ui-icon",
+            id: "icon1",
+            mount: "route:/customers/content",
+            icon: "home",
+            color: { kind: "store", path: "iconColor" }
         });
 
         expect(result.success).toBe(true);

@@ -90,8 +90,17 @@ describe("P231: toComponentDefinitions — generic color/visible routing (not li
         expect((def.bind as Record<string, unknown>).color).toEqual({ kind: "store", path: "avatarColor" });
     });
 
-    it("a plain-string color (ui-icon's own field) is NOT routed to bind.color", () => {
+    // P238 (ADR 0039 §4): ui-icon no longer has a plain-string `color` field — it
+    // uses the base bindable colour like every other node, and a store/state-bound
+    // colour DOES now route into bind.color (see
+    // p238-color-standard-control.test.ts). What is asserted here is the narrower,
+    // still-true fact about THIS pass: toComponentDefinitions routes only binding
+    // OBJECTS. A legacy plain string is migrated upstream by the ui-icon mapConfig;
+    // if one reaches this pass unmigrated it stays in props (where the serializer
+    // resolves it), rather than being silently treated as a binding.
+    it("a plain-string color is NOT routed to bind.color (only binding objects are)", () => {
         const def = compile({ type: "ui-icon", id: "ic", mount, icon: "star", color: "#123456" });
         expect((def.bind as Record<string, unknown>).color).toBeUndefined();
+        expect((def.props as Record<string, unknown>).color).toBe("#123456");
     });
 });
