@@ -3,7 +3,7 @@ id: P239
 node: ui-icon
 title: "ui-icon: Icon-Name im Editor bindbar (typedInput) — Auswahl-Dialog bleibt"
 epic: aspects/node-conformance
-status: pending
+status: in_progress
 dependencies: [P238]
 verify: browser
 spec: docs/nodes/display/ui-icon.md

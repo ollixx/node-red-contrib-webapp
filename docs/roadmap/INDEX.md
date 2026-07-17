@@ -28,7 +28,6 @@ their blocker clears.
 ## Open work (pending / in_progress)
 
 - **P239** — aspects/node-conformance — **ui-icon**: Icon-Name im Editor bindbar (typedInput), Auswahl-Dialog bleibt — *Owner 2026-07-17; ADR 0039* — [P239](aspects/node-conformance/P239-ui-icon-name-bindable-editor.md)
-- **P240** — aspects/node-conformance — **Review variant-vs-color pro Knoten** (backend-getrieben): Entscheidungstabelle + Findings; Umklassifizierung erst als Folge-Pakete — *Owner 2026-07-17; ADR 0039* — [P240](aspects/node-conformance/P240-variant-vs-color-per-node-review.md)
 - **P241** — aspects/node-conformance — Konformitäts-Pass **ui-skeleton**: der Knoten **rendert nichts** → echtes Output (sl-skeleton ist vendored), Base-Fields, Spec-Drift, `lines`-Validierung, frische Tests — *Owner 2026-07-17; node-conformance* — [P241](aspects/node-conformance/P241-conformance-ui-skeleton.md)
 
 
@@ -93,7 +92,7 @@ open the folder for the full history.
 | nodes/ui-accordion | 2 |
 | nodes/ui-breadcrumb · ui-dialog · ui-progress · ui-skeleton | 1 each |
 | aspects/test-infra | 28 |
-| aspects/node-conformance | 7 |
+| aspects/node-conformance | 8 |
 | aspects/misc | 16 |
 | aspects/docs | 1 |
 | aspects/runtime | 9 |
@@ -105,4 +104,4 @@ open the folder for the full history.
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 234 done, 2 open, 12 deferred.**
+**Total: 235 done, 2 open, 12 deferred.**
