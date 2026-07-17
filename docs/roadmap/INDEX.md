@@ -29,6 +29,7 @@ their blocker clears.
 
 - **P239** — aspects/node-conformance — **ui-icon**: Icon-Name im Editor bindbar (typedInput), Auswahl-Dialog bleibt — *Owner 2026-07-17; ADR 0039* — [P239](aspects/node-conformance/P239-ui-icon-name-bindable-editor.md)
 - **P240** — aspects/node-conformance — **Review variant-vs-color pro Knoten** (backend-getrieben): Entscheidungstabelle + Findings; Umklassifizierung erst als Folge-Pakete — *Owner 2026-07-17; ADR 0039* — [P240](aspects/node-conformance/P240-variant-vs-color-per-node-review.md)
+- **P241** — aspects/node-conformance — Konformitäts-Pass **ui-skeleton**: der Knoten **rendert nichts** → echtes Output (sl-skeleton ist vendored), Base-Fields, Spec-Drift, `lines`-Validierung, frische Tests — *Owner 2026-07-17; node-conformance* — [P241](aspects/node-conformance/P241-conformance-ui-skeleton.md)
 
 
 ## Deferred (parked, not abandoned)
