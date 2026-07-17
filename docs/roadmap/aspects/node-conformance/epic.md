@@ -50,6 +50,24 @@ display → input → feedback → navigation → structure → state → behavi
   per-Knoten-Pässe darauf bauen — bereits erledigt/geplant: **P231** (Base-Fields
   in Schema+Laufzeit, done), **P232** (Voll-Doku-Link in alle Inline-Hilfen),
   **P233** (verbotene „renders without crashing\"-Tests ersetzen).
+- **Muster 6 (Editor-Exposure-Gap) — geprüft 2026-07-17, NICHT systemisch.** Gegenstück
+  zu Muster 4: Schema+Renderer können Binding, aber das Editor-Control ist kein
+  typedInput → für den Autor unerreichbar. Sweep über alle 41 Knoten mit Schema
+  (Binding-Fähigkeit transitiv aufgelöst, inkl. Aliase wie `iconFieldSchema`):
+  **12 Kandidaten → 1 echter Fall** (`ui-icon.icon` → **P239**), 1 bekannt-übersprungener
+  (`ui-empty-state.visible`: eigenes Plain-Text-`visiblePath` statt typedInput —
+  gehört in den **P152**-Redesign), **10 False Positives**. **Kein Batch-Paket nötig.**
+  - **Warum ein Muster-6-Guardrail heute NICHT sauber baubar ist:** Editor-Feldnamen
+    und Schema-Feldnamen weichen *by design* ab, `mapConfig` (`nodes/webapp.js`)
+    übersetzt — `currentPage`→`page`, `total`→`totalPages`, `activeRoute`→`activeItem`,
+    `fallback`→`fallbackSrc`, `optionsField`→`options`. Ein Namens-Match-Check
+    produziert damit ~10/12 False Positives; er müsste `mapConfig` pro Knoten
+    verfolgen. Das ist die Feld-Modell-Normalisierung aus **ADR 0038** — der Guardrail
+    wartet auf **P228/P229** (deferred).
+  - **Nebenbefund:** derselbe Namens-Versatz ist der Grund, warum P237s
+    `check:binding-docs` `ui-icon.icon` nicht sehen konnte — es matcht nur Felder,
+    deren Ausdruck **wörtlich** `bindingSchema` enthält; `iconFieldSchema` ist ein
+    indirekter Alias.
 - **Discovery-Sweep:** ein schneller heuristischer Audit über alle 45 Knoten
   (Spec-Drift, fehlender Hilfe-Link, No-Crash-Tests, Katalog-Stubs, Testabdeckung)
   liefert die **priorisierte Reihenfolge** (worst-first) statt blinder Familien-
