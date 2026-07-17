@@ -106,6 +106,196 @@ ist ([ADR 0039](../../adr/0039-colour-field-model-color-is-tokens-plus-any-colou
 
 ---
 
+## `variant` vs. `color` — die Entscheidungstabelle pro Knoten (P240, ADR 0039 §3)
+
+> **Status: Evidenz, nicht Zielzustand.** Diese Tabelle hält fest, *welche Seite*
+> ein Knoten **tragen sollte** und **warum** — begründet aus dem, was das
+> Backend-Element real unterstützt. Die **Soll**-Spalte ist eine
+> **Produkt-Entscheidung** und steht unter Owner-Review; sie ist **kein**
+> Auftrag. Wo Soll ≠ Ist, steht der Befund in der letzten Spalte — eine
+> Umklassifizierung ist ein **Breaking Field Change** und bekommt je Knoten ein
+> eigenes Paket mit Migration ([ADR 0039](../../adr/0039-colour-field-model-color-is-tokens-plus-any-colour-variant-is-the-reduction.md),
+> Consequences). Vokabular + Auflösung: [theming.md](theming.md).
+
+### Die Entscheidungsregel
+
+Ein Knoten trägt seine Farbe in **`variant`**, wenn **eine** der beiden Klauseln
+aus ADR 0039 §2 greift:
+
+- **(a) natives Variant-Konzept** — das Backend-Element hat ein eigenes
+  `variant`-artiges Attribut, das eine freie Farbe **nicht** ansteuern kann
+  (Shoelace: `sl-button`, `sl-badge`, `sl-alert`), **oder**
+- **(b) Nicht-Farb-Ausprägungen im Vokabular** — Werte, die eine Farbe nicht
+  ausdrücken kann (`ghost`/`link`, `line`/`contained`/`pills`, `card`/`panel`).
+
+Greift **keine** Klausel und hat das Element einen **freien Farb-Hook** (eine
+setzbare CSS-Custom-Property, ein `color:`), trägt der Knoten **`color`** — die
+Obermenge. Hat das Element **gar keine** Farb-Oberfläche, ist Farbe **N/A**.
+
+**Wichtig — zwei Achsen, nicht eine.** Ein Feld namens `variant` ist nicht
+automatisch die Farbachse. Auf `ui-container`/`ui-tabs`/`ui-pagination`/
+`ui-stepper` ist `variant` reine **Erscheinung** (Element-Wahl, Füllung,
+Orientierung) und beantwortet die Farbfrage **gar nicht**. Diese Knoten stehen
+unten deshalb doppelt: `variant` = Erscheinung **und** eine eigene Farb-Zeile.
+
+### Backend-Minimum (die P102-Spalte)
+
+Die letzte Spalte benennt, was ein **zweites Backend** mindestens können muss,
+um die gewählte Seite zu bedienen. Vier Fähigkeits-Token — genau die Form, die
+[P102](backend-support.md) später als **Spalte pro Backend** (✓/✗) übernimmt:
+
+| Token | Bedeutung | Shoelace heute |
+|---|---|---|
+| `native-variant` | Element hat ein eigenes semantisches Variant-/Farbrollen-Attribut | `sl-button`, `sl-badge`, `sl-alert` |
+| `appearance-switch` | Element kann eine **Nicht-Farb**-Erscheinung umschalten (Füllung/Form/Element-Wahl) | `sl-input[filled]`, `sl-card` vs. `div` |
+| `color-hook` | Element hat einen **setzbaren freien Farbwert** (CSS-Custom-Property / `color:` / part) | `sl-divider --color`, `sl-progress-* --indicator-color`, `sl-icon color:` |
+| `—` | keine Farb-Oberfläche — nichts zu tragen | — |
+
+### A — Soll: `variant`
+
+| Knoten | Backend-Element | Was das Element real kann | Nicht-Farb-Werte? | Ist | Befund |
+|---|---|---|---|---|---|
+| `ui-button` | `sl-button` | natives `variant`-Attribut (`primary`/`success`/`neutral`/`warning`/`danger`/`text`/`default`) + `outline`; eine freie Farbe erreicht es nur über `::part(base)` | **ja** — `ghost`, `link` (`BUTTON_VARIANTS`) | `variant` (`color` N/A) | ✅ konform — beide Klauseln greifen |
+| `ui-badge` | `sl-badge` | natives `variant`-Attribut (`SEVERITY_VARIANTS` 1:1) | nein — reine Farbe | `variant` (`color` N/A) | ✅ konform — Klausel (a) |
+| `ui-alert` | `sl-alert` | natives `variant`-Attribut | nein — reine Farbe | Feld **`severity`**; `BASE_FIELDS.variant:false` + hand-gesetztes `color:false` | ⚠️ **F-1** — inhaltlich richtig, **Mechanik umgangen** |
+| `ui-toast` | `sl-alert` (Toast-Stack) | wie `ui-alert` | nein — reine Farbe | Feld **`severity`**; wie oben | ⚠️ **F-1** |
+
+**Backend-Minimum: `native-variant`** für alle vier. Ein Backend ohne natives
+Variant-Konzept muss die sechs bis acht Rollen selbst auf Klassen/CSS abbilden —
+das ist zulässig (many-to-one, [theming.md](theming.md) Ebene-3-Regeln), aber es
+darf das Vokabular nie erweitern.
+
+### B — `variant` = **Erscheinung** (beantwortet die Farbfrage nicht)
+
+| Knoten | Backend-Element | Vokabular | Was das Element real kann | Ist | Befund |
+|---|---|---|---|---|---|
+| `ui-container` | `sl-card` / `div` / `span` (variant **wählt das Element**) | `card`, `panel`, `section`, `transparent`, `span` | Element-Wahl + `webapp-container--<v>`-Klasse — real gerendert | `variant` gerendert; Editor-SelectBox vorhanden | ✅ Erscheinung korrekt bei `variant` |
+| `ui-input` | `sl-input` | `default`, `filled`, `outlined` | `sl-input` hat ein natives `filled` (+ `pill`) — die **Fähigkeit existiert**, der Serializer emittiert sie **nie** | `variant` im Schema + `defaults`, **kein** Rendering | ❌ **F-5** — Feld tot |
+| `ui-tabs` | `sl-tab-group` | `line`, `contained`, `pills` | `sl-tab-group` hat **kein** Variant-Attribut (nur `placement`/`activation`); der Serializer emittiert nichts | `variant` **nur im Schema** — kein `defaults`-Eintrag, kein Editor-Control | ❌ **F-8** — Feld tot **und** unerreichbar |
+| `ui-pagination` | `sl-button-group` | `numbered`, `simple` | kein Variant-Attribut; der Serializer emittiert nichts | `variant` **nur im Schema** | ❌ **F-8** |
+| `ui-stepper` | eigenes Markup | `horizontal`, `vertical` | — | `variant` **nur im Schema** | ❌ **F-8** + ⚠️ **F-14** (das ist eine **Orientierung**; `ui-divider` nennt dasselbe Konzept `orientation`) |
+
+**Backend-Minimum: `appearance-switch`.** Ein zweites Backend muss die
+Erscheinung selbst umschalten können (eigenes Element, eigene Klasse). Fehlt
+ihm die Ausprägung, degradiert es auf den dokumentierten Default — es ersetzt
+sie **nie** durch eine Farbe.
+
+### C — Soll: `color`
+
+| Knoten | Backend-Element | Der Farb-Hook, den es real hat | Ist | Befund |
+|---|---|---|---|---|
+| `ui-divider` | `sl-divider` | `--color`-Custom-Property — **angewandt** (`webapp-serializer.js:1435`) | `color` | ✅ konform — die Referenz-Implementierung |
+| `ui-progress` | `sl-progress-bar` / `-ring` / `sl-spinner` | `--indicator-color` — **angewandt** (`:966`) | `color` | ✅ konform |
+| `ui-list` | eigenes `<div class="webapp-list">` | inline `color:` — **angewandt** (`:1366`) | `color` | ✅ konform |
+| `ui-icon` | `sl-icon` | inline `color:` (`currentColor`) — **angewandt** (`:114`) | `color` | ✅ konform (seit P238) |
+| `ui-avatar` | `sl-avatar` | **kein** natives Variant (Schema sagt es selbst, `node-definitions.ts:1826`); der Hook ist CSS/`::part(base)` → freie Farbe | **`variant` (`SEVERITY_VARIANTS`) UND `color: true`** — beides aktiv, beides Farbe | ❌ **F-6 — echter Exklusivitäts-Verstoß.** `variant` rendert nur ein ungestyltes `data-variant`; `color` rendert **gar nichts** |
+| `ui-container` (Farbachse) | `sl-card` / `div` | `sl-card` hat Farb-Hooks (`--border-color`, Hintergrund via `::part(base)`) → Fähigkeit vorhanden | `color: true`, **nie emittiert** | ❌ **F-3** — inertes Control |
+| `ui-table` | eigenes `<table>` | `color:` trivial setzbar → Fähigkeit vorhanden | `color: true`, **nie emittiert** | ❌ **F-3** |
+| `ui-menu` | `sl-menu` | `color:` / `::part` → Fähigkeit vorhanden | `color: true`, **nie emittiert** | ❌ **F-3** |
+| `ui-breadcrumb` | `sl-breadcrumb` | `color:` → Fähigkeit vorhanden | `color: true`, **nie emittiert** | ❌ **F-3** |
+| `ui-stepper` (Farbachse) | eigenes Markup | `color:` → Fähigkeit vorhanden | `color: true`, **nie emittiert** | ❌ **F-3** |
+| `ui-empty-state` | eigenes Markup | `color:` → Fähigkeit vorhanden | `color: true`, **nie emittiert** | ❌ **F-3** |
+
+**Backend-Minimum: `color-hook`.** Ein zweites Backend muss **einen** setzbaren
+freien Farbwert am Element anbieten. Das ist die **schwächste** Anforderung der
+Tabelle — jedes DOM-basierte Backend erfüllt sie; genau deshalb ist `color` die
+**backend-neutralere** Seite und `variant` die, die eine Backend-Fähigkeit
+**voraussetzt**.
+
+### D — Soll: Farbe **N/A**
+
+| Knoten | Warum keine Farbachse | Ist | Befund |
+|---|---|---|---|
+| `ui-text` | — **siehe Owner-Frage 2**: das Vokabular ist **reine Farbe**, das Element (`<p>`/`<h1>`/…) hat einen freien `color:`-Hook → nach der Regel wäre **`color`** richtig | `variant` (`TEXT_COLOR_VARIANTS`), `color` N/A | ⚠️ **F-2** — der stärkste Reklassifizierungs-Kandidat |
+| `ui-select`, `ui-checkbox`, `ui-radio`, `ui-switch`, `ui-textarea`, `ui-datepicker`, `ui-slider` | Formularfeld — die Farbe ist Shoelace-Theming (`--sl-input-*`), keine Autoren-Achse; Zustandsfarben kommen aus der **Validierung** | `color: false` | ✅ Ergebnis korrekt — ⚠️ **F-4** (Hinweistext falsch) |
+| `ui-input` (Farbachse) | wie oben | `color: false` | ✅ / ⚠️ **F-4** |
+| `ui-tabs` (Farbachse) | `sl-tab-group` hat **keinen** Farb-Hook — die Tab-Farbe folgt der Token-Bridge (`--sl-color-primary`) | `color: true` | ❌ **F-7** — inertes Control; die gemessene Antwort auf „fehlt dem Knoten ein `color`?" ist **nein** |
+| `ui-accordion` | `sl-details` hat keinen `--color`-artigen Hook (nur `::part(base)`) | `color: true` | ❌ **F-9** — inertes Control; **Owner-Frage 4** |
+| `ui-pagination` (Farbachse) | `sl-button-group` delegiert die Farbe an die enthaltenen `sl-button` (dort = `variant`) | `color: true` | ❌ **F-7** |
+| `ui-image` | ein `<img>` hat keine Farbe | `color: false` | ✅ konform |
+| `ui-log` | die Farbe ist **pro Eintrag** aus der Severity abgeleitet — intern, keine Autoren-Achse | `color: false` | ✅ konform |
+| `ui-skeleton` | neutraler Platzhalter-Shimmer | **gar kein Basis-Feld-Block** (kein `BASE_FIELDS`, kein `installBaseFields`) — obwohl das Schema `...baseFieldsSchema` spreadet | ❌ **F-15** — der ADR-0015-Rollout hat diesen Knoten nie erreicht |
+| `ui-repeat`, `ui-tab`, `ui-accordion-section` | rendern **keine eigene Chrome** (ADR 0025: `ui-repeat` ist transparent) | `color: false` + Hinweis | ✅ konform |
+| `ui-app` | die App-Farbe **sind** die Design-Tokens (Ebene 1) — keine Element-Farbe | keine Basis-Felder | ✅ konform |
+| `ui-route`, `ui-dialog`, `ui-component-definition`, `ui-component-instance` | Struktur ohne eigene Farb-Oberfläche | keine Basis-Felder | ✅ konform |
+| `ui-store`, `ui-query`, `ui-store-read`, `ui-store-action`, `ui-query-action`, `ui-action`, `ui-navigation` | rendern **kein DOM** | keine Basis-Felder | ✅ konform |
+
+**Backend-Minimum: `—`.** Kein Backend muss hier etwas können.
+
+### Exklusivität (ADR 0015 §1) — der gemessene Stand
+
+Die Exklusivität ist im Helper implementiert: `variant: true` in `BASE_FIELDS`
+schaltet `color` auf N/A („Nutzt die semantische Variant",
+`resolveBaseFieldApplicability` in `resources/lib/editor-common.js`). Gesetzt ist
+das Flag auf **genau drei** Knoten: `ui-button`, `ui-badge`, `ui-text`.
+
+Damit ist die Durchsetzung **hand-gepflegt**, nicht abgeleitet — und der Baum
+weicht an zwei Stellen ab:
+
+- **`ui-avatar` trägt beides wirksam** (`variant: SEVERITY_VARIANTS` **und**
+  `color: true`) — beides ist die **Farbachse**. Das ist der **einzige echte**
+  Verstoß gegen ADR 0015 §1 (**F-6**).
+- **`ui-container`, `ui-tabs`, `ui-pagination`, `ui-stepper`** tragen ein
+  `variant`-Feld **und** `color: true`. Dem **Buchstaben** nach ein Verstoß, dem
+  **Sinn** nach keiner: ihr `variant` ist Erscheinung, nicht Farbe → **Owner-Frage 1**.
+- **`ui-alert`/`ui-toast`** sind nur deshalb konform, weil ihr `color: false`
+  **von Hand** gesetzt ist — ihr Farbfeld heißt `severity`, das Flag `variant`
+  steht auf `false`. Die Exklusivität ist hier **Zufall, keine Garantie** (**F-1**).
+
+### Offene Owner-Fragen (Produkt-Entscheidungen, keine Ableitungen)
+
+1. **Meint „exklusiv" die Felder oder die Farbachse?** ADR 0015 §1 sagt „nie
+   beides". Gemessen tragen vier Knoten ein `variant`-Feld **und** `color` —
+   ohne Konflikt, weil ihr `variant` Erscheinung ist. Präzisiert man §1 auf *„nie
+   zwei **Farb**-Achsen"*, sind diese vier konform und nur `ui-avatar` bleibt
+   Verstoß. Belässt man §1 wörtlich, brauchen vier Knoten eine Umbenennung
+   (`variant` → `displayType`/`orientation`, wie P49 es schon einmal getan hat).
+2. **`ui-text`: `variant` → `color`?** Die Regel sagt eindeutig `color`
+   (reine Farbe, kein natives Variant, freier `color:`-Hook). Die Migration wäre
+   **verlustfrei**: `COLOR_TOKENS` deckt `TEXT_COLOR_VARIANTS` exakt ab
+   (`muted` → `token:muted`, `default` → leeres `color`, Rest → `token:*`), und
+   der Autor gewönne freie Farben + Bindings. **Dagegen** spricht nur die
+   Konsistenz mit `ui-button`/`ui-badge` („Variant heißt überall Farbe") — und
+   `ui-text` rendert seine Farbe heute als **Klasse** (`webapp-text--color-<c>`),
+   was ein Theme-Wechsel mitnimmt, eine freie Farbe nicht.
+3. **`ui-avatar`: welche Seite gewinnt?** Beides ist heute wirkungslos —
+   `variant` erzeugt ein ungestyltes `data-variant`, `color` gar nichts. Nach der
+   Regel: `color` (kein natives Variant vorhanden). Nach der Absicht des
+   Schema-Kommentars (P94: „Bootstrap unterstützt das nativ per CSS-Klassen"):
+   `variant` — dort ist die Wahl bewusst **auf ein zweites Backend hin** getroffen
+   worden, das es noch nicht gibt. Das ist die einzige Stelle im Baum, wo P102s
+   Argument heute schon zieht.
+4. **Ist ein inertes `color` ein Bug oder ein Platzhalter?** Auf **acht** Knoten
+   (`ui-container`, `ui-table`, `ui-menu`, `ui-breadcrumb`, `ui-stepper`,
+   `ui-empty-state`, `ui-tabs`, `ui-accordion`) zeigt der Editor ein `color`, das
+   nie im DOM landet. ADR 0039 §3 sagt: *„Ein Knoten darf kein Control anbieten,
+   das das Backend nicht honorieren kann."* Entweder implementieren (sechs davon
+   **könnten**) oder auf N/A stellen (zwei **können** nicht) — beides sind
+   Folge-Pakete.
+
+### Findings-Register
+
+| Id | Knoten | Feld | Warum die heutige Zuordnung der Tabelle widerspricht |
+|---|---|---|---|
+| **F-1** | `ui-alert`, `ui-toast` | `severity` | Farbachse heißt nicht `variant`; `BASE_FIELDS.variant:false` + hand-gesetztes `color:false` → die Exklusivität ist nicht durchgesetzt, nur nachgebaut |
+| **F-2** | `ui-text` | `variant` | reine Farb-Vokabel + freier `color:`-Hook + kein natives Variant → nach ADR 0039 §2 gehört die Farbe in `color` |
+| **F-3** | `ui-container`, `ui-table`, `ui-menu`, `ui-breadcrumb`, `ui-stepper`, `ui-empty-state` | `color` | Control angeboten, Serializer emittiert es nie → inert. Fähigkeit **vorhanden**, Umsetzung fehlt (ADR 0039 §3) |
+| **F-4** | `ui-input`, `ui-select`, `ui-checkbox`, `ui-radio`, `ui-switch`, `ui-textarea`, `ui-datepicker`, `ui-slider` | `color` (N/A-Hinweis) | Hinweis „Zustandsfarben kommen aus Validierung/**Variant**" ist falsch: `INPUT_VARIANTS` enthält **keine** Farbe, und sechs der acht Knoten haben gar kein `variant`-Feld |
+| **F-5** | `ui-input` | `variant` | `INPUT_VARIANTS` (`filled`/`outlined`) wird nie gerendert — `sl-input[filled]` existiert, wird aber nicht emittiert |
+| **F-6** | `ui-avatar` | `variant` + `color` | **beides aktiv, beides Farbe** → Exklusivitäts-Verstoß (ADR 0015 §1). Zusätzlich: `variant` rendert nur `data-variant` (ungestylt), `color` rendert nichts |
+| **F-7** | `ui-tabs`, `ui-pagination` | `color` | Control angeboten, Element hat **keinen** Farb-Hook → nicht implementierbar, gehört auf N/A |
+| **F-8** | `ui-tabs`, `ui-pagination`, `ui-stepper` | `variant` | im Schema deklariert, aber **kein** `defaults`-Eintrag, **kein** Editor-Control, **kein** Rendering → totes Feld |
+| **F-9** | `ui-accordion` | `color` | `sl-details` hat keinen Farb-Hook; Control ist inert |
+| **F-14** | `ui-stepper` | `variant` | Werte `horizontal`/`vertical` sind eine **Orientierung** — `ui-divider` nennt dasselbe Konzept `orientation` (Cross-Node-Drift, ADR 0038) |
+| **F-15** | `ui-skeleton` | Basis-Felder | kein `BASE_FIELDS`/`installBaseFields` — der ADR-0015-Rollout hat den Knoten nie erreicht, obwohl sein Schema `...baseFieldsSchema` spreadet |
+
+Gemessen am 2026-07-17 gegen `packages/schema/src/contracts.ts`,
+`packages/schema/src/node-definitions.ts`, die `BASE_FIELDS`-Blöcke aller
+`nodes/**/*.html`, `resources/lib/editor-common.js` und
+`resources/lib/webapp-serializer.js`.
+
+---
+
 ## Der Tripwire `pnpm check:fields`
 
 `scripts/check-fields.js` ist **read-only** (schreibt nichts) und in
