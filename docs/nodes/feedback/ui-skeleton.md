@@ -31,37 +31,54 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 | `name` | „Name" | Textfeld | optional | Anzeigename im Editor. Default: fortlaufend `Skeleton N`. |
 | `mount` | „Parent Slot" | Mount-Picker (Baum) | **ja** | Slot, in den der Knoten gemountet wird (`<type>:<id>/<slot>`). |
 
-### Gruppe „Sichtbarkeit"
+### Gruppe „Allgemein" (Base-Fields, ADR 0015 §3)
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `visible` | „Visible Path" | typedInput (Binding-Arten) | **ja** | Binding, das die Sichtbarkeit steuert. `true` = Skeleton sichtbar (Daten werden geladen); `false` = Skeleton verborgen (Inhalt bereit). Unterstützt alle Binding-Arten (`literal`, `state`, `store`, `query`, `routeParam`, `msg`, `flow`, `global`, `jsonata`, `env`). Typischerweise ein `query`- oder `state`-Binding auf einen booleanen „isLoading"-Wert. |
+| `visible` | „Visible" | typedInput (Boolean-Binding-Satz) | optional | Binding, das die Sichtbarkeit steuert. `true` = Skeleton sichtbar (Daten werden geladen); `false` = Skeleton verborgen (Inhalt bereit). **Leer = immer sichtbar** (neutraler Default `true`). Unterstützt den Boolean-Satz (`boolean`, `state`, `store`, `query`, `routeParam`, `msg`, `jsonata`, `flow`, `global`, `env`). Typischerweise ein `query`- oder `store`-Binding auf einen booleanen „isLoading"-Wert. Legacy: ein bestehendes `visiblePath` (Plain-State-Pfad) wird verlustfrei als `state`-Binding übernommen. |
+| `color` | „Color" | typedInput (Wert-Binding + Theme-Token) | optional | **Wirksam** (ADR 0039): färbt die Platzhalter-/Shimmer-Fläche (`sl-skeleton --color`). Akzeptiert einen Theme-Token (`token:primary` …), einen semantischen Token (bare word) oder einen CSS-Farbwert; leer = neutrale Theme-Farbe (Shoelace-Default). |
+| `disabled` | „Disabled" | — (N/A) | — | **Nicht anwendbar** — ein Lade-Platzhalter ist nicht interaktiv. Im Editor gerendert, aber deaktiviert mit Hinweis (ADR 0015 §3). |
 
 ### Gruppe „Darstellung"
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `displayType` | „Display Type" | SelectBox | optional | Darstellungsform des Platzhalters — dies ist ein **Darstellungstyp**, kein semantischer Variant (vgl. [theming.md](../concepts/theming.md)). Werte: `text` (Default), `avatar`, `card`, `table`. Jede Form imitiert den Umriss der korrespondierenden Komponente. |
-| `lines` | „Lines" | Zahlenfeld (≥ 1) | optional | Anzahl simulierter Textzeilen. Nur relevant für `displayType: text`. Default: `3`. |
+| `displayType` | „Display Type" | SelectBox | optional | Darstellungsform des Platzhalters — dies ist ein **Darstellungstyp**, kein semantischer Variant (vgl. [theming.md](../concepts/theming.md)). Werte: `text` (Default), `avatar`, `card`, `table`. Beobachtbare Render-Wirkung: **`text`** → `lines` Platzhalter-Zeilen, vertikal untereinander gestapelt; **`avatar`** → ein **rundes** Platzhalter-Element (Breite = Höhe, `border-radius` 50 %); **`card`** → ein Block-Platzhalter (Medien-Block + Zeilen in einer umrandeten Box), **höher und breiter** als eine einzelne Text-Zeile; **`table`** → **`lines` Zeilen à 3 Spalten** (Zellen-Platzhalter), unterscheidbar von `text`. |
+| `lines` | „Lines" | Zahlenfeld (≥ 1) | optional | Anzahl simulierter Zeilen. Wirkt für **`text`** (Anzahl Text-Zeilen) **und `table`** (Anzahl Tabellen-Zeilen, je 3 Spalten). Für `avatar`/`card` ohne Wirkung (Feld im Editor deaktiviert mit Hinweis). Default: `3`. **Validierung:** ganze Zahl **≥ 1** — `0`/negativ ist ein **Editor-Validierungsfehler** (Knoten rot, Deploy blockiert), nicht erst zur Schema-/Deploy-Zeit. |
+
+### Gruppe „Platzierung"
+
+| Feld | Label | Editor-Typ | Pflicht | Beschreibung |
+|---|---|---|---|---|
+| `order` / `row` / `col` / `colSize` / `rowSize` / `layoutX` / `layoutY` | (Platzierungs-Felder) | Zahlenfelder | optional | Standard-Platzierung im übergeordneten Layout (Reihenfolge; Grid-Zelle/-Spanne; absolute Position). Via `installLayoutChildPropRows()`, identisch zu den übrigen Kind-Knoten. |
 
 ### Inline-Hilfe (HTML)
 
 Der `data-help-name="ui-skeleton"`-Hilfetext soll **knapp, aber ausreichend** sein:
 Zweck in 1–2 Sätzen (animierter Platzhalter, Lade-Zustand), Hinweis auf das
 `visible`-Binding (wann sichtbar), `displayType` (Darstellungsform, kein Variant)
-und `lines` sowie ein Link auf die ausführliche Doku. Empfohlener Link:
+und `lines` (Text + Table), `color` (Platzhalter-Farbe) sowie ein Link auf die
+ausführliche Doku. Er darf **keine** internen Phasen-Ids an Nutzer leaken.
+Empfohlener Link:
 `https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/feedback/ui-skeleton.md`.
 
 ## Input
 
-`ui-skeleton` hat einen **Input-Port** für Push-Updates aus dem Flow.
+`ui-skeleton` hat einen **Input-Port** für Push-Updates aus dem Flow. Er nutzt den
+`componentStateInputHandler` — d. h. **heute** verarbeitet er ausschließlich:
 
-- **`msg.ui.patch`** — überschreibt beliebige Felder der Knoten-Definition
-  (`displayType`, `lines`).
-- **`msg.ui.component.op`** (`show`, `hide`, …) — steuert Sichtbarkeit und
-  Interaktionszustand zusätzlich zum `visible`-Binding.
+- **`msg.ui.component.op`** (`show`, `hide`, `enable`, `disable`, …) — steuert
+  Sichtbarkeits-/Interaktionszustand zusätzlich zum `visible`-Binding.
 - **Nicht erkannte / fachfremde Messages:** werden **unverändert durchgereicht**
   (Pass-Through), ohne Fehlerausgabe.
+
+> **`msg.ui.patch` wird derzeit NICHT unterstützt.** Anders als patch-fähige
+> View-Knoten (`viewNodePatchInputHandler`) überschreibt eine eingehende Message
+> **keine** Definitions-Felder (`displayType`, `lines`). Ob `ui-skeleton` künftig
+> `msg.ui.patch` erhalten soll, ist eine offene, knotenübergreifende Owner-
+> Entscheidung (dieselbe wie der `msg.payload`-Follow-up bei `ui-icon`); sie wird
+> **nicht** in diesem Konformitäts-Pass getroffen. Diese Doku beschreibt das
+> **heutige** Verhalten.
 
 ## Output
 
@@ -69,12 +86,15 @@ und `lines` sowie ein Link auf die ausführliche Doku. Empfohlener Link:
 
 ## Theming
 
-`ui-skeleton` hat kein `variant`- und kein `severity`-Feld. Die Animations- und
-Platzhalterfarben folgen den neutralen Design-Tokens des `ui-app`-Themes
-(`colorNeutral`, `colorSurface`). `displayType` ist ein Darstellungstyp
-(Rendering-Form), keine semantische Ebene-2-Rolle — er landet deshalb nicht im
-Variant-Vokabular (vgl. [theming.md](../concepts/theming.md)). Das Modell ist
-backend-neutral.
+`ui-skeleton` hat kein `variant`- und kein `severity`-Feld. Ohne gesetztes `color`
+folgen Animations- und Platzhalterfarben dem neutralen Shoelace-Default
+(`--sl-color-neutral-200`). Das **Base-Field `color`** (ADR 0039) überschreibt die
+Platzhalter-/Shimmer-Fläche (`sl-skeleton --color`) — es ist der Standard-
+Farbregler, **nicht** N/A. `displayType` ist ein Darstellungstyp (Rendering-Form),
+keine semantische Ebene-2-Rolle — er landet deshalb nicht im Variant-Vokabular
+(vgl. [theming.md](../concepts/theming.md)). Das Modell ist backend-neutral: die
+vier `displayType`-Formen werden erst im Serializer/Adapter zu einer Komposition
+mehrerer `sl-skeleton` (ADR 0021).
 
 ## Besonderheiten
 
@@ -86,7 +106,7 @@ backend-neutral.
 
 ## Referenzen
 
-- [editor.md](../concepts/editor.md) — Binding-Typen, typedInput
-- [theming.md](../concepts/theming.md) — `displayType` vs. `variant`, Design-Tokens
-- [inputs.md](../concepts/inputs.md) — `msg.ui.patch` Push-Updates
+- [editor.md](../concepts/editor.md) — Binding-Typen, typedInput, Base-Fields
+- [theming.md](../concepts/theming.md) — `displayType` vs. `variant`, Design-Tokens, `color`
+- [inputs.md](../concepts/inputs.md) — `msg.ui.component.op` Push-Updates (patch: s. Input)
 - [`ui-query`](../state/ui-query.md) — typischer Datenquellenknoten für `isLoading`-Bindings
