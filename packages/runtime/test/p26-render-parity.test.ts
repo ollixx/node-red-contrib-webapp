@@ -113,7 +113,9 @@ describe("P26: shared serializer is the single source of truth", () => {
         const kinds = [
             "button", "input", "select", "checkbox", "radio", "switch", "textarea",
             "datepicker", "slider", "alert", "badge", "progress", "breadcrumb",
-            "tabs", "accordion", "menu", "avatar", "container", "card", "toast", "pagination"
+            "tabs", "accordion", "menu", "avatar", "container", "card", "toast", "pagination",
+            // P241: skeleton → sl-skeleton (loading placeholder base element).
+            "skeleton"
         ];
 
         for (const kind of kinds) {

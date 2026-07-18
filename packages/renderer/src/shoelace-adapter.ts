@@ -59,7 +59,12 @@ const KIND_TO_SHOELACE: Record<string, string> = {
     menu: "sl-menu",
     avatar: "sl-avatar",
     toast: "sl-alert",
-    pagination: "sl-button-group"
+    pagination: "sl-button-group",
+    // P241: skeleton — the loading placeholder is built from <sl-skeleton>.
+    // The four displayType forms (text/avatar/card/table) are a COMPOSITION of
+    // one or more sl-skeleton, assembled by the server-side serializer; this
+    // entry is the base element and ends the data-wa-fallback path.
+    skeleton: "sl-skeleton"
 };
 
 /**

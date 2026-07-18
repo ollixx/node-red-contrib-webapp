@@ -1792,7 +1792,12 @@ function toComponentDefinitions(components) {
             // P57: log display node
             "ui-log": "log",
             // P83: ui-divider — static separator; renders as sl-divider.
-            "ui-divider": "divider"
+            "ui-divider": "divider",
+            // P241: ui-skeleton — animated loading placeholder (kind "skeleton").
+            // Rides the generic display path so `visible` (visibleIf), `color`
+            // (base field → bind.color/props.color) and displayType/lines flow
+            // through to the serializer's skeleton branch.
+            "ui-skeleton": "skeleton"
         };
         const p16Kind = P16X_KIND_MAP[component.type];
 
@@ -2044,6 +2049,10 @@ function toComponentDefinitions(components) {
                     ...(component.pulsating !== undefined ? { pulsating: component.pulsating } : {}),
                     // P49: display type (progress/skeleton/badge/menu/list render mode).
                     ...(component.displayType !== undefined ? { displayType: component.displayType } : {}),
+                    // P241: ui-skeleton line/row count — drives the number of
+                    // placeholder text lines (displayType text) and table rows
+                    // (displayType table, `lines` rows × 3 columns).
+                    ...(component.lines !== undefined ? { lines: component.lines } : {}),
                     // P180: ui-list ordered flag (ul↔ol). Mirrors displayType: copied
                     // into component.props so the serializer can read props.ordered.
                     ...(component.ordered !== undefined ? { ordered: component.ordered } : {}),
@@ -7669,7 +7678,12 @@ const runtimeNodeRegistry = {
             mount: config.mount || config.parent,
             order: resolveOrder(config),
             visible: getBinding(config.visible, config.visiblePath ? stateBinding(config.visiblePath) : undefined),
-            displayType: config.displayType || config.variant || undefined,
+            // P241: displayType is the ONLY placeholder-shape field. The prior
+            // `|| config.variant` legacy twin was dead code — ui-skeleton has never
+            // had a `variant` field in its schema or editor, so no authored flow
+            // ever set it. Removed (no migration needed) so the shape source is
+            // singular and documented (findings E).
+            displayType: config.displayType || undefined,
             lines: toOptionalNumber(config.lines),
             ...collectNodeConfigLayoutProps(config)
         }),

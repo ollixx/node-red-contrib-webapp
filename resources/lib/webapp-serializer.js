@@ -233,7 +233,12 @@
         avatar: "sl-avatar",
         toast: "sl-alert",
         pagination: "sl-button-group",
-        divider: "sl-divider"
+        divider: "sl-divider",
+        // P241: skeleton — loading placeholder built from <sl-skeleton>. The four
+        // displayType forms compose one or more sl-skeleton (see the `skeleton`
+        // branch in renderComponentHtml); this entry mirrors the renderer adapter
+        // and ends the data-wa-fallback path.
+        skeleton: "sl-skeleton"
     };
 
     // P111: ui-text typographic role → semantic HTML element. The `style` field
@@ -1013,6 +1018,100 @@
                 return wrapRenderedComponentHtml(component, layoutId, "<sl-progress-ring" + valueAttr + labelAttr + colorStyle + ">" + slotText + "</sl-progress-ring>");
             }
             return wrapRenderedComponentHtml(component, layoutId, "<sl-progress-bar" + valueAttr + labelAttr + colorStyle + ">" + slotText + "</sl-progress-bar>");
+        }
+
+        if (component.kind === "skeleton") {
+            // P241: ui-skeleton conformance. The four displayType forms are a
+            // COMPOSITION of one or more <sl-skeleton> (ADR 0021 — semantic intent
+            // vocabulary, mapped here). Everything derives from resolvedProps:
+            //   displayType  "text" (Default) | "avatar" | "card" | "table"
+            //   lines        placeholder text lines (text) / table rows (table).
+            //                Schema guarantees a positive integer; defended anyway.
+            //   color        base-field colour → sl-skeleton `--color` (the fill).
+            // effect="pulse" keeps the indicator background = var(--color) so the
+            // resolved colour is measurable (effect="sheen" would replace the
+            // background with a gradient and hide it).
+            const props = component.props || {};
+            const displayType = props.displayType ? String(props.displayType) : "text";
+
+            // Base-field `color` tints the placeholder fill. sl-skeleton exposes the
+            // indicator colour as the `--color` custom property (and `--sheen-color`
+            // for the shimmer). Applied to every composed piece via a shared style.
+            const skeletonColor = resolveColorValue(props.color);
+            const colorVars = skeletonColor
+                ? "--color:" + skeletonColor + ";--sheen-color:" + skeletonColor + ";"
+                : "";
+
+            // lines drives text-line and table-row counts. Defend against a missing/
+            // non-positive value (schema uses .int().positive(); serializer is the
+            // last line): default 3, floor, and cap to a sane maximum.
+            let lines = Number(props.lines);
+            if (!Number.isFinite(lines) || lines < 1) {
+                lines = 3;
+            }
+            lines = Math.min(Math.floor(lines), 50);
+
+            // One placeholder piece. `cls` is a stable class the tests measure;
+            // `styleExtra` is the piece's own geometry. The pulse effect animates.
+            function piece(cls, styleExtra) {
+                const style = "style=\"" + escapeAttribute(styleExtra + (colorVars ? ";" + colorVars : "")) + "\"";
+                return "<sl-skeleton effect=\"pulse\" class=\"" + cls + "\" " + style + "></sl-skeleton>";
+            }
+
+            if (displayType === "avatar") {
+                // Round placeholder: width == height, fully-circular border-radius.
+                return wrapRenderedComponentHtml(component, layoutId, piece(
+                    "webapp-skeleton webapp-skeleton--avatar",
+                    "display:block;width:3rem;height:3rem;--border-radius:50%"
+                ));
+            }
+
+            if (displayType === "card") {
+                // A block placeholder: a tall media block plus a title + body lines,
+                // in a full-width bordered box — measurably taller AND wider than a
+                // single text line.
+                const cardPieces =
+                    piece("webapp-skeleton-block", "display:block;width:100%;height:6rem;--border-radius:var(--wa-radius-md,0.25rem)") +
+                    piece("webapp-skeleton-line", "display:block;width:60%;height:1rem;--border-radius:var(--wa-radius-sm,0.1875rem)") +
+                    piece("webapp-skeleton-line", "display:block;width:100%;height:0.85rem;--border-radius:var(--wa-radius-sm,0.1875rem)") +
+                    piece("webapp-skeleton-line", "display:block;width:90%;height:0.85rem;--border-radius:var(--wa-radius-sm,0.1875rem)");
+                return wrapRenderedComponentHtml(component, layoutId,
+                    "<div class=\"webapp-skeleton webapp-skeleton--card\" style=\"display:flex;flex-direction:column;gap:0.75rem;width:100%;box-sizing:border-box;padding:1rem;border:1px solid var(--wa-color-border,#e5e7eb);border-radius:var(--wa-radius-md,0.5rem)\">" +
+                    cardPieces + "</div>");
+            }
+
+            if (displayType === "table") {
+                // `lines` rows × 3 columns (Owner-Entscheid). Each row is a flex row
+                // of three equal cells — distinguishable from `text` (which has a
+                // single column of lines).
+                let rows = "";
+                for (let r = 0; r < lines; r++) {
+                    const cells =
+                        piece("webapp-skeleton-cell", "flex:1 1 0;display:block;height:1rem;--border-radius:var(--wa-radius-sm,0.1875rem)") +
+                        piece("webapp-skeleton-cell", "flex:1 1 0;display:block;height:1rem;--border-radius:var(--wa-radius-sm,0.1875rem)") +
+                        piece("webapp-skeleton-cell", "flex:1 1 0;display:block;height:1rem;--border-radius:var(--wa-radius-sm,0.1875rem)");
+                    rows += "<div class=\"webapp-skeleton-row\" style=\"display:flex;gap:0.75rem;width:100%\">" + cells + "</div>";
+                }
+                return wrapRenderedComponentHtml(component, layoutId,
+                    "<div class=\"webapp-skeleton webapp-skeleton--table\" style=\"display:flex;flex-direction:column;gap:0.5rem;width:100%\">" +
+                    rows + "</div>");
+            }
+
+            // Default: text — `lines` ragged (inset) placeholder lines stacked
+            // vertically. Ragged widths (never 100%) make a single line measurably
+            // narrower than the card block.
+            const TEXT_LINE_WIDTHS = [95, 88, 72, 90, 60];
+            let textLines = "";
+            for (let i = 0; i < lines; i++) {
+                const w = TEXT_LINE_WIDTHS[i % TEXT_LINE_WIDTHS.length];
+                textLines += piece(
+                    "webapp-skeleton-line",
+                    "display:block;width:" + w + "%;height:1rem;--border-radius:var(--wa-radius-sm,0.1875rem)"
+                );
+            }
+            return wrapRenderedComponentHtml(component, layoutId,
+                "<div class=\"webapp-skeleton webapp-skeleton--text\" style=\"display:flex;flex-direction:column;gap:0.6rem;width:100%\">" +
+                textLines + "</div>");
         }
 
         if (component.kind === "breadcrumb") {
