@@ -76,3 +76,25 @@ status: done
   fix, not a new feature. This closes the deferred dynamic-slots concept (P142). **This was the
   last open roadmap phase — the roadmap is drained.**
 - **cost:** session a6c5282a95cb8353d, ~24m (+ orchestrator browser proof + flake recheck).
+
+## Correction (2026-07-17, P239)
+
+**The "confirmed flake" verdict above (line ~72) was wrong.** `ui-tabs` E01 was a
+**deterministic race**, not a flake, and it stayed red in the suite for months
+behind that note. Diagnosed and fixed during P239:
+
+As `sl-tab-group` upgrades it emits its **own real** `sl-tab-show` (probed live as
+`POST /event {event:"change",params:{value:"overview"}}`). E01 armed
+`interceptNextEvent()` right after `navigate()` and raced it — so it passed when
+run alone and failed in-file. The fix drains that first event, keeping the
+assertion honest (no filtering on the asserted value): ui-tabs 8/1 → **9/9**,
+three consecutive runs, and the orchestrator's authoritative full suite is green
+at **785 passed with `--retries=0`** (it previously needed a retry).
+
+**The process lesson (worth more than the fix):** *a re-run that goes green is not
+a diagnosis.* "Re-ran 14/14 green" rationalised away `.ai/agents/validation.md`'s
+anti-baseline rule **in writing, in a closed package**, which then licensed every
+later run to wave the same red through — and cost the P239 agent ~15 min
+re-deriving it. A `## Result` must not close a phase on "confirmed flake" unless
+the flake is actually *diagnosed* (root cause named). Recorded in
+`.ai/friction-log.md`.
