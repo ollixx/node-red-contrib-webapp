@@ -852,6 +852,11 @@ export const componentKindSchema = z.enum([
     "icon",
     // P83: divider — static visual separator (sl-divider)
     "divider",
+    // P241: skeleton — animated loading placeholder. Composes one or more
+    // <sl-skeleton> per displayType (text/avatar/card/table). No value binding;
+    // `visible` gates it, `lines` drives the text/table count, `color` (base
+    // field) tints the placeholder fill.
+    "skeleton",
     // P164 (ADR 0017): ui-repeat — a TEMPLATE CONTAINER. It carries no rendered
     // chrome of its own; the renderer EXPANDS it, cloning its default-slot child
     // subtree once per resolved `items` element (with a render-time item scope).

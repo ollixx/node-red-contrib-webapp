@@ -99,7 +99,7 @@ export interface RenderedInputComponent extends RenderedComponentBase {
 
 /** Generic rendered component for P16x kinds (select, checkbox, radio, etc.). */
 export interface RenderedGenericComponent extends RenderedComponentBase {
-    kind: "select" | "checkbox" | "radio" | "switch" | "textarea" | "datepicker" | "slider" | "alert" | "badge" | "progress" | "breadcrumb" | "menu" | "avatar" | "image" | "list" | "pagination" | "stepper" | "log" | "icon" | "divider";
+    kind: "select" | "checkbox" | "radio" | "switch" | "textarea" | "datepicker" | "slider" | "alert" | "badge" | "progress" | "breadcrumb" | "menu" | "avatar" | "image" | "list" | "pagination" | "stepper" | "log" | "icon" | "divider" | "skeleton";
     value: unknown;
 }
 
@@ -1230,6 +1230,16 @@ function toRenderedComponent(component: ComponentDefinition, context: ComponentR
             return {
                 ...baseComponent,
                 kind: "divider",
+                value: undefined
+            } as RenderedGenericComponent;
+        // P241: skeleton — animated loading placeholder. No value binding; the
+        // serializer composes the placeholder shape from resolvedProps.displayType
+        // and resolvedProps.lines, tinting with resolvedProps.color (base field).
+        // `visible` gates rendering via visibleIf (matchesCondition) above.
+        case "skeleton":
+            return {
+                ...baseComponent,
+                kind: "skeleton",
                 value: undefined
             } as RenderedGenericComponent;
     }

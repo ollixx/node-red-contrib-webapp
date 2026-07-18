@@ -2,22 +2,49 @@
 <script type="text/javascript">
     (function () {
         const common = window.WebappEditorCommon;
+
+        // P241 (ADR 0015 §3): common base fields via the shared helper (replaces the
+        // hand-built P138/P181/P202 `visible` logic — no more duplicated seeding).
+        //   visible  → active (the load-state gate; empty = always visible).
+        //   color    → active (ADR 0039): tints the placeholder/shimmer fill.
+        //   disabled → N/A: a loading placeholder is not interactive
+        //              (rendered-disabled with a node-local hint, ADR 0015 §3).
+        const BASE_FIELDS = {
+            visible: true,
+            disabled: false,
+            color: true,
+            size: false,
+            variant: false,
+            advanced: [],
+            omit: [],
+            hints: {
+                disabled: "Ein Lade-Platzhalter hat keinen interaktiven Zustand.",
+                size: "Dieser Knoten hat keine Größen-Stufen."
+            }
+        };
+
         common.registerNodeType("ui-skeleton", {
             category: "webapp view",
             color: "#f4efcf",
             defaults: {
+                // P241 (ADR 0015): base fields via installBaseFields/applyBaseFields.
+                // `visible` persists the binding OBJECT (DOM-less carrier on
+                // #node-input-visibleBinding); legacy `visiblePath` (plain state path)
+                // is kept for lossless migration only. `color` mirrors the shape.
+                visible: { value: null },
+                visibleBinding: { value: "" },
+                visiblePath: { value: "" },
+                color: { value: null },
+                colorBinding: { value: "" },
                 name: { value: "" },
                 parent: { value: "" },
                 mount: { value: "", required: true },
-                // P138 (ADR 0012): `visible` persists the binding OBJECT; there is no
-                // matching #node-input-visible element so Node-RED auto-save cannot
-                // clobber it. The typedInput lives on #node-input-visibleBinding.
-                // Legacy: `visiblePath` (plain state path) is kept for migration only.
-                visiblePath: { value: "" },
-                visible: { value: null },
-                visibleBinding: { value: "" },
                 displayType: { value: "text" },
-                lines: { value: 3, validate: function (value) { return value === "" || RED.validators.number()(value); } },
+                // P241 (findings D): `lines` must be a positive integer (≥ 1).
+                // Empty is allowed (serializer default 3); 0/negative is a REAL
+                // editor validation error (node red, deploy blocked) — no longer
+                // deferred to the schema's .int().positive() at deploy time.
+                lines: { value: 3, validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
                 col: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
@@ -37,42 +64,17 @@
             },
             oneditprepare: function () {
                 common.installReferenceSelectors({ mount: true }).call(this);
+                common.installBaseFields(BASE_FIELDS).call(this);
                 common.installLayoutChildPropRows().call(this);
 
-                // P138 (ADR 0012 / boolean category): `visible` typedInput.
-                // Migration: a legacy `visiblePath` plain string becomes a state
-                // binding; a stored `visible` binding object takes precedence.
-                var storedVisible = common.parseBindingValue(this.visible);
-                var visibleBinding = storedVisible
-                    ? storedVisible
-                    : (this.visiblePath ? { kind: "state", path: this.visiblePath } : undefined);
-                var visibleEditor = common.readValueBinding(visibleBinding, "");
-                // P181: when the binding is absent, use 'bool' as the default type
-                // so Node-RED shows a clean true/false control instead of the first
-                // entry of the boolean set (store → empty dropdown + '…').
-                var visibleType = visibleEditor.type !== "str" ? visibleEditor.type : "bool";
-                var visibleInput = $("#node-input-visibleBinding");
-                visibleInput.typedInput({
-                    default: visibleType,
-                    types: common.valueBindingTypes({ category: "boolean" })
-                });
-                visibleInput.typedInput("type", visibleType);
-                // P202 (ADR 0026): `visible`'s per-field neutral is TRUE (empty =
-                // shown). Seed an originally-empty control to "true", matching the
-                // central installBaseFields behaviour.
-                var visibleValue = !visibleBinding ? "true" : visibleEditor.value;
-                visibleInput.typedInput("value", visibleValue);
-                // P181: track original-empty to preserve "no binding" on save.
-                visibleInput.data("base-field-originally-empty", !visibleBinding);
-
-                // P138: Conditionally disable the `lines` field when the selected
-                // displayType renders no lines (avatar, card, table). Only `text`
-                // uses lines. Show a hint when lines is not applicable.
+                // P138 (retained): conditionally disable `lines` when the selected
+                // displayType renders no line count (avatar, card). `text` uses lines
+                // for its placeholder lines; `table` uses lines for its row count.
                 function updateLinesState() {
                     var dt = $("#node-input-displayType").val();
                     var linesRow = $("#node-input-lines").closest(".form-row");
                     var hintRow = $("#ui-skeleton-lines-hint");
-                    if (dt === "text" || dt === "" || !dt) {
+                    if (dt === "text" || dt === "table" || dt === "" || !dt) {
                         $("#node-input-lines").prop("disabled", false);
                         hintRow.hide();
                         linesRow.show();
@@ -86,22 +88,9 @@
                 updateLinesState();
             },
             oneditsave: function () {
-                // P138: persist visible as binding object; clear legacy visiblePath.
-                // P181: if the field was originally absent and the user never touched
-                // it, keep visible null (no binding = always visible).
-                var $visibleInput = $("#node-input-visibleBinding");
-                var visibleResult = common.applyValueBinding(
-                    $visibleInput.typedInput("type"),
-                    $visibleInput.typedInput("value")
-                );
-                // P202 (ADR 0026, corrects P181): `visible`'s neutral sentinel is
-                // bool literal `true`, not `false`. A deliberate `false` persists
-                // verbatim and hides the node.
-                var visibleOriginEmpty = $visibleInput.data("base-field-originally-empty");
-                var visibleIsSyntheticDefault = visibleResult && visibleResult.kind === "literal"
-                    && visibleResult.value === true;
-                this.visible = (visibleOriginEmpty && visibleIsSyntheticDefault) ? null : visibleResult;
-                this.visiblePath = "";
+                // P241 (ADR 0015): persist visible/color via the shared helper
+                // (clears legacy visiblePath; preserves neutral-true seeding).
+                common.applyBaseFields(BASE_FIELDS).call(this);
             }
         });
     })();
@@ -110,8 +99,6 @@
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
-    <!-- P138 (ADR 0012 / boolean category): Visible binding — typedInput managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-visibleBinding">Visible</label><input type="text" id="node-input-visibleBinding"></div>
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-displayType">Display Type</label>
         <select id="node-input-displayType">
@@ -122,15 +109,17 @@
         </select>
     </div>
     <div class="form-row"><label for="node-input-lines">Lines</label><input type="number" id="node-input-lines" min="1"></div>
-    <!-- P138: hint shown when displayType does not use lines (avatar/card/table). -->
-    <div id="ui-skeleton-lines-hint" style="display:none; margin-left:105px; color:#999; font-size:0.85em;">Lines gilt nur für den Text-Typ</div>
+    <!-- P138/P241: hint shown when displayType does not use lines (avatar/card). -->
+    <div id="ui-skeleton-lines-hint" style="display:none; margin-left:105px; color:#999; font-size:0.85em;">Lines gilt nur für Text und Table</div>
 </script>
 <script type="text/html" data-help-name="ui-skeleton">
 <p>Animierter Lade-Platzhalter der die Form des eigentlichen Inhalts imitiert.</p>
 <p>Solange <b>Visible</b> truthy ist, wird der Skeleton angezeigt (Daten werden geladen). Wird <b>Visible</b> falsy, verschwindet der Skeleton und der echte Inhalt übernimmt.</p>
 <h4>Display Type</h4>
-<p><b>Text</b> (Standard) — simuliert Textzeilen; <b>Lines</b> bestimmt die Anzahl. <b>Avatar</b>, <b>Card</b> und <b>Table</b> imitieren die Form der entsprechenden Komponente; <b>Lines</b> ist für diese Typen nicht relevant.</p>
-<h4>Visible (P138)</h4>
+<p><b>Text</b> (Standard) — simuliert Textzeilen; <b>Lines</b> bestimmt die Anzahl. <b>Table</b> — imitiert eine Tabelle mit <b>Lines</b> Zeilen à 3 Spalten. <b>Avatar</b> (rund) und <b>Card</b> (Block) imitieren die Form der entsprechenden Komponente; <b>Lines</b> ist für diese beiden Typen nicht relevant.</p>
+<h4>Visible</h4>
 <p>Bindbar über den Boolean-Zustand-Satz (ADR 0012): Store, Query, Route-Param, Reactive, msg, JSONata, boolean, Flow, Global, Env. Leer = immer sichtbar. Ein bestehender <code>visiblePath</code> wird automatisch als <code>state</code>-Binding übernommen.</p>
+<h4>Color</h4>
+<p>Färbt die Platzhalter-/Shimmer-Fläche (ADR 0039). Leer = neutrale Theme-Farbe. <b>Disabled</b> ist für diesen Knoten nicht anwendbar (ein Lade-Platzhalter ist nicht interaktiv).</p>
 <p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/feedback/ui-skeleton.md">Ausführliche Doku</a></p>
 </script>
