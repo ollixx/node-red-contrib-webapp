@@ -72,8 +72,10 @@ sie **unverändert durch** und setzt NICHT ihren eigenen Pfad darauf. Nur
 zielloses navigate (Modus `wire`) löst „Route baut die Location" aus.
 
 `onEnter`/`onLeave` der betroffenen Route(n) werden in **allen** Modi emittiert
-(siehe [events.md](events.md)). Der frühere `msg.ui.navigate`-Pfad und der Knoten
-`ui-navigation` sind **deprecated**.
+(siehe [events.md](events.md)). Der frühere `msg.ui.navigate`-Pfad ist **deprecated**;
+der Knoten `ui-navigation` wurde in
+[ADR 0040](../../adr/0040-retire-ui-navigation-node-navigate-is-a-ui-action.md)
+**stillgelegt** — Navigation ist allein ein `ui-action` mit `navigate`.
 
 ---
 

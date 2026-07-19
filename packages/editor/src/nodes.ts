@@ -18,7 +18,6 @@ import {
     type UiDialogNodeDefinition,
     type UiEmptyStateNodeDefinition,
     type UiInputNodeDefinition,
-    type UiNavigationNodeDefinition,
     type UiNodeDefinition,
     type UiProgressNodeDefinition,
     type UiQueryNodeDefinition,
@@ -302,10 +301,6 @@ export interface UiActionEditorConfig extends IdentifiedEditorConfig {
     description?: string;
 }
 
-export interface UiNavigationEditorConfig extends IdentifiedEditorConfig {
-    to?: string;
-}
-
 // P16b: feedback and status node editor configs
 export interface UiAlertEditorConfig extends MountableEditorConfig {
     // P67: message is a full binding (literal/state/query/.../store). messagePath
@@ -553,7 +548,6 @@ export type NodeEditorConfig =
     | UiStoreActionEditorConfig
     | UiQueryActionEditorConfig
     | UiActionEditorConfig
-    | UiNavigationEditorConfig
     | UiAlertEditorConfig
     | UiToastEditorConfig
     | UiProgressEditorConfig
@@ -599,7 +593,6 @@ export type NodeEditorDefinition =
     | BaseEditorNodeDefinition<UiStoreActionEditorConfig, UiStoreActionNodeDefinition>
     | BaseEditorNodeDefinition<UiQueryActionEditorConfig, UiQueryActionNodeDefinition>
     | BaseEditorNodeDefinition<UiActionEditorConfig, UiActionNodeDefinition>
-    | BaseEditorNodeDefinition<UiNavigationEditorConfig, UiNavigationNodeDefinition>
     | BaseEditorNodeDefinition<UiAlertEditorConfig, UiAlertNodeDefinition>
     | BaseEditorNodeDefinition<UiToastEditorConfig, UiToastNodeDefinition>
     | BaseEditorNodeDefinition<UiProgressEditorConfig, UiProgressNodeDefinition>
@@ -1535,14 +1528,7 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
             description: config.description
         };
     }),
-    "ui-navigation": createDefinition("ui-navigation", "behavior", {
-        id: requiredString("Navigation IDs are required before deploy."),
-        to: requiredString("Navigation nodes must declare a destination path.")
-    }, (config: UiNavigationEditorConfig): UiNavigationNodeDefinition => ({
-        type: "ui-navigation",
-        id: config.id ?? "",
-        to: config.to ?? ""
-    })),
+    // P243 (ADR 0040): ui-navigation retired — navigation is a ui-action navigate.
     "ui-alert": createDefinition("ui-alert", "view", {
         id: requiredString("Alert IDs are required before deploy."),
         mount: requiredString("Alerts must declare a parent slot."),

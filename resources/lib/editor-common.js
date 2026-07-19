@@ -986,7 +986,7 @@
                 return;
             }
 
-            if (node.type === "ui-action" || node.type === "ui-navigation") {
+            if (node.type === "ui-action") {
                 references.actions.push({
                     id,
                     label: node.name || id,
@@ -1552,7 +1552,8 @@
                 : references.actions;
             return candidates.map(function (action) {
                 const name = action.label || action.id;
-                const suffix = action.type === "ui-navigation" && action.to ? " -> " + action.to : "";
+                // P243 (ADR 0040): ui-navigation retired — no per-node `-> to` suffix.
+                const suffix = "";
                 const secondary = !appId && action.parent ? appTitleById(references, action.parent) : "";
                 return {
                     value: action.id,
@@ -2161,8 +2162,8 @@
     // purple for route, neutral for url) using the P120 dual-path tokens. There
     // is no separate badge inside the panel (ADR 0011 §4 cosmetic decision).
     //
-    // The helpers below are central and reusable: ui-action AND ui-navigation
-    // wire the same installNavigateTargetMode() — no second implementation.
+    // The helpers below are central and reusable: ui-action navigate wires
+    // installNavigateTargetMode(). (P243/ADR 0040: ui-navigation is retired.)
 
     /**
      * Parse the `:placeholder` segments out of a route path. Returns the ordered
@@ -2678,8 +2679,9 @@
      * @returns {boolean}
      */
     function validateNavigateConfig(node) {
-        // ui-action: only the `navigate` verb navigates. ui-navigation always does.
-        if (!node || (node.type !== "ui-navigation" && node.actionType !== "navigate")) {
+        // ui-action: only the `navigate` verb navigates. (P243/ADR 0040:
+        // ui-navigation retired — navigation is solely a ui-action navigate.)
+        if (!node || node.actionType !== "navigate") {
             return true;
         }
         // Panel open: the controller knows the live picker + param state.
@@ -6087,8 +6089,7 @@
             // emitter (ui-action) itself and non-webapp nodes are excluded.
             return typeof type === "string"
                 && type.indexOf("ui-") === 0
-                && type !== "ui-action"
-                && type !== "ui-navigation";
+                && type !== "ui-action";
         }
 
         function nodeLabel(node) {

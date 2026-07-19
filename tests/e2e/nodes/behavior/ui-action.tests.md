@@ -39,13 +39,15 @@ Browser-E2E: `tests/e2e/nodes/editor/navigate-target-modes.spec.ts`.
 | Route-Modus: Pflicht-Platzhalter | „route mode: empty :placeholder value makes the node invalid…" | Leerer `:id`-Wert → Knoten ungültig (Deploy blockiert); gefüllt → gültig. |
 | Route-Wechsel baut Tabelle neu | „route mode: changing the route rebuilds the table…" | `/customers/:id` → `/orders/:id/:tab`: Zeilen `[:id, :tab]`, `:id`-Wert bleibt erhalten. |
 | URL-Modus: keine Parameter-Sektion + sanfte Warnung | „url mode shows the `to` typedInput and NO parameter section…" | `to`-Zeile sichtbar, 0 Mapping-Zeilen, `:platzhalter`-Warnung sichtbar, `node.valid === true`. |
-| ui-navigation angeglichen | (in `navigate-target-modes.spec.ts`) „ui-navigation shows the same three-mode switcher" | Drei Segmente sichtbar; Legacy-`to`-Config öffnet im `url`-Modus. |
 | Legacy `to`-Round-Trip im URL-Modus | `behavior-state.spec.ts` → „ui-action — actionType selector…" | Segment URL → `to` = `/customers/:id` → Speichern/Reopen behält `targetMode==="url"` + `to`. |
 
+> P243 (ADR 0040): `ui-navigation` wurde stillgelegt — Navigation ist allein ein
+> `ui-action` navigate. Der frühere „ui-navigation angeglichen"-Fall entfällt.
+
 Unit-Belege (nicht-Browser):
-- Route-Modus-`ui-navigation` ohne `to` assembliert + bleibt aus der `to`-Liste:
-  `packages/runtime/test/node-set-runtime.test.ts` („P119: a route-mode
-  ui-navigation (no `to`)…").
+- Route-Modus-`ui-action` navigate ohne `to` assembliert + bleibt aus der `to`-Liste:
+  `packages/runtime/test/node-set-runtime.test.ts` („P243: a route-mode
+  ui-action navigate (no `to`)…").
 - Zentrale Editor-Helfer (`parseRoutePlaceholders`, `scanWiredNavigationTargets`)
   sind browser-only und werden über `page.evaluate` in der Editor-Spec geprüft.
 

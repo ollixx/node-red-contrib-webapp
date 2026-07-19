@@ -6,7 +6,7 @@ import { NodeEditorPage } from "../../../helpers/node-editor-page";
 
 /**
  * P47 — Node-RED EDITOR property-panel specs for behavior + state nodes
- * (ui-action, ui-store, ui-query, ui-navigation). Editor-only: no webapp URL.
+ * (ui-action, ui-store, ui-query). Editor-only: no webapp URL.
  */
 
 test.describe("editor panels — behavior & state nodes (P47)", () => {
@@ -138,19 +138,6 @@ test.describe("editor panels — behavior & state nodes (P47)", () => {
         expect(await editor.readField("queryPath")).toBe("products.list");
     });
 
-    test("ui-navigation — opens without crash, parent SelectBox lists app", async ({ page, request }) => {
-        const flow = new FlowBuilder()
-            .app({ id: "navApp", root: "navApp", name: "Nav App" })
-            .node("ui-navigation", { id: "navEd", to: "/" })
-            .build();
-        await deployFlow(request, flow);
-
-        const editor = new NodeEditorPage(page);
-        await editor.open();
-        await editor.openNode("navEd");
-
-        await editor.expectFields(["name", "parent"]);
-        expect(await editor.pickerPresetValues("apps")).toContain("navApp");
-        expect(await editor.inputPortCount("navEd")).toBe(1);
-    });
+    // P243 (ADR 0040): ui-navigation retired — navigation is a ui-action navigate;
+    // the ui-action editor test above covers the parent SelectBox behaviour.
 });

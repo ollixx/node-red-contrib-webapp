@@ -94,9 +94,7 @@ function defaultsFor(type: string, ctx: { appId: string; routeId?: string; id: s
         case "ui-action":
             // action has no visible mount; x/y required to avoid config-node treatment.
             return { type, id: ctx.id, uiId: ctx.id, name: ctx.id, parent: ctx.appId, actionType: "navigate", z: TAB_ID, x: 100, y: 400, wires: [[]] };
-        case "ui-navigation":
-            // navigation has no visible mount; x/y required to avoid config-node treatment.
-            return { type, id: ctx.id, uiId: ctx.id, name: ctx.id, parent: ctx.appId, to: "/", z: TAB_ID, x: 100, y: 450, wires: [[]] };
+        // P243 (ADR 0040): ui-navigation retired — navigation is a ui-action navigate.
         case "ui-log":
             // P57: log display node — mounts like a view node, no inputs/outputs.
             return { ...base, minSeverity: "debug", maxEntries: 50, collapsed: false, wires: [] };

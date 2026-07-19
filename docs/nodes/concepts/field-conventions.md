@@ -218,7 +218,7 @@ Tabelle — jedes DOM-basierte Backend erfüllt sie; genau deshalb ist `color` d
 | `ui-repeat`, `ui-tab`, `ui-accordion-section` | rendern **keine eigene Chrome** (ADR 0025: `ui-repeat` ist transparent) | `color: false` + Hinweis | ✅ konform |
 | `ui-app` | die App-Farbe **sind** die Design-Tokens (Ebene 1) — keine Element-Farbe | keine Basis-Felder | ✅ konform |
 | `ui-route`, `ui-dialog`, `ui-component-definition`, `ui-component-instance` | Struktur ohne eigene Farb-Oberfläche | keine Basis-Felder | ✅ konform |
-| `ui-store`, `ui-query`, `ui-store-read`, `ui-store-action`, `ui-query-action`, `ui-action`, `ui-navigation` | rendern **kein DOM** | keine Basis-Felder | ✅ konform |
+| `ui-store`, `ui-query`, `ui-store-read`, `ui-store-action`, `ui-query-action`, `ui-action` | rendern **kein DOM** | keine Basis-Felder | ✅ konform |
 
 **Backend-Minimum: `—`.** Kein Backend muss hier etwas können.
 

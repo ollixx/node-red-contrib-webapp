@@ -70,8 +70,7 @@ Die Einzeldokumente pro Knoten sowie übergreifende Konzepte sind unter [docs/no
 
 ## Verhaltensknoten
 
-- [ui-action](nodes/behavior/ui-action.md)
-- [ui-navigation](nodes/behavior/ui-navigation.md) _(Deprecated)_
+- [ui-action](nodes/behavior/ui-action.md) — Navigation ist ein `ui-action` mit `navigate` ([ADR 0040](adr/0040-retire-ui-navigation-node-navigate-is-a-ui-action.md); `ui-navigation` stillgelegt)
 
 ## Extension-Pakete (nicht im Core)
 

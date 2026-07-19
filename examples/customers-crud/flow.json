@@ -200,11 +200,13 @@
         ]
     },
     {
-        "type": "ui-navigation",
+        "type": "ui-action",
         "id": "navToCustomers",
         "name": "Nav to customers",
         "uiId": "navToCustomers",
         "parent": "customersApp",
+        "actionType": "navigate",
+        "targetMode": "url",
         "to": "/customers",
         "z": "flow1",
         "x": 1080,

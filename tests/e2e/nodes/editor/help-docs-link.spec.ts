@@ -31,7 +31,8 @@ const UI_TYPES = [
     "ui-tabs", "ui-tab", "ui-accordion", "ui-accordion-section", "ui-breadcrumb", "ui-menu",
     "ui-pagination", "ui-stepper", "ui-image", "ui-icon", "ui-list", "ui-avatar",
     "ui-divider", "ui-log", "ui-repeat", "ui-store", "ui-query", "ui-store-read",
-    "ui-store-action", "ui-query-action", "ui-action", "ui-navigation",
+    "ui-store-action", "ui-query-action", "ui-action",
+    // P243 (ADR 0040): ui-navigation retired — navigation is a ui-action navigate.
 ] as const;
 
 const expectedBasename = (type: string) => EXPECTED_DOC[type] ?? `${type}.md`;

@@ -23,7 +23,6 @@ import {
     type UiTableNodeDefinition,
     type UiTextNodeDefinition,
     type UiActionNodeDefinition,
-    type UiNavigationNodeDefinition,
     type UiAlertNodeDefinition,
     type UiBadgeNodeDefinition
 } from "@node-red-contrib-webapp/schema";
@@ -41,7 +40,7 @@ export interface AssembledNodeSet {
     emittedDefinitions: UiNodeDefinition[];
     contributions: RuntimeRegistryContribution[];
     integration: RuntimeIntegrationModel;
-    passiveDefinitions: Array<UiStoreNodeDefinition | UiQueryNodeDefinition | UiActionNodeDefinition | UiNavigationNodeDefinition>;
+    passiveDefinitions: Array<UiStoreNodeDefinition | UiQueryNodeDefinition | UiActionNodeDefinition>;
 }
 
 type Result<T> =
@@ -316,7 +315,7 @@ function assembleComponentContribution(
 }
 
 function assembleRuntimeIntegration(
-    passiveDefinitions: Array<UiStoreNodeDefinition | UiQueryNodeDefinition | UiActionNodeDefinition | UiNavigationNodeDefinition>
+    passiveDefinitions: Array<UiStoreNodeDefinition | UiQueryNodeDefinition | UiActionNodeDefinition>
 ): Result<RuntimeIntegrationModel> {
     const stores = passiveDefinitions
         .filter((definition): definition is UiStoreNodeDefinition => definition.type === "ui-store")
@@ -339,27 +338,26 @@ function assembleRuntimeIntegration(
         .sort((left, right) => left.id.localeCompare(right.id));
 
     const actions = passiveDefinitions
-        .filter((definition): definition is UiActionNodeDefinition | UiNavigationNodeDefinition => definition.type === "ui-action" || definition.type === "ui-navigation")
+        .filter((definition): definition is UiActionNodeDefinition => definition.type === "ui-action")
         .map((definition) => ({
             id: definition.id,
-            actionType: definition.type === "ui-navigation" ? "navigate" : definition.actionType,
+            actionType: definition.actionType,
             // P118 (ADR 0011 §1): the navigate target SOURCE (wire | route | url).
-            // ui-navigation has no stored mode → its `to` makes it a url target.
-            targetMode: definition.type === "ui-navigation" ? "url" : definition.targetMode,
-            routeId: definition.type === "ui-navigation" ? undefined : definition.routeId,
-            target: definition.type === "ui-navigation" ? undefined : definition.target,
-            to: definition.type === "ui-navigation" ? definition.to : definition.to,
-            params: definition.type === "ui-navigation" ? undefined : definition.params,
-            description: definition.type === "ui-navigation" ? undefined : definition.description
+            targetMode: definition.targetMode,
+            routeId: definition.routeId,
+            target: definition.target,
+            to: definition.to,
+            params: definition.params,
+            description: definition.description
         }))
         .sort((left, right) => left.id.localeCompare(right.id));
 
     const navigations = passiveDefinitions
         // P119 (ADR 0011 §5): only navigations that carry a concrete `to` URL are
-        // url-target navigations. A route-mode ui-navigation/ui-action has no `to`
+        // url-target navigations. A route-mode ui-action navigate has no `to`
         // (it addresses via routeId) and is excluded from this `to`-keyed list.
-        .filter((definition): definition is UiNavigationNodeDefinition | UiActionNodeDefinition =>
-            (definition.type === "ui-navigation" || (definition.type === "ui-action" && definition.actionType === "navigate"))
+        .filter((definition): definition is UiActionNodeDefinition =>
+            definition.type === "ui-action" && definition.actionType === "navigate"
             && typeof definition.to === "string")
         .map((definition) => ({
             id: definition.id,
@@ -472,11 +470,10 @@ export function assembleNodeSet(input: unknown[]): Result<AssembledNodeSet> {
     const passiveDefinitions = emittedDefinitions.filter(
         (
             definition
-        ): definition is UiStoreNodeDefinition | UiQueryNodeDefinition | UiActionNodeDefinition | UiNavigationNodeDefinition =>
+        ): definition is UiStoreNodeDefinition | UiQueryNodeDefinition | UiActionNodeDefinition =>
             definition.type === "ui-store" ||
             definition.type === "ui-query" ||
-            definition.type === "ui-action" ||
-            definition.type === "ui-navigation"
+            definition.type === "ui-action"
     );
     const componentNodes = sortById(
         emittedDefinitions.filter(

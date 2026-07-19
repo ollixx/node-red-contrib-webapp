@@ -65,8 +65,7 @@
             "ui-store-read": "nodes/state/ui-store-read.js",
             "ui-store-action": "nodes/state/ui-store-action.js",
             "ui-query-action": "nodes/state/ui-query-action.js",
-            "ui-action": "nodes/behavior/ui-action.js",
-            "ui-navigation": "nodes/behavior/ui-navigation.js"
+            "ui-action": "nodes/behavior/ui-action.js"
         }
     },
     "scripts": {

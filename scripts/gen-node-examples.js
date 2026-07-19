@@ -1150,45 +1150,8 @@ examples.push(inputNodeExample({
     });
 }
 
-// ui-navigation ────────────────────────────────────────────────────────────────
-{
-    const T = "ex-ui-navigation"; const A = "navApp"; const DBG = "navDbg";
-    examples.push({
-        path: "examples/behavior/ui-navigation.json",
-        nodes: [
-            tab(T, "ui-navigation example"),
-            uiApp(A, T, { name: "Navigation App", layout: "app" }),
-
-            // The app is the implicit root route ("/"); two explicit sub-routes.
-            uiRoute("navProducts", "/products", A, T, { layoutId: "vertical", x: 120, y: 260 }),
-            uiRoute("navAbout", "/about", A, T, { layoutId: "vertical", x: 120, y: 340 }),
-
-            // Navigation mounted in the app nav slot — output: navigate event
-            {
-                id: "mainNav", type: "ui-navigation", name: "Main Nav",
-                uiId: "mainNav", parent: A, mount: `${A}.nav`,
-                links: JSON.stringify([
-                    { label: "Home", to: "/" },
-                    { label: "Products", to: "/products" },
-                    { label: "About", to: "/about" }
-                ]),
-                z: T, x: 480, y: 180, wires: [[DBG]]
-            },
-
-            // Route content (home content mounts into the app's content slot)
-            viewNode("ui-text", "homeContent", A, A, T, { name: "home content", text: "Home page" }),
-            viewNode("ui-text", "productsContent", A, "navProducts", T, { name: "products content", text: "Products page", x: 480, y: 260 }),
-            viewNode("ui-text", "aboutContent", A, "navAbout", T, { name: "about content", text: "About page", x: 480, y: 340 }),
-
-            debugNode(DBG, T, "navigate events", 280),
-
-            // Inject: update nav links dynamically
-            injectPayload("inj-links", T, "Update nav links",
-                JSON.stringify([{ label: "Home", to: "/" }, { label: "FAQ", to: "/about" }]),
-                "json", "mainNav", 480)
-        ]
-    });
-}
+// ui-navigation was retired in P243 (ADR 0040) — navigation is solely a
+// ui-action navigate; no per-node example is generated for it any more.
 
 // ── write all files ────────────────────────────────────────────────────────────
 

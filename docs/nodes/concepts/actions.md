@@ -95,7 +95,7 @@ Button **"Auf Canvas wählen"** direkt auf dem Canvas auswählen (P60 / ADR 0007
 §3). Technisch nutzt der Picker `RED.view.selectNodes()` — dieselbe Canvas-Pick-API,
 die die Kern-Knoten `catch` / `status` / `complete` für ihren Scope verwenden —
 gefiltert auf **interaktionsfähige webapp-Knoten** (alle `ui-*` außer dem Emitter
-`ui-action`/`ui-navigation` selbst). Es lassen sich **mehrere** Ziele wählen; die
+`ui-action` selbst). Es lassen sich **mehrere** Ziele wählen; die
 IDs werden als Liste (`targets`) in der Config gespeichert.
 
 Bei Eingang stellt `ui-action` die Aktion an **jeden** gewählten Zielknoten via
@@ -185,7 +185,9 @@ ausführlich in [messages.md](messages.md#navigation):
 
 `to` ist ein absoluter Pfad bzw. ein Template innerhalb der App; `:placeholder`
 werden aus `params` gefüllt. `onEnter`/`onLeave` der betroffenen Route(n) werden in
-beiden Szenarien emittiert (siehe [events.md](events.md)). `ui-navigation` ist deprecated.
+beiden Szenarien emittiert (siehe [events.md](events.md)). Navigation ist allein
+ein `ui-action` mit `navigate` — der `ui-navigation`-Knoten wurde in
+[ADR 0040](../../adr/0040-retire-ui-navigation-node-navigate-is-a-ui-action.md) stillgelegt.
 
 ---
 

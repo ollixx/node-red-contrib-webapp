@@ -103,7 +103,7 @@ vorgefiltert (`nodePickerPresets`, gespeist aus `collectReferenceNodes`):
 |---|---|
 | `apps` | alle `ui-app` |
 | `routes` | alle `ui-route` |
-| `actions` | alle `ui-action` / `ui-navigation` |
+| `actions` | alle `ui-action` |
 | `stores` | alle `ui-store` |
 | `mounts` | alle Parent-Slots (Apps → Routen/Dialoge → Container → Slots) als **Zwei-Spalten-Tree** (P135, `buildMountPickerTree`); `buildMountOptionsTree`/`flattenMountOptionTree` liefern weiterhin die flache Breadcrumb-Liste (Such-Pfade + Label-Auflösung) |
 
@@ -506,8 +506,7 @@ Hidden-Input gehalten und als entfernbare Chips dargestellt.
 
 Genutzt von `ui-action` für den optionalen „drahtlosen" Mehrfach-Ziel-Pfad
 (`targets`); das Verdrahten des Output-Ports bleibt der primäre Weg. Per Default
-sind nur interaktionsfähige `ui-*`-Knoten wählbar (nicht `ui-action`/
-`ui-navigation` selbst).
+sind nur interaktionsfähige `ui-*`-Knoten wählbar (nicht `ui-action` selbst).
 
 | | Listen-Dialog (P68) | Canvas-Picker (P60) |
 |---|---|---|
@@ -578,8 +577,9 @@ nicht selbst aufrufen.
 
 ## Navigations-Zielquellen-Umschalter & Wire-Scan (P119, ADR 0011)
 
-Erster Konsument der Zwei-Wege-Codierung ist die Navigations-Konfiguration von
-`ui-action` (Verb `navigate`) und `ui-navigation`. `installNavigateTargetMode()`
+Konsument der Zwei-Wege-Codierung ist die Navigations-Konfiguration von
+`ui-action` (Verb `navigate`). (P243/ADR 0040: `ui-navigation` wurde stillgelegt —
+Navigation ist allein ein `ui-action` navigate.) `installNavigateTargetMode()`
 baut aus drei Hidden-Carriern (`targetMode`, `routeId`, `params`) und dem
 `to`-typedInput eine Modus-UI:
 
