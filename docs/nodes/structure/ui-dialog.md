@@ -17,7 +17,7 @@ zusammengesetzt — View-Knoten mounten über `dialog:<id>/<slot>` in den Dialog
 
 - **Parent:** genau eine `ui-app`. Dialoge gehören zu einer App und werden in deren Routing-Kontext geöffnet/geschlossen.
 - **Kinder:** View-Knoten mounten über `mount` in die Slots des Dialogs (`dialog:<id>/content`, beim `dialog`-Preset zusätzlich `header`/`header-actions`/`footer`).
-- **Erreichbarkeit:** der Dialog ist kein eigener URL-Pfad — er wird über `open`/`close` ein- und ausgeblendet, optional an eine Route gekoppelt (`routeId`).
+- **Erreichbarkeit:** der Dialog ist kein eigener URL-Pfad — er wird über `open`/`close` ein- und ausgeblendet, optional an eine Route gekoppelt (`routeId`). Ist er an eine Route gekoppelt, ist er **nur bei aktiver passender Route** darstellbar (siehe `routeId` in den Feldern).
 - **Rolle zur Laufzeit:** der Server hält den autoritativen Offen-Zustand (`ui.dialogs.<id>.open`) und pusht ihn per Snapshot an die Clients.
 
 ## Felder
@@ -32,7 +32,7 @@ Node-Picker-Dialog, Event-Checkboxen).
 | `name` | „Name" | Textfeld | optional | Anzeigename im Editor und in Auswahllisten. Default: fortlaufend `Dialog N`. |
 | `parent` | „App" | Node-Picker-Dialog (Preset Apps) | **ja** | Die Parent-`ui-app`. Auswahl aus einer filter- und scrollbaren Liste der Apps. |
 | `title` | „Titel" | Textfeld | optional | Sichtbarer Titel des Dialogs (Header). Entfällt bei `closable: false` (kein Header). |
-| `routeId` | „Parent Route" | Node-Picker-Dialog (Preset Routes) | optional | Optionale Kopplung an eine `ui-route` derselben App (Routing-Kontext des Dialogs). |
+| `routeId` | „Parent Route" | Node-Picker-Dialog (Preset Routes) | optional | Optionale Kopplung an eine `ui-route` derselben App. **Ist `routeId` gesetzt, ist der Dialog nur bei aktiver passender Route darstellbar:** der Renderer filtert die Dialoge nach der gerade aktiven Route (`dialog.routeId === aktive Route-Id`). Bei einer anderen aktiven Route wird der Dialog **auch unter `?dialog=<id>` nicht gerendert**. Ohne `routeId` ist der Dialog in jeder Route der App darstellbar. |
 
 ### Gruppe „Layout"
 
@@ -44,7 +44,7 @@ Node-Picker-Dialog, Event-Checkboxen).
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `modal` | „Modal" | Checkbox | optional | Legt fest, ob der Rest der App während der Anzeige geblockt wird (Light-Box) oder nicht. Default: `true`. |
+| `modal` | „Modal" | Checkbox | optional | **Dialoge sind heute immer modal.** Das aktive Renderer-Backend (`sl-dialog`) ist nativ modal (eigenes Overlay/Backdrop); der HTML-Serializer emittiert keinen Modal-/Overlay-Schalter, daher erzeugt `modal:false` heute **identisches** Verhalten wie `modal:true`. Das Feld bleibt als **noch nicht umgesetzter** Platzhalter für einen künftigen nicht-modalen Modus erhalten (ein echt nicht-modaler Dialog braucht ein anderes Primitive). Default: `true`. |
 | `closable` | „Schließbar" | Checkbox | optional | Steuert den nativen Schließen-Button und das Nutzer-Dismissal. Default: `true`. Bei `true` zeigt der Dialog das native Schließen-Element und ist per X / ESC / Overlay-Klick schließbar. Bei `false` entfällt der gesamte Header (Schließen-Element **und** Titel); der Dialog wird dann ausschließlich über `open`/`close`-Actions gesteuert. |
 
 ### Gruppe „Events"
@@ -58,8 +58,9 @@ Node-Picker-Dialog, Event-Checkboxen).
 Der `data-help-name="ui-dialog"`-Hilfetext im Editor soll **knapp, aber
 ausreichend** sein: Zweck (Dialog mit eigenem Layout, offengelegt über
 `open`/`close`), ein Hinweis auf `closable` (natives Dismissal vs. nur
-Action-gesteuert), `modal` und ein Hinweis auf die `onOpen`/`onClose`-Events
-sowie ein Link auf die ausführliche Doku. Empfohlener Link (später ggf. Wiki):
+Action-gesteuert), den `modal`-Status (Dialoge sind **heute immer modal** — das
+Feld ist ein Platzhalter für einen künftigen nicht-modalen Modus) und ein Hinweis
+auf die `onOpen`/`onClose`-Events sowie ein Link auf die ausführliche Doku. Empfohlener Link (später ggf. Wiki):
 `https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/structure/ui-dialog.md`.
 
 ## Input
@@ -117,6 +118,11 @@ wird von der Parent-App geerbt. Siehe [theming.md](../concepts/theming.md).
 - **Autoritativer Offen-Zustand.** Der Server hält `ui.dialogs.<id>.open`; ein
   Nutzer-Close wird serverseitig verbucht und per Snapshot an alle betroffenen
   Clients gespiegelt.
+- **Keine Base-Fields** (`visible` / `disabled` / `color`). Ein Dialog folgt dem
+  **Offenlegungs-** statt dem Sichtbarkeits-Modell: er wird über `open`/`close`
+  gesteuert, nicht über `show`/`hide` oder ein `disabled`-Flag, und trägt daher
+  bewusst keine der ADR-0015-Base-Fields. Präsenz/Interaktivität des Inhalts
+  regeln die gemounteten View-Knoten.
 
 ## Referenzen
 
@@ -131,5 +137,10 @@ wird von der Parent-App geerbt. Siehe [theming.md](../concepts/theming.md).
 
 - Ob eine deklarative Kopplung des Offen-Zustands an ein Store-Flag
   (Schema `<store>:<flag>`) sinnvoll ist, ist noch nicht entschieden.
-- Die explizite Modellierung der Route-/Dialog-Kopplung (`routeId`-Lebenszyklus)
-  ist noch nicht ausspezifiziert.
+- Ein echt **nicht-modaler** Dialog (`modal:false` mit sichtbarer Wirkung) ist ein
+  künftiges Feature — es braucht ein anderes Primitive als das nativ-modale
+  `sl-dialog`. Heute ist das `modal`-Feld ein Platzhalter ohne Wirkung.
+
+Das Route-Scoping über `routeId` (Dialog nur bei aktiver passender Route
+darstellbar) ist implementiert und dokumentiert (siehe Feld `routeId`) — kein
+offener Punkt mehr.
