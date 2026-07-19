@@ -63,5 +63,9 @@
     <div class="form-row"><label>Events</label></div>
     <div id="node-input-events-container"></div>
 </script>
-<script type="text/html" data-help-name="ui-dialog"><p>Definiert einen Dialog mit eigenem Layout.</p>
+<script type="text/html" data-help-name="ui-dialog"><p>Definiert einen <b>Dialog mit eigenem Layout</b> innerhalb einer App. Der Dialog wird über die Action-Verben <code>open</code> / <code>close</code> offengelegt (nicht über <code>show</code>/<code>hide</code>); View-Knoten mounten über <code>dialog:&lt;id&gt;/&lt;slot&gt;</code> in seine Slots.</p>
+<p><b>Schließbar</b> (<code>closable</code>): steuert nur das native Nutzer-Dismissal. Bei <code>true</code> ist der Dialog per X / ESC / Overlay-Klick schließbar; bei <code>false</code> entfällt der gesamte Header und der Dialog wird ausschließlich über <code>open</code>/<code>close</code> gesteuert.</p>
+<p><b>Modal</b>: Dialoge sind heute <b>immer modal</b> (das Backend <code>sl-dialog</code> ist nativ modal). Das Feld ist ein Platzhalter für einen künftigen nicht-modalen Modus und hat aktuell keine Wirkung.</p>
+<p><b>Parent Route</b> (<code>routeId</code>): koppelt den Dialog optional an eine Route — dann ist er nur bei aktiver passender Route darstellbar.</p>
+<p><b>Events</b>: <code>onOpen</code> feuert beim Öffnen, <code>onClose</code> beim Schließen (auch bei X / ESC / Overlay). Jedes aktive Event erzeugt einen Output-Port.</p>
 <p>Vollständige Doku: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/structure/ui-dialog.md" target="_blank">docs/nodes/structure/ui-dialog.md</a></p></script>

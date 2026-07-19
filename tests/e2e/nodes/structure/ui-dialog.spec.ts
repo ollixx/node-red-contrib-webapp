@@ -48,6 +48,46 @@ function buildDialogFlow(): NodeDef[] {
     return [tab, app, route, dialog, dialogText];
 }
 
+/**
+ * Build a flow with TWO routes where the dialog is scoped to route A via
+ * `routeId`. The renderer filters dialogs by the active route
+ * (renderer.ts: `.filter(d => !d.routeId || d.routeId === routeMatch.route.id)`),
+ * so the dialog is only renderable while route A is active.
+ */
+function buildRouteScopedDialogFlow(): NodeDef[] {
+    const appId = "scopeApp";
+    const routeAId = "routeA";
+    const routeBId = "routeB";
+    const dialogId = "scopedDialog";
+
+    const tab: NodeDef = { id: TAB_ID, type: "tab", label: "E2E", disabled: false, info: "" };
+    const app: NodeDef = {
+        type: "ui-app", id: appId, uiId: appId, name: "Scope App",
+        title: "Scope App", root: appId, layout: "vertical", z: TAB_ID, wires: [[]]
+    };
+    const routeA: NodeDef = {
+        type: "ui-route", id: routeAId, uiId: routeAId, name: "Home",
+        parent: appId, path: "/", title: "Home", layoutId: "vertical", z: TAB_ID, wires: [[]]
+    };
+    const routeB: NodeDef = {
+        type: "ui-route", id: routeBId, uiId: routeBId, name: "Other",
+        parent: appId, path: "/other", title: "Other", layoutId: "vertical", z: TAB_ID, wires: [[]]
+    };
+    // Dialog scoped to route A only.
+    const dialog: NodeDef = {
+        type: "ui-dialog", id: dialogId, uiId: dialogId, name: "Scoped Dialog",
+        title: "Scoped Dialog", parent: appId, routeId: routeAId,
+        layoutId: "vertical", closable: true, z: TAB_ID, wires: [[]]
+    };
+    const dialogText: NodeDef = {
+        type: "ui-text", id: "scopedText", uiId: "scopedText", name: "scoped text",
+        parent: appId, mount: `${dialogId}.content`, text: "Scoped dialog content",
+        z: TAB_ID, wires: [[]]
+    };
+
+    return [tab, app, routeA, routeB, dialog, dialogText];
+}
+
 test.describe("ui-dialog (P42)", () => {
     test.afterEach(async ({ request }) => {
         await resetFlow(request);
@@ -151,5 +191,38 @@ test.describe("ui-dialog (P42)", () => {
         const dialog = page.locator("sl-dialog.webapp-dialog");
         await expect(dialog).toBeVisible();
         await expect(dialog).toHaveAttribute("no-header", /.*/);
+    });
+
+    // ── P245: routeId route-scoping (dialog only renderable on its route) ───────
+
+    test("routeId — dialog is present under ?dialog on its route, absent on another route", async ({ page, request }) => {
+        await deployFlow(request, buildRouteScopedDialogFlow());
+
+        // Route A ("/") is the dialog's routeId → dialog IS rendered.
+        {
+            const streamRequested = page.waitForRequest((req) =>
+                req.url().includes("/webapp/scopeApp/stream")
+            );
+            await page.goto("/webapp/scopeApp/?dialog=scopedDialog");
+            await expect(page.locator("#webapp-client-root")).toBeVisible();
+            await streamRequested;
+
+            const dialog = page.locator("sl-dialog.webapp-dialog");
+            await expect(dialog).toBeVisible();
+            await expect(dialog).toContainText("Scoped dialog content");
+        }
+
+        // Route B ("/other") is NOT the dialog's routeId → dialog is filtered out
+        // and absent from the DOM even with the same ?dialog param.
+        {
+            const streamRequested = page.waitForRequest((req) =>
+                req.url().includes("/webapp/scopeApp/stream")
+            );
+            await page.goto("/webapp/scopeApp/other?dialog=scopedDialog");
+            await expect(page.locator("#webapp-client-root")).toBeVisible();
+            await streamRequested;
+
+            await expect(page.locator(".webapp-dialog")).toHaveCount(0);
+        }
     });
 });
