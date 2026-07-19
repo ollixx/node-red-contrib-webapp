@@ -2075,6 +2075,13 @@ function toComponentDefinitions(components) {
                     // static array stays in props.items. Other kinds (breadcrumb) keep
                     // their existing items-in-props behaviour.
                     ...(component.items !== undefined && !menuItemsBinding && !listItemsBinding ? { items: component.items } : {}),
+                    // P248: ui-breadcrumb `separator` string — a non-empty value is
+                    // slotted into slot="separator" by the serializer (static-items
+                    // modes a & b), overriding Shoelace's native "/". Previously this
+                    // field reached the definition but was dropped here, so it was
+                    // inert. In layout="breadcrumb" mode the separator comes from a
+                    // child node in the "separator" region instead (mutually exclusive).
+                    ...(component.separator !== undefined ? { separator: component.separator } : {}),
                     ...(component.sections !== undefined ? { sections: component.sections } : {}),
                     ...(component.tabs !== undefined ? { tabs: component.tabs } : {}),
                     ...(component.orientation !== undefined ? { orientation: component.orientation } : {}),

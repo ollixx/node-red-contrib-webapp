@@ -1148,6 +1148,15 @@
             //   differently); item remains clickable.
             //   ALL items emit a `click` event via data-webapp-breadcrumb-action.
             const rawItems = Array.isArray(component.props.items) ? component.props.items : (Array.isArray(component.value) ? component.value : []);
+            // P248: a non-empty `separator` string prop overrides Shoelace's native
+            // "/" separator by slotting the escaped string into slot="separator".
+            // (In layout="breadcrumb" mode above, the separator comes from a child
+            // node mounted into the "separator" region instead — the string-prop and
+            // region mechanisms are mutually exclusive by mode.)
+            const separatorStr = typeof component.props.separator === "string" ? component.props.separator : "";
+            const staticSeparatorHtml = separatorStr !== ""
+                ? "<span slot=\"separator\">" + escapeHtml(separatorStr) + "</span>"
+                : "";
             const itemHtml = rawItems.map(function (item) {
                 // Normalise to { label, action, active }
                 const isStr = typeof item === "string";
@@ -1162,7 +1171,7 @@
                 const activeAttr = active ? " aria-current=\"page\"" : "";
                 return "<sl-breadcrumb-item" + clickAttr + activeAttr + ">" + label + "</sl-breadcrumb-item>";
             }).join("");
-            return wrapRenderedComponentHtml(component, layoutId, "<sl-breadcrumb>" + itemHtml + "</sl-breadcrumb>");
+            return wrapRenderedComponentHtml(component, layoutId, "<sl-breadcrumb>" + staticSeparatorHtml + itemHtml + "</sl-breadcrumb>");
         }
 
         if (component.kind === "tabs") {

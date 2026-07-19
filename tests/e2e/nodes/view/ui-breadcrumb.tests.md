@@ -37,3 +37,22 @@ Per-node test catalogue as required by `.ai/agents/node-testing.md`.
 | item without explicit action: label is used as action | Default action fallback |
 | last item is also clickable (no positional selectivity in P95) | P95 key contract: all items clickable |
 | empty items array → sl-breadcrumb with zero items (sibling still renders) | Empty items emit the container with zero `sl-breadcrumb-item`; sibling text still renders |
+| separator string renders as slot=separator content (overrides native '/') | P248: a non-empty `separator` string is measured in the DOM as `<span slot="separator">` with the custom char — the field is honest, not inert |
+| no separator prop → no slot=separator element (Shoelace native default) | P248 control: the slotted separator is only emitted when the string is set (value-driven, not always-on) |
+| route/path item fires click (not navigate) with correct msg.ui envelope | P248 navigate-truth: even a route/path `action` ("/customers") emits `click`, never `navigate`; runtime is click-only (schema tolerates `["navigate"]` only as P75 back-compat) |
+
+## P248 findings resolution
+
+- **`separator` (finding A):** was **inert** — `mapConfig` carried it but `toComponentDefinitions`
+  (nodes/webapp.js) dropped it before the serializer, and the static-items serializer branch
+  never read `props.separator`. Resolved by the lower-risk **implement** path: `separator` now
+  flows into `component.props` and the serializer slots a non-empty string into `slot="separator"`,
+  overriding Shoelace's native `/`. Proven by the two measured E2E above (custom char present +
+  control absent). The `layout="breadcrumb"` region-based separator (child node in slot `separator`)
+  is unchanged and mutually exclusive by mode.
+- **`navigate` (finding B):** breadcrumb runtime emits **`click` only** (`mapConfig` → `events:["click"]`,
+  locked by the runtime unit "mapConfig: events is always ['click']"). A `navigate` event is **not**
+  fired for any item, including route/path items — the P95 design collapsed all interactions to `click`
+  (navigation happens via wiring `click` → `ui-action navigate`). The schema keeps `events:["navigate"]`
+  only as intentional P75 back-compat (locked by schema test "accepts ui-breadcrumb with events:['navigate']").
+  The E2E above measures the real envelope: a `/customers` item fires `click`, not `navigate`.

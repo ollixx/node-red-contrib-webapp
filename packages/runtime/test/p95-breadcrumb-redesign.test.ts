@@ -117,6 +117,40 @@ describe("P95: serializer — string items", () => {
     });
 });
 
+describe("P248: serializer — separator string (static items)", () => {
+    it("non-empty separator string is slotted into slot=separator (overrides native '/')", () => {
+        const html = serializer.renderComponentHtml(
+            makeComponent("breadcrumb", "bc-sep", {
+                props: { items: [{ label: "Home", action: "/" }, { label: "Details" }], separator: ">" }
+            }),
+            "app", { appId: "app" }
+        );
+        expect(html).toContain("<span slot=\"separator\">&gt;</span>");
+        // The separator span sits inside the sl-breadcrumb, before the items.
+        expect(html.indexOf("slot=\"separator\"")).toBeLessThan(html.indexOf("<sl-breadcrumb-item"));
+    });
+
+    it("no separator prop → no slot=separator element (native default)", () => {
+        const html = serializer.renderComponentHtml(
+            makeComponent("breadcrumb", "bc-sep2", {
+                props: { items: [{ label: "Home", action: "/" }, { label: "Details" }] }
+            }),
+            "app", { appId: "app" }
+        );
+        expect(html).not.toContain("slot=\"separator\"");
+    });
+
+    it("empty-string separator is treated as unset (no slotted separator)", () => {
+        const html = serializer.renderComponentHtml(
+            makeComponent("breadcrumb", "bc-sep3", {
+                props: { items: [{ label: "Home" }], separator: "" }
+            }),
+            "app", { appId: "app" }
+        );
+        expect(html).not.toContain("slot=\"separator\"");
+    });
+});
+
 describe("P95: serializer — breadcrumb layout (child slots mode)", () => {
     it("renders items from default region as sl-breadcrumb-items with child node id as action", () => {
         const component = {
@@ -210,6 +244,11 @@ describe("P95: mapConfig — item resolution", () => {
     it("events is always ['click']", () => {
         const def = map({ items: [{ label: "A" }] });
         expect(def.events).toEqual(["click"]);
+    });
+
+    it("passes the separator string through to the definition (P248)", () => {
+        const def = map({ items: ["A", "B"], separator: ">" });
+        expect(def.separator).toBe(">");
     });
 
     it("layout='breadcrumb' is preserved for child-slot mode", () => {
