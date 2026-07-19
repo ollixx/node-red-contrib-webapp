@@ -3,7 +3,7 @@ id: P247
 node: ui-accordion
 title: "Konformitäts-Pass ui-accordion(+section) — `multiple` ist inert (Single-Open nicht durchgesetzt), events nur unit-getestet, section ohne Katalog; Render/openSection solide"
 epic: aspects/node-conformance
-status: in_progress
+status: done
 dependencies: []
 verify: browser
 spec: docs/nodes/navigation/ui-accordion.md
@@ -96,3 +96,62 @@ DOM/Envelope; die 7 bestehenden Tests bleiben grün.
 
 1. **`multiple`:** Single-Open-Semantik **implementieren** oder als „Sektionen sind
    heute immer unabhängig" **dokumentieren/entfernen**?
+
+## Result
+
+**Done 2026-07-19.** Owner-Entscheid **implementieren** umgesetzt: `multiple:false`
+(Default) erzwingt jetzt echtes Single-Open.
+
+### Single-Open verdrahtet (Serializer-Flag + gescopeter Client-Listener)
+
+- **Serializer** (`webapp-serializer.js`): der `.webapp-accordion`-Wrapper emittiert
+  `data-webapp-source=<id>` + `data-webapp-accordion-multiple="true|false"`
+  (`props.multiple === true`; Default false = Single-Open, konsistent mit der Spec
+  „Im Einzel-Modus ist genau die openSection offen").
+- **Client** (`webapp-client.js`, +67 Z.): delegierte `sl-show`/`sl-hide`-Listener.
+  Expand → `sectionOpen`, Collapse → `sectionClose` (beide `params.sectionId` =
+  `data-webapp-part`). Bei `multiple!="true"` schließt ein Expand die offenen
+  Geschwister **nur innerhalb dieses einen Accordions** (`closest(".webapp-accordion
+  [data-webapp-source]")`-gescopet); ui-log-`<sl-details>` u. a. sind per
+  `data-webapp-part`-Guard ausgenommen. Server-Default-Open (`openSection`) unverändert.
+
+### Gemessene Tests (11 grün im Node-Spec, retries=0)
+
+- **S01** `multiple:false` (Default): Öffnen von Sektion 2 → 2 offen, 1 verliert `open`.
+- **S02** `multiple:true`: Öffnen von Sektion 2 → beide offen (keine Koordination).
+- **E01/E02** echte Expand/Collapse-Geste → POST `/event`
+  `{sectionOpen|sectionClose, params.sectionId}`.
+- Die 7 bestehenden R01/R02/O01–O03/D01/M01 blieben grün.
+
+### ui-accordion-section (Kind-Knoten)
+
+Dokumentierte **Kind-Knoten-Ausnahme** (ui-tab-Präzedenz): kein eigener Katalog;
+`ui-accordion-section.md` verweist auf die Eltern-Abdeckung (R01/R02 + P169-Unit/
+Schema) und hält **Base-Fields = N/A** fest (reiner Sektionskopf, kein eigenes
+Chrome, nicht eigenständig interaktiv).
+
+### Ein autoritativer Regressions-Fund (behoben) — der Wert der Voll-Suite
+
+Der autoritative Voll-Lauf war **794 passed / 1 failed** (`--retries=0`). Die eine
+Interaktion: `ui-action-verbs.spec.ts:160` (P53) — der ui-action-`open`-Verb
+offenbart eine Accordion-Sektion programmatisch. Dessen alte Assertion („Sektion A
+bleibt offen — Disclosure ist additiv") kodierte das **Vor-P247-Multi-Open-Verhalten
+aus Versehen** und **widersprach der Accordion-Spec selbst** (`multiple:false`
+Default = nur openSection offen). Single-Open gilt konsistent auch für
+programmatische Disclosure → Öffnen von B schließt A. Assertion an den dokumentierten
+Vertrag angeglichen (kein erfundenes Verhalten; „additive disclosure" war **kein**
+dokumentierter ui-action-Vertrag). Betroffene Specs danach **16 passed**. Alle
+übrigen 793 waren im selben Voll-Lauf grün; der Fix ist rein Test-Assertion und kann
+keine anderen Tests beeinflussen.
+
+### Verifikation
+
+`pnpm validate` + alle Tripwires grün (Agent-seitig zu Ende gelaufen); autoritativer
+Voll-Lauf 794/1 → nach dem Test-Fix grün. Der Implementer-Agent committete VOR der
+Verifikation und stoppte alle Prozesse (Port 1882 frei) — Brief-Härtung greift.
+
+### NUL-Byte-Grep-Falle (wiederholt)
+
+`webapp-client.js` ist `file`-detektiert als binär → plain `grep` findet den neuen
+Listener **nicht** (stиller Leerbefund); `grep -a`/`git grep` zeigt ihn (Z. 852+).
+Die vorgeschlagene `grep -rlP '\x00'`-Tripwire über `resources/lib/` ist weiter offen.
