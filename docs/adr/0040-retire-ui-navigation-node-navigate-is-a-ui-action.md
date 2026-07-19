@@ -4,13 +4,13 @@
 - Date: 2026-07-17
 - Supersedes: the deprecation-alias framing of `ui-navigation` in
   `docs/nodes/behavior/ui-navigation.md` (which kept the node "for
-  back-compat"). Amends **P119 / [ADR 0011 §5](0011-navigation-model.md)** — P119
+  back-compat"). Amends **P119 / [ADR 0011 §5](0011-ui-action-navigation-target-modes-and-dual-path-coding.md)** — P119
   gave the `ui-navigation` editor the full `wire`/`route`/`url` switcher + typed
   `params`, but the runtime never honored them (see Context). This ADR resolves
   the open question the ui-navigation spec itself raised (*"ob `ui-navigation`
   ganz in `ui-action` aufgeht"*): it does.
 - Builds on: [ADR 0007](0007-action-message-and-per-node-interaction-handlers.md)
-  (navigate is a public action message), [ADR 0011](0011-navigation-model.md)
+  (navigate is a public action message), [ADR 0011](0011-ui-action-navigation-target-modes-and-dual-path-coding.md)
   (the three navigate target modes on `ui-action`).
 - Audit source: the `ui-navigation` conformance audit (2026-07-17).
 
