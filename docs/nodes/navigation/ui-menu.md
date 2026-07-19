@@ -10,9 +10,9 @@
 `ui-menu` rendert ein **Navigationsmenü**, das die App-Routen für den Nutzer
 zugänglich macht. Die Menü-Items werden statisch konfiguriert oder über ein
 Binding aus dem App-State bezogen; das aktive Item (die aktuelle Route) kann
-ebenfalls über ein Binding gesteuert werden. Durch `displayType` wird bestimmt,
-wie das Menü räumlich dargestellt wird — als Seitenleiste, als Kopfzeile oder
-als ausklappbares Dropdown.
+ebenfalls über ein Binding gesteuert werden. Das Feld `displayType`
+(`sidebar`/`topbar`) benennt den **geplanten** räumlichen Darstellungsmodus;
+er hat heute **keine beobachtbare Render-Wirkung** (s. u. „Darstellung").
 
 ## Einordnung
 
@@ -35,15 +35,14 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `displayType` | „Display Type" | SelectBox | optional | Darstellungstyp des Menüs (kein semantischer Variant, sondern ein Präsentationsmodus): `sidebar` (vertikale Seitenleiste, Default), `topbar` (horizontale Kopfzeile), `dropdown` (ausklappbares Kontextmenü). Jeder Modus kann das Layout und die Interaktion des Menüs wesentlich verändern. |
+| `displayType` | „Display Type" | SelectBox | optional | Geplanter Darstellungstyp des Menüs (kein semantischer Variant, sondern ein Präsentationsmodus): `sidebar` (Default) oder `topbar`. **Noch nicht umgesetzt:** heute erzeugt **kein** Wert einen beobachtbaren Render-Unterschied — Renderer und Shoelace-Adapter verzweigen nicht auf `displayType`; beide Werte rendern ein nacktes `sl-menu`. Die räumlichen Modi (sidebar vertikal, topbar horizontal) sind **geplant**, aber noch nicht implementiert. Ein früher dokumentierter `dropdown`-Modus wurde entfernt (kein Trigger-Modell, im Editor nie wählbar). Ein deployter Legacy-Wert `dropdown` fällt verlustfrei auf den Default zurück (Schema `.catch("sidebar")`). |
 
 ### Gruppe „Items"
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `items` | „Items State Path" | typedInput (Binding) | **ja** | Die Menü-Einträge. Kann ein **statisches Array** oder ein **Binding** sein. Jedes Item hat die Form `{ "label": "<anzeigename>", "route"?: "<route-pfad>", "href"?: "<externer-link>", "path"?: "<pfad>", "icon"?: "<icon-name>", "children"?: [...] }`. Ein Item kann entweder `route` (interne Navigation), `href` (externer Link) oder `path` tragen — nicht mehrere. Kinder-Items (`children`) haben dieselbe Struktur ohne weiteren `children`-Level. Bindbare Arten: `state`, `store`, `query`, `routeParam`, `literal` sowie Node-RED-Standard-Arten (`msg`, `flow`, `global`, `jsonata`, `env`). |
-| `activeRoute` | „Active Route Path" | typedInput (Binding) | optional | Binding auf den Pfad/die Route des aktuell aktiven Items (im Feld `activeRoute` gespeichert, typedInput-Carrier `activeRouteBinding`). Das Menü hebt das passende Item visuell hervor. Typischerweise an einen Store-Wert gebunden, der beim `onEnter` einer Route gesetzt wird. Bindbare Arten wie `items`. |
-| `collapsed` | — | typedInput (Binding) | optional | Binding auf einen Boolean; steuert bei `displayType: sidebar` den eingeklappten Zustand der Seitenleiste. `true` = eingeklappt (nur Icons sichtbar), `false` = ausgeklappt. Bindbare Arten wie `items`. |
+| `items` | „Items" | typedInput (Binding) | **ja** | Die Menü-Einträge. Kann ein **statisches Array** oder ein **Binding** sein. Jedes Item hat die Form `{ "label": "<anzeigename>", "route"?: "<route-pfad>", "href"?: "<externer-link>", "path"?: "<pfad>", "icon"?: "<icon-name>", "children"?: [...] }`. Ein Item kann entweder `route` (interne Navigation), `href` (externer Link) oder `path` tragen — nicht mehrere. Kinder-Items (`children`) haben dieselbe Struktur ohne weiteren `children`-Level. Bindbare Arten: `state`, `store`, `query`, `routeParam`, `literal` sowie Node-RED-Standard-Arten (`msg`, `flow`, `global`, `jsonata`, `env`). |
+| `activeRoute` | „Active Route" | typedInput (Binding) | optional | Binding auf den Pfad/die Route des aktuell aktiven Items (im Feld `activeRoute` gespeichert, typedInput-Carrier `activeRouteBinding`). Das Menü hebt das passende Item visuell hervor. Typischerweise an einen Store-Wert gebunden, der beim `onEnter` einer Route gesetzt wird. Bindbare Arten wie `items`. |
 
 ### Gruppe „Layout" (Child-Platzierung im Parent)
 
@@ -58,16 +57,25 @@ Sichtbarkeit dieser Felder folgt dem Layout-Preset des jeweiligen Parents — ge
 ### Inline-Hilfe (HTML)
 
 Der `data-help-name="ui-menu"`-Hilfetext soll knapp sein: Zweck (Navigationsmenü),
-Hinweis auf `displayType` (`sidebar`/`topbar`/`dropdown`), Items-Format
+Hinweis auf `displayType` (`sidebar`/`topbar`), Items-Format
 (`label`/`route`/`icon`/`children`) und `activeItem`-Binding sowie ein Link auf
 die ausführliche Doku:
 `https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/navigation/ui-menu.md`.
 
 ## Input
 
-- **`msg.payload`** — ersetzt die Items-Liste vollständig; erwartet wird ein Array von Menu-Item-Objekten (s. o.). Binding-gebundene Items werden bei der nächsten Binding-Auflösung wieder überschrieben.
-- **`msg.ui.patch`** — überschreibt beliebige Felder der Knoten-Definition (z. B. `items`, `activeItem`, `collapsed`, `displayType`). Binding-Felder müssen als Binding-Objekt übergeben werden. Format: [inputs.md](../concepts/inputs.md).
-- **Component-Operationen** (`msg.ui.component.op`): `show`, `hide` steuern die Sichtbarkeit des gesamten Menüs. Format und Semantik: [inputs.md](../concepts/inputs.md).
+> **Ist-Zustand (P244):** `ui-menu` verwendet den Interaktions-Input-Handler
+> (`interactionInputHandler` über `componentStateInputHandler`). Er konsumiert
+> **weder `msg.payload` noch `msg.ui.patch`** — beide werden **unverändert
+> durchgereicht** (Pass-Through). Ein Items-Ersatz oder Feld-Patch per Nachricht ist
+> heute **nicht** verdrahtet (dieselbe knotenübergreifende Frage wie beim
+> ui-icon-`msg.payload`-Follow-up, P235 — hier nur die Wahrheit dokumentiert, keine
+> Richtungsentscheidung).
+
+- **`msg.payload`** — **nicht** konsumiert; wird unverändert durchgereicht. Ein Items-Ersatz per Payload ist noch nicht implementiert.
+- **`msg.ui.patch`** — **nicht** konsumiert; wird unverändert durchgereicht. Ein Feld-Patch per Nachricht ist noch nicht implementiert.
+- **Interaktions-Verben** (`msg.ui.action.type`): `show`, `hide`, `select` — von einer verdrahteten `ui-action` dispatcht; lösen den zugehörigen Client-Push aus.
+- **Component-Operationen** (`msg.ui.component.op`): `show`, `hide` (sowie `enable`, `disable`, `focus`, `reset`) steuern die Sichtbarkeit/den Zustand des gesamten Menüs. Format und Semantik: [inputs.md](../concepts/inputs.md).
 - **Nicht erkannte / fachfremde Messages:** werden **unverändert durchgereicht** (Pass-Through), ohne Fehlerausgabe.
 
 ## Output
@@ -85,13 +93,13 @@ Items mit `href` (externe Links) lösen keinen `navigate`-Event aus — der Brow
 **Antizipierte Wiring-Szenarien:**
 - `navigate`-Output → `ui-action` (`navigate`, `to: msg.ui.params.path`) → navigiert zur gewählten Route. Gleichzeitig kann das `activeItem`-Binding aus einem Store gelesen werden, den eine `ui-route`-`onEnter`-Verdrahtung befüllt.
 - `navigate`-Output → `function`-Knoten → `ui-store` (`set`, `path: "activeRoute"`) → `activeItem`-Binding liest denselben Wert → visuell aktives Item bleibt bei URL-getriebener Navigation synchron.
-- `collapsed`-Binding aus einem `ui-store` → Button (`ui-button`) toggled den Store-Wert → Sidebar klappt ein/aus.
 
 ## Theming
 
-`ui-menu` rendert je nach `displayType` sehr unterschiedliche Strukturen
-(Seitenleiste, horizontale Leiste, Dropdown). Das Theme (Design-Tokens) wird von
-der Parent-App geerbt. `displayType` ist kein semantischer Variant im Sinne von
+`ui-menu` soll je nach `displayType` (`sidebar`/`topbar`) unterschiedliche
+Strukturen rendern — heute jedoch **noch nicht** (kein Render-Unterschied, s.
+„Darstellung"). Das Theme (Design-Tokens) wird von der Parent-App geerbt.
+`displayType` ist kein semantischer Variant im Sinne von
 [theming.md](../concepts/theming.md) — er steuert die Darstellungsform, nicht
 die Semantik; deshalb liegt er im Feld `displayType`, nicht in `variant`.
 Details: [theming.md](../concepts/theming.md).
@@ -108,6 +116,7 @@ Details: [theming.md](../concepts/theming.md).
 
 ## Offene Punkte
 
-- `dropdown`-Modus: Wer öffnet das Dropdown (Trigger-Element)? Die Beziehung zu einem auslösenden `ui-button` ist noch nicht modelliert.
+- `displayType`-Render-Wirkung: `sidebar`/`topbar` sollen räumlich unterschiedlich rendern (sidebar vertikal, topbar horizontal), tun es aber noch nicht — Renderer/Adapter verzweigen nicht auf `displayType`. Noch nicht implementiert.
+- `msg.payload`/`msg.ui.patch`-Konsum (Items-Ersatz bzw. Feld-Patch): heute Pass-Through; ob und wie das verdrahtet wird, ist die knotenübergreifende Frage aus P235 (ui-icon-`msg.payload`).
 - Berechtigungsgesteuertes Ein- und Ausblenden einzelner Items (z. B. per `visibleIf`-Binding pro Item) ist noch nicht spezifiziert.
 - Icon-Set-Konvention (Name → Asset-Auflösung) ist noch nicht festgelegt.

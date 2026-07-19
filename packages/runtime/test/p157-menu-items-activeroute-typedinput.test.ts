@@ -2,6 +2,8 @@ import { createRequire } from "node:module";
 
 import { describe, expect, it } from "vitest";
 
+import { validateUiNodeDefinition } from "../../schema/src/node-definitions";
+
 const require = createRequire(import.meta.url);
 const webapp = require("../../../nodes/webapp.js") as {
     __test__: {
@@ -158,5 +160,60 @@ describe("P157: ui-menu — structural items render + activeRoute highlight", ()
         const result = renderAppPage("mApp5", "/", undefined, definitions);
         expect(result.status).toBe(200);
         expect(result.body).toContain(">Reports</sl-menu-item>");
+    });
+});
+
+/**
+ * P244 — Konformitäts-Pass ui-menu (document-down / dead-field removal).
+ *
+ * - `displayType` enum narrowed to sidebar/topbar; a legacy `dropdown` (or any
+ *   out-of-enum value) degrades GRACEFULLY to the default via schema `.catch`,
+ *   never a hard validation failure that would drop the node.
+ * - `collapsed` was a phantom field (not in editor, never mapped/rendered) →
+ *   removed from the schema; an incoming `collapsed` key is stripped, not an error.
+ * - the `config.variant` legacy twin in mapConfig was dead code (ui-menu never had
+ *   a `variant` field) → removed; a stray `variant` no longer leaks into displayType.
+ */
+describe("P244: ui-menu conformance — displayType narrowing, dead-field removal", () => {
+    const reg = runtimeNodeRegistry["ui-menu"];
+    const baseDef = { type: "ui-menu", id: "m1", mount: "app1.content", items: [] as unknown[] };
+
+    it("accepts sidebar and topbar", () => {
+        for (const displayType of ["sidebar", "topbar"]) {
+            const result = validateUiNodeDefinition({ ...baseDef, displayType });
+            expect(result.success, displayType).toBe(true);
+            if (result.success) {
+                expect((result.data as { displayType?: string }).displayType).toBe(displayType);
+            }
+        }
+    });
+
+    it("a legacy `dropdown` value degrades to the default (sidebar), not a validation failure", () => {
+        const result = validateUiNodeDefinition({ ...baseDef, displayType: "dropdown" });
+        expect(result.success).toBe(true);
+        if (result.success) {
+            expect((result.data as { displayType?: string }).displayType).toBe("sidebar");
+        }
+    });
+
+    it("any out-of-enum displayType value degrades to the default", () => {
+        const result = validateUiNodeDefinition({ ...baseDef, displayType: "nonsense" });
+        expect(result.success).toBe(true);
+        if (result.success) {
+            expect((result.data as { displayType?: string }).displayType).toBe("sidebar");
+        }
+    });
+
+    it("`collapsed` is no longer a schema field — an incoming key is stripped, not an error", () => {
+        const result = validateUiNodeDefinition({ ...baseDef, collapsed: { kind: "state", path: "nav.collapsed" } });
+        expect(result.success).toBe(true);
+        if (result.success) {
+            expect("collapsed" in (result.data as Record<string, unknown>)).toBe(false);
+        }
+    });
+
+    it("mapConfig ignores a stray `config.variant` (dead twin removed)", () => {
+        const def = reg.mapConfig({ id: "m1", mount: "app1.content", items: [], variant: "topbar" }) as Record<string, unknown>;
+        expect(def.displayType).toBeUndefined();
     });
 });

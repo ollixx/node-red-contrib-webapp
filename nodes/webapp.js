@@ -7909,7 +7909,11 @@ const runtimeNodeRegistry = {
             parent: config.parent || undefined,
             mount: config.mount || config.parent,
             order: resolveOrder(config),
-            displayType: config.displayType || config.variant || undefined,
+            // P244: the prior `|| config.variant` legacy twin was dead code — ui-menu
+            // has never had a `variant` field in its schema or editor, so no authored
+            // flow ever set it. Removed (no migration needed) so the display-type
+            // source is singular and documented (same pattern as ui-skeleton P241).
+            displayType: config.displayType || undefined,
             // P157 (ADR 0012): `items` is a STRUCTURAL array source (store/query/
             // reactive/json-literal) — the menu renders its entries itself (NOT a
             // repeats case). A json-literal binding's raw array is unwrapped to a
