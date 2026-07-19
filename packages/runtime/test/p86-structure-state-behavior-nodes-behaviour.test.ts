@@ -4,7 +4,8 @@ import { NodeBehaviourHarness, webappTest } from "./helpers/node-behaviour-harne
 
 /**
  * P86 — Classic behaviour tests for the Structure / State / Behavior-category nodes:
- * ui-app, ui-query, ui-navigation.
+ * ui-app, ui-query.
+ * (P243/ADR 0040: ui-navigation retired — navigation is a ui-action navigate.)
  *
  * For each node we verify via the shared NodeBehaviourHarness (and the raw
  * webapp.__test__ surface where needed):
@@ -32,15 +33,9 @@ import { NodeBehaviourHarness, webappTest } from "./helpers/node-behaviour-harne
  *      terminal, so neither first nor second call produces an out-emit (P175).
  *  12. Non-query message (arbitrary payload) passes through unchanged.
  *
- * ui-navigation:
- *  13. ui-navigation.mapConfig stores the `to` field in the definition.
- *  14. ui-navigation input handler passes all messages through (alias: pass-through).
- *  15. ui-navigation passes through a navigate-shaped message unchanged.
- *  16. ui-navigation passes through unrecognised messages unchanged.
- *
  * E2E note (test-conventions.md): the "render" and "editor" tests for these nodes
- * already live in tests/e2e/ (p12-events.spec.ts, nodes/behavior/ui-action.spec.ts,
- * nodes/behavior/ui-navigation.spec.ts). This file covers only the handler
+ * already live in tests/e2e/ (p12-events.spec.ts, nodes/behavior/ui-action.spec.ts).
+ * This file covers only the handler
  * behaviour (SSE emit, output events, pass-through). Redundant E2E that tests
  * pure-handler behaviour (e.g. "navigate does NOT update store") is slimmed by P86.
  */
@@ -370,72 +365,8 @@ describe("P86: ui-query — arbitrary payload passes through unchanged", () => {
 });
 
 // ---------------------------------------------------------------------------
-// 13–16. ui-navigation: alias for ui-action(navigate), pass-through
+// P243 (ADR 0040): the ui-navigation node is retired — navigation is solely a
+// ui-action with actionType:"navigate". Its former handler tests (13–16) are
+// gone with the node; the navigate message contract is covered by
+// tests/e2e/nodes/behavior/p66-navigation.spec.ts.
 // ---------------------------------------------------------------------------
-
-describe("P86: ui-navigation mapConfig stores the `to` field", () => {
-    it("mapConfig with `to` stores it in the definition", () => {
-        const def = h.registry["ui-navigation"].mapConfig({
-            id: "nav1",
-            parent: h.appId,
-            to: "/customers"
-        });
-
-        expect((def as Record<string, unknown>).to).toBe("/customers");
-        expect((def as Record<string, unknown>).type).toBe("ui-navigation");
-        expect((def as Record<string, unknown>).id).toBe("nav1");
-    });
-
-    it("mapConfig without `to` stores undefined", () => {
-        const def = h.registry["ui-navigation"].mapConfig({
-            id: "nav2",
-            parent: h.appId
-        }) as Record<string, unknown>;
-
-        expect(def.to).toBeUndefined();
-    });
-});
-
-describe("P86: ui-navigation input handler — pass-through (alias for navigate)", () => {
-    it("passes through a navigate-shaped message unchanged", () => {
-        const nodeId = "navNode1";
-        const node = h.makeNode("ui-navigation", nodeId);
-        const msg = {
-            ui: {
-                action: { type: "navigate", to: "/customers" }
-            }
-        };
-        const { sent, done } = h.drive("ui-navigation", node, msg);
-
-        expect(sent).toHaveLength(1);
-        expect(sent[0]).toBe(msg);
-        expect(done).toHaveBeenCalledTimes(1);
-    });
-
-    it("passes through an arbitrary message unchanged", () => {
-        const nodeId = "navNode2";
-        const node = h.makeNode("ui-navigation", nodeId);
-        const msg = { topic: "unrelated", payload: 99 };
-        const { sent, done } = h.drive("ui-navigation", node, msg);
-
-        expect(sent).toHaveLength(1);
-        expect(sent[0]).toBe(msg);
-        expect(done).toHaveBeenCalledTimes(1);
-    });
-
-    it("passes through a message with msg.ui.clientId unchanged", () => {
-        const nodeId = "navNode3";
-        const node = h.makeNode("ui-navigation", nodeId);
-        const msg = {
-            ui: {
-                clientId: "c-nav",
-                action: { type: "navigate", to: "/home" }
-            }
-        };
-        const { sent } = h.drive("ui-navigation", node, msg);
-
-        expect(sent).toHaveLength(1);
-        const outMsg = sent[0] as { ui: Record<string, unknown> };
-        expect(outMsg.ui.clientId).toBe("c-nav");
-    });
-});

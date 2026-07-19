@@ -27,7 +27,6 @@ describe("editor node set", () => {
             "ui-input",
             "ui-list",
             "ui-menu",
-            "ui-navigation",
             "ui-pagination",
             "ui-progress",
             "ui-query",
@@ -224,8 +223,12 @@ describe("editor node set", () => {
                 routeId: "customerDetail",
                 params: JSON.stringify([{ name: "id", value: "payload.id", valueType: "msg" }])
             }),
-            emitNodeDefinition("ui-navigation", {
+            // P243 (ADR 0040): navigation is a ui-action navigate (url mode) —
+            // ui-navigation is retired.
+            emitNodeDefinition("ui-action", {
                 id: "goToCustomers",
+                actionType: "navigate",
+                targetMode: "url",
                 to: "/customers"
             })
         ];

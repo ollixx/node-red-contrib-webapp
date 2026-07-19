@@ -73,7 +73,7 @@ const ALLOWLIST = {
         definitionId: "P228: rename `definitionId` → `definition` (bare reference name)",
     },
     "ui-action": { routeId: "P228: rename `routeId` → `route` (bare reference name)" },
-    "ui-navigation": { routeId: "P228: rename `routeId` → `route` (bare reference name)" },
+    // P243 (ADR 0040): ui-navigation retired — navigation is a ui-action navigate.
 
     // ---- (a) residual `<base>Path` twin alongside `<base>Binding` (P229) -----
     "ui-button": { disabledPath: "P229: residual `<base>Path` twin of `disabledBinding`" },
