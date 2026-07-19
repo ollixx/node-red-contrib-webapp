@@ -290,11 +290,17 @@ const flowNodes = [
         target:     "app",
         to:         "/customers"
     }),
-    node("ui-navigation", "navToCustomers", "actions", 4, {
-        name:   "Nav to customers",
-        uiId:   "navToCustomers",  // required
-        parent: APP,
-        to:     "/customers"       // required
+    // P243 (ADR 0040): ui-navigation is retired. Navigation is solely a
+    // ui-action navigate. This node was a url-mode ui-navigation carrying
+    // `to` — its exact equivalent is a ui-action navigate, targetMode:"url",
+    // same `to`/`parent`/`name`. Observable behaviour is unchanged.
+    node("ui-action", "navToCustomers", "actions", 4, {
+        name:       "Nav to customers",
+        uiId:       "navToCustomers",  // required
+        parent:     APP,
+        actionType: "navigate",
+        targetMode: "url",
+        to:         "/customers"       // required
     }),
 
     // ── View – App shell (navbar) ─────────────────────────────────────────────
