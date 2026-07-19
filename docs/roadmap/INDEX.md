@@ -27,8 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P245** — aspects/node-conformance — Konformitäts-Pass **ui-dialog**: `modal` inert (Serializer ignoriert es), `routeId` funktioniert aber unterdokumentiert+ungetestet, Inline-Hilfe zu dünn — *Owner 2026-07-17; node-conformance* — [P245](aspects/node-conformance/P245-conformance-ui-dialog.md)
-- **P246** — aspects/node-conformance — Konformitäts-Pass **ui-log** (leicht): fehlender Test-Katalog, anomales editierbares `uiId`-Feld, Hilfe-Detail; Knoten sonst solide — *Owner 2026-07-17; node-conformance* — [P246](aspects/node-conformance/P246-conformance-ui-log.md)
 - **P247** — aspects/node-conformance — Konformitäts-Pass **ui-accordion(+section)**: `multiple` inert (Single-Open nicht durchgesetzt), events nur unit, section ohne Katalog — *Owner 2026-07-17; node-conformance* — [P247](aspects/node-conformance/P247-conformance-ui-accordion.md)
 - **P248** — aspects/node-conformance — Konformitäts-Pass **ui-breadcrumb** (leicht): `separator`-String inert, `navigate`-Event ungetestet; Kern solide — *Owner 2026-07-17; node-conformance* — [P248](aspects/node-conformance/P248-conformance-ui-breadcrumb.md)
 - **P249** — aspects/node-conformance — Konformitäts-Pass **ui-table** (leicht): `footer` + Sekundär-Events ohne Verhaltens-E2E; Kern solide — *Owner 2026-07-17; node-conformance* — [P249](aspects/node-conformance/P249-conformance-ui-table.md)
@@ -102,7 +100,7 @@ open the folder for the full history.
 | nodes/ui-accordion | 2 |
 | nodes/ui-breadcrumb · ui-dialog · ui-progress · ui-skeleton | 1 each |
 | aspects/test-infra | 28 |
-| aspects/node-conformance | 13 |
+| aspects/node-conformance | 15 |
 | aspects/misc | 16 |
 | aspects/docs | 1 |
 | aspects/runtime | 9 |
@@ -114,4 +112,4 @@ open the folder for the full history.
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 240 done, 12 open, 12 deferred.**
+**Total: 242 done, 10 open, 12 deferred.**

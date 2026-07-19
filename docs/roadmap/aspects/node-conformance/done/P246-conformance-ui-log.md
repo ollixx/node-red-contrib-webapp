@@ -3,7 +3,7 @@ id: P246
 node: ui-log
 title: "Konformitäts-Pass ui-log (leicht) — fehlender Test-Katalog, anomales editierbares `uiId`-Feld, Hilfe-Detail; Knoten sonst solide"
 epic: aspects/node-conformance
-status: pending
+status: done
 dependencies: []
 verify: browser
 spec: docs/nodes/feedback/ui-log.md
@@ -97,3 +97,24 @@ Neu: `tests/e2e/nodes/view/ui-log.tests.md` (Katalog) + `collapsed=true`-Test in
 - **Nicht** die soliden minSeverity/maxEntries/Backend-Fehler-Tests neu aufbauen —
   nur den Katalog nachziehen und collapsed=true ergänzen.
 - Leichter Pass — Umfang strikt auf A–D halten.
+
+## Result
+
+**Done 2026-07-19.** Leichter Pass, Umfang strikt A–D. ui-log-Kern unangetastet.
+
+- **Test-Katalog angelegt:** `tests/e2e/nodes/view/ui-log.tests.md` (bestehende 5 +
+  collapsed=true, je mit Testziel).
+- **Anomales editierbares `uiId`-Feld entfernt** aus `nodes/view/ui-log.html`
+  (Input-Zeile + `defaults.uiId`). ui-log bezieht seine uiId jetzt wie jeder View-
+  Knoten über runtime `getUiId`. Round-trip verlustfrei (`check:roundtrip` grün);
+  ein Alt-Flow mit getipptem uiId behält es als Node-Property. Die Component-Knoten
+  (legitimer uiId-Bedarf) **unangetastet**.
+- **`collapsed=true`-E2E** (gemessen): `sl-details` startet **ohne** `open`-Attribut,
+  abgegrenzt vom collapsed=false-Test. Grün.
+- **Inline-Hilfe** um den `forwardErrorsToClient`-Hinweis ergänzt (ohne diese
+  ui-app-Einstellung zeigt ui-log nie Einträge); Doku-Link bleibt.
+
+**Verifikation:** ui-log-Spec (mit ui-dialog) **13 passed, `--retries=0`**; Tripwires
++ `pnpm build` grün. Wie P245 stallte der Agent vor dem Commit (parallele
+validate-Kontention) — Arbeit vollständig im Worktree, orchestrator-seitig committet
++ verifiziert.

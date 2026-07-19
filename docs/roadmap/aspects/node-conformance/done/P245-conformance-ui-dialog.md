@@ -3,7 +3,7 @@ id: P245
 node: ui-dialog
 title: "Konformitäts-Pass ui-dialog — `modal` ist inert (Serializer ignoriert es), `routeId` funktioniert aber ist unterdokumentiert+ungetestet, Inline-Hilfe zu dünn"
 epic: aspects/node-conformance
-status: pending
+status: done
 dependencies: []
 verify: browser
 spec: docs/nodes/structure/ui-dialog.md
@@ -114,3 +114,35 @@ routeId-Route-Scoping (sichtbar bei R, weg bei R'); modal (falls implementiert).
    **implementieren** (anderes Primitive/Overlay-Handling)? Empfehlung:
    dokumentieren/entfernen (sl-dialog ist nativ immer modal; nicht-modal ist ein
    neues Feature, kein Bugfix).
+
+## Result
+
+**Done 2026-07-19.** ui-dialog-Kern war solide; die zwei Feld-Befunde + die dünne
+Hilfe sind behoben. Rein node-lokal (Doku + `ui-dialog.html` + neuer E2E) — kein
+Runtime/Serializer/Schema-Code.
+
+- **`modal` → dokumentiert (Owner-Entscheid).** Spec sagt jetzt: Dialoge sind **heute
+  immer modal** (`sl-dialog` nativ modal; der Serializer emittiert keinen Modal-/
+  Overlay-Schalter, `modal:false` == `modal:true`). Das Feld **bleibt** als
+  Platzhalter für einen künftigen nicht-modalen Modus, klar als **nicht umgesetzt**
+  markiert; die falsche „Light-Box an/aus"-Zusage entfernt. Nicht implementiert (ein
+  echt nicht-modaler Dialog braucht ein anderes Primitive).
+- **`routeId` → wahrheitsgemäß + getestet.** Die Felder-Tabelle beschreibt jetzt das
+  reale Route-Scoping (`renderer.ts:2244` filtert Dialoge nach aktiver Route); die
+  falsche „Offene Punkte"-Zeile ist ersetzt. **Neuer gemessener E2E** (Zwei-Routen-
+  Flow): Dialog mit `routeId=A` ist unter `?dialog=<id>` bei aktiver Route A **präsent**,
+  bei Route B **abwesend** (nicht gerendert). Grün.
+- **Inline-Hilfe** um Zweck + `open`/`close` + `closable` + `modal`-Status +
+  `onOpen`/`onClose` ergänzt; Doku-Link bleibt. **Base-Fields-N/A** in der Spec vermerkt.
+- **`layout`/`layoutId`-Drift** nur vermerkt, **nicht** angefasst (P228 deferred).
+
+**Verifikation:** ui-dialog-Spec + ui-log-Spec zusammen **13 passed, `--retries=0`**
+(neuer routeId-Test grün); `pnpm build` + alle Tripwires grün. Kein Full-Suite nötig
+(kein Runtime-Code berührt).
+
+**Prozess:** der Implementer-Agent **stallte vor dem Commit** (Watchdog nach 600s;
+zwei parallele Agents ließen ihre `pnpm validate`-Läufe gegeneinander laufen und
+verhungerten). Die Arbeit war vollständig + korrekt im Worktree — orchestrator-seitig
+committet, gemergt, verifiziert. **Lehre:** parallele Agents auf schweren
+`pnpm validate`/`build`-Schritten konkurrieren genauso wie parallele E2E → künftig
+seriell.
