@@ -6,6 +6,7 @@
  *   2. An error pushed over the SSE "error" channel appears as a log entry.
  *   3. minSeverity filter suppresses entries below the threshold.
  *   4. maxEntries config caps the displayed entries (oldest dropped).
+ *   5. collapsed=false → sl-details starts open; collapsed=true → starts collapsed.
  *
  * The SSE "error" channel is exercised the same way as the P56 E2E test:
  * an inject → function pipeline sends an unknown store op to a ui-store node,
@@ -102,6 +103,25 @@ test.describe("ui-log (P57)", () => {
         await expect(panel).toBeVisible();
         // The `open` attribute must be present (non-collapsed)
         await expect(panel).toHaveAttribute("open", "");
+    });
+
+    test("starts collapsed (no open attribute) when collapsed=true", async ({ page, request }) => {
+        const appId = "logCollapsedApp";
+        await deployFlow(request, buildFlow(appId, { collapsed: true }));
+
+        const webapp = new WebappPage(page, appId);
+        await webapp.navigate("/");
+
+        const panel = page.locator("[data-webapp-log]");
+        await expect(panel).toBeVisible();
+        // sl-details: absence of the `open` attribute = collapsed (opposite of the
+        // collapsed=false test above, which asserts open="").
+        await expect(panel).not.toHaveAttribute("open", "");
+        // Measure the real sl-details state: its content body must not be visible.
+        const collapsedNow = await panel.evaluate(
+            (el) => !(el as HTMLDetailsElement & { open: boolean }).open
+        );
+        expect(collapsedNow).toBe(true);
     });
 
     test("a backend error appears as a log entry in the panel", async ({ page, request }) => {

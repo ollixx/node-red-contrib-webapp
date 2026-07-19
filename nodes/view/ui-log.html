@@ -27,7 +27,6 @@
                 visible: { value: null },
                 visibleBinding: { value: "" },
                 name:        { value: "" },
-                uiId:        { value: "", required: true },
                 parent:      { value: "" },
                 mount:       { value: "", required: true },
                 minSeverity: { value: "debug" },
@@ -63,7 +62,6 @@
 </script>
 <script type="text/html" data-template-name="ui-log">
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
-    <div class="form-row"><label for="node-input-uiId">Node ID</label><input type="text" id="node-input-uiId"></div>
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <div class="form-row">
         <label for="node-input-minSeverity">Min Severity</label>
@@ -95,6 +93,10 @@
     <p>Der Knoten abonniert automatisch den SSE-Fehlerkanal der App und aktualisiert seine Anzeige live,
        sobald neue Einträge eintreffen. Im Gegensatz zu <code>ui-toast</code> sind die Einträge dauerhaft
        sichtbar und nach Schweregrad filterbar — gedacht für Entwickler und Betreiber, nicht für Endbenutzer.</p>
+    <p><strong>Voraussetzung:</strong> Die Parent-<code>ui-app</code> muss
+       <code>forwardErrorsToClient: true</code> gesetzt haben (ggf. plus
+       <code>forwardErrorMinSeverity</code>). Ohne diese App-Einstellung leitet der Server keine
+       Fehler über den SSE-Kanal weiter und das Log-Panel bleibt dauerhaft leer.</p>
     <h3>Eigenschaften</h3>
     <dl>
         <dt>Min Severity</dt><dd>Minimaler Schweregrad, der angezeigt wird (debug · info · warn · error).</dd>
