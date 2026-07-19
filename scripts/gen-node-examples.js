@@ -735,7 +735,7 @@ examples.push(inputNodeExample({
                 rows: { kind: "state", path: "users" }
             }), wires: [[DBG]] },
 
-            debugNode(DBG, T, "rowSelect / rowAction events", 280),
+            debugNode(DBG, T, "rowSelect events", 280),
 
             // Inject: replace rows at runtime
             injectPayload("inj-rows", T, "Replace rows",

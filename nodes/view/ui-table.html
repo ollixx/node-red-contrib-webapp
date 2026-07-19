@@ -43,7 +43,6 @@
                 rowsBinding: { value: "" },
                 rowsPath: { value: "" },
                 selectAction: { value: "" },
-                footer: { value: false },
                 events: { value: "[]" },
                 outputs: { value: 0 },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
@@ -106,7 +105,7 @@
                 );
                 this.rowsPath = "";
             }
-        }, ["rowSelect", "rowAction", "checkboxChange", "cellSelect"]);
+        }, ["rowSelect"]);
     })();
 </script>
 <script type="text/html" data-template-name="ui-table">
@@ -116,10 +115,6 @@
     <div class="form-row"><label for="node-input-columns">Columns</label><input type="text" id="node-input-columns" placeholder="name,email,status"></div>
     <!-- P158 (ADR 0012 / value category): Rows binding (structural array data source) — typedInput managed in oneditprepare/oneditsave. -->
     <div class="form-row"><label for="node-input-rowsBinding">Rows</label><input type="text" id="node-input-rowsBinding"></div>
-    <div class="form-row">
-        <label for="node-input-footer" style="width:auto; margin-right:8px;">Footer Slot</label>
-        <input type="checkbox" id="node-input-footer" style="width:auto; margin:0;">
-    </div>
     <input type="hidden" id="node-input-events">
     <input type="hidden" id="node-input-outputs">
     <div class="form-row"><label>Events</label></div>

@@ -11,7 +11,13 @@ import { WebappPage } from "../../../helpers/webapp-page";
  *   - columns + rows render as <table> with correct header/cell content.
  *   - Row click → POST /event { event:"rowSelect", params:{ rowId } }.
  *   - Input port: inject new rows array → table updates via SSE.
- *   - Optional footer renders when enabled.
+ *   - selectAction (P249): a configured selectAction makes the row selectable and
+ *     is carried on the rendered rowSelect link as data-webapp-action.
+ *
+ * P249 (conformance): the inert `footer` field and the inert secondary events
+ * `rowAction`/`checkboxChange`/`cellSelect` were REMOVED from schema + spec — no
+ * DOM source ever rendered them, so there is nothing to E2E. `rowSelect` and
+ * `selectAction` are the only interactive surfaces and are proven below.
  */
 
 test.describe("ui-table (P45)", () => {
@@ -178,6 +184,47 @@ test.describe("ui-table (P45)", () => {
         const body = await eventPromise;
         expect(body.event).toBe("rowSelect");
         expect((body.params as Record<string, unknown>).rowId).toBe("r42");
+    });
+
+    // ─── selectAction (P249) — the configured action is carried ──────────────
+
+    // P249: `selectAction` (deprecated but still wired) makes a row selectable even
+    // without `events:[rowSelect]`, and the rendered first-cell link carries the
+    // action as data-webapp-action so the legacy no-events flow keeps working.
+    test("configured selectAction makes the row selectable and is carried on the link", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "tblApp6", root: "tblApp6" })
+            .node("ui-table", {
+                id: "tblNode6",
+                columns: JSON.stringify([{ key: "name", label: "Name" }]),
+                rows: {
+                    kind: "literal",
+                    value: [{ id: "r7", name: "Alice" }]
+                },
+                // No `events` — selectAction alone must drive selectability.
+                selectAction: "openCustomerDetail"
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "tblApp6");
+        await webapp.navigate("/");
+
+        // The row renders a selectable link carrying the configured action.
+        const link = page.locator("table.webapp-table tbody tr td a.webapp-link");
+        await expect(link).toHaveCount(1);
+        await expect(link).toHaveAttribute("data-webapp-action", "openCustomerDetail");
+        await expect(link).toHaveAttribute("data-webapp-event", "rowSelect");
+        await expect(link).toHaveAttribute("data-webapp-rowid", "r7");
+
+        // And clicking it still emits a rowSelect envelope (selectAction is a
+        // client-side action hint; the reported event type stays rowSelect).
+        const eventPromise = webapp.interceptNextEvent();
+        await link.click();
+        const body = await eventPromise;
+        expect(body.event).toBe("rowSelect");
+        expect((body.params as Record<string, unknown>).rowId).toBe("r7");
     });
 
     // ─── input port — rows update via inject ─────────────────────────────────

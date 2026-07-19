@@ -78,27 +78,10 @@ describe("P13: ui-table — structured column parsing", () => {
     });
 });
 
-describe("P13: ui-table — footer slot", () => {
-    it("footer=true exposes footer flag in compiled config", () => {
-        const def = runtimeNodeRegistry["ui-table"].mapConfig({
-            ...baseTableConfig,
-            columns: "name",
-            footer: true
-        }) as { footer: boolean };
-
-        expect(def.footer).toBe(true);
-    });
-
-    it("footer omitted defaults to false", () => {
-        const def = runtimeNodeRegistry["ui-table"].mapConfig({
-            ...baseTableConfig,
-            columns: "name"
-        }) as { footer: boolean };
-
-        expect(def.footer).toBe(false);
-    });
-
-    it("assembleNodeSet: table with footer=true exposes footer in compiled component props", () => {
+// P249: assembleNodeSet still compiles a table (no footer prop; footer was
+// removed as an inert field). Sanity-check the component still contributes.
+describe("P13/P249: ui-table — compiles into a component contribution", () => {
+    it("assembleNodeSet exposes the table as a component contribution", () => {
         const assembly = assembleNodeSet([
             { type: "ui-app", id: "app1", name: "Test App", root: "app1", layout: "app" },
             { type: "ui-route", id: "route1", path: "/test", layout: "vertical" },
@@ -107,8 +90,7 @@ describe("P13: ui-table — footer slot", () => {
                 id: "table1",
                 mount: "route:/test/content",
                 columns: [{ key: "name", label: "Name" }],
-                rows: { kind: "query", path: "items.list" },
-                footer: true
+                rows: { kind: "query", path: "items.list" }
             }
         ]);
 
@@ -122,11 +104,12 @@ describe("P13: ui-table — footer slot", () => {
         expect(tableContrib).toBeDefined();
         if (!tableContrib || tableContrib.kind !== "component") return;
 
-        expect((tableContrib.definition.props as Record<string, unknown>).footer).toBe(true);
+        // P249: `footer` is gone from the compiled props.
+        expect((tableContrib.definition.props as Record<string, unknown>).footer).toBeUndefined();
     });
 });
 
-describe("P13: ui-table — configurable row events", () => {
+describe("P13/P249: ui-table — configurable row events", () => {
     it("events=[rowSelect] produces events array of length 1", () => {
         const def = runtimeNodeRegistry["ui-table"].mapConfig({
             ...baseTableConfig,
@@ -137,14 +120,17 @@ describe("P13: ui-table — configurable row events", () => {
         expect(def.events).toEqual(["rowSelect"]);
     });
 
-    it("events=[rowSelect, rowAction] produces events array of length 2", () => {
+    // P249: the removed events (rowAction/checkboxChange/cellSelect) had no DOM
+    // source and were dropped from the schema. A legacy flow that still carries
+    // them must keep deploying — mapConfig filters them to the supported set.
+    it("events with legacy removed values are filtered to the supported set", () => {
         const def = runtimeNodeRegistry["ui-table"].mapConfig({
             ...baseTableConfig,
             columns: "name",
-            events: ["rowSelect", "rowAction"]
+            events: ["rowSelect", "rowAction", "checkboxChange", "cellSelect"]
         }) as { events: string[] };
 
-        expect(def.events).toHaveLength(2);
+        expect(def.events).toEqual(["rowSelect"]);
     });
 
     it("no events and no selectAction produces empty events array", () => {

@@ -29,7 +29,9 @@ test.describe("P13: ui-table enhancements — editor", () => {
         await deployFlow(request, baselineFlow);
     });
 
-    test("ui-table registered type has events and footer defaults", async ({ page }) => {
+    // P249: `footer` was removed as an inert field — assert it is GONE from the
+    // registered defaults, and that `events` + outputLabels remain.
+    test("ui-table registered type has events default and no footer default", async ({ page }) => {
         await gotoEditor(page);
 
         const result = await page.evaluate(() => {
@@ -41,7 +43,7 @@ test.describe("P13: ui-table enhancements — editor", () => {
             }).getType?.("ui-table");
 
             if (!typeDef) {
-                return { found: false, hasEventsDefault: false, hasFooterDefault: false, hasOutputLabels: false };
+                return { found: false, hasEventsDefault: false, hasFooterDefault: true, hasOutputLabels: false };
             }
 
             return {
@@ -54,11 +56,11 @@ test.describe("P13: ui-table enhancements — editor", () => {
 
         expect(result.found).toBe(true);
         expect(result.hasEventsDefault).toBe(true);
-        expect(result.hasFooterDefault).toBe(true);
+        expect(result.hasFooterDefault).toBe(false);
         expect(result.hasOutputLabels).toBe(true);
     });
 
-    test("ui-table outputLabels returns row event names for enabled events", async ({ page }) => {
+    test("ui-table outputLabels returns the row event name for the enabled event", async ({ page }) => {
         await gotoEditor(page);
 
         const result = await page.evaluate(() => {
@@ -72,7 +74,7 @@ test.describe("P13: ui-table enhancements — editor", () => {
                 return { found: false, label0: "", label1: "" };
             }
 
-            const fakeNode = { events: JSON.stringify(["rowSelect", "rowAction"]), outputs: 2 };
+            const fakeNode = { events: JSON.stringify(["rowSelect"]), outputs: 1 };
             return {
                 found: true,
                 label0: typeDef.outputLabels.call(fakeNode, 0),
@@ -82,10 +84,13 @@ test.describe("P13: ui-table enhancements — editor", () => {
 
         expect(result.found).toBe(true);
         expect(result.label0).toBe("rowSelect");
-        expect(result.label1).toBe("rowAction");
+        // P249: only rowSelect survives — the second port has no label.
+        expect(result.label1).toBe("");
     });
 
-    test("ui-table editor HTML contains events-container and footer checkbox", async ({ page, request }) => {
+    // P249: the footer checkbox was removed with the inert `footer` field — assert
+    // the events container/hidden input remain and the footer input is GONE.
+    test("ui-table editor HTML contains events-container and no footer checkbox", async ({ page, request }) => {
         const mountFlow = await loadFlowFixture("tests/e2e/fixtures/editor-mount-options.flow.json");
         await deployFlow(request, mountFlow);
 
@@ -94,7 +99,7 @@ test.describe("P13: ui-table enhancements — editor", () => {
         // Verify the template script content contains expected markup
         const result = await page.evaluate(() => {
             const template = document.querySelector('[data-template-name="ui-table"]');
-            if (!template) return { found: false, hasEventsContainer: false, hasFooter: false, hasEventsHidden: false };
+            if (!template) return { found: false, hasEventsContainer: false, hasFooter: true, hasEventsHidden: false };
             const html = template.innerHTML || template.textContent || "";
 
             return {
@@ -107,7 +112,7 @@ test.describe("P13: ui-table enhancements — editor", () => {
 
         expect(result.found).toBe(true);
         expect(result.hasEventsContainer).toBe(true);
-        expect(result.hasFooter).toBe(true);
+        expect(result.hasFooter).toBe(false);
         expect(result.hasEventsHidden).toBe(true);
     });
 });

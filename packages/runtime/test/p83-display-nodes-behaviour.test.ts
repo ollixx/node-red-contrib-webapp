@@ -18,8 +18,8 @@ import { NodeBehaviourHarness, webappTest } from "./helpers/node-behaviour-harne
  * Additionally:
  *   4. ui-button: msg with a `click`-like ui.event emits the click msg on port 0;
  *      msg.payload updates the `label` field.
- *   5. ui-table: rowSelect / rowAction / checkboxChange events dispatched via
- *      dispatchClientEvent emit msg.ui on the table node's output port.
+ *   5. ui-table: the rowSelect event dispatched via dispatchClientEvent emits
+ *      msg.ui on the table node's output port.
  *   6. ui-list: itemClick event dispatched via dispatchClientEvent emits msg.ui.
  *   7. ui-icon: uses componentStateInputHandler — passes all messages through.
  *
@@ -293,11 +293,11 @@ describe("P83: ui-button click event emission", () => {
 });
 
 // ---------------------------------------------------------------------------
-// 6. ui-table: rowSelect / rowAction / checkboxChange events via dispatchClientEvent
+// 6. ui-table: rowSelect event via dispatchClientEvent
 // ---------------------------------------------------------------------------
 
 describe("P83: ui-table event dispatch via dispatchClientEvent", () => {
-    for (const event of ["rowSelect", "rowAction", "checkboxChange"] as const) {
+    for (const event of ["rowSelect"] as const) {
         it(`table node emits msg.ui for '${event}' event`, () => {
             const nodeId = `table-${event}`;
             registerNode("ui-table", nodeId, {
