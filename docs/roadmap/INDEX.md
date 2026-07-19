@@ -28,6 +28,7 @@ their blocker clears.
 ## Open work (pending / in_progress)
 
 - **P243** — aspects/node-conformance — **ui-navigation stilllegen** (ADR 0040): Knoten entfernen (Editor-Falle route/params vs. url-only-Laufzeit), Flows zu ui-action navigate migrieren, Generatoren + Doku aufräumen — *Owner 2026-07-17; ADR 0040* — [P243](aspects/node-conformance/P243-retire-ui-navigation-node.md)
+- **P244** — aspects/node-conformance — Konformitäts-Pass **ui-menu**: `displayType` inert (kein Render-Unterschied), `collapsed` totes Feld, `dropdown` fehlt im Editor; Daten-/Event-Ebene solide — *Owner 2026-07-17; node-conformance* — [P244](aspects/node-conformance/P244-conformance-ui-menu.md)
 
 
 ## Deferred (parked, not abandoned)
