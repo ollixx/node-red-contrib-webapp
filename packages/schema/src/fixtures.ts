@@ -971,9 +971,13 @@ export const customersCrudNodeSetFixture: UiNodeDefinition[] = [
         to: "/customers"
     },
     {
-        type: "ui-navigation",
+        // P243 (ADR 0040): ui-navigation retired — navigation is a ui-action
+        // navigate (url mode). Same observable behaviour as the old url-mode node.
+        type: "ui-action",
         id: "navToCustomers",
         parent: "customersApp",
+        actionType: "navigate",
+        targetMode: "url",
         to: "/customers"
     }
 ];

@@ -20,7 +20,6 @@ export type {
     UiContainerEditorConfig,
     UiDialogEditorConfig,
     UiInputEditorConfig,
-    UiNavigationEditorConfig,
     UiQueryEditorConfig,
     UiRouteEditorConfig,
     UiStoreEditorConfig,

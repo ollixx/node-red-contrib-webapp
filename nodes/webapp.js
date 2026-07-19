@@ -145,7 +145,6 @@ const WEBAPP_NODE_TYPES = new Set([
     // P212 (ADR 0029): reference-based, typed query TRIGGER (hybrid wire|reference).
     "ui-query-action",
     "ui-action",
-    "ui-navigation",
     "ui-alert",
     "ui-toast",
     "ui-progress",
@@ -3355,7 +3354,7 @@ function validateAppRootUniqueness(RED) {
 // the node's own id. Pure over a nodes array (unit-testable); the RED wrapper reads
 // the deployed flow file (mirrors validateAppRootUniqueness). Returns a list of
 // { nodeId, parent, message }.
-const APP_SCOPED_PARENT_TYPES = ["ui-store", "ui-store-read", "ui-store-action", "ui-query", "ui-query-action", "ui-action", "ui-navigation", "ui-dialog", "ui-route"];
+const APP_SCOPED_PARENT_TYPES = ["ui-store", "ui-store-read", "ui-store-action", "ui-query", "ui-query-action", "ui-action", "ui-dialog", "ui-route"];
 
 function collectAppScopedParentIssues(nodes) {
     const issues = [];
@@ -3556,7 +3555,11 @@ function getDefinitionBuckets(appId, definitions) {
         stores: matchingDefinitions.filter((entry) => entry.type === "ui-store"),
         queries: matchingDefinitions.filter((entry) => entry.type === "ui-query"),
         actions: matchingDefinitions.filter((entry) => entry.type === "ui-action"),
-        navigations: matchingDefinitions.filter((entry) => entry.type === "ui-navigation")
+        // P243 (ADR 0040): ui-navigation retired — a url-target navigation is now a
+        // ui-action navigate carrying a concrete `to` (mirrors packages/runtime
+        // node-set.ts). Route-mode navigate (no `to`) is excluded from this list.
+        navigations: matchingDefinitions.filter((entry) =>
+            entry.type === "ui-action" && entry.actionType === "navigate" && typeof entry.to === "string")
     };
 }
 
@@ -7590,17 +7593,8 @@ const runtimeNodeRegistry = {
             inputHandler: actionInputHandler
         }
     },
-    "ui-navigation": {
-        mapConfig: (config) => ({
-            type: "ui-navigation",
-            id: getUiId(config),
-            parent: config.parent || undefined,
-            to: config.to
-        }),
-        options: {
-            inputHandler: passThroughInputHandler
-        }
-    },
+    // P243 (ADR 0040): ui-navigation retired — navigation is solely a ui-action
+    // with actionType:"navigate". No mapConfig entry for ui-navigation any more.
     "ui-alert": {
         mapConfig: (config) => ({
             type: "ui-alert",
