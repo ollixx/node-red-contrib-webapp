@@ -3,15 +3,15 @@ id: P243
 node: ui-navigation
 title: "ui-navigation stilllegen — Knoten entfernen, Flows zu ui-action navigate migrieren (ADR 0040)"
 epic: aspects/node-conformance
-status: pending
+status: done
 dependencies: []
 verify: browser
 spec: docs/nodes/behavior/ui-action.md
-tests: tests/e2e/nodes/behavior/ui-navigation.tests.md
+tests: tests/e2e/nodes/behavior/p66-navigation.spec.ts
 ---
 # P243 — ui-navigation stilllegen (ADR 0040)
 
-> Rationale: **[ADR 0040](../../../adr/0040-retire-ui-navigation-node-navigate-is-a-ui-action.md)**.
+> Rationale: **[ADR 0040](../../../../adr/0040-retire-ui-navigation-node-navigate-is-a-ui-action.md)**.
 > Aus dem ui-navigation-Konformitäts-Audit (2026-07-17): der abgekündigte Knoten
 > ist eine **Falle** — sein Editor bietet (P119) einen validierten route/wire/
 > params-Umschalter an, den die Laufzeit (P118 node-set) **bewusst verwirft**.
@@ -119,3 +119,63 @@ Alle Tripwires + `pnpm validate` grün.
   `.config.nodes.json` wird ebenfalls neu erzeugt.
 - **Detail-Bar für die Migrations-Notiz:** exakt die Feld-Abbildung angeben, damit
   ein Nutzer sie ohne Raten anwenden kann (siehe acceptance).
+
+## Result
+
+**Done 2026-07-19.** Die **erste Knoten-Stilllegung des Projekts** (ADR 0040 §3).
+`ui-navigation` ist vollständig entfernt; Navigation ist allein `ui-action` navigate.
+Kein Laufzeit-Shim.
+
+### Reihenfolge (so lief die App nie auf einen unbekannten Knotentyp)
+
+Fünf inkrementelle Commits: (1) Generatoren + Flow-Migration, (2) Knoten-Typ entfernt,
+(3) Tripwire + Unit-Tests bereinigt, (4) Doku + Migrations-Notiz, (5) Kommentar-Politur.
+
+### Entfernt
+
+- `nodes/behavior/ui-navigation.js` + `.html`, `docs/nodes/behavior/ui-navigation.md`,
+  `tests/e2e/nodes/behavior/ui-navigation.spec.ts` + `.tests.md`,
+  `examples/behavior/ui-navigation.json` — gelöscht.
+- `nodes/webapp.js` (Knoten-Typ-Liste, mapConfig, `components`-Filter),
+  `packages/runtime/src/node-set.ts` (Navigate-Map **auf ui-action-only kollabiert**:
+  Filter akzeptiert nur `ui-action`, Ternäre auf else-Zweig reduziert, Type-Guard ohne
+  `UiNavigationNodeDefinition`), `packages/schema/src/node-definitions.ts` (Schema +
+  Union-Member + Type-Export), `packages/schema/src/fixtures.ts` (Fixture),
+  `packages/editor/src/nodes.ts` (Definition) — bereinigt.
+- `scripts/check-fields.js` (Tripwire erwartet den Knoten nicht mehr) + drei
+  Unit-Test-Dateien (nur die ui-navigation-Assertions entfernt, Rest erhalten).
+- Überall bleibt ein **P243/ADR-0040-Kommentar-Breadcrumb** statt spurloser Löschung.
+
+### Migriert (Beispiele generiert, nie handgepflegt)
+
+- `scripts/gen-example.js`: `navToCustomers` ist jetzt `ui-action`
+  (`actionType:"navigate"`, `targetMode:"url"`, `to:"/customers"`, gleicher parent).
+- `examples/customers-crud/flow.json` per `pnpm gen:example` neu generiert — Diff
+  betrifft **ausschließlich** `navToCustomers` (verifiziert: `ui-action navigate url
+  /customers`), keine Positions-Normalisierung, kein Fremd-Flow berührt.
+- `gen-node-examples.js` erzeugt kein ui-navigation-Beispiel mehr.
+
+### Historie vs. Links
+
+Historische `done/`-Roadmap-Dateien + ADRs, die ui-navigation als **Prosa** nennen,
+blieben unangetastet (keine Geschichtsfälschung); nur echte **Links** auf die gelöschte
+Spec wurden auf `ui-action.md`/ADR 0040 umgebogen. `check:links` grün (125 md, alle
+Referenzen auflösbar). Migrations-Notiz mit exakter Feld-Abbildung
+(`ui-navigation` → `ui-action`+`actionType:navigate`+`targetMode:url`, `to`/`parent`/
+`name` behalten) ergänzt.
+
+### Verifikation (Haupt-Checkout, autoritativ)
+
+**E2E 791 passed, 0 failed, `--retries=0`, 15,2 min** — die customers-crud-Navbar
+navigiert nach der Migration unverändert (Pfad in der Suite). Count 795 → 791: die 4
+gelöschten ui-navigation-E2E-Tests. Unit: editor 196 / renderer 163 / runtime **1365**
+(−6 ui-navigation-Assertions, erwartet). `pnpm build` grün, `pnpm validate` + alle
+Tripwires grün (`check:fields` sieht jetzt 44 statt 45 Knoten).
+
+### Prozess-Nebenbefund (wiederholt)
+
+Der Implementer-Agent ließ erneut seine **eigene** E2E-Suite laufen (Monitor nie
+gestoppt) — beim Merge lief sie noch auf Port 1882 (worktree-playwright + throwaway
+node-red). Orchestrator-seitig gekillt, bevor der autoritative Lauf startete. Trotz
+explizitem „stoppe alles vor Rückgabe" im Brief. **Härtungs-Kandidat:** ein
+Post-Agent-Hook, der worktree-lokale playwright/node-red-Prozesse automatisch reapt.

@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P243** — aspects/node-conformance — **ui-navigation stilllegen** (ADR 0040): Knoten entfernen (Editor-Falle route/params vs. url-only-Laufzeit), Flows zu ui-action navigate migrieren, Generatoren + Doku aufräumen — *Owner 2026-07-17; ADR 0040* — [P243](aspects/node-conformance/P243-retire-ui-navigation-node.md)
 - **P244** — aspects/node-conformance — Konformitäts-Pass **ui-menu**: `displayType` inert (kein Render-Unterschied), `collapsed` totes Feld, `dropdown` fehlt im Editor; Daten-/Event-Ebene solide — *Owner 2026-07-17; node-conformance* — [P244](aspects/node-conformance/P244-conformance-ui-menu.md)
 - **P245** — aspects/node-conformance — Konformitäts-Pass **ui-dialog**: `modal` inert (Serializer ignoriert es), `routeId` funktioniert aber unterdokumentiert+ungetestet, Inline-Hilfe zu dünn — *Owner 2026-07-17; node-conformance* — [P245](aspects/node-conformance/P245-conformance-ui-dialog.md)
 - **P246** — aspects/node-conformance — Konformitäts-Pass **ui-log** (leicht): fehlender Test-Katalog, anomales editierbares `uiId`-Feld, Hilfe-Detail; Knoten sonst solide — *Owner 2026-07-17; node-conformance* — [P246](aspects/node-conformance/P246-conformance-ui-log.md)
@@ -104,7 +103,7 @@ open the folder for the full history.
 | nodes/ui-accordion | 2 |
 | nodes/ui-breadcrumb · ui-dialog · ui-progress · ui-skeleton | 1 each |
 | aspects/test-infra | 28 |
-| aspects/node-conformance | 11 |
+| aspects/node-conformance | 12 |
 | aspects/misc | 16 |
 | aspects/docs | 1 |
 | aspects/runtime | 9 |
@@ -116,4 +115,4 @@ open the folder for the full history.
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 238 done, 1 open, 12 deferred.**
+**Total: 239 done, 13 open, 12 deferred.**
