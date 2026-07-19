@@ -3,7 +3,7 @@ id: P247
 node: ui-accordion
 title: "Konformitäts-Pass ui-accordion(+section) — `multiple` ist inert (Single-Open nicht durchgesetzt), events nur unit-getestet, section ohne Katalog; Render/openSection solide"
 epic: aspects/node-conformance
-status: pending
+status: in_progress
 dependencies: []
 verify: browser
 spec: docs/nodes/navigation/ui-accordion.md

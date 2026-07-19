@@ -186,10 +186,13 @@ test.describe("ui-action interaction verbs (P53)", () => {
 
         await injectMessage(request, "verbOpenSecInj4");
 
-        // The open verb discloses section B (disclosure is additive per section).
+        // The open verb discloses section B.
         await expect(secB).toHaveAttribute("open", "", { timeout: 5000 });
-        // Section A (the default-open first section) is unaffected — still open.
-        await expect(secA).toHaveAttribute("open", "");
+        // P247: the accordion is single-open by default (`multiple:false` — the
+        // spec: "Im Einzel-Modus ist genau die openSection offen"). Disclosing B
+        // therefore closes the previously-open section A — single-open applies to
+        // programmatic ui-action disclosure exactly as it does to a user click.
+        await expect(secA).not.toHaveAttribute("open", /.*/, { timeout: 5000 });
     });
 
     // ─── hidden value survives a ui-store-driven snapshot re-render ───────────
