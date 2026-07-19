@@ -21,6 +21,10 @@ import { WebappPage } from "../../../helpers/webapp-page";
  *   O02  openSection state binding resolves the open section from the store.
  *   O03  external store change → SSE re-render opens the section.
  *   D01  default: no openSection → the first child by order is open.
+ *   S01  single-open (multiple:false, default): opening one section closes the sibling.
+ *   S02  multi-open (multiple:true): opening one section leaves the sibling open.
+ *   E01  events: expanding a section POSTs { event:"sectionOpen", params.sectionId }.
+ *   E02  events: collapsing a section POSTs { event:"sectionClose", params.sectionId }.
  *   M01  migration: a legacy sections-JSON flow still renders the migrated sections.
  *
  * NOTE: do not run this file with the Playwright CLI in a worktree — the
@@ -157,6 +161,102 @@ test.describe("ui-accordion / ui-accordion-section (P169, children model)", () =
         await webapp.navigate("/");
         // overview has order 0 → it is the default open section.
         await expect(page.locator("sl-details[name='overview']")).toHaveAttribute("open", "");
+    });
+
+    // ─── single-open vs multi-open (P247) ────────────────────────────────────
+
+    // Click the header area of an sl-details (position pins the click to the
+    // summary bar so it toggles regardless of whether the panel is currently open).
+    const HEADER = { position: { x: 30, y: 12 } } as const;
+
+    test("S01 — multiple:false (default) → opening a section closes the open sibling", async ({ page, request }) => {
+        const builder = new FlowBuilder()
+            .app({ id: "ac247S1App", root: "ac247S1App" })
+            // no `multiple` → single-open (the default)
+            .node("ui-accordion", { id: "ac247S1" });
+        const flow = withTwoSections(builder, "ac247S1").build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "ac247S1App");
+        await webapp.navigate("/");
+
+        const overview = page.locator("sl-details[name='overview']");
+        const details = page.locator("sl-details[name='details']");
+        // default: first section (overview, order 0) is open.
+        await expect(overview).toHaveAttribute("open", "");
+        await expect(details).not.toHaveAttribute("open", "");
+
+        // open the second section → the client closes the open sibling (single-open).
+        await details.click(HEADER);
+        await expect(details).toHaveAttribute("open", "", { timeout: 5000 });
+        await expect(overview).not.toHaveAttribute("open", "");
+    });
+
+    test("S02 — multiple:true → opening a section leaves the open sibling open", async ({ page, request }) => {
+        const builder = new FlowBuilder()
+            .app({ id: "ac247S2App", root: "ac247S2App" })
+            .node("ui-accordion", { id: "ac247S2", multiple: true });
+        const flow = withTwoSections(builder, "ac247S2").build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "ac247S2App");
+        await webapp.navigate("/");
+
+        const overview = page.locator("sl-details[name='overview']");
+        const details = page.locator("sl-details[name='details']");
+        await expect(overview).toHaveAttribute("open", "");
+        await expect(details).not.toHaveAttribute("open", "");
+
+        // open the second section → BOTH stay open (no coordination).
+        await details.click(HEADER);
+        await expect(details).toHaveAttribute("open", "", { timeout: 5000 });
+        await expect(overview).toHaveAttribute("open", "");
+    });
+
+    // ─── events — output port (P247) ─────────────────────────────────────────
+
+    test("E01 — expanding a section → POST /event { event:'sectionOpen', params.sectionId }", async ({ page, request }) => {
+        const builder = new FlowBuilder()
+            .app({ id: "ac247E1App", root: "ac247E1App" })
+            // multiple:true → the click emits ONLY sectionOpen (no coordinated close).
+            .node("ui-accordion", { id: "ac247E1", multiple: true, events: JSON.stringify(["sectionOpen", "sectionClose"]) });
+        const flow = withTwoSections(builder, "ac247E1").build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "ac247E1App");
+        await webapp.navigate("/");
+        await expect(page.locator("sl-details[name='overview']")).toHaveAttribute("open", "");
+
+        const eventPromise = webapp.interceptNextEvent();
+        await page.locator("sl-details[name='details']").click(HEADER);
+
+        const body = await eventPromise;
+        expect(body.event).toBe("sectionOpen");
+        expect((body.params as Record<string, unknown>).sectionId).toBe("details");
+    });
+
+    test("E02 — collapsing a section → POST /event { event:'sectionClose', params.sectionId }", async ({ page, request }) => {
+        const builder = new FlowBuilder()
+            .app({ id: "ac247E2App", root: "ac247E2App" })
+            .node("ui-accordion", { id: "ac247E2", multiple: true, events: JSON.stringify(["sectionOpen", "sectionClose"]) });
+        const flow = withTwoSections(builder, "ac247E2").build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "ac247E2App");
+        await webapp.navigate("/");
+        // overview is open by default; collapsing it fires sectionClose.
+        await expect(page.locator("sl-details[name='overview']")).toHaveAttribute("open", "");
+
+        const eventPromise = webapp.interceptNextEvent();
+        await page.locator("sl-details[name='overview']").click(HEADER);
+
+        const body = await eventPromise;
+        expect(body.event).toBe("sectionClose");
+        expect((body.params as Record<string, unknown>).sectionId).toBe("overview");
     });
 
     // ─── migration (legacy sections-JSON flow) ───────────────────────────────
