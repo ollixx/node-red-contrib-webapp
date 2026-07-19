@@ -32,7 +32,31 @@ Editor-Regression: `tests/e2e/nodes/editor/navigation-nodes.spec.ts`,
 | O02 | `openSection` State-Binding löst die offene Sektion aus dem Store auf. |
 | O03 | Externe Store-Änderung → SSE-Re-Render öffnet die Sektion (Browser-Beweis). |
 | D01 | Ohne `openSection` → erstes Kind nach `order` ist offen. |
+| S01 | `multiple:false` (Default, Single-Open): Öffnen einer Sektion schließt die offene Schwester (gemessen am `open`-Zustand der `sl-details`). |
+| S02 | `multiple:true` (Multi-Open): Öffnen einer Sektion lässt die offene Schwester offen (beide `open`). |
+| E01 | `sectionOpen`: eine Sektion aufklappen → POST `/event` `{ event:"sectionOpen", params.sectionId }` (gemessenes Envelope, echte Klick-Geste). |
+| E02 | `sectionClose`: eine Sektion zuklappen → POST `/event` `{ event:"sectionClose", params.sectionId }` (gemessenes Envelope). |
 | M01 | Legacy `sections`-JSON-Flow migriert: Sektionen + Inhalt rendern weiterhin. |
+
+### Single-Open / Multi-Open (P247)
+
+`multiple` ist **implementiert** (Owner-Entscheid P247): der Serializer trägt die
+Accordion-Knoten-id (`data-webapp-source`) und den `multiple`-Schalter
+(`data-webapp-accordion-multiple`) auf den `.webapp-accordion`-Wrapper; das
+Client-Bundle koordiniert Single-Open — bei `multiple:false` schließt das Öffnen
+einer Sektion (`sl-show`) die offenen Schwestern **desselben** Accordions (auf
+diesen einen Wrapper begrenzt), das Schließen einer Schwester feuert deren eigenes
+`sl-hide` → `sectionClose`. `sl-details` sind nativ unabhängig — die Koordination
+lebt im Client, nicht im Markup. Beide Richtungen sind per gemessenem DOM belegt
+(S01/S02).
+
+### Events (P247)
+
+`sectionOpen`/`sectionClose` werden aus den echten `sl-show`/`sl-hide`-Gesten
+gefeuert; E01/E02 messen das an die Runtime gelieferte Event-Envelope
+(`event` + `params.sectionId`). Das Output-`msg.ui`-Envelope (event, params.sectionId,
+clientId, sourceId, appId + Port-Routing) ist zusätzlich unit-belegt in
+`packages/runtime/test/p85-navigation-nodes-behaviour.test.ts` (§12/§13).
 
 ## Unit-Tests (`p169-accordion-children-model.test.ts`)
 - Ein `sl-details` je `ui-accordion-section`-Kind; Inhalt im Panel.
