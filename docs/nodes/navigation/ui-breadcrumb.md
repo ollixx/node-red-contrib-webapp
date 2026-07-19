@@ -37,7 +37,7 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 |---|---|---|---|---|
 | `layout` | „Mode" | SelectBox | optional | `""` (Standard, Items/Binding-Modus) oder `"breadcrumb"` (Child-Nodes-Slots-Modus). |
 | `items` | „Items" | typedInput (Binding) | konditional | Sichtbar wenn Mode = Standard. Die anzuzeigenden Pfad-Elemente als Array oder Binding (siehe unten). |
-| `separator` | „Separator" | Textfeld | optional | Trennzeichen zwischen den Items (nur Modus Standard). Default: Shoelace-nativer `/`. |
+| `separator` | „Separator" | Textfeld | optional | Trennzeichen zwischen den Items (nur Modus Standard). Ein gesetzter, nicht-leerer String wird als `slot="separator"`-Inhalt gerendert und überschreibt so den Shoelace-nativen `/`. Leer/ungesetzt → Shoelace-Default `/`. Im Modus „Child Nodes (Slots)" liefert stattdessen ein Kind-Knoten im Slot `separator` das Trennzeichen (die beiden Mechanismen schließen sich je Modus gegenseitig aus). |
 
 #### Items-Formate (Modus Standard)
 
@@ -107,6 +107,14 @@ Items klickbar sind, und ein Link auf die ausführliche Doku:
 | `click` | Nutzer klickt ein Item | `event: "click"`, `params.action` (Item-Action-Wert oder Label), `clientId`, `sourceId`, `appId` | Navigation oder andere Reaktion im Flow auslösen |
 
 Im Child-Nodes-Modus (c) ist `params.action` die Node-ID des angeklickten Kind-Knotens.
+
+**Kein `navigate`-Event.** Auch ein Item mit einem Routen-/Pfad-Wert als `action`
+(z. B. `"/customers"`) feuert `click` — **nicht** `navigate`. Der Knoten führt
+selbst keine Navigation aus; die eigentliche Navigation entsteht durch die
+Verdrahtung `click` → `ui-action` (`navigate`). Das Schema toleriert `events:
+["navigate"]` lediglich als P75-Rückwärtskompatibilität (Alt-Flows) — die Laufzeit
+emittiert für `ui-breadcrumb` ausschließlich `click` (`mapConfig` → `events:
+["click"]`).
 
 **Antizipierte Wiring-Szenarien:**
 - `click`-Output → `ui-action` (`navigate`, `to: msg.ui.params.action`) → navigiert zur übergeordneten Route.
