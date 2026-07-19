@@ -849,6 +849,73 @@
         });
     });
 
+    // P247: accordion — a <sl-details> section inside a .webapp-accordion fires
+    // Shoelace's `sl-show` when the user expands it and `sl-hide` when it collapses.
+    // We (1) report sectionOpen/sectionClose to the flow (sourceId = the accordion
+    // node id, params.sectionId = the section's data-webapp-part) and (2) enforce
+    // SINGLE-OPEN: when the accordion is data-webapp-accordion-multiple="false"
+    // (the default), opening one section closes its open siblings in the SAME
+    // accordion — scoped to that one wrapper, other accordions on the page are
+    // untouched. Closing a sibling sets its `open=false`, which fires the sibling's
+    // own `sl-hide` → sectionClose, so the flow learns it collapsed. Native
+    // <sl-details> are independent; this listener is the coordination the markup
+    // alone cannot express.
+    function accordionSectionFrom(eventObject) {
+        const details = eventObject.target;
+        if (!details || !details.tagName || details.tagName.toLowerCase() !== "sl-details") {
+            return null;
+        }
+        // Only accordion sections carry data-webapp-part; a ui-log <sl-details> (or
+        // any other unrelated disclosure) does not, and is ignored here.
+        if (!details.hasAttribute("data-webapp-part")) {
+            return null;
+        }
+        const accordion = details.closest(".webapp-accordion[data-webapp-source]");
+        if (!accordion || !root.contains(accordion)) {
+            return null;
+        }
+        return {
+            details: details,
+            accordion: accordion,
+            sectionId: details.getAttribute("data-webapp-part")
+        };
+    }
+
+    root.addEventListener("sl-show", function (eventObject) {
+        const ctx = accordionSectionFrom(eventObject);
+        if (!ctx) {
+            return;
+        }
+        dispatch({
+            source: ctx.accordion.getAttribute("data-webapp-source"),
+            event: "sectionOpen",
+            params: { sectionId: ctx.sectionId }
+        });
+        // Single-open: close the open siblings in THIS accordion only.
+        if (ctx.accordion.getAttribute("data-webapp-accordion-multiple") !== "true") {
+            const siblings = ctx.accordion.querySelectorAll("sl-details[data-webapp-part]");
+            Array.prototype.forEach.call(siblings, function (sib) {
+                if (sib !== ctx.details && sib.open) {
+                    // Fires the sibling's own sl-hide → sectionClose (no re-entrancy:
+                    // hiding never re-triggers sl-show).
+                    sib.open = false;
+                }
+            });
+        }
+    });
+
+    root.addEventListener("sl-hide", function (eventObject) {
+        const ctx = accordionSectionFrom(eventObject);
+        if (!ctx) {
+            return;
+        }
+        dispatch({
+            source: ctx.accordion.getAttribute("data-webapp-source"),
+            event: "sectionClose",
+            params: { sectionId: ctx.sectionId }
+        });
+    });
+
     // P64: native <sl-dialog> dismissal. X / ESC / overlay-click all converge on
     // Shoelace's `sl-after-hide` (fired after the dialog has finished hiding). We
     // (1) report onClose to the flow (sourceId = the dialog node id) so a wired
