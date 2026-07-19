@@ -25,8 +25,28 @@ Nicht-mutierend, per-client, beliebig oft platzierbar — für Backend-Zugriffe
 - **Input:** jede Message triggert einen Read.
 - **Pfad-Präzedenz:** `msg.ui.store.path` › `msg.path` › Config-`path` › ganzes Slice.
 - **Per-Client:** liest den per-client-Zustand zu `msg.ui.clientId` (sonst broadcast).
-  Scope-Regel wie beim Schreiben: `client-only` ohne clientId → Scope-Fehler.
+  Scope-Regel wie beim Schreiben — siehe § „Per-Client & Scope".
 - **Nicht-mutierend:** keine State-Änderung, kein Snapshot-Push.
+
+## Per-Client & Scope
+
+Mit `msg.ui.clientId` liest der Knoten den per-client-Zustand (sonst broadcast).
+Scope-Regel wie beim Lesen über `ui-store` (gespiegelt vom Schreibpfad):
+`client-only` ohne clientId → Scope-Fehler; `broadcast-only` mit clientId →
+Scope-Fehler. Beides `server.store.scope-violation`. Der Read ist bei einer
+Scope-Verletzung ein **No-op**: keine Emission, kein Output — und, wie jeder Read,
+**nicht-mutierend** (keine State-Änderung, kein Snapshot-Push).
+
+## Fehler-Codes
+
+| Code | Auslöser |
+|---|---|
+| `server.store.read-missing-store` | referenzierter Store nicht im Registry gefunden |
+| `server.store.scope-violation` | Scope-Regel verletzt (`client-only` ohne clientId; `broadcast-only` mit clientId — siehe oben) |
+| `server.store.no-active-app` | keine aktive `ui-app` registriert |
+
+Jeder dieser Fehler ist ein strukturierter `done(error)` **ohne** Emission (kein
+`send`). Emittiert von `storeReadInputHandler` in `nodes/webapp.js`.
 
 ## Output
 

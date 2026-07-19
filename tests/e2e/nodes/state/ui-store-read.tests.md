@@ -76,6 +76,24 @@ emittierte Message wird über einen HTTP-Rück-Kanal beobachtet.
 Beweis über den EMITTIERTEN Message-Inhalt (verdrahtet an einen Rück-Kanal),
 nicht über bloße Knoten-Registrierung.
 
+### Scope-Violation an der Integrationsebene (P242) — Browser-Ebene
+
+Hebt die zuvor nur unit-belegte `scope-violation` auf die Integrationsebene. Flow:
+`tests/e2e/fixtures/p242-store-read-scope.flow.json` — ein **client-only** Store
+`entity`, ein `ui-store-read` darauf (verdrahtet an einen Result-Store + Readout),
+ein `ui-log`-Panel; die `ui-app` aktiviert Error-Forwarding
+(`forwardErrorsToClient` + `forwardErrorMinSeverity="error"`). Ein `inject` →
+`function` feuert einen Read, **nachdem** jegliche `clientId` entfernt wurde.
+
+**Gewählte Ebene: Browser** — deterministisch getrieben, weil der emittierte
+strukturierte Fehler-Code über den SSE-`error`-Kanal an den Client geht und dort
+in das Log-Panel als `.webapp-log-code` gerendert wird; gemessen wird der Code-Wert
+(nicht DOM-Präsenz des Reads).
+
+| Test | Ziel | Gemessen |
+|---|---|---|
+| client-only Read OHNE clientId → `server.store.scope-violation`, kein Read-Output | Scope-Guard verhindert Emission; strukturierter Fehler-Code beobachtbar | `.webapp-log-code` = `server.store.scope-violation` (emittierter Code, via SSE-Forwarding); Result-Readout bleibt `NONE` (kein `send`) |
+
 ## E2E — Editor open→save round-trip (`tests/e2e/nodes/state/ui-store-read.roundtrip.spec.ts`)
 
 Standard: `.ai/agents/node-testing.md` „Editor open→save round-trip", [ADR 0031](../../../../docs/adr/0031-editor-open-save-round-trip-test-standard.md).

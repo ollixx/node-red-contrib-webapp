@@ -3,6 +3,8 @@ import path from "node:path";
 
 import { expect, test } from "@playwright/test";
 
+import { injectMessage } from "../../../helpers/admin-api";
+
 /**
  * P209 (ADR 0028) — ui-store-read: on-demand, NON-mutating store reader.
  *
@@ -56,5 +58,63 @@ test.describe("ui-store-read on-demand reader (P209)", () => {
         // READNAME: msg.path='name' override → the reader emits just 'B'.
         await page.locator("li.webapp-list-item").filter({ hasText: "READNAME" }).click();
         await expect(readout).toHaveText("B", { timeout: 10000 });
+    });
+});
+
+/**
+ * P242 (ADR 0028) — scope-violation lifted to the integration level.
+ *
+ * The scope guard in storeReadInputHandler (nodes/webapp.js ~5625) rejects a
+ * CLIENT-ONLY store read that carries NO clientId with the structured code
+ * `server.store.scope-violation` (webapp.js ~5629) and, crucially, does NOT
+ * send — the read is short-circuited before any output.
+ *
+ * Flow (tests/e2e/fixtures/p242-store-read-scope.flow.json): a client-only store
+ * `entity`, a ui-store-read referencing it wired to a result store + readout, a
+ * ui-log panel, and an inject → function that fires a read after stripping any
+ * clientId. The ui-app opts into error forwarding (forwardErrorsToClient +
+ * forwardErrorMinSeverity="error"), so the structured error is pushed over the
+ * SSE "error" channel and the client renders its code into the ui-log panel as
+ * `.webapp-log-code`.
+ *
+ * MEASURED (not DOM-presence of the read):
+ *   - the EMITTED error code, read off the forwarded structured error rendered in
+ *     the log panel: `.webapp-log-code` === "server.store.scope-violation".
+ *   - NO read output: the result readout is never written (stays at "NONE"), i.e.
+ *     the handler short-circuited before send().
+ */
+test.describe("ui-store-read scope-violation is observable end-to-end (P242)", () => {
+    test.beforeAll(async ({ request }) => {
+        const flow = await loadFlow("tests/e2e/fixtures/p242-store-read-scope.flow.json");
+        expect((await request.post("/flows", { data: flow })).ok()).toBeTruthy();
+    });
+
+    test.afterAll(async ({ request }) => {
+        const baseline = await loadFlow("examples/customers-crud/flow.json");
+        await request.post("/flows", { data: baseline });
+    });
+
+    test("client-only read WITHOUT clientId emits server.store.scope-violation and no read output", async ({ page, request }) => {
+        const streamRequested = page.waitForRequest((req) => req.url().includes("/webapp/p242App/stream"));
+        await page.goto("/webapp/p242App/");
+        await streamRequested;
+        await page.waitForTimeout(500);
+
+        const readout = page.locator(".webapp-text").first();
+        // Baseline: the result store shows its sentinel — no read has happened yet.
+        await expect(readout).toHaveText("NONE", { timeout: 10000 });
+
+        // Fire a read whose message carries NO clientId against the client-only
+        // store. The scope guard rejects it with server.store.scope-violation.
+        await injectMessage(request, "p242Inject");
+
+        // MEASURED: the forwarded structured error's CODE, rendered by the client
+        // into the ui-log panel as the .webapp-log-code span.
+        const logCode = page.locator("[data-webapp-log] .webapp-log-entry .webapp-log-code").first();
+        await expect(logCode).toHaveText("server.store.scope-violation", { timeout: 10000 });
+
+        // MEASURED: NO read output — the handler short-circuited before send(), so
+        // the result readout is still the sentinel (never overwritten by a payload).
+        await expect(readout).toHaveText("NONE");
     });
 });
