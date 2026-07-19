@@ -37,3 +37,24 @@
 | runtime `p157-...` mapConfig: json-literal unwrap, store/query pass-through, bare JSON parse, itemsPath/activeRoutePath migration | webapp.js-Mapper-Vertrag |
 | runtime `p157-...` render: store/literal items rendern, activeRoute markiert aktiv, kein activeRoute → keine Marker, legacy itemsPath rendert | End-to-End-Auflösung (renderAppPage) |
 | editor `p157-...` emitNodeDefinition: items-Auflösung + activeRoute-Migration durch das Schema | Editor-Mapper-Vertrag |
+
+## P244 — Konformitäts-Pass (document-down / dead-field removal)
+
+> `displayType` ist heute inert (kein beobachtbarer Render-Unterschied; Spec sagt
+> das jetzt und markiert sidebar/topbar als geplant). `dropdown` aus dem Enum
+> entfernt (Editor bot es nie an); Legacy-Wert `dropdown` fällt via Schema
+> `.catch("sidebar")` verlustfrei auf den Default zurück. `collapsed` (Phantom-Feld:
+> nicht im Editor, nie gemappt/gerendert) aus Schema + Spec entfernt. Der
+> `config.variant`-Legacy-Zwilling in mapConfig war toter Code → entfernt (P241-Muster).
+> `msg.payload`/`msg.ui.patch` werden **nicht** konsumiert (Pass-Through) — Spec-Input
+> auf die Wahrheit heruntergeschrieben.
+
+### Unit (`packages/runtime/test/p157-menu-items-activeroute-typedinput.test.ts`, describe „P244")
+
+| Test | Ziel |
+|---|---|
+| accepts sidebar and topbar | narrowed Enum akzeptiert beide gültigen Werte |
+| a legacy `dropdown` value degrades to the default (sidebar), not a validation failure | Back-Compat: `.catch("sidebar")` statt Deploy-Crash |
+| any out-of-enum displayType value degrades to the default | robuste Enum-Degradierung generell |
+| `collapsed` is no longer a schema field — an incoming key is stripped, not an error | Phantom-Feld verlustfrei entfernt |
+| mapConfig ignores a stray `config.variant` (dead twin removed) | `variant`-Zwilling leckt nicht mehr in displayType |

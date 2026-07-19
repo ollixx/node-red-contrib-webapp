@@ -1632,9 +1632,15 @@ const menuItemSchema: z.ZodType<{ label: string; route?: string; href?: string; 
 export const uiMenuNodeDefinitionSchema = mountableNodeSchema.extend({
     ...baseFieldsSchema,
     type: z.literal("ui-menu"),
-    // P49: sidebar/topbar/dropdown is a DISPLAY TYPE (layout mode), not a
-    // semantic variant.
-    displayType: z.enum(["sidebar", "topbar", "dropdown"]).optional(),
+    // P49: sidebar/topbar is a DISPLAY TYPE (layout mode), not a semantic variant.
+    // P244: `dropdown` was removed from the enum — it was never reachable from the
+    // editor (only sidebar/topbar are offered) and had no trigger model. A deployed
+    // legacy flow carrying `displayType: "dropdown"` (or any out-of-enum value) must
+    // NOT fail validation and drop the node; `.catch("sidebar")` degrades it to the
+    // default. NOTE: no displayType value produces an observable render difference
+    // today (renderer/adapter do not branch on it — findings A); the modes are
+    // documented as planned, not implemented.
+    displayType: z.enum(["sidebar", "topbar"]).optional().catch("sidebar"),
     // P157 (ADR 0012): `items` is the canonical STRUCTURAL array source — either a
     // static array of menu items (the menu renders its entries itself; NOT a
     // repeats case, vgl. ui-list P140) OR a binding (store/query/reactive/
@@ -1643,7 +1649,9 @@ export const uiMenuNodeDefinitionSchema = mountableNodeSchema.extend({
     // P157 (ADR 0012): `activeItem` is the read-only active-route binding (editor
     // field `activeRoute`); the matching item is highlighted by the serializer.
     activeItem: bindingSchema.optional(),
-    collapsed: bindingSchema.optional(),
+    // P244: `collapsed` was removed — it was a phantom field: not in the editor
+    // (no defaults entry / form row), never read by mapConfig, never rendered.
+    // Removal is lossless (no authored flow could set or depend on it).
     // P75: clicking a navigable item (one with `route`/`path`, not an external
     // `href`) emits a `navigate` event on the node's output port. See the
     // ui-breadcrumb note above for the dispatch/serializer roles of this contract.
