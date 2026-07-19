@@ -117,8 +117,7 @@ test.describe("P60: ui-action node picker (ADR 0007 §3)", () => {
             const accept = (type: string | undefined) =>
                 typeof type === "string"
                 && type.indexOf("ui-") === 0
-                && type !== "ui-action"
-                && type !== "ui-navigation";
+                && type !== "ui-action";
             const out: Record<string, boolean> = {};
             for (const id of ids) {
                 const node = red.nodes.node(id);

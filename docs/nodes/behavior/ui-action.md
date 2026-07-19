@@ -214,11 +214,33 @@ nicht besitzt, wird unverändert durchgereicht.
   Offenlegungs-/Auswahl-Zustand (`open`/`selected`) wird weiterhin client-seitig in
   einer Interaktions-Overlay gehalten und nach jedem Re-Render erneut angewandt.
 
+## Migration: `ui-navigation` → `ui-action` navigate ([ADR 0040](../../adr/0040-retire-ui-navigation-node-navigate-is-a-ui-action.md))
+
+Der frühere `ui-navigation`-Knoten wurde **stillgelegt** (P243). Navigation ist ab
+jetzt **allein** ein `ui-action` mit `actionType: "navigate"`; es gibt **keinen**
+Laufzeit-Shim. Ein deployter `type: "ui-navigation"`-Knoten wird nach dem Entfernen
+zum **unbekannten Typ** — ersetze ihn mechanisch:
+
+| vorher (`ui-navigation`) | nachher (`ui-action`) |
+|---|---|
+| `type: "ui-navigation"` | `type: "ui-action"` |
+| — | `actionType: "navigate"` |
+| — | `targetMode: "url"` |
+| `to` | `to` (unverändert übernehmen) |
+| `parent` | `parent` (unverändert) |
+| `name` | `name` (unverändert) |
+
+Nur der `url`-Modus (`to`) eines `ui-navigation` hat je funktioniert (die Laufzeit
+verwarf `route`/`wire`/`params`), daher ist die Abbildung verlustfrei. Für
+`route`- oder `wire`-Navigation nutze die entsprechenden `targetMode`-Werte des
+`ui-action` navigate (siehe „Gruppe Navigation" oben).
+
 ## Referenzen
 
 - [actions.md](../concepts/actions.md) — Action-Contract, Verben, Zieladressierung
 - [messages.md](../concepts/messages.md) — `msg.ui.action`-Format, Navigation
 - [events.md](../concepts/events.md) — auslösende Events (Client → Server)
+- [ADR 0040](../../adr/0040-retire-ui-navigation-node-navigate-is-a-ui-action.md) — `ui-navigation` stillgelegt (Navigation ist ein `ui-action` navigate)
 - [`ui-route`](../structure/ui-route.md) / [`ui-app`](../structure/ui-app.md) — Navigationsziele
 - [editor.md](../concepts/editor.md) — Canvas-Picker (`targets`) vs. Wiring
 - [`ui-store`](../state/ui-store.md) — Daten (Abgrenzung)

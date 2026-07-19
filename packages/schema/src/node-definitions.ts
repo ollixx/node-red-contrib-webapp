@@ -15,7 +15,6 @@ import {
     identifierSchema,
     INPUT_VARIANTS,
     routeNodePathSchema,
-    routePathSchema,
     SEVERITY_VARIANTS,
     TEXT_COLOR_VARIANTS,
     TEXT_DISPLAY_MODES,

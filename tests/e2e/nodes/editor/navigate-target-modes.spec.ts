@@ -5,7 +5,8 @@ import { FlowBuilder } from "../../../helpers/flow-builder";
 import { NodeEditorPage } from "../../../helpers/node-editor-page";
 
 /**
- * P119 (ADR 0011) — ui-action / ui-navigation navigate EDITOR target-mode UX.
+ * P119 (ADR 0011) — ui-action navigate EDITOR target-mode UX.
+ * (P243/ADR 0040: ui-navigation retired — navigation is solely a ui-action navigate.)
  *
  * The navigate verb gets an explicit, stored target SOURCE — wire | route | url —
  * surfaced as a three-segment switch whose active segment colours the whole panel
@@ -283,27 +284,7 @@ test.describe("editor — navigate target modes (P119)", () => {
         expect(await editor.getValidationState("ntActionH")).toBe("valid");
     });
 
-    // ── ui-navigation alignment ───────────────────────────────────────────────
-
-    test("ui-navigation shows the same three-mode switcher", async ({ page, request }) => {
-        const flow = new FlowBuilder()
-            .app({ id: "ntI", root: "ntI" })
-            .node("ui-text", { id: "ntIHome", text: "Home" })
-            .route({ id: "ntIRoute", path: "/customers/:id" })
-            .node("ui-text", { id: "ntIRouteTxt", text: "Detail" })
-            .node("ui-navigation", { id: "ntNav", to: "/customers/:id" })
-            .build();
-        await deployFlow(request, flow);
-
-        const editor = new NodeEditorPage(page);
-        await editor.open();
-        await editor.openNode("ntNav");
-
-        // All three segments present.
-        await expect(page.locator(".webapp-nav-mode-seg--wire")).toBeVisible();
-        await expect(page.locator(".webapp-nav-mode-seg--route")).toBeVisible();
-        await expect(page.locator(".webapp-nav-mode-seg--url")).toBeVisible();
-        // A legacy `to`-carrying ui-navigation opens in url mode.
-        await expect(page.locator("#node-input-targetMode")).toHaveValue("url");
-    });
+    // P243 (ADR 0040): ui-navigation retired — navigation is solely a ui-action
+    // navigate. The three-mode switcher is exercised on ui-action above; there is
+    // no separate navigation node to align any more.
 });

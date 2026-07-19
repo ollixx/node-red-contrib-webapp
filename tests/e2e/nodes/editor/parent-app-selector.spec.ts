@@ -15,8 +15,8 @@ import { NodeEditorPage } from "../../../helpers/node-editor-page";
  * The App selector must NEVER seed the node's own id: a fresh/empty `parent`
  * seeds "", and an already-corrupted `parent === self.id` self-heals to "" so
  * the user is prompted to pick the real app. Applies to every node that uses
- * installParentAppSelector (ui-store/ui-query/ui-action/ui-navigation/
- * ui-dialog/ui-route); proven here on ui-store where the owner hit it.
+ * installParentAppSelector (ui-store/ui-query/ui-action/ui-dialog/ui-route);
+ * proven here on ui-store where the owner hit it.
  */
 
 test.describe("editor — App parent selector never seeds the node's own id", () => {

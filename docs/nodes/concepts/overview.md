@@ -25,7 +25,7 @@ Querschnittliche Konzepte sind in eigenen Dateien zentral dokumentiert:
 - Struktur: [`ui-app`](../structure/ui-app.md), [`ui-route`](../structure/ui-route.md), [`ui-dialog`](../structure/ui-dialog.md)
 - View (Display / Input / Feedback / Navigation): u. a. [`ui-text`](../display/ui-text.md), [`ui-button`](../display/ui-button.md), [`ui-table`](../display/ui-table.md), [`ui-container`](../display/ui-container.md), [`ui-input`](../input/ui-input.md), [`ui-alert`](../feedback/ui-alert.md), [`ui-tabs`](../navigation/ui-tabs.md) — vollständige Liste in den jeweiligen Unterordnern.
 - State: [`ui-store`](../state/ui-store.md), [`ui-query`](../state/ui-query.md)
-- Verhalten: [`ui-action`](../behavior/ui-action.md), [`ui-navigation`](../behavior/ui-navigation.md) *(deprecated — `ui-action` mit `navigate` ist der Weg, siehe ADR 0007)*
+- Verhalten: [`ui-action`](../behavior/ui-action.md) *(Navigation ist ein `ui-action` mit `navigate` — `ui-navigation` wurde in [ADR 0040](../../adr/0040-retire-ui-navigation-node-navigate-is-a-ui-action.md) stillgelegt)*
 
 ## Gemeinsame Modellregeln
 
