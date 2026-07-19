@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P248** — aspects/node-conformance — Konformitäts-Pass **ui-breadcrumb** (leicht): `separator`-String inert, `navigate`-Event ungetestet; Kern solide — *Owner 2026-07-17; node-conformance* — [P248](aspects/node-conformance/P248-conformance-ui-breadcrumb.md)
 - **P249** — aspects/node-conformance — Konformitäts-Pass **ui-table** (leicht): `footer` + Sekundär-Events ohne Verhaltens-E2E; Kern solide — *Owner 2026-07-17; node-conformance* — [P249](aspects/node-conformance/P249-conformance-ui-table.md)
 - **P250** — aspects/node-conformance — Konformitäts-Pass **ui-tabs(+tab)** (leicht): `variant` (line/contained/pills) ungetestet, tab-Kind ohne Katalog; Kern exzellent — *Owner 2026-07-17; node-conformance* — [P250](aspects/node-conformance/P250-conformance-ui-tabs.md)
 - **P251** — aspects/node-conformance — Konformitäts-Pass **ui-stepper** (leicht): `linear` totes Feld, orientation+`complete` ungetestet; Kern solide — *Owner 2026-07-17; node-conformance* — [P251](aspects/node-conformance/P251-conformance-ui-stepper.md)
@@ -99,7 +98,7 @@ open the folder for the full history.
 | nodes/ui-accordion | 2 |
 | nodes/ui-breadcrumb · ui-dialog · ui-progress · ui-skeleton | 1 each |
 | aspects/test-infra | 28 |
-| aspects/node-conformance | 16 |
+| aspects/node-conformance | 17 |
 | aspects/misc | 16 |
 | aspects/docs | 1 |
 | aspects/runtime | 9 |
@@ -111,4 +110,4 @@ open the folder for the full history.
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 243 done, 9 open, 12 deferred.**
+**Total: 244 done, 8 open, 12 deferred.**

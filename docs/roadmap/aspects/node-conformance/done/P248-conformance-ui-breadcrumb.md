@@ -3,7 +3,7 @@ id: P248
 node: ui-breadcrumb
 title: "Konformitäts-Pass ui-breadcrumb (leicht) — `separator`-String-Feld ist inert (Serializer nutzt separator-Region), `navigate`-Event ungetestet; Kern solide"
 epic: aspects/node-conformance
-status: pending
+status: done
 dependencies: []
 verify: browser
 spec: docs/nodes/navigation/ui-breadcrumb.md
@@ -61,3 +61,43 @@ implementieren (String → `slot="separator"`) **oder** aus Schema+Editor+Spec e
 - `separator`-String vs -Region ist dasselbe Inert-Muster wie ui-menu displayType /
   ui-dialog modal — am Serializer prüfen, nicht an mapConfig.
 - Legacy `itemsJson`/`itemsPath` NICHT hier sweepen (P229).
+
+## Result
+
+**Done 2026-07-19.** Leichter Pass; beide Feld-Befunde **gemessen** aufgelöst.
+
+### `separator` — gemessen doppelt inert → implementiert (ehrlich gemacht)
+
+`mapConfig` trug `separator` in die Definition, aber die generische Props-Assembly
+in `toComponentDefinitions` (webapp.js) enumeriert Props explizit und hatte **keine
+`separator`-Zeile** → fiel vor dem Serializer weg; der Static-Items-Zweig las
+`props.separator` ohnehin nie. `separator=">"` hatte **null** DOM-Wirkung (Shoelace
+zeigte immer das native `/`). **Lower-risk implement** gewählt: `separator` fließt
+jetzt in `component.props`, und ein nicht-leerer String wird als
+`<span slot="separator">…</span>` geslottet (überschreibt das native `/`).
+**Gemessen:** `separator=">"` → `sl-breadcrumb > span[slot='separator']` count=1,
+text=`>`; ohne separator → count=0. Der region-basierte Separator
+(`layout="breadcrumb"`, Kind im Slot `separator`) ist unberührt + gegenseitig
+exklusiv per Modus — dokumentiert.
+
+### `navigate` — gemessen NICHT emittiert → ehrlicher Lock (nicht entfernt)
+
+Gute Agent-Entscheidung: die `events:["navigate"]` im Schema sind **intentionaler
+P75-Back-Compat** (durch einen bestehenden Schema-Test gepinnt), NICHT zu entfernen.
+Zur Laufzeit emittiert `mapConfig` `events:["click"]`; der Client dispatcht für
+Breadcrumb-Items nur `click` (der `navigate`-Client-Pfad braucht
+`data-webapp-navigate-path`, das der Breadcrumb-Serializer nie emittiert — P95-Design:
+Navigation via `click` → `ui-action navigate` verdrahten). Ein „navigate feuert"-E2E
+ist damit **unmöglich**; stattdessen ein ehrlicher Lock: ein Route/Pfad-Item
+(`action="/customers"`) feuert `click` (nicht `navigate`) mit korrektem
+`msg.ui`-Envelope. Spec + Katalog sagen die navigate-Wahrheit explizit.
+
+### Verifikation (Haupt-Checkout, autoritativ)
+
+Beide P247+P248 zusammen im **sauberen** Voll-Lauf: **800 passed, 0 failed,
+`--retries=0`, 15,3 min.** (Dieser Lauf ersetzt einen vorherigen, den der
+Orchestrator selbst sabotiert hatte, indem er Port 1882 killte, während der Lauf
+noch lief — 279 Scheinfehler; siehe [[e2e-verify-build-and-no-tail]]. Der saubere
+Lauf beweist: kein echter P247/P248-Regress.) Unit `p95-breadcrumb-redesign` 23
+passed (+4). `pnpm validate` + Tripwires grün. Agent committete VOR der Verifikation
+und stoppte alle Prozesse (Port 1882 frei).
