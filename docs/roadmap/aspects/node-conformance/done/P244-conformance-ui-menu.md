@@ -3,7 +3,7 @@ id: P244
 node: ui-menu
 title: "Konformitäts-Pass ui-menu — displayType ist inert (kein Render-Unterschied), collapsed ist totes Feld, dropdown fehlt im Editor; Daten-/Event-Ebene ist solide"
 epic: aspects/node-conformance
-status: pending
+status: done
 dependencies: []
 verify: browser
 spec: docs/nodes/navigation/ui-menu.md
@@ -135,3 +135,55 @@ bestehenden outcome-Tests bleiben.
    Daten-/Event-Knoten mit kosmetischem Enum ist.
 2. **`collapsed`:** implementieren oder als totes Feld entfernen?
 3. **`dropdown`:** implementieren (Trigger-Modell) oder aus Schema+Spec entfernen?
+
+## Result
+
+**Done 2026-07-19.** Konformitäts-Pass: die inerte Darstellungs-Ebene von ui-menu ist
+jetzt ehrlich; die solide Daten-/Event-Ebene unangetastet.
+
+### Owner-Entscheide (bestätigt): alle drei **honest-conformance**
+
+1. **`displayType` → auf Realität heruntergeschrieben.** Spec sagt jetzt: sidebar/topbar
+   haben **heute keinen beobachtbaren Render-Unterschied** (Renderer + shoelace-adapter
+   verzweigen nicht; beide rendern ein nacktes `sl-menu`); die Modi sind **geplant,
+   nicht implementiert**. Falsches „verändert das Layout wesentlich" entfernt.
+2. **`collapsed` → entfernt** aus Schema, Spec (Items-Gruppe + `msg.ui.patch` + Wiring-
+   Szenario). Verlustfrei (nicht im Editor, nie in mapConfig gelesen, nie gerendert).
+   Der `collapsed`-Treffer bei webapp.js gehört zu **ui-log** (P57) — unangetastet.
+3. **`dropdown` → aus dem Enum entfernt** (`z.enum(["sidebar","topbar"])`); der Editor
+   bot ohnehin nur die zwei.
+
+### Back-Compat für Legacy-`dropdown` (Mechanismus)
+
+Reines Enum-Verengen würde `validateUiNodeDefinition` einen gespeicherten
+`displayType:"dropdown"` **ablehnen** (webapp.js:4984 → rote Config-Fehler-Status,
+Knoten nicht registriert → Menü rendert nicht). Der Owner-Gate „degrade to default,
+not fail" ist erfüllt via **`.optional().catch("sidebar")`**: `undefined→undefined`,
+`sidebar`/`topbar` passieren, jeder out-of-enum-Wert → `"sidebar"`. Ein Alt-Flow mit
+`dropdown` validiert und rendert jetzt als Default — kein Crash, kein verlorener Knoten.
+
+### Weitere Konformitäts-Fixes
+
+- **Label-Drift:** Spec-Labels „Items State Path"/„Active Route Path" → „Items"/
+  „Active Route" (HTML-konform).
+- **`variant`-Legacy-Zwilling entfernt** aus mapConfig (`|| config.variant` → weg),
+  mit P244-Kommentar (Muster wie P241); ui-menu hatte nie ein `variant`-Feld.
+- **Input-Wahrheit:** ui-menu nutzt `interactionInputHandler(["show","hide","select"],
+  componentStateInputHandler)`. Verifiziert: **weder `msg.payload` noch `msg.ui.patch`**
+  werden konsumiert (beide pass-through, anders als ui-button → viewNodePatchInputHandler).
+  Spec-Input-Abschnitt sagt jetzt diese Wahrheit; Item-Ersatz/Patch-per-Message nicht
+  verdrahtet, Richtung offen (P235-Muster, nicht einseitig entschieden).
+
+### Tests
+
+- **Unit +5** in `p157-menu-items-activeroute-typedinput.test.ts` (18/18): sidebar/topbar
+  akzeptiert; Legacy `dropdown` → sidebar; jeder out-of-enum → sidebar; `collapsed`-Key
+  stripped statt Fehler; mapConfig ignoriert `config.variant`.
+- Die 6 soliden items/activeItem/navigate/href-E2E + ihr Code **unangetastet**.
+  Katalog `ui-menu.tests.md` um einen P244-Abschnitt ergänzt.
+
+### Verifikation (Haupt-Checkout, autoritativ)
+
+**E2E 791 passed, 0 failed, `--retries=0`, 15,1 min.** `pnpm build` grün, `pnpm validate`
++ alle Tripwires grün. Der Implementer-Agent stoppte diesmal alle eigenen Prozesse
+(Port 1882 frei bei Rückgabe) — die Brief-Härtung greift.
