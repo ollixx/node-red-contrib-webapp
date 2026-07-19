@@ -77,8 +77,8 @@
                 });
 
                 // P119 (ADR 0011): the three-mode navigate target switch + wire-scan
-                // assistance + parameter-mapping table. Central helper; ui-navigation
-                // wires the same one.
+                // assistance + parameter-mapping table. Central helper.
+                // (P243/ADR 0040: ui-navigation retired — ui-action is the sole user.)
                 let navMode = null;
                 this.__navMode = null;
                 const self = this;
