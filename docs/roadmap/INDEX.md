@@ -37,6 +37,7 @@ their blocker clears.
 - **P250** — aspects/node-conformance — Konformitäts-Pass **ui-tabs(+tab)** (leicht): `variant` (line/contained/pills) ungetestet, tab-Kind ohne Katalog; Kern exzellent — *Owner 2026-07-17; node-conformance* — [P250](aspects/node-conformance/P250-conformance-ui-tabs.md)
 - **P251** — aspects/node-conformance — Konformitäts-Pass **ui-stepper** (leicht): `linear` totes Feld, orientation+`complete` ungetestet; Kern solide — *Owner 2026-07-17; node-conformance* — [P251](aspects/node-conformance/P251-conformance-ui-stepper.md)
 - **P252** — aspects/node-conformance — Konformitäts-Pass **ui-pagination** (leicht): `showInfo`/`variant`/`totalItems` vermutlich inert; page/total/currentPage exzellent — *Owner 2026-07-17; node-conformance* — [P252](aspects/node-conformance/P252-conformance-ui-pagination.md)
+- **P253** — aspects/node-conformance — **Muster-4-Abschluss** (input/switch/textarea): Binding-Doku + `ui-textarea.placeholder`-Serializer-Fix (live Bug) + Tests; check:binding-docs-Allowlist → leer — *Owner 2026-07-17; ADR 0012* — [P253](aspects/node-conformance/P253-muster4-completion-input-switch-textarea.md)
 
 
 ## Deferred (parked, not abandoned)
