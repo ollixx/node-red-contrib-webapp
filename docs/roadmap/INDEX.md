@@ -31,6 +31,9 @@ their blocker clears.
 - **P244** — aspects/node-conformance — Konformitäts-Pass **ui-menu**: `displayType` inert (kein Render-Unterschied), `collapsed` totes Feld, `dropdown` fehlt im Editor; Daten-/Event-Ebene solide — *Owner 2026-07-17; node-conformance* — [P244](aspects/node-conformance/P244-conformance-ui-menu.md)
 - **P245** — aspects/node-conformance — Konformitäts-Pass **ui-dialog**: `modal` inert (Serializer ignoriert es), `routeId` funktioniert aber unterdokumentiert+ungetestet, Inline-Hilfe zu dünn — *Owner 2026-07-17; node-conformance* — [P245](aspects/node-conformance/P245-conformance-ui-dialog.md)
 - **P246** — aspects/node-conformance — Konformitäts-Pass **ui-log** (leicht): fehlender Test-Katalog, anomales editierbares `uiId`-Feld, Hilfe-Detail; Knoten sonst solide — *Owner 2026-07-17; node-conformance* — [P246](aspects/node-conformance/P246-conformance-ui-log.md)
+- **P247** — aspects/node-conformance — Konformitäts-Pass **ui-accordion(+section)**: `multiple` inert (Single-Open nicht durchgesetzt), events nur unit, section ohne Katalog — *Owner 2026-07-17; node-conformance* — [P247](aspects/node-conformance/P247-conformance-ui-accordion.md)
+- **P248** — aspects/node-conformance — Konformitäts-Pass **ui-breadcrumb** (leicht): `separator`-String inert, `navigate`-Event ungetestet; Kern solide — *Owner 2026-07-17; node-conformance* — [P248](aspects/node-conformance/P248-conformance-ui-breadcrumb.md)
+- **P249** — aspects/node-conformance — Konformitäts-Pass **ui-table** (leicht): `footer` + Sekundär-Events ohne Verhaltens-E2E; Kern solide — *Owner 2026-07-17; node-conformance* — [P249](aspects/node-conformance/P249-conformance-ui-table.md)
 
 
 ## Deferred (parked, not abandoned)
