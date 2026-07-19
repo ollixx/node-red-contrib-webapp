@@ -62,6 +62,26 @@ reiner Struktur-/Container-Knoten. Der Sektions-Wechsel und das
 `sectionOpen`/`sectionClose`-Event liegen beim Parent
 [`ui-accordion`](ui-accordion.md).
 
+## Tests & Konformität (Kind-Knoten-Ausnahme, P247)
+
+`ui-accordion-section` hat **keinen eigenen Testkatalog** und **keine eigenen
+E2E** — wie [`ui-tab`](ui-tab.md) zu [`ui-tabs`](ui-tabs.md) ist es ein reiner
+Kind-Knoten ohne eigenständigen Render. Seine Wirkung (ein `<sl-details>`-Panel je
+Sektion, `label`-Summary, optionales `icon`, Inhalt im `content`-Slot) wird
+vollständig über den **Eltern-Katalog**
+[`ui-accordion.tests.md`](../../../tests/e2e/nodes/view/ui-accordion.tests.md)
+abgedeckt (R01 Render zweier Sektionen als `sl-details` mit Summary = Label; R02
+Inhalt je Sektions-Panel) sowie die Unit-Tests
+`packages/runtime/test/p169-accordion-children-model.test.ts` und den Schema-Block
+in `packages/schema/test/schema.test.ts`. Ein separater Katalog wäre eine zweite
+Quelle der Wahrheit für dasselbe Verhalten.
+
+**Base-Fields: N/A.** Ein `ui-accordion-section` ist ein Sektionskopf, kein
+eigenständig interaktives View — es rendert keine eigene Chrome und trägt darum
+**keine** Base-Fields (`visible`/`disabled` etc.) in seinen `defaults`. Sichtbarkeit
+und Zustand liegen beim Parent [`ui-accordion`](ui-accordion.md) bzw. am
+Sektions-Inhalt. Konsistent mit [`ui-tab`](ui-tab.md).
+
 ## Theming
 
 `ui-accordion-section` rendert keine eigene Chrome; Aussehen der Sektions-Leiste

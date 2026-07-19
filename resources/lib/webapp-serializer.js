@@ -1224,7 +1224,16 @@
                     : "";
                 return "<sl-details name=\"" + escapeAttribute(partId) + "\" data-webapp-part=\"" + escapeAttribute(partId) + "\" summary=\"" + summary + "\"" + open + ">" + iconHtml + body + "</sl-details>";
             }).join("");
-            return wrapRenderedComponentHtml(component, layoutId, "<div class=\"webapp-accordion\">" + detailsHtml + "</div>");
+            // P247: emit the accordion's node id (data-webapp-source) so the client can
+            // report sectionOpen/sectionClose events, and the resolved `multiple` flag
+            // (data-webapp-accordion-multiple) so the client can enforce single-open
+            // coordination. `<sl-details>` are natively independent — without this hook
+            // the client cannot tell which accordion a section belongs to nor whether
+            // multiple sections may stay open. Single-open is the default (multiple:false).
+            const accMultiple = component.props && component.props.multiple === true;
+            const accSourceAttr = " data-webapp-source=\"" + escapeAttribute(component.id) + "\"";
+            const accMultipleAttr = " data-webapp-accordion-multiple=\"" + (accMultiple ? "true" : "false") + "\"";
+            return wrapRenderedComponentHtml(component, layoutId, "<div class=\"webapp-accordion\"" + accSourceAttr + accMultipleAttr + ">" + detailsHtml + "</div>");
         }
 
         if (component.kind === "menu") {
