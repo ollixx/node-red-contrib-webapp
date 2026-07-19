@@ -34,6 +34,9 @@ their blocker clears.
 - **P247** — aspects/node-conformance — Konformitäts-Pass **ui-accordion(+section)**: `multiple` inert (Single-Open nicht durchgesetzt), events nur unit, section ohne Katalog — *Owner 2026-07-17; node-conformance* — [P247](aspects/node-conformance/P247-conformance-ui-accordion.md)
 - **P248** — aspects/node-conformance — Konformitäts-Pass **ui-breadcrumb** (leicht): `separator`-String inert, `navigate`-Event ungetestet; Kern solide — *Owner 2026-07-17; node-conformance* — [P248](aspects/node-conformance/P248-conformance-ui-breadcrumb.md)
 - **P249** — aspects/node-conformance — Konformitäts-Pass **ui-table** (leicht): `footer` + Sekundär-Events ohne Verhaltens-E2E; Kern solide — *Owner 2026-07-17; node-conformance* — [P249](aspects/node-conformance/P249-conformance-ui-table.md)
+- **P250** — aspects/node-conformance — Konformitäts-Pass **ui-tabs(+tab)** (leicht): `variant` (line/contained/pills) ungetestet, tab-Kind ohne Katalog; Kern exzellent — *Owner 2026-07-17; node-conformance* — [P250](aspects/node-conformance/P250-conformance-ui-tabs.md)
+- **P251** — aspects/node-conformance — Konformitäts-Pass **ui-stepper** (leicht): `linear` totes Feld, orientation+`complete` ungetestet; Kern solide — *Owner 2026-07-17; node-conformance* — [P251](aspects/node-conformance/P251-conformance-ui-stepper.md)
+- **P252** — aspects/node-conformance — Konformitäts-Pass **ui-pagination** (leicht): `showInfo`/`variant`/`totalItems` vermutlich inert; page/total/currentPage exzellent — *Owner 2026-07-17; node-conformance* — [P252](aspects/node-conformance/P252-conformance-ui-pagination.md)
 
 
 ## Deferred (parked, not abandoned)
