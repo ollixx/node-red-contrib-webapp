@@ -3,7 +3,7 @@ id: P242
 node: ui-store-read
 title: "Konformitäts-Pass ui-store-read (schlank) — Spec-Detail-Bar-Parität mit den Geschwistern: Fehler-Codes + Scope; scope-violation als E2E-Beleg"
 epic: aspects/node-conformance
-status: pending
+status: done
 dependencies: []
 verify: browser
 spec: docs/nodes/state/ui-store-read.md
@@ -104,3 +104,50 @@ Abschnitt, im Format von `docs/nodes/state/ui-store-action.md`.
   ui-store-action/ui-query-action anfassen (die sind konform).
 - Muster-Referenz für Tabellenform: `docs/nodes/state/ui-store-action.md`
   (§ „Fehler-Codes", § „Per-Client & Scope").
+
+## Result
+
+**Done 2026-07-19.** Die eine Familien-Asymmetrie ist geschlossen: `ui-store-read`
+hat jetzt die Detail-Bar-Parität seiner Geschwister. Schlank gehalten — **kein**
+Runtime-Code, **keine** Unit-Suite-Änderung, die Geschwister-Knoten unberührt.
+
+### Fehler-Codes dokumentiert (verbatim aus `storeReadInputHandler`, `nodes/webapp.js`)
+
+Kein erfundener Code — jeder existiert im Handler (Zeile geprüft):
+- `server.store.read-missing-store` — **5598** (referenzierter Store nicht in der Registry)
+- `server.store.scope-violation` — **5615** (`broadcast-only` + clientId) und **5629**
+  (`client-only` ohne clientId)
+- `server.store.no-active-app` — **5643** (kein aktives `ui-app`) — vom Agent
+  zusätzlich gefunden; ebenfalls real.
+
+Jeder emittiert ein strukturiertes `done(error)` **ohne** `send`.
+
+### Spec (`docs/nodes/state/ui-store-read.md`)
+
+- **„Fehler-Codes"-Tabelle** im Format von `ui-store-action.md` (Code + Auslöser),
+  die drei/vier realen Codes.
+- **„Per-Client & Scope"-Abschnitt** analog `ui-store-action.md`: `client-only` ohne
+  clientId → Scope-Fehler; `broadcast-only` mit clientId → Scope-Fehler; beide
+  `server.store.scope-violation`; Read bleibt bei Verletzung nicht-mutierender No-op.
+
+### Test — **Browser-Ebene**, gemessen
+
+`tests/e2e/nodes/state/ui-store-read.spec.ts` (neuer describe-Block; der bestehende
+P209-Test unberührt) + Fixture `tests/e2e/fixtures/p242-store-read-scope.flow.json`.
+Ein `client-only`-Store wird ohne clientId gelesen; `ui-app` leitet den strukturierten
+Fehler per SSE weiter (P56/P57-Maschinerie), der Client rendert den Code in ein
+`ui-log`-Panel. Gemessen:
+- `.webapp-log-code` = **`server.store.scope-violation`** (emittierter Code)
+- Ergebnis-Readout bleibt **`NONE`** → kein Read-Output (Handler kurzschließt vor `send`)
+
+`2 passed` im Haupt-Checkout (`--retries=0`); Katalog `ui-store-read.tests.md`
+aktualisiert (Ebene vermerkt).
+
+### Verifikation (Haupt-Checkout)
+
+P242 fasst **nur Doku + einen neuen Test + Fixture** an (kein Runtime/geteilter Code)
+→ gezielter Spec-Lauf statt Voll-Suite: `ui-store-read.spec.ts` **2 passed,
+`--retries=0`**. `pnpm validate` EXIT 0; alle Tripwires grün
+(`check:specs`/`check:fields`/`check:help`/`check:roundtrip`/`check:links`).
+Prozess-Hygiene bestätigt: nichts vom Agent gestartetes läuft noch (Port 1882 frei;
+Owner-1881 unberührt).

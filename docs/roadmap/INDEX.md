@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P242** — aspects/node-conformance — Konformitäts-Pass **ui-store-read** (schlank): Spec-Detail-Bar-Parität mit den Geschwistern (Fehler-Codes + Scope-Abschnitt); scope-violation als E2E-Beleg — *Owner 2026-07-17; node-conformance* — [P242](aspects/node-conformance/P242-conformance-ui-store-read-spec-parity.md)
 - **P243** — aspects/node-conformance — **ui-navigation stilllegen** (ADR 0040): Knoten entfernen (Editor-Falle route/params vs. url-only-Laufzeit), Flows zu ui-action navigate migrieren, Generatoren + Doku aufräumen — *Owner 2026-07-17; ADR 0040* — [P243](aspects/node-conformance/P243-retire-ui-navigation-node.md)
 
 
@@ -92,7 +91,7 @@ open the folder for the full history.
 | nodes/ui-accordion | 2 |
 | nodes/ui-breadcrumb · ui-dialog · ui-progress · ui-skeleton | 1 each |
 | aspects/test-infra | 28 |
-| aspects/node-conformance | 10 |
+| aspects/node-conformance | 11 |
 | aspects/misc | 16 |
 | aspects/docs | 1 |
 | aspects/runtime | 9 |
@@ -104,4 +103,4 @@ open the folder for the full history.
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 237 done, 1 open, 12 deferred.**
+**Total: 238 done, 1 open, 12 deferred.**
