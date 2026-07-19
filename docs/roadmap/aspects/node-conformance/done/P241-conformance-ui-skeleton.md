@@ -3,7 +3,7 @@ id: P241
 node: ui-skeleton
 title: "Konformitäts-Pass ui-skeleton — der Knoten rendert NICHTS: echtes Output (sl-skeleton), Base-Fields, Spec-Drift, Validierung, frische Tests"
 epic: aspects/node-conformance
-status: pending
+status: done
 dependencies: []
 verify: browser
 spec: docs/nodes/feedback/ui-skeleton.md
@@ -175,3 +175,81 @@ Serializer-Abbildung `skeleton` → Element + `displayType`/`lines`-Komposition.
    Hinweis? Die Spec sagt heute, die Farben folgen den **neutralen** Design-Tokens
    (`colorNeutral`/`colorSurface`) — das spricht für **N/A**, widerspricht aber dem
    Base-Field-Standard nach ADR 0039. Berührt **P240** (variant-vs-color-Review).
+
+## Result
+
+**Done 2026-07-19.** Der Sonderfall ist behoben: ui-skeleton **rendert jetzt echtes
+Chrome**. Alles per **Bounding-Box / computed style** am echten DOM gemessen, nicht
+per Tag/Klasse.
+
+### Owner-Entscheide (vor Umsetzung bestätigt, so gebaut)
+
+1. **table = `lines` Zeilen × 3 Spalten** — `lines` wirkt jetzt für **text** (N
+   Platzhalter-Zeilen) **und** table (N Zeilen × 3 Zellen); bei avatar/card bleibt
+   `lines` disabled-mit-Hinweis.
+2. **`color` WIRKSAM** (nicht N/A) — färbt Platzhalter + Sheen über `--color` /
+   `--sheen-color` auf `sl-skeleton` (`resolveColorValue(props.color)`), nach dem
+   P238-Standard-Control-Muster; `--wa-color-*`-Namespace. `disabled` bleibt das
+   N/A-Base-Field (ein Lade-Platzhalter ist nicht interaktiv, ADR 0015 §3).
+
+### Was landete
+
+- **Renderer:** neuer `skeleton: "sl-skeleton"`-Eintrag in `KIND_TO_SHOELACE`
+  (`shoelace-adapter.ts`) beendet den `data-wa-fallback`-Pfad; der Serializer
+  komponiert die vier `displayType`-Formen aus `sl-skeleton` (ADR 0021: Form bleibt
+  backend-neutral im Schema, per Adapter gemappt).
+- **Editor:** `visible` läuft jetzt über den geteilten `installBaseFields` (statt
+  handkopierter P181/P202-Logik); `disabled`/`color` sind vorhanden (color wirksam,
+  disabled N/A-mit-Hinweis). `lines=0`/negativ ist ein **echter Editor-
+  Validierungsfehler** vor Deploy (nicht erst Schema-Zeit).
+- **Legacy `variant`-Zwilling entfernt** (findings E): `mapConfig` war
+  `displayType: config.displayType || config.variant`; `variant` war bei ui-skeleton
+  **nie** in Schema/Editor → toter Code, ohne Migration entfernt, Kommentar erklärt
+  warum. (ui-progress/ui-badge behalten ihr eigenes `variant`-Handling — unberührt.)
+- **Inline-Hilfe:** interne Phasen-Id („Visible (P138)") entfernt, Doku-Link bleibt.
+- **Spec entdriftet:** Label „Visible" (nicht „Visible Path"); `visible` optional;
+  Gruppe „Platzierung" dokumentiert; `disabled`/`color` dokumentiert.
+
+### `msg.ui.patch`: Spec sagt jetzt die Wahrheit (Richtung bleibt Owner-Sache)
+
+Die Spec behauptete, `msg.ui.patch` überschreibe `displayType`/`lines` — **falsch**:
+ui-skeleton nutzt `componentStateInputHandler` (nur `msg.ui.component.op`). Die Spec
+sagt jetzt „`msg.ui.patch` wird derzeit NICHT unterstützt"; **ob** patch kommt, ist
+dieselbe knotenübergreifende Owner-Entscheidung wie der ui-icon-`msg.payload`-Follow-up
+aus P235 — **hier nicht** einseitig entschieden.
+
+### Gemessene Test-Werte (E2E, je Feature)
+
+- sichtbar → Box-Höhe > 0.
+- `text` `lines=5` → 5 Zeilen-Boxen, aufsteigendes `y` (vertikal gestapelt); `lines=1` → 1.
+- `avatar` → Breite ≈ Höhe (|Δ| ≤ 2 px) **und** `border-top-left-radius` ≥ 90 % der
+  halben Breite (computed style → rund).
+- `card` → Box **höher UND breiter** als eine einzelne Text-Zeile.
+- `table` (`lines=4`) → **4 Zeilen × 3 Zellen**, aufsteigendes `x` pro Zeile;
+  `.webapp-skeleton--text` count 0 (von text unterscheidbar).
+- `visible=false` → Box weg; Store-Binding blendet live um (SSE, gemessen).
+- `color` → gemessene computed-Farbe auf dem Chrome.
+
+### Tests
+
+- **Unit +14** (`packages/runtime/test/p241-skeleton-render-pipeline.test.ts`):
+  Serializer-Abbildung `skeleton` → Element + `displayType`/`lines`-Komposition.
+- **E2E +10** (`ui-skeleton.spec.ts`, alle gemessen); der alte „Geschwister rendert
+  noch"-Notnagel ersetzt, der falsche „sl-skeleton not in the bundled set"-Kommentar
+  entfernt. Katalog `ui-skeleton.tests.md` aktualisiert.
+
+### Verifikation (Haupt-Checkout, autoritativ)
+
+**E2E 795 passed, 0 failed, `--retries=0`, 15,5 min** (Normal-Laufzeit). `pnpm build`
+vorab; Unit 1371 runtime (+14). `pnpm validate` + alle Tripwires grün.
+
+### Prozess-Nebenbefund (kein P241-Defekt)
+
+Der erste autoritative Lauf zeigte **32 verstreute Timeouts über ~20 unverwandte
+Specs** und 21,9 min — **keine** echte Regression, sondern Ressourcen-Kontention: der
+Implementer-Agent ließ seine **eigene** E2E-Suite in seinem Worktree laufen (Monitor
+nie gestoppt) auf einer geleakten Wegwerf-Node-RED (Port 1900), die mit meinem Lauf
+um denselben festen Port 1882 + die CPU konkurrierte. Nach Kill aller Konkurrenten:
+sauberer Lauf grün. **Lehre:** Agent-Briefs müssen „stoppe jede selbst gestartete
+E2E/Monitor/Wegwerf-Node-RED vor der Rückgabe" erzwingen — ein zerstreutes
+Timeout-Muster über unverwandte Specs ist Kontention, keine Regression.

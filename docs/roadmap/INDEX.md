@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P241** — aspects/node-conformance — Konformitäts-Pass **ui-skeleton**: der Knoten **rendert nichts** → echtes Output (sl-skeleton ist vendored), Base-Fields, Spec-Drift, `lines`-Validierung, frische Tests — *Owner 2026-07-17; node-conformance* — [P241](aspects/node-conformance/P241-conformance-ui-skeleton.md)
 - **P242** — aspects/node-conformance — Konformitäts-Pass **ui-store-read** (schlank): Spec-Detail-Bar-Parität mit den Geschwistern (Fehler-Codes + Scope-Abschnitt); scope-violation als E2E-Beleg — *Owner 2026-07-17; node-conformance* — [P242](aspects/node-conformance/P242-conformance-ui-store-read-spec-parity.md)
 
 
@@ -92,7 +91,7 @@ open the folder for the full history.
 | nodes/ui-accordion | 2 |
 | nodes/ui-breadcrumb · ui-dialog · ui-progress · ui-skeleton | 1 each |
 | aspects/test-infra | 28 |
-| aspects/node-conformance | 9 |
+| aspects/node-conformance | 10 |
 | aspects/misc | 16 |
 | aspects/docs | 1 |
 | aspects/runtime | 9 |
@@ -104,4 +103,4 @@ open the folder for the full history.
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 236 done, 2 open, 12 deferred.**
+**Total: 237 done, 1 open, 12 deferred.**
