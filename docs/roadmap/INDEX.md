@@ -29,6 +29,8 @@ their blocker clears.
 
 - **P243** — aspects/node-conformance — **ui-navigation stilllegen** (ADR 0040): Knoten entfernen (Editor-Falle route/params vs. url-only-Laufzeit), Flows zu ui-action navigate migrieren, Generatoren + Doku aufräumen — *Owner 2026-07-17; ADR 0040* — [P243](aspects/node-conformance/P243-retire-ui-navigation-node.md)
 - **P244** — aspects/node-conformance — Konformitäts-Pass **ui-menu**: `displayType` inert (kein Render-Unterschied), `collapsed` totes Feld, `dropdown` fehlt im Editor; Daten-/Event-Ebene solide — *Owner 2026-07-17; node-conformance* — [P244](aspects/node-conformance/P244-conformance-ui-menu.md)
+- **P245** — aspects/node-conformance — Konformitäts-Pass **ui-dialog**: `modal` inert (Serializer ignoriert es), `routeId` funktioniert aber unterdokumentiert+ungetestet, Inline-Hilfe zu dünn — *Owner 2026-07-17; node-conformance* — [P245](aspects/node-conformance/P245-conformance-ui-dialog.md)
+- **P246** — aspects/node-conformance — Konformitäts-Pass **ui-log** (leicht): fehlender Test-Katalog, anomales editierbares `uiId`-Feld, Hilfe-Detail; Knoten sonst solide — *Owner 2026-07-17; node-conformance* — [P246](aspects/node-conformance/P246-conformance-ui-log.md)
 
 
 ## Deferred (parked, not abandoned)
