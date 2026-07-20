@@ -1399,7 +1399,12 @@
             const steps = Array.isArray(component.props.steps) ? component.props.steps : (Array.isArray(component.steps) ? component.steps : []);
             const activeStep = component.activeStep !== undefined && component.activeStep !== null ? Number(component.activeStep) : (component.value !== undefined && component.value !== null ? Number(component.value) : 0);
             const src = " data-webapp-source=\"" + escapeAttribute(component.id) + "\"";
-            const orientation = String(component.variant || component.props.orientation || "horizontal");
+            // P251: the compile path stores the stepper's orientation under
+            // props.variant (mapConfig `variant: config.orientation`). Read it there —
+            // the older `component.props.orientation` key was never populated, so the
+            // orientation always defaulted to "horizontal". Legacy top-level
+            // `component.variant` / `props.orientation` are kept as fallbacks.
+            const orientation = String(component.variant || component.props.variant || component.props.orientation || "horizontal");
             const stepHtml = steps.map(function (step, idx) {
                 const label = escapeHtml(String(step.label !== undefined ? step.label : (step.id !== undefined ? step.id : step)));
                 const isActive = idx === activeStep ? " webapp-step--active" : "";
