@@ -52,7 +52,7 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `variant` | „Variant" | Variant-SelectBox | optional | Visueller Stil der Tab-Leiste: `line` (Unterstrich-Indikator, Standard), `contained` (Pill-ähnlich mit Hintergrund), `pills` (freistehendes Pill-Design). Default: `line`. |
+| `variant` | „Variant" | Variant-SelectBox | optional | Visueller Stil der Tab-Leiste: `line` (Unterstrich-Indikator, Standard), `contained` (Pill-ähnlich mit Hintergrund), `pills` (freistehendes Pill-Design). Default: `line`. **Render-Wirkung (P250):** `variant` ist eine **Nicht-Farb-Appearance** (nicht Farbe/Severity) — Shoelace `sl-tab-group` hat keine native Variant-Unterstützung, deshalb läuft der Wert **nicht** durch `mapVariant` (das ist die Farb-Tabelle für button/badge/alert/toast). Stattdessen wird der Wert (wie beim `ui-avatar`, P94) 1:1 als **`data-variant="<line|contained|pills>"`** auf das `sl-tab-group`-Element emittiert, das Adapter-/Custom-CSS ansteuern kann. Fehlt der Wert, wird der Default `line` emittiert — das Attribut ist also immer vorhanden und jeder dokumentierte Wert ist beobachtbar. |
 | `events` | „Events" | Event-Checkboxen → Output-Ports | optional | Aktivierbares Ausgangs-Event: `tabChange`. Jedes aktive Event erzeugt einen Output-Port. Siehe Abschnitt „Output". |
 
 ### Gruppe „Layout" (Child-Platzierung im Parent)
@@ -150,8 +150,10 @@ Konfigurationsreihenfolge.
 
 `ui-tabs` rendert eine Tab-Leiste; das Theme wird von der Parent-App (Design-Tokens) geerbt.
 Der `variant`-Wert (`line`, `contained`, `pills`) steuert die visuelle Ausprägung unabhängig
-vom Token-Set. Rendert das Backend die Tabs (z. B. Shoelace `<sl-tab-group>`), wird der
-Variant-Wert auf die Backend-Variante abgebildet; nicht erkannte Werte fallen auf `line` zurück.
+vom Token-Set. Er ist eine **Nicht-Farb-Appearance** und wird als `data-variant`-Attribut auf
+das `sl-tab-group`-Element emittiert (P250, siehe Feld-Tabelle „Darstellung" → `variant`); er
+läuft **nicht** durch die Farb-`mapVariant`-Tabelle (die deckt nur die Severity/Colour-Knoten
+button/badge/alert/toast ab). Fehlt oder ist der Wert leer, wird der Default `line` emittiert.
 Details: [theming.md](../concepts/theming.md).
 
 ## Referenzen
