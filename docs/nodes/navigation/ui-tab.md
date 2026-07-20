@@ -59,6 +59,27 @@ ausführliche Doku:
 Struktur-/Container-Knoten. Der Tab-Wechsel und das `tabChange`/`change`-Event
 liegen beim Parent [`ui-tabs`](ui-tabs.md).
 
+## Tests & Konformität (Kind-Knoten-Ausnahme, P250)
+
+`ui-tab` hat **keinen eigenen Testkatalog** und **keine eigenen E2E** — wie
+[`ui-accordion-section`](ui-accordion-section.md) zu [`ui-accordion`](ui-accordion.md)
+ist es ein reiner Kind-Knoten ohne eigenständigen Render. Seine Wirkung (ein
+`sl-tab`-Nav-Eintrag + ein `sl-tab-panel` je `ui-tab`, `label`-Titel, optionales
+`icon`, Inhalt im `content`-Slot) wird vollständig über den **Eltern-Katalog**
+[`ui-tabs.tests.md`](../../../tests/e2e/nodes/view/ui-tabs.tests.md) abgedeckt (R01
+Render zweier Tabs als `sl-tab`/`sl-tab-panel`-Paare mit Titel = Label; R02 Inhalt
+je Tab-Panel) sowie die Unit-Tests
+`packages/runtime/test/p168-tabs-children-model.test.ts` und den Schema-Block in
+`packages/schema/test/schema.test.ts`. Ein separater Katalog wäre eine zweite
+Quelle der Wahrheit für dasselbe Verhalten.
+
+**Base-Fields: N/A.** Ein `ui-tab` ist ein Tab-Kopf, kein eigenständig
+interaktives View — es rendert keine eigene Chrome und trägt darum **keine**
+Base-Fields (`visible`/`disabled`/`color`/`size`/`variant`) in seinen `defaults`
+(alle im `BASE_FIELDS`-Block von `ui-tab.html` auf `false` gesetzt). Sichtbarkeit
+eines Tabs steuert die aktive-Tab-Auswahl (`activeTab`) des Parents, nicht ein
+`visible`-Binding. Konsistent mit [`ui-accordion-section`](ui-accordion-section.md).
+
 ## Theming
 
 `ui-tab` rendert keine eigene Chrome; Aussehen und Variante der Tab-Leiste

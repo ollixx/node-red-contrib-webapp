@@ -1204,7 +1204,18 @@
             // closest [data-webapp-source][data-webapp-event="sl-tab-show"] ancestor, and
             // dispatches a `change` event with params.value = the newly-active tab id.
             const tabSourceAttr = " data-webapp-source=\"" + escapeAttribute(component.id) + "\" data-webapp-event=\"sl-tab-show\"";
-            return wrapRenderedComponentHtml(component, layoutId, "<sl-tab-group" + tabSourceAttr + ">" + tabHtml + panelHtml + "</sl-tab-group>");
+            // P250: variant (line/contained/pills) is a NON-colour APPEARANCE — it does
+            // NOT go through mapVariant (that table maps semantic colour vocab onto
+            // Shoelace colour tokens for button/badge/alert/toast only). Shoelace
+            // sl-tab-group has no native variant; mirror the avatar precedent (P94) and
+            // emit the appearance as data-variant so custom/adapter CSS can target each
+            // value. Absent → the documented default "line", so the attribute is always
+            // present and every documented value is observable.
+            const tabsVariant = (typeof component.props.variant === "string" && component.props.variant)
+                ? component.props.variant
+                : "line";
+            const variantAttr = " data-variant=\"" + escapeAttribute(String(tabsVariant)) + "\"";
+            return wrapRenderedComponentHtml(component, layoutId, "<sl-tab-group" + tabSourceAttr + variantAttr + ">" + tabHtml + panelHtml + "</sl-tab-group>");
         }
 
         if (component.kind === "accordion") {

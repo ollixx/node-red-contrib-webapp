@@ -32,6 +32,7 @@ Editor-Regression: `tests/e2e/nodes/editor/navigation-nodes.spec.ts`,
 | A04 | Externe Store-Änderung → SSE-Re-Render aktiviert den Tab. |
 | D01 | Ohne `activeTab` → erstes Kind nach `order` ist aktiv. |
 | E01 | `change`: `sl-tab-show` emittiert `change` mit `params.value` (Kind-id). |
+| V01 | `variant` (Nicht-Farb-Appearance, P250): jeder Wert `line`/`contained`/`pills` emittiert **gemessen** `data-variant="<wert>"` am `sl-tab-group`; fehlender Wert → Default `data-variant="line"`. Kein `mapVariant` (Farb-Tabelle nur button/badge/alert/toast); Emit wie `ui-avatar` (P94). |
 | M01 | Legacy `tabs`-JSON-Flow migriert: Tabs + Inhalt rendern weiterhin. |
 
 ## Unit-Tests

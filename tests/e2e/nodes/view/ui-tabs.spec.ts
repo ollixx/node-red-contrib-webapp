@@ -260,6 +260,35 @@ test.describe("ui-tabs / ui-tab (P168, children model)", () => {
         expect((body.params as Record<string, unknown>).value).toBe("details");
     });
 
+    // ─── variant appearance (P250) ───────────────────────────────────────────
+
+    // V01 — `variant` (line/contained/pills) is a NON-colour APPEARANCE. MEASURED:
+    // each value emits an observable `data-variant` on the sl-tab-group (P250 —
+    // mirrors the ui-avatar data-variant precedent; sl-tab-group has no native
+    // variant, so the value does NOT go through the colour mapVariant table). Absent
+    // → the documented default "line", so the attribute is always present.
+    for (const [variant, expected] of [
+        [undefined, "line"], // default when the field is absent
+        ["line", "line"],
+        ["contained", "contained"],
+        ["pills", "pills"]
+    ] as const) {
+        test(`V01 — variant ${variant ?? "(absent)"} → data-variant="${expected}" on sl-tab-group`, async ({ page, request }) => {
+            const appId = `tb250V_${expected}App`;
+            const builder = new FlowBuilder()
+                .app({ id: appId, root: appId })
+                .node("ui-tabs", { id: `tb250V_${expected}`, ...(variant ? { variant } : {}) });
+            const flow = withTwoTabs(builder, `tb250V_${expected}`).build();
+
+            await deployFlow(request, flow);
+
+            const webapp = new WebappPage(page, appId);
+            await webapp.navigate("/");
+
+            await expect(page.locator("sl-tab-group")).toHaveAttribute("data-variant", expected);
+        });
+    }
+
     // ─── migration (legacy tabs-JSON flow) ───────────────────────────────────
 
     test("M01 — legacy tabs-JSON flow migrates: tabs + content still render", async ({ page, request }) => {
