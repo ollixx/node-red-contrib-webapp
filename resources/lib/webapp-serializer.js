@@ -489,6 +489,20 @@
             ? " data-webapp-node=\"" + escapeAttribute(component.id) + "\""
             : "";
 
+        // P255: a ui-container with onShow/onHide enabled carries its lifecycle
+        // events here (props.lifecycleEvents). visible=false gates the container OUT
+        // of the render tree entirely, so the client cannot observe a hide from the
+        // markup alone — instead it diffs the presence of `[data-webapp-lifecycle]`
+        // elements across snapshot renders and POSTs onShow (newly present) / onHide
+        // (newly absent) to /event. The events ride on the SAME wrapper as
+        // data-webapp-node so the client reads the source id from one element.
+        const lifecycleEvents = component && component.props && Array.isArray(component.props.lifecycleEvents)
+            ? component.props.lifecycleEvents
+            : [];
+        const lifecycleAttribute = lifecycleEvents.length > 0
+            ? " data-webapp-lifecycle=\"" + escapeAttribute(lifecycleEvents.join(" ")) + "\""
+            : "";
+
         // ADR 0025 (KISS markup): the per-item `<div class="webapp-item">` wrapper is
         // pure nesting for a plain DISPLAY LEAF with no placement — e.g. a ui-repeat of
         // ui-text emitted `div.webapp-item > p` per item, a stack of wrapper divs. For
@@ -509,7 +523,7 @@
             }
         }
 
-        return "<div class=\"webapp-item webapp-item--" + escapeAttribute(layoutVariant) + "\"" + nodeAttribute + sourceAttribute + styleAttribute + ">" + innerHtml + "</div>";
+        return "<div class=\"webapp-item webapp-item--" + escapeAttribute(layoutVariant) + "\"" + nodeAttribute + lifecycleAttribute + sourceAttribute + styleAttribute + ">" + innerHtml + "</div>";
     }
 
     // ADR 0025: insert hook attributes (already space-prefixed) at the END of the

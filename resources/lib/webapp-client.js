@@ -90,6 +90,15 @@
         selected: Object.create(null)
     };
 
+    // P255: ui-container visibility-lifecycle tracking (onShow / onHide). A hidden
+    // container is gated OUT of the render tree server-side, so the client cannot
+    // observe a hide from a single snapshot — it must DIFF the set of lifecycle
+    // containers across renders. This map holds the containers PRESENT after the
+    // last applySnapshot, keyed by node id → the events they enabled (a subset of
+    // ["onShow","onHide"]). A container newly present fires onShow; a container that
+    // was present and is now absent fires onHide (using its remembered events).
+    let lifecyclePresence = Object.create(null);
+
     // P30: a per-tab client id so the flow can address actions back to this
     // browser (events.md / actions.md clientId targeting; the live channel is P31).
     //
@@ -340,6 +349,65 @@
             || (typeof targetEl.querySelector === "function" ? targetEl.querySelector("#" + esc) : null);
     }
 
+    // P255: POST a container visibility-lifecycle event (onShow / onHide) to the
+    // flow. Mirrors `dispatch` (fire-and-report; the SSE stream is the single source
+    // of re-renders) but is driven by the presence DIFF below, not a DOM interaction.
+    // The server routes it to the matching output port via events.indexOf(event).
+    function postLifecycleEvent(nodeId, eventName) {
+        const payload = {
+            clientId: clientId,
+            sourceId: nodeId,
+            event: eventName,
+            location: location,
+            params: {}
+        };
+        log.debug("lifecycle", "→ POST /event " + eventName, { sourceId: nodeId });
+        fetch(base() + "/event", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        }).catch(function (err) {
+            log.warn("lifecycle", "POST /event failed — lifecycle event not delivered", {
+                event: eventName,
+                sourceId: nodeId,
+                error: err && err.message ? err.message : String(err)
+            });
+        });
+    }
+
+    // P255: diff the lifecycle-container presence after a render and emit onShow for
+    // newly-present containers and onHide for newly-absent ones. Called at the end of
+    // every applySnapshot (initial hydrate AND every SSE snapshot push), so it fires
+    // exactly on the visible↔hidden transitions a store/state toggle drives. The diff
+    // is idempotent: a container that stays present (e.g. an unrelated store update or
+    // an SSE reconnect re-push) does not re-fire onShow.
+    function detectLifecycleTransitions() {
+        const next = Object.create(null);
+        const nodes = root.querySelectorAll("[data-webapp-lifecycle]");
+        for (let i = 0; i < nodes.length; i += 1) {
+            const el = nodes[i];
+            const nodeId = el.getAttribute("data-webapp-node");
+            if (!nodeId) {
+                continue;
+            }
+            const events = (el.getAttribute("data-webapp-lifecycle") || "")
+                .split(/\s+/)
+                .filter(function (token) { return token.length > 0; });
+            next[nodeId] = events;
+            // Newly present (was absent last render) → onShow, if enabled.
+            if (!lifecyclePresence[nodeId] && events.indexOf("onShow") !== -1) {
+                postLifecycleEvent(nodeId, "onShow");
+            }
+        }
+        // Newly absent (was present last render, gone now) → onHide, if enabled.
+        for (const nodeId in lifecyclePresence) {
+            if (!next[nodeId] && lifecyclePresence[nodeId].indexOf("onHide") !== -1) {
+                postLifecycleEvent(nodeId, "onHide");
+            }
+        }
+        lifecyclePresence = next;
+    }
+
     function applySnapshot(snapshot) {
         currentSnapshot = snapshot;
         location = snapshot.location;
@@ -459,6 +527,10 @@
                 });
             });
         }
+
+        // P255: after the DOM reflects the new snapshot, diff lifecycle-container
+        // presence and emit onShow/onHide for the containers that appeared/disappeared.
+        detectLifecycleTransitions();
     }
 
     function collectFormValues(formId) {
