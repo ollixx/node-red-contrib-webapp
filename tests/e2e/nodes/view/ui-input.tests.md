@@ -44,3 +44,12 @@
 | W03 | `writeTrigger=change`: jedes `change`-Event schreibt zurück und aktualisiert den gebundenen View live |
 | W04 (P206) | `value=store(x).name` UND `writeTo=store(x).name`, `writeTrigger=none`: Tippen + Submit schreibt **NICHT** automatisch zurück — ein ZWEITER an `store(x).name` gebundener `ui-text` bleibt auf dem Ausgangswert (Textinhalt gemessen, UNVERÄNDERT); ABER das `change`-Output-Event des Knotens feuert mit dem neuen Wert (per Request/Event beobachtet). `writeTo` darf bei `none` auch leer sein (kein Validierungs-/Render-Fehler) |
 | M01 (editor) | Legacy `storeId`+`path` migriert beim Öffnen zu `writeTo={kind:"store", path:<storeId>, subPath:{kind:"literal", value:<path>}}`; Speichern lässt die Alt-Felder weg |
+
+## P253 — label Binding-Auflösung (Muster 4, ADR 0012)
+
+Unit (`packages/runtime/test/p253-input-label-binding.test.ts`):
+
+| Test | Ziel |
+|---|---|
+| state-gebundenes `label` → `sl-input[label]` = aufgelöster Wert | Beweist, dass eine `state`-Bindung auf `label` durch renderer→serializer aufgelöst UND als `label`-Attribut gerendert wird (rot, wenn Auflösung bricht). Schließt den P237-Guardrail-Fund (Doku war „Textfeld"). |
+| Pfad-String leakt nicht ins Attribut | Der rohe Binding-Pfad (`form.lbl`) erscheint nicht im Markup; kein `[object Object]`. |

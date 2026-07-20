@@ -44,7 +44,7 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `label` | „Label" | Textfeld | **ja** | Beschriftung des Eingabefeldes. Wird als Feld-Label über dem Input angezeigt. |
+| `label` | „Label" | typedInput (alle Binding-Arten) | **ja** | Beschriftung des Eingabefeldes. Wird als Feld-Label über dem Input angezeigt. Unterstützt alle Binding-Arten: `literal`, `state`, `store`, `query`, `routeParam`, `msg`, `flow`, `global`, `jsonata`, `env`. |
 | `value` | „Value" | typedInput (alle Binding-Arten) | **ja** | Bindbare **Lese**-Quelle des Feldwerts (Anzeige/Initialwert). Unterstützt alle Binding-Arten: `literal`, `state`, `store`, `query`, `routeParam`, `msg`, `flow`, `global`, `jsonata`, `env`. Details: [stores.md](../concepts/stores.md). |
 | `writeTo` | „Write To" | typedInput (**nur schreibbare** Arten: Store/Flow/Global) | optional | Bindbares **Schreib**-Ziel (ADR 0027). Nur die schreibbaren Kinds sind zulässig: `store` (ein `ui-store` + optionaler ein-Ebenen-Sub-Pfad), `flow`, `global`. Nicht-schreibbare Kinds (query, routeParam, reactive, literal, msg, jsonata, env) sind ausgeschlossen. Die Runtime schreibt die Nutzeränderung beim `writeTrigger` in dieses Ziel. |
 | `writeTrigger` | „Write Trigger" | SelectBox (`none` / `change` / `submit`) | optional | Wann geschrieben wird: `submit` (Default) = bei Enter/Blur, `change` = bei jeder Eingabe, `none` = **kein** automatischer Write-Back (P206) — der Flow-Autor verdrahtet die Persistenz selbst (`change → function → ui-store`); `writeTo` darf bei `none` leer sein. Die `change`/`submit`-Output-Events feuern in allen Fällen unverändert. |

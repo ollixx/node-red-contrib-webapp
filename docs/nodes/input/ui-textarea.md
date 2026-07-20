@@ -38,11 +38,11 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `label` | „Label" | Textfeld | **ja** | Beschriftung des Texteingabefeldes. Wird als Feld-Label über dem Textarea angezeigt. |
+| `label` | „Label" | typedInput (alle Binding-Arten) | **ja** | Beschriftung des Texteingabefeldes. Wird als Feld-Label über dem Textarea angezeigt. Unterstützt alle Binding-Arten: `literal`, `state`, `store`, `query`, `routeParam`, `msg`, `flow`, `global`, `jsonata`, `env`. |
 | `value` | „Value Path" | typedInput (alle Binding-Arten) | **ja** | Bindbare **Lese**-Quelle des Textinhalts. Unterstützt alle Binding-Arten: `literal`, `state`, `store`, `query`, `routeParam`, `msg`, `flow`, `global`, `jsonata`, `env`. Details: [stores.md](../concepts/stores.md). |
 | `writeTo` | „Write To" | typedInput (**nur schreibbare** Arten: Store/Flow/Global, P204) | optional | Bindbares **Schreib**-Ziel (ADR 0027). Nur `store`/`flow`/`global`. Eine Textarea ist **text-artig** und honoriert den `writeTrigger`: `submit` schreibt beim Verlassen des Feldes (Blur), `change` bei jeder Eingabe. Store per-client + SSE-Re-Render; Flow/Global server-seitig. |
 | `writeTrigger` | „Write Trigger" | SelectBox (`none` / `change` / `submit`) | optional | Default `submit` (= Blur). `change` schreibt bei jeder Eingabe. `none` (P206) = **kein** automatischer Write-Back — der Flow-Autor verdrahtet die Persistenz selbst; die `change`/`submit`-Output-Events feuern weiter, `writeTo` darf bei `none` leer sein. |
-| `placeholder` | „Placeholder" | Textfeld | optional | Platzhaltertext, der angezeigt wird, wenn das Feld leer ist. |
+| `placeholder` | „Placeholder" | typedInput (alle Binding-Arten) | optional | Platzhaltertext, der angezeigt wird, wenn das Feld leer ist. Unterstützt alle Binding-Arten: `literal`, `state`, `store`, `query`, `routeParam`, `msg`, `flow`, `global`, `jsonata`, `env`. |
 | `rows` | „Rows" | Zahlfeld (≥ 1) | optional | Anzahl der sichtbaren Textzeilen (Höhe des Feldes). Wenn nicht gesetzt, verwendet das Backend seinen Standard-Default. |
 | `maxLength` | „Max Length" | Zahlfeld (≥ 1) | optional | Maximale Anzahl erlaubter Zeichen. Wenn gesetzt, wird ein Zeichenzähler eingeblendet; Eingaben über die Grenze hinaus werden verhindert. |
 | `size` | „Größe" | SelectBox (`small` / `medium` / `large`) | optional | Größe des Texteingabefeldes. Default: `medium`. |
