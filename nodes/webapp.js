@@ -1594,15 +1594,35 @@ function toComponentDefinitions(components) {
 
         if (component.type === "ui-container") {
             const layoutProps = collectNormalizedLayoutProps(component);
+            // P255: onShow/onHide are VISIBILITY-LIFECYCLE events, not DOM handlers.
+            // A hidden container is gated OUT of the render tree server-side (the
+            // renderer returns undefined for visible=false), so there is no server
+            // hook that observes the hide. The CLIENT detects the container
+            // appearing/disappearing across snapshot morphs and POSTs the matching
+            // /event. Carry the enabled lifecycle events in props (free record — no
+            // schema change; they are not part of the closed interaction-event enum)
+            // so the serializer can stamp them onto the wrapper for the client to read.
+            const lifecycleEvents = Array.isArray(component.events)
+                ? component.events.filter((event) => event === "onShow" || event === "onHide")
+                : [];
+            // P255: wire the `visible` base field (installBaseFields/applyBaseFields,
+            // possibly store/state-bound) into visibleIf so a store toggle actually
+            // shows/hides the container — the render-gate the lifecycle events hook
+            // into. An unbound `visible` is normalised to the per-client slot by the
+            // applyDynamicStateSlots post-pass (so the imperative show/hide op works),
+            // exactly as for the generic p16Kind display path above.
+            const visibleBinding = getBinding(component.visible, undefined);
             return {
                 id: component.id,
                 kind: "container",
                 mount: component.mount || component.parent,
                 order: resolveOrder(component),
                 bind: {},
+                ...(visibleBinding ? { visibleIf: visibleBinding } : {}),
                 props: {
                     layoutId: component.layout || component.layoutId,
                     ...(blankToUndefined(component.variant) ? { variant: component.variant } : {}),
+                    ...(lifecycleEvents.length > 0 ? { lifecycleEvents } : {}),
                     ...(Object.keys(layoutProps).length > 0 ? { layout: layoutProps } : {})
                 },
                 events: []

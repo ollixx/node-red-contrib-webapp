@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { deployFlow, resetFlow } from "../../../helpers/admin-api";
+import { deployFlow, injectMessage, resetFlow } from "../../../helpers/admin-api";
 import { FlowBuilder } from "../../../helpers/flow-builder";
 import { WebappPage } from "../../../helpers/webapp-page";
 
@@ -261,5 +261,161 @@ test.describe("ui-container variant=span — inline wrapper (P199)", () => {
         const minTop = Math.min(...boxes);
         const maxTop = Math.max(...boxes);
         expect(maxTop - minTop).toBeLessThan(4);
+    });
+});
+
+
+/**
+ * P255 — ui-container visibility-lifecycle events (onShow / onHide).
+ *
+ * A hidden container is gated OUT of the render tree server-side (the renderer
+ * returns undefined for visible=false), so the client observes the container
+ * appearing / disappearing across snapshot morphs and POSTs the matching /event.
+ *
+ * The measurement is the REAL client → server POST /event body (webapp.interceptNextEvent),
+ * i.e. the event envelope the flow receives — event name + sourceId (the
+ * container's node id). Both onShow (visible false→true) and onHide (true→false)
+ * are driven by a ui-store-bound `visible` toggled live via inject → SSE re-render.
+ */
+test.describe("ui-container lifecycle events onShow/onHide (P255)", () => {
+    test.afterEach(async ({ request }) => {
+        await resetFlow(request);
+    });
+
+    test("the container wrapper is stamped with data-webapp-lifecycle for the enabled events", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "ctnLcMark", root: "ctnLcMark" })
+            .node("ui-container", {
+                id: "ctnLcMark1",
+                layoutId: "vertical",
+                variant: "card",
+                events: ["onShow", "onHide"],
+                outputs: 2
+            })
+            .node("ui-text", { id: "ctnLcMarkTxt", text: "content", mount: "container:ctnLcMark1/content" })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "ctnLcMark");
+        await webapp.navigate("/");
+
+        // The lifecycle marker rides on the SAME wrapper as data-webapp-node, so the
+        // client reads the source id and the enabled events from one element.
+        const marker = page.locator('[data-webapp-node="ctnLcMark1"][data-webapp-lifecycle]');
+        await expect(marker).toHaveCount(1);
+        await expect(marker).toHaveAttribute("data-webapp-lifecycle", "onShow onHide");
+    });
+
+    test("visible false→true fires onShow with the container's sourceId (POST /event)", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "ctnOnShow", root: "ctnOnShow" })
+            .node("ui-store", { id: "ctnShowStore", parent: "ctnOnShow", statePath: "shown", initialValue: JSON.stringify(false) })
+            .node("ui-container", {
+                id: "ctnShow1",
+                layoutId: "vertical",
+                variant: "card",
+                events: ["onShow"],
+                outputs: 1,
+                visible: { kind: "store", path: "ctnShowStore" }
+            })
+            .node("ui-text", { id: "ctnShowTxt", text: "lazy content", mount: "container:ctnShow1/content" })
+            .withStoreInject("ctnShowInj", "ctnShowStore", true)
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "ctnOnShow");
+        await webapp.navigate("/");
+
+        // Initially hidden (store=false) → gated out, so no onShow on load.
+        await expect(page.locator('[data-webapp-node="ctnShow1"]')).toHaveCount(0);
+
+        // Arm the interceptor, then flip the bound store true → SSE re-render adds
+        // the container → the client detects the appearance and POSTs onShow.
+        const eventPromise = webapp.interceptNextEvent();
+        await injectMessage(request, "ctnShowInj");
+
+        await expect(page.locator('[data-webapp-node="ctnShow1"]')).toHaveCount(1, { timeout: 5000 });
+
+        const body = await eventPromise;
+        expect(body.event).toBe("onShow");
+        expect(body.sourceId).toBe("ctnShow1");
+    });
+
+    test("visible true→false fires onHide with the container's sourceId (POST /event)", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "ctnOnHide", root: "ctnOnHide" })
+            .node("ui-store", { id: "ctnHideStore", parent: "ctnOnHide", statePath: "shown", initialValue: JSON.stringify(true) })
+            .node("ui-container", {
+                id: "ctnHide1",
+                layoutId: "vertical",
+                variant: "card",
+                // onHide ONLY: the container is present on load but must NOT emit
+                // onShow (that event is not enabled), so the next POST /event is the
+                // onHide we drive below — no initial-render event to race with.
+                events: ["onHide"],
+                outputs: 1,
+                visible: { kind: "store", path: "ctnHideStore" }
+            })
+            .node("ui-text", { id: "ctnHideTxt", text: "draft content", mount: "container:ctnHide1/content" })
+            .withStoreInject("ctnHideInj", "ctnHideStore", false)
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "ctnOnHide");
+        await webapp.navigate("/");
+
+        // Initially shown (store=true).
+        await expect(page.locator('[data-webapp-node="ctnHide1"]')).toHaveCount(1);
+
+        // Arm the interceptor, then flip the bound store false → SSE re-render removes
+        // the container → the client detects the disappearance and POSTs onHide.
+        const eventPromise = webapp.interceptNextEvent();
+        await injectMessage(request, "ctnHideInj");
+
+        await expect(page.locator('[data-webapp-node="ctnHide1"]')).toHaveCount(0, { timeout: 5000 });
+
+        const body = await eventPromise;
+        expect(body.event).toBe("onHide");
+        expect(body.sourceId).toBe("ctnHide1");
+    });
+
+    test("a container with NO events enabled emits no /event on a show toggle", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "ctnNoEvt", root: "ctnNoEvt" })
+            .node("ui-store", { id: "ctnNoEvtStore", parent: "ctnNoEvt", statePath: "shown", initialValue: JSON.stringify(false) })
+            .node("ui-container", {
+                id: "ctnNoEvt1",
+                layoutId: "vertical",
+                variant: "card",
+                visible: { kind: "store", path: "ctnNoEvtStore" }
+            })
+            .node("ui-text", { id: "ctnNoEvtTxt", text: "content", mount: "container:ctnNoEvt1/content" })
+            .withStoreInject("ctnNoEvtInj", "ctnNoEvtStore", true)
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "ctnNoEvt");
+        await webapp.navigate("/");
+
+        // No lifecycle marker → the client must never POST for this container.
+        await expect(page.locator('[data-webapp-lifecycle]')).toHaveCount(0);
+
+        const eventCalls: string[] = [];
+        page.on("request", (req) => {
+            if (req.url().includes("/event") && req.method() === "POST") {
+                eventCalls.push(req.postData() ?? "");
+            }
+        });
+
+        await injectMessage(request, "ctnNoEvtInj");
+        // The container becomes visible…
+        await expect(page.locator('[data-webapp-node="ctnNoEvt1"]')).toHaveCount(1, { timeout: 5000 });
+        // …but with no events enabled, no POST /event fires.
+        await page.waitForTimeout(500);
+        expect(eventCalls).toHaveLength(0);
     });
 });
