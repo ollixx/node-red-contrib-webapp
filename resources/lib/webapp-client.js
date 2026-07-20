@@ -1430,19 +1430,29 @@
                 const toast = payload.toast;
                 // P55: trace incoming toast at DEBUG.
                 log.debug("sse/toast", "← toast severity=" + (toast.severity || "info") + " \"" + String(toast.message || "").slice(0, 60) + "\"");
-                const duration = typeof toast.duration === "number" ? toast.duration : 3000;
+                // P254: duration is the auto-dismiss timeout in ms. A missing /
+                // non-numeric value (and 0) means "no auto-dismiss" — the toast
+                // stays until the user closes it. Only a positive number arms the
+                // removal timer below.
+                const duration = typeof toast.duration === "number" ? toast.duration : 0;
                 const severity = String(toast.severity || "info");
                 const message = String(toast.message || "");
-                const position = String(toast.position || "top-right");
+                const position = String(toast.position || "bottom-right");
 
                 const el = document.createElement("sl-alert");
                 el.setAttribute("variant", severity);
                 el.setAttribute("open", "");
                 el.setAttribute("closable", "");
                 el.className = "webapp-toast webapp-toast--" + position;
+                // P254: place the toast at the configured corner. Vertical anchor
+                // from top-/bottom-; horizontal anchor from -center (viewport-centred
+                // via translateX) vs -right (right-anchored). Each of the four enum
+                // values yields a measurably distinct placement.
+                const atBottom = position.indexOf("bottom") === 0;
+                const atCenter = position.indexOf("center") !== -1;
                 el.style.cssText = "position:fixed;z-index:9999;max-width:320px;"
-                    + (position.includes("bottom") ? "bottom:1rem;" : "top:1rem;")
-                    + (position.includes("left") ? "left:1rem;" : "right:1rem;");
+                    + (atBottom ? "bottom:1rem;" : "top:1rem;")
+                    + (atCenter ? "left:50%;transform:translateX(-50%);" : "right:1rem;");
                 el.textContent = message;
 
                 document.body.appendChild(el);

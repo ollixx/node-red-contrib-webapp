@@ -41,8 +41,8 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
 | `severity` | „Severity" | SelectBox | optional | Default-Farbrolle für Toasts, wenn die Message kein `severity`-Feld enthält. Werte aus `SEVERITY_VARIANTS`: `primary`, `success`, `warning`, `danger`, `neutral`, `info` (Default: `info`). Kann durch `msg.ui.toast.severity` überschrieben werden. |
-| `duration` | „Duration (ms)" | Zahlenfeld (≥ 0) | optional | Default-Anzeigedauer in Millisekunden. `0` = kein Auto-Dismiss. Default: `4000`. Kann durch `msg.ui.toast.duration` überschrieben werden. |
-| `position` | „Position" | SelectBox | optional | Default-Position der Toast-Anzeige. Werte: `top-right`, `top-center`, `bottom-right` (Default), `bottom-center`. Kann durch `msg.ui.toast.position` überschrieben werden. |
+| `duration` | „Duration (ms)" | Zahlenfeld (≥ 0) | optional | Default-Anzeigedauer in Millisekunden. Ein positiver Wert `N` entfernt den Toast client-seitig nach ~`N` ms aus dem DOM (Auto-Dismiss). `0` **oder** ein nicht gesetzter Wert = **kein** Auto-Dismiss (der Toast bleibt, bis der Nutzer ihn schließt). Das Editor-Feld ist mit `4000` vorbelegt. Kann durch `msg.ui.toast.duration` überschrieben werden. |
+| `position` | „Position" | SelectBox | optional | Default-Position der Toast-Anzeige. Werte: `top-right`, `top-center`, `bottom-right` (Default), `bottom-center`. Der Toast wird per `position:fixed` an der konfigurierten Ecke verankert — vertikal `top`/`bottom`, horizontal rechtsbündig (`-right`) bzw. viewport-zentriert (`-center`, via `translateX(-50%)`). Jeder der vier Werte erzeugt eine messbar unterschiedliche Platzierung (CSS-Klasse `webapp-toast--<position>` + berechnete Position). Kann durch `msg.ui.toast.position` überschrieben werden. |
 
 ### Inline-Hilfe (HTML)
 
