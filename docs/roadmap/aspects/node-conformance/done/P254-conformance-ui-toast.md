@@ -3,7 +3,7 @@ id: P254
 node: ui-toast
 title: "Konformitäts-Pass ui-toast — dünne Coverage (3 E2E), kein Katalog, `duration`/`position` ungetestet und vermutlich nicht im Render-Pfad konsumiert"
 epic: aspects/node-conformance
-status: pending
+status: done
 dependencies: []
 verify: browser
 spec: docs/nodes/feedback/ui-toast.md
@@ -66,3 +66,42 @@ Entfernung), Abgrenzung zu ui-log (bereits vorhanden).
   prüfen, nicht nur in mapConfig (Inert-Muster wie ui-menu displayType / ui-dialog modal).
 - ui-toast hat **keinen** mount (kein Slot-Kind — es ist ein App-globaler Layer);
   das ist korrekt, kein Finding.
+
+## Result
+
+**Done 2026-07-20.** Owner-Entscheid **implementieren** für beide Felder umgesetzt;
+Katalog angelegt.
+
+### Gemessen inert → implementiert
+
+- **`position` — voll inert (tiefere Ursache gemessen).** Shoelaces `sl-alert`-Host
+  ist `display:contents` → **keine positionierbare Box**, `position:fixed` +
+  Ecken-Offsets wirkungslos; alle vier Werte lieferten `getBoundingClientRect`
+  `{0,0,0,0}`. Fix (`webapp-client.js`): `display:block` am Host erzwingen; `-center`
+  via `left:50%;translateX(-50%)`, `-right` via `right:1rem`; Server+Client-Default
+  auf Spec-`bottom-right` angeglichen (`webapp.js`).
+- **`duration` — Positivwert wirkte, aber der Absent-Default war falsch.** Positives
+  `N` dismisste bereits, `duration=0` blieb — aber ein **absentes** Node-Default fiel
+  auf `3000ms` zurück, gegen den Owner-Entscheid (absent → bleibt). Absent-Default in
+  Server+Client auf `0` (kein Timer) korrigiert.
+
+### Gemessener Beleg (E2E, `--retries=0`) — 6/6
+
+- `duration=700`: bei +300ms präsent, nach dem Timer `toHaveCount(0)`.
+- `duration=0`: nach 1500ms weiter präsent.
+- `position`: vier distinkte `getBoundingClientRect`-Boxen — top `y=16` vs bottom
+  `y≈637`; `-center` mid-x ≈640 (Viewport-Mitte) vs `-right` mid-x ≈1176 (>500px Δ).
+
+### Auch geliefert
+
+- **Katalog** `tests/e2e/nodes/composite/ui-toast.tests.md` angelegt → räumt die
+  P254-`check:roadmap`-Warnung ab (jetzt nur noch 1 Warnung, P255).
+- **Spec** wahrheitsgemäß: duration-Semantik (N→dismiss, 0/absent→bleibt, Editor
+  füllt 4000 vor) + position-Anchoring (4 messbare Platzierungen).
+
+### Verifikation (Haupt-Checkout, autoritativ)
+
+**E2E 811 passed, 0 failed, `--retries=0`, 15,2 min** (E01 grün). Client-Bundle +
+webapp.js geändert (Serializer unberührt) → Voll-Suite gerechtfertigt. `pnpm build` +
+`pnpm validate` + Tripwires grün. Agent committete VOR der Verifikation, stoppte alle
+Prozesse (Port 1882 frei), Haupt-Checkout unberührt.
