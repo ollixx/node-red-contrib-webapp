@@ -125,4 +125,28 @@ describe("P154: ui-pagination — total/currentPage canonical typedInputs", () =
     it("empty config does not throw", () => {
         expect(() => reg.mapConfig({ id: "pg8", mount: "app1.content" })).not.toThrow();
     });
+
+    // ── P252: showInfo boolean plumb; variant/totalItems removed ──────────────
+    it("P252: showInfo true maps to a boolean showInfo prop", () => {
+        const def = reg.mapConfig({
+            id: "pg9",
+            mount: "app1.content",
+            currentPage: { kind: "literal", value: 2 },
+            total: { kind: "literal", value: 5 },
+            showInfo: true
+        }) as Record<string, unknown>;
+
+        expect(def.showInfo).toBe(true);
+    });
+
+    it("P252: showInfo omitted → no showInfo key (info-text region not emitted)", () => {
+        const def = reg.mapConfig({
+            id: "pg10",
+            mount: "app1.content",
+            currentPage: { kind: "literal", value: 2 },
+            total: { kind: "literal", value: 5 }
+        }) as Record<string, unknown>;
+
+        expect(def.showInfo).toBeUndefined();
+    });
 });

@@ -1389,7 +1389,15 @@
             const prevBtn = "<sl-button" + src + " data-webapp-event=\"click\" data-webapp-page=\"" + prevPage + "\"" + prevDisabled + " size=\"small\">&#8249;</sl-button>";
             const nextBtn = "<sl-button" + src + " data-webapp-event=\"click\" data-webapp-page=\"" + nextPage + "\"" + nextDisabled + " size=\"small\">&#8250;</sl-button>";
             const pageLabel = "<span class=\"webapp-pagination-page\">" + escapeHtml(String(currentPage)) + (totalPages > 0 ? " / " + escapeHtml(String(totalPages)) : "") + "</span>";
-            return wrapRenderedComponentHtml(component, layoutId, "<div class=\"webapp-pagination\">" + prevBtn + pageLabel + nextBtn + "</div>");
+            // P252: `showInfo` toggles a separate, measurable info-text region
+            // ("Seite X von Y") below the prev/next controls. Emitted ONLY when the
+            // resolved prop is true; absent otherwise. The always-on compact page
+            // label between the buttons is unchanged (the 16 P154/P45 tests rely on it).
+            const showInfo = !!(component.props && component.props.showInfo === true);
+            const infoText = showInfo
+                ? "<div class=\"webapp-pagination-info\">Seite " + escapeHtml(String(currentPage)) + " von " + escapeHtml(String(totalPages)) + "</div>"
+                : "";
+            return wrapRenderedComponentHtml(component, layoutId, "<div class=\"webapp-pagination\">" + prevBtn + pageLabel + nextBtn + "</div>" + infoText);
         }
 
         // P38: stepper — renders a step indicator. Each step carries

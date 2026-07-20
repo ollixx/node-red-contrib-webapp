@@ -44,6 +44,9 @@
                 totalPath: { value: "" },
                 currentPagePath: { value: "" },
                 pageSize: { value: "" },
+                // P252: `showInfo` toggles the info-text region ("Seite X von Y")
+                // rendered below the prev/next controls. Plain boolean checkbox.
+                showInfo: { value: false },
                 events: { value: "" },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
@@ -132,6 +135,8 @@
     <!-- P154 (ADR 0012 / value category): Total (page count) binding (read-only) — typedInput managed in oneditprepare/oneditsave. -->
     <div class="form-row"><label for="node-input-totalBinding">Total</label><input type="text" id="node-input-totalBinding"></div>
     <div class="form-row"><label for="node-input-pageSize">Page Size</label><input type="number" id="node-input-pageSize" placeholder="10"></div>
+    <!-- P252: showInfo — toggles the "Seite X von Y" info-text region below the controls. -->
+    <div class="form-row"><label for="node-input-showInfo">Info-Zeile</label><input type="checkbox" id="node-input-showInfo" style="width:auto"></div>
 </script>
 <script type="text/html" data-help-name="ui-pagination">
 <p>Seitennavigations-Controls (Vor/Zurück, Seitenzahl) für paginierte Datensätze. Emittiert ein <code>pageChange</code>-Event beim Seitenwechsel.</p>
@@ -147,5 +152,8 @@ Seite, das im Flow zurück in den Store geschrieben wird (Roundtrip). Default-Ty
 <p>Bindbare, <strong>lesende</strong> Quelle der Gesamt-Seitenzahl — gleicher kanonischer
 Satz. Default-Typ: <code>number</code>. Ein bestehender <code>totalPath</code> wird
 automatisch als <code>state</code>-Binding übernommen.</p>
+<h4>Info-Zeile (P252)</h4>
+<p>Checkbox <code>showInfo</code>: zeigt bei Aktivierung eine Info-Zeile
+<code>„Seite X von Y"</code> unterhalb der Vor/Zurück-Controls. Default: aus.</p>
 <p>Doku: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/navigation/ui-pagination.md" target="_blank">ui-pagination</a>.</p>
 </script>
