@@ -59,7 +59,7 @@
   {
     "id": "tblDbg",
     "type": "debug",
-    "name": "rowSelect / rowAction events",
+    "name": "rowSelect events",
     "z": "ex-ui-table",
     "x": 700,
     "y": 280,

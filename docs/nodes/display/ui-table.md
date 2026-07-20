@@ -11,19 +11,16 @@
 werden über das `rows`-Binding bereitgestellt; die Spaltenstruktur wird
 deklarativ über `columns` konfiguriert. Spalten können einfache Datenfelder
 oder typisierte Renderer (Text, Zahl, Datum, Checkbox, Aktions-Buttons) sein und
-optional sortier- sowie filterbar gemacht werden. Nutzerinteraktionen
-(Zeilenauswahl, Zeilen-Aktion, Checkbox-Änderung, Zell-Auswahl) werden als
-Events auf konfigurierten Output-Ports emittiert. Ein optionaler Footer-Slot
-erlaubt es, Paginierung, Aggregationen oder freien Inhalt unterhalb der Tabelle
-einzuhängen.
+optional sortier- sowie filterbar gemacht werden. Klickt der Nutzer eine Zeile
+an, wird dies als `rowSelect`-Event auf einem konfigurierten Output-Port
+emittiert.
 
 ## Einordnung
 
 - **Parent:** ein Slot eines `ui-app`-, `ui-route`-, `ui-dialog`- oder
   `ui-container`-Knotens. Deklariert über `mount` oder `parent`.
-- **Kinder:** View-Knoten können über `mount` in den Footer-Slot der Tabelle
-  eingehängt werden, wenn `footer: true` gesetzt ist (Mount-Pfad
-  `table:<id>/footer`).
+- **Kinder:** keine. `ui-table` ist ein Blatt-Knoten und stellt keine Slots
+  bereit; andere Knoten können nicht in die Tabelle eingehängt werden.
 - **Erreichbarkeit:** als Teil des gerenderten Snapshots der Parent-Route bzw.
   des Parent-Dialogs.
 - **Rolle zur Laufzeit:** der Renderer löst `rows` auf, iteriert über das Array
@@ -46,13 +43,12 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 |---|---|---|---|---|
 | `columns` | „Columns" | Textfeld (kommagetrennte Liste oder strukturierte Definition) | **ja** | Spaltendefinition der Tabelle. Mindestens eine Spalte erforderlich. Kurzform: kommagetrennte Property-Keys (z. B. `name,email,status`) — Key ist gleichzeitig Header-Label. Vollform: strukturiertes Objekt pro Spalte mit `key`, `label` (optional), `type` (`text`\|`number`\|`date`\|`checkbox`\|`actions`), `sortable` (boolean), `filterable` (boolean), `width` (px). Rückwärtskompatibel: ein einfacher String-Key wird als `{ key, label: key, type: "text" }` interpretiert. |
 | `rows` | „Rows" | typedInput (Binding, Default `json`) | optional | **Strukturelle Daten-Quelle** der Tabellenzeilen (ein Array von Zeilen-Objekten) — die Tabelle rendert ihre Zeilen selbst. Bindbar über alle Standard-Binding-Arten: `json` (statisches Array-Literal), `state`, `query`, `routeParam`, `store`, `reactive`, `msg`/`flow`/`global`/`jsonata`/`env`. Jedes Zeilenobjekt sollte die in `columns` deklarierten Keys enthalten; fehlende Keys werden als leerer String gerendert. Ein bestehendes Legacy-`rowsPath` wird automatisch als `state`-Binding übernommen (P158). Ist nichts gebunden, rendert die Tabelle leer. Binding-Arten: [stores.md](../concepts/stores.md). |
-| `footer` | „Footer Slot" | Checkbox | optional | Aktiviert einen Footer-Slot unterhalb des `<tbody>`. Ist `footer: true`, können View-Knoten über `mount: table:<id>/footer` dort eingehängt werden — typisch für Pagination, Aggregationen oder freie Inhalte. Default: `false`. |
 
 ### Gruppe „Events"
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `events` | „Events" | Event-Checkboxen → Output-Ports | optional | Aktivierbare Ausgangs-Events: `rowSelect`, `rowAction`, `checkboxChange`, `cellSelect`. Jedes aktive Event erzeugt einen Output-Port (Reihenfolge = Listenreihenfolge). Siehe Abschnitt „Output". |
+| `events` | „Events" | Event-Checkbox → Output-Port | optional | Aktivierbares Ausgangs-Event: `rowSelect`. Ist es aktiv, erzeugt es einen Output-Port. Siehe Abschnitt „Output". (Die früher dokumentierten Events `rowAction`/`checkboxChange`/`cellSelect` hatten keine beobachtbare Wirkung — es gab keine DOM-Quelle, die sie feuerte — und wurden mit P249 entfernt; Legacy-Flows, die sie noch tragen, werden beim Deploy verlustfrei gefiltert.) |
 
 ### Gruppe „Platzierung"
 
@@ -82,7 +78,7 @@ zu aktualisieren.
   verbundenen Clients der Parent-App gesendet. Primäres Feld: `rows` (Array der
   Tabellenzeilen). Details: [inputs.md](../concepts/inputs.md).
 - **`msg.ui.patch`:** Überschreibt beliebige Felder der Knotendefinition (z. B.
-  `rows`, `columns`, `footer`). Binding-Felder (`rows`) müssen als Binding-Objekt
+  `rows`, `columns`). Binding-Felder (`rows`) müssen als Binding-Objekt
   übergeben werden.
 - **Component-State-Messages** (`msg.ui.component.op`): `show`, `hide`.
 - **Nicht erkannte / fachfremde Messages:** werden **unverändert durchgereicht**
@@ -96,23 +92,17 @@ Tabellenzeile oder -zelle interagiert:
 | Event | Wann | Erzeugte `msg.ui`-Felder | Intention |
 |---|---|---|---|
 | `rowSelect` | Nutzer klickt auf eine Zeile | `event: "rowSelect"`, `params: { rowId, row }` | Navigation zur Detailseite oder Laden von Zeilen-Daten |
-| `rowAction` | Nutzer klickt einen Aktions-Button in einer Zeile | `event: "rowAction"`, `params: { rowId, row, actionLabel }` | Zeilen-gebundene Aktion auslösen (Bearbeiten, Löschen, …) |
-| `checkboxChange` | Nutzer ändert eine Checkbox-Spalte | `event: "checkboxChange"`, `params: { rowId, checked }` | Zeilenauswahl-Zustand im Flow verarbeiten |
-| `cellSelect` | Nutzer klickt eine einzelne Zelle | `event: "cellSelect"`, `params: { rowId, row }` | Inline-Bearbeitung oder Zell-Detail einleiten |
 
 `rowId` ist der Primärschlüssel der Zeile (sofern im Zeilenobjekt als `id`
 vorhanden), andernfalls der Array-Index als String. `row` ist das vollständige
-Zeilenobjekt aus `rows`. `actionLabel` ist das Label des geklickten
-Aktions-Buttons aus der `actions`-Spalte. Allgemeines Event-Format:
+Zeilenobjekt aus `rows` — der Runtime reichert `params.row` beim Empfang aus dem
+aktuellen Render read-only an. Allgemeines Event-Format:
 [events.md](../concepts/events.md).
 
 **Antizipierte Wiring-Szenarien:**
 - `rowSelect` → `ui-action` (Navigation zur Detailseite mit `params.rowId`).
 - `rowSelect` → `ui-store` (`set` der aktuellen Auswahl) → `ui-query` (Laden der
   Detaildaten).
-- `checkboxChange` → `function`/`ui-store` (Mehrfachauswahl-Set pflegen).
-- `rowAction` → `function` (API-Call zum Löschen/Bearbeiten), dann
-  `ui-store`/`ui-query` aktualisieren.
 
 ## Theming
 
@@ -127,12 +117,11 @@ Zeilenabstände über die `--wa-*`-Custom-Properties. Details:
   kommagetrennte Key-Liste als auch vollständige Spaltenobjekte mit `type`,
   `sortable`, `filterable` und `width`. Die vollständige Form ist rückwärtskompatibel
   zur Kurzform.
-- **Footer-Slot als Layout-Slot.** Der Footer-Slot verhält sich wie jeder andere
-  Layout-Slot — View-Knoten mounten darin mit ihrem eigenen Platzierungsfeld.
-  Das Layout-Preset des Slots bestimmt die Child-Props der gemounteten Knoten.
-- **`selectAction` (deprecated).** Das Feld `selectAction` (direkte Action-Referenz
-  bei Zeilenklick) ist durch `events: [rowSelect]` abgelöst; bestehende Flows
-  werden weiterhin unterstützt, neue Flows sollen Events verwenden.
+- **`selectAction` (deprecated, aber wirksam).** Das Feld `selectAction` (direkte
+  Action-Referenz bei Zeilenklick) ist durch `events: [rowSelect]` abgelöst; neue
+  Flows sollen Events verwenden. Es bleibt jedoch **wirksam**: ist es gesetzt, wird
+  die Zeile auch ohne `events: [rowSelect]` auswählbar und der gerenderte
+  Zeilen-Link trägt die Action als `data-webapp-action`.
 
 ## Referenzen
 
@@ -140,7 +129,7 @@ Zeilenabstände über die `--wa-*`-Custom-Properties. Details:
 - [editor.md](../concepts/editor.md) — typedInput, Mount-Picker, Event-Checkboxen
 - [events.md](../concepts/events.md) — Event-Format, `params`-Struktur, Output-Ports
 - [inputs.md](../concepts/inputs.md) — `msg.payload`-Verhalten und `msg.ui.patch`
-- [layout.md](../concepts/layout.md) — Platzierungsfelder, Footer-Slot
+- [layout.md](../concepts/layout.md) — Platzierungsfelder
 - [theming.md](../concepts/theming.md) — Design-Tokens
 
 ## Offene Punkte

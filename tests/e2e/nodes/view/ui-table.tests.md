@@ -24,7 +24,32 @@
 | store-array rows render the table rows reactively | Store-Array wird strukturell aufgelöst und gerendert |
 | legacy rowsPath migrates to a state binding and renders rows | Alt-`rowsPath` lädt verlustfrei als state-Binding |
 | row click → POST /event with event='rowSelect' and params.rowId | rowSelect-Event bleibt funktional |
+| configured selectAction makes the row selectable and is carried on the link | **P249:** `selectAction` allein macht die Zeile auswählbar; der Link trägt `data-webapp-action` und feuert `rowSelect` |
 | inject new rows → table updates after navigate | Input-Port-Push aktualisiert die Zeilen (SSE) |
+
+## P249 — Konformitäts-Pass (leicht): inerte Felder/Events entfernt
+
+> Audit 2026-07-17, umgesetzt P249. Gemessen (Serializer + Renderer + Client):
+> `footer` erzeugt **kein** beobachtbares DOM (kein `<tfoot>`, keine Footer-Region;
+> `ui-table` ist ein Blatt-Knoten und stellt **keinen** `table:<id>/footer`-Slot
+> bereit — nur `ui-app`/`ui-route`/`ui-dialog`/`ui-container` sind Slot-Hosts). Die
+> Sekundär-Events `rowAction`/`checkboxChange`/`cellSelect` haben **keine
+> DOM-Quelle** (der Serializer rendert nur den `rowSelect`-Link; der Client kennt
+> keine Change-/Cell-/Action-Klick-Quelle in der Tabelle) — der P83-Unit-Test belegt
+> nur den generischen Dispatcher, kein reales Verhalten. Daher wurden `footer` und
+> die drei Events **aus Schema + Spec entfernt** (kein dokumentiertes Feature ohne
+> Wirkung). `selectAction` **wirkt** (als `data-webapp-action` auf dem `rowSelect`-Link)
+> und ist neu per E2E belegt.
+
+### Angepasste Bestandstests (nicht neu aufgebaut)
+
+| Test | Änderung |
+|---|---|
+| `p13-table-enhancements.spec.ts` — registered type has events default and **no** footer default | Footer-Default entfällt (assert: `footer` NICHT in defaults) |
+| `p13-table-enhancements.spec.ts` — outputLabels returns the row event name | Fixture auf `["rowSelect"]` reduziert; zweiter Port ohne Label |
+| `p13-table-enhancements.spec.ts` — editor HTML contains events-container and **no** footer checkbox | Footer-Checkbox entfällt (assert: `node-input-footer` NICHT im Template) |
+| `p13-table-enhancements.test.ts` (unit) — footer-Block ersetzt durch „compiles into a component contribution" (footer prop `undefined`); Events-Test belegt Legacy-Filter auf `["rowSelect"]` |
+| `p83-display-nodes-behaviour.test.ts` (unit) — Event-Dispatch-Schleife auf `["rowSelect"]` reduziert |
 
 ### Editor-Panel (`tests/e2e/nodes/editor/view.spec.ts`)
 

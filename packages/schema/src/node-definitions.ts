@@ -610,8 +610,13 @@ export const uiTableNodeDefinitionSchema = mountableNodeSchema.extend({
     type: z.literal("ui-table"),
     columns: z.array(tableColumnDefinitionSchema).min(1, "Tables must declare at least one column."),
     rows: bindingSchema,
-    footer: z.boolean().optional(),
-    events: z.array(z.enum(["rowSelect", "rowAction", "checkboxChange", "cellSelect"])).optional(),
+    // P249: only `rowSelect` has an observable end-to-end effect (the serializer
+    // renders a selectable first-cell link that POSTs a `rowSelect` event). The
+    // former `rowAction`/`checkboxChange`/`cellSelect` values were inert — no DOM
+    // source ever emitted them — and were removed (no documented event without
+    // effect). Legacy flows carrying the dropped values are filtered in the node
+    // mapConfig before they reach this schema.
+    events: z.array(z.enum(["rowSelect"])).optional(),
     selectAction: z.string().min(1, "Table select actions must not be empty.").optional()
 });
 

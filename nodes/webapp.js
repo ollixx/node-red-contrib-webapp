@@ -362,6 +362,17 @@ function parseColumns(value) {
     }).filter(Boolean);
 }
 
+// P249: `rowSelect` is the only ui-table event with an observable end-to-end
+// effect. The former `rowAction`/`checkboxChange`/`cellSelect` values had no DOM
+// source and were removed from the schema; filter them out of legacy flow configs
+// so an old flow that still carries them keeps deploying (it just loses the inert
+// events) instead of failing schema validation.
+const SUPPORTED_TABLE_EVENTS = new Set(["rowSelect"]);
+
+function filterSupportedTableEvents(list) {
+    return (Array.isArray(list) ? list : []).filter((event) => SUPPORTED_TABLE_EVENTS.has(event));
+}
+
 function parseJson(value) {
     if (value === undefined || value === null || value === "") {
         return undefined;
@@ -1550,13 +1561,12 @@ function toComponentDefinitions(components) {
 
         if (component.type === "ui-table") {
             const layoutProps = collectNormalizedLayoutProps(component);
-            const tableEvents = parseJsonList(component.events);
+            const tableEvents = filterSupportedTableEvents(parseJsonList(component.events));
             return {
                 id: component.id,
                 kind: "table",
                 mount: component.mount || component.parent,
                 order: resolveOrder(component),
-                footer: component.footer === true || component.footer === "true",
                 bind: {
                     rows: resolveTableRows(component)
                 },
@@ -2648,9 +2658,9 @@ function dispatchClientEvent(RED, appId, body, definitions) {
     const location = body && body.location ? String(body.location) : "/";
     const params = body && body.params && typeof body.params === "object" ? { ...body.params } : {};
 
-    // Enrich documented table events with the full row object when only a rowId
-    // was reported. This is a read-only render lookup, not a data action.
-    if ((event === "rowSelect" || event === "rowAction") && params.rowId !== undefined && params.row === undefined) {
+    // Enrich the documented table event with the full row object when only a
+    // rowId was reported. This is a read-only render lookup, not a data action.
+    if (event === "rowSelect" && params.rowId !== undefined && params.row === undefined) {
         const row = resolveTableRow(appId, location, sourceId, params.rowId, definitions);
         if (row !== undefined) {
             params.row = clone(row);
@@ -7072,8 +7082,7 @@ const runtimeNodeRegistry = {
             order: resolveOrder(config),
             columns: parseColumns(config.columns),
             rows: resolveTableRows(config),
-            footer: config.footer === true || config.footer === "true",
-            events: parseJsonList(config.events).length > 0 ? parseJsonList(config.events) : undefined,
+            events: filterSupportedTableEvents(parseJsonList(config.events)),
             selectAction: config.selectAction || undefined,
             ...collectNodeConfigLayoutProps(config)
         }),
