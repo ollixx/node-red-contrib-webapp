@@ -5074,9 +5074,12 @@ function toastInputHandler(node, msg, send, done) {
             message: uiMsg.toast && uiMsg.toast.message !== undefined ? String(uiMsg.toast.message)
                 : (msg.payload !== undefined && msg.payload !== null ? String(msg.payload) : ""),
             severity: (uiMsg.toast && uiMsg.toast.severity) || (toastDefinition && toastDefinition.severity) || "info",
+            // P254: duration is the auto-dismiss timeout (ms). msg overrides the
+            // node default; an absent node default means 0 = no auto-dismiss (the
+            // toast stays until the user closes it), matching the client timer.
             duration: (uiMsg.toast && uiMsg.toast.duration !== undefined ? Number(uiMsg.toast.duration)
-                : (toastDefinition && toastDefinition.duration !== undefined ? toastDefinition.duration : 3000)),
-            position: (uiMsg.toast && uiMsg.toast.position) || (toastDefinition && toastDefinition.position) || "top-right"
+                : (toastDefinition && toastDefinition.duration !== undefined ? toastDefinition.duration : 0)),
+            position: (uiMsg.toast && uiMsg.toast.position) || (toastDefinition && toastDefinition.position) || "bottom-right"
         };
         pushToastToClients(activeAppId, clientId, toastPayload);
     }
