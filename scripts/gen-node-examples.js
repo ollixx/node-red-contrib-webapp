@@ -979,7 +979,8 @@ examples.push(inputNodeExample({
                 name: "step store", statePath: "step", initialValue: '"step1"'
             }),
 
-            // Output: stepChange + complete events (2 output ports)
+            // Output: stepChange event (1 output port). P251: the `complete` event
+            // was removed — no DOM source ever emitted it.
             { ...viewNode("ui-stepper", NODE, A, R, T, {
                 name: "wizard",
                 steps: JSON.stringify([
@@ -988,9 +989,9 @@ examples.push(inputNodeExample({
                     { id: "step3", label: "Confirm" }
                 ]),
                 value: { kind: "state", path: "step" }
-            }), wires: [[DBG], [DBG]] },
+            }), wires: [[DBG]] },
 
-            debugNode(DBG, T, "stepChange / complete events", 280),
+            debugNode(DBG, T, "stepChange event", 280),
 
             // Inject: advance to specific step
             injectPayload("inj-step2", T, "Go to Profile step", "step2", "str", "stepStore", 480),

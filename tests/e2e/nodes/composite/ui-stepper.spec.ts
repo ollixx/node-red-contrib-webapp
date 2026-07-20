@@ -86,6 +86,60 @@ test.describe("ui-stepper (P45)", () => {
         await expect(page.locator(".webapp-stepper button.webapp-step").nth(1)).toHaveClass(/webapp-step--active/);
     });
 
+    test("orientation horizontal vs vertical: distinct class + measured layout axis", async ({ page, request }) => {
+        // P251: `orientation` (editor field) → `variant` (schema, via mapConfig
+        // `variant: config.orientation`) → serializer renders the wrapper class
+        // `webapp-stepper--<orientation>`. Prove it is observable: the class differs
+        // AND the step buttons lay out along the matching axis (row vs column).
+        const steps = JSON.stringify([
+            { id: "a", label: "Alpha" },
+            { id: "b", label: "Beta" },
+            { id: "c", label: "Gamma" }
+        ]);
+
+        // Horizontal stepper.
+        const hFlow = new FlowBuilder()
+            .app({ id: "stpHApp", root: "stpHApp" })
+            .node("ui-stepper", { id: "stpHNode", steps, orientation: "horizontal" })
+            .build();
+        await deployFlow(request, hFlow);
+
+        let webapp = new WebappPage(page, "stpHApp");
+        await webapp.navigate("/");
+        await expect(page.locator(".webapp-stepper")).toHaveClass(/webapp-stepper--horizontal/);
+
+        const hBtn0 = await page.locator(".webapp-stepper button.webapp-step").nth(0).boundingBox();
+        const hBtn1 = await page.locator(".webapp-stepper button.webapp-step").nth(1).boundingBox();
+        // Horizontal: second button is to the RIGHT of the first (x advances),
+        // and they share (roughly) the same top edge.
+        expect(hBtn0).not.toBeNull();
+        expect(hBtn1).not.toBeNull();
+        expect(hBtn1!.x).toBeGreaterThan(hBtn0!.x + hBtn0!.width / 2);
+        expect(Math.abs(hBtn1!.y - hBtn0!.y)).toBeLessThan(hBtn0!.height);
+
+        await resetFlow(request);
+
+        // Vertical stepper.
+        const vFlow = new FlowBuilder()
+            .app({ id: "stpVApp", root: "stpVApp" })
+            .node("ui-stepper", { id: "stpVNode", steps, orientation: "vertical" })
+            .build();
+        await deployFlow(request, vFlow);
+
+        webapp = new WebappPage(page, "stpVApp");
+        await webapp.navigate("/");
+        await expect(page.locator(".webapp-stepper")).toHaveClass(/webapp-stepper--vertical/);
+
+        const vBtn0 = await page.locator(".webapp-stepper button.webapp-step").nth(0).boundingBox();
+        const vBtn1 = await page.locator(".webapp-stepper button.webapp-step").nth(1).boundingBox();
+        // Vertical: second button is BELOW the first (y advances), and they share
+        // (roughly) the same left edge.
+        expect(vBtn0).not.toBeNull();
+        expect(vBtn1).not.toBeNull();
+        expect(vBtn1!.y).toBeGreaterThan(vBtn0!.y + vBtn0!.height / 2);
+        expect(Math.abs(vBtn1!.x - vBtn0!.x)).toBeLessThan(vBtn0!.width);
+    });
+
     test("step click → POST /event with event='change' and params.value = step index", async ({ page, request }) => {
         const steps = JSON.stringify([
             { id: "s1", label: "First" },

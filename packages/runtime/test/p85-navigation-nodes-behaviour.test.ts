@@ -23,7 +23,7 @@ import { NodeBehaviourHarness, webappTest } from "./helpers/node-behaviour-harne
  * Event dispatch via dispatchClientEvent:
  *   9. tabChange dispatched on ui-tabs node → emits msg.ui on output port.
  *  10. stepChange dispatched on ui-stepper node → emits msg.ui with params.stepId.
- *  11. complete dispatched on ui-stepper node → emits msg.ui on port for "complete".
+ *  11. P251: legacy `complete` event on ui-stepper is filtered out (dead event).
  *  12. sectionOpen dispatched on ui-accordion node → emits msg.ui with params.sectionId.
  *  13. sectionClose dispatched on ui-accordion node → emits msg.ui on correct port.
  *  14. navigate dispatched on ui-menu node → emits msg.ui with params.path.
@@ -295,7 +295,7 @@ describe("P85: stepChange event dispatched via dispatchClientEvent", () => {
                 { id: "step-2", label: "Review" },
                 { id: "step-3", label: "Deploy" }
             ]),
-            events: JSON.stringify(["stepChange", "complete"])
+            events: JSON.stringify(["stepChange"])
         });
 
         const { result, emitted } = h.dispatchClientEvent(
@@ -312,25 +312,15 @@ describe("P85: stepChange event dispatched via dispatchClientEvent", () => {
 });
 
 // ---------------------------------------------------------------------------
-// 11. complete dispatched on ui-stepper → lands on the correct port
+// 11. P251: `complete` was a dead ui-stepper event — no DOM source emits it, so
+//     it was removed from the schema enum. `filterSupportedStepperEvents` strips a
+//     legacy `complete` from a flow config so an old flow keeps deploying.
 // ---------------------------------------------------------------------------
 
-describe("P85: stepper complete event dispatched via dispatchClientEvent", () => {
-    it("complete event emits msg.ui on the 'complete' output port (port 1 when stepChange is also enabled)", () => {
-        const nodeId = "stepper-complete";
-        const definitions = buildNavDefinitions("ui-stepper", nodeId, {
-            steps: JSON.stringify([
-                { id: "s1", label: "Step 1" },
-                { id: "s2", label: "Step 2" }
-            ]),
-            // events list defines port order: stepChange=0, complete=1
-            events: JSON.stringify(["stepChange", "complete"])
-        });
-
-        // The node definition must carry the right events array for port routing.
-        // We need to inject the events field so the definition node carries it.
-        const nodeWithEvents = h.registry["ui-stepper"].mapConfig({
-            id: nodeId,
+describe("P85/P251: stepper `complete` legacy event is filtered out", () => {
+    it("a legacy events list ['stepChange','complete'] maps to ['stepChange'] only", () => {
+        const def = h.registry["ui-stepper"].mapConfig({
+            id: "stepper-complete",
             parent: h.appId,
             steps: JSON.stringify([
                 { id: "s1", label: "Step 1" },
@@ -339,17 +329,7 @@ describe("P85: stepper complete event dispatched via dispatchClientEvent", () =>
             events: JSON.stringify(["stepChange", "complete"])
         });
 
-        // buildDefinitions already maps through mapConfig, so definitions carries events.
-        const { result, emitted } = h.dispatchClientEvent(
-            [nodeId],
-            { clientId: "c1", event: "complete", sourceId: nodeId, params: {} },
-            definitions
-        );
-
-        expect(result.success).toBe(true);
-        const out = emitted.get(nodeId)!;
-        expect(out).toHaveLength(1);
-        expect(out[0]).toMatchObject({ event: "complete", sourceId: nodeId });
+        expect(def.events).toEqual(["stepChange"]);
     });
 });
 
@@ -617,7 +597,7 @@ describe("P85: ui-stepper steps + activeStep round-trip through mapConfig", () =
         expect(def.activeStep).toMatchObject({ kind: "literal", value: "s1" });
     });
 
-    it("events list with stepChange and complete is stored as array", () => {
+    it("events list with stepChange is stored as array (P251: legacy `complete` filtered out)", () => {
         const def = h.registry["ui-stepper"].mapConfig({
             id: "stp3",
             parent: h.appId,
@@ -627,7 +607,7 @@ describe("P85: ui-stepper steps + activeStep round-trip through mapConfig", () =
 
         expect(Array.isArray(def.events)).toBe(true);
         expect(def.events).toContain("stepChange");
-        expect(def.events).toContain("complete");
+        expect(def.events).not.toContain("complete");
     });
 });
 
