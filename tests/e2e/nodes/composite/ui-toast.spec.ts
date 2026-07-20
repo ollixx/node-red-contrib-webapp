@@ -180,15 +180,17 @@ test.describe("ui-toast (P45)", () => {
             throw new Error("viewport size unavailable");
         }
 
-        // Collect each toast's class + measured box.
+        // Collect each toast's measured box. getBoundingClientRect (read in-page)
+        // is the real placement measurement and is robust to the sl-alert being a
+        // zero-area custom-element host (where Playwright's boundingBox() is null).
         const boxes: Record<string, { x: number; y: number; width: number; height: number }> = {};
         for (const position of positions) {
             const el = page.locator(`sl-alert.webapp-toast--${position}`);
-            await expect(el).toBeVisible({ timeout: 5000 });
-            const box = await el.boundingBox();
-            if (!box) {
-                throw new Error(`no bounding box for ${position}`);
-            }
+            await expect(el).toHaveCount(1, { timeout: 5000 });
+            const box = await el.evaluate((node) => {
+                const r = (node as HTMLElement).getBoundingClientRect();
+                return { x: r.left, y: r.top, width: r.width, height: r.height };
+            });
             boxes[position] = box;
         }
 

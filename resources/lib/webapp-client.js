@@ -1450,7 +1450,10 @@
                 // values yields a measurably distinct placement.
                 const atBottom = position.indexOf("bottom") === 0;
                 const atCenter = position.indexOf("center") !== -1;
-                el.style.cssText = "position:fixed;z-index:9999;max-width:320px;"
+                // display:block is required: Shoelace's sl-alert host defaults to
+                // `display:contents`, which suppresses the host box and makes
+                // position:fixed inert (the alert would render in normal body flow).
+                el.style.cssText = "display:block;position:fixed;z-index:9999;max-width:320px;"
                     + (atBottom ? "bottom:1rem;" : "top:1rem;")
                     + (atCenter ? "left:50%;transform:translateX(-50%);" : "right:1rem;");
                 el.textContent = message;
