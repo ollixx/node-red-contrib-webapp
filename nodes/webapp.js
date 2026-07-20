@@ -2110,6 +2110,9 @@ function toComponentDefinitions(components) {
                     // P45: composite and layout node props
                     ...(component.steps !== undefined ? { steps: component.steps } : {}),
                     ...(component.page !== undefined ? { page: component.page } : {}),
+                    // P252: ui-pagination `showInfo` boolean → props.showInfo; the
+                    // serializer emits the `.webapp-pagination-info` region when true.
+                    ...(component.showInfo !== undefined ? { showInfo: component.showInfo } : {}),
                     // P154: when `total`/`totalPages` is a binding it routes through
                     // bind.totalPages (resolved by the renderer); only a plain literal
                     // value stays in props as a static fallback.
@@ -7984,6 +7987,10 @@ const runtimeNodeRegistry = {
             // to the schema `totalPages` binding. Legacy order: canonical `total`
             // → legacy `totalPages` → legacy `totalPath` plain state path.
             totalPages: getBinding(config.total, getBinding(config.totalPages, config.totalPath ? stateBinding(config.totalPath) : undefined)),
+            // P252: `showInfo` (editor checkbox) toggles the measured info-text
+            // region rendered by the serializer. A plain boolean; passed straight
+            // through so props.showInfo drives `.webapp-pagination-info`.
+            showInfo: config.showInfo === true || config.showInfo === "true" || undefined,
             events: parseJsonList(config.events),
             ...collectNodeConfigLayoutProps(config)
         }),

@@ -219,6 +219,51 @@ test.describe("ui-pagination (P154)", () => {
         expect((body.params as Record<string, unknown>).page).toBe(3);
     });
 
+    // ─── showInfo info-text region (P252) ────────────────────────────────────
+
+    test("I01 — showInfo:true renders the '.webapp-pagination-info' region", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "pg252I1App", root: "pg252I1App" })
+            .node("ui-pagination", {
+                id: "pg252I1",
+                currentPage: { kind: "literal", value: 2 },
+                total: { kind: "literal", value: 5 },
+                showInfo: true
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "pg252I1App");
+        await webapp.navigate("/");
+
+        // The always-on compact page label is unchanged...
+        await expect(page.locator(".webapp-pagination-page")).toContainText("2 / 5");
+        // ...and showInfo:true adds the separate measured info-text region.
+        await expect(page.locator(".webapp-pagination-info")).toBeVisible();
+        await expect(page.locator(".webapp-pagination-info")).toContainText("Seite 2 von 5");
+    });
+
+    test("I02 — showInfo omitted → no '.webapp-pagination-info' region", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "pg252I2App", root: "pg252I2App" })
+            .node("ui-pagination", {
+                id: "pg252I2",
+                currentPage: { kind: "literal", value: 2 },
+                total: { kind: "literal", value: 5 }
+            })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "pg252I2App");
+        await webapp.navigate("/");
+
+        await expect(page.locator(".webapp-pagination-page")).toContainText("2 / 5");
+        // No showInfo → the info-text region is not emitted at all.
+        await expect(page.locator(".webapp-pagination-info")).toHaveCount(0);
+    });
+
     // ─── migration (legacy plain paths) ──────────────────────────────────────
 
     test("M01 — legacy currentPagePath migrated: active page read from the store", async ({ page, request }) => {

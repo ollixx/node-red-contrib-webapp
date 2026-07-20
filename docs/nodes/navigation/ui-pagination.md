@@ -37,15 +37,16 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 |---|---|---|---|---|
 | `currentPage` | „Current Page" | typedInput (Binding, **zweiseitig**) | **ja** | Kanonischer Wert-typedInput (Default-Typ `number`, ADR 0012) auf die aktuell angezeigte Seitennummer (1-basiert). **Zweiseitig**: liest die Live-Seite aus einem `ui-store`/`state`-Wert UND der Seitenwechsel emittiert das `pageChange`-Event mit der neuen Seite, das im Flow zurück in denselben Store geschrieben wird (Store-Roundtrip). Kompiliert intern zum `page`-Binding. Bindbare Arten: `state`, `store`, `query`, `routeParam`, `literal`, `reactive` sowie Node-RED-Standard-Arten (`msg`, `flow`, `global`, `jsonata`, `env`). Ein bestehender `currentPagePath` (nackter State-Pfad) wird automatisch als `state`-Binding übernommen. |
 | `total` | „Total" | typedInput (Binding, **lesend**) | **ja** | Kanonischer Wert-typedInput (Default-Typ `number`, ADR 0012) auf die Gesamtzahl der Seiten — **rein lesende Quelle**. Wird typischerweise aus einem `ui-query`-Ergebnis bezogen (z. B. `Math.ceil(total / pageSize)`). Kompiliert intern zum `totalPages`-Binding. Bindbare Arten wie `currentPage`. Ein bestehender `totalPath` wird automatisch als `state`-Binding übernommen. |
-| `pageSize` | „Page Size" | Zahlenfeld (Config) | optional | Anzahl der Einträge pro Seite (Config-Number). Wenn gesetzt und `totalItems` ebenfalls gesetzt, kann `total` aus beiden berechnet werden. |
-| `totalItems` | — | typedInput (Binding) | optional | Binding auf die Gesamtanzahl der Einträge (nicht Seiten). Wird zusammen mit `pageSize` und `showInfo` genutzt, um die Info-Zeile „Einträge X–Y von Z" darzustellen. Bindbare Arten wie `currentPage`. |
-| `showInfo` | — | Checkbox | optional | `true` — zeigt eine Info-Zeile mit dem Bereich der aktuell sichtbaren Einträge (z. B. „Einträge 11–20 von 47"). Erfordert `totalItems` und `pageSize`. Default: `false`. |
+| `pageSize` | „Page Size" | Zahlenfeld (Config) | optional | Anzahl der Einträge pro Seite (Config-Number). |
+| `showInfo` | „Info-Zeile" | Checkbox | optional | `true` — rendert unterhalb der Vor/Zurück-Controls eine gemessene Info-Zeile `„Seite X von Y"` (aus dem aufgelösten `currentPage`/`total`). Klasse `.webapp-pagination-info`. Default: `false` — dann wird die Zeile nicht ausgegeben. Der kompakte Seiten-Label `„X / Y"` zwischen den Buttons ist davon unabhängig und immer sichtbar. |
 
-### Gruppe „Darstellung"
-
-| Feld | Label | Editor-Typ | Pflicht | Beschreibung |
-|---|---|---|---|---|
-| `variant` | „Variant" | Variant-SelectBox | optional | Visueller Stil der Seitennavigation: `numbered` (Seitenzahlen sichtbar, Standard), `simple` (nur Vor/Zurück-Pfeile). Default: `numbered`. |
+> **Seitenzahl-Quelle (P252):** Die Gesamt-Seitenzahl ergibt sich **allein** aus dem
+> `total`-Binding (kompiliert zu `totalPages`); es gibt keine Berechnung aus einer
+> Einträge-Gesamtzahl. Ein früheres `totalItems`-Binding war vestigial (nie im Editor,
+> nie im Serializer/Renderer konsumiert) und wurde in P252 entfernt — ebenso ein
+> vestigiales `variant`-Enum (`numbered`/`simple`), zu dem keine distinkte Darstellung
+> existierte. Legacy-Flows mit diesen Feldern deployen unverändert (Zod verwirft
+> unbekannte Schlüssel; mapConfig hat beide nie erzeugt).
 
 ### Gruppe „Events"
 
@@ -74,7 +75,7 @@ ausführliche Doku:
 ## Input
 
 - **`msg.payload`** — setzt die aktuelle Seite direkt (Ganzzahl ≥ 1). Der Wert wirkt wie ein `currentPage`-Update; das `currentPage`-Binding wird bei der nächsten Binding-Auflösung wieder führend.
-- **`msg.ui.patch`** — überschreibt beliebige Felder der Knoten-Definition (z. B. `variant`, `showInfo`). Binding-Felder müssen als Binding-Objekt übergeben werden. Format: [inputs.md](../concepts/inputs.md).
+- **`msg.ui.patch`** — überschreibt beliebige Felder der Knoten-Definition (z. B. `showInfo`). Binding-Felder müssen als Binding-Objekt übergeben werden. Format: [inputs.md](../concepts/inputs.md).
 - **Component-Operationen** (`msg.ui.component.op`): `show`, `hide` steuern die Sichtbarkeit der Seitennavigation. Format und Semantik: [inputs.md](../concepts/inputs.md).
 - **Nicht erkannte / fachfremde Messages:** werden **unverändert durchgereicht** (Pass-Through), ohne Fehlerausgabe.
 
@@ -118,10 +119,9 @@ Siehe [`ui-query` › Reaktives Paging](../state/ui-query.md#reaktives-paging--p
 
 ## Theming
 
-`ui-pagination` rendert Schaltflächen und ggf. Seitenzahl-Links; das Theme
-(Design-Tokens) wird von der Parent-App geerbt. Der `variant`-Wert (`numbered`,
-`simple`) steuert die visuelle Ausprägung unabhängig vom Token-Set. Details:
-[theming.md](../concepts/theming.md).
+`ui-pagination` rendert Vor/Zurück-Schaltflächen, den kompakten Seiten-Label und
+(bei `showInfo`) die Info-Zeile; das Theme (Design-Tokens) wird von der Parent-App
+geerbt. Details: [theming.md](../concepts/theming.md).
 
 ## Referenzen
 
@@ -129,11 +129,10 @@ Siehe [`ui-query` › Reaktives Paging](../state/ui-query.md#reaktives-paging--p
 - [events.md](../concepts/events.md) — Event-Format und Output-Port-Semantik
 - [inputs.md](../concepts/inputs.md) — `msg.payload`, `msg.ui.patch`, Component-Ops
 - [stores.md](../concepts/stores.md) — Binding-Arten und Store-Roundtrip
-- [editor.md](../concepts/editor.md) — typedInput, Variant-SelectBox, Mount-Picker
+- [editor.md](../concepts/editor.md) — typedInput, Mount-Picker
 - [`ui-query`](../state/ui-query.md) — Datenladen mit page/pageSize-Parametern
 
 ## Offene Punkte
 
-- Ob `totalPages` alternativ aus `totalItems` / `pageSize` automatisch berechnet werden soll (statt explizites Binding), ist noch nicht abschließend entschieden.
 - Tastaturnavigation (Arrow-Keys, Eingabe einer Seitenzahl) ist noch nicht spezifiziert.
 - Maximale Anzahl der angezeigten Seitenzahlen (Ellipsis-Verhalten) ist noch nicht über Felder konfigurierbar.

@@ -1676,9 +1676,16 @@ export const uiPaginationNodeDefinitionSchema = mountableNodeSchema.extend({
     page: bindingSchema,
     totalPages: bindingSchema,
     pageSize: bindingSchema.optional(),
-    totalItems: bindingSchema.optional(),
+    // P252: `showInfo` toggles a measured info-text region ("Seite X von Y")
+    // rendered below the prev/next controls. mapConfig passes the boolean through
+    // to props.showInfo; the serializer emits `.webapp-pagination-info` only when
+    // true. (The former `totalItems` binding and `variant` enum were vestigial —
+    // never in the editor, never mapped, never consumed by serializer/renderer:
+    // `totalPages` is the sole authoritative page-count source, and there was no
+    // numbered/simple distinction to render. Both removed in P252; a legacy flow
+    // that still carries them deploys unchanged since non-strict Zod drops unknown
+    // keys and mapConfig never produced either field.)
     showInfo: z.boolean().optional(),
-    variant: z.enum(["numbered", "simple"]).optional(),
     events: z.array(z.enum(["pageChange"])).optional()
 });
 
