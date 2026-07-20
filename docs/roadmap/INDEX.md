@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P253** — aspects/node-conformance — **Muster-4-Abschluss** (input/switch/textarea): Binding-Doku + `ui-textarea.placeholder`-Serializer-Fix (live Bug) + Tests; check:binding-docs-Allowlist → leer — *Owner 2026-07-17; ADR 0012* — [P253](aspects/node-conformance/P253-muster4-completion-input-switch-textarea.md)
 - **P254** — aspects/node-conformance — Konformitäts-Pass **ui-toast**: dünn (3 E2E, kein Katalog), `duration`/`position` ungetestet + Inert-Verdacht — *Owner 2026-07-17; node-conformance* — [P254](aspects/node-conformance/P254-conformance-ui-toast.md)
 - **P255** — aspects/node-conformance — Konformitäts-Pass **ui-container** (leicht): kein Katalog, `events` (onShow/onHide) ungetestet + Inert-Verdacht; Varianten solide — *Owner 2026-07-17; node-conformance* — [P255](aspects/node-conformance/P255-conformance-ui-container.md)
 - **P256** — aspects/node-conformance — Konformitäts-Pass **ui-action** (leicht): Verben `focus`/`reset`/`select` ungetestet; übrige + navigate solide — *Owner 2026-07-17; node-conformance* — [P256](aspects/node-conformance/P256-conformance-ui-action.md)
@@ -94,7 +93,7 @@ open the folder for the full history.
 | nodes/ui-accordion | 2 |
 | nodes/ui-breadcrumb · ui-dialog · ui-progress · ui-skeleton | 1 each |
 | aspects/test-infra | 28 |
-| aspects/node-conformance | 21 |
+| aspects/node-conformance | 22 |
 | aspects/misc | 16 |
 | aspects/docs | 1 |
 | aspects/runtime | 9 |
@@ -106,4 +105,4 @@ open the folder for the full history.
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 248 done, 4 open, 12 deferred.**
+**Total: 249 done, 3 open, 12 deferred.**

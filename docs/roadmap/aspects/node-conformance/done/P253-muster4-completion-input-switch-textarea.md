@@ -2,7 +2,7 @@
 id: P253
 title: "Muster-4-Abschluss (input/switch/textarea) — Binding-Doku + `ui-textarea.placeholder`-Serializer-Fix (live Bug) + Binding-Tests; check:binding-docs-Allowlist → leer"
 epic: aspects/node-conformance
-status: pending
+status: done
 dependencies: []
 verify: browser
 spec: docs/nodes/input/ui-textarea.md
@@ -14,7 +14,7 @@ tests: tests/e2e/nodes/view/ui-textarea.tests.md
 > `check:binding-docs` fand die Muster-4-Drift auf drei weiteren Knoten und
 > allowlistete sie mit dem Grund „je eigener Konformitäts-Pass". Dieses Paket
 > schließt den Sweep ab und treibt die Allowlist auf **leer**. Setzt
-> [ADR 0012](../../../adr/0012-binding-ubiquity-every-value-field-offers-bindings.md)
+> [ADR 0012](../../../../adr/0012-binding-ubiquity-every-value-field-offers-bindings.md)
 > durch (wie P237). Kein neuer ADR.
 
 ## findings
@@ -75,3 +75,41 @@ Kataloge der drei Knoten.
 - Nach dem Fix: die 6 Allowlist-Einträge in `scripts/check-binding-docs.js` löschen;
   der Check muss mit `{}` grün bleiben — sonst ist ein Feld noch nicht sauber.
 - **Nicht** die umfangreiche bestehende Coverage der drei Knoten neu aufbauen.
+
+## Result
+
+**Done 2026-07-20.** Muster-4-Abschluss: die letzten 6 Binding-Doc-Allowlist-Einträge
+sind aufgelöst, der Live-Bug gefixt, die Allowlist **leer**.
+
+### Doku-Fix (Muster 4) — 6 Felder als bindbar dokumentiert
+
+Im kanonischen Wortlaut (Editor-Typ → `typedInput (alle Binding-Arten)` + Binding-
+Kind-Liste), „Textfeld"-Aussage entfernt: `ui-input.label`; `ui-switch.label`/
+`labelOn`/`labelOff`; `ui-textarea.label`/`placeholder`.
+
+### Live-Bug gefixt — `ui-textarea.placeholder`-Serializer
+
+`resources/lib/webapp-serializer.js` textarea-Zweig (Z. 835): der `sl-textarea`-Output
+emittierte **nie** ein `placeholder`-Attribut (die Bindung löste auf, verpuffte aber).
+Fix nach dem P237-datepicker/P133-select-Muster: `placeholder` wird emittiert, wenn
+present (empty/undefined → omittiert). **Gemessen:** ein `state`-gebundener Placeholder
+erscheint als `placeholder="Type your comment…"` am `sl-textarea`, kein Roh-Pfad-Leak.
+
+### Binding-Test-Locks (6 Felder, gemessen, grün)
+
+`p253-input-label-binding.test.ts`, `p253-switch-labels-binding.test.ts`,
+`p253-textarea-label-placeholder-binding.test.ts` — je über die echte
+renderer→serializer-Pipeline.
+
+### Allowlist leer
+
+`scripts/check-binding-docs.js` → `FIELD_ALLOWLIST = {}`; Tripwire grün:
+„Binding-doc-drift OK: 31 ui-* node(s) checked, **0 allowlisted**." (Die separate
+`iconFieldSchema`-Alias-Blindstelle des Tripwires ist ein eigener Chip `task_87bbb8df`,
+nicht hier — dieses Paket schließt nur seine 6 Muster-4-Einträge.)
+
+### Verifikation (Haupt-Checkout, autoritativ)
+
+**E2E 808 passed, 0 failed, `--retries=0`, 15,1 min** (E01 diesmal grün). Serializer-
+Fix → Voll-Suite gerechtfertigt. `pnpm build` + `pnpm validate` + alle Tripwires grün.
+Agent committete VOR der Verifikation, stoppte alle Prozesse (Port 1882 frei).
