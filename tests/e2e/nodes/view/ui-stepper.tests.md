@@ -25,10 +25,16 @@ Editor-Regression: `tests/e2e/nodes/editor/navigation-nodes.spec.ts`,
 | ID | Ziel |
 |---|---|
 | P45 | Schritte gerendert als `button.webapp-step` mit Labels; Default-Schritt (Index 0) aktiv; konfigurierter `activeStep` markiert; Klick → `change`/`params.value`. |
+| O01 | **P251 `orientation`**: `horizontal` vs `vertical` erzeugt die unterscheidende Klasse `webapp-stepper--<orientation>` **und** einen gemessenen Layout-Unterschied (Bounding-Box-Achse: horizontal → x wächst, gemeinsame Oberkante; vertikal → y wächst, gemeinsame linke Kante). |
 | A03 | `activeStep` **zweiseitig**: Step-Klick → change-Event → verdrahteter Store-`set` → SSE-Re-Render aktiviert den gewählten Schritt. |
 | A04 | Externe Store-Änderung → SSE-Re-Render aktiviert den Schritt. |
 | E01 | `change`: Step-Klick emittiert `change` mit `params.value` (Step-Index). |
 | M01 | Legacy `activeStepPath` migriert: aktiver Schritt aus dem Store. |
+
+**P251-Konformität:** `linear` (totes Feld) und das `complete`-Event (keine
+DOM-Quelle) entfernt. Legacy-Flows mit `complete` werden vom Laufzeit-Filter
+`filterSupportedStepperEvents` verlustfrei bereinigt (Unit-Test in
+`p85-navigation-nodes-behaviour.test.ts`).
 
 ## Unit-Tests (`p156-stepper-activestep-typedinput.test.ts`)
 - Kanonisches `activeStep`-Binding-Objekt (state/store/literal) → `activeStep`.

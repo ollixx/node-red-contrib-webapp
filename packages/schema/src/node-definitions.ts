@@ -1695,8 +1695,13 @@ export const uiStepperNodeDefinitionSchema = mountableNodeSchema.extend({
     // webapp.js toComponentDefinitions / the editor mapper (mirrors ui-tabs P155).
     activeStep: bindingSchema.optional(),
     variant: z.enum(["horizontal", "vertical"]).optional(),
-    linear: z.boolean().optional(),
-    events: z.array(z.enum(["stepChange", "complete"])).optional()
+    // P251: `complete` was a dead event — no DOM source ever emitted it (the only
+    // step interaction the client dispatches is `change` with params.value). Dropped
+    // to the single honest event `stepChange`; a legacy flow that still carries
+    // `complete` is filtered by webapp.js `filterSupportedStepperEvents` so it keeps
+    // deploying. (The former `linear` field was likewise a dead field — in the schema
+    // but never in the editor defaults and consumed nowhere — and was removed.)
+    events: z.array(z.enum(["stepChange"])).optional()
 });
 
 export type UiStepperNodeDefinition = z.infer<typeof uiStepperNodeDefinitionSchema>;

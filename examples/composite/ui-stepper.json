@@ -48,9 +48,6 @@
     "wires": [
       [
         "stepDbg"
-      ],
-      [
-        "stepDbg"
       ]
     ],
     "steps": "[{\"id\":\"step1\",\"label\":\"Account\"},{\"id\":\"step2\",\"label\":\"Profile\"},{\"id\":\"step3\",\"label\":\"Confirm\"}]",
@@ -62,7 +59,7 @@
   {
     "id": "stepDbg",
     "type": "debug",
-    "name": "stepChange / complete events",
+    "name": "stepChange event",
     "z": "ex-ui-stepper",
     "x": 700,
     "y": 280,

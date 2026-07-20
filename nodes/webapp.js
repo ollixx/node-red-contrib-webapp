@@ -373,6 +373,18 @@ function filterSupportedTableEvents(list) {
     return (Array.isArray(list) ? list : []).filter((event) => SUPPORTED_TABLE_EVENTS.has(event));
 }
 
+// P251: `complete` was a dead ui-stepper event — no DOM source emits it (the step
+// buttons only dispatch `change` with params.value). It was removed from the schema
+// enum; filter it out of legacy flow configs so an old flow that still carries
+// `complete` keeps deploying (it just loses the inert event). `stepChange` is the
+// documented event name; `change` is the actual DOM-dispatched event that real flows
+// wire — both are kept so existing flows/E2E remain green.
+const SUPPORTED_STEPPER_EVENTS = new Set(["stepChange", "change"]);
+
+function filterSupportedStepperEvents(list) {
+    return (Array.isArray(list) ? list : []).filter((event) => SUPPORTED_STEPPER_EVENTS.has(event));
+}
+
 function parseJson(value) {
     if (value === undefined || value === null || value === "") {
         return undefined;
@@ -3025,6 +3037,12 @@ ${tokenCss ? tokenCss.split("\n").map((line) => `    ${line}`).join("\n") : "   
     .webapp-slot-body--grid { display:grid; grid-template-columns:repeat(12, minmax(0, 1fr)); gap:12px; }
     .webapp-slot-body--absolute { position:relative; min-height:320px; }
     .webapp-item--absolute { position:absolute; }
+    /* P251: ui-stepper orientation — the variant (horizontal/vertical) renders the
+       webapp-stepper--orientation class; give it an observable layout effect so the
+       step buttons lay out along the matching axis (row vs column). */
+    .webapp-stepper { display:flex; gap:8px; }
+    .webapp-stepper--horizontal { flex-direction:row; align-items:center; flex-wrap:wrap; }
+    .webapp-stepper--vertical { flex-direction:column; align-items:stretch; }
     /* P36: navbar — frameless stacked nav links; active state via color */
     .webapp-nav-list { display:flex; flex-direction:column; gap:0; list-style:none; margin:0; padding:0; }
     .webapp-nav-item a, .webapp-nav-link { display:block; padding:10px 20px; font-size:0.95rem; font-weight:500; color:var(--wa-color-text); text-decoration:none; transition:color 0.15s, background 0.15s; }
@@ -7988,7 +8006,7 @@ const runtimeNodeRegistry = {
             }).filter(Boolean),
             activeStep: getBinding(config.activeStep, config.activeStepPath ? stateBinding(config.activeStepPath) : undefined),
             variant: config.orientation || undefined,
-            events: parseJsonList(config.events),
+            events: filterSupportedStepperEvents(parseJsonList(config.events)),
             ...collectNodeConfigLayoutProps(config)
         }),
         options: {
