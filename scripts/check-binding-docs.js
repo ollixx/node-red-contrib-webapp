@@ -58,30 +58,17 @@ const SCHEMA_SRC = path.join(ROOT, "packages", "schema", "src", "node-definition
  * P237 landed the guardrail after fixing its four target fields
  * (ui-datepicker.placeholder, ui-slider.label, ui-image.alt/fallbackSrc). The
  * guardrail — reading the SCHEMA as truth — then surfaced the SAME Muster-4
- * drift on three OTHER nodes the manual audit had not listed. Those nodes each
- * have their own per-node conformance pass (the node-conformance program,
- * P230+), and P237 deliberately defers cross-node work to the owning pass to
- * avoid Doppelarbeit (exactly as it defers ui-button to P236). So these are
- * allowlisted here — with the drift RECORDED — and must be removed by each
- * node's own pass. All are confirmed genuine drift (schema binding-capable,
- * editor typedInput, binding resolves at runtime) — this is a doc fix, except
- * ui-textarea.placeholder which ALSO needs the datepicker-style serializer fix
- * (the placeholder attribute is not emitted for sl-textarea today).
+ * drift on three OTHER nodes the manual audit had not listed, which P237
+ * allowlisted and deferred to each node's own conformance pass. P253 closed that
+ * sweep: ui-input.label; ui-switch.label/labelOn/labelOff; and
+ * ui-textarea.label/placeholder are now documented as bindable, and the
+ * ui-textarea.placeholder serializer bug is fixed. The allowlist is empty again.
  * ------------------------------------------------------------------ */
-const FIELD_ALLOWLIST = {
-    "ui-input": {
-        label: "Muster-4 drift (P237 guardrail find): bindable label resolves+renders; deferred to ui-input's conformance pass",
-    },
-    "ui-switch": {
-        label: "Muster-4 drift (P237 guardrail find): bindable label resolves+renders; deferred to ui-switch's conformance pass",
-        labelOn: "Muster-4 drift (P237 guardrail find): bindable labelOn resolves+renders (label-on attr); deferred to ui-switch's conformance pass",
-        labelOff: "Muster-4 drift (P237 guardrail find): bindable labelOff resolves+renders (label-off attr); deferred to ui-switch's conformance pass",
-    },
-    "ui-textarea": {
-        label: "Muster-4 drift (P237 guardrail find): bindable label resolves+renders; deferred to ui-textarea's conformance pass",
-        placeholder: "Muster-4 drift (P237 guardrail find): bindable placeholder resolves but sl-textarea serializer omits the attribute — needs the datepicker-style serializer fix + doc; deferred to ui-textarea's conformance pass",
-    },
-};
+// EMPTY (P253): the six Muster-4 offenders P237 deferred here
+// (ui-input.label; ui-switch.label/labelOn/labelOff; ui-textarea.label/placeholder)
+// are now documented as bindable and the ui-textarea.placeholder serializer bug
+// is fixed. The allowlist is back to empty by design (P237).
+const FIELD_ALLOWLIST = {};
 
 /* ------------------------------------------------------------------ *
  * Schema: node type -> binding-capable field names

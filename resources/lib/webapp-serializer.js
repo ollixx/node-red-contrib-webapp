@@ -838,9 +838,17 @@
             const value = component.value === undefined || component.value === null ? "" : String(component.value);
             const rows = component.props.rows ? " rows=\"" + escapeAttribute(String(component.props.rows)) + "\"" : "";
             const disabled = component.disabled ? " disabled" : "";
+            // P148/P253 (ADR 0012): `placeholder` is a bindable value — the renderer
+            // resolves a state/store binding into component.props.placeholder. Emit it
+            // as the sl-textarea `placeholder` attribute when present (empty/undefined →
+            // omitted), mirroring ui-input / ui-select / ui-datepicker.
+            const placeholderValue = component.props.placeholder;
+            const placeholder = placeholderValue !== undefined && placeholderValue !== null && String(placeholderValue).length > 0
+                ? " placeholder=\"" + escapeAttribute(String(placeholderValue)) + "\""
+                : "";
             const attrs = shoelaceAttrs(mapComponentToShoelace("textarea", component.props || {}).attributes);
             return wrapRenderedComponentHtml(component, layoutId, "<sl-textarea" + attrs + " label=\"" + escapeAttribute(label)
-                + "\" name=\"" + escapeAttribute(name) + "\"" + rows + " value=\"" + escapeAttribute(value) + "\"" + disabled + "></sl-textarea>");
+                + "\" name=\"" + escapeAttribute(name) + "\"" + rows + " value=\"" + escapeAttribute(value) + "\"" + placeholder + disabled + "></sl-textarea>");
         }
 
         if (component.kind === "datepicker") {

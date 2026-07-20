@@ -40,3 +40,14 @@
   gebundener `ui-text` flippt live (SSE, Textinhalt `false`→`true`), ohne
   function-Knoten. Switch hat keine Submit-Geste → schreibt bei `change`
   unabhängig vom `writeTrigger`.
+
+## P253 — label / labelOn / labelOff Binding-Auflösung (Muster 4, ADR 0012)
+
+Unit (`packages/runtime/test/p253-switch-labels-binding.test.ts`):
+
+| Test | Ziel |
+|---|---|
+| state-gebundenes `label` → `sl-switch`-Textinhalt = aufgelöster Wert | `state`-Bindung auf `label` wird renderer→serializer aufgelöst UND als Label-Text gerendert (rot, wenn Auflösung bricht). Schließt den P237-Guardrail-Fund (Doku war „Textfeld"). |
+| state-gebundenes `labelOn` → `sl-switch[label-on]` = aufgelöster Wert | `state`-Bindung auf `labelOn` wird aufgelöst UND als `label-on`-Attribut gerendert. |
+| state-gebundenes `labelOff` → `sl-switch[label-off]` = aufgelöster Wert | `state`-Bindung auf `labelOff` wird aufgelöst UND als `label-off`-Attribut gerendert. |
+| Pfad-Strings leaken nicht ins Markup | Die rohen Binding-Pfade (`form.lbl`/`form.on`/`form.off`) erscheinen nicht im Markup; kein `[object Object]`. |
