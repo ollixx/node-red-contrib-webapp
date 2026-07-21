@@ -3,7 +3,7 @@ id: P256
 node: ui-action
 title: "Konformitäts-Pass ui-action (leicht) — Verben `focus`/`reset`/`select` ungetestet (Existenz zu verifizieren); übrige Verben + navigate solide"
 epic: aspects/node-conformance
-status: pending
+status: done
 dependencies: []
 verify: browser
 spec: docs/nodes/behavior/ui-action.md
@@ -52,3 +52,48 @@ Persistenz über Re-Render, openDialog/closeDialog-Aliase.
 - Verb-Dispatch sitzt client-seitig (Interaction-Verben) — im Client-Bundle prüfen,
   nicht nur an mapConfig.
 - `navigate` ist seit P243 der einzige Navigations-Pfad — dessen Coverage nicht schwächen.
+
+## Result
+
+**Done 2026-07-20.** Alle drei Verben **gegen das echte DOM gemessen**; jedes ist
+aufgelöst (getestet bzw. Owner-Entscheid + Umsetzungspfad).
+
+### `focus` → funktioniert → getestet (grün)
+
+`ui-action(focus)` auf ein `ui-input` setzt den Tastatur-Fokus auf das Control
+(`sl-input` wird `document.activeElement`). Bereits implementiert (Client
+`applyCommand` case `"focus"` → `.focus()` am inneren Control; Server-`ui-input`/
+`ui-textarea`/`ui-datepicker` besitzen das Verb). Neuer grüner Lock in
+`tests/e2e/nodes/behavior/p256-verbs-focus-reset-select.spec.ts`.
+
+### `select` → gemessen INERT → Owner: **implementieren** → **P257**
+
+Das Command wird gepusht, aber der Client löst `part` via `[name="<part>"]` auf →
+trifft den `sl-tab-panel`-Body statt des aktivierenden `sl-tab`-Nav-Elements; kein
+Tab-Wechsel. Echtes `select` spannt tabs/stepper/menu/table (je Aktivierungs-Semantik
++ Serializer-Hook) → substanziell, als eigenes Feature-Paket **P257** ausgekoppelt
+(Owner-Entscheid 2026-07-20). Der Test liegt als lauffähiger `test.fixme` vor.
+
+### `reset` → gemessen INERT → Owner: **implementieren** → **P258**
+
+Das Command wird gepusht, aber der Client löscht nur open/selected-Overlay-Flags,
+setzt nie einen Feld-**Wert** zurück (getippter Input behielt „scratch"). „Reset auf
+Initialwert" hat pro Ziel-Typ verschiedene Semantik (offene Frage) → eigenes Paket
+**P258** (mit Owner-Entscheid zur Initialwert-Quelle). Test als `test.fixme`.
+
+### Warum P257/P258 statt inline
+
+P256 war als **leichter** Konformitäts-Pass geschnitten; select (4 Knoten, Serializer-
+Hooks) + reset (Wert-Reset über ~8 Form-Controls, offene Semantik) sind cross-node-
+**Feature**-Arbeit. Sauber als Folge-Pakete geschnitten (Muster: P240-Findings →
+Folge-Pakete), mit dem gemessenen Befund + konkreter Akzeptanz als Startpunkt — kein
+Raten, kein stilles Entfernen eines dokumentierten Verbs.
+
+### Verifikation
+
+Der P256-Anteil ist **test-only** (1 grüner focus-Test + 2 `test.fixme` + Katalog,
+kein geteilter Code) → gezielter Lauf: `p256-verbs-focus-reset-select.spec.ts`
+**1 passed, 2 skipped, `--retries=0`**. Kein Regress möglich (keine Impl.-Änderung).
+`pnpm validate` + Tripwires grün. Agent committete VOR der Verifikation, stoppte alle
+Prozesse (Port 1882 frei). (Der erste Versuch starb an einem Verbindungsfehler in der
+Mess-Phase ohne Commit — verlustfrei neu gestartet.)
