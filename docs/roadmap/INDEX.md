@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P257** — aspects/node-conformance — **ui-action `select`-Verb implementieren**: cross-node Item-Aktivierung (tabs/stepper/menu/table); Serializer-Hook am aktivierenden Element — *Owner 2026-07-20; aus P256* — [P257](aspects/node-conformance/P257-implement-ui-action-select-verb.md)
 - **P258** — aspects/node-conformance — **ui-action `reset`-Verb implementieren**: Wert-Reset auf Initialzustand je Form-Control; Initialwert-Quelle = Owner-Entscheid — *Owner 2026-07-20; aus P256* — [P258](aspects/node-conformance/P258-implement-ui-action-reset-verb.md)
 
 ## Deferred (parked, not abandoned)
@@ -91,7 +90,7 @@ open the folder for the full history.
 | nodes/ui-accordion | 2 |
 | nodes/ui-breadcrumb · ui-dialog · ui-progress · ui-skeleton | 1 each |
 | aspects/test-infra | 28 |
-| aspects/node-conformance | 25 |
+| aspects/node-conformance | 26 |
 | aspects/misc | 16 |
 | aspects/docs | 1 |
 | aspects/runtime | 9 |
@@ -103,4 +102,4 @@ open the folder for the full history.
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 252 done, 2 open, 12 deferred.**
+**Total: 253 done, 1 open, 12 deferred.**

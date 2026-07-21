@@ -3,7 +3,7 @@ id: P257
 node: ui-action
 title: "ui-action `select`-Verb implementieren — cross-node Item-Aktivierung (tabs/stepper/menu/table)"
 epic: aspects/node-conformance
-status: in_progress
+status: done
 dependencies: []
 verify: browser
 spec: docs/nodes/behavior/ui-action.md
@@ -78,3 +78,49 @@ Aktivierungs-Semantik + beobachtbare Wirkung.
   (`webapp.js:2647`) nutzen soll statt eines zweiten Mechanismus.
 - Umfang groß genug für inkrementelle Commits (ein Knotentyp pro Commit) —
   Ausfallsicherheit.
+
+## Result
+
+**Done 2026-07-21.** Das `select`-Verb aktiviert jetzt real ein Item über **alle vier**
+Knotentypen — Serializer-Hook am aktivierenden Element (nicht am Inhalt), Client-
+Aktivierung per `findActivationElement`, idempotent (Re-Stamp nach jedem Snapshot
+feuert keine Events erneut).
+
+### Je Knotentyp (gemessen, grün)
+
+- **ui-tabs** — Hook auf `sl-tab[slot="nav"]` (`data-webapp-part=<tab id>`); Client
+  klickt das Nav-Tab → Shoelace schaltet das Panel. Ziel-`sl-tab` bekommt `active`,
+  das vorherige verliert es.
+- **ui-stepper** — Hook auf dem Step-Button; unbound `activeStep` round-trippt nicht,
+  daher client-seitig `webapp-step--active` single-active markiert (kein Klick).
+- **ui-menu** — Hook auf `sl-menu-item`; `data-webapp-active="true"` + `aria-current`
+  single-active, ohne zu navigieren.
+- **ui-table** — Hook auf der selektierbaren `<tr>`; **Entscheidung: bestehenden
+  `rowSelect`-Pfad wiederverwenden** (kein zweiter Mechanismus). Client-`select`
+  klickt den rowSelect-Link → feuert das dokumentierte Event (via `interceptNextEvent`
+  gemessen: `event:"rowSelect"`, `params.rowId:"r2"`), event-only (kein Overlay-Record,
+  sonst Re-Fire bei jedem Render).
+
+Alle vier implementiert, nichts zurückgestellt. Der P256-`select`-`fixme` ist zu
+echten Tests je Knotentyp gewachsen (nur `reset` bleibt `fixme` → P258).
+
+### Nebenfund + gefixt: ui-tabs E01 deterministisch gemacht
+
+Der autoritative Voll-Lauf war zunächst **819/1**: `ui-tabs.spec.ts:226` E01 (30 s
+Timeout). Ursache: P257s **single-active Re-Stamp** aktiviert den Default-Tab vor
+Shoelaces Upgrade und **unterdrückt** dessen Upgrade-`sl-tab-show`-Auto-Emit, auf den
+E01s fragiler `defaultTabEvent`-Drain wartete → kippte E01 von „flakt unter Last"
+(P170/P239) in „flakt isoliert" (~50 %). Das Feature war intakt (E01 grün in 70 ms,
+wenn es nicht rennt). Fix (Commit `d948921`): E01 wartet per Prädikat auf **sein
+eigenes** `details`-Change-Event statt auf den Shoelace-eigenen Upgrade-Emit (nicht
+der Vertrag dieses Knotens; D01 deckt Default-Aktiv). **Isoliert 4/4 grün, ~2,6 s;**
+löst die wiederkehrende E01-Flake (`task_c1239d9c`).
+
+### Verifikation (Haupt-Checkout, autoritativ)
+
+**E2E 820 passed, 0 failed, `--retries=0`, 15,2 min** — der erste **voll grüne**
+Voll-Lauf ohne E01-Retry/Flake. Serializer+Client geändert → Voll-Suite. `pnpm build`
++ `pnpm validate` + alle Tripwires grün. Agent committete inkrementell (2 Commits)
+VOR der Verifikation, stoppte alle Prozesse (Port 1882 frei), Haupt-Checkout unberührt.
+Spec `ui-action.md` + Katalog spiegeln die per-Ziel-Aktivierungssemantik + die
+ui-table-Entscheidung.
