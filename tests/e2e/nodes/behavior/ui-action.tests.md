@@ -81,10 +81,35 @@ gemessen (Verb deployt + getriggert, DOM beobachtet):
 | Ziel | Spec / Test | Beobachtung |
 |---|---|---|
 | `focus` **hat Wirkung** → Ziel-Control fokussiert | „focus → the target ui-input control becomes document.activeElement" | Nach dem `focus`-Verb ist das `sl-input` des Ziels `:focus` (`toBeFocused`). **Grün.** |
-| `select` **INERT** (geflaggt) | `test.fixme` „select(part) → the targeted ui-tabs tab becomes active" | Der `select`-Command wird gepusht, aber der Client klickt via `findPartElement` das `sl-tab-panel[name]` (Body), nicht das `sl-tab[panel]` (Nav) — der aktive Tab wechselt **nicht**. Tabs/Stepper/Menü tragen keinen `data-webapp-part`-Hook (anders als Accordion-`sl-details`). Als `fixme` bewahrt bis Owner-Entscheid (implementieren über tabs/stepper/menu/table vs. Verb entfernen). |
-| `reset` **INERT** (geflaggt) | `test.fixme` „reset → the target ui-input value returns to its initial state" | Der `reset`-Command wird gepusht, aber der Client-Handler löscht nur die `open`/`selected`-Overlay-Flags des Ziels (bei einem Input leer) und re-rendert — der **Feldwert** wird nie zurückgesetzt (getippter Wert überlebt). „Reset auf Initialwert" hat je Ziel-Typ (ui-input/-textarea/-datepicker vs. ui-app/-route) andere Semantik. Als `fixme` bewahrt bis Owner-Entscheid.
+| `reset` **INERT** (geflaggt → P258) | `test.fixme` „reset → the target ui-input value returns to its initial state" | Der `reset`-Command wird gepusht, aber der Client-Handler löscht nur die `open`/`selected`-Overlay-Flags des Ziels (bei einem Input leer) und re-rendert — der **Feldwert** wird nie zurückgesetzt (getippter Wert überlebt). „Reset auf Initialwert" hat je Ziel-Typ (ui-input/-textarea/-datepicker vs. ui-app/-route) andere Semantik. Als `fixme` bewahrt bis P258.
 
-> `focus` ist der einzige der drei Verben mit belegter Wirkung und daher der
-> einzige grüne Verhaltens-Test. `select`/`reset` sind gemessen INERT; ihre
-> `fixme`-Tests dokumentieren die Soll-Wirkung ausführbar, ohne die Suite rot zu
-> färben, bis der Owner über Implementieren-oder-Entfernen entscheidet.
+> `focus` ist grün. `reset` ist gemessen INERT und als `fixme` (→ P258) bewahrt.
+> `select` wurde in **P257** implementiert (siehe unten).
+
+## P257 — Verb `select` implementiert (cross-node Item-Aktivierung)
+
+Owner-Entscheid (aus P256): **implementieren** statt entfernen. Der Serializer
+stampft auf dem **aktivierenden** Element je Knoten einen auflösbaren
+`data-webapp-part`-Hook (Präzedenz: Accordion-`sl-details`, P247); der Client
+(`activateSelection` + `findActivationElement`) löst `part` darüber auf und löst
+die native Aktivierung je Ziel-Typ aus. Browser-E2E:
+`p256-verbs-focus-reset-select.spec.ts` (der P256-`select`-`fixme` ist zu vier
+gemessenen grünen Tests ausgebaut).
+
+| Ziel | Test | Gemessener Aktiv-Zustand |
+|---|---|---|
+| **ui-tabs** | „select(part) → the targeted ui-tabs tab becomes active" | Hook auf `sl-tab[slot="nav"] data-webapp-part`; Klick aktiviert das Nav-Tab, Shoelace schaltet das Panel um. Gemessen: Ziel-`sl-tab` bekommt `active`, das vorher aktive verliert es. **Grün.** |
+| **ui-stepper** | „select(part) → the targeted ui-stepper step becomes active" | Hook auf dem Step-Button (`data-webapp-part` = Step-Id/Index); der Client setzt `webapp-step--active` einzelaktiv. Gemessen: Ziel-Button bekommt die Aktiv-Klasse, der Default (Index 0) verliert sie. **Grün.** |
+| **ui-menu** | „select(part) → the targeted ui-menu item is marked active" | Hook auf `sl-menu-item`; der Client markiert `data-webapp-active="true"` + `aria-current="page"` einzelaktiv (ohne Navigation). Gemessen: Ziel-Item aktiv, vorher keins. **Grün.** |
+| **ui-table** | „select(part) → the targeted ui-table row fires its rowSelect" | Hook auf der Zeile (`<tr data-webapp-part="<rowId>">`); `select` **nutzt den bestehenden `rowSelect`-Pfad wieder** (kein zweiter Mechanismus, keine Persistenz → keine Event-Schleife) und klickt den `rowSelect`-Link. Gemessen: `POST /event { event:"rowSelect", params.rowId }` für die Ziel-Zeile (`interceptNextEvent`). **Grün.** |
+
+> **ui-table-Entscheid:** eine ui-table trägt **keinen** persistenten
+> Pro-Zeilen-Aktiv-Zustand (Selektions-Zustand lebt auf `ui-list` via
+> `aria-selected`/`selectedId`). `select` wird daher über das bestehende
+> `rowSelect`-**Event** belegt (nicht über ein DOM-Attribut) und einmalig gefeuert
+> (nicht im Selection-Overlay re-gestampft — das würde das Event bei jedem
+> Re-Render erneut auslösen).
+>
+> **Kein Regress:** die soliden Item-/Event-Pfade (tabs `change`/two-way,
+> stepper `change`, menu `navigate`, table `rowSelect`) bleiben grün
+> (`ui-tabs.spec.ts`, `ui-stepper.spec.ts`, `ui-menu.spec.ts`, `ui-table.spec.ts`).

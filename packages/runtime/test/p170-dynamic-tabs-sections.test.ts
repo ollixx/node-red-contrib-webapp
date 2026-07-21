@@ -74,7 +74,7 @@ describe("P170: dynamic ui-tabs via ui-repeat-of-ui-tab — rendered HTML", () =
         expect(result.body).toContain("Compiler");
 
         // default active = first dynamic tab.
-        expect(result.body).toContain("panel=\"a#tpl\" active");
+        expect(result.body).toContain("panel=\"a#tpl\" data-webapp-part=\"a#tpl\" active");
     });
 });
 

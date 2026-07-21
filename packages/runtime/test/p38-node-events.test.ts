@@ -72,7 +72,7 @@ describe("P38: serializer emits data-webapp-source on all interactive kinds", ()
             props: { tabs: [{ id: "a", label: "A" }, { id: "b", label: "B" }] }
         });
         const html = serializer.renderComponentHtml(component, "app", {});
-        expect(html).toContain("panel=\"b\" active");
+        expect(html).toContain("panel=\"b\" data-webapp-part=\"b\" active");
     });
 
     it("pagination renders prev/next buttons with data-webapp-source and data-webapp-page", () => {

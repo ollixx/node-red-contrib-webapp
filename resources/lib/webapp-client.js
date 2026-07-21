@@ -323,20 +323,97 @@
         });
     }
 
-    // P59: activate a single-active sub-part within a target (tab / step / menu
-    // item). Prefer the element's own activation affordance (click) and fall back
-    // to the `active`/`selected` attribute the Shoelace markup uses.
+    // P59/P257: activate a single-active sub-part within a target (tab / step /
+    // menu item / table row). Resolve the part to the ACTIVATING element (P257:
+    // prefer the data-webapp-part hook — for tabs that is the `sl-tab` NAV element,
+    // not the `sl-tab-panel[name]` body) and trigger that node's own native
+    // activation. Idempotent: if the part is already active, do nothing (so the
+    // re-stamp after every snapshot render does not re-fire change/rowSelect events
+    // and loop).
     function activateSelection(targetEl, part) {
-        const partEl = findPartElement(targetEl, part);
+        const partEl = findActivationElement(targetEl, part);
         if (!partEl) {
             return;
         }
+        const tag = partEl.tagName ? partEl.tagName.toLowerCase() : "";
+
+        // Menu item — mark it active (single-active among its siblings) WITHOUT
+        // navigating. A menu's active highlight is data-webapp-active + aria-current.
+        if (tag === "sl-menu-item") {
+            if (partEl.getAttribute("data-webapp-active") === "true") {
+                return;
+            }
+            const siblings = targetEl.querySelectorAll("sl-menu-item[data-webapp-active]");
+            for (let i = 0; i < siblings.length; i += 1) {
+                siblings[i].removeAttribute("data-webapp-active");
+                siblings[i].removeAttribute("aria-current");
+            }
+            partEl.setAttribute("data-webapp-active", "true");
+            partEl.setAttribute("aria-current", "page");
+            return;
+        }
+
+        // Table row — reuse the existing rowSelect affordance: click the first-cell
+        // rowSelect link inside this row so the documented `rowSelect` event fires
+        // exactly as a user click would (no second selection mechanism).
+        if (partEl.hasAttribute("data-webapp-row")) {
+            const link = partEl.querySelector("[data-webapp-event=\"rowSelect\"]");
+            if (link && typeof link.click === "function") {
+                link.click();
+            }
+            return;
+        }
+
+        // Stepper step button — the active state is the `webapp-step--active` class,
+        // which is serializer-driven (an unbound activeStep never round-trips). Mark
+        // it directly (single-active among its sibling steps); do NOT click (a click
+        // only dispatches a change event and would not move the class on its own).
+        if (partEl.classList && partEl.classList.contains("webapp-step")) {
+            if (partEl.classList.contains("webapp-step--active")) {
+                return;
+            }
+            const steps = targetEl.querySelectorAll("button.webapp-step");
+            for (let i = 0; i < steps.length; i += 1) {
+                steps[i].classList.remove("webapp-step--active");
+            }
+            partEl.classList.add("webapp-step--active");
+            return;
+        }
+
+        // Tab nav element — already active? nothing to do (re-clicking would re-fire
+        // sl-tab-show on every re-stamp).
+        if (partEl.hasAttribute && partEl.hasAttribute("active")) {
+            return;
+        }
+
+        // Tab nav element: native activation via a click — Shoelace's tab-group
+        // switches the visible panel and fires sl-tab-show. Fall back to the `active`
+        // attribute if the element exposes no click affordance.
         if (typeof partEl.click === "function") {
             partEl.click();
         }
         else {
             partEl.setAttribute("active", "");
         }
+    }
+
+    // P257: resolve the part to its ACTIVATING element. Prefer the explicit
+    // data-webapp-part hook the serializer stamps on the activating element (nav
+    // tab / step button / menu item / row); fall back to the disclosure resolver
+    // (findPartElement) used by the open/close verbs.
+    function findActivationElement(targetEl, part) {
+        const esc = cssEscapeAttr(part);
+        return targetEl.querySelector('[data-webapp-part="' + esc + '"]')
+            || findPartElement(targetEl, part);
+    }
+
+    // P257: a target whose `select` activation is EVENT-based rather than a
+    // persistent DOM active-state (a ui-table row fires rowSelect). These are fired
+    // once and NOT recorded in the selection overlay — there is no persistent
+    // active-state to re-stamp, and re-firing on every render would spam the event.
+    function isEventOnlySelection(targetEl, part) {
+        const partEl = findActivationElement(targetEl, part);
+        return Boolean(partEl && partEl.hasAttribute && partEl.hasAttribute("data-webapp-row"));
     }
 
     // P53: find an openable sub-part within a target (accordion section, tree
@@ -1255,12 +1332,17 @@
             // ── single-active selection ───────────────────────────────────────
             case "select":
                 if (target && part) {
-                    // Record in the overlay so the selection survives a later
-                    // snapshot re-render (applyInteractionOverlay re-stamps it),
-                    // then activate it now.
-                    interaction.selected[target] = part;
                     const targetEl = findTargetElement(target);
                     if (targetEl) {
+                        // P257: a table row's `select` is an EVENT (rowSelect), not a
+                        // persistent active-state — fire it once, do NOT record it in
+                        // the overlay (re-stamping it on every render would re-fire the
+                        // event and loop). Persistent single-active targets (tab / step
+                        // / menu item) are recorded so the selection survives a later
+                        // snapshot re-render (applyInteractionOverlay re-stamps it).
+                        if (!isEventOnlySelection(targetEl, part)) {
+                            interaction.selected[target] = part;
+                        }
                         activateSelection(targetEl, part);
                     }
                 }
