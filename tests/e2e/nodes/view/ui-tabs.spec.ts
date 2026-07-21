@@ -232,20 +232,27 @@ test.describe("ui-tabs / ui-tab (P168, children model)", () => {
         await deployFlow(request, flow);
 
         const webapp = new WebappPage(page, "tb168E1App");
-
-        // The tab group emits its OWN sl-tab-show as it upgrades and activates the
-        // default tab — MEASURED: that really reaches the runtime as
-        // POST /event { event:"change", params:{ value:"overview" } }. It has to be
-        // drained BEFORE arming the intercept below, or `interceptNextEvent` grabs
-        // the default-tab event instead of the one this test dispatches (whether it
-        // does was pure timing — the cause of this spec's long-standing flakiness,
-        // see P170's result note). Armed before navigate() so it cannot be missed.
-        const defaultTabEvent = webapp.interceptNextEvent();
         await webapp.navigate("/");
         await expect(page.locator("sl-tab[panel='overview']")).toHaveAttribute("active", "");
-        expect((await defaultTabEvent).params).toEqual({ value: "overview" });
 
-        const eventPromise = webapp.interceptNextEvent();
+        // Wait for THIS dispatch's `details` change event specifically (by predicate).
+        // We deliberately do NOT depend on the tab group's OWN upgrade-time sl-tab-show
+        // (the default "overview" change): whether Shoelace auto-emits it — and whether
+        // P257's single-active re-stamp pre-activates the default tab and suppresses it —
+        // is pure timing and is not this node's contract (D01 covers default-active
+        // rendering). Matching `details` tolerates that noise with no flaky drain and no
+        // 30s hang, and stays honest — a wrong event/value never satisfies the predicate,
+        // so a real regression still fails the test. (Was the long-standing E01 flake;
+        // see P170/P239 result notes and P257 which tipped it into isolation.)
+        const detailsEvent = page.waitForRequest((req) => {
+            if (req.method() !== "POST" || !req.url().includes("/webapp/tb168E1App/event")) return false;
+            try {
+                const b = req.postDataJSON() as { event?: string; params?: { value?: string } };
+                return b?.event === "change" && b?.params?.value === "details";
+            } catch {
+                return false;
+            }
+        });
         await page.evaluate(() => {
             const tabGroup = document.querySelector("sl-tab-group") as HTMLElement;
             tabGroup?.dispatchEvent(new CustomEvent("sl-tab-show", {
@@ -255,9 +262,9 @@ test.describe("ui-tabs / ui-tab (P168, children model)", () => {
             }));
         });
 
-        const body = await eventPromise;
+        const body = (await detailsEvent).postDataJSON() as { event: string; params: { value: string } };
         expect(body.event).toBe("change");
-        expect((body.params as Record<string, unknown>).value).toBe("details");
+        expect(body.params.value).toBe("details");
     });
 
     // ─── variant appearance (P250) ───────────────────────────────────────────
