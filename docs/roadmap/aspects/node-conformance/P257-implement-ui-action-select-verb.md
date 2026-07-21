@@ -3,7 +3,7 @@ id: P257
 node: ui-action
 title: "ui-action `select`-Verb implementieren — cross-node Item-Aktivierung (tabs/stepper/menu/table)"
 epic: aspects/node-conformance
-status: pending
+status: in_progress
 dependencies: []
 verify: browser
 spec: docs/nodes/behavior/ui-action.md

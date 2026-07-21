@@ -71,9 +71,12 @@ zu echten Tests je unterstütztem Control ausbauen) + `ui-action.tests.md`.
   ist wahrscheinlich sauberer als pro-Knoten-Zweige.
 - Inkrementelle Commits je Control-Typ.
 
-## Owner-Entscheid (vor Umsetzung zu bestätigen)
+## Owner-Entscheid (2026-07-21 bestätigt)
 
-1. **Initialwert-Quelle:** gerenderter `value` (Deploy-Zeit) — oder gebundener
-   Store-Initialwert bei store-gebundenen Controls — oder schlicht leer?
-2. **Umfang der Ziel-Typen:** nur Text (`ui-input`/`ui-textarea`) — oder der volle
-   Form-Control-Satz (datepicker/select/slider/checkbox/radio/switch)?
+1. **Initialwert-Quelle = Store-Initialwert bei Binding.** Store-gebundene Controls
+   werden auf den **Store-Initialwert** zurückgesetzt; ungebundene Controls auf den
+   **gerenderten `value`** (Deploy-Zeit). Zwei Pfade, aber die mächtigere Semantik.
+2. **Umfang = voller Form-Control-Satz:** `ui-input`/`ui-textarea`/`ui-datepicker`/
+   `ui-select`/`ui-slider`/`ui-checkbox`/`ui-radio`/`ui-switch` — ein einheitlicher
+   Client-Mechanismus (Wert auf initial zurück + Change-Event feuern, damit
+   Write-Back/Bindings konsistent bleiben).
