@@ -112,7 +112,11 @@ Die Verben (`actionTypeSchema`) sind in drei semantische Klassen getrennt:
   Snapshot-Re-Render entfernt/zeigt das Element), **nicht** einer separaten
   Client-Overlay-Schicht. `ui-alert` ist ein gültiges Ziel.
 - **Offenlegung (Disclosure):** `open` / `close` — öffnet/schließt ein bereits sichtbares, aufklappbares Element (Dialog, Drawer, Accordion-Sektion, Details/Collapse, Tree-Branch). Nutzt optional `part`. Ersetzt `openDialog`/`closeDialog`, die als Aliase erhalten bleiben.
-- **Einzelauswahl:** `select` — genau eines aus einer Geschwister-Gruppe aktiv (Tab, Stepper-Schritt, Menü). Nutzt `part`.
+- **Einzelauswahl:** `select` — genau eines aus einer Geschwister-Gruppe aktiv. Nutzt `part` (die Sub-ID des zu aktivierenden Items). Der Serializer stampft dazu auf dem **aktivierenden** Element (nicht dem Inhalt) einen auflösbaren `data-webapp-part`-Hook (Präzedenz: Accordion-`sl-details`, P247); der Client löst `part` darüber auf und löst die native Aktivierung je Ziel-Typ aus (P257):
+  - **ui-tabs** → Hook auf `sl-tab[slot="nav"]`; ein Klick aktiviert das Nav-Tab, Shoelace schaltet das Panel um (`active`-Attribut). (Ohne den Nav-Hook träfe `[name]` fälschlich den `sl-tab-panel`-Body.)
+  - **ui-stepper** → Hook auf dem Step-Button; der aktive Schritt (`webapp-step--active`) wird einzelaktiv gesetzt.
+  - **ui-menu** → Hook auf dem `sl-menu-item`; das Item wird als aktiv markiert (`data-webapp-active` + `aria-current="page"`), einzelaktiv unter den Geschwistern, **ohne** zu navigieren.
+  - **ui-table** → Hook auf der Zeile (`<tr data-webapp-part="<rowId>">`); `select` **nutzt den bestehenden `rowSelect`-Pfad wieder** (kein zweiter Mechanismus) und klickt den `rowSelect`-Link der Zeile — das dokumentierte `rowSelect`-Event feuert. Eine ui-table trägt **keinen** persistenten Pro-Zeilen-Aktiv-Zustand (Selektions-Zustand lebt auf `ui-list` via `aria-selected`); die beobachtbare Wirkung ist das `rowSelect`-Event.
 
 plus `navigate`, `enable` / `disable` (schreiben analog den `disabled`-Wert, ADR
 0037), `focus`, `reset`. (`trigger` bleibt als
