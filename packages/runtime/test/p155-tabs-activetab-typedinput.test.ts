@@ -143,8 +143,8 @@ describe("P155/P168: ui-tabs — activeTab read-resolution into the active sl-ta
         const result = renderAppPage("tabsResApp", "/", undefined, definitions);
         expect(result.status).toBe(200);
         // the "details" sl-tab carries the active flag; "overview" does not.
-        expect(result.body).toContain("panel=\"details\" active");
-        expect(result.body).toContain("panel=\"overview\">");
+        expect(result.body).toContain("panel=\"details\" data-webapp-part=\"details\" active");
+        expect(result.body).toContain("panel=\"overview\" data-webapp-part=\"overview\">");
         // each child contributes its own panel.
         expect(result.body).toContain("name=\"overview\"");
         expect(result.body).toContain("name=\"details\"");
@@ -163,7 +163,7 @@ describe("P155/P168: ui-tabs — activeTab read-resolution into the active sl-ta
 
         const result = renderAppPage("tabsResApp2", "/", undefined, definitions);
         expect(result.status).toBe(200);
-        expect(result.body).toContain("panel=\"details\" active");
+        expect(result.body).toContain("panel=\"details\" data-webapp-part=\"details\" active");
     });
 
     it("a legacy activeTabPath still resolves the active tab from the store", () => {
@@ -176,7 +176,7 @@ describe("P155/P168: ui-tabs — activeTab read-resolution into the active sl-ta
 
         const result = renderAppPage("tabsResApp3", "/", undefined, definitions);
         expect(result.status).toBe(200);
-        expect(result.body).toContain("panel=\"overview\" active");
+        expect(result.body).toContain("panel=\"overview\" data-webapp-part=\"overview\" active");
     });
 
     it("no activeTab falls back to the first child by order", () => {
@@ -189,7 +189,7 @@ describe("P155/P168: ui-tabs — activeTab read-resolution into the active sl-ta
         const result = renderAppPage("tabsResApp4", "/", undefined, definitions);
         expect(result.status).toBe(200);
         // first child by order ("overview", order 0) is the default active tab.
-        expect(result.body).toContain("panel=\"overview\" active");
+        expect(result.body).toContain("panel=\"overview\" data-webapp-part=\"overview\" active");
     });
 
     it("renders each ui-tab child's content into its own panel", () => {

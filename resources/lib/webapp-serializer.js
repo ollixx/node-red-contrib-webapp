@@ -736,7 +736,12 @@
 
                         return "<td>" + value + "</td>";
                     }).join("");
-                    return "<tr data-webapp-row=\"" + escapeAttribute(rowId) + "\">" + cells + "</tr>";
+                    // P257: a selectable row carries a resolvable data-webapp-part hook
+                    // (its id) so a ui-action `select` reuses the existing rowSelect
+                    // affordance — it clicks the first-cell rowSelect link inside this
+                    // row, firing the documented `rowSelect` event (no 2nd mechanism).
+                    const partAttr = (rowSelectable && rowId) ? " data-webapp-part=\"" + escapeAttribute(rowId) + "\"" : "";
+                    return "<tr data-webapp-row=\"" + escapeAttribute(rowId) + "\"" + partAttr + ">" + cells + "</tr>";
                 }).join("");
             return wrapRenderedComponentHtml(component, layoutId, "<table class=\"webapp-table\"><thead><tr>" + header + "</tr></thead><tbody>" + body + "</tbody></table>");
         }
@@ -1212,7 +1217,11 @@
                 const iconHtml = tab.icon ? "<sl-icon slot=\"prefix\" name=\"" + escapeAttribute(String(tab.icon)) + "\"></sl-icon>" : "";
                 const label = escapeHtml(String(tab.label !== undefined ? tab.label : tab.id));
                 const active = (activeTab && String(tab.id) === activeTab) || tab.active ? " active" : "";
-                return "<sl-tab slot=\"nav\" panel=\"" + panelId + "\"" + active + ">" + iconHtml + label + "</sl-tab>";
+                // P257: the NAV tab carries a resolvable data-webapp-part hook (its
+                // id) so a ui-action `select` activates the nav element — NOT the
+                // sl-tab-panel body (which shares the same `name`). Mirrors the
+                // accordion `data-webapp-part` precedent (P247).
+                return "<sl-tab slot=\"nav\" panel=\"" + panelId + "\" data-webapp-part=\"" + panelId + "\"" + active + ">" + iconHtml + label + "</sl-tab>";
             }).join("");
             const panelHtml = tabs.map(function (tab) {
                 const region = regions.find(function (r) { return String(r.name) === String(tab.id); });
@@ -1308,7 +1317,16 @@
                 const itemRoute = item.route !== undefined ? item.route : item.path;
                 const isActive = activeRoute !== undefined && itemRoute !== undefined && String(itemRoute) === activeRoute;
                 const activeAttr = isActive ? " data-webapp-active=\"true\" aria-current=\"page\"" : "";
-                return "<sl-menu-item" + href + navAttr + activeAttr + ">" + label + "</sl-menu-item>";
+                // P257: each menu item carries a resolvable data-webapp-part hook
+                // (its id, else route/path, else label) so a ui-action `select` marks
+                // THIS item active (single-active among its siblings) without
+                // navigating. Mirrors the accordion `data-webapp-part` precedent (P247).
+                const partRaw = item.id !== undefined ? item.id
+                    : (item.route !== undefined ? item.route
+                        : (item.path !== undefined ? item.path
+                            : (item.label !== undefined ? item.label : item)));
+                const partAttr = " data-webapp-part=\"" + escapeAttribute(String(partRaw)) + "\"";
+                return "<sl-menu-item" + href + navAttr + activeAttr + partAttr + ">" + label + "</sl-menu-item>";
             }).join("");
             return wrapRenderedComponentHtml(component, layoutId, "<sl-menu>" + itemHtml + "</sl-menu>");
         }
@@ -1438,7 +1456,11 @@
             const stepHtml = steps.map(function (step, idx) {
                 const label = escapeHtml(String(step.label !== undefined ? step.label : (step.id !== undefined ? step.id : step)));
                 const isActive = idx === activeStep ? " webapp-step--active" : "";
-                return "<button class=\"webapp-step" + isActive + "\"" + src + " data-webapp-event=\"click\" data-webapp-step=\"" + idx + "\" type=\"button\">" + label + "</button>";
+                // P257: the step button carries a resolvable data-webapp-part hook
+                // (its id, else its index) so a ui-action `select` clicks THIS button
+                // (native step activation → change event → activeStep re-render).
+                const partId = escapeAttribute(String(step.id !== undefined ? step.id : idx));
+                return "<button class=\"webapp-step" + isActive + "\"" + src + " data-webapp-event=\"click\" data-webapp-step=\"" + idx + "\" data-webapp-part=\"" + partId + "\" type=\"button\">" + label + "</button>";
             }).join("");
             return wrapRenderedComponentHtml(component, layoutId, "<div class=\"webapp-stepper webapp-stepper--" + escapeAttribute(orientation) + "\">" + stepHtml + "</div>");
         }

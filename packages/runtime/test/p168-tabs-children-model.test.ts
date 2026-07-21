@@ -65,14 +65,14 @@ describe("P168: ui-tabs/ui-tab children model — renderer", () => {
 
     it("marks the activeTab child active; an invalid value falls back to the first child", () => {
         const active = renderAppPage("P168App", "/", undefined, tabsFlow({ kind: "literal", value: "de" }));
-        expect(active.body).toContain("panel=\"de\" active");
+        expect(active.body).toContain("panel=\"de\" data-webapp-part=\"de\" active");
 
         const invalid = renderAppPage("P168App", "/", undefined, tabsFlow({ kind: "literal", value: "nope" }));
         // falls back to the first child by order ("ov").
-        expect(invalid.body).toContain("panel=\"ov\" active");
+        expect(invalid.body).toContain("panel=\"ov\" data-webapp-part=\"ov\" active");
 
         const none = renderAppPage("P168App", "/", undefined, tabsFlow());
-        expect(none.body).toContain("panel=\"ov\" active");
+        expect(none.body).toContain("panel=\"ov\" data-webapp-part=\"ov\" active");
     });
 
     it("accepts the container:<id>/content mount alias the editor picker emits", () => {
@@ -136,7 +136,7 @@ describe("P168: legacy tabs-JSON migration (migrateLegacyTabComponents)", () => 
         ]);
         const result = renderAppPage("P168Leg", "/", undefined, defs);
         expect(result.status).toBe(200);
-        expect(result.body).toContain("panel=\"de\" active");
+        expect(result.body).toContain("panel=\"de\" data-webapp-part=\"de\" active");
         expect(result.body).toContain("Legacy Overview body");
         expect(result.body).toContain(">Overview</sl-tab>");
     });
