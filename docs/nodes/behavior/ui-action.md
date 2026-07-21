@@ -123,6 +123,35 @@ plus `navigate`, `enable` / `disable` (schreiben analog den `disabled`-Wert, ADR
 Legacy-Pass-Through-Verb erhalten.) Es gibt **keine** CRUD-Verben — die früheren
 `submit`/`remove` wurden in P29 entfernt; Daten gehören in den verdrahteten Flow.
 
+#### `reset` — Form-Control auf Initialwert (P258)
+
+`reset` setzt den **Live-Wert eines Form-Controls** auf seinen **Initialzustand**
+zurück und feuert das `change`-Event des Controls, damit ein gebundener Store
+konsistent nachzieht (kein Auseinanderdriften von Control und Store).
+
+- **Unterstützte Ziel-Typen (der volle Form-Control-Satz):** `ui-input`,
+  `ui-textarea`, `ui-datepicker`, `ui-select`, `ui-slider`, `ui-checkbox`,
+  `ui-radio`, `ui-switch`. (Diese Knoten „besitzen" das Verb — nur sie pushen
+  einen `reset`-Command; `focus` besitzen zusätzlich nur die Text-Controls
+  input/textarea/datepicker.)
+- **„Initialwert"-Definition (Owner-Entscheid 2026-07-21):** der Wert, der im
+  **ersten an den Client ausgelieferten HTML** stand (Deploy-Zeit). Für einen an
+  einen **Store/State gebundenen** Control ist das der **Store-Initialwert**; für
+  einen **ungebundenen** Control der **gerenderte `value`** (bzw. `checked`) aus
+  seiner Deklaration. Beide fallen auf „der zuerst gesehene Wert" zusammen — **ein**
+  einheitlicher Client-Mechanismus friert diesen Wert je Control beim ersten Render
+  ein (und überschreibt ihn nie), sodass eine spätere Store-Änderung den
+  gemerkten Initialwert nicht verfälscht.
+- **Beobachtbare Wirkung:** in einen Control „scratch" schreiben → `ui-action(reset,
+  target=<control>)` → der gemessene Control-Wert ist wieder der initiale. Bei einem
+  gebundenen Control zieht der Store (und jede zweite gebundene View) auf den
+  Store-Initialwert nach.
+- **Nicht unterstützte Ziel-Typen** (Display-Knoten wie `ui-text`, Struktur wie
+  `ui-container`): **dokumentierter No-op** — der Knoten besitzt das Verb nicht, es
+  wird kein Command gepusht, es passiert nichts (kein Crash). `ui-app`/`ui-route`
+  besitzen `reset` (App-global, ADR 0007 §4); da es dort kein Form-Control-Ziel
+  gibt, ist die Wirkung ein reiner Overlay-Re-Render (ebenfalls wertneutral).
+
 ### Inline-Hilfe (HTML)
 
 Der `data-help-name="ui-action"`-Hilfetext im Editor soll **knapp, aber

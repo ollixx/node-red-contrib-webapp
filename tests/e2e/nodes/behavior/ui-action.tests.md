@@ -81,9 +81,9 @@ gemessen (Verb deployt + getriggert, DOM beobachtet):
 | Ziel | Spec / Test | Beobachtung |
 |---|---|---|
 | `focus` **hat Wirkung** → Ziel-Control fokussiert | „focus → the target ui-input control becomes document.activeElement" | Nach dem `focus`-Verb ist das `sl-input` des Ziels `:focus` (`toBeFocused`). **Grün.** |
-| `reset` **INERT** (geflaggt → P258) | `test.fixme` „reset → the target ui-input value returns to its initial state" | Der `reset`-Command wird gepusht, aber der Client-Handler löscht nur die `open`/`selected`-Overlay-Flags des Ziels (bei einem Input leer) und re-rendert — der **Feldwert** wird nie zurückgesetzt (getippter Wert überlebt). „Reset auf Initialwert" hat je Ziel-Typ (ui-input/-textarea/-datepicker vs. ui-app/-route) andere Semantik. Als `fixme` bewahrt bis P258.
+| `reset` **implementiert → P258** | siehe P258-Abschnitt unten | Der P256-Befund (`reset` inert: Client löschte nur Overlay-Flags, nie den Feldwert) ist in **P258** behoben; der `fixme` ist zu gemessenen Pro-Control-Tests ausgebaut. |
 
-> `focus` ist grün. `reset` ist gemessen INERT und als `fixme` (→ P258) bewahrt.
+> `focus` ist grün. `reset` wurde in **P258** implementiert (siehe unten).
 > `select` wurde in **P257** implementiert (siehe unten).
 
 ## P257 — Verb `select` implementiert (cross-node Item-Aktivierung)
@@ -113,3 +113,42 @@ gemessenen grünen Tests ausgebaut).
 > **Kein Regress:** die soliden Item-/Event-Pfade (tabs `change`/two-way,
 > stepper `change`, menu `navigate`, table `rowSelect`) bleiben grün
 > (`ui-tabs.spec.ts`, `ui-stepper.spec.ts`, `ui-menu.spec.ts`, `ui-table.spec.ts`).
+
+## P258 — Verb `reset` implementiert (Wert-Reset je Form-Control)
+
+Owner-Entscheid (aus P256, 2026-07-21 bestätigt): **implementieren**. Ein
+einheitlicher Client-Mechanismus (`resources/lib/webapp-client.js`) friert je
+Form-Control den **zuerst gesehenen** Wert/`checked` ein (`captureInitialControlState`,
+idempotent — erster Render gewinnt) und setzt ihn bei `reset` zurück
+(`resetControlToInitial`) plus feuert das `change`-Event, sodass ein gebundener
+Store nachzieht. **„Initialwert" = der Deploy-Zeit-Wert:** gebunden = Store-Initialwert,
+ungebunden = gerenderter `value`/`checked` (beides = der zuerst ausgelieferte Wert).
+Serverseitig besitzt jetzt der **volle Form-Control-Satz** das Verb
+(`INTERACTION_VERBS_BY_TYPE` in `nodes/webapp.js`: `reset` zu select/checkbox/
+radio/switch/slider ergänzt; input/textarea/datepicker hatten es bereits).
+Browser-E2E: `p256-verbs-focus-reset-select.spec.ts` (der P256-`reset`-`fixme` ist
+zu gemessenen Pro-Control-Tests ausgebaut).
+
+| Ziel | Test | Gemessene Wirkung (Wert → initial) |
+|---|---|---|
+| **ui-input (ungebunden, leer)** | „reset → an UNBOUND ui-input value returns to its rendered initial (empty)" | „scratch" getippt → `reset` → `sl-input.value === ""` (gerenderter Initialwert). **Grün.** |
+| **ui-input (ungebunden, geseedet)** | „reset → an UNBOUND ui-input with a rendered initial returns to that value (not empty)" | Initial `value="seed"`, überschrieben → `reset` → `value === "seed"` (belegt den „gerenderten value"-Pfad, nicht „leer"). **Grün.** |
+| **ui-input (Store-gebunden)** | „reset → a STORE-BOUND ui-input returns to the STORE INITIAL and re-syncs the store" | Store-Initial `"Alice"`, `writeTrigger=change` → auf `"Bob"` geändert (Store + zweite gebundene View ziehen nach) → `reset` → Control `=== "Alice"` **und** die Mirror-View re-synct auf `"Alice"` (belegt den Store-Initialwert-Pfad + gefeuertes `change`). **Grün.** |
+| **ui-textarea** | „reset → an UNBOUND ui-textarea value returns to its rendered initial" | Initial `"start"`, überschrieben → `reset` → `sl-textarea.value === "start"`. **Grün.** |
+| **ui-checkbox** | „reset → a ui-checkbox returns to its initial checked state" | Initial `unchecked`, angehakt → `reset` → `checked === false`. **Grün.** |
+| **ui-switch** | „reset → a ui-switch returns to its initial checked state" | Initial `off`, eingeschaltet → `reset` → `checked === false`. **Grün.** |
+| **ui-select** | „reset → a ui-select returns to its initial value" | Initial `"a"`, auf `"b"` gesetzt → `reset` → `value === "a"`. **Grün.** |
+| **ui-radio** | „reset → a ui-radio group returns to its initial value" | Initial `"a"`, auf `"b"` gesetzt → `reset` → `sl-radio-group.value === "a"`. **Grün.** |
+| **ui-slider** | „reset → a ui-slider returns to its initial value" | Initial `10`, auf `75` gesetzt → `reset` → `sl-range.value === 10`. **Grün.** |
+| **ui-datepicker** | „reset → a ui-datepicker returns to its initial value" | Initial `"2026-01-01"`, geändert → `reset` → `value === "2026-01-01"`. **Grün.** |
+| **Nicht-Form-Ziel (No-op)** | „reset → a NON-form target (ui-text display) is a documented no-op and does not crash" | `reset` auf eine `ui-text` (besitzt das Verb nicht → kein Command): kein Client-Crash (`pageerror` leer), ein unbeteiligter Control behält seinen Scratch-Wert. **Grün.** |
+
+> **Initialwert-Quelle:** ein einziger eingefrorener Wert deckt beide Owner-Pfade
+> (gebunden = Store-Initial, ungebunden = gerenderter `value`), weil zur Deploy-Zeit
+> der ausgelieferte Wert eines gebundenen Controls **gleich** dem Store-Initialwert
+> ist. Das Einfrieren (nie überschreiben) garantiert, dass eine spätere
+> Store-Änderung den Initialwert nicht verfälscht.
+>
+> **Kein Regress:** die Write-Back/Binding-Pfade (`ui-input.spec.ts` W01–W04,
+> `ui-textarea`/`ui-select`/`ui-slider`/`ui-datepicker`-Specs) bleiben unangetastet
+> — `reset` **ergänzt** nur den Wert-Reset.
