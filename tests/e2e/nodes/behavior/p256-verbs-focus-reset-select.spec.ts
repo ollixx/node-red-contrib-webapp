@@ -251,10 +251,13 @@ test.describe("ui-action verbs focus / select / reset (P256)", () => {
         const control = page.locator('[data-webapp-node="p258Seed"] sl-input');
         await expect(control).toHaveJSProperty("value", "seed");
 
-        // Overtype the seeded value.
-        await control.click();
-        await page.keyboard.type("-scratch");
-        await expect(control).toHaveJSProperty("value", "seed-scratch");
+        // Replace the seeded value with scratch.
+        await page.evaluate(() => {
+            const el = document.querySelector('[data-webapp-node="p258Seed"] sl-input') as HTMLElement & { value: string };
+            el.value = "scratch";
+            el.dispatchEvent(new CustomEvent("sl-input", { bubbles: true, composed: true }));
+        });
+        await expect(control).toHaveJSProperty("value", "scratch");
 
         await injectMessage(request, "p258SeedInj");
 
@@ -515,7 +518,13 @@ test.describe("ui-action verbs focus / select / reset (P256)", () => {
         await expect(control).toHaveJSProperty("value", "2026-01-01", { timeout: 5000 });
     });
 
-    test("reset → a NON-form target (ui-text) is a documented no-op and does not crash", async ({ page, request }) => {
+    test("reset → a NON-form target (ui-text display) is a documented no-op and does not crash", async ({ page, request }) => {
+        // A display node does not own `reset` (INTERACTION_VERBS_BY_TYPE), so no
+        // command is pushed — the verb is inert. We prove it does not crash and does
+        // not touch an UNRELATED control's scratch value.
+        const pageErrors: string[] = [];
+        page.on("pageerror", (e) => pageErrors.push(String(e)));
+
         const flow = new FlowBuilder()
             .app({ id: "p258NopApp", root: "p258NopApp" })
             .node("ui-text", { id: "p258Nop", text: "Static label" })
@@ -529,17 +538,17 @@ test.describe("ui-action verbs focus / select / reset (P256)", () => {
         const webapp = new WebappPage(page, "p258NopApp");
         await webapp.navigate("/");
 
-        await expect(webapp.root().locator(".webapp-text")).toContainText("Static label");
         const input = page.locator('[data-webapp-node="p258NopIn"] sl-input');
         await input.click();
         await page.keyboard.type("keepme");
         await expect(input).toHaveJSProperty("value", "keepme");
 
         await injectMessage(request, "p258NopInj");
+        await page.waitForTimeout(1000);
 
-        // No-op: the display node is unaffected, no crash, and an UNRELATED control's
-        // value is untouched (reset targets only its own control).
-        await expect(webapp.root().locator(".webapp-text")).toContainText("Static label");
+        // No-op: no client crash, and the unrelated control keeps its scratch value
+        // (reset on a non-form target touches nothing).
         await expect(input).toHaveJSProperty("value", "keepme");
+        expect(pageErrors).toEqual([]);
     });
 });

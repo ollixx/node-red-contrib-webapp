@@ -6519,12 +6519,14 @@ const INTERACTION_VERBS_BY_TYPE = {
     "ui-text": ["show", "hide"],
     "ui-table": ["show", "hide", "select"],
     "ui-container": ["show", "hide"],
-    "ui-select": ["show", "hide", "enable", "disable"],
+    // P258: the full form-control set owns `reset` (value → initial). Text controls
+    // (input/textarea/datepicker) also own `focus`; non-text controls do not.
+    "ui-select": ["show", "hide", "enable", "disable", "reset"],
     "ui-textarea": ["show", "hide", "enable", "disable", "focus", "reset"],
-    "ui-checkbox": ["show", "hide", "enable", "disable"],
-    "ui-radio": ["show", "hide", "enable", "disable"],
-    "ui-switch": ["show", "hide", "enable", "disable"],
-    "ui-slider": ["show", "hide", "enable", "disable"],
+    "ui-checkbox": ["show", "hide", "enable", "disable", "reset"],
+    "ui-radio": ["show", "hide", "enable", "disable", "reset"],
+    "ui-switch": ["show", "hide", "enable", "disable", "reset"],
+    "ui-slider": ["show", "hide", "enable", "disable", "reset"],
     "ui-datepicker": ["show", "hide", "enable", "disable", "focus", "reset"],
     // single-active containers (tabs / stepper / menu) own `select`
     "ui-tabs": ["show", "hide", "select"],
