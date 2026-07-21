@@ -56,6 +56,16 @@
     let dialogId = root.getAttribute("data-webapp-dialog") || undefined;
     let currentSnapshot = null;
 
+    // P258: the reset verb restores a form control to its INITIAL value. "Initial"
+    // is the value served in the first HTML the client rendered (deploy-time). For a
+    // store/state-BOUND control that first-served value IS the store's initial value;
+    // for an UNBOUND control it is the node's rendered `value` prop. Both collapse to
+    // "the value first seen", so ONE mechanism covers both owner paths: freeze each
+    // control's first-seen value/checked here and never overwrite it, so a later
+    // store change (which re-renders the control to a new value) cannot corrupt the
+    // recorded initial. Keyed by node id. See applyCommand("reset").
+    const initialControlState = Object.create(null);
+
     // P106: live-deploy-update.md. The server bakes a shell/topology SIGNATURE and
     // the app's deploy MODE into the page. On a later deploy push (or a re-focus
     // /snapshot pull) the client compares the incoming signature against this
@@ -272,6 +282,100 @@
             return null;
         }
         return root.querySelector('[data-webapp-node="' + cssEscapeAttr(nodeId) + '"]');
+    }
+
+    // P258: the full form-control set the `reset` verb operates on. These are the
+    // exactly-eight change-control kinds the serializer tags with
+    // data-webapp-event="change" (ui-input/textarea/datepicker/select/slider/
+    // checkbox/radio/switch). We resolve the control from a wrapper via this list.
+    const FORM_CONTROL_SELECTOR =
+        "sl-input, sl-textarea, sl-select, sl-checkbox, sl-switch, sl-radio-group, sl-range, input, textarea, select";
+
+    // P258: resolve the concrete form control from a target wrapper (or the element
+    // itself if it already IS a control). A change-control wrapper contains exactly
+    // one own control; a non-control target (container/display) yields null.
+    function formControlOf(el) {
+        if (!el) {
+            return null;
+        }
+        if (el.matches && el.matches(FORM_CONTROL_SELECTOR)) {
+            return el;
+        }
+        return el.querySelector ? el.querySelector(FORM_CONTROL_SELECTOR) : null;
+    }
+
+    // P258: toggles carry their value as `checked` (boolean), everything else as
+    // `value`. Mirrors collectFormValues / handleChangeEvent.
+    function isToggleControl(control) {
+        const tag = control && control.tagName ? control.tagName.toLowerCase() : "";
+        return tag === "sl-checkbox" || tag === "sl-switch" || (tag === "input" && control.type === "checkbox");
+    }
+
+    // P258: freeze each form control's first-seen initial value/checked. Called after
+    // every snapshot render but NEVER overwrites an id already recorded, so the value
+    // captured is the deploy-time one (store-initial for bound, rendered `value` for
+    // unbound). We iterate the change-control wrappers (which own exactly one control)
+    // rather than every [data-webapp-node] so a container's descendant child controls
+    // are never mis-attributed to the container.
+    function captureInitialControlState() {
+        const wrappers = root.querySelectorAll('[data-webapp-source][data-webapp-event="change"]');
+        wrappers.forEach(function (wrap) {
+            const nodeId = wrap.getAttribute("data-webapp-node") || wrap.getAttribute("data-webapp-source");
+            if (!nodeId || initialControlState[nodeId]) {
+                return;
+            }
+            const control = formControlOf(wrap);
+            if (!control) {
+                return;
+            }
+            if (isToggleControl(control)) {
+                initialControlState[nodeId] = { toggle: true, checked: control.hasAttribute("checked") };
+            }
+            else {
+                const attr = control.getAttribute("value");
+                initialControlState[nodeId] = { toggle: false, value: attr != null ? attr : "" };
+            }
+        });
+    }
+
+    // P258: restore a control to its recorded initial and fire its change pathway so
+    // a bound store re-syncs (the fired `change` POSTs to /event → store write-through
+    // → SSE re-render) and an unbound control's live value lands directly. We fire the
+    // native input/change AND the Shoelace sl-input/sl-change so every listener class
+    // (dedupe, write-back) sees the transition.
+    function resetControlToInitial(control, initial) {
+        if (initial.toggle) {
+            control.checked = Boolean(initial.checked);
+            if (initial.checked) {
+                control.setAttribute("checked", "");
+            }
+            else {
+                control.removeAttribute("checked");
+            }
+        }
+        else {
+            const value = initial.value != null ? initial.value : "";
+            control.value = value;
+            // Reflect onto the attribute too so a subsequent snapshot morph (which
+            // diffs markup) sees a consistent value.
+            control.setAttribute("value", value);
+        }
+        const view = root.ownerDocument.defaultView;
+        const EventCtor = view && view.Event ? view.Event : Event;
+        ["input", "change", "sl-input", "sl-change"].forEach(function (type) {
+            try {
+                control.dispatchEvent(new EventCtor(type, { bubbles: true, composed: true }));
+            }
+            catch (_e) {
+                // Older engines: fall back to a document-created event.
+                try {
+                    const legacy = root.ownerDocument.createEvent("Event");
+                    legacy.initEvent(type, true, false);
+                    control.dispatchEvent(legacy);
+                }
+                catch (_e2) { /* give up on this event type */ }
+            }
+        });
     }
 
     // Minimal attribute-value escaper for the selector (no CSS.escape in older
@@ -604,6 +708,10 @@
                 });
             });
         }
+
+        // P258: freeze each form control's first-seen initial value so the `reset`
+        // verb can restore it later. Idempotent — the first render wins.
+        captureInitialControlState();
 
         // P255: after the DOM reflects the new snapshot, diff lifecycle-container
         // presence and emit onShow/onHide for the containers that appeared/disappeared.
@@ -1362,8 +1470,18 @@
                 break;
             case "reset":
                 if (target) {
+                    // P258: reset a FORM CONTROL's live value back to its frozen
+                    // initial (store-initial when bound, rendered `value` when
+                    // unbound) and fire its change pathway so a bound store re-syncs.
+                    // For NON-form targets (ui-app/ui-route/display nodes) there is no
+                    // recorded initial → documented no-op (no crash), we only clear
+                    // the disclosure/selection overlay flags and re-render.
+                    const initial = initialControlState[target];
+                    const targetEl = findTargetElement(target);
+                    const control = initial ? formControlOf(targetEl) : null;
+
                     // Clear the disclosure/selection overlay flags for this target
-                    // (back to the snapshot's own intrinsic state) and re-render.
+                    // (back to the snapshot's own intrinsic state).
                     // P226 (ADR 0037): visibility/enabled are not overlay flags any
                     // more — they live in the snapshot value, so there is nothing to
                     // clear here for show/enable.
@@ -1373,7 +1491,20 @@
                             delete interaction.open[key];
                         }
                     });
-                    reRenderWithOverlay();
+
+                    if (control && initial) {
+                        // Value reset: set the control back to initial + fire change.
+                        // Do NOT reRenderWithOverlay here — for a bound control the
+                        // fired change round-trips through the store and the SSE push
+                        // re-renders; for an unbound control the live value we just set
+                        // is authoritative and a snapshot morph would be redundant.
+                        resetControlToInitial(control, initial);
+                    }
+                    else {
+                        // No form-control value to reset (non-form target, or overlay-
+                        // only reset) — restore intrinsic markup + re-stamp overlays.
+                        reRenderWithOverlay();
+                    }
                 }
                 break;
 
@@ -1694,6 +1825,11 @@
             }
         };
     }
+
+    // P258: seed the initial-value freeze from the server-rendered DOM before any
+    // hydration/morph, so the reset baseline survives even if hydrate() keeps the
+    // server-rendered fallback. applySnapshot re-captures (idempotently) afterwards.
+    captureInitialControlState();
 
     hydrate();
     subscribe();
