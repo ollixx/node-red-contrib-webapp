@@ -72,3 +72,19 @@ Unit-Belege (nicht-Browser):
 - Sicht-/Enabled-Verben schreiben den Wert statt eines Command-Frames (kein
   `command`-Push), übrige Verben (select/focus/reset) weiter als Command:
   `packages/runtime/test/p82-…`, `p83-…`, `p85-navigation-nodes-behaviour.test.ts`.
+
+## P256 — Verben `focus` / `select` / `reset` gemessen (leichter Konformitäts-Pass)
+
+Browser-E2E: `p256-verbs-focus-reset-select.spec.ts`. Gegen das reale DOM
+gemessen (Verb deployt + getriggert, DOM beobachtet):
+
+| Ziel | Spec / Test | Beobachtung |
+|---|---|---|
+| `focus` **hat Wirkung** → Ziel-Control fokussiert | „focus → the target ui-input control becomes document.activeElement" | Nach dem `focus`-Verb ist das `sl-input` des Ziels `:focus` (`toBeFocused`). **Grün.** |
+| `select` **INERT** (geflaggt) | `test.fixme` „select(part) → the targeted ui-tabs tab becomes active" | Der `select`-Command wird gepusht, aber der Client klickt via `findPartElement` das `sl-tab-panel[name]` (Body), nicht das `sl-tab[panel]` (Nav) — der aktive Tab wechselt **nicht**. Tabs/Stepper/Menü tragen keinen `data-webapp-part`-Hook (anders als Accordion-`sl-details`). Als `fixme` bewahrt bis Owner-Entscheid (implementieren über tabs/stepper/menu/table vs. Verb entfernen). |
+| `reset` **INERT** (geflaggt) | `test.fixme` „reset → the target ui-input value returns to its initial state" | Der `reset`-Command wird gepusht, aber der Client-Handler löscht nur die `open`/`selected`-Overlay-Flags des Ziels (bei einem Input leer) und re-rendert — der **Feldwert** wird nie zurückgesetzt (getippter Wert überlebt). „Reset auf Initialwert" hat je Ziel-Typ (ui-input/-textarea/-datepicker vs. ui-app/-route) andere Semantik. Als `fixme` bewahrt bis Owner-Entscheid.
+
+> `focus` ist der einzige der drei Verben mit belegter Wirkung und daher der
+> einzige grüne Verhaltens-Test. `select`/`reset` sind gemessen INERT; ihre
+> `fixme`-Tests dokumentieren die Soll-Wirkung ausführbar, ohne die Suite rot zu
+> färben, bis der Owner über Implementieren-oder-Entfernen entscheidet.
