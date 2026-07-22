@@ -46,7 +46,7 @@ function uiApp(id, tabId, overrides = {}) {
 }
 
 function uiRoute(id, path, appId, tabId, overrides = {}) {
-    return { id, type: "ui-route", name: id, uiId: id, path, app: appId, layoutId: "vertical", z: tabId, x: 120, y: 180, wires: [[]], ...overrides };
+    return { id, type: "ui-route", name: id, uiId: id, path, app: appId, layout: "vertical", z: tabId, x: 120, y: 180, wires: [[]], ...overrides };
 }
 
 // Inject node that sends msg.payload (updates primary field of any view node)
@@ -134,7 +134,7 @@ const examples = [];
         nodes: [
             tab(T, "ui-app example"),
             // layout:"app" on the ui-app node renders a coloured top bar on ALL
-            // routes of this app, regardless of the individual route's layoutId.
+            // routes of this app, regardless of the individual route's layout preset.
             // tokens override the CSS custom properties used by the top bar.
             // The ui-app is the implicit root route ("/") — no ui-route node is
             // needed for the home page; content mounts into the app's content slot.
@@ -163,7 +163,7 @@ const examples = [];
 
             // The app is the implicit root route ("/"). One explicit sub-route
             // with a :id param demonstrates the ui-route node.
-            uiRoute("routeDetail", "/item/:id", A, T, { layoutId: "vertical", x: 120, y: 260 }),
+            uiRoute("routeDetail", "/item/:id", A, T, { layout: "vertical", x: 120, y: 260 }),
 
             // Home page content mounts directly into the ui-app content slot.
             viewNode("ui-text", "homeText", A, A, T, {
@@ -764,7 +764,7 @@ examples.push(inputNodeExample({
             uiApp(A, T, { name: "Container App" }),
 
             // Output: onShow / onHide (if configured)
-            { ...viewNode("ui-container", NODE, A, R, T, { name: "card", layoutId: "vertical" }), wires: [[DBG]] },
+            { ...viewNode("ui-container", NODE, A, R, T, { name: "card", layout: "vertical" }), wires: [[DBG]] },
 
             // Children mounted inside the container
             viewNode("ui-text", "ctTitle", A, R, T, { name: "card title", mount: "ctNode.content", text: "Card title", x: 700, y: 200 }),
@@ -1116,7 +1116,7 @@ examples.push(inputNodeExample({
             uiApp(A, T, { name: "Action App", layout: "app" }),
 
             // The app is the implicit root route ("/"); one explicit sub-route.
-            uiRoute("detailRoute", "/detail", A, T, { layoutId: "vertical", x: 120, y: 260 }),
+            uiRoute("detailRoute", "/detail", A, T, { layout: "vertical", x: 120, y: 260 }),
 
             // A dialog
             { id: "infoDialog", type: "ui-dialog", name: "Info", uiId: "infoDialog",
@@ -1129,7 +1129,7 @@ examples.push(inputNodeExample({
             viewNode("ui-button", "showCardBtn", A, A, T, { name: "show card", label: "Show Card", x: 480, y: 520 }),
 
             // A container that gets shown/hidden
-            viewNode("ui-container", "toggleCard", A, A, T, { name: "toggle card", layoutId: "vertical", x: 480, y: 600 }),
+            viewNode("ui-container", "toggleCard", A, A, T, { name: "toggle card", layout: "vertical", x: 480, y: 600 }),
             viewNode("ui-text", "cardContent", A, A, T, { name: "card content", mount: "toggleCard.content", text: "This card can be shown/hidden.", x: 700, y: 600 }),
 
             // Detail page content

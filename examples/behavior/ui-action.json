@@ -27,7 +27,7 @@
     "uiId": "detailRoute",
     "path": "/detail",
     "app": "actionApp",
-    "layoutId": "vertical",
+    "layout": "vertical",
     "z": "ex-ui-action",
     "x": 120,
     "y": 260,
@@ -122,7 +122,7 @@
     "wires": [
       []
     ],
-    "layoutId": "vertical"
+    "layout": "vertical"
   },
   {
     "id": "cardContent",

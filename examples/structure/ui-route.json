@@ -27,7 +27,7 @@
     "uiId": "routeDetail",
     "path": "/item/:id",
     "app": "routeApp",
-    "layoutId": "vertical",
+    "layout": "vertical",
     "z": "ex-ui-route",
     "x": 120,
     "y": 260,
