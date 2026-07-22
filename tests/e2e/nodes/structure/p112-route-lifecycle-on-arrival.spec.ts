@@ -32,7 +32,7 @@ function deepLinkFlow(appId: string) {
         name: appId + "-detail",
         app: appId,
         path: "/customers/:id",
-        layoutId: "vertical",
+        layout: "vertical",
         events: ["onEnter"],
         outputs: 1,
         z: "e2e-flow",

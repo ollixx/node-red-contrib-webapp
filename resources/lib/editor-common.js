@@ -857,8 +857,112 @@
         return out;
     }
 
+    // P259 (ADR 0038): the remaining reference id-suffix renames — the canonical
+    // config fields are `layout` / `route` / `definition`; pre-rename flows carry
+    // `layoutId` / `routeId` / `definitionId`. Same mechanics as the P228
+    // parent→app migration, generalised: every node whose defaults carry a
+    // canonical reference field gets
+    //   - a hidden `{ value: undefined }` migration default for the legacy name
+    //     (so a legacy flow's value is imported instead of stripped),
+    //   - an on-open migration that lifts the legacy value into the canonical
+    //     field AND re-seeds the `#node-input-<canonical>` carrier (Node-RED
+    //     binds the carrier from node[canonical] BEFORE oneditprepare, so a
+    //     legacy-only flow leaves it blank otherwise),
+    //   - an order-proof oneditsave that writes the migrated value into carrier
+    //     + property and DELETES the legacy alias, so the saved node exports
+    //     canonical-only (the ADR-0031 clobber-class fix, as in P228).
+    var REFERENCE_FIELD_RENAMES = [
+        { canonical: "layout", legacy: "layoutId" },
+        { canonical: "route", legacy: "routeId" },
+        { canonical: "definition", legacy: "definitionId" }
+    ];
+
+    function withReferenceFieldMigration(definition) {
+        if (!definition.defaults) {
+            return definition;
+        }
+        var renames = REFERENCE_FIELD_RENAMES.filter(function (rename) {
+            return Object.prototype.hasOwnProperty.call(definition.defaults, rename.canonical);
+        });
+        if (renames.length === 0) {
+            return definition;
+        }
+        var out = Object.assign({}, definition);
+        var defaults = Object.assign({}, out.defaults);
+        renames.forEach(function (rename) {
+            if (!Object.prototype.hasOwnProperty.call(defaults, rename.legacy)) {
+                defaults[rename.legacy] = { value: undefined };
+            }
+        });
+        out.defaults = defaults;
+
+        function seedCarrier(canonical, value) {
+            if (typeof $ !== "function") {
+                return;
+            }
+            var $carrier = $("#node-input-" + canonical);
+            if (!$carrier.length || String($carrier.val() || "") !== "") {
+                return;
+            }
+            if ($carrier.is("select") && $carrier.find("option[value='" + String(value).replace(/'/g, "\\'") + "']").length === 0) {
+                $carrier.append($("<option></option>").attr("value", value).text(value));
+            }
+            $carrier.val(value);
+        }
+
+        var originalPrepare = out.oneditprepare;
+        out.oneditprepare = function () {
+            var self = this;
+            // Migrate BEFORE the node's own oneditprepare so every installer
+            // (layout selector, reference picker, navigate mode) reads the
+            // canonical field and finds a seeded carrier.
+            renames.forEach(function (rename) {
+                var canonicalValue = self[rename.canonical];
+                var legacyValue = self[rename.legacy];
+                if ((canonicalValue === undefined || canonicalValue === null || canonicalValue === "") &&
+                    legacyValue !== undefined && legacyValue !== null && legacyValue !== "") {
+                    self[rename.canonical] = legacyValue;
+                    seedCarrier(rename.canonical, legacyValue);
+                }
+            });
+            if (originalPrepare) {
+                originalPrepare.call(this);
+            }
+        };
+
+        var originalSave = out.oneditsave;
+        out.oneditsave = function () {
+            if (originalSave) {
+                originalSave.call(this);
+            }
+            var self = this;
+            renames.forEach(function (rename) {
+                var legacyValue = self[rename.legacy];
+                if (legacyValue !== undefined && legacyValue !== null && legacyValue !== "") {
+                    // Order-proof against Node-RED's input→property field copy:
+                    // seed BOTH the (empty) carrier and the (empty) property.
+                    seedCarrier(rename.canonical, legacyValue);
+                    if (self[rename.canonical] === undefined || self[rename.canonical] === null || self[rename.canonical] === "") {
+                        self[rename.canonical] = legacyValue;
+                    }
+                }
+                dropLegacyFields(self, [rename.legacy]);
+            });
+        };
+        return out;
+    }
+
     function withUiIdMigration(definition) {
-        return withAppFieldMigration(withMigrationDefaults(definition));
+        return withReferenceFieldMigration(withAppFieldMigration(withMigrationDefaults(definition)));
+    }
+
+    // P259: `required` semantics for a canonical reference field with a legacy
+    // alias (mirrors validateAppRef): an un-opened legacy node carries the value
+    // in the legacy field and must not flag invalid before open→save migrates it.
+    function validateRefWithLegacy(legacyField) {
+        return function (value) {
+            return required(value) || required(this && this[legacyField]);
+        };
     }
 
     function required(value) {
@@ -949,7 +1053,8 @@
                 references.routes.push({
                     id,
                     path: node.path || "",
-                    layoutId: node.layoutId || "",
+                    // P259: canonical `layout`; legacy `layoutId` fallback.
+                    layoutId: node.layout || node.layoutId || "",
                     title: node.title || node.name || id,
                     parent: node.app || node.parent || ""
                 });
@@ -959,7 +1064,7 @@
             if (node.type === "ui-dialog") {
                 references.dialogs.push({
                     id,
-                    layoutId: node.layoutId || "",
+                    layoutId: node.layout || node.layoutId || "",
                     title: node.title || node.name || id,
                     parent: node.app || node.parent || ""
                 });
@@ -969,7 +1074,7 @@
             if (node.type === "ui-container") {
                 references.containers.push({
                     id,
-                    layoutId: node.layoutId || "",
+                    layoutId: node.layout || node.layoutId || "",
                     title: node.title || node.name || id,
                     mount: node.mount || ""
                 });
@@ -6005,11 +6110,12 @@
             }
 
             if (config.layout) {
-                installPickerField("#node-input-layoutId", {
+                installPickerField("#node-input-layout", {
                     filterPreset: "layouts",
                     title: "Layout auswählen",
                     placeholder: "Parent-Layout auswählen",
-                    seedValue: self.layoutId || ""
+                    // P259: canonical `layout`; legacy `layoutId` fallback.
+                    seedValue: self.layout || self.layoutId || ""
                 });
             }
 
@@ -6985,6 +7091,7 @@
         registerNodeTypeWithEvents,
         required,
         validateAppRef,
+        validateRefWithLegacy,
         resolveEditedNodeApp,
         resolveAppFromMount,
         // P165 (ADR 0017): scope-local item/index repeat helpers.

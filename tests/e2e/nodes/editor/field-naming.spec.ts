@@ -447,6 +447,71 @@ test.describe("P228 — pre-rename fixture (parent-era flow)", () => {
     });
 });
 
+// ─── P259 Stufe 1 — `layoutId` → `layout` (route / dialog / container) ───────
+//
+// The layout reference is renamed to the canonical bare name `layout` (ADR 0038
+// rule (c)). A legacy flow authored with `layoutId` must (a) render unchanged
+// (the runtime mapConfig reads `layout || layoutId`), (b) OPEN with the layout
+// preset SelectBox FILLED from the legacy value, and (c) save `layout` with the
+// legacy `layoutId` deleted (withReferenceFieldMigration in editor-common.js).
+
+const TAB_L = "e2e-flow";
+const APP_L = "p259App";
+
+/** One legacy flow: route (grid) + container + dialog authored with `layoutId`. */
+function legacyLayoutIdFlow(): Parameters<typeof deployFlow>[1] {
+    return [
+        { id: TAB_L, type: "tab", label: "P259 layoutId", disabled: false, info: "" },
+        { type: "ui-app", id: APP_L, uiId: APP_L, name: "P259 App", title: "P259 App", root: APP_L, layout: "vertical", z: TAB_L, x: 100, y: 80, wires: [[]] },
+        { type: "ui-route", id: "p259Route", uiId: "p259Route", name: "Page", app: APP_L, path: "/page", title: "Page", layoutId: "grid", events: "[]", outputs: 0, z: TAB_L, x: 100, y: 160, wires: [] },
+        { type: "ui-container", id: "p259Cont", uiId: "p259Cont", name: "Card", app: APP_L, mount: "route:/page/content", layoutId: "vertical", z: TAB_L, x: 100, y: 220, wires: [[]] },
+        { type: "ui-text", id: "p259Text", uiId: "p259Text", name: "Text", app: APP_L, mount: "container:p259Cont/content", text: "Legacy layout renders", z: TAB_L, x: 100, y: 280, wires: [[]] },
+        { type: "ui-dialog", id: "p259Dialog", uiId: "p259Dialog", name: "Dialog", app: APP_L, title: "Dialog", layoutId: "dialog", modal: true, closable: true, events: "[]", outputs: 0, z: TAB_L, x: 100, y: 340, wires: [] }
+    ];
+}
+
+/** node id → the legacy preset the SelectBox must show on open. */
+const LAYOUT_RENAME_CASES = [
+    { type: "ui-route", nodeId: "p259Route", preset: "grid" },
+    { type: "ui-container", nodeId: "p259Cont", preset: "vertical" },
+    { type: "ui-dialog", nodeId: "p259Dialog", preset: "dialog" }
+] as const;
+
+test.describe("P259 Stufe 1 — legacy `layoutId` migrates to canonical `layout`", () => {
+    test.afterEach(async ({ request }) => {
+        await resetFlow(request);
+    });
+
+    test("a legacy flow with `layoutId` renders unchanged (runtime fallback intact)", async ({ page, request }) => {
+        await deployFlow(request, legacyLayoutIdFlow());
+
+        const webapp = new WebappPage(page, APP_L);
+        await webapp.navigate("/page");
+        // The legacy `layoutId: "grid"` still drives the route layout class and
+        // the mounted container/text chain renders.
+        await expect(page.locator(".webapp-layout--grid").first()).toBeVisible();
+        await expect(page.locator("text=Legacy layout renders")).toBeVisible();
+    });
+
+    for (const c of LAYOUT_RENAME_CASES) {
+        test(`${c.type}: opens with the preset FILLED ('${c.preset}'), saves \`layout\`, drops \`layoutId\``, async ({ page, request }) => {
+            await deployFlow(request, legacyLayoutIdFlow());
+            await gotoEditor(page);
+            const editor = new NodeEditorPage(page);
+
+            await editor.openNode(c.nodeId);
+            // On-open migration: the layout preset SelectBox shows the legacy
+            // value (seeded via the migrated `layout` carrier / getValue chain).
+            expect(await editor.readField("layout-preset"), `${c.type} preset seeded from legacy layoutId`).toBe(c.preset);
+
+            await editor.save();
+            const n = await readNode(page, c.nodeId, ["layout", "layoutId"]);
+            expect(n.layout, `${c.type} layoutId → layout`).toBe(c.preset);
+            expect(n.layoutId, `${c.type} legacy layoutId dropped`).toBeUndefined();
+        });
+    }
+});
+
 test.describe("P229 slice D — ui-textarea rows renames to lines", () => {
     test.afterEach(async ({ request }) => {
         await resetFlow(request);

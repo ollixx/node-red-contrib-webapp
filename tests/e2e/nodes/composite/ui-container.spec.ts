@@ -29,7 +29,7 @@ test.describe("ui-container (P45)", () => {
     test("renders sl-card wrapper", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "ctnApp1", root: "ctnApp1" })
-            .node("ui-container", { id: "ctnNode1", layoutId: "vertical" })
+            .node("ui-container", { id: "ctnNode1", layout: "vertical" })
             .build();
 
         await deployFlow(request, flow);
@@ -43,7 +43,7 @@ test.describe("ui-container (P45)", () => {
         const containerId = "ctnNode2";
         const flow = new FlowBuilder()
             .app({ id: "ctnApp2", root: "ctnApp2" })
-            .node("ui-container", { id: containerId, layoutId: "vertical" })
+            .node("ui-container", { id: containerId, layout: "vertical" })
             .node("ui-text", {
                 id: "ctnText2",
                 text: "Hello from inside",
@@ -63,7 +63,7 @@ test.describe("ui-container (P45)", () => {
         const containerId = "ctnNode3";
         const flow = new FlowBuilder()
             .app({ id: "ctnApp3", root: "ctnApp3" })
-            .node("ui-container", { id: containerId, layoutId: "vertical" })
+            .node("ui-container", { id: containerId, layout: "vertical" })
             .node("ui-text", { id: "ctnText3a", text: "First", mount: `container:${containerId}/content` })
             .node("ui-text", { id: "ctnText3b", text: "Second", mount: `container:${containerId}/content` })
             .build();
@@ -79,7 +79,7 @@ test.describe("ui-container (P45)", () => {
     test("layout preset 'grid' → container renders the grid layout wrapper", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "ctnApp4", root: "ctnApp4" })
-            .node("ui-container", { id: "ctnNode4", layoutId: "grid" })
+            .node("ui-container", { id: "ctnNode4", layout: "grid" })
             .build();
 
         await deployFlow(request, flow);
@@ -101,7 +101,7 @@ test.describe("ui-container variants (P198)", () => {
     test("card variant renders as sl-card element", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "ctnVApp1", root: "ctnVApp1" })
-            .node("ui-container", { id: "ctnV1", layoutId: "vertical", variant: "card" })
+            .node("ui-container", { id: "ctnV1", layout: "vertical", variant: "card" })
             .build();
 
         await deployFlow(request, flow);
@@ -119,7 +119,7 @@ test.describe("ui-container variants (P198)", () => {
     test("panel variant renders as plain div (no sl-card)", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "ctnVApp2", root: "ctnVApp2" })
-            .node("ui-container", { id: "ctnV2", layoutId: "vertical", variant: "panel" })
+            .node("ui-container", { id: "ctnV2", layout: "vertical", variant: "panel" })
             .build();
 
         await deployFlow(request, flow);
@@ -142,7 +142,7 @@ test.describe("ui-container variants (P198)", () => {
     test("section variant renders as plain div with spacing only (no border)", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "ctnVApp3", root: "ctnVApp3" })
-            .node("ui-container", { id: "ctnV3", layoutId: "vertical", variant: "section" })
+            .node("ui-container", { id: "ctnV3", layout: "vertical", variant: "section" })
             .build();
 
         await deployFlow(request, flow);
@@ -165,7 +165,7 @@ test.describe("ui-container variants (P198)", () => {
     test("transparent variant renders as plain div with no box chrome", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "ctnVApp4", root: "ctnVApp4" })
-            .node("ui-container", { id: "ctnV4", layoutId: "vertical", variant: "transparent" })
+            .node("ui-container", { id: "ctnV4", layout: "vertical", variant: "transparent" })
             .build();
 
         await deployFlow(request, flow);
@@ -212,7 +212,7 @@ test.describe("ui-container variant=span — inline wrapper (P199)", () => {
     test("span variant renders a <span> wrapper (not sl-card, not div)", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "ctnSpanApp1", root: "ctnSpanApp1" })
-            .node("ui-container", { id: "ctnSpan1", layoutId: "vertical", variant: "span" })
+            .node("ui-container", { id: "ctnSpan1", layout: "vertical", variant: "span" })
             .node("ui-text", { id: "ctnSpanApp1Txt", text: "test", mount: "container:ctnSpan1/content" })
             .build();
 
@@ -233,7 +233,7 @@ test.describe("ui-container variant=span — inline wrapper (P199)", () => {
     test("span container with 3 ui-text children renders them inline (not stacked)", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "ctnSpanApp2", root: "ctnSpanApp2" })
-            .node("ui-container", { id: "ctnSpan2", layoutId: "vertical", variant: "span" })
+            .node("ui-container", { id: "ctnSpan2", layout: "vertical", variant: "span" })
             .node("ui-text", { id: "ctnSpanTxt1", text: "Hello", mount: "container:ctnSpan2/content" })
             .node("ui-text", { id: "ctnSpanTxt2", text: " ", mount: "container:ctnSpan2/content" })
             .node("ui-text", { id: "ctnSpanTxt3", text: "World", mount: "container:ctnSpan2/content" })
@@ -287,7 +287,7 @@ test.describe("ui-container lifecycle events onShow/onHide (P255)", () => {
             .app({ id: "ctnLcMark", root: "ctnLcMark" })
             .node("ui-container", {
                 id: "ctnLcMark1",
-                layoutId: "vertical",
+                layout: "vertical",
                 variant: "card",
                 events: ["onShow", "onHide"],
                 outputs: 2
@@ -313,7 +313,7 @@ test.describe("ui-container lifecycle events onShow/onHide (P255)", () => {
             .node("ui-store", { id: "ctnShowStore", app: "ctnOnShow", statePath: "shown", initialValue: JSON.stringify(false) })
             .node("ui-container", {
                 id: "ctnShow1",
-                layoutId: "vertical",
+                layout: "vertical",
                 variant: "card",
                 events: ["onShow"],
                 outputs: 1,
@@ -349,7 +349,7 @@ test.describe("ui-container lifecycle events onShow/onHide (P255)", () => {
             .node("ui-store", { id: "ctnHideStore", app: "ctnOnHide", statePath: "shown", initialValue: JSON.stringify(true) })
             .node("ui-container", {
                 id: "ctnHide1",
-                layoutId: "vertical",
+                layout: "vertical",
                 variant: "card",
                 // onHide ONLY: the container is present on load but must NOT emit
                 // onShow (that event is not enabled), so the next POST /event is the
@@ -388,7 +388,7 @@ test.describe("ui-container lifecycle events onShow/onHide (P255)", () => {
             .node("ui-store", { id: "ctnNoEvtStore", app: "ctnNoEvt", statePath: "shown", initialValue: JSON.stringify(false) })
             .node("ui-container", {
                 id: "ctnNoEvt1",
-                layoutId: "vertical",
+                layout: "vertical",
                 variant: "card",
                 visible: { kind: "store", path: "ctnNoEvtStore" }
             })

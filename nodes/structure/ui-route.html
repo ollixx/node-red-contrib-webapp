@@ -52,7 +52,9 @@
                 // element so Node-RED's post-save auto-read cannot clobber it).
                 title: { value: null },
                 titleBinding: { value: "" },
-                layoutId: { value: "", required: true },
+                // P259 (ADR 0038): canonical bare reference name `layout` (was
+                // `layoutId`); the legacy value migrates on open→save.
+                layout: { value: "", required: true, validate: common.validateRefWithLegacy("layoutId") },
                 events: { value: "[]" },
                 outputs: { value: 0 }
             },
@@ -79,10 +81,10 @@
             oneditprepare: function () {
                 common.installParentAppSelector().call(this);
                 common.installLayoutSelector({
-                    valueSelector: "#node-input-layoutId",
+                    valueSelector: "#node-input-layout",
                     presetSelector: "#node-input-layout-preset",
                     getValue: function () {
-                        return this.layoutId;
+                        return this.layout || this.layoutId;
                     }
                 }).call(this);
 
@@ -141,7 +143,7 @@
     </div>
     <!-- P89 (b): title as typedInput binding (all types) -->
     <div class="form-row"><label for="node-input-titleBinding">Titel</label><input type="text" id="node-input-titleBinding"></div>
-    <input type="hidden" id="node-input-layoutId">
+    <input type="hidden" id="node-input-layout">
     <div class="form-row"><label for="node-input-layout-preset">Parent Layout</label><select id="node-input-layout-preset"></select></div>
     <input type="hidden" id="node-input-events">
     <input type="hidden" id="node-input-outputs">

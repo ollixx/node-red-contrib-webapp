@@ -107,7 +107,7 @@ test.describe("ui-action interaction verbs (P53)", () => {
             ...baseFlow,
             {
                 type: "ui-dialog", id: dialogId, uiId: dialogId, name: "Verb Dialog",
-                app: "verbApp3", title: "Verb Dialog", layoutId: "vertical",
+                app: "verbApp3", title: "Verb Dialog", layout: "vertical",
                 z: "e2e-flow", x: 100, y: 300, wires: [[]]
             },
             {

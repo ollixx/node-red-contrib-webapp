@@ -119,7 +119,7 @@ test.describe("live model delivery on deploy (P106)", () => {
                 name: "Orders",
                 app: "p106App",
                 path: "/orders",
-                layoutId: "vertical",
+                layout: "vertical",
                 z: "p106flow",
                 wires: [],
                 x: 200,

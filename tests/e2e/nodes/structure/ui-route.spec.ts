@@ -77,7 +77,7 @@ test.describe("ui-route (P89)", () => {
     test("layoutId 'grid' — webapp-layout--grid class in HTML", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "routeApp4", root: "routeApp4", name: "Grid App", layout: "vertical" })
-            .route({ id: "routeGrid4", path: "/grid", layoutId: "grid" })
+            .route({ id: "routeGrid4", path: "/grid", layout: "grid" })
             .node("ui-text", { id: "routeGridText4", text: "Grid content" })
             .build();
 
@@ -91,7 +91,7 @@ test.describe("ui-route (P89)", () => {
     test("layoutId 'vertical' — webapp-layout--vertical class in HTML", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "routeApp5", root: "routeApp5", name: "Stack App", layout: "vertical" })
-            .route({ id: "routeStack5", path: "/stack", layoutId: "vertical" })
+            .route({ id: "routeStack5", path: "/stack", layout: "vertical" })
             .node("ui-text", { id: "routeStackText5", text: "Stack content" })
             .build();
 

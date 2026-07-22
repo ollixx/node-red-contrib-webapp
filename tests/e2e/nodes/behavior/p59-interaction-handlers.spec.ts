@@ -44,7 +44,7 @@ test.describe("P59: per-node interaction handlers (ADR 0007)", () => {
             ...base,
             {
                 type: "ui-dialog", id: dialogId, uiId: dialogId, name: "P59 Dialog",
-                app: appId, title: "P59 Dialog", layoutId: "vertical",
+                app: appId, title: "P59 Dialog", layout: "vertical",
                 z: TAB_ID, x: 100, y: 300, wires: [[]]
             },
             {

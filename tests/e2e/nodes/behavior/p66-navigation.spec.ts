@@ -103,7 +103,7 @@ test.describe("P66 navigation (ADR 0007 Amendment)", () => {
             name: "navDetail3",
             app: "navApp3",
             path: "/customers/:id",
-            layoutId: "vertical",
+            layout: "vertical",
             events: ["onEnter"],
             outputs: 1,
             z: "e2e-flow",

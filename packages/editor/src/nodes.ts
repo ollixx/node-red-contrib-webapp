@@ -87,6 +87,9 @@ export interface IdentifiedEditorConfig {
 }
 
 export interface UiContainerEditorConfig extends MountableEditorConfig {
+    // P259 (ADR 0038): canonical bare reference name `layout`; `layoutId` is the
+    // legacy alias lifted into `layout` by normalizeLegacyReferenceConfig.
+    layout?: StandardLayoutPresetId;
     layoutId?: StandardLayoutPresetId;
     title?: string;
     variant?: "card" | "panel" | "section" | "transparent";
@@ -117,11 +120,15 @@ export interface UiComponentInstanceEditorConfig extends MountableEditorConfig {
 export interface UiRouteEditorConfig extends IdentifiedEditorConfig {
     path?: string;
     title?: string;
+    // P259 (ADR 0038): canonical `layout`; legacy `layoutId` alias.
+    layout?: StandardLayoutPresetId;
     layoutId?: StandardLayoutPresetId;
 }
 
 export interface UiDialogEditorConfig extends IdentifiedEditorConfig {
     title?: string;
+    // P259 (ADR 0038): canonical `layout`; legacy `layoutId` alias.
+    layout?: StandardLayoutPresetId;
     layoutId?: StandardLayoutPresetId;
     routeId?: string;
     modal?: boolean;
@@ -966,6 +973,35 @@ function collectLayoutChildConfig(config: MountableEditorConfig) {
     };
 }
 
+// P259 (ADR 0038): reference-field naming normalization. The canonical config
+// fields are `app` / `layout` / `route` / `definition`; pre-rename flows carry
+// the legacy `parent` / `layoutId` / `routeId` / `definitionId`. Lift each legacy
+// value into its canonical slot (when the canonical is absent) so every validator
+// + mapper below reads ONLY the canonical name while old configs still validate.
+const LEGACY_REFERENCE_CONFIG_FIELDS: Record<string, string> = {
+    app: "parent",
+    layout: "layoutId",
+    route: "routeId",
+    definition: "definitionId"
+};
+
+function normalizeLegacyReferenceConfig<TConfig extends object>(config: TConfig): TConfig {
+    const record = config as Record<string, unknown>;
+    let copy: Record<string, unknown> | null = null;
+    for (const [canonical, legacy] of Object.entries(LEGACY_REFERENCE_CONFIG_FIELDS)) {
+        const current = record[canonical];
+        const legacyValue = record[legacy];
+        if ((current === undefined || current === null || current === "") &&
+            legacyValue !== undefined && legacyValue !== null && legacyValue !== "") {
+            if (!copy) {
+                copy = { ...record };
+            }
+            copy[canonical] = legacyValue;
+        }
+    }
+    return (copy ?? record) as TConfig;
+}
+
 function createDefinition<TConfig extends object, TDefinition extends UiNodeDefinition>(
     type: TDefinition["type"],
     category: BaseEditorNodeDefinition<TConfig, TDefinition>["category"],
@@ -977,11 +1013,12 @@ function createDefinition<TConfig extends object, TDefinition extends UiNodeDefi
         category,
         defaults,
         validate(config) {
-            return collectIssues(config as Record<string, unknown>, defaults);
+            return collectIssues(normalizeLegacyReferenceConfig(config) as Record<string, unknown>, defaults);
         },
         emit(config) {
-            const issues = collectIssues(config as Record<string, unknown>, defaults);
-            return emitDefinition(factory(config), issues);
+            const normalized = normalizeLegacyReferenceConfig(config);
+            const issues = collectIssues(normalized as Record<string, unknown>, defaults);
+            return emitDefinition(factory(normalized), issues);
         }
     };
 }
@@ -1001,22 +1038,22 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
     "ui-route": createDefinition("ui-route", "structure", {
         id: requiredString("Route IDs are required before deploy."),
         path: requiredString("Routes must declare a path."),
-        layoutId: requiredStringEnum([...standardLayoutPresetIds], "Routes must reference a layout.", "Routes must reference a known layout.")
+        layout: requiredStringEnum([...standardLayoutPresetIds], "Routes must reference a layout.", "Routes must reference a known layout.")
     }, (config: UiRouteEditorConfig): UiRouteNodeDefinition => ({
         type: "ui-route",
         id: config.id ?? "",
         path: config.path ?? "",
         title: config.title,
-        layout: config.layoutId ?? "vertical"
+        layout: config.layout ?? "vertical"
     })),
     "ui-dialog": createDefinition("ui-dialog", "structure", {
         id: requiredString("Dialog IDs are required before deploy."),
-        layoutId: requiredStringEnum([...standardLayoutPresetIds], "Dialogs must reference a layout.", "Dialogs must reference a known layout.")
+        layout: requiredStringEnum([...standardLayoutPresetIds], "Dialogs must reference a layout.", "Dialogs must reference a known layout.")
     }, (config: UiDialogEditorConfig): UiDialogNodeDefinition => ({
         type: "ui-dialog",
         id: config.id ?? "",
         title: config.title,
-        layout: config.layoutId ?? "vertical",
+        layout: config.layout ?? "vertical",
         routeId: config.routeId,
         modal: config.modal ?? true,
         closable: config.closable ?? true
@@ -1100,7 +1137,7 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
     "ui-container": createDefinition("ui-container", "view", {
         id: requiredString("Container IDs are required before deploy."),
         mount: requiredString("Containers must declare a mount target."),
-        layoutId: requiredStringEnum([...standardLayoutPresetIds], "Containers must reference a child layout.", "Containers must reference a known child layout."),
+        layout: requiredStringEnum([...standardLayoutPresetIds], "Containers must reference a child layout.", "Containers must reference a known child layout."),
         order: optionalInteger("Container order must be an integer."),
         row: optionalInteger("Container grid rows must be integers."),
         col: optionalInteger("Container grid columns must be integers."),
@@ -1112,7 +1149,7 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         type: "ui-container",
         id: config.id ?? "",
         mount: config.mount ?? "",
-        layout: config.layoutId ?? "vertical",
+        layout: config.layout ?? "vertical",
         variant: config.variant,
         ...collectLayoutChildConfig(config)
     })),

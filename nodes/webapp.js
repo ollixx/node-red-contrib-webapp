@@ -7048,7 +7048,8 @@ const runtimeNodeRegistry = {
                 parent: config.app || config.parent || undefined,
                 path: config.path,
                 title: resolvedTitle,
-                layout: config.layoutId,
+                // P259 (ADR 0038): canonical `layout`; legacy `layoutId` fallback.
+                layout: config.layout || config.layoutId,
                 events: parseJsonList(config.events).length > 0 ? parseJsonList(config.events) : undefined
             };
         },
@@ -7064,7 +7065,8 @@ const runtimeNodeRegistry = {
             id: getUiId(config),
             parent: config.app || config.parent || undefined,
             title: config.title || undefined,
-            layout: config.layoutId,
+            // P259 (ADR 0038): canonical `layout`; legacy `layoutId` fallback.
+            layout: config.layout || config.layoutId,
             routeId: config.routeId || undefined,
             modal: config.modal !== false && config.modal !== "false",
             // P64: closable defaults to true; only an explicit false disables it.
@@ -7152,7 +7154,8 @@ const runtimeNodeRegistry = {
             parent: config.app || config.parent || undefined,
             mount: config.mount || config.app || config.parent,
             order: resolveOrder(config),
-            layout: config.layoutId,
+            // P259 (ADR 0038): canonical `layout`; legacy `layoutId` fallback.
+            layout: config.layout || config.layoutId,
             variant: config.variant || undefined,
             events: parseJsonList(config.events).length > 0 ? parseJsonList(config.events) : undefined,
             ...collectNodeConfigLayoutProps(config)
@@ -8170,12 +8173,12 @@ const runtimeNodeRegistry = {
             // item/index). Empty/absent → only the generic innermost item/index.
             itemName: config.itemName || undefined,
             // P191: ui-repeat's OWN content-slot layout preset — carried through
-            // exactly like ui-container's `layout: config.layoutId`. The editor
-            // stores the preset id in `#node-input-layoutId`; the generated fixtures
-            // set `layout` directly. Without this the definition lost the preset and
+            // exactly like ui-container's `layout` (P259: canonical `layout`,
+            // legacy `layoutId` fallback). The generated fixtures set `layout`
+            // directly. Without this the definition lost the preset and
             // the bucket logic default-migrated every repeat to "vertical", so a
             // chosen grid layout never reached the renderer's per-item container.
-            layout: config.layoutId || config.layout,
+            layout: config.layout || config.layoutId,
             // P197: ui-repeat is a full container after P191, so it carries the
             // semantic container `variant` (CONTAINER_VARIANTS) just like
             // ui-container (`variant: config.variant`). toComponentDefinitions

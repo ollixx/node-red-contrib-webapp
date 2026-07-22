@@ -65,19 +65,17 @@ const PKG = require(path.join(ROOT, "package.json"));
  * `storeId`/`path`/pagination-alias sweep) drive this to {}.
  * ------------------------------------------------------------------ */
 const ALLOWLIST = {
-    // ---- (c) reference id-suffix → bare name (P228 rename) -------------------
-    "ui-route": { layoutId: "P259: rename `layoutId` → `layout` (bare reference name)" },
+    // ---- (c) reference id-suffix → bare name: layoutId→layout landed (P259
+    //          Stufe 1); the remaining routeId/definitionId entries fall with
+    //          Stufe 2, driving this to {} (ADR 0038 fully enforced).
     "ui-dialog": {
-        layoutId: "P259: rename `layoutId` → `layout` (bare reference name)",
         routeId: "P259: rename `routeId` → `route` (bare reference name)",
     },
-    "ui-container": { layoutId: "P259: rename `layoutId` → `layout` (bare reference name)" },
     "ui-component-instance": {
         definitionId: "P259: rename `definitionId` → `definition` (bare reference name)",
     },
     "ui-action": { routeId: "P259: rename `routeId` → `route` (bare reference name)" },
     // P243 (ADR 0040): ui-navigation retired — navigation is a ui-action navigate.
-
 };
 
 /* ------------------------------------------------------------------ *

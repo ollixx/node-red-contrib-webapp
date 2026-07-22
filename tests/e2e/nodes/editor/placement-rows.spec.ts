@@ -69,7 +69,7 @@ test.describe("editor panels — central placement-row injection (P49a)", () => 
         // visibility toggle keys off, so the spec uses it.
         const flow = new FlowBuilder()
             .app({ id: "gridApp", root: "gridApp", name: "Grid App" })
-            .route({ id: "gridRoute", path: "/grid", layoutId: "grid" })
+            .route({ id: "gridRoute", path: "/grid", layout: "grid" })
             .node("ui-text", { id: nodeId, mount: "route:/grid/content" })
             .build();
         await deployFlow(request, flow);
@@ -118,7 +118,7 @@ test.describe("editor panels — central placement-row injection (P49a)", () => 
         const nodeId = "ui-text-vert";
         const flow = new FlowBuilder()
             .app({ id: "vertApp", root: "vertApp", name: "Vert App" })
-            .route({ id: "vertRoute", path: "/vert", layoutId: "vertical" })
+            .route({ id: "vertRoute", path: "/vert", layout: "vertical" })
             .node("ui-text", { id: nodeId, mount: "route:/vert/content" })
             .build();
         await deployFlow(request, flow);
@@ -142,7 +142,7 @@ test.describe("editor panels — central placement-row injection (P49a)", () => 
         const nodeId = "ui-text-rt";
         const flow = new FlowBuilder()
             .app({ id: "rtApp", root: "rtApp", name: "RT App" })
-            .route({ id: "rtRoute", path: "/rt", layoutId: "grid" })
+            .route({ id: "rtRoute", path: "/rt", layout: "grid" })
             .node("ui-text", { id: nodeId, mount: "rtRoute.content", row: 2, col: 3, colSize: 4, rowSize: 1 })
             .build();
         await deployFlow(request, flow);

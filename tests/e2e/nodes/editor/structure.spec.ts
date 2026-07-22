@@ -68,7 +68,7 @@ test.describe("editor panels — structure nodes (P47)", () => {
     test("ui-route — fields present, parent SelectBox lists the app, path required", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "routeEdApp", root: "routeEdApp", name: "Route Editor App" })
-            .route({ id: "routeEd", path: "", layoutId: "vertical" })
+            .route({ id: "routeEd", path: "", layout: "vertical" })
             .build();
         await deployFlow(request, flow);
 
@@ -112,7 +112,7 @@ test.describe("editor panels — structure nodes (P47)", () => {
                 app: "slashApp",
                 path: "/",
                 title: "Bad Route",
-                layoutId: "vertical",
+                layout: "vertical",
                 z: "e2e-flow",
                 x: 100,
                 y: 200,

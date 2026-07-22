@@ -138,7 +138,7 @@ test.describe("ui-app Logging select (P61)", () => {
                 name: "Legacy App",
                 root: "legacyApp",
                 layout: "vertical",
-                layoutId: "vertical",
+                layout: "vertical",
                 events: "[]",
                 outputs: 0,
                 tokens: "",

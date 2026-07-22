@@ -162,7 +162,8 @@ const DEFAULT_CARRIER = {
     store: "storeId",
     query: "queryId",
     route: "routeId",
-    layout: "layoutId",
+    // P259 (ADR 0038): the layout reference carrier is the bare concept name.
+    layout: "layout",
 };
 
 function selectorToField(sel) {

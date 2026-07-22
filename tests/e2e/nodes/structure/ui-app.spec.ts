@@ -111,12 +111,12 @@ test.describe("ui-app", () => {
     test("app-bar persists on routes with non-'app' layoutId", async ({ page, request }) => {
         // The app-bar is driven by the ui-app node's layout field, NOT by the
         // individual route's layoutId. This means navigating to a route that
-        // uses layoutId: "vertical" must still show the app-bar when the app
+        // uses layout: "vertical" must still show the app-bar when the app
         // itself has layout: "app".
         // P48: "/" is the implicit app root; the sub-route uses layoutId "vertical".
         const flow = new FlowBuilder()
             .app({ id: "appBarPersist", root: "appBarPersist", name: "Persistent Bar", layout: "app" })
-            .route({ id: "appBarPersistSub", path: "/sub", layoutId: "vertical" })
+            .route({ id: "appBarPersistSub", path: "/sub", layout: "vertical" })
             .node("ui-text", { id: "appBarPersistText", text: "Sub page" })
             .build();
 

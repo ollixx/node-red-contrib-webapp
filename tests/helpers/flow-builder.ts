@@ -92,7 +92,7 @@ function defaultsFor(type: string, ctx: { appId: string; routeId?: string; id: s
             // editor default is gone; the runtime migration reader remains).
             return { ...base, columns: JSON.stringify([{ key: "name", label: "Name" }]), rows: { kind: "state", path: "rows" } };
         case "ui-container":
-            return { ...base, layoutId: "vertical" };
+            return { ...base, layout: "vertical" };
         case "ui-store":
             // store has no visible mount but MUST have x/y so Node-RED places it
             // in flow.nodes (not flow.configs). Nodes without x/y are treated as
@@ -165,7 +165,7 @@ export class FlowBuilder {
             app: this.appId,
             path: "/",
             title: id,
-            layoutId: "vertical",
+            layout: "vertical",
             z: TAB_ID,
             x: 100,
             y: 200,

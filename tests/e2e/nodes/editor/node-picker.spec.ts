@@ -170,7 +170,7 @@ test.describe("editor — picker dialog as sole reference selection (P114)", () 
     test("mounts preset is a two-column tree; selecting a node + slot writes the mount value (P135)", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "shopApp", root: "shopApp", name: "Shop", layout: "app" })
-            .route({ id: "custRoute", path: "/customers", layoutId: "grid", title: "Customers" })
+            .route({ id: "custRoute", path: "/customers", layout: "grid", title: "Customers" })
             .node("ui-text", { id: "txt1", name: "Text 1" })
             .build();
         await deployFlow(request, flow);
@@ -225,7 +225,7 @@ test.describe("editor — picker dialog as sole reference selection (P114)", () 
     test("mounts tree search shows a flat path list (no slots) on the left; slots stay on the right (P135)", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "shopApp", root: "shopApp", name: "Shop", layout: "app" })
-            .route({ id: "custRoute", path: "/customers", layoutId: "grid", title: "Customers" })
+            .route({ id: "custRoute", path: "/customers", layout: "grid", title: "Customers" })
             .node("ui-text", { id: "txt2", name: "Text 2" })
             .build();
         await deployFlow(request, flow);
@@ -259,12 +259,12 @@ test.describe("editor — picker dialog as sole reference selection (P114)", () 
     test("mounts tree is cross-app: a node can be mounted into another app's slot (P135)", async ({ page, request }) => {
         const flowA = new FlowBuilder()
             .app({ id: "shopApp", root: "shopApp", name: "Shop", layout: "app" })
-            .route({ id: "shopRoute", path: "/shop", layoutId: "grid", title: "ShopHome" })
+            .route({ id: "shopRoute", path: "/shop", layout: "grid", title: "ShopHome" })
             .node("ui-text", { id: "crossTxt", name: "Cross Text", mount: "route:/shop/content" })
             .build();
         const flowB = new FlowBuilder()
             .app({ id: "adminApp", root: "adminApp", name: "Admin", layout: "app" })
-            .route({ id: "adminRoute", path: "/admin", layoutId: "grid", title: "AdminHome" })
+            .route({ id: "adminRoute", path: "/admin", layout: "grid", title: "AdminHome" })
             .build();
         await deployFlow(request, [...flowA, ...flowB]);
 
@@ -303,8 +303,8 @@ test.describe("editor — picker dialog as sole reference selection (P114)", () 
     test("mounts tree cycle guard: editing a container omits its own subtree (P135)", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "cycApp", root: "cycApp", name: "Cyc", layout: "app" })
-            .route({ id: "cycRoute", path: "/c", layoutId: "grid", title: "CycRoute" })
-            .node("ui-container", { id: "outerCont", name: "Outer", layoutId: "vertical", mount: "route:/c/content" })
+            .route({ id: "cycRoute", path: "/c", layout: "grid", title: "CycRoute" })
+            .node("ui-container", { id: "outerCont", name: "Outer", layout: "vertical", mount: "route:/c/content" })
             .build();
         await deployFlow(request, flow);
 
@@ -541,7 +541,7 @@ test.describe("P117 — picker app-scope + admin-UI look", () => {
         const flowA = new FlowBuilder()
             .app({ id: "appA", root: "appA", name: "App A" })
             .node("ui-store", { id: "storeA", name: "Store A", statePath: "a" })
-            .node("ui-route", { id: "routeA", path: "/a", app: "appA", name: "Route A", layoutId: "vertical" })
+            .node("ui-route", { id: "routeA", path: "/a", app: "appA", name: "Route A", layout: "vertical" })
             .build();
         const flowB = new FlowBuilder()
             .app({ id: "appB", root: "appB", name: "App B" })

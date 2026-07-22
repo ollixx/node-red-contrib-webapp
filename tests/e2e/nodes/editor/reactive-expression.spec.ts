@@ -32,7 +32,7 @@ async function readTextValue(page: Page, nodeId: string): Promise<ReactiveBindin
 function reactiveFlow(appId: string, textId: string, storeName = "customer") {
     return new FlowBuilder()
         .app({ id: appId, root: appId, name: appId, title: appId, layout: "app" })
-        .route({ id: `${appId}-route`, path: "/customers/:id", title: "Detail", layoutId: "vertical" })
+        .route({ id: `${appId}-route`, path: "/customers/:id", title: "Detail", layout: "vertical" })
         .node("ui-text", { id: textId, mount: "route:/customers/:id/content", text: "x" })
         .node("ui-store", { id: `${appId}-store`, name: storeName, statePath: "customer", initialValue: "{}" })
         .build();

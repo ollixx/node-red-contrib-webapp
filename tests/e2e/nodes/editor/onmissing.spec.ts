@@ -37,7 +37,7 @@ function objectStoreFlow(appId: string, textId: string, onMissing?: "marker" | "
     const storeId = `${appId}-store`;
     return new FlowBuilder()
         .app({ id: appId, root: appId, name: appId, title: appId, layout: "app" })
-        .route({ id: `${appId}-route`, path: "/home", title: "Home", layoutId: "vertical" })
+        .route({ id: `${appId}-route`, path: "/home", title: "Home", layout: "vertical" })
         .node("ui-store", { id: storeId, name: "obj", statePath: "obj", initialValue: "{}" })
         .node("ui-text", {
             id: textId,

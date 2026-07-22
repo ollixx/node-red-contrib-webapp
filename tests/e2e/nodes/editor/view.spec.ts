@@ -353,7 +353,7 @@ test.describe("editor panels — variant SelectBox (P50)", () => {
         request
     }) => {
         const flow = appOnly(new FlowBuilder(), "ctrVApp")
-            .node("ui-container", { id: "ctrV1", layoutId: "vertical", variant: "panel" })
+            .node("ui-container", { id: "ctrV1", layout: "vertical", variant: "panel" })
             .build();
         await deployFlow(request, flow);
 
