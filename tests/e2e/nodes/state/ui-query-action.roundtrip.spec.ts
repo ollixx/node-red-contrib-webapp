@@ -28,9 +28,9 @@ test.describe("ui-query-action — query reference open→save round-trip", () =
     test("query survives open→Done and a value-change round-trips", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "qaApp", root: "qaApp" })
-            .node("ui-query", { id: "qaQuery", parent: "qaApp", queryPath: "rows" })
-            .node("ui-query", { id: "qaQuery2", parent: "qaApp", queryPath: "other" })
-            .node("ui-query-action", { id: "qaAction", parent: "qaApp", query: "qaQuery", action: "refresh", mode: "reference" })
+            .node("ui-query", { id: "qaQuery", app: "qaApp", queryPath: "rows" })
+            .node("ui-query", { id: "qaQuery2", app: "qaApp", queryPath: "other" })
+            .node("ui-query-action", { id: "qaAction", app: "qaApp", query: "qaQuery", action: "refresh", mode: "reference" })
             .build();
 
         await deployFlow(request, flow);

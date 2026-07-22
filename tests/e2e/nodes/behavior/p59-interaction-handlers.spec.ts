@@ -44,12 +44,12 @@ test.describe("P59: per-node interaction handlers (ADR 0007)", () => {
             ...base,
             {
                 type: "ui-dialog", id: dialogId, uiId: dialogId, name: "P59 Dialog",
-                parent: appId, title: "P59 Dialog", layoutId: "vertical",
+                app: appId, title: "P59 Dialog", layoutId: "vertical",
                 z: TAB_ID, x: 100, y: 300, wires: [[]]
             },
             {
                 type: "ui-text", id: "p59DlgTxt1", uiId: "p59DlgTxt1", name: "p59DlgTxt1",
-                parent: appId, mount: `dialog:${dialogId}/content`, text: "Dialog body",
+                app: appId, mount: `dialog:${dialogId}/content`, text: "Dialog body",
                 z: TAB_ID, x: 100, y: 350, wires: [[]]
             }
         ];

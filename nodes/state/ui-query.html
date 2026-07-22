@@ -7,7 +7,7 @@
             color: "#d8e8f8",
             defaults: {
                 name: { value: "" },
-                parent: { value: "", required: true },
+                app: { value: "", required: true, validate: common.validateAppRef },
                 queryPath: { value: "", required: true },
                 params: { value: "" },
                 refreshAction: { value: "" },
@@ -34,7 +34,7 @@
 <script type="text/html" data-template-name="ui-query">
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-parent">App</label><select id="node-input-parent"></select></div>
+    <div class="form-row"><label for="node-input-app">App</label><select id="node-input-app"></select></div>
     <div class="form-row"><label for="node-input-queryPath">Query Path</label><input type="text" id="node-input-queryPath"></div>
     <div class="form-row"><label for="node-input-params">Params Store</label><select id="node-input-params"></select></div>
     <div class="form-row"><label for="node-input-debounceMs">Debounce (ms)</label><input type="number" id="node-input-debounceMs" min="0" placeholder="0 (sofort)"></div>

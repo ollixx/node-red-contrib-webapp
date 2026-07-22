@@ -78,7 +78,7 @@ test.describe("editor panels — structure nodes (P47)", () => {
 
         // Fields documented for ui-route.
         // P89: title is a typedInput that uses `titleBinding` as the DOM field id.
-        await editor.expectFields(["name", "parent", "path", "titleBinding", "layout-preset"]);
+        await editor.expectFields(["name", "app", "path", "titleBinding", "layout-preset"]);
 
         // Parent picker (apps preset) lists the app (P114 / ADR 0009).
         const parentOptions = await editor.pickerPresetValues("apps");
@@ -109,7 +109,7 @@ test.describe("editor panels — structure nodes (P47)", () => {
                 id: "slashRoute",
                 uiId: "slashRoute",
                 name: "slashRoute",
-                parent: "slashApp",
+                app: "slashApp",
                 path: "/",
                 title: "Bad Route",
                 layoutId: "vertical",
@@ -147,7 +147,7 @@ test.describe("editor panels — structure nodes (P47)", () => {
 
         await editor.expectFields(["name"]);
         // Parent picker present and the apps preset lists the app.
-        if (await editor.hasField("parent")) {
+        if (await editor.hasField("app")) {
             expect(await editor.pickerPresetValues("apps")).toContain("dlgApp");
         }
     });

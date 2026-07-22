@@ -30,14 +30,14 @@ function roundTripFlow(): NodeDef[] {
     return [
         { id: TAB, type: "tab", label: "Dialog round-trip", disabled: false, info: "" },
         { type: "ui-app", id: "dlgApp", uiId: "dlgApp", name: "dlgApp", title: "dlgApp", root: "dlgApp", layout: "vertical", z: TAB, x: 100, y: 100, wires: [[]] },
-        { type: "ui-route", id: "dlgRouteA", uiId: "dlgRouteA", name: "Route A", parent: "dlgApp", path: "/a", title: "Route A", layoutId: "vertical", z: TAB, x: 100, y: 160, wires: [[]] },
-        { type: "ui-route", id: "dlgRouteB", uiId: "dlgRouteB", name: "Route B", parent: "dlgApp", path: "/b", title: "Route B", layoutId: "vertical", z: TAB, x: 100, y: 220, wires: [[]] },
+        { type: "ui-route", id: "dlgRouteA", uiId: "dlgRouteA", name: "Route A", app: "dlgApp", path: "/a", title: "Route A", layoutId: "vertical", z: TAB, x: 100, y: 160, wires: [[]] },
+        { type: "ui-route", id: "dlgRouteB", uiId: "dlgRouteB", name: "Route B", app: "dlgApp", path: "/b", title: "Route B", layoutId: "vertical", z: TAB, x: 100, y: 220, wires: [[]] },
         {
             type: "ui-dialog",
             id: "dlgDialog",
             uiId: "dlgDialog",
             name: "Dialog",
-            parent: "dlgApp",
+            app: "dlgApp",
             title: "Dialog",
             layoutId: "vertical",
             routeId: "dlgRouteA",

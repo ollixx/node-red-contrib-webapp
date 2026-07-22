@@ -129,7 +129,7 @@ test.describe("ui-query implicit per-query params store (P214)", () => {
             // slice at ui.queries.entities.params. op=set, path=page, reference mode.
             .node("ui-store-action", {
                 id: actionId,
-                parent: appId,
+                app: appId,
                 store: queryId,
                 op: "set",
                 path: "page",
@@ -188,7 +188,7 @@ test.describe("ui-query implicit per-query params store (P214)", () => {
             // Sets the implicit params page=2 (and fires its own refresh).
             .node("ui-store-action", {
                 id: actionId,
-                parent: appId,
+                app: appId,
                 store: queryId,
                 op: "set",
                 path: "page",

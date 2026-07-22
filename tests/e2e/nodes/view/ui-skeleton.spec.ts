@@ -163,7 +163,7 @@ test.describe("ui-skeleton — visible render-gate (store binding, live)", () =>
 
     test("store=false → not rendered; store=true → rendered", async ({ request }) => {
         const hidden = new FlowBuilder().app({ id: "skVisF", root: "skVisF" })
-            .node("ui-store", { id: "skVisStoreF", parent: "skVisF", statePath: "loading", initialValue: JSON.stringify(false) })
+            .node("ui-store", { id: "skVisStoreF", app: "skVisF", statePath: "loading", initialValue: JSON.stringify(false) })
             .node("ui-skeleton", { id: "skVisF1", visible: { kind: "store", path: "skVisStoreF" } })
             .build();
         await deployFlow(request, hidden);
@@ -171,7 +171,7 @@ test.describe("ui-skeleton — visible render-gate (store binding, live)", () =>
         await resetFlow(request);
 
         const shown = new FlowBuilder().app({ id: "skVisT", root: "skVisT" })
-            .node("ui-store", { id: "skVisStoreT", parent: "skVisT", statePath: "loading", initialValue: JSON.stringify(true) })
+            .node("ui-store", { id: "skVisStoreT", app: "skVisT", statePath: "loading", initialValue: JSON.stringify(true) })
             .node("ui-skeleton", { id: "skVisT1", visible: { kind: "store", path: "skVisStoreT" } })
             .build();
         await deployFlow(request, shown);
@@ -180,7 +180,7 @@ test.describe("ui-skeleton — visible render-gate (store binding, live)", () =>
 
     test("a live inject flips visible false→true and the skeleton appears via SSE", async ({ page, request }) => {
         const flow = new FlowBuilder().app({ id: "skVisLive", root: "skVisLive" })
-            .node("ui-store", { id: "skLiveStore", parent: "skVisLive", statePath: "loading", initialValue: JSON.stringify(false) })
+            .node("ui-store", { id: "skLiveStore", app: "skVisLive", statePath: "loading", initialValue: JSON.stringify(false) })
             .node("ui-skeleton", { id: "skLive1", displayType: "text", lines: 2, visible: { kind: "store", path: "skLiveStore" } })
             .withStoreInject("skLiveInj", "skLiveStore", true)
             .build();

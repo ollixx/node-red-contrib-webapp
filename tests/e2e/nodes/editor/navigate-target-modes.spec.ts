@@ -31,7 +31,7 @@ function wiredFlow(opts: { app: string; routePath: string; actionId: string; rou
     const fnId = `${opts.actionId}__fn`;
     flow.push({
         type: "ui-action", id: opts.actionId, uiId: opts.actionId, name: opts.actionId,
-        parent: opts.app, actionType: "navigate",
+        app: opts.app, actionType: "navigate",
         z: "e2e-flow", x: 100, y: 400, wires: [[fnId]]
     });
     flow.push({
@@ -77,7 +77,7 @@ test.describe("editor — navigate target modes (P119)", () => {
             .build();
         flow.push({
             type: "ui-action", id: "ntActionB", uiId: "ntActionB", name: "ntActionB",
-            parent: "ntB", actionType: "navigate", z: "e2e-flow", x: 100, y: 400,
+            app: "ntB", actionType: "navigate", z: "e2e-flow", x: 100, y: 400,
             wires: [["ntBSwitch"]]
         });
         flow.push({
@@ -126,7 +126,7 @@ test.describe("editor — navigate target modes (P119)", () => {
             .build();
         flow.push({
             type: "ui-action", id: "ntActionD", uiId: "ntActionD", name: "ntActionD",
-            parent: "ntD", actionType: "navigate", z: "e2e-flow", x: 100, y: 400,
+            app: "ntD", actionType: "navigate", z: "e2e-flow", x: 100, y: 400,
             wires: [["ntDSwitch"]]
         });
         flow.push({
@@ -193,7 +193,7 @@ test.describe("editor — navigate target modes (P119)", () => {
         // An unwired navigate action already in route mode pointing at the route.
         flow.push({
             type: "ui-action", id: "ntActionF", uiId: "ntActionF", name: "ntActionF",
-            parent: "ntF", actionType: "navigate", targetMode: "route", routeId: "ntRouteF",
+            app: "ntF", actionType: "navigate", targetMode: "route", routeId: "ntRouteF",
             params: "", z: "e2e-flow", x: 100, y: 400, wires: [[]]
         });
         await deployFlow(request, flow);
@@ -228,7 +228,7 @@ test.describe("editor — navigate target modes (P119)", () => {
             .build();
         flow.push({
             type: "ui-action", id: "ntActionG", uiId: "ntActionG", name: "ntActionG",
-            parent: "ntG", actionType: "navigate", targetMode: "route", routeId: "ntGRoute1",
+            app: "ntG", actionType: "navigate", targetMode: "route", routeId: "ntGRoute1",
             params: JSON.stringify([{ name: "id", value: "payload.id", valueType: "msg" }]),
             z: "e2e-flow", x: 100, y: 400, wires: [[]]
         });
@@ -266,7 +266,7 @@ test.describe("editor — navigate target modes (P119)", () => {
             .build();
         flow.push({
             type: "ui-action", id: "ntActionH", uiId: "ntActionH", name: "ntActionH",
-            parent: "ntH", actionType: "navigate", targetMode: "url", to: "/customers/:id", toType: "str",
+            app: "ntH", actionType: "navigate", targetMode: "url", to: "/customers/:id", toType: "str",
             z: "e2e-flow", x: 100, y: 400, wires: [[]]
         });
         await deployFlow(request, flow);

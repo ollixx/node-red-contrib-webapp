@@ -139,7 +139,7 @@ test.describe("ui-icon icon binding (P235)", () => {
     test("state-bound icon renders the live name from the store", async ({ request }) => {
         const flow = new FlowBuilder()
             .app({ id: "iconBindApp", root: "iconBindApp" })
-            .node("ui-store", { id: "iconStore", parent: "iconBindApp", statePath: "iconName", initialValue: JSON.stringify("house") })
+            .node("ui-store", { id: "iconStore", app: "iconBindApp", statePath: "iconName", initialValue: JSON.stringify("house") })
             .node("ui-icon", { id: "iconBindNode", icon: { kind: "state", path: "iconName" } })
             .build();
         await deployFlow(request, flow);
@@ -155,7 +155,7 @@ test.describe("ui-icon icon binding (P235)", () => {
     test("store change updates the rendered icon name via SSE", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "iconBindApp2", root: "iconBindApp2" })
-            .node("ui-store", { id: "iconStore2", parent: "iconBindApp2", statePath: "iconName", initialValue: JSON.stringify("house") })
+            .node("ui-store", { id: "iconStore2", app: "iconBindApp2", statePath: "iconName", initialValue: JSON.stringify("house") })
             .node("ui-icon", { id: "iconBindNode2", icon: { kind: "state", path: "iconName" } })
             .withStoreInject("iconInj2", "iconStore2", "star")
             .build();
@@ -226,7 +226,7 @@ test.describe("ui-icon visible render-gate (bound; ADR 0037) (P235)", () => {
     test("visible bound to a store=false → the icon is not rendered", async ({ request }) => {
         const flow = new FlowBuilder()
             .app({ id: "iconVisApp", root: "iconVisApp" })
-            .node("ui-store", { id: "iconVisStore", parent: "iconVisApp", statePath: "show", initialValue: JSON.stringify(false) })
+            .node("ui-store", { id: "iconVisStore", app: "iconVisApp", statePath: "show", initialValue: JSON.stringify(false) })
             .node("ui-icon", { id: "iconVisNode", icon: "house", visible: { kind: "store", path: "iconVisStore" } })
             .build();
         await deployFlow(request, flow);
@@ -243,7 +243,7 @@ test.describe("ui-icon visible render-gate (bound; ADR 0037) (P235)", () => {
     test("visible bound to a store=true → the icon is rendered", async ({ request }) => {
         const flow = new FlowBuilder()
             .app({ id: "iconVisApp2", root: "iconVisApp2" })
-            .node("ui-store", { id: "iconVisStore2", parent: "iconVisApp2", statePath: "show", initialValue: JSON.stringify(true) })
+            .node("ui-store", { id: "iconVisStore2", app: "iconVisApp2", statePath: "show", initialValue: JSON.stringify(true) })
             .node("ui-icon", { id: "iconVisNode2", icon: "house", visible: { kind: "store", path: "iconVisStore2" } })
             .build();
         await deployFlow(request, flow);
@@ -443,7 +443,7 @@ test.describe("ui-icon color: bound to a store (P238)", () => {
     test("a store-bound colour colours the icon", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "colBindApp1", root: "colBindApp1" })
-            .node("ui-store", { id: "colStore1", parent: "colBindApp1", statePath: "iconColor", initialValue: JSON.stringify("token:success") })
+            .node("ui-store", { id: "colStore1", app: "colBindApp1", statePath: "iconColor", initialValue: JSON.stringify("token:success") })
             .node("ui-icon", { id: "colBindIcon1", icon: "house", color: { kind: "store", path: "colStore1" } })
             .build();
         await deployFlow(request, flow);
@@ -466,7 +466,7 @@ test.describe("ui-icon color: bound to a store (P238)", () => {
     test("a store change recolours the icon live via SSE", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "colBindApp2", root: "colBindApp2" })
-            .node("ui-store", { id: "colStore2", parent: "colBindApp2", statePath: "iconColor", initialValue: JSON.stringify("token:success") })
+            .node("ui-store", { id: "colStore2", app: "colBindApp2", statePath: "iconColor", initialValue: JSON.stringify("token:success") })
             .node("ui-icon", { id: "colBindIcon2", icon: "house", color: { kind: "store", path: "colStore2" } })
             .withStoreInject("colInj2", "colStore2", "token:danger")
             .build();
@@ -544,7 +544,7 @@ test.describe("ui-icon icon name — editor binding (P239)", () => {
     test("author binds the icon name to a store in the EDITOR → deploy → resolved name renders and swaps live", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "iconEdApp1", root: "iconEdApp1" })
-            .node("ui-store", { id: "iconEdStore", parent: "iconEdApp1", statePath: "iconName", initialValue: JSON.stringify("house") })
+            .node("ui-store", { id: "iconEdStore", app: "iconEdApp1", statePath: "iconName", initialValue: JSON.stringify("house") })
             // Starts as a LITERAL — the binding below is authored purely through the UI.
             .node("ui-icon", { id: "iconEdNode1", icon: "gear" })
             .withStoreInject("iconEdInj", "iconEdStore", "star")

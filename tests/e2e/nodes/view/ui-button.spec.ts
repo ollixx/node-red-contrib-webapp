@@ -269,7 +269,7 @@ test.describe("ui-button — label binding (P236)", () => {
     test("store-bound label renders the resolved live value and updates via SSE", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "btnLblApp", root: "btnLblApp" })
-            .node("ui-store", { id: "btnLblStore", parent: "btnLblApp", statePath: "lbl", initialValue: JSON.stringify("LiveLabel") })
+            .node("ui-store", { id: "btnLblStore", app: "btnLblApp", statePath: "lbl", initialValue: JSON.stringify("LiveLabel") })
             .node("ui-button", { id: "btnLbl", label: { kind: "store", path: "btnLblStore" } })
             .withStoreInject("btnLblInj", "btnLblStore", "ChangedLabel")
             .build();
@@ -311,7 +311,7 @@ test.describe("ui-button — href binding in url mode (P236)", () => {
     test("store-bound href (linkMode=url) → sl-button renders the resolved href", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "btnHrefApp", root: "btnHrefApp" })
-            .node("ui-store", { id: "btnHrefStore", parent: "btnHrefApp", statePath: "h", initialValue: JSON.stringify("https://bound.example/x") })
+            .node("ui-store", { id: "btnHrefStore", app: "btnHrefApp", statePath: "h", initialValue: JSON.stringify("https://bound.example/x") })
             .node("ui-button", {
                 id: "btnHref",
                 label: "Link",
@@ -368,7 +368,7 @@ test.describe("ui-button — visible render-gate is NOT wired (P236 gap)", () =>
     test("a store-bound visible=false STILL renders the button (gate does not fire)", async ({ request }) => {
         const flow = new FlowBuilder()
             .app({ id: "btnVisApp", root: "btnVisApp" })
-            .node("ui-store", { id: "btnVisStore", parent: "btnVisApp", statePath: "show", initialValue: JSON.stringify(false) })
+            .node("ui-store", { id: "btnVisStore", app: "btnVisApp", statePath: "show", initialValue: JSON.stringify(false) })
             .node("ui-button", { id: "btnVis", label: "Hidden", visible: { kind: "store", path: "btnVisStore" } })
             .build();
         await deployFlow(request, flow);

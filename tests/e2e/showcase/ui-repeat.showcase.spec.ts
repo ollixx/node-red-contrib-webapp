@@ -43,7 +43,7 @@ function buildObjectRepeatFlow(extraItems?: { name: string }[]) {
         })
         .node("ui-text", {
             id: "repeatPersonName",
-            parent: "repeatPeopleRepeat",
+            app: "repeatPeopleRepeat",
             mount: "container:repeatPeopleRepeat/content",
             value: { kind: "item", path: "name" }
         })
@@ -74,14 +74,14 @@ test.describe("ui-repeat showcase (P187)", () => {
                 })
                 .node("ui-text", {
                     id: "repeatPrimItem",
-                    parent: "repeatPrimRepeat",
+                    app: "repeatPrimRepeat",
                     mount: "container:repeatPrimRepeat/content",
                     order: 0,
                     value: { kind: "item" }
                 })
                 .node("ui-text", {
                     id: "repeatPrimIndex",
-                    parent: "repeatPrimRepeat",
+                    app: "repeatPrimRepeat",
                     mount: "container:repeatPrimRepeat/content",
                     order: 1,
                     value: { kind: "index" }

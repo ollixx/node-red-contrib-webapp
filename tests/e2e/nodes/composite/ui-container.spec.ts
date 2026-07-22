@@ -310,7 +310,7 @@ test.describe("ui-container lifecycle events onShow/onHide (P255)", () => {
     test("visible false→true fires onShow with the container's sourceId (POST /event)", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "ctnOnShow", root: "ctnOnShow" })
-            .node("ui-store", { id: "ctnShowStore", parent: "ctnOnShow", statePath: "shown", initialValue: JSON.stringify(false) })
+            .node("ui-store", { id: "ctnShowStore", app: "ctnOnShow", statePath: "shown", initialValue: JSON.stringify(false) })
             .node("ui-container", {
                 id: "ctnShow1",
                 layoutId: "vertical",
@@ -346,7 +346,7 @@ test.describe("ui-container lifecycle events onShow/onHide (P255)", () => {
     test("visible true→false fires onHide with the container's sourceId (POST /event)", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "ctnOnHide", root: "ctnOnHide" })
-            .node("ui-store", { id: "ctnHideStore", parent: "ctnOnHide", statePath: "shown", initialValue: JSON.stringify(true) })
+            .node("ui-store", { id: "ctnHideStore", app: "ctnOnHide", statePath: "shown", initialValue: JSON.stringify(true) })
             .node("ui-container", {
                 id: "ctnHide1",
                 layoutId: "vertical",
@@ -385,7 +385,7 @@ test.describe("ui-container lifecycle events onShow/onHide (P255)", () => {
     test("a container with NO events enabled emits no /event on a show toggle", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "ctnNoEvt", root: "ctnNoEvt" })
-            .node("ui-store", { id: "ctnNoEvtStore", parent: "ctnNoEvt", statePath: "shown", initialValue: JSON.stringify(false) })
+            .node("ui-store", { id: "ctnNoEvtStore", app: "ctnNoEvt", statePath: "shown", initialValue: JSON.stringify(false) })
             .node("ui-container", {
                 id: "ctnNoEvt1",
                 layoutId: "vertical",

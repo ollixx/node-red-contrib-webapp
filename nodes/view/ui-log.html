@@ -27,7 +27,7 @@
                 visible: { value: null },
                 visibleBinding: { value: "" },
                 name:        { value: "" },
-                parent:      { value: "" },
+                app:      { value: "" },
                 mount:       { value: "", required: true },
                 minSeverity: { value: "debug" },
                 maxEntries:  { value: 50, validate: function (v) { return v === "" || (RED.validators.number()(v) && Number(v) >= 1); } },

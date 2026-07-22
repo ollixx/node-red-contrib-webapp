@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+
 import { expect, test, type Page } from "@playwright/test";
 
 import { deployFlow, resetFlow } from "../../../helpers/admin-api";
@@ -338,6 +341,111 @@ function legacyRowsFlow() {
         .node("ui-textarea", { id: "fndText", rows: 7, lines: undefined })
         .build();
 }
+
+// ─── P228 — `parent` → `app` (owning-app field) category roundtrips ──────────
+//
+// The first P228 attempt died on migrate-on-save leaving `app` EMPTY (the
+// ADR-0031 clobber class). These tests disprove that bug per node CATEGORY:
+// one representative each for structure (ui-route), view (ui-text — no app
+// carrier input), state (ui-store) and behavior (ui-action). A legacy node
+// authored with `parent` must (a) open with the App picker FILLED (where the
+// template has one), and (b) save `app` with the legacy `parent` deleted.
+
+const APP_P = "p228App";
+
+/** One legacy flow: a `parent`-authored representative per category. The
+ *  explicit `parent` override makes FlowBuilder emit a PURE legacy node. */
+function legacyParentFlow() {
+    return new FlowBuilder()
+        .app({ id: APP_P, root: APP_P })
+        // view (BEFORE .route(): mounts into the app's own content slot)
+        .node("ui-text", { id: "p228Text", parent: APP_P, text: "Legacy parent text" })
+        // structure
+        .route({ id: "p228Route", path: "/sub", parent: APP_P })
+        // state + behavior
+        .node("ui-store", { id: "p228Store", parent: APP_P, statePath: "p228" })
+        .node("ui-action", { id: "p228Action", parent: APP_P })
+        .build();
+}
+
+/** category → node id + whether the template carries the #node-input-app picker */
+const PARENT_APP_CASES = [
+    { category: "structure", type: "ui-route", nodeId: "p228Route", hasPicker: true },
+    { category: "view", type: "ui-text", nodeId: "p228Text", hasPicker: false },
+    { category: "state", type: "ui-store", nodeId: "p228Store", hasPicker: true },
+    { category: "behavior", type: "ui-action", nodeId: "p228Action", hasPicker: true }
+] as const;
+
+test.describe("P228 — legacy `parent` migrates to canonical `app`", () => {
+    test.afterEach(async ({ request }) => {
+        await resetFlow(request);
+    });
+
+    test("a legacy flow with `parent` still renders (runtime fallback intact)", async ({ page, request }) => {
+        await deployFlow(request, legacyParentFlow());
+
+        const webapp = new WebappPage(page, APP_P);
+        await webapp.navigate("/");
+        await expect(page.locator("text=Legacy parent text")).toBeVisible();
+    });
+
+    for (const c of PARENT_APP_CASES) {
+        test(`${c.category} (${c.type}): opens with App ${c.hasPicker ? "picker FILLED" : "migrated"}, saves \`app\`, drops \`parent\``, async ({ page, request }) => {
+            await deployFlow(request, legacyParentFlow());
+            await gotoEditor(page);
+            const editor = new NodeEditorPage(page);
+
+            await editor.openNode(c.nodeId);
+            if (c.hasPicker) {
+                // On-open migration: the hidden #node-input-app carrier is
+                // seeded from the legacy `parent` — the picker shows the app.
+                expect(await editor.readField("app"), `${c.type} picker seeded from legacy parent`).toBe(APP_P);
+            }
+
+            await editor.save();
+            const n = await readNode(page, c.nodeId, ["app", "parent"]);
+            expect(n.app, `${c.type} app written on save`).toBe(APP_P);
+            expect(n.parent, `${c.type} legacy parent dropped`).toBeUndefined();
+        });
+    }
+});
+
+// ─── P228 Gesamt-Beweis — a pre-rename FIXTURE flow loads, renders, migrates ─
+
+test.describe("P228 — pre-rename fixture (parent-era flow)", () => {
+    test.afterEach(async ({ request }) => {
+        await resetFlow(request);
+    });
+
+    test("loads + renders unchanged; editor open→save→deploy migrates to `app`", async ({ page, request }) => {
+        const fixture = JSON.parse(
+            readFileSync(path.resolve(process.cwd(), "tests/e2e/fixtures/pre-rename-parent.flow.json"), "utf8")
+        ) as Parameters<typeof deployFlow>[1];
+        await deployFlow(request, fixture);
+
+        // 1. The legacy flow renders unchanged.
+        const webapp = new WebappPage(page, "preApp");
+        await webapp.navigate("/");
+        await expect(page.locator("text=Pre-rename text")).toBeVisible();
+
+        // 2. Open the legacy store: the App picker is FILLED from `parent`.
+        await gotoEditor(page);
+        const editor = new NodeEditorPage(page);
+        await editor.openNode("preStore");
+        expect(await editor.readField("app")).toBe("preApp");
+
+        // 3. Save migrates: `app` written, legacy `parent` deleted.
+        await editor.save();
+        const n = await readNode(page, "preStore", ["app", "parent"]);
+        expect(n.app).toBe("preApp");
+        expect(n.parent).toBeUndefined();
+
+        // 4. Deploy the migrated flow — it still renders.
+        await editor.deploy();
+        await webapp.navigate("/");
+        await expect(page.locator("text=Pre-rename text")).toBeVisible();
+    });
+});
 
 test.describe("P229 slice D — ui-textarea rows renames to lines", () => {
     test.afterEach(async ({ request }) => {

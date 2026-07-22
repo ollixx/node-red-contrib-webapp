@@ -48,7 +48,7 @@ test.describe("ui-divider — orientation + label", () => {
 
     test("bound label (store) renders the resolved live value (P150)", async ({ request }) => {
         const flow = new FlowBuilder().app({ id: "divB", root: "divB" })
-            .node("ui-store", { id: "lblStore", parent: "divB", statePath: "dividerLabel", initialValue: JSON.stringify("Gebunden") })
+            .node("ui-store", { id: "lblStore", app: "divB", statePath: "dividerLabel", initialValue: JSON.stringify("Gebunden") })
             .node("ui-divider", { id: "dB", label: { kind: "store", path: "lblStore" } })
             .build();
         await deployFlow(request, flow);
@@ -94,7 +94,7 @@ test.describe("ui-divider — visible render-gate (bound; ADR 0037) (P231)", () 
     // unbound dynamic-state field seeded to the neutral default `true`, ADR 0037).
     test("visible bound to a store=false → the divider is not rendered", async ({ request }) => {
         const flow = new FlowBuilder().app({ id: "divVis", root: "divVis" })
-            .node("ui-store", { id: "visStore", parent: "divVis", statePath: "show", initialValue: JSON.stringify(false) })
+            .node("ui-store", { id: "visStore", app: "divVis", statePath: "show", initialValue: JSON.stringify(false) })
             .node("ui-divider", { id: "dVis", visible: { kind: "store", path: "visStore" } })
             .build();
         await deployFlow(request, flow);
@@ -103,7 +103,7 @@ test.describe("ui-divider — visible render-gate (bound; ADR 0037) (P231)", () 
 
     test("visible bound to a store=true → the divider is rendered", async ({ request }) => {
         const flow = new FlowBuilder().app({ id: "divVis2", root: "divVis2" })
-            .node("ui-store", { id: "visStore2", parent: "divVis2", statePath: "show", initialValue: JSON.stringify(true) })
+            .node("ui-store", { id: "visStore2", app: "divVis2", statePath: "show", initialValue: JSON.stringify(true) })
             .node("ui-divider", { id: "dVis2", visible: { kind: "store", path: "visStore2" } })
             .build();
         await deployFlow(request, flow);

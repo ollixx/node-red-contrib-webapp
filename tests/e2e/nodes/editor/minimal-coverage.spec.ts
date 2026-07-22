@@ -91,7 +91,7 @@ test.describe("editor panels — minimal coverage (P47)", () => {
 
     // ui-toast mounts via `parent` (app-scoped), not a route slot.
     // NOTE: ui-toast's editor wires its App selector through
-    // installReferenceSelectors({ parent: "ui-app" }), but that helper has no
+    // installReferenceSelectors({ app: "ui-app" }), but that helper has no
     // `parent` branch, so the select is never populated with app options (a
     // pre-existing editor bug, not a P47 deliverable). The minimal P47 contract
     // is "opens without crash, has the expected fields", which this asserts.
@@ -106,12 +106,12 @@ test.describe("editor panels — minimal coverage (P47)", () => {
         await editor.open();
         await editor.openNode("toastEd");
 
-        await editor.expectFields(["name", "parent"]);
+        await editor.expectFields(["name", "app"]);
         // The node's stored parent reference is intact even though the selector
         // does not enumerate it (see note above).
         const parent = await page.evaluate(() => {
-            const n = (window as unknown as { RED: { nodes: { node: (id: string) => { parent?: string } | null } } }).RED.nodes.node("toastEd");
-            return n?.parent;
+            const n = (window as unknown as { RED: { nodes: { node: (id: string) => { app?: string } | null } } }).RED.nodes.node("toastEd");
+            return n?.app;
         });
         expect(parent).toBe("toastApp");
     });

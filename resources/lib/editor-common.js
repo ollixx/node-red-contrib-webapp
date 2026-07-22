@@ -804,12 +804,73 @@
         });
     }
 
+    // P228 (ADR 0038): the owning-app reference field is canonically `app`; the
+    // legacy name is `parent`. Every node whose defaults carry `app` gets the
+    // universal parent→app migration:
+    //   - registration injects a hidden `parent: { value: undefined }` migration
+    //     default (same mechanics as withMigrationDefaults) so a legacy flow's
+    //     `parent` value is imported into the editor node instead of stripped;
+    //   - `installParentAppSelector` seeds the `#node-input-app` carrier from
+    //     `app || parent`, so a legacy node OPENS with the App picker filled;
+    //   - `oneditsave` writes the migrated value into the canonical field — via
+    //     the `#node-input-app` carrier when the template has one (Node-RED's
+    //     field copy persists it), directly onto `this.app` when it has none
+    //     (the many view nodes without an app control) — and then DELETES the
+    //     legacy `parent` so the saved node exports without it.
+    // This is the ADR-0031 clobber-class fix the first P228 attempt missed: the
+    // save path must never leave `app` empty while dropping `parent`.
+    function withAppFieldMigration(definition) {
+        if (!definition.defaults || !Object.prototype.hasOwnProperty.call(definition.defaults, "app")) {
+            return definition;
+        }
+        var out = Object.assign({}, definition);
+        if (!Object.prototype.hasOwnProperty.call(out.defaults, "parent")) {
+            var defaults = Object.assign({}, out.defaults);
+            defaults.parent = { value: undefined };
+            out.defaults = defaults;
+        }
+        var originalSave = out.oneditsave;
+        out.oneditsave = function () {
+            if (originalSave) {
+                originalSave.call(this);
+            }
+            var legacy = (typeof this.parent === "string" && this.parent !== this.id) ? this.parent : "";
+            if (legacy) {
+                // Order-proof against Node-RED's input→property field copy
+                // (whether it runs before or after oneditsave): seed BOTH the
+                // carrier input (if the template has one and it is empty) and
+                // the node property (if still empty), so whichever one Node-RED
+                // treats as authoritative carries the migrated value.
+                var $carrier = (typeof $ === "function") ? $("#node-input-app") : null;
+                if ($carrier && $carrier.length && !$carrier.val()) {
+                    if ($carrier.is("select") && $carrier.find("option[value='" + legacy.replace(/'/g, "\\'") + "']").length === 0) {
+                        $carrier.append($("<option></option>").attr("value", legacy).text(legacy));
+                    }
+                    $carrier.val(legacy);
+                }
+                if (this.app === undefined || this.app === null || this.app === "") {
+                    this.app = legacy;
+                }
+            }
+            dropLegacyFields(this, ["parent"]);
+        };
+        return out;
+    }
+
     function withUiIdMigration(definition) {
-        return withMigrationDefaults(definition);
+        return withAppFieldMigration(withMigrationDefaults(definition));
     }
 
     function required(value) {
         return value !== undefined && value !== null && String(value).trim().length > 0;
+    }
+
+    // P228: `required` semantics for the canonical `app` field. An un-opened
+    // legacy node carries its owning app in `parent` — it must not flag invalid
+    // just because the value has not migrated into `app` yet (open→save does
+    // that). Node-RED calls validators with `this` bound to the node.
+    function validateAppRef(value) {
+        return required(value) || required(this && this.parent);
     }
 
     function parseBindingValue(value) {
@@ -890,7 +951,7 @@
                     path: node.path || "",
                     layoutId: node.layoutId || "",
                     title: node.title || node.name || id,
-                    parent: node.parent || ""
+                    parent: node.app || node.parent || ""
                 });
                 return;
             }
@@ -900,7 +961,7 @@
                     id,
                     layoutId: node.layoutId || "",
                     title: node.title || node.name || id,
-                    parent: node.parent || ""
+                    parent: node.app || node.parent || ""
                 });
                 return;
             }
@@ -1039,7 +1100,7 @@
                     label: node.name || id,
                     type: node.type,
                     to: node.to || "",
-                    parent: node.parent || ""
+                    parent: node.app || node.parent || ""
                 });
                 return;
             }
@@ -1052,7 +1113,7 @@
                     // P132: the JSON default-slice source — used (parsed) for the
                     // soft sub-path autocomplete (keys/indices), never to restrict.
                     initialValue: node.initialValue || "",
-                    parent: node.parent || ""
+                    parent: node.app || node.parent || ""
                 });
                 return;
             }
@@ -1062,7 +1123,7 @@
                     id,
                     name: node.name || "",
                     queryPath: node.queryPath || "",
-                    parent: node.parent || ""
+                    parent: node.app || node.parent || ""
                 });
             }
         });
@@ -1073,11 +1134,12 @@
     // ── P117: App-scope helpers ──────────────────────────────────────────────
     // resolveEditedNodeApp(node, references) — determine the ui-app id that the
     // currently-edited node belongs to. Three cases:
-    //   1. The node has a `parent` that is a known ui-app id → that app.
+    //   1. The node has an `app` (owning app; legacy alias `parent`) that is a
+    //      known ui-app id → that app.
     //   2. The node has a `mount` → walk the mount chain upward to find the app.
     //   3. Neither known → return null (fallback: show all candidates).
     //
-    // "Currently edited" means we look at the live panel values (#node-input-parent
+    // "Currently edited" means we look at the live panel values (#node-input-app
     // / #node-input-mount) first, then fall back to the node object's fields, so
     // that changing the app in an open panel immediately scopes the picker.
     function resolveEditedNodeApp(node, references) {
@@ -1093,8 +1155,10 @@
             return el.length ? (String(el.val() || "")) : null;
         }
 
-        // Case 1: direct parent field.
-        const parentVal = liveVal("parent") || (node.parent ? String(node.parent) : "");
+        // Case 1: direct owning-app field (P228: canonical `app`, legacy `parent`).
+        const parentVal = liveVal("app") || liveVal("parent")
+            || (node.app ? String(node.app) : "")
+            || (node.parent ? String(node.parent) : "");
         if (parentVal && appIds.has(parentVal)) {
             return parentVal;
         }
@@ -3263,7 +3327,7 @@
             if (typeof cfg.getAppId === "function") {
                 return cfg.getAppId();
             }
-            // Auto-derive: look at the live #node-input-parent or #node-input-mount
+            // Auto-derive: look at the live #node-input-app or #node-input-mount
             // values to find the current app. We pass a minimal node proxy.
             const references = collectReferenceNodes();
             const nodeProxy = {};
@@ -5896,16 +5960,20 @@
     function installParentAppSelector() {
         return function () {
             const self = this;
-            // The bound #node-input-parent stays the value carrier. The template
+            // The bound #node-input-app stays the value carrier. The template
             // ships an option-less <select>, so seed the STORED app id into the
-            // picker. Never fall back to the node's own id: `parent` references
-            // the owning ui-app, and self.id is never an app — that legacy
-            // fallback silently corrupted `parent` to the node's own id when no
-            // app was chosen, so the node then filtered out of every reference
-            // picker (which matches `parent === appId`). An empty or already-
-            // self-corrupted `parent` seeds "" so the user picks the real app.
-            const seededParent = (self.parent && self.parent !== self.id) ? self.parent : "";
-            installPickerField("#node-input-parent", {
+            // picker. P228: read the canonical `app` field, falling back to the
+            // legacy `parent` for flows authored before the rename (this is the
+            // "legacy node opens with the App picker FILLED" migration path).
+            // Never fall back to the node's own id: the field references the
+            // owning ui-app, and self.id is never an app — that legacy fallback
+            // silently corrupted the field to the node's own id when no app was
+            // chosen, so the node then filtered out of every reference picker
+            // (which matches `app === appId`). An empty or already-self-
+            // corrupted value seeds "" so the user picks the real app.
+            const storedApp = self.app || self.parent;
+            const seededParent = (storedApp && storedApp !== self.id) ? storedApp : "";
+            installPickerField("#node-input-app", {
                 filterPreset: "apps",
                 title: "App auswählen",
                 placeholder: "App auswählen",
@@ -6910,6 +6978,7 @@
         registerNodeType,
         registerNodeTypeWithEvents,
         required,
+        validateAppRef,
         resolveEditedNodeApp,
         resolveAppFromMount,
         // P165 (ADR 0017): scope-local item/index repeat helpers.

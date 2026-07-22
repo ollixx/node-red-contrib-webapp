@@ -37,7 +37,7 @@ async function openEditor(page: Parameters<typeof test>[0]["page"], nodeId: stri
 
 /**
  * P114 / ADR 0009: parent and parent-slot selection is the dialog-only picker.
- * The bound `#node-input-parent` / `#node-input-mount` are hidden value carriers;
+ * The bound `#node-input-app` / `#node-input-mount` are hidden value carriers;
  * a read-only display + "Auswählen…" button drive selection through the P68
  * dialog (apps / mounts presets). These specs assert the dialog pattern is wired
  * and the preset candidates are populated from the editor graph.
@@ -64,8 +64,8 @@ test.describe("P11b/P114: parent + parent-slot pickers in editors", () => {
         await openEditor(page, "mountStore");
 
         // Dialog-only pattern: button present, bound control hidden.
-        await expect(pickerFieldButton(page, "parent")).toBeVisible();
-        await expect(page.locator("#node-input-parent")).toBeHidden();
+        await expect(pickerFieldButton(page, "app")).toBeVisible();
+        await expect(page.locator("#node-input-app")).toBeHidden();
 
         // The apps preset (what the dialog renders from) has app candidates.
         const appCount = await page.evaluate(() => {
@@ -75,7 +75,7 @@ test.describe("P11b/P114: parent + parent-slot pickers in editors", () => {
         expect(appCount).toBeGreaterThan(0);
 
         // Opening the dialog shows app rows.
-        await openPicker(page, "parent");
+        await openPicker(page, "app");
         await expect(page.locator(".webapp-node-picker-row").first()).toBeVisible();
     });
 

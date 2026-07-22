@@ -32,16 +32,16 @@ function buildDialogFlow(): NodeDef[] {
     };
     const route: NodeDef = {
         type: "ui-route", id: "dialogRoute", uiId: "dialogRoute", name: "Home",
-        parent: appId, path: "/", title: "Home", layoutId: "vertical", z: TAB_ID, wires: [[]]
+        app: appId, path: "/", title: "Home", layoutId: "vertical", z: TAB_ID, wires: [[]]
     };
     const dialog: NodeDef = {
         type: "ui-dialog", id: dialogId, uiId: dialogId, name: "Test Dialog",
-        title: "Test Dialog", parent: appId, layoutId: "vertical", closable: true, z: TAB_ID, wires: [[]]
+        title: "Test Dialog", app: appId, layoutId: "vertical", closable: true, z: TAB_ID, wires: [[]]
     };
     // A text node mounted inside the dialog to verify child rendering.
     const dialogText: NodeDef = {
         type: "ui-text", id: "dialogText", uiId: "dialogText", name: "dialog text",
-        parent: appId, mount: `${dialogId}.content`, text: "Dialog content here",
+        app: appId, mount: `${dialogId}.content`, text: "Dialog content here",
         z: TAB_ID, wires: [[]]
     };
 
@@ -67,21 +67,21 @@ function buildRouteScopedDialogFlow(): NodeDef[] {
     };
     const routeA: NodeDef = {
         type: "ui-route", id: routeAId, uiId: routeAId, name: "Home",
-        parent: appId, path: "/", title: "Home", layoutId: "vertical", z: TAB_ID, wires: [[]]
+        app: appId, path: "/", title: "Home", layoutId: "vertical", z: TAB_ID, wires: [[]]
     };
     const routeB: NodeDef = {
         type: "ui-route", id: routeBId, uiId: routeBId, name: "Other",
-        parent: appId, path: "/other", title: "Other", layoutId: "vertical", z: TAB_ID, wires: [[]]
+        app: appId, path: "/other", title: "Other", layoutId: "vertical", z: TAB_ID, wires: [[]]
     };
     // Dialog scoped to route A only.
     const dialog: NodeDef = {
         type: "ui-dialog", id: dialogId, uiId: dialogId, name: "Scoped Dialog",
-        title: "Scoped Dialog", parent: appId, routeId: routeAId,
+        title: "Scoped Dialog", app: appId, routeId: routeAId,
         layoutId: "vertical", closable: true, z: TAB_ID, wires: [[]]
     };
     const dialogText: NodeDef = {
         type: "ui-text", id: "scopedText", uiId: "scopedText", name: "scoped text",
-        parent: appId, mount: `${dialogId}.content`, text: "Scoped dialog content",
+        app: appId, mount: `${dialogId}.content`, text: "Scoped dialog content",
         z: TAB_ID, wires: [[]]
     };
 

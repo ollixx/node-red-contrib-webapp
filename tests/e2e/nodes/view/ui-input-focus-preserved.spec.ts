@@ -21,17 +21,17 @@ test.describe("ui-input keeps focus + caret across a store-driven re-render", ()
     test("sequential typing with writeTrigger=change is lossless (caret not reset)", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "fcApp", root: "fcApp" })
-            .node("ui-store", { id: "fcStore", parent: "fcApp", statePath: "e", initialValue: JSON.stringify({ name: "" }) })
+            .node("ui-store", { id: "fcStore", app: "fcApp", statePath: "e", initialValue: JSON.stringify({ name: "" }) })
             .node("ui-input", {
                 id: "fcInput",
-                parent: "fcApp",
+                app: "fcApp",
                 value: { kind: "store", path: "fcStore", subPath: { kind: "literal", value: "name" } },
                 writeTo: { kind: "store", path: "fcStore", subPath: { kind: "literal", value: "name" } },
                 writeTrigger: "change"
             })
             .node("ui-text", {
                 id: "fcText",
-                parent: "fcApp",
+                app: "fcApp",
                 value: { kind: "store", path: "fcStore", subPath: { kind: "literal", value: "name" } }
             })
             .build();

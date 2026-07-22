@@ -3408,15 +3408,15 @@ function validateAppRootUniqueness(RED) {
     return issues;
 }
 
-// P205 (Owner 2026-07-06): an app-scoped node (store/query/action/navigation/
-// dialog/route) belongs to a ui-app via its `parent` field. Deploy groups nodes
-// into an app by flow tab (`z`), NOT by `parent`, so a node with an empty / own-id
-// / non-app `parent` renders silently and its editor reference-pickers (which match
-// `parent === appId`) drop it — with no error. This surfaces the misconfiguration
-// as a deploy error: `parent` must be the id of a real ui-app in the flow and never
-// the node's own id. Pure over a nodes array (unit-testable); the RED wrapper reads
-// the deployed flow file (mirrors validateAppRootUniqueness). Returns a list of
-// { nodeId, parent, message }.
+// P205 (Owner 2026-07-06): an app-scoped node (store/query/action/dialog/route)
+// belongs to a ui-app via its `app` field (P228; legacy alias `parent`). Deploy
+// groups nodes into an app by flow tab (`z`), NOT by `app`, so a node with an
+// empty / own-id / non-app `app` renders silently and its editor reference-
+// pickers (which match `app === appId`) drop it — with no error. This surfaces
+// the misconfiguration as a deploy error: `app` must be the id of a real ui-app
+// in the flow and never the node's own id. Pure over a nodes array (unit-
+// testable); the RED wrapper reads the deployed flow file (mirrors
+// validateAppRootUniqueness). Returns a list of { nodeId, parent, message }.
 const APP_SCOPED_PARENT_TYPES = ["ui-store", "ui-store-read", "ui-store-action", "ui-query", "ui-query-action", "ui-action", "ui-dialog", "ui-route"];
 
 function collectAppScopedParentIssues(nodes) {
@@ -3438,9 +3438,9 @@ function collectAppScopedParentIssues(nodes) {
         const legacyParent = typeof n.parent === "string" ? n.parent.trim() : "";
         const parent = appField || legacyParent;
         let reason;
-        if (!parent) { reason = "has no App parent — open it and pick the owning ui-app"; }
-        else if (parent === n.id) { reason = "has its own id as App parent (not a valid app) — pick the owning ui-app"; }
-        else if (!appIds.has(parent)) { reason = `App parent '${parent}' is not a ui-app in this flow`; }
+        if (!parent) { reason = "has no App — open it and pick the owning ui-app"; }
+        else if (parent === n.id) { reason = "has its own id as App (not a valid app) — pick the owning ui-app"; }
+        else if (!appIds.has(parent)) { reason = `App '${parent}' is not a ui-app in this flow`; }
         if (reason) {
             issues.push({ nodeId: n.id, parent, message: `${n.type} '${n.name || n.id}' ${reason}.` });
         }

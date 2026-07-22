@@ -1,0 +1,6 @@
+[
+    { "id": "e2e-flow", "type": "tab", "label": "Flow", "disabled": false, "info": "P228 pre-rename fixture: authored with the LEGACY `parent` owning-app field on purpose — do NOT sweep to `app`. It proves a pre-rename flow loads, renders unchanged, and migrates to `app` on editor open/save." },
+    { "id": "preApp", "type": "ui-app", "name": "preApp", "title": "preApp", "root": "preApp", "layout": "vertical", "z": "e2e-flow", "x": 100, "y": 100, "wires": [[]] },
+    { "id": "preText", "type": "ui-text", "uiId": "preText", "name": "preText", "parent": "preApp", "mount": "preApp.content", "text": "Pre-rename text", "z": "e2e-flow", "x": 100, "y": 160, "wires": [[]] },
+    { "id": "preStore", "type": "ui-store", "uiId": "preStore", "name": "preStore", "parent": "preApp", "statePath": "pre", "initialValue": "{\"greeting\":\"Hallo\"}", "z": "e2e-flow", "x": 100, "y": 300, "wires": [[]] }
+]

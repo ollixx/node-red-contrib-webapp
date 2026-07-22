@@ -450,7 +450,7 @@ test.describe("P117 — picker app-scope + admin-UI look", () => {
                 actions: [],
                 stores: []
             };
-            const nodeWithParent = { parent: "appA" };
+            const nodeWithParent = { app: "appA" };
             const nodeNoParent = {};
 
             return {
@@ -473,8 +473,8 @@ test.describe("P117 — picker app-scope + admin-UI look", () => {
 
             const refs = {
                 apps: [{ id: "shopApp", title: "Shop" }],
-                routes: [{ id: "r1", path: "/customers", parent: "shopApp", layoutId: "grid" }],
-                dialogs: [{ id: "d1", parent: "shopApp", layoutId: "dialog" }],
+                routes: [{ id: "r1", path: "/customers", app: "shopApp", layoutId: "grid" }],
+                dialogs: [{ id: "d1", app: "shopApp", layoutId: "dialog" }],
                 containers: [{ id: "c1", mount: "route:/customers/content", layoutId: "vertical" }],
                 actions: [],
                 stores: []
@@ -511,8 +511,8 @@ test.describe("P117 — picker app-scope + admin-UI look", () => {
                     { id: "appB", title: "App B" }
                 ],
                 routes: [
-                    { id: "rA", path: "/a", parent: "appA", layoutId: "vertical" },
-                    { id: "rB", path: "/b", parent: "appB", layoutId: "vertical" }
+                    { id: "rA", path: "/a", app: "appA", layoutId: "vertical" },
+                    { id: "rB", path: "/b", app: "appB", layoutId: "vertical" }
                 ],
                 dialogs: [],
                 containers: [],
@@ -541,7 +541,7 @@ test.describe("P117 — picker app-scope + admin-UI look", () => {
         const flowA = new FlowBuilder()
             .app({ id: "appA", root: "appA", name: "App A" })
             .node("ui-store", { id: "storeA", name: "Store A", statePath: "a" })
-            .node("ui-route", { id: "routeA", path: "/a", parent: "appA", name: "Route A", layoutId: "vertical" })
+            .node("ui-route", { id: "routeA", path: "/a", app: "appA", name: "Route A", layoutId: "vertical" })
             .build();
         const flowB = new FlowBuilder()
             .app({ id: "appB", root: "appB", name: "App B" })

@@ -51,12 +51,12 @@ test.describe("P60: ui-action node picker (ADR 0007 §3)", () => {
             ...base,
             {
                 type: "ui-dialog", id: dialogId, uiId: dialogId, name: "P60 Dialog",
-                parent: appId, title: "P60 Dialog", layoutId: "vertical",
+                app: appId, title: "P60 Dialog", layoutId: "vertical",
                 z: TAB_ID, x: 100, y: 300, wires: [[]]
             },
             {
                 type: "ui-text", id: "p60DlgTxt1", uiId: "p60DlgTxt1", name: "p60DlgTxt1",
-                parent: appId, mount: `dialog:${dialogId}/content`, text: "Dialog body",
+                app: appId, mount: `dialog:${dialogId}/content`, text: "Dialog body",
                 z: TAB_ID, x: 100, y: 350, wires: [[]]
             }
         ];
@@ -92,7 +92,7 @@ test.describe("P60: ui-action node picker (ADR 0007 §3)", () => {
             ...base,
             {
                 type: "ui-dialog", id: dialogId, uiId: dialogId, name: "Pickable Dialog",
-                parent: appId, title: "Pickable Dialog", layoutId: "vertical",
+                app: appId, title: "Pickable Dialog", layoutId: "vertical",
                 z: TAB_ID, x: 100, y: 300, wires: [[]]
             },
             // A plain Node-RED node that must NOT be selectable by the picker.

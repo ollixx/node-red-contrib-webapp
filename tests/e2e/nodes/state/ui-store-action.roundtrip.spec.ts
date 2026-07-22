@@ -28,9 +28,9 @@ test.describe("ui-store-action — store reference open→save round-trip", () =
     test("store survives open→Done and a value-change round-trips", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "saApp", root: "saApp" })
-            .node("ui-store", { id: "saStore", parent: "saApp", statePath: "entity", initialValue: JSON.stringify({ name: "A" }) })
-            .node("ui-store", { id: "saStore2", parent: "saApp", statePath: "other", initialValue: JSON.stringify({ name: "B" }) })
-            .node("ui-store-action", { id: "saAction", parent: "saApp", store: "saStore", op: "set", path: "name", mode: "reference" })
+            .node("ui-store", { id: "saStore", app: "saApp", statePath: "entity", initialValue: JSON.stringify({ name: "A" }) })
+            .node("ui-store", { id: "saStore2", app: "saApp", statePath: "other", initialValue: JSON.stringify({ name: "B" }) })
+            .node("ui-store-action", { id: "saAction", app: "saApp", store: "saStore", op: "set", path: "name", mode: "reference" })
             .build();
 
         await deployFlow(request, flow);

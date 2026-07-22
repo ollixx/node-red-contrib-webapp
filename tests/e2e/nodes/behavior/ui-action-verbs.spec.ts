@@ -107,12 +107,12 @@ test.describe("ui-action interaction verbs (P53)", () => {
             ...baseFlow,
             {
                 type: "ui-dialog", id: dialogId, uiId: dialogId, name: "Verb Dialog",
-                parent: "verbApp3", title: "Verb Dialog", layoutId: "vertical",
+                app: "verbApp3", title: "Verb Dialog", layoutId: "vertical",
                 z: "e2e-flow", x: 100, y: 300, wires: [[]]
             },
             {
                 type: "ui-text", id: "verbDlgTxt3", uiId: "verbDlgTxt3", name: "verbDlgTxt3",
-                parent: "verbApp3", mount: `dialog:${dialogId}/content`, text: "Dialog content",
+                app: "verbApp3", mount: `dialog:${dialogId}/content`, text: "Dialog content",
                 z: "e2e-flow", x: 100, y: 350, wires: [[]]
             },
             // open: inject → function(open=true) → store  AND  inject → ui-action(open)

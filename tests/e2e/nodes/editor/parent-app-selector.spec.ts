@@ -42,30 +42,30 @@ test.describe("editor — App parent selector never seeds the node's own id", ()
     }
 
     test("a fresh ui-store with empty parent seeds '' (not its own id)", async ({ page, request }) => {
-        const editor = await openStore(page, request, { parent: "" });
+        const editor = await openStore(page, request, { app: "" });
         // #node-input-parent is the hidden value carrier the picker seeds.
-        expect(await editor.readField("parent")).toBe("");
+        expect(await editor.readField("app")).toBe("");
     });
 
     test("an already-corrupted parent === self.id self-heals to '' on open", async ({ page, request }) => {
-        const editor = await openStore(page, request, { parent: "pasStore" });
-        expect(await editor.readField("parent")).toBe("");
+        const editor = await openStore(page, request, { app: "pasStore" });
+        expect(await editor.readField("app")).toBe("");
     });
 
     test("a valid app parent is preserved (not cleared)", async ({ page, request }) => {
-        const editor = await openStore(page, request, { parent: "pasApp" });
-        expect(await editor.readField("parent")).toBe("pasApp");
+        const editor = await openStore(page, request, { app: "pasApp" });
+        expect(await editor.readField("app")).toBe("pasApp");
     });
 
     // The seed fix alone leaves an appless node silently empty — it must instead
     // be a deploy-blocking error. `parent` is required on every app-owned node.
     test("a ui-store with no app parent is INVALID (deploy-blocking error)", async ({ page, request }) => {
-        const editor = await openStore(page, request, { parent: "" });
+        const editor = await openStore(page, request, { app: "" });
         expect(await editor.getValidationState("pasStore")).toBe("invalid");
     });
 
     test("a ui-store WITH an app parent is valid", async ({ page, request }) => {
-        const editor = await openStore(page, request, { parent: "pasApp" });
+        const editor = await openStore(page, request, { app: "pasApp" });
         expect(await editor.getValidationState("pasStore")).toBe("valid");
     });
 });

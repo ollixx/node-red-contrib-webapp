@@ -45,7 +45,7 @@ function roundTripFlow(): NodeDef[] {
             type: "ui-component-instance",
             id: "rtInst",
             name: "Instance",
-            parent: "rtApp",
+            app: "rtApp",
             mount: "rtApp.content",
             order: 0,
             definitionId: "rtDef",

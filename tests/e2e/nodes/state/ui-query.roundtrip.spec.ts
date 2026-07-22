@@ -33,11 +33,11 @@ test.describe("ui-query — params/refreshAction reference open→save round-tri
     test("params and refreshAction survive open→Done and value-changes round-trip", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "qApp", root: "qApp" })
-            .node("ui-store", { id: "qStore", parent: "qApp", statePath: "params" })
-            .node("ui-store", { id: "qStore2", parent: "qApp", statePath: "params2" })
-            .node("ui-action", { id: "qAction", parent: "qApp", actionType: "navigate" })
-            .node("ui-action", { id: "qAction2", parent: "qApp", actionType: "navigate" })
-            .node("ui-query", { id: "qQuery", parent: "qApp", queryPath: "rows", params: "qStore", refreshAction: "qAction" })
+            .node("ui-store", { id: "qStore", app: "qApp", statePath: "params" })
+            .node("ui-store", { id: "qStore2", app: "qApp", statePath: "params2" })
+            .node("ui-action", { id: "qAction", app: "qApp", actionType: "navigate" })
+            .node("ui-action", { id: "qAction2", app: "qApp", actionType: "navigate" })
+            .node("ui-query", { id: "qQuery", app: "qApp", queryPath: "rows", params: "qStore", refreshAction: "qAction" })
             .build();
 
         await deployFlow(request, flow);

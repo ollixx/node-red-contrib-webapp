@@ -30,7 +30,7 @@ test.describe("editor panels — behavior & state nodes (P47)", () => {
         // `target` survives as a hidden input for backward-compat.
         // P119 (ADR 0011): the navigate `to` is now the URL-mode carrier; the
         // targetMode/routeId hidden carriers join the field set.
-        await editor.expectFields(["name", "parent", "actionType", "to", "targetMode", "routeId", "targets", "part", "description"]);
+        await editor.expectFields(["name", "app", "actionType", "to", "targetMode", "routeId", "targets", "part", "description"]);
 
         // The wireless picker exposes a "pick on canvas" button.
         await expect(page.locator("#node-input-targets-pick")).toHaveCount(1);
@@ -76,7 +76,7 @@ test.describe("editor panels — behavior & state nodes (P47)", () => {
         await editor.open();
         await editor.openNode("storeEd");
 
-        await editor.expectFields(["name", "parent", "statePath", "initialValue", "persist"]);
+        await editor.expectFields(["name", "app", "statePath", "initialValue", "persist"]);
 
         // statePath required and empty → invalid.
         expect(await editor.getValidationState("storeEd")).toBe("invalid");
@@ -106,7 +106,7 @@ test.describe("editor panels — behavior & state nodes (P47)", () => {
         await editor.open();
         await editor.openNode("qEd");
 
-        await editor.expectFields(["name", "parent"]);
+        await editor.expectFields(["name", "app"]);
         expect(await editor.pickerPresetValues("apps")).toContain("qApp");
     });
 
@@ -128,7 +128,7 @@ test.describe("editor panels — behavior & state nodes (P47)", () => {
         expect(await editor.hasField("previewData")).toBe(false);
 
         // The real fields must still be present and editable.
-        await editor.expectFields(["name", "parent", "queryPath"]);
+        await editor.expectFields(["name", "app", "queryPath"]);
 
         // queryPath value round-trips across save/reopen.
         expect(await editor.readField("queryPath")).toBe("items.list");

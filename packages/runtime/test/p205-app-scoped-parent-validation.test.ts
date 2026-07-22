@@ -24,11 +24,27 @@ describe("P205: app-scoped node requires a valid ui-app parent", () => {
         expect(issues).toEqual([]);
     });
 
+    it("P228: the canonical `app` field is accepted → no issue", () => {
+        const issues = collectAppScopedParentIssues([app, { type: "ui-store", id: "s1", app: "app1" }]);
+        expect(issues).toEqual([]);
+    });
+
+    it("P228: `app` wins over a stale legacy `parent`", () => {
+        const issues = collectAppScopedParentIssues([app, { type: "ui-store", id: "s1", app: "app1", parent: "nope" }]);
+        expect(issues).toEqual([]);
+    });
+
+    it("P228: an INVALID canonical `app` is flagged", () => {
+        const issues = collectAppScopedParentIssues([app, { type: "ui-store", id: "s1", app: "nope" }]);
+        expect(issues).toHaveLength(1);
+        expect(issues[0].message).toContain("not a ui-app");
+    });
+
     it("the owner's case — a new store with NO parent → one issue", () => {
         const issues = collectAppScopedParentIssues([app, { type: "ui-store", id: "s1", parent: "" }]);
         expect(issues).toHaveLength(1);
         expect(issues[0].nodeId).toBe("s1");
-        expect(issues[0].message).toContain("no App parent");
+        expect(issues[0].message).toContain("no App");
     });
 
     it("a store whose parent is its OWN id → one issue (the 22c604b corruption class)", () => {
@@ -64,7 +80,7 @@ describe("P205: app-scoped node requires a valid ui-app parent", () => {
         const issues = collectAppScopedParentIssues([app, { type: "ui-query-action", id: "qa1", parent: "" }]);
         expect(issues).toHaveLength(1);
         expect(issues[0].nodeId).toBe("qa1");
-        expect(issues[0].message).toContain("no App parent");
+        expect(issues[0].message).toContain("no App");
     });
 
     it("P212: a ui-query-action with a VALID app parent → no issue", () => {
@@ -76,7 +92,7 @@ describe("P205: app-scoped node requires a valid ui-app parent", () => {
         const issues = collectAppScopedParentIssues([app, { type: "ui-store-action", id: "sa1", parent: "" }]);
         expect(issues).toHaveLength(1);
         expect(issues[0].nodeId).toBe("sa1");
-        expect(issues[0].message).toContain("no App parent");
+        expect(issues[0].message).toContain("no App");
     });
 
     it("P211: a ui-store-action with a VALID app parent → no issue", () => {
@@ -88,7 +104,7 @@ describe("P205: app-scoped node requires a valid ui-app parent", () => {
         const issues = collectAppScopedParentIssues([app, { type: "ui-store-read", id: "sr1", parent: "" }]);
         expect(issues).toHaveLength(1);
         expect(issues[0].nodeId).toBe("sr1");
-        expect(issues[0].message).toContain("no App parent");
+        expect(issues[0].message).toContain("no App");
     });
 
     it("a plain display node (ui-text) is NOT app-scoped → never flagged", () => {

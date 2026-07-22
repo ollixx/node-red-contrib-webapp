@@ -27,7 +27,7 @@
                 visible: { value: null },
                 visibleBinding: { value: "" },
                 name: { value: "" },
-                parent: { value: "" },
+                app: { value: "" },
                 severity: { value: "info" },
                 duration: { value: 4000, validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 position: { value: "bottom-right" }
@@ -45,7 +45,11 @@
                 common.applyBaseFields(BASE_FIELDS).call(this);
             },
             oneditprepare: function () {
-                common.installReferenceSelectors({ parent: "ui-app" }).call(this);
+                // P228: the owning-app field is `app`; the shared App picker
+                // binds the #node-input-app carrier (the old
+                // `installReferenceSelectors({ parent: … })` config key was a
+                // dead branch — the selector never installed a picker for it).
+                common.installParentAppSelector().call(this);
                 common.installBaseFields(BASE_FIELDS).call(this);
             }
         });
@@ -54,7 +58,7 @@
 <script type="text/html" data-template-name="ui-toast">
     <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-parent">App</label><select id="node-input-parent"></select></div>
+    <div class="form-row"><label for="node-input-app">App</label><select id="node-input-app"></select></div>
     <div class="form-row"><label for="node-input-severity">Severity</label>
         <select id="node-input-severity">
             <option value="primary">Primary</option>

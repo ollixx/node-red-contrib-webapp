@@ -117,7 +117,7 @@ test.describe("live model delivery on deploy (P106)", () => {
                 type: "ui-route",
                 id: "p106Orders",
                 name: "Orders",
-                parent: "p106App",
+                app: "p106App",
                 path: "/orders",
                 layoutId: "vertical",
                 z: "p106flow",

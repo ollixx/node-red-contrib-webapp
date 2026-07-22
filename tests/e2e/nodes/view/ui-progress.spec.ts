@@ -83,7 +83,7 @@ test.describe("ui-progress — value", () => {
 
     test("store-bound value renders live and updates via SSE", async ({ page, request }) => {
         const flow = new FlowBuilder().app({ id: "prgStore", root: "prgStore" })
-            .node("ui-store", { id: "prgStoreNode", parent: "prgStore", statePath: "pct", initialValue: JSON.stringify(30) })
+            .node("ui-store", { id: "prgStoreNode", app: "prgStore", statePath: "pct", initialValue: JSON.stringify(30) })
             .node("ui-progress", { id: "pStore", value: { kind: "store", path: "prgStoreNode" } })
             .withStoreInject("prgStoreInj", "prgStoreNode", 80)
             .build();
@@ -121,7 +121,7 @@ test.describe("ui-progress — label (P137)", () => {
 
     test("store-bound label renders the resolved live value", async ({ request }) => {
         const flow = new FlowBuilder().app({ id: "prgLblB", root: "prgLblB" })
-            .node("ui-store", { id: "prgLblStore", parent: "prgLblB", statePath: "lbl", initialValue: JSON.stringify("Live") })
+            .node("ui-store", { id: "prgLblStore", app: "prgLblB", statePath: "lbl", initialValue: JSON.stringify("Live") })
             .node("ui-progress", { id: "pLblB", value: { kind: "literal", value: 50 }, label: { kind: "store", path: "prgLblStore" } })
             .build();
         await deployFlow(request, flow);
@@ -211,7 +211,7 @@ test.describe("ui-progress — visible render-gate (bound; ADR 0037)", () => {
 
     test("visible bound to store=false → the progress is not rendered", async ({ request }) => {
         const flow = new FlowBuilder().app({ id: "prgVis", root: "prgVis" })
-            .node("ui-store", { id: "prgVisStore", parent: "prgVis", statePath: "show", initialValue: JSON.stringify(false) })
+            .node("ui-store", { id: "prgVisStore", app: "prgVis", statePath: "show", initialValue: JSON.stringify(false) })
             .node("ui-progress", { id: "pVis", value: { kind: "literal", value: 50 }, visible: { kind: "store", path: "prgVisStore" } })
             .build();
         await deployFlow(request, flow);
@@ -222,7 +222,7 @@ test.describe("ui-progress — visible render-gate (bound; ADR 0037)", () => {
 
     test("visible bound to store=true → the progress is rendered", async ({ request }) => {
         const flow = new FlowBuilder().app({ id: "prgVis2", root: "prgVis2" })
-            .node("ui-store", { id: "prgVisStore2", parent: "prgVis2", statePath: "show", initialValue: JSON.stringify(true) })
+            .node("ui-store", { id: "prgVisStore2", app: "prgVis2", statePath: "show", initialValue: JSON.stringify(true) })
             .node("ui-progress", { id: "pVis2", value: { kind: "literal", value: 50 }, visible: { kind: "store", path: "prgVisStore2" } })
             .build();
         await deployFlow(request, flow);
