@@ -2,7 +2,7 @@
 id: P228
 title: "parent → app: das Besitz-Feld auf allen 42 Nicht-App-Knoten umbenennen (back-compat) — Haupt-Checkout, E2E-iteriert; Redo des reverteten Versuchs, NUR diese eine Welle"
 epic: aspects/editor
-status: in_progress
+status: done
 dependencies: [P229]
 verify: browser
 spec: docs/nodes/concepts/field-conventions.md
@@ -10,7 +10,7 @@ tests: tests/e2e/nodes/editor/field-naming.spec.ts
 ---
 # P228 — `parent` → `app` (Redo, eng geschnitten)
 
-> Rationale: [ADR 0038](../../../adr/0038-field-model-consistency-naming-and-carrier-normalization.md)
+> Rationale: [ADR 0038](../../../../adr/0038-field-model-consistency-naming-and-carrier-normalization.md)
 > Finding 1: `parent` hält faktisch die **besitzende App-id** (auf View- wie
 > Logik-Knoten), nicht einen Slot-Parent — der Slot ist `mount`. **Dieses Paket
 > macht NUR die `parent→app`-Welle.** Die `*Id`-Renames (`layoutId`/`routeId`/
@@ -116,3 +116,49 @@ Harness-Vorlage auf `phase/P228` minen) + die vier Kategorie-Roundtrips.
 - Nach Abschluss: `check-fields.js` Regel (c) um `parent`-Verbot ergänzen
   (neuer Knoten darf kein `parent`-Referenzfeld mehr einführen) — der Guardrail
   friert die Welle ein.
+
+## Result
+
+**Done 2026-07-22.** Das Redo ist gelandet — `parent` → `app` auf allen 42 Knoten,
+back-compat, im Haupt-Checkout nach dem Stufen-Protokoll. Der Kontrast zum
+reverteten Erstversuch (100-Dateien-Merge, 35 rote Editor-E2E, migrate-on-save-Bug):
+**vier Stufen, jedes Gate fing seine eigenen Fehler, Finale voll grün.**
+
+### Die Stufen (je committet nach grünem Gate)
+
+- **Stufe 1** (`319dca9`) — Runtime liest beide Namen (`config.app || config.parent`)
+  in node-set.ts, webapp.js (inkl. findAppIdForNode + P205-Validierung), editor
+  nodes.ts, Schema-Übergangs-Union. **Gate: Voll-Suite 853/0 unverändert** — rein
+  additiv, nichts brach.
+- **Stufe 2** (`9d117a0`) — Test-Infrastruktur kanonisch: flow-builder emittiert
+  `app`, alle Fixtures umgestellt. **Gate: Voll-Suite 853/0** — beweist den
+  Dual-Read unter Kanonik.
+- **Stufe 3** (`8d9531f` + Fix `3146327`) — Editor schreibt kanonisch:
+  `installParentAppSelector` → `#node-input-app`, `defaults` aller 42 Knoten tragen
+  `app`; on-open-Migration (Alt-`parent` → App-Picker befüllt → Save schreibt `app`,
+  Alt-Feld geleert). Der Erstversuch-Bug („app leer beim migrate-on-save") durch die
+  **4 Kategorie-Roundtrips** (structure/view/state/behavior) + `check:roundtrip`
+  widerlegt. **Das Gate fing genau 2 Fehler** — die P117-Picker-Helfer
+  `resolveAppFromMount`/`isMountUnderApp` (editor-interne parent-Leser) → auf
+  Dual-Read gebracht, Gate-Wiederholung grün. Präzise Fehlerortung statt 35
+  unzuordenbarer Roter — das Stufen-Design in Aktion.
+- **Stufe 4** (`101071c`) — Generatoren emittieren `app` (`examples/**` per Skript
+  regeneriert, nur Feldname), Specs/field-conventions/editor.md auf `app`
+  („besitzende App"; `mount` = Slot), und der **Guardrail**: `check-fields.js`
+  Regel (c) verbietet jedes neue `parent`-Referenzfeld — die Welle ist eingefroren.
+
+### Finale (Haupt-Checkout, autoritativ)
+
+**Voll-Suite 859 passed, 0 failed, `--retries=0`, 16,1 min** (+6 Migrations-/
+Roundtrip-Tests). Pre-Rename-Fixture-Beweis in `field-naming.spec.ts` (Alt-Flow mit
+`parent` lädt, rendert unverändert, migriert on-open/save zu `app`). Keine
+`parent:`-Emission mehr in Editor/Generatoren; alle Migrations-LESER intakt
+(externe Alt-Flows brechen nie). `check:fields`/`check:roundtrip`/`check:specs` +
+`pnpm validate` grün; die 6 verbleibenden Allowlist-Einträge sind die P259-Ziele.
+
+### Prozess
+
+Haupt-Checkout-Agent über 3 Resume-Zyklen (Turn-Enden während laufender Gates kosten
+nichts — Stufen sind vor dem Gate committet; der Orchestrator liest das Gate-Ergebnis
+und stößt wieder an). Kein verbotenes Git-Kommando, Baum sauber, geleakte
+Wegwerf-Node-RED (1883) nach Erinnerung gereapt.
