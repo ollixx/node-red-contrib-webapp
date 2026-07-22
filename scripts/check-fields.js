@@ -75,59 +75,17 @@ const ALLOWLIST = {
     "ui-action": { routeId: "P228: rename `routeId` → `route` (bare reference name)" },
     // P243 (ADR 0040): ui-navigation retired — navigation is a ui-action navigate.
 
-    // ---- (a) residual `<base>Path` twin alongside `<base>Binding` (P229) -----
-    "ui-button": { disabledPath: "P229: residual `<base>Path` twin of `disabledBinding`" },
-    "ui-table": { rowsPath: "P229: residual `<base>Path` twin of `rowsBinding`" },
-    "ui-input": {
-        valuePath: "P229: residual `<base>Path` twin of `valueBinding`",
-    },
+    // ---- (b) legacy `*Json` carriers + pagination alias (P229 slice C) -------
     "ui-select": {
-        valuePath: "P229: residual `<base>Path` twin of `valueBinding`",
         optionsJson: "P229: legacy raw-JSON options carrier (superseded by `optionsBinding`)",
-    },
-    "ui-checkbox": {
-        valuePath: "P229: residual `<base>Path` twin of `valueBinding`",
     },
     "ui-radio": {
-        valuePath: "P229: residual `<base>Path` twin of `valueBinding`",
         optionsJson: "P229: legacy raw-JSON options carrier (superseded by `optionsBinding`)",
     },
-    "ui-switch": {
-        valuePath: "P229: residual `<base>Path` twin of `valueBinding`",
-    },
-    "ui-textarea": {
-        valuePath: "P229: residual `<base>Path` twin of `valueBinding`",
-    },
-    "ui-datepicker": {
-        valuePath: "P229: residual `<base>Path` twin of `valueBinding`",
-    },
-    "ui-slider": {
-        valuePath: "P229: residual `<base>Path` twin of `valueBinding`",
-    },
-    "ui-alert": { messagePath: "P229: residual `<base>Path` twin of `messageBinding`" },
-    "ui-progress": { valuePath: "P229: residual `<base>Path` twin of `valueBinding`" },
-    "ui-skeleton": { visiblePath: "P229: residual `<base>Path` twin of `visibleBinding`" },
-    "ui-badge": { valuePath: "P229: residual `<base>Path` twin of `valueBinding`" },
-    "ui-tabs": { activeTabPath: "P229: residual `<base>Path` twin of `activeTabBinding`" },
-    "ui-tab": { labelPath: "P229: residual `<base>Path` twin of `labelBinding`" },
-    "ui-accordion": { openSectionPath: "P229: residual `<base>Path` twin of `openSectionBinding`" },
-    "ui-accordion-section": { labelPath: "P229: residual `<base>Path` twin of `labelBinding`" },
     "ui-breadcrumb": { itemsJson: "P229: legacy raw-JSON items carrier (superseded by binding)" },
-    "ui-menu": {
-        itemsPath: "P229: residual `<base>Path` twin of `itemsBinding`",
-        activeRoutePath: "P229: residual `<base>Path` twin of `activeRouteBinding`",
-    },
     "ui-pagination": {
-        totalPath: "P229: residual `<base>Path` twin of `totalBinding`",
         currentPagePath: "P229: legacy pagination alias / `<base>Path` twin of `currentPageBinding`",
     },
-    "ui-stepper": { activeStepPath: "P229: residual `<base>Path` twin of `activeStepBinding`" },
-    "ui-image": { srcPath: "P229: residual `<base>Path` twin of `srcBinding`" },
-    "ui-list": {
-        itemsPath: "P229: residual `<base>Path` twin of `itemsBinding`",
-        selectedIdPath: "P229: residual `<base>Path` twin of `selectedIdBinding`",
-    },
-    "ui-repeat": { itemsPath: "P229: residual `<base>Path` twin of `itemsBinding`" },
 };
 
 /* ------------------------------------------------------------------ *

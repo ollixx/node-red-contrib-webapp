@@ -38,7 +38,6 @@
                 // state path) is kept for migration only.
                 activeTab: { value: null },
                 activeTabBinding: { value: "" },
-                activeTabPath: { value: "" },
                 events: { value: "" },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
@@ -48,6 +47,10 @@
                 layoutX: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 layoutY: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } }
             },
+            // P229 (ADR 0038): migration-only legacy fields — injected as hidden
+            // defaults at registration (see editor-common withMigrationDefaults);
+            // migrated to the canonical binding on open, deleted on save.
+            migrationFields: ["activeTabPath"],
             inputs: 1,
             outputs: 1,
             outputLabels: function () { return "event"; },
@@ -89,7 +92,7 @@
                     $("#node-input-activeTabBinding").typedInput("type"),
                     $("#node-input-activeTabBinding").typedInput("value")
                 );
-                this.activeTabPath = "";
+                common.dropLegacyFields(this, ["activeTabPath"]);
             }
         });
     })();

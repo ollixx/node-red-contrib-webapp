@@ -36,7 +36,6 @@
                 // is migrated on open.
                 items: { value: null },
                 itemsBinding: { value: "" },
-                itemsPath: { value: "" },
                 // ADR 0025: ui-repeat is transparent — NO layoutId, NO variant fields.
                 // P165: optional stable per-instance key field (e.g. "id").
                 keyField: { value: "" },
@@ -61,6 +60,10 @@
                 layoutX: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 layoutY: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } }
             },
+            // P229 (ADR 0038): migration-only legacy fields — injected as hidden
+            // defaults at registration (see editor-common withMigrationDefaults);
+            // migrated to the canonical binding on open, deleted on save.
+            migrationFields: ["itemsPath"],
             // P165: ui-repeat takes the wire path like ui-list — an inbound
             // msg.payload array sets `items`. No event outputs of its own.
             inputs: 1,
@@ -119,7 +122,7 @@
                     // innermost). Sets `binding.scope` for an item/index kind.
                     common.valueBindingScopePicked("#node-input-itemsBinding")
                 );
-                this.itemsPath = "";
+                common.dropLegacyFields(this, ["itemsPath"]);
             }
         });
     })();

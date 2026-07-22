@@ -8,9 +8,9 @@ import { NodeEditorPage } from "../../../helpers/node-editor-page";
  * P47 — Node-RED EDITOR property-panel specs for the high-complexity view nodes
  * (ui-input, ui-checkbox, ui-select, ui-table). Editor-only: no webapp URL.
  *
- * Each view node mounts into a route (FlowBuilder sets `mount`). The required
- * `valuePath` / `rowsPath` fields are intentionally left empty by the builder so
- * the validation-indicator assertions have something to fire on.
+ * Each view node mounts into a route (FlowBuilder sets `mount`). Required
+ * fields (label / columns) are intentionally left empty per test so the
+ * validation-indicator assertions have something to fire on.
  */
 
 test.describe("editor panels — view nodes (P47)", () => {
@@ -197,7 +197,10 @@ test.describe("editor panels — view nodes (P47)", () => {
             .node("ui-table", {
                 id: "tblMig",
                 columns: JSON.stringify([{ key: "name", label: "Name" }]),
-                rowsPath: "customers.list"
+                rowsPath: "customers.list",
+                // P229: the FlowBuilder default now emits the canonical `rows`
+                // binding; suppress it so the legacy field is the only source.
+                rows: undefined
             })
             .build();
         await deployFlow(request, flow);
@@ -215,7 +218,6 @@ test.describe("editor panels — view nodes (P47)", () => {
             .node("ui-table", {
                 id: "tblEd2",
                 columns: JSON.stringify([{ key: "n", label: "N" }]),
-                rowsPath: "rows",
                 events: JSON.stringify(["rowClick"]),
                 outputs: 1
             })

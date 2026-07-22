@@ -51,7 +51,6 @@
                 // no matching #node-input-disabled element so Node-RED auto-save
                 // cannot clobber it. The typedInput lives on #node-input-disabledBinding.
                 // Legacy: `disabledPath` (plain state path) is kept for migration only.
-                disabledPath: { value: "" },
                 disabled: { value: null },
                 disabledBinding: { value: "" },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
@@ -62,6 +61,10 @@
                 layoutX: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 layoutY: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } }
             },
+            // P229 (ADR 0038): migration-only legacy fields — injected as hidden
+            // defaults at registration (see editor-common withMigrationDefaults);
+            // migrated to the canonical binding on open, deleted on save.
+            migrationFields: ["disabledPath"],
             inputs: 1,
             outputs: 1,
             icon: "font-awesome/fa-hand-pointer-o",
@@ -164,8 +167,7 @@
                 const disabledIsBoolLiteral = disabledResult && disabledResult.kind === "literal"
                     && disabledResult.value === false;
                 this.disabled = (disabledOriginEmpty && disabledIsBoolLiteral) ? null : disabledResult;
-                this.disabledPath = "";
-
+                common.dropLegacyFields(this, ["disabledPath"]);
                 // P122: persist href as binding object.
                 const hrefBinding = common.applyValueBinding(
                     $("#node-input-hrefBinding").typedInput("type"),

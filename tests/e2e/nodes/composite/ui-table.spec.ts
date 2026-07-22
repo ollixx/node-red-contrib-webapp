@@ -143,7 +143,10 @@ test.describe("ui-table (P45)", () => {
                 id: "tblMigNode",
                 columns: JSON.stringify([{ key: "name", label: "Name" }]),
                 // legacy plain state-path field — migrates to { kind:"state", path }.
-                rowsPath: "data.list"
+                // P229: the FlowBuilder default now emits the canonical `rows`
+                // binding; suppress it so the legacy field is the only source.
+                rowsPath: "data.list",
+                rows: undefined
             })
             .build();
 

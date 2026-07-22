@@ -37,7 +37,6 @@
                 // it. Legacy `openSectionPath` (plain state path) migrates on open.
                 openSection: { value: null },
                 openSectionBinding: { value: "" },
-                openSectionPath: { value: "" },
                 multiple: { value: false },
                 events: { value: "" },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
@@ -48,6 +47,10 @@
                 layoutX: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 layoutY: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } }
             },
+            // P229 (ADR 0038): migration-only legacy fields — injected as hidden
+            // defaults at registration (see editor-common withMigrationDefaults);
+            // migrated to the canonical binding on open, deleted on save.
+            migrationFields: ["openSectionPath"],
             inputs: 1,
             outputs: 1,
             outputLabels: function () { return "event"; },
@@ -88,7 +91,7 @@
                     $("#node-input-openSectionBinding").typedInput("type"),
                     $("#node-input-openSectionBinding").typedInput("value")
                 );
-                this.openSectionPath = "";
+                common.dropLegacyFields(this, ["openSectionPath"]);
             }
         });
     })();

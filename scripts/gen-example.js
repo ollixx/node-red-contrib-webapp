@@ -5,7 +5,7 @@
  * Generates examples/customers-crud/flow.json in Node-RED editor format.
  *
  * The nodes use the editor-layer field names that the node HTML defaults expect
- * (e.g. `root`, `uiId`, `mount`, `text`, `valuePath`, `rowsPath`).  At runtime
+ * (e.g. `root`, `uiId`, `mount`, `text`, `rows`, `value` bindings).  At runtime
  * webapp.js maps these editor fields to the schema representation via mapConfig.
  *
  * Usage:
@@ -387,7 +387,6 @@ const flowNodes = [
         order:        1,
         label:        "Refresh",
         // no action ref — wired directly to fnRefreshCustomers which re-pushes the list
-        disabledPath: "ui.queries.customersQuery.loading",
         disabled:     { kind: "state", path: "ui.queries.customersQuery.loading", fallback: false }
     }),
     node("ui-text", "editorStatus", "viewCustomers", 2, {
@@ -411,7 +410,6 @@ const flowNodes = [
         // SSE transport re-renders the table. selectAction makes the rows
         // clickable and emits a `rowSelect` event on this table's OUTPUT port —
         // a wired function node (not the runtime) decides what happens next.
-        rowsPath:     "customers.list",
         rows:         { kind: "state", path: "customers.list" },
         selectAction: "openCustomerDetail"
     }),
@@ -453,7 +451,6 @@ const flowNodes = [
         order:        3,
         label:        "Delete customer",
         action:       "deleteCustomer",
-        disabledPath: "draft.isDeleting",
         disabled:     { kind: "state", path: "draft.isDeleting", fallback: false }
     }),
     node("ui-text", "detailCustomerId", "viewDetail", 4, {
@@ -473,7 +470,6 @@ const flowNodes = [
         parent:      APP,
         mount:       "route:/customers/:id/content",
         order:       5,
-        valuePath:   "customers.current.status",
         value:       { kind: "state", path: "customers.current.status" },
         // P92: displayType is now shape (rounded/pill/square), not count/dot/status.
         // variant replaces severity.
@@ -495,7 +491,6 @@ const flowNodes = [
         parent:    APP,
         mount:     "layout:grid/content", // required
         label:     "Name",               // required
-        valuePath: "draft.customer.name", // required (editor field for state binding)
         value:     { kind: "state", path: "draft.customer.name" },
         // P229 (ADR 0038): canonical write target — the dead storeId/path pair
         // is no longer emitted; writeTo carries the store + subPath directly.
@@ -509,7 +504,6 @@ const flowNodes = [
         parent:    APP,
         mount:     "layout:grid/content",
         label:     "Email",
-        valuePath: "draft.customer.email",
         value:     { kind: "state", path: "draft.customer.email" },
         writeTo:   { kind: "store", path: "draftStore", subPath: { kind: "literal", value: "email" } },
         inputType: "email",
@@ -521,7 +515,6 @@ const flowNodes = [
         parent:    APP,
         mount:     "layout:grid/content",
         label:     "Status",
-        valuePath: "draft.customer.status",
         value:     { kind: "state", path: "draft.customer.status" },
         writeTo:   { kind: "store", path: "draftStore", subPath: { kind: "literal", value: "status" } },
         inputType: "text",
@@ -545,7 +538,6 @@ const flowNodes = [
         mount:        "dialog:customerEditor/footer",
         label:        "Save",
         // no action ref — wired to fnSaveCustomer which closes dialog via dialogStore
-        disabledPath: "draft.isSaving",
         disabled:     { kind: "state", path: "draft.isSaving", fallback: false }
     }),
 

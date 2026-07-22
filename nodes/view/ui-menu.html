@@ -43,8 +43,6 @@
                 activeRoute: { value: null },
                 itemsBinding: { value: "" },
                 activeRouteBinding: { value: "" },
-                itemsPath: { value: "" },
-                activeRoutePath: { value: "" },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
                 col: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
@@ -53,6 +51,10 @@
                 layoutX: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 layoutY: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } }
             },
+            // P229 (ADR 0038): migration-only legacy fields — injected as hidden
+            // defaults at registration (see editor-common withMigrationDefaults);
+            // migrated to the canonical binding on open, deleted on save.
+            migrationFields: ["itemsPath", "activeRoutePath"],
             inputs: 1,
             outputs: 1,
             icon: "font-awesome/fa-bars",
@@ -111,12 +113,12 @@
                     $("#node-input-itemsBinding").typedInput("type"),
                     $("#node-input-itemsBinding").typedInput("value")
                 );
-                this.itemsPath = "";
+                common.dropLegacyFields(this, ["itemsPath"]);
                 this.activeRoute = common.applyValueBinding(
                     $("#node-input-activeRouteBinding").typedInput("type"),
                     $("#node-input-activeRouteBinding").typedInput("value")
                 );
-                this.activeRoutePath = "";
+                common.dropLegacyFields(this, ["activeRoutePath"]);
             }
         });
     })();

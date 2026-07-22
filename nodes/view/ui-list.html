@@ -37,7 +37,6 @@
                 // is kept for migration only (the unused `items:null` default is gone).
                 items: { value: null },
                 itemsBinding: { value: "" },
-                itemsPath: { value: "" },
                 // P180 (ADR 0021): semantic intent enum. Default "plain" (back-compat
                 // with old "default"). Migration in oneditprepare maps old → new.
                 displayType: { value: "plain" },
@@ -62,7 +61,6 @@
                 selectable: { value: false },
                 selectedId: { value: null },
                 selectedIdBinding: { value: "" },
-                selectedIdPath: { value: "" },
                 events: { value: "[]" },
                 outputs: { value: 0 },
                 // P172 (ADR 0015): base fields. `visible`/`color`/`disabled` persist
@@ -84,6 +82,10 @@
                 layoutX: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 layoutY: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } }
             },
+            // P229 (ADR 0038): migration-only legacy fields — injected as hidden
+            // defaults at registration (see editor-common withMigrationDefaults);
+            // migrated to the canonical binding on open, deleted on save.
+            migrationFields: ["itemsPath", "selectedIdPath"],
             inputs: 1,
             outputs: 0,
             outputLabels: function (index) {
@@ -200,7 +202,7 @@
                     $("#node-input-itemsBinding").typedInput("type"),
                     $("#node-input-itemsBinding").typedInput("value")
                 );
-                this.itemsPath = "";
+                common.dropLegacyFields(this, ["itemsPath"]);
                 // P180: persist the migrated displayType and ordered.
                 this.displayType = $("#node-input-displayType").val();
                 this.ordered = $("#node-input-ordered").is(":checked");
@@ -220,7 +222,7 @@
                     $("#node-input-selectedIdBinding").typedInput("type"),
                     $("#node-input-selectedIdBinding").typedInput("value")
                 );
-                this.selectedIdPath = "";
+                common.dropLegacyFields(this, ["selectedIdPath"]);
             }
         }, ["itemClick", "itemSelect"]);
     })();

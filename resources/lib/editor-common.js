@@ -637,7 +637,8 @@
                 var visibleIsSyntheticDefault = visibleResult && visibleResult.kind === "literal"
                     && visibleResult.value === true;
                 self.visible = (visibleOriginEmpty && visibleIsSyntheticDefault) ? null : visibleResult;
-                self.visiblePath = "";
+                // P229 (ADR 0038): delete (not blank) the migrated legacy twin.
+                dropLegacyFields(self, ["visiblePath"]);
             }
 
             if (applicability.disabled.applicable && omit.indexOf("disabled") === -1) {
@@ -654,7 +655,8 @@
                 var disabledIsSyntheticDefault = disabledResult && disabledResult.kind === "literal"
                     && disabledResult.value === false;
                 self.disabled = (disabledOriginEmpty && disabledIsSyntheticDefault) ? null : disabledResult;
-                self.disabledPath = "";
+                // P229 (ADR 0038): delete (not blank) the migrated legacy twin.
+                dropLegacyFields(self, ["disabledPath"]);
             }
 
             if (applicability.color.applicable && omit.indexOf("color") === -1) {

@@ -41,7 +41,6 @@
                 // `columns` (schema) stays separate (Collections).
                 rows: { value: null },
                 rowsBinding: { value: "" },
-                rowsPath: { value: "" },
                 selectAction: { value: "" },
                 events: { value: "[]" },
                 outputs: { value: 0 },
@@ -53,6 +52,10 @@
                 layoutX: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 layoutY: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } }
             },
+            // P229 (ADR 0038): migration-only legacy fields — injected as hidden
+            // defaults at registration (see editor-common withMigrationDefaults);
+            // migrated to the canonical binding on open, deleted on save.
+            migrationFields: ["rowsPath"],
             inputs: 1,
             outputs: 0,
             outputLabels: function (index) {
@@ -103,7 +106,7 @@
                     $("#node-input-rowsBinding").typedInput("type"),
                     $("#node-input-rowsBinding").typedInput("value")
                 );
-                this.rowsPath = "";
+                common.dropLegacyFields(this, ["rowsPath"]);
             }
         }, ["rowSelect"]);
     })();

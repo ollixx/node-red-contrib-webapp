@@ -35,7 +35,6 @@
                 // matching #node-input-value element so Node-RED auto-save cannot
                 // clobber it. The typedInput lives on #node-input-valueBinding.
                 // Legacy `valuePath` (pre-P137 plain state path) is kept for migration only.
-                valuePath: { value: "" },
                 value: { value: null },
                 valueBinding: { value: "" },
                 // P137 (ADR 0012): `label` persists the binding OBJECT; DOM-less widget lives on `labelBinding`.
@@ -54,6 +53,10 @@
                 layoutX: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 layoutY: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } }
             },
+            // P229 (ADR 0038): migration-only legacy fields — injected as hidden
+            // defaults at registration (see editor-common withMigrationDefaults);
+            // migrated to the canonical binding on open, deleted on save.
+            migrationFields: ["valuePath"],
             inputs: 1,
             outputs: 0,
             icon: "font-awesome/fa-spinner",
@@ -112,8 +115,7 @@
                     $("#node-input-valueBinding").typedInput("type"),
                     $("#node-input-valueBinding").typedInput("value")
                 );
-                this.valuePath = "";
-
+                common.dropLegacyFields(this, ["valuePath"]);
                 // P137: persist label as binding object.
                 this.label = common.applyValueBinding(
                     $("#node-input-labelBinding").typedInput("type"),

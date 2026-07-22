@@ -41,7 +41,6 @@
                 currentPage: { value: null },
                 totalBinding: { value: "" },
                 currentPageBinding: { value: "" },
-                totalPath: { value: "" },
                 currentPagePath: { value: "" },
                 pageSize: { value: "" },
                 // P252: `showInfo` toggles the info-text region ("Seite X von Y")
@@ -56,6 +55,10 @@
                 layoutX: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 layoutY: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } }
             },
+            // P229 (ADR 0038): migration-only legacy fields — injected as hidden
+            // defaults at registration (see editor-common withMigrationDefaults);
+            // migrated to the canonical binding on open, deleted on save.
+            migrationFields: ["totalPath"],
             inputs: 1,
             outputs: 1,
             outputLabels: function () { return "event"; },
@@ -121,7 +124,7 @@
                     $("#node-input-totalBinding").typedInput("type"),
                     $("#node-input-totalBinding").typedInput("value")
                 );
-                this.totalPath = "";
+                common.dropLegacyFields(this, ["totalPath"]);
             }
         });
     })();

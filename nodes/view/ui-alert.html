@@ -90,7 +90,6 @@
                 messageBinding: { value: "" },
                 // Legacy field — declared (DOM-less) so a pre-P67 node's value is
                 // loaded into oneditprepare for the messagePath→state back-compat.
-                messagePath: { value: "" },
                 severity: { value: "info" },
                 // P90: icon — "auto" (severity-derived), "none" (no icon), or a
                 // plain icon name string. Default "" means the field is absent
@@ -130,6 +129,10 @@
                 layoutX: { value: "", validate: function (value) { return value == null || value === "" || RED.validators.number()(value); } },
                 layoutY: { value: "", validate: function (value) { return value == null || value === "" || RED.validators.number()(value); } }
             },
+            // P229 (ADR 0038): migration-only legacy fields — injected as hidden
+            // defaults at registration (see editor-common withMigrationDefaults);
+            // migrated to the canonical binding on open, deleted on save.
+            migrationFields: ["messagePath"],
             inputs: 1,
             outputs: 1,
             icon: "font-awesome/fa-exclamation-circle",
@@ -192,8 +195,7 @@
                 common.applyBaseFields(BASE_FIELDS).call(this);
 
                 this.message = readBinding("#node-input-messageBinding");
-                this.messagePath = "";
-
+                common.dropLegacyFields(this, ["messagePath"]);
                 const titleBinding = readBinding("#node-input-titleBinding");
                 const isEmptyLiteral = titleBinding.kind === "literal"
                     && (titleBinding.value === undefined || titleBinding.value === null || titleBinding.value === "");

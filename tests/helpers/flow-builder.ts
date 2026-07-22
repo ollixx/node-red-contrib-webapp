@@ -80,7 +80,9 @@ function defaultsFor(type: string, ctx: { appId: string; routeId?: string; id: s
         case "ui-slider":
             return { ...base, label: "Slider", min: 0, max: 100, step: 1, value: { kind: "literal", value: 0 } };
         case "ui-table":
-            return { ...base, columns: JSON.stringify([{ key: "name", label: "Name" }]), rowsPath: "rows" };
+            // P229 (ADR 0038): canonical `rows` binding (the legacy `rowsPath`
+            // editor default is gone; the runtime migration reader remains).
+            return { ...base, columns: JSON.stringify([{ key: "name", label: "Name" }]), rows: { kind: "state", path: "rows" } };
         case "ui-container":
             return { ...base, layoutId: "vertical" };
         case "ui-store":

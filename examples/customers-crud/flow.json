@@ -366,7 +366,6 @@
         "mount": "route:/customers/content",
         "order": 1,
         "label": "Refresh",
-        "disabledPath": "ui.queries.customersQuery.loading",
         "disabled": {
             "kind": "state",
             "path": "ui.queries.customersQuery.loading",
@@ -410,7 +409,6 @@
         "mount": "route:/customers/content",
         "order": 3,
         "columns": "name,email,status",
-        "rowsPath": "customers.list",
         "rows": {
             "kind": "state",
             "path": "customers.list"
@@ -493,7 +491,6 @@
         "order": 3,
         "label": "Delete customer",
         "action": "deleteCustomer",
-        "disabledPath": "draft.isDeleting",
         "disabled": {
             "kind": "state",
             "path": "draft.isDeleting",
@@ -536,7 +533,6 @@
         "parent": "customersApp",
         "mount": "route:/customers/:id/content",
         "order": 5,
-        "valuePath": "customers.current.status",
         "value": {
             "kind": "state",
             "path": "customers.current.status"
@@ -573,7 +569,6 @@
         "parent": "customersApp",
         "mount": "layout:grid/content",
         "label": "Name",
-        "valuePath": "draft.customer.name",
         "value": {
             "kind": "state",
             "path": "draft.customer.name"
@@ -605,7 +600,6 @@
         "parent": "customersApp",
         "mount": "layout:grid/content",
         "label": "Email",
-        "valuePath": "draft.customer.email",
         "value": {
             "kind": "state",
             "path": "draft.customer.email"
@@ -637,7 +631,6 @@
         "parent": "customersApp",
         "mount": "layout:grid/content",
         "label": "Status",
-        "valuePath": "draft.customer.status",
         "value": {
             "kind": "state",
             "path": "draft.customer.status"
@@ -686,7 +679,6 @@
         "parent": "customersApp",
         "mount": "dialog:customerEditor/footer",
         "label": "Save",
-        "disabledPath": "draft.isSaving",
         "disabled": {
             "kind": "state",
             "path": "draft.isSaving",

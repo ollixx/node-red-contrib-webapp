@@ -96,7 +96,6 @@
                 src: { value: { kind: "literal", value: "" } },
                 srcBinding: { value: "" },
                 // Legacy field (pre-P70 plain state path) — DOM-less, read for back-compat.
-                srcPath: { value: "" },
                 // P151 (ADR 0012): alt and fallback persist as binding OBJECTS.
                 // The typedInputs live directly on #node-input-alt / #node-input-fallback.
                 // Legacy plain strings are migrated to { kind:"literal", value } on open.
@@ -113,6 +112,10 @@
                 layoutX: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 layoutY: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } }
             },
+            // P229 (ADR 0038): migration-only legacy fields — injected as hidden
+            // defaults at registration (see editor-common withMigrationDefaults);
+            // migrated to the canonical binding on open, deleted on save.
+            migrationFields: ["srcPath"],
             inputs: 1,
             outputs: 0,
             icon: "font-awesome/fa-image",
@@ -145,8 +148,7 @@
             oneditsave: function () {
                 common.applyBaseFields(BASE_FIELDS).call(this);
                 this.src = readBinding("#node-input-srcBinding");
-                this.srcPath = "";
-
+                common.dropLegacyFields(this, ["srcPath"]);
                 // P151: persist alt and fallback as binding objects.
                 this.alt = readDisplayBinding("#node-input-alt");
                 this.fallback = readDisplayBinding("#node-input-fallback");

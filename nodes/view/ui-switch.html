@@ -32,7 +32,6 @@
                 // matching #node-input-value element so Node-RED auto-save cannot
                 // clobber it. The typedInput lives on #node-input-valueBinding.
                 // Legacy: `valuePath` (plain state path) is kept for migration only.
-                valuePath: { value: "" },
                 value: { value: null },
                 valueBinding: { value: "" },
                 // P147 (ADR 0012): `label`, `labelOn`, `labelOff` persist binding
@@ -65,7 +64,7 @@
             // P229 (ADR 0038): migration-only legacy fields — injected as hidden
             // defaults at registration (see editor-common withMigrationDefaults);
             // migrated to `writeTo` on open, deleted on save, never written anew.
-            migrationFields: ["storeId", "path"],
+            migrationFields: ["storeId", "path", "valuePath"],
             inputs: 1,
             outputs: 1,
             outputLabels: function () { return "event"; },
@@ -205,8 +204,7 @@
                     $("#node-input-valueBinding").typedInput("type"),
                     $("#node-input-valueBinding").typedInput("value")
                 );
-                this.valuePath = "";
-
+                common.dropLegacyFields(this, ["valuePath"]);
                 // P125: persist disabled as binding object.
                 // P181: preserve null when field was originally absent and untouched.
                 const $disabledInput = $("#node-input-disabledBinding");

@@ -38,7 +38,6 @@
                 // state path) is kept for migration only.
                 activeStep: { value: null },
                 activeStepBinding: { value: "" },
-                activeStepPath: { value: "" },
                 orientation: { value: "horizontal" },
                 events: { value: "" },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
@@ -49,6 +48,10 @@
                 layoutX: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 layoutY: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } }
             },
+            // P229 (ADR 0038): migration-only legacy fields — injected as hidden
+            // defaults at registration (see editor-common withMigrationDefaults);
+            // migrated to the canonical binding on open, deleted on save.
+            migrationFields: ["activeStepPath"],
             inputs: 1,
             outputs: 1,
             outputLabels: function () { return "event"; },
@@ -90,7 +93,7 @@
                     $("#node-input-activeStepBinding").typedInput("type"),
                     $("#node-input-activeStepBinding").typedInput("value")
                 );
-                this.activeStepPath = "";
+                common.dropLegacyFields(this, ["activeStepPath"]);
             }
         });
     })();

@@ -33,7 +33,6 @@
                 // Legacy `labelPath` (plain string) migrates on open.
                 label: { value: null },
                 labelBinding: { value: "" },
-                labelPath: { value: "" },
                 // P169: optional icon name shown beside the section label (sl-icon).
                 icon: { value: "" },
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
@@ -44,6 +43,10 @@
                 layoutX: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 layoutY: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } }
             },
+            // P229 (ADR 0038): migration-only legacy fields — injected as hidden
+            // defaults at registration (see editor-common withMigrationDefaults);
+            // migrated to the canonical binding on open, deleted on save.
+            migrationFields: ["labelPath"],
             inputs: 0,
             outputs: 0,
             icon: "font-awesome/fa-bars",
@@ -61,11 +64,12 @@
 
                 // P169 (ADR 0012 value category): `label` value typedInput (full
                 // value-binding set, default type `str`). Migration: a legacy
-                // `labelPath` opens as a literal binding; a stored `label` wins.
+                // `labelPath` opens as a STATE binding (matching the runtime's
+                // mapConfig migration, P229); a stored `label` wins.
                 const storedLabel = common.parseBindingValue(this.label);
                 const labelBinding = storedLabel
                     ? storedLabel
-                    : (this.labelPath ? { kind: "literal", value: this.labelPath } : undefined);
+                    : (this.labelPath ? { kind: "state", path: this.labelPath } : undefined);
                 const labelEditor = common.readValueBinding(labelBinding, "");
                 const labelInput = $("#node-input-labelBinding");
                 labelInput.typedInput({
@@ -82,7 +86,7 @@
                     $("#node-input-labelBinding").typedInput("type"),
                     $("#node-input-labelBinding").typedInput("value")
                 );
-                this.labelPath = "";
+                common.dropLegacyFields(this, ["labelPath"]);
             }
         });
     })();

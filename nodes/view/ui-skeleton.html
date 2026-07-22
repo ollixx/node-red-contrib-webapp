@@ -33,7 +33,6 @@
                 // is kept for lossless migration only. `color` mirrors the shape.
                 visible: { value: null },
                 visibleBinding: { value: "" },
-                visiblePath: { value: "" },
                 color: { value: null },
                 colorBinding: { value: "" },
                 name: { value: "" },
@@ -53,6 +52,10 @@
                 layoutX: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 layoutY: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } }
             },
+            // P229 (ADR 0038): migration-only legacy fields — injected as hidden
+            // defaults at registration (see editor-common withMigrationDefaults);
+            // migrated to the canonical binding on open, deleted on save.
+            migrationFields: ["visiblePath"],
             inputs: 1,
             outputs: 0,
             icon: "font-awesome/fa-square",
