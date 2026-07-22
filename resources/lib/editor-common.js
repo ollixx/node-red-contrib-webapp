@@ -1197,8 +1197,12 @@
                 const sepIdx = current.lastIndexOf("/");
                 const routePath = sepIdx >= 0 ? current.slice("route:".length, sepIdx) : current.slice("route:".length);
                 const route = references.routes.find(function (r) { return r.path === routePath; });
-                if (route && route.parent && appIds.has(route.parent)) {
-                    return route.parent;
+                // P228: reference entries carry the owning app under the
+                // internal `parent` key (collectReferenceNodes), but callers may
+                // pass canonical-`app` graphs — dual-read both.
+                const routeApp = route ? (route.app || route.parent) : "";
+                if (routeApp && appIds.has(routeApp)) {
+                    return routeApp;
                 }
                 return null;
             }
@@ -1207,8 +1211,10 @@
                 const sepIdx = current.lastIndexOf("/");
                 const dialogId = sepIdx >= 0 ? current.slice("dialog:".length, sepIdx) : current.slice("dialog:".length);
                 const dialog = references.dialogs.find(function (d) { return d.id === dialogId; });
-                if (dialog && dialog.parent && appIds.has(dialog.parent)) {
-                    return dialog.parent;
+                // P228: dual-read `app || parent` (see the route branch above).
+                const dialogApp = dialog ? (dialog.app || dialog.parent) : "";
+                if (dialogApp && appIds.has(dialogApp)) {
+                    return dialogApp;
                 }
                 return null;
             }
