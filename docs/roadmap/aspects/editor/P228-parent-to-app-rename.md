@@ -2,7 +2,7 @@
 id: P228
 title: "parent → app: das Besitz-Feld auf allen 42 Nicht-App-Knoten umbenennen (back-compat) — Haupt-Checkout, E2E-iteriert; Redo des reverteten Versuchs, NUR diese eine Welle"
 epic: aspects/editor
-status: pending
+status: in_progress
 dependencies: [P229]
 verify: browser
 spec: docs/nodes/concepts/field-conventions.md
