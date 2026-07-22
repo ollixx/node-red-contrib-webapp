@@ -3,7 +3,7 @@ id: P260
 node: ui-app
 title: "Auth-Fundament: `user`-Contract im Schema, `ui-app.auth`-Feld (none|trusted-header), Konzept-Doku mit Endpoint-Enforcement-Matrix + Tier-0-Betriebsanleitung — KEIN Enforcement-Code"
 epic: aspects/auth
-status: pending
+status: in_progress
 dependencies: []
 verify: unit
 spec: docs/nodes/concepts/auth.md
