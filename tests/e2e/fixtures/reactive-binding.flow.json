@@ -20,7 +20,7 @@
     "type": "ui-route",
     "id": "r-customer-detail",
     "name": "Customer detail",
-    "parent": "reactiveApp",
+    "app": "reactiveApp",
     "path": "/customers/:id",
     "title": "Customer",
     "layoutId": "vertical",

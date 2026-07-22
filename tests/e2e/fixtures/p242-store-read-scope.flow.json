@@ -2,14 +2,14 @@
   { "type": "tab", "id": "p242flow", "label": "P242" },
   { "type": "ui-app", "id": "p242App", "name": "P242 App", "root": "p242root", "layout": "app", "title": "P242", "forwardErrorsToClient": true, "forwardErrorMinSeverity": "error", "z": "p242flow", "wires": [], "x": 200, "y": 120 },
 
-  { "type": "ui-store", "id": "p242Store", "name": "Entity", "parent": "p242App", "statePath": "entity", "scope": "client-only", "initialValue": "{\"name\":\"A\"}", "z": "p242flow", "wires": [], "x": 200, "y": 160 },
-  { "type": "ui-store", "id": "p242Result", "name": "Result", "parent": "p242App", "statePath": "result", "scope": "broadcast-only", "initialValue": "{\"text\":\"NONE\"}", "z": "p242flow", "wires": [], "x": 200, "y": 190 },
+  { "type": "ui-store", "id": "p242Store", "name": "Entity", "app": "p242App", "statePath": "entity", "scope": "client-only", "initialValue": "{\"name\":\"A\"}", "z": "p242flow", "wires": [], "x": 200, "y": 160 },
+  { "type": "ui-store", "id": "p242Result", "name": "Result", "app": "p242App", "statePath": "result", "scope": "broadcast-only", "initialValue": "{\"text\":\"NONE\"}", "z": "p242flow", "wires": [], "x": 200, "y": 190 },
 
-  { "type": "ui-store-read", "id": "p242Read", "name": "Read Entity", "parent": "p242App", "store": "p242Store", "z": "p242flow", "wires": [["p242StoreResult"]], "x": 620, "y": 300 },
+  { "type": "ui-store-read", "id": "p242Read", "name": "Read Entity", "app": "p242App", "store": "p242Store", "z": "p242flow", "wires": [["p242StoreResult"]], "x": 620, "y": 300 },
 
-  { "type": "ui-container", "id": "p242Cont", "name": "Container 1", "parent": "p242App", "mount": "p242App.content", "layoutId": "vertical", "variant": "section", "order": 0, "z": "p242flow", "wires": [], "x": 200, "y": 220 },
-  { "type": "ui-text", "id": "p242ResultText", "name": "result readout", "parent": "p242Cont", "mount": "container:p242Cont/content", "order": 0, "value": { "kind": "store", "path": "p242Result", "subPath": { "kind": "literal", "value": "text" } }, "z": "p242flow", "wires": [], "x": 200, "y": 250 },
-  { "type": "ui-log", "id": "p242Log", "name": "log", "parent": "p242Cont", "mount": "container:p242Cont/content", "order": 1, "minSeverity": "debug", "maxEntries": 50, "collapsed": false, "z": "p242flow", "wires": [], "x": 200, "y": 280 },
+  { "type": "ui-container", "id": "p242Cont", "name": "Container 1", "app": "p242App", "mount": "p242App.content", "layoutId": "vertical", "variant": "section", "order": 0, "z": "p242flow", "wires": [], "x": 200, "y": 220 },
+  { "type": "ui-text", "id": "p242ResultText", "name": "result readout", "app": "p242Cont", "mount": "container:p242Cont/content", "order": 0, "value": { "kind": "store", "path": "p242Result", "subPath": { "kind": "literal", "value": "text" } }, "z": "p242flow", "wires": [], "x": 200, "y": 250 },
+  { "type": "ui-log", "id": "p242Log", "name": "log", "app": "p242Cont", "mount": "container:p242Cont/content", "order": 1, "minSeverity": "debug", "maxEntries": 50, "collapsed": false, "z": "p242flow", "wires": [], "x": 200, "y": 280 },
 
   { "type": "inject", "id": "p242Inject", "name": "fire read (no clientId)", "props": [{ "p": "payload" }], "repeat": "", "crontab": "", "once": false, "onceDelay": "0.1", "topic": "", "payload": "", "payloadType": "date", "z": "p242flow", "wires": [["p242FnRead"]], "x": 200, "y": 340 },
   { "type": "function", "id": "p242FnRead", "name": "trigger read (broadcast, no clientId)", "func": "delete msg.path;\nif (msg.ui && msg.ui.store) { delete msg.ui.store; }\nif (msg.ui && msg.ui.clientId) { delete msg.ui.clientId; }\nreturn msg;", "outputs": 1, "noerr": 0, "z": "p242flow", "wires": [["p242Read"]], "x": 420, "y": 340 },

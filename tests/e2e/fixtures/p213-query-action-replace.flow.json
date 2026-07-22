@@ -2,21 +2,21 @@
   { "type": "tab", "id": "p213flow", "label": "P213" },
   { "type": "ui-app", "id": "p213App", "name": "P213 App", "root": "p213root", "layout": "app", "title": "P213", "z": "p213flow", "wires": [], "x": 200, "y": 120 },
 
-  { "type": "ui-query", "id": "p213Query", "name": "Items Query", "parent": "p213App", "queryPath": "items", "z": "p213flow", "wires": [[]], "x": 200, "y": 160 },
-  { "type": "ui-store", "id": "p213Result", "name": "Result", "parent": "p213App", "statePath": "result", "scope": "client-only", "initialValue": "{\"text\":\"\"}", "z": "p213flow", "wires": [], "x": 200, "y": 190 },
+  { "type": "ui-query", "id": "p213Query", "name": "Items Query", "app": "p213App", "queryPath": "items", "z": "p213flow", "wires": [[]], "x": 200, "y": 160 },
+  { "type": "ui-store", "id": "p213Result", "name": "Result", "app": "p213App", "statePath": "result", "scope": "client-only", "initialValue": "{\"text\":\"\"}", "z": "p213flow", "wires": [], "x": 200, "y": 190 },
 
-  { "type": "ui-container", "id": "p213Cont", "name": "Container 1", "parent": "p213App", "mount": "p213App.content", "layoutId": "vertical", "variant": "section", "order": 0, "z": "p213flow", "wires": [], "x": 200, "y": 220 },
-  { "type": "ui-text", "id": "p213QueryText", "name": "query readout", "parent": "p213Cont", "mount": "container:p213Cont/content", "order": 0, "value": { "kind": "query", "path": "items" }, "z": "p213flow", "wires": [], "x": 200, "y": 250 },
-  { "type": "ui-text", "id": "p213ResultText", "name": "wire envelope readout", "parent": "p213Cont", "mount": "container:p213Cont/content", "order": 1, "value": { "kind": "store", "path": "p213Result", "subPath": { "kind": "literal", "value": "text" } }, "z": "p213flow", "wires": [], "x": 200, "y": 280 },
+  { "type": "ui-container", "id": "p213Cont", "name": "Container 1", "app": "p213App", "mount": "p213App.content", "layoutId": "vertical", "variant": "section", "order": 0, "z": "p213flow", "wires": [], "x": 200, "y": 220 },
+  { "type": "ui-text", "id": "p213QueryText", "name": "query readout", "app": "p213Cont", "mount": "container:p213Cont/content", "order": 0, "value": { "kind": "query", "path": "items" }, "z": "p213flow", "wires": [], "x": 200, "y": 250 },
+  { "type": "ui-text", "id": "p213ResultText", "name": "wire envelope readout", "app": "p213Cont", "mount": "container:p213Cont/content", "order": 1, "value": { "kind": "store", "path": "p213Result", "subPath": { "kind": "literal", "value": "text" } }, "z": "p213flow", "wires": [], "x": 200, "y": 280 },
 
-  { "type": "ui-list", "id": "p213ListRef", "name": "Replace ref", "parent": "p213Cont", "mount": "container:p213Cont/content", "order": 2, "items": "[{\"id\":\"ref\",\"label\":\"REPLACE-REF\"}]", "events": "[\"itemClick\"]", "z": "p213flow", "wires": [["p213FnRef"]], "x": 200, "y": 310 },
-  { "type": "ui-list", "id": "p213ListWire", "name": "Replace wire", "parent": "p213Cont", "mount": "container:p213Cont/content", "order": 3, "items": "[{\"id\":\"wire\",\"label\":\"REPLACE-WIRE\"}]", "events": "[\"itemClick\"]", "z": "p213flow", "wires": [["p213FnWire"]], "x": 200, "y": 340 },
+  { "type": "ui-list", "id": "p213ListRef", "name": "Replace ref", "app": "p213Cont", "mount": "container:p213Cont/content", "order": 2, "items": "[{\"id\":\"ref\",\"label\":\"REPLACE-REF\"}]", "events": "[\"itemClick\"]", "z": "p213flow", "wires": [["p213FnRef"]], "x": 200, "y": 310 },
+  { "type": "ui-list", "id": "p213ListWire", "name": "Replace wire", "app": "p213Cont", "mount": "container:p213Cont/content", "order": 3, "items": "[{\"id\":\"wire\",\"label\":\"REPLACE-WIRE\"}]", "events": "[\"itemClick\"]", "z": "p213flow", "wires": [["p213FnWire"]], "x": 200, "y": 340 },
 
   { "type": "function", "id": "p213FnRef", "name": "payload rows (reference)", "func": "msg.payload = \"REPLACED\";\nif (msg.ui && msg.ui.query) { delete msg.ui.query; }\nreturn msg;", "outputs": 1, "noerr": 0, "z": "p213flow", "wires": [["p213ActionRef"]], "x": 460, "y": 310 },
   { "type": "function", "id": "p213FnWire", "name": "payload rows (wire)", "func": "msg.payload = [{ id: 1, name: \"Ada\" }];\nif (msg.ui && msg.ui.query) { delete msg.ui.query; }\nreturn msg;", "outputs": 1, "noerr": 0, "z": "p213flow", "wires": [["p213ActionWire"]], "x": 460, "y": 340 },
 
-  { "type": "ui-query-action", "id": "p213ActionRef", "name": "replace (reference)", "parent": "p213App", "query": "p213Query", "action": "replace", "mode": "reference", "z": "p213flow", "wires": [[]], "x": 700, "y": 310 },
-  { "type": "ui-query-action", "id": "p213ActionWire", "name": "replace (wire)", "parent": "p213App", "query": "p213Query", "action": "replace", "mode": "wire", "z": "p213flow", "wires": [["p213FnStringify"]], "x": 700, "y": 340 },
+  { "type": "ui-query-action", "id": "p213ActionRef", "name": "replace (reference)", "app": "p213App", "query": "p213Query", "action": "replace", "mode": "reference", "z": "p213flow", "wires": [[]], "x": 700, "y": 310 },
+  { "type": "ui-query-action", "id": "p213ActionWire", "name": "replace (wire)", "app": "p213App", "query": "p213Query", "action": "replace", "mode": "wire", "z": "p213flow", "wires": [["p213FnStringify"]], "x": 700, "y": 340 },
 
   { "type": "function", "id": "p213FnStringify", "name": "stringify wire envelope into result store", "func": "var env = (msg.ui && msg.ui.query) ? msg.ui.query : {};\nvar text = JSON.stringify({ queryPath: env.queryPath, data: env.data });\nmsg.ui.store = { id: 'p213Result', op: 'replace', value: { text: text } };\nreturn msg;", "outputs": 1, "noerr": 0, "z": "p213flow", "wires": [["p213Result"]], "x": 980, "y": 340 }
 ]

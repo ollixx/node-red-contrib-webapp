@@ -2,21 +2,21 @@
   { "type": "tab", "id": "p212flow", "label": "P212" },
   { "type": "ui-app", "id": "p212App", "name": "P212 App", "root": "p212root", "layout": "app", "title": "P212", "z": "p212flow", "wires": [], "x": 200, "y": 120 },
 
-  { "type": "ui-query", "id": "p212Query", "name": "Items Query", "parent": "p212App", "queryPath": "items", "z": "p212flow", "wires": [["p212Retrieval"]], "x": 200, "y": 160 },
-  { "type": "ui-store", "id": "p212Result", "name": "Result", "parent": "p212App", "statePath": "result", "scope": "client-only", "initialValue": "{\"text\":\"\"}", "z": "p212flow", "wires": [], "x": 200, "y": 190 },
+  { "type": "ui-query", "id": "p212Query", "name": "Items Query", "app": "p212App", "queryPath": "items", "z": "p212flow", "wires": [["p212Retrieval"]], "x": 200, "y": 160 },
+  { "type": "ui-store", "id": "p212Result", "name": "Result", "app": "p212App", "statePath": "result", "scope": "client-only", "initialValue": "{\"text\":\"\"}", "z": "p212flow", "wires": [], "x": 200, "y": 190 },
 
-  { "type": "ui-container", "id": "p212Cont", "name": "Container 1", "parent": "p212App", "mount": "p212App.content", "layoutId": "vertical", "variant": "section", "order": 0, "z": "p212flow", "wires": [], "x": 200, "y": 220 },
-  { "type": "ui-text", "id": "p212QueryText", "name": "query readout", "parent": "p212Cont", "mount": "container:p212Cont/content", "order": 0, "value": { "kind": "query", "path": "items" }, "z": "p212flow", "wires": [], "x": 200, "y": 250 },
-  { "type": "ui-text", "id": "p212ResultText", "name": "wire envelope readout", "parent": "p212Cont", "mount": "container:p212Cont/content", "order": 1, "value": { "kind": "store", "path": "p212Result", "subPath": { "kind": "literal", "value": "text" } }, "z": "p212flow", "wires": [], "x": 200, "y": 280 },
+  { "type": "ui-container", "id": "p212Cont", "name": "Container 1", "app": "p212App", "mount": "p212App.content", "layoutId": "vertical", "variant": "section", "order": 0, "z": "p212flow", "wires": [], "x": 200, "y": 220 },
+  { "type": "ui-text", "id": "p212QueryText", "name": "query readout", "app": "p212Cont", "mount": "container:p212Cont/content", "order": 0, "value": { "kind": "query", "path": "items" }, "z": "p212flow", "wires": [], "x": 200, "y": 250 },
+  { "type": "ui-text", "id": "p212ResultText", "name": "wire envelope readout", "app": "p212Cont", "mount": "container:p212Cont/content", "order": 1, "value": { "kind": "store", "path": "p212Result", "subPath": { "kind": "literal", "value": "text" } }, "z": "p212flow", "wires": [], "x": 200, "y": 280 },
 
-  { "type": "ui-list", "id": "p212ListRefresh", "name": "Refresh", "parent": "p212Cont", "mount": "container:p212Cont/content", "order": 2, "items": "[{\"id\":\"refresh\",\"label\":\"REFRESH\"}]", "events": "[\"itemClick\"]", "z": "p212flow", "wires": [["p212FnRefresh"]], "x": 200, "y": 310 },
-  { "type": "ui-list", "id": "p212ListWire", "name": "Wire", "parent": "p212Cont", "mount": "container:p212Cont/content", "order": 3, "items": "[{\"id\":\"wire\",\"label\":\"WIRE\"}]", "events": "[\"itemClick\"]", "z": "p212flow", "wires": [["p212FnWire"]], "x": 200, "y": 340 },
+  { "type": "ui-list", "id": "p212ListRefresh", "name": "Refresh", "app": "p212Cont", "mount": "container:p212Cont/content", "order": 2, "items": "[{\"id\":\"refresh\",\"label\":\"REFRESH\"}]", "events": "[\"itemClick\"]", "z": "p212flow", "wires": [["p212FnRefresh"]], "x": 200, "y": 310 },
+  { "type": "ui-list", "id": "p212ListWire", "name": "Wire", "app": "p212Cont", "mount": "container:p212Cont/content", "order": 3, "items": "[{\"id\":\"wire\",\"label\":\"WIRE\"}]", "events": "[\"itemClick\"]", "z": "p212flow", "wires": [["p212FnWire"]], "x": 200, "y": 340 },
 
   { "type": "function", "id": "p212FnRefresh", "name": "clear payload (reference)", "func": "delete msg.payload;\nif (msg.ui && msg.ui.query) { delete msg.ui.query; }\nreturn msg;", "outputs": 1, "noerr": 0, "z": "p212flow", "wires": [["p212ActionRef"]], "x": 440, "y": 310 },
   { "type": "function", "id": "p212FnWire", "name": "payload params (wire)", "func": "msg.payload = { page: 2 };\nif (msg.ui && msg.ui.query) { delete msg.ui.query; }\nreturn msg;", "outputs": 1, "noerr": 0, "z": "p212flow", "wires": [["p212ActionWire"]], "x": 440, "y": 340 },
 
-  { "type": "ui-query-action", "id": "p212ActionRef", "name": "refresh (reference)", "parent": "p212App", "query": "p212Query", "action": "refresh", "mode": "reference", "z": "p212flow", "wires": [[]], "x": 680, "y": 310 },
-  { "type": "ui-query-action", "id": "p212ActionWire", "name": "refresh (wire)", "parent": "p212App", "query": "p212Query", "action": "refresh", "mode": "wire", "z": "p212flow", "wires": [["p212FnStringify"]], "x": 680, "y": 340 },
+  { "type": "ui-query-action", "id": "p212ActionRef", "name": "refresh (reference)", "app": "p212App", "query": "p212Query", "action": "refresh", "mode": "reference", "z": "p212flow", "wires": [[]], "x": 680, "y": 310 },
+  { "type": "ui-query-action", "id": "p212ActionWire", "name": "refresh (wire)", "app": "p212App", "query": "p212Query", "action": "refresh", "mode": "wire", "z": "p212flow", "wires": [["p212FnStringify"]], "x": 680, "y": 340 },
 
   { "type": "function", "id": "p212Retrieval", "name": "query retrieval provider", "func": "var incoming = msg.ui || {};\nvar q = incoming.query || {};\nmsg.ui = { query: { queryPath: q.queryPath, data: \"LOADED\" } };\nif (incoming.clientId) { msg.ui.clientId = incoming.clientId; }\nreturn msg;", "outputs": 1, "noerr": 0, "z": "p212flow", "wires": [["p212Query"]], "x": 460, "y": 160 },
 

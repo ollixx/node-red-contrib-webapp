@@ -1,8 +1,8 @@
 [
   { "type": "tab", "id": "repInlineFlow", "label": "Repeat Inline Compose" },
   { "type": "ui-app", "id": "riApp", "name": "RI App", "root": "riApp", "layout": "app", "title": "RI", "z": "repInlineFlow", "wires": [], "x": 200, "y": 120 },
-  { "type": "ui-store", "id": "riStore", "name": "RI Labels", "parent": "riApp", "statePath": "labels", "initialValue": "[{\"label\":\"a\"},{\"label\":\"b\"},{\"label\":\"c\"}]", "z": "repInlineFlow", "wires": [], "x": 200, "y": 180 },
-  { "type": "ui-container", "id": "riBox", "name": "Inline Box", "parent": "riApp", "mount": "riApp.content", "order": 0, "layoutId": "vertical", "variant": "span", "z": "repInlineFlow", "wires": [], "x": 200, "y": 240 },
-  { "type": "ui-repeat", "id": "riRepeat", "name": "RI Repeat", "parent": "riBox", "mount": "container:riBox/content", "order": 0, "items": { "kind": "store", "path": "riStore" }, "keyField": "label", "z": "repInlineFlow", "wires": [], "x": 200, "y": 300 },
-  { "type": "ui-text", "id": "riText", "name": "RI Text", "parent": "riRepeat", "mount": "container:riRepeat/content", "order": 0, "value": { "kind": "item", "path": "label" }, "z": "repInlineFlow", "wires": [], "x": 200, "y": 360 }
+  { "type": "ui-store", "id": "riStore", "name": "RI Labels", "app": "riApp", "statePath": "labels", "initialValue": "[{\"label\":\"a\"},{\"label\":\"b\"},{\"label\":\"c\"}]", "z": "repInlineFlow", "wires": [], "x": 200, "y": 180 },
+  { "type": "ui-container", "id": "riBox", "name": "Inline Box", "app": "riApp", "mount": "riApp.content", "order": 0, "layoutId": "vertical", "variant": "span", "z": "repInlineFlow", "wires": [], "x": 200, "y": 240 },
+  { "type": "ui-repeat", "id": "riRepeat", "name": "RI Repeat", "app": "riBox", "mount": "container:riBox/content", "order": 0, "items": { "kind": "store", "path": "riStore" }, "keyField": "label", "z": "repInlineFlow", "wires": [], "x": 200, "y": 300 },
+  { "type": "ui-text", "id": "riText", "name": "RI Text", "app": "riRepeat", "mount": "container:riRepeat/content", "order": 0, "value": { "kind": "item", "path": "label" }, "z": "repInlineFlow", "wires": [], "x": 200, "y": 360 }
 ]

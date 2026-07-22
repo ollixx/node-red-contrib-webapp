@@ -11,11 +11,19 @@ import type { NodeDef } from "./admin-api";
  * field it is actually testing.
  *
  * Invariants honoured (see .ai/agents/architecture.md):
- *   - UI hierarchy is `parent` / `mount`, never wires.
+ *   - UI hierarchy is `app` / `mount`, never wires.
  *   - Mount paths: view nodes default to `<routeId>.content` (the id-keyed dot
  *     form, e.g. `home.content`). Route mounts may also be keyed by path
  *     (`route:/path/content`) — override `mount` if a spec needs that form.
- *   - Every non-app node carries a `parent` (the app id) and a `mount`.
+ *   - Every non-app node carries an `app` (the owning app id) and a `mount`.
+ *
+ * P228 (ADR 0038): the owning-app field is canonically `app`; `parent` is the
+ * retired legacy alias. The builder emits `app` PLUS a mirrored legacy `parent`
+ * twin as a TRANSITIONAL bridge while the editor defaults still speak `parent`
+ * (Stufe 2 of the rename; Stufe 3 removes the twin when the editor writes
+ * canonical `app`). A spec that passes an explicit `parent` override (and no
+ * `app`) gets a PURE legacy node — the default `app` is dropped — so migration
+ * specs can author pre-rename flows through the builder.
  *
  * Usage:
  *   const flow = new FlowBuilder()
@@ -48,6 +56,7 @@ function defaultsFor(type: string, ctx: { appId: string; routeId?: string; id: s
         id: ctx.id,
         uiId: ctx.id,
         name: ctx.id,
+        app: ctx.appId,
         parent: ctx.appId,
         mount,
         z: TAB_ID,
@@ -91,13 +100,13 @@ function defaultsFor(type: string, ctx: { appId: string; routeId?: string; id: s
             // store has no visible mount but MUST have x/y so Node-RED places it
             // in flow.nodes (not flow.configs). Nodes without x/y are treated as
             // config nodes, which causes "Circular config node dependency" errors.
-            return { type, id: ctx.id, uiId: ctx.id, name: ctx.id, parent: ctx.appId, statePath: "state", initialValue: "{}", z: TAB_ID, x: 100, y: 300, wires: [[]] };
+            return { type, id: ctx.id, uiId: ctx.id, name: ctx.id, app: ctx.appId, parent: ctx.appId, statePath: "state", initialValue: "{}", z: TAB_ID, x: 100, y: 300, wires: [[]] };
         case "ui-query":
             // query has no visible mount; x/y required to avoid config-node treatment.
-            return { type, id: ctx.id, uiId: ctx.id, name: ctx.id, parent: ctx.appId, queryPath: "data", z: TAB_ID, x: 100, y: 350, wires: [[]] };
+            return { type, id: ctx.id, uiId: ctx.id, name: ctx.id, app: ctx.appId, parent: ctx.appId, queryPath: "data", z: TAB_ID, x: 100, y: 350, wires: [[]] };
         case "ui-action":
             // action has no visible mount; x/y required to avoid config-node treatment.
-            return { type, id: ctx.id, uiId: ctx.id, name: ctx.id, parent: ctx.appId, actionType: "navigate", z: TAB_ID, x: 100, y: 400, wires: [[]] };
+            return { type, id: ctx.id, uiId: ctx.id, name: ctx.id, app: ctx.appId, parent: ctx.appId, actionType: "navigate", z: TAB_ID, x: 100, y: 400, wires: [[]] };
         // P243 (ADR 0040): ui-navigation retired — navigation is a ui-action navigate.
         case "ui-log":
             // P57: log display node — mounts like a view node, no inputs/outputs.
@@ -156,6 +165,7 @@ export class FlowBuilder {
             id,
             uiId: id,
             name: id,
+            app: this.appId,
             parent: this.appId,
             path: "/",
             title: id,
@@ -166,6 +176,11 @@ export class FlowBuilder {
             wires: [[]],
             ...overrides
         };
+        // P228: an explicit `parent` override (with no `app`) authors a PURE
+        // legacy node — drop the canonical default (see node()).
+        if ("parent" in overrides && !("app" in overrides)) {
+            delete node.app;
+        }
         this.routeId = node.id as string;
         this.nodes.push(node);
         return this;
@@ -178,7 +193,14 @@ export class FlowBuilder {
         }
         const id = (overrides.id as string) ?? uid(type.replace(/^ui-/, ""));
         const defaults = defaultsFor(type, { appId: this.appId, routeId: this.routeId, id });
-        this.nodes.push({ ...defaults, ...overrides });
+        const merged: NodeDef = { ...defaults, ...overrides };
+        // P228: an explicit `parent` override (with no `app`) authors a PURE
+        // legacy node — drop the canonical default so the override is the only
+        // owning-app field (migration specs rely on this).
+        if ("parent" in overrides && !("app" in overrides)) {
+            delete merged.app;
+        }
+        this.nodes.push(merged);
         return this;
     }
 

@@ -21,7 +21,7 @@
     "type": "ui-text",
     "id": "p106Label",
     "name": "Label",
-    "parent": "p106App",
+    "app": "p106App",
     "mount": "p106App.content",
     "order": 0,
     "value": {
@@ -37,7 +37,7 @@
     "type": "ui-input",
     "id": "p106Input",
     "name": "Scratch",
-    "parent": "p106App",
+    "app": "p106App",
     "mount": "p106App.content",
     "order": 1,
     "label": "Scratch",

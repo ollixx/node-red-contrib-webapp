@@ -2,19 +2,19 @@
   { "type": "tab", "id": "p224flow", "label": "P224" },
   { "type": "ui-app", "id": "p224App", "name": "P224 App", "root": "p224root", "layout": "app", "title": "P224", "z": "p224flow", "wires": [], "x": 200, "y": 80 },
 
-  { "type": "ui-store", "id": "p224VisStore", "name": "Visibility", "parent": "p224App", "statePath": "vis", "scope": "any", "initialValue": "true", "z": "p224flow", "wires": [], "x": 200, "y": 140 },
+  { "type": "ui-store", "id": "p224VisStore", "name": "Visibility", "app": "p224App", "statePath": "vis", "scope": "any", "initialValue": "true", "z": "p224flow", "wires": [], "x": 200, "y": 140 },
 
-  { "type": "ui-container", "id": "p224Cont", "name": "Container", "parent": "p224App", "mount": "p224App.content", "layoutId": "vertical", "variant": "section", "order": 0, "z": "p224flow", "wires": [], "x": 200, "y": 180 },
+  { "type": "ui-container", "id": "p224Cont", "name": "Container", "app": "p224App", "mount": "p224App.content", "layoutId": "vertical", "variant": "section", "order": 0, "z": "p224flow", "wires": [], "x": 200, "y": 180 },
 
-  { "type": "ui-alert", "id": "p224AlertUnbound", "name": "Slot alert", "parent": "p224Cont", "mount": "container:p224Cont/content", "order": 0, "message": { "kind": "literal", "value": "Slot alert" }, "severity": "info", "z": "p224flow", "wires": [], "x": 200, "y": 220 },
+  { "type": "ui-alert", "id": "p224AlertUnbound", "name": "Slot alert", "app": "p224Cont", "mount": "container:p224Cont/content", "order": 0, "message": { "kind": "literal", "value": "Slot alert" }, "severity": "info", "z": "p224flow", "wires": [], "x": 200, "y": 220 },
 
-  { "type": "ui-alert", "id": "p224AlertBound", "name": "Store alert", "parent": "p224Cont", "mount": "container:p224Cont/content", "order": 1, "message": { "kind": "literal", "value": "Store alert" }, "severity": "warning", "visible": { "kind": "store", "path": "p224VisStore" }, "z": "p224flow", "wires": [], "x": 200, "y": 260 },
+  { "type": "ui-alert", "id": "p224AlertBound", "name": "Store alert", "app": "p224Cont", "mount": "container:p224Cont/content", "order": 1, "message": { "kind": "literal", "value": "Store alert" }, "severity": "warning", "visible": { "kind": "store", "path": "p224VisStore" }, "z": "p224flow", "wires": [], "x": 200, "y": 260 },
 
-  { "type": "ui-text", "id": "p224StoreText", "name": "store value", "parent": "p224Cont", "mount": "container:p224Cont/content", "order": 2, "value": { "kind": "store", "path": "p224VisStore" }, "z": "p224flow", "wires": [], "x": 200, "y": 300 },
+  { "type": "ui-text", "id": "p224StoreText", "name": "store value", "app": "p224Cont", "mount": "container:p224Cont/content", "order": 2, "value": { "kind": "store", "path": "p224VisStore" }, "z": "p224flow", "wires": [], "x": 200, "y": 300 },
 
-  { "type": "ui-button", "id": "p224HideUnbound", "name": "Hide Unbound", "label": "Hide Unbound", "parent": "p224Cont", "mount": "container:p224Cont/content", "order": 3, "z": "p224flow", "wires": [["p224FnHideU"]], "x": 200, "y": 340 },
-  { "type": "ui-button", "id": "p224ShowUnbound", "name": "Show Unbound", "label": "Show Unbound", "parent": "p224Cont", "mount": "container:p224Cont/content", "order": 4, "z": "p224flow", "wires": [["p224FnShowU"]], "x": 200, "y": 380 },
-  { "type": "ui-button", "id": "p224HideBound", "name": "Hide Bound", "label": "Hide Bound", "parent": "p224Cont", "mount": "container:p224Cont/content", "order": 5, "z": "p224flow", "wires": [["p224FnHideB"]], "x": 200, "y": 420 },
+  { "type": "ui-button", "id": "p224HideUnbound", "name": "Hide Unbound", "label": "Hide Unbound", "app": "p224Cont", "mount": "container:p224Cont/content", "order": 3, "z": "p224flow", "wires": [["p224FnHideU"]], "x": 200, "y": 340 },
+  { "type": "ui-button", "id": "p224ShowUnbound", "name": "Show Unbound", "label": "Show Unbound", "app": "p224Cont", "mount": "container:p224Cont/content", "order": 4, "z": "p224flow", "wires": [["p224FnShowU"]], "x": 200, "y": 380 },
+  { "type": "ui-button", "id": "p224HideBound", "name": "Hide Bound", "label": "Hide Bound", "app": "p224Cont", "mount": "container:p224Cont/content", "order": 5, "z": "p224flow", "wires": [["p224FnHideB"]], "x": 200, "y": 420 },
 
   { "type": "function", "id": "p224FnHideU", "name": "hide unbound (per-client)", "func": "msg.ui.dynamicState = { field: 'visible', value: false, id: 'p224AlertUnbound' };\nreturn msg;", "outputs": 1, "noerr": 0, "z": "p224flow", "wires": [["p224AlertUnbound"]], "x": 440, "y": 340 },
   { "type": "function", "id": "p224FnShowU", "name": "show unbound (per-client)", "func": "msg.ui.dynamicState = { field: 'visible', value: true, id: 'p224AlertUnbound' };\nreturn msg;", "outputs": 1, "noerr": 0, "z": "p224flow", "wires": [["p224AlertUnbound"]], "x": 440, "y": 380 },

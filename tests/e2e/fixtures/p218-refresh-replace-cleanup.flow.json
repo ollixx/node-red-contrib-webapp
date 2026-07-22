@@ -2,18 +2,18 @@
   { "type": "tab", "id": "p218flow", "label": "P218" },
   { "type": "ui-app", "id": "p218App", "name": "P218 App", "root": "p218root", "layout": "app", "title": "P218", "z": "p218flow", "wires": [], "x": 200, "y": 120 },
 
-  { "type": "ui-query", "id": "p218Query", "name": "Items Query", "parent": "p218App", "queryPath": "items", "z": "p218flow", "wires": [["p218DeriveData"]], "x": 200, "y": 160 },
+  { "type": "ui-query", "id": "p218Query", "name": "Items Query", "app": "p218App", "queryPath": "items", "z": "p218flow", "wires": [["p218DeriveData"]], "x": 200, "y": 160 },
 
-  { "type": "ui-container", "id": "p218Cont", "name": "Container 1", "parent": "p218App", "mount": "p218App.content", "layoutId": "vertical", "variant": "section", "order": 0, "z": "p218flow", "wires": [], "x": 200, "y": 220 },
-  { "type": "ui-text", "id": "p218QueryText", "name": "query readout", "parent": "p218Cont", "mount": "container:p218Cont/content", "order": 0, "value": { "kind": "query", "path": "items" }, "z": "p218flow", "wires": [], "x": 200, "y": 250 },
+  { "type": "ui-container", "id": "p218Cont", "name": "Container 1", "app": "p218App", "mount": "p218App.content", "layoutId": "vertical", "variant": "section", "order": 0, "z": "p218flow", "wires": [], "x": 200, "y": 220 },
+  { "type": "ui-text", "id": "p218QueryText", "name": "query readout", "app": "p218Cont", "mount": "container:p218Cont/content", "order": 0, "value": { "kind": "query", "path": "items" }, "z": "p218flow", "wires": [], "x": 200, "y": 250 },
 
-  { "type": "ui-list", "id": "p218ListRefresh", "name": "Refresh", "parent": "p218Cont", "mount": "container:p218Cont/content", "order": 1, "items": "[{\"id\":\"refresh\",\"label\":\"REFRESH\"}]", "events": "[\"itemClick\"]", "z": "p218flow", "wires": [["p218FnPoison"]], "x": 200, "y": 310 },
+  { "type": "ui-list", "id": "p218ListRefresh", "name": "Refresh", "app": "p218Cont", "mount": "container:p218Cont/content", "order": 1, "items": "[{\"id\":\"refresh\",\"label\":\"REFRESH\"}]", "events": "[\"itemClick\"]", "z": "p218flow", "wires": [["p218FnPoison"]], "x": 200, "y": 310 },
 
   { "type": "function", "id": "p218FnPoison", "name": "poison payload (stale trigger data)", "func": "msg.payload = \"POISON\";\nreturn msg;", "outputs": 1, "noerr": 0, "z": "p218flow", "wires": [["p218RefreshAction"]], "x": 460, "y": 310 },
 
-  { "type": "ui-query-action", "id": "p218RefreshAction", "name": "refresh (wire)", "parent": "p218App", "query": "p218Query", "action": "refresh", "mode": "wire", "z": "p218flow", "wires": [["p218Query"]], "x": 720, "y": 310 },
+  { "type": "ui-query-action", "id": "p218RefreshAction", "name": "refresh (wire)", "app": "p218App", "query": "p218Query", "action": "refresh", "mode": "wire", "z": "p218flow", "wires": [["p218Query"]], "x": 720, "y": 310 },
 
   { "type": "function", "id": "p218DeriveData", "name": "derive data from (stripped) payload", "func": "// After the ui-query refresh hop the stale trigger payload must be GONE.\n// If it survived (bug), we would fold \"POISON\" as the query data; when it is\n// correctly stripped, payload is undefined and we fold the sentinel \"CLEAN\".\nvar poisoned = (msg.payload !== undefined && msg.payload !== null);\nmsg.payload = poisoned ? msg.payload : \"CLEAN\";\nreturn msg;", "outputs": 1, "noerr": 0, "z": "p218flow", "wires": [["p218ReplaceAction"]], "x": 480, "y": 160 },
 
-  { "type": "ui-query-action", "id": "p218ReplaceAction", "name": "replace (reference)", "parent": "p218App", "query": "p218Query", "action": "replace", "mode": "reference", "z": "p218flow", "wires": [[]], "x": 760, "y": 160 }
+  { "type": "ui-query-action", "id": "p218ReplaceAction", "name": "replace (reference)", "app": "p218App", "query": "p218Query", "action": "replace", "mode": "reference", "z": "p218flow", "wires": [[]], "x": 760, "y": 160 }
 ]

@@ -20,7 +20,7 @@
     "type": "ui-store",
     "id": "wordsStore",
     "name": "Words",
-    "parent": "repeatPrimApp",
+    "app": "repeatPrimApp",
     "statePath": "words",
     "initialValue": "[\"alpha\",\"beta\",\"gamma\"]",
     "z": "repeatprimflow",
@@ -32,7 +32,7 @@
     "type": "ui-repeat",
     "id": "wordsRepeat",
     "name": "Words Repeat",
-    "parent": "repeatPrimApp",
+    "app": "repeatPrimApp",
     "mount": "repeatPrimApp.content",
     "order": 0,
     "items": {
@@ -48,7 +48,7 @@
     "type": "ui-text",
     "id": "wholeWord",
     "name": "Whole word",
-    "parent": "wordsRepeat",
+    "app": "wordsRepeat",
     "mount": "container:wordsRepeat/content",
     "order": 0,
     "value": {
@@ -63,7 +63,7 @@
     "type": "ui-text",
     "id": "wordIndex",
     "name": "Word index",
-    "parent": "wordsRepeat",
+    "app": "wordsRepeat",
     "mount": "container:wordsRepeat/content",
     "order": 1,
     "value": {

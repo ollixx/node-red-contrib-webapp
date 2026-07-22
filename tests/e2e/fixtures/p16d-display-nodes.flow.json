@@ -20,7 +20,7 @@
     "z": "flowP16d",
     "name": "P16d Route",
     "uiId": "p16dRoute",
-    "parent": "p16dApp",
+    "app": "p16dApp",
     "path": "/p16d",
     "layoutId": "vertical"
   },

@@ -20,7 +20,7 @@
     "type": "ui-store",
     "id": "customersStore",
     "name": "Customers",
-    "parent": "repeatNamedApp",
+    "app": "repeatNamedApp",
     "statePath": "customers",
     "initialValue": "[{\"id\":\"c1\",\"name\":\"Ada\",\"orders\":[{\"total\":10},{\"total\":20}]},{\"id\":\"c2\",\"name\":\"Linus\",\"orders\":[{\"total\":30}]}]",
     "z": "repeatNamedFlow",
@@ -32,7 +32,7 @@
     "type": "ui-repeat",
     "id": "customerRepeat",
     "name": "Customer Repeat",
-    "parent": "repeatNamedApp",
+    "app": "repeatNamedApp",
     "mount": "repeatNamedApp.content",
     "order": 0,
     "items": {
@@ -50,7 +50,7 @@
     "type": "ui-repeat",
     "id": "orderRepeat",
     "name": "Order Repeat",
-    "parent": "customerRepeat",
+    "app": "customerRepeat",
     "mount": "container:customerRepeat/content",
     "order": 0,
     "items": {
@@ -68,7 +68,7 @@
     "type": "ui-text",
     "id": "outerName",
     "name": "Outer name",
-    "parent": "orderRepeat",
+    "app": "orderRepeat",
     "mount": "container:orderRepeat/content",
     "order": 0,
     "value": {
@@ -85,7 +85,7 @@
     "type": "ui-text",
     "id": "innerTotal",
     "name": "Inner total",
-    "parent": "orderRepeat",
+    "app": "orderRepeat",
     "mount": "container:orderRepeat/content",
     "order": 1,
     "value": {
@@ -102,7 +102,7 @@
     "type": "ui-text",
     "id": "bareTotal",
     "name": "Bare total",
-    "parent": "orderRepeat",
+    "app": "orderRepeat",
     "mount": "container:orderRepeat/content",
     "order": 2,
     "value": {
@@ -118,7 +118,7 @@
     "type": "ui-text",
     "id": "reactiveScope",
     "name": "Reactive scope",
-    "parent": "orderRepeat",
+    "app": "orderRepeat",
     "mount": "container:orderRepeat/content",
     "order": 3,
     "value": {

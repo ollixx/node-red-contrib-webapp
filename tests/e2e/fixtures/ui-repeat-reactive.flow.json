@@ -20,7 +20,7 @@
     "type": "ui-store",
     "id": "peopleStore",
     "name": "People",
-    "parent": "repeatReactiveApp",
+    "app": "repeatReactiveApp",
     "statePath": "people",
     "initialValue": "[{\"name\":\"Ada\"},{\"name\":\"Linus\"},{\"name\":\"Grace\"}]",
     "z": "repeatreactiveflow",
@@ -32,7 +32,7 @@
     "type": "ui-repeat",
     "id": "peopleRepeat",
     "name": "People Repeat",
-    "parent": "repeatReactiveApp",
+    "app": "repeatReactiveApp",
     "mount": "repeatReactiveApp.content",
     "order": 0,
     "items": {
@@ -48,7 +48,7 @@
     "type": "ui-text",
     "id": "reactiveRow",
     "name": "Reactive row",
-    "parent": "peopleRepeat",
+    "app": "peopleRepeat",
     "mount": "container:peopleRepeat/content",
     "order": 0,
     "value": {
