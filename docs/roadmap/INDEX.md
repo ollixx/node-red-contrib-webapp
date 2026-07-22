@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P259** — aspects/editor — **Id-Suffix-Renames** (Feld-Modell-Einfrierung 3/3): layoutId→layout, routeId→route, definitionId→definition; Abschluss = check:fields-Allowlist **LEER** — *ADR 0038* — [P259](aspects/editor/P259-id-suffix-reference-renames.md)
 - **P260** — aspects/auth — **Auth-Fundament** (ADR 0041): `user`-Contract, `ui-app.auth`-Feld (none|trusted-header), Konzept-Doku + Endpoint-Matrix + Tier-0-Anleitung — KEIN Enforcement — [P260](aspects/auth/P260-auth-contract-and-concept.md)
 - **P261** — aspects/auth — **Trusted-Header-Identität**: EINE Guard-Middleware über alle 7 App-Endpoints + Binding-Quelle `user` — E2E via Header-Fake — [P261](aspects/auth/P261-trusted-header-identity.md)
 - **P262** — aspects/auth — **Route-/Dialog-Guards**: `requiresGroup[]`, server-erzwungen (Render/Snapshot/Navigation/Event); „visibleIf ist UX, Guard ist Sicherheit" — [P262](aspects/auth/P262-route-dialog-guards.md)
@@ -97,11 +96,11 @@ open the folder for the full history.
 | aspects/docs | 1 |
 | aspects/runtime | 9 |
 | aspects/state | 9 |
-| aspects/editor | 29 |
+| aspects/editor | 30 |
 | schema | 5 |
 | aspects/rendering | 14 |
 | aspects/foundation | 5 |
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 257 done, 4 open, 11 deferred.**
+**Total: 258 done, 3 open, 11 deferred.**
