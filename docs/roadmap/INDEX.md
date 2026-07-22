@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P229** — aspects/editor — **Legacy-Feld-Sweep** (Feld-Modell-Einfrierung 1/3): *Path-Zwillinge, totes storeId/path, *Json, pagination-Alias + rows→lines — 4 Slices, E2E-Gate je Slice, **Haupt-Checkout** — *ADR 0038* — [P229](aspects/editor/P229-legacy-field-sweep-and-rows-collision.md)
 - **P228** — aspects/editor — **parent→app** (Feld-Modell-Einfrierung 2/3): Besitz-Feld auf 42 Knoten, 4 Stufen mit E2E-Gates, **Haupt-Checkout** (Redo des reverteten Versuchs, NUR diese Welle) — *ADR 0038* — [P228](aspects/editor/P228-parent-to-app-rename.md)
 - **P259** — aspects/editor — **Id-Suffix-Renames** (Feld-Modell-Einfrierung 3/3): layoutId→layout, routeId→route, definitionId→definition; Abschluss = check:fields-Allowlist **LEER** — *ADR 0038* — [P259](aspects/editor/P259-id-suffix-reference-renames.md)
 - **P260** — aspects/auth — **Auth-Fundament** (ADR 0041): `user`-Contract, `ui-app.auth`-Feld (none|trusted-header), Konzept-Doku + Endpoint-Matrix + Tier-0-Anleitung — KEIN Enforcement — [P260](aspects/auth/P260-auth-contract-and-concept.md)
@@ -99,11 +98,11 @@ open the folder for the full history.
 | aspects/docs | 1 |
 | aspects/runtime | 9 |
 | aspects/state | 9 |
-| aspects/editor | 27 |
+| aspects/editor | 28 |
 | schema | 5 |
 | aspects/rendering | 14 |
 | aspects/foundation | 5 |
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 255 done, 6 open, 11 deferred.**
+**Total: 256 done, 5 open, 11 deferred.**

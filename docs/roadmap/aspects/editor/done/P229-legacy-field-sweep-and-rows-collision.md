@@ -2,7 +2,7 @@
 id: P229
 title: "Legacy-Feld-Sweep: residuale *Path-Zwillinge, totes storeId/path, *Json-Carrier, pagination-Aliase entfernen + ui-textarea rows→lines — in 4 mechanischen Slices, E2E-Gate je Slice"
 epic: aspects/editor
-status: in_progress
+status: done
 dependencies: [P227]
 verify: browser
 spec: docs/nodes/concepts/field-conventions.md
@@ -10,7 +10,7 @@ tests: tests/e2e/nodes/editor/field-naming.spec.ts
 ---
 # P229 — Legacy-Feld-Sweep + `rows`-Kollision (Redo-fest spezifiziert)
 
-> Rationale: [ADR 0038](../../../adr/0038-field-model-consistency-naming-and-carrier-normalization.md).
+> Rationale: [ADR 0038](../../../../adr/0038-field-model-consistency-naming-and-carrier-normalization.md).
 > **Erster Zug der Feld-Modell-Einfrierung vor 1.0** (dann P228 `parent→app`, dann
 > P259 Id-Renames). Bewusst VOR P228: mechanisch risikoärmer, und baut die
 > `field-naming.spec.ts`-Migrations-Harness auf, die P228/P259 wiederverwenden.
@@ -123,3 +123,48 @@ die hier NICHT Scope sind). Je Slice die Migrations-Fälle ergänzen.
   liegen, migrieren sie beim nächsten Owner-Open automatisch.
 - `examples/**` sind generiert: falls ein Generator ein Legacy-Feld emittiert,
   Generator fixen + `pnpm gen:example`/`gen:node-examples` — nie Hand-Edit.
+
+## Result
+
+**Done 2026-07-22.** Erster Zug der Feld-Modell-Einfrierung — alle 4 Slices nach dem
+vorgeschriebenen Protokoll (Haupt-Checkout, ein Slice = ein Commit = ein E2E-Gate)
+gelandet. Die Ausführungs-Auflagen haben sich exakt bewährt.
+
+### Die 4 Slices (je committet nach grünem Gate)
+
+- **A** (`5f33b9b`) — totes `storeId`/`path`-Paar aus den `defaults` der 8 Input-
+  Knoten entfernt; ADR-0027-Open-Time-Migration (`→ writeTo`) bleibt, per Roundtrip
+  belegt.
+- **B** (`7bad5a5`) — residuale `<base>Path`-Zwillinge aus **24** Knoten-`defaults`
+  entfernt; die `oneditprepare`-Migrationen (`<base>Path` → state-Binding) bleiben;
+  bestehende Runtime-Migrations-E2E grün.
+- **C** (`cbca206`) — `optionsJson` (select/radio), `itemsJson` (breadcrumb),
+  `currentPagePath` (pagination) aus den `defaults`; Migrationen bleiben.
+- **D** (`90aa665`) — `rows` → `lines` (ui-textarea, der einzige echte Rename);
+  Alt-Flow mit `rows` migriert on-open zu `lines`, rendert dieselbe Höhe (gemessen
+  am `rows`-Attribut des `sl-textarea`); ui-table `rows` ist jetzt die einzige
+  `rows`-Bedeutung.
+
+**Migrations-LESER alle intakt** — entfernt wurde nur, was der Editor NEU schreibt;
+Alt-Flows brechen nie. Die `field-naming.spec.ts`-Harness (aus dem alten
+`phase/P228`-Branch gemint, P228-Anteile ausgelassen) trägt jetzt die
+Migrations-Beweise und wird von P228/P259 wiederverwendet.
+
+### check:fields
+
+Allowlist von 52 auf **6** Einträge (nur noch P228/P259-Gründe) — kein P229-Eintrag
+mehr. `check:roundtrip` (das Clobber-Netz) nach jedem Slice grün.
+
+### Verifikation (Haupt-Checkout, autoritativ)
+
+**Voll-Suite 853 passed, 0 failed, `--retries=0`, 16,0 min** (+22 neue Migrations-
+Tests). `pnpm build` + `pnpm validate` + alle Tripwires grün.
+
+### Prozess-Anmerkung
+
+Der Haupt-Checkout-Agent arbeitete das Slice-Protokoll exakt ab und wurde erst beim
+**Warten auf seine finale Voll-Suite** vom Watchdog gekillt — verlustfrei, weil alle
+4 Slices bereits committet waren (das Protokoll IST die Ausfallsicherheit). Der
+Orchestrator übernahm nur den Capstone-Lauf. Eine geleakte Wegwerf-Node-RED
+(Port 1883) wurde orchestrator-seitig gereapt. Kein verbotenes Git-Kommando; Baum
+sauber; Owner-Commit (ADR 0041, `4c02736`) lief konfliktfrei zwischen den Slices ein.
