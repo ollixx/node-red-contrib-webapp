@@ -30,6 +30,9 @@ their blocker clears.
 - **P229** — aspects/editor — **Legacy-Feld-Sweep** (Feld-Modell-Einfrierung 1/3): *Path-Zwillinge, totes storeId/path, *Json, pagination-Alias + rows→lines — 4 Slices, E2E-Gate je Slice, **Haupt-Checkout** — *ADR 0038* — [P229](aspects/editor/P229-legacy-field-sweep-and-rows-collision.md)
 - **P228** — aspects/editor — **parent→app** (Feld-Modell-Einfrierung 2/3): Besitz-Feld auf 42 Knoten, 4 Stufen mit E2E-Gates, **Haupt-Checkout** (Redo des reverteten Versuchs, NUR diese Welle) — *ADR 0038* — [P228](aspects/editor/P228-parent-to-app-rename.md)
 - **P259** — aspects/editor — **Id-Suffix-Renames** (Feld-Modell-Einfrierung 3/3): layoutId→layout, routeId→route, definitionId→definition; Abschluss = check:fields-Allowlist **LEER** — *ADR 0038* — [P259](aspects/editor/P259-id-suffix-reference-renames.md)
+- **P260** — aspects/auth — **Auth-Fundament** (ADR 0041): `user`-Contract, `ui-app.auth`-Feld (none|trusted-header), Konzept-Doku + Endpoint-Matrix + Tier-0-Anleitung — KEIN Enforcement — [P260](aspects/auth/P260-auth-contract-and-concept.md)
+- **P261** — aspects/auth — **Trusted-Header-Identität**: EINE Guard-Middleware über alle 7 App-Endpoints + Binding-Quelle `user` — E2E via Header-Fake — [P261](aspects/auth/P261-trusted-header-identity.md)
+- **P262** — aspects/auth — **Route-/Dialog-Guards**: `requiresGroup[]`, server-erzwungen (Render/Snapshot/Navigation/Event); „visibleIf ist UX, Guard ist Sicherheit" — [P262](aspects/auth/P262-route-dialog-guards.md)
 
 ## Deferred (parked, not abandoned)
 
@@ -39,11 +42,12 @@ Reason in each package's `deferred_reason`. Picked up once the blocker clears.
 - **P101** — nodes/ui-avatar — size/variant Backend-Warnung + Render-Garantie — *hängt an P102 + zweitem Backend* — [P101](nodes/ui-avatar/deferred/P101-size-variant-backend-warning.md)
 - **P105** — aspects/rendering — nicht-darstellbarer Wert: Achtung-Icon + Alert/Dialog statt nacktem `"?"` — *Stufe 2 über P104; re-scopet unter ADR 0034 → P220* — [P105](aspects/rendering/deferred/P105-invalid-value-warning-affordance.md)
 - **P220** — aspects/rendering — `onMissing` Folgeverhalten: `errorPort` + `throw`/Catch + Fallback-Slot + P105-Affordance — *ADR 0034; baut auf P219; absorbiert Catch-Follow-up + P105* — [P220](aspects/rendering/deferred/P220-onmissing-errorport-throw-and-affordance.md)
-- **P107** — nodes/ui-app — App-weite Auth/Authz (OAuth2/OIDC) modellieren — *eigenes Epic, ADR + Owner-Entscheidung nötig* — [P107](nodes/ui-app/deferred/P107-auth-authz.md)
 - **P121** — aspects/docs — Konzept Nutzer-Doku: Wo/Wie die zwei Wege (Wire vs. Referenz) mit Beispielen dokumentieren — *Owner-Entscheidung zu Ort + Form nötig* — [P121](aspects/docs/deferred/P121-user-docs-concept-two-ways.md)
 - **P143** — aspects/editor — Konzept: Enums dynamisch bindbar (Pro-Feld-typedInput mit Enum-Default statt globalem Advanced-Mode) — *ADR + Owner-Entscheidung nötig; Empfehlung steht* — [P143](aspects/editor/deferred/P143-enums-dynamic-binding-vs-advanced-mode.md)
 - **P152** — nodes/ui-empty-state — Redesign: Container mit Slot(s) + visible-Binding (statt fester icon/title/message/action-Felder) — *Vertragswechsel; ADR + Restfragen nötig; Richtung steht* — [P152](nodes/ui-empty-state/deferred/P152-empty-state-as-container-with-visible-binding.md)
 - **P162** — nodes/ui-event — Konzept: referenzbasierter lokaler Tap der App/Route-Lifecycle-Events (onEnter/onLeave) neben dem Consumer — *neuer Knoten + Vertrag; ADR-würdig (Scope/Events/Output-Form); löst Lange-Leitung aus ADR 0016* — [P162](nodes/ui-event/deferred/P162-ui-event-local-lifecycle-tap.md)
+- **P263** — aspects/auth — Per-User-State (Store-Scope `per-user`, Key=user.id) — *koppelt an P210; nach P261, nicht 1.0-kritisch* — [P263](aspects/auth/deferred/P263-per-user-state-scope.md)
+- **P264** — aspects/auth — In-App OIDC RP (Cookie-Session, PKCE, CSRF) — *nur falls proxy-loser Betrieb Ziel wird; koppelt an P210* — [P264](aspects/auth/deferred/P264-in-app-oidc-relying-party.md)
 - **P210** — aspects/state — Tech-Debt: per-client-State produktionsreif skalieren — externer geteilter Store (Redis) und/oder Multi-Instanz + Sticky-Sessions; TTL/Eviction gegen unbegrenztes Wachstum — *großer Umbau; ADR + Owner-Entscheidung; erst bei realem Skalierungs-/Durability-Bedarf* — [P210](aspects/state/deferred/P210-per-client-state-production-scale.md)
 
 ## Done (rollup — history lives in the epic folders)
@@ -54,7 +58,7 @@ open the folder for the full history.
 | Epic | done |
 |---|---|
 | nodes/ui-action | 7 |
-| nodes/ui-app | 6 |
+| nodes/ui-app | 7 |
 | nodes/ui-alert | 5 |
 | nodes/ui-avatar | 2 |
 | nodes/ui-log | 2 |
@@ -102,4 +106,4 @@ open the folder for the full history.
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 254 done, 3 open, 10 deferred.**
+**Total: 255 done, 6 open, 11 deferred.**

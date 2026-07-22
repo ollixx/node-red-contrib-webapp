@@ -2,8 +2,7 @@
 id: P107
 title: "ui-app: App-weite Authentifizierung/Autorisierung modellieren (OAuth2/OIDC) — Designentscheidung offen"
 epic: nodes/ui-app
-status: deferred
-deferred_reason: "Großes eigenes Thema, Designentscheidung offen (welches Auth-Modell, wo erzwungen, wie per-Route). Erfasst als deferred, damit der Doc-Offene-Punkt nachverfolgt ist; vor Umsetzung ADR + Owner-Entscheidung nötig."
+status: done
 dependencies: []
 node: ui-app
 spec: docs/nodes/structure/ui-app.md
@@ -25,3 +24,15 @@ spec: docs/nodes/structure/ui-app.md
 
 ## Notes
 - Bewusst deferred: erst Owner-Entscheidung + ADR, dann Pakete. Dieses File hält nur den offenen Punkt nachverfolgbar.
+
+## Result
+
+**Aufgelöst 2026-07-22** durch **[ADR 0041](../../../../adr/0041-auth-model-idp-agnostic-identity-trusted-header-first.md)**
+(IdP-agnostische Identität, trusted-header zuerst, deklarative Guards, keine
+eigenen Credentials) + das neue Epic **aspects/auth**: P260 (Contract+Konzept),
+P261 (trusted-header + `user`-Binding), P262 (Route-/Dialog-Guards) für 1.0;
+P263 (per-user-State) + P264 (in-App OIDC) deferred (P210-Kopplung). Die vier
+offenen Fragen dieses Trackers sind im ADR beantwortet (Modell: trusted-header →
+oidc später; erzwungen: EINE Middleware über alle 7 App-Endpoints; clientId
+bleibt Geräte-Identität, `user` orthogonal; Editor-Felder am ui-app als EIN
+`auth`-Objekt, kein eigener Auth-Knoten).
