@@ -123,7 +123,7 @@ befülltes Dropdown:
 
 - `installParentAppSelector()` — `#node-input-app` (Preset `apps`).
 - `installReferenceSelectors(config)` — je nach `config`-Flags:
-  - `route: true` → `#node-input-routeId` (Preset `routes`, optional/leerbar)
+  - `route: true` → `#node-input-route` (Preset `routes`, optional/leerbar)
   - `action: "<selector>"` → ein Action-Feld (Preset `actions`)
   - `store: true | "<selector>"` → ein Store-Feld (Preset `stores`, optional/leerbar)
   - `mount: true` → `#node-input-mount` (Preset `mounts`; Anzeige = Breadcrumb;
@@ -580,7 +580,7 @@ nicht selbst aufrufen.
 Konsument der Zwei-Wege-Codierung ist die Navigations-Konfiguration von
 `ui-action` (Verb `navigate`). (P243/ADR 0040: `ui-navigation` wurde stillgelegt —
 Navigation ist allein ein `ui-action` navigate.) `installNavigateTargetMode()`
-baut aus drei Hidden-Carriern (`targetMode`, `routeId`, `params`) und dem
+baut aus drei Hidden-Carriern (`targetMode`, `route`, `params`) und dem
 `to`-typedInput eine Modus-UI:
 
 - **Segment-Schalter** mit drei Modi (Icon + Label): **via Wire** · **Route** ·
@@ -601,7 +601,7 @@ baut aus drei Hidden-Carriern (`targetMode`, `routeId`, `params`) und dem
   (Scan ≥1 → `wire`, sonst `route`); danach gewinnt die gespeicherte Absicht —
   spätere Wire-Änderungen schalten den Modus nicht um (kein UI-Flackern).
 - **`validateNavigateConfig(node)`** — Field-Validator: nur der `route`-Modus
-  wird **hart** geprüft (auflösbare `routeId` + jeder `:platzhalter` mit Wert);
+  wird **hart** geprüft (auflösbare `route`-Referenz + jeder `:platzhalter` mit Wert);
   `wire`/`url` blockieren nie. Wirkt sowohl bei offenem Panel (über den
   Controller) als auch zur Deploy-Zeit (liest die gespeicherten Felder).
 

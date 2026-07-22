@@ -20,11 +20,15 @@ Feld heißt und welches Carrier-Muster es verwendet. Sie ergänzt
 > **`parent` → `app`-Welle ist abgeschlossen (P228, 2026-07-22)**: das
 > Besitz-Feld heißt in allen 42 Nicht-App-`defaults` `app`; Laufzeit und Editor
 > lesen das Legacy-`parent` weiter (Migration beim Öffnen/Speichern), und
-> `check:fields` Regel (c) verbietet ein neues `parent`-Referenzfeld. Es fehlen
-> nur noch die `*Id`-Umbenennungen (`layoutId`/`routeId`/`definitionId` → bloßer
-> Name) aus **P259**; deren Einträge trägt die **kuratierte Allowlist** in
-> `scripts/check-fields.js` noch (je eine Ein-Zeilen-Begründung), damit
-> `pnpm validate` grün bleibt; P259 schrumpft die Liste auf leer.
+> `check:fields` Regel (c) verbietet ein neues `parent`-Referenzfeld. Die
+> **`*Id`-Umbenennungen sind abgeschlossen (P259, 2026-07-22)**:
+> `layoutId`→`layout` (ui-route/ui-dialog/ui-container), `routeId`→`route`
+> (ui-dialog/ui-action) und `definitionId`→`definition`
+> (ui-component-instance) tragen den bloßen Namen; Laufzeit, Schema
+> (Übergangs-Union) und Editor lesen die Legacy-Namen weiter (Migration beim
+> Öffnen/Speichern). Damit ist die **Allowlist in `scripts/check-fields.js`
+> LEER** — das Feld-Modell ist für 1.0 eingefroren; jedes künftige
+> `*Id`-Referenzfeld wird sofort geflaggt und braucht einen ADR-Grund.
 
 ---
 

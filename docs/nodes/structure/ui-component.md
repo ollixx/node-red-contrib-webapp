@@ -14,7 +14,7 @@ machinery ([ADR 0017](../../adr/0017-ui-repeat-template-container-render-time-sc
 
 - **`ui-component-definition`** — container-kind, off-canvas; children mount into
   `def:<componentId>/content`; never renders on its own. *(P177 schema; P179 node/editor.)*
-- **`ui-component-instance`** — leaf with an outer `mount`, a `definitionId`, and a
+- **`ui-component-instance`** — leaf with an outer `mount`, a `definition` reference, and a
   `props` map (name → value typedInput, any binding kind). *(P177 schema; P179 editor picker + props map.)*
 - **`def:` mount scope** — new scope in the mount grammar. *(P177.)*
 - **`prop` / `prop.<name>` binding kind** — scope-local, resolved at render time
@@ -42,7 +42,7 @@ display `name` for the editor/structure sidebar.
 A **leaf-shaped** node (no children of its own) that **must** carry an outer
 `mount`/`app` into a real route/container (like any mounted node). Fields:
 
-- **`definitionId`** *(required string)* — the id of the `ui-component-definition`
+- **`definition`** *(required string)* — the id of the `ui-component-definition` (P259/ADR 0038: bare reference name, formerly `definitionId` — legacy flows migrate on open+save)
   it instantiates.
 - **`props`** *(map `name → value-binding`, default `{}`)* — each value is an
   ordinary value-binding of **any** binding kind (literal/state/store/query/item/…).
@@ -87,12 +87,12 @@ When `renderRegions` enumerates a region's components, a `component-instance` (l
 a `repeat`) carries **no rendered chrome** — it **expands in place**:
 
 1. Read `props.definitionId` → find the `component-definition`. A missing/unknown
-   definition (or absent `definitionId`) renders **nothing** (a defined "no output",
+   definition (or absent `definition` reference) renders **nothing** (a defined "no output",
    not a crash — the editor/deploy layer flags the misuse).
 2. Resolve the instance's **`bind` props** (each an ordinary typedInput, any binding
    kind, resolved against the **current** scope so a prop may itself bind
    `item.*`/`prop.*` of an enclosing repeat/instance) → one **`propScope` frame**
-   `{ <name>: value, … }`. `definitionId` lives in `props`, never `bind`, so it is
+   `{ <name>: value, … }`. The definition reference rides in `props` (internal key `definitionId`), never `bind`, so it is
    not a prop.
 3. Push the frame onto the render-time **`propScope` stack** (a sibling of
    `itemScope`, same immutable-per-clone discipline).
@@ -151,7 +151,7 @@ files.
 - `toComponentDefinitions` maps `ui-component-definition` → renderer kind
   `component-definition` (with a self-anchoring `def:<id>` mount that never resolves
   to a real region) and `ui-component-instance` → kind `component-instance` (its
-  `props` map becomes the component's `bind`; `definitionId` rides in `props`). Only
+  `props` map becomes the component's `bind`; the definition reference rides in `props`). Only
   `expandComponent` consumes a definition's `def:`-rooted subtree; `renderRegions`
   never emits a definition directly.
 
@@ -183,7 +183,7 @@ button-first mount picker). Fields:
 
 ### Visible validation
 
-- A missing/empty `definitionId` fails the editor's required-field check (the node is
+- A missing/empty `definition` reference fails the editor's required-field check (the node is
   marked invalid, deploy blocked).
 - `validateComponentAcyclic` (P177) is the deploy-time guard for a definition that
   instantiates itself directly or transitively — surfaced as a deploy error.

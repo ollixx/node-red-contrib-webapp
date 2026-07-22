@@ -15,13 +15,13 @@ opens a dialog when `?dialog=<id>` is present in the URL.
 | child renders inside `.webapp-dialog` | Ein gemounteter View-Knoten erscheint im Dialog-Overlay. |
 | native `<sl-dialog>` + `label` | Dialog rendert als `sl-dialog` mit `title` als `label`; `closable`(default) → kein `no-header`. |
 | `closable:false` → `no-header` | Kein Header (X/Titel) bei `closable:false`. |
-| **`routeId` route-scoping (P245)** | Ein Dialog mit `routeId=Route A` ist unter `?dialog=<id>` **bei aktiver Route A vorhanden** (`sl-dialog.webapp-dialog` sichtbar + Kind-Inhalt), unter der **anderen Route B** (`/other?dialog=<id>`) **nicht vorhanden** (`.webapp-dialog` count 0). Belegt den Renderer-Route-Filter (`dialog.routeId === aktive Route-Id`) am gemessenen DOM. |
+| **`route` route-scoping (P245)** | Ein Dialog mit `route=Route A` ist unter `?dialog=<id>` **bei aktiver Route A vorhanden** (`sl-dialog.webapp-dialog` sichtbar + Kind-Inhalt), unter der **anderen Route B** (`/other?dialog=<id>`) **nicht vorhanden** (`.webapp-dialog` count 0). Belegt den Renderer-Route-Filter (`dialog.routeId === aktive Route-Id` im kompilierten Modell; Konfig-Feld `route`, P259) am gemessenen DOM. |
 
 ## E2E — Editor open→save round-trip (`tests/e2e/nodes/structure/ui-dialog.roundtrip.spec.ts`)
 
 Standard: `.ai/agents/node-testing.md` „Editor open→save round-trip", [ADR 0031](../../../../docs/adr/0031-editor-open-save-round-trip-test-standard.md).
-`assertEditorRoundTrip`-Aufruf für das `routeId`-Parent-Route-Referenz-Picker-Feld (P217).
+`assertEditorRoundTrip`-Aufruf für das `route`-Parent-Route-Referenz-Picker-Feld (P217; P259: kanonischer bare Name, Legacy-`routeId`-Fixture beweist Back-Compat + Migrate-on-Save).
 
 | Test | Ziel |
 |---|---|
-| `routeId` open→Done Round-Trip | Der Route-Reference-Picker (hidden `#node-input-routeId`, `installReferenceSelectors({ route: true })`) ist beim Öffnen aus `routeId` **geseedet** (nicht leer), **überlebt** Done unverändert (`RED.nodes.node().routeId` bleibt `dlgRouteA`, kein Clobber zu `""`), und ein **Wertwechsel** auf `dlgRouteB` persistiert und re-seedet beim Wiederöffnen. Entfernen des `self.routeId`-Seeds in `installReferenceSelectors` macht den Test rot. |
+| `route` open→Done Round-Trip | Der Route-Reference-Picker (hidden `#node-input-route`, `installReferenceSelectors({ route: true })`) ist beim Öffnen aus dem migrierten Legacy-`routeId` **geseedet** (nicht leer), **überlebt** Done unverändert (`RED.nodes.node().route` wird `dlgRouteA`, kein Clobber zu `""`), und ein **Wertwechsel** auf `dlgRouteB` persistiert und re-seedet beim Wiederöffnen. Entfernen des `self.route`-Seeds in `installReferenceSelectors` macht den Test rot. |

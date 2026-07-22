@@ -23,8 +23,9 @@ const TAB = "e2e-flow";
 
 function roundTripFlow(): NodeDef[] {
     // A minimal component flow: app + definition (one prop-bound ui-text child) +
-    // an instance deployed with props pre-set. The definition makes `definitionId`
-    // resolvable; the assertion targets the instance's `props` carrier.
+    // an instance deployed with props pre-set. The instance keeps the LEGACY
+    // `definitionId` reference (P259: proves back-compat; open→save migrates it
+    // to the canonical `definition`); the assertion targets the `props` carrier.
     return [
         { id: TAB, type: "tab", label: "Component round-trip", disabled: false, info: "" },
         { type: "ui-app", id: "rtApp", name: "rtApp", title: "rtApp", root: "rtApp", layout: "app", z: TAB, x: 100, y: 100, wires: [[]] },

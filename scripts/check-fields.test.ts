@@ -30,11 +30,14 @@ const CONFORMANT = [
 ];
 
 describe("check-fields cross-node consistency tripwire", () => {
-    it("is GREEN on the real tree (every violation is covered by the seeded allowlist)", () => {
+    it("is GREEN on the real tree with a COMPLETELY EMPTY allowlist (P259: field model frozen)", () => {
         const { errors, checked, allowlisted } = check.checkFields();
         expect(errors).toEqual([]);
         expect(checked).toBeGreaterThan(0);
-        expect(allowlisted).toBeGreaterThan(0);
+        // P259 closed the ADR-0038 rename train — no allowlist entry remains and
+        // none may come back without an ADR reason.
+        expect(allowlisted).toBe(0);
+        expect(check.ALLOWLIST).toEqual({});
     });
 
     it("exits 0 when run as the CI tripwire", () => {

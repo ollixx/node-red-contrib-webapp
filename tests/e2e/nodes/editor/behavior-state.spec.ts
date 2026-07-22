@@ -29,8 +29,8 @@ test.describe("editor panels — behavior & state nodes (P47)", () => {
         // node picker. `targets` (JSON list) is the new config field; legacy
         // `target` survives as a hidden input for backward-compat.
         // P119 (ADR 0011): the navigate `to` is now the URL-mode carrier; the
-        // targetMode/routeId hidden carriers join the field set.
-        await editor.expectFields(["name", "app", "actionType", "to", "targetMode", "routeId", "targets", "part", "description"]);
+        // targetMode/route hidden carriers join the field set (P259: canonical `route`).
+        await editor.expectFields(["name", "app", "actionType", "to", "targetMode", "route", "targets", "part", "description"]);
 
         // The wireless picker exposes a "pick on canvas" button.
         await expect(page.locator("#node-input-targets-pick")).toHaveCount(1);

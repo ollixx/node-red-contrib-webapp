@@ -16,7 +16,7 @@ import {
 /**
  * P114 / ADR 0009 — the picker dialog is the SOLE reference-selection mechanism.
  *
- * Every reference field (parent, routeId, action, store, mount) renders the
+ * Every reference field (app, route, action, store, mount) renders the
  * dialog-only pattern: the bound `#node-input-*` is HIDDEN (it stays the value
  * carrier so the save round-trip is unchanged) and a read-only display + an
  * "Auswählen…" button sit next to it. There is no visible, fully-populated

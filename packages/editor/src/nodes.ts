@@ -113,6 +113,8 @@ export interface UiComponentDefinitionEditorConfig extends IdentifiedEditorConfi
 }
 
 export interface UiComponentInstanceEditorConfig extends MountableEditorConfig {
+    // P259 (ADR 0038): canonical `definition`; legacy `definitionId` alias.
+    definition?: string;
     definitionId?: string;
     props?: Record<string, BindingDefinition>;
 }
@@ -130,6 +132,8 @@ export interface UiDialogEditorConfig extends IdentifiedEditorConfig {
     // P259 (ADR 0038): canonical `layout`; legacy `layoutId` alias.
     layout?: StandardLayoutPresetId;
     layoutId?: StandardLayoutPresetId;
+    // P259 (ADR 0038): canonical `route`; legacy `routeId` alias.
+    route?: string;
     routeId?: string;
     modal?: boolean;
     closable?: boolean;
@@ -298,7 +302,9 @@ export interface UiActionEditorConfig extends IdentifiedEditorConfig {
     actionType?: "navigate" | "disable" | "enable" | "show" | "hide" | "trigger";
     // P118 (ADR 0011 §1): navigate target SOURCE — wire | route | url.
     targetMode?: "wire" | "route" | "url";
-    // P118: referenced ui-route id (route mode).
+    // P118: referenced ui-route id (route mode). P259 (ADR 0038): canonical
+    // `route`; legacy `routeId` alias.
+    route?: string;
     routeId?: string;
     target?: string;
     to?: string;
@@ -1054,7 +1060,8 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         id: config.id ?? "",
         title: config.title,
         layout: config.layout ?? "vertical",
-        routeId: config.routeId,
+        // P259 (ADR 0038): emit the canonical `route` reference.
+        route: config.route,
         modal: config.modal ?? true,
         closable: config.closable ?? true
     })),
@@ -1183,11 +1190,11 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         ...(config.name ? { name: config.name } : {})
     })),
     // P177 (ADR 0020): minimal ui-component-instance registration. The full editor
-    // UX (definitionId picker + props typedInput map) lands in P179.
+    // UX (definition picker + props typedInput map) lands in P179.
     "ui-component-instance": createDefinition("ui-component-instance", "structure", {
         id: requiredString("Component instance IDs are required before deploy."),
         mount: requiredString("Component instances must declare a mount target."),
-        definitionId: requiredString("Component instances must reference a component definition."),
+        definition: requiredString("Component instances must reference a component definition."),
         order: optionalInteger("Component instance order must be an integer."),
         row: optionalInteger("Component instance grid rows must be integers."),
         col: optionalInteger("Component instance grid columns must be integers."),
@@ -1199,7 +1206,8 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         type: "ui-component-instance",
         id: config.id ?? "",
         mount: config.mount ?? "",
-        definitionId: config.definitionId ?? "",
+        // P259 (ADR 0038): emit the canonical `definition` reference.
+        definition: config.definition ?? "",
         props: config.props ?? {},
         ...collectLayoutChildConfig(config)
     })),
@@ -1494,9 +1502,10 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
                 return undefined;
             }
         },
-        // P118: `routeId` is the referenced ui-route id (route mode). The picker
-        // (P119) supplies it; per-node validation only checks it is a string.
-        routeId: {
+        // P118: `route` is the referenced ui-route id (route mode; P259: bare
+        // canonical name, ex-`routeId`). The picker (P119) supplies it; per-node
+        // validation only checks it is a string.
+        route: {
             validate(value) {
                 if (value === undefined || value === "") {
                     return undefined;
@@ -1558,14 +1567,14 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         const isNavigate = config.actionType === "navigate";
         const targetMode: UiActionNodeDefinition["targetMode"] = isNavigate
             ? (config.targetMode
-                ?? (config.routeId ? "route" : (config.to ? "url" : "wire")))
+                ?? (config.route ? "route" : (config.to ? "url" : "wire")))
             : undefined;
         return {
             type: "ui-action",
             id: config.id ?? "",
             actionType: config.actionType,
             targetMode,
-            routeId: targetMode === "route" ? (config.routeId || undefined) : undefined,
+            route: targetMode === "route" ? (config.route || undefined) : undefined,
             target: config.target,
             to: targetMode === "url" ? (config.to || undefined) : undefined,
             toType: targetMode === "url" ? config.toType : undefined,

@@ -163,9 +163,9 @@ test.describe("editor — navigate target modes (P119)", () => {
         // Pick the route + fill the :id value so the node is valid.
         await page.evaluate(() => {
             (window as unknown as { $: (s: string) => { val: (v?: string) => unknown } })
-                .$("#node-input-routeId").val("ntRouteE");
+                .$("#node-input-route").val("ntRouteE");
             (window as unknown as { $: (s: string) => { trigger: (e: string) => unknown } })
-                .$("#node-input-routeId").trigger("change");
+                .$("#node-input-route").trigger("change");
         });
         await page.evaluate(() => {
             const $ = (window as unknown as { $: (s: string) => { first: () => { typedInput: (...a: unknown[]) => unknown; trigger: (e: string) => unknown } } }).$;
@@ -193,7 +193,7 @@ test.describe("editor — navigate target modes (P119)", () => {
         // An unwired navigate action already in route mode pointing at the route.
         flow.push({
             type: "ui-action", id: "ntActionF", uiId: "ntActionF", name: "ntActionF",
-            app: "ntF", actionType: "navigate", targetMode: "route", routeId: "ntRouteF",
+            app: "ntF", actionType: "navigate", targetMode: "route", route: "ntRouteF",
             params: "", z: "e2e-flow", x: 100, y: 400, wires: [[]]
         });
         await deployFlow(request, flow);
@@ -228,7 +228,7 @@ test.describe("editor — navigate target modes (P119)", () => {
             .build();
         flow.push({
             type: "ui-action", id: "ntActionG", uiId: "ntActionG", name: "ntActionG",
-            app: "ntG", actionType: "navigate", targetMode: "route", routeId: "ntGRoute1",
+            app: "ntG", actionType: "navigate", targetMode: "route", route: "ntGRoute1",
             params: JSON.stringify([{ name: "id", value: "payload.id", valueType: "msg" }]),
             z: "e2e-flow", x: 100, y: 400, wires: [[]]
         });
@@ -248,8 +248,8 @@ test.describe("editor — navigate target modes (P119)", () => {
         // Switch the route to /orders/:id/:tab.
         await page.evaluate(() => {
             const $ = (window as unknown as { $: (s: string) => { val: (v?: string) => unknown; trigger: (e: string) => unknown } }).$;
-            $("#node-input-routeId").val("ntGRoute2");
-            $("#node-input-routeId").trigger("change");
+            $("#node-input-route").val("ntGRoute2");
+            $("#node-input-route").trigger("change");
         });
         // Two rows now: :id (kept) and :tab (new, empty).
         await expect(page.locator(".webapp-nav-param-name")).toHaveCount(2);

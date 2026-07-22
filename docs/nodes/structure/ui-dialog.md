@@ -17,7 +17,7 @@ zusammengesetzt — View-Knoten mounten über `dialog:<id>/<slot>` in den Dialog
 
 - **Parent:** genau eine `ui-app`. Dialoge gehören zu einer App und werden in deren Routing-Kontext geöffnet/geschlossen.
 - **Kinder:** View-Knoten mounten über `mount` in die Slots des Dialogs (`dialog:<id>/content`, beim `dialog`-Preset zusätzlich `header`/`header-actions`/`footer`).
-- **Erreichbarkeit:** der Dialog ist kein eigener URL-Pfad — er wird über `open`/`close` ein- und ausgeblendet, optional an eine Route gekoppelt (`routeId`). Ist er an eine Route gekoppelt, ist er **nur bei aktiver passender Route** darstellbar (siehe `routeId` in den Feldern).
+- **Erreichbarkeit:** der Dialog ist kein eigener URL-Pfad — er wird über `open`/`close` ein- und ausgeblendet, optional an eine Route gekoppelt (`route`). Ist er an eine Route gekoppelt, ist er **nur bei aktiver passender Route** darstellbar (siehe `route` in den Feldern).
 - **Rolle zur Laufzeit:** der Server hält den autoritativen Offen-Zustand (`ui.dialogs.<id>.open`) und pusht ihn per Snapshot an die Clients.
 
 ## Felder
@@ -32,7 +32,7 @@ Node-Picker-Dialog, Event-Checkboxen).
 | `name` | „Name" | Textfeld | optional | Anzeigename im Editor und in Auswahllisten. Default: fortlaufend `Dialog N`. |
 | `app` | „App" | Node-Picker-Dialog (Preset Apps) | **ja** | Die Parent-`ui-app`. Auswahl aus einer filter- und scrollbaren Liste der Apps. |
 | `title` | „Titel" | Textfeld | optional | Sichtbarer Titel des Dialogs (Header). Entfällt bei `closable: false` (kein Header). |
-| `routeId` | „Parent Route" | Node-Picker-Dialog (Preset Routes) | optional | Optionale Kopplung an eine `ui-route` derselben App. **Ist `routeId` gesetzt, ist der Dialog nur bei aktiver passender Route darstellbar:** der Renderer filtert die Dialoge nach der gerade aktiven Route (`dialog.routeId === aktive Route-Id`). Bei einer anderen aktiven Route wird der Dialog **auch unter `?dialog=<id>` nicht gerendert**. Ohne `routeId` ist der Dialog in jeder Route der App darstellbar. |
+| `route` | „Parent Route" | Node-Picker-Dialog (Preset Routes) | optional | Optionale Kopplung an eine `ui-route` derselben App (P259/ADR 0038: bare Referenz-Name, vormals `routeId` — Alt-Flows migrieren beim Öffnen+Speichern). **Ist `route` gesetzt, ist der Dialog nur bei aktiver passender Route darstellbar:** der Renderer filtert die Dialoge nach der gerade aktiven Route (`dialog.routeId === aktive Route-Id` im kompilierten Modell). Bei einer anderen aktiven Route wird der Dialog **auch unter `?dialog=<id>` nicht gerendert**. Ohne `route` ist der Dialog in jeder Route der App darstellbar. |
 
 ### Gruppe „Layout"
 
@@ -141,6 +141,6 @@ wird von der Parent-App geerbt. Siehe [theming.md](../concepts/theming.md).
   künftiges Feature — es braucht ein anderes Primitive als das nativ-modale
   `sl-dialog`. Heute ist das `modal`-Feld ein Platzhalter ohne Wirkung.
 
-Das Route-Scoping über `routeId` (Dialog nur bei aktiver passender Route
-darstellbar) ist implementiert und dokumentiert (siehe Feld `routeId`) — kein
+Das Route-Scoping über `route` (Dialog nur bei aktiver passender Route
+darstellbar) ist implementiert und dokumentiert (siehe Feld `route`) — kein
 offener Punkt mehr.

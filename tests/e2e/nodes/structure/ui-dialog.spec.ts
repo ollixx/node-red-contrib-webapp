@@ -50,7 +50,7 @@ function buildDialogFlow(): NodeDef[] {
 
 /**
  * Build a flow with TWO routes where the dialog is scoped to route A via
- * `routeId`. The renderer filters dialogs by the active route
+ * `route` (P259: canonical bare name). The renderer filters dialogs by the active route
  * (renderer.ts: `.filter(d => !d.routeId || d.routeId === routeMatch.route.id)`),
  * so the dialog is only renderable while route A is active.
  */
@@ -76,7 +76,7 @@ function buildRouteScopedDialogFlow(): NodeDef[] {
     // Dialog scoped to route A only.
     const dialog: NodeDef = {
         type: "ui-dialog", id: dialogId, uiId: dialogId, name: "Scoped Dialog",
-        title: "Scoped Dialog", app: appId, routeId: routeAId,
+        title: "Scoped Dialog", app: appId, route: routeAId,
         layout: "vertical", closable: true, z: TAB_ID, wires: [[]]
     };
     const dialogText: NodeDef = {
@@ -193,12 +193,12 @@ test.describe("ui-dialog (P42)", () => {
         await expect(dialog).toHaveAttribute("no-header", /.*/);
     });
 
-    // ── P245: routeId route-scoping (dialog only renderable on its route) ───────
+    // ── P245: route-scoping (dialog only renderable on its route) ───────
 
-    test("routeId — dialog is present under ?dialog on its route, absent on another route", async ({ page, request }) => {
+    test("route — dialog is present under ?dialog on its route, absent on another route", async ({ page, request }) => {
         await deployFlow(request, buildRouteScopedDialogFlow());
 
-        // Route A ("/") is the dialog's routeId → dialog IS rendered.
+        // Route A ("/") is the dialog's `route` → dialog IS rendered.
         {
             const streamRequested = page.waitForRequest((req) =>
                 req.url().includes("/webapp/scopeApp/stream")
@@ -212,7 +212,7 @@ test.describe("ui-dialog (P42)", () => {
             await expect(dialog).toContainText("Scoped dialog content");
         }
 
-        // Route B ("/other") is NOT the dialog's routeId → dialog is filtered out
+        // Route B ("/other") is NOT the dialog's `route` → dialog is filtered out
         // and absent from the DOM even with the same ?dialog param.
         {
             const streamRequested = page.waitForRequest((req) =>

@@ -65,17 +65,11 @@ const PKG = require(path.join(ROOT, "package.json"));
  * `storeId`/`path`/pagination-alias sweep) drive this to {}.
  * ------------------------------------------------------------------ */
 const ALLOWLIST = {
-    // ---- (c) reference id-suffix → bare name: layoutId→layout landed (P259
-    //          Stufe 1); the remaining routeId/definitionId entries fall with
-    //          Stufe 2, driving this to {} (ADR 0038 fully enforced).
-    "ui-dialog": {
-        routeId: "P259: rename `routeId` → `route` (bare reference name)",
-    },
-    "ui-component-instance": {
-        definitionId: "P259: rename `definitionId` → `definition` (bare reference name)",
-    },
-    "ui-action": { routeId: "P259: rename `routeId` → `route` (bare reference name)" },
-    // P243 (ADR 0040): ui-navigation retired — navigation is a ui-action navigate.
+    // EMPTY since P259 — the ADR-0038 field model is fully enforced (P228:
+    // parent→app; P229: legacy sweep; P259: layoutId→layout, routeId→route,
+    // definitionId→definition). Rule (c) stays sharp with no exceptions: any
+    // future `*Id` reference default (or `parent`) is flagged immediately. A
+    // NEW entry is only ever justified by an ADR reason.
 };
 
 /* ------------------------------------------------------------------ *

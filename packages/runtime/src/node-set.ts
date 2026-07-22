@@ -264,7 +264,10 @@ function assembleDialogContribution(appId: string, dialogNode: UiDialogNodeDefin
         id: dialogNode.id,
         title: dialogNode.title,
         layoutId: dialogNode.layout,
-        routeId: dialogNode.routeId,
+        // P259 (ADR 0038): the node definition's canonical field is `route`
+        // (legacy alias `routeId`); the compiled dialog model keeps its internal
+        // `routeId` key.
+        routeId: dialogNode.route ?? dialogNode.routeId,
         modal: dialogNode.modal,
         closable: dialogNode.closable
     };
@@ -345,7 +348,8 @@ function assembleRuntimeIntegration(
             actionType: definition.actionType,
             // P118 (ADR 0011 §1): the navigate target SOURCE (wire | route | url).
             targetMode: definition.targetMode,
-            routeId: definition.routeId,
+            // P259 (ADR 0038): canonical `route` with legacy `routeId` fallback.
+            routeId: definition.route ?? definition.routeId,
             target: definition.target,
             to: definition.to,
             params: definition.params,

@@ -161,8 +161,9 @@ const EXCLUDED_KEYS = new Set(["app", "parent", "mount"]);
 const DEFAULT_CARRIER = {
     store: "storeId",
     query: "queryId",
-    route: "routeId",
-    // P259 (ADR 0038): the layout reference carrier is the bare concept name.
+    // P259 (ADR 0038): the route/layout reference carriers are the bare
+    // concept names.
+    route: "route",
     layout: "layout",
 };
 

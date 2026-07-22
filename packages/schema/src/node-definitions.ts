@@ -311,7 +311,8 @@ export type UiComponentDefinitionNodeDefinition = z.infer<typeof uiComponentDefi
 
 // The component INSTANCE is a LEAF-shaped node (no children of its own). It carries
 // a required outer `mount`/`parent` into a real route/container (like any mounted
-// node), a required `definitionId` referencing a `ui-component-definition`, and a
+// node), a required `definition` reference (P259: bare name; legacy alias
+// `definitionId`) to a `ui-component-definition`, and a
 // `props` map (name → value-binding, any binding kind; optional/empty allowed).
 // The renderer (P178) resolves each prop into a `propScope` frame and renders the
 // `def:<definitionId>/content` subtree against it.
@@ -319,11 +320,22 @@ export const uiComponentInstanceNodeDefinitionSchema = mountableNodeSchema.exten
     type: z.literal("ui-component-instance"),
     // REQUIRED reference to a `ui-component-definition` node id. Existence /
     // self-reference checks happen in `validateComponentAcyclic` and the runtime,
-    // not in this per-node form check.
-    definitionId: z.string().min(1, "A component instance must reference a definitionId."),
+    // not in this per-node form check. P259 (ADR 0038): the canonical field is
+    // the bare `definition`; `definitionId` is the legacy alias accepted for
+    // pre-rename flows (transitional union — exactly ONE of the two must be set).
+    definition: z.string().min(1, "A component instance must reference a definition.").optional(),
+    definitionId: z.string().min(1, "A component instance must reference a definition.").optional(),
     // Named prop values: each is an ordinary value-binding (any binding kind).
     // Optional and may be empty. Resolution → `propScope` is P178.
     props: z.record(z.string(), bindingSchema).default({})
+}).superRefine((def, ctx) => {
+    if (!def.definition && !def.definitionId) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["definition"],
+            message: "A component instance must reference a definition."
+        });
+    }
 });
 
 export type UiComponentInstanceNodeDefinition = z.infer<typeof uiComponentInstanceNodeDefinitionSchema>;
@@ -353,6 +365,8 @@ interface ComponentGraphNode {
     parent?: string;
     type?: string;
     id?: string;
+    // P259 (ADR 0038): canonical `definition`; legacy `definitionId` alias.
+    definition?: string;
     definitionId?: string;
 }
 
@@ -442,13 +456,15 @@ export function validateComponentAcyclic(nodes: unknown[]): ComponentAcyclicResu
     }
 
     for (const node of graphNodes) {
-        if (node.type !== "ui-component-instance" || typeof node.definitionId !== "string") {
+        // P259 (ADR 0038): canonical `definition`; legacy `definitionId` fallback.
+        const definitionRef = typeof node.definition === "string" ? node.definition : node.definitionId;
+        if (node.type !== "ui-component-instance" || typeof definitionRef !== "string") {
             continue;
         }
 
         const host = enclosingDefinitionId(node);
         if (host && definitionIds.has(host)) {
-            const target = node.definitionId;
+            const target = definitionRef;
 
             if (host === target) {
                 return {
@@ -532,6 +548,10 @@ export const uiDialogNodeDefinitionSchema = identifiedNodeSchema.extend({
     parent: identifierSchema.optional(),
     title: z.string().min(1, "Dialog titles must not be empty.").optional(),
     layout: standardLayoutPresetSchema,
+    // P259 (ADR 0038): `route` is the canonical route reference (bare name);
+    // `routeId` is the legacy alias accepted for pre-rename flows (transitional
+    // union). Consumers read `route ?? routeId`.
+    route: identifierSchema.optional(),
     routeId: identifierSchema.optional(),
     modal: z.boolean().default(true),
     // P64: when false the native <sl-dialog> renders with `no-header`, removing
@@ -761,9 +781,9 @@ export type UiQueryActionNodeDefinition = z.infer<typeof uiQueryActionNodeDefini
 // P118 (ADR 0011 §1): navigate target-mode exclusivity. The stored `targetMode`
 // declares the single intent; only that mode's fields may be set so a config can
 // never carry a double configuration:
-//   • route ⇒ routeId set; `to` must NOT be set.
-//   • url   ⇒ `to` set; routeId must NOT be set.
-//   • wire  ⇒ neither routeId nor `to`.
+//   • route ⇒ `route` set; `to` must NOT be set.
+//   • url   ⇒ `to` set; `route` must NOT be set.
+//   • wire  ⇒ neither `route` nor `to`.
 // Violations are validation (compile-time) errors. Only enforced for navigate
 // actions (other verbs ignore targetMode). Absent targetMode skips the check
 // (legacy configs are migrated to a mode on load before they reach here).
@@ -771,6 +791,7 @@ function applyNavigateTargetModeExclusivity(
     def: {
         actionType?: string;
         targetMode?: string;
+        route?: string;
         routeId?: string;
         to?: string;
     },
@@ -780,7 +801,9 @@ function applyNavigateTargetModeExclusivity(
         return;
     }
     const hasTo = typeof def.to === "string" && def.to.length > 0;
-    const hasRouteId = typeof def.routeId === "string" && def.routeId.length > 0;
+    // P259 (ADR 0038): canonical `route`; legacy `routeId` counts the same.
+    const routeRef = def.route ?? def.routeId;
+    const hasRouteId = typeof routeRef === "string" && routeRef.length > 0;
     if (def.targetMode === "route") {
         if (hasTo) {
             ctx.addIssue({
@@ -794,8 +817,8 @@ function applyNavigateTargetModeExclusivity(
         if (hasRouteId) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
-                path: ["routeId"],
-                message: "targetMode 'url' must not set `routeId` — the `to` URL is built whole."
+                path: ["route"],
+                message: "targetMode 'url' must not set `route` — the `to` URL is built whole."
             });
         }
     }
@@ -810,8 +833,8 @@ function applyNavigateTargetModeExclusivity(
         if (hasRouteId) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
-                path: ["routeId"],
-                message: "targetMode 'wire' must not set `routeId` — the wired route is the target."
+                path: ["route"],
+                message: "targetMode 'wire' must not set `route` — the wired route is the target."
             });
         }
     }
@@ -835,7 +858,10 @@ export const uiActionNodeDefinitionSchema = identifiedNodeSchema.extend({
     // legacy values migrate to a navigate mode on load.)
     targetMode: navigateTargetModeSchema.optional(),
     // P118: the referenced ui-route id (navigate `route` mode only). Resolved
-    // app-globally to the route's `path` at action time.
+    // app-globally to the route's `path` at action time. P259 (ADR 0038): the
+    // canonical field is the bare `route`; `routeId` is the legacy alias
+    // accepted for pre-rename flows (transitional union).
+    route: identifierSchema.optional(),
     routeId: identifierSchema.optional(),
     target: z.string().min(1, "Action targets must not be empty.").optional(),
     // P53 (ADR 0005): sub-id within the target for open / close / select

@@ -3,7 +3,7 @@
     (function () {
         const common = window.WebappEditorCommon;
         // P179 (ADR 0020): ui-component-instance is a LEAF-shaped node. It carries a
-        // real outer `mount`, a `definitionId` (reference picker over
+        // real outer `mount`, a `definition` reference (picker over
         // ui-component-definition nodes — the P114/P60 picker pattern), and a `props`
         // map (name → value-binding, any binding kind). At render time the renderer
         // resolves each prop into a propScope frame and expands the definition's
@@ -16,12 +16,14 @@
                 uiId: { value: "" },
                 app: { value: "" },
                 mount: { value: "", required: true },
-                // The referenced definition id. Required — a missing/invalid
-                // definitionId is a visible deploy error (validateComponentAcyclic).
-                definitionId: {
+                // The referenced definition id (P259/ADR 0038: canonical bare name
+                // `definition`, ex-`definitionId` — legacy flows migrate on
+                // open→save). Required — a missing/invalid reference is a visible
+                // deploy error (validateComponentAcyclic).
+                definition: {
                     value: "",
                     required: true,
-                    validate: function (v) { return !!(v && String(v).trim()); }
+                    validate: common.validateRefWithLegacy("definitionId")
                 },
                 // props is a JSON object { name: <binding> } persisted on a hidden
                 // input; the editableList below is its editor.
@@ -49,13 +51,14 @@
                 common.installReferenceSelectors({ mount: true }).call(this);
                 common.installLayoutChildPropRows().call(this);
 
-                // definitionId — button-first reference picker over the
-                // ui-component-definition nodes (P114/P60 pattern).
-                common.installPickerField("#node-input-definitionId", {
+                // definition — button-first reference picker over the
+                // ui-component-definition nodes (P114/P60 pattern). P259:
+                // canonical `definition`; legacy `definitionId` fallback.
+                common.installPickerField("#node-input-definition", {
                     filterPreset: "definitions",
                     title: "Komponenten-Definition auswählen",
                     placeholder: "Definition auswählen…",
-                    seedValue: this.definitionId
+                    seedValue: this.definition || this.definitionId
                 });
 
                 // ── props map editor (name → value typedInput) ──────────────────
@@ -146,7 +149,7 @@
     <div class="form-row"><label for="node-input-uiId">Node ID</label><input type="text" id="node-input-uiId"></div>
     <hr style="margin: 8px 0;">
     <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
-    <div class="form-row"><label for="node-input-definitionId">Definition</label><input type="text" id="node-input-definitionId"></div>
+    <div class="form-row"><label for="node-input-definition">Definition</label><input type="text" id="node-input-definition"></div>
     <div class="form-row" style="margin-bottom: 0;"><label style="width: 100%;">Props</label></div>
     <div class="form-row">
         <ol id="node-input-props-list" style="width: 100%;"></ol>

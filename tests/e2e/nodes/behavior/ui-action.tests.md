@@ -21,7 +21,7 @@ Unit-Belege (nicht-Browser):
 - Doppel-Konfig-Ausschluss, typisierte param-`valueType`s, Modus-Exklusivität:
   `packages/schema/test/schema.test.ts` (Block „P118 (ADR 0011)…").
 - Migration (Legacy `to`→url, kein `to`→wire, params-Objekt→str-Liste),
-  typisierte param-Auswertung (str/msg/jsonata/flow/global/env), routeId→path,
+  typisierte param-Auswertung (str/msg/jsonata/flow/global/env), route→path,
   Adressierungs-Vorrang in `resolveNavigateLocation`:
   `packages/runtime/test/p118-navigate-target-modes.test.ts`.
 

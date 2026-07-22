@@ -300,7 +300,7 @@ function parseActionParamList(value) {
 
 // P118 (ADR 0011 §1 + Migration): derive the navigate target-source MODE for a
 // ui-action config. An explicit stored `targetMode` (wire | route | url) wins.
-// Legacy configs without one are migrated: a `routeId` → "route"; a `to` →
+// Legacy configs without one are migrated: a `route` reference → "route"; a `to` →
 // "url"; otherwise → "wire" (the wired route supplies the path). Returns
 // undefined for non-navigate actions (the mode is navigate-only).
 function deriveNavigateTargetMode(config) {
@@ -311,7 +311,8 @@ function deriveNavigateTargetMode(config) {
     if (stored === "wire" || stored === "route" || stored === "url") {
         return stored;
     }
-    if (blankToUndefined(config.routeId)) {
+    // P259 (ADR 0038): canonical `route`; legacy `routeId` fallback.
+    if (blankToUndefined(config.route || config.routeId)) {
         return "route";
     }
     if (blankToUndefined(config.to)) {
@@ -1755,7 +1756,7 @@ function toComponentDefinitions(components) {
         // its definition's `def:` subtree at its real outer mount. It maps to the
         // renderer kind "component-instance" (like a repeat, it carries no chrome of
         // its own). `bind` is the prop map (name → value-binding, any binding kind);
-        // the renderer resolves each into a `propScope` frame. `definitionId` lives
+        // the renderer resolves each into a `propScope` frame. The definition ref lives
         // in `props` (never `bind`, so it is not treated as a prop).
         if (component.type === "ui-component-instance") {
             const propMap = (component.props && typeof component.props === "object") ? component.props : {};
@@ -1773,7 +1774,9 @@ function toComponentDefinitions(components) {
                 order: resolveOrder(component),
                 bind,
                 props: {
-                    definitionId: component.definitionId
+                    // The render-time props key stays `definitionId` (internal);
+                    // the definition carries canonical `definition` (P259).
+                    definitionId: component.definition || component.definitionId
                 },
                 events: []
             };
@@ -2266,7 +2269,9 @@ function getAppModelResult(appId, definitions) {
                 id: dialog.id,
                 title: blankToUndefined(dialog.title),
                 layoutId: dialog.layout || dialog.layoutId,
-                routeId: blankToUndefined(dialog.routeId),
+                // Compiled dialog model keeps the internal `routeId` key; the
+                // definition carries the canonical `route` (legacy `routeId`).
+                routeId: blankToUndefined(dialog.route || dialog.routeId),
                 modal: dialog.modal !== false,
                 // P64: closable defaults to true (only false when explicitly set).
                 closable: dialog.closable !== false
@@ -4465,7 +4470,7 @@ function buildActionCommand(actionDefinition, msg, node) {
     const def = actionDefinition || {};
     const isNavigate = String(type) === "navigate";
     const targetMode = isNavigate
-        ? (def.targetMode || (def.to ? "url" : (def.routeId ? "route" : "wire")))
+        ? (def.targetMode || (def.to ? "url" : ((def.route || def.routeId) ? "route" : "wire")))
         : undefined;
 
     // P118: typed config params (route/wire mode) resolved against the msg →
@@ -4491,7 +4496,7 @@ function buildActionCommand(actionDefinition, msg, node) {
             : (def.to ? String(def.to) : undefined);
     }
     else if (isNavigate && targetMode === "route") {
-        const template = resolveRouteIdToPath(def.routeId);
+        const template = resolveRouteIdToPath(def.route || def.routeId);
         resolvedTo = template
             ? resolveNavigationTarget(template, mergedParams || {}, {})
             : undefined;
@@ -7067,7 +7072,8 @@ const runtimeNodeRegistry = {
             title: config.title || undefined,
             // P259 (ADR 0038): canonical `layout`; legacy `layoutId` fallback.
             layout: config.layout || config.layoutId,
-            routeId: config.routeId || undefined,
+            // P259 (ADR 0038): canonical `route`; legacy `routeId` fallback.
+            route: (config.route || config.routeId) || undefined,
             modal: config.modal !== false && config.modal !== "false",
             // P64: closable defaults to true; only an explicit false disables it.
             closable: config.closable !== false && config.closable !== "false",
@@ -7632,12 +7638,13 @@ const runtimeNodeRegistry = {
         mapConfig: (config) => {
             // P118 (ADR 0011 §1 + Migration): derive the explicit navigate target
             // mode (wire | route | url), then keep ONLY the fields the mode owns so
-            // the definition can never carry a double configuration (route ⇒ routeId,
-            // no `to`; url ⇒ `to`, no routeId; wire ⇒ neither). Legacy configs are
-            // migrated here: `to` → url, `routeId` → route, otherwise wire; legacy
-            // params object → str-typed list.
+            // the definition can never carry a double configuration (route ⇒ `route`,
+            // no `to`; url ⇒ `to`, no `route`; wire ⇒ neither). Legacy configs are
+            // migrated here: `to` → url, a route reference → route, otherwise wire;
+            // legacy params object → str-typed list. P259 (ADR 0038): the canonical
+            // reference field is `route`; legacy `routeId` is read as a fallback.
             const targetMode = deriveNavigateTargetMode(config);
-            const routeId = targetMode === "route" ? blankToUndefined(config.routeId) : undefined;
+            const route = targetMode === "route" ? blankToUndefined(config.route || config.routeId) : undefined;
             const to = targetMode === "url" ? blankToUndefined(config.to) : undefined;
             const toType = targetMode === "url"
                 ? (blankToUndefined(config.toType) || (to ? "str" : undefined))
@@ -7652,8 +7659,8 @@ const runtimeNodeRegistry = {
                 actionType: blankToUndefined(config.actionType),
                 // P118 (ADR 0011 §1): the stored navigate target SOURCE.
                 targetMode,
-                // P118: referenced ui-route id (route mode).
-                routeId,
+                // P118: referenced ui-route id (route mode). P259: canonical `route`.
+                route,
                 // P118: url-mode destination typedInput (value + type).
                 to,
                 toType,
@@ -8278,7 +8285,8 @@ const runtimeNodeRegistry = {
             parent: config.app || config.parent || undefined,
             mount: config.mount || config.app || config.parent,
             order: resolveOrder(config),
-            definitionId: config.definitionId || "",
+            // P259 (ADR 0038): canonical `definition`; legacy `definitionId` fallback.
+            definition: (config.definition || config.definitionId) || "",
             // `props` is a map name → value-binding (any binding kind). The editor
             // persists it as a JSON string or an object; normalise to an object of
             // binding objects so toComponentDefinitions can route each into bind.

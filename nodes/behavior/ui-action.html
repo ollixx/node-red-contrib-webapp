@@ -12,10 +12,12 @@
                 // P118/P119 (ADR 0011): the navigate target SOURCE mode (wire | route
                 // | url). Empty until the panel resolves it (wire-scan pre-select).
                 targetMode: { value: "" },
-                // P118/P119: referenced ui-route id (route mode). Its validator
-                // back-stops the whole navigate config (ADR 0011 §3): route mode
-                // requires a resolvable routeId + a value for each :placeholder.
-                routeId: { value: "", validate: function () { return window.WebappEditorCommon.validateNavigateConfig(this); } },
+                // P118/P119: referenced ui-route id (route mode; P259/ADR 0038:
+                // canonical bare name `route`, ex-`routeId` — legacy flows migrate
+                // on open→save). Its validator back-stops the whole navigate
+                // config (ADR 0011 §3): route mode requires a resolvable route
+                // reference + a value for each :placeholder.
+                route: { value: "", validate: function () { return window.WebappEditorCommon.validateNavigateConfig(this); } },
                 // P66 (ADR 0007): navigate `to` is a typedInput — `to` holds the
                 // value, `toType` the type (str = literal path, or msg/flow/global/
                 // jsonata). Only meaningful in url mode (the URL is built whole).
@@ -128,14 +130,14 @@
     <div class="form-row"><label for="node-input-actionType">Action-Typ</label><select id="node-input-actionType"><option value="">unspezifiziert</option><option value="navigate">navigate</option><option value="show">show</option><option value="hide">hide</option><option value="open">open</option><option value="close">close</option><option value="select">select</option><option value="enable">enable</option><option value="disable">disable</option><option value="focus">focus</option><option value="reset">reset</option></select></div>
     <!-- P119 (ADR 0011): navigate target-source mode UI (built by
          installNavigateTargetMode into .webapp-navigate-target-mode). The `to`
-         row is relocated into the URL-mode body; routeId/params/targetMode are
+         row is relocated into the URL-mode body; route/params/targetMode are
          hidden carriers Node-RED binds + saves. -->
     <div class="form-row ui-action-navigate-field" style="display:block;">
         <label style="display:block; margin-bottom:6px;">Ziel</label>
         <div class="webapp-navigate-target-mode"></div>
     </div>
     <div class="form-row" id="node-input-to-row" style="display:none;"><label for="node-input-to">Navigation zu</label><input type="text" id="node-input-to" style="width: 70%;" placeholder="z.B. /customers/:id"><input type="hidden" id="node-input-toType"></div>
-    <div class="form-row" id="node-input-routeId-row" style="display:none;"><label for="node-input-routeId">Ziel-Route</label><input type="text" id="node-input-routeId"></div>
+    <div class="form-row" id="node-input-route-row" style="display:none;"><label for="node-input-route">Ziel-Route</label><input type="text" id="node-input-route"></div>
     <input type="hidden" id="node-input-targetMode">
     <input type="hidden" id="node-input-params">
     <div class="form-row">

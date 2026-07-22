@@ -2508,7 +2508,7 @@
      *
      * Required hidden fields in the template (carriers Node-RED binds + saves):
      *   #node-input-targetMode   (str: wire|route|url)
-     *   #node-input-routeId      (str: referenced ui-route id)
+     *   #node-input-route      (str: referenced ui-route id, P259 canonical)
      *   #node-input-params       (str: JSON array of {name,value,valueType})
      *   #node-input-to / #node-input-toType  (url typedInput)
      * Required container in the template:
@@ -2528,7 +2528,7 @@
         }
 
         var $modeField = $("#node-input-targetMode");
-        var $routeField = $("#node-input-routeId");
+        var $routeField = $("#node-input-route");
         var $paramsField = $("#node-input-params");
 
         // The initial mode: a stored value wins absolutely (ADR 0011 §1 — once
@@ -2668,7 +2668,7 @@
                 return;
             }
             routePickerInstalled = true;
-            installPickerField("#node-input-routeId", {
+            installPickerField("#node-input-route", {
                 filterPreset: "routes",
                 title: "Ziel-Route auswählen",
                 placeholder: "Route auswählen…",
@@ -2831,7 +2831,7 @@
                 ensureRoutePicker();
                 if (!$routeRowMoved) {
                     $routeRowMoved = true;
-                    var $routeRow = $("#node-input-routeId").closest(".form-row");
+                    var $routeRow = $("#node-input-route").closest(".form-row");
                     $routeRow.addClass("webapp-path-field-inset").show().appendTo($routeBody);
                     $("<div>").addClass("webapp-nav-route-table").css({ "margin-top": "8px" }).appendTo($routeBody);
                 }
@@ -2854,7 +2854,7 @@
                     serializeParams();
                     $routeField.val("");
                 } else {
-                    // url mode: no params, no routeId.
+                    // url mode: no params, no route reference.
                     $paramsField.val("");
                     $routeField.val("");
                 }
@@ -2894,7 +2894,7 @@
      * closed (reads the stored fields directly, so deploy-time validation works).
      *
      * Rules: only `navigate` is checked; only `route` mode is hard-validated —
-     * the referenced routeId must resolve AND every `:placeholder` of its path
+     * the referenced route must resolve AND every `:placeholder` of its path
      * must have a non-empty value. wire/url never block (heuristic / dynamic).
      *
      * @param {object} node — the Node-RED node being validated (`this` in validate)
@@ -2911,15 +2911,17 @@
             return node.__navMode.isValid();
         }
         // Panel closed / deploy time: derive the mode + check stored fields.
+        // P259 (ADR 0038): canonical `route`; legacy flows carry `routeId`.
+        var routeRef = node.route || node.routeId;
         var mode = node.targetMode;
         if (mode !== "wire" && mode !== "route" && mode !== "url") {
             // Legacy migration mirror of deriveNavigateTargetMode().
-            mode = node.routeId ? "route" : (node.to ? "url" : "wire");
+            mode = routeRef ? "route" : (node.to ? "url" : "wire");
         }
         if (mode !== "route") {
             return true;
         }
-        var routeId = node.routeId ? String(node.routeId) : "";
+        var routeId = routeRef ? String(routeRef) : "";
         if (!routeId) {
             return false;
         }
@@ -6120,12 +6122,13 @@
             }
 
             if (config.route) {
-                installPickerField("#node-input-routeId", {
+                installPickerField("#node-input-route", {
                     filterPreset: "routes",
                     title: "Route auswählen",
                     placeholder: "Optional: Parent-Route auswählen",
                     clearable: true,
-                    seedValue: self.routeId || "",
+                    // P259: canonical `route`; legacy `routeId` fallback.
+                    seedValue: self.route || self.routeId || "",
                     getAppId: getAppId
                 });
             }

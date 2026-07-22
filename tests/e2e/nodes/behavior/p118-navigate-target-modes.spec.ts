@@ -41,7 +41,7 @@ test.describe("P118 navigate target modes (ADR 0011)", () => {
         await resetFlow(request);
     });
 
-    test("route mode: routeId + typed params (msg) navigates to the resolved location", async ({ page, request }) => {
+    test("route mode: route reference + typed params (msg) navigates to the resolved location", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "p118a", root: "p118a", name: "P118 A", layout: "vertical" })
             .node("ui-text", { id: "p118aHome", text: "Home content" })
@@ -52,7 +52,7 @@ test.describe("P118 navigate target modes (ADR 0011)", () => {
                 id: "p118aGo",
                 actionType: "navigate",
                 targetMode: "route",
-                routeId: "p118aDetail",
+                route: "p118aDetail",
                 params: JSON.stringify([{ name: "id", value: "payload.id", valueType: "msg" }]),
                 wires: [["p118aDetail"]]
             })
@@ -84,7 +84,7 @@ test.describe("P118 navigate target modes (ADR 0011)", () => {
                 id: "p118bGo",
                 actionType: "navigate",
                 targetMode: "route",
-                routeId: "p118bDetail",
+                route: "p118bDetail",
                 params: JSON.stringify([{ name: "id", value: "payload.id", valueType: "msg" }]),
                 wires: [["p118bOther"]]
             })

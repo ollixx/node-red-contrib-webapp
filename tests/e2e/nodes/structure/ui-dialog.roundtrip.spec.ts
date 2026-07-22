@@ -4,29 +4,31 @@ import { deployFlow, resetFlow, type NodeDef } from "../../../helpers/admin-api"
 import { NodeEditorPage } from "../../../helpers/node-editor-page";
 
 /**
- * P217 (ADR 0031) — editor open→save round-trip for the `ui-dialog` `routeId`
- * parent-route reference picker.
+ * P217 (ADR 0031) — editor open→save round-trip for the `ui-dialog` parent-route
+ * reference picker. P259 (ADR 0038): the field is now the canonical `route`
+ * (renamed from `routeId`); the fixture below deploys the LEGACY `routeId` (plus
+ * `layoutId`) so this doubly proves back-compat load + migrate-on-save.
  *
- * `routeId` is a hidden-carrier reference field
- * (`installReferenceSelectors({ route: true })`, seeded via `#node-input-routeId`
- * with `seedValue: self.routeId`, `clearable: true`). If `oneditprepare` fails to
- * seed the carrier from the saved `this.routeId`, Node-RED's field-copy on Done
- * writes the empty carrier back over `this.routeId` — silently losing the
- * parent-route reference on the first edit. Runtime specs deploy `routeId` pre-set
+ * `route` is a hidden-carrier reference field
+ * (`installReferenceSelectors({ route: true })`, seeded via `#node-input-route`
+ * with `seedValue: self.route || self.routeId`, `clearable: true`). If
+ * `oneditprepare` fails to seed the carrier from the saved value, Node-RED's
+ * field-copy on Done writes the empty carrier back over it — silently losing the
+ * parent-route reference on the first edit. Runtime specs deploy the value pre-set
  * via the admin API and never drive the editor, so the clobber went uncaught.
  *
- * Unlike the store/query pickers this branch has no catalogue seed alias — it
- * reads `self.routeId` directly, so it is correct by construction; this test
- * pins that and turns red if the seed is removed. Single `assertEditorRoundTrip`
- * call — the canonical way per `.ai/agents/node-testing.md`.
+ * The migration (`withReferenceFieldMigration`) lifts the legacy `routeId` into
+ * `route` on open and re-seeds the carrier, so after Done the node carries ONLY
+ * `route`. Single `assertEditorRoundTrip` call — the canonical way per
+ * `.ai/agents/node-testing.md`.
  */
 
 const TAB = "e2e-flow";
 
 function roundTripFlow(): NodeDef[] {
     // app + two routes (so a value-change has a second target) + a dialog whose
-    // routeId is pre-set to the first route. layoutId is required; modal/closable
-    // carry their defaults.
+    // LEGACY routeId is pre-set to the first route (P259: proves the migration
+    // path; the routes also stay legacy `layoutId`). modal/closable defaults.
     return [
         { id: TAB, type: "tab", label: "Dialog round-trip", disabled: false, info: "" },
         { type: "ui-app", id: "dlgApp", uiId: "dlgApp", name: "dlgApp", title: "dlgApp", root: "dlgApp", layout: "vertical", z: TAB, x: 100, y: 100, wires: [[]] },
@@ -53,19 +55,19 @@ function roundTripFlow(): NodeDef[] {
     ];
 }
 
-test.describe("ui-dialog — routeId reference open→save round-trip", () => {
+test.describe("ui-dialog — route reference open→save round-trip", () => {
     test.afterEach(async ({ request }) => {
         await resetFlow(request);
     });
 
-    test("routeId survives open→Done and a value-change round-trips", async ({ page, request }) => {
+    test("route survives open→Done and a value-change round-trips (legacy routeId fixture)", async ({ page, request }) => {
         await deployFlow(request, roundTripFlow());
 
         const editor = new NodeEditorPage(page);
         await editor.open();
 
         await editor.assertEditorRoundTrip("dlgDialog", [
-            { field: "routeId", carrier: "picker", expected: "dlgRouteA", newValue: "dlgRouteB" }
+            { field: "route", carrier: "picker", expected: "dlgRouteA", newValue: "dlgRouteB" }
         ]);
     });
 });

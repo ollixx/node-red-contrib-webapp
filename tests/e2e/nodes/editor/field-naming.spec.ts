@@ -512,6 +512,100 @@ test.describe("P259 Stufe 1 — legacy `layoutId` migrates to canonical `layout`
     }
 });
 
+// ─── P259 Stufe 2 — `routeId` → `route` + `definitionId` → `definition` ──────
+//
+// The route reference (ui-dialog parent route, ui-action navigate target) and
+// the component-definition reference are renamed to the canonical bare names
+// (ADR 0038 rule (c)). A legacy flow authored with `routeId`/`definitionId`
+// must (a) render/behave unchanged (schema transitional union + runtime
+// fallbacks), and (b) migrate to the canonical field on open→save.
+
+const TAB_R = "e2e-flow";
+const APP_R = "p259bApp";
+
+/** One legacy flow: dialog routeId + navigate-action routeId + instance definitionId. */
+function legacyIdSuffixFlow(): Parameters<typeof deployFlow>[1] {
+    return [
+        { id: TAB_R, type: "tab", label: "P259 id-suffix", disabled: false, info: "" },
+        { type: "ui-app", id: APP_R, uiId: APP_R, name: "P259b App", title: "P259b App", root: APP_R, layout: "vertical", z: TAB_R, x: 100, y: 80, wires: [[]] },
+        { type: "ui-route", id: "p259bRoute", uiId: "p259bRoute", name: "Page", app: APP_R, path: "/page", title: "Page", layout: "vertical", events: "[]", outputs: 0, z: TAB_R, x: 100, y: 160, wires: [] },
+        // ui-dialog: legacy routeId (route-scoped to /page)
+        { type: "ui-dialog", id: "p259bDialog", uiId: "p259bDialog", name: "Dialog", app: APP_R, title: "Dialog", layout: "vertical", routeId: "p259bRoute", modal: true, closable: true, events: "[]", outputs: 0, z: TAB_R, x: 100, y: 220, wires: [] },
+        { type: "ui-text", id: "p259bDlgText", uiId: "p259bDlgText", name: "DlgText", app: APP_R, mount: "dialog:p259bDialog/content", text: "Scoped dialog body", z: TAB_R, x: 300, y: 220, wires: [[]] },
+        // ui-action: legacy navigate routeId (route mode)
+        { type: "ui-action", id: "p259bAction", uiId: "p259bAction", name: "Go", app: APP_R, actionType: "navigate", targetMode: "route", routeId: "p259bRoute", params: "[]", z: TAB_R, x: 100, y: 280, wires: [[]] },
+        // ui-component-definition + instance: legacy definitionId
+        { type: "ui-component-definition", id: "p259bDef", uiId: "p259bDef", name: "Widget", z: TAB_R, x: 400, y: 80, wires: [[]] },
+        { type: "ui-text", id: "p259bDefText", uiId: "p259bDefText", name: "DefText", app: APP_R, mount: "def:p259bDef/content", text: "widget body", z: TAB_R, x: 400, y: 140, wires: [[]] },
+        { type: "ui-component-instance", id: "p259bInst", uiId: "p259bInst", name: "Instance", app: APP_R, mount: "route:/page/content", definitionId: "p259bDef", props: {}, z: TAB_R, x: 100, y: 340, wires: [[]] }
+    ];
+}
+
+test.describe("P259 Stufe 2 — legacy `routeId`/`definitionId` migrate to `route`/`definition`", () => {
+    test.afterEach(async ({ request }) => {
+        await resetFlow(request);
+    });
+
+    test("a legacy flow with routeId/definitionId renders unchanged (runtime fallbacks intact)", async ({ page, request }) => {
+        await deployFlow(request, legacyIdSuffixFlow());
+
+        const webapp = new WebappPage(page, APP_R);
+        // The instance's legacy definitionId still expands the definition subtree.
+        await webapp.navigate("/page");
+        await expect(page.locator("text=widget body")).toBeVisible();
+        // The dialog's legacy routeId still route-scopes it: present under
+        // ?dialog on its route, with its mounted child rendered.
+        await webapp.navigate("/page?dialog=p259bDialog");
+        await expect(page.locator("sl-dialog.webapp-dialog")).toBeAttached();
+        await expect(page.locator("text=Scoped dialog body")).toBeAttached();
+    });
+
+    test("ui-dialog: opens with the Route picker FILLED, saves `route`, drops `routeId`", async ({ page, request }) => {
+        await deployFlow(request, legacyIdSuffixFlow());
+        await gotoEditor(page);
+        const editor = new NodeEditorPage(page);
+
+        await editor.openNode("p259bDialog");
+        // On-open migration seeds the #node-input-route carrier from routeId.
+        expect(await editor.readField("route"), "dialog route picker seeded from legacy routeId").toBe("p259bRoute");
+
+        await editor.save();
+        const n = await readNode(page, "p259bDialog", ["route", "routeId"]);
+        expect(n.route, "dialog routeId → route").toBe("p259bRoute");
+        expect(n.routeId, "legacy routeId dropped").toBeUndefined();
+    });
+
+    test("ui-action (navigate, route mode): opens with the Ziel-Route FILLED, saves `route`, drops `routeId`", async ({ page, request }) => {
+        await deployFlow(request, legacyIdSuffixFlow());
+        await gotoEditor(page);
+        const editor = new NodeEditorPage(page);
+
+        await editor.openNode("p259bAction");
+        // The navigate controller reads the migrated #node-input-route carrier.
+        expect(await editor.readField("route"), "navigate route carrier seeded from legacy routeId").toBe("p259bRoute");
+
+        await editor.save();
+        const n = await readNode(page, "p259bAction", ["route", "routeId", "targetMode"]);
+        expect(n.route, "action routeId → route").toBe("p259bRoute");
+        expect(n.routeId, "legacy routeId dropped").toBeUndefined();
+        expect(n.targetMode, "route mode kept").toBe("route");
+    });
+
+    test("ui-component-instance: opens with the Definition picker FILLED, saves `definition`, drops `definitionId`", async ({ page, request }) => {
+        await deployFlow(request, legacyIdSuffixFlow());
+        await gotoEditor(page);
+        const editor = new NodeEditorPage(page);
+
+        await editor.openNode("p259bInst");
+        expect(await editor.readField("definition"), "definition picker seeded from legacy definitionId").toBe("p259bDef");
+
+        await editor.save();
+        const n = await readNode(page, "p259bInst", ["definition", "definitionId"]);
+        expect(n.definition, "instance definitionId → definition").toBe("p259bDef");
+        expect(n.definitionId, "legacy definitionId dropped").toBeUndefined();
+    });
+});
+
 test.describe("P229 slice D — ui-textarea rows renames to lines", () => {
     test.afterEach(async ({ request }) => {
         await resetFlow(request);

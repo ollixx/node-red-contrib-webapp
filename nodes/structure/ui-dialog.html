@@ -12,7 +12,9 @@
                 // P259 (ADR 0038): canonical bare reference name `layout` (was
                 // `layoutId`); the legacy value migrates on open→save.
                 layout: { value: "", required: true, validate: common.validateRefWithLegacy("layoutId") },
-                routeId: { value: "" },
+                // P259 (ADR 0038): canonical bare reference name `route` (was
+                // `routeId`); the legacy value migrates on open→save.
+                route: { value: "" },
                 modal: { value: true },
                 closable: { value: true },
                 events: { value: "[]" },
@@ -57,7 +59,7 @@
     <div class="form-row"><label for="node-input-title">Titel</label><input type="text" id="node-input-title"></div>
     <input type="hidden" id="node-input-layout">
     <div class="form-row"><label for="node-input-layout-preset">Parent Layout</label><select id="node-input-layout-preset"></select></div>
-    <div class="form-row"><label for="node-input-routeId">Parent Route</label><select id="node-input-routeId"></select></div>
+    <div class="form-row"><label for="node-input-route">Parent Route</label><select id="node-input-route"></select></div>
     <div class="form-row"><label for="node-input-modal">Modal</label><input type="checkbox" id="node-input-modal" style="width:auto"></div>
     <div class="form-row"><label for="node-input-closable">Schließbar</label><input type="checkbox" id="node-input-closable" style="width:auto"></div>
     <input type="hidden" id="node-input-events">
@@ -68,6 +70,6 @@
 <script type="text/html" data-help-name="ui-dialog"><p>Definiert einen <b>Dialog mit eigenem Layout</b> innerhalb einer App. Der Dialog wird über die Action-Verben <code>open</code> / <code>close</code> offengelegt (nicht über <code>show</code>/<code>hide</code>); View-Knoten mounten über <code>dialog:&lt;id&gt;/&lt;slot&gt;</code> in seine Slots.</p>
 <p><b>Schließbar</b> (<code>closable</code>): steuert nur das native Nutzer-Dismissal. Bei <code>true</code> ist der Dialog per X / ESC / Overlay-Klick schließbar; bei <code>false</code> entfällt der gesamte Header und der Dialog wird ausschließlich über <code>open</code>/<code>close</code> gesteuert.</p>
 <p><b>Modal</b>: Dialoge sind heute <b>immer modal</b> (das Backend <code>sl-dialog</code> ist nativ modal). Das Feld ist ein Platzhalter für einen künftigen nicht-modalen Modus und hat aktuell keine Wirkung.</p>
-<p><b>Parent Route</b> (<code>routeId</code>): koppelt den Dialog optional an eine Route — dann ist er nur bei aktiver passender Route darstellbar.</p>
+<p><b>Parent Route</b> (<code>route</code>): koppelt den Dialog optional an eine Route — dann ist er nur bei aktiver passender Route darstellbar.</p>
 <p><b>Events</b>: <code>onOpen</code> feuert beim Öffnen, <code>onClose</code> beim Schließen (auch bei X / ESC / Overlay). Jedes aktive Event erzeugt einen Output-Port.</p>
 <p>Vollständige Doku: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/structure/ui-dialog.md" target="_blank">docs/nodes/structure/ui-dialog.md</a></p></script>
