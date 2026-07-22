@@ -106,8 +106,10 @@ test.describe("editor panels — view nodes (P47)", () => {
             path: "migStore",
             subPath: { kind: "literal", value: "name" }
         });
-        expect(saved?.storeId).toBe("");
-        expect(saved?.path).toBe("");
+        // P229 (ADR 0038): the dead pair is DELETED on save (no longer blanked),
+        // so the exported node carries no legacy fields at all.
+        expect(saved?.storeId).toBeUndefined();
+        expect(saved?.path).toBeUndefined();
     });
 
     test("ui-checkbox — P97: labelBinding + valueBinding + disabledBinding + size fields present", async ({ page, request }) => {

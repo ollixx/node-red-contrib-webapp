@@ -74,14 +74,10 @@
                 // Restricted to the writable kinds (store/flow/global). The
                 // typedInput lives on #node-input-writeToBinding. Legacy
                 // storeId/path are migrated to a writeTo=store binding on open and
-                // then dropped (not re-serialised).
+                // then dropped (not re-serialised) — see migrationFields below.
                 writeTo: { value: null },
                 writeToBinding: { value: "" },
                 writeTrigger: { value: "submit" },
-                // Legacy write-target pair — kept in defaults only so a pre-P203
-                // node opens; migrated to `writeTo` on open, cleared on save.
-                storeId: { value: "" },
-                path: { value: "" },
                 inputType: { value: "text", required: true },
                 variant: { value: "default" },
                 size: { value: "" },
@@ -99,6 +95,10 @@
                 layoutX: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 layoutY: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } }
             },
+            // P229 (ADR 0038): migration-only legacy fields — injected as hidden
+            // defaults at registration so a legacy flow still imports/re-exports
+            // them until the open-time migration runs; never written anew.
+            migrationFields: ["storeId", "path"],
             inputs: 1,
             outputs: 1,
             outputLabels: function () { return "event"; },
@@ -229,8 +229,9 @@
                         || ((writeToResult.kind === "flow" || writeToResult.kind === "global") && writeToResult.path));
                 this.writeTo = (writeToOriginEmpty && !writeToHasTarget) ? null : (writeToHasTarget ? writeToResult : null);
                 this.writeTrigger = $("#node-input-writeTrigger").val() || "submit";
-                this.storeId = "";
-                this.path = "";
+                // P229 (ADR 0038): delete (not blank) so the saved node exports
+                // WITHOUT the dead pre-ADR-0027 pair.
+                common.dropLegacyFields(this, ["storeId", "path"]);
 
                 // P123: persist disabled as binding object.
                 // P181: preserve null when field was originally absent and untouched.

@@ -80,46 +80,29 @@ const ALLOWLIST = {
     "ui-table": { rowsPath: "P229: residual `<base>Path` twin of `rowsBinding`" },
     "ui-input": {
         valuePath: "P229: residual `<base>Path` twin of `valueBinding`",
-        // (b) dead ADR-0027 input write-target pair
-        storeId: "P229: dead pre-ADR-0027 write target (superseded by `writeTo`)",
-        path: "P229: dead pre-ADR-0027 write target (superseded by `writeTo`)",
     },
     "ui-select": {
         valuePath: "P229: residual `<base>Path` twin of `valueBinding`",
         optionsJson: "P229: legacy raw-JSON options carrier (superseded by `optionsBinding`)",
-        storeId: "P229: dead pre-ADR-0027 write target (superseded by `writeTo`)",
-        path: "P229: dead pre-ADR-0027 write target (superseded by `writeTo`)",
     },
     "ui-checkbox": {
         valuePath: "P229: residual `<base>Path` twin of `valueBinding`",
-        storeId: "P229: dead pre-ADR-0027 write target (superseded by `writeTo`)",
-        path: "P229: dead pre-ADR-0027 write target (superseded by `writeTo`)",
     },
     "ui-radio": {
         valuePath: "P229: residual `<base>Path` twin of `valueBinding`",
         optionsJson: "P229: legacy raw-JSON options carrier (superseded by `optionsBinding`)",
-        storeId: "P229: dead pre-ADR-0027 write target (superseded by `writeTo`)",
-        path: "P229: dead pre-ADR-0027 write target (superseded by `writeTo`)",
     },
     "ui-switch": {
         valuePath: "P229: residual `<base>Path` twin of `valueBinding`",
-        storeId: "P229: dead pre-ADR-0027 write target (superseded by `writeTo`)",
-        path: "P229: dead pre-ADR-0027 write target (superseded by `writeTo`)",
     },
     "ui-textarea": {
         valuePath: "P229: residual `<base>Path` twin of `valueBinding`",
-        storeId: "P229: dead pre-ADR-0027 write target (superseded by `writeTo`)",
-        path: "P229: dead pre-ADR-0027 write target (superseded by `writeTo`)",
     },
     "ui-datepicker": {
         valuePath: "P229: residual `<base>Path` twin of `valueBinding`",
-        storeId: "P229: dead pre-ADR-0027 write target (superseded by `writeTo`)",
-        path: "P229: dead pre-ADR-0027 write target (superseded by `writeTo`)",
     },
     "ui-slider": {
         valuePath: "P229: residual `<base>Path` twin of `valueBinding`",
-        storeId: "P229: dead pre-ADR-0027 write target (superseded by `writeTo`)",
-        path: "P229: dead pre-ADR-0027 write target (superseded by `writeTo`)",
     },
     "ui-alert": { messagePath: "P229: residual `<base>Path` twin of `messageBinding`" },
     "ui-progress": { valuePath: "P229: residual `<base>Path` twin of `valueBinding`" },

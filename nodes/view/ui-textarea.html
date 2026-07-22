@@ -88,8 +88,7 @@
                 writeTo: { value: null },
                 writeToBinding: { value: "" },
                 writeTrigger: { value: "submit" },
-                storeId: { value: "" },
-                path: { value: "" },
+
                 order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
                 col: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
@@ -98,6 +97,10 @@
                 layoutX: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 layoutY: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } }
             },
+            // P229 (ADR 0038): migration-only legacy fields — injected as hidden
+            // defaults at registration (see editor-common withMigrationDefaults);
+            // migrated to `writeTo` on open, deleted on save, never written anew.
+            migrationFields: ["storeId", "path"],
             inputs: 1,
             outputs: 1,
             outputLabels: function () { return "event"; },

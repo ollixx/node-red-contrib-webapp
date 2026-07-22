@@ -757,8 +757,53 @@
         };
     }
 
+    // P229 (ADR 0038): migration-only defaults injection. A node lists its LEGACY,
+    // migration-only fields in `migrationFields: ["storeId", ...]` NEXT TO (not
+    // inside) its authored `defaults` block. Registration injects a hidden
+    // `{ value: undefined }` defaults entry for each, because the Node-RED editor
+    // only (a) imports and (b) re-exports properties that exist in `_def.defaults`:
+    //   - without the entry, a legacy flow's value would never reach the editor
+    //     node object (the open-time migration reader would read `undefined`) AND
+    //     any deploy would silently STRIP the legacy field from the flow file
+    //     before the migration ever ran — breaking un-opened legacy flows;
+    //   - with `{ value: undefined }`, a palette-new node gets NO such property
+    //     (Node-RED only seeds defaults whose value !== undefined) and a saved
+    //     node whose oneditsave `delete`d the field exports WITHOUT it.
+    // The authored `defaults` block stays clean, which is exactly the surface
+    // `check:fields` (ADR 0038) polices: the editor never WRITES these fields anew.
+    function withMigrationDefaults(definition) {
+        var fields = definition.migrationFields;
+        if (!Array.isArray(fields) || fields.length === 0) {
+            return definition;
+        }
+        var defaults = Object.assign({}, definition.defaults);
+        fields.forEach(function (field) {
+            if (!Object.prototype.hasOwnProperty.call(defaults, field)) {
+                defaults[field] = { value: undefined };
+            }
+        });
+        var out = Object.assign({}, definition, { defaults: defaults });
+        delete out.migrationFields;
+        return out;
+    }
+
+    // P229: drop a migrated legacy field so the saved node never re-serialises it
+    // (an absent property is omitted from the exported flow, unlike `""`).
+    function dropLegacyFields(node, fields) {
+        fields.forEach(function (field) {
+            if (Object.prototype.hasOwnProperty.call(node, field)) {
+                try {
+                    delete node[field];
+                }
+                catch (_e) {
+                    node[field] = undefined;
+                }
+            }
+        });
+    }
+
     function withUiIdMigration(definition) {
-        return { ...definition };
+        return withMigrationDefaults(definition);
     }
 
     function required(value) {
@@ -5185,8 +5230,9 @@
                 || ((writeToResult.kind === "flow" || writeToResult.kind === "global") && writeToResult.path));
         node.writeTo = (writeToOriginEmpty && !writeToHasTarget) ? null : (writeToHasTarget ? writeToResult : null);
         node.writeTrigger = $("#node-input-writeTrigger").val() || "submit";
-        node.storeId = "";
-        node.path = "";
+        // P229 (ADR 0038): the dead pre-ADR-0027 pair is deleted (not blanked) so
+        // the saved node exports WITHOUT the legacy fields.
+        dropLegacyFields(node, ["storeId", "path"]);
     }
 
     // Pick the editor literal sub-type for a stored literal value by its JS type.
@@ -6798,6 +6844,8 @@
         // the WRITE half of an input's value binding, used by every input control.
         installWriteToField,
         saveWriteToField,
+        // P229 (ADR 0038): migration-only legacy-field handling.
+        dropLegacyFields,
         // P136: the ONE shared Options helper (ui-select + ui-radio).
         normalizeOptionsStructure,
         validateOptionsJson,

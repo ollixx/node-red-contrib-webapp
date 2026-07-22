@@ -497,8 +497,9 @@ const flowNodes = [
         label:     "Name",               // required
         valuePath: "draft.customer.name", // required (editor field for state binding)
         value:     { kind: "state", path: "draft.customer.name" },
-        storeId:   "draftStore",
-        path:      "name",
+        // P229 (ADR 0038): canonical write target — the dead storeId/path pair
+        // is no longer emitted; writeTo carries the store + subPath directly.
+        writeTo:   { kind: "store", path: "draftStore", subPath: { kind: "literal", value: "name" } },
         inputType: "text",               // required
         row: 1, col: 1, colSize: 12
     }),
@@ -510,8 +511,7 @@ const flowNodes = [
         label:     "Email",
         valuePath: "draft.customer.email",
         value:     { kind: "state", path: "draft.customer.email" },
-        storeId:   "draftStore",
-        path:      "email",
+        writeTo:   { kind: "store", path: "draftStore", subPath: { kind: "literal", value: "email" } },
         inputType: "email",
         row: 2, col: 1, colSize: 12
     }),
@@ -523,8 +523,7 @@ const flowNodes = [
         label:     "Status",
         valuePath: "draft.customer.status",
         value:     { kind: "state", path: "draft.customer.status" },
-        storeId:   "draftStore",
-        path:      "status",
+        writeTo:   { kind: "store", path: "draftStore", subPath: { kind: "literal", value: "status" } },
         inputType: "text",
         row: 3, col: 1, colSize: 12
     }),

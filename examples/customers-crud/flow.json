@@ -578,8 +578,14 @@
             "kind": "state",
             "path": "draft.customer.name"
         },
-        "storeId": "draftStore",
-        "path": "name",
+        "writeTo": {
+            "kind": "store",
+            "path": "draftStore",
+            "subPath": {
+                "kind": "literal",
+                "value": "name"
+            }
+        },
         "inputType": "text",
         "row": 1,
         "col": 1,
@@ -604,8 +610,14 @@
             "kind": "state",
             "path": "draft.customer.email"
         },
-        "storeId": "draftStore",
-        "path": "email",
+        "writeTo": {
+            "kind": "store",
+            "path": "draftStore",
+            "subPath": {
+                "kind": "literal",
+                "value": "email"
+            }
+        },
         "inputType": "email",
         "row": 2,
         "col": 1,
@@ -630,8 +642,14 @@
             "kind": "state",
             "path": "draft.customer.status"
         },
-        "storeId": "draftStore",
-        "path": "status",
+        "writeTo": {
+            "kind": "store",
+            "path": "draftStore",
+            "subPath": {
+                "kind": "literal",
+                "value": "status"
+            }
+        },
         "inputType": "text",
         "row": 3,
         "col": 1,
