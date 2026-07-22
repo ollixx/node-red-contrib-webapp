@@ -2,7 +2,7 @@
 id: P229
 title: "Legacy-Feld-Sweep: residuale *Path-Zwillinge, totes storeId/path, *Json-Carrier, pagination-Aliase entfernen + ui-textarea rows→lines — in 4 mechanischen Slices, E2E-Gate je Slice"
 epic: aspects/editor
-status: pending
+status: in_progress
 dependencies: [P227]
 verify: browser
 spec: docs/nodes/concepts/field-conventions.md
