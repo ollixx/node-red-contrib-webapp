@@ -17,7 +17,7 @@ Object-Fit-Modus für die visuelle Darstellung.
 
 - **Parent:** ein Slot eines `ui-app`-, `ui-route`-, `ui-dialog`- oder
   `ui-container`-Knotens. Deklariert über `mount` (Mount-Pfad `<type>:<id>/<slot>`)
-  oder `parent` (direkte Parent-ID).
+  oder `app` (direkte Parent-ID).
 - **Kinder:** keine — `ui-image` ist ein Blatt-Knoten.
 - **Erreichbarkeit:** als Teil des gerenderten Snapshots der Parent-Route bzw.
   des Parent-Dialogs.

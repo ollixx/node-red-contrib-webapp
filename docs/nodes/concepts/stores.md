@@ -34,7 +34,7 @@ Node-RED-Flow — der Store ist nur der Zustandsspeicher, nicht der Ort der Logi
 
 | Feld | Pflicht | Bedeutung |
 |---|---|---|
-| `parent` | ja | Die `ui-app`. Sie ist der Routing-Kontext: sie bestimmt, an welche Clients Notifications gehen und welche eingehenden Messages für diesen Store bestimmt sind. |
+| `app` | ja | Die `ui-app`. Sie ist der Routing-Kontext: sie bestimmt, an welche Clients Notifications gehen und welche eingehenden Messages für diesen Store bestimmt sind. |
 | `statePath` | ja | Der Pfad des Slice im Client-State. Innerhalb einer App eindeutig. Der Editor erzwingt einen einzelnen Bezeichner (nur `[A-Za-z0-9_]`, keine Punkte/Slashes) als Slice-Namen, z. B. `customers`, `draft`, `session`. |
 | `initialValue` | optional | Startwert des Slice. Wird beim Aufbau des Client-State unter `statePath` gesetzt und ist das Ziel der `reset`-Operation. |
 | `persist` | optional | Flag, ob der Slice clientseitig persistiert werden soll. **Hinweis:** Das Flag wird heute durch das Modell getragen, die clientseitige `localStorage`-Persistenz/Resynchronisierung ist aber noch nicht aktiv — siehe [multi-user.md](multi-user.md). Default `false`. |

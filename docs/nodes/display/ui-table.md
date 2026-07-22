@@ -18,7 +18,7 @@ emittiert.
 ## Einordnung
 
 - **Parent:** ein Slot eines `ui-app`-, `ui-route`-, `ui-dialog`- oder
-  `ui-container`-Knotens. Deklariert über `mount` oder `parent`.
+  `ui-container`-Knotens. Deklariert über `mount` oder `app`.
 - **Kinder:** keine. `ui-table` ist ein Blatt-Knoten und stellt keine Slots
   bereit; andere Knoten können nicht in die Tabelle eingehängt werden.
 - **Erreichbarkeit:** als Teil des gerenderten Snapshots der Parent-Route bzw.

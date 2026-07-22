@@ -27,7 +27,7 @@ Events auf konfigurierten Output-Ports emittiert.
 ## Einordnung
 
 - **Parent:** ein Slot eines `ui-app`-, `ui-route`-, `ui-dialog`- oder
-  `ui-container`-Knotens. Deklariert über `mount` oder `parent`.
+  `ui-container`-Knotens. Deklariert über `mount` oder `app`.
 - **Kinder:** keine — `ui-list` ist ein Blatt-Knoten; die Zeilen werden durch
   das `items`-Binding deklarativ, nicht durch Child-Knoten, beschrieben.
 - **Erreichbarkeit:** als Teil des gerenderten Snapshots der Parent-Route bzw.

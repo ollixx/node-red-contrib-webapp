@@ -16,11 +16,15 @@ Feld heißt und welches Carrier-Muster es verwendet. Sie ergänzt
 > **Migrations-Reihenfolge.** Dieses Dokument beschreibt den **Zielzustand**. Der
 > **Legacy-Sweep ist abgeschlossen (P229, 2026-07-22)**: `*Path`/`*Json`/totes
 > `storeId`/`path`/Pagination-Aliase sind aus allen `defaults` entfernt und
-> `ui-textarea.rows` heißt `lines` (Migration bleibt, siehe unten). Es fehlen
-> noch die Umbenennungen (`parent` → `app`, `*Id` → bloßer Name) aus **P228**;
-> nur deren Einträge trägt die **kuratierte Allowlist** in
+> `ui-textarea.rows` heißt `lines` (Migration bleibt, siehe unten). Die
+> **`parent` → `app`-Welle ist abgeschlossen (P228, 2026-07-22)**: das
+> Besitz-Feld heißt in allen 42 Nicht-App-`defaults` `app`; Laufzeit und Editor
+> lesen das Legacy-`parent` weiter (Migration beim Öffnen/Speichern), und
+> `check:fields` Regel (c) verbietet ein neues `parent`-Referenzfeld. Es fehlen
+> nur noch die `*Id`-Umbenennungen (`layoutId`/`routeId`/`definitionId` → bloßer
+> Name) aus **P259**; deren Einträge trägt die **kuratierte Allowlist** in
 > `scripts/check-fields.js` noch (je eine Ein-Zeilen-Begründung), damit
-> `pnpm validate` grün bleibt; P228 schrumpft die Liste auf leer.
+> `pnpm validate` grün bleibt; P259 schrumpft die Liste auf leer.
 
 ---
 
@@ -49,7 +53,9 @@ Konzept — **ohne** `Id`-Suffix; der Wert *ist* die Id, wie bei `store` und
 
 - **`app`** benennt die **besitzende App-Id** (auf jedem Nicht-App-Knoten). Das
   frühere `parent` war irreführend benannt — es hielt nie einen Slot-Parent,
-  sondern die App-Id. (Rename in P228; bis dahin heißt das Feld noch `parent`.)
+  sondern die App-Id. (Umbenannt in P228; das Legacy-`parent` bleibt überall
+  **lesbar** — Laufzeit-Fallback + Editor-Migration beim Öffnen/Speichern —
+  wird aber nirgendwo mehr geschrieben.)
 - **`mount`** ist der **Render-Slot** (`<typ>:<id>/<slot>`), siehe
   [layout.md](layout.md). Ein Knoten deklariert entweder `mount` (Render-Knoten)
   oder trägt `app` (Logik-Knoten); Render-Knoten dürfen zusätzlich `app` für

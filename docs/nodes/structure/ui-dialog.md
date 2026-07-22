@@ -30,7 +30,7 @@ Node-Picker-Dialog, Event-Checkboxen).
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
 | `name` | „Name" | Textfeld | optional | Anzeigename im Editor und in Auswahllisten. Default: fortlaufend `Dialog N`. |
-| `parent` | „App" | Node-Picker-Dialog (Preset Apps) | **ja** | Die Parent-`ui-app`. Auswahl aus einer filter- und scrollbaren Liste der Apps. |
+| `app` | „App" | Node-Picker-Dialog (Preset Apps) | **ja** | Die Parent-`ui-app`. Auswahl aus einer filter- und scrollbaren Liste der Apps. |
 | `title` | „Titel" | Textfeld | optional | Sichtbarer Titel des Dialogs (Header). Entfällt bei `closable: false` (kein Header). |
 | `routeId` | „Parent Route" | Node-Picker-Dialog (Preset Routes) | optional | Optionale Kopplung an eine `ui-route` derselben App. **Ist `routeId` gesetzt, ist der Dialog nur bei aktiver passender Route darstellbar:** der Renderer filtert die Dialoge nach der gerade aktiven Route (`dialog.routeId === aktive Route-Id`). Bei einer anderen aktiven Route wird der Dialog **auch unter `?dialog=<id>` nicht gerendert**. Ohne `routeId` ist der Dialog in jeder Route der App darstellbar. |
 

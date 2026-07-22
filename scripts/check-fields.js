@@ -38,6 +38,9 @@
  *       `uiId` (a node's OWN stable id, not a reference) and `selectedId` (a
  *       *selected value*, not a node reference). `storeId` is a rule-(b) removed
  *       legacy, so rule (c) leaves it to (b) to avoid a double message.
+ *       P228 guardrail: `parent` — the pre-rename owning-app field — is also a
+ *       rule-(c) violation. The rename wave is FROZEN: no node may reintroduce a
+ *       `parent` reference default (the runtime/editor migration READERS remain).
  *
  * ALLOWLIST — a curated allowlist carries TODAY's real violations (the ones P228
  * renames / P229 sweeps) so `pnpm validate` stays GREEN on landing. Format:
@@ -63,16 +66,16 @@ const PKG = require(path.join(ROOT, "package.json"));
  * ------------------------------------------------------------------ */
 const ALLOWLIST = {
     // ---- (c) reference id-suffix → bare name (P228 rename) -------------------
-    "ui-route": { layoutId: "P228: rename `layoutId` → `layout` (bare reference name)" },
+    "ui-route": { layoutId: "P259: rename `layoutId` → `layout` (bare reference name)" },
     "ui-dialog": {
-        layoutId: "P228: rename `layoutId` → `layout` (bare reference name)",
-        routeId: "P228: rename `routeId` → `route` (bare reference name)",
+        layoutId: "P259: rename `layoutId` → `layout` (bare reference name)",
+        routeId: "P259: rename `routeId` → `route` (bare reference name)",
     },
-    "ui-container": { layoutId: "P228: rename `layoutId` → `layout` (bare reference name)" },
+    "ui-container": { layoutId: "P259: rename `layoutId` → `layout` (bare reference name)" },
     "ui-component-instance": {
-        definitionId: "P228: rename `definitionId` → `definition` (bare reference name)",
+        definitionId: "P259: rename `definitionId` → `definition` (bare reference name)",
     },
-    "ui-action": { routeId: "P228: rename `routeId` → `route` (bare reference name)" },
+    "ui-action": { routeId: "P259: rename `routeId` → `route` (bare reference name)" },
     // P243 (ADR 0040): ui-navigation retired — navigation is a ui-action navigate.
 
 };
@@ -195,8 +198,17 @@ function fieldViolations(defaults) {
         }
     }
 
-    // (c) bare-name reference fields: no `*Id` reference (keep-list excepted).
+    // (c) bare-name reference fields: no `*Id` reference (keep-list excepted),
+    //     and no retired `parent` reference (P228: the owning app is `app`).
     for (const field of defaults) {
+        if (field === "parent") {
+            out.push({
+                field,
+                rule: "reference-bare-name",
+                message: "`parent` is the retired owning-app reference (renamed P228, ADR 0038) — the canonical field is `app`; the migration READER keeps legacy flows working, but no node may (re)introduce a `parent` default.",
+            });
+            continue;
+        }
         if (!/Id$/.test(field)) continue;
         if (ID_KEEP.has(field)) continue;
         if (field === "storeId") continue; // owned by rule (b)

@@ -15,9 +15,9 @@ Bei Zustandswechsel emittiert der Knoten ein `change`-Event mit dem neuen
 ## Einordnung
 
 - **Parent:** ein Slot einer `ui-app`, `ui-route`, `ui-dialog` oder
-  `ui-container` — angegeben über `mount` (Mount-Pfad) oder `parent` (Node-ID).
+  `ui-container` — angegeben über `mount` (Mount-Pfad) oder `app` (Node-ID).
 - **Kinder:** keine.
-- **Erreichbarkeit:** im gerenderten Layout an der Position, die `mount`/`parent`
+- **Erreichbarkeit:** im gerenderten Layout an der Position, die `mount`/`app`
   und die Layout-Child-Felder vorgeben.
 - **Rolle zur Laufzeit:** liest `value` (Boolean) aus dem Client-State; schreibt
   den neuen Checked-Zustand bei Nutzerinteraktion zurück. Gibt `change`-Events auf

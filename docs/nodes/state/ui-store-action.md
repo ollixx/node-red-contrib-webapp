@@ -21,7 +21,7 @@ server-seitig an, **wire** emittiert das Kommando-Envelope zum Verdrahten.
 | `op` | „Operation" | Select | **ja** | `set` \| `patch` \| `delete` \| `replace` \| `reset`. Default `set`. Op-Semantik siehe unten. |
 | `path` | „Path" | Textfeld | optional | Sub-Pfad im Slice (eine Ebene, relativ zum `statePath`, [ADR 0013](../../adr/0013-store-binding-subpath.md)). Leer = ganzes Slice (statePath-Root). Zur Laufzeit überschreibbar. |
 | `mode` | „Mode" | Select | **ja** | `reference` (direkt anwenden) \| `wire` (Envelope emittieren). Default `reference`. |
-| `parent` | „App" | Node-Picker (Apps) | **ja** | Besitzende `ui-app` (app-gebundener Referenz-Knoten, P205). Leer = Deploy-Fehler. |
+| `app` | „App" | Node-Picker (Apps) | **ja** | Besitzende `ui-app` (app-gebundener Referenz-Knoten, P205). Leer = Deploy-Fehler. |
 
 ## Op-Semantik
 

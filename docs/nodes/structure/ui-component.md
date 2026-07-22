@@ -32,7 +32,7 @@ machinery ([ADR 0017](../../adr/0017-ui-repeat-template-container-render-time-sc
 A **container-kind** node, registered alongside `ui-container`/`ui-repeat`. Its
 children mount into a fixed default slot named `content`, exported as the constant
 `COMPONENT_DEF_SLOT = "content"` — the full mount string is `def:<componentId>/content`.
-The definition is **off-canvas**: it has **no required outer `mount`/`parent`**
+The definition is **off-canvas**: it has **no required outer `mount`/`app`**
 (it never renders on its own — it exists only to be expanded by instances). The
 node's own **`id` is its `componentId`**. The only other field is an optional
 display `name` for the editor/structure sidebar.
@@ -40,7 +40,7 @@ display `name` for the editor/structure sidebar.
 ### `ui-component-instance`
 
 A **leaf-shaped** node (no children of its own) that **must** carry an outer
-`mount`/`parent` into a real route/container (like any mounted node). Fields:
+`mount`/`app` into a real route/container (like any mounted node). Fields:
 
 - **`definitionId`** *(required string)* — the id of the `ui-component-definition`
   it instantiates.
@@ -72,7 +72,7 @@ render-time `propScope` is P178. Outside any instance, `prop.<name>` resolves to
 `validateComponentAcyclic(nodes)` is a **pure** function that reconstructs the
 definition→definition instantiation graph (an instance inside definition *D*
 referencing definition *T* is an edge *D → T*, where *D* is found by walking the
-instance's `def:` mount/parent chain) and rejects any cycle — a definition that
+instance's `def:` mount/app chain) and rejects any cycle — a definition that
 instantiates itself **directly or transitively** — with a clear error message. An
 acyclic definition→instance graph is valid.
 

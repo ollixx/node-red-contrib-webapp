@@ -22,7 +22,7 @@ Listen-Optik) trägt `ui-repeat` **keine Chrome** und wiederholt einen
 ## Einordnung
 
 - **Parent:** ein Slot eines `ui-app`-, `ui-route`-, `ui-dialog`- oder
-  `ui-container`-Knotens. Deklariert über `mount` oder `parent`.
+  `ui-container`-Knotens. Deklariert über `mount` oder `app`.
 - **Kinder:** **ja** — der **Default-Slot** (`content`, `REPEAT_SLOT`) hält die
   Schablone (ein oder mehrere Knoten). Diese Kinder werden **pro Item** geklont.
 - **Eigenes content-Layout (P191):** wie `ui-container`/`ui-route` trägt `ui-repeat`

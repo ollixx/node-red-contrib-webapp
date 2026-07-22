@@ -18,7 +18,7 @@ Nicht-mutierend, per-client, beliebig oft platzierbar — für Backend-Zugriffe
 | `name` | „Name" | Textfeld | optional | Anzeigename im Editor (Default: „Store Read N"). Keine Laufzeit-Wirkung. |
 | `store` | „Store" | Node-Picker (Preset Stores) | **ja** | Referenz auf den zu lesenden `ui-store` (Knoten-ID). |
 | `path` | „Path" | Textfeld | optional | Default-Sub-Pfad im Slice (eine Ebene, relativ zum `statePath`). Leer = ganzes Slice. |
-| `parent` | „App" | Node-Picker (Apps) | **ja** | Besitzende `ui-app` (app-gebundener Referenz-Knoten, P205). |
+| `app` | „App" | Node-Picker (Apps) | **ja** | Besitzende `ui-app` (app-gebundener Referenz-Knoten, P205). |
 
 ## Verhalten
 

@@ -44,8 +44,8 @@ DOM-Präsenz/Tags.
 
 | Test | Ziel |
 |---|---|
-| ui-store-action ohne parent | Deploy-Fehler (P205), `no App parent` |
-| ui-store-action mit gültigem App-parent | kein Issue |
+| ui-store-action ohne App | Deploy-Fehler (P205), `no App` |
+| ui-store-action mit gültigem App-Feld | kein Issue |
 | „applies to ALL app-scoped types" | ui-store-action ist Teil der app-gebundenen Typen |
 
 ## E2E — Playwright (`tests/e2e/nodes/state/ui-store-action.spec.ts`)

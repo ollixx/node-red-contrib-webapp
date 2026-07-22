@@ -30,7 +30,7 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
 | `name` | „Name" | Textfeld | optional | Anzeigename im Editor und in Auswahllisten. Default: fortlaufend `Query N`. |
-| `parent` | „App" | Node-Picker-Dialog (Preset Apps) | **ja** | Die Parent-`ui-app`. Bestimmt den Routing-Kontext für Query-Daten und Lade-Events. |
+| `app` | „App" | Node-Picker-Dialog (Preset Apps) | **ja** | Die Parent-`ui-app`. Bestimmt den Routing-Kontext für Query-Daten und Lade-Events. |
 | `queryPath` | „Query Path" | Textfeld | **ja** | Pfad, unter dem die Query-Daten im Client-State abgelegt werden. Bindings referenzieren ihn (z. B. `customers.list` → `query:customers.list`). Innerhalb derselben App eindeutig. |
 
 ### Gruppe „Daten"

@@ -72,7 +72,7 @@ clientId, sourceId, appId + Port-Routing) ist zusätzlich unit-belegt in
 
 ## Schema-Unit (`packages/schema/test/schema.test.ts`, P169-Block)
 - `ui-accordion-section` kompiliert (label-Binding, optionales icon, order, content-Slot).
-- `label` ist Pflicht; `mount`/`parent` ist Pflicht.
+- `label` ist Pflicht; `mount`/`app` ist Pflicht.
 - `uiAccordionSectionContentMount` / `validateUiAccordionChildrenUnique` /
   `defaultOpenSectionId` / `migrateUiAccordionToChildren` (Round-trip, ids eindeutig,
   Default = erstes nach `order`).

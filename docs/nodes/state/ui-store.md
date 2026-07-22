@@ -31,7 +31,7 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
 | `name` | „Name" | Textfeld | optional | Anzeigename im Editor und in Auswahllisten. Default: fortlaufend `Store N`. |
-| `parent` | „App" | Node-Picker-Dialog (Preset Apps) | **ja** | Die Parent-`ui-app`. Bestimmt den Routing-Kontext für alle Store-Messages. |
+| `app` | „App" | Node-Picker-Dialog (Preset Apps) | **ja** | Die Parent-`ui-app`. Bestimmt den Routing-Kontext für alle Store-Messages. |
 | `statePath` | „State Path" | Textfeld | **ja** | Name des Slice im Client-State. Ein einzelner Bezeichner (nur `[A-Za-z0-9_]`, keine Punkte oder Slashes) — kein Pfad, sondern ein Slice-Name (z. B. `draft`, `customers`, `session`). Innerhalb derselben App eindeutig. |
 
 ### Gruppe „Wert"

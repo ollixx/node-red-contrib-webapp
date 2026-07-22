@@ -12,7 +12,7 @@
 
 - `ui-repeat`-Knotendefinition validiert (`items` Pflicht-Wert-Binding,
   optionales `keyField`, fester Default-Slot `content` = `REPEAT_SLOT`). Negativ:
-  fehlende `items` und leeres `keyField` bleiben rot; Knoten ohne `mount`/`parent`
+  fehlende `items` und leeres `keyField` bleiben rot; Knoten ohne `mount`/`app`
   rot.
 - Binding-Art `item` (ganzes Element), `item.<pfad>` (ein-/mehrstufig, z. B.
   `address.city`) und `index` (nullbasiert, pfadlos) ist im Binding-Union

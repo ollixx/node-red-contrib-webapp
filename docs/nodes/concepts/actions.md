@@ -330,7 +330,7 @@ Zielknoten aus (P59 / ADR 0007).
 `ui-action` wird im Editor mit einem **Action-Typ** vorkonfiguriert. Das legt fest, welche Action der Knoten bei Eingang einer `msg` ausführt. Alternativ kann der Typ dynamisch aus `msg.ui.action.type` gelesen werden (msg überschreibt Konfiguration).
 
 Pflichtfelder:
-- `parent`: die `ui-app`, zu der diese Action gehört (bestimmt den Routing-Kontext)
+- `app`: die `ui-app`, zu der diese Action gehört (bestimmt den Routing-Kontext)
 - `name`: wird in Auswahlfeldern anderer Knoten angezeigt
 
 Optionale Felder:

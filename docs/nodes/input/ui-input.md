@@ -19,9 +19,9 @@ beim `writeTrigger`-Event persistiert. Zusätzlich emittiert der Knoten bei jede
 ## Einordnung
 
 - **Parent:** ein Slot einer `ui-app`, `ui-route`, `ui-dialog` oder
-  `ui-container` — angegeben über `mount` (Mount-Pfad) oder `parent` (Node-ID).
+  `ui-container` — angegeben über `mount` (Mount-Pfad) oder `app` (Node-ID).
 - **Kinder:** keine.
-- **Erreichbarkeit:** im gerenderten Layout an der Position, die `mount`/`parent`
+- **Erreichbarkeit:** im gerenderten Layout an der Position, die `mount`/`app`
   und die Layout-Child-Felder (`order`, `row`/`col`, `layoutX`/`layoutY`)
   vorgeben.
 - **Rolle zur Laufzeit:** liest `value` aus dem Client-State; schreibt die

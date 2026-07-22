@@ -149,8 +149,11 @@ function extractDefaultsKeys(src) {
  * ------------------------------------------------------------------ */
 
 // Config keys that are the placement baseline — excluded from the round-trip
-// mandate (covered by parent-selector.spec.ts / editor-mount-options.spec.ts).
-const EXCLUDED_KEYS = new Set(["parent", "mount"]);
+// mandate (covered by parent-selector.spec.ts / editor-mount-options.spec.ts /
+// the P228 category roundtrips in field-naming.spec.ts). `app` is the canonical
+// owning-app key (P228, ex-`parent`); the legacy key stays excluded for
+// robustness against old configs.
+const EXCLUDED_KEYS = new Set(["app", "parent", "mount"]);
 
 // The default `#node-input-<carrier>` id each reference-picker branch binds when
 // the config value is `true` rather than an explicit selector string (mirrors

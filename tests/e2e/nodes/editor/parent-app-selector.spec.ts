@@ -58,7 +58,7 @@ test.describe("editor — App parent selector never seeds the node's own id", ()
     });
 
     // The seed fix alone leaves an appless node silently empty — it must instead
-    // be a deploy-blocking error. `parent` is required on every app-owned node.
+    // be a deploy-blocking error. `app` (P228, ex-`parent`) is required on every app-owned node.
     test("a ui-store with no app parent is INVALID (deploy-blocking error)", async ({ page, request }) => {
         const editor = await openStore(page, request, { app: "" });
         expect(await editor.getValidationState("pasStore")).toBe("invalid");

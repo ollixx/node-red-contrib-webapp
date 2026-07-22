@@ -34,7 +34,7 @@ Node-Picker-Dialog, typedInput, Canvas-Knoten-Picker).
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
 | `name` | „Name" | Textfeld | optional | Anzeigename im Editor und in Auswahllisten. Default: fortlaufend `Action N`. |
-| `parent` | „App" | Node-Picker-Dialog (Preset Apps) | **ja** | Die Parent-`ui-app`. Bestimmt den Routing-Kontext. |
+| `app` | „App" | Node-Picker-Dialog (Preset Apps) | **ja** | Die Parent-`ui-app`. Bestimmt den Routing-Kontext. |
 | `actionType` | „Action-Typ" | SelectBox (Verb-Set) | optional | Das voreingestellte Interaktions-Verb. Auswahl aus dem kanonischen Verb-Set (siehe unten). Überschreibbar via `msg.ui.action.type`. Leer = unspezifiziert (Typ kommt dann aus der `msg`). |
 | `description` | „Beschreibung" | Textfeld | optional | Freitext-Beschreibung der Aktion (Dokumentation im Editor). |
 
@@ -260,7 +260,7 @@ zum **unbekannten Typ** — ersetze ihn mechanisch:
 | — | `actionType: "navigate"` |
 | — | `targetMode: "url"` |
 | `to` | `to` (unverändert übernehmen) |
-| `parent` | `parent` (unverändert) |
+| `parent` | `app` (P228-Rename; ein belassenes `parent` bleibt lesbar) |
 | `name` | `name` (unverändert) |
 
 Nur der `url`-Modus (`to`) eines `ui-navigation` hat je funktioniert (die Laufzeit

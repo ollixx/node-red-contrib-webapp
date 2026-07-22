@@ -39,9 +39,9 @@ Graphen nicht mehr auflösbar ist, bleibt erhalten und wird als
 
 **Verhalten des Dialogs:**
 - **App-Scope (P117):** Die Kandidaten sind auf die **App des editierten
-  Knotens** gefiltert (bestimmt über dessen `parent` bzw. die Mount-Kette,
+  Knotens** gefiltert (bestimmt über dessen `app` bzw. die Mount-Kette,
   jeweils nach dem aktuellen Stand des offenen Panels). Ist keine App
-  bestimmbar (neuer Knoten ohne parent/mount), werden alle Kandidaten gezeigt
+  bestimmbar (neuer Knoten ohne app/mount), werden alle Kandidaten gezeigt
   und jede Zeile nennt zusätzlich ihre App. Das `apps`-Preset ist naturgemäß
   ungefiltert.
 - **Optik (P117):** Der Dialog folgt dem Stil der übrigen Node-RED-Admin-
@@ -108,7 +108,7 @@ vorgefiltert (`nodePickerPresets`, gespeist aus `collectReferenceNodes`):
 | `mounts` | alle Parent-Slots (Apps → Routen/Dialoge → Container → Slots) als **Zwei-Spalten-Tree** (P135, `buildMountPickerTree`); `buildMountOptionsTree`/`flattenMountOptionTree` liefern weiterhin die flache Breadcrumb-Liste (Such-Pfade + Label-Auflösung) |
 
 `collectReferenceNodes()` sammelt App-, Route-, Dialog-, Container-, Action- und
-Store-Knoten aus dem aktuellen Editor-Graphen (inkl. id/typ/titel/parent/path),
+Store-Knoten aus dem aktuellen Editor-Graphen (inkl. id/typ/titel/app/path),
 indem es `RED.nodes.eachNode` durchläuft — die Auswahl basiert also auf dem
 Modell, nicht auf Canvas-Wires.
 
@@ -121,7 +121,7 @@ Standard-Felder eines Panels (in `oneditprepare` aufrufen, an den Knoten
 gebunden). Sie rendern jeweils das Anzeige+Button-Muster aus ADR 0009 — kein
 befülltes Dropdown:
 
-- `installParentAppSelector()` — `#node-input-parent` (Preset `apps`).
+- `installParentAppSelector()` — `#node-input-app` (Preset `apps`).
 - `installReferenceSelectors(config)` — je nach `config`-Flags:
   - `route: true` → `#node-input-routeId` (Preset `routes`, optional/leerbar)
   - `action: "<selector>"` → ein Action-Feld (Preset `actions`)
@@ -513,7 +513,7 @@ sind nur interaktionsfähige `ui-*`-Knoten wählbar (nicht `ui-action` selbst).
 | Auswahl | aus einer gefilterten Liste | durch Anklicken auf der Canvas |
 | Anzahl | ein Wert | Mehrfachauswahl (Liste) |
 | Gespeichert in | verstecktes Wertefeld (eine ID / Mount-String) | Hidden-Input (JSON-Array von IDs) |
-| Typischer Einsatz | parent, route, action, store, mount | `ui-action` `targets` |
+| Typischer Einsatz | app, route, action, store, mount | `ui-action` `targets` |
 
 ---
 

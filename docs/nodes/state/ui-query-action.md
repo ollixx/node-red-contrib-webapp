@@ -31,7 +31,7 @@ Verdrahten.
 | `query` | „Query" | Node-Picker (Preset Queries) | **ja** | Referenz auf die zu triggernde `ui-query` (Knoten-ID). Leer = nicht auflösbar → Laufzeit-Fehler. |
 | `action` | „Action" | Select | **ja** | Richtung: `refresh` (Query triggern, Default) \| `replace` (Query-Daten aus `msg.payload` setzen). Erweiterbares Enum. |
 | `mode` | „Mode" | Select | **ja** | `reference` (direkt triggern) \| `wire` (Envelope emittieren). Default `reference`. |
-| `parent` | „App" | Node-Picker (Apps) | **ja** | Besitzende `ui-app` (app-gebundener Referenz-Knoten, P205). Leer = Deploy-Fehler. |
+| `app` | „App" | Node-Picker (Apps) | **ja** | Besitzende `ui-app` (app-gebundener Referenz-Knoten, P205). Leer = Deploy-Fehler. |
 
 ## Action-Enum
 

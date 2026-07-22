@@ -14,7 +14,7 @@ referenzierten Stores (+ optionaler Sub-Pfad). Emittiert `msg.payload` +
 
 | Test | Ziel |
 |---|---|
-| minimaler Reader (store + parent, kein path) | Pflichtfelder genügen |
+| minimaler Reader (store + App, kein path) | Pflichtfelder genügen |
 | optionaler Default-`path` | `path` ist optional |
 | fehlende `store`-Referenz → ungültig | `store` ist Pflicht |
 | leere `store`-Referenz → ungültig | `min(1)` greift |
@@ -27,7 +27,7 @@ referenzierten Stores (+ optionaler Sub-Pfad). Emittiert `msg.payload` +
 
 | Test | Ziel |
 |---|---|
-| store + path + parent; leerer path → undefined | `blankToUndefined` |
+| store + path + App; leerer path → undefined | `blankToUndefined` |
 | nicht-leerer Config-path wird durchgereicht | Feld-Mapping |
 
 **Pfad-Präzedenz** (`msg.ui.store.path` › `msg.path` › Config-`path` › ganzes Slice)
@@ -60,7 +60,7 @@ referenzierten Stores (+ optionaler Sub-Pfad). Emittiert `msg.payload` +
 | Test | Ziel |
 |---|---|
 | `ui-store-read` in ALLE app-scoped Typen aufgenommen | Teil von `APP_SCOPED_PARENT_TYPES` |
-| `ui-store-read` ohne parent → ein Deploy-Issue | `parent` required (P205) |
+| `ui-store-read` ohne App → ein Deploy-Issue | `app` required (P205) |
 
 ## E2E (gemessen) — `tests/e2e/nodes/state/ui-store-read.spec.ts`
 

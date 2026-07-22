@@ -58,7 +58,7 @@ geprüft — nie über DOM-Präsenz/Tags.
 
 | Test | Ziel |
 |---|---|
-| ui-query-action ohne parent | Deploy-Fehler (P205), `no App parent` |
+| ui-query-action ohne App | Deploy-Fehler (P205), `no App` |
 | „applies to ALL app-scoped types" | ui-query-action ist Teil der app-gebundenen Typen |
 
 ## E2E — Playwright (`tests/e2e/nodes/state/ui-query-action.spec.ts`)

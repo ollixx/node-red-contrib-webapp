@@ -21,7 +21,7 @@ der explizit aus dem Flow ausgelöst wird.
 
 ## Einordnung
 
-- **Parent:** genau eine `ui-app` (via `parent`). Toasts erscheinen immer auf App-Ebene — nicht in einem Layout-Slot.
+- **Parent:** genau eine `ui-app` (via `app`). Toasts erscheinen immer auf App-Ebene — nicht in einem Layout-Slot.
 - **Kinder:** keine.
 - **Rolle zur Laufzeit:** imperativ ausgelöste Benachrichtigung; kein Teil des deklarativen Slot-Modells.
 
@@ -34,7 +34,7 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
 | `name` | „Name" | Textfeld | optional | Anzeigename im Editor. Default: fortlaufend `Toast N`. |
-| `parent` | „App" | Node-Picker-Dialog (Preset `apps`) | **ja** | Die Parent-`ui-app`. Toasts erscheinen app-weit, nicht slot-gebunden. |
+| `app` | „App" | Node-Picker-Dialog (Preset `apps`) | **ja** | Die Parent-`ui-app`. Toasts erscheinen app-weit, nicht slot-gebunden. |
 
 ### Gruppe „Defaults"
 

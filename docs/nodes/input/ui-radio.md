@@ -16,9 +16,9 @@ der Knoten ein `change`-Event auf dem Output-Port.
 ## Einordnung
 
 - **Parent:** ein Slot einer `ui-app`, `ui-route`, `ui-dialog` oder
-  `ui-container` — angegeben über `mount` (Mount-Pfad) oder `parent` (Node-ID).
+  `ui-container` — angegeben über `mount` (Mount-Pfad) oder `app` (Node-ID).
 - **Kinder:** keine.
-- **Erreichbarkeit:** im gerenderten Layout an der Position, die `mount`/`parent`
+- **Erreichbarkeit:** im gerenderten Layout an der Position, die `mount`/`app`
   und die Layout-Child-Felder vorgeben.
 - **Rolle zur Laufzeit:** liest `value` (die gewählte Option) und `options` aus
   dem Client-State; gibt `change`-Events auf dem Output-Port aus.

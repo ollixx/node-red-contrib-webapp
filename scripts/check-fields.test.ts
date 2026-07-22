@@ -107,6 +107,19 @@ describe("check-fields cross-node consistency tripwire", () => {
         expect(check.fieldViolations(["selectedId", "uiId"])).toEqual([]);
     });
 
+    // ---- Rule (c) P228 guardrail: `parent` is a retired reference field -----
+    it("FAILS a node reintroducing the retired `parent` reference field (P228: use `app`)", () => {
+        const v = check.fieldViolations(["name", "parent"]);
+        expect(v).toEqual([
+            { field: "parent", rule: "reference-bare-name", message: expect.any(String) },
+        ]);
+        expect(v[0].message).toContain("`app`");
+    });
+
+    it("does NOT flag the canonical `app` owning-app field", () => {
+        expect(check.fieldViolations(["name", "app", "mount"])).toEqual([]);
+    });
+
     // ---- Allowlist ----------------------------------------------------------
     it("PASSES an allowlisted (node, field) violation", () => {
         const { errors, allowlisted } = check.analyzeNodes(
