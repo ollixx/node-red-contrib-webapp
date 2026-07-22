@@ -36,6 +36,9 @@ const identifiedNodeSchema = z.object({
 });
 
 const mountableNodeSchema = identifiedNodeSchema.extend({
+    // P228 (ADR 0038): `app` is the canonical owning-app field; `parent` is the
+    // legacy alias accepted for pre-rename flows (transitional union).
+    app: z.string().min(1, "Component app references must not be empty.").optional(),
     parent: z.string().min(1, "Component parent paths must not be empty.").optional(),
     mount: z.string().min(1, "Component mounts must not be empty.").optional(),
     order: z.number().int("Component order must be an integer.").optional(),
@@ -46,7 +49,7 @@ const mountableNodeSchema = identifiedNodeSchema.extend({
     layoutX: z.number().int("Component x coordinates must be integers.").optional(),
     layoutY: z.number().int("Component y coordinates must be integers.").optional()
 }).superRefine((node, context) => {
-    if (!node.mount && !node.parent) {
+    if (!node.mount && !node.app && !node.parent) {
         context.addIssue({
             code: z.ZodIssueCode.custom,
             message: "Component nodes must declare either a mount or a parent path.",
@@ -504,6 +507,9 @@ export function validateComponentAcyclic(nodes: unknown[]): ComponentAcyclicResu
 
 export const uiRouteNodeDefinitionSchema = identifiedNodeSchema.extend({
     type: z.literal("ui-route"),
+    // P228 (ADR 0038): `app` is the canonical owning-app field; `parent` is the
+    // legacy alias accepted for pre-rename flows (transitional union).
+    app: identifierSchema.optional(),
     parent: identifierSchema.optional(),
     path: routeNodePathSchema,
     // P89: title is now a bindable field (literal/state/store/query/routeParam/msg/
@@ -520,6 +526,9 @@ export type UiRouteNodeDefinition = z.infer<typeof uiRouteNodeDefinitionSchema>;
 
 export const uiDialogNodeDefinitionSchema = identifiedNodeSchema.extend({
     type: z.literal("ui-dialog"),
+    // P228 (ADR 0038): `app` is the canonical owning-app field; `parent` is the
+    // legacy alias accepted for pre-rename flows (transitional union).
+    app: identifierSchema.optional(),
     parent: identifierSchema.optional(),
     title: z.string().min(1, "Dialog titles must not be empty.").optional(),
     layout: standardLayoutPresetSchema,
@@ -653,6 +662,9 @@ export type UiStoreScope = z.infer<typeof uiStoreScopeSchema>;
 
 export const uiStoreNodeDefinitionSchema = identifiedNodeSchema.extend({
     type: z.literal("ui-store"),
+    // P228 (ADR 0038): `app` is the canonical owning-app field; `parent` is the
+    // legacy alias accepted for pre-rename flows (transitional union).
+    app: identifierSchema.optional(),
     parent: identifierSchema.optional(),
     statePath: z.string().min(1, "Stores must declare a state path."),
     initialValue: z.unknown().optional(),
@@ -664,6 +676,9 @@ export type UiStoreNodeDefinition = z.infer<typeof uiStoreNodeDefinitionSchema>;
 
 export const uiQueryNodeDefinitionSchema = identifiedNodeSchema.extend({
     type: z.literal("ui-query"),
+    // P228 (ADR 0038): `app` is the canonical owning-app field; `parent` is the
+    // legacy alias accepted for pre-rename flows (transitional union).
+    app: identifierSchema.optional(),
     parent: identifierSchema.optional(),
     queryPath: z.string().min(1, "Queries must declare a query path."),
     params: z.string().min(1, "Params store reference must not be empty.").optional(),
@@ -683,6 +698,9 @@ export type UiQueryNodeDefinition = z.infer<typeof uiQueryNodeDefinitionSchema>;
 // owning app (required at deploy via the P205 parent validation).
 export const uiStoreReadNodeDefinitionSchema = identifiedNodeSchema.extend({
     type: z.literal("ui-store-read"),
+    // P228 (ADR 0038): `app` is the canonical owning-app field; `parent` is the
+    // legacy alias accepted for pre-rename flows (transitional union).
+    app: identifierSchema.optional(),
     parent: identifierSchema.optional(),
     store: z.string().min(1, "ui-store-read must reference a ui-store node."),
     path: z.string().min(1, "Store read paths must not be empty.").optional()
@@ -701,6 +719,9 @@ export type UiStoreReadNodeDefinition = z.infer<typeof uiStoreReadNodeDefinition
 // value comes from `msg.payload` (set/patch/replace); `reset` ignores it.
 export const uiStoreActionNodeDefinitionSchema = identifiedNodeSchema.extend({
     type: z.literal("ui-store-action"),
+    // P228 (ADR 0038): `app` is the canonical owning-app field; `parent` is the
+    // legacy alias accepted for pre-rename flows (transitional union).
+    app: identifierSchema.optional(),
     parent: identifierSchema.optional(),
     store: z.string().min(1, "ui-store-action must reference a ui-store node."),
     op: z.enum(["set", "patch", "delete", "replace", "reset"]).default("set"),
@@ -726,6 +747,9 @@ export type UiStoreActionNodeDefinition = z.infer<typeof uiStoreActionNodeDefini
 // the replace data comes from `msg.payload`.
 export const uiQueryActionNodeDefinitionSchema = identifiedNodeSchema.extend({
     type: z.literal("ui-query-action"),
+    // P228 (ADR 0038): `app` is the canonical owning-app field; `parent` is the
+    // legacy alias accepted for pre-rename flows (transitional union).
+    app: identifierSchema.optional(),
     parent: identifierSchema.optional(),
     query: z.string().min(1, "ui-query-action must reference a ui-query node."),
     action: z.enum(["refresh", "replace"]).default("refresh"),
@@ -795,6 +819,9 @@ function applyNavigateTargetModeExclusivity(
 
 export const uiActionNodeDefinitionSchema = identifiedNodeSchema.extend({
     type: z.literal("ui-action"),
+    // P228 (ADR 0038): `app` is the canonical owning-app field; `parent` is the
+    // legacy alias accepted for pre-rename flows (transitional union).
+    app: identifierSchema.optional(),
     parent: identifierSchema.optional(),
     actionType: actionTypeSchema.optional(),
     // P60 (ADR 0007 §3): the node picker (RED.view.selectNodes) stores a LIST of
@@ -1128,6 +1155,9 @@ export type UiAlertNodeDefinition = z.infer<typeof uiAlertNodeDefinitionSchema>;
 
 export const uiToastNodeDefinitionSchema = identifiedNodeSchema.extend({
     type: z.literal("ui-toast"),
+    // P228 (ADR 0038): `app` is the canonical owning-app field; `parent` is the
+    // legacy alias accepted for pre-rename flows (transitional union).
+    app: identifierSchema.optional(),
     parent: identifierSchema.optional(),
     // P49b: unified with SEVERITY_VARIANTS — same single source of truth as ui-alert.
     severity: z.enum(SEVERITY_VARIANTS).optional(),

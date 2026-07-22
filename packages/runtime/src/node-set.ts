@@ -55,8 +55,10 @@ function makeRegistrationId(type: string, appId: string, id: string): string {
     return `${appId}:${type}:${id}`;
 }
 
-function resolveMount(node: { mount?: string; parent?: string }): string {
-    return (node.mount || node.parent) ?? "";
+// P228 (ADR 0038): the owning-app field is canonically `app`; `parent` is the
+// legacy alias kept as a read-only fallback for pre-rename flows.
+function resolveMount(node: { mount?: string; app?: string; parent?: string }): string {
+    return (node.mount || node.app || node.parent) ?? "";
 }
 
 function toTextComponent(node: UiTextNodeDefinition): ComponentDefinition {

@@ -318,6 +318,9 @@ export interface UiAlertEditorConfig extends MountableEditorConfig {
 }
 
 export interface UiToastEditorConfig extends IdentifiedEditorConfig {
+    // P228 (ADR 0038): canonical owning-app field is `app`; `parent` is the
+    // legacy alias read as a fallback for pre-rename flows.
+    app?: string;
     parent?: string;
     // P49b: unified with SEVERITY_VARIANTS — primary|success|warning|danger|neutral|info
     severity?: "primary" | "success" | "warning" | "danger" | "neutral" | "info";
@@ -1570,7 +1573,7 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
     }, (config: UiToastEditorConfig): UiToastNodeDefinition => ({
         type: "ui-toast",
         id: config.id ?? "",
-        parent: config.parent,
+        parent: config.app ?? config.parent,
         severity: config.severity,
         duration: config.duration,
         position: config.position
