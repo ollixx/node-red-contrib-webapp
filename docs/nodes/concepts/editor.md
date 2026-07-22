@@ -157,7 +157,7 @@ Alle gespeicherten Werte sind **IDs** (bzw. Mount-Strings `<type>:<id>/<slot>`).
 > Der Input-Control-`value` ist **kein** reduzierter Sonderfall: er ist die
 > *Anzeige-/Initial*-Bindung (voller Satz, wie ui-checkbox/-datepicker bereits
 > liefern); das **Zurückschreib-Ziel** ist ein **separates** Feld
-> (`valuePath`/`storeId`, state/store). Ein Feld ohne deklarierte Kategorie
+> (`writeTo`, ADR 0027 — die alten `valuePath`/`storeId` sind seit P229 nur noch Migrations-Leser). Ein Feld ohne deklarierte Kategorie
 > fällt auf den **Wert/Anzeige-Vollsatz** zurück (sicherer, maximaler Default).
 > Details: [ADR 0012](../../adr/0012-binding-ubiquity-every-value-field-offers-bindings.md).
 

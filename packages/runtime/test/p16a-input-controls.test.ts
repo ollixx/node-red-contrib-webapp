@@ -217,19 +217,31 @@ describe("P16a: ui-textarea — schema compilation", () => {
         expect(assembly.success).toBe(true);
     });
 
-    it("mapConfig forwards rows and maxLength", () => {
+    it("mapConfig forwards lines and maxLength", () => {
         const def = runtimeNodeRegistry["ui-textarea"].mapConfig({
             id: "ta1",
             ...baseMount,
             label: "Notes",
             valuePath: "form.notes",
-            rows: "5",
+            lines: "6",
             maxLength: "500"
         }) as Record<string, unknown>;
 
         expect(def.type).toBe("ui-textarea");
-        expect(def.rows).toBe(5);
+        expect(def.lines).toBe(6);
         expect(def.maxLength).toBe(500);
+    });
+
+    it("mapConfig migrates a legacy `rows` config into `lines` (P229)", () => {
+        const def = runtimeNodeRegistry["ui-textarea"].mapConfig({
+            id: "ta2",
+            ...baseMount,
+            label: "Notes",
+            rows: "5"
+        }) as Record<string, unknown>;
+
+        expect(def.lines).toBe(5);
+        expect(def.rows).toBeUndefined();
     });
 });
 

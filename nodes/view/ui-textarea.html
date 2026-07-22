@@ -71,7 +71,10 @@
                 // typedInput lives directly on #node-input-placeholder.
                 // A legacy plain-string `placeholder` is migrated on open.
                 placeholder: { value: null },
-                rows: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
+                // P229 (ADR 0038): `lines` = visible text-line count (field HEIGHT).
+                // Renamed from the overloaded `rows` — `rows` now means only the
+                // ui-table DATA binding. A legacy `rows` migrates on open.
+                lines: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 maxLength: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 size: { value: "" },
                 // P128 (ADR 0012 / boolean category): `disabled` persists the binding
@@ -99,7 +102,7 @@
             // P229 (ADR 0038): migration-only legacy fields — injected as hidden
             // defaults at registration (see editor-common withMigrationDefaults);
             // migrated to `writeTo` on open, deleted on save, never written anew.
-            migrationFields: ["storeId", "path", "valuePath"],
+            migrationFields: ["storeId", "path", "valuePath", "rows"],
             inputs: 1,
             outputs: 1,
             outputLabels: function () { return "event"; },
@@ -115,6 +118,14 @@
                 common.installBaseFields(BASE_FIELDS).call(this);
                 common.installSizeSelectBox().call(this);
                 common.installLayoutChildPropRows().call(this);
+
+                // P229 (ADR 0038): `rows` → `lines` migration. Node-RED seeded
+                // #node-input-lines from `lines` before this hook; a legacy node
+                // (lines empty, rows set) seeds the field from the old value.
+                if ((this.lines === undefined || this.lines === null || this.lines === "")
+                    && this.rows !== undefined && this.rows !== null && this.rows !== "") {
+                    $("#node-input-lines").val(this.rows);
+                }
 
                 // P148 (ADR 0012 / display category): `label` typedInput.
                 // The typedInput lives on #node-input-label (not a separate
@@ -193,6 +204,11 @@
                 // P204: persist writeTo + writeTrigger; drop legacy storeId/path.
                 common.saveWriteToField.call(this);
 
+                // P229: `lines` is auto-copied from #node-input-lines by Node-RED
+                // after this hook; the migrated legacy `rows` is deleted so the
+                // saved node exports without it.
+                common.dropLegacyFields(this, ["rows"]);
+
                 // P148: persist label as binding object.
                 this.label = common.applyValueBinding(
                     $("#node-input-label").typedInput("type"),
@@ -239,7 +255,7 @@
     <div class="form-row"><label for="node-input-writeTrigger">Write Trigger</label><select id="node-input-writeTrigger"><option value="submit">submit</option><option value="change">change</option><option value="none">none</option></select></div>
     <!-- P148 (ADR 0012 / display category): Placeholder binding — typedInput managed in oneditprepare/oneditsave. -->
     <div class="form-row"><label for="node-input-placeholder">Placeholder</label><input type="text" id="node-input-placeholder"></div>
-    <div class="form-row"><label for="node-input-rows">Rows</label><input type="number" id="node-input-rows" min="1"></div>
+    <div class="form-row"><label for="node-input-lines">Lines</label><input type="number" id="node-input-lines" min="1"></div>
     <div class="form-row"><label for="node-input-maxLength">Max Length</label><input type="number" id="node-input-maxLength" min="1"></div>
     <!-- P128 (ADR 0012 / boolean category): Disabled binding — typedInput managed in oneditprepare/oneditsave. -->
     <div class="form-row"><label for="node-input-disabledBinding">Disabled</label><input type="text" id="node-input-disabledBinding"></div>

@@ -2067,6 +2067,11 @@ function toComponentDefinitions(components) {
                     ...(component.options !== undefined && !(optionsBinding) ? { options: component.options } : {}),
                     ...(component.multiple !== undefined ? { multiple: component.multiple } : {}),
                     ...(component.rows !== undefined ? { rows: component.rows } : {}),
+                    // P229 (ADR 0038): ui-textarea `lines` (renamed from the
+                    // overloaded `rows`) still rides as props.rows — that is the
+                    // component-prop/serializer surface backing the native
+                    // sl-textarea `rows` attribute (the measured height).
+                    ...(component.lines !== undefined ? { rows: component.lines } : {}),
                     ...(component.maxLength !== undefined ? { maxLength: component.maxLength } : {}),
                     ...(component.min !== undefined ? { min: component.min } : {}),
                     ...(component.max !== undefined ? { max: component.max } : {}),
@@ -7300,7 +7305,12 @@ const runtimeNodeRegistry = {
             writeTrigger: config.writeTrigger || undefined,
             // P148 (ADR 0012): placeholder may be a binding object or a legacy plain string.
             placeholder: getBinding(config.placeholder, typeof config.placeholder === "string" && config.placeholder ? config.placeholder : undefined),
-            rows: toOptionalNumber(config.rows),
+            // P229 (ADR 0038): canonical `lines` (visible line count / height);
+            // a legacy `rows` config migrates here — `rows` now means only the
+            // ui-table data binding.
+            lines: toOptionalNumber(config.lines) !== undefined
+                ? toOptionalNumber(config.lines)
+                : toOptionalNumber(config.rows),
             maxLength: toOptionalNumber(config.maxLength),
             size: blankToUndefined(config.size),
             disabled: getBinding(config.disabled, undefined),

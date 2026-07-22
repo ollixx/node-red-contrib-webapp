@@ -327,3 +327,51 @@ test.describe("P229 slice C — *Json carriers + currentPagePath migrate to cano
         expect(n.currentPagePath, "legacy currentPagePath dropped").toBeUndefined();
     });
 });
+
+// ─── Slice D — ui-textarea `rows` → `lines` (the only real rename) ───────────
+
+const APP_D = "fndApp";
+
+function legacyRowsFlow() {
+    return new FlowBuilder()
+        .app({ id: APP_D, root: APP_D })
+        .node("ui-textarea", { id: "fndText", rows: 7, lines: undefined })
+        .build();
+}
+
+test.describe("P229 slice D — ui-textarea rows renames to lines", () => {
+    test.afterEach(async ({ request }) => {
+        await resetFlow(request);
+    });
+
+    test("a legacy flow with `rows` renders the same height (measured rows attribute)", async ({ page, request }) => {
+        await deployFlow(request, legacyRowsFlow());
+
+        const webapp = new WebappPage(page, APP_D);
+        await webapp.navigate("/");
+        // The runtime migrates rows → lines; the native sl-textarea `rows`
+        // attribute (the measured height surface) is unchanged.
+        await expect(page.locator("sl-textarea")).toHaveAttribute("rows", "7");
+    });
+
+    test("open migrates rows → lines; save writes only `lines`; height unchanged after deploy", async ({ page, request }) => {
+        await deployFlow(request, legacyRowsFlow());
+        await gotoEditor(page);
+        const editor = new NodeEditorPage(page);
+
+        await editor.openNode("fndText");
+        // Open-time migration seeds the Lines field from the legacy rows value.
+        expect(await editor.readField("lines")).toBe("7");
+
+        await editor.save();
+        const n = await readNode(page, "fndText", ["lines", "rows"]);
+        expect(String(n.lines), "rows → lines").toBe("7");
+        expect(n.rows, "legacy rows dropped").toBeUndefined();
+
+        // Deploy the migrated node — the rendered height must be unchanged.
+        await editor.deploy();
+        const webapp = new WebappPage(page, APP_D);
+        await webapp.navigate("/");
+        await expect(page.locator("sl-textarea")).toHaveAttribute("rows", "7");
+    });
+});

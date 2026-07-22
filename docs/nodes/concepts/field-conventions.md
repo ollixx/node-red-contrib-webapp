@@ -14,12 +14,13 @@ Feld heißt und welches Carrier-Muster es verwendet. Sie ergänzt
 > (`scripts/check-fields.js`) erzwingt ihn.
 
 > **Migrations-Reihenfolge.** Dieses Dokument beschreibt den **Zielzustand**. Der
-> Baum entspricht ihm heute noch nicht vollständig: die Umbenennungen (`parent` →
-> `app`, `*Id` → bloßer Name) folgen in **P228**, der Legacy-Sweep (`*Path`/`*Json`/
-> totes `storeId`/`path`/Pagination-Aliase) in **P229**. Bis dahin trägt eine
-> **kuratierte Allowlist** in `scripts/check-fields.js` die heutigen Verstöße mit je
-> einer Ein-Zeilen-Begründung, damit `pnpm validate` grün bleibt; die Liste
-> schrumpft mit P228/P229 auf leer.
+> **Legacy-Sweep ist abgeschlossen (P229, 2026-07-22)**: `*Path`/`*Json`/totes
+> `storeId`/`path`/Pagination-Aliase sind aus allen `defaults` entfernt und
+> `ui-textarea.rows` heißt `lines` (Migration bleibt, siehe unten). Es fehlen
+> noch die Umbenennungen (`parent` → `app`, `*Id` → bloßer Name) aus **P228**;
+> nur deren Einträge trägt die **kuratierte Allowlist** in
+> `scripts/check-fields.js` noch (je eine Ein-Zeilen-Begründung), damit
+> `pnpm validate` grün bleibt; P228 schrumpft die Liste auf leer.
 
 ---
 
@@ -68,6 +69,32 @@ Der frühere `<base>Path`-Zwilling ist **entfernt** — der Binding-Pfad (ADR 00
 ist kanonisch. Es darf **kein** `<base>Path`-Default mehr geben, wenn
 `<base>Binding` existiert. Ebenso entfernt sind die rohen JSON-Authoring-Carrier
 `<base>Json` (`optionsJson`, `itemsJson`).
+
+> **Status: abgeschlossen (P229, 2026-07-22).** Der Legacy-Sweep ist gelaufen:
+> kein `ui-*`-Knoten trägt mehr einen `<base>Path`-, `*Json`-, `storeId`/`path`-
+> oder Pagination-Alias-Default. Die `check:fields`-Allowlist enthält nur noch
+> die P228-Rename-Einträge.
+
+### Migration-only Felder (`migrationFields`, P229)
+
+Ein entferntes Legacy-Feld braucht weiterhin einen **Migrations-Leser**: Alt-Flows
+dürfen nie brechen. Der Node-RED-Editor importiert und re-exportiert aber **nur**
+Felder, die in `_def.defaults` stehen — ohne Eintrag ginge der Legacy-Wert beim
+ersten Deploy verloren, bevor die Open-Time-Migration je liefe. Deshalb listet
+ein Knoten seine migration-only Felder in **`migrationFields: ["storeId", …]`**
+NEBEN (nicht in) seinem `defaults`-Block; die Registrierung
+(`withMigrationDefaults` in `resources/lib/editor-common.js`) injiziert dafür
+versteckte `{ value: undefined }`-Defaults:
+
+- ein Alt-Flow importiert seine Legacy-Werte weiter in den Editor (die
+  `oneditprepare`-Migration liest sie und hebt sie ins kanonische Feld);
+- ein Palette-neuer Knoten bekommt das Feld **nie** (Node-RED seedet nur
+  Defaults mit `value !== undefined`);
+- `oneditsave` **löscht** das migrierte Feld (`dropLegacyFields`) statt es zu
+  leeren — der gespeicherte Knoten exportiert ohne Legacy-Felder.
+
+Der Text-parsende Tripwire `check:fields` sieht die Injektion nicht — absichtlich:
+er prüft genau die Oberfläche, die der Editor **neu schreibt**.
 
 ---
 

@@ -260,6 +260,9 @@ export interface UiTextareaEditorConfig extends MountableEditorConfig {
     label?: string | BindingDefinition;
     valuePath?: string;
     placeholder?: string | BindingDefinition;
+    // P229 (ADR 0038): `lines` = visible line count (renamed from the overloaded
+    // `rows`; the legacy field is accepted for validation of old flows).
+    lines?: number;
     rows?: number;
     maxLength?: number;
 }
@@ -1301,7 +1304,8 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         rowSize: optionalInteger("Textarea grid row spans must be integers."),
         layoutX: optionalInteger("Textarea absolute x coordinates must be integers."),
         layoutY: optionalInteger("Textarea absolute y coordinates must be integers."),
-        rows: optionalInteger("Textarea rows must be a positive integer."),
+        lines: optionalInteger("Textarea lines must be a positive integer."),
+        rows: optionalInteger("Textarea rows (legacy alias of lines) must be a positive integer."),
         maxLength: optionalInteger("Textarea max length must be a positive integer.")
     }, (config: UiTextareaEditorConfig): UiTextareaNodeDefinition => ({
         type: "ui-textarea",
@@ -1312,7 +1316,8 @@ export const nodeSet: Record<NodeEditorType, NodeEditorDefinition> = {
         value: stateBinding(config.valuePath ?? ""),
         // P148: placeholder is a binding (literal string or dynamic binding).
         placeholder: bindingOrString(config.placeholder),
-        rows: config.rows,
+        // P229: canonical `lines`; a legacy `rows` config migrates into it.
+        lines: config.lines ?? config.rows,
         maxLength: config.maxLength,
         ...collectLayoutChildConfig(config)
     })),

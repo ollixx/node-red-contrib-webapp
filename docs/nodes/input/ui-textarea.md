@@ -43,7 +43,7 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 | `writeTo` | „Write To" | typedInput (**nur schreibbare** Arten: Store/Flow/Global, P204) | optional | Bindbares **Schreib**-Ziel (ADR 0027). Nur `store`/`flow`/`global`. Eine Textarea ist **text-artig** und honoriert den `writeTrigger`: `submit` schreibt beim Verlassen des Feldes (Blur), `change` bei jeder Eingabe. Store per-client + SSE-Re-Render; Flow/Global server-seitig. |
 | `writeTrigger` | „Write Trigger" | SelectBox (`none` / `change` / `submit`) | optional | Default `submit` (= Blur). `change` schreibt bei jeder Eingabe. `none` (P206) = **kein** automatischer Write-Back — der Flow-Autor verdrahtet die Persistenz selbst; die `change`/`submit`-Output-Events feuern weiter, `writeTo` darf bei `none` leer sein. |
 | `placeholder` | „Placeholder" | typedInput (alle Binding-Arten) | optional | Platzhaltertext, der angezeigt wird, wenn das Feld leer ist. Unterstützt alle Binding-Arten: `literal`, `state`, `store`, `query`, `routeParam`, `msg`, `flow`, `global`, `jsonata`, `env`. |
-| `rows` | „Rows" | Zahlfeld (≥ 1) | optional | Anzahl der sichtbaren Textzeilen (Höhe des Feldes). Wenn nicht gesetzt, verwendet das Backend seinen Standard-Default. |
+| `lines` | „Lines" | Zahlfeld (≥ 1) | optional | Anzahl der sichtbaren Textzeilen (Höhe des Feldes). Wenn nicht gesetzt, verwendet das Backend seinen Standard-Default. **P229 (ADR 0038):** umbenannt vom überladenen `rows` (das jetzt ausschließlich das ui-table-Daten-Binding meint); ein bestehendes `rows` migriert beim Öffnen verlustfrei zu `lines` (nur-Migration, kein Editor-Feld mehr) — die Runtime liest alt-deployte `rows`-Configs weiter. |
 | `maxLength` | „Max Length" | Zahlfeld (≥ 1) | optional | Maximale Anzahl erlaubter Zeichen. Wenn gesetzt, wird ein Zeichenzähler eingeblendet; Eingaben über die Grenze hinaus werden verhindert. |
 | `size` | „Größe" | SelectBox (`small` / `medium` / `large`) | optional | Größe des Texteingabefeldes. Default: `medium`. |
 | `disabled` | „Disabled" | typedInput (alle Binding-Arten) | optional | Bindbare Bedingung, die das Feld deaktiviert (Nutzereingabe gesperrt). |
@@ -67,7 +67,7 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 ### Inline-Hilfe (HTML)
 
 Der `data-help-name="ui-textarea"`-Hilfetext soll knapp sein: Zweck (mehrzeiliges
-Textfeld), Hinweis auf `rows` und `maxLength` (Zeichenzähler), `change`- und
+Textfeld), Hinweis auf `lines` und `maxLength` (Zeichenzähler), `change`- und
 `submit`-Events und ein Link auf die ausführliche Doku:
 `https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/input/ui-textarea.md`.
 
@@ -79,7 +79,7 @@ den Komponentenzustand steuert.
 - **`msg.payload`** (nicht-null) → aktualisiert das `value`-Feld des Knotens und
   sendet einen frischen Snapshot an alle verbundenen Clients der App.
 - **`msg.ui.patch`** → überschreibt beliebige Felder der Knoten-Definition
-  (z. B. `placeholder`, `rows`, `maxLength`, `disabled`). Binding-behaftete
+  (z. B. `placeholder`, `lines`, `maxLength`, `disabled`). Binding-behaftete
   Felder (`value`) müssen als Binding-Objekt übergeben werden.
   Details: [inputs.md](../concepts/inputs.md).
 - **`msg.ui.component.op`** → Komponentenoperation:

@@ -1029,7 +1029,10 @@ export const uiTextareaNodeDefinitionSchema = mountableNodeSchema.extend({
     // P148 (ADR 0012): placeholder accepts the canonical value-binding set.
     // Back-compat: a plain string from a pre-P148 flow is still accepted.
     placeholder: z.union([bindingSchema, z.string().min(1, "Textarea placeholders must not be empty.")]).optional(),
-    rows: z.number().int().positive().optional(),
+    // P229 (ADR 0038): `lines` = visible text-line count (field height). Renamed
+    // from the overloaded `rows` so `rows` means only the ui-table DATA binding;
+    // the runtime mapConfig migrates a legacy `rows` config into `lines`.
+    lines: z.number().int().positive().optional(),
     maxLength: z.number().int().positive().optional(),
     // P71: three-step size (sm/md/lg).
     size: componentSizeSchema.optional(),

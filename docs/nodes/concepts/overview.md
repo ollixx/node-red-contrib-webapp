@@ -33,7 +33,7 @@ Querschnittliche Konzepte sind in eigenen Dateien zentral dokumentiert:
 - Knoten werden über ihre Node-RED-Knoten-IDs referenziert (eine separate fachliche ID ist nicht nötig).
 - View-Knoten werden über `mount` an Route-, Dialog- oder Preset-Layout-Slots gebunden. Die UI-Hierarchie ergibt sich aus `parent`/`mount`, **nie** aus Wires — Wires tragen Daten-/Event-Fluss.
 - Mount-Pfade folgen dem Muster `<type>:<id>/<slot>` (z. B. `route:/customers/content`).
-- Für Referenzen wie `parent`, `mount`, `routeId`, `action`, `storeId` bietet der Editor durchsuchbare Auswahllisten aus den vorhandenen Webapp-Knoten an (einheitlicher Node-Picker-Dialog, P68).
+- Für Referenzen wie `parent`, `mount`, `routeId`, `action`, `store` bietet der Editor durchsuchbare Auswahllisten aus den vorhandenen Webapp-Knoten an (einheitlicher Node-Picker-Dialog, P68).
 - Das gemeinsame Schema validiert Feldpräsenz, Grundform und zunehmend fachliche Constraints (z. B. Routen-Pfad `/` verboten, Grid-Platzierung positive Integer, Mehrdeutigkeit bei Navigation).
 
 ## Ereignis- und Zustandsmodell

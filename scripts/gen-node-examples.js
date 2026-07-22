@@ -414,7 +414,7 @@ examples.push(inputNodeExample({
     nodeType: "ui-textarea",
     nodeProps: {
         label: "Notes", placeholder: "Enter your notes…",
-        rows: 4, value: { kind: "literal", value: "" }
+        lines: 4, value: { kind: "literal", value: "" }
     },
     injectValue: "Injected text content.", injectPayloadType: "str"
 }));

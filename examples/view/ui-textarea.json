@@ -37,7 +37,7 @@
     ],
     "label": "Notes",
     "placeholder": "Enter your notes…",
-    "rows": 4,
+    "lines": 4,
     "value": {
       "kind": "literal",
       "value": ""
