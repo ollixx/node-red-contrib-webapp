@@ -464,7 +464,7 @@ function legacyLayoutIdFlow(): Parameters<typeof deployFlow>[1] {
         { id: TAB_L, type: "tab", label: "P259 layoutId", disabled: false, info: "" },
         { type: "ui-app", id: APP_L, uiId: APP_L, name: "P259 App", title: "P259 App", root: APP_L, layout: "vertical", z: TAB_L, x: 100, y: 80, wires: [[]] },
         { type: "ui-route", id: "p259Route", uiId: "p259Route", name: "Page", app: APP_L, path: "/page", title: "Page", layoutId: "grid", events: "[]", outputs: 0, z: TAB_L, x: 100, y: 160, wires: [] },
-        { type: "ui-container", id: "p259Cont", uiId: "p259Cont", name: "Card", app: APP_L, mount: "route:/page/content", layoutId: "vertical", z: TAB_L, x: 100, y: 220, wires: [[]] },
+        { type: "ui-container", id: "p259Cont", uiId: "p259Cont", name: "Card", app: APP_L, mount: "route:/page/content", layoutId: "vertical", order: 0, row: 1, col: 1, colSize: 6, z: TAB_L, x: 100, y: 220, wires: [[]] },
         { type: "ui-text", id: "p259Text", uiId: "p259Text", name: "Text", app: APP_L, mount: "container:p259Cont/content", text: "Legacy layout renders", z: TAB_L, x: 100, y: 280, wires: [[]] },
         { type: "ui-dialog", id: "p259Dialog", uiId: "p259Dialog", name: "Dialog", app: APP_L, title: "Dialog", layoutId: "dialog", modal: true, closable: true, events: "[]", outputs: 0, z: TAB_L, x: 100, y: 340, wires: [] }
     ];
