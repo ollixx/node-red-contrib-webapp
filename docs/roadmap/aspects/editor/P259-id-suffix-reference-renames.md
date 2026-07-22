@@ -2,7 +2,7 @@
 id: P259
 title: "Id-Suffix-Referenz-Renames: layoutId→layout (route/dialog/container), routeId→route (dialog/action), definitionId→definition (component-instance) — back-compat; check:fields-Allowlist → LEER"
 epic: aspects/editor
-status: pending
+status: in_progress
 dependencies: [P228]
 verify: browser
 spec: docs/nodes/concepts/field-conventions.md
