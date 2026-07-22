@@ -64,7 +64,6 @@
                 // strings are kept for migration only (shared helper with ui-select).
                 options: { value: null },
                 optionsField: { value: "" },
-                optionsJson: { value: "" },
                 optionsBinding: { value: "" },
                 orientation: { value: "vertical" },
                 // P127 (ADR 0012 / boolean category): `disabled` persists the binding
@@ -91,7 +90,7 @@
             // P229 (ADR 0038): migration-only legacy fields — injected as hidden
             // defaults at registration (see editor-common withMigrationDefaults);
             // migrated to `writeTo` on open, deleted on save, never written anew.
-            migrationFields: ["storeId", "path", "valuePath"],
+            migrationFields: ["storeId", "path", "valuePath", "optionsJson"],
             inputs: 1,
             outputs: 1,
             outputLabels: function () { return "event"; },
@@ -198,7 +197,7 @@
                 // P136: persist options as binding object (json literal | store);
                 // clear the legacy options fields so they don't shadow the new one.
                 this.options = this._saveOptions ? this._saveOptions() : null;
-                this.optionsJson = "";
+                common.dropLegacyFields(this, ["optionsJson"]);
                 this.optionsBinding = "";
             }
         });

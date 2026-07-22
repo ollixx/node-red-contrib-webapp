@@ -31,10 +31,10 @@ test.describe("ui-select (P44 + P124)", () => {
             .node("ui-select", {
                 id: "selNode1",
                 label: "Country",
-                optionsJson: JSON.stringify([
+                options: { kind: "literal", value: [
                     { label: "Germany", value: "de" },
                     { label: "France", value: "fr" }
-                ])
+                ] }
             })
             .build();
 
@@ -55,7 +55,7 @@ test.describe("ui-select (P44 + P124)", () => {
                 id: "selNode2",
                 label: "Locked",
                 disabled: { kind: "literal", value: true },
-                optionsJson: JSON.stringify([{ label: "A", value: "a" }])
+                options: { kind: "literal", value: [{ label: "A", value: "a" }] }
             })
             .build();
 
@@ -74,10 +74,10 @@ test.describe("ui-select (P44 + P124)", () => {
             .node("ui-select", {
                 id: "selNode3",
                 label: "Lang",
-                optionsJson: JSON.stringify([
+                options: { kind: "literal", value: [
                     { label: "EN", value: "en" },
                     { label: "DE", value: "de" }
-                ])
+                ] }
             })
             .build();
 
@@ -110,10 +110,10 @@ test.describe("ui-select (P44 + P124)", () => {
                 id: "selValNode1",
                 label: "Lang",
                 value: { kind: "literal", value: "de" },
-                optionsJson: JSON.stringify([
+                options: { kind: "literal", value: [
                     { label: "EN", value: "en" },
                     { label: "DE", value: "de" }
-                ])
+                ] }
             })
             .build();
 
@@ -138,7 +138,7 @@ test.describe("ui-select (P44 + P124)", () => {
                 id: "selValNode2",
                 label: "Legacy",
                 valuePath: "selectedLang",
-                optionsJson: JSON.stringify([{ label: "EN", value: "en" }])
+                options: { kind: "literal", value: [{ label: "EN", value: "en" }] }
             })
             .build();
 
@@ -160,7 +160,7 @@ test.describe("ui-select (P44 + P124)", () => {
                 id: "selDisNode1",
                 label: "Locked",
                 disabled: { kind: "literal", value: true },
-                optionsJson: JSON.stringify([{ label: "A", value: "a" }])
+                options: { kind: "literal", value: [{ label: "A", value: "a" }] }
             })
             .build();
 
@@ -178,7 +178,7 @@ test.describe("ui-select (P44 + P124)", () => {
                 id: "selDisNode2",
                 label: "Enabled",
                 disabled: { kind: "literal", value: false },
-                optionsJson: JSON.stringify([{ label: "A", value: "a" }])
+                options: { kind: "literal", value: [{ label: "A", value: "a" }] }
             })
             .build();
 
@@ -205,7 +205,7 @@ test.describe("ui-select (P44 + P124)", () => {
                 id: "selDisNode3",
                 label: "Store Locked",
                 disabled: { kind: "store", path: "selStore3" },
-                optionsJson: JSON.stringify([{ label: "A", value: "a" }])
+                options: { kind: "literal", value: [{ label: "A", value: "a" }] }
             })
             .build();
 
@@ -225,10 +225,10 @@ test.describe("ui-select (P44 + P124)", () => {
                 id: "selRTNode",
                 label: "Round-trip",
                 value: { kind: "literal", value: "en" },
-                optionsJson: JSON.stringify([
+                options: { kind: "literal", value: [
                     { label: "EN", value: "en" },
                     { label: "DE", value: "de" }
-                ])
+                ] }
             })
             .build();
 
@@ -411,7 +411,7 @@ test.describe("ui-select (P44 + P124)", () => {
                 id: "p133SearchNode",
                 label: "Old",
                 searchable: true,
-                optionsJson: JSON.stringify([{ label: "A", value: "a" }])
+                options: { kind: "literal", value: [{ label: "A", value: "a" }] }
             })
             .build();
 
@@ -436,7 +436,7 @@ test.describe("ui-select (P44 + P124)", () => {
             .node("ui-select", {
                 id: "selWbIn",
                 label: "Choose",
-                optionsJson: JSON.stringify([{ label: "A", value: "a" }, { label: "B", value: "b" }]),
+                options: { kind: "literal", value: [{ label: "A", value: "a" }, { label: "B", value: "b" }] },
                 value: { kind: "store", path: "selWbStore", subPath: { kind: "literal", value: "choice" } },
                 writeTo: { kind: "store", path: "selWbStore", subPath: { kind: "literal", value: "choice" } },
                 writeTrigger: "submit"

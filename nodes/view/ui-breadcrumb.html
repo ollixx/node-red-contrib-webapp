@@ -46,14 +46,17 @@
                 name:      { value: "" },
                 parent:    { value: "" },
                 mount:     { value: "", required: true },
-                // P95: items as a binding object or stored as JSON literal in 'itemsJson'.
-                itemsJson: { value: "[]" },      // literal JSON (items array as string)
-                items:     { value: undefined },  // binding object (when not literal)
+                // P95/P229: `items` persists the binding object — a literal JSON
+                // array persists as {kind:"literal", value:[…]} (the legacy
+                // `itemsJson` string carrier is migration-only, see migrationFields).
+                items:     { value: undefined },
+                // P229 (ADR 0031 pattern): the typedInput carrier lives on
+                // #node-input-itemsBinding so Node-RED's post-save auto-copy
+                // cannot clobber the `items` binding object with the raw string.
+                itemsBinding: { value: "" },
                 // P95: optional layout for child-node slot mode (value = "breadcrumb")
                 layout:    { value: "" },
                 separator: { value: "" },
-                // Legacy P75 field — kept for back-compat read; replaced by items binding.
-                itemsPath: { value: "" },
                 order:     { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 row:       { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
                 col:       { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
@@ -62,6 +65,10 @@
                 layoutX:   { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
                 layoutY:   { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } }
             },
+            // P229 (ADR 0038): migration-only legacy fields — injected as hidden
+            // defaults at registration (see editor-common withMigrationDefaults);
+            // migrated to the canonical `items` binding on open, deleted on save.
+            migrationFields: ["itemsJson", "itemsPath"],
             inputs: 1,
             outputs: 1,
             icon: "font-awesome/fa-angle-right",
@@ -77,19 +84,33 @@
                 common.installLayoutChildPropRows().call(this);
 
                 // Determine current typedInput state from stored node properties.
-                // Priority: items binding object → literal JSON from itemsJson → legacy itemsPath.
+                // Priority: items binding object → literal JSON from legacy
+                // itemsJson → legacy itemsPath (both migration-only, P229).
                 let editorType = "literal";
-                let editorValue = this.itemsJson || "[]";
-                if (this.items && typeof this.items === "object" && typeof this.items.kind === "string") {
-                    editorType = this.items.kind;
-                    editorValue = this.items.path || this.items.value || "";
+                let editorValue = "[]";
+                if (Array.isArray(this.items)) {
+                    // Raw array (hand-authored flow) — open as its JSON literal.
+                    editorValue = JSON.stringify(this.items);
+                } else if (this.items && typeof this.items === "object" && typeof this.items.kind === "string") {
+                    if (this.items.kind === "literal") {
+                        // Canonical literal binding — the value is the items array.
+                        editorValue = typeof this.items.value === "string"
+                            ? this.items.value
+                            : JSON.stringify(this.items.value === undefined || this.items.value === null ? [] : this.items.value);
+                    } else {
+                        editorType = this.items.kind;
+                        editorValue = this.items.path || this.items.value || "";
+                    }
+                } else if (this.itemsJson && this.itemsJson !== "[]") {
+                    // Legacy raw-JSON string carrier.
+                    editorValue = String(this.itemsJson);
                 } else if (this.itemsPath) {
                     // Legacy P75 state-path shorthand.
                     editorType = "state";
                     editorValue = this.itemsPath;
                 }
 
-                const itemsInput = $("#node-input-items");
+                const itemsInput = $("#node-input-itemsBinding");
                 itemsInput.typedInput({
                     default: editorType,
                     types: makeItemsTypes()
@@ -110,17 +131,27 @@
             },
             oneditsave: function () {
                 common.applyBaseFields(BASE_FIELDS).call(this);
-                const itemsInput = $("#node-input-items");
+                const itemsInput = $("#node-input-itemsBinding");
                 const bindingType = itemsInput.typedInput("type");
                 const bindingValue = itemsInput.typedInput("value");
 
                 if (bindingType === "literal") {
-                    this.itemsJson = bindingValue;
-                    this.items = undefined;
+                    // P229: a literal items array persists as the canonical
+                    // literal binding — never as the legacy itemsJson string.
+                    let parsedItems;
+                    try {
+                        parsedItems = JSON.parse(bindingValue);
+                    }
+                    catch (_e) {
+                        // Invalid JSON is blocked by the typedInput validate;
+                        // keep the raw string so nothing is silently lost.
+                        parsedItems = bindingValue;
+                    }
+                    this.items = { kind: "literal", value: parsedItems };
                 } else {
-                    this.itemsJson = "";
                     this.items = { kind: bindingType, path: bindingValue };
                 }
+                common.dropLegacyFields(this, ["itemsJson", "itemsPath"]);
                 this.layout = $("#node-input-layout").val() || "";
                 this.separator = $("#node-input-separator").val() || "";
             }
@@ -139,8 +170,8 @@
         </select>
     </div>
     <div class="form-row" id="breadcrumb-items-row">
-        <label for="node-input-items">Items</label>
-        <input type="text" id="node-input-items">
+        <label for="node-input-itemsBinding">Items</label>
+        <input type="text" id="node-input-itemsBinding">
     </div>
     <div class="form-row"><label for="node-input-separator">Separator</label><input type="text" id="node-input-separator" placeholder="e.g. /"></div>
 </script>

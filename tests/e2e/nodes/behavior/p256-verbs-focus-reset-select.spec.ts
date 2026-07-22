@@ -402,7 +402,7 @@ test.describe("ui-action verbs focus / select / reset (P256)", () => {
             .node("ui-select", {
                 id: "p258Sel",
                 label: "Pick",
-                optionsJson: JSON.stringify([{ label: "A", value: "a" }, { label: "B", value: "b" }]),
+                options: { kind: "literal", value: [{ label: "A", value: "a" }, { label: "B", value: "b" }] },
                 value: { kind: "literal", value: "a" }
             })
             .node("ui-action", { id: "p258SelAct", actionType: "reset", target: "p258Sel" })
@@ -435,7 +435,7 @@ test.describe("ui-action verbs focus / select / reset (P256)", () => {
             .node("ui-radio", {
                 id: "p258Ra",
                 label: "Choose",
-                optionsJson: JSON.stringify([{ label: "A", value: "a" }, { label: "B", value: "b" }]),
+                options: { kind: "literal", value: [{ label: "A", value: "a" }, { label: "B", value: "b" }] },
                 value: { kind: "literal", value: "a" }
             })
             .node("ui-action", { id: "p258RaAct", actionType: "reset", target: "p258Ra" })

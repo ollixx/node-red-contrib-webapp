@@ -30,10 +30,10 @@ test.describe("ui-radio (P127)", () => {
             .node("ui-radio", {
                 id: "rd01",
                 label: "Size",
-                optionsJson: JSON.stringify([
+                options: { kind: "literal", value: [
                     { label: "Small", value: "s" },
                     { label: "Large", value: "l" }
-                ])
+                ] }
             })
             .build();
 
@@ -54,7 +54,7 @@ test.describe("ui-radio (P127)", () => {
                 id: "rd02",
                 label: "Color",
                 orientation: "horizontal",
-                optionsJson: JSON.stringify([{ label: "Red", value: "red" }])
+                options: { kind: "literal", value: [{ label: "Red", value: "red" }] }
             })
             .build();
 
@@ -73,10 +73,10 @@ test.describe("ui-radio (P127)", () => {
             .node("ui-radio", {
                 id: "rd03",
                 label: "Fruit",
-                optionsJson: JSON.stringify([
+                options: { kind: "literal", value: [
                     { label: "Apple", value: "apple" },
                     { label: "Banana", value: "banana" }
-                ]),
+                ] },
                 value: { kind: "literal", value: "banana" }
             })
             .build();
@@ -102,10 +102,10 @@ test.describe("ui-radio (P127)", () => {
             .node("ui-radio", {
                 id: "rd04",
                 label: "Size",
-                optionsJson: JSON.stringify([
+                options: { kind: "literal", value: [
                     { label: "Small", value: "s" },
                     { label: "Large", value: "l" }
-                ]),
+                ] },
                 value: { kind: "state", path: "radioState" }
             })
             .build();
@@ -133,10 +133,10 @@ test.describe("ui-radio (P127)", () => {
             .node("ui-radio", {
                 id: "rd05",
                 label: "Color",
-                optionsJson: JSON.stringify([
+                options: { kind: "literal", value: [
                     { label: "Red", value: "red" },
                     { label: "Blue", value: "blue" }
-                ]),
+                ] },
                 value: null,
                 valuePath: "legacyRadio"
             })
@@ -160,7 +160,7 @@ test.describe("ui-radio (P127)", () => {
             .node("ui-radio", {
                 id: "rd06",
                 label: "Size",
-                optionsJson: JSON.stringify([{ label: "Small", value: "s" }]),
+                options: { kind: "literal", value: [{ label: "Small", value: "s" }] },
                 disabled: { kind: "literal", value: true }
             })
             .build();
@@ -178,7 +178,7 @@ test.describe("ui-radio (P127)", () => {
             .node("ui-radio", {
                 id: "rd07",
                 label: "Size",
-                optionsJson: JSON.stringify([{ label: "Small", value: "s" }]),
+                options: { kind: "literal", value: [{ label: "Small", value: "s" }] },
                 disabled: { kind: "literal", value: false }
             })
             .build();
@@ -204,7 +204,7 @@ test.describe("ui-radio (P127)", () => {
             .node("ui-radio", {
                 id: "rd08",
                 label: "Size",
-                optionsJson: JSON.stringify([{ label: "Small", value: "s" }]),
+                options: { kind: "literal", value: [{ label: "Small", value: "s" }] },
                 disabled: { kind: "store", path: "rd08Store" }
             })
             .withStoreInject("rd08Inj", "rd08Store", true)
@@ -232,10 +232,10 @@ test.describe("ui-radio (P127)", () => {
             .node("ui-radio", {
                 id: "rd09",
                 label: "Color",
-                optionsJson: JSON.stringify([
+                options: { kind: "literal", value: [
                     { label: "Red", value: "red" },
                     { label: "Blue", value: "blue" }
-                ])
+                ] }
             })
             .build();
 
@@ -350,12 +350,15 @@ test.describe("ui-radio (P127)", () => {
 
     test("O05 — legacy optionsJson migrates: new `options` field still renders", async ({ page, request }) => {
         // Pre-P136 config: optionsJson only, no `options` binding object.
+        // P229: the FlowBuilder default now emits the canonical `options`
+        // binding; suppress it so the legacy field is the only source.
         const flow = new FlowBuilder()
             .app({ id: "rd14App", root: "rd14App" })
             .node("ui-radio", {
                 id: "rd14",
                 label: "Legacy",
-                optionsJson: JSON.stringify([{ label: "Old", value: "old" }])
+                optionsJson: JSON.stringify([{ label: "Old", value: "old" }]),
+                options: undefined
             })
             .build();
 
@@ -400,7 +403,7 @@ test.describe("ui-radio (P127)", () => {
             .node("ui-radio", {
                 id: "rdWbIn",
                 label: "Color",
-                optionsJson: JSON.stringify([{ label: "Red", value: "red" }, { label: "Blue", value: "blue" }]),
+                options: { kind: "literal", value: [{ label: "Red", value: "red" }, { label: "Blue", value: "blue" }] },
                 value: { kind: "store", path: "rdWbStore", subPath: { kind: "literal", value: "color" } },
                 writeTo: { kind: "store", path: "rdWbStore", subPath: { kind: "literal", value: "color" } },
                 writeTrigger: "submit"

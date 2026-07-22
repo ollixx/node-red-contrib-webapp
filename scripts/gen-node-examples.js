@@ -441,7 +441,7 @@ examples.push(inputNodeExample({
     nodeType: "ui-radio",
     nodeProps: {
         label: "Size",
-        optionsJson: JSON.stringify([{ label: "Small", value: "s" }, { label: "Medium", value: "m" }, { label: "Large", value: "l" }]),
+        options: { kind: "literal", value: [{ label: "Small", value: "s" }, { label: "Medium", value: "m" }, { label: "Large", value: "l" }] },
         value: { kind: "literal", value: "m" }
     },
     injectValue: "l", injectPayloadType: "str"

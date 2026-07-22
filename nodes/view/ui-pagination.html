@@ -41,7 +41,6 @@
                 currentPage: { value: null },
                 totalBinding: { value: "" },
                 currentPageBinding: { value: "" },
-                currentPagePath: { value: "" },
                 pageSize: { value: "" },
                 // P252: `showInfo` toggles the info-text region ("Seite X von Y")
                 // rendered below the prev/next controls. Plain boolean checkbox.
@@ -58,7 +57,7 @@
             // P229 (ADR 0038): migration-only legacy fields — injected as hidden
             // defaults at registration (see editor-common withMigrationDefaults);
             // migrated to the canonical binding on open, deleted on save.
-            migrationFields: ["totalPath"],
+            migrationFields: ["totalPath", "currentPagePath"],
             inputs: 1,
             outputs: 1,
             outputLabels: function () { return "event"; },
@@ -119,7 +118,7 @@
                     $("#node-input-currentPageBinding").typedInput("type"),
                     $("#node-input-currentPageBinding").typedInput("value")
                 );
-                this.currentPagePath = "";
+                common.dropLegacyFields(this, ["currentPagePath"]);
                 this.total = common.applyValueBinding(
                     $("#node-input-totalBinding").typedInput("type"),
                     $("#node-input-totalBinding").typedInput("value")

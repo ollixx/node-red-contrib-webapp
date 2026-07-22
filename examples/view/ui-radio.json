@@ -36,7 +36,23 @@
       ]
     ],
     "label": "Size",
-    "optionsJson": "[{\"label\":\"Small\",\"value\":\"s\"},{\"label\":\"Medium\",\"value\":\"m\"},{\"label\":\"Large\",\"value\":\"l\"}]",
+    "options": {
+      "kind": "literal",
+      "value": [
+        {
+          "label": "Small",
+          "value": "s"
+        },
+        {
+          "label": "Medium",
+          "value": "m"
+        },
+        {
+          "label": "Large",
+          "value": "l"
+        }
+      ]
+    },
     "value": {
       "kind": "literal",
       "value": "m"

@@ -207,3 +207,123 @@ test.describe("P229 slice B — residual <base>Path twins migrate to canonical b
         });
     }
 });
+
+// ─── Slice C — legacy `*Json` carriers + the pagination alias ────────────────
+
+const APP_C = "fncApp";
+
+/** One legacy flow: raw-JSON carriers + the pagination currentPagePath alias. */
+function legacyJsonCarrierFlow() {
+    return new FlowBuilder()
+        .app({ id: APP_C, root: APP_C })
+        .node("ui-store", {
+            id: "fncStore",
+            statePath: "fnc",
+            initialValue: JSON.stringify({ page: 2 })
+        })
+        // legacy raw-JSON options carrier (builder default `options` suppressed)
+        .node("ui-select", {
+            id: "fncSelect",
+            optionsJson: JSON.stringify([{ label: "EN", value: "en" }]),
+            options: undefined,
+            order: 0
+        })
+        .node("ui-radio", {
+            id: "fncRadio",
+            optionsJson: JSON.stringify([{ label: "Red", value: "red" }]),
+            options: undefined,
+            order: 1
+        })
+        // legacy raw-JSON items carrier
+        .node("ui-breadcrumb", {
+            id: "fncCrumb",
+            itemsJson: JSON.stringify([{ label: "Home" }, { label: "Deep" }]),
+            order: 2
+        })
+        // legacy pagination alias
+        .node("ui-pagination", {
+            id: "fncPager",
+            currentPagePath: "fnc.page",
+            total: { kind: "literal", value: 9 },
+            order: 3
+        })
+        .build();
+}
+
+test.describe("P229 slice C — *Json carriers + currentPagePath migrate to canonical bindings", () => {
+    test.afterEach(async ({ request }) => {
+        await resetFlow(request);
+    });
+
+    test("a legacy flow with *Json carriers + currentPagePath renders unchanged", async ({ page, request }) => {
+        await deployFlow(request, legacyJsonCarrierFlow());
+
+        const webapp = new WebappPage(page, APP_C);
+        await webapp.navigate("/");
+
+        await expect(page.locator("sl-option[value='en']")).toBeAttached();
+        await expect(page.locator("sl-radio[value='red']")).toBeVisible();
+        await expect(page.locator("sl-breadcrumb-item")).toHaveCount(2);
+        await expect(page.locator(".webapp-pagination-page")).toContainText("2 / 9");
+    });
+
+    test("ui-select: legacy optionsJson opens in the Options field, save writes only `options`", async ({ page, request }) => {
+        await deployFlow(request, legacyJsonCarrierFlow());
+        await gotoEditor(page);
+        const editor = new NodeEditorPage(page);
+
+        await editor.openNode("fncSelect");
+        expect(await editor.readTypedInputType("optionsField")).toBe("json");
+        expect(await editor.readTypedInput("optionsField")).toContain("EN");
+
+        await editor.save();
+        const n = await readNode(page, "fncSelect", ["options", "optionsJson"]);
+        expect(n.options).toMatchObject({ kind: "literal", value: [{ label: "EN", value: "en" }] });
+        expect(n.optionsJson, "legacy optionsJson dropped").toBeUndefined();
+    });
+
+    test("ui-radio: legacy optionsJson opens in the Options field, save writes only `options`", async ({ page, request }) => {
+        await deployFlow(request, legacyJsonCarrierFlow());
+        await gotoEditor(page);
+        const editor = new NodeEditorPage(page);
+
+        await editor.openNode("fncRadio");
+        expect(await editor.readTypedInputType("optionsField")).toBe("json");
+        expect(await editor.readTypedInput("optionsField")).toContain("Red");
+
+        await editor.save();
+        const n = await readNode(page, "fncRadio", ["options", "optionsJson"]);
+        expect(n.options).toMatchObject({ kind: "literal", value: [{ label: "Red", value: "red" }] });
+        expect(n.optionsJson, "legacy optionsJson dropped").toBeUndefined();
+    });
+
+    test("ui-breadcrumb: legacy itemsJson opens as the literal Items value, save writes only `items`", async ({ page, request }) => {
+        await deployFlow(request, legacyJsonCarrierFlow());
+        await gotoEditor(page);
+        const editor = new NodeEditorPage(page);
+
+        await editor.openNode("fncCrumb");
+        expect(await editor.readTypedInputType("itemsBinding")).toBe("literal");
+        expect(await editor.readTypedInput("itemsBinding")).toContain("Home");
+
+        await editor.save();
+        const n = await readNode(page, "fncCrumb", ["items", "itemsJson"]);
+        expect(n.items).toMatchObject({ kind: "literal", value: [{ label: "Home" }, { label: "Deep" }] });
+        expect(n.itemsJson, "legacy itemsJson dropped").toBeUndefined();
+    });
+
+    test("ui-pagination: legacy currentPagePath opens as a state binding, save writes only `currentPage`", async ({ page, request }) => {
+        await deployFlow(request, legacyJsonCarrierFlow());
+        await gotoEditor(page);
+        const editor = new NodeEditorPage(page);
+
+        await editor.openNode("fncPager");
+        expect(await editor.readTypedInputType("currentPageBinding")).toBe("state");
+        expect(await editor.readTypedInput("currentPageBinding")).toBe("fnc.page");
+
+        await editor.save();
+        const n = await readNode(page, "fncPager", ["currentPage", "currentPagePath"]);
+        expect(n.currentPage).toMatchObject({ kind: "state", path: "fnc.page" });
+        expect(n.currentPagePath, "legacy currentPagePath dropped").toBeUndefined();
+    });
+});

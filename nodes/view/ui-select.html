@@ -64,7 +64,6 @@
                 // strings are kept for migration only.
                 options: { value: null },
                 optionsField: { value: "" },
-                optionsJson: { value: "" },
                 optionsBinding: { value: "" },
                 // P133 (ADR 0012): `placeholder` persists the binding OBJECT; the
                 // typedInput lives on #node-input-placeholderBinding.
@@ -98,7 +97,7 @@
             // P229 (ADR 0038): migration-only legacy fields — injected as hidden
             // defaults at registration (see editor-common withMigrationDefaults);
             // migrated to `writeTo` on open, deleted on save, never written anew.
-            migrationFields: ["storeId", "path", "valuePath"],
+            migrationFields: ["storeId", "path", "valuePath", "optionsJson"],
             inputs: 1,
             outputs: 1,
             outputLabels: function () { return "event"; },
@@ -227,7 +226,7 @@
                 // P133: persist options as binding object (json literal | store);
                 // clear the legacy options fields so they don't shadow the new one.
                 this.options = this._saveSelectOptions ? this._saveSelectOptions() : null;
-                this.optionsJson = "";
+                common.dropLegacyFields(this, ["optionsJson"]);
                 this.optionsBinding = "";
             }
         });

@@ -75,17 +75,6 @@ const ALLOWLIST = {
     "ui-action": { routeId: "P228: rename `routeId` → `route` (bare reference name)" },
     // P243 (ADR 0040): ui-navigation retired — navigation is a ui-action navigate.
 
-    // ---- (b) legacy `*Json` carriers + pagination alias (P229 slice C) -------
-    "ui-select": {
-        optionsJson: "P229: legacy raw-JSON options carrier (superseded by `optionsBinding`)",
-    },
-    "ui-radio": {
-        optionsJson: "P229: legacy raw-JSON options carrier (superseded by `optionsBinding`)",
-    },
-    "ui-breadcrumb": { itemsJson: "P229: legacy raw-JSON items carrier (superseded by binding)" },
-    "ui-pagination": {
-        currentPagePath: "P229: legacy pagination alias / `<base>Path` twin of `currentPageBinding`",
-    },
 };
 
 /* ------------------------------------------------------------------ *

@@ -68,11 +68,13 @@ function defaultsFor(type: string, ctx: { appId: string; routeId?: string; id: s
         case "ui-textarea":
             return { ...base, label: "Textarea", value: { kind: "literal", value: "" } };
         case "ui-select":
-            return { ...base, label: "Select", optionsJson: JSON.stringify([{ label: "A", value: "a" }]), value: { kind: "literal", value: "" } };
+            // P229 (ADR 0038): canonical `options` literal binding (the legacy
+            // `optionsJson` editor default is gone; the runtime reader remains).
+            return { ...base, label: "Select", options: { kind: "literal", value: [{ label: "A", value: "a" }] }, value: { kind: "literal", value: "" } };
         case "ui-checkbox":
             return { ...base, label: "Checkbox", value: { kind: "literal", value: false } };
         case "ui-radio":
-            return { ...base, label: "Radio", optionsJson: JSON.stringify([{ label: "A", value: "a" }]), value: { kind: "literal", value: "" } };
+            return { ...base, label: "Radio", options: { kind: "literal", value: [{ label: "A", value: "a" }] }, value: { kind: "literal", value: "" } };
         case "ui-switch":
             return { ...base, label: "Switch", value: { kind: "literal", value: false } };
         case "ui-datepicker":
