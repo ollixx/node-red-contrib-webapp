@@ -279,13 +279,13 @@ function main() {
         for (const e of errors) console.error("  - " + e);
         console.error(
             `\n${errors.length} field-model violation(s) across ${checked} node(s) checked; ` +
-                `${allowlisted} field(s) allowlisted (pending P228/P229).`
+                `${allowlisted} field(s) allowlisted (the list is frozen EMPTY since P259 — new entries need an ADR reason).`
         );
         process.exit(1);
     }
     console.log(
         `Cross-node field-consistency OK: ${checked} ui-* node(s) checked, ` +
-            `${allowlisted} field(s) allowlisted (pending P228/P229).`
+            `${allowlisted} field(s) allowlisted (ADR 0038 fully enforced since P259).`
     );
 }
 
