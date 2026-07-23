@@ -1,0 +1,22 @@
+<script type="text/html" data-help-name="ui-store">
+<p>Ein benannter Slice des Client-States und der eine deklarative Pfad für
+fachliche Zustandsänderungen. Geschrieben über Store-Operationen, gelesen über
+<code>state</code> / <code>store</code>-Bindings.</p>
+<h3>Wichtige Felder</h3>
+<ul>
+    <li><b>State Path</b> — der Slice-Name (ein einzelner Bezeichner), app-weit eindeutig.</li>
+    <li><b>Initial Value JSON</b> — der Startwert des Slice; zugleich Ziel von <code>reset</code>.</li>
+    <li><b>Persist</b> — den Slice im <code>localStorage</code> des Clients halten.</li>
+    <li><b>Scope</b> — Guard: <code>Broadcast Only</code> / <code>Client Only</code> weisen die falsche Message-Art ab.</li>
+</ul>
+<h3>Eingang</h3>
+<p>Eine <code>msg.ui.store</code>, deren <code>id</code> zu diesem Knoten passt:
+<code>op</code> = <code>set</code>/<code>patch</code>/<code>delete</code>/<code>replace</code>/<code>reset</code>
+mit <code>path</code>/<code>value</code>. <code>msg.ui.clientId</code> zielt auf einen
+Client. Eine unpassende Message wird unverändert durchgereicht.</p>
+<h3>Ausgänge / Events</h3>
+<p>Bei Änderung: <code>msg.ui.store = { id, event:"changed", op, path,
+fullPath, value, previousValue, origin }</code>.</p>
+<h3>Vollständige Doku</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/de/nodes/ui-store.md" target="_blank">docs/guide/de/nodes/ui-store.md</a></p>
+</script>

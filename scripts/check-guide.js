@@ -46,7 +46,7 @@ for (const t of [
     "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state",
     "ui-tabs", "ui-tab", "ui-accordion", "ui-accordion-section", "ui-breadcrumb", "ui-menu",
     "ui-pagination", "ui-stepper", "ui-image", "ui-icon", "ui-list", "ui-avatar",
-    "ui-log", "ui-repeat", "ui-store", "ui-query", "ui-store-read",
+    "ui-log", "ui-repeat", "ui-query", "ui-store-read",
     "ui-store-action", "ui-query-action", "ui-action",
     // ui-divider: PILOT (P265) — has full guide coverage; intentionally absent.
 ]) {

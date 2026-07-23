@@ -1,0 +1,50 @@
+[
+    {
+        "id": "guide-ui-store",
+        "type": "tab",
+        "label": "Guide: ui-store",
+        "disabled": false,
+        "info": "User-guide example for ui-store (docs/guide/nodes/ui-store.md). Import, deploy, open /webapp/guideStore/ to see a store value shown by a text view."
+    },
+    {
+        "id": "guideStore",
+        "type": "ui-app",
+        "name": "Store demo",
+        "uiId": "guideStore",
+        "root": "guideStore",
+        "layout": "app",
+        "z": "guide-ui-store",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gStoreNode",
+        "type": "ui-store",
+        "name": "Greeting store",
+        "uiId": "gStoreNode",
+        "app": "guideStore",
+        "statePath": "greeting",
+        "initialValue": "\"Hello from the store\"",
+        "persist": false,
+        "scope": "any",
+        "z": "guide-ui-store",
+        "x": 120,
+        "y": 160,
+        "wires": [[]]
+    },
+    {
+        "id": "gStoreText",
+        "type": "ui-text",
+        "name": "Greeting",
+        "uiId": "gStoreText",
+        "app": "guideStore",
+        "mount": "guideStore.content",
+        "value": { "kind": "state", "path": "greeting" },
+        "order": "1",
+        "z": "guide-ui-store",
+        "x": 340,
+        "y": 120,
+        "wires": [[]]
+    }
+]

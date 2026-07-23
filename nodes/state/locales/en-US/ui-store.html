@@ -1,0 +1,22 @@
+<script type="text/html" data-help-name="ui-store">
+<p>A named slice of client state and the one declarative path for business state
+changes. Written through store operations, read through <code>state</code> /
+<code>store</code> bindings.</p>
+<h3>Key fields</h3>
+<ul>
+    <li><b>State Path</b> — the slice name (a single identifier), unique per app.</li>
+    <li><b>Initial Value JSON</b> — the slice's starting value; also the target of <code>reset</code>.</li>
+    <li><b>Persist</b> — keep the slice in the client's <code>localStorage</code>.</li>
+    <li><b>Scope</b> — guard: <code>Broadcast Only</code> / <code>Client Only</code> reject the wrong message kind.</li>
+</ul>
+<h3>Inputs</h3>
+<p>A <code>msg.ui.store</code> whose <code>id</code> matches this node:
+<code>op</code> = <code>set</code>/<code>patch</code>/<code>delete</code>/<code>replace</code>/<code>reset</code>
+with <code>path</code>/<code>value</code>. <code>msg.ui.clientId</code> targets one
+client. A non-matching message passes through unchanged.</p>
+<h3>Outputs / Events</h3>
+<p>On change, emits <code>msg.ui.store = { id, event:"changed", op, path,
+fullPath, value, previousValue, origin }</code>.</p>
+<h3>Full docs</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/nodes/ui-store.md" target="_blank">docs/guide/nodes/ui-store.md</a></p>
+</script>

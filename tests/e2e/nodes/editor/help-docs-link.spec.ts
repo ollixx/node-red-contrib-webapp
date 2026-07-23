@@ -30,6 +30,7 @@ const EXPECTED_DOC: Record<string, string> = {
 const LOCALE_MIGRATED = new Set<string>([
     "ui-divider", "ui-app", "ui-route", "ui-dialog",
     "ui-component-definition", "ui-component-instance",
+    "ui-store",
 ]);
 
 // Every ui-* editor type (from package.json node-red.nodes). Kept explicit so a

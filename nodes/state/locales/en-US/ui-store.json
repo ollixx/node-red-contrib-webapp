@@ -1,0 +1,18 @@
+{
+    "ui-store": {
+        "label": {
+            "app": "App",
+            "statePath": "State Path",
+            "initialValue": "Initial Value JSON",
+            "persist": "Persist",
+            "scope": "Scope"
+        },
+        "option": {
+            "scope": {
+                "any": "Any (default)",
+                "broadcast-only": "Broadcast Only",
+                "client-only": "Client Only"
+            }
+        }
+    }
+}
