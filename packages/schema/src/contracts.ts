@@ -34,9 +34,10 @@ export const routeNodePathSchema = routePathSchema.refine((path) => path !== "/"
  * headers, or provider specifics. `groups` defaults to `[]` so consumers can
  * always iterate it without a presence check.
  *
- * NOTE (inert until P261): P260 ships the contract + the `ui-app.auth` config
- * only; no runtime code produces or enforces a UserIdentity yet. See
- * docs/nodes/concepts/auth.md.
+ * Since P261 this contract is LIVE: the trusted-header auth guard
+ * (nodes/webapp.js, `appAuthGuard`) produces it from the configured proxy
+ * headers and enforces it on every app endpoint; the renderer resolves it via
+ * the `user` binding kind. See docs/nodes/concepts/auth.md.
  */
 export const userIdentitySchema = z.object({
     id: z.string().min(1, "user.id must not be empty."),
@@ -54,8 +55,15 @@ export type UserIdentity = z.infer<typeof userIdentitySchema>;
  * id, which the renderer resolves to the store's current value via its
  * statePath. Referencing the store by id (not by statePath) keeps the binding
  * robust against later statePath renames.
+ *
+ * P261 (ADR 0041 §3): `user` — the authenticated identity of the requesting
+ * client (the ONE {@link userIdentitySchema} object). Path-bearing like
+ * `routeParam`: `user.id` / `user.name` / `user.email` / `user.groups` (the
+ * groups value is a string[] — usable as a structural source). Resolved by the
+ * renderer from the request/SSE-connection context; with `auth.mode: "none"`
+ * (no identity) it resolves undefined → fallback.
  */
-export const DYNAMIC_BINDING_KINDS = ["state", "query", "routeParam", "msg", "flow", "global", "jsonata", "env", "store"] as const;
+export const DYNAMIC_BINDING_KINDS = ["state", "query", "routeParam", "user", "msg", "flow", "global", "jsonata", "env", "store"] as const;
 
 /**
  * P163 (ADR 0017): the **scope-local** binding kinds introduced by `ui-repeat`.
@@ -76,7 +84,7 @@ export const DYNAMIC_BINDING_KINDS = ["state", "query", "routeParam", "msg", "fl
  */
 export const SCOPE_LOCAL_BINDING_KINDS = ["item", "index", "prop"] as const;
 
-const BINDING_KINDS = ["state", "query", "routeParam", "literal", "msg", "flow", "global", "jsonata", "env", "store", "reactive", "item", "index", "prop"] as const;
+const BINDING_KINDS = ["state", "query", "routeParam", "user", "literal", "msg", "flow", "global", "jsonata", "env", "store", "reactive", "item", "index", "prop"] as const;
 
 /**
  * P219 (ADR 0034): per-field behaviour when this binding's value is

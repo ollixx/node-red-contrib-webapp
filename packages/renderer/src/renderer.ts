@@ -45,6 +45,24 @@ export interface RendererAppOptions {
     // per app instance so a broken expression is reported once, not on every
     // re-render. The host wires this to the error-forwarding pipeline.
     onReactiveError?: ReactiveErrorReporter;
+    // P261 (ADR 0041 §3): the authenticated identity of the REQUESTING client
+    // (the ONE userIdentitySchema object: { id, name?, email?, groups }). Set
+    // per snapshot build from the request / SSE-connection context — never
+    // shared between clients. Absent (auth mode "none") → every `user` binding
+    // resolves undefined (→ fallback).
+    user?: UserIdentityLike;
+}
+
+/**
+ * P261: the shape the `user` binding kind resolves against — structurally the
+ * schema's UserIdentity. Kept as a local structural type so the renderer does
+ * not need a new import surface for one lookup.
+ */
+interface UserIdentityLike {
+    id: string;
+    name?: string;
+    email?: string;
+    groups: string[];
 }
 
 export interface RenderedEventBinding {
@@ -245,6 +263,11 @@ interface BindingSources {
     // the resolver can tell a lifecycle sub-path from a data sub-field.
     queryLifecycle: Record<string, Record<string, unknown>>;
     params: Record<string, string>;
+    // P261 (ADR 0041 §3): the requesting client's identity for the `user`
+    // binding kind (`user.id/name/email/groups`). Per-snapshot, per-client —
+    // an SSE re-render resolves against the identity bound to THAT connection.
+    // Absent (mode "none") → `user` bindings resolve undefined.
+    user?: UserIdentityLike;
     // P67: store id → statePath, so a `store` binding resolves to the store's
     // current value via state. Referencing by id (not statePath) stays robust
     // against later statePath renames.
@@ -618,6 +641,14 @@ function resolveBinding(binding: BindingDefinition | undefined, sources: Binding
             break;
         case "routeParam":
             resolvedValue = binding.path ? sources.params[binding.path] : undefined;
+            break;
+        case "user":
+            // P261 (ADR 0041 §3): the authenticated identity of the requesting
+            // client. `user.id` / `user.name` / `user.email` / `user.groups`
+            // resolve via the standard path walk (so `groups` yields the raw
+            // string[] — usable structurally). No identity (mode "none") or an
+            // unknown path → undefined (→ fallback), never a throw.
+            resolvedValue = getValueAtPath(sources.user, binding.path);
             break;
         case "state":
             resolvedValue = getValueAtPath(sources.state, binding.path);
@@ -2234,6 +2265,9 @@ export function createRendererApp(appModel: AppModel, options: RendererAppOption
                 queries,
                 queryLifecycle,
                 params: routeMatch.params,
+                // P261: the requesting client's identity (per app instance —
+                // webapp.js builds one renderer app per snapshot, per client).
+                user: options.user,
                 storePaths,
                 storeNamePaths,
                 storeNames,
