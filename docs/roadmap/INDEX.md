@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P267** — aspects/docs — Node-Referenz-Batch **backbone** (11: structure/state/behavior/components) — [P267](aspects/docs/P267-node-reference-batch-backbone.md)
 - **P268** — aspects/docs — Node-Referenz-Batch **input** (9 Formular-Knoten) — [P268](aspects/docs/P268-node-reference-batch-input.md)
 - **P269** — aspects/docs — Node-Referenz-Batch **display** (8; divider = Pilot) — [P269](aspects/docs/P269-node-reference-batch-display.md)
 - **P270** — aspects/docs — Node-Referenz-Batch **feedback** (7) — [P270](aspects/docs/P270-node-reference-batch-feedback.md)
@@ -95,7 +94,7 @@ open the folder for the full history.
 | aspects/test-infra | 28 |
 | aspects/node-conformance | 27 |
 | aspects/misc | 16 |
-| aspects/docs | 5 |
+| aspects/docs | 6 |
 | aspects/runtime | 9 |
 | aspects/state | 9 |
 | aspects/auth | 3 |
@@ -106,4 +105,4 @@ open the folder for the full history.
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 265 done, 5 open, 10 deferred.**
+**Total: 266 done, 4 open, 10 deferred.**
