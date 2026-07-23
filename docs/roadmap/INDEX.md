@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P266** — aspects/docs — **Intro + Getting Started + 8 Themen-Guides** (EN+DE, je Import-Beispiel; absorbiert „Wire vs. Referenz") — [P266](aspects/docs/P266-intro-getting-started-guides.md)
 - **P267** — aspects/docs — Node-Referenz-Batch **backbone** (11: structure/state/behavior/components) — [P267](aspects/docs/P267-node-reference-batch-backbone.md)
 - **P268** — aspects/docs — Node-Referenz-Batch **input** (9 Formular-Knoten) — [P268](aspects/docs/P268-node-reference-batch-input.md)
 - **P269** — aspects/docs — Node-Referenz-Batch **display** (8; divider = Pilot) — [P269](aspects/docs/P269-node-reference-batch-display.md)
@@ -96,7 +95,7 @@ open the folder for the full history.
 | aspects/test-infra | 28 |
 | aspects/node-conformance | 27 |
 | aspects/misc | 16 |
-| aspects/docs | 3 |
+| aspects/docs | 4 |
 | aspects/runtime | 9 |
 | aspects/state | 9 |
 | aspects/auth | 3 |
@@ -107,4 +106,4 @@ open the folder for the full history.
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 263 done, 7 open, 10 deferred.**
+**Total: 264 done, 6 open, 10 deferred.**

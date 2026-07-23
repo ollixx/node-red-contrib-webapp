@@ -2,7 +2,7 @@
 id: P266
 title: "Introduction + Getting Started + die 8 Themen-Guides (EN + DE) — inkl. Import-Beispiel-Flows je Guide; absorbiert das alte P121-Thema „Wire vs. Referenz\""
 epic: aspects/docs
-status: in_progress
+status: done
 dependencies: [P265]
 verify: browser
 spec: docs/guide/README.md
@@ -10,7 +10,7 @@ tests: tests/e2e/nodes/structure/ui-app.tests.md
 ---
 # P266 — Introduction, Getting Started, Themen-Guides
 
-> Rationale: **[ADR 0042](../../../adr/0042-user-docs-architecture-guide-tree-i18n-help-en-first-de.md)**.
+> Rationale: **[ADR 0042](../../../../adr/0042-user-docs-architecture-guide-tree-i18n-help-en-first-de.md)**.
 > Nutzt Skelett + Templates + Smoke-Harness aus P265.
 
 ## findings
@@ -82,3 +82,43 @@ Smoke-Harness-Einträge je Beispiel-Flow.
 - Auth-Guide: Enforcement-Matrix + Tier-0-Anleitung existieren in
   `docs/nodes/concepts/auth.md` (P260) — nutzerorientiert nacherzählen, verlinken.
 - EN zuerst schreiben, DE im selben Paket übersetzen (ADR 0042 §3).
+
+## Result
+
+**Done 2026-07-23.** Introduction, Getting Started und alle 8 Themen-Guides stehen —
+EN kanonisch + DE-Spiegel je im selben Commit (Drift-Regel), jeder Guide mit
+smoke-verifiziertem Import-Beispiel. **Das alte P121-Kernthema („Wire vs. Referenz")
+ist als Actions-&-Events-Guide aufgelöst.**
+
+### Geliefert (11 Commits, je Doc-Paar + Beispiel + Smoke-PASS)
+
+`9ac8d0c` introduction (Kern-Modell auf einer Seite, Struktur-vs-Wires,
+Mermaid-Diagramm) · `2aed318` getting-started (Erste App ≤10 min, kompletter
+Import-Flow, Troubleshooting) · `69f829c` layout-slots · `d0b2802` bindings-state
+(inkl. `user`-Quelle) · `40e2255` **actions-events (die zwei Wege Wire vs.
+Referenz)** · `4d94f92` navigation-dialogs (drei Navigate-Modi) · `e16db3e`
+displaying-data (Query-Loop, Item-Mapping) · `b8a23d7` forms (value/writeTo
+bidirektional, ADR 0027) · `43b5e12` auth (trusted-header + oauth2-proxy,
+requiresGroup ANY-of, „visibleIf ist UX, Guard ist Sicherheit"; Beispiel bewusst
+`mode:"none"`, da ein trusted-header-Flow den Smoke-Harness by design 401en würde)
+· `62b0edf` theming-components (`--wa-*`-Tokens, ADR-0039-Modell, prop-Bindings)
+· `ab97817` Verlinkung (Guide-TOC EN+DE, Repo-README).
+
+### Ehrlich gemeldete Contract-Widersprüche (nicht aufgelöst — Chips)
+
+1. **Mount-Grammatik-Drift:** Konzept-Doku nennt `<type>:<id>/<slot>` als DAS
+   Muster; reale Flows nutzen überwiegend die Named-Form `<nodeId>.<slot>` (+
+   `container:<id>/<slot>`), alle vom Parser akzeptiert. Guides dokumentieren die
+   Realität; Contract-Angleich → Chip `task_fccd7129`.
+2. **Generator-Drift `targetMode:"path"`:** customers-crud (via gen-example.js:271/
+   280, orchestrator-verifiziert) emittiert einen Wert außerhalb des eingefrorenen
+   Schemas (wire/route/url), funktioniert nur über den Legacy-Fallback → Chip
+   `task_de2aa8b2` (inkl. stale `previewData`).
+
+### Verifikation
+
+Smoke-Harness **11/11** (nach jedem Beispiel + final; im Haupt-Checkout nach Merge
+erneut **11 passed, `--retries=0`**). `check:links` OK (155 md), `check:guide` OK
+mit **unveränderter** Allowlist (43 — Node-Referenzen korrekt nicht Scope),
+`pnpm validate` grün. **Kein geteilter Code angefasst** (nur docs/guide, examples/
+guide, README) → gezieltes Gate statt Voll-Suite.
