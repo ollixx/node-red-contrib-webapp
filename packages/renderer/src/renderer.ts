@@ -709,7 +709,10 @@ function resolveBinding(binding: BindingDefinition | undefined, sources: Binding
                 item: itemFrame?.item,
                 index: itemFrame?.index,
                 prop: propFrame,
-                scopeItems
+                scopeItems,
+                // P262 (ADR 0041 §3/§4): the identity as reactive global `user` —
+                // the documented visibleIf pattern for group-based UI hiding.
+                user: sources.user
             });
 
             if (result.error) {

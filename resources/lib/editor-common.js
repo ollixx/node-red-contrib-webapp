@@ -4113,6 +4113,16 @@
             detail: "Funktion — Wert aus den Query-Ergebnissen",
             doc: "query(pfad) — Wert am Pfad innerhalb der Query-Ergebnisse (gleiches Lookup wie das query-Binding).",
             example: "query(\"customers.total\")"
+        },
+        // P262 (ADR 0041 §3/§4): the identity object as reactive global — the
+        // documented visibleIf pattern for group-based UI hiding (UX only; the
+        // security is the server-side requiresGroup guard).
+        {
+            name: "user",
+            insert: "user",
+            detail: "Objekt — Identität des anfragenden Clients",
+            doc: "user — das Identitätsobjekt ({ id, name?, email?, groups }) wie beim user-Binding. Ohne Identität (auth mode \"none\") undefined — defensiv lesen.",
+            example: "(user?.groups ?? []).includes(\"admins\")"
         }
     ];
 
