@@ -28,6 +28,7 @@ const EXPECTED_DOC: Record<string, string> = {
 // The batches P267–P271 move every node here; the transitional inline nodes
 // keep the contract-doc link until migrated.
 const LOCALE_MIGRATED = new Set<string>([
+    "ui-textarea",
     "ui-input",
     "ui-divider", "ui-app", "ui-route", "ui-dialog",
     "ui-component-definition", "ui-component-instance",

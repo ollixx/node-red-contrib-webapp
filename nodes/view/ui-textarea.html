@@ -14,9 +14,9 @@
             variant: false,
             advanced: [],
             omit: ["disabled","size"],
-            hints: {
-                color: "Ein Formularfeld hat keine allgemeine Farbe (Zustandsfarben kommen aus Validierung/Variant)."
-            }
+            // P268 (ADR 0042 §3): N/A hints live in the node's OWN locale catalog
+            // (nodes/view/locales/<lang>/ui-textarea.json -> `ui-textarea.hints.<field>`).
+            i18nNode: "ui-textarea"
         };
         common.registerNodeType("ui-textarea", {
             category: "webapp view",
@@ -242,48 +242,30 @@
         });
     })();
 </script>
+<!-- P268 (ADR 0042 §3): editor-label i18n. Form-row labels carry data-i18n keys
+     per the convention `<node>.label.<field>` (options `<node>.option.<field>.<value>`,
+     placeholders `[placeholder]<node>.placeholder.<field>`). Catalogs:
+     nodes/view/locales/{en-US,de}/ui-textarea.json. The literal texts stay as the en-US
+     authoring reference; at edit time the catalog text replaces them. -->
 <script type="text/html" data-template-name="ui-textarea">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-row"><label for="node-input-mount" data-i18n="ui-textarea.label.mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <!-- P148 (ADR 0012 / display category): Label binding — typedInput managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-label">Label</label><input type="text" id="node-input-label"></div>
+    <div class="form-row"><label for="node-input-label" data-i18n="ui-textarea.label.label">Label</label><input type="text" id="node-input-label"></div>
     <!-- P128 (ADR 0012 / value/display category): Value binding — typedInput managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-valueBinding">Value</label><input type="text" id="node-input-valueBinding"></div>
+    <div class="form-row"><label for="node-input-valueBinding" data-i18n="ui-textarea.label.valueBinding">Value</label><input type="text" id="node-input-valueBinding"></div>
     <!-- P204 (ADR 0027 / writable category): writeTo target (WRITE) — Store/Flow/Global. -->
-    <div class="form-row"><label for="node-input-writeToBinding">Write To</label><input type="text" id="node-input-writeToBinding"></div>
-    <div class="form-row"><label for="node-input-writeTrigger">Write Trigger</label><select id="node-input-writeTrigger"><option value="submit">submit</option><option value="change">change</option><option value="none">none</option></select></div>
+    <div class="form-row"><label for="node-input-writeToBinding" data-i18n="ui-textarea.label.writeToBinding">Write To</label><input type="text" id="node-input-writeToBinding"></div>
+    <div class="form-row"><label for="node-input-writeTrigger" data-i18n="ui-textarea.label.writeTrigger">Write Trigger</label><select id="node-input-writeTrigger"><option value="submit" data-i18n="ui-textarea.option.writeTrigger.submit">submit</option><option value="change" data-i18n="ui-textarea.option.writeTrigger.change">change</option><option value="none" data-i18n="ui-textarea.option.writeTrigger.none">none</option></select></div>
     <!-- P148 (ADR 0012 / display category): Placeholder binding — typedInput managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-placeholder">Placeholder</label><input type="text" id="node-input-placeholder"></div>
-    <div class="form-row"><label for="node-input-lines">Lines</label><input type="number" id="node-input-lines" min="1"></div>
-    <div class="form-row"><label for="node-input-maxLength">Max Length</label><input type="number" id="node-input-maxLength" min="1"></div>
+    <div class="form-row"><label for="node-input-placeholder" data-i18n="ui-textarea.label.placeholder">Placeholder</label><input type="text" id="node-input-placeholder"></div>
+    <div class="form-row"><label for="node-input-lines" data-i18n="ui-textarea.label.lines">Lines</label><input type="number" id="node-input-lines" min="1"></div>
+    <div class="form-row"><label for="node-input-maxLength" data-i18n="ui-textarea.label.maxLength">Max Length</label><input type="number" id="node-input-maxLength" min="1"></div>
     <!-- P128 (ADR 0012 / boolean category): Disabled binding — typedInput managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-disabledBinding">Disabled</label><input type="text" id="node-input-disabledBinding"></div>
+    <div class="form-row"><label for="node-input-disabledBinding" data-i18n="ui-textarea.label.disabledBinding">Disabled</label><input type="text" id="node-input-disabledBinding"></div>
 </script>
-<script type="text/html" data-help-name="ui-textarea">
-    <p>Mehrzeiliges Texteingabefeld mit optionalem Zähler und maximaler Länge.</p>
-    <h4>Label (P148)</h4>
-    <p>Bindbares Label — kanonischer Display-Satz (ADR 0012): Store, Query, Route-Param, Reactive,
-    msg, JSONata, string, number, boolean, json, timestamp, Flow, Global, Env.
-    Ein bestehender Plaintext-<code>label</code> wird automatisch als <code>str</code>-Literal übernommen.</p>
-    <h4>Placeholder (P148)</h4>
-    <p>Bindbarer Platzhaltertext — kanonischer Display-Satz (ADR 0012).
-    Ein bestehender Plaintext-<code>placeholder</code> wird automatisch als <code>str</code>-Literal übernommen.</p>
-    <h4>Value (P128)</h4>
-    <p>Bindbare Quelle des Feldwerts (Anzeige/Initialwert) — voller kanonischer Satz (ADR 0012):
-    Store, Query, Route-Param, Reactive, msg, JSONata, string, number, boolean, json, timestamp,
-    Flow, Global, Env. Ein bestehender <code>valuePath</code> wird automatisch als
-    <code>state</code>-Binding übernommen.</p>
-    <h4>Write To (Schreiben, P204 / ADR 0027)</h4>
-    <p>Ziel, in das die Runtime den Text schreibt — nur <b>schreibbare</b> Kinds
-    (<code>Store</code>/<code>Flow</code>/<code>Global</code>). Eine Textarea ist text-artig und
-    honoriert den <code>Write Trigger</code>: <code>submit</code> schreibt beim Verlassen des
-    Feldes (Blur), <code>change</code> bei jeder Eingabe.</p>
-    <h4>Disabled (P128)</h4>
-    <p>Bindbar über den Boolean-Zustand-Satz (ADR 0012): Store, Query, Route-Param, Reactive,
-    msg, JSONata, boolean, Flow, Global, Env. Ein Store-Binding deaktiviert die Textarea live,
-    sobald der Wert truthy ist.</p>
-    <h4>Events</h4>
-    <p>Emittiert <code>{ event: "change", params: { value } }</code> bei jeder Eingabe.</p>
-    <p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/input/ui-textarea.md">Ausführliche Doku</a></p>
-</script>
+<!-- P268 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/view/locales/{en-US,de}/ui-textarea.html; form-row labels carry
+     data-i18n keys resolved from nodes/view/locales/{en-US,de}/ui-textarea.json.
+     No inline data-help-name block here. -->

@@ -1,0 +1,96 @@
+[
+    {
+        "id": "guide-ui-textarea",
+        "type": "tab",
+        "label": "Guide: ui-textarea",
+        "disabled": false,
+        "info": "User-guide example for ui-textarea (docs/guide/nodes/ui-textarea.md). Import, deploy, open /webapp/guideTextarea/ — a 6-line comment box with a 200-character counter, two-way bound to a store slice, plus a live preview."
+    },
+    {
+        "id": "guideTextarea",
+        "type": "ui-app",
+        "name": "Textarea demo",
+        "uiId": "guideTextarea",
+        "root": "guideTextarea",
+        "title": "Textarea demo",
+        "layout": "app",
+        "z": "guide-ui-textarea",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gTaDraft",
+        "type": "ui-store",
+        "name": "Draft store",
+        "uiId": "gTaDraft",
+        "app": "guideTextarea",
+        "statePath": "draft",
+        "initialValue": "{\"comment\":\"A first note.\"}",
+        "z": "guide-ui-textarea",
+        "x": 120,
+        "y": 180,
+        "wires": [[]]
+    },
+    {
+        "id": "gTaHeading",
+        "type": "ui-text",
+        "name": "Heading",
+        "uiId": "gTaHeading",
+        "app": "guideTextarea",
+        "mount": "guideTextarea.content",
+        "text": "Leave a comment (max 200 characters):",
+        "order": "0",
+        "z": "guide-ui-textarea",
+        "x": 340,
+        "y": 60,
+        "wires": [[]]
+    },
+    {
+        "id": "gTaField",
+        "type": "ui-textarea",
+        "name": "Comment box",
+        "uiId": "gTaField",
+        "app": "guideTextarea",
+        "mount": "guideTextarea.content",
+        "label": "Comment",
+        "placeholder": "Type your comment…",
+        "lines": 6,
+        "maxLength": 200,
+        "value": {
+            "kind": "store",
+            "path": "gTaDraft",
+            "subPath": { "kind": "literal", "value": "comment" }
+        },
+        "writeTo": {
+            "kind": "store",
+            "path": "gTaDraft",
+            "subPath": { "kind": "literal", "value": "comment" }
+        },
+        "writeTrigger": "change",
+        "order": "1",
+        "z": "guide-ui-textarea",
+        "x": 340,
+        "y": 140,
+        "wires": [[]]
+    },
+    {
+        "id": "gTaPreview",
+        "type": "ui-text",
+        "name": "Live preview",
+        "uiId": "gTaPreview",
+        "app": "guideTextarea",
+        "mount": "guideTextarea.content",
+        "value": {
+            "kind": "store",
+            "path": "gTaDraft",
+            "subPath": { "kind": "literal", "value": "comment" },
+            "fallback": "(nothing yet)"
+        },
+        "order": "2",
+        "z": "guide-ui-textarea",
+        "x": 340,
+        "y": 220,
+        "wires": [[]]
+    }
+]

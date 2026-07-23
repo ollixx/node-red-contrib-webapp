@@ -1,0 +1,25 @@
+{
+    "ui-textarea": {
+        "label": {
+            "mount": "Parent Slot",
+            "label": "Label",
+            "valueBinding": "Value",
+            "writeToBinding": "Write To",
+            "writeTrigger": "Write Trigger",
+            "placeholder": "Placeholder",
+            "lines": "Lines",
+            "maxLength": "Max Length",
+            "disabledBinding": "Disabled"
+        },
+        "option": {
+            "writeTrigger": {
+                "submit": "submit",
+                "change": "change",
+                "none": "none"
+            }
+        },
+        "hints": {
+            "color": "A form field has no general colour (state colours come from validation / variant)."
+        }
+    }
+}

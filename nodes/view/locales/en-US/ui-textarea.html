@@ -1,0 +1,23 @@
+<script type="text/html" data-help-name="ui-textarea">
+<p>A multi-line text field bound to client state in both directions:
+<b>Value</b> reads, <b>Write To</b> writes.</p>
+<h3>Key fields</h3>
+<ul>
+    <li><b>Label</b> — the field caption (bindable, required).</li>
+    <li><b>Value</b> / <b>Write To</b> — the READ / WRITE halves (ADR 0027); Write To takes <code>store</code>/<code>flow</code>/<code>global</code> only.</li>
+    <li><b>Write Trigger</b> — for a textarea <code>submit</code> means BLUR (Enter inserts a line break); <code>change</code> writes on every edit; <code>none</code> disables the write-back.</li>
+    <li><b>Lines</b> — visible rows (P229: the former <code>rows</code>, migrated on open).</li>
+    <li><b>Max Length</b> — caps the input and shows a character counter.</li>
+</ul>
+<h3>Inputs</h3>
+<p>Has an input port. <code>msg.payload</code> (non-null) sets the text;
+<code>msg.ui.patch</code> overwrites definition fields (<code>placeholder</code>,
+<code>lines</code>, <code>maxLength</code>, …); <code>msg.ui.component.op</code>
+supports <code>show</code>/<code>hide</code>, <code>enable</code>/<code>disable</code>,
+<code>focus</code>, <code>reset</code>. Anything else passes through unchanged.</p>
+<h3>Outputs / Events</h3>
+<p><code>change</code> on every edit and <code>submit</code> on the submit gesture,
+both with <code>msg.ui.params.value</code>.</p>
+<h3>Full docs</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/nodes/ui-textarea.md" target="_blank">docs/guide/nodes/ui-textarea.md</a></p>
+</script>
