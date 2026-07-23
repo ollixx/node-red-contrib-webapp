@@ -1,0 +1,19 @@
+<script type="text/html" data-help-name="ui-component-definition">
+<p>Eine wiederverwendbare, parametrisierte Vorlage aus <code>ui-*</code>-Knoten
+(ADR 0020). Sie ist off-canvas und rendert nie selbst — eine
+<code>ui-component-instance</code> klont sie je Verwendung.</p>
+<h3>Wichtige Felder</h3>
+<ul>
+    <li><b>Node ID</b> — die Komponenten-ID, die Instanzen referenzieren.</li>
+    <li>Kind-Knoten in den <code>content</code>-Slot mounten (im Mount-Picker unter <b>Komponenten</b>).</li>
+    <li>In einem Kind einen Wert an <b>Prop (Component)</b> binden (z. B. <code>title</code>, <code>address.city</code>), um das von der Instanz Übergebene zu lesen.</li>
+</ul>
+<h3>Eingang</h3>
+<p>Keiner — eine Definition ist eine Vorlage, kein Laufzeit-Knoten. Sie hat
+keinen Eingangs-Port und empfängt keine Nachrichten.</p>
+<h3>Ausgänge / Events</h3>
+<p>Keine direkt. Events der geklonten Kinder einer Instanz tragen die
+Instanz-Identität in ihrer <code>sourceId</code>. v1: Props rein / Events raus.</p>
+<h3>Vollständige Doku</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/de/nodes/ui-component-definition.md" target="_blank">docs/guide/de/nodes/ui-component-definition.md</a></p>
+</script>

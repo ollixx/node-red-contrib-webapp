@@ -145,12 +145,12 @@
     })();
 </script>
 <script type="text/html" data-template-name="ui-component-instance">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
-    <div class="form-row"><label for="node-input-uiId">Node ID</label><input type="text" id="node-input-uiId"></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-uiId" data-i18n="ui-component-instance.label.uiId">Node ID</label><input type="text" id="node-input-uiId"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
-    <div class="form-row"><label for="node-input-definition">Definition</label><input type="text" id="node-input-definition"></div>
-    <div class="form-row" style="margin-bottom: 0;"><label style="width: 100%;">Props</label></div>
+    <div class="form-row"><label for="node-input-mount" data-i18n="ui-component-instance.label.mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-row"><label for="node-input-definition" data-i18n="ui-component-instance.label.definition">Definition</label><input type="text" id="node-input-definition"></div>
+    <div class="form-row" style="margin-bottom: 0;"><label style="width: 100%;" data-i18n="ui-component-instance.label.props">Props</label></div>
     <div class="form-row">
         <ol id="node-input-props-list" style="width: 100%;"></ol>
     </div>
@@ -168,15 +168,7 @@
     <div class="form-row" data-layout-child-prop-row="layoutX" style="display:none;"><label for="node-input-layoutX">X</label><input type="number" id="node-input-layoutX"></div>
     <div class="form-row" data-layout-child-prop-row="layoutY" style="display:none;"><label for="node-input-layoutY">Y</label><input type="number" id="node-input-layoutY"></div>
 </script>
-<script type="text/html" data-help-name="ui-component-instance">
-<p>Instantiates a <code>ui-component-definition</code> with props (ADR 0020).</p>
-<h3>How it works</h3>
-<ul>
-  <li><b>Parent Slot</b> — where this instance renders (a real route/container slot).</li>
-  <li><b>Definition</b> — the <code>ui-component-definition</code> to expand here. Required; a missing/invalid reference is a deploy error.</li>
-  <li><b>Props</b> — name → value pairs (any binding kind). The definition's children read them via <b>Prop (Component)</b>.</li>
-</ul>
-<p>Each inner node is re-id'd <code>&lt;instanceId&gt;#&lt;innerNodeId&gt;</code>, so events from inside an instance carry the instance identity in their <code>sourceId</code>.</p>
-<p><b>v1:</b> props in / events out. No child-slot projection and no per-instance state.</p>
-<p>Full documentation: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/structure/ui-component.md" target="_blank">docs/nodes/structure/ui-component.md</a></p>
-</script>
+<!-- P267 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/structure/locales/{en-US,de}/ui-component-instance.html; form-row
+     labels carry data-i18n keys resolved from the matching .json catalogs.
+     No inline data-help-name block here. -->

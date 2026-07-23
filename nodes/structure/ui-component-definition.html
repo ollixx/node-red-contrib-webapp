@@ -28,8 +28,8 @@
     })();
 </script>
 <script type="text/html" data-template-name="ui-component-definition">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
-    <div class="form-row"><label for="node-input-uiId">Node ID</label><input type="text" id="node-input-uiId"></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-uiId" data-i18n="ui-component-definition.label.uiId">Node ID</label><input type="text" id="node-input-uiId"></div>
     <div class="form-tips" style="margin-top: 8px;">
         Eine <b>Komponenten-Definition</b> ist eine wiederverwendbare Vorlage und
         rendert <b>nicht selbst</b>. Mounten Sie Kind-Knoten in ihren
@@ -40,14 +40,7 @@
         Instanz-Knoten übergebenen Wert zu lesen.
     </div>
 </script>
-<script type="text/html" data-help-name="ui-component-definition">
-<p>Defines a reusable, parametrised component template (ADR 0020).</p>
-<h3>How it works</h3>
-<ul>
-  <li><b>Off-canvas</b> — a definition never renders on its own. It exists only to be expanded by a <code>ui-component-instance</code>.</li>
-  <li><b>Template</b> — mount any child subtree into this node's default <code>content</code> slot (shown under <b>Komponenten</b> in the mount picker). The instance clones it once per use.</li>
-  <li><b>Props</b> — in a child node, bind a value to <b>Prop (Component)</b> (with an optional field path, e.g. <code>title</code>, <code>address.city</code>) to read the value the instance passes in.</li>
-</ul>
-<p><b>v1:</b> props in / events out. No child-slot projection (composition) and no per-instance state.</p>
-<p>Full documentation: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/structure/ui-component.md" target="_blank">docs/nodes/structure/ui-component.md</a></p>
-</script>
+<!-- P267 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/structure/locales/{en-US,de}/ui-component-definition.html; form-row
+     labels carry data-i18n keys resolved from the matching .json catalogs.
+     No inline data-help-name block here. -->

@@ -1,0 +1,19 @@
+<script type="text/html" data-help-name="ui-component-definition">
+<p>A reusable, parametrised template of <code>ui-*</code> nodes (ADR 0020). It is
+off-canvas and never renders on its own — a <code>ui-component-instance</code>
+clones it once per use.</p>
+<h3>Key fields</h3>
+<ul>
+    <li><b>Node ID</b> — the component id that instances reference.</li>
+    <li>Mount child nodes into this node's <code>content</code> slot (shown under <b>Komponenten</b> in the mount picker).</li>
+    <li>In a child, bind a value to <b>Prop (Component)</b> (e.g. <code>title</code>, <code>address.city</code>) to read what the instance passes in.</li>
+</ul>
+<h3>Inputs</h3>
+<p>None — a definition is a template, not a runtime node. It has no input port
+and receives no messages.</p>
+<h3>Outputs / Events</h3>
+<p>None directly. Events from an instance's cloned children carry the instance
+identity in their <code>sourceId</code>. v1: props in / events out.</p>
+<h3>Full docs</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/nodes/ui-component-definition.md" target="_blank">docs/guide/nodes/ui-component-definition.md</a></p>
+</script>

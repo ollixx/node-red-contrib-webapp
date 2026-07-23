@@ -1,0 +1,19 @@
+<script type="text/html" data-help-name="ui-component-instance">
+<p>Instanziiert eine <code>ui-component-definition</code> an einem echten Slot und
+übergibt ihr Props (ADR 0020). Der Teilbaum der Definition wird an Ort und Stelle
+geklont; jeder innere Knoten wird <code>&lt;instanceId&gt;#&lt;innerNodeId&gt;</code> re-id't.</p>
+<h3>Wichtige Felder</h3>
+<ul>
+    <li><b>Parent Slot</b> — wo diese Instanz rendert (ein echter Route-/Container-Slot).</li>
+    <li><b>Definition</b> — die hier zu expandierende Definition. Pflicht; eine fehlende/ungültige Referenz ist ein Deploy-Fehler.</li>
+    <li><b>Props</b> — Name → Wert (jede Binding-Art); die Kinder der Definition lesen sie über <b>Prop (Component)</b>.</li>
+</ul>
+<h3>Eingang</h3>
+<p>Keiner — eine Instanz ist ein Render-Zeit-Konstrukt, kein Laufzeit-Knoten. Sie
+hat keinen Eingangs-Port.</p>
+<h3>Ausgänge / Events</h3>
+<p>Keine an der Instanz. Events der geklonten inneren Knoten tragen die
+Instanz-Identität in ihrer <code>sourceId</code>. v1: Props rein / Events raus.</p>
+<h3>Vollständige Doku</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/de/nodes/ui-component-instance.md" target="_blank">docs/guide/de/nodes/ui-component-instance.md</a></p>
+</script>
