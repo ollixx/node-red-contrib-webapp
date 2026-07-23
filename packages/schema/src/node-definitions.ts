@@ -551,6 +551,10 @@ export const uiRouteNodeDefinitionSchema = identifiedNodeSchema.extend({
     // render time).
     title: z.union([bindingSchema, z.string().min(1, "Route titles must not be empty.")]).optional(),
     layout: standardLayoutPresetSchema,
+    // P262 (ADR 0041 §4): declarative authz guard. Empty/absent ⇒ authentication
+    // only (P261 behaviour); set ⇒ the requesting user needs AT LEAST ONE of the
+    // listed groups (ANY-of; deliberately no policy DSL).
+    requiresGroup: z.array(z.string().min(1, "Group names must not be empty.")).optional(),
     events: z.array(z.enum(["onEnter", "onLeave"])).optional()
 });
 
@@ -574,6 +578,8 @@ export const uiDialogNodeDefinitionSchema = identifiedNodeSchema.extend({
     // the whole header (native X + title). When true (default) the dialog shows
     // the native close button and is dismissable via X / ESC / overlay click.
     closable: z.boolean().default(true),
+    // P262 (ADR 0041 §4): declarative authz guard — see uiRouteNodeDefinitionSchema.
+    requiresGroup: z.array(z.string().min(1, "Group names must not be empty.")).optional(),
     events: z.array(z.enum(["onOpen", "onClose"])).optional()
 });
 

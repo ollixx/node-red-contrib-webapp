@@ -17,6 +17,10 @@
                 route: { value: "" },
                 modal: { value: true },
                 closable: { value: true },
+                // P262 (ADR 0041 §4): declarative authz guard — comma-separated
+                // group names (visible plain input, tolerant parsing server-side).
+                // Empty ⇒ authentication only; set ⇒ ANY-of the groups required.
+                requiresGroup: { value: "" },
                 events: { value: "[]" },
                 outputs: { value: 0 }
             },
@@ -62,6 +66,11 @@
     <div class="form-row"><label for="node-input-route">Parent Route</label><select id="node-input-route"></select></div>
     <div class="form-row"><label for="node-input-modal">Modal</label><input type="checkbox" id="node-input-modal" style="width:auto"></div>
     <div class="form-row"><label for="node-input-closable">Schließbar</label><input type="checkbox" id="node-input-closable" style="width:auto"></div>
+    <!-- P262: authz guard - comma-separated group names (ANY-of, server-enforced) -->
+    <div class="form-row">
+        <label for="node-input-requiresGroup">Gruppen</label>
+        <input type="text" id="node-input-requiresGroup" placeholder="z.B. admins, sales (leer = nur Authentifizierung)">
+    </div>
     <input type="hidden" id="node-input-events">
     <input type="hidden" id="node-input-outputs">
     <div class="form-row"><label>Events</label></div>
@@ -71,5 +80,6 @@
 <p><b>Schließbar</b> (<code>closable</code>): steuert nur das native Nutzer-Dismissal. Bei <code>true</code> ist der Dialog per X / ESC / Overlay-Klick schließbar; bei <code>false</code> entfällt der gesamte Header und der Dialog wird ausschließlich über <code>open</code>/<code>close</code> gesteuert.</p>
 <p><b>Modal</b>: Dialoge sind heute <b>immer modal</b> (das Backend <code>sl-dialog</code> ist nativ modal). Das Feld ist ein Platzhalter für einen künftigen nicht-modalen Modus und hat aktuell keine Wirkung.</p>
 <p><b>Parent Route</b> (<code>route</code>): koppelt den Dialog optional an eine Route — dann ist er nur bei aktiver passender Route darstellbar.</p>
+<p><b>Gruppen</b> (<code>requiresGroup</code>, P262): kommaseparierte Gruppennamen. Leer &rArr; nur Authentifizierung n&ouml;tig. Gesetzt &rArr; der User braucht <b>mindestens eine</b> der Gruppen (<code>user.groups</code>, ADR 0041). Server-seitig erzwungen: der Dialog fehlt im Snapshot (auch via <code>?dialog=</code>), Events an seine Komponenten werden abgelehnt. <em>visibleIf ist UX, der Guard ist Sicherheit.</em></p>
 <p><b>Events</b>: <code>onOpen</code> feuert beim Öffnen, <code>onClose</code> beim Schließen (auch bei X / ESC / Overlay). Jedes aktive Event erzeugt einen Output-Port.</p>
 <p>Vollständige Doku: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/structure/ui-dialog.md" target="_blank">docs/nodes/structure/ui-dialog.md</a></p></script>

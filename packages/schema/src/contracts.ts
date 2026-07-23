@@ -560,7 +560,10 @@ export const routeDefinitionSchema = z.object({
     // ui-route NODES only — enforced via routeNodePathSchema in node-definitions.ts.
     path: routePathSchema,
     title: z.string().min(1, "Route titles must not be empty.").optional(),
-    layoutId: identifierSchema
+    layoutId: identifierSchema,
+    // P262 (ADR 0041 §4): declarative authz guard. Absent/empty ⇒ authentication
+    // only; set ⇒ the user needs AT LEAST ONE of the groups (ANY-of).
+    requiresGroup: z.array(z.string().min(1, "Group names must not be empty.")).optional()
 });
 
 export type RouteDefinition = z.infer<typeof routeDefinitionSchema>;
@@ -572,7 +575,9 @@ export const dialogDefinitionSchema = z.object({
     routeId: identifierSchema.optional(),
     modal: z.boolean().default(true),
     // P64: see uiDialogNodeDefinitionSchema.closable. false → native no-header.
-    closable: z.boolean().default(true)
+    closable: z.boolean().default(true),
+    // P262 (ADR 0041 §4): declarative authz guard — see routeDefinitionSchema.
+    requiresGroup: z.array(z.string().min(1, "Group names must not be empty.")).optional()
 });
 
 export type DialogDefinition = z.infer<typeof dialogDefinitionSchema>;

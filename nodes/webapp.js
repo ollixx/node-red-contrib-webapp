@@ -4623,6 +4623,16 @@ function parseGroupsHeader(raw) {
         .filter((entry) => entry.length > 0);
 }
 
+// P262 (ADR 0041 §4): parse the editor's comma-separated `requiresGroup` field
+// (or an already-parsed array from typed definitions) into the schema's
+// string[] — undefined when empty (⇒ authentication only, P261 behaviour).
+function parseRequiresGroup(raw) {
+    const groups = Array.isArray(raw)
+        ? raw.map((entry) => String(entry).trim()).filter((entry) => entry.length > 0)
+        : parseGroupsHeader(raw);
+    return groups.length > 0 ? groups : undefined;
+}
+
 // Build the ONE internal user object (userIdentitySchema, ADR 0041 §1) from the
 // configured proxy headers. Express lowercases header names. `name` mirrors the
 // user header value — trusted-header carries no separate display name, and the
@@ -7204,6 +7214,9 @@ const runtimeNodeRegistry = {
                 title: resolvedTitle,
                 // P259 (ADR 0038): canonical `layout`; legacy `layoutId` fallback.
                 layout: config.layout || config.layoutId,
+                // P262 (ADR 0041 §4): declarative authz guard (comma-separated in
+                // the editor; ANY-of semantics, enforced server-side).
+                requiresGroup: parseRequiresGroup(config.requiresGroup),
                 events: parseJsonList(config.events).length > 0 ? parseJsonList(config.events) : undefined
             };
         },
@@ -7226,6 +7239,9 @@ const runtimeNodeRegistry = {
             modal: config.modal !== false && config.modal !== "false",
             // P64: closable defaults to true; only an explicit false disables it.
             closable: config.closable !== false && config.closable !== "false",
+            // P262 (ADR 0041 §4): declarative authz guard (comma-separated in the
+            // editor; ANY-of semantics, enforced server-side).
+            requiresGroup: parseRequiresGroup(config.requiresGroup),
             events: parseJsonList(config.events).length > 0 ? parseJsonList(config.events) : undefined
         }),
         options: {
