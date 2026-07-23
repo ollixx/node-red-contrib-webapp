@@ -533,9 +533,10 @@ test.describe("ui-icon icon name — editor binding (P239)", () => {
             (els) => els.map((e) => e.getAttribute("value") || "")
         );
         // MEASURED against the live editor. The `icon` category is the canonical
-        // value set with exactly one delta: `str` → `icon` (see valueBindingTypes).
+        // value set (15 kinds since P261 added `user`) with exactly one delta:
+        // `str` → `icon` (see valueBindingTypes).
         expect(offered).toEqual([
-            "store", "query", "routeParam", "reactive", "msg", "jsonata",
+            "store", "query", "routeParam", "user", "reactive", "msg", "jsonata",
             "icon", "num", "bool", "json", "date", "flow", "global", "env"
         ]);
         expect(offered).not.toContain("str");

@@ -1004,7 +1004,7 @@
         }
 
         // P67: `store` binding — path holds the referenced ui-store id.
-        if (binding && ["state", "query", "routeParam", "msg", "flow", "global", "jsonata", "env", "store"].includes(binding.kind)) {
+        if (binding && ["state", "query", "routeParam", "user", "msg", "flow", "global", "jsonata", "env", "store"].includes(binding.kind)) {
             return {
                 type: binding.kind,
                 value: binding.path || ""
@@ -4039,6 +4039,8 @@
                 }
             },
             { value: "routeParam", label: "Route Param", icon: "fa fa-map-signs", hasValue: true },
+            // P261 (ADR 0041 §3): the authenticated user identity (trusted-header).
+            { value: "user", label: "User", icon: "fa fa-user", hasValue: true },
             storeTypedInputType({ label: "Store" }),
             "msg",
             "flow",
@@ -4056,8 +4058,8 @@
     // `readValueBinding()` in oneditprepare, and `applyValueBinding()` in
     // oneditsave — so adding/reordering a type is exactly one change here.
     //
-    // Canonical order (value/display = full set, 14 kinds):
-    //   Store, Query, Route-Param, Reactive, msg, JSONata, string, number,
+    // Canonical order (value/display = full set, 15 kinds — P261 added User):
+    //   Store, Query, Route-Param, User, Reactive, msg, JSONata, string, number,
     //   boolean, json, timestamp, Flow, Global, Env.
     // `state` is deliberately NOT offered (owner decision): the renderer/schema
     // still support it for legacy bindings, it is just no longer authorable.
@@ -4076,7 +4078,7 @@
 
     // ─── P116 (ADR 0010): the `reactive` typedInput + expression-editor dialog ──
     //
-    // Type #4 of the canonical set (after Route-Param, before msg). It carries the
+    // Type #5 of the canonical set (after User since P261, before msg). It carries the
     // expression source in the binding `value` (handled by apply/readValueBinding
     // above). The expand button opens the expression editor dialog with code
     // completion (Monaco, with a clean ace-fallback), live syntax validation and
@@ -4739,6 +4741,24 @@
             }
         };
         var routeParamType = { value: "routeParam", label: "Route Param", icon: "fa fa-map-signs", hasValue: true };
+        // P261 (ADR 0041 §3): the `user` binding kind — the authenticated identity
+        // established by the trusted-header auth guard. The value is the field
+        // path into the ONE user object: `id` | `name` | `email` | `groups`
+        // (a string[], also usable as a structural source). With auth mode
+        // "none" it resolves undefined at runtime (→ fallback).
+        var userType = {
+            value: "user",
+            label: "User",
+            icon: "fa fa-user",
+            hasValue: true,
+            validate: function (value) {
+                var v = (value || "").trim();
+                if (v.length === 0) {
+                    return false;
+                }
+                return /^[a-zA-Z_$][a-zA-Z0-9_$]*(\.[a-zA-Z_$][a-zA-Z0-9_$]*|\[\d+\])*$/.test(v);
+            }
+        };
         var storeType = storeTypedInputType({ label: "Store" });
         var reactiveType = reactiveTypedInputType();
         // P165 (ADR 0017): the scope-local `item`/`index` binding kinds. They only
@@ -4860,6 +4880,8 @@
                 storeType,
                 queryType,
                 routeParamType,
+                // P261: `user.groups` is a string[] — a legitimate structural source.
+                userType,
                 reactiveType,
                 "msg",
                 "jsonata",
@@ -4886,7 +4908,7 @@
             ];
         }
 
-        // Default — value/display full set (14 kinds). The scope-local kinds are
+        // Default — value/display full set (15 kinds, P261). The scope-local kinds are
         // appended ONLY when the edited node is inside the matching container (or
         // the field already carries that kind) — see the P182 gating above. They
         // sit at the tail so they never shift the established ordering of the
@@ -4918,6 +4940,8 @@
             storeType,
             queryType,
             routeParamType,
+            // P261 (ADR 0041 §3): the authenticated user identity.
+            userType,
             reactiveType,
             "msg",
             "jsonata",

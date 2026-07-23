@@ -85,7 +85,11 @@ test.describe("editor help — every node links its full doc (P232)", () => {
 
             // Render the node's help HTML into a detached container and inspect the
             // anchor Node-RED produced — this is exactly what the info sidebar shows.
-            const link = await page.evaluate((t) => {
+            // A help block may legitimately carry MORE than one canonical doc
+            // link (e.g. ui-app links the auth concept doc since P260 AND its
+            // own spec) — find the anchor for the node's OWN doc, not just the
+            // first doc-prefixed anchor.
+            const link = await page.evaluate(({ t, basename }) => {
                 const RED = (window as unknown as {
                     RED: { nodes: { getNodeHelp: (t: string) => string } };
                 }).RED;
@@ -93,13 +97,14 @@ test.describe("editor help — every node links its full doc (P232)", () => {
                 const el = document.createElement("div");
                 el.innerHTML = html;
                 const anchors = Array.from(el.querySelectorAll("a")) as HTMLAnchorElement[];
-                const docAnchor = anchors.find((a) =>
-                    (a.getAttribute("href") || "").includes("/blob/develop/docs/nodes/")
-                );
+                const docAnchor = anchors.find((a) => {
+                    const href = a.getAttribute("href") || "";
+                    return href.includes("/blob/develop/docs/nodes/") && href.includes(basename);
+                });
                 return docAnchor
                     ? { href: docAnchor.getAttribute("href"), text: docAnchor.textContent }
                     : null;
-            }, type);
+            }, { t: type, basename: expectedBasename(type) });
 
             expect(link, `${type}: no rendered doc anchor in help`).not.toBeNull();
             expect(link!.href).toContain(CANONICAL_PREFIX);

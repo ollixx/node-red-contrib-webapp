@@ -229,8 +229,9 @@ export const uiAppNodeDefinitionSchema = z.object({
     // mode:"oidc" extends it without flooding the ui-app field list).
     // Defaults when absent: mode "none"; header defaults X-Forwarded-User /
     // X-Forwarded-Email / X-Forwarded-Groups; redirect none.
-    // INERT until P261: configurable but NOT enforced — no runtime code reads
-    // this yet (see docs/nodes/concepts/auth.md).
+    // ENFORCED since P261: mode "trusted-header" routes every app endpoint
+    // through the auth guard (nodes/webapp.js `appAuthGuard` via
+    // registerAppEndpoint — see docs/nodes/concepts/auth.md).
     auth: z
         .object({
             mode: z.enum(["none", "trusted-header"]),

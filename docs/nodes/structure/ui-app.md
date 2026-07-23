@@ -54,7 +54,7 @@ Node-Picker-Dialog, typedInput, Token-Editor, Event-Checkboxen).
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
-| `auth` | „Auth" (+ Detail-Zeilen) | SelectBox `none` / `trusted-header`; bei `trusted-header` zusätzlich die Detail-Zeilen „User-Header" / „Email-Header" / „Groups-Header" / „Redirect" | optional | **Ein** Objekt `{ mode, headerUser?, headerEmail?, headerGroups?, redirect? }` (ADR 0041 §2; ein künftiges `mode: "oidc"` erweitert es). Defaults: `mode: none`; Header `X-Forwarded-User`/`-Email`/`-Groups`; leerer `redirect` = 401. **Bis P261 wirkungslos** — konfiguriert, noch nicht erzwungen (siehe „Besonderheiten"); Vertrag, Enforcement-Matrix und Tier-0-Betrieb: [auth.md](../concepts/auth.md). |
+| `auth` | „Auth" (+ Detail-Zeilen) | SelectBox `none` / `trusted-header`; bei `trusted-header` zusätzlich die Detail-Zeilen „User-Header" / „Email-Header" / „Groups-Header" / „Redirect" | optional | **Ein** Objekt `{ mode, headerUser?, headerEmail?, headerGroups?, redirect? }` (ADR 0041 §2; ein künftiges `mode: "oidc"` erweitert es). Defaults: `mode: none`; Header `X-Forwarded-User`/`-Email`/`-Groups`; leerer `redirect` = 401. **Wirksam seit P261**: `trusted-header` erzwingt die Identität auf allen App-Endpoints und macht sie als Binding-Quelle `user` verfügbar (siehe „Besonderheiten"); Vertrag, Enforcement-Matrix und Betrieb: [auth.md](../concepts/auth.md). |
 
 ### Gruppe „Medien"
 
@@ -154,14 +154,15 @@ bleibt ein optionaler späterer Ausbauschritt.
   `ui-route`-Routing verhalten sich gleich (gemeinsamer Pfad).
 - **Mehrere Apps** pro Node-RED-Instanz sind zulässig; jede hat eine eindeutige
   `root`.
-- **`auth` ist bis P261 wirkungslos (Inert-Feld-Disclaimer).** Das `auth`-Feld
-  (ADR 0041, P260) ist **konfiguriert, noch nicht erzwungen — Enforcement kommt
-  mit P261**. Kein Runtime-Endpoint liest es heute; bis P261 schützt allein der
-  vorgelagerte Reverse-Proxy (Tier-0-Betrieb, siehe
-  [auth.md](../concepts/auth.md)). Die Editor-Inline-Hilfe und die Auth-Zeilen
-  im Editor tragen denselben Hinweis — ein Feld, das Verhalten verspricht, ohne
-  es zu liefern, ist eine etablierte Bug-Klasse und wird hier explizit
-  ausgeschlossen.
+- **`auth` wirkt (seit P261).** Bei `mode: "trusted-header"` läuft **jede**
+  Anfrage an **jeden** App-Endpoint (Page, `/stream`, `/event`,
+  `/dynamic-state`, `/asset/:id`, `/snapshot`, SPA-Fallback) durch die eine
+  Auth-Guard-Middleware: Identitäts-Header vorhanden ⇒ `user`-Objekt im
+  Request-Kontext (und als Binding-Quelle `user` auflösbar), fehlend ⇒ **401**
+  bzw. **302** auf `redirect`. `mode: "none"` (Default) ist exakt das offene
+  Verhalten von vorher. **Vertrauens-Grenze:** die Header sind nur hinter einem
+  authentifizierenden Reverse-Proxy eine Identität — Betriebsvoraussetzung und
+  Enforcement-Matrix in [auth.md](../concepts/auth.md).
 
 ## Referenzen
 

@@ -2814,7 +2814,7 @@ function dispatchClientEvent(RED, appId, body, definitions) {
 
 // Builds the RenderSnapshot for an app + location + open dialog.
 // The HTML route, the SSE stream initial sync, and the /event response all use this.
-function buildAppSnapshot(appId, location, dialogId, definitions, clientId) {
+function buildAppSnapshot(appId, location, dialogId, definitions, clientId, user) {
     const modelResult = getAppModelResult(appId, definitions);
 
     if (!modelResult.success) {
@@ -2879,6 +2879,11 @@ function buildAppSnapshot(appId, location, dialogId, definitions, clientId) {
         state: effectiveState,
         queries,
         queryLifecycle,
+        // P261 (ADR 0041 §3): the requesting client's identity (established by
+        // the auth guard, or bound to the SSE connection for re-renders). Drives
+        // the `user` binding source; absent in mode "none" → `user` bindings
+        // resolve undefined.
+        user,
         // P115 (ADR 0010): a failed `reactive` expression never breaks the
         // snapshot; it is reported once per distinct error through the existing
         // error-forwarding/logging pipeline (ADR 0006 / P55–P56). The renderer
@@ -2938,8 +2943,11 @@ function buildAppSnapshot(appId, location, dialogId, definitions, clientId) {
     };
 }
 
-function renderAppPage(appId, location, dialogId, definitions) {
-    const built = buildAppSnapshot(appId, location, dialogId, definitions);
+function renderAppPage(appId, location, dialogId, definitions, user) {
+    // P261: the requesting user's identity (from the auth guard) flows into the
+    // server-side render so `user` bindings are correct on FIRST paint, before
+    // SSE hydration.
+    const built = buildAppSnapshot(appId, location, dialogId, definitions, undefined, user);
 
     if (!built.success) {
         const heading = built.status === 404 ? "Unknown route" : built.status === 500 ? "Missing layout" : "Incomplete app";
@@ -3741,7 +3749,7 @@ function getStreamSubscribers(appId) {
     return subscribers;
 }
 
-function addStreamClient(appId, clientId, res, location, loadId) {
+function addStreamClient(appId, clientId, res, location, loadId, user) {
     // P37: record the connect time so the redeploy broadcast can skip clients
     // that just connected (the deploy that triggered flows:started fired BEFORE
     // this client connected — reloading them immediately would be a false positive).
@@ -3756,7 +3764,12 @@ function addStreamClient(appId, clientId, res, location, loadId) {
         res.socket.on("error", noop);
     }
     const resolvedLocation = location || "/";
-    getStreamSubscribers(appId).set(clientId, { res, location: resolvedLocation, connectedAt: Date.now() });
+    // P261 (ADR 0041): the identity established by the auth guard AT CONNECTION
+    // TIME is bound to the SSE connection. Every later re-render for this client
+    // (store push, deploy push, dialog push) uses THIS identity — no per-event
+    // header re-read, and no way for one connection's identity to leak into
+    // another's re-render. Mode "none" → undefined (no identity).
+    getStreamSubscribers(appId).set(clientId, { res, location: resolvedLocation, connectedAt: Date.now(), user });
     // P86: emit clientConnected on the ui-app node if the event is declared.
     emitAppClientEvent(appId, "clientConnected", clientId);
     // P112: connect-based route lifecycle. Every arrival (deep-link, refresh,
@@ -3914,7 +3927,8 @@ function pushSnapshotToClients(appId, clientId, definitions) {
         : Array.from(subscribers.entries());
 
     for (const [targetClientId, entry] of targets) {
-        const built = buildAppSnapshot(appId, entry.location || "/", undefined, definitions, targetClientId);
+        // P261: re-render with the identity bound to THIS SSE connection.
+        const built = buildAppSnapshot(appId, entry.location || "/", undefined, definitions, targetClientId, entry.user);
         if (built.success) {
             writeStreamEvent(entry.res, "snapshot", { snapshot: built.snapshot });
         }
@@ -3948,8 +3962,8 @@ function normalizeAppMode(status) {
 // Pure pass-through: normalise the mode token, drop blank optional strings,
 // return undefined when nothing is configured (absent = mode "none"). The
 // documented defaults (headers X-Forwarded-User/-Email/-Groups) are applied by
-// the future READER (P261), not here — the config stays exactly what the user
-// set. INERT until P261: no runtime endpoint consumes this yet.
+// the READER (resolveEffectiveAuth, P261), not here — the config stays exactly
+// what the user set. ENFORCED since P261 via appAuthGuard/registerAppEndpoint.
 function mapAuthConfig(auth) {
     if (!auth || typeof auth !== "object") {
         return undefined;
@@ -4077,7 +4091,7 @@ function pushDeployToClients(appId, definitions, options) {
             }
         }
 
-        const built = buildAppSnapshot(appId, entry.location || "/", undefined, definitions, targetClientId);
+        const built = buildAppSnapshot(appId, entry.location || "/", undefined, definitions, targetClientId, entry.user);
         if (built.success) {
             writeStreamEvent(entry.res, "deploy", {
                 snapshot: built.snapshot,
@@ -4147,7 +4161,8 @@ function pushSnapshotToTargets(appId, targets, definitions) {
     const defs = definitions || readDeployDefinitions(runtimeState.RED);
 
     for (const [targetClientId, entry] of targets) {
-        const built = buildAppSnapshot(appId, entry.location || "/", undefined, defs, targetClientId);
+        // P261: re-render with the identity bound to THIS SSE connection.
+        const built = buildAppSnapshot(appId, entry.location || "/", undefined, defs, targetClientId, entry.user);
         if (built.success) {
             writeStreamEvent(entry.res, "snapshot", { snapshot: built.snapshot });
         }
@@ -4564,6 +4579,116 @@ function resolveAssetStoreUrl(appId, id, definitions) {
     return { ok: true, url: `${base}/${encodeURIComponent(id)}` };
 }
 
+// ════════════════════════════════════════════════════════════════════════
+// P261 (ADR 0041 §2/§3): trusted-header identity — the ONE auth guard over
+// all app endpoints.
+// ════════════════════════════════════════════════════════════════════════
+
+// The documented default proxy headers (docs/nodes/concepts/auth.md). Empty
+// optional config fields mean "use the documented default"; the READER (here)
+// applies them — the editor stores exactly what the user typed (P260).
+const AUTH_DEFAULT_HEADER_USER = "X-Forwarded-User";
+const AUTH_DEFAULT_HEADER_EMAIL = "X-Forwarded-Email";
+const AUTH_DEFAULT_HEADER_GROUPS = "X-Forwarded-Groups";
+
+// Resolve the EFFECTIVE auth config of an app: mode + header names with the
+// documented defaults applied. Unknown app / no auth object / mode "none" →
+// `{ mode: "none" }` (exactly today's open behaviour; the endpoint's own 404
+// handling stays authoritative for unknown apps).
+function resolveEffectiveAuth(appId, definitions) {
+    const canonicalId = resolveCanonicalAppId(appId, definitions);
+    const buckets = getDefinitionBuckets(canonicalId, definitions);
+    const auth = buckets.app && buckets.app.auth;
+    if (!auth || auth.mode !== "trusted-header") {
+        return { mode: "none" };
+    }
+    return {
+        mode: "trusted-header",
+        headerUser: auth.headerUser || AUTH_DEFAULT_HEADER_USER,
+        headerEmail: auth.headerEmail || AUTH_DEFAULT_HEADER_EMAIL,
+        headerGroups: auth.headerGroups || AUTH_DEFAULT_HEADER_GROUPS,
+        redirect: auth.redirect
+    };
+}
+
+// Tolerant comma-separated groups parsing: trim each entry, drop empties.
+// "admin, sales,,ops " → ["admin","sales","ops"]; absent/blank header → [].
+function parseGroupsHeader(raw) {
+    if (typeof raw !== "string" || raw.trim() === "") {
+        return [];
+    }
+    return raw
+        .split(",")
+        .map((entry) => entry.trim())
+        .filter((entry) => entry.length > 0);
+}
+
+// Build the ONE internal user object (userIdentitySchema, ADR 0041 §1) from the
+// configured proxy headers. Express lowercases header names. `name` mirrors the
+// user header value — trusted-header carries no separate display name, and the
+// contract keeps `user.name` the binding authors reach for (`user.id` stays the
+// stable identifier; with a proxy that sends a distinct display name a future
+// source can diverge them). Missing/blank user header → null (unauthenticated).
+function extractTrustedHeaderIdentity(req, effectiveAuth) {
+    const headers = req.headers || {};
+    const rawId = headers[effectiveAuth.headerUser.toLowerCase()];
+    const id = typeof rawId === "string" ? rawId.trim() : "";
+    if (id === "") {
+        return null;
+    }
+    const rawEmail = headers[effectiveAuth.headerEmail.toLowerCase()];
+    const email = typeof rawEmail === "string" && rawEmail.trim() !== "" ? rawEmail.trim() : undefined;
+    return {
+        id,
+        name: id,
+        email,
+        groups: parseGroupsHeader(headers[effectiveAuth.headerGroups.toLowerCase()])
+    };
+}
+
+// The guard middleware itself. Runs BEFORE every app-endpoint handler (wired by
+// registerAppEndpoint below):
+//   - mode "none" → next() — exactly today's behaviour, byte-identical.
+//   - mode "trusted-header" + identity headers present → attach the user object
+//     to the request context (`req.webappUser`) and continue.
+//   - mode "trusted-header" + missing user header → 401, or 302 to
+//     `auth.redirect` when configured.
+// Trust boundary (auth.md): the headers are only meaningful when the app is
+// reachable exclusively through the authenticating reverse proxy — the guard
+// enforces presence, the deployment enforces trustworthiness.
+function appAuthGuard(RED) {
+    return function (req, res, next) {
+        const definitions = readDeployDefinitions(RED);
+        const effectiveAuth = resolveEffectiveAuth(req.params.appId, definitions);
+        if (effectiveAuth.mode !== "trusted-header") {
+            next();
+            return;
+        }
+        const user = extractTrustedHeaderIdentity(req, effectiveAuth);
+        if (!user) {
+            if (effectiveAuth.redirect) {
+                res.redirect(302, effectiveAuth.redirect);
+                return;
+            }
+            res.status(401).json({ error: "Unauthorized: missing identity header." });
+            return;
+        }
+        req.webappUser = user;
+        next();
+    };
+}
+
+// P261 (ADR 0041 §2): the ONE registration function for ALL app-facing
+// (`RED.httpNode`) runtime endpoints. Every endpoint of the enforcement matrix
+// (docs/nodes/concepts/auth.md) MUST register through here — never directly via
+// `RED.httpNode.get/post` — so a future endpoint cannot forget the auth guard:
+// the guard middleware is prepended unconditionally.
+// The admin endpoints (`RED.httpAdmin`) are covered by Node-RED's `adminAuth`
+// and stay outside this function by design.
+function registerAppEndpoint(RED, method, path, ...handlers) {
+    RED.httpNode[method](path, appAuthGuard(RED), ...handlers);
+}
+
 function registerEndpoints(RED) {
     if (runtimeState.endpointsRegistered) {
         return;
@@ -4610,10 +4735,10 @@ function registerEndpoints(RED) {
         });
     });
 
-    RED.httpNode.get("/webapp/:appId", (req, res) => {
+    registerAppEndpoint(RED, "get", "/webapp/:appId", (req, res) => {
         const location = req.query.location ? String(req.query.location) : "/";
         const dialogId = req.query.dialog ? String(req.query.dialog) : undefined;
-        const page = renderAppPage(req.params.appId, location, dialogId, readDeployDefinitions(RED));
+        const page = renderAppPage(req.params.appId, location, dialogId, readDeployDefinitions(RED), req.webappUser);
 
         if (!page) {
             res.status(404).send("Unknown app.");
@@ -4628,7 +4753,7 @@ function registerEndpoints(RED) {
     // an initial snapshot immediately (which subsumes the P15 reconnect sync).
     // Thereafter, flow-driven ui-store updates push `snapshot` events and ui-action
     // interaction commands push `command` events to the relevant client(s).
-    RED.httpNode.get("/webapp/:appId/stream", (req, res) => {
+    registerAppEndpoint(RED, "get", "/webapp/:appId/stream", (req, res) => {
         const appId = resolveCanonicalAppId(req.params.appId, readDeployDefinitions(RED));
         const clientId = req.query.clientId ? String(req.query.clientId) : undefined;
         const location = req.query.location ? String(req.query.location) : "/";
@@ -4662,12 +4787,12 @@ function registerEndpoints(RED) {
         // Open the SSE comment line so proxies do not buffer the stream.
         res.write(":ok\n\n");
 
-        addStreamClient(appId, clientId, res, location, loadId);
+        addStreamClient(appId, clientId, res, location, loadId, req.webappUser);
 
         // Initial sync: push the current live snapshot for this client immediately.
         // Pass the initialDialogId so the first push matches the server-rendered HTML
         // (prevents the SSE hydration from closing a dialog opened via ?dialog=<id>).
-        const built = buildAppSnapshot(appId, location, initialDialogId, readDeployDefinitions(RED), clientId);
+        const built = buildAppSnapshot(appId, location, initialDialogId, readDeployDefinitions(RED), clientId, req.webappUser);
         if (built.success) {
             writeStreamEvent(res, "snapshot", { snapshot: built.snapshot });
         }
@@ -4684,7 +4809,7 @@ function registerEndpoints(RED) {
     // is the only place that may react; live push is via the SSE stream (P31).
     // The response echoes the emitted message and the CURRENT snapshot (unchanged —
     // a read-only re-render) so the thin client keeps a consistent view between pushes.
-    RED.httpNode.post("/webapp/:appId/event", readJsonBody, (req, res) => {
+    registerAppEndpoint(RED, "post", "/webapp/:appId/event", readJsonBody, (req, res) => {
         const body = req.body && typeof req.body === "object" ? req.body : {};
         const definitions = readDeployDefinitions(RED);
         const appId = resolveCanonicalAppId(req.params.appId, definitions);
@@ -4697,7 +4822,7 @@ function registerEndpoints(RED) {
         }
 
         const location = body.location ? String(body.location) : "/";
-        const built = buildAppSnapshot(appId, location, undefined, definitions);
+        const built = buildAppSnapshot(appId, location, undefined, definitions, undefined, req.webappUser);
 
         if (!built.success) {
             res.status(built.status).json({ error: built.message });
@@ -4717,7 +4842,7 @@ function registerEndpoints(RED) {
     // `setDynamicStateField` write API so the hide is a real value transition
     // (bound → store write-through, unbound → per-client slot), not a DOM close.
     // MUST be registered before the catch-all `/webapp/:appId/*` page route.
-    RED.httpNode.post("/webapp/:appId/dynamic-state", readJsonBody, (req, res) => {
+    registerAppEndpoint(RED, "post", "/webapp/:appId/dynamic-state", readJsonBody, (req, res) => {
         const body = req.body && typeof req.body === "object" ? req.body : {};
         const written = dispatchDynamicStateWrite(body);
         if (!written.success) {
@@ -4736,7 +4861,7 @@ function registerEndpoints(RED) {
     // with the upstream content-type. The store URL is never disclosed to the
     // client (obfuscation), and the id is charset-validated (no path traversal).
     // MUST be registered before the catch-all `/webapp/:appId/*` page route.
-    RED.httpNode.get("/webapp/:appId/asset/:id", (req, res) => {
+    registerAppEndpoint(RED, "get", "/webapp/:appId/asset/:id", (req, res) => {
         const { appId, id } = req.params;
         const resolved = resolveAssetStoreUrl(appId, id, readDeployDefinitions(RED));
         if (!resolved.ok) {
@@ -4841,14 +4966,14 @@ function registerEndpoints(RED) {
     // Returns { snapshot, signature, mode } so the client can apply the same
     // in-place-vs-reload rule used for a live deploy push. MUST be registered
     // before the catch-all `/webapp/:appId/*` page route.
-    RED.httpNode.get("/webapp/:appId/snapshot", (req, res) => {
+    registerAppEndpoint(RED, "get", "/webapp/:appId/snapshot", (req, res) => {
         const location = req.query.location ? String(req.query.location) : "/";
         const dialogId = req.query.dialog ? String(req.query.dialog) : undefined;
         const clientId = req.query.clientId ? String(req.query.clientId) : undefined;
         const definitions = readDeployDefinitions(RED);
         const appId = resolveCanonicalAppId(req.params.appId, definitions);
 
-        const built = buildAppSnapshot(appId, location, dialogId, definitions, clientId);
+        const built = buildAppSnapshot(appId, location, dialogId, definitions, clientId, req.webappUser);
         if (!built.success) {
             res.status(built.status).json({ error: built.message });
             return;
@@ -4861,10 +4986,10 @@ function registerEndpoints(RED) {
         });
     });
 
-    RED.httpNode.get("/webapp/:appId/*", (req, res) => {
+    registerAppEndpoint(RED, "get", "/webapp/:appId/*", (req, res) => {
         const suffix = req.params[0] ? `/${req.params[0]}` : "/";
         const dialogId = req.query.dialog ? String(req.query.dialog) : undefined;
-        const page = renderAppPage(req.params.appId, suffix, dialogId, readDeployDefinitions(RED));
+        const page = renderAppPage(req.params.appId, suffix, dialogId, readDeployDefinitions(RED), req.webappUser);
 
         if (!page) {
             res.status(404).send("Unknown app.");
@@ -7039,8 +7164,8 @@ const runtimeNodeRegistry = {
             // convenient auto-update. `config.status` is honoured as a legacy alias.
             mode: normalizeAppMode(config.deployMode !== undefined ? config.deployMode : config.status),
             // P260 (ADR 0041 §2): pass the ONE auth object through unchanged
-            // (blank optional strings dropped). INERT until P261 — configured
-            // but not enforced; no runtime endpoint reads it yet.
+            // (blank optional strings dropped). ENFORCED since P261: the guard
+            // (appAuthGuard via registerAppEndpoint) reads it on every request.
             auth: mapAuthConfig(config.auth)
         }),
         options: {

@@ -24,7 +24,7 @@ Written fresh for P87 per `.ai/agents/node-testing.md`. Reviewed for P88 — no 
 
 Location: `tests/e2e/nodes/structure/ui-app.roundtrip.spec.ts`
 
-The `auth` config (ADR 0041 §2) is ONE object stored directly on the node — deliberately without a `#node-input-auth` DOM carrier (ADR 0031 clobber class): `oneditprepare` seeds the `#node-ui-app-auth-*` rows from `this.auth`, `oneditsave` writes the object back. The field is INERT until P261 (configured, not enforced) — these tests prove config persistence only, deliberately no behaviour.
+The `auth` config (ADR 0041 §2) is ONE object stored directly on the node — deliberately without a `#node-input-auth` DOM carrier (ADR 0031 clobber class): `oneditprepare` seeds the `#node-ui-app-auth-*` rows from `this.auth`, `oneditsave` writes the object back. These tests prove config persistence; the runtime ENFORCEMENT behaviour (P261: guard on all app endpoints, `user` binding source, identity faked via request headers) is covered by `tests/e2e/auth/trusted-header.spec.ts` — see its catalogue `tests/e2e/auth/trusted-header.tests.md` for the reference header-fake pattern.
 
 | Test | Goal |
 |---|---|

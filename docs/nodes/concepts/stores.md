@@ -312,6 +312,7 @@ Der vollständige Satz der Binding-`kind`s (`bindingSchema`,
 | `store` | Client-State per Store-ID → `statePath` | Renderer |
 | `query` | Query-Daten per `queryPath`; Ladezustand über reservierte Unterpfade `.loading`/`.error`/`.updatedAt`/`.status` | Renderer |
 | `routeParam` | Routen-Parameter der aktuellen Route | Renderer |
+| `user` | Identität des anfragenden Users (`user.id`/`name`/`email`/`groups` — ADR 0041, P261; `groups` ist ein `string[]`, auch strukturell nutzbar) | Renderer (aus dem Request- bzw. SSE-Verbindungs-Kontext; `auth.mode: "none"` → `undefined` → Fallback) |
 | `reactive` | clientseitiger JS-Ausdruck (`routeParam`/`store(…)`/`query(…)`) | Renderer (kompiliert einmal, wertet je Snapshot aus — ADR 0010, P115) |
 | `msg` | eingehender Node-RED-Message (Pfad) | Runtime (Node-RED-Schicht) |
 | `flow` | Flow-Context | Runtime |
@@ -319,7 +320,14 @@ Der vollständige Satz der Binding-`kind`s (`bindingSchema`,
 | `jsonata` | JSONata-Ausdruck **gegen die eingehende Message** | Runtime (Input-Handler, message-getrieben) |
 | `env` | Environment-Variable | Runtime |
 
-`literal/state/store/query/routeParam/reactive` werden im Renderer aufgelöst;
+Die `user`-Quelle (P261, [auth.md](auth.md)) liest die **eine** interne
+User-Identität (`userIdentitySchema`): pro Snapshot wird die Identität des
+anfragenden Clients aufgelöst — bei einem SSE-Re-Render die Identität, die beim
+Verbindungsaufbau an **diese** Verbindung gebunden wurde (kein Identitäts-Leck
+zwischen Verbindungen). Der Editor bietet die Quelle als typedInput-Typ „User"
+an (Pfad: `id` | `name` | `email` | `groups`).
+
+`literal/state/store/query/routeParam/user/reactive` werden im Renderer aufgelöst;
 `flow/global/env` werden an der Node-RED-Laufzeitschicht (webapp.js) einmalig pro
 Render aufgelöst. `msg` und `jsonata` sind **message-getrieben**: sie rendern leer,
 bis eine passende Message eintrifft; der Input-Handler wertet sie gegen die `msg`

@@ -128,14 +128,14 @@ Measured, not tag-asserted (memory: verify-rendering-by-measurement-not-tags).
 | display select present, defaults to text; label row hidden until formField | the mode switch + the documented label-depends-on-display toggle |
 | formField + label persist through open→save→reopen | plain-select persistence (no hidden carrier → no ADR-0031 harness needed) |
 
-## E2E tests — Reactive binding type #4 (P116, `tests/e2e/nodes/editor/reactive-expression.spec.ts`)
+## E2E tests — Reactive binding type #5 (P116, `tests/e2e/nodes/editor/reactive-expression.spec.ts`)
 
 ui-text is the lead node of the canonical value-binding set, so the `Reactive`
-(type #4) editor cases live here.
+(type #5 since P261 added `user`) editor cases live here.
 
 | Test | Goal |
 |---|---|
-| Reactive is type #4 of the ui-text value type set | canonical order (after Route-Param, before msg) holds on ui-text |
+| Reactive is type #5 of the ui-text value type set (after User since P261) | canonical order (Store, Query, Route-Param, User, Reactive, msg, …) holds on ui-text |
 | expand opens the dialog; a multi-line expression round-trips through save | dialog open + doc panel + `{ kind:"reactive", value }` round-trip |
 | syntax error: broken template literal shows an error, disables Übernehmen, blocks deploy | stage-1 syntax validation, live + deploy-blocking |
 | reference error: store("gibtsnicht") names the unknown store + marks the node invalid | stage-2 reference validation names the store; a known name is valid |
