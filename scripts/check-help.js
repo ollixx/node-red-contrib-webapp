@@ -31,6 +31,15 @@
  * `{ "<node>": "reason" }` suppresses ALL rules for that node. Every entry WEAKENS
  * the check — keep it EMPTY unless an ADR reason forces an exception.
  *
+ * P265 EXTENSION (ADR 0042): help migrates to Node-RED's per-node locale
+ * mechanism. Nodes on the shrinking TRANSITION_INLINE rest-list keep the
+ * inline rules (1)-(4) above; every OTHER node (locale-migrated, starting
+ * with the pilot ui-divider — and any NEW node) is checked under the STRICT
+ * locale rules (L0)-(L6): inline block gone; en-US AND de locale help files
+ * present with the data-help-name wrapper, the mandatory Inputs section, and
+ * a resolving language-correct link to the node's own guide doc
+ * (docs/guide/nodes/<node>.md / docs/guide/de/nodes/<node>.md).
+ *
  * Run via `pnpm check:help`; part of `pnpm validate`.
  */
 "use strict";
@@ -46,6 +55,48 @@ const PKG = require(path.join(ROOT, "package.json"));
  * { "<node-type>": "one-line reason" }.
  * ------------------------------------------------------------------ */
 const ALLOWLIST = {};
+
+/* ------------------------------------------------------------------ *
+ * P265 (ADR 0042) — locale-help migration. Help moves from the inline
+ * `data-help-name` block to Node-RED's per-node locale mechanism:
+ * `nodes/<cat>/locales/en-US/<node>.html` + `locales/de/<node>.html`, both
+ * linking the node's USER guide doc (EN → docs/guide/nodes/<node>.md,
+ * DE → docs/guide/de/nodes/<node>.md) and both carrying the mandatory
+ * Inputs section (help template: docs/guide/_templates/help.md).
+ *
+ * TRANSITION_INLINE is the SHRINKING rest-list (the proven check-fields
+ * idiom): a node listed here is still checked under the OLD inline rules
+ * (inline block + contract-doc link). The batches P267–P271 migrate every
+ * node and delete its entry; a node NOT listed here (incl. any NEW node)
+ * is checked under the STRICT locale rules below. Format:
+ * { "<node-type>": "one-line reason" }. Target: EMPTY.
+ * ------------------------------------------------------------------ */
+const TRANSITION_INLINE = {};
+for (const t of [
+    "ui-app", "ui-route", "ui-dialog", "ui-component-definition", "ui-component-instance",
+    "ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select",
+    "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider",
+    "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state",
+    "ui-tabs", "ui-tab", "ui-accordion", "ui-accordion-section", "ui-breadcrumb", "ui-menu",
+    "ui-pagination", "ui-stepper", "ui-image", "ui-icon", "ui-list", "ui-avatar",
+    "ui-log", "ui-repeat", "ui-store", "ui-query", "ui-store-read",
+    "ui-store-action", "ui-query-action", "ui-action",
+    // ui-divider: MIGRATED (P265 pilot) — intentionally absent.
+]) {
+    TRANSITION_INLINE[t] = "inline help pending locale migration (batches P267-P271)";
+}
+
+// Canonical guide-doc URL per language. Capture group 1 = repo-relative path.
+const GUIDE_LINK_RE = {
+    "en-US": /https:\/\/github\.com\/ollixx\/node-red-contrib-webapp\/blob\/develop\/(docs\/guide\/nodes\/[A-Za-z0-9/_-]+\.md)/,
+    "de": /https:\/\/github\.com\/ollixx\/node-red-contrib-webapp\/blob\/develop\/(docs\/guide\/de\/nodes\/[A-Za-z0-9/_-]+\.md)/,
+};
+
+// The mandatory Inputs section heading per language (help template).
+const INPUTS_HEADING_RE = {
+    "en-US": /<h3>\s*Inputs?\s*<\/h3>/i,
+    "de": /<h3>\s*Eingä?a?ng(e)?\s*<\/h3>/i,
+};
 
 /* ------------------------------------------------------------------ *
  * Expected doc basename per node. Default: `<type>.md`. Nodes without an
@@ -154,15 +205,94 @@ function helpViolation(node, opts) {
 }
 
 /* ------------------------------------------------------------------ *
+ * P265 — STRICT locale rules for migrated nodes (pure seam, like
+ * helpViolation). node: { type, help, locales: { "en-US": s|null, de: s|null } }.
+ * Returns the FIRST { rule, message } or null.
+ *   opts.docExists(relPath) -> whether a repo-relative doc path resolves.
+ */
+function localeViolation(node, opts) {
+    const docExists =
+        (opts && opts.docExists) || ((rel) => fs.existsSync(path.join(ROOT, rel)));
+    const { type, help } = node;
+    const locales = node.locales || {};
+
+    // (L0) the inline block must be GONE — if it stays, it shadows nothing
+    // (locale help is appended per request) but it is dead, drift-prone weight.
+    if (help != null) {
+        return {
+            rule: "inline-help-remains",
+            message:
+                "still has an inline `data-help-name` block although its help is locale-migrated — " +
+                "delete the inline block (help lives in `nodes/<cat>/locales/<lang>/`).",
+        };
+    }
+
+    for (const lang of ["en-US", "de"]) {
+        const content = locales[lang];
+        // (L1) locale help file present.
+        if (content == null) {
+            return {
+                rule: "missing-locale-help",
+                message: `has no locale help for \`${lang}\` — add \`nodes/<cat>/locales/${lang}/${type}.html\` (template: docs/guide/_templates/help.md).`,
+            };
+        }
+        // (L2) the file carries the node's own data-help-name block.
+        if (extractHelpBlock(content, type) == null) {
+            return {
+                rule: "locale-no-help-block",
+                message: `locale help \`${lang}\` lacks the \`<script type="text/html" data-help-name="${type}">\` wrapper — Node-RED appends the file verbatim; the wrapper is required.`,
+            };
+        }
+        // (L3) mandatory Inputs section (help template).
+        if (!INPUTS_HEADING_RE[lang].test(content)) {
+            return {
+                rule: "no-inputs-section",
+                message: `locale help \`${lang}\` is missing the mandatory Inputs section (\`<h3>${lang === "de" ? "Eingang" : "Inputs"}</h3>\`) — even "no input port" must be stated.`,
+            };
+        }
+        // (L4) guide link present, language-correct.
+        const m = GUIDE_LINK_RE[lang].exec(content);
+        if (!m) {
+            const want = lang === "de" ? `docs/guide/de/nodes/${type}.md` : `docs/guide/nodes/${type}.md`;
+            return {
+                rule: "no-guide-link",
+                message: `locale help \`${lang}\` has no guide-doc link — add \`https://github.com/ollixx/node-red-contrib-webapp/blob/develop/${want}\`.`,
+            };
+        }
+        // (L5) the linked guide doc resolves on disk.
+        if (!docExists(m[1])) {
+            return {
+                rule: "dangling-guide-link",
+                message: `locale help \`${lang}\` links \`${m[1]}\`, which does not resolve on disk.`,
+            };
+        }
+        // (L6) it links the node's OWN guide doc.
+        if (path.basename(m[1]) !== `${type}.md`) {
+            return {
+                rule: "not-own-guide",
+                message: `locale help \`${lang}\` links \`${m[1]}\` but not the node's own guide doc (\`${type}.md\`).`,
+            };
+        }
+    }
+    return null;
+}
+
+/* ------------------------------------------------------------------ *
  * Core analysis (pure — operates on an in-memory node list)
  * ------------------------------------------------------------------ *
- * nodes: [{ type, help: string|null }]
+ * nodes: [{ type, help: string|null, locales?: { "en-US": s|null, de: s|null } }]
  * allowlist: { <type>: reason }
+ * opts.transition: { <type>: reason } — nodes still under the OLD inline
+ *   rules (defaults to TRANSITION_INLINE); everything else gets the STRICT
+ *   locale rules (localeViolation).
  */
 function analyzeNodes(nodes, allowlist, opts) {
     const errors = [];
     let checked = 0;
     let allowlisted = 0;
+    let transitional = 0;
+    let migrated = 0;
+    const transition = (opts && opts.transition) || TRANSITION_INLINE;
 
     for (const n of nodes) {
         checked++;
@@ -170,16 +300,23 @@ function analyzeNodes(nodes, allowlist, opts) {
             allowlisted++;
             continue;
         }
-        const v = helpViolation(n, opts);
+        let v;
+        if (transition[n.type]) {
+            transitional++;
+            v = helpViolation(n, opts);
+        } else {
+            migrated++;
+            v = localeViolation(n, opts);
+        }
         if (v) {
             errors.push(
                 `${n.type}: ${v.message} ` +
-                    `Fix: add the link (see docs/nodes/concepts/editor.md), or allowlist ` +
+                    `Fix: add the link (see docs/nodes/concepts/editor.md / docs/guide/README.md), or allowlist ` +
                     `it in scripts/check-help.js with a one-line reason.`
             );
         }
     }
-    return { errors, checked, allowlisted };
+    return { errors, checked, allowlisted, transitional, migrated };
 }
 
 /* ------------------------------------------------------------------ *
@@ -192,7 +329,16 @@ function buildNodes() {
     for (const [type, htmlPath] of Object.entries(htmls).sort()) {
         if (!fs.existsSync(htmlPath)) continue;
         const src = fs.readFileSync(htmlPath, "utf8");
-        nodes.push({ type, help: extractHelpBlock(src, type) });
+        // P265: locale help files live next to the registered .js/.html —
+        // `<dir>/locales/<lang>/<type>.html` (the PROVEN Node-RED mechanic,
+        // docs/guide/README.md).
+        const dir = path.dirname(htmlPath);
+        const locales = {};
+        for (const lang of ["en-US", "de"]) {
+            const p = path.join(dir, "locales", lang, `${type}.html`);
+            locales[lang] = fs.existsSync(p) ? fs.readFileSync(p, "utf8") : null;
+        }
+        nodes.push({ type, help: extractHelpBlock(src, type), locales });
     }
     return nodes;
 }
@@ -202,19 +348,20 @@ function checkHelp() {
 }
 
 function main() {
-    const { errors, checked, allowlisted } = checkHelp();
+    const { errors, checked, allowlisted, transitional, migrated } = checkHelp();
     if (errors.length) {
-        console.error("Inline-help doc-link check FAILED:\n");
+        console.error("Node-help check FAILED:\n");
         for (const e of errors) console.error("  - " + e);
         console.error(
-            `\n${errors.length} help-link violation(s) across ${checked} node(s) checked; ` +
+            `\n${errors.length} help violation(s) across ${checked} node(s) checked; ` +
                 `${allowlisted} node(s) allowlisted.`
         );
         process.exit(1);
     }
     console.log(
-        `Inline-help doc-link OK: ${checked} ui-* node(s) checked, ` +
-            `every help block links a resolvable full doc; ${allowlisted} allowlisted.`
+        `Node-help OK: ${checked} ui-* node(s) checked — ${migrated} locale-migrated ` +
+            `(en-US+de help, guide links resolve), ${transitional} transitional inline ` +
+            `(rest-list, shrinking to 0 via P267-P271); ${allowlisted} allowlisted.`
     );
 }
 
@@ -224,8 +371,10 @@ module.exports = {
     checkHelp,
     analyzeNodes,
     helpViolation,
+    localeViolation,
     extractHelpBlock,
     nodeHtmlPaths,
     EXPECTED_DOC,
     ALLOWLIST,
+    TRANSITION_INLINE,
 };
