@@ -39,6 +39,20 @@ Editor-Typen sind in [editor.md](../concepts/editor.md) erklärt.
 |---|---|---|---|---|
 | `layout` | „Layout" | SelectBox (Layout-Preset) | **ja** | Layout der Route (im Feld `layout` gespeichert; P259/ADR 0038: bare Referenz-Name, vormals `layoutId` — Alt-Flows migrieren beim Öffnen+Speichern). Auswahl aus den Standard-Presets (`vertical`, `horizontal`, `app`, `grid`, `absolute`). Default: `vertical`. Bestimmt die Slots und die Child-Platzierungs-Felder direkter Kinder — siehe [layout.md](../concepts/layout.md). |
 
+### Gruppe „Sicherheit" (P262)
+
+| Feld | Label | Editor-Typ | Pflicht | Beschreibung |
+|---|---|---|---|---|
+| `requiresGroup` | „Gruppen" | Textfeld (kommaseparierte Gruppennamen) | optional | Deklarativer Authz-Guard ([ADR 0041](../../adr/0041-auth-model-idp-agnostic-identity-trusted-header-first.md) §4, [auth.md](../concepts/auth.md)). Werte: beliebige Gruppennamen, kommasepariert (tolerant geparst: getrimmt, Leereinträge verworfen). Default: leer. **Leer/absent ⇒ nur Authentifizierung nötig** (P261-Verhalten). **Gesetzt ⇒ der User braucht mindestens eine der Gruppen** (ANY-of gegen `user.groups`; kein Policy-DSL). Server-seitig an allen vier Wirkstellen erzwungen: Page-Render der Route ⇒ **403-Seite** („Access denied", ohne jeden Routen-Inhalt im HTML), `/snapshot` der Route ⇒ **403** (weder Struktur noch Daten im JSON), Navigation (ui-action navigate) auf die Route ⇒ **abgewiesen** (kein Navigate-Command an die Verbindung; strukturierter Fehler `server.auth.navigation-denied`), `/event` an Komponenten der Route ⇒ **403** mit strukturiertem Fehler `server.auth.event-denied`. Ohne Identitätsquelle (`auth.mode: "none"`) erfüllt niemand einen gesetzten Guard. **„visibleIf ist UX, Guard ist Sicherheit"** — siehe unten. |
+
+**visibleIf ist UX, Guard ist Sicherheit.** Menü-Einträge oder Buttons auf eine
+geschützte Route via `visible`/Reactive auszublenden (empfohlenes Muster: das
+Reactive-Global `user`, z. B. `(user?.groups ?? []).includes("admins")` — siehe
+[reactive-expressions.md](../concepts/reactive-expressions.md)) ist reiner
+Bedienkomfort. Die Sicherheit entsteht ausschließlich durch den server-seitigen
+`requiresGroup`-Guard: der direkte URL-Zugriff liefert **403**, auch wenn kein
+Menüpunkt hinführt.
+
 ### Gruppe „Events"
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |

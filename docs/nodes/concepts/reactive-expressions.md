@@ -54,6 +54,7 @@ deklarativen Binding-Arten auflöst — nicht mehr:
 | `routeParam` | Objekt | Aufgelöste Parameter der **aktuell aktiven Route** (gleiche Quelle wie das `routeParam`-Binding). Fehlender Parameter → `undefined`. | `routeParam.id` |
 | `store(name)` | Funktion | Live-Wert des `ui-store` der Parent-App, dessen **Name** (`name`-Feld, getrimmt, exakter Vergleich) übergeben wird. Aufgelöst wird Name → `statePath` → Live-Wert im Client-State. | `store("customer").name` |
 | `query(pfad)` | Funktion | Wert am Pfad innerhalb der Query-Ergebnisse (gleiches Lookup wie das `query`-Binding). | `query("customers.total")` |
+| `user` | Objekt | P262 ([ADR 0041](../../adr/0041-auth-model-idp-agnostic-identity-trusted-header-first.md) §3/§4): das Identitätsobjekt des anfragenden Clients (`{ id, name?, email?, groups }` — dieselbe Quelle wie das `user`-Binding, siehe [auth.md](auth.md)). Ohne Identität (`auth.mode: "none"`) `undefined` — **defensiv lesen**. Empfohlenes Muster für gruppenabhängiges UI-Ausblenden; Merksatz: *visibleIf ist UX, Guard ist Sicherheit* (die Sicherheit ist der server-seitige `requiresGroup`-Guard). | `(user?.groups ?? []).includes("admins")` |
 
 ### Scope-lokale Globals — `item` / `index` / `prop` (P185)
 
@@ -158,7 +159,8 @@ den **Expression-Editor-Dialog** (Vorbild: Node-REDs JSONata-Editor):
   Completion weiter).
 - **Completion aus dem echten Graphen:** `store("` schlägt die tatsächlich
   existierenden Store-Namen der App vor; `routeParam.` die `:param`-Namen der
-  Route, unter der der Knoten gemountet ist; dazu die drei Globals selbst. Im
+  Route, unter der der Knoten gemountet ist; dazu die Basis-Globals selbst
+  (`routeParam`/`store`/`query`/`user`). Im
   Repeat-/Component-Scope zusätzlich die scope-lokalen Globals `item`/`index`
   bzw. `prop` (nur wenn der Knoten innerhalb des passenden Containers liegt).
 - **Validierung zweistufig:** beim Tippen Syntaxprüfung (Expression-Parse,

@@ -4087,9 +4087,10 @@
     //
     // The contract the dialog teaches and validates is the renderer's (P115):
     // docs/nodes/concepts/reactive-expressions.md — a single synchronous ES2020
-    // expression over the three globals `routeParam`, `store(name)`, `query(path)`.
+    // expression over the base globals `routeParam`, `store(name)`, `query(path)`
+    // and (P262) `user`.
 
-    // The three globals offered as completion + shown in the doc panel. The
+    // The base globals offered as completion + shown in the doc panel. The
     // example snippets are quoted verbatim from reactive-expressions.md (the
     // single source of truth); if these diverge, fix the doc page, not here.
     var REACTIVE_GLOBALS = [
