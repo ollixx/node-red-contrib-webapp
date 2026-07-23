@@ -80,10 +80,10 @@ test.describe("editor panel — ui-alert message/title typedInput (P67)", () => 
         // are CONTEXT-GATED — offered ONLY when the edited node is inside a
         // ui-repeat (item/index) or a ui-component-definition (prop). This
         // ui-alert is mounted in a plain route slot — neither scope — so its
-        // canonical value set is exactly the 14 global kinds, with NO item/index
-        // and NO prop.
+        // canonical value set is exactly the 15 global kinds (P261 added `user`),
+        // with NO item/index and NO prop.
         expect(messageTypes).toEqual([
-            "store", "query", "routeParam", "reactive", "msg", "jsonata",
+            "store", "query", "routeParam", "user", "reactive", "msg", "jsonata",
             "str", "num", "bool", "json", "date", "flow", "global", "env"
         ]);
         expect(messageTypes).not.toContain("item");

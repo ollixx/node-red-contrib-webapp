@@ -4078,7 +4078,7 @@
 
     // ─── P116 (ADR 0010): the `reactive` typedInput + expression-editor dialog ──
     //
-    // Type #4 of the canonical set (after Route-Param, before msg). It carries the
+    // Type #5 of the canonical set (after User since P261, before msg). It carries the
     // expression source in the binding `value` (handled by apply/readValueBinding
     // above). The expand button opens the expression editor dialog with code
     // completion (Monaco, with a clean ace-fallback), live syntax validation and

@@ -45,7 +45,8 @@ async function readTypedInputTypeSet(page: Page, fieldId: string): Promise<strin
 }
 
 const BASE_VALUE_SET = [
-    "store", "query", "routeParam", "reactive", "msg", "jsonata",
+    // P261: `user` joined the canonical set (after routeParam, before reactive).
+    "store", "query", "routeParam", "user", "reactive", "msg", "jsonata",
     "str", "num", "bool", "json", "date", "flow", "global", "env"
 ];
 
@@ -116,7 +117,7 @@ test.describe("editor — scope-local binding kinds are context-gated (P182)", (
         await editor.openNode("p182TextFree");
 
         const types = await readTypedInputTypeSet(page, "text");
-        // Exactly the 14 global kinds — no scope-local kinds.
+        // Exactly the 15 global kinds (P261 added `user`) — no scope-local kinds.
         expect(types).toEqual(BASE_VALUE_SET);
         expect(types).not.toContain("item");
         expect(types).not.toContain("index");

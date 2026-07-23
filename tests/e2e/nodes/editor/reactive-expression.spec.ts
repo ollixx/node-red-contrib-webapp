@@ -8,7 +8,8 @@ import { NodeEditorPage } from "../../../helpers/node-editor-page";
 /**
  * P116 (ADR 0010) — the `reactive` typedInput + expression-editor dialog.
  *
- * `Reactive` is type #4 of the canonical value-binding set (P113). Its expand
+ * `Reactive` is type #5 of the canonical value-binding set (P113; #5 since
+ * P261 added `user`). Its expand
  * button opens an expression editor (RED.editor.createEditor — Monaco with an
  * ace-fallback) with completion from the real graph, two-stage validation
  * (syntax live + references on save/deploy) and a doc panel sourced from
@@ -43,7 +44,7 @@ test.describe("editor — reactive expression dialog (P116)", () => {
         await resetFlow(request);
     });
 
-    test("Reactive is type #4 of the ui-text value type set", async ({ page, request }) => {
+    test("Reactive is type #5 of the ui-text value type set (after User since P261)", async ({ page, request }) => {
         await deployFlow(request, reactiveFlow("rxApp0", "rxText0"));
 
         const editor = new NodeEditorPage(page);
@@ -56,7 +57,8 @@ test.describe("editor — reactive expression dialog (P116)", () => {
             }).WebappEditorCommon;
             return C.valueBindingTypes().map((t) => (typeof t === "string" ? t : t.value));
         });
-        expect(types[3]).toBe("reactive");
+        // Canonical order: Store, Query, Route-Param, User (P261), Reactive, …
+        expect(types[4]).toBe("reactive");
     });
 
     test("expand opens the dialog; a multi-line expression round-trips through save", async ({ page, request }) => {
