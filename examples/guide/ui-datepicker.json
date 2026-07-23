@@ -1,0 +1,97 @@
+[
+    {
+        "id": "guide-ui-datepicker",
+        "type": "tab",
+        "label": "Guide: ui-datepicker",
+        "disabled": false,
+        "info": "User-guide example for ui-datepicker (docs/guide/nodes/ui-datepicker.md). Import, deploy, open /webapp/guideDatepicker/ — a bounded start-date field (mode date, Min/Max) two-way bound to a store sub-path, plus a live echo."
+    },
+    {
+        "id": "guideDatepicker",
+        "type": "ui-app",
+        "name": "Datepicker demo",
+        "uiId": "guideDatepicker",
+        "root": "guideDatepicker",
+        "title": "Datepicker demo",
+        "layout": "app",
+        "z": "guide-ui-datepicker",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gDpBooking",
+        "type": "ui-store",
+        "name": "Booking store",
+        "uiId": "gDpBooking",
+        "app": "guideDatepicker",
+        "statePath": "booking",
+        "initialValue": "{\"start\":\"2026-08-01\"}",
+        "z": "guide-ui-datepicker",
+        "x": 120,
+        "y": 180,
+        "wires": [[]]
+    },
+    {
+        "id": "gDpHeading",
+        "type": "ui-text",
+        "name": "Heading",
+        "uiId": "gDpHeading",
+        "app": "guideDatepicker",
+        "mount": "guideDatepicker.content",
+        "text": "Pick a start date between 2026-07-01 and 2026-12-31:",
+        "order": "0",
+        "z": "guide-ui-datepicker",
+        "x": 340,
+        "y": 60,
+        "wires": [[]]
+    },
+    {
+        "id": "gDpField",
+        "type": "ui-datepicker",
+        "name": "Start date",
+        "uiId": "gDpField",
+        "app": "guideDatepicker",
+        "mount": "guideDatepicker.content",
+        "label": { "kind": "literal", "value": "Start date" },
+        "placeholder": { "kind": "literal", "value": "YYYY-MM-DD" },
+        "mode": "date",
+        "min": "2026-07-01",
+        "max": "2026-12-31",
+        "value": {
+            "kind": "store",
+            "path": "gDpBooking",
+            "subPath": { "kind": "literal", "value": "start" }
+        },
+        "writeTo": {
+            "kind": "store",
+            "path": "gDpBooking",
+            "subPath": { "kind": "literal", "value": "start" }
+        },
+        "writeTrigger": "change",
+        "order": "1",
+        "z": "guide-ui-datepicker",
+        "x": 340,
+        "y": 140,
+        "wires": [[]]
+    },
+    {
+        "id": "gDpEcho",
+        "type": "ui-text",
+        "name": "Date echo",
+        "uiId": "gDpEcho",
+        "app": "guideDatepicker",
+        "mount": "guideDatepicker.content",
+        "value": {
+            "kind": "store",
+            "path": "gDpBooking",
+            "subPath": { "kind": "literal", "value": "start" },
+            "fallback": "(no date picked)"
+        },
+        "order": "2",
+        "z": "guide-ui-datepicker",
+        "x": 340,
+        "y": 220,
+        "wires": [[]]
+    }
+]

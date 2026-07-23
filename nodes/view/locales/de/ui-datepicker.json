@@ -1,0 +1,36 @@
+{
+    "ui-datepicker": {
+        "label": {
+            "mount": "Parent-Slot",
+            "labelBinding": "Beschriftung",
+            "valueBinding": "Wert-Pfad (Lesen)",
+            "writeToBinding": "Schreibziel",
+            "writeTrigger": "Schreib-Auslöser",
+            "disabledBinding": "Deaktiviert",
+            "mode": "Modus",
+            "min": "Minimum",
+            "max": "Maximum",
+            "placeholderBinding": "Platzhalter"
+        },
+        "option": {
+            "writeTrigger": {
+                "submit": "submit",
+                "change": "change",
+                "none": "none"
+            },
+            "mode": {
+                "date": "Datum",
+                "datetime": "Datum & Uhrzeit",
+                "time": "Uhrzeit"
+            }
+        },
+        "placeholder": {
+            "min": "JJJJ-MM-TT",
+            "max": "JJJJ-MM-TT"
+        },
+        "hints": {
+            "color": "Ein Formularfeld hat keine allgemeine Farbe (Zustandsfarben kommen aus Validierung/Variant).",
+            "size": "Dieser Knoten hat keine Größen-Stufen."
+        }
+    }
+}

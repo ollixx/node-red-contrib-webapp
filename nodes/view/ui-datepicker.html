@@ -14,10 +14,9 @@
             variant: false,
             advanced: ["size"],
             omit: ["disabled"],
-            hints: {
-                color: "Ein Formularfeld hat keine allgemeine Farbe (Zustandsfarben kommen aus Validierung/Variant).",
-                size: "Dieser Knoten hat keine Größen-Stufen."
-            }
+            // P268 (ADR 0042 §3): N/A hints live in the node's OWN locale catalog
+            // (nodes/view/locales/<lang>/ui-datepicker.json -> `ui-datepicker.hints.<field>`).
+            i18nNode: "ui-datepicker"
         };
 
         common.registerNodeType("ui-datepicker", {
@@ -189,52 +188,38 @@
         });
     })();
 </script>
+<!-- P268 (ADR 0042 §3): editor-label i18n. Form-row labels carry data-i18n keys
+     per the convention `<node>.label.<field>` (options `<node>.option.<field>.<value>`,
+     placeholders `[placeholder]<node>.placeholder.<field>`). Catalogs:
+     nodes/view/locales/{en-US,de}/ui-datepicker.json. The literal texts stay as the en-US
+     authoring reference; at edit time the catalog text replaces them. -->
 <script type="text/html" data-template-name="ui-datepicker">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-row"><label for="node-input-mount" data-i18n="ui-datepicker.label.mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <!-- P98 / P130: Label binding — typedInput managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-labelBinding">Label</label><input type="text" id="node-input-labelBinding"></div>
+    <div class="form-row"><label for="node-input-labelBinding" data-i18n="ui-datepicker.label.labelBinding">Label</label><input type="text" id="node-input-labelBinding"></div>
     <!-- P98 / P130: Value binding — typedInput managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-valueBinding">Value Path</label><input type="text" id="node-input-valueBinding"></div>
+    <div class="form-row"><label for="node-input-valueBinding" data-i18n="ui-datepicker.label.valueBinding">Value Path</label><input type="text" id="node-input-valueBinding"></div>
     <!-- P204 (ADR 0027 / writable category): writeTo target (WRITE) — Store/Flow/Global. -->
-    <div class="form-row"><label for="node-input-writeToBinding">Write To</label><input type="text" id="node-input-writeToBinding"></div>
-    <div class="form-row"><label for="node-input-writeTrigger">Write Trigger</label><select id="node-input-writeTrigger"><option value="submit">submit</option><option value="change">change</option><option value="none">none</option></select></div>
+    <div class="form-row"><label for="node-input-writeToBinding" data-i18n="ui-datepicker.label.writeToBinding">Write To</label><input type="text" id="node-input-writeToBinding"></div>
+    <div class="form-row"><label for="node-input-writeTrigger" data-i18n="ui-datepicker.label.writeTrigger">Write Trigger</label><select id="node-input-writeTrigger"><option value="submit" data-i18n="ui-datepicker.option.writeTrigger.submit">submit</option><option value="change" data-i18n="ui-datepicker.option.writeTrigger.change">change</option><option value="none" data-i18n="ui-datepicker.option.writeTrigger.none">none</option></select></div>
     <!-- P130 (ADR 0012 / boolean category): Disabled binding — typedInput managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-disabledBinding">Disabled</label><input type="text" id="node-input-disabledBinding"></div>
+    <div class="form-row"><label for="node-input-disabledBinding" data-i18n="ui-datepicker.label.disabledBinding">Disabled</label><input type="text" id="node-input-disabledBinding"></div>
     <div class="form-row">
-        <label for="node-input-mode">Mode</label>
+        <label for="node-input-mode" data-i18n="ui-datepicker.label.mode">Mode</label>
         <select id="node-input-mode">
-            <option value="date">Date</option>
-            <option value="datetime">Date &amp; Time</option>
-            <option value="time">Time</option>
+            <option value="date" data-i18n="ui-datepicker.option.mode.date">Date</option>
+            <option value="datetime" data-i18n="ui-datepicker.option.mode.datetime">Date &amp; Time</option>
+            <option value="time" data-i18n="ui-datepicker.option.mode.time">Time</option>
         </select>
     </div>
-    <div class="form-row"><label for="node-input-min">Min</label><input type="text" id="node-input-min" placeholder="YYYY-MM-DD"></div>
-    <div class="form-row"><label for="node-input-max">Max</label><input type="text" id="node-input-max" placeholder="YYYY-MM-DD"></div>
+    <div class="form-row"><label for="node-input-min" data-i18n="ui-datepicker.label.min">Min</label><input type="text" id="node-input-min" placeholder="YYYY-MM-DD" data-i18n="[placeholder]ui-datepicker.placeholder.min"></div>
+    <div class="form-row"><label for="node-input-max" data-i18n="ui-datepicker.label.max">Max</label><input type="text" id="node-input-max" placeholder="YYYY-MM-DD" data-i18n="[placeholder]ui-datepicker.placeholder.max"></div>
     <!-- P149 (ADR 0012): Placeholder binding — typedInput managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-placeholderBinding">Placeholder</label><input type="text" id="node-input-placeholderBinding"></div>
+    <div class="form-row"><label for="node-input-placeholderBinding" data-i18n="ui-datepicker.label.placeholderBinding">Placeholder</label><input type="text" id="node-input-placeholderBinding"></div>
 </script>
-<script type="text/html" data-help-name="ui-datepicker">
-<p>Datums- und Uhrzeiteingabe mit konfigurierbarem Modus (date, datetime, time). Rendert ein <code>sl-input</code>-Element (type="date", "datetime-local" oder "time").</p>
-<h3>Label</h3>
-<p>Beschriftung des Datepickers — bindbar: alle Binding-Arten (ADR 0012): Store, Query,
-Route-Param, Reactive, msg, JSONata, string/boolean/number/json/timestamp,
-Flow, Global, Env.</p>
-<h3>Value Path</h3>
-<p>Bindbare Quelle des Datumswerts als ISO-8601-String — alle Binding-Arten werden unterstützt.</p>
-<h3>Write To (Schreiben, P204 / ADR 0027)</h3>
-<p>Ziel, in das die Runtime das gewählte Datum schreibt — nur <b>schreibbare</b> Kinds
-(<code>Store</code>/<code>Flow</code>/<code>Global</code>). Der Datepicker ist text-artig
-(<code>sl-input</code>) und honoriert den <code>Write Trigger</code>: <code>submit</code>
-schreibt bei Enter/Blur, <code>change</code> bei jeder Auswahl.</p>
-<h3>Disabled (P130)</h3>
-<p>Bindbare Bedingung zum Deaktivieren des Datepickers (sperrt Nutzerinteraktion).
-Boolean-Zustand-Satz (ADR 0012): Store, Query, Route-Param, Reactive, msg,
-JSONata, boolean, Flow, Global, Env.</p>
-<h3>Mode</h3>
-<p>Eingabe-Modus: <b>Date</b> = nur Datum (YYYY-MM-DD), <b>Date &amp; Time</b> = Datum und Uhrzeit (YYYY-MM-DDTHH:mm), <b>Time</b> = nur Uhrzeit (HH:mm).</p>
-<h3>Events</h3>
-<p>Bei Nutzerinteraktion sendet der Knoten <code>{ event: "change", params: { value: string } }</code> auf dem Output-Port (ISO-8601-String je nach Modus).</p>
-<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/input/ui-datepicker.md">Ausführliche Dokumentation</a></p>
-</script>
+<!-- P268 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/view/locales/{en-US,de}/ui-datepicker.html; form-row labels carry
+     data-i18n keys resolved from nodes/view/locales/{en-US,de}/ui-datepicker.json.
+     No inline data-help-name block here. -->

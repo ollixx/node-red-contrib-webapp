@@ -1,0 +1,25 @@
+<script type="text/html" data-help-name="ui-datepicker">
+<p>Ein Feld für Datum / Datum+Uhrzeit / Uhrzeit, zweiseitig an den Client-State
+gebunden: <b>Value Path</b> liest, <b>Write To</b> schreibt. Der Wert ist immer
+ein ISO-8601-String.</p>
+<h3>Wichtige Felder</h3>
+<ul>
+    <li><b>Mode</b> — <code>date</code> (<code>YYYY-MM-DD</code>), <code>datetime</code> (<code>YYYY-MM-DDTHH:mm</code>) oder <code>time</code> (<code>HH:mm</code>).</li>
+    <li><b>Min</b> / <b>Max</b> — frühestes / spätestes erlaubtes Datum (<code>YYYY-MM-DD</code>); Tage außerhalb sind deaktiviert.</li>
+    <li><b>Placeholder</b> — sichtbar, solange nichts gewählt ist (bindbar).</li>
+    <li><b>Value Path</b> / <b>Write To</b> — die LESE- / SCHREIB-Hälfte (ADR 0027); Write To nimmt nur <code>store</code>/<code>flow</code>/<code>global</code>.</li>
+    <li><b>Write Trigger</b> — dieses Control ist text-artig, der Trigger greift also: <code>submit</code> = Enter/Blur, <code>change</code> = jede Auswahl, <code>none</code> = kein Write-Back.</li>
+</ul>
+<h3>Eingang</h3>
+<p>Hat einen Eingangs-Port. <code>msg.payload</code> (nicht null, ISO-8601-String)
+setzt den Wert; <code>msg.ui.patch</code> überschreibt Definitionsfelder
+(<code>min</code>, <code>max</code>, <code>mode</code>, …);
+<code>msg.ui.component.op</code> unterstützt <code>show</code>/<code>hide</code>,
+<code>enable</code>/<code>disable</code>, <code>reset</code>. Alles andere wird
+unverändert durchgereicht.</p>
+<h3>Ausgänge / Events</h3>
+<p><code>change</code> mit <code>msg.ui.params.value</code> — der neue
+ISO-8601-String in der Form des gewählten Modus.</p>
+<h3>Vollständige Doku</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/de/nodes/ui-datepicker.md" target="_blank">docs/guide/de/nodes/ui-datepicker.md</a></p>
+</script>
