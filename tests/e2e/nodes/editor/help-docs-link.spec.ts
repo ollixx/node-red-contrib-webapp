@@ -21,6 +21,14 @@ const EXPECTED_DOC: Record<string, string> = {
     "ui-component-instance": "ui-component.md",
 };
 
+// P265 (ADR 0042): nodes whose help has moved to the Node-RED locale mechanism
+// (`nodes/<cat>/locales/<lang>/<node>.html`). Their help links the USER guide
+// doc (`docs/guide/nodes/<node>.md`) instead of the internal contract doc —
+// the intent (a resolvable full-doc link in the rendered help) is unchanged.
+// The batches P267–P271 move every node here; the transitional inline nodes
+// keep the contract-doc link until migrated.
+const LOCALE_MIGRATED = new Set<string>(["ui-divider"]);
+
 // Every ui-* editor type (from package.json node-red.nodes). Kept explicit so a
 // new node that forgets a help link fails HERE too, not only in the guardrail.
 const UI_TYPES = [
@@ -39,6 +47,13 @@ const expectedBasename = (type: string) => EXPECTED_DOC[type] ?? `${type}.md`;
 
 const CANONICAL_PREFIX =
     "https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/";
+const GUIDE_PREFIX =
+    "https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/nodes/";
+
+// The doc-link prefix a node's rendered help must carry: guide doc for
+// locale-migrated nodes (P265), contract doc for the transitional inline rest.
+const expectedPrefix = (type: string) =>
+    LOCALE_MIGRATED.has(type) ? GUIDE_PREFIX : CANONICAL_PREFIX;
 
 // Representative sample rendered through the FULL help path with anchor-attribute
 // assertions (href + it is a real <a>). One per category + the special cases.
@@ -68,10 +83,10 @@ test.describe("editor help — every node links its full doc (P232)", () => {
         const missing: string[] = [];
         for (const type of UI_TYPES) {
             const help = helpByType[type] ?? "";
-            const wanted = CANONICAL_PREFIX;
+            const wanted = expectedPrefix(type);
             // The rendered help must contain a canonical develop-blob docs link
             // whose basename is the node's own spec (or the concept doc for the
-            // component pair).
+            // component pair; or the guide doc for locale-migrated nodes).
             const hasOwnSpecLink =
                 help.includes(wanted) && help.includes(expectedBasename(type));
             if (!hasOwnSpecLink) missing.push(`${type} (expected ${expectedBasename(type)})`);
@@ -89,7 +104,7 @@ test.describe("editor help — every node links its full doc (P232)", () => {
             // link (e.g. ui-app links the auth concept doc since P260 AND its
             // own spec) — find the anchor for the node's OWN doc, not just the
             // first doc-prefixed anchor.
-            const link = await page.evaluate(({ t, basename }) => {
+            const link = await page.evaluate(({ t, basename, prefix }) => {
                 const RED = (window as unknown as {
                     RED: { nodes: { getNodeHelp: (t: string) => string } };
                 }).RED;
@@ -99,15 +114,15 @@ test.describe("editor help — every node links its full doc (P232)", () => {
                 const anchors = Array.from(el.querySelectorAll("a")) as HTMLAnchorElement[];
                 const docAnchor = anchors.find((a) => {
                     const href = a.getAttribute("href") || "";
-                    return href.includes("/blob/develop/docs/nodes/") && href.includes(basename);
+                    return href.startsWith(prefix) && href.includes(basename);
                 });
                 return docAnchor
                     ? { href: docAnchor.getAttribute("href"), text: docAnchor.textContent }
                     : null;
-            }, { t: type, basename: expectedBasename(type) });
+            }, { t: type, basename: expectedBasename(type), prefix: expectedPrefix(type) });
 
             expect(link, `${type}: no rendered doc anchor in help`).not.toBeNull();
-            expect(link!.href).toContain(CANONICAL_PREFIX);
+            expect(link!.href).toContain(expectedPrefix(type));
             expect(link!.href).toContain(expectedBasename(type));
         });
     }
