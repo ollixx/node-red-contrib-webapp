@@ -48,6 +48,7 @@ Reason in each package's `deferred_reason`. Picked up once the blocker clears.
 - **P263** — aspects/auth — Per-User-State (Store-Scope `per-user`, Key=user.id) — *koppelt an P210; nach P261, nicht 1.0-kritisch* — [P263](aspects/auth/deferred/P263-per-user-state-scope.md)
 - **P264** — aspects/auth — In-App OIDC RP (Cookie-Session, PKCE, CSRF) — *nur falls proxy-loser Betrieb Ziel wird; koppelt an P210* — [P264](aspects/auth/deferred/P264-in-app-oidc-relying-party.md)
 - **P210** — aspects/state — Tech-Debt: per-client-State produktionsreif skalieren — externer geteilter Store (Redis) und/oder Multi-Instanz + Sticky-Sessions; TTL/Eviction gegen unbegrenztes Wachstum — *großer Umbau; ADR + Owner-Entscheidung; erst bei realem Skalierungs-/Durability-Bedarf* — [P210](aspects/state/deferred/P210-per-client-state-production-scale.md)
+- **P273** — nodes/ui-app — optionaler Root-Mount `/<root>` (Page-only, Opt-in) mit beidseitiger Deploy-Zeit-Kollisionsvalidierung — *ADR 0043; Owner 2026-07-23 bewusst geparkt: nicht 1.0-kritisch, Reverse-Proxy deckt den Bedarf* — [P273](nodes/ui-app/deferred/P273-optional-root-mount-page-only-with-collision-validation.md)
 
 ## Done (rollup — history lives in the epic folders)
 
