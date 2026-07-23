@@ -86,6 +86,37 @@ for (const t of [
     TRANSITION_INLINE[t] = "inline help pending locale migration (batches P267-P271)";
 }
 
+/* ------------------------------------------------------------------ *
+ * P272 (ADR 0042 §3) — editor-LABEL i18n. Labels migrate to `data-i18n`
+ * keys + per-node message catalogs `nodes/<cat>/locales/<lang>/<node>.json`
+ * (en-US + de, key convention in docs/guide/README.md). LABEL_TRANSITION is
+ * the SHRINKING rest-list (same idiom as TRANSITION_INLINE): a node listed
+ * here may still carry untranslated literal labels; a node NOT listed here
+ * (starting with the pilot ui-divider — and any NEW node) must use
+ * `data-i18n` labels AND ship both catalogs with mirrored key structure.
+ * Independent of the list: ANY node that uses `data-i18n` must have both
+ * catalogs (a half-migrated node cannot ship EN-only). Target: EMPTY.
+ * ------------------------------------------------------------------ */
+const LABEL_TRANSITION = {};
+for (const t of [
+    "ui-app", "ui-route", "ui-dialog", "ui-component-definition", "ui-component-instance",
+    "ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select",
+    "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider",
+    "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state",
+    "ui-tabs", "ui-tab", "ui-accordion", "ui-accordion-section", "ui-breadcrumb", "ui-menu",
+    "ui-pagination", "ui-stepper", "ui-image", "ui-icon", "ui-list", "ui-avatar",
+    "ui-log", "ui-repeat", "ui-store", "ui-query", "ui-store-read",
+    "ui-store-action", "ui-query-action", "ui-action",
+    // ui-divider: MIGRATED (P272 pilot) — intentionally absent.
+]) {
+    LABEL_TRANSITION[t] = "editor labels pending i18n migration (batches P267-P271)";
+}
+
+// The SHARED editor-common catalog (P272): the catalog-carrier set
+// `webapp-common` must ship both languages with mirrored key structure.
+const SHARED_CATALOG_LANGS = ["en-US", "de"];
+const SHARED_CATALOG_DIR = path.join(ROOT, "nodes", "locales");
+
 // Canonical guide-doc URL per language. Capture group 1 = repo-relative path.
 const GUIDE_LINK_RE = {
     "en-US": /https:\/\/github\.com\/ollixx\/node-red-contrib-webapp\/blob\/develop\/(docs\/guide\/nodes\/[A-Za-z0-9/_-]+\.md)/,
@@ -278,6 +309,170 @@ function localeViolation(node, opts) {
 }
 
 /* ------------------------------------------------------------------ *
+ * P272 — label-catalog rules (pure seam, like helpViolation).
+ * ------------------------------------------------------------------ */
+
+// The sorted list of dotted LEAF key paths of a parsed catalog object — the
+// structural fingerprint two languages must share (values differ, keys never).
+function catalogKeyTree(obj, prefix) {
+    const keys = [];
+    const pre = prefix ? prefix + "." : "";
+    for (const k of Object.keys(obj || {})) {
+        const v = obj[k];
+        if (v !== null && typeof v === "object" && !Array.isArray(v)) {
+            keys.push(...catalogKeyTree(v, pre + k));
+        } else {
+            keys.push(pre + k);
+        }
+    }
+    return keys.sort();
+}
+
+/* labelViolation(node, opts): the FIRST { rule, message } or null.
+ * node: { type, html: string|null, labelCatalogs: { "en-US": s|null, de: s|null } }
+ *   (catalog entries are the RAW file contents, null when the file is absent).
+ * opts.labelTransition: { <type>: reason } — nodes still allowed to carry
+ *   untranslated literal labels (defaults to LABEL_TRANSITION). Rules:
+ *   (LB1) a label-migrated node (not on the list) uses `data-i18n` in its HTML;
+ *   (LB2) any node using `data-i18n` (migrated or not) has BOTH catalogs;
+ *   (LB3) both catalogs parse as JSON;
+ *   (LB4) both carry the node's own type as top-level key;
+ *   (LB5) the two languages' key trees are identical (no drift).
+ */
+function labelViolation(node, opts) {
+    const transition = (opts && opts.labelTransition) || LABEL_TRANSITION;
+    const { type } = node;
+    const html = node.html || "";
+    const catalogs = node.labelCatalogs || {};
+    const usesDataI18n = /data-i18n\s*=/.test(html);
+    const migrated = !transition[type];
+
+    if (!migrated && !usesDataI18n) {
+        return null; // untouched legacy node — the batches migrate it.
+    }
+    // (LB1)
+    if (migrated && !usesDataI18n) {
+        return {
+            rule: "no-data-i18n-labels",
+            message:
+                "is label-migrated (not on LABEL_TRANSITION) but its template has no `data-i18n` labels — " +
+                "add them per the key convention (docs/guide/README.md) or re-list the node.",
+        };
+    }
+    const parsed = {};
+    for (const lang of ["en-US", "de"]) {
+        const raw = catalogs[lang];
+        // (LB2)
+        if (raw == null) {
+            return {
+                rule: "missing-label-catalog",
+                message: `uses \`data-i18n\` labels but has no \`${lang}\` message catalog — add \`nodes/<cat>/locales/${lang}/${type}.json\` (EN + DE always together).`,
+            };
+        }
+        // (LB3)
+        try {
+            parsed[lang] = JSON.parse(raw);
+        } catch (err) {
+            return {
+                rule: "invalid-label-catalog",
+                message: `label catalog \`${lang}\` is not valid JSON: ${err.message}.`,
+            };
+        }
+        // (LB4)
+        if (!parsed[lang] || typeof parsed[lang] !== "object" || !(type in parsed[lang])) {
+            return {
+                rule: "label-catalog-wrong-root",
+                message: `label catalog \`${lang}\` lacks the top-level \`${type}\` key (the namespace-internal root the data-i18n keys start with).`,
+            };
+        }
+    }
+    // (LB5)
+    const enKeys = catalogKeyTree(parsed["en-US"]);
+    const deKeys = catalogKeyTree(parsed.de);
+    if (enKeys.join("\n") !== deKeys.join("\n")) {
+        const missingInDe = enKeys.filter((k) => !deKeys.includes(k));
+        const missingInEn = deKeys.filter((k) => !enKeys.includes(k));
+        return {
+            rule: "label-catalog-key-drift",
+            message:
+                "label catalogs en-US and de have drifted key structures — " +
+                (missingInDe.length ? `missing in de: ${missingInDe.join(", ")}; ` : "") +
+                (missingInEn.length ? `missing in en-US: ${missingInEn.join(", ")}` : "") +
+                " (every key EN + DE together).",
+        };
+    }
+    return null;
+}
+
+/* sharedCatalogViolations(catalogs): array of message strings (empty = OK).
+ * catalogs: { "en-US": s|null, de: s|null } — raw webapp-common.json contents.
+ * The shared catalog must exist in both languages, parse, carry the `common`
+ * root, and mirror key structures (same drift rule as per-node catalogs).
+ */
+function sharedCatalogViolations(catalogs) {
+    const errors = [];
+    const parsed = {};
+    for (const lang of SHARED_CATALOG_LANGS) {
+        const raw = catalogs ? catalogs[lang] : null;
+        if (raw == null) {
+            errors.push(
+                `webapp-common: shared catalog \`nodes/locales/${lang}/webapp-common.json\` is missing — ` +
+                    "editor-common's shared strings need en-US AND de."
+            );
+            continue;
+        }
+        try {
+            parsed[lang] = JSON.parse(raw);
+        } catch (err) {
+            errors.push(`webapp-common: shared catalog \`${lang}\` is not valid JSON: ${err.message}.`);
+            continue;
+        }
+        if (!parsed[lang] || typeof parsed[lang] !== "object" || !("common" in parsed[lang])) {
+            errors.push(`webapp-common: shared catalog \`${lang}\` lacks the top-level \`common\` key.`);
+        }
+    }
+    if (parsed["en-US"] && parsed.de) {
+        const enKeys = catalogKeyTree(parsed["en-US"]);
+        const deKeys = catalogKeyTree(parsed.de);
+        if (enKeys.join("\n") !== deKeys.join("\n")) {
+            const missingInDe = enKeys.filter((k) => !deKeys.includes(k));
+            const missingInEn = deKeys.filter((k) => !enKeys.includes(k));
+            errors.push(
+                "webapp-common: shared catalogs en-US and de have drifted key structures — " +
+                    (missingInDe.length ? `missing in de: ${missingInDe.join(", ")}; ` : "") +
+                    (missingInEn.length ? `missing in en-US: ${missingInEn.join(", ")}` : "")
+            );
+        }
+    }
+    return errors;
+}
+
+/* analyzeLabels(nodes, opts): { errors, labelMigrated, labelTransitional } —
+ * runs labelViolation over the node list (pure, like analyzeNodes). */
+function analyzeLabels(nodes, opts) {
+    const errors = [];
+    let labelMigrated = 0;
+    let labelTransitional = 0;
+    const transition = (opts && opts.labelTransition) || LABEL_TRANSITION;
+    for (const n of nodes) {
+        if (transition[n.type]) {
+            labelTransitional++;
+        } else {
+            labelMigrated++;
+        }
+        const v = labelViolation(n, opts);
+        if (v) {
+            errors.push(
+                `${n.type}: ${v.message} ` +
+                    "Fix: follow the label key convention (docs/guide/README.md, \"How editor-label i18n works\") " +
+                    "or adjust LABEL_TRANSITION in scripts/check-help.js with a one-line reason."
+            );
+        }
+    }
+    return { errors, labelMigrated, labelTransitional };
+}
+
+/* ------------------------------------------------------------------ *
  * Core analysis (pure — operates on an in-memory node list)
  * ------------------------------------------------------------------ *
  * nodes: [{ type, help: string|null, locales?: { "en-US": s|null, de: s|null } }]
@@ -334,26 +529,51 @@ function buildNodes() {
         // docs/guide/README.md).
         const dir = path.dirname(htmlPath);
         const locales = {};
+        const labelCatalogs = {};
         for (const lang of ["en-US", "de"]) {
             const p = path.join(dir, "locales", lang, `${type}.html`);
             locales[lang] = fs.existsSync(p) ? fs.readFileSync(p, "utf8") : null;
+            // P272: the LABEL message catalog lives next to the help file.
+            const cat = path.join(dir, "locales", lang, `${type}.json`);
+            labelCatalogs[lang] = fs.existsSync(cat) ? fs.readFileSync(cat, "utf8") : null;
         }
-        nodes.push({ type, help: extractHelpBlock(src, type), locales });
+        nodes.push({ type, help: extractHelpBlock(src, type), locales, html: src, labelCatalogs });
     }
     return nodes;
 }
 
+// P272: the shared webapp-common catalogs from the real tree.
+function readSharedCatalogs() {
+    const catalogs = {};
+    for (const lang of SHARED_CATALOG_LANGS) {
+        const p = path.join(SHARED_CATALOG_DIR, lang, "webapp-common.json");
+        catalogs[lang] = fs.existsSync(p) ? fs.readFileSync(p, "utf8") : null;
+    }
+    return catalogs;
+}
+
 function checkHelp() {
-    return analyzeNodes(buildNodes(), ALLOWLIST);
+    const nodes = buildNodes();
+    const helpResult = analyzeNodes(nodes, ALLOWLIST);
+    // P272: label-catalog rules + the shared webapp-common catalog check run in
+    // the same tripwire (one `pnpm check:help` covers the whole i18n surface).
+    const labelResult = analyzeLabels(nodes);
+    const sharedErrors = sharedCatalogViolations(readSharedCatalogs());
+    return {
+        ...helpResult,
+        errors: helpResult.errors.concat(labelResult.errors, sharedErrors),
+        labelMigrated: labelResult.labelMigrated,
+        labelTransitional: labelResult.labelTransitional,
+    };
 }
 
 function main() {
-    const { errors, checked, allowlisted, transitional, migrated } = checkHelp();
+    const { errors, checked, allowlisted, transitional, migrated, labelMigrated, labelTransitional } = checkHelp();
     if (errors.length) {
         console.error("Node-help check FAILED:\n");
         for (const e of errors) console.error("  - " + e);
         console.error(
-            `\n${errors.length} help violation(s) across ${checked} node(s) checked; ` +
+            `\n${errors.length} help/label violation(s) across ${checked} node(s) checked; ` +
                 `${allowlisted} node(s) allowlisted.`
         );
         process.exit(1);
@@ -361,7 +581,10 @@ function main() {
     console.log(
         `Node-help OK: ${checked} ui-* node(s) checked — ${migrated} locale-migrated ` +
             `(en-US+de help, guide links resolve), ${transitional} transitional inline ` +
-            `(rest-list, shrinking to 0 via P267-P271); ${allowlisted} allowlisted.`
+            `(rest-list, shrinking to 0 via P267-P271); ${allowlisted} allowlisted. ` +
+            `Labels: ${labelMigrated} migrated (data-i18n + en-US/de catalogs, keys mirrored), ` +
+            `${labelTransitional} transitional (LABEL_TRANSITION, shrinking to 0); ` +
+            `shared webapp-common catalogs OK.`
     );
 }
 
@@ -377,4 +600,10 @@ module.exports = {
     EXPECTED_DOC,
     ALLOWLIST,
     TRANSITION_INLINE,
+    // P272 — label-catalog rules.
+    labelViolation,
+    analyzeLabels,
+    sharedCatalogViolations,
+    catalogKeyTree,
+    LABEL_TRANSITION,
 };
