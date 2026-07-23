@@ -480,4 +480,9 @@
     </p>
 </div>
 <script type="text/html" data-help-name="ui-app"><p>Root-Knoten einer deklarativen Web-App fuer Node-RED.</p>
+<p><b>Auth</b> (ADR 0041): <code>none</code> (Default) oder <code>trusted-header</code>
+(Identität aus Reverse-Proxy-Headern, Defaults <code>X-Forwarded-User</code>/<code>-Email</code>/<code>-Groups</code>).
+<b>Achtung:</b> das Feld ist derzeit <b>konfiguriert, noch nicht erzwungen — Enforcement kommt mit P261</b>.
+Bis dahin schützt allein der vorgelagerte Proxy (oauth2-proxy/Authelia/ForwardAuth); Details:
+<a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/concepts/auth.md" target="_blank">docs/nodes/concepts/auth.md</a>.</p>
 <p>Vollständige Doku: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/structure/ui-app.md" target="_blank">docs/nodes/structure/ui-app.md</a></p></script>

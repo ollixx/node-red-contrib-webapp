@@ -148,6 +148,14 @@ bleibt ein optionaler späterer Ausbauschritt.
   `ui-route`-Routing verhalten sich gleich (gemeinsamer Pfad).
 - **Mehrere Apps** pro Node-RED-Instanz sind zulässig; jede hat eine eindeutige
   `root`.
+- **`auth` ist bis P261 wirkungslos (Inert-Feld-Disclaimer).** Das `auth`-Feld
+  (ADR 0041, P260) ist **konfiguriert, noch nicht erzwungen — Enforcement kommt
+  mit P261**. Kein Runtime-Endpoint liest es heute; bis P261 schützt allein der
+  vorgelagerte Reverse-Proxy (Tier-0-Betrieb, siehe
+  [auth.md](../concepts/auth.md)). Die Editor-Inline-Hilfe und die Auth-Zeilen
+  im Editor tragen denselben Hinweis — ein Feld, das Verhalten verspricht, ohne
+  es zu liefern, ist eine etablierte Bug-Klasse und wird hier explizit
+  ausgeschlossen.
 
 ## Referenzen
 
