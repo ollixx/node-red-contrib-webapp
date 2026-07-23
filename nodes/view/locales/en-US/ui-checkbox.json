@@ -1,0 +1,31 @@
+{
+    "ui-checkbox": {
+        "label": {
+            "mount": "Parent Slot",
+            "labelBinding": "Label",
+            "valueBinding": "Value Path",
+            "writeToBinding": "Write To",
+            "writeTrigger": "Write Trigger",
+            "disabledBinding": "Disabled",
+            "size": "Size"
+        },
+        "option": {
+            "writeTrigger": {
+                "submit": "submit",
+                "change": "change",
+                "none": "none"
+            },
+            "size": {
+                "default": "Default",
+                "xs": "XSmall",
+                "sm": "Small",
+                "md": "Medium",
+                "lg": "Large",
+                "xl": "XLarge"
+            }
+        },
+        "hints": {
+            "color": "A form field has no general colour (state colours come from validation / variant)."
+        }
+    }
+}

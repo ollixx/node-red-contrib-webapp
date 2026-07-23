@@ -1,0 +1,93 @@
+[
+    {
+        "id": "guide-ui-checkbox",
+        "type": "tab",
+        "label": "Guide: ui-checkbox",
+        "disabled": false,
+        "info": "User-guide example for ui-checkbox (docs/guide/nodes/ui-checkbox.md). Import, deploy, open /webapp/guideCheckbox/ — a terms checkbox two-way bound to a boolean store sub-path, plus a live status line."
+    },
+    {
+        "id": "guideCheckbox",
+        "type": "ui-app",
+        "name": "Checkbox demo",
+        "uiId": "guideCheckbox",
+        "root": "guideCheckbox",
+        "title": "Checkbox demo",
+        "layout": "app",
+        "z": "guide-ui-checkbox",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gCbPrefs",
+        "type": "ui-store",
+        "name": "Prefs store",
+        "uiId": "gCbPrefs",
+        "app": "guideCheckbox",
+        "statePath": "prefs",
+        "initialValue": "{\"accepted\":false}",
+        "z": "guide-ui-checkbox",
+        "x": 120,
+        "y": 180,
+        "wires": [[]]
+    },
+    {
+        "id": "gCbHeading",
+        "type": "ui-text",
+        "name": "Heading",
+        "uiId": "gCbHeading",
+        "app": "guideCheckbox",
+        "mount": "guideCheckbox.content",
+        "text": "Tick the box — the boolean lands in the store immediately:",
+        "order": "0",
+        "z": "guide-ui-checkbox",
+        "x": 340,
+        "y": 60,
+        "wires": [[]]
+    },
+    {
+        "id": "gCbBox",
+        "type": "ui-checkbox",
+        "name": "Terms checkbox",
+        "uiId": "gCbBox",
+        "app": "guideCheckbox",
+        "mount": "guideCheckbox.content",
+        "label": { "kind": "literal", "value": "I accept the terms" },
+        "value": {
+            "kind": "store",
+            "path": "gCbPrefs",
+            "subPath": { "kind": "literal", "value": "accepted" }
+        },
+        "writeTo": {
+            "kind": "store",
+            "path": "gCbPrefs",
+            "subPath": { "kind": "literal", "value": "accepted" }
+        },
+        "writeTrigger": "change",
+        "order": "1",
+        "z": "guide-ui-checkbox",
+        "x": 340,
+        "y": 140,
+        "wires": [[]]
+    },
+    {
+        "id": "gCbEcho",
+        "type": "ui-text",
+        "name": "Status echo",
+        "uiId": "gCbEcho",
+        "app": "guideCheckbox",
+        "mount": "guideCheckbox.content",
+        "value": {
+            "kind": "store",
+            "path": "gCbPrefs",
+            "subPath": { "kind": "literal", "value": "accepted" },
+            "fallback": "false"
+        },
+        "order": "2",
+        "z": "guide-ui-checkbox",
+        "x": 340,
+        "y": 220,
+        "wires": [[]]
+    }
+]

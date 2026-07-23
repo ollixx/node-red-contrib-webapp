@@ -1,0 +1,31 @@
+{
+    "ui-checkbox": {
+        "label": {
+            "mount": "Parent-Slot",
+            "labelBinding": "Beschriftung",
+            "valueBinding": "Wert-Pfad (Lesen)",
+            "writeToBinding": "Schreibziel",
+            "writeTrigger": "Schreib-Auslöser",
+            "disabledBinding": "Deaktiviert",
+            "size": "Größe"
+        },
+        "option": {
+            "writeTrigger": {
+                "submit": "submit",
+                "change": "change",
+                "none": "none"
+            },
+            "size": {
+                "default": "Standard",
+                "xs": "Sehr klein",
+                "sm": "Klein",
+                "md": "Mittel",
+                "lg": "Groß",
+                "xl": "Sehr groß"
+            }
+        },
+        "hints": {
+            "color": "Ein Formularfeld hat keine allgemeine Farbe (Zustandsfarben kommen aus Validierung/Variant)."
+        }
+    }
+}
