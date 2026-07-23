@@ -1,0 +1,91 @@
+[
+    {
+        "id": "guide-getting-started",
+        "type": "tab",
+        "label": "Guide: Getting started",
+        "disabled": false,
+        "info": "First app from the Getting-started guide (docs/guide/getting-started.md). Import, deploy, then open /webapp/firstApp/ — a welcome page with a button that navigates to a second page (/hello)."
+    },
+    {
+        "id": "firstApp",
+        "type": "ui-app",
+        "name": "My first app",
+        "uiId": "firstApp",
+        "root": "firstApp",
+        "title": "My first app",
+        "layout": "app",
+        "z": "guide-getting-started",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gsWelcome",
+        "type": "ui-text",
+        "name": "Welcome text",
+        "uiId": "gsWelcome",
+        "app": "firstApp",
+        "mount": "firstApp.content",
+        "text": "Hello from Node-RED! This page is rendered from a flow.",
+        "order": "1",
+        "z": "guide-getting-started",
+        "x": 320,
+        "y": 60,
+        "wires": [[]]
+    },
+    {
+        "id": "gsGoButton",
+        "type": "ui-button",
+        "name": "Go to hello",
+        "uiId": "gsGoButton",
+        "app": "firstApp",
+        "mount": "firstApp.content",
+        "label": "Say hello",
+        "order": "2",
+        "z": "guide-getting-started",
+        "x": 320,
+        "y": 120,
+        "wires": [["gsNavigate"]]
+    },
+    {
+        "id": "gsNavigate",
+        "type": "ui-action",
+        "name": "Navigate to /hello",
+        "uiId": "gsNavigate",
+        "app": "firstApp",
+        "actionType": "navigate",
+        "targetMode": "wire",
+        "z": "guide-getting-started",
+        "x": 540,
+        "y": 120,
+        "wires": [["gsHelloRoute"]]
+    },
+    {
+        "id": "gsHelloRoute",
+        "type": "ui-route",
+        "name": "Hello route",
+        "uiId": "gsHelloRoute",
+        "app": "firstApp",
+        "path": "/hello",
+        "title": "Hello",
+        "layout": "vertical",
+        "z": "guide-getting-started",
+        "x": 760,
+        "y": 120,
+        "wires": [[]]
+    },
+    {
+        "id": "gsHelloText",
+        "type": "ui-text",
+        "name": "Hello text",
+        "uiId": "gsHelloText",
+        "app": "firstApp",
+        "mount": "gsHelloRoute.content",
+        "text": "Hello! You navigated to your second page.",
+        "order": "1",
+        "z": "guide-getting-started",
+        "x": 960,
+        "y": 100,
+        "wires": [[]]
+    }
+]

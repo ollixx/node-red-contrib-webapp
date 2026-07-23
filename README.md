@@ -12,6 +12,7 @@ Der dritte Schritt fuehrt die Customer-CRUD-Smoke-Checks fuer Schema, Runtime un
 
 ## Wichtigste Einstiege
 
+- **Benutzerhandbuch (User Guide, EN + DE):** [docs/guide/README.md](docs/guide/README.md) — Einführung, Getting Started, Themen-Guides mit importierbaren Beispiel-Flows
 - Architekturueberblick: [docs/architecture-overview.md](docs/architecture-overview.md)
 - Knotenkatalog und Spezifikationsbasis: [docs/node-catalog.md](docs/node-catalog.md)
 - Referenzbeispiel: [examples/customers-crud/README.md](examples/customers-crud/README.md)
