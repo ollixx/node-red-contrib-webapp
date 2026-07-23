@@ -26,6 +26,12 @@
  *     OUTER repeat's element past inner ones. A namespaced FUNCTION (not a bare
  *     global) so it never collides with `store`/`query`/`routeParam`/`item`/
  *     `index`. Outside any matching named scope it returns `undefined` (no throw).
+ *   - `user` — P262 (ADR 0041 §3/§4): the requesting client's identity object
+ *     ({ id, name?, email?, groups }) — the same source as the `user` binding
+ *     kind. `undefined` when there is no identity (auth mode "none"), so guard
+ *     against it: `(user?.groups ?? []).includes("admins")`. This is the
+ *     documented visibleIf pattern for group-based UI hiding (UX — the security
+ *     is the server-side `requiresGroup` guard).
  * Nothing else is exposed (no `msg`, no flow/global/env, no host objects).
  *
  * Error containment is by contract: a compile error, an evaluation throw, or a
@@ -40,7 +46,8 @@ export type ReactiveCompiledFn = (
     item: unknown,
     index: number | undefined,
     prop: unknown,
-    scope: (name: unknown) => unknown
+    scope: (name: unknown) => unknown,
+    user: unknown
 ) => unknown;
 
 /** Sources the reactive evaluator reads. */
@@ -73,6 +80,12 @@ export interface ReactiveSources {
      * (no throw). Absent/empty outside any named repeat.
      */
     scopeItems?: Record<string, unknown>;
+    /**
+     * P262 (ADR 0041 §3/§4): the requesting client's identity object — the same
+     * source the `user` binding kind resolves against. `undefined` when there is
+     * no identity (auth mode "none").
+     */
+    user?: unknown;
 }
 
 /** A distinct evaluation failure, surfaced to the caller for containment + logging. */
@@ -144,6 +157,7 @@ function compile(source: string): ReactiveCompiledFn | null {
             "index",
             "prop",
             "scope",
+            "user",
             '"use strict"; return ( ' + source + " );"
         ) as ReactiveCompiledFn;
     } catch {
@@ -232,7 +246,7 @@ export function evaluateReactiveExpression(source: string, sources: ReactiveSour
     let result: unknown;
 
     try {
-        result = compiled(sources.params, storeFn, queryFn, sources.item, sources.index, sources.prop, scopeFn);
+        result = compiled(sources.params, storeFn, queryFn, sources.item, sources.index, sources.prop, scopeFn, sources.user);
     } catch (caught) {
         const message = caught instanceof Error ? caught.message : String(caught);
         return { value: undefined, error: makeError(source, message) };

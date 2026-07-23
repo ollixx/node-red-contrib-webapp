@@ -7,7 +7,10 @@
 > an jeden App-Endpoint durch die eine Auth-Guard-Middleware (401 bzw.
 > `redirect`), und die Identität ist als Binding-Quelle `user` in jeder
 > Wert-Bindung auflösbar. `mode: "none"` (Default) ist exakt das offene
-> Verhalten von vorher.
+> Verhalten von vorher. **Seit P262** tragen `ui-route` und `ui-dialog` den
+> deklarativen Authz-Guard `requiresGroup[]` — server-erzwungen bei Page-Render,
+> `/snapshot`, Navigation und Event-Dispatch (siehe
+> [Deklarative Guards](#deklarative-guards-requiresgroup-an-routen-und-dialogen-p262)).
 
 ## Der `user`-Contract
 
@@ -105,6 +108,41 @@ Wert-Bindung auflösbar — wie `state`/`routeParam` (ADR 0041 §3, ADR 0012):
 Aufgelöst wird im Renderer aus dem Request- bzw. SSE-Verbindungs-Kontext; bei
 `mode: "none"` (keine Identität) löst jede `user`-Bindung `undefined` auf (→
 Fallback). Vollständiges Binding-Vokabular: [stores.md](stores.md).
+
+Zusätzlich steht die Identität seit P262 als Reactive-Global **`user`** in jedem
+Reactive-Ausdruck zur Verfügung (dasselbe Objekt; ohne Identität `undefined` —
+defensiv lesen): `(user?.groups ?? []).includes("admins")`. Das ist das
+empfohlene Muster für gruppenabhängiges UI-Ausblenden — Details:
+[reactive-expressions.md](reactive-expressions.md).
+
+## Deklarative Guards: `requiresGroup` an Routen und Dialogen (P262)
+
+`ui-route` und `ui-dialog` tragen ein optionales **`requiresGroup`** (string[],
+im Editor kommasepariert; tolerant geparst). Semantik bewusst einfach:
+
+- **leer/absent** ⇒ nur Authentifizierung nötig (P261-Verhalten unverändert),
+- **gesetzt** ⇒ der User braucht **mindestens eine** der Gruppen (**ANY-of**
+  gegen `user.groups`; Rollen-Ausdrücke/Policy-DSL sind Nicht-Ziel vor 1.0),
+- ohne Identitätsquelle (`auth.mode: "none"`) erfüllt **niemand** einen
+  gesetzten Guard — geschützte Routen/Dialoge setzen eine Identität voraus.
+
+Erzwungen wird **server-seitig an den vier zentralen Wirkstellen** (zentrale
+Pfade, kein Per-Knoten-Code — `nodes/webapp.js` + Renderer-Dialog-Filter):
+
+| Wirkstelle | Verhalten ohne Gruppe |
+|---|---|
+| **Page-Render** einer geschützten Route (Page + SPA-Fallback) | **403** mit definierter Access-denied-Seite — nur Überschrift + generische Meldung, **kein** Routen-Inhalt, keine Komponenten-IDs, kein Client-Root im HTML. |
+| **`/snapshot`** | Geschützte **Route**: 403 (das JSON enthält weder Struktur noch Daten der Route). Geschützter **Dialog**: fehlt im Snapshot **vollständig** — der Renderer filtert ihn vor dem Rendern aus, auch wenn sein Open-State via `?dialog=<id>` oder eine `open`-Action erzwungen wird. Gleiches gilt für die SSE-Initial-Syncs und jeden Push-Re-Render (alle laufen durch denselben Snapshot-Builder). |
+| **Navigation** (ui-action navigate) auf eine geschützte Route | Im zentralen Command-Push je Ziel-Verbindung geprüft (Identität ist an die SSE-Verbindung gebunden): an Verbindungen ohne Gruppe wird **kein** Navigate-Command gepusht — der Client bleibt stehen (kein stiller Erfolg), die Ablehnung wird als strukturierter Fehler `server.auth.navigation-denied` (warn) gemeldet ([logs-errors.md](logs-errors.md)). Externe URLs matchen keine Route und passieren ungeprüft. |
+| **Event-Dispatch** (`/event`) an Komponenten einer geschützten Route/eines geschützten Dialogs | **403** mit strukturiertem Fehler `server.auth.event-denied` (warn, `context.nodeId` = Ziel), **bevor** Write-Back, State-Änderung oder Flow-Emission passieren. Die Zugehörigkeit wird über die Mount-Kette aufgelöst (Container rekursiv, Layout → besitzende Route/Dialog); ein route-gekoppelter Dialog erbt den Guard seiner Route. |
+
+**„visibleIf ist UX, Guard ist Sicherheit."** Ein Menüpunkt/Button auf eine
+geschützte Route wird per Empfehlung über das Reactive-Global `user`
+ausgeblendet (`(user?.groups ?? []).includes("admins")`) — das ist
+Bedienkomfort. Die Sicherheit ist ausschließlich der server-seitige Guard: der
+direkte URL-Zugriff liefert 403, `/snapshot` leakt nichts, Events werden
+abgelehnt — unabhängig davon, ob irgendein UI-Element hinführt. Belegt in
+`tests/e2e/auth/guards.spec.ts` (Katalog `tests/e2e/auth/guards.tests.md`).
 
 ## Tier-0-Betrieb: hinter einem authentifizierenden Proxy
 
@@ -207,11 +245,12 @@ Instanz-weite Zusatzprüfungen.
   [multi-user.md](multi-user.md)) identifiziert einen Browser/Tab und keyed
   per-Client-State. Sie sagt nichts darüber, *wer* die App benutzt. `user` ist
   orthogonal dazu; beide existieren nebeneinander.
-- **„visibleIf ist UX, Guard ist Sicherheit"** (Vorgriff auf P262): UI über
-  `visibleIf user.groups` auszublenden ist Bedienkomfort — die Daten liegen
-  trotzdem im Snapshot/Stream. Sicherheit entsteht ausschließlich durch
-  server-seitige Guards (`requiresGroup[]` an Routen/Dialogen, P262), die Page,
-  `/snapshot`, Navigation und Event-Dispatch erzwingen.
+- **„visibleIf ist UX, Guard ist Sicherheit"** (seit P262 erzwungen): UI über
+  `visibleIf`/Reactive (`user`-Global) auszublenden ist Bedienkomfort — ohne
+  Guard lägen die Daten trotzdem im Snapshot/Stream. Sicherheit entsteht
+  ausschließlich durch die server-seitigen Guards (`requiresGroup[]` an
+  Routen/Dialogen), die Page, `/snapshot`, Navigation und Event-Dispatch
+  erzwingen — siehe [Deklarative Guards](#deklarative-guards-requiresgroup-an-routen-und-dialogen-p262).
 - **Nicht-Ziele:** Das Framework speichert oder prüft **niemals** Passwörter;
   Passkeys/MFA gehören dem IdP hinter dem Proxy (bzw. später dem OIDC-Issuer,
   P264). Auch **API-Token** (Machine-to-Machine-Auth für die Endpoints) sind

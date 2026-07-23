@@ -67,6 +67,8 @@ Abgedeckte Pfade (vormals nackt/still):
 | keine aktive `ui-app` für Store-Update | `server.store.no-active-app` |
 | Snapshot-Aufbau schlägt fehl (Push) | `server.snapshot.build-failed` |
 | SSE-Schreibfehler | (geloggt via `RED.log.warn`, nicht weitergeleitet) |
+| Navigation auf geschützte Route abgewiesen (P262, `warn`) | `server.auth.navigation-denied` |
+| `/event` an geschützte Route/Dialog abgelehnt (P262, `warn`; auch der 403-Response-Body trägt die strukturierte Form) | `server.auth.event-denied` |
 
 ## Backend → Frontend Weiterleitung (ADR 0006 §4)
 

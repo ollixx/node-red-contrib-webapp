@@ -18,6 +18,14 @@ Written fresh for P89 per `.ai/agents/node-testing.md`. Replaces the P42 spec.
 | title as state binding — `<title>` falls back to route id | P89: a dynamic binding (state/store/msg/…) that cannot be resolved server-side causes the `<title>` to fall back to the route's id. |
 | no title — `<title>` shows route id as fallback | When no title is set, the `<title>` element shows the route id as a fallback identifier. |
 
+## Authz guard `requiresGroup` (P262)
+
+Location: `tests/e2e/auth/guards.spec.ts` (Katalog:
+`tests/e2e/auth/guards.tests.md`) — server-erzwungener ANY-of-Gruppen-Guard an
+allen vier Wirkstellen (Page-Render 403 ohne Leak, `/snapshot`-Ausschluss,
+Navigation abgewiesen, `/event` 403 strukturiert) + Menü-Konsistenz
+(„visibleIf ist UX, Guard ist Sicherheit").
+
 ## Route lifecycle on arrival (P112)
 
 Location: `tests/e2e/nodes/structure/p112-route-lifecycle-on-arrival.spec.ts` —

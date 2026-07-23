@@ -207,7 +207,10 @@ function assembleRouteContribution(appId: string, routeNode: UiRouteNodeDefiniti
         id: routeNode.id,
         path: routeNode.path,
         title: routeNode.title,
-        layoutId: routeNode.layout
+        layoutId: routeNode.layout,
+        // P262 (ADR 0041 §4): the declarative authz guard travels into the
+        // compiled route model so the runtime can enforce it centrally.
+        requiresGroup: routeNode.requiresGroup
     };
     const validation = routeDefinitionSchema.safeParse(definition);
 
@@ -231,13 +234,15 @@ function assembleRouteContribution(appId: string, routeNode: UiRouteNodeDefiniti
 
 function assembleRouteDefinitionContribution(
     appId: string,
-    routeDefinition: Pick<UiRouteNodeDefinition, "id" | "path" | "title" | "layout">
+    routeDefinition: Pick<UiRouteNodeDefinition, "id" | "path" | "title" | "layout" | "requiresGroup">
 ): Result<RouteContribution> {
     const definition = {
         id: routeDefinition.id,
         path: routeDefinition.path,
         title: routeDefinition.title,
-        layoutId: routeDefinition.layout
+        layoutId: routeDefinition.layout,
+        // P262 (ADR 0041 §4): carry the authz guard through.
+        requiresGroup: routeDefinition.requiresGroup
     };
     const validation = routeDefinitionSchema.safeParse(definition);
 
@@ -269,7 +274,9 @@ function assembleDialogContribution(appId: string, dialogNode: UiDialogNodeDefin
         // `routeId` key.
         routeId: dialogNode.route ?? dialogNode.routeId,
         modal: dialogNode.modal,
-        closable: dialogNode.closable
+        closable: dialogNode.closable,
+        // P262 (ADR 0041 §4): carry the authz guard through.
+        requiresGroup: dialogNode.requiresGroup
     };
     const validation = dialogDefinitionSchema.safeParse(definition);
 

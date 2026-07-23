@@ -4087,9 +4087,10 @@
     //
     // The contract the dialog teaches and validates is the renderer's (P115):
     // docs/nodes/concepts/reactive-expressions.md — a single synchronous ES2020
-    // expression over the three globals `routeParam`, `store(name)`, `query(path)`.
+    // expression over the base globals `routeParam`, `store(name)`, `query(path)`
+    // and (P262) `user`.
 
-    // The three globals offered as completion + shown in the doc panel. The
+    // The base globals offered as completion + shown in the doc panel. The
     // example snippets are quoted verbatim from reactive-expressions.md (the
     // single source of truth); if these diverge, fix the doc page, not here.
     var REACTIVE_GLOBALS = [
@@ -4113,6 +4114,16 @@
             detail: "Funktion — Wert aus den Query-Ergebnissen",
             doc: "query(pfad) — Wert am Pfad innerhalb der Query-Ergebnisse (gleiches Lookup wie das query-Binding).",
             example: "query(\"customers.total\")"
+        },
+        // P262 (ADR 0041 §3/§4): the identity object as reactive global — the
+        // documented visibleIf pattern for group-based UI hiding (UX only; the
+        // security is the server-side requiresGroup guard).
+        {
+            name: "user",
+            insert: "user",
+            detail: "Objekt — Identität des anfragenden Clients",
+            doc: "user — das Identitätsobjekt ({ id, name?, email?, groups }) wie beim user-Binding. Ohne Identität (auth mode \"none\") undefined — defensiv lesen.",
+            example: "(user?.groups ?? []).includes(\"admins\")"
         }
     ];
 
