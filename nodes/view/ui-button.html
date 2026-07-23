@@ -83,7 +83,10 @@
                 // wires visibility of data-button-href-row="hrefBinding".
                 common.installButtonLinkFields().call(this);
                 common.installLayoutChildPropRows().call(this);
-                common.installIconField("#node-input-icon", { title: "Button-Icon auswählen" });
+                common.installIconField("#node-input-icon", {
+                    // P268 (ADR 0042 §3): node-owned dialog title from this node's catalog.
+                    title: common.nodeI18n("ui-button", "ui-button.title.iconPicker", "Choose button icon")
+                });
 
                 // P144 (ADR 0012 / value category): `label` typedInput.
                 // The typedInput lives on #node-input-label (not a separate
@@ -181,41 +184,24 @@
         });
     })();
 </script>
+<!-- P268 (ADR 0042 §3): editor-label i18n. Form-row labels carry data-i18n keys
+     per the convention `<node>.label.<field>` (options `<node>.option.<field>.<value>`,
+     placeholders `[placeholder]<node>.placeholder.<field>`). Catalogs:
+     nodes/view/locales/{en-US,de}/ui-button.json. The literal texts stay as the en-US
+     authoring reference; at edit time the catalog text replaces them. -->
 <script type="text/html" data-template-name="ui-button">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
-    <div class="form-row"><label for="node-input-label">Label</label><input type="text" id="node-input-label"></div>
-    <div class="form-row"><label for="node-input-icon">Icon</label><input type="text" id="node-input-icon" placeholder="z. B. plus oder lucide:user"></div>
+    <div class="form-row"><label for="node-input-mount" data-i18n="ui-button.label.mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-row"><label for="node-input-label" data-i18n="ui-button.label.label">Label</label><input type="text" id="node-input-label"></div>
+    <div class="form-row"><label for="node-input-icon" data-i18n="ui-button.label.icon">Icon</label><input type="text" id="node-input-icon" placeholder="e.g. plus or lucide:user" data-i18n="[placeholder]ui-button.placeholder.icon"></div>
     <!-- P122 (ADR 0012 / boolean category): Disabled binding — typedInput managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-disabledBinding">Disabled</label><input type="text" id="node-input-disabledBinding"></div>
+    <div class="form-row"><label for="node-input-disabledBinding" data-i18n="ui-button.label.disabledBinding">Disabled</label><input type="text" id="node-input-disabledBinding"></div>
     <!-- P122 (ADR 0012 / url category): href binding — typedInput managed in oneditprepare/oneditsave.
          data-button-href-row is used by installButtonLinkFields to sync visibility with linkMode. -->
-    <div class="form-row" data-button-href-row="hrefBinding"><label for="node-input-hrefBinding">URL / Route</label><input type="text" id="node-input-hrefBinding"></div>
+    <div class="form-row" data-button-href-row="hrefBinding"><label for="node-input-hrefBinding" data-i18n="ui-button.label.hrefBinding">URL / Route</label><input type="text" id="node-input-hrefBinding"></div>
 </script>
-<script type="text/html" data-help-name="ui-button">
-    <p>Mountet einen klickbaren Button. Jeder Klick erzeugt ein <code>click</code>-Event
-    auf dem Output-Port; verdrahte ihn z. B. mit einem <code>ui-action</code>.</p>
-    <h4>Darstellung</h4>
-    <ul>
-        <li><b>Variante</b> — semantische Rolle (primary, danger …).</li>
-        <li><b>Size</b> — Small / Medium / Large (leer = Standardgröße).</li>
-        <li><b>Outline</b> — zeichnet den Button mit Kontur statt Füllung.</li>
-    </ul>
-    <h4>Disabled (P122)</h4>
-    <p>Bindbar über den Boolean-Zustand-Satz (ADR 0012): Store, Query, Route-Param,
-    Reactive, msg, JSONata, boolean, Flow, Global, Env. Ein bestehender
-    <code>disabledPath</code> wird automatisch als <code>state</code>-Binding übernommen.</p>
-    <h4>Link-Modus</h4>
-    <ul>
-        <li><b>Button (kein Link)</b> — normaler Button; Aktion läuft über den
-        Output-Port (Standardverhalten).</li>
-        <li><b>URL (Hyperlink)</b> — rendert einen echten Link; das Feld
-        „URL / Route" gibt das Ziel an (externe oder interne Adresse).</li>
-        <li><b>Navigate (In-App-Route)</b> — navigiert clientseitig zur angegebenen
-        Route und meldet den Klick zusätzlich an den Flow.</li>
-    </ul>
-    <p>Das Feld „URL / Route" (P122: URL/Pfad-Binding, ADR 0012) erscheint nur in
-    den Modi <i>URL</i> und <i>Navigate</i>.</p>
-    <p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/display/ui-button.md">Ausführliche Doku</a></p>
-</script>
+<!-- P268 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/view/locales/{en-US,de}/ui-button.html; form-row labels carry
+     data-i18n keys resolved from nodes/view/locales/{en-US,de}/ui-button.json.
+     No inline data-help-name block here. -->
