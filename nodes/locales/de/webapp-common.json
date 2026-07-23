@@ -1,0 +1,142 @@
+{
+    "common": {
+        "baseFields": {
+            "heading": "Allgemein",
+            "advanced": "Erweitert",
+            "label": {
+                "visible": "Sichtbar",
+                "disabled": "Deaktiviert",
+                "color": "Farbe",
+                "size": "Größe"
+            },
+            "naHint": {
+                "visible": "Für diesen Knoten nicht anwendbar.",
+                "disabled": "Dieser Knoten hat keinen interaktiven Zustand.",
+                "color": "Für diesen Knoten nicht anwendbar.",
+                "size": "Dieser Knoten hat keine Größen-Stufen.",
+                "variantColor": "Nutzt die semantische Variant (Farbe über das Variant-Feld)."
+            }
+        },
+        "layout": {
+            "heading": "Layout",
+            "label": {
+                "order": "Reihenfolge",
+                "row": "Zeile",
+                "col": "Spalte",
+                "colSize": "Spaltenbreite",
+                "rowSize": "Zeilenhöhe",
+                "layoutX": "X",
+                "layoutY": "Y"
+            }
+        },
+        "select": {
+            "variantLabel": "Variant",
+            "sizeLabel": "Größe",
+            "styleLabel": "Stil",
+            "linkModeLabel": "Link-Modus",
+            "outlineLabel": "Outline",
+            "default": "(Standard)",
+            "defaultMd": "(Standard / md)",
+            "existing": "(bestehend)",
+            "size": {
+                "xs": "XS",
+                "sm": "Klein",
+                "md": "Mittel",
+                "lg": "Groß",
+                "xl": "XL"
+            },
+            "textStyle": {
+                "heading-1": "Überschrift 1",
+                "heading-2": "Überschrift 2",
+                "heading-3": "Überschrift 3",
+                "body": "Fließtext",
+                "caption": "Bildunterschrift",
+                "label": "Label",
+                "code": "Code"
+            },
+            "linkMode": {
+                "button": "Button (kein Link)",
+                "url": "URL (Hyperlink)",
+                "navigate": "Navigate (In-App-Route)"
+            },
+            "colorToken": {
+                "primary": "Primär",
+                "success": "Erfolg",
+                "warning": "Warnung",
+                "danger": "Gefahr",
+                "neutral": "Neutral",
+                "info": "Info",
+                "muted": "Gedämpft"
+            }
+        },
+        "picker": {
+            "select": "Auswählen…",
+            "chooseIcon": "Icon wählen…",
+            "clear": "Leeren",
+            "cancel": "Abbrechen",
+            "apply": "Übernehmen",
+            "upload": "Hochladen…",
+            "removeSelection": "Auswahl entfernen",
+            "existingSuffix": "(bestehend)",
+            "noMatches": "Keine Treffer.",
+            "noSlots": "Keine Slots.",
+            "noMountTargets": "Keine Mount-Ziele.",
+            "noAssets": "Keine Assets.",
+            "allLibraries": "Alle Libraries",
+            "searchNodes": "Suche (Name, ID, Typ)…",
+            "searchIcon": "Suche (Icon-Name)…",
+            "searchAsset": "Suche (Asset-Name)…",
+            "nodeTitle": "Knoten auswählen",
+            "iconTitle": "Icon auswählen",
+            "assetTitle": "Asset auswählen",
+            "colorTitle": "Farbe wählen"
+        },
+        "ref": {
+            "app": {
+                "title": "App auswählen",
+                "placeholder": "App auswählen"
+            },
+            "layout": {
+                "title": "Layout auswählen",
+                "placeholder": "Parent-Layout auswählen"
+            },
+            "route": {
+                "title": "Route auswählen",
+                "placeholder": "Optional: Parent-Route auswählen"
+            },
+            "mount": {
+                "title": "Parent-Slot auswählen",
+                "placeholder": "Parent-Slot auswählen"
+            },
+            "action": {
+                "title": "Action auswählen",
+                "placeholder": "Action auswählen"
+            },
+            "store": {
+                "title": "Store auswählen",
+                "placeholder": "Optional: Store auswählen"
+            },
+            "query": {
+                "title": "Query auswählen",
+                "placeholder": "Query auswählen"
+            },
+            "targetRoute": {
+                "title": "Ziel-Route auswählen",
+                "placeholder": "Route auswählen…"
+            },
+            "groups": {
+                "slots": "Slots",
+                "routes": "Routen",
+                "dialogs": "Dialoge",
+                "components": "Komponenten",
+                "other": "Weitere"
+            },
+            "layoutPreset": {
+                "placeholder": "Layout auswählen"
+            }
+        },
+        "store": {
+            "pickHint": "Store über „…“ auswählen"
+        }
+    }
+}

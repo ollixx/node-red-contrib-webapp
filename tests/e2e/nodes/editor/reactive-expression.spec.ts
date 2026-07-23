@@ -90,9 +90,9 @@ test.describe("editor — reactive expression dialog (P116)", () => {
         await expect(dialog.locator(".webapp-reactive-doc code", { hasText: "routeParam" }).first()).toBeVisible();
         await expect(dialog.locator(".webapp-reactive-doc a")).toHaveAttribute("href", /reactive-expressions\.md/);
 
-        // Status line shows a valid expression and Übernehmen is enabled.
+        // Status line shows a valid expression and Apply is enabled.
         await expect(dialog.locator(".webapp-reactive-status")).toHaveAttribute("data-state", "ok");
-        const okBtn = dialog.locator("button", { hasText: "Übernehmen" });
+        const okBtn = dialog.locator("button", { hasText: "Apply" });
         await expect(okBtn).toBeEnabled();
         await okBtn.click();
         await expect(dialog).toHaveCount(0);
@@ -119,7 +119,7 @@ test.describe("editor — reactive expression dialog (P116)", () => {
         expect(await editor.readTypedInput("text")).toBe(singleLine);
     });
 
-    test("syntax error: broken template literal shows an error, disables Übernehmen, blocks deploy", async ({ page, request }) => {
+    test("syntax error: broken template literal shows an error, disables Apply, blocks deploy", async ({ page, request }) => {
         await deployFlow(request, reactiveFlow("rxApp2", "rxText2"));
 
         const editor = new NodeEditorPage(page);
@@ -136,8 +136,8 @@ test.describe("editor — reactive expression dialog (P116)", () => {
         const dialog = page.locator(".webapp-reactive-dialog");
         await expect(dialog).toBeVisible();
         await expect(dialog.locator(".webapp-reactive-status")).toHaveAttribute("data-state", "error");
-        await expect(dialog.locator("button", { hasText: "Übernehmen" })).toBeDisabled();
-        await dialog.locator("button", { hasText: "Abbrechen" }).click();
+        await expect(dialog.locator("button", { hasText: "Apply" })).toBeDisabled();
+        await dialog.locator("button", { hasText: "Cancel" }).click();
         await expect(dialog).toHaveCount(0);
 
         // The same broken expression on the node → typedInput validate fails →
@@ -165,10 +165,10 @@ test.describe("editor — reactive expression dialog (P116)", () => {
         const dialog = page.locator(".webapp-reactive-dialog");
         await expect(dialog).toBeVisible();
         // Syntax ok → status ok and Übernehmen enabled, but applying fails on refs.
-        await dialog.locator("button", { hasText: "Übernehmen" }).click();
+        await dialog.locator("button", { hasText: "Apply" }).click();
         await expect(dialog).toBeVisible(); // stays open — reference error
         await expect(dialog.locator(".webapp-reactive-status")).toContainText("gibtsnicht");
-        await dialog.locator("button", { hasText: "Abbrechen" }).click();
+        await dialog.locator("button", { hasText: "Cancel" }).click();
 
         // On the node: typedInput validate runs the reference check too → invalid.
         await editor.fillTypedInput("text", 'store("gibtsnicht").name', "reactive");
@@ -244,7 +244,7 @@ test.describe("editor — reactive expression dialog (P116)", () => {
         await expect(dialog.locator(".webapp-reactive-editor-fallback")).toBeVisible();
         await expect(dialog.locator(".webapp-reactive-status")).toHaveAttribute("data-state", "ok");
 
-        await dialog.locator("button", { hasText: "Abbrechen" }).click();
+        await dialog.locator("button", { hasText: "Cancel" }).click();
 
         // Restore createEditor for later tests sharing the page context.
         await page.evaluate(() => {

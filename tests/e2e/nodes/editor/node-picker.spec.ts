@@ -30,7 +30,7 @@ import {
  *   3. The store preset lists only ui-store nodes; picking one round-trips.
  *   4. The contains-search narrows by name, id and type.
  *   5. The mounts preset offers breadcrumb rows; search + pick writes the mount.
- *   6. Optional fields clear via "×"; a non-resolvable value shows "(bestehend)".
+ *   6. Optional fields clear via "×"; a non-resolvable value shows "(existing)".
  */
 
 test.describe("editor — picker dialog as sole reference selection (P114)", () => {
@@ -392,7 +392,7 @@ test.describe("editor — picker dialog as sole reference selection (P114)", () 
         expect(saved).toBe("");
     });
 
-    test("a non-resolvable stored value is shown as '(bestehend)' and survives save", async ({ page, request }) => {
+    test("a non-resolvable stored value is shown as '(existing)' and survives save", async ({ page, request }) => {
         const flow = new FlowBuilder()
             .app({ id: "ghostApp", root: "ghostApp", name: "Ghost App" })
             // points at a store id that does NOT exist in the graph.
@@ -405,7 +405,7 @@ test.describe("editor — picker dialog as sole reference selection (P114)", () 
         await editor.openNode("q4");
 
         await expect(pickerFieldDisplay(page, "params")).toContainText("deleted-store-id");
-        await expect(pickerFieldDisplay(page, "params")).toContainText("bestehend");
+        await expect(pickerFieldDisplay(page, "params")).toContainText("existing");
 
         // Opening + saving without touching it keeps the value.
         await editor.save();

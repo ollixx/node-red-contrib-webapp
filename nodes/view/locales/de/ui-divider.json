@@ -1,0 +1,22 @@
+{
+    "ui-divider": {
+        "label": {
+            "mount": "Parent-Slot",
+            "orientation": "Ausrichtung",
+            "label": "Beschriftung"
+        },
+        "option": {
+            "orientation": {
+                "horizontal": "Horizontal",
+                "vertical": "Vertikal"
+            }
+        },
+        "placeholder": {
+            "label": "optionale Trenner-Beschriftung"
+        },
+        "hints": {
+            "disabled": "Ein Trenner hat keinen interaktiven Zustand.",
+            "size": "Ein Trenner hat keine Größen-Stufen."
+        }
+    }
+}

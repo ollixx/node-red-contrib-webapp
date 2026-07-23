@@ -22,6 +22,7 @@
     "node-red": {
         "version": ">=4.0.0",
         "nodes": {
+            "webapp-common": "nodes/webapp-common.js",
             "ui-app": "nodes/structure/ui-app.js",
             "ui-route": "nodes/structure/ui-route.js",
             "ui-dialog": "nodes/structure/ui-dialog.js",

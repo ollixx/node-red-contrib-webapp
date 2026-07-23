@@ -241,3 +241,112 @@ describe("check-help locale rules (P265 — migrated nodes)", () => {
         expect(flipped.errors.length).toBe(1);
     });
 });
+
+/* ------------------------------------------------------------------ *
+ * P272 — editor-LABEL i18n rules (labelViolation / analyzeLabels /
+ * sharedCatalogViolations / catalogKeyTree). Pure over in-memory nodes.
+ * ------------------------------------------------------------------ */
+
+const labelCatalog = (type: string, labels: Record<string, string>) =>
+    JSON.stringify({ [type]: { label: labels } });
+
+const labelOk = (type: string) => ({
+    type,
+    html: `<script type="text/html" data-template-name="${type}"><label data-i18n="${type}.label.mount">Parent Slot</label></script>`,
+    labelCatalogs: {
+        "en-US": labelCatalog(type, { mount: "Parent Slot" }),
+        de: labelCatalog(type, { mount: "Parent-Slot" }),
+    },
+});
+
+describe("check-help label-catalog rules (P272 — editor-label i18n)", () => {
+    it("the label transition rest-list covers every registered node except the pilot", () => {
+        const types = Object.keys(check.nodeHtmlPaths());
+        const transitional = types.filter((t) => check.LABEL_TRANSITION[t]);
+        expect(transitional.length).toBe(types.length - 1);
+        expect(check.LABEL_TRANSITION["ui-divider"]).toBeUndefined();
+    });
+
+    it("catalogKeyTree fingerprints leaf key paths, sorted", () => {
+        expect(check.catalogKeyTree({ a: { b: "x", c: "y" }, d: "z" })).toEqual(["a.b", "a.c", "d"]);
+    });
+
+    it("passes a migrated node with data-i18n labels + mirrored en-US/de catalogs", () => {
+        expect(check.labelViolation(labelOk("ui-x"), { labelTransition: {} })).toBeNull();
+    });
+
+    it("passes an untouched legacy node while it is on LABEL_TRANSITION", () => {
+        const n = { type: "ui-legacy", html: "<label>Titel</label>", labelCatalogs: { "en-US": null, de: null } };
+        expect(check.labelViolation(n, { labelTransition: { "ui-legacy": "pending" } })).toBeNull();
+    });
+
+    it("FAILS a migrated node whose template has no data-i18n labels (LB1)", () => {
+        const n = { ...labelOk("ui-x"), html: "<label>Titel</label>" };
+        const v = check.labelViolation(n, { labelTransition: {} });
+        expect(v?.rule).toBe("no-data-i18n-labels");
+    });
+
+    it("FAILS a data-i18n-using node without the de catalog — even on the transition list (LB2)", () => {
+        const n = labelOk("ui-x");
+        n.labelCatalogs.de = null as unknown as string;
+        const v = check.labelViolation(n, { labelTransition: { "ui-x": "pending" } });
+        expect(v?.rule).toBe("missing-label-catalog");
+        expect(v?.message).toContain("de");
+    });
+
+    it("FAILS an unparseable catalog (LB3)", () => {
+        const n = labelOk("ui-x");
+        n.labelCatalogs["en-US"] = "{ not json";
+        const v = check.labelViolation(n, { labelTransition: {} });
+        expect(v?.rule).toBe("invalid-label-catalog");
+    });
+
+    it("FAILS a catalog missing the node's own top-level key (LB4)", () => {
+        const n = labelOk("ui-x");
+        n.labelCatalogs["en-US"] = JSON.stringify({ "ui-other": { label: { mount: "x" } } });
+        const v = check.labelViolation(n, { labelTransition: {} });
+        expect(v?.rule).toBe("label-catalog-wrong-root");
+    });
+
+    it("FAILS drifted key structures between en-US and de (LB5)", () => {
+        const n = labelOk("ui-x");
+        n.labelCatalogs.de = labelCatalog("ui-x", { mount: "Parent-Slot", extra: "Nur-DE" });
+        const v = check.labelViolation(n, { labelTransition: {} });
+        expect(v?.rule).toBe("label-catalog-key-drift");
+        expect(v?.message).toContain("extra");
+    });
+
+    it("analyzeLabels aggregates violations and counts migrated vs transitional", () => {
+        const result = check.analyzeLabels(
+            [labelOk("ui-a"), { type: "ui-b", html: "", labelCatalogs: {} }],
+            { labelTransition: { "ui-b": "pending" } }
+        );
+        expect(result.errors).toEqual([]);
+        expect(result.labelMigrated).toBe(1);
+        expect(result.labelTransitional).toBe(1);
+    });
+
+    it("sharedCatalogViolations: OK when both languages mirror; reports missing/drifted otherwise", () => {
+        const en = JSON.stringify({ common: { picker: { clear: "Clear" } } });
+        const de = JSON.stringify({ common: { picker: { clear: "Leeren" } } });
+        expect(check.sharedCatalogViolations({ "en-US": en, de })).toEqual([]);
+
+        const missing = check.sharedCatalogViolations({ "en-US": en, de: null });
+        expect(missing.length).toBe(1);
+        expect(missing[0]).toContain("de");
+
+        const drifted = check.sharedCatalogViolations({
+            "en-US": en,
+            de: JSON.stringify({ common: { picker: { clear: "Leeren", extra: "x" } } }),
+        });
+        expect(drifted.length).toBe(1);
+        expect(drifted[0]).toContain("drifted");
+    });
+
+    it("the real tree is GREEN including label + shared-catalog rules", () => {
+        const { errors, labelMigrated, labelTransitional } = check.checkHelp();
+        expect(errors).toEqual([]);
+        expect(labelMigrated).toBeGreaterThanOrEqual(1);
+        expect(labelMigrated + labelTransitional).toBe(Object.keys(check.nodeHtmlPaths()).length);
+    });
+});

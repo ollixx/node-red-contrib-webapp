@@ -9,7 +9,7 @@ import { NodeEditorPage } from "../../../helpers/node-editor-page";
  * P132 + P134 (ADR 0013 §4) — the store-binding editor: name-in-value,
  * path-in-a-second-row. The store type is one type among many in the value
  * typedInput; when chosen, the value area shows the store NAME (not the id, no
- * "Store ändern" button, no "(bestehend)" for a live store) and the typedInput's
+ * "Store ändern" button, no "(existing)" for a live store) and the typedInput's
  * native "…" expand button (re-)opens the app-scoped picker. BELOW the name, a
  * second, indented sub-path typedInput carries the one-level `subPath` (the full
  * 11-source `storePath` set) with soft default-slice autocomplete.
@@ -101,7 +101,7 @@ test.describe("editor — store binding sub-path (P132 / P134)", () => {
         await expect(subPathRow(page)).toHaveCount(0);
     });
 
-    test("after selecting a store the NAME (not id) shows in the value area; no button, no '(bestehend)'", async ({ page, request }) => {
+    test("after selecting a store the NAME (not id) shows in the value area; no button, no '(existing)'", async ({ page, request }) => {
         await deployFlow(request, buildFlow());
 
         const editor = new NodeEditorPage(page);
@@ -113,10 +113,10 @@ test.describe("editor — store binding sub-path (P132 / P134)", () => {
         await pickStoreRow(page, "monster");
 
         // The resolved NAME "monster" shows — never the raw node id, never a
-        // "Store ändern" button, never "(bestehend)" for a live store.
+        // "Store ändern" button, never "(existing)" for a live store (P272: en-US shared strings).
         await expect(storeName(page)).toHaveText("monster");
         await expect(storeName(page)).not.toContainText("monsterStore");
-        await expect(storeName(page)).not.toContainText("bestehend");
+        await expect(storeName(page)).not.toContainText("existing");
         await expect(page.locator(".webapp-store-field-button")).toHaveCount(0);
 
         // The second, indented sub-path typedInput now appears below the name.
@@ -231,7 +231,7 @@ test.describe("editor — store binding sub-path (P132 / P134)", () => {
         expect(restoredSubPath).toEqual({ type: "str", value: "c" });
     });
 
-    test("an unresolvable store id falls back to '<id> (bestehend)'", async ({ page, request }) => {
+    test("an unresolvable store id falls back to '<id> (existing)'", async ({ page, request }) => {
         // A ui-text pre-bound to a store id that does not exist in the graph.
         const flow = new FlowBuilder()
             .app({ id: "ghostApp", root: "ghostApp", name: "Ghost App" })
@@ -244,7 +244,7 @@ test.describe("editor — store binding sub-path (P132 / P134)", () => {
         await editor.openNode("ghostTxt");
         await selectStoreType(page);
 
-        await expect(storeName(page)).toHaveText("deletedStore (bestehend)");
+        await expect(storeName(page)).toHaveText("deletedStore (existing)");
     });
 });
 
@@ -422,7 +422,7 @@ test.describe("editor — store typedInput two-row layout & cross-node consisten
 
         const wrap = page.locator("#node-input-currentPageBinding").locator("xpath=..").locator("> .red-ui-typedInput-container");
         await expect(wrap.locator(".webapp-store-field-name")).toHaveClass(/webapp-store-field-placeholder/);
-        await expect(wrap.locator(".webapp-store-field-name")).toHaveText("Store über „…“ auswählen");
+        await expect(wrap.locator(".webapp-store-field-name")).toHaveText('Select store via "…"');
         await expect(wrap.locator(".webapp-store-field-subpath")).toHaveCount(0);
     });
 

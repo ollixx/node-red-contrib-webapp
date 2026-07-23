@@ -1,0 +1,142 @@
+{
+    "common": {
+        "baseFields": {
+            "heading": "General",
+            "advanced": "Advanced",
+            "label": {
+                "visible": "Visible",
+                "disabled": "Disabled",
+                "color": "Color",
+                "size": "Size"
+            },
+            "naHint": {
+                "visible": "Not applicable for this node.",
+                "disabled": "This node has no interactive state.",
+                "color": "Not applicable for this node.",
+                "size": "This node has no size steps.",
+                "variantColor": "Uses the semantic variant (color via the Variant field)."
+            }
+        },
+        "layout": {
+            "heading": "Layout",
+            "label": {
+                "order": "Order",
+                "row": "Row",
+                "col": "Col",
+                "colSize": "Col Size",
+                "rowSize": "Row Size",
+                "layoutX": "X",
+                "layoutY": "Y"
+            }
+        },
+        "select": {
+            "variantLabel": "Variant",
+            "sizeLabel": "Size",
+            "styleLabel": "Style",
+            "linkModeLabel": "Link Mode",
+            "outlineLabel": "Outline",
+            "default": "(default)",
+            "defaultMd": "(default / md)",
+            "existing": "(existing)",
+            "size": {
+                "xs": "XSmall",
+                "sm": "Small",
+                "md": "Medium",
+                "lg": "Large",
+                "xl": "XLarge"
+            },
+            "textStyle": {
+                "heading-1": "Heading 1",
+                "heading-2": "Heading 2",
+                "heading-3": "Heading 3",
+                "body": "Body",
+                "caption": "Caption",
+                "label": "Label",
+                "code": "Code"
+            },
+            "linkMode": {
+                "button": "Button (no link)",
+                "url": "URL (hyperlink)",
+                "navigate": "Navigate (in-app route)"
+            },
+            "colorToken": {
+                "primary": "Primary",
+                "success": "Success",
+                "warning": "Warning",
+                "danger": "Danger",
+                "neutral": "Neutral",
+                "info": "Info",
+                "muted": "Muted"
+            }
+        },
+        "picker": {
+            "select": "Select…",
+            "chooseIcon": "Choose icon…",
+            "clear": "Clear",
+            "cancel": "Cancel",
+            "apply": "Apply",
+            "upload": "Upload…",
+            "removeSelection": "Remove selection",
+            "existingSuffix": "(existing)",
+            "noMatches": "No matches.",
+            "noSlots": "No slots.",
+            "noMountTargets": "No mount targets.",
+            "noAssets": "No assets.",
+            "allLibraries": "All libraries",
+            "searchNodes": "Search (name, id, type)…",
+            "searchIcon": "Search (icon name)…",
+            "searchAsset": "Search (asset name)…",
+            "nodeTitle": "Select node",
+            "iconTitle": "Select icon",
+            "assetTitle": "Select asset",
+            "colorTitle": "Select color"
+        },
+        "ref": {
+            "app": {
+                "title": "Select app",
+                "placeholder": "Select app"
+            },
+            "layout": {
+                "title": "Select layout",
+                "placeholder": "Select parent layout"
+            },
+            "route": {
+                "title": "Select route",
+                "placeholder": "Optional: select parent route"
+            },
+            "mount": {
+                "title": "Select parent slot",
+                "placeholder": "Select parent slot"
+            },
+            "action": {
+                "title": "Select action",
+                "placeholder": "Select action"
+            },
+            "store": {
+                "title": "Select store",
+                "placeholder": "Optional: select store"
+            },
+            "query": {
+                "title": "Select query",
+                "placeholder": "Select query"
+            },
+            "targetRoute": {
+                "title": "Select target route",
+                "placeholder": "Select route…"
+            },
+            "groups": {
+                "slots": "Slots",
+                "routes": "Routes",
+                "dialogs": "Dialogs",
+                "components": "Components",
+                "other": "Other"
+            },
+            "layoutPreset": {
+                "placeholder": "Select layout"
+            }
+        },
+        "store": {
+            "pickHint": "Select store via \"…\""
+        }
+    }
+}
