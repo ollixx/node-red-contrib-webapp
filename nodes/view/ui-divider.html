@@ -12,10 +12,11 @@
             size: false,
             variant: false,
             advanced: ["size"],
-            hints: {
-                disabled: "Ein Trenner hat keinen interaktiven Zustand.",
-                size: "Ein Trenner hat keine Größen-Stufen."
-            }
+            // P272 (ADR 0042 §3): N/A hints live in the node's OWN locale
+            // catalog (nodes/view/locales/<lang>/ui-divider.json →
+            // `ui-divider.hints.<field>`); `i18nNode` tells installBaseFields
+            // which catalog to resolve them from (en-US + de, editor language).
+            i18nNode: "ui-divider"
         };
         common.registerNodeType("ui-divider", {
             category: "webapp view",

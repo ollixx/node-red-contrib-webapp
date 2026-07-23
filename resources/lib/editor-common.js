@@ -1,6 +1,47 @@
 (function (global) {
     "use strict";
 
+    // ── Shared editor i18n (P272, ADR 0042 §3) ───────────────────────────────
+    // editor-common.js is served statically and has no node set of its own, so
+    // its user-visible strings resolve through the dedicated catalog-carrier
+    // set `webapp-common` (nodes/webapp-common.js, catalogs at
+    // nodes/locales/<lang>/webapp-common.json). The editor loads every set's
+    // catalog at startup (`GET /nodes/messages?lng=…`), so the namespace is
+    // available under the well-known id below. sharedI18n() resolves lazily at
+    // call time (all call sites run in oneditprepare or dialog-open, i.e. after
+    // the catalogs are loaded); when the key is missing everywhere RED._
+    // returns the full "ns:key" string, which we detect and replace with the
+    // en-US fallback the call site carries — so the editor never renders a raw
+    // key. Key convention: `common.<area>.<key>` (docs/guide/README.md).
+    var SHARED_I18N_NS = "node-red-contrib-webapp/webapp-common";
+
+    function sharedI18n(key, fallback) {
+        if (typeof RED !== "undefined" && typeof RED._ === "function") {
+            var full = SHARED_I18N_NS + ":common." + key;
+            var resolved = RED._(full);
+            if (typeof resolved === "string" && resolved !== full) {
+                return resolved;
+            }
+        }
+        return fallback;
+    }
+
+    // Per-NODE catalog lookup (same lazy/fallback contract as sharedI18n).
+    // Resolves `node-red-contrib-webapp/<nodeType>:<key>` — the namespace the
+    // registry assigns to each node set whose dir has a locales/ folder. Used
+    // e.g. for base-field N/A hints a node keeps in its own catalog
+    // (`<node>.hints.<field>`, see installBaseFields' `i18nNode`).
+    function nodeI18n(nodeType, key, fallback) {
+        if (typeof RED !== "undefined" && typeof RED._ === "function") {
+            var full = "node-red-contrib-webapp/" + nodeType + ":" + key;
+            var resolved = RED._(full);
+            if (typeof resolved === "string" && resolved !== full) {
+                return resolved;
+            }
+        }
+        return fallback;
+    }
+
     const standardLayoutPresetOptions = [
         { value: "vertical", label: "Vertical" },
         { value: "horizontal", label: "Horizontal" },
@@ -192,14 +233,21 @@
     ];
 
     function injectPlacementRows() {
+        // P272: labels resolve through the shared catalog at injection time
+        // (common.layout.label.<id>); the literals above are the en-US fallback.
+        const localizedFields = placementRowFields.map(function (field) {
+            return Object.assign({}, field, {
+                label: sharedI18n("layout.label." + field.id, field.label)
+            });
+        });
         return injectFieldGroup({
             groupId: "layout-placement",
             separator: true,
             // P139 (ADR 0015): central "Layout" heading over the placement rows —
             // one change here lands the heading on every node at once. Shown/
             // hidden together with the rows (see installLayoutChildPropRows).
-            heading: "Layout",
-            fields: placementRowFields
+            heading: sharedI18n("layout.heading", "Layout"),
+            fields: localizedFields
         });
     }
 
@@ -239,7 +287,7 @@
                 fields: [
                     {
                         id: "variant",
-                        label: "Variant",
+                        label: sharedI18n("select.variantLabel", "Variant"),
                         type: "select",
                         options: options
                     }
@@ -267,6 +315,20 @@
         { value: "lg", label: "Large" }
     ];
 
+    // P272: option labels localize through the shared catalog at build time
+    // ("" → common.select.default, tokens → common.select.size.<token>); the
+    // SIZE_OPTIONS/ICON_SIZE_OPTIONS literals stay the en-US source of truth.
+    function localizedSizeOptions(options, emptyKey) {
+        return options.map(function (opt) {
+            return {
+                value: opt.value,
+                label: opt.value === ""
+                    ? sharedI18n(emptyKey, opt.label)
+                    : sharedI18n("select.size." + opt.value, opt.label)
+            };
+        });
+    }
+
     function installSizeSelectBox() {
         return function () {
             const self = this;
@@ -274,7 +336,12 @@
                 groupId: "size-select",
                 separator: false,
                 fields: [
-                    { id: "size", label: "Size", type: "select", options: SIZE_OPTIONS }
+                    {
+                        id: "size",
+                        label: sharedI18n("select.sizeLabel", "Size"),
+                        type: "select",
+                        options: localizedSizeOptions(SIZE_OPTIONS, "select.default")
+                    }
                 ]
             });
             const select = $("#node-input-size");
@@ -312,18 +379,23 @@
                 groupId: "size-select",
                 separator: false,
                 fields: [
-                    { id: "size", label: "Größe", type: "select", options: ICON_SIZE_OPTIONS }
+                    {
+                        id: "size",
+                        label: sharedI18n("select.sizeLabel", "Size"),
+                        type: "select",
+                        options: localizedSizeOptions(ICON_SIZE_OPTIONS, "select.defaultMd")
+                    }
                 ]
             });
             var select = $("#node-input-size");
             if (!select.length) { return; }
             var stored = self.size || "";
             if (stored && ICON_SIZE_TOKENS.indexOf(stored) === -1) {
-                // Legacy free CSS value — prepend a "(bestehend)" option so the
+                // Legacy free CSS value — prepend an "(existing)" option so the
                 // old value is preserved on first open; user can then choose a
                 // token to migrate permanently.
                 select.prepend(
-                    $("<option>").val(stored).text(stored + " (bestehend)")
+                    $("<option>").val(stored).text(stored + " " + sharedI18n("select.existing", "(existing)"))
                 );
             }
             select.val(stored);
@@ -364,13 +436,15 @@
 
     var BASE_FIELD_ORDER = ["visible", "disabled", "color", "size"];
     var BASE_FIELD_LABELS = { visible: "Visible", disabled: "Disabled", color: "Color", size: "Size" };
+    // P272: the en-US fallbacks; the rendered texts resolve through the shared
+    // catalog (common.baseFields.naHint.<field>) at install time.
     var BASE_FIELD_DEFAULT_NA_HINTS = {
-        visible: "Für diesen Knoten nicht anwendbar.",
-        disabled: "Dieser Knoten hat keinen interaktiven Zustand.",
-        color: "Für diesen Knoten nicht anwendbar.",
-        size: "Dieser Knoten hat keine einstellbare Größe."
+        visible: "Not applicable for this node.",
+        disabled: "This node has no interactive state.",
+        color: "Not applicable for this node.",
+        size: "This node has no size steps."
     };
-    var BASE_FIELD_VARIANT_COLOR_HINT = "Nutzt die semantische Variant (Farbe über das Variant-Feld).";
+    var BASE_FIELD_VARIANT_COLOR_HINT = "Uses the semantic variant (color via the Variant field).";
 
     // The binding-carrier (or plain) input element id per base field.
     var BASE_FIELD_INPUT_IDS = {
@@ -383,22 +457,36 @@
     // Pure node-local applicability/hint resolver (unit-tested,
     // packages/editor/test/p139-base-fields.test.ts). Default: applicable.
     // `variant: true` forces `color` → N/A (mutual exclusion, ADR 0015 §1). An
-    // N/A field's hint comes from config.hints[field], falling back to the
-    // built-in defaults above; applicable fields never carry a hint.
+    // N/A field's hint resolves (P272, ADR 0042 §3) in this order:
+    //   1. the node's OWN catalog key `<node>.hints.<field>` when the config
+    //      names its node type via `i18nNode` (the batches' migration target),
+    //   2. a literal config.hints[field] override (legacy, untranslated),
+    //   3. the SHARED catalog default (common.baseFields.naHint.<field>).
+    // Applicable fields never carry a hint. Without RED (unit tests) every
+    // lookup falls back to the en-US literals.
     function resolveBaseFieldApplicability(config) {
         var cfg = config || {};
         var hints = cfg.hints || {};
         var result = {};
         BASE_FIELD_ORDER.forEach(function (field) {
             var applicable = cfg[field] !== false;
-            var defaultHint = BASE_FIELD_DEFAULT_NA_HINTS[field];
+            var defaultHintKey = "baseFields.naHint." + field;
+            var defaultHintFallback = BASE_FIELD_DEFAULT_NA_HINTS[field];
             if (field === "color" && cfg.variant === true) {
                 applicable = false;
-                defaultHint = BASE_FIELD_VARIANT_COLOR_HINT;
+                defaultHintKey = "baseFields.naHint.variantColor";
+                defaultHintFallback = BASE_FIELD_VARIANT_COLOR_HINT;
+            }
+            var hint = "";
+            if (!applicable) {
+                var nodeHint = cfg.i18nNode
+                    ? nodeI18n(cfg.i18nNode, cfg.i18nNode + ".hints." + field, null)
+                    : null;
+                hint = nodeHint || hints[field] || sharedI18n(defaultHintKey, defaultHintFallback);
             }
             result[field] = {
                 applicable: applicable,
-                hint: applicable ? "" : (hints[field] || defaultHint)
+                hint: hint
             };
         });
         return result;
@@ -414,7 +502,7 @@
         }
         var control;
         if (field === "size") {
-            var optionMarkup = SIZE_OPTIONS.map(function (opt) {
+            var optionMarkup = localizedSizeOptions(SIZE_OPTIONS, "select.default").map(function (opt) {
                 return '<option value="' + escapeHtml(opt.value) + '">' + escapeHtml(opt.label) + "</option>";
             }).join("");
             control = '<select id="' + inputId + '"' + (state.applicable ? "" : " disabled") + ">" + optionMarkup + "</select>";
@@ -425,8 +513,9 @@
             ? ""
             : '<span data-base-field-hint style="display: block; margin-left: 104px; font-size: 11px; color: var(--red-ui-secondary-text-color, #888);">' +
                 escapeHtml(state.hint) + "</span>";
+        var label = sharedI18n("baseFields.label." + field, BASE_FIELD_LABELS[field]);
         return '<div class="form-row"' + rowAttrs + ">" +
-            '<label for="' + inputId + '">' + escapeHtml(BASE_FIELD_LABELS[field]) + "</label>" +
+            '<label for="' + inputId + '">' + escapeHtml(label) + "</label>" +
             control + hintMarkup +
             "</div>";
     }
@@ -468,12 +557,13 @@
                 });
                 var markup = '<span data-field-group="base-fields" style="display: contents;">' +
                     '<hr style="margin: 8px 0;">' +
-                    buildGroupHeadingMarkup("base-fields", "Allgemein") +
+                    buildGroupHeadingMarkup("base-fields", sharedI18n("baseFields.heading", "General")) +
                     mainRows;
                 if (advancedRows) {
                     markup +=
                         '<div class="form-row" data-base-advanced-toggle style="margin-bottom: 4px;">' +
-                        '<a href="#" style="text-decoration: none;"><i class="fa fa-caret-right"></i> Erweitert</a>' +
+                        '<a href="#" style="text-decoration: none;"><i class="fa fa-caret-right"></i> ' +
+                        escapeHtml(sharedI18n("baseFields.advanced", "Advanced")) + '</a>' +
                         "</div>" +
                         '<div data-base-advanced-section style="display: none;">' + advancedRows + "</div>";
                 }
@@ -695,7 +785,14 @@
                 groupId: "text-style-select",
                 separator: false,
                 fields: [
-                    { id: "style", label: "Style", type: "select", options: TEXT_STYLE_OPTIONS }
+                    {
+                        id: "style",
+                        label: sharedI18n("select.styleLabel", "Style"),
+                        type: "select",
+                        options: TEXT_STYLE_OPTIONS.map(function (opt) {
+                            return { value: opt.value, label: sharedI18n("select.textStyle." + opt.value, opt.label) };
+                        })
+                    }
                 ]
             });
             const select = $("#node-input-style");
@@ -725,8 +822,15 @@
                 groupId: "button-link",
                 separator: false,
                 fields: [
-                    { id: "outline", label: "Outline", type: "checkbox" },
-                    { id: "linkMode", label: "Link Mode", type: "select", options: BUTTON_LINK_MODE_OPTIONS }
+                    { id: "outline", label: sharedI18n("select.outlineLabel", "Outline"), type: "checkbox" },
+                    {
+                        id: "linkMode",
+                        label: sharedI18n("select.linkModeLabel", "Link Mode"),
+                        type: "select",
+                        options: BUTTON_LINK_MODE_OPTIONS.map(function (opt) {
+                            return { value: opt.value, label: sharedI18n("select.linkMode." + opt.value, opt.label) };
+                        })
+                    }
                 ]
             });
 
@@ -2670,8 +2774,8 @@
             routePickerInstalled = true;
             installPickerField("#node-input-route", {
                 filterPreset: "routes",
-                title: "Ziel-Route auswählen",
-                placeholder: "Route auswählen…",
+                title: sharedI18n("ref.targetRoute.title", "Select target route"),
+                placeholder: sharedI18n("ref.targetRoute.placeholder", "Select route…"),
                 getAppId: cfg.getAppId
             });
             $routeField.on("change.webappNavMode", function () { rebuildRouteTable(); });
@@ -3032,14 +3136,14 @@
         // Header
         $("<div>")
             .addClass("webapp-node-picker-header")
-            .text(opts.title || "Knoten auswählen")
+            .text(opts.title || sharedI18n("picker.nodeTitle", "Select node"))
             .appendTo($dialog);
 
         // Search bar with magnifier icon
         const $searchWrap = $("<div>").addClass("webapp-node-picker-search-wrap").appendTo($dialog);
         $("<i>").addClass("fa fa-search").appendTo($searchWrap);
         const $search = $("<input type=\"text\">")
-            .attr("placeholder", "Suche (Name, ID, Typ)…")
+            .attr("placeholder", sharedI18n("picker.searchNodes", "Search (name, id, type)…"))
             .addClass("webapp-node-picker-search")
             .appendTo($searchWrap);
 
@@ -3112,7 +3216,7 @@
             $right.empty();
             const slots = node && node.slots ? node.slots : [];
             if (slots.length === 0) {
-                $("<div>").addClass("webapp-node-picker-empty").text("Keine Slots.").appendTo($right);
+                $("<div>").addClass("webapp-node-picker-empty").text(sharedI18n("picker.noSlots", "No slots.")).appendTo($right);
                 return;
             }
             slots.forEach(function (slot) {
@@ -3175,7 +3279,7 @@
             }
 
             if (tree.length === 0) {
-                $("<div>").addClass("webapp-node-picker-empty").text("Keine Mount-Ziele.").appendTo($left);
+                $("<div>").addClass("webapp-node-picker-empty").text(sharedI18n("picker.noMountTargets", "No mount targets.")).appendTo($left);
             } else {
                 tree.forEach(function (node) { renderBranch($left, node, 0); });
             }
@@ -3217,7 +3321,7 @@
             });
 
             if (matches.length === 0) {
-                $("<div>").addClass("webapp-node-picker-empty").text("Keine Treffer.").appendTo($left);
+                $("<div>").addClass("webapp-node-picker-empty").text(sharedI18n("picker.noMatches", "No matches.")).appendTo($left);
                 renderSlots($right, null);
                 return;
             }
@@ -3273,7 +3377,7 @@
             const matches = entries.filter(function (entry) { return nodePickerMatch(entry, query); });
 
             if (matches.length === 0) {
-                $("<div>").addClass("webapp-node-picker-empty").text("Keine Treffer.").appendTo($list);
+                $("<div>").addClass("webapp-node-picker-empty").text(sharedI18n("picker.noMatches", "No matches.")).appendTo($list);
                 return;
             }
 
@@ -3307,13 +3411,13 @@
         }
 
         const $clearBtn = $("<button type=\"button\" class=\"red-ui-button\">")
-            .text("Leeren")
+            .text(sharedI18n("picker.clear", "Clear"))
             .on("click", function (event) {
                 event.preventDefault();
                 confirm("");
             });
         const $cancelBtn = $("<button type=\"button\" class=\"red-ui-button\">")
-            .text("Abbrechen")
+            .text(sharedI18n("picker.cancel", "Cancel"))
             .on("click", function (event) {
                 event.preventDefault();
                 close();
@@ -3416,11 +3520,11 @@
             });
 
         const $button = $("<button type=\"button\" class=\"red-ui-button webapp-picker-field-button\">")
-            .text("Auswählen…")
+            .text(sharedI18n("picker.select", "Select…"))
             .css({ "flex": "0 0 auto" });
 
         const $clear = $("<button type=\"button\" class=\"red-ui-button webapp-picker-field-clear\">")
-            .attr("title", "Auswahl entfernen")
+            .attr("title", sharedI18n("picker.removeSelection", "Remove selection"))
             .html("<i class=\"fa fa-times\"></i>")
             .css({ "flex": "0 0 auto" });
 
@@ -3472,7 +3576,7 @@
             const value = String($field.val() || "");
             if (!value) {
                 $display
-                    .text(cfg.placeholder || "Auswählen…")
+                    .text(cfg.placeholder || sharedI18n("picker.select", "Select…"))
                     .css({ color: "var(--red-ui-secondary-text-color, #999)", "font-style": "italic" });
                 if (cfg.clearable) {
                     $clear.hide();
@@ -3480,7 +3584,7 @@
                 return;
             }
             const label = labelForValue(value);
-            const text = label === null ? value + " (bestehend)" : label;
+            const text = label === null ? value + " " + sharedI18n("select.existing", "(existing)") : label;
             $display
                 .text(text)
                 .css({ color: "var(--red-ui-primary-text-color, #333)", "font-style": "normal" })
@@ -3495,7 +3599,7 @@
             const appId = resolveAppContext();
             const context = appId ? { appId: appId } : {};
             const dialogOptions = {
-                title: cfg.title || "Knoten auswählen",
+                title: cfg.title || sharedI18n("picker.nodeTitle", "Select node"),
                 value: String($field.val() || ""),
                 entries: nodePickerOptionsForPreset(cfg.filterPreset, context),
                 onSelect: function (value) {
@@ -3581,7 +3685,7 @@
         if (ref) {
             return ref.name || ref.statePath || ref.id;
         }
-        return String(storeId) + " (bestehend)";
+        return String(storeId) + " " + sharedI18n("select.existing", "(existing)");
     }
     // The soft sub-path autocomplete entries for a store id: the keys/indices of
     // its parsed default-slice value, mapped to Node-RED autoComplete records.
@@ -3712,7 +3816,7 @@
                 }
                 else {
                     $name.addClass("webapp-store-field-placeholder")
-                        .text("Store über „…“ auswählen")
+                        .text(sharedI18n("store.pickHint", "Select store via \"…\""))
                         .css({ color: "var(--red-ui-secondary-text-color, #888)", "font-style": "italic" });
                 }
                 $row.append($name);
@@ -3851,7 +3955,11 @@
             value: "token",
             label: opts.label || "Theme Token",
             icon: "fa fa-tint",
-            options: COLOR_TOKEN_OPTIONS
+            // P272: token labels localize through the shared catalog
+            // (common.select.colorToken.<token>); values stay the raw tokens.
+            options: COLOR_TOKEN_OPTIONS.map(function (opt) {
+                return { value: opt.value, label: sharedI18n("select.colorToken." + opt.value, opt.label) };
+            })
         };
     }
 
@@ -3902,7 +4010,7 @@
             .css({ width: "340px", "max-width": "95vw" })
             .appendTo($overlay);
 
-        $("<div>").addClass("webapp-node-picker-header").text(opts.title || "Farbe wählen").appendTo($dialog);
+        $("<div>").addClass("webapp-node-picker-header").text(opts.title || sharedI18n("picker.colorTitle", "Select color")).appendTo($dialog);
 
         var $body = $("<div>").css({ padding: "12px", display: "flex", "flex-direction": "column", gap: "10px" }).appendTo($dialog);
 
@@ -3961,15 +4069,15 @@
         }
 
         $("<button type=\"button\" class=\"red-ui-button\">")
-            .text("Leeren").css({ "margin-right": "6px" })
+            .text(sharedI18n("picker.clear", "Clear")).css({ "margin-right": "6px" })
             .on("click", function (e) { e.preventDefault(); confirm(""); })
             .appendTo($footer);
         $("<button type=\"button\" class=\"red-ui-button\">")
-            .text("Abbrechen").css({ "margin-right": "6px" })
+            .text(sharedI18n("picker.cancel", "Cancel")).css({ "margin-right": "6px" })
             .on("click", function (e) { e.preventDefault(); close(); })
             .appendTo($footer);
         $("<button type=\"button\" class=\"red-ui-button\">")
-            .text("Übernehmen")
+            .text(sharedI18n("picker.apply", "Apply"))
             .on("click", function (e) { e.preventDefault(); confirm(String($text.val() || "").trim()); })
             .appendTo($footer);
 
@@ -4434,8 +4542,8 @@
         buildReactiveDocPanel($doc, ctx);
 
         var $footer = $("<div>").addClass("webapp-node-picker-footer").appendTo($dialog);
-        var $okBtn = $("<button type=\"button\" class=\"red-ui-button\">").text("Übernehmen").css({ "margin-right": "6px" });
-        var $cancelBtn = $("<button type=\"button\" class=\"red-ui-button\">").text("Abbrechen");
+        var $okBtn = $("<button type=\"button\" class=\"red-ui-button\">").text(sharedI18n("picker.apply", "Apply")).css({ "margin-right": "6px" });
+        var $cancelBtn = $("<button type=\"button\" class=\"red-ui-button\">").text(sharedI18n("picker.cancel", "Cancel"));
         $footer.append($okBtn).append($cancelBtn);
 
         var editor = null;
@@ -5673,7 +5781,7 @@
             input.append(
                 $("<option></option>")
                     .attr("value", normalizedCurrentValue)
-                    .text(`${normalizedCurrentValue} (bestehend)`)
+                    .text(`${normalizedCurrentValue} ${sharedI18n("select.existing", "(existing)")}`)
             );
         }
 
@@ -5725,14 +5833,14 @@
             // app/route/dialog slot label includes the full path, e.g.
             // "Shop > /customers > content".
             if (appSlots.length > 0) {
-                groupOptions.push({ disabled: true, label: "Slots" });
+                groupOptions.push({ disabled: true, label: sharedI18n("ref.groups.slots", "Slots") });
                 for (const slot of appSlots) {
                     groupOptions.push.apply(groupOptions, slotOptions(`${app.id}.${slot}`, `${appLabel} > ${slot}`));
                 }
             }
 
             if (appRoutes.length > 0) {
-                groupOptions.push({ disabled: true, label: "Routes" });
+                groupOptions.push({ disabled: true, label: sharedI18n("ref.groups.routes", "Routes") });
                 for (const route of appRoutes) {
                     const routeSlots = getSlotNamesForLayout(route.layoutId);
                     if (routeSlots.length === 0) continue;
@@ -5745,7 +5853,7 @@
             }
 
             if (appDialogs.length > 0) {
-                groupOptions.push({ disabled: true, label: "Dialoge" });
+                groupOptions.push({ disabled: true, label: sharedI18n("ref.groups.dialogs", "Dialogs") });
                 for (const dialog of appDialogs) {
                     const dialogSlots = getSlotNamesForLayout(dialog.layoutId);
                     if (dialogSlots.length === 0) continue;
@@ -5786,7 +5894,7 @@
         }
 
         if (orphanOptions.length > 0) {
-            groups.push({ label: "Weitere", options: orphanOptions });
+            groups.push({ label: sharedI18n("ref.groups.other", "Other"), options: orphanOptions });
         }
 
         // P179 (ADR 0020): component DEFINITIONS are off-canvas (no outer mount), so
@@ -5805,7 +5913,7 @@
                 defOptions.push.apply(defOptions, slotOptions(`def:${def.id}/content`, `${def.name || def.id} > content`));
             }
             if (defOptions.length > 0) {
-                groups.push({ label: "Komponenten", options: defOptions });
+                groups.push({ label: sharedI18n("ref.groups.components", "Components"), options: defOptions });
             }
         }
 
@@ -6123,8 +6231,8 @@
             const seededParent = (storedApp && storedApp !== self.id) ? storedApp : "";
             installPickerField("#node-input-app", {
                 filterPreset: "apps",
-                title: "App auswählen",
-                placeholder: "App auswählen",
+                title: sharedI18n("ref.app.title", "Select app"),
+                placeholder: sharedI18n("ref.app.placeholder", "Select app"),
                 seedValue: seededParent
             });
         };
@@ -6149,8 +6257,8 @@
             if (config.layout) {
                 installPickerField("#node-input-layout", {
                     filterPreset: "layouts",
-                    title: "Layout auswählen",
-                    placeholder: "Parent-Layout auswählen",
+                    title: sharedI18n("ref.layout.title", "Select layout"),
+                    placeholder: sharedI18n("ref.layout.placeholder", "Select parent layout"),
                     // P259: canonical `layout`; legacy `layoutId` fallback.
                     seedValue: self.layout || self.layoutId || ""
                 });
@@ -6159,8 +6267,8 @@
             if (config.route) {
                 installPickerField("#node-input-route", {
                     filterPreset: "routes",
-                    title: "Route auswählen",
-                    placeholder: "Optional: Parent-Route auswählen",
+                    title: sharedI18n("ref.route.title", "Select route"),
+                    placeholder: sharedI18n("ref.route.placeholder", "Optional: select parent route"),
                     clearable: true,
                     // P259: canonical `route`; legacy `routeId` fallback.
                     seedValue: self.route || self.routeId || "",
@@ -6171,8 +6279,8 @@
             if (config.mount) {
                 installPickerField("#node-input-mount", {
                     filterPreset: "mounts",
-                    title: "Parent-Slot auswählen",
-                    placeholder: "Parent-Slot auswählen",
+                    title: sharedI18n("ref.mount.title", "Select parent slot"),
+                    placeholder: sharedI18n("ref.mount.placeholder", "Select parent slot"),
                     seedValue: self.mount || "",
                     getAppId: getAppId,
                     // P135 / ADR 0014: cycle guard — when editing a ui-container's
@@ -6185,8 +6293,8 @@
             if (config.action) {
                 installPickerField(config.action, {
                     filterPreset: "actions",
-                    title: "Action auswählen",
-                    placeholder: "Action auswählen",
+                    title: sharedI18n("ref.action.title", "Select action"),
+                    placeholder: sharedI18n("ref.action.placeholder", "Select action"),
                     seedValue: self.action || self.selectAction || self.refreshAction || "",
                     getAppId: getAppId
                 });
@@ -6198,8 +6306,8 @@
                     : "#node-input-storeId";
                 installPickerField(storeSelector, {
                     filterPreset: "stores",
-                    title: "Store auswählen",
-                    placeholder: "Optional: Store auswählen",
+                    title: sharedI18n("ref.store.title", "Select store"),
+                    placeholder: sharedI18n("ref.store.placeholder", "Optional: select store"),
                     clearable: true,
                     // P211: this node's field is `store`; the legacy `storeId`/`params`
                     // (ui-query) fall-backs must NOT shadow it, or the picker seeds ""
@@ -6216,8 +6324,8 @@
                     : "#node-input-queryId";
                 installPickerField(querySelector, {
                     filterPreset: "queries",
-                    title: "Query auswählen",
-                    placeholder: "Query auswählen",
+                    title: sharedI18n("ref.query.title", "Select query"),
+                    placeholder: sharedI18n("ref.query.placeholder", "Select query"),
                     seedValue: self.query || "",
                     getAppId: getAppId
                 });
@@ -6235,7 +6343,7 @@
                 presetSelector,
                 getStandardLayoutPresetOptions(),
                 isStandardLayoutPreset(currentValue) ? currentValue : standardLayoutPresetOptions[0].value,
-                config.presetPlaceholder || "Layout auswaehlen"
+                config.presetPlaceholder || sharedI18n("ref.layoutPreset.placeholder", "Select layout")
             );
 
             function syncLayoutValue() {
@@ -6545,7 +6653,7 @@
 
         $("<div>")
             .addClass("webapp-node-picker-header")
-            .text(opts.title || "Icon auswählen")
+            .text(opts.title || sharedI18n("picker.iconTitle", "Select icon"))
             .appendTo($dialog);
 
         const $controls = $("<div>")
@@ -6553,7 +6661,7 @@
             .appendTo($dialog);
         const $libFilter = $("<select>").addClass("webapp-icon-picker-lib").css({ "flex": "0 0 auto" }).appendTo($controls);
         const $search = $("<input type=\"text\">")
-            .attr("placeholder", "Suche (Icon-Name)…")
+            .attr("placeholder", sharedI18n("picker.searchIcon", "Search (icon name)…"))
             .addClass("webapp-icon-picker-search webapp-node-picker-search")
             .css({ flex: "1 1 auto" })
             .appendTo($controls);
@@ -6579,8 +6687,8 @@
             }
         }
 
-        const $clearBtn = $("<button type=\"button\" class=\"red-ui-button\">").text("Leeren").css({ "margin-right": "6px" }).on("click", function (e) { e.preventDefault(); confirm(""); });
-        const $cancelBtn = $("<button type=\"button\" class=\"red-ui-button\">").text("Abbrechen").on("click", function (e) { e.preventDefault(); close(); });
+        const $clearBtn = $("<button type=\"button\" class=\"red-ui-button\">").text(sharedI18n("picker.clear", "Clear")).css({ "margin-right": "6px" }).on("click", function (e) { e.preventDefault(); confirm(""); });
+        const $cancelBtn = $("<button type=\"button\" class=\"red-ui-button\">").text(sharedI18n("picker.cancel", "Cancel")).on("click", function (e) { e.preventDefault(); close(); });
         $footer.append($clearBtn).append($cancelBtn);
 
         let manifest = { libraries: [] };
@@ -6624,7 +6732,7 @@
                 }
             }
             if (shown === 0) {
-                $("<div>").addClass("webapp-node-picker-empty").css({ "grid-column": "1 / -1" }).text("Keine Treffer.").appendTo($grid);
+                $("<div>").addClass("webapp-node-picker-empty").css({ "grid-column": "1 / -1" }).text(sharedI18n("picker.noMatches", "No matches.")).appendTo($grid);
             }
             else if (shown >= MAX) {
                 $("<div>").addClass("webapp-node-picker-row-secondary").css({ padding: "6px", "grid-column": "1 / -1" }).text("… weiter eingrenzen (Suche), um mehr zu sehen.").appendTo($grid);
@@ -6633,7 +6741,7 @@
 
         loadIconManifest(function (data) {
             manifest = data;
-            $libFilter.append($("<option>").attr("value", "").text("Alle Libraries"));
+            $libFilter.append($("<option>").attr("value", "").text(sharedI18n("picker.allLibraries", "All libraries")));
             manifest.libraries.forEach(function (l) {
                 $libFilter.append($("<option>").attr("value", l.name).text(l.name));
                 if (l.basePath) {
@@ -6787,7 +6895,7 @@
         }
 
         const $preview = $("<img class=\"webapp-icon-field-preview\">").css({ width: "20px", height: "20px", "vertical-align": "middle", "margin-right": "6px" }).hide();
-        const $button = $("<button type=\"button\" class=\"red-ui-button webapp-icon-field-button\">").text("Icon wählen…").css({ "margin-left": "6px" });
+        const $button = $("<button type=\"button\" class=\"red-ui-button webapp-icon-field-button\">").text(sharedI18n("picker.chooseIcon", "Choose icon…")).css({ "margin-left": "6px" });
 
         // typedInput keeps the original input in the DOM (hidden) and renders its
         // container AFTER it — so the preview still goes before the input, but the
@@ -6887,16 +6995,16 @@
 
         $("<div>")
             .addClass("webapp-node-picker-header")
-            .text(opts.title || "Asset auswählen")
+            .text(opts.title || sharedI18n("picker.assetTitle", "Select asset"))
             .appendTo($dialog);
 
         const $controls = $("<div>").addClass("webapp-node-picker-search-wrap").appendTo($dialog);
         const $search = $("<input type=\"text\">")
-            .attr("placeholder", "Suche (Asset-Name)…")
+            .attr("placeholder", sharedI18n("picker.searchAsset", "Search (asset name)…"))
             .addClass("webapp-media-picker-search webapp-node-picker-search")
             .css({ flex: "1 1 auto" })
             .appendTo($controls);
-        const $uploadBtn = $("<button type=\"button\" class=\"red-ui-button\">").text("Hochladen…").appendTo($controls);
+        const $uploadBtn = $("<button type=\"button\" class=\"red-ui-button\">").text(sharedI18n("picker.upload", "Upload…")).appendTo($controls);
         const $uploadInput = $("<input type=\"file\" accept=\"image/*\">").css({ display: "none" }).appendTo($controls);
 
         const $grid = $("<div>")
@@ -6920,8 +7028,8 @@
             }
         }
 
-        $("<button type=\"button\" class=\"red-ui-button\">").text("Leeren").css({ "margin-right": "6px" }).on("click", function (e) { e.preventDefault(); confirm(""); }).appendTo($footer);
-        $("<button type=\"button\" class=\"red-ui-button\">").text("Abbrechen").on("click", function (e) { e.preventDefault(); close(); }).appendTo($footer);
+        $("<button type=\"button\" class=\"red-ui-button\">").text(sharedI18n("picker.clear", "Clear")).css({ "margin-right": "6px" }).on("click", function (e) { e.preventDefault(); confirm(""); }).appendTo($footer);
+        $("<button type=\"button\" class=\"red-ui-button\">").text(sharedI18n("picker.cancel", "Cancel")).on("click", function (e) { e.preventDefault(); close(); }).appendTo($footer);
 
         let assets = [];
 
@@ -6933,7 +7041,7 @@
                 return !query || name.toLowerCase().indexOf(query) !== -1;
             });
             if (matches.length === 0) {
-                $("<div>").addClass("webapp-node-picker-empty").css({ "grid-column": "1 / -1" }).text("Keine Assets.").appendTo($grid);
+                $("<div>").addClass("webapp-node-picker-empty").css({ "grid-column": "1 / -1" }).text(sharedI18n("picker.noAssets", "No assets.")).appendTo($grid);
                 return;
             }
             matches.forEach(function (a) {
@@ -7127,6 +7235,10 @@
         validateNavigateConfig,
         registerNodeType,
         registerNodeTypeWithEvents,
+        // P272 (ADR 0042 §3): shared/per-node editor i18n lookups (lazy RED._
+        // resolution with en-US fallback; see the header of this file).
+        sharedI18n,
+        nodeI18n,
         required,
         validateAppRef,
         validateRefWithLegacy,
