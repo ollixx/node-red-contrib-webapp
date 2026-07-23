@@ -4564,6 +4564,16 @@ function resolveAssetStoreUrl(appId, id, definitions) {
     return { ok: true, url: `${base}/${encodeURIComponent(id)}` };
 }
 
+// P261 (ADR 0041 §2): the ONE registration function for ALL app-facing
+// (`RED.httpNode`) runtime endpoints. Every endpoint of the enforcement matrix
+// (docs/nodes/concepts/auth.md) MUST register through here — never directly via
+// `RED.httpNode.get/post` — so a future endpoint cannot forget the auth guard.
+// The admin endpoints (`RED.httpAdmin`) are covered by Node-RED's `adminAuth`
+// and stay outside this function by design.
+function registerAppEndpoint(RED, method, path, ...handlers) {
+    RED.httpNode[method](path, ...handlers);
+}
+
 function registerEndpoints(RED) {
     if (runtimeState.endpointsRegistered) {
         return;
@@ -4610,7 +4620,7 @@ function registerEndpoints(RED) {
         });
     });
 
-    RED.httpNode.get("/webapp/:appId", (req, res) => {
+    registerAppEndpoint(RED, "get", "/webapp/:appId", (req, res) => {
         const location = req.query.location ? String(req.query.location) : "/";
         const dialogId = req.query.dialog ? String(req.query.dialog) : undefined;
         const page = renderAppPage(req.params.appId, location, dialogId, readDeployDefinitions(RED));
@@ -4628,7 +4638,7 @@ function registerEndpoints(RED) {
     // an initial snapshot immediately (which subsumes the P15 reconnect sync).
     // Thereafter, flow-driven ui-store updates push `snapshot` events and ui-action
     // interaction commands push `command` events to the relevant client(s).
-    RED.httpNode.get("/webapp/:appId/stream", (req, res) => {
+    registerAppEndpoint(RED, "get", "/webapp/:appId/stream", (req, res) => {
         const appId = resolveCanonicalAppId(req.params.appId, readDeployDefinitions(RED));
         const clientId = req.query.clientId ? String(req.query.clientId) : undefined;
         const location = req.query.location ? String(req.query.location) : "/";
@@ -4684,7 +4694,7 @@ function registerEndpoints(RED) {
     // is the only place that may react; live push is via the SSE stream (P31).
     // The response echoes the emitted message and the CURRENT snapshot (unchanged —
     // a read-only re-render) so the thin client keeps a consistent view between pushes.
-    RED.httpNode.post("/webapp/:appId/event", readJsonBody, (req, res) => {
+    registerAppEndpoint(RED, "post", "/webapp/:appId/event", readJsonBody, (req, res) => {
         const body = req.body && typeof req.body === "object" ? req.body : {};
         const definitions = readDeployDefinitions(RED);
         const appId = resolveCanonicalAppId(req.params.appId, definitions);
@@ -4717,7 +4727,7 @@ function registerEndpoints(RED) {
     // `setDynamicStateField` write API so the hide is a real value transition
     // (bound → store write-through, unbound → per-client slot), not a DOM close.
     // MUST be registered before the catch-all `/webapp/:appId/*` page route.
-    RED.httpNode.post("/webapp/:appId/dynamic-state", readJsonBody, (req, res) => {
+    registerAppEndpoint(RED, "post", "/webapp/:appId/dynamic-state", readJsonBody, (req, res) => {
         const body = req.body && typeof req.body === "object" ? req.body : {};
         const written = dispatchDynamicStateWrite(body);
         if (!written.success) {
@@ -4736,7 +4746,7 @@ function registerEndpoints(RED) {
     // with the upstream content-type. The store URL is never disclosed to the
     // client (obfuscation), and the id is charset-validated (no path traversal).
     // MUST be registered before the catch-all `/webapp/:appId/*` page route.
-    RED.httpNode.get("/webapp/:appId/asset/:id", (req, res) => {
+    registerAppEndpoint(RED, "get", "/webapp/:appId/asset/:id", (req, res) => {
         const { appId, id } = req.params;
         const resolved = resolveAssetStoreUrl(appId, id, readDeployDefinitions(RED));
         if (!resolved.ok) {
@@ -4841,7 +4851,7 @@ function registerEndpoints(RED) {
     // Returns { snapshot, signature, mode } so the client can apply the same
     // in-place-vs-reload rule used for a live deploy push. MUST be registered
     // before the catch-all `/webapp/:appId/*` page route.
-    RED.httpNode.get("/webapp/:appId/snapshot", (req, res) => {
+    registerAppEndpoint(RED, "get", "/webapp/:appId/snapshot", (req, res) => {
         const location = req.query.location ? String(req.query.location) : "/";
         const dialogId = req.query.dialog ? String(req.query.dialog) : undefined;
         const clientId = req.query.clientId ? String(req.query.clientId) : undefined;
@@ -4861,7 +4871,7 @@ function registerEndpoints(RED) {
         });
     });
 
-    RED.httpNode.get("/webapp/:appId/*", (req, res) => {
+    registerAppEndpoint(RED, "get", "/webapp/:appId/*", (req, res) => {
         const suffix = req.params[0] ? `/${req.params[0]}` : "/";
         const dialogId = req.query.dialog ? String(req.query.dialog) : undefined;
         const page = renderAppPage(req.params.appId, suffix, dialogId, readDeployDefinitions(RED));
