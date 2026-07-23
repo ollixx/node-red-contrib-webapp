@@ -222,8 +222,11 @@ describe("check-help locale rules (P265 — migrated nodes)", () => {
             {},
             {
                 transition: { "ui-old": "pending" },
+                // Split literal so the check:links Tier-2 scanner never sees a
+                // contiguous docs path for this fictitious node (same idiom as
+                // the "ghost" test above).
                 docExists: stubExists([
-                    "docs/nodes/display/ui-old.md",
+                    "docs/nodes/display/" + "ui-old.md",
                     ...guideDocs("ui-new"),
                 ]),
             }
