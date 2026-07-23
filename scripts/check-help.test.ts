@@ -148,7 +148,7 @@ const guideDocs = (type: string) => [
 ];
 
 describe("check-help locale rules (P265 — migrated nodes)", () => {
-    it("the transition rest-list excludes every locale-migrated node (pilot + P267 backbone)", () => {
+    it("the transition rest-list excludes every locale-migrated node (pilot + P267 backbone + P268 input batch)", () => {
         const types = Object.keys(check.nodeHtmlPaths());
         const transitional = types.filter((t) => check.TRANSITION_INLINE[t]);
         // Migrated so far: the P265 pilot + the P267 backbone batch (11 nodes).
@@ -158,6 +158,9 @@ describe("check-help locale rules (P265 — migrated nodes)", () => {
             "ui-component-definition", "ui-component-instance",
             "ui-store", "ui-store-read", "ui-store-action",
             "ui-query", "ui-query-action", "ui-action",
+            // P268 — the input batch (9 form nodes).
+            "ui-input", "ui-select", "ui-checkbox", "ui-radio", "ui-switch",
+            "ui-textarea", "ui-datepicker", "ui-slider", "ui-button",
         ];
         expect(transitional.length).toBe(types.length - migrated.length);
         for (const t of migrated) expect(check.TRANSITION_INLINE[t]).toBeUndefined();
@@ -268,7 +271,7 @@ const labelOk = (type: string) => ({
 });
 
 describe("check-help label-catalog rules (P272 — editor-label i18n)", () => {
-    it("the label transition rest-list excludes every migrated node (pilot + P267 backbone)", () => {
+    it("the label transition rest-list excludes every migrated node (pilot + P267 backbone + P268 input batch)", () => {
         const types = Object.keys(check.nodeHtmlPaths());
         const transitional = types.filter((t) => check.LABEL_TRANSITION[t]);
         const migrated = [
@@ -277,6 +280,9 @@ describe("check-help label-catalog rules (P272 — editor-label i18n)", () => {
             "ui-component-definition", "ui-component-instance",
             "ui-store", "ui-store-read", "ui-store-action",
             "ui-query", "ui-query-action", "ui-action",
+            // P268 — the input batch (9 form nodes).
+            "ui-input", "ui-select", "ui-checkbox", "ui-radio", "ui-switch",
+            "ui-textarea", "ui-datepicker", "ui-slider", "ui-button",
         ];
         expect(transitional.length).toBe(types.length - migrated.length);
         for (const t of migrated) expect(check.LABEL_TRANSITION[t]).toBeUndefined();
