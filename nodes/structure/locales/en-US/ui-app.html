@@ -1,0 +1,22 @@
+<script type="text/html" data-help-name="ui-app">
+<p>The root of a declarative web app: base URL, layout, theme, auth and
+lifecycle events. It is also the implicit root route <code>/</code> — home-page
+content mounts straight into its slots. Served at <code>/webapp/&lt;root&gt;</code>.</p>
+<h3>Key fields</h3>
+<ul>
+    <li><b>Root</b> — the URL segment after <code>/webapp/</code>; unique, required.</li>
+    <li><b>Layout</b> — base preset (<code>vertical</code>/<code>app</code>/…); sets slots + child placement.</li>
+    <li><b>Auth</b> — <code>none</code> or <code>trusted-header</code> (enforces identity, exposes the <code>user</code> binding).</li>
+    <li><b>Logging</b> — opt-in redacted forwarding of framework errors (off by default).</li>
+    <li><b>Status</b> — <code>Entwicklung</code> auto-delivers on deploy; <code>Produktion</code> waits for a manual reload.</li>
+</ul>
+<h3>Inputs</h3>
+<p>Has an input port so the app-global verbs <code>navigate</code> / <code>reset</code>
+can be wired to it (navigate targets the root <code>/</code>). It consumes no
+business messages; unknown messages pass through unchanged.</p>
+<h3>Outputs / Events</h3>
+<p>One output port per ticked event: <code>clientConnected</code>,
+<code>clientDisconnected</code>, <code>onEnter</code>, <code>onLeave</code>.</p>
+<h3>Full docs</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/nodes/ui-app.md" target="_blank">docs/guide/nodes/ui-app.md</a></p>
+</script>

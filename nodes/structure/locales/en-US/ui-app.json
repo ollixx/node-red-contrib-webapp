@@ -1,0 +1,43 @@
+{
+    "ui-app": {
+        "label": {
+            "root": "Root",
+            "layout": "Layout",
+            "status": "Status",
+            "appUrl": "App URL",
+            "styles": "Customise styles",
+            "logging": "Logging",
+            "auth": "Auth",
+            "authHeaderUser": "User header",
+            "authHeaderEmail": "Email header",
+            "authHeaderGroups": "Groups header",
+            "authRedirect": "Redirect",
+            "mediaStoreUrl": "Media Store URL",
+            "events": "Events"
+        },
+        "option": {
+            "status": {
+                "development": "Development",
+                "production": "Production"
+            },
+            "auth": {
+                "none": "none",
+                "trusted-header": "trusted-header"
+            },
+            "logging": {
+                "off": "off",
+                "debug": "debug",
+                "info": "info",
+                "warn": "warn",
+                "error": "error"
+            }
+        },
+        "placeholder": {
+            "mediaStoreUrl": "https://store.example/media (optional)",
+            "authRedirect": "/oauth2/sign_in (optional)"
+        },
+        "hints": {
+            "rootRequired": "Set Root first"
+        }
+    }
+}
