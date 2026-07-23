@@ -1,0 +1,23 @@
+<script type="text/html" data-help-name="ui-query">
+<p>A named, loaded, read-only data source. It describes where data lives
+(<code>queryPath</code>) and its loading state — it loads nothing itself; you
+wire the fetch. For your own mutable state use <code>ui-store</code>.</p>
+<h3>Key fields</h3>
+<ul>
+    <li><b>Query Path</b> — where data is stored; bind via <code>query:&lt;queryPath&gt;</code>.</li>
+    <li><b>Params Store</b> — optional shared params store; empty = the implicit per-query store.</li>
+    <li><b>Debounce (ms)</b> — batch fast params changes (search typing); 0 = immediate.</li>
+    <li><b>Refresh Action</b> — optional ui-action that manually refreshes.</li>
+</ul>
+<h3>Inputs</h3>
+<p>A <code>msg.ui.query</code> for this <code>queryPath</code>. <code>data</code>/<code>error</code>
+are terminal (stored + pushed, not re-emitted — loop guard); <code>refresh</code>
+passes through the out-port. Unknown messages pass through. <b>Empty is normal
+without a wired fetch.</b></p>
+<h3>Outputs / Events</h3>
+<p>The out-port carries only triggers toward the fetch; the fetch returns data to
+the input port. Read data via <code>query:&lt;path&gt;</code>, load state via
+<code>.loading</code>/<code>.error</code>/<code>.status</code>.</p>
+<h3>Full docs</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/nodes/ui-query.md" target="_blank">docs/guide/nodes/ui-query.md</a></p>
+</script>

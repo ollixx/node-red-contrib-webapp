@@ -1,0 +1,23 @@
+<script type="text/html" data-help-name="ui-query">
+<p>Eine benannte, geladene, read-only Datenquelle. Sie beschreibt, wo Daten
+liegen (<code>queryPath</code>) und ihren Ladezustand — sie lädt nichts selbst;
+den Fetch verdrahtest du. Für eigenen veränderbaren Zustand → <code>ui-store</code>.</p>
+<h3>Wichtige Felder</h3>
+<ul>
+    <li><b>Query Path</b> — wo Daten liegen; Binding über <code>query:&lt;queryPath&gt;</code>.</li>
+    <li><b>Params Store</b> — optionaler geteilter Params-Store; leer = der implizite per-Query-Store.</li>
+    <li><b>Debounce (ms)</b> — schnelle Params-Änderungen bündeln (Such-Tippen); 0 = sofort.</li>
+    <li><b>Refresh Action</b> — optionale ui-action, die manuell refresht.</li>
+</ul>
+<h3>Eingang</h3>
+<p>Eine <code>msg.ui.query</code> für diesen <code>queryPath</code>. <code>data</code>/<code>error</code>
+sind terminal (abgelegt + gepusht, kein Re-Emit — Schleifenschutz);
+<code>refresh</code> läuft am Out-Port weiter. Unbekannte Messages passieren.
+<b>Leer ist normal ohne verdrahteten Fetch.</b></p>
+<h3>Ausgänge / Events</h3>
+<p>Der Out-Port trägt nur Auslöser Richtung Fetch; der Fetch gibt Daten an den
+In-Port zurück. Daten über <code>query:&lt;path&gt;</code>, Ladezustand über
+<code>.loading</code>/<code>.error</code>/<code>.status</code>.</p>
+<h3>Vollständige Doku</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/de/nodes/ui-query.md" target="_blank">docs/guide/de/nodes/ui-query.md</a></p>
+</script>

@@ -1,0 +1,89 @@
+[
+    {
+        "id": "guide-ui-query",
+        "type": "tab",
+        "label": "Guide: ui-query",
+        "disabled": false,
+        "info": "User-guide example for ui-query (docs/guide/nodes/ui-query.md). Import, deploy, open /webapp/guideQuery/ to see a wired fetch fill the query."
+    },
+    {
+        "id": "guideQuery",
+        "type": "ui-app",
+        "name": "Query demo",
+        "uiId": "guideQuery",
+        "root": "guideQuery",
+        "layout": "app",
+        "z": "guide-ui-query",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gQyHome",
+        "type": "ui-text",
+        "name": "Intro",
+        "uiId": "gQyHome",
+        "app": "guideQuery",
+        "mount": "guideQuery.content",
+        "text": "A ui-query loads nothing itself — the value below arrives via a wired fetch.",
+        "order": "1",
+        "z": "guide-ui-query",
+        "x": 340,
+        "y": 60,
+        "wires": [[]]
+    },
+    {
+        "id": "gQyValue",
+        "type": "ui-text",
+        "name": "Query value",
+        "uiId": "gQyValue",
+        "app": "guideQuery",
+        "mount": "guideQuery.content",
+        "value": { "kind": "query", "path": "message" },
+        "order": "2",
+        "z": "guide-ui-query",
+        "x": 340,
+        "y": 120,
+        "wires": [[]]
+    },
+    {
+        "id": "gQyQuery",
+        "type": "ui-query",
+        "name": "Message query",
+        "uiId": "gQyQuery",
+        "app": "guideQuery",
+        "queryPath": "message",
+        "debounceMs": 0,
+        "z": "guide-ui-query",
+        "x": 340,
+        "y": 200,
+        "wires": [["gQyFetch"]]
+    },
+    {
+        "id": "gQyInject",
+        "type": "inject",
+        "name": "Load once",
+        "props": [{ "p": "payload" }],
+        "repeat": "",
+        "once": true,
+        "onceDelay": "0.5",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "z": "guide-ui-query",
+        "x": 120,
+        "y": 200,
+        "wires": [["gQyQuery"]]
+    },
+    {
+        "id": "gQyFetch",
+        "type": "function",
+        "name": "Return data",
+        "func": "msg.ui = { query: { queryPath: \"message\", data: \"Loaded via ui-query\" } };\nreturn msg;",
+        "outputs": 1,
+        "z": "guide-ui-query",
+        "x": 540,
+        "y": 200,
+        "wires": [["gQyQuery"]]
+    }
+]
