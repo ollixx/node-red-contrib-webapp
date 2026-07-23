@@ -166,7 +166,17 @@
                 // shows a version alert instead and waits for a manual reload.
                 // NB: the config key is `deployMode`, NOT `status` — `status` is a
                 // RESERVED Node-RED node property (the runtime status indicator).
-                deployMode: { value: "development" }
+                deployMode: { value: "development" },
+                // P260 (ADR 0041 §2): auth config as ONE object (a future
+                // mode:"oidc" extends it). Defaults: mode "none"; header
+                // defaults X-Forwarded-User/-Email/-Groups (applied by the
+                // reader, blank here means "use default"). INERT until P261 —
+                // konfiguriert, noch nicht erzwungen. There is deliberately NO
+                // `#node-input-auth` DOM carrier: oneditprepare seeds the
+                // visible auth rows from this.auth and oneditsave writes the
+                // object back to this.auth directly, so Node-RED's field-copy
+                // never sees a stale/empty carrier to clobber it with (ADR 0031).
+                auth: { value: { mode: "none" } }
             },
             // P59 / ADR 0007 §4: ui-app accepts an input port so app-global verbs
             // navigate / reset can be wired (or picked) to it like any other target.
@@ -283,6 +293,25 @@
                 $("#node-ui-app-logging-info-btn").on("click", function () {
                     $("#node-dialog-logging-info").dialog("open");
                 });
+
+                // P260 (ADR 0041 §2): seed the auth rows from the ONE stored
+                // auth object. Older nodes have no `auth` — treat as mode "none".
+                const auth = (this.auth && typeof this.auth === "object") ? this.auth : {};
+                const authModeSelect = $("#node-ui-app-auth-mode");
+                authModeSelect.val(auth.mode === "trusted-header" ? "trusted-header" : "none");
+                $("#node-ui-app-auth-headerUser").val(auth.headerUser || "");
+                $("#node-ui-app-auth-headerEmail").val(auth.headerEmail || "");
+                $("#node-ui-app-auth-headerGroups").val(auth.headerGroups || "");
+                $("#node-ui-app-auth-redirect").val(auth.redirect || "");
+
+                // Header/redirect detail rows are only meaningful for
+                // trusted-header — hide them entirely for mode "none".
+                function updateAuthRows() {
+                    const trusted = authModeSelect.val() === "trusted-header";
+                    $(".node-ui-app-auth-detail").toggle(trusted);
+                }
+                authModeSelect.on("change", updateAuthRows);
+                updateAuthRows();
             },
             oneditsave: function () {
                 // P61: Map the Logging select back onto the two backing config fields.
@@ -306,6 +335,24 @@
                     $("#node-input-forwardErrorMinSeverity").val(val);
                 }
                 // tokens are already serialised to #node-input-tokens inside the dialog OK handler.
+
+                // P260 (ADR 0041 §2): write the ONE auth object straight onto
+                // the node (there is NO #node-input-auth DOM carrier, so
+                // Node-RED's post-oneditsave field-copy leaves this value
+                // alone). Blank optional fields are dropped — blank means "use
+                // the documented default" (X-Forwarded-User/-Email/-Groups).
+                // INERT until P261: configured, not enforced.
+                const authMode = $("#node-ui-app-auth-mode").val() === "trusted-header" ? "trusted-header" : "none";
+                const authOut = { mode: authMode };
+                const headerUser = String($("#node-ui-app-auth-headerUser").val() || "").trim();
+                const headerEmail = String($("#node-ui-app-auth-headerEmail").val() || "").trim();
+                const headerGroups = String($("#node-ui-app-auth-headerGroups").val() || "").trim();
+                const redirect = String($("#node-ui-app-auth-redirect").val() || "").trim();
+                if (headerUser) { authOut.headerUser = headerUser; }
+                if (headerEmail) { authOut.headerEmail = headerEmail; }
+                if (headerGroups) { authOut.headerGroups = headerGroups; }
+                if (redirect) { authOut.redirect = redirect; }
+                this.auth = authOut;
             },
             label: function () {
                 return this.name || this.root || "ui-app";
@@ -368,6 +415,42 @@
                 title="Informationen zur Fehler-Weiterleitung">
             <i class="fa fa-info-circle"></i>
         </button>
+    </div>
+    <hr style="margin: 8px 0;">
+    <!-- P260 (ADR 0041 §2): auth config. ONE stored object (this.auth) — the
+         rows below are seeded/serialised in oneditprepare/oneditsave; there is
+         deliberately NO #node-input-auth carrier (ADR 0031 clobber class).
+         Detail rows only visible for mode trusted-header. INERT until P261:
+         konfiguriert, noch nicht erzwungen — Enforcement kommt mit P261. -->
+    <div class="form-row">
+        <label for="node-ui-app-auth-mode">Auth</label>
+        <select id="node-ui-app-auth-mode" style="width: 70%;">
+            <option value="none">none</option>
+            <option value="trusted-header">trusted-header</option>
+        </select>
+    </div>
+    <div class="form-row node-ui-app-auth-detail">
+        <label for="node-ui-app-auth-headerUser">User-Header</label>
+        <input type="text" id="node-ui-app-auth-headerUser" placeholder="X-Forwarded-User">
+    </div>
+    <div class="form-row node-ui-app-auth-detail">
+        <label for="node-ui-app-auth-headerEmail">Email-Header</label>
+        <input type="text" id="node-ui-app-auth-headerEmail" placeholder="X-Forwarded-Email">
+    </div>
+    <div class="form-row node-ui-app-auth-detail">
+        <label for="node-ui-app-auth-headerGroups">Groups-Header</label>
+        <input type="text" id="node-ui-app-auth-headerGroups" placeholder="X-Forwarded-Groups">
+    </div>
+    <div class="form-row node-ui-app-auth-detail">
+        <label for="node-ui-app-auth-redirect">Redirect</label>
+        <input type="text" id="node-ui-app-auth-redirect" placeholder="/oauth2/sign_in (optional)">
+    </div>
+    <div class="form-row node-ui-app-auth-detail">
+        <label>&nbsp;</label>
+        <span style="color: #777; font-size: 12px;">
+            <i class="fa fa-info-circle"></i>
+            Konfiguriert, noch nicht erzwungen — Enforcement kommt mit P261.
+        </span>
     </div>
     <hr style="margin: 8px 0;">
     <div class="form-row">
