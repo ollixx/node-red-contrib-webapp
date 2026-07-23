@@ -14,9 +14,9 @@
             variant: false,
             advanced: [],
             omit: ["disabled","size"],
-            hints: {
-                color: "Ein Formularfeld hat keine allgemeine Farbe (Zustandsfarben kommen aus Validierung/Variant)."
-            }
+            // P268 (ADR 0042 §3): N/A hints live in the node's OWN locale catalog
+            // (nodes/view/locales/<lang>/ui-input.json → `ui-input.hints.<field>`).
+            i18nNode: "ui-input"
         };
         common.registerNodeType("ui-input", {
             category: "webapp view",
@@ -246,41 +246,25 @@
         });
     })();
 </script>
+<!-- P268 (ADR 0042 §3): editor-label i18n. Form-row labels carry data-i18n keys
+     per the convention `<node>.label.<field>` (options `<node>.option.<field>.<value>`).
+     Catalogs: nodes/view/locales/{en-US,de}/ui-input.json. The literal texts stay
+     as the en-US authoring reference; at edit time the catalog text replaces them. -->
 <script type="text/html" data-template-name="ui-input">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
-    <div class="form-row"><label for="node-input-label">Label</label><input type="text" id="node-input-label"></div>
+    <div class="form-row"><label for="node-input-mount" data-i18n="ui-input.label.mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-row"><label for="node-input-label" data-i18n="ui-input.label.label">Label</label><input type="text" id="node-input-label"></div>
     <!-- P123 (ADR 0012 / value/display category): Value binding (READ) — typedInput managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-valueBinding">Value</label><input type="text" id="node-input-valueBinding"></div>
+    <div class="form-row"><label for="node-input-valueBinding" data-i18n="ui-input.label.valueBinding">Value</label><input type="text" id="node-input-valueBinding"></div>
     <!-- P203 (ADR 0027 / writable category): writeTo target (WRITE) — Store/Flow/Global; typedInput managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-writeToBinding">Write To</label><input type="text" id="node-input-writeToBinding"></div>
-    <div class="form-row"><label for="node-input-writeTrigger">Write Trigger</label><select id="node-input-writeTrigger"><option value="submit">submit</option><option value="change">change</option><option value="none">none</option></select></div>
-    <div class="form-row"><label for="node-input-inputType">Input Type</label><select id="node-input-inputType"><option value="text">text</option><option value="email">email</option><option value="number">number</option></select></div>
+    <div class="form-row"><label for="node-input-writeToBinding" data-i18n="ui-input.label.writeToBinding">Write To</label><input type="text" id="node-input-writeToBinding"></div>
+    <div class="form-row"><label for="node-input-writeTrigger" data-i18n="ui-input.label.writeTrigger">Write Trigger</label><select id="node-input-writeTrigger"><option value="submit" data-i18n="ui-input.option.writeTrigger.submit">submit</option><option value="change" data-i18n="ui-input.option.writeTrigger.change">change</option><option value="none" data-i18n="ui-input.option.writeTrigger.none">none</option></select></div>
+    <div class="form-row"><label for="node-input-inputType" data-i18n="ui-input.label.inputType">Input Type</label><select id="node-input-inputType"><option value="text" data-i18n="ui-input.option.inputType.text">text</option><option value="email" data-i18n="ui-input.option.inputType.email">email</option><option value="number" data-i18n="ui-input.option.inputType.number">number</option></select></div>
     <!-- P123 (ADR 0012 / boolean category): Disabled binding — typedInput managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-disabledBinding">Disabled</label><input type="text" id="node-input-disabledBinding"></div>
+    <div class="form-row"><label for="node-input-disabledBinding" data-i18n="ui-input.label.disabledBinding">Disabled</label><input type="text" id="node-input-disabledBinding"></div>
 </script>
-<script type="text/html" data-help-name="ui-input">
-    <p>Mountet ein einzeiliges Eingabefeld und bindet seinen Wert an den Client-State.</p>
-    <h4>Value (Lesen, P123)</h4>
-    <p>Bindbare Quelle des Feldwerts (Anzeige/Initialwert) — voller kanonischer Satz (ADR 0012):
-    Store, Query, Route-Param, Reactive, msg, JSONata, string, number, boolean, json, timestamp,
-    Flow, Global, Env. Ein bestehender <code>valuePath</code> wird automatisch als
-    <code>state</code>-Binding übernommen.</p>
-    <h4>Write To (Schreiben, P203 / ADR 0027)</h4>
-    <p>Ziel, in das die Runtime die Nutzeränderung schreibt — nur <b>schreibbare</b> Kinds:
-    <code>Store</code> (ein <code>ui-store</code> + optionaler ein-Ebenen-Sub-Pfad, per-client,
-    live SSE-Re-Render), <code>Flow</code>- oder <code>Global</code>-Kontext (server-seitig, ohne
-    per-client-Scope und ohne Auto-Re-Render). <code>Write Trigger</code> (<code>submit</code> =
-    Enter/Blur, Default; <code>change</code> = jede Eingabe) legt fest, wann geschrieben wird.
-    Ersetzt die alten, wirkungslosen Felder <code>Store ID</code>/<code>Store Path</code>: ein
-    Alt-Knoten wird beim Öffnen automatisch nach <code>writeTo=store</code> migriert.</p>
-    <h4>Disabled (P123)</h4>
-    <p>Bindbar über den Boolean-Zustand-Satz (ADR 0012): Store, Query, Route-Param, Reactive,
-    msg, JSONata, boolean, Flow, Global, Env. Ein Store-Binding deaktiviert das Feld live,
-    sobald der Wert truthy ist.</p>
-    <h4>Events</h4>
-    <p>Emittiert <code>{ event: "change", params: { value } }</code> bei jeder Eingabe und
-    <code>{ event: "submit", params: { value } }</code> bei Enter/Submit.</p>
-    <p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/input/ui-input.md">Ausführliche Doku</a></p>
-</script>
+<!-- P268 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/view/locales/{en-US,de}/ui-input.html; form-row labels carry
+     data-i18n keys resolved from nodes/view/locales/{en-US,de}/ui-input.json.
+     No inline data-help-name block here. -->

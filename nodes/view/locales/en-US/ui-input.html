@@ -1,0 +1,23 @@
+<script type="text/html" data-help-name="ui-input">
+<p>A single-line entry field (<code>text</code>/<code>email</code>/<code>number</code>)
+bound to client state in both directions: <b>Value</b> reads, <b>Write To</b> writes.</p>
+<h3>Key fields</h3>
+<ul>
+    <li><b>Label</b> — the field caption (bindable, required).</li>
+    <li><b>Value</b> — the READ half: what the field shows; any binding kind.</li>
+    <li><b>Write To</b> — the WRITE half (ADR 0027): <code>store</code>/<code>flow</code>/<code>global</code> only.</li>
+    <li><b>Write Trigger</b> — <code>submit</code> (Enter/blur, default), <code>change</code> (every keystroke), <code>none</code>.</li>
+    <li><b>Input Type</b> — <code>text</code>/<code>email</code>/<code>number</code>; <b>Variant</b> — <code>default</code>/<code>filled</code>/<code>outlined</code>.</li>
+</ul>
+<h3>Inputs</h3>
+<p>Has an input port. <code>msg.payload</code> (non-null) sets the field value;
+<code>msg.ui.patch</code> overwrites definition fields;
+<code>msg.ui.component.op</code> supports <code>show</code>/<code>hide</code>,
+<code>enable</code>/<code>disable</code>, <code>focus</code>, <code>reset</code>.
+Anything else passes through unchanged.</p>
+<h3>Outputs / Events</h3>
+<p><code>change</code> on every edit and <code>submit</code> on Enter, both with
+<code>msg.ui.params.value</code>. Events fire independently of the write-back.</p>
+<h3>Full docs</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/nodes/ui-input.md" target="_blank">docs/guide/nodes/ui-input.md</a></p>
+</script>

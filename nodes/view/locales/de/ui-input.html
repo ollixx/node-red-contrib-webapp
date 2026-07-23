@@ -1,0 +1,23 @@
+<script type="text/html" data-help-name="ui-input">
+<p>Ein einzeiliges Eingabefeld (<code>text</code>/<code>email</code>/<code>number</code>),
+zweiseitig an den Client-State gebunden: <b>Value</b> liest, <b>Write To</b> schreibt.</p>
+<h3>Wichtige Felder</h3>
+<ul>
+    <li><b>Label</b> — Beschriftung des Feldes (bindbar, Pflicht).</li>
+    <li><b>Value</b> — die LESE-Hälfte: was das Feld anzeigt; jede Binding-Art.</li>
+    <li><b>Write To</b> — die SCHREIB-Hälfte (ADR 0027): nur <code>store</code>/<code>flow</code>/<code>global</code>.</li>
+    <li><b>Write Trigger</b> — <code>submit</code> (Enter/Blur, Default), <code>change</code> (jeder Tastendruck), <code>none</code>.</li>
+    <li><b>Input Type</b> — <code>text</code>/<code>email</code>/<code>number</code>; <b>Variant</b> — <code>default</code>/<code>filled</code>/<code>outlined</code>.</li>
+</ul>
+<h3>Eingang</h3>
+<p>Hat einen Eingangs-Port. <code>msg.payload</code> (nicht null) setzt den Feldwert;
+<code>msg.ui.patch</code> überschreibt Definitionsfelder;
+<code>msg.ui.component.op</code> unterstützt <code>show</code>/<code>hide</code>,
+<code>enable</code>/<code>disable</code>, <code>focus</code>, <code>reset</code>.
+Alles andere wird unverändert durchgereicht.</p>
+<h3>Ausgänge / Events</h3>
+<p><code>change</code> bei jeder Änderung und <code>submit</code> bei Enter, beide mit
+<code>msg.ui.params.value</code>. Die Events feuern unabhängig vom Write-Back.</p>
+<h3>Vollständige Doku</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/de/nodes/ui-input.md" target="_blank">docs/guide/de/nodes/ui-input.md</a></p>
+</script>

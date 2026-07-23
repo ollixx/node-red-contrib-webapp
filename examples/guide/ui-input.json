@@ -1,0 +1,113 @@
+[
+    {
+        "id": "guide-ui-input",
+        "type": "tab",
+        "label": "Guide: ui-input",
+        "disabled": false,
+        "info": "User-guide example for ui-input (docs/guide/nodes/ui-input.md). Import, deploy, open /webapp/guideInput/ — a text field whose Value and Write To point at the same store sub-path, with a live preview text."
+    },
+    {
+        "id": "guideInput",
+        "type": "ui-app",
+        "name": "Input demo",
+        "uiId": "guideInput",
+        "root": "guideInput",
+        "title": "Input demo",
+        "layout": "app",
+        "z": "guide-ui-input",
+        "x": 120,
+        "y": 80,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "gInDraft",
+        "type": "ui-store",
+        "name": "Draft store",
+        "uiId": "gInDraft",
+        "app": "guideInput",
+        "statePath": "draft",
+        "initialValue": "{\"name\":\"Ada Lovelace\"}",
+        "z": "guide-ui-input",
+        "x": 120,
+        "y": 180,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "gInHeading",
+        "type": "ui-text",
+        "name": "Heading",
+        "uiId": "gInHeading",
+        "app": "guideInput",
+        "mount": "guideInput.content",
+        "text": "Two-way bound input (Value + Write To on draft.name):",
+        "order": "0",
+        "z": "guide-ui-input",
+        "x": 340,
+        "y": 60,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "gInField",
+        "type": "ui-input",
+        "name": "Name field",
+        "uiId": "gInField",
+        "app": "guideInput",
+        "mount": "guideInput.content",
+        "label": "Name",
+        "inputType": "text",
+        "value": {
+            "kind": "store",
+            "path": "gInDraft",
+            "subPath": {
+                "kind": "literal",
+                "value": "name"
+            }
+        },
+        "writeTo": {
+            "kind": "store",
+            "path": "gInDraft",
+            "subPath": {
+                "kind": "literal",
+                "value": "name"
+            }
+        },
+        "writeTrigger": "change",
+        "order": "1",
+        "z": "guide-ui-input",
+        "x": 340,
+        "y": 120,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "gInPreview",
+        "type": "ui-text",
+        "name": "Live preview",
+        "uiId": "gInPreview",
+        "app": "guideInput",
+        "mount": "guideInput.content",
+        "value": {
+            "kind": "store",
+            "path": "gInDraft",
+            "subPath": {
+                "kind": "literal",
+                "value": "name"
+            },
+            "fallback": "(type something)"
+        },
+        "order": "2",
+        "z": "guide-ui-input",
+        "x": 340,
+        "y": 200,
+        "wires": [
+            []
+        ]
+    }
+]
