@@ -2814,7 +2814,7 @@ function dispatchClientEvent(RED, appId, body, definitions) {
 
 // Builds the RenderSnapshot for an app + location + open dialog.
 // The HTML route, the SSE stream initial sync, and the /event response all use this.
-function buildAppSnapshot(appId, location, dialogId, definitions, clientId) {
+function buildAppSnapshot(appId, location, dialogId, definitions, clientId, user) {
     const modelResult = getAppModelResult(appId, definitions);
 
     if (!modelResult.success) {
@@ -2879,6 +2879,11 @@ function buildAppSnapshot(appId, location, dialogId, definitions, clientId) {
         state: effectiveState,
         queries,
         queryLifecycle,
+        // P261 (ADR 0041 §3): the requesting client's identity (established by
+        // the auth guard, or bound to the SSE connection for re-renders). Drives
+        // the `user` binding source; absent in mode "none" → `user` bindings
+        // resolve undefined.
+        user,
         // P115 (ADR 0010): a failed `reactive` expression never breaks the
         // snapshot; it is reported once per distinct error through the existing
         // error-forwarding/logging pipeline (ADR 0006 / P55–P56). The renderer
@@ -2938,8 +2943,11 @@ function buildAppSnapshot(appId, location, dialogId, definitions, clientId) {
     };
 }
 
-function renderAppPage(appId, location, dialogId, definitions) {
-    const built = buildAppSnapshot(appId, location, dialogId, definitions);
+function renderAppPage(appId, location, dialogId, definitions, user) {
+    // P261: the requesting user's identity (from the auth guard) flows into the
+    // server-side render so `user` bindings are correct on FIRST paint, before
+    // SSE hydration.
+    const built = buildAppSnapshot(appId, location, dialogId, definitions, undefined, user);
 
     if (!built.success) {
         const heading = built.status === 404 ? "Unknown route" : built.status === 500 ? "Missing layout" : "Incomplete app";
@@ -3741,7 +3749,7 @@ function getStreamSubscribers(appId) {
     return subscribers;
 }
 
-function addStreamClient(appId, clientId, res, location, loadId) {
+function addStreamClient(appId, clientId, res, location, loadId, user) {
     // P37: record the connect time so the redeploy broadcast can skip clients
     // that just connected (the deploy that triggered flows:started fired BEFORE
     // this client connected — reloading them immediately would be a false positive).
@@ -3756,7 +3764,12 @@ function addStreamClient(appId, clientId, res, location, loadId) {
         res.socket.on("error", noop);
     }
     const resolvedLocation = location || "/";
-    getStreamSubscribers(appId).set(clientId, { res, location: resolvedLocation, connectedAt: Date.now() });
+    // P261 (ADR 0041): the identity established by the auth guard AT CONNECTION
+    // TIME is bound to the SSE connection. Every later re-render for this client
+    // (store push, deploy push, dialog push) uses THIS identity — no per-event
+    // header re-read, and no way for one connection's identity to leak into
+    // another's re-render. Mode "none" → undefined (no identity).
+    getStreamSubscribers(appId).set(clientId, { res, location: resolvedLocation, connectedAt: Date.now(), user });
     // P86: emit clientConnected on the ui-app node if the event is declared.
     emitAppClientEvent(appId, "clientConnected", clientId);
     // P112: connect-based route lifecycle. Every arrival (deep-link, refresh,
@@ -3914,7 +3927,8 @@ function pushSnapshotToClients(appId, clientId, definitions) {
         : Array.from(subscribers.entries());
 
     for (const [targetClientId, entry] of targets) {
-        const built = buildAppSnapshot(appId, entry.location || "/", undefined, definitions, targetClientId);
+        // P261: re-render with the identity bound to THIS SSE connection.
+        const built = buildAppSnapshot(appId, entry.location || "/", undefined, definitions, targetClientId, entry.user);
         if (built.success) {
             writeStreamEvent(entry.res, "snapshot", { snapshot: built.snapshot });
         }
@@ -4077,7 +4091,7 @@ function pushDeployToClients(appId, definitions, options) {
             }
         }
 
-        const built = buildAppSnapshot(appId, entry.location || "/", undefined, definitions, targetClientId);
+        const built = buildAppSnapshot(appId, entry.location || "/", undefined, definitions, targetClientId, entry.user);
         if (built.success) {
             writeStreamEvent(entry.res, "deploy", {
                 snapshot: built.snapshot,
@@ -4147,7 +4161,8 @@ function pushSnapshotToTargets(appId, targets, definitions) {
     const defs = definitions || readDeployDefinitions(runtimeState.RED);
 
     for (const [targetClientId, entry] of targets) {
-        const built = buildAppSnapshot(appId, entry.location || "/", undefined, defs, targetClientId);
+        // P261: re-render with the identity bound to THIS SSE connection.
+        const built = buildAppSnapshot(appId, entry.location || "/", undefined, defs, targetClientId, entry.user);
         if (built.success) {
             writeStreamEvent(entry.res, "snapshot", { snapshot: built.snapshot });
         }
@@ -4723,7 +4738,7 @@ function registerEndpoints(RED) {
     registerAppEndpoint(RED, "get", "/webapp/:appId", (req, res) => {
         const location = req.query.location ? String(req.query.location) : "/";
         const dialogId = req.query.dialog ? String(req.query.dialog) : undefined;
-        const page = renderAppPage(req.params.appId, location, dialogId, readDeployDefinitions(RED));
+        const page = renderAppPage(req.params.appId, location, dialogId, readDeployDefinitions(RED), req.webappUser);
 
         if (!page) {
             res.status(404).send("Unknown app.");
@@ -4772,12 +4787,12 @@ function registerEndpoints(RED) {
         // Open the SSE comment line so proxies do not buffer the stream.
         res.write(":ok\n\n");
 
-        addStreamClient(appId, clientId, res, location, loadId);
+        addStreamClient(appId, clientId, res, location, loadId, req.webappUser);
 
         // Initial sync: push the current live snapshot for this client immediately.
         // Pass the initialDialogId so the first push matches the server-rendered HTML
         // (prevents the SSE hydration from closing a dialog opened via ?dialog=<id>).
-        const built = buildAppSnapshot(appId, location, initialDialogId, readDeployDefinitions(RED), clientId);
+        const built = buildAppSnapshot(appId, location, initialDialogId, readDeployDefinitions(RED), clientId, req.webappUser);
         if (built.success) {
             writeStreamEvent(res, "snapshot", { snapshot: built.snapshot });
         }
@@ -4807,7 +4822,7 @@ function registerEndpoints(RED) {
         }
 
         const location = body.location ? String(body.location) : "/";
-        const built = buildAppSnapshot(appId, location, undefined, definitions);
+        const built = buildAppSnapshot(appId, location, undefined, definitions, undefined, req.webappUser);
 
         if (!built.success) {
             res.status(built.status).json({ error: built.message });
@@ -4958,7 +4973,7 @@ function registerEndpoints(RED) {
         const definitions = readDeployDefinitions(RED);
         const appId = resolveCanonicalAppId(req.params.appId, definitions);
 
-        const built = buildAppSnapshot(appId, location, dialogId, definitions, clientId);
+        const built = buildAppSnapshot(appId, location, dialogId, definitions, clientId, req.webappUser);
         if (!built.success) {
             res.status(built.status).json({ error: built.message });
             return;
@@ -4974,7 +4989,7 @@ function registerEndpoints(RED) {
     registerAppEndpoint(RED, "get", "/webapp/:appId/*", (req, res) => {
         const suffix = req.params[0] ? `/${req.params[0]}` : "/";
         const dialogId = req.query.dialog ? String(req.query.dialog) : undefined;
-        const page = renderAppPage(req.params.appId, suffix, dialogId, readDeployDefinitions(RED));
+        const page = renderAppPage(req.params.appId, suffix, dialogId, readDeployDefinitions(RED), req.webappUser);
 
         if (!page) {
             res.status(404).send("Unknown app.");
