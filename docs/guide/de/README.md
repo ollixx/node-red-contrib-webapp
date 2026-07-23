@@ -56,3 +56,21 @@ Kurzfassung: Hilfe-Dateien liegen unter
 `data-help-name`-Script-Block), der Inline-Hilfeblock wird entfernt, die
 Editor-Sprache (User Settings → View → Language) wählt die Locale; Fallback
 exakt → Sprachpräfix → `en-US`.
+
+## i18n der Editor-Labels
+
+Die **verbindliche Anleitung** zur Label-Mechanik (P272, ADR 0042 §3 —
+Message-Kataloge, Key-Konvention, geteilter `webapp-common`-Namespace,
+Migrationsregeln, Guardrail) steht — bewiesen am Piloten `ui-divider` — im
+englischen [README](../README.md#how-editor-label-i18n-works-proven-mechanic--binding-for-p267p271).
+Kurzfassung: Label-Kataloge liegen unter
+`nodes/<cat>/locales/en-US/<node>.json` + `locales/de/<node>.json`
+(Namespace = Set-Id `node-red-contrib-webapp/<node>`); Formzeilen tragen
+`data-i18n="<node>.label.<feld>"` (Optionen:
+`<node>.option.<feld>.<wert>`, Platzhalter:
+`[placeholder]<node>.placeholder.<feld>`, N/A-Hinweise:
+`<node>.hints.<feld>` + `i18nNode` in den `BASE_FIELDS`); die geteilten
+editor-common-Strings laufen über `common.<bereich>.<key>` im
+Träger-Set `webapp-common` (`nodes/locales/<lang>/webapp-common.json`,
+Zugriff via `sharedI18n()`). Specs asserten en-US-Texte oder strukturelle
+Selektoren — nie deutsche Texte.
