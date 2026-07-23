@@ -58,14 +58,15 @@ beforeAll(() => {
     common = sandbox.WebappEditorCommon as EditorCommon;
 });
 
-// The 14 canonical global value kinds in their established order — the base set
+// The 15 canonical global value kinds in their established order — the base set
 // every value/display field offers regardless of scope (P182 gates the
 // scope-local item/index/prop kinds OUT of this base unless inside their
-// container).
+// container). P261 added `user` (trusted-header identity) after routeParam.
 const BASE_VALUE_SET = [
     "store",
     "query",
     "routeParam",
+    "user",
     "reactive",
     "msg",
     "jsonata",
@@ -80,10 +81,10 @@ const BASE_VALUE_SET = [
 ];
 
 describe("P113: canonical value-binding type set", () => {
-    it("value category (default) offers the 14 canonical global types in order — no scope-local kinds outside a scope (P182)", () => {
+    it("value category (default) offers the 15 canonical global types in order — no scope-local kinds outside a scope (P182)", () => {
         // P182: with no DOM/editor scope (the vm has no `$`/`RED`), the scope is
         // unknown → both-false → the scope-local item/index/prop kinds are gated
-        // OUT. The base set is exactly the 14 global kinds.
+        // OUT. The base set is exactly the 15 global kinds.
         const order = typeValues(common.valueBindingTypes());
         expect(order).toEqual(BASE_VALUE_SET);
     });
