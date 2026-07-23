@@ -1,0 +1,65 @@
+[
+    {
+        "id": "guide-ui-divider",
+        "type": "tab",
+        "label": "Guide: ui-divider",
+        "disabled": false,
+        "info": "User-guide example for ui-divider (docs/guide/nodes/ui-divider.md). Import, deploy, then open /webapp/guideDivider/ to see two text sections separated by a labelled divider."
+    },
+    {
+        "id": "guideDivider",
+        "type": "ui-app",
+        "name": "Divider demo",
+        "uiId": "guideDivider",
+        "root": "guideDivider",
+        "layout": "app",
+        "z": "guide-ui-divider",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gDivTextA",
+        "type": "ui-text",
+        "name": "Section A",
+        "uiId": "gDivTextA",
+        "app": "guideDivider",
+        "mount": "guideDivider.content",
+        "text": "Section A — content above the divider.",
+        "order": "1",
+        "z": "guide-ui-divider",
+        "x": 320,
+        "y": 60,
+        "wires": [[]]
+    },
+    {
+        "id": "gDivDivider",
+        "type": "ui-divider",
+        "name": "Divider",
+        "uiId": "gDivDivider",
+        "app": "guideDivider",
+        "mount": "guideDivider.content",
+        "orientation": "horizontal",
+        "label": { "kind": "literal", "value": "Or" },
+        "color": { "kind": "literal", "value": "#7b1fa2" },
+        "order": "2",
+        "z": "guide-ui-divider",
+        "x": 320,
+        "y": 100,
+        "wires": [[]]
+    },
+    {
+        "id": "gDivTextB",
+        "type": "ui-text",
+        "name": "Section B",
+        "uiId": "gDivTextB",
+        "app": "guideDivider",
+        "mount": "guideDivider.content",
+        "text": "Section B — content below the divider.",
+        "order": "3",
+        "z": "guide-ui-divider",
+        "x": 320,
+        "y": 140,
+        "wires": [[]]
+    }
+]
