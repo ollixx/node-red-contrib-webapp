@@ -3962,8 +3962,8 @@ function normalizeAppMode(status) {
 // Pure pass-through: normalise the mode token, drop blank optional strings,
 // return undefined when nothing is configured (absent = mode "none"). The
 // documented defaults (headers X-Forwarded-User/-Email/-Groups) are applied by
-// the future READER (P261), not here — the config stays exactly what the user
-// set. INERT until P261: no runtime endpoint consumes this yet.
+// the READER (resolveEffectiveAuth, P261), not here — the config stays exactly
+// what the user set. ENFORCED since P261 via appAuthGuard/registerAppEndpoint.
 function mapAuthConfig(auth) {
     if (!auth || typeof auth !== "object") {
         return undefined;
@@ -7164,8 +7164,8 @@ const runtimeNodeRegistry = {
             // convenient auto-update. `config.status` is honoured as a legacy alias.
             mode: normalizeAppMode(config.deployMode !== undefined ? config.deployMode : config.status),
             // P260 (ADR 0041 §2): pass the ONE auth object through unchanged
-            // (blank optional strings dropped). INERT until P261 — configured
-            // but not enforced; no runtime endpoint reads it yet.
+            // (blank optional strings dropped). ENFORCED since P261: the guard
+            // (appAuthGuard via registerAppEndpoint) reads it on every request.
             auth: mapAuthConfig(config.auth)
         }),
         options: {

@@ -18,7 +18,8 @@ import { NodeEditorPage } from "../../../helpers/node-editor-page";
  *   B. a value change through the real rows (mode switch + header edit)
  *      persists structurally.
  *
- * The auth field is INERT until P261 — this spec proves config persistence
+ * The auth field is ENFORCED since P261 (tests/e2e/auth/trusted-header.spec.ts
+ * covers the runtime behaviour) — this spec proves config persistence
  * only, deliberately no behaviour.
  */
 

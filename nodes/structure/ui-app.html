@@ -170,8 +170,8 @@
                 // P260 (ADR 0041 §2): auth config as ONE object (a future
                 // mode:"oidc" extends it). Defaults: mode "none"; header
                 // defaults X-Forwarded-User/-Email/-Groups (applied by the
-                // reader, blank here means "use default"). INERT until P261 —
-                // konfiguriert, noch nicht erzwungen. There is deliberately NO
+                // reader, blank here means "use default"). ENFORCED since P261
+                // (guard on all app endpoints). There is deliberately NO
                 // `#node-input-auth` DOM carrier: oneditprepare seeds the
                 // visible auth rows from this.auth and oneditsave writes the
                 // object back to this.auth directly, so Node-RED's field-copy
@@ -341,7 +341,7 @@
                 // Node-RED's post-oneditsave field-copy leaves this value
                 // alone). Blank optional fields are dropped — blank means "use
                 // the documented default" (X-Forwarded-User/-Email/-Groups).
-                // INERT until P261: configured, not enforced.
+                // ENFORCED since P261 (guard on all app endpoints).
                 const authMode = $("#node-ui-app-auth-mode").val() === "trusted-header" ? "trusted-header" : "none";
                 const authOut = { mode: authMode };
                 const headerUser = String($("#node-ui-app-auth-headerUser").val() || "").trim();
@@ -420,8 +420,8 @@
     <!-- P260 (ADR 0041 §2): auth config. ONE stored object (this.auth) — the
          rows below are seeded/serialised in oneditprepare/oneditsave; there is
          deliberately NO #node-input-auth carrier (ADR 0031 clobber class).
-         Detail rows only visible for mode trusted-header. INERT until P261:
-         konfiguriert, noch nicht erzwungen — Enforcement kommt mit P261. -->
+         Detail rows only visible for mode trusted-header. ENFORCED since
+         P261: guard on all app endpoints, identity as binding source `user`. -->
     <div class="form-row">
         <label for="node-ui-app-auth-mode">Auth</label>
         <select id="node-ui-app-auth-mode" style="width: 70%;">
@@ -449,7 +449,8 @@
         <label>&nbsp;</label>
         <span style="color: #777; font-size: 12px;">
             <i class="fa fa-info-circle"></i>
-            Konfiguriert, noch nicht erzwungen — Enforcement kommt mit P261.
+            Erzwingt die Identität auf allen App-Endpoints (401/Redirect).
+            Header sind nur hinter einem authentifizierenden Proxy vertrauenswürdig.
         </span>
     </div>
     <hr style="margin: 8px 0;">
@@ -482,7 +483,9 @@
 <script type="text/html" data-help-name="ui-app"><p>Root-Knoten einer deklarativen Web-App fuer Node-RED.</p>
 <p><b>Auth</b> (ADR 0041): <code>none</code> (Default) oder <code>trusted-header</code>
 (Identität aus Reverse-Proxy-Headern, Defaults <code>X-Forwarded-User</code>/<code>-Email</code>/<code>-Groups</code>).
-<b>Achtung:</b> das Feld ist derzeit <b>konfiguriert, noch nicht erzwungen — Enforcement kommt mit P261</b>.
-Bis dahin schützt allein der vorgelagerte Proxy (oauth2-proxy/Authelia/ForwardAuth); Details:
+<code>trusted-header</code> <b>erzwingt</b> die Identität auf allen App-Endpoints (fehlender Header: 401 bzw. Redirect)
+und macht sie als Binding-Quelle <code>user</code> (<code>user.name</code>, <code>user.groups</code>, …) verfügbar.
+<b>Achtung (Vertrauens-Grenze):</b> die Header sind nur vertrauenswürdig, wenn die App ausschließlich hinter dem
+authentifizierenden Proxy (oauth2-proxy/Authelia/ForwardAuth) erreichbar ist; Details:
 <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/concepts/auth.md" target="_blank">docs/nodes/concepts/auth.md</a>.</p>
 <p>Vollständige Doku: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/structure/ui-app.md" target="_blank">docs/nodes/structure/ui-app.md</a></p></script>

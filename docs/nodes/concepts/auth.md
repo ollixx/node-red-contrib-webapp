@@ -2,13 +2,12 @@
 
 > Konzept-Dokument zu [ADR 0041](../../adr/0041-auth-model-idp-agnostic-identity-trusted-header-first.md)
 > (IdP-agnostische Identität, trusted-header zuerst, deklarative Guards, keine
-> eigenen Credentials). Eingeführt mit **P260**.
->
-> **Stand P260: konfiguriert, noch nicht erzwungen — Enforcement kommt mit
-> P261.** Dieses Dokument beschreibt den Vertrag und die Enforcement-Fläche;
-> das `ui-app.auth`-Feld ist bereits konfigurierbar, aber **kein**
-> Runtime-Endpoint liest es heute. Bis P261 schützt allein der vorgelagerte
-> Reverse-Proxy (siehe [Tier-0-Betrieb](#tier-0-betrieb-hinter-einem-authentifizierenden-proxy)).
+> eigenen Credentials). Eingeführt mit **P260** (Contract + Konfiguration);
+> **erzwungen seit P261**: bei `auth.mode: "trusted-header"` läuft jede Anfrage
+> an jeden App-Endpoint durch die eine Auth-Guard-Middleware (401 bzw.
+> `redirect`), und die Identität ist als Binding-Quelle `user` in jeder
+> Wert-Bindung auflösbar. `mode: "none"` (Default) ist exakt das offene
+> Verhalten von vorher.
 
 ## Der `user`-Contract
 
@@ -45,42 +44,74 @@ ein künftiger Modus erweitert das Objekt, ohne die Feldliste zu fluten):
 | `redirect` | optional | — (401) | Ziel-URL für unauthentifizierte Requests statt einer nackten 401 (z. B. `/oauth2/sign_in`). |
 
 Leere optionale Felder bedeuten „dokumentierten Default verwenden"; die
-Defaults wendet der **Leser** der Konfiguration an (P261), nicht der Editor.
+Defaults wendet der **Leser** der Konfiguration an (seit P261:
+`resolveEffectiveAuth` in `nodes/webapp.js`), nicht der Editor.
 
 ## Enforcement-Matrix — die sieben Runtime-Endpoints
 
 Ein Guard nur auf der Seite wäre Theater: **alle sieben** `RED.httpNode`-Endpoints
-tragen App-Daten oder nehmen Kommandos an und müssen ab P261 durch **eine**
-gemeinsame Auth-Middleware laufen. Datei:Zeile verifiziert gegen
-`nodes/webapp.js` (Stand P260, 2026-07-23):
+tragen App-Daten oder nehmen Kommandos an und laufen seit P261 durch **eine**
+gemeinsame Auth-Middleware (`appAuthGuard`). Erzwungen wird das strukturell:
+jeder App-Endpoint registriert über **`registerAppEndpoint(RED, method, path,
+…handlers)`** (nodes/webapp.js, Z. 4688), das die Guard-Middleware
+**unbedingt** voranstellt — ein direkt via `RED.httpNode.get/post`
+registrierter Endpoint existiert nicht mehr. Datei:Zeile verifiziert gegen
+`nodes/webapp.js` (Stand P261, 2026-07-23):
 
 | Endpoint | Methode | Registrierung (`nodes/webapp.js`) | Enforcement |
 |---|---|---|---|
-| Page `/webapp/:appId` | GET | Zeile 4613 | muss Guard tragen (P261) |
-| `/webapp/:appId/stream` (SSE) | GET | Zeile 4631 | muss Guard tragen (P261) |
-| `/webapp/:appId/event` | POST | Zeile 4687 | muss Guard tragen (P261) |
-| `/webapp/:appId/dynamic-state` | POST | Zeile 4720 | muss Guard tragen (P261) |
-| `/webapp/:appId/asset/:id` | GET | Zeile 4739 | muss Guard tragen (P261) |
-| `/webapp/:appId/snapshot` | GET | Zeile 4844 | muss Guard tragen (P261) |
-| SPA-Fallback `/webapp/:appId/*` | GET | Zeile 4864 | muss Guard tragen (P261) |
+| Page `/webapp/:appId` | GET | Zeile 4738 | erzwungen via `registerAppEndpoint` |
+| `/webapp/:appId/stream` (SSE) | GET | Zeile 4756 | erzwungen via `registerAppEndpoint` |
+| `/webapp/:appId/event` | POST | Zeile 4812 | erzwungen via `registerAppEndpoint` |
+| `/webapp/:appId/dynamic-state` | POST | Zeile 4845 | erzwungen via `registerAppEndpoint` |
+| `/webapp/:appId/asset/:id` | GET | Zeile 4864 | erzwungen via `registerAppEndpoint` |
+| `/webapp/:appId/snapshot` | GET | Zeile 4969 | erzwungen via `registerAppEndpoint` |
+| SPA-Fallback `/webapp/:appId/*` | GET | Zeile 4989 | erzwungen via `registerAppEndpoint` |
 
 **Regel (nicht verhandelbar):** *Jeder künftige Runtime-Endpoint registriert
-durch die Auth-Middleware.* Ein neuer `RED.httpNode`-Handler, der an der
-Middleware vorbei registriert wird, ist ein Sicherheitsfehler — `/snapshot`
-allein liefert den kompletten App-Zustand aus.
+über `registerAppEndpoint` — nie direkt via `RED.httpNode`.* Ein daran vorbei
+registrierter Handler ist ein Sicherheitsfehler — `/snapshot` allein liefert
+den kompletten App-Zustand aus.
 
-Die Admin-Endpoints (`RED.httpAdmin`: `/webapp/icons/manifest` Z. 4579,
-`/webapp/apps` Z. 4583, `/webapp/:appId/model` Z. 4598, `/webapp/:appId/assets`
-GET Z. 4768 / POST Z. 4797) sind **nicht** Teil dieser Matrix — sie hängen am
+Die Guard-Semantik je Anfrage (`appAuthGuard`, Z. 4659): `mode: "none"` →
+durchlassen (exakt das bisherige Verhalten). `mode: "trusted-header"` →
+User-Header (konfigurierter Name, Default `X-Forwarded-User`) vorhanden ⇒
+`user`-Objekt in den Request-Kontext (Groups: kommasepariert, tolerant geparst
+— getrimmt, leere Einträge verworfen); fehlend/leer ⇒ **401**, bzw. **302** auf
+`auth.redirect`, wenn gesetzt. Bei einer SSE-Verbindung prüft die Guard **beim
+Verbindungsaufbau**; die Identität wird an die Verbindung gebunden — jedes
+spätere Re-Render dieses Clients (Store-Push, Deploy-Push) nutzt genau diese
+Identität, ohne die Header je Event neu zu lesen und ohne Leck zwischen
+Verbindungen.
+
+Die Admin-Endpoints (`RED.httpAdmin`: `/webapp/icons/manifest` Z. 4704,
+`/webapp/apps` Z. 4708, `/webapp/:appId/model` Z. 4723, `/webapp/:appId/assets`
+GET Z. 4893 / POST Z. 4922) sind **nicht** Teil dieser Matrix — sie hängen am
 Editor und sind über Node-REDs `adminAuth` abgedeckt (siehe
 [Abgrenzungen](#abgrenzungen)).
 
+## `user` als Binding-Quelle
+
+Die Identität ist als Binding-Quelle `user` (typedInput-Typ „User") in jeder
+Wert-Bindung auflösbar — wie `state`/`routeParam` (ADR 0041 §3, ADR 0012):
+
+| Bindung | liefert |
+|---|---|
+| `user.id` | den stabilen Identifikator (Wert des User-Headers) |
+| `user.name` | den Anzeigenamen (bei trusted-header identisch mit `user.id` — die Proxy-Header tragen keinen separaten Anzeigenamen) |
+| `user.email` | die E-Mail (oder `undefined` → Fallback) |
+| `user.groups` | das `string[]` — auch strukturell nutzbar; `user.groups.0` liest einen Eintrag |
+
+Aufgelöst wird im Renderer aus dem Request- bzw. SSE-Verbindungs-Kontext; bei
+`mode: "none"` (keine Identität) löst jede `user`-Bindung `undefined` auf (→
+Fallback). Vollständiges Binding-Vokabular: [stores.md](stores.md).
+
 ## Tier-0-Betrieb: hinter einem authentifizierenden Proxy
 
-Sofort nutzbar — ganz ohne Framework-Enforcement: die App ausschließlich hinter
-einem authentifizierenden Reverse-Proxy erreichbar machen. Der Proxy erzwingt
-das Login und setzt die Identitäts-Header; ab P261 liest das Framework sie und
-erzwingt zusätzlich selbst.
+Die Betriebs-Grundlage: die App ausschließlich hinter einem
+authentifizierenden Reverse-Proxy erreichbar machen. Der Proxy erzwingt das
+Login und setzt die Identitäts-Header; das Framework (seit P261) liest sie und
+erzwingt zusätzlich selbst — `auth.mode: "trusted-header"` am `ui-app`.
 
 > **Warnung — Header sind nur hinter dem Proxy vertrauenswürdig.** Die
 > `X-Forwarded-*`-Header kann jeder Client selbst setzen. Sie sind **nur** dann
@@ -88,7 +119,18 @@ erzwingt zusätzlich selbst.
 > Proxy erreichbar ist (Firewall/Netzwerk-Policy: Node-RED-Port nicht direkt
 > exponiert) und der Proxy einkommende `X-Forwarded-*`-Header von außen
 > **verwirft/überschreibt**. Ohne diese Deployment-Voraussetzung ist
-> `trusted-header` wertlos.
+> `trusted-header` wertlos: die Guard prüft die **Anwesenheit** der Header —
+> ihre **Vertrauenswürdigkeit** erzwingt allein das Deployment.
+
+**Optionale Härtung (`trustProxy`, dokumentierte Option):** Als zusätzlicher
+Gürtel zur Hose kann die Annahme „Header kommen nur vom Proxy" auch
+Node-RED-seitig geprüft werden — z. B. in `settings.js` via
+`httpNodeMiddleware` nur Requests akzeptieren, deren `req.socket.remoteAddress`
+die konfigurierte Upstream-Adresse des Proxys ist (bzw. Express'
+`trust proxy`-Einstellung entsprechend setzen). Ein eigenes
+`auth.trustProxy`-Feld am `ui-app` ist bewusst **nicht** eingeführt: die
+Upstream-Quelle ist eine Deployment-Eigenschaft der Node-RED-Instanz, keine
+Eigenschaft einer einzelnen App — die Prüfung gehört in die Instanz-Settings.
 
 ### Beispiel: oauth2-proxy
 
@@ -137,7 +179,8 @@ Authelia/ForwardAuth setzt `Remote-User`/`-Email`/`-Groups` statt der
 
 Node-RED bietet in `settings.js` den Haken `httpNodeMiddleware`, der vor
 **allen** `RED.httpNode`-Routen läuft — also auch vor allen sieben Endpoints
-der Matrix. Wer heute (vor P261) hart absichern will, kann dort selbst prüfen:
+der Matrix. Er bleibt als Instanz-weite Zusatzschicht nützlich (z. B. für die
+`trustProxy`-Härtung oben oder Nicht-Webapp-HTTP-Nodes):
 
 ```js
 // settings.js
@@ -149,8 +192,10 @@ httpNodeMiddleware: function (req, res, next) {
 }
 ```
 
-Das ist der Node-RED-native Vorläufer genau der Middleware, die P261 als
-Framework-Bestandteil (pro App, `ui-app.auth`-gesteuert) einzieht.
+Das ist der Node-RED-native Vorläufer der Middleware, die P261 als
+Framework-Bestandteil (pro App, `ui-app.auth`-gesteuert) eingezogen hat — die
+Framework-Guard ersetzt ihn für die Webapp-Endpoints, der Haken bleibt für
+Instanz-weite Zusatzprüfungen.
 
 ## Abgrenzungen
 
