@@ -3944,6 +3944,26 @@ function normalizeAppMode(status) {
     return "development";
 }
 
+// P260 (ADR 0041 §2): map the editor's `auth` object onto the schema shape.
+// Pure pass-through: normalise the mode token, drop blank optional strings,
+// return undefined when nothing is configured (absent = mode "none"). The
+// documented defaults (headers X-Forwarded-User/-Email/-Groups) are applied by
+// the future READER (P261), not here — the config stays exactly what the user
+// set. INERT until P261: no runtime endpoint consumes this yet.
+function mapAuthConfig(auth) {
+    if (!auth || typeof auth !== "object") {
+        return undefined;
+    }
+    const mode = String(auth.mode || "").trim() === "trusted-header" ? "trusted-header" : "none";
+    return {
+        mode,
+        headerUser: blankToUndefined(auth.headerUser),
+        headerEmail: blankToUndefined(auth.headerEmail),
+        headerGroups: blankToUndefined(auth.headerGroups),
+        redirect: blankToUndefined(auth.redirect)
+    };
+}
+
 // P106: resolve an app's deploy mode from a set of definitions (the ui-app's
 // `mode`, already normalised by mapConfig, with a defensive re-normalise so a
 // raw `status` on the definition is honoured too).
@@ -7017,7 +7037,11 @@ const runtimeNodeRegistry = {
             // Entwicklung / Produktion labels and the normalised development /
             // production tokens; default to "development" so existing apps keep the
             // convenient auto-update. `config.status` is honoured as a legacy alias.
-            mode: normalizeAppMode(config.deployMode !== undefined ? config.deployMode : config.status)
+            mode: normalizeAppMode(config.deployMode !== undefined ? config.deployMode : config.status),
+            // P260 (ADR 0041 §2): pass the ONE auth object through unchanged
+            // (blank optional strings dropped). INERT until P261 — configured
+            // but not enforced; no runtime endpoint reads it yet.
+            auth: mapAuthConfig(config.auth)
         }),
         options: {
             // P59 / ADR 0007 §4: ui-app owns the app-global verbs navigate / reset.

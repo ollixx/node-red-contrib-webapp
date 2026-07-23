@@ -50,6 +50,12 @@ Node-Picker-Dialog, typedInput, Token-Editor, Event-Checkboxen).
 |---|---|---|---|---|
 | `forwardErrorsToClient` / `forwardErrorMinSeverity` | „Logging" (+ Info-Icon-Dialog) | **eine** SelectBox: `aus` / `debug` / `info` / `warn` / `error` | optional | Steuert die opt-in Weiterleitung von **Framework-Fehlern** des Backends an verbundene Clients. `aus` (Default) = keine Weiterleitung. Eine Severity schaltet die Weiterleitung ein und setzt zugleich die Mindeststufe. Weitergeleitete Meldungen werden redigiert. Mapping und Sicherheitsbegründung: [logs-errors.md](../concepts/logs-errors.md). |
 
+### Gruppe „Auth"
+
+| Feld | Label | Editor-Typ | Pflicht | Beschreibung |
+|---|---|---|---|---|
+| `auth` | „Auth" (+ Detail-Zeilen) | SelectBox `none` / `trusted-header`; bei `trusted-header` zusätzlich die Detail-Zeilen „User-Header" / „Email-Header" / „Groups-Header" / „Redirect" | optional | **Ein** Objekt `{ mode, headerUser?, headerEmail?, headerGroups?, redirect? }` (ADR 0041 §2; ein künftiges `mode: "oidc"` erweitert es). Defaults: `mode: none`; Header `X-Forwarded-User`/`-Email`/`-Groups`; leerer `redirect` = 401. **Bis P261 wirkungslos** — konfiguriert, noch nicht erzwungen (siehe „Besonderheiten"); Vertrag, Enforcement-Matrix und Tier-0-Betrieb: [auth.md](../concepts/auth.md). |
+
 ### Gruppe „Medien"
 
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
@@ -148,6 +154,14 @@ bleibt ein optionaler späterer Ausbauschritt.
   `ui-route`-Routing verhalten sich gleich (gemeinsamer Pfad).
 - **Mehrere Apps** pro Node-RED-Instanz sind zulässig; jede hat eine eindeutige
   `root`.
+- **`auth` ist bis P261 wirkungslos (Inert-Feld-Disclaimer).** Das `auth`-Feld
+  (ADR 0041, P260) ist **konfiguriert, noch nicht erzwungen — Enforcement kommt
+  mit P261**. Kein Runtime-Endpoint liest es heute; bis P261 schützt allein der
+  vorgelagerte Reverse-Proxy (Tier-0-Betrieb, siehe
+  [auth.md](../concepts/auth.md)). Die Editor-Inline-Hilfe und die Auth-Zeilen
+  im Editor tragen denselben Hinweis — ein Feld, das Verhalten verspricht, ohne
+  es zu liefern, ist eine etablierte Bug-Klasse und wird hier explizit
+  ausgeschlossen.
 
 ## Referenzen
 
@@ -157,8 +171,13 @@ bleibt ein optionaler späterer Ausbauschritt.
 - [logs-errors.md](../concepts/logs-errors.md) — Logging/Fehler-Weiterleitung
 - [events.md](../concepts/events.md) — Event-Format und Output-Ports
 - [multi-user.md](../concepts/multi-user.md) — `clientId`-Routing
+- [auth.md](../concepts/auth.md) — `user`-Contract, Enforcement-Matrix, Tier-0-Betrieb (ADR 0041)
 - [`ui-route`](ui-route.md) — Unterseiten
 
 ## Offene Punkte
 
-- App-weite Metadaten wie Authentifizierung/Autorisierung (z. B. OAuth2/OIDC) sind noch nicht modelliert.
+- Authentifizierung/Autorisierung ist modelliert — Entscheidung in
+  [ADR 0041](../../adr/0041-auth-model-idp-agnostic-identity-trusted-header-first.md)
+  (IdP-agnostische Identität, trusted-header zuerst, deklarative Guards), Konzept
+  in [auth.md](../concepts/auth.md); Umsetzung gestaffelt über das auth-Epic
+  (P260 Contract/Konzept, P261 Enforcement, P262 Guards).

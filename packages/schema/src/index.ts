@@ -64,7 +64,9 @@ export {
     storeOperationSchema,
     storeDefinitionSchema,
     uiEventMessageSchema,
-    uiStoreMessageSchema
+    uiStoreMessageSchema,
+    // P260 (ADR 0041 §1): the IdP-agnostic user-identity contract.
+    userIdentitySchema
 } from "./contracts";
 export {
     collectMissingStandardLayouts,
@@ -120,7 +122,9 @@ export type {
     StoreOperation,
     StoreDefinition,
     UiEventMessage,
-    UiStoreMessage
+    UiStoreMessage,
+    // P260 (ADR 0041 §1): the IdP-agnostic user-identity contract.
+    UserIdentity
 } from "./contracts";
 export type { StandardLayoutPresetId } from "./layout-presets";
 

@@ -224,7 +224,22 @@ export const uiAppNodeDefinitionSchema = z.object({
     // user's manual reload adopts the new model, so no running user state is lost.
     // The editor field is labelled status (Entwicklung / Produktion); mapConfig
     // normalises it to this enum and defaults to "development".
-    mode: z.enum(["development", "production"]).optional()
+    mode: z.enum(["development", "production"]).optional(),
+    // P260 (ADR 0041 §2): auth configuration as ONE object (a future
+    // mode:"oidc" extends it without flooding the ui-app field list).
+    // Defaults when absent: mode "none"; header defaults X-Forwarded-User /
+    // X-Forwarded-Email / X-Forwarded-Groups; redirect none.
+    // INERT until P261: configurable but NOT enforced — no runtime code reads
+    // this yet (see docs/nodes/concepts/auth.md).
+    auth: z
+        .object({
+            mode: z.enum(["none", "trusted-header"]),
+            headerUser: z.string().optional(),
+            headerEmail: z.string().optional(),
+            headerGroups: z.string().optional(),
+            redirect: z.string().optional()
+        })
+        .optional()
 });
 
 export type UiAppNodeDefinition = z.infer<typeof uiAppNodeDefinitionSchema>;

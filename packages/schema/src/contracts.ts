@@ -28,6 +28,26 @@ export const routeNodePathSchema = routePathSchema.refine((path) => path !== "/"
 });
 
 /**
+ * P260 (ADR 0041 §1): the ONE internal user-identity contract, IdP-agnostic.
+ * Every auth source (trusted proxy headers today; OIDC later) maps into this
+ * object — flows, bindings, and guards only ever see `user`, never tokens,
+ * headers, or provider specifics. `groups` defaults to `[]` so consumers can
+ * always iterate it without a presence check.
+ *
+ * NOTE (inert until P261): P260 ships the contract + the `ui-app.auth` config
+ * only; no runtime code produces or enforces a UserIdentity yet. See
+ * docs/nodes/concepts/auth.md.
+ */
+export const userIdentitySchema = z.object({
+    id: z.string().min(1, "user.id must not be empty."),
+    name: z.string().optional(),
+    email: z.string().optional(),
+    groups: z.array(z.string()).default([])
+});
+
+export type UserIdentity = z.infer<typeof userIdentitySchema>;
+
+/**
  * Binding kinds that require a path (i.e. they are not literal).
  *
  * `store` is path-bearing too: its `path` holds the referenced ui-store node's
