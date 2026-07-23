@@ -1,0 +1,123 @@
+[
+    {
+        "id": "guide-bindings-state",
+        "type": "tab",
+        "label": "Guide: Bindings & State",
+        "disabled": false,
+        "info": "Example for the Bindings & State guide (docs/guide/guides/bindings-state.md). Import, deploy, then open /webapp/bindingsApp/ — a text bound to a store slice, buttons that write the store, and a user binding with fallback."
+    },
+    {
+        "id": "bindingsApp",
+        "type": "ui-app",
+        "name": "Bindings demo",
+        "uiId": "bindingsApp",
+        "root": "bindingsApp",
+        "title": "Bindings demo",
+        "layout": "app",
+        "z": "guide-bindings-state",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gbsStore",
+        "type": "ui-store",
+        "name": "Greeting store",
+        "uiId": "gbsStore",
+        "app": "bindingsApp",
+        "statePath": "greeting",
+        "initialValue": "{\"name\":\"World\"}",
+        "z": "guide-bindings-state",
+        "x": 120,
+        "y": 160,
+        "wires": [[]]
+    },
+    {
+        "id": "gbsBoundText",
+        "type": "ui-text",
+        "name": "Bound greeting",
+        "uiId": "gbsBoundText",
+        "app": "bindingsApp",
+        "mount": "bindingsApp.content",
+        "value": {
+            "kind": "store",
+            "path": "gbsStore",
+            "subPath": { "kind": "literal", "value": "name" }
+        },
+        "order": "1",
+        "z": "guide-bindings-state",
+        "x": 320,
+        "y": 60,
+        "wires": [[]]
+    },
+    {
+        "id": "gbsUserText",
+        "type": "ui-text",
+        "name": "Who is logged in",
+        "uiId": "gbsUserText",
+        "app": "bindingsApp",
+        "mount": "bindingsApp.content",
+        "value": {
+            "kind": "user",
+            "path": "name",
+            "fallback": "guest (no identity source configured)"
+        },
+        "order": "2",
+        "z": "guide-bindings-state",
+        "x": 320,
+        "y": 120,
+        "wires": [[]]
+    },
+    {
+        "id": "gbsGreetButton",
+        "type": "ui-button",
+        "name": "Greet Ada",
+        "uiId": "gbsGreetButton",
+        "app": "bindingsApp",
+        "mount": "bindingsApp.content",
+        "label": "Greet Ada",
+        "order": "3",
+        "z": "guide-bindings-state",
+        "x": 320,
+        "y": 200,
+        "wires": [["gbsSetName"]]
+    },
+    {
+        "id": "gbsSetName",
+        "type": "function",
+        "name": "set name = Ada",
+        "func": "msg.ui = { store: { id: \"gbsStore\", op: \"set\", path: \"name\", value: \"Ada\" } };\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "z": "guide-bindings-state",
+        "x": 540,
+        "y": 200,
+        "wires": [["gbsStore"]]
+    },
+    {
+        "id": "gbsResetButton",
+        "type": "ui-button",
+        "name": "Reset greeting",
+        "uiId": "gbsResetButton",
+        "app": "bindingsApp",
+        "mount": "bindingsApp.content",
+        "label": "Reset",
+        "order": "4",
+        "z": "guide-bindings-state",
+        "x": 320,
+        "y": 260,
+        "wires": [["gbsReset"]]
+    },
+    {
+        "id": "gbsReset",
+        "type": "function",
+        "name": "reset store",
+        "func": "msg.ui = { store: { id: \"gbsStore\", op: \"reset\" } };\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "z": "guide-bindings-state",
+        "x": 540,
+        "y": 260,
+        "wires": [["gbsStore"]]
+    }
+]
