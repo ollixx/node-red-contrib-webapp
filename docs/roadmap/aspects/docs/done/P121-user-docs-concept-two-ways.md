@@ -2,8 +2,7 @@
 id: P121
 title: "Konzept Nutzer-Dokumentation: Wo und Wie werden die zwei Wege (Wire vs. Referenz) mit Beispielen dokumentiert?"
 epic: aspects/docs
-status: deferred
-deferred_reason: "Owner-Entscheidung zu Ort und Form der Nutzer-Doku nötig (In-Editor-Hilfe? Doku-Site? Beispiel-Galerie/Import-Flows?) — erst Konzept mit Owner abstimmen, dann Pakete schneiden."
+status: done
 dependencies: [P119]
 ---
 # P121 — Konzept: Nutzer-Doku der zwei Wege (geparkt)
@@ -37,3 +36,13 @@ Referenz: wann welcher, wie kombiniert, Grenzen wie Link-Nodes/Verzweigungen).
 
 Bis dahin tragen die Inline-Hilfen der Knoten (P89-Standard) und die
 Spec-Doku die Last.
+
+
+## Result
+
+**Aufgelöst 2026-07-22** durch **[ADR 0042](../../../../adr/0042-user-docs-architecture-guide-tree-i18n-help-en-first-de.md)**
+(Owner-Entscheid: docs/guide/ im Repo, EN-first via Node-RED-i18n + DE-Übersetzung)
+und das Doku-Programm **P265–P271** (Framework/i18n-Pilot, Intro+Getting-Started+
+8 Themen-Guides, 5 Node-Referenz-Batches über alle 44 Knoten). Das Kernthema
+dieses Trackers — „die zwei Wege (Wire vs. Referenz) dokumentieren" — ist der
+Actions-&-Events-Guide in P266.

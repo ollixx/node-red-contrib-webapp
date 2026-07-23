@@ -27,6 +27,13 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
+- **P265** — aspects/docs — **User-Docs-Fundament** (ADR 0042): docs/guide/-Skelett + Templates, i18n-Hilfe-Mechanik am Piloten (ui-divider) bewiesen, Smoke-Harness, check:guide — [P265](aspects/docs/P265-userdocs-framework-i18n-pilot.md)
+- **P266** — aspects/docs — **Intro + Getting Started + 8 Themen-Guides** (EN+DE, je Import-Beispiel; absorbiert „Wire vs. Referenz") — [P266](aspects/docs/P266-intro-getting-started-guides.md)
+- **P267** — aspects/docs — Node-Referenz-Batch **backbone** (11: structure/state/behavior/components) — [P267](aspects/docs/P267-node-reference-batch-backbone.md)
+- **P268** — aspects/docs — Node-Referenz-Batch **input** (9 Formular-Knoten) — [P268](aspects/docs/P268-node-reference-batch-input.md)
+- **P269** — aspects/docs — Node-Referenz-Batch **display** (8; divider = Pilot) — [P269](aspects/docs/P269-node-reference-batch-display.md)
+- **P270** — aspects/docs — Node-Referenz-Batch **feedback** (7) — [P270](aspects/docs/P270-node-reference-batch-feedback.md)
+- **P271** — aspects/docs — Node-Referenz-Batch **navigation** (8) — [P271](aspects/docs/P271-node-reference-batch-navigation.md)
 
 ## Deferred (parked, not abandoned)
 
@@ -36,7 +43,6 @@ Reason in each package's `deferred_reason`. Picked up once the blocker clears.
 - **P101** — nodes/ui-avatar — size/variant Backend-Warnung + Render-Garantie — *hängt an P102 + zweitem Backend* — [P101](nodes/ui-avatar/deferred/P101-size-variant-backend-warning.md)
 - **P105** — aspects/rendering — nicht-darstellbarer Wert: Achtung-Icon + Alert/Dialog statt nacktem `"?"` — *Stufe 2 über P104; re-scopet unter ADR 0034 → P220* — [P105](aspects/rendering/deferred/P105-invalid-value-warning-affordance.md)
 - **P220** — aspects/rendering — `onMissing` Folgeverhalten: `errorPort` + `throw`/Catch + Fallback-Slot + P105-Affordance — *ADR 0034; baut auf P219; absorbiert Catch-Follow-up + P105* — [P220](aspects/rendering/deferred/P220-onmissing-errorport-throw-and-affordance.md)
-- **P121** — aspects/docs — Konzept Nutzer-Doku: Wo/Wie die zwei Wege (Wire vs. Referenz) mit Beispielen dokumentieren — *Owner-Entscheidung zu Ort + Form nötig* — [P121](aspects/docs/deferred/P121-user-docs-concept-two-ways.md)
 - **P143** — aspects/editor — Konzept: Enums dynamisch bindbar (Pro-Feld-typedInput mit Enum-Default statt globalem Advanced-Mode) — *ADR + Owner-Entscheidung nötig; Empfehlung steht* — [P143](aspects/editor/deferred/P143-enums-dynamic-binding-vs-advanced-mode.md)
 - **P152** — nodes/ui-empty-state — Redesign: Container mit Slot(s) + visible-Binding (statt fester icon/title/message/action-Felder) — *Vertragswechsel; ADR + Restfragen nötig; Richtung steht* — [P152](nodes/ui-empty-state/deferred/P152-empty-state-as-container-with-visible-binding.md)
 - **P162** — nodes/ui-event — Konzept: referenzbasierter lokaler Tap der App/Route-Lifecycle-Events (onEnter/onLeave) neben dem Consumer — *neuer Knoten + Vertrag; ADR-würdig (Scope/Events/Output-Form); löst Lange-Leitung aus ADR 0016* — [P162](nodes/ui-event/deferred/P162-ui-event-local-lifecycle-tap.md)
@@ -90,7 +96,7 @@ open the folder for the full history.
 | aspects/test-infra | 28 |
 | aspects/node-conformance | 27 |
 | aspects/misc | 16 |
-| aspects/docs | 1 |
+| aspects/docs | 2 |
 | aspects/runtime | 9 |
 | aspects/state | 9 |
 | aspects/auth | 3 |
@@ -101,4 +107,4 @@ open the folder for the full history.
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 261 done, 0 open, 11 deferred.**
+**Total: 262 done, 7 open, 10 deferred.**
