@@ -121,10 +121,14 @@ test.describe("ui-select (P44 + P124)", () => {
 
         const webapp = new WebappPage(page, "selValApp1");
         await webapp.navigate("/");
-        // The sl-select should have the initial value "de" set.
+        // The sl-select should have the initial value "de" set. Poll the property:
+        // `toBeVisible` can pass before the Shoelace upgrade initialises `.value`
+        // from the attribute, so a one-shot read raced under full-suite load
+        // (observed 2026-07-23: "" !== "de" at test #744, green in isolation).
         await expect(page.locator("sl-select")).toBeVisible();
-        const val = await page.locator("sl-select").evaluate((el: HTMLElement & { value: string }) => el.value);
-        expect(val).toBe("de");
+        await expect.poll(async () =>
+            page.locator("sl-select").evaluate((el: HTMLElement & { value: string }) => el.value)
+        , { timeout: 5000 }).toBe("de");
     });
 
     test("P124: valuePath migration — legacy valuePath config resolves value as state binding", async ({ page, request }) => {
