@@ -1,0 +1,15 @@
+{
+    "ui-route": {
+        "label": {
+            "app": "App",
+            "path": "Path",
+            "title": "Title",
+            "layout": "Parent Layout",
+            "requiresGroup": "Groups",
+            "events": "Events"
+        },
+        "placeholder": {
+            "requiresGroup": "e.g. admins, sales (empty = auth only)"
+        }
+    }
+}

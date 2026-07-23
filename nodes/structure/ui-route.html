@@ -131,12 +131,12 @@
     })();
 </script>
 <script type="text/html" data-template-name="ui-route">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-app">App</label><select id="node-input-app"></select></div>
+    <div class="form-row"><label for="node-input-app" data-i18n="ui-route.label.app">App</label><select id="node-input-app"></select></div>
     <!-- P89 (a): path field with info button (analog ui-app logging info button) -->
     <div class="form-row">
-        <label for="node-input-path">Pfad</label>
+        <label for="node-input-path" data-i18n="ui-route.label.path">Pfad</label>
         <input type="text" id="node-input-path" style="width: calc(70% - 30px);">
         <button type="button" id="node-ui-route-path-info-btn"
                 class="red-ui-button"
@@ -146,17 +146,17 @@
         </button>
     </div>
     <!-- P89 (b): title as typedInput binding (all types) -->
-    <div class="form-row"><label for="node-input-titleBinding">Titel</label><input type="text" id="node-input-titleBinding"></div>
+    <div class="form-row"><label for="node-input-titleBinding" data-i18n="ui-route.label.title">Titel</label><input type="text" id="node-input-titleBinding"></div>
     <input type="hidden" id="node-input-layout">
-    <div class="form-row"><label for="node-input-layout-preset">Parent Layout</label><select id="node-input-layout-preset"></select></div>
+    <div class="form-row"><label for="node-input-layout-preset" data-i18n="ui-route.label.layout">Parent Layout</label><select id="node-input-layout-preset"></select></div>
     <!-- P262: authz guard - comma-separated group names (ANY-of, server-enforced) -->
     <div class="form-row">
-        <label for="node-input-requiresGroup">Gruppen</label>
-        <input type="text" id="node-input-requiresGroup" placeholder="z.B. admins, sales (leer = nur Authentifizierung)">
+        <label for="node-input-requiresGroup" data-i18n="ui-route.label.requiresGroup">Gruppen</label>
+        <input type="text" id="node-input-requiresGroup" placeholder="z.B. admins, sales (leer = nur Authentifizierung)" data-i18n="[placeholder]ui-route.placeholder.requiresGroup">
     </div>
     <input type="hidden" id="node-input-events">
     <input type="hidden" id="node-input-outputs">
-    <div class="form-row"><label>Events</label></div>
+    <div class="form-row"><label data-i18n="ui-route.label.events">Events</label></div>
     <div id="node-input-events-container"></div>
 </script>
 <!-- P89 (a): path info dialog container - lives outside the form so jQuery UI dialog can move it to <body> -->
@@ -171,27 +171,7 @@
     <p>Aufgel&ouml;ste Parameter stehen als <em>routeParam</em>-Bindings f&uuml;r alle gemounteten Knoten bereit.</p>
     <p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/structure/ui-route.md" target="_blank" rel="noopener">Vollst&auml;ndige Dokumentation &rarr;</a></p>
 </div>
-<script type="text/html" data-help-name="ui-route">
-<p>Definiert eine Unterseite der App: eine URL-Route mit eigenem Layout.</p>
-<h3>Pfad-Regeln</h3>
-<ul>
-  <li>Muss mit <code>/</code> beginnen, z.&nbsp;B. <code>/customers</code></li>
-  <li>URL-Parameter mit Doppelpunkt: <code>/customers/:id</code></li>
-  <li>Darf <strong>nicht</strong> <code>/</code> sein &mdash; die Root-Route geh&ouml;rt der <code>ui-app</code></li>
-  <li>Muss je App eindeutig sein</li>
-</ul>
-<h3>Titel-Bindung</h3>
-<p>Der Titel ist vollst&auml;ndig bindbar (wie ui-text und ui-alert): literal/state/query/routeParam/msg/flow/global/jsonata/env sowie <b>Store</b>.</p>
-<ul>
-  <li><b>Text (literal)</b> &mdash; statischer Titel, erscheint im Browser-Tab.</li>
-  <li><b>State/Store/msg/&hellip;</b> &mdash; dynamisch bindbar; Browser-Tab-Titel zeigt die ID als Fallback, wenn der Binding-Wert zur Render-Zeit unbekannt ist.</li>
-</ul>
-<h3>Gruppen (Authz-Guard, P262)</h3>
-<p>Kommaseparierte Gruppennamen. Leer &rArr; nur Authentifizierung n&ouml;tig. Gesetzt &rArr; der User braucht <b>mindestens eine</b> der Gruppen (<code>user.groups</code>, ADR 0041). Server-seitig erzwungen: Page-Render &rarr; 403, <code>/snapshot</code> ohne die Route, Navigation abgewiesen, <code>/event</code> abgelehnt. <em>visibleIf ist UX, der Guard ist Sicherheit.</em></p>
-<h3>Events</h3>
-<ul>
-  <li><b>onEnter</b> &mdash; wird beim Betreten der Route ausgel&ouml;st (z.&nbsp;B. Daten laden).</li>
-  <li><b>onLeave</b> &mdash; wird beim Verlassen der Route ausgel&ouml;st (z.&nbsp;B. Zustand zur&uuml;cksetzen).</li>
-</ul>
-<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/structure/ui-route.md" target="_blank" rel="noopener">Vollst&auml;ndige Dokumentation &rarr;</a></p>
-</script>
+<!-- P267 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/structure/locales/{en-US,de}/ui-route.html; form-row labels carry
+     data-i18n keys resolved from nodes/structure/locales/{en-US,de}/ui-route.json.
+     No inline data-help-name block here. -->

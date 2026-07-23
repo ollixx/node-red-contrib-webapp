@@ -1,0 +1,92 @@
+[
+    {
+        "id": "guide-ui-route",
+        "type": "tab",
+        "label": "Guide: ui-route",
+        "disabled": false,
+        "info": "User-guide example for ui-route (docs/guide/nodes/ui-route.md). Import, deploy, open /webapp/guideRoute/, click 'Go to details' to reach the /details route."
+    },
+    {
+        "id": "guideRoute",
+        "type": "ui-app",
+        "name": "Route demo",
+        "uiId": "guideRoute",
+        "root": "guideRoute",
+        "layout": "app",
+        "z": "guide-ui-route",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gRouteHome",
+        "type": "ui-text",
+        "name": "Home text",
+        "uiId": "gRouteHome",
+        "app": "guideRoute",
+        "mount": "guideRoute.content",
+        "text": "Home page (the app's implicit root route).",
+        "order": "1",
+        "z": "guide-ui-route",
+        "x": 340,
+        "y": 60,
+        "wires": [[]]
+    },
+    {
+        "id": "gRouteButton",
+        "type": "ui-button",
+        "name": "Go to details",
+        "uiId": "gRouteButton",
+        "app": "guideRoute",
+        "mount": "guideRoute.content",
+        "label": "Go to details",
+        "action": "gRouteNav",
+        "order": "2",
+        "z": "guide-ui-route",
+        "x": 340,
+        "y": 120,
+        "wires": [["gRouteNav"]]
+    },
+    {
+        "id": "gRouteNav",
+        "type": "ui-action",
+        "name": "Navigate to details",
+        "uiId": "gRouteNav",
+        "app": "guideRoute",
+        "actionType": "navigate",
+        "targetMode": "url",
+        "to": "/details",
+        "toType": "str",
+        "z": "guide-ui-route",
+        "x": 560,
+        "y": 120,
+        "wires": [[]]
+    },
+    {
+        "id": "gRouteDetails",
+        "type": "ui-route",
+        "name": "Details",
+        "uiId": "gRouteDetails",
+        "app": "guideRoute",
+        "path": "/details",
+        "layout": "vertical",
+        "z": "guide-ui-route",
+        "x": 120,
+        "y": 200,
+        "wires": [[]]
+    },
+    {
+        "id": "gRouteDetailText",
+        "type": "ui-text",
+        "name": "Detail text",
+        "uiId": "gRouteDetailText",
+        "app": "guideRoute",
+        "mount": "route:/details/content",
+        "text": "This is the details page, served at /webapp/guideRoute/details.",
+        "order": "1",
+        "z": "guide-ui-route",
+        "x": 340,
+        "y": 200,
+        "wires": [[]]
+    }
+]

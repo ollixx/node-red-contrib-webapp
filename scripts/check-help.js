@@ -73,7 +73,7 @@ const ALLOWLIST = {};
  * ------------------------------------------------------------------ */
 const TRANSITION_INLINE = {};
 for (const t of [
-    "ui-route", "ui-dialog", "ui-component-definition", "ui-component-instance",
+    "ui-dialog", "ui-component-definition", "ui-component-instance",
     "ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select",
     "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider",
     "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state",
@@ -99,7 +99,7 @@ for (const t of [
  * ------------------------------------------------------------------ */
 const LABEL_TRANSITION = {};
 for (const t of [
-    "ui-route", "ui-dialog", "ui-component-definition", "ui-component-instance",
+    "ui-dialog", "ui-component-definition", "ui-component-instance",
     "ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select",
     "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider",
     "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state",
