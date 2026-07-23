@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P265** — aspects/docs — **User-Docs-Fundament** (ADR 0042): docs/guide/-Skelett + Templates, i18n-Hilfe-Mechanik am Piloten (ui-divider) bewiesen, Smoke-Harness, check:guide — [P265](aspects/docs/P265-userdocs-framework-i18n-pilot.md)
 - **P266** — aspects/docs — **Intro + Getting Started + 8 Themen-Guides** (EN+DE, je Import-Beispiel; absorbiert „Wire vs. Referenz") — [P266](aspects/docs/P266-intro-getting-started-guides.md)
 - **P267** — aspects/docs — Node-Referenz-Batch **backbone** (11: structure/state/behavior/components) — [P267](aspects/docs/P267-node-reference-batch-backbone.md)
 - **P268** — aspects/docs — Node-Referenz-Batch **input** (9 Formular-Knoten) — [P268](aspects/docs/P268-node-reference-batch-input.md)
@@ -97,7 +96,7 @@ open the folder for the full history.
 | aspects/test-infra | 28 |
 | aspects/node-conformance | 27 |
 | aspects/misc | 16 |
-| aspects/docs | 2 |
+| aspects/docs | 3 |
 | aspects/runtime | 9 |
 | aspects/state | 9 |
 | aspects/auth | 3 |
@@ -108,4 +107,4 @@ open the folder for the full history.
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 262 done, 8 open, 10 deferred.**
+**Total: 263 done, 7 open, 10 deferred.**
