@@ -1,0 +1,27 @@
+{
+    "ui-slider": {
+        "label": {
+            "mount": "Parent-Slot",
+            "label": "Beschriftung",
+            "valueBinding": "Wert (Lesen)",
+            "writeToBinding": "Schreibziel",
+            "writeTrigger": "Schreib-Auslöser",
+            "min": "Minimum",
+            "max": "Maximum",
+            "step": "Schrittweite",
+            "showValue": "Wert anzeigen",
+            "disabledBinding": "Deaktiviert"
+        },
+        "option": {
+            "writeTrigger": {
+                "submit": "submit",
+                "change": "change",
+                "none": "none"
+            }
+        },
+        "hints": {
+            "color": "Ein Formularfeld hat keine allgemeine Farbe (Zustandsfarben kommen aus Validierung/Variant).",
+            "size": "Dieser Knoten hat keine Größen-Stufen."
+        }
+    }
+}

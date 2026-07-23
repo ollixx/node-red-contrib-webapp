@@ -1,0 +1,97 @@
+[
+    {
+        "id": "guide-ui-slider",
+        "type": "tab",
+        "label": "Guide: ui-slider",
+        "disabled": false,
+        "info": "User-guide example for ui-slider (docs/guide/nodes/ui-slider.md). Import, deploy, open /webapp/guideSlider/ — a 0-100 volume slider (step 5, value readout) two-way bound to a numeric store sub-path, plus a live echo."
+    },
+    {
+        "id": "guideSlider",
+        "type": "ui-app",
+        "name": "Slider demo",
+        "uiId": "guideSlider",
+        "root": "guideSlider",
+        "title": "Slider demo",
+        "layout": "app",
+        "z": "guide-ui-slider",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gSlSettings",
+        "type": "ui-store",
+        "name": "Settings store",
+        "uiId": "gSlSettings",
+        "app": "guideSlider",
+        "statePath": "settings",
+        "initialValue": "{\"volume\":40}",
+        "z": "guide-ui-slider",
+        "x": 120,
+        "y": 180,
+        "wires": [[]]
+    },
+    {
+        "id": "gSlHeading",
+        "type": "ui-text",
+        "name": "Heading",
+        "uiId": "gSlHeading",
+        "app": "guideSlider",
+        "mount": "guideSlider.content",
+        "text": "Drag the handle — the value is written into the store while you drag:",
+        "order": "0",
+        "z": "guide-ui-slider",
+        "x": 340,
+        "y": 60,
+        "wires": [[]]
+    },
+    {
+        "id": "gSlRange",
+        "type": "ui-slider",
+        "name": "Volume slider",
+        "uiId": "gSlRange",
+        "app": "guideSlider",
+        "mount": "guideSlider.content",
+        "label": { "kind": "literal", "value": "Volume" },
+        "min": 0,
+        "max": 100,
+        "step": 5,
+        "showValue": true,
+        "value": {
+            "kind": "store",
+            "path": "gSlSettings",
+            "subPath": { "kind": "literal", "value": "volume" }
+        },
+        "writeTo": {
+            "kind": "store",
+            "path": "gSlSettings",
+            "subPath": { "kind": "literal", "value": "volume" }
+        },
+        "writeTrigger": "change",
+        "order": "1",
+        "z": "guide-ui-slider",
+        "x": 340,
+        "y": 140,
+        "wires": [[]]
+    },
+    {
+        "id": "gSlEcho",
+        "type": "ui-text",
+        "name": "Value echo",
+        "uiId": "gSlEcho",
+        "app": "guideSlider",
+        "mount": "guideSlider.content",
+        "value": {
+            "kind": "store",
+            "path": "gSlSettings",
+            "subPath": { "kind": "literal", "value": "volume" },
+            "fallback": "0"
+        },
+        "order": "2",
+        "z": "guide-ui-slider",
+        "x": 340,
+        "y": 220,
+        "wires": [[]]
+    }
+]
