@@ -1,0 +1,17 @@
+{
+    "ui-dialog": {
+        "label": {
+            "app": "App",
+            "title": "Title",
+            "layout": "Parent Layout",
+            "route": "Parent Route",
+            "modal": "Modal",
+            "closable": "Closable",
+            "requiresGroup": "Groups",
+            "events": "Events"
+        },
+        "placeholder": {
+            "requiresGroup": "e.g. admins, sales (empty = auth only)"
+        }
+    }
+}

@@ -27,7 +27,7 @@ const EXPECTED_DOC: Record<string, string> = {
 // the intent (a resolvable full-doc link in the rendered help) is unchanged.
 // The batches P267–P271 move every node here; the transitional inline nodes
 // keep the contract-doc link until migrated.
-const LOCALE_MIGRATED = new Set<string>(["ui-divider", "ui-app", "ui-route"]);
+const LOCALE_MIGRATED = new Set<string>(["ui-divider", "ui-app", "ui-route", "ui-dialog"]);
 
 // Every ui-* editor type (from package.json node-red.nodes). Kept explicit so a
 // new node that forgets a help link fails HERE too, not only in the guardrail.
