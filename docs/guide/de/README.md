@@ -10,12 +10,27 @@
 
 ## Inhalt
 
-- **Einführung** — was node-red-contrib-webapp ist und wie es denkt
-  (*kommt mit P266*)
-- **Erste Schritte** — Installation, erste App, erstes Deploy (*kommt mit
-  P266*)
-- **Guides** — die großen Themen: Layout, State & Bindings, Actions & Events,
-  Dialoge, Auth (*kommt mit P266*)
+- **[Einführung](introduction.md)** — was node-red-contrib-webapp ist und
+  wie es denkt (das Kern-Modell auf einer Seite)
+- **[Erste Schritte](getting-started.md)** — Installation, erste App,
+  erstes Deploy, Troubleshooting
+- **Guides** — die großen Themen, jeweils mit importierbarem Beispiel-Flow:
+  - [Layout & Slots](guides/layout-slots.md) — Mount-Pfade, Layout-Presets,
+    Platzierungsfelder
+  - [Bindings & State](guides/bindings-state.md) — die Binding-Arten (inkl.
+    der `user`-Quelle), Stores, Store-Operationen
+  - [Actions & Events](guides/actions-events.md) — die Richtungs-Regel und
+    die zwei Wege: Wire vs. Referenz
+  - [Navigation & Dialoge](guides/navigation-dialogs.md) — Routen, die drei
+    Navigate-Modi, Dialog open/close, Route-Scoping
+  - [Daten anzeigen](guides/displaying-data.md) — der Query-Loop, Tabellen,
+    Listen, Repeat, Pagination
+  - [Formulare](guides/forms.md) — die Input-Familie, bidirektionales
+    value/writeTo, Write-Trigger
+  - [Auth](guides/auth.md) — Trusted-Header-Betrieb, `user`-Binding,
+    `requiresGroup`-Guards
+  - [Theming & Komponenten](guides/theming-components.md) — Design-Tokens,
+    Varianten vs. Farben, wiederverwendbare Komponenten
 - **Knoten-Referenz** — eine Seite je Knoten unter
   [`nodes/`](nodes/ui-divider.md): Zweck, jedes Feld mit seinen Varianten auf
   Benutzer-Ebene, Eingangs-Verhalten, Events und 1–3 importierbare Beispiele

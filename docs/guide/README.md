@@ -9,11 +9,27 @@
 
 ## Contents
 
-- **Introduction** — what node-red-contrib-webapp is and how it thinks
-  (*coming with P266*)
-- **Getting started** — install, first app, first deploy (*coming with P266*)
-- **Guides** — the big topics: layout, state & bindings, actions & events,
-  dialogs, auth (*coming with P266*)
+- **[Introduction](introduction.md)** — what node-red-contrib-webapp is and
+  how it thinks (the core model on one page)
+- **[Getting started](getting-started.md)** — install, first app, first
+  deploy, troubleshooting
+- **Guides** — the big topics, each with an importable example flow:
+  - [Layout & Slots](guides/layout-slots.md) — mount paths, layout presets,
+    placement fields
+  - [Bindings & State](guides/bindings-state.md) — the binding kinds (incl.
+    the `user` source), stores, store operations
+  - [Actions & Events](guides/actions-events.md) — the direction rule and
+    the two ways: wire vs. reference
+  - [Navigation & Dialogs](guides/navigation-dialogs.md) — routes, the three
+    navigate modes, dialog open/close, route scoping
+  - [Displaying data](guides/displaying-data.md) — the query loop, tables,
+    lists, repeat, pagination
+  - [Forms](guides/forms.md) — the input family, bidirectional
+    value/writeTo, write triggers
+  - [Auth](guides/auth.md) — trusted-header operation, `user` binding,
+    `requiresGroup` guards
+  - [Theming & Components](guides/theming-components.md) — design tokens,
+    variants vs. colours, reusable components
 - **Node reference** — one page per node under [`nodes/`](nodes/ui-divider.md):
   purpose, every field with its variants at user level, input behaviour,
   events, and 1–3 importable examples
