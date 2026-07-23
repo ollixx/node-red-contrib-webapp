@@ -2,7 +2,7 @@
 id: P266
 title: "Introduction + Getting Started + die 8 Themen-Guides (EN + DE) — inkl. Import-Beispiel-Flows je Guide; absorbiert das alte P121-Thema „Wire vs. Referenz\""
 epic: aspects/docs
-status: pending
+status: in_progress
 dependencies: [P265]
 verify: browser
 spec: docs/guide/README.md
