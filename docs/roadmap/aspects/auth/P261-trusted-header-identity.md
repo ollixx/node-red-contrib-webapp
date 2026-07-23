@@ -3,7 +3,7 @@ id: P261
 node: ui-app
 title: "Trusted-Header-Identität: EINE Guard-Middleware über alle 7 App-Endpoints (401/Redirect), `user` im Snapshot-Kontext + neue Binding-Quelle `user` — E2E via gefakte Header"
 epic: aspects/auth
-status: pending
+status: in_progress
 dependencies: [P260, P259]
 verify: browser
 spec: docs/nodes/concepts/auth.md
