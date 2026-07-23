@@ -1,0 +1,16 @@
+{
+    "ui-query-action": {
+        "label": {
+            "app": "App",
+            "query": "Query",
+            "action": "Action",
+            "mode": "Mode"
+        },
+        "option": {
+            "mode": {
+                "reference": "reference (trigger directly)",
+                "wire": "wire (emit envelope)"
+            }
+        }
+    }
+}

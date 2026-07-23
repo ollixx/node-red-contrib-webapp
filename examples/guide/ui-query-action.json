@@ -1,0 +1,91 @@
+[
+    {
+        "id": "guide-ui-query-action",
+        "type": "tab",
+        "label": "Guide: ui-query-action",
+        "disabled": false,
+        "info": "User-guide example for ui-query-action (docs/guide/nodes/ui-query-action.md). Import, deploy, open /webapp/guideQueryAction/, click the inject to replace the query data."
+    },
+    {
+        "id": "guideQueryAction",
+        "type": "ui-app",
+        "name": "Query-action demo",
+        "uiId": "guideQueryAction",
+        "root": "guideQueryAction",
+        "layout": "app",
+        "z": "guide-ui-query-action",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gQAHome",
+        "type": "ui-text",
+        "name": "Intro",
+        "uiId": "gQAHome",
+        "app": "guideQueryAction",
+        "mount": "guideQueryAction.content",
+        "text": "Click the inject to write the query's data via ui-query-action (replace).",
+        "order": "1",
+        "z": "guide-ui-query-action",
+        "x": 340,
+        "y": 60,
+        "wires": [[]]
+    },
+    {
+        "id": "gQAValue",
+        "type": "ui-text",
+        "name": "Query value",
+        "uiId": "gQAValue",
+        "app": "guideQueryAction",
+        "mount": "guideQueryAction.content",
+        "value": { "kind": "query", "path": "note" },
+        "order": "2",
+        "z": "guide-ui-query-action",
+        "x": 340,
+        "y": 120,
+        "wires": [[]]
+    },
+    {
+        "id": "gQAQuery",
+        "type": "ui-query",
+        "name": "Note query",
+        "uiId": "gQAQuery",
+        "app": "guideQueryAction",
+        "queryPath": "note",
+        "debounceMs": 0,
+        "z": "guide-ui-query-action",
+        "x": 340,
+        "y": 200,
+        "wires": [[]]
+    },
+    {
+        "id": "gQAInject",
+        "type": "inject",
+        "name": "Replace data",
+        "props": [{ "p": "payload" }],
+        "repeat": "",
+        "once": false,
+        "topic": "",
+        "payload": "Replaced via ui-query-action",
+        "payloadType": "str",
+        "z": "guide-ui-query-action",
+        "x": 120,
+        "y": 200,
+        "wires": [["gQAAction"]]
+    },
+    {
+        "id": "gQAAction",
+        "type": "ui-query-action",
+        "name": "Replace note",
+        "uiId": "gQAAction",
+        "app": "guideQueryAction",
+        "query": "gQAQuery",
+        "action": "replace",
+        "mode": "reference",
+        "z": "guide-ui-query-action",
+        "x": 340,
+        "y": 260,
+        "wires": [[]]
+    }
+]

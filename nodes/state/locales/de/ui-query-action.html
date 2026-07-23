@@ -1,0 +1,23 @@
+<script type="text/html" data-help-name="ui-query-action">
+<p>Typisierter, referenz-basierter Trigger für eine <code>ui-query</code>: Query
+und Action picken, statt <code>msg.ui.query</code> von Hand zu bauen.
+<b>refresh</b> feuert die Query (Daten-raus); <b>replace</b> schreibt
+<code>msg.payload</code> als ihre Daten (Daten-rein).</p>
+<h3>Wichtige Felder</h3>
+<ul>
+    <li><b>Query</b> — die zu triggernde Query (Picker).</li>
+    <li><b>Action</b> — <code>refresh</code> (triggern) oder <code>replace</code> (Daten aus <code>msg.payload</code> setzen).</li>
+    <li><b>Mode</b> — <code>reference</code> (direkt anwenden) oder <code>wire</code> (Envelope emittieren).</li>
+</ul>
+<h3>Eingang</h3>
+<p>Jede Message führt die Action aus. <code>refresh</code>-Params aus
+<code>msg.ui.query.params</code>/<code>msg.payload</code>; <code>replace</code>-Daten
+aus <code>msg.payload</code>. <code>msg.ui.clientId</code> zielt auf einen Client.
+Fehler: <code>server.query.action-missing-query</code>.</p>
+<h3>Ausgänge / Events</h3>
+<p>reference-Mode emittiert nichts (die Query handelt). wire-Mode emittiert
+<code>msg.ui.query = { queryPath, refresh:true, params? }</code> (refresh) oder
+<code>{ queryPath, data, totalCount?, pageCount? }</code> (replace).</p>
+<h3>Vollständige Doku</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/de/nodes/ui-query-action.md" target="_blank">docs/guide/de/nodes/ui-query-action.md</a></p>
+</script>

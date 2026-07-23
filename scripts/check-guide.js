@@ -47,7 +47,7 @@ for (const t of [
     "ui-tabs", "ui-tab", "ui-accordion", "ui-accordion-section", "ui-breadcrumb", "ui-menu",
     "ui-pagination", "ui-stepper", "ui-image", "ui-icon", "ui-list", "ui-avatar",
     "ui-log", "ui-repeat",
-    "ui-query-action", "ui-action",
+    "ui-action",
     // ui-divider: PILOT (P265) — has full guide coverage; intentionally absent.
 ]) {
     ALLOWLIST[t] = "guide docs pending (batches P267-P271)";
