@@ -2,7 +2,7 @@
 id: P272
 title: "Editor-Label-i18n: Mechanik am Piloten bewiesen (data-i18n + locales-JSON, en-US+de) + die GETEILTEN editor-common-Strings übersetzt (Base-Field-Hinweise, Picker, SelectBox-Optionen)"
 epic: aspects/docs
-status: pending
+status: in_progress
 dependencies: [P265]
 verify: browser
 spec: docs/guide/README.md
