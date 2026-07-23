@@ -16,7 +16,7 @@ Flag — für mehrere unabhängige Optionen nimmt man mehrere Checkboxen.
 - Ein einzelnes Boolean-Flag: „AGB akzeptieren", „Newsletter abonnieren",
   „angemeldet bleiben".
 - Mehrere unabhängige Flags — je eine `ui-checkbox` pro Flag.
-- Für ein Schalter-Control mit An/Aus-Beschriftung `ui-switch`; für
+- Für ein Schalter-Control mit An/Aus-Beschriftung [`ui-switch`](ui-switch.md); für
   „genau eines von N" [`ui-radio`](ui-radio.md).
 
 ## Felder

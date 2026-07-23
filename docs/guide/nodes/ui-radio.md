@@ -17,7 +17,7 @@ a time, and the selection is bound to client state in both directions:
   (role, delivery method, payment type).
 - When comparing the options matters more than saving space.
 - For long lists or multi-selection use [`ui-select`](ui-select.md); for
-  independent on/off flags use `ui-checkbox`.
+  independent on/off flags use [`ui-checkbox`](ui-checkbox.md).
 
 ## Fields
 
@@ -25,18 +25,18 @@ a time, and the selection is bound to client state in both directions:
 |---|---|---|---|
 | **Name** | Display name in the editor and in pickers. | free text | `Radio N` |
 | **Parent Slot** (`mount`) | Where the group is placed. Required. | mount picker | — |
-| **Label** (`label`) | The group caption. Required, bindable (same set as `ui-select`). | binding / literal text | — |
+| **Label** (`label`) | The group caption. Required, bindable (same set as [`ui-select`](ui-select.md)). | binding / literal text | — |
 | **Value** (`value`) | The **read** half: the value of the currently selected option. Bindable with every binding kind. | binding | — |
 | **Write To** (`writeTo`) | The **write** half ([ADR 0027](../../adr/0027-input-value-binding-is-bidirectional-value-read-writeto-write.md)): `store`, `flow` or `global` only. | `store` / `flow` / `global` | empty |
 | **Write Trigger** (`writeTrigger`) | A radio group has **no submit gesture** — it always writes on `change`. Only `none` differs: it switches the automatic write-back off. | `submit` / `change` / `none` | `submit` |
-| **Options** (`options`) | One field, two types — the **same helper as `ui-select`**. **json** validates exactly one of: object `{"<label>": "<value>"}`, string array `["A","B"]`, or object array `[{"label":…,"value":…}]` (the node turns red on a bad structure). **store** reads the options reactively from a store path. Optional: an unconfigured group stays valid. | `json` / `store` | empty |
+| **Options** (`options`) | One field, two types — the **same helper as [`ui-select`](ui-select.md)**. **json** validates exactly one of: object `{"<label>": "<value>"}`, string array `["A","B"]`, or object array `[{"label":…,"value":…}]` (the node turns red on a bad structure). **store** reads the options reactively from a store path. Optional: an unconfigured group stays valid. | `json` / `store` | empty |
 | **Orientation** (`orientation`) | Layout of the buttons. `vertical` = stacked; `horizontal` = side by side. | `vertical` / `horizontal` | `vertical` |
 | **Disabled** (`disabled`) | Bindable condition that locks the whole group. | binding (boolean set) | unset |
 | **Visible** (`visible`) | Bindable condition gating whether the group renders. | binding (boolean set) | unset |
 | **Order / Row / Col / Col Span / Row Span / X / Y** | Placement inside the parent slot — see [Layout & Slots](../guides/layout-slots.md). | numbers | empty |
 
 `ui-radio` has **no `variant`** and **no size steps** (the editor shows the
-Size row under "Advanced" with an N/A hint). Unlike `ui-select` it has no
+Size row under "Advanced" with an N/A hint). Unlike [`ui-select`](ui-select.md) it has no
 **Placeholder**.
 
 ### Value / Write To / Write Trigger

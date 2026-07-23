@@ -18,7 +18,7 @@ client state in both directions: **Value** reads, **Write To** writes.
 - Options that change at runtime — bind **Options** to a store slice your flow
   fills.
 - For 2–5 mutually exclusive choices that should all be visible, prefer
-  `ui-radio`.
+  [`ui-radio`](ui-radio.md).
 
 ## Fields
 

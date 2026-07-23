@@ -51,7 +51,7 @@ verb passes it through unchanged.
 | `select` | activate exactly one of a sibling group via `part` | `ui-action(select, part:tab2) → ui-tabs` |
 | `enable` | write the target's `disabled` to false | `ui-action(enable) → ui-button "Save"` |
 | `disable` | write the target's `disabled` to true (e.g. during a request) | `ui-action(disable) → ui-button "Save"` |
-| `focus` | focus a text control (`ui-input`/`ui-textarea`/`ui-datepicker`) | `ui-action(focus) → ui-input "Search"` |
+| `focus` | focus a text control ([`ui-input`](ui-input.md)/[`ui-textarea`](ui-textarea.md)/[`ui-datepicker`](ui-datepicker.md)) | `ui-action(focus) → ui-input "Search"` |
 | `reset` | reset a form control to its initial value and fire `change` | `ui-action(reset) → ui-input "Name"` |
 
 `show`/`hide` and `enable`/`disable` write the target's one dynamic-state value

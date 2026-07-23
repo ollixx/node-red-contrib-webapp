@@ -17,7 +17,7 @@ mit [`ui-select`](ui-select.md).
   (Rolle, Versandart, Zahlungsart).
 - Wenn das Vergleichen der Optionen wichtiger ist als Platzersparnis.
 - Für lange Listen oder Mehrfachauswahl [`ui-select`](ui-select.md); für
-  unabhängige An/Aus-Flags `ui-checkbox`.
+  unabhängige An/Aus-Flags [`ui-checkbox`](ui-checkbox.md).
 
 ## Felder
 
@@ -25,18 +25,18 @@ mit [`ui-select`](ui-select.md).
 |---|---|---|---|
 | **Name** | Anzeigename im Editor und in Pickern. | Freitext | `Radio N` |
 | **Parent Slot** (`mount`) | Einbauort. Pflicht. | Mount-Picker | — |
-| **Label** (`label`) | Beschriftung der Gruppe. Pflicht, bindbar (derselbe Satz wie `ui-select`). | Binding / Literal | — |
+| **Label** (`label`) | Beschriftung der Gruppe. Pflicht, bindbar (derselbe Satz wie [`ui-select`](ui-select.md)). | Binding / Literal | — |
 | **Value** (`value`) | Die **Lese**-Hälfte: der Wert der aktuell gewählten Option. Mit jeder Binding-Art bindbar. | Binding | — |
 | **Write To** (`writeTo`) | Die **Schreib**-Hälfte ([ADR 0027](../../../adr/0027-input-value-binding-is-bidirectional-value-read-writeto-write.md)): nur `store`, `flow` oder `global`. | `store` / `flow` / `global` | leer |
 | **Write Trigger** (`writeTrigger`) | Eine Radio-Gruppe hat **keine Submit-Geste** — sie schreibt immer bei `change`. Nur `none` ist anders: es schaltet den automatischen Write-Back ab. | `submit` / `change` / `none` | `submit` |
-| **Options** (`options`) | Ein Feld, zwei Typen — **derselbe Helfer wie bei `ui-select`**. **json** validiert genau eine von drei Formen: Objekt `{"<Label>": "<Wert>"}`, String-Array `["A","B"]` oder Objekt-Array `[{"label":…,"value":…}]` (bei falscher Struktur wird der Knoten rot). **store** liest die Optionen reaktiv aus einem Store-Pfad. Optional: eine unkonfigurierte Gruppe bleibt gültig. | `json` / `store` | leer |
+| **Options** (`options`) | Ein Feld, zwei Typen — **derselbe Helfer wie bei [`ui-select`](ui-select.md)**. **json** validiert genau eine von drei Formen: Objekt `{"<Label>": "<Wert>"}`, String-Array `["A","B"]` oder Objekt-Array `[{"label":…,"value":…}]` (bei falscher Struktur wird der Knoten rot). **store** liest die Optionen reaktiv aus einem Store-Pfad. Optional: eine unkonfigurierte Gruppe bleibt gültig. | `json` / `store` | leer |
 | **Orientation** (`orientation`) | Anordnung der Buttons. `vertical` = untereinander; `horizontal` = nebeneinander. | `vertical` / `horizontal` | `vertical` |
 | **Disabled** (`disabled`) | Bindbare Bedingung, die die ganze Gruppe sperrt. | Binding (Boolean-Satz) | ungesetzt |
 | **Visible** (`visible`) | Bindbare Bedingung, ob die Gruppe gerendert wird. | Binding (Boolean-Satz) | ungesetzt |
 | **Order / Row / Col / Col Span / Row Span / X / Y** | Platzierung im Parent-Slot — siehe [Layout & Slots](../guides/layout-slots.md). | Zahlen | leer |
 
 `ui-radio` hat **kein `variant`** und **keine Größen-Stufen** (die Size-Zeile
-steht im Editor unter „Erweitert" mit N/A-Hinweis). Anders als `ui-select` hat
+steht im Editor unter „Erweitert" mit N/A-Hinweis). Anders als [`ui-select`](ui-select.md) hat
 es keinen **Placeholder**.
 
 ### Value / Write To / Write Trigger

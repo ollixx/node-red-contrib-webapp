@@ -18,9 +18,9 @@ Input-Familie — das gemeinsame Modell steht im [Formular-Guide](../guides/form
 - Ein Formularfeld für Name, E-Mail, Zahl oder Suchbegriff.
 - Überall dort, wo ein Store-Slice zweiseitig gebunden werden soll — ohne
   `function`-Knoten.
-- Nicht für mehrzeiligen Text — dafür `ui-textarea`.
-- Nicht für eine feste Auswahlmenge — dafür `ui-select` oder
-  `ui-radio`.
+- Nicht für mehrzeiligen Text — dafür [`ui-textarea`](ui-textarea.md).
+- Nicht für eine feste Auswahlmenge — dafür [`ui-select`](ui-select.md) oder
+  [`ui-radio`](ui-radio.md).
 
 ## Felder
 
@@ -106,6 +106,6 @@ Import-Anleitung:
 
 - [Formulare](../guides/forms.md) — die Input-Familie, zweiseitiges value/writeTo
 - [Bindings & State](../guides/bindings-state.md) — die Binding-Arten
-- `ui-textarea` · `ui-select` · `ui-switch`
+- [`ui-textarea`](ui-textarea.md) · [`ui-select`](ui-select.md) · [`ui-switch`](ui-switch.md)
 - [`ui-store`](ui-store.md) — das übliche Write-To-Ziel
 - Contract-Doc (intern, Deutsch): `docs/nodes/input/ui-input.md`

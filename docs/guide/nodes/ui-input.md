@@ -17,9 +17,9 @@ user's edit is persisted). It is the workhorse of the input family — see
 
 - A form field for a name, an email address, a number, a search term.
 - Anywhere you want two-way binding to a store slice without a `function` node.
-- Not for multi-line text — use `ui-textarea`.
-- Not for a fixed set of choices — use `ui-select` or
-  `ui-radio`.
+- Not for multi-line text — use [`ui-textarea`](ui-textarea.md).
+- Not for a fixed set of choices — use [`ui-select`](ui-select.md) or
+  [`ui-radio`](ui-radio.md).
 
 ## Fields
 
@@ -104,6 +104,6 @@ Import instructions:
 
 - [Forms](../guides/forms.md) — the input family, bidirectional value/writeTo
 - [Bindings & State](../guides/bindings-state.md) — the binding kinds
-- `ui-textarea` · `ui-select` · `ui-switch`
+- [`ui-textarea`](ui-textarea.md) · [`ui-select`](ui-select.md) · [`ui-switch`](ui-switch.md)
 - [`ui-store`](ui-store.md) — the usual Write To target
 - Contract doc (internal, German): `docs/nodes/input/ui-input.md`

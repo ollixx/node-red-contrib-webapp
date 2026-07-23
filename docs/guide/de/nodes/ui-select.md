@@ -19,7 +19,7 @@ Auswahl ist zweiseitig an den Client-State gebunden: **Value** liest,
 - Optionen, die sich zur Laufzeit ändern — **Options** an einen Store-Slice
   binden, den der Flow füllt.
 - Für 2–5 sich ausschließende Optionen, die alle sichtbar sein sollen, eher
-  `ui-radio`.
+  [`ui-radio`](ui-radio.md).
 
 ## Felder
 

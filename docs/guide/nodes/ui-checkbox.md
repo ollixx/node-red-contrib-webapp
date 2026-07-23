@@ -16,7 +16,7 @@ use several of them for independent options.
 - A single boolean flag: "accept the terms", "send me the newsletter",
   "remember me".
 - Several independent flags — one `ui-checkbox` per flag.
-- For a switch-style control with on/off captions use `ui-switch`; for
+- For a switch-style control with on/off captions use [`ui-switch`](ui-switch.md); for
   "exactly one of N" use [`ui-radio`](ui-radio.md).
 
 ## Fields
