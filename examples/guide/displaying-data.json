@@ -1,0 +1,158 @@
+[
+    {
+        "id": "guide-displaying-data",
+        "type": "tab",
+        "label": "Guide: Displaying data",
+        "disabled": false,
+        "info": "Example for the Displaying data guide (docs/guide/guides/displaying-data.md). Import, deploy, then open /webapp/dataApp/ — click 'Load fruits' to run the query loop (refresh → fetch → data back) into a bound table, plus a ui-repeat with item bindings."
+    },
+    {
+        "id": "dataApp",
+        "type": "ui-app",
+        "name": "Data demo",
+        "uiId": "dataApp",
+        "root": "dataApp",
+        "title": "Data demo",
+        "layout": "app",
+        "z": "guide-displaying-data",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gddTitle",
+        "type": "ui-text",
+        "name": "Title",
+        "uiId": "gddTitle",
+        "app": "dataApp",
+        "mount": "dataApp.content",
+        "text": "Server data in a table (query) and a repeated template (store).",
+        "order": "1",
+        "z": "guide-displaying-data",
+        "x": 320,
+        "y": 40,
+        "wires": [[]]
+    },
+    {
+        "id": "gddLoadButton",
+        "type": "ui-button",
+        "name": "Load fruits",
+        "uiId": "gddLoadButton",
+        "app": "dataApp",
+        "mount": "dataApp.content",
+        "label": "Load fruits",
+        "order": "2",
+        "z": "guide-displaying-data",
+        "x": 320,
+        "y": 120,
+        "wires": [["gddQuery"]]
+    },
+    {
+        "id": "gddQuery",
+        "type": "ui-query",
+        "name": "Fruits query",
+        "uiId": "gddQuery",
+        "app": "dataApp",
+        "queryPath": "fruits.list",
+        "z": "guide-displaying-data",
+        "x": 540,
+        "y": 120,
+        "wires": [["gddFetch"]]
+    },
+    {
+        "id": "gddFetch",
+        "type": "function",
+        "name": "fetch (your DB/HTTP goes here)",
+        "func": "// Simulated data source — replace with a real DB/HTTP lookup.\nconst rows = [\n    { name: \"Apple\", color: \"red\", stock: 12 },\n    { name: \"Banana\", color: \"yellow\", stock: 7 },\n    { name: \"Kiwi\", color: \"green\", stock: 3 }\n];\nmsg.ui = { query: { queryPath: \"fruits.list\", data: rows } };\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "z": "guide-displaying-data",
+        "x": 800,
+        "y": 120,
+        "wires": [["gddQuery"]]
+    },
+    {
+        "id": "gddTable",
+        "type": "ui-table",
+        "name": "Fruits table",
+        "uiId": "gddTable",
+        "app": "dataApp",
+        "mount": "dataApp.content",
+        "columns": "name,color,stock",
+        "rows": {
+            "kind": "query",
+            "path": "fruits.list"
+        },
+        "order": "3",
+        "z": "guide-displaying-data",
+        "x": 320,
+        "y": 200,
+        "wires": [[]]
+    },
+    {
+        "id": "gddPeopleStore",
+        "type": "ui-store",
+        "name": "People store",
+        "uiId": "gddPeopleStore",
+        "app": "dataApp",
+        "statePath": "people",
+        "initialValue": "[{\"name\":\"Ada\",\"role\":\"Engineer\"},{\"name\":\"Grace\",\"role\":\"Admiral\"}]",
+        "z": "guide-displaying-data",
+        "x": 120,
+        "y": 300,
+        "wires": [[]]
+    },
+    {
+        "id": "gddRepeat",
+        "type": "ui-repeat",
+        "name": "People repeat",
+        "uiId": "gddRepeat",
+        "app": "dataApp",
+        "mount": "dataApp.content",
+        "items": {
+            "kind": "store",
+            "path": "gddPeopleStore"
+        },
+        "keyField": "name",
+        "order": "4",
+        "z": "guide-displaying-data",
+        "x": 320,
+        "y": 300,
+        "wires": [[]]
+    },
+    {
+        "id": "gddPersonName",
+        "type": "ui-text",
+        "name": "Person name",
+        "uiId": "gddPersonName",
+        "app": "gddRepeat",
+        "mount": "container:gddRepeat/content",
+        "order": "1",
+        "value": {
+            "kind": "item",
+            "path": "name"
+        },
+        "z": "guide-displaying-data",
+        "x": 540,
+        "y": 280,
+        "wires": [[]]
+    },
+    {
+        "id": "gddPersonRole",
+        "type": "ui-text",
+        "name": "Person role",
+        "uiId": "gddPersonRole",
+        "app": "gddRepeat",
+        "mount": "container:gddRepeat/content",
+        "order": "2",
+        "value": {
+            "kind": "item",
+            "path": "role"
+        },
+        "variant": "muted",
+        "z": "guide-displaying-data",
+        "x": 540,
+        "y": 320,
+        "wires": [[]]
+    }
+]
