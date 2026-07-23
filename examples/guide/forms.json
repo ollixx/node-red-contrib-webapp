@@ -1,0 +1,148 @@
+[
+    {
+        "id": "guide-forms",
+        "type": "tab",
+        "label": "Guide: Forms",
+        "disabled": false,
+        "info": "Example for the Forms guide (docs/guide/guides/forms.md). Import, deploy, then open /webapp/formsApp/ — inputs that read from and write back to a store (bidirectional value/writeTo, ADR 0027), with a live preview text."
+    },
+    {
+        "id": "formsApp",
+        "type": "ui-app",
+        "name": "Forms demo",
+        "uiId": "formsApp",
+        "root": "formsApp",
+        "title": "Forms demo",
+        "layout": "app",
+        "z": "guide-forms",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gfDraftStore",
+        "type": "ui-store",
+        "name": "Draft store",
+        "uiId": "gfDraftStore",
+        "app": "formsApp",
+        "statePath": "draft",
+        "initialValue": "{\"name\":\"\",\"email\":\"\",\"newsletter\":false}",
+        "z": "guide-forms",
+        "x": 120,
+        "y": 180,
+        "wires": [[]]
+    },
+    {
+        "id": "gfNameInput",
+        "type": "ui-input",
+        "name": "Name input",
+        "uiId": "gfNameInput",
+        "app": "formsApp",
+        "mount": "formsApp.content",
+        "label": "Name",
+        "inputType": "text",
+        "placeholder": "Type your name",
+        "value": {
+            "kind": "store",
+            "path": "gfDraftStore",
+            "subPath": { "kind": "literal", "value": "name" }
+        },
+        "writeTo": {
+            "kind": "store",
+            "path": "gfDraftStore",
+            "subPath": { "kind": "literal", "value": "name" }
+        },
+        "writeTrigger": "change",
+        "order": "1",
+        "z": "guide-forms",
+        "x": 320,
+        "y": 60,
+        "wires": [[]]
+    },
+    {
+        "id": "gfEmailInput",
+        "type": "ui-input",
+        "name": "Email input",
+        "uiId": "gfEmailInput",
+        "app": "formsApp",
+        "mount": "formsApp.content",
+        "label": "Email (writes on submit — Enter or blur)",
+        "inputType": "email",
+        "placeholder": "you@example.com",
+        "value": {
+            "kind": "store",
+            "path": "gfDraftStore",
+            "subPath": { "kind": "literal", "value": "email" }
+        },
+        "writeTo": {
+            "kind": "store",
+            "path": "gfDraftStore",
+            "subPath": { "kind": "literal", "value": "email" }
+        },
+        "writeTrigger": "submit",
+        "order": "2",
+        "z": "guide-forms",
+        "x": 320,
+        "y": 140,
+        "wires": [[]]
+    },
+    {
+        "id": "gfNewsletterSwitch",
+        "type": "ui-switch",
+        "name": "Newsletter switch",
+        "uiId": "gfNewsletterSwitch",
+        "app": "formsApp",
+        "mount": "formsApp.content",
+        "label": "Subscribe to newsletter",
+        "value": {
+            "kind": "store",
+            "path": "gfDraftStore",
+            "subPath": { "kind": "literal", "value": "newsletter" }
+        },
+        "writeTo": {
+            "kind": "store",
+            "path": "gfDraftStore",
+            "subPath": { "kind": "literal", "value": "newsletter" }
+        },
+        "writeTrigger": "change",
+        "order": "3",
+        "z": "guide-forms",
+        "x": 320,
+        "y": 220,
+        "wires": [[]]
+    },
+    {
+        "id": "gfPreviewLabel",
+        "type": "ui-text",
+        "name": "Preview label",
+        "uiId": "gfPreviewLabel",
+        "app": "formsApp",
+        "mount": "formsApp.content",
+        "text": "Live preview (bound to the same store slice):",
+        "variant": "label",
+        "order": "4",
+        "z": "guide-forms",
+        "x": 320,
+        "y": 300,
+        "wires": [[]]
+    },
+    {
+        "id": "gfPreviewName",
+        "type": "ui-text",
+        "name": "Preview name",
+        "uiId": "gfPreviewName",
+        "app": "formsApp",
+        "mount": "formsApp.content",
+        "value": {
+            "kind": "store",
+            "path": "gfDraftStore",
+            "subPath": { "kind": "literal", "value": "name" },
+            "fallback": "(empty)"
+        },
+        "order": "5",
+        "z": "guide-forms",
+        "x": 320,
+        "y": 360,
+        "wires": [[]]
+    }
+]
