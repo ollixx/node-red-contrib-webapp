@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P260** — aspects/auth — **Auth-Fundament** (ADR 0041): `user`-Contract, `ui-app.auth`-Feld (none|trusted-header), Konzept-Doku + Endpoint-Matrix + Tier-0-Anleitung — KEIN Enforcement — [P260](aspects/auth/P260-auth-contract-and-concept.md)
 - **P261** — aspects/auth — **Trusted-Header-Identität**: EINE Guard-Middleware über alle 7 App-Endpoints + Binding-Quelle `user` — E2E via Header-Fake — [P261](aspects/auth/P261-trusted-header-identity.md)
 - **P262** — aspects/auth — **Route-/Dialog-Guards**: `requiresGroup[]`, server-erzwungen (Render/Snapshot/Navigation/Event); „visibleIf ist UX, Guard ist Sicherheit" — [P262](aspects/auth/P262-route-dialog-guards.md)
 
@@ -96,6 +95,7 @@ open the folder for the full history.
 | aspects/docs | 1 |
 | aspects/runtime | 9 |
 | aspects/state | 9 |
+| aspects/auth | 1 |
 | aspects/editor | 30 |
 | schema | 5 |
 | aspects/rendering | 14 |
@@ -103,4 +103,4 @@ open the folder for the full history.
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 258 done, 3 open, 11 deferred.**
+**Total: 259 done, 2 open, 11 deferred.**
