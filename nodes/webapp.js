@@ -4564,14 +4564,114 @@ function resolveAssetStoreUrl(appId, id, definitions) {
     return { ok: true, url: `${base}/${encodeURIComponent(id)}` };
 }
 
+// ════════════════════════════════════════════════════════════════════════
+// P261 (ADR 0041 §2/§3): trusted-header identity — the ONE auth guard over
+// all app endpoints.
+// ════════════════════════════════════════════════════════════════════════
+
+// The documented default proxy headers (docs/nodes/concepts/auth.md). Empty
+// optional config fields mean "use the documented default"; the READER (here)
+// applies them — the editor stores exactly what the user typed (P260).
+const AUTH_DEFAULT_HEADER_USER = "X-Forwarded-User";
+const AUTH_DEFAULT_HEADER_EMAIL = "X-Forwarded-Email";
+const AUTH_DEFAULT_HEADER_GROUPS = "X-Forwarded-Groups";
+
+// Resolve the EFFECTIVE auth config of an app: mode + header names with the
+// documented defaults applied. Unknown app / no auth object / mode "none" →
+// `{ mode: "none" }` (exactly today's open behaviour; the endpoint's own 404
+// handling stays authoritative for unknown apps).
+function resolveEffectiveAuth(appId, definitions) {
+    const canonicalId = resolveCanonicalAppId(appId, definitions);
+    const buckets = getDefinitionBuckets(canonicalId, definitions);
+    const auth = buckets.app && buckets.app.auth;
+    if (!auth || auth.mode !== "trusted-header") {
+        return { mode: "none" };
+    }
+    return {
+        mode: "trusted-header",
+        headerUser: auth.headerUser || AUTH_DEFAULT_HEADER_USER,
+        headerEmail: auth.headerEmail || AUTH_DEFAULT_HEADER_EMAIL,
+        headerGroups: auth.headerGroups || AUTH_DEFAULT_HEADER_GROUPS,
+        redirect: auth.redirect
+    };
+}
+
+// Tolerant comma-separated groups parsing: trim each entry, drop empties.
+// "admin, sales,,ops " → ["admin","sales","ops"]; absent/blank header → [].
+function parseGroupsHeader(raw) {
+    if (typeof raw !== "string" || raw.trim() === "") {
+        return [];
+    }
+    return raw
+        .split(",")
+        .map((entry) => entry.trim())
+        .filter((entry) => entry.length > 0);
+}
+
+// Build the ONE internal user object (userIdentitySchema, ADR 0041 §1) from the
+// configured proxy headers. Express lowercases header names. `name` mirrors the
+// user header value — trusted-header carries no separate display name, and the
+// contract keeps `user.name` the binding authors reach for (`user.id` stays the
+// stable identifier; with a proxy that sends a distinct display name a future
+// source can diverge them). Missing/blank user header → null (unauthenticated).
+function extractTrustedHeaderIdentity(req, effectiveAuth) {
+    const headers = req.headers || {};
+    const rawId = headers[effectiveAuth.headerUser.toLowerCase()];
+    const id = typeof rawId === "string" ? rawId.trim() : "";
+    if (id === "") {
+        return null;
+    }
+    const rawEmail = headers[effectiveAuth.headerEmail.toLowerCase()];
+    const email = typeof rawEmail === "string" && rawEmail.trim() !== "" ? rawEmail.trim() : undefined;
+    return {
+        id,
+        name: id,
+        email,
+        groups: parseGroupsHeader(headers[effectiveAuth.headerGroups.toLowerCase()])
+    };
+}
+
+// The guard middleware itself. Runs BEFORE every app-endpoint handler (wired by
+// registerAppEndpoint below):
+//   - mode "none" → next() — exactly today's behaviour, byte-identical.
+//   - mode "trusted-header" + identity headers present → attach the user object
+//     to the request context (`req.webappUser`) and continue.
+//   - mode "trusted-header" + missing user header → 401, or 302 to
+//     `auth.redirect` when configured.
+// Trust boundary (auth.md): the headers are only meaningful when the app is
+// reachable exclusively through the authenticating reverse proxy — the guard
+// enforces presence, the deployment enforces trustworthiness.
+function appAuthGuard(RED) {
+    return function (req, res, next) {
+        const definitions = readDeployDefinitions(RED);
+        const effectiveAuth = resolveEffectiveAuth(req.params.appId, definitions);
+        if (effectiveAuth.mode !== "trusted-header") {
+            next();
+            return;
+        }
+        const user = extractTrustedHeaderIdentity(req, effectiveAuth);
+        if (!user) {
+            if (effectiveAuth.redirect) {
+                res.redirect(302, effectiveAuth.redirect);
+                return;
+            }
+            res.status(401).json({ error: "Unauthorized: missing identity header." });
+            return;
+        }
+        req.webappUser = user;
+        next();
+    };
+}
+
 // P261 (ADR 0041 §2): the ONE registration function for ALL app-facing
 // (`RED.httpNode`) runtime endpoints. Every endpoint of the enforcement matrix
 // (docs/nodes/concepts/auth.md) MUST register through here — never directly via
-// `RED.httpNode.get/post` — so a future endpoint cannot forget the auth guard.
+// `RED.httpNode.get/post` — so a future endpoint cannot forget the auth guard:
+// the guard middleware is prepended unconditionally.
 // The admin endpoints (`RED.httpAdmin`) are covered by Node-RED's `adminAuth`
 // and stay outside this function by design.
 function registerAppEndpoint(RED, method, path, ...handlers) {
-    RED.httpNode[method](path, ...handlers);
+    RED.httpNode[method](path, appAuthGuard(RED), ...handlers);
 }
 
 function registerEndpoints(RED) {
