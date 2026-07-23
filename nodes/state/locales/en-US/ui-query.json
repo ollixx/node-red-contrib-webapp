@@ -1,0 +1,14 @@
+{
+    "ui-query": {
+        "label": {
+            "app": "App",
+            "queryPath": "Query Path",
+            "params": "Params Store",
+            "debounceMs": "Debounce (ms)",
+            "refreshAction": "Refresh Action"
+        },
+        "placeholder": {
+            "debounceMs": "0 (immediate)"
+        }
+    }
+}

@@ -361,30 +361,30 @@
     })();
 </script>
 <script type="text/html" data-template-name="ui-app">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-root">Root</label><input type="text" id="node-input-root"></div>
+    <div class="form-row"><label for="node-input-root" data-i18n="ui-app.label.root">Root</label><input type="text" id="node-input-root"></div>
     <input type="hidden" id="node-input-layout">
-    <div class="form-row"><label for="node-input-layout-preset">Layout</label><select id="node-input-layout-preset"></select></div>
+    <div class="form-row"><label for="node-input-layout-preset" data-i18n="ui-app.label.layout">Layout</label><select id="node-input-layout-preset"></select></div>
     <!-- P106: deploy mode. Entwicklung = auto-deliver the new model on deploy
          (in-place via snapshot, reload only on a shell/topology change).
          Produktion = no auto-update; the client shows a version alert and the
          user's manual reload adopts the new model (no running state lost). -->
     <div class="form-row">
-        <label for="node-input-deployMode">Status</label>
+        <label for="node-input-deployMode" data-i18n="ui-app.label.status">Status</label>
         <select id="node-input-deployMode" style="width: 70%;">
-            <option value="development">Entwicklung</option>
-            <option value="production">Produktion</option>
+            <option value="development" data-i18n="ui-app.option.status.development">Entwicklung</option>
+            <option value="production" data-i18n="ui-app.option.status.production">Produktion</option>
         </select>
     </div>
     <div class="form-row">
-        <label>App URL</label>
+        <label data-i18n="ui-app.label.appUrl">App URL</label>
         <a id="node-ui-app-url" href="#" target="_blank" rel="noopener" style="display: none;"></a>
-        <span id="node-ui-app-url-empty" style="color: #777;">Bitte zuerst Root setzen</span>
+        <span id="node-ui-app-url-empty" style="color: #777;" data-i18n="ui-app.hints.rootRequired">Bitte zuerst Root setzen</span>
     </div>
     <div class="form-row">
         <label>&nbsp;</label>
-        <button type="button" id="node-ui-app-styles-btn" class="red-ui-button" style="width: auto;">Styles anpassen</button>
+        <button type="button" id="node-ui-app-styles-btn" class="red-ui-button" style="width: auto;" data-i18n="ui-app.label.styles">Styles anpassen</button>
     </div>
     <input type="hidden" id="node-input-tokens">
     <input type="hidden" id="node-input-events">
@@ -401,13 +401,13 @@
     <!-- P61: single Logging select replaces the old checkbox + tips + severity row -->
     <!-- P88: info button moved AFTER the select, bündig in 2. Spalte -->
     <div class="form-row">
-        <label for="node-ui-app-logging">Logging</label>
+        <label for="node-ui-app-logging" data-i18n="ui-app.label.logging">Logging</label>
         <select id="node-ui-app-logging" style="width: calc(70% - 30px);">
-            <option value="aus">aus</option>
-            <option value="debug">debug</option>
-            <option value="info">info</option>
-            <option value="warn">warn</option>
-            <option value="error">error</option>
+            <option value="aus" data-i18n="ui-app.option.logging.off">aus</option>
+            <option value="debug" data-i18n="ui-app.option.logging.debug">debug</option>
+            <option value="info" data-i18n="ui-app.option.logging.info">info</option>
+            <option value="warn" data-i18n="ui-app.option.logging.warn">warn</option>
+            <option value="error" data-i18n="ui-app.option.logging.error">error</option>
         </select>
         <button type="button" id="node-ui-app-logging-info-btn"
                 class="red-ui-button"
@@ -423,27 +423,27 @@
          Detail rows only visible for mode trusted-header. ENFORCED since
          P261: guard on all app endpoints, identity as binding source `user`. -->
     <div class="form-row">
-        <label for="node-ui-app-auth-mode">Auth</label>
+        <label for="node-ui-app-auth-mode" data-i18n="ui-app.label.auth">Auth</label>
         <select id="node-ui-app-auth-mode" style="width: 70%;">
-            <option value="none">none</option>
-            <option value="trusted-header">trusted-header</option>
+            <option value="none" data-i18n="ui-app.option.auth.none">none</option>
+            <option value="trusted-header" data-i18n="ui-app.option.auth.trusted-header">trusted-header</option>
         </select>
     </div>
     <div class="form-row node-ui-app-auth-detail">
-        <label for="node-ui-app-auth-headerUser">User-Header</label>
+        <label for="node-ui-app-auth-headerUser" data-i18n="ui-app.label.authHeaderUser">User-Header</label>
         <input type="text" id="node-ui-app-auth-headerUser" placeholder="X-Forwarded-User">
     </div>
     <div class="form-row node-ui-app-auth-detail">
-        <label for="node-ui-app-auth-headerEmail">Email-Header</label>
+        <label for="node-ui-app-auth-headerEmail" data-i18n="ui-app.label.authHeaderEmail">Email-Header</label>
         <input type="text" id="node-ui-app-auth-headerEmail" placeholder="X-Forwarded-Email">
     </div>
     <div class="form-row node-ui-app-auth-detail">
-        <label for="node-ui-app-auth-headerGroups">Groups-Header</label>
+        <label for="node-ui-app-auth-headerGroups" data-i18n="ui-app.label.authHeaderGroups">Groups-Header</label>
         <input type="text" id="node-ui-app-auth-headerGroups" placeholder="X-Forwarded-Groups">
     </div>
     <div class="form-row node-ui-app-auth-detail">
-        <label for="node-ui-app-auth-redirect">Redirect</label>
-        <input type="text" id="node-ui-app-auth-redirect" placeholder="/oauth2/sign_in (optional)">
+        <label for="node-ui-app-auth-redirect" data-i18n="ui-app.label.authRedirect">Redirect</label>
+        <input type="text" id="node-ui-app-auth-redirect" placeholder="/oauth2/sign_in (optional)" data-i18n="[placeholder]ui-app.placeholder.authRedirect">
     </div>
     <div class="form-row node-ui-app-auth-detail">
         <label>&nbsp;</label>
@@ -455,11 +455,11 @@
     </div>
     <hr style="margin: 8px 0;">
     <div class="form-row">
-        <label for="node-input-mediaStoreUrl">Media Store URL</label>
-        <input type="text" id="node-input-mediaStoreUrl" placeholder="https://store.example/media (optional)">
+        <label for="node-input-mediaStoreUrl" data-i18n="ui-app.label.mediaStoreUrl">Media Store URL</label>
+        <input type="text" id="node-input-mediaStoreUrl" placeholder="https://store.example/media (optional)" data-i18n="[placeholder]ui-app.placeholder.mediaStoreUrl">
     </div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label>Events</label></div>
+    <div class="form-row"><label data-i18n="ui-app.label.events">Events</label></div>
     <div id="node-input-events-container"></div>
 </script>
 <!-- P40: token editor dialog container — lives outside the form so jQuery UI dialog can move it to <body> -->
@@ -480,12 +480,7 @@
         Trotz Redaktionierung können Fehlermeldungen interne Informationen enthalten.
     </p>
 </div>
-<script type="text/html" data-help-name="ui-app"><p>Root-Knoten einer deklarativen Web-App fuer Node-RED.</p>
-<p><b>Auth</b> (ADR 0041): <code>none</code> (Default) oder <code>trusted-header</code>
-(Identität aus Reverse-Proxy-Headern, Defaults <code>X-Forwarded-User</code>/<code>-Email</code>/<code>-Groups</code>).
-<code>trusted-header</code> <b>erzwingt</b> die Identität auf allen App-Endpoints (fehlender Header: 401 bzw. Redirect)
-und macht sie als Binding-Quelle <code>user</code> (<code>user.name</code>, <code>user.groups</code>, …) verfügbar.
-<b>Achtung (Vertrauens-Grenze):</b> die Header sind nur vertrauenswürdig, wenn die App ausschließlich hinter dem
-authentifizierenden Proxy (oauth2-proxy/Authelia/ForwardAuth) erreichbar ist; Details:
-<a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/concepts/auth.md" target="_blank">docs/nodes/concepts/auth.md</a>.</p>
-<p>Vollständige Doku: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/structure/ui-app.md" target="_blank">docs/nodes/structure/ui-app.md</a></p></script>
+<!-- P267 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/structure/locales/{en-US,de}/ui-app.html; form-row labels carry
+     data-i18n keys resolved from nodes/structure/locales/{en-US,de}/ui-app.json.
+     No inline data-help-name block here. -->

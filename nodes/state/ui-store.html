@@ -27,37 +27,23 @@
     })();
 </script>
 <script type="text/html" data-template-name="ui-store">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-app">App</label><select id="node-input-app"></select></div>
-    <div class="form-row"><label for="node-input-statePath">State Path</label><input type="text" id="node-input-statePath"></div>
-    <div class="form-row"><label for="node-input-initialValue">Initial Value JSON</label><input type="text" id="node-input-initialValue"></div>
-    <div class="form-row"><label for="node-input-persist">Persist</label><input type="checkbox" id="node-input-persist" style="width:auto;margin-top:6px;"></div>
+    <div class="form-row"><label for="node-input-app" data-i18n="ui-store.label.app">App</label><select id="node-input-app"></select></div>
+    <div class="form-row"><label for="node-input-statePath" data-i18n="ui-store.label.statePath">State Path</label><input type="text" id="node-input-statePath"></div>
+    <div class="form-row"><label for="node-input-initialValue" data-i18n="ui-store.label.initialValue">Initial Value JSON</label><input type="text" id="node-input-initialValue"></div>
+    <div class="form-row"><label for="node-input-persist" data-i18n="ui-store.label.persist">Persist</label><input type="checkbox" id="node-input-persist" style="width:auto;margin-top:6px;"></div>
     <hr style="margin: 8px 0;">
     <div class="form-row">
-        <label for="node-input-scope">Scope</label>
+        <label for="node-input-scope" data-i18n="ui-store.label.scope">Scope</label>
         <select id="node-input-scope">
-            <option value="any">Any (default)</option>
-            <option value="broadcast-only">Broadcast Only</option>
-            <option value="client-only">Client Only</option>
+            <option value="any" data-i18n="ui-store.option.scope.any">Any (default)</option>
+            <option value="broadcast-only" data-i18n="ui-store.option.scope.broadcast-only">Broadcast Only</option>
+            <option value="client-only" data-i18n="ui-store.option.scope.client-only">Client Only</option>
         </select>
     </div>
 </script>
-<script type="text/html" data-help-name="ui-store">
-    <p>Declares a named state slice in the app's client state. Use <strong>Scope</strong> to guard
-    the allowed write target:</p>
-    <ul>
-        <li><strong>Any</strong> (default) — accepts both broadcast and per-client messages.
-            Back-compatible with existing flows.</li>
-        <li><strong>Broadcast Only</strong> — rejects messages that carry a <code>msg.ui.clientId</code>.
-            Prevents accidentally overwriting shared state with a client-specific message.</li>
-        <li><strong>Client Only</strong> — rejects messages that have no <code>msg.ui.clientId</code>.
-            Prevents accidentally broadcasting a per-client value to all connected clients.</li>
-    </ul>
-    <p>State is written via <code>msg.ui.store</code> operations (<code>set</code>, <code>patch</code>,
-    <code>delete</code>, <code>replace</code>, <code>reset</code>). Scope violations are reported as
-    a structured <code>server.store.scope-violation</code> error and wired to any connected
-    <em>catch</em> node.</p>
-    <p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/state/ui-store.md"
-        target="_blank">Full documentation</a></p>
-</script>
+<!-- P267 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/state/locales/{en-US,de}/ui-store.html; form-row labels carry
+     data-i18n keys resolved from nodes/state/locales/{en-US,de}/ui-store.json.
+     No inline data-help-name block here. -->

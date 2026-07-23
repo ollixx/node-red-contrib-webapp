@@ -1,0 +1,74 @@
+[
+    {
+        "id": "guide-ui-component",
+        "type": "tab",
+        "label": "Guide: ui-component",
+        "disabled": false,
+        "info": "User-guide example for ui-component-definition + ui-component-instance (docs/guide/nodes/ui-component-definition.md). Import, deploy, open /webapp/guideComponent/ to see two cards from one definition."
+    },
+    {
+        "id": "guideComponent",
+        "type": "ui-app",
+        "name": "Component demo",
+        "uiId": "guideComponent",
+        "root": "guideComponent",
+        "layout": "app",
+        "z": "guide-ui-component",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gCompDef",
+        "type": "ui-component-definition",
+        "name": "Card",
+        "uiId": "gCompDef",
+        "z": "guide-ui-component",
+        "x": 120,
+        "y": 160,
+        "wires": [[]]
+    },
+    {
+        "id": "gCompTitle",
+        "type": "ui-text",
+        "name": "Card title",
+        "uiId": "gCompTitle",
+        "mount": "def:gCompDef/content",
+        "order": "1",
+        "value": { "kind": "prop", "path": "title" },
+        "z": "guide-ui-component",
+        "x": 340,
+        "y": 160,
+        "wires": [[]]
+    },
+    {
+        "id": "gCompInst1",
+        "type": "ui-component-instance",
+        "name": "First",
+        "uiId": "gCompInst1",
+        "app": "guideComponent",
+        "mount": "guideComponent.content",
+        "order": "1",
+        "definition": "gCompDef",
+        "props": "{\"title\":{\"kind\":\"literal\",\"value\":\"First card\"}}",
+        "z": "guide-ui-component",
+        "x": 340,
+        "y": 100,
+        "wires": [[]]
+    },
+    {
+        "id": "gCompInst2",
+        "type": "ui-component-instance",
+        "name": "Second",
+        "uiId": "gCompInst2",
+        "app": "guideComponent",
+        "mount": "guideComponent.content",
+        "order": "2",
+        "definition": "gCompDef",
+        "props": "{\"title\":{\"kind\":\"literal\",\"value\":\"Second card\"}}",
+        "z": "guide-ui-component",
+        "x": 340,
+        "y": 220,
+        "wires": [[]]
+    }
+]

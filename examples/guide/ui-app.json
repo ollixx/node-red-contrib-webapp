@@ -1,0 +1,49 @@
+[
+    {
+        "id": "guide-ui-app",
+        "type": "tab",
+        "label": "Guide: ui-app",
+        "disabled": false,
+        "info": "User-guide example for ui-app (docs/guide/nodes/ui-app.md). Import, deploy, then open /webapp/guideApp/ to see the app bar and a home-page greeting."
+    },
+    {
+        "id": "guideApp",
+        "type": "ui-app",
+        "name": "Guide App",
+        "uiId": "guideApp",
+        "root": "guideApp",
+        "layout": "app",
+        "z": "guide-ui-app",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gAppHeader",
+        "type": "ui-text",
+        "name": "Header",
+        "uiId": "gAppHeader",
+        "app": "guideApp",
+        "mount": "guideApp.header",
+        "text": "Guide App",
+        "order": "1",
+        "z": "guide-ui-app",
+        "x": 340,
+        "y": 60,
+        "wires": [[]]
+    },
+    {
+        "id": "gAppContent",
+        "type": "ui-text",
+        "name": "Welcome",
+        "uiId": "gAppContent",
+        "app": "guideApp",
+        "mount": "guideApp.content",
+        "text": "Welcome to the app — this home page is the app's implicit root route.",
+        "order": "1",
+        "z": "guide-ui-app",
+        "x": 340,
+        "y": 120,
+        "wires": [[]]
+    }
+]

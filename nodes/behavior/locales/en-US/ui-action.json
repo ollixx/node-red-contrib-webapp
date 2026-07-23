@@ -1,0 +1,22 @@
+{
+    "ui-action": {
+        "label": {
+            "app": "App",
+            "actionType": "Action type",
+            "to": "Navigate to",
+            "route": "Target route",
+            "targets": "Target nodes (optional)",
+            "part": "Part (sub-id)",
+            "description": "Description"
+        },
+        "option": {
+            "actionType": {
+                "": "unspecified"
+            }
+        },
+        "placeholder": {
+            "to": "e.g. /customers/:id",
+            "part": "open/close/select: e.g. accordion section"
+        }
+    }
+}

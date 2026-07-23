@@ -73,15 +73,14 @@ const ALLOWLIST = {};
  * ------------------------------------------------------------------ */
 const TRANSITION_INLINE = {};
 for (const t of [
-    "ui-app", "ui-route", "ui-dialog", "ui-component-definition", "ui-component-instance",
     "ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select",
     "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider",
     "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state",
     "ui-tabs", "ui-tab", "ui-accordion", "ui-accordion-section", "ui-breadcrumb", "ui-menu",
     "ui-pagination", "ui-stepper", "ui-image", "ui-icon", "ui-list", "ui-avatar",
-    "ui-log", "ui-repeat", "ui-store", "ui-query", "ui-store-read",
-    "ui-store-action", "ui-query-action", "ui-action",
+    "ui-log", "ui-repeat",
     // ui-divider: MIGRATED (P265 pilot) — intentionally absent.
+    // P267: backbone batch fully migrated — no entries remain here.
 ]) {
     TRANSITION_INLINE[t] = "inline help pending locale migration (batches P267-P271)";
 }
@@ -99,15 +98,14 @@ for (const t of [
  * ------------------------------------------------------------------ */
 const LABEL_TRANSITION = {};
 for (const t of [
-    "ui-app", "ui-route", "ui-dialog", "ui-component-definition", "ui-component-instance",
     "ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select",
     "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider",
     "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state",
     "ui-tabs", "ui-tab", "ui-accordion", "ui-accordion-section", "ui-breadcrumb", "ui-menu",
     "ui-pagination", "ui-stepper", "ui-image", "ui-icon", "ui-list", "ui-avatar",
-    "ui-log", "ui-repeat", "ui-store", "ui-query", "ui-store-read",
-    "ui-store-action", "ui-query-action", "ui-action",
+    "ui-log", "ui-repeat",
     // ui-divider: MIGRATED (P272 pilot) — intentionally absent.
+    // P267: backbone batch fully migrated — no entries remain here.
 ]) {
     LABEL_TRANSITION[t] = "editor labels pending i18n migration (batches P267-P271)";
 }

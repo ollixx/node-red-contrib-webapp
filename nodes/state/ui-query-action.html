@@ -29,64 +29,24 @@
     })();
 </script>
 <script type="text/html" data-template-name="ui-query-action">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-app">App</label><select id="node-input-app"></select></div>
-    <div class="form-row"><label for="node-input-query">Query</label><select id="node-input-query"></select></div>
-    <div class="form-row"><label for="node-input-action">Action</label>
+    <div class="form-row"><label for="node-input-app" data-i18n="ui-query-action.label.app">App</label><select id="node-input-app"></select></div>
+    <div class="form-row"><label for="node-input-query" data-i18n="ui-query-action.label.query">Query</label><select id="node-input-query"></select></div>
+    <div class="form-row"><label for="node-input-action" data-i18n="ui-query-action.label.action">Action</label>
         <select id="node-input-action">
             <option value="refresh">refresh</option>
             <option value="replace">replace</option>
         </select>
     </div>
-    <div class="form-row"><label for="node-input-mode">Mode</label>
+    <div class="form-row"><label for="node-input-mode" data-i18n="ui-query-action.label.mode">Mode</label>
         <select id="node-input-mode">
-            <option value="reference">reference (trigger directly)</option>
-            <option value="wire">wire (emit envelope)</option>
+            <option value="reference" data-i18n="ui-query-action.option.mode.reference">reference (trigger directly)</option>
+            <option value="wire" data-i18n="ui-query-action.option.mode.wire">wire (emit envelope)</option>
         </select>
     </div>
 </script>
-<script type="text/html" data-help-name="ui-query-action">
-    <p>Typed, reference-based node for a <code>ui-query</code>. Pick the query, an
-    action, and a mode in the editor instead of hand-building <code>msg.ui.query</code>. The
-    <strong>action</strong> chooses the direction: <code>refresh</code> triggers the query
-    (data-out), <code>replace</code> writes incoming <code>msg.payload</code> as the query's data
-    (data-in). Together they form the typed loop:
-    <code>[refresh] → fetch → [replace • payload=rows] → query binding</code>.</p>
-    <h4>Config</h4>
-    <ul>
-        <li><strong>Query</strong> — reference to the target <code>ui-query</code> node (node picker, preset Queries).</li>
-        <li><strong>Action</strong> — <code>refresh</code> (trigger the query's retrieval) or
-            <code>replace</code> (set the query's data from <code>msg.payload</code>). The selector is an
-            extensible enum; default <code>refresh</code>.</li>
-        <li><strong>Mode</strong> — <code>reference</code> applies directly, server-side (per-client);
-            <code>wire</code> emits the <code>msg.ui.query</code> envelope on the out-port instead.</li>
-        <li><strong>App</strong> — the owning <code>ui-app</code> (required; a deploy error when empty, P205).</li>
-    </ul>
-    <h4>action = refresh (data-out, P212)</h4>
-    <ul>
-        <li><strong>reference</strong> — every input triggers the referenced query's <code>refresh</code>
-            DIRECTLY (server-side, per-client via <code>msg.ui.clientId</code>) so its out-port fires the
-            retrieval. No wire to the <code>ui-query</code> needed.</li>
-        <li><strong>wire</strong> — emits <code>msg.ui.query = { queryPath, refresh:true, params }</code>
-            on the out-port, which you wire to the <code>ui-query</code> input.</li>
-        <li><strong>Params</strong> — from <code>msg.ui.query.params</code> (preferred) or
-            <code>msg.payload</code>. When neither is present, NO <code>params</code> field is emitted.</li>
-    </ul>
-    <h4>action = replace (data-in, P213)</h4>
-    <ul>
-        <li><strong>reference</strong> — writes <code>msg.payload</code> DIRECTLY into
-            <code>ui.queries.&lt;queryPath&gt;.data</code> (per-client via <code>msg.ui.clientId</code>,
-            with an SSE re-render). Every <code>query:&lt;path&gt;</code>-bound view shows the new rows
-            live. The node does not emit in reference mode.</li>
-        <li><strong>wire</strong> — the node does NOT mutate; it emits
-            <code>msg.ui.query = { queryPath, data }</code> on the out-port, which you wire to the
-            <code>ui-query</code> input (its input handler absorbs the data — terminal, no loop).</li>
-        <li><strong>Data</strong> — from <code>msg.payload</code> (an array). No payload
-            (<code>undefined</code>/<code>null</code>) → <code>data</code> is <code>[]</code> (an explicit
-            replace-to-empty). Optional <code>totalCount</code>/<code>pageCount</code> ride along when
-            present on <code>msg.ui.query.*</code>.</li>
-    </ul>
-    <p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/state/ui-query-action.md"
-        target="_blank">Full documentation</a></p>
-</script>
+<!-- P267 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/state/locales/{en-US,de}/ui-query-action.html; form-row labels carry
+     data-i18n keys resolved from nodes/state/locales/{en-US,de}/ui-query-action.json.
+     No inline data-help-name block here. -->

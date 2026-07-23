@@ -1,0 +1,10 @@
+{
+    "ui-component-instance": {
+        "label": {
+            "uiId": "Node ID",
+            "mount": "Parent Slot",
+            "definition": "Definition",
+            "props": "Props"
+        }
+    }
+}

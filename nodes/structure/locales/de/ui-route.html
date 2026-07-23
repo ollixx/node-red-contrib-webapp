@@ -1,0 +1,22 @@
+<script type="text/html" data-help-name="ui-route">
+<p>Eine Unterseite der App: eine URL-Route mit eigenem Layout. Pfade können
+Parameter tragen (<code>/customers/:id</code>), verfügbar als
+<code>routeParam</code>-Bindings. Die Startseite <code>/</code> gehört zur
+<code>ui-app</code>, nicht hierher.</p>
+<h3>Wichtige Felder</h3>
+<ul>
+    <li><b>Pfad</b> — das URL-Segment; Parameter via <code>:name</code>; app-weit eindeutig; nie <code>/</code>.</li>
+    <li><b>Titel</b> — sprechender Titel, voll bindbar; ein Literal erscheint im Browser-Tab.</li>
+    <li><b>Parent Layout</b> — Layout-Preset; legt Slots + Child-Platzierung fest.</li>
+    <li><b>Gruppen</b> — kommaseparierter Authz-Guard; leer = nur Auth, gesetzt = eine der Gruppen nötig (sonst 403).</li>
+</ul>
+<h3>Eingang</h3>
+<p>Von der Runtime bedient — meist wird nichts verdrahtet. Die Route empfängt
+Navigation und Component-State-Messages; eine bereits adressierte Navigation
+wird unverändert durchgereicht. Unbekannte Messages passieren.</p>
+<h3>Ausgänge / Events</h3>
+<p>Ein Output-Port je aktivem Event: <code>onEnter</code> / <code>onLeave</code>
+(tragen <code>route</code>, <code>params</code>, <code>clientId</code>).</p>
+<h3>Vollständige Doku</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/de/nodes/ui-route.md" target="_blank">docs/guide/de/nodes/ui-route.md</a></p>
+</script>

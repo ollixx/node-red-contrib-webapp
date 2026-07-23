@@ -1,0 +1,22 @@
+<script type="text/html" data-help-name="ui-dialog">
+<p>Ein Dialog mit eigenem Layout innerhalb einer App. Offengelegt über die
+Action-Verben <code>open</code> / <code>close</code> (nicht
+<code>show</code>/<code>hide</code>); View-Knoten mounten über
+<code>dialog:&lt;id&gt;/&lt;slot&gt;</code>.</p>
+<h3>Wichtige Felder</h3>
+<ul>
+    <li><b>Schließbar</b> — das native Dismissal (X / ESC / Overlay); aus entfernt den Header, es bleibt nur <code>open</code>/<code>close</code>.</li>
+    <li><b>Modal</b> — Dialoge sind heute immer modal; das Feld ist ein Platzhalter für einen künftigen nicht-modalen Modus.</li>
+    <li><b>Parent Route</b> — optional: der Dialog ist nur bei aktiver passender Route darstellbar.</li>
+    <li><b>Gruppen</b> — Authz-Guard; gesetzt = der Dialog fehlt im Snapshot, außer der User hat eine Gruppe.</li>
+</ul>
+<h3>Eingang</h3>
+<p>Offengelegt durch eine <code>msg.ui.action</code> mit <code>type: "open"</code> /
+<code>"close"</code>, die den Dialog adressiert (Aliase <code>openDialog</code>/<code>closeDialog</code>).
+Unbekannte Messages werden unverändert durchgereicht.</p>
+<h3>Ausgänge / Events</h3>
+<p>Ein Output-Port je aktivem Event: <code>onOpen</code> / <code>onClose</code>
+(<code>onClose</code> feuert auch beim nativen Schließen).</p>
+<h3>Vollständige Doku</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/de/nodes/ui-dialog.md" target="_blank">docs/guide/de/nodes/ui-dialog.md</a></p>
+</script>

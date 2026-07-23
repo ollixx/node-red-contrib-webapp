@@ -1,0 +1,19 @@
+<script type="text/html" data-help-name="ui-component-instance">
+<p>Instantiates a <code>ui-component-definition</code> at a real slot, passing it
+props (ADR 0020). The definition's subtree is cloned in place; each inner node
+is re-id'd <code>&lt;instanceId&gt;#&lt;innerNodeId&gt;</code>.</p>
+<h3>Key fields</h3>
+<ul>
+    <li><b>Parent Slot</b> — where this instance renders (a real route/container slot).</li>
+    <li><b>Definition</b> — the definition to expand here. Required; a missing/invalid reference is a deploy error.</li>
+    <li><b>Props</b> — name → value pairs (any binding kind); the definition's children read them via <b>Prop (Component)</b>.</li>
+</ul>
+<h3>Inputs</h3>
+<p>None — an instance is a render-time construct, not a runtime node. It has no
+input port.</p>
+<h3>Outputs / Events</h3>
+<p>None on the instance. Events from the cloned inner nodes carry the instance
+identity in their <code>sourceId</code>. v1: props in / events out.</p>
+<h3>Full docs</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/nodes/ui-component-instance.md" target="_blank">docs/guide/nodes/ui-component-instance.md</a></p>
+</script>

@@ -57,29 +57,26 @@
     })();
 </script>
 <script type="text/html" data-template-name="ui-dialog">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-app">App</label><select id="node-input-app"></select></div>
-    <div class="form-row"><label for="node-input-title">Titel</label><input type="text" id="node-input-title"></div>
+    <div class="form-row"><label for="node-input-app" data-i18n="ui-dialog.label.app">App</label><select id="node-input-app"></select></div>
+    <div class="form-row"><label for="node-input-title" data-i18n="ui-dialog.label.title">Titel</label><input type="text" id="node-input-title"></div>
     <input type="hidden" id="node-input-layout">
-    <div class="form-row"><label for="node-input-layout-preset">Parent Layout</label><select id="node-input-layout-preset"></select></div>
-    <div class="form-row"><label for="node-input-route">Parent Route</label><select id="node-input-route"></select></div>
-    <div class="form-row"><label for="node-input-modal">Modal</label><input type="checkbox" id="node-input-modal" style="width:auto"></div>
-    <div class="form-row"><label for="node-input-closable">Schließbar</label><input type="checkbox" id="node-input-closable" style="width:auto"></div>
+    <div class="form-row"><label for="node-input-layout-preset" data-i18n="ui-dialog.label.layout">Parent Layout</label><select id="node-input-layout-preset"></select></div>
+    <div class="form-row"><label for="node-input-route" data-i18n="ui-dialog.label.route">Parent Route</label><select id="node-input-route"></select></div>
+    <div class="form-row"><label for="node-input-modal" data-i18n="ui-dialog.label.modal">Modal</label><input type="checkbox" id="node-input-modal" style="width:auto"></div>
+    <div class="form-row"><label for="node-input-closable" data-i18n="ui-dialog.label.closable">Schließbar</label><input type="checkbox" id="node-input-closable" style="width:auto"></div>
     <!-- P262: authz guard - comma-separated group names (ANY-of, server-enforced) -->
     <div class="form-row">
-        <label for="node-input-requiresGroup">Gruppen</label>
-        <input type="text" id="node-input-requiresGroup" placeholder="z.B. admins, sales (leer = nur Authentifizierung)">
+        <label for="node-input-requiresGroup" data-i18n="ui-dialog.label.requiresGroup">Gruppen</label>
+        <input type="text" id="node-input-requiresGroup" placeholder="z.B. admins, sales (leer = nur Authentifizierung)" data-i18n="[placeholder]ui-dialog.placeholder.requiresGroup">
     </div>
     <input type="hidden" id="node-input-events">
     <input type="hidden" id="node-input-outputs">
-    <div class="form-row"><label>Events</label></div>
+    <div class="form-row"><label data-i18n="ui-dialog.label.events">Events</label></div>
     <div id="node-input-events-container"></div>
 </script>
-<script type="text/html" data-help-name="ui-dialog"><p>Definiert einen <b>Dialog mit eigenem Layout</b> innerhalb einer App. Der Dialog wird über die Action-Verben <code>open</code> / <code>close</code> offengelegt (nicht über <code>show</code>/<code>hide</code>); View-Knoten mounten über <code>dialog:&lt;id&gt;/&lt;slot&gt;</code> in seine Slots.</p>
-<p><b>Schließbar</b> (<code>closable</code>): steuert nur das native Nutzer-Dismissal. Bei <code>true</code> ist der Dialog per X / ESC / Overlay-Klick schließbar; bei <code>false</code> entfällt der gesamte Header und der Dialog wird ausschließlich über <code>open</code>/<code>close</code> gesteuert.</p>
-<p><b>Modal</b>: Dialoge sind heute <b>immer modal</b> (das Backend <code>sl-dialog</code> ist nativ modal). Das Feld ist ein Platzhalter für einen künftigen nicht-modalen Modus und hat aktuell keine Wirkung.</p>
-<p><b>Parent Route</b> (<code>route</code>): koppelt den Dialog optional an eine Route — dann ist er nur bei aktiver passender Route darstellbar.</p>
-<p><b>Gruppen</b> (<code>requiresGroup</code>, P262): kommaseparierte Gruppennamen. Leer &rArr; nur Authentifizierung n&ouml;tig. Gesetzt &rArr; der User braucht <b>mindestens eine</b> der Gruppen (<code>user.groups</code>, ADR 0041). Server-seitig erzwungen: der Dialog fehlt im Snapshot (auch via <code>?dialog=</code>), Events an seine Komponenten werden abgelehnt. <em>visibleIf ist UX, der Guard ist Sicherheit.</em></p>
-<p><b>Events</b>: <code>onOpen</code> feuert beim Öffnen, <code>onClose</code> beim Schließen (auch bei X / ESC / Overlay). Jedes aktive Event erzeugt einen Output-Port.</p>
-<p>Vollständige Doku: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/structure/ui-dialog.md" target="_blank">docs/nodes/structure/ui-dialog.md</a></p></script>
+<!-- P267 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/structure/locales/{en-US,de}/ui-dialog.html; form-row labels carry
+     data-i18n keys resolved from nodes/structure/locales/{en-US,de}/ui-dialog.json.
+     No inline data-help-name block here. -->

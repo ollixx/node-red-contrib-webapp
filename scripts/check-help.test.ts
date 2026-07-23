@@ -148,11 +148,19 @@ const guideDocs = (type: string) => [
 ];
 
 describe("check-help locale rules (P265 — migrated nodes)", () => {
-    it("the transition rest-list covers every registered node except the pilot", () => {
+    it("the transition rest-list excludes every locale-migrated node (pilot + P267 backbone)", () => {
         const types = Object.keys(check.nodeHtmlPaths());
         const transitional = types.filter((t) => check.TRANSITION_INLINE[t]);
-        expect(transitional.length).toBe(types.length - 1);
-        expect(check.TRANSITION_INLINE["ui-divider"]).toBeUndefined();
+        // Migrated so far: the P265 pilot + the P267 backbone batch (11 nodes).
+        const migrated = [
+            "ui-divider",
+            "ui-app", "ui-route", "ui-dialog",
+            "ui-component-definition", "ui-component-instance",
+            "ui-store", "ui-store-read", "ui-store-action",
+            "ui-query", "ui-query-action", "ui-action",
+        ];
+        expect(transitional.length).toBe(types.length - migrated.length);
+        for (const t of migrated) expect(check.TRANSITION_INLINE[t]).toBeUndefined();
     });
 
     it("passes a fully migrated node (en-US + de locale help, guide links resolve)", () => {
@@ -260,11 +268,18 @@ const labelOk = (type: string) => ({
 });
 
 describe("check-help label-catalog rules (P272 — editor-label i18n)", () => {
-    it("the label transition rest-list covers every registered node except the pilot", () => {
+    it("the label transition rest-list excludes every migrated node (pilot + P267 backbone)", () => {
         const types = Object.keys(check.nodeHtmlPaths());
         const transitional = types.filter((t) => check.LABEL_TRANSITION[t]);
-        expect(transitional.length).toBe(types.length - 1);
-        expect(check.LABEL_TRANSITION["ui-divider"]).toBeUndefined();
+        const migrated = [
+            "ui-divider",
+            "ui-app", "ui-route", "ui-dialog",
+            "ui-component-definition", "ui-component-instance",
+            "ui-store", "ui-store-read", "ui-store-action",
+            "ui-query", "ui-query-action", "ui-action",
+        ];
+        expect(transitional.length).toBe(types.length - migrated.length);
+        for (const t of migrated) expect(check.LABEL_TRANSITION[t]).toBeUndefined();
     });
 
     it("catalogKeyTree fingerprints leaf key paths, sorted", () => {

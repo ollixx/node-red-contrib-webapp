@@ -1,0 +1,91 @@
+[
+    {
+        "id": "guide-ui-dialog",
+        "type": "tab",
+        "label": "Guide: ui-dialog",
+        "disabled": false,
+        "info": "User-guide example for ui-dialog (docs/guide/nodes/ui-dialog.md). Import, deploy, open /webapp/guideDialog/, click 'Open dialog'."
+    },
+    {
+        "id": "guideDialog",
+        "type": "ui-app",
+        "name": "Dialog demo",
+        "uiId": "guideDialog",
+        "root": "guideDialog",
+        "layout": "app",
+        "z": "guide-ui-dialog",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gDlgHome",
+        "type": "ui-text",
+        "name": "Home text",
+        "uiId": "gDlgHome",
+        "app": "guideDialog",
+        "mount": "guideDialog.content",
+        "text": "Click the button to reveal a modal dialog.",
+        "order": "1",
+        "z": "guide-ui-dialog",
+        "x": 340,
+        "y": 60,
+        "wires": [[]]
+    },
+    {
+        "id": "gDlgButton",
+        "type": "ui-button",
+        "name": "Open dialog",
+        "uiId": "gDlgButton",
+        "app": "guideDialog",
+        "mount": "guideDialog.content",
+        "label": "Open dialog",
+        "action": "gDlgOpen",
+        "order": "2",
+        "z": "guide-ui-dialog",
+        "x": 340,
+        "y": 120,
+        "wires": [["gDlgOpen"]]
+    },
+    {
+        "id": "gDlgOpen",
+        "type": "ui-action",
+        "name": "Open the dialog",
+        "uiId": "gDlgOpen",
+        "app": "guideDialog",
+        "actionType": "open",
+        "z": "guide-ui-dialog",
+        "x": 560,
+        "y": 120,
+        "wires": [["gDlgDialog"]]
+    },
+    {
+        "id": "gDlgDialog",
+        "type": "ui-dialog",
+        "name": "Confirmation",
+        "uiId": "gDlgDialog",
+        "app": "guideDialog",
+        "title": "Confirmation",
+        "layout": "dialog",
+        "modal": true,
+        "closable": true,
+        "z": "guide-ui-dialog",
+        "x": 120,
+        "y": 200,
+        "wires": [[]]
+    },
+    {
+        "id": "gDlgContent",
+        "type": "ui-text",
+        "name": "Dialog text",
+        "uiId": "gDlgContent",
+        "app": "guideDialog",
+        "mount": "dialog:gDlgDialog/content",
+        "text": "This content lives inside the dialog.",
+        "order": "1",
+        "z": "guide-ui-dialog",
+        "x": 340,
+        "y": 200,
+        "wires": [[]]
+    }
+]

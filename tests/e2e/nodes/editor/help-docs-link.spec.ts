@@ -27,7 +27,12 @@ const EXPECTED_DOC: Record<string, string> = {
 // the intent (a resolvable full-doc link in the rendered help) is unchanged.
 // The batches P267–P271 move every node here; the transitional inline nodes
 // keep the contract-doc link until migrated.
-const LOCALE_MIGRATED = new Set<string>(["ui-divider"]);
+const LOCALE_MIGRATED = new Set<string>([
+    "ui-divider", "ui-app", "ui-route", "ui-dialog",
+    "ui-component-definition", "ui-component-instance",
+    "ui-store", "ui-store-read", "ui-store-action", "ui-query", "ui-query-action",
+    "ui-action",
+]);
 
 // Every ui-* editor type (from package.json node-red.nodes). Kept explicit so a
 // new node that forgets a help link fails HERE too, not only in the guardrail.
@@ -43,7 +48,12 @@ const UI_TYPES = [
     // P243 (ADR 0040): ui-navigation retired — navigation is a ui-action navigate.
 ] as const;
 
-const expectedBasename = (type: string) => EXPECTED_DOC[type] ?? `${type}.md`;
+// Contract docs may share a spec basename (the component pair → ui-component.md),
+// but the USER guide docs are per-type. A locale-migrated node therefore links
+// its OWN guide doc (`<type>.md`); only transitional inline nodes fall back to
+// the shared contract-doc basename in EXPECTED_DOC.
+const expectedBasename = (type: string) =>
+    LOCALE_MIGRATED.has(type) ? `${type}.md` : (EXPECTED_DOC[type] ?? `${type}.md`);
 
 const CANONICAL_PREFIX =
     "https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/";

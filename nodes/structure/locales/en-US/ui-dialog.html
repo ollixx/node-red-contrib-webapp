@@ -1,0 +1,21 @@
+<script type="text/html" data-help-name="ui-dialog">
+<p>A dialog with its own layout inside an app. Revealed with the action verbs
+<code>open</code> / <code>close</code> (not <code>show</code>/<code>hide</code>);
+view nodes mount via <code>dialog:&lt;id&gt;/&lt;slot&gt;</code>.</p>
+<h3>Key fields</h3>
+<ul>
+    <li><b>Schließbar</b> — the native dismissal (X / ESC / overlay); off drops the header and leaves only <code>open</code>/<code>close</code>.</li>
+    <li><b>Modal</b> — dialogs are always modal today; the field is a placeholder for a future non-modal mode.</li>
+    <li><b>Parent Route</b> — optional: the dialog is only renderable while that route is active.</li>
+    <li><b>Gruppen</b> — authz guard; set = the dialog is absent from the snapshot unless the user has a group.</li>
+</ul>
+<h3>Inputs</h3>
+<p>Revealed by a <code>msg.ui.action</code> with <code>type: "open"</code> /
+<code>"close"</code> addressing the dialog (aliases <code>openDialog</code>/<code>closeDialog</code>).
+Unknown messages pass through unchanged.</p>
+<h3>Outputs / Events</h3>
+<p>One output port per ticked event: <code>onOpen</code> / <code>onClose</code>
+(<code>onClose</code> also fires on a native close).</p>
+<h3>Full docs</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/nodes/ui-dialog.md" target="_blank">docs/guide/nodes/ui-dialog.md</a></p>
+</script>

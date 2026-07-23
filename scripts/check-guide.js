@@ -41,15 +41,15 @@ const PKG = require(path.join(ROOT, "package.json"));
  * ------------------------------------------------------------------ */
 const ALLOWLIST = {};
 for (const t of [
-    "ui-app", "ui-route", "ui-dialog", "ui-component-definition", "ui-component-instance",
     "ui-text", "ui-button", "ui-table", "ui-container", "ui-input", "ui-select",
     "ui-checkbox", "ui-radio", "ui-switch", "ui-textarea", "ui-datepicker", "ui-slider",
     "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state",
     "ui-tabs", "ui-tab", "ui-accordion", "ui-accordion-section", "ui-breadcrumb", "ui-menu",
     "ui-pagination", "ui-stepper", "ui-image", "ui-icon", "ui-list", "ui-avatar",
-    "ui-log", "ui-repeat", "ui-store", "ui-query", "ui-store-read",
-    "ui-store-action", "ui-query-action", "ui-action",
+    "ui-log", "ui-repeat",
     // ui-divider: PILOT (P265) — has full guide coverage; intentionally absent.
+    // P267: the backbone batch (app, route, dialog, component pair, store family,
+    // query family, action) is now fully migrated — no entries remain here.
 ]) {
     ALLOWLIST[t] = "guide docs pending (batches P267-P271)";
 }

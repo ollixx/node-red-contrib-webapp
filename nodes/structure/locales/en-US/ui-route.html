@@ -1,0 +1,21 @@
+<script type="text/html" data-help-name="ui-route">
+<p>A sub-page of the app: a URL route with its own layout. Paths may carry
+parameters (<code>/customers/:id</code>) exposed as <code>routeParam</code>
+bindings. The home page <code>/</code> belongs to <code>ui-app</code>, not here.</p>
+<h3>Key fields</h3>
+<ul>
+    <li><b>Pfad</b> — the URL segment; parameters via <code>:name</code>; unique per app; never <code>/</code>.</li>
+    <li><b>Titel</b> — readable title, fully bindable; a literal shows in the browser tab.</li>
+    <li><b>Parent Layout</b> — layout preset; sets slots + child placement.</li>
+    <li><b>Gruppen</b> — comma-separated authz guard; empty = auth only, set = needs one of the groups (403 otherwise).</li>
+</ul>
+<h3>Inputs</h3>
+<p>Driven by the runtime — normally nothing is wired in. It receives navigation
+and component-state messages; an already-addressed navigate passes through
+unchanged. Unknown messages pass through.</p>
+<h3>Outputs / Events</h3>
+<p>One output port per ticked event: <code>onEnter</code> / <code>onLeave</code>
+(carry <code>route</code>, <code>params</code>, <code>clientId</code>).</p>
+<h3>Full docs</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/nodes/ui-route.md" target="_blank">docs/guide/nodes/ui-route.md</a></p>
+</script>

@@ -1,0 +1,12 @@
+{
+    "ui-store-read": {
+        "label": {
+            "app": "App",
+            "store": "Store",
+            "path": "Default Path"
+        },
+        "placeholder": {
+            "path": "(optional sub-path, e.g. name)"
+        }
+    }
+}

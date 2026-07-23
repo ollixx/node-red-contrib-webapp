@@ -1,0 +1,21 @@
+<script type="text/html" data-help-name="ui-action">
+<p>The typed emitter of the <code>msg.ui.action</code> contract — interaction
+state only, never business data (ADR 0007). On input it builds a schema-valid
+<code>msg.ui.action</code> and emits it; the wired target performs the push.</p>
+<h3>Key fields</h3>
+<ul>
+    <li><b>Action-Typ</b> — the verb: <code>navigate</code>, <code>show</code>/<code>hide</code>, <code>open</code>/<code>close</code>, <code>select</code>, <code>enable</code>/<code>disable</code>, <code>focus</code>, <code>reset</code>.</li>
+    <li><b>Ziel</b> (navigate) — three modes: <b>Wire</b> (route builds the location), <b>Route</b> (picked route + params), <b>URL</b> (whole URL). Navigate is the canonical navigation path (ADR 0040).</li>
+    <li><b>Teil (Sub-ID)</b> — sub-id for <code>open</code>/<code>close</code>/<code>select</code>.</li>
+</ul>
+<h3>Inputs</h3>
+<p>A <code>msg</code>; <code>msg.ui.action.*</code> overrides config
+(<code>type</code>, <code>target</code>, <code>part</code>, <code>to</code>,
+<code>params</code>). <code>msg.ui.clientId</code> limits to one client. The
+message is enriched (not replaced); unknown messages pass through.</p>
+<h3>Outputs / Events</h3>
+<p>Emits the <code>msg.ui.action</code>-enriched message; the wired target
+processes the verb it owns and performs the push. ui-action pushes nothing itself.</p>
+<h3>Full docs</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/nodes/ui-action.md" target="_blank">docs/guide/nodes/ui-action.md</a></p>
+</script>

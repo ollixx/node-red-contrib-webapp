@@ -1,0 +1,20 @@
+{
+    "ui-store-action": {
+        "label": {
+            "app": "App",
+            "store": "Store",
+            "op": "Operation",
+            "path": "Path",
+            "mode": "Mode"
+        },
+        "option": {
+            "mode": {
+                "reference": "reference (apply directly)",
+                "wire": "wire (emit envelope)"
+            }
+        },
+        "placeholder": {
+            "path": "(optional sub-path, e.g. name)"
+        }
+    }
+}

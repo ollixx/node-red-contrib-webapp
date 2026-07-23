@@ -1,0 +1,24 @@
+<script type="text/html" data-help-name="ui-app">
+<p>Die Wurzel einer deklarativen Web-App: Basis-URL, Layout, Theme, Auth und
+Lebenszyklus-Events. Zugleich die implizite Root-Route <code>/</code> —
+Startseiten-Inhalt mountet direkt in ihre Slots. Ausgeliefert unter
+<code>/webapp/&lt;root&gt;</code>.</p>
+<h3>Wichtige Felder</h3>
+<ul>
+    <li><b>Root</b> — das URL-Segment hinter <code>/webapp/</code>; eindeutig, Pflicht.</li>
+    <li><b>Layout</b> — Basis-Preset (<code>vertical</code>/<code>app</code>/…); legt Slots + Child-Platzierung fest.</li>
+    <li><b>Auth</b> — <code>none</code> oder <code>trusted-header</code> (erzwingt Identität, stellt das <code>user</code>-Binding bereit).</li>
+    <li><b>Logging</b> — opt-in, redigierte Weiterleitung von Framework-Fehlern (Default aus).</li>
+    <li><b>Status</b> — <code>Entwicklung</code> liefert beim Deploy automatisch aus; <code>Produktion</code> wartet auf manuellen Reload.</li>
+</ul>
+<h3>Eingang</h3>
+<p>Hat einen Eingangs-Port, damit die App-globalen Verben <code>navigate</code> /
+<code>reset</code> an ihn verdrahtet werden können (navigate zielt auf die Root
+<code>/</code>). Fachliche Messages konsumiert er nicht; unbekannte werden
+unverändert durchgereicht.</p>
+<h3>Ausgänge / Events</h3>
+<p>Ein Output-Port je aktivem Event: <code>clientConnected</code>,
+<code>clientDisconnected</code>, <code>onEnter</code>, <code>onLeave</code>.</p>
+<h3>Vollständige Doku</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/de/nodes/ui-app.md" target="_blank">docs/guide/de/nodes/ui-app.md</a></p>
+</script>
