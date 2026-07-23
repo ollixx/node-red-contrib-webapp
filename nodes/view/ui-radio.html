@@ -14,10 +14,9 @@
             variant: false,
             advanced: ["size"],
             omit: ["disabled"],
-            hints: {
-                color: "Ein Formularfeld hat keine allgemeine Farbe (Zustandsfarben kommen aus Validierung/Variant).",
-                size: "Dieser Knoten hat keine Größen-Stufen."
-            }
+            // P268 (ADR 0042 §3): N/A hints live in the node's OWN locale catalog
+            // (nodes/view/locales/<lang>/ui-radio.json -> `ui-radio.hints.<field>`).
+            i18nNode: "ui-radio"
         };
         common.registerNodeType("ui-radio", {
             category: "webapp view",
@@ -203,56 +202,36 @@
         });
     })();
 </script>
+<!-- P268 (ADR 0042 §3): editor-label i18n. Form-row labels carry data-i18n keys
+     per the convention `<node>.label.<field>` (options `<node>.option.<field>.<value>`,
+     placeholders `[placeholder]<node>.placeholder.<field>`). Catalogs:
+     nodes/view/locales/{en-US,de}/ui-radio.json. The literal texts stay as the en-US
+     authoring reference; at edit time the catalog text replaces them. -->
 <script type="text/html" data-template-name="ui-radio">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-row"><label for="node-input-mount" data-i18n="ui-radio.label.mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <!-- P136 (ADR 0012 / value category): Label binding — typedInput managed in oneditprepare/oneditsave. -->
     <!-- Hidden input so NR auto-save can resolve the `label` default without clobbering the binding object. -->
     <input type="hidden" id="node-input-label">
-    <div class="form-row"><label for="node-input-labelBinding">Label</label><input type="text" id="node-input-labelBinding"></div>
+    <div class="form-row"><label for="node-input-labelBinding" data-i18n="ui-radio.label.labelBinding">Label</label><input type="text" id="node-input-labelBinding"></div>
     <!-- P127 (ADR 0012 / value/display category): Value binding — typedInput managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-valueBinding">Value</label><input type="text" id="node-input-valueBinding"></div>
+    <div class="form-row"><label for="node-input-valueBinding" data-i18n="ui-radio.label.valueBinding">Value</label><input type="text" id="node-input-valueBinding"></div>
     <!-- P204 (ADR 0027 / writable category): writeTo target (WRITE) — Store/Flow/Global. -->
-    <div class="form-row"><label for="node-input-writeToBinding">Write To</label><input type="text" id="node-input-writeToBinding"></div>
-    <div class="form-row"><label for="node-input-writeTrigger">Write Trigger</label><select id="node-input-writeTrigger"><option value="submit">submit</option><option value="change">change</option><option value="none">none</option></select></div>
+    <div class="form-row"><label for="node-input-writeToBinding" data-i18n="ui-radio.label.writeToBinding">Write To</label><input type="text" id="node-input-writeToBinding"></div>
+    <div class="form-row"><label for="node-input-writeTrigger" data-i18n="ui-radio.label.writeTrigger">Write Trigger</label><select id="node-input-writeTrigger"><option value="submit" data-i18n="ui-radio.option.writeTrigger.submit">submit</option><option value="change" data-i18n="ui-radio.option.writeTrigger.change">change</option><option value="none" data-i18n="ui-radio.option.writeTrigger.none">none</option></select></div>
     <!-- P136 (ADR 0012): single Options field — json (NR JSON editor) | store. Shared helper with ui-select. -->
-    <div class="form-row"><label for="node-input-optionsField">Options</label><input type="text" id="node-input-optionsField"></div>
-    <div class="form-row"><label for="node-input-orientation">Orientation</label>
+    <div class="form-row"><label for="node-input-optionsField" data-i18n="ui-radio.label.optionsField">Options</label><input type="text" id="node-input-optionsField"></div>
+    <div class="form-row"><label for="node-input-orientation" data-i18n="ui-radio.label.orientation">Orientation</label>
         <select id="node-input-orientation">
-            <option value="vertical">vertical</option>
-            <option value="horizontal">horizontal</option>
+            <option value="vertical" data-i18n="ui-radio.option.orientation.vertical">vertical</option>
+            <option value="horizontal" data-i18n="ui-radio.option.orientation.horizontal">horizontal</option>
         </select>
     </div>
     <!-- P127 (ADR 0012 / boolean category): Disabled binding — typedInput managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-disabledBinding">Disabled</label><input type="text" id="node-input-disabledBinding"></div>
+    <div class="form-row"><label for="node-input-disabledBinding" data-i18n="ui-radio.label.disabledBinding">Disabled</label><input type="text" id="node-input-disabledBinding"></div>
 </script>
-<script type="text/html" data-help-name="ui-radio">
-    <p>Radio-Gruppe — genau eine Option waehlbar.</p>
-    <h4>Label &amp; Optionen (P136)</h4>
-    <p><code>Label</code> nutzt den kanonischen Wert-Satz (ADR 0012): literaler Text oder ein Binding
-    (Store, Query, Route-Param, Reactive, msg, JSONata, Flow, Global, Env).</p>
-    <p><code>Optionen</code> ist ein einziges Feld mit zwei Typen — <code>Options</code> (NR-JSON-Editor)
-    oder <code>Store</code> — der <strong>gleiche geteilte Helfer</strong> wie bei ui-select.
-    Das JSON akzeptiert genau eine von drei Formen: Objekt <code>{"A":"a"}</code>,
-    String-Array <code>["A","B"]</code> oder Objekt-Array <code>[{"label":"A","value":"a"}]</code>;
-    andere Strukturen markieren den Knoten vor dem Deploy als ungültig. Der Typ <code>Store</code>
-    liest die Optionen reaktiv aus einem Store(-Pfad). Bestehende <code>optionsJson</code>/
-    <code>optionsBinding</code>-Felder migrieren verlustfrei.</p>
-    <h4>Value (P127)</h4>
-    <p>Bindbare Quelle des ausgewählten Werts (Anzeige/Initialwert) — voller kanonischer Satz (ADR 0012):
-    Store, Query, Route-Param, Reactive, msg, JSONata, string, number, boolean, json, timestamp,
-    Flow, Global, Env. Ein bestehender <code>valuePath</code> wird automatisch als
-    <code>state</code>-Binding übernommen. Auswahl durch den Nutzer schreibt weiterhin zurück.</p>
-    <h4>Write To (Schreiben, P204 / ADR 0027)</h4>
-    <p>Ziel, in das die Runtime den gewählten Wert schreibt — nur <b>schreibbare</b> Kinds
-    (<code>Store</code>/<code>Flow</code>/<code>Global</code>). Eine Radiogruppe hat keine
-    Submit-Geste: sie schreibt bei <code>change</code>, unabhängig vom <code>Write Trigger</code>.</p>
-    <h4>Disabled (P127)</h4>
-    <p>Bindbar über den Boolean-Zustand-Satz (ADR 0012): Store, Query, Route-Param, Reactive,
-    msg, JSONata, boolean, Flow, Global, Env. Ein Store-Binding deaktiviert die Radiogruppe live,
-    sobald der Wert truthy ist.</p>
-    <h4>Events</h4>
-    <p>Emittiert <code>{ event: "change", params: { value } }</code> wenn der Nutzer eine Option wählt.</p>
-    <p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/input/ui-radio.md">Ausführliche Doku</a></p>
-</script>
+<!-- P268 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/view/locales/{en-US,de}/ui-radio.html; form-row labels carry
+     data-i18n keys resolved from nodes/view/locales/{en-US,de}/ui-radio.json.
+     No inline data-help-name block here. -->
