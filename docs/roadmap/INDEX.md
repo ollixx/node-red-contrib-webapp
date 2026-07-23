@@ -34,6 +34,7 @@ their blocker clears.
 - **P269** — aspects/docs — Node-Referenz-Batch **display** (8; divider = Pilot) — [P269](aspects/docs/P269-node-reference-batch-display.md)
 - **P270** — aspects/docs — Node-Referenz-Batch **feedback** (7) — [P270](aspects/docs/P270-node-reference-batch-feedback.md)
 - **P271** — aspects/docs — Node-Referenz-Batch **navigation** (8) — [P271](aspects/docs/P271-node-reference-batch-navigation.md)
+- **P272** — aspects/docs — **Editor-Label-i18n**: Mechanik-Pilot (data-i18n + Kataloge) + die geteilten editor-common-Strings (Base-Field-Hinweise, Picker, Optionen) en-US+de — [P272](aspects/docs/P272-editor-label-i18n-mechanics-and-shared-strings.md)
 
 ## Deferred (parked, not abandoned)
 
@@ -107,4 +108,4 @@ open the folder for the full history.
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 262 done, 7 open, 10 deferred.**
+**Total: 262 done, 8 open, 10 deferred.**

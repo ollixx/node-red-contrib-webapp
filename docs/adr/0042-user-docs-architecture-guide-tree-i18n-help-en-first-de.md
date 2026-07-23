@@ -56,9 +56,18 @@ Every registered node gets:
 Help lives in the Node-RED locale mechanism (editor language selects it);
 guides live as md twins (`docs/guide/…` ↔ `docs/guide/de/…`). English is written
 first and is the review target; German is a translation pass in the same
-package (never a separate drift-prone effort). **Editor form labels**
-(`data-i18n` on rows) are explicitly **out of scope** for 1.0 — help + guides
-only; label i18n is a possible later package.
+package (never a separate drift-prone effort).
+
+**Editor form labels are IN scope** (owner amendment 2026-07-22 — the labels are
+as language-mixed today as the helps were: „Titel"/„Schließbar" German,
+„Min Severity"/„Start collapsed" English): form-row labels, SelectBox option
+texts and hint strings move to `data-i18n` + per-node message catalogs
+(`nodes/<cat>/locales/<lang>/<node>.json`, en-US + de). The **shared**
+editor-common strings (base-field N/A hints, picker buttons like „Icon wählen…",
+shared SelectBox options, validation hints) are a **cross-cutting** slice with
+their own proven mechanics (**P272** — label-mechanics pilot + shared strings);
+the per-node labels ride in the same node batches that already touch every
+node's HTML for the help extraction (P267–P271, same file, same commit).
 
 ### 4. Guardrails extend to user docs
 

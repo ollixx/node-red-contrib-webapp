@@ -1,9 +1,9 @@
 ---
 id: P270
-title: "Node-Referenz-Batch feedback: Feedback-Knoten (7): alert, toast, progress, skeleton, badge, empty-state, log — Guide-Doc (EN+DE) + 1–3 Import-Beispiele + locales-Hilfe (en-US+de) je Knoten"
+title: "Node-Referenz-Batch feedback: Feedback-Knoten (7): alert, toast, progress, skeleton, badge, empty-state, log — Guide-Doc (EN+DE) + 1–3 Import-Beispiele + locales-Hilfe (en-US+de) + Editor-Label-i18n (data-i18n + Kataloge) je Knoten"
 epic: aspects/docs
 status: pending
-dependencies: [P265]
+dependencies: [P265, P272]
 verify: browser
 spec: docs/guide/README.md
 tests: tests/e2e/nodes/structure/ui-app.tests.md
@@ -29,6 +29,12 @@ tests: tests/e2e/nodes/structure/ui-app.tests.md
 - **locales-Hilfe** `nodes/<cat>/locales/en-US/<node>.html` + `locales/de/<node>.html`
   nach Hilfe-Template (Purpose · Key fields · **Inputs-Pflichtabschnitt** ·
   Outputs · Guide-Link); der Inline-`data-help-name`-Block ist entfernt.
+- **Editor-Label-i18n** (ADR 0042 §3, Mechanik + Key-Konvention aus **P272**):
+  Formzeilen-Labels, knoten-eigene SelectBox-Optionstexte und knoten-eigene
+  Hinweise via `data-i18n` + Kataloge `nodes/<cat>/locales/{en-US,de}/<node>.json`;
+  Sprachumschaltung an mind. 1 Knoten des Batches gemessen; Label-Katalog-
+  Guardrail-Allowlist um diese Knoten geleert. (Geteilte editor-common-Strings
+  sind P272 — hier NICHT anfassen.)
 - **Beispiele smoke-verifiziert** (Harness deployt + prüft Render).
 - **Guardrail-Fortschritt:** die `check:guide`- und `check:help`-Allowlist-
   Einträge dieser Knoten sind entfernt (schrumpfend Richtung leer).
