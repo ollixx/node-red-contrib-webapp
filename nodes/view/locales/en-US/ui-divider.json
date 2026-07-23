@@ -1,0 +1,22 @@
+{
+    "ui-divider": {
+        "label": {
+            "mount": "Parent Slot",
+            "orientation": "Orientation",
+            "label": "Label"
+        },
+        "option": {
+            "orientation": {
+                "horizontal": "Horizontal",
+                "vertical": "Vertical"
+            }
+        },
+        "placeholder": {
+            "label": "optional divider label"
+        },
+        "hints": {
+            "disabled": "A divider has no interactive state.",
+            "size": "A divider has no size steps."
+        }
+    }
+}
