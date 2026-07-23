@@ -7,7 +7,7 @@ import { NodeEditorPage } from "../../../helpers/node-editor-page";
 /**
  * P139 (ADR 0015) — the common base-field foundation: `installBaseFields()`.
  *
- * The shared helper renders the grouped base-field section ("Allgemein") with
+ * The shared helper renders the grouped base-field section ("General") with
  * visible/disabled/color/size, N/A-disable-with-hint, and the optional
  * collapsible "Erweitert" subsection. The per-node rollout is OUT of scope —
  * the helper is proven on ONE reference node: **ui-divider** (non-variant, so
@@ -34,16 +34,16 @@ test.describe("editor panels — common base fields (P139, ADR 0015)", () => {
         return { editor, nodeId };
     }
 
-    test("ui-divider — base-field group with 'Allgemein' heading is injected", async ({ page, request }) => {
+    test("ui-divider — base-field group with 'General' heading is injected", async ({ page, request }) => {
         await openDividerPanel(page, request);
 
         // Exactly one injected base-field group (idempotent injection).
         await expect(page.locator('[data-field-group="base-fields"]')).toHaveCount(1);
 
-        // Its own heading, "Allgemein".
+        // Its own heading, "General" (P272: en-US shared strings).
         const heading = page.locator('[data-group-heading="base-fields"]');
         await expect(heading).toHaveCount(1);
-        await expect(heading).toHaveText("Allgemein");
+        await expect(heading).toHaveText("General");
         await expect(heading).toBeVisible();
 
         // All four base fields are rendered (applicable or N/A — always shown).
@@ -76,7 +76,8 @@ test.describe("editor panels — common base fields (P139, ADR 0015)", () => {
         await expect(row.locator("#node-input-disabledBinding")).toBeDisabled();
 
         // The node-local hint is visible AND available as a title tooltip.
-        const hint = "Ein Trenner hat keinen interaktiven Zustand.";
+        // P272: the hint resolves from the pilot's own catalog (ui-divider.hints.disabled) — en-US text under the default editor language.
+        const hint = "A divider has no interactive state.";
         await expect(row.locator("[data-base-field-hint]")).toHaveText(hint);
         await expect(row).toHaveAttribute("title", hint);
     });
@@ -93,7 +94,7 @@ test.describe("editor panels — common base fields (P139, ADR 0015)", () => {
         await expect(row.locator("[data-base-field-hint]")).toHaveCount(0);
     });
 
-    test("ui-divider — 'Erweitert' is collapsed by default and toggles open/closed", async ({ page, request }) => {
+    test("ui-divider — 'Advanced' is collapsed by default and toggles open/closed", async ({ page, request }) => {
         await openDividerPanel(page, request);
 
         const toggle = page.locator("[data-base-advanced-toggle]");
@@ -111,7 +112,7 @@ test.describe("editor panels — common base fields (P139, ADR 0015)", () => {
         await expect(sizeRow).toBeVisible();
         await expect(sizeRow).toHaveAttribute("data-base-field-na", "true");
         await expect(sizeRow.locator("#node-input-size")).toBeDisabled();
-        await expect(sizeRow.locator("[data-base-field-hint]")).toHaveText("Ein Trenner hat keine Größen-Stufen.");
+        await expect(sizeRow.locator("[data-base-field-hint]")).toHaveText("A divider has no size steps.");
 
         // Collapse again.
         await toggle.locator("a").click();
@@ -185,14 +186,14 @@ test.describe("editor panels — ui-list base fields (P172, ADR 0015)", () => {
         return { editor, nodeId };
     }
 
-    test("ui-list — base-field group with 'Allgemein' heading is injected", async ({ page, request }) => {
+    test("ui-list — base-field group with 'General' heading is injected", async ({ page, request }) => {
         await openListPanel(page, request);
 
         await expect(page.locator('[data-field-group="base-fields"]')).toHaveCount(1);
 
         const heading = page.locator('[data-group-heading="base-fields"]');
         await expect(heading).toHaveCount(1);
-        await expect(heading).toHaveText("Allgemein");
+        await expect(heading).toHaveText("General");
         await expect(heading).toBeVisible();
 
         for (const field of ["visible", "disabled", "color", "size"]) {
@@ -298,12 +299,12 @@ test.describe("editor panels — ui-alert base fields", () => {
         return { editor, nodeId };
     }
 
-    test("ui-alert — base-field group with 'Allgemein' heading is injected", async ({ page, request }) => {
+    test("ui-alert — base-field group with 'General' heading is injected", async ({ page, request }) => {
         await openAlertPanel(page, request);
 
         await expect(page.locator('[data-field-group="base-fields"]')).toHaveCount(1);
         const heading = page.locator('[data-group-heading="base-fields"]');
-        await expect(heading).toHaveText("Allgemein");
+        await expect(heading).toHaveText("General");
         for (const field of ["visible", "disabled", "color", "size"]) {
             await expect(
                 page.locator(`[data-base-field="${field}"]`),
@@ -584,7 +585,7 @@ test.describe("editor panels — P202: per-field neutral (visible→true, disabl
  * P222 (ADR 0015) — the base-field rollout COMPLETION, driven data-first from the
  * applicability table in docs/nodes/concepts/editor.md. For every View node that
  * P222 retrofitted, the ONE matrix below asserts, in the live editor:
- *   1. the shared "Allgemein" base-field group is injected;
+ *   1. the shared "General" base-field group is injected;
  *   2. each of visible/disabled/color/size is `active` / `na` (greyed + hint) /
  *      `omit` (not rendered — the node owns its own control) exactly per the table;
  *   3. the node's headline base field round-trips open→save (ADR 0031) — `visible`
@@ -689,9 +690,9 @@ test.describe("editor panels — P222 base-field rollout matrix (ADR 0015)", () 
             await editor.open();
             await editor.openNode(nodeId);
 
-            // 1. The shared "Allgemein" base-field group is injected exactly once.
+            // 1. The shared "General" base-field group is injected exactly once.
             await expect(page.locator('[data-field-group="base-fields"]')).toHaveCount(1);
-            await expect(page.locator('[data-group-heading="base-fields"]')).toHaveText("Allgemein");
+            await expect(page.locator('[data-group-heading="base-fields"]')).toHaveText("General");
 
             // 2. Each base field is active / N/A / omitted per the table.
             await assertFieldState(page, "visible", row.visible);
