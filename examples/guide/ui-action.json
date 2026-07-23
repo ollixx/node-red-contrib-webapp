@@ -1,0 +1,92 @@
+[
+    {
+        "id": "guide-ui-action",
+        "type": "tab",
+        "label": "Guide: ui-action",
+        "disabled": false,
+        "info": "User-guide example for ui-action (docs/guide/nodes/ui-action.md). Import, deploy, open /webapp/guideAction/, click 'Go to page 2' to navigate (canonical navigate, ADR 0040)."
+    },
+    {
+        "id": "guideAction",
+        "type": "ui-app",
+        "name": "Action demo",
+        "uiId": "guideAction",
+        "root": "guideAction",
+        "layout": "app",
+        "z": "guide-ui-action",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gActHome",
+        "type": "ui-text",
+        "name": "Home text",
+        "uiId": "gActHome",
+        "app": "guideAction",
+        "mount": "guideAction.content",
+        "text": "Home page. Use the button to navigate via a ui-action.",
+        "order": "1",
+        "z": "guide-ui-action",
+        "x": 340,
+        "y": 60,
+        "wires": [[]]
+    },
+    {
+        "id": "gActButton",
+        "type": "ui-button",
+        "name": "Go to page 2",
+        "uiId": "gActButton",
+        "app": "guideAction",
+        "mount": "guideAction.content",
+        "label": "Go to page 2",
+        "action": "gActNav",
+        "order": "2",
+        "z": "guide-ui-action",
+        "x": 340,
+        "y": 120,
+        "wires": [["gActNav"]]
+    },
+    {
+        "id": "gActNav",
+        "type": "ui-action",
+        "name": "Navigate to page 2",
+        "uiId": "gActNav",
+        "app": "guideAction",
+        "actionType": "navigate",
+        "targetMode": "url",
+        "to": "/page2",
+        "toType": "str",
+        "z": "guide-ui-action",
+        "x": 560,
+        "y": 120,
+        "wires": [[]]
+    },
+    {
+        "id": "gActRoute",
+        "type": "ui-route",
+        "name": "Page 2",
+        "uiId": "gActRoute",
+        "app": "guideAction",
+        "path": "/page2",
+        "layout": "vertical",
+        "z": "guide-ui-action",
+        "x": 120,
+        "y": 200,
+        "wires": [[]]
+    },
+    {
+        "id": "gActRouteText",
+        "type": "ui-text",
+        "name": "Page 2 text",
+        "uiId": "gActRouteText",
+        "app": "guideAction",
+        "mount": "route:/page2/content",
+        "text": "Page 2, reached by a ui-action navigate.",
+        "order": "1",
+        "z": "guide-ui-action",
+        "x": 340,
+        "y": 200,
+        "wires": [[]]
+    }
+]

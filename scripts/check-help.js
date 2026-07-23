@@ -79,8 +79,8 @@ for (const t of [
     "ui-tabs", "ui-tab", "ui-accordion", "ui-accordion-section", "ui-breadcrumb", "ui-menu",
     "ui-pagination", "ui-stepper", "ui-image", "ui-icon", "ui-list", "ui-avatar",
     "ui-log", "ui-repeat",
-    "ui-action",
     // ui-divider: MIGRATED (P265 pilot) — intentionally absent.
+    // P267: backbone batch fully migrated — no entries remain here.
 ]) {
     TRANSITION_INLINE[t] = "inline help pending locale migration (batches P267-P271)";
 }
@@ -104,8 +104,8 @@ for (const t of [
     "ui-tabs", "ui-tab", "ui-accordion", "ui-accordion-section", "ui-breadcrumb", "ui-menu",
     "ui-pagination", "ui-stepper", "ui-image", "ui-icon", "ui-list", "ui-avatar",
     "ui-log", "ui-repeat",
-    "ui-action",
     // ui-divider: MIGRATED (P272 pilot) — intentionally absent.
+    // P267: backbone batch fully migrated — no entries remain here.
 ]) {
     LABEL_TRANSITION[t] = "editor labels pending i18n migration (batches P267-P271)";
 }

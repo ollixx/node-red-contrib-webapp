@@ -1,0 +1,23 @@
+<script type="text/html" data-help-name="ui-action">
+<p>Der typisierte Emitter des <code>msg.ui.action</code>-Contracts — nur
+Interaktionszustand, nie fachliche Daten (ADR 0007). Bei Eingang baut er eine
+schema-valide <code>msg.ui.action</code> und emittiert sie; den Push führt der
+verdrahtete Zielknoten aus.</p>
+<h3>Wichtige Felder</h3>
+<ul>
+    <li><b>Action-Typ</b> — das Verb: <code>navigate</code>, <code>show</code>/<code>hide</code>, <code>open</code>/<code>close</code>, <code>select</code>, <code>enable</code>/<code>disable</code>, <code>focus</code>, <code>reset</code>.</li>
+    <li><b>Ziel</b> (navigate) — drei Modi: <b>Wire</b> (Route baut die Location), <b>Route</b> (gepickte Route + Params), <b>URL</b> (ganze URL). Navigate ist der kanonische Weg (ADR 0040).</li>
+    <li><b>Teil (Sub-ID)</b> — Sub-ID für <code>open</code>/<code>close</code>/<code>select</code>.</li>
+</ul>
+<h3>Eingang</h3>
+<p>Eine <code>msg</code>; <code>msg.ui.action.*</code> überschreibt die Konfig
+(<code>type</code>, <code>target</code>, <code>part</code>, <code>to</code>,
+<code>params</code>). <code>msg.ui.clientId</code> schränkt auf einen Client ein.
+Die Message wird angereichert (nicht ersetzt); unbekannte Messages passieren.</p>
+<h3>Ausgänge / Events</h3>
+<p>Emittiert die mit <code>msg.ui.action</code> angereicherte Message; der
+verdrahtete Zielknoten verarbeitet sein Verb und führt den Push aus. ui-action
+pusht selbst nichts.</p>
+<h3>Vollständige Doku</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/de/nodes/ui-action.md" target="_blank">docs/guide/de/nodes/ui-action.md</a></p>
+</script>

@@ -124,10 +124,10 @@
     })();
 </script>
 <script type="text/html" data-template-name="ui-action">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-app">App</label><select id="node-input-app"></select></div>
-    <div class="form-row"><label for="node-input-actionType">Action-Typ</label><select id="node-input-actionType"><option value="">unspezifiziert</option><option value="navigate">navigate</option><option value="show">show</option><option value="hide">hide</option><option value="open">open</option><option value="close">close</option><option value="select">select</option><option value="enable">enable</option><option value="disable">disable</option><option value="focus">focus</option><option value="reset">reset</option></select></div>
+    <div class="form-row"><label for="node-input-app" data-i18n="ui-action.label.app">App</label><select id="node-input-app"></select></div>
+    <div class="form-row"><label for="node-input-actionType" data-i18n="ui-action.label.actionType">Action-Typ</label><select id="node-input-actionType"><option value="" data-i18n="ui-action.option.actionType.">unspezifiziert</option><option value="navigate">navigate</option><option value="show">show</option><option value="hide">hide</option><option value="open">open</option><option value="close">close</option><option value="select">select</option><option value="enable">enable</option><option value="disable">disable</option><option value="focus">focus</option><option value="reset">reset</option></select></div>
     <!-- P119 (ADR 0011): navigate target-source mode UI (built by
          installNavigateTargetMode into .webapp-navigate-target-mode). The `to`
          row is relocated into the URL-mode body; route/params/targetMode are
@@ -136,29 +136,22 @@
         <label style="display:block; margin-bottom:6px;">Ziel</label>
         <div class="webapp-navigate-target-mode"></div>
     </div>
-    <div class="form-row" id="node-input-to-row" style="display:none;"><label for="node-input-to">Navigation zu</label><input type="text" id="node-input-to" style="width: 70%;" placeholder="z.B. /customers/:id"><input type="hidden" id="node-input-toType"></div>
-    <div class="form-row" id="node-input-route-row" style="display:none;"><label for="node-input-route">Ziel-Route</label><input type="text" id="node-input-route"></div>
+    <div class="form-row" id="node-input-to-row" style="display:none;"><label for="node-input-to" data-i18n="ui-action.label.to">Navigation zu</label><input type="text" id="node-input-to" style="width: 70%;" placeholder="z.B. /customers/:id" data-i18n="[placeholder]ui-action.placeholder.to"><input type="hidden" id="node-input-toType"></div>
+    <div class="form-row" id="node-input-route-row" style="display:none;"><label for="node-input-route" data-i18n="ui-action.label.route">Ziel-Route</label><input type="text" id="node-input-route"></div>
     <input type="hidden" id="node-input-targetMode">
     <input type="hidden" id="node-input-params">
     <div class="form-row">
-        <label style="width: auto; vertical-align: top;">Ziel-Knoten (optional)</label>
+        <label style="width: auto; vertical-align: top;" data-i18n="ui-action.label.targets">Ziel-Knoten (optional)</label>
         <button type="button" id="node-input-targets-pick" class="red-ui-button"><i class="fa fa-crosshairs"></i> Auf Canvas wählen</button>
         <div id="node-input-targets-list" style="margin-top: 6px;"></div>
         <input type="hidden" id="node-input-targets">
         <small class="form-tips" style="display: block; margin-top: 4px;">Sekundärer Weg ("wireless"). Primär: Output-Port mit dem Zielknoten verdrahten.</small>
     </div>
-    <div class="form-row ui-action-part-field"><label for="node-input-part">Teil (Sub-ID)</label><input type="text" id="node-input-part" placeholder="open/close/select: z.B. Accordion-Sektion"></div>
-    <div class="form-row"><label for="node-input-description">Beschreibung</label><input type="text" id="node-input-description"></div>
+    <div class="form-row ui-action-part-field"><label for="node-input-part" data-i18n="ui-action.label.part">Teil (Sub-ID)</label><input type="text" id="node-input-part" placeholder="open/close/select: z.B. Accordion-Sektion" data-i18n="[placeholder]ui-action.placeholder.part"></div>
+    <div class="form-row"><label for="node-input-description" data-i18n="ui-action.label.description">Beschreibung</label><input type="text" id="node-input-description"></div>
     <input type="hidden" id="node-input-target">
 </script>
-<script type="text/html"
-    data-help-name="ui-action"><p>Typisierter Emitter fuer Interaktions-Aktionen (Interaktionszustand, keine Fachdaten; ADR 0007). Verben: navigate, show/hide (Element-Sichtbarkeit), open/close (Offenlegung: Dialog, Accordion, Tree), select (Einzelauswahl), enable/disable, focus, reset. Bei Eingang baut der Knoten eine schema-valide <code>msg.ui.action</code> aus seiner Konfiguration (msg.ui.action ueberschreibt) und sendet sie am Output-Port. Den SSE-Push fuehrt der <b>verdrahtete Zielknoten</b> aus (nicht ui-action selbst). Zieladressierung primaer ueber das <b>Wiring des Output-Ports</b>.</p>
-    <h4>Navigation (P66)</h4>
-    <p>Zwei Wege fuer <code>navigate</code>:</p>
-    <ul>
-        <li><b>Szenario 1 — verdrahtet mit einer ui-route</b> (oder der ui-app fuer die Root "/"): "Navigation zu" LEER lassen; die Route baut die Location aus ihrem EIGENEN Pfad + den hier gesetzten <b>Parametern</b> (fuellen die <code>:platzhalter</code> der Route). Kein Pfad-Drift bei Route-Umbenennung.</li>
-        <li><b>Szenario 2 — nicht verdrahtet</b>: "Navigation zu" als Pfad-Template setzen. Der typedInput erlaubt <code>str</code> (statischer Pfad), <code>msg</code>/<code>flow</code>/<code>global</code> (dynamisch aus Kontext) oder <code>jsonata</code> (Ausdruck gegen die eingehende Nachricht). App-global an die ui-app, die die Location aufloest.</li>
-    </ul>
-    <p><code>onEnter</code> wird bei jedem Routen-Eintritt emittiert (beide Szenarien). Mehrdeutigkeit (verdrahtet UND "Navigation zu" gesetzt), fehlendes Ziel oder ein statischer toter Link werden zur Deploy-Zeit geprueft.</p>
-    <p>open/close/select nutzen "Teil" (bzw. msg.ui.action.part) fuer die Sub-Granularitaet.</p>
-    <p>Vollständige Doku: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/behavior/ui-action.md" target="_blank">docs/nodes/behavior/ui-action.md</a></p></script>
+<!-- P267 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/behavior/locales/{en-US,de}/ui-action.html; form-row labels carry
+     data-i18n keys resolved from nodes/behavior/locales/{en-US,de}/ui-action.json.
+     No inline data-help-name block here. -->
