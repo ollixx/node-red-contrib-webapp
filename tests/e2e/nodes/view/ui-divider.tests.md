@@ -41,6 +41,27 @@ User-Guide (`docs/guide/nodes/ui-divider.md`).
 | editor-language=fr → englische Hilfe | defaultLang-Fallback →en-US |
 | Guide-Link-`<a>` gerendert (en + de) | Info-Sidebar rendert funktionierenden Guide-Doc-Anker |
 
+## Editor-Label-i18n (P272, Label-Pilot — `tests/e2e/nodes/editor/label-i18n-locales.spec.ts`)
+
+ui-divider ist der Pilot der Editor-Label-Mechanik (ADR 0042 §3): Formzeilen
+tragen `data-i18n`-Keys (`ui-divider.label.<feld>` usw.); die Message-Kataloge
+liegen unter `nodes/view/locales/en-US/ui-divider.json` + `locales/de/ui-divider.json`
+(Namespace = Set-Id, Anleitung: `docs/guide/README.md`).
+
+| Test | Testziel |
+|---|---|
+| Default (en-US) → englische Labels/Optionen/Placeholder | en-US-Katalog wird angewendet (data-i18n-Mechanik) |
+| editor-language=de → deutsche Labels/Optionen/Placeholder | de-Katalog wird angewendet (Sprachumschaltung gemessen) |
+| editor-language=fr → englische Labels | Fallback auf en-US |
+
+## Geteilte Editor-Strings (P272 — `tests/e2e/nodes/editor/label-i18n-shared-strings.spec.ts`)
+
+| Test | Testziel |
+|---|---|
+| ui-menu Base-Field-Gruppe en-US/de | geteilte editor-common-Strings über den `webapp-common`-Namespace |
+| ui-icon Picker-Button en-US/de | „Choose icon…“/„Icon wählen…“ aus dem geteilten Katalog |
+| ui-divider N/A-Hinweis en-US/de (i18nNode) | per-Knoten-Hints aus dem eigenen Katalog (`ui-divider.hints.<feld>`) |
+
 ## Hinweise
 
 - Platzierung (order/row/col) ist generisches Layout-Boilerplate — abgedeckt von der
