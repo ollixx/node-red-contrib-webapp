@@ -17,7 +17,7 @@ einzigen `ui-route`-Knoten.
 
 - **Parent:** keiner — `ui-app` ist der Root-Knoten.
 - **Kinder:** View-Knoten mounten über `mount` in die App-Slots (`<appId>/content`, beim `app`-Preset zusätzlich `header`/`navbar`/`footer`). `ui-route`-Knoten referenzieren die App als Parent.
-- **Erreichbarkeit:** die App wird unter `/<root>` ausgeliefert (eindeutiger URL-Einstieg).
+- **Erreichbarkeit:** die App wird unter `/webapp/<root>` ausgeliefert (eindeutiger URL-Einstieg; das feste `/webapp/`-Präfix trennt App-URLs vom übrigen HTTP-Namensraum der Node-RED-Instanz).
 - **Rolle zur Laufzeit:** Einstiegspunkt für Runtime-API, Renderer und Editor-Strukturansicht; SSE-Hub für den Live-Transport (siehe [messages.md](../concepts/messages.md)).
 
 ## Felder
@@ -30,7 +30,7 @@ Node-Picker-Dialog, typedInput, Token-Editor, Event-Checkboxen).
 | Feld | Label | Editor-Typ | Pflicht | Beschreibung |
 |---|---|---|---|---|
 | `name` | „Name" | Textfeld | optional | Anzeigename im Editor und in Auswahllisten. Default: fortlaufend `App N`. |
-| `root` | „Root" | Textfeld + URL-Vorschau | **ja** | Erster URL-Abschnitt der App (`/<root>`). Eindeutig über alle `ui-app`-Knoten; nur valide URL-Path-Zeichen. Eine Live-Vorschau zeigt die resultierende App-URL. |
+| `root` | „Root" | Textfeld + URL-Vorschau | **ja** | URL-Abschnitt der App hinter dem festen Präfix (`/webapp/<root>`). Eindeutig über alle `ui-app`-Knoten; nur valide URL-Path-Zeichen. Eine Live-Vorschau zeigt die resultierende App-URL. |
 
 ### Gruppe „Layout"
 
