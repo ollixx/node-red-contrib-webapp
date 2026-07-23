@@ -2,7 +2,7 @@
 id: P265
 title: "User-Docs-Fundament (ADR 0042): docs/guide/-Skelett + Templates, Node-RED-i18n-Hilfe-Mechanik am Piloten bewiesen (en-US+de locales), Beispiel-Smoke-Harness, Guardrails check:help-erweitert + check:guide"
 epic: aspects/docs
-status: pending
+status: in_progress
 dependencies: []
 verify: browser
 spec: docs/guide/README.md
