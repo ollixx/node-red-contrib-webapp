@@ -1,0 +1,21 @@
+<script type="text/html" data-help-name="ui-store-read">
+<p>Liest einen <code>ui-store</code> on demand: referenziert einen Store per ID
+und emittiert bei jedem Input dessen aktuellen Wert (ganzes Slice oder
+Teil-Pfad). Nicht-mutierend, per-client — der Referenz-Stil (Store picken, kein
+Wire).</p>
+<h3>Wichtige Felder</h3>
+<ul>
+    <li><b>Store</b> — der zu lesende Store (Picker; listet auch Query-Params-Ziele).</li>
+    <li><b>Default Path</b> — Default-Teil-Pfad im Slice; leer = ganzes Slice; zur Laufzeit überschreibbar.</li>
+</ul>
+<h3>Eingang</h3>
+<p>Jede Message triggert einen Read. Pfad-Präzedenz:
+<code>msg.ui.store.path</code> › <code>msg.path</code> › Default Path › ganzes
+Slice. <code>msg.ui.clientId</code> liest den per-client-Zustand. Eine
+Scope-Verletzung ist ein No-op (keine Emission).</p>
+<h3>Ausgänge / Events</h3>
+<p><code>msg.payload = &lt;Wert&gt;</code> und
+<code>msg.ui.store = { id, event:"read", path, fullPath, value, clientId }</code>.</p>
+<h3>Vollständige Doku</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/de/nodes/ui-store-read.md" target="_blank">docs/guide/de/nodes/ui-store-read.md</a></p>
+</script>

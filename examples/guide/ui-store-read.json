@@ -1,0 +1,90 @@
+[
+    {
+        "id": "guide-ui-store-read",
+        "type": "tab",
+        "label": "Guide: ui-store-read",
+        "disabled": false,
+        "info": "User-guide example for ui-store-read (docs/guide/nodes/ui-store-read.md). Import, deploy, open /webapp/guideStoreRead/, then click the inject and watch the debug sidebar."
+    },
+    {
+        "id": "guideStoreRead",
+        "type": "ui-app",
+        "name": "Store-read demo",
+        "uiId": "guideStoreRead",
+        "root": "guideStoreRead",
+        "layout": "app",
+        "z": "guide-ui-store-read",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gSRStore",
+        "type": "ui-store",
+        "name": "Profile store",
+        "uiId": "gSRStore",
+        "app": "guideStoreRead",
+        "statePath": "profile",
+        "initialValue": "{\"name\":\"Ada\"}",
+        "persist": false,
+        "scope": "any",
+        "z": "guide-ui-store-read",
+        "x": 120,
+        "y": 160,
+        "wires": [[]]
+    },
+    {
+        "id": "gSRText",
+        "type": "ui-text",
+        "name": "Name",
+        "uiId": "gSRText",
+        "app": "guideStoreRead",
+        "mount": "guideStoreRead.content",
+        "value": { "kind": "state", "path": "profile.name" },
+        "order": "1",
+        "z": "guide-ui-store-read",
+        "x": 340,
+        "y": 120,
+        "wires": [[]]
+    },
+    {
+        "id": "gSRInject",
+        "type": "inject",
+        "name": "Read now",
+        "props": [{ "p": "payload" }],
+        "repeat": "",
+        "once": false,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "z": "guide-ui-store-read",
+        "x": 120,
+        "y": 240,
+        "wires": [["gSRRead"]]
+    },
+    {
+        "id": "gSRRead",
+        "type": "ui-store-read",
+        "name": "Read profile",
+        "uiId": "gSRRead",
+        "app": "guideStoreRead",
+        "store": "gSRStore",
+        "path": "name",
+        "z": "guide-ui-store-read",
+        "x": 340,
+        "y": 240,
+        "wires": [["gSRDebug"]]
+    },
+    {
+        "id": "gSRDebug",
+        "type": "debug",
+        "name": "read value",
+        "active": true,
+        "tosidebar": true,
+        "complete": "payload",
+        "z": "guide-ui-store-read",
+        "x": 540,
+        "y": 240,
+        "wires": []
+    }
+]
