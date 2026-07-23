@@ -3,7 +3,7 @@ id: P262
 node: ui-route
 title: "Deklarative Authz: `requiresGroup[]` an ui-route + ui-dialog — server-erzwungen bei Render, Snapshot, Navigation und Event-Dispatch; „visibleIf ist UX, Guard ist Sicherheit\""
 epic: aspects/auth
-status: pending
+status: in_progress
 dependencies: [P261]
 verify: browser
 spec: docs/nodes/concepts/auth.md
