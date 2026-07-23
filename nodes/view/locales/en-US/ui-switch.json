@@ -1,0 +1,25 @@
+{
+    "ui-switch": {
+        "label": {
+            "mount": "Parent Slot",
+            "valueBinding": "Value Path",
+            "writeToBinding": "Write To",
+            "writeTrigger": "Write Trigger",
+            "label": "Label",
+            "labelOn": "Label On",
+            "labelOff": "Label Off",
+            "disabledBinding": "Disabled"
+        },
+        "option": {
+            "writeTrigger": {
+                "submit": "submit",
+                "change": "change",
+                "none": "none"
+            }
+        },
+        "hints": {
+            "color": "A form field has no general colour (state colours come from validation / variant).",
+            "size": "This node has no size steps."
+        }
+    }
+}

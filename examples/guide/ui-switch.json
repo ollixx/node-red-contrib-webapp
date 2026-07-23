@@ -1,0 +1,95 @@
+[
+    {
+        "id": "guide-ui-switch",
+        "type": "tab",
+        "label": "Guide: ui-switch",
+        "disabled": false,
+        "info": "User-guide example for ui-switch (docs/guide/nodes/ui-switch.md). Import, deploy, open /webapp/guideSwitch/ — a notification switch with on/off captions, two-way bound to a boolean store sub-path, plus a live status line."
+    },
+    {
+        "id": "guideSwitch",
+        "type": "ui-app",
+        "name": "Switch demo",
+        "uiId": "guideSwitch",
+        "root": "guideSwitch",
+        "title": "Switch demo",
+        "layout": "app",
+        "z": "guide-ui-switch",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gSwSettings",
+        "type": "ui-store",
+        "name": "Settings store",
+        "uiId": "gSwSettings",
+        "app": "guideSwitch",
+        "statePath": "settings",
+        "initialValue": "{\"notify\":true}",
+        "z": "guide-ui-switch",
+        "x": 120,
+        "y": 180,
+        "wires": [[]]
+    },
+    {
+        "id": "gSwHeading",
+        "type": "ui-text",
+        "name": "Heading",
+        "uiId": "gSwHeading",
+        "app": "guideSwitch",
+        "mount": "guideSwitch.content",
+        "text": "Flip the switch — the setting is stored right away:",
+        "order": "0",
+        "z": "guide-ui-switch",
+        "x": 340,
+        "y": 60,
+        "wires": [[]]
+    },
+    {
+        "id": "gSwToggle",
+        "type": "ui-switch",
+        "name": "Notify switch",
+        "uiId": "gSwToggle",
+        "app": "guideSwitch",
+        "mount": "guideSwitch.content",
+        "label": { "kind": "literal", "value": "Notifications" },
+        "labelOn": { "kind": "literal", "value": "On" },
+        "labelOff": { "kind": "literal", "value": "Off" },
+        "value": {
+            "kind": "store",
+            "path": "gSwSettings",
+            "subPath": { "kind": "literal", "value": "notify" }
+        },
+        "writeTo": {
+            "kind": "store",
+            "path": "gSwSettings",
+            "subPath": { "kind": "literal", "value": "notify" }
+        },
+        "writeTrigger": "change",
+        "order": "1",
+        "z": "guide-ui-switch",
+        "x": 340,
+        "y": 140,
+        "wires": [[]]
+    },
+    {
+        "id": "gSwEcho",
+        "type": "ui-text",
+        "name": "Status echo",
+        "uiId": "gSwEcho",
+        "app": "guideSwitch",
+        "mount": "guideSwitch.content",
+        "value": {
+            "kind": "store",
+            "path": "gSwSettings",
+            "subPath": { "kind": "literal", "value": "notify" },
+            "fallback": "false"
+        },
+        "order": "2",
+        "z": "guide-ui-switch",
+        "x": 340,
+        "y": 220,
+        "wires": [[]]
+    }
+]

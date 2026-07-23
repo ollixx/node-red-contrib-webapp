@@ -1,0 +1,22 @@
+<script type="text/html" data-help-name="ui-switch">
+<p>A toggle switch for a boolean, bound to client state in both directions:
+<b>Value Path</b> reads, <b>Write To</b> writes.</p>
+<h3>Key fields</h3>
+<ul>
+    <li><b>Label</b> — optional caption next to the switch (bindable); empty renders no label.</li>
+    <li><b>Label On</b> / <b>Label Off</b> — optional state captions (bindable).</li>
+    <li><b>Value Path</b> / <b>Write To</b> — the READ / WRITE halves (ADR 0027); Write To takes <code>store</code>/<code>flow</code>/<code>global</code> only.</li>
+    <li><b>Write Trigger</b> — no submit gesture: always writes on <code>change</code>; only <code>none</code> disables the write-back.</li>
+</ul>
+<h3>Inputs</h3>
+<p>Has an input port. <code>msg.payload</code> (non-null) sets the toggle state;
+<code>msg.ui.patch</code> overwrites definition fields (<code>label</code>,
+<code>labelOn</code>, <code>labelOff</code>, …); <code>msg.ui.component.op</code>
+supports <code>show</code>/<code>hide</code>, <code>enable</code>/<code>disable</code>,
+<code>reset</code>. Anything else passes through unchanged.</p>
+<h3>Outputs / Events</h3>
+<p><code>change</code> with <code>msg.ui.params.checked</code> (the boolean — NOT
+<code>value</code>). There is no <code>submit</code> event.</p>
+<h3>Full docs</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/nodes/ui-switch.md" target="_blank">docs/guide/nodes/ui-switch.md</a></p>
+</script>

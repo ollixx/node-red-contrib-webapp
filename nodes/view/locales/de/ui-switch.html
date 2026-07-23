@@ -1,0 +1,23 @@
+<script type="text/html" data-help-name="ui-switch">
+<p>Ein Kippschalter für einen Boolean, zweiseitig an den Client-State gebunden:
+<b>Value Path</b> liest, <b>Write To</b> schreibt.</p>
+<h3>Wichtige Felder</h3>
+<ul>
+    <li><b>Label</b> — optionale Beschriftung neben dem Switch (bindbar); leer rendert kein Label.</li>
+    <li><b>Label On</b> / <b>Label Off</b> — optionale Zustandstexte (bindbar).</li>
+    <li><b>Value Path</b> / <b>Write To</b> — die LESE- / SCHREIB-Hälfte (ADR 0027); Write To nimmt nur <code>store</code>/<code>flow</code>/<code>global</code>.</li>
+    <li><b>Write Trigger</b> — keine Submit-Geste: schreibt immer bei <code>change</code>; nur <code>none</code> schaltet den Write-Back ab.</li>
+</ul>
+<h3>Eingang</h3>
+<p>Hat einen Eingangs-Port. <code>msg.payload</code> (nicht null) setzt den
+Toggle-Zustand; <code>msg.ui.patch</code> überschreibt Definitionsfelder
+(<code>label</code>, <code>labelOn</code>, <code>labelOff</code>, …);
+<code>msg.ui.component.op</code> unterstützt <code>show</code>/<code>hide</code>,
+<code>enable</code>/<code>disable</code>, <code>reset</code>. Alles andere wird
+unverändert durchgereicht.</p>
+<h3>Ausgänge / Events</h3>
+<p><code>change</code> mit <code>msg.ui.params.checked</code> (dem Boolean — NICHT
+<code>value</code>). Ein <code>submit</code>-Event gibt es nicht.</p>
+<h3>Vollständige Doku</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/de/nodes/ui-switch.md" target="_blank">docs/guide/de/nodes/ui-switch.md</a></p>
+</script>
