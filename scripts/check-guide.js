@@ -41,7 +41,7 @@ const PKG = require(path.join(ROOT, "package.json"));
  * ------------------------------------------------------------------ */
 const ALLOWLIST = {};
 for (const t of [
-    "ui-text", "ui-button", "ui-table", "ui-container", "ui-select",
+    "ui-text", "ui-button", "ui-table", "ui-container", 
     "ui-checkbox", "ui-radio", "ui-switch", "ui-datepicker", "ui-slider",
     "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state",
     "ui-tabs", "ui-tab", "ui-accordion", "ui-accordion-section", "ui-breadcrumb", "ui-menu",

@@ -1,0 +1,23 @@
+<script type="text/html" data-help-name="ui-select">
+<p>Ein Dropdown bzw. eine Combobox mit statischen oder store-getriebenen Optionen,
+zweiseitig an den Client-State gebunden: <b>Value</b> liest, <b>Write To</b> schreibt.</p>
+<h3>Wichtige Felder</h3>
+<ul>
+    <li><b>Options</b> — ein Feld, zwei Typen: <code>json</code> (vor dem Deploy validiert; Objekt, String-Array oder <code>{label,value}</code>-Array) oder <code>store</code> (reaktiv aus einem Store-Pfad).</li>
+    <li><b>Value</b> / <b>Write To</b> — die LESE- / SCHREIB-Hälfte (ADR 0027); Write To nimmt nur <code>store</code>/<code>flow</code>/<code>global</code>.</li>
+    <li><b>Write Trigger</b> — ein Select hat keine Submit-Geste: es schreibt immer bei <code>change</code>; nur <code>none</code> schaltet den Write-Back ab.</li>
+    <li><b>Multiple</b> — Mehrfachauswahl; <code>value</code> wird zum Array.</li>
+    <li><b>Placeholder</b> — sichtbar, solange nichts gewählt ist (bindbar).</li>
+</ul>
+<h3>Eingang</h3>
+<p>Hat einen Eingangs-Port. <code>msg.payload</code> (nicht null) setzt die Auswahl
+(mit Multiple ein Array); <code>msg.ui.patch</code> überschreibt Definitionsfelder
+(<code>options</code>, <code>placeholder</code>, …); <code>msg.ui.component.op</code>
+unterstützt <code>show</code>/<code>hide</code>, <code>enable</code>/<code>disable</code>,
+<code>reset</code>. Alles andere wird unverändert durchgereicht.</p>
+<h3>Ausgänge / Events</h3>
+<p><code>change</code> mit <code>msg.ui.params.value</code> (mit Multiple ein Array).
+Ein <code>submit</code>-Event gibt es nicht.</p>
+<h3>Vollständige Doku</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/de/nodes/ui-select.md" target="_blank">docs/guide/de/nodes/ui-select.md</a></p>
+</script>
