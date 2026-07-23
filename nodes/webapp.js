@@ -2264,7 +2264,10 @@ function getAppModelResult(appId, definitions) {
                 id: route.id,
                 path: route.path,
                 title: blankToUndefined(route.title),
-                layoutId: route.layout || route.layoutId
+                layoutId: route.layout || route.layoutId,
+                // P262 (ADR 0041 §4): the authz guard travels into the compiled
+                // model — the central enforcement points read it from there.
+                requiresGroup: parseRequiresGroup(route.requiresGroup)
             }))
             .sort((left, right) => left.path.localeCompare(right.path)),
         dialogs: buckets.dialogs
@@ -2277,7 +2280,9 @@ function getAppModelResult(appId, definitions) {
                 routeId: blankToUndefined(dialog.route || dialog.routeId),
                 modal: dialog.modal !== false,
                 // P64: closable defaults to true (only false when explicitly set).
-                closable: dialog.closable !== false
+                closable: dialog.closable !== false,
+                // P262 (ADR 0041 §4): the authz guard travels into the compiled model.
+                requiresGroup: parseRequiresGroup(dialog.requiresGroup)
             }))
             .sort((left, right) => left.id.localeCompare(right.id)),
         components: toComponentDefinitions(migrateLegacyAccordionComponents(migrateLegacyTabComponents(buckets.components)))
