@@ -1,0 +1,80 @@
+[
+    {
+        "id": "guide-ui-store-action",
+        "type": "tab",
+        "label": "Guide: ui-store-action",
+        "disabled": false,
+        "info": "User-guide example for ui-store-action (docs/guide/nodes/ui-store-action.md). Import, deploy, open /webapp/guideStoreAction/, then click the inject to set the store to 'active'."
+    },
+    {
+        "id": "guideStoreAction",
+        "type": "ui-app",
+        "name": "Store-action demo",
+        "uiId": "guideStoreAction",
+        "root": "guideStoreAction",
+        "layout": "app",
+        "z": "guide-ui-store-action",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gSAStore",
+        "type": "ui-store",
+        "name": "Status store",
+        "uiId": "gSAStore",
+        "app": "guideStoreAction",
+        "statePath": "status",
+        "initialValue": "\"idle\"",
+        "persist": false,
+        "scope": "any",
+        "z": "guide-ui-store-action",
+        "x": 120,
+        "y": 160,
+        "wires": [[]]
+    },
+    {
+        "id": "gSAText",
+        "type": "ui-text",
+        "name": "Status",
+        "uiId": "gSAText",
+        "app": "guideStoreAction",
+        "mount": "guideStoreAction.content",
+        "value": { "kind": "state", "path": "status" },
+        "order": "1",
+        "z": "guide-ui-store-action",
+        "x": 340,
+        "y": 120,
+        "wires": [[]]
+    },
+    {
+        "id": "gSAInject",
+        "type": "inject",
+        "name": "Set active",
+        "props": [{ "p": "payload" }],
+        "repeat": "",
+        "once": false,
+        "topic": "",
+        "payload": "active",
+        "payloadType": "str",
+        "z": "guide-ui-store-action",
+        "x": 120,
+        "y": 240,
+        "wires": [["gSAAction"]]
+    },
+    {
+        "id": "gSAAction",
+        "type": "ui-store-action",
+        "name": "Set status",
+        "uiId": "gSAAction",
+        "app": "guideStoreAction",
+        "store": "gSAStore",
+        "op": "set",
+        "path": "",
+        "mode": "reference",
+        "z": "guide-ui-store-action",
+        "x": 340,
+        "y": 240,
+        "wires": [[]]
+    }
+]

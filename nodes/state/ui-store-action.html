@@ -30,11 +30,11 @@
     })();
 </script>
 <script type="text/html" data-template-name="ui-store-action">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-app">App</label><select id="node-input-app"></select></div>
-    <div class="form-row"><label for="node-input-store">Store</label><select id="node-input-store"></select></div>
-    <div class="form-row"><label for="node-input-op">Operation</label>
+    <div class="form-row"><label for="node-input-app" data-i18n="ui-store-action.label.app">App</label><select id="node-input-app"></select></div>
+    <div class="form-row"><label for="node-input-store" data-i18n="ui-store-action.label.store">Store</label><select id="node-input-store"></select></div>
+    <div class="form-row"><label for="node-input-op" data-i18n="ui-store-action.label.op">Operation</label>
         <select id="node-input-op">
             <option value="set">set</option>
             <option value="patch">patch</option>
@@ -43,49 +43,15 @@
             <option value="reset">reset</option>
         </select>
     </div>
-    <div class="form-row"><label for="node-input-path">Path</label><input type="text" id="node-input-path" placeholder="(optional sub-path, e.g. name)"></div>
-    <div class="form-row"><label for="node-input-mode">Mode</label>
+    <div class="form-row"><label for="node-input-path" data-i18n="ui-store-action.label.path">Path</label><input type="text" id="node-input-path" placeholder="(optional sub-path, e.g. name)" data-i18n="[placeholder]ui-store-action.placeholder.path"></div>
+    <div class="form-row"><label for="node-input-mode" data-i18n="ui-store-action.label.mode">Mode</label>
         <select id="node-input-mode">
-            <option value="reference">reference (apply directly)</option>
-            <option value="wire">wire (emit envelope)</option>
+            <option value="reference" data-i18n="ui-store-action.option.mode.reference">reference (apply directly)</option>
+            <option value="wire" data-i18n="ui-store-action.option.mode.wire">wire (emit envelope)</option>
         </select>
     </div>
 </script>
-<script type="text/html" data-help-name="ui-store-action">
-    <p>Typed, reference-based <strong>mutation</strong> of a <code>ui-store</code>. Pick the store, an
-    operation, and a mode in the editor instead of hand-building <code>msg.ui.store</code>. Unlike
-    <code>ui-store</code> (which holds state and writes via its own input protocol) and
-    <code>ui-store-read</code> (a non-mutating getter), this node <em>triggers</em> a write.</p>
-    <h4>Config</h4>
-    <ul>
-        <li><strong>Store</strong> — reference to the target <code>ui-store</code> node (node picker, preset Stores).</li>
-        <li><strong>Operation</strong> — <code>set</code> | <code>patch</code> | <code>delete</code> |
-            <code>replace</code> | <code>reset</code>. <code>set</code>/<code>patch</code> write at the
-            resolved path; <code>delete</code> removes at the path; <code>replace</code> swaps the whole
-            slice; <code>reset</code> restores the store's <code>initialValue</code> and <em>ignores</em> the value.</li>
-        <li><strong>Path</strong> — optional one-level sub-path relative to the store's
-            <code>statePath</code> (ADR 0013). Overridable at runtime (see below). Empty = the whole slice.</li>
-        <li><strong>Mode</strong> — <code>reference</code> applies the op directly, server-side (per-client,
-            SSE re-render); <code>wire</code> emits the envelope on the out-port instead.</li>
-        <li><strong>App</strong> — the owning <code>ui-app</code> (required; a deploy error when empty, P205).</li>
-    </ul>
-    <h4>Value &amp; path precedence</h4>
-    <p>The value to write comes from <code>msg.payload</code> (for <code>set</code>/<code>patch</code>/<code>replace</code>);
-    <code>reset</code> takes no value. Path precedence:
-    <code>msg.ui.store.path</code> &rsaquo; <code>msg.path</code> &rsaquo; config <strong>Path</strong>
-    &rsaquo; (none = the whole slice at <code>statePath</code>).</p>
-    <h4>Modes</h4>
-    <ul>
-        <li><strong>reference</strong> — every input applies the op DIRECTLY to the referenced store,
-            per-client via <code>msg.ui.clientId</code> (same scope rule as writing: a
-            <code>client-only</code> op without a clientId is a
-            <code>server.store.scope-violation</code> error), and pushes a fresh snapshot so a
-            store-bound view updates live. No wire to the <code>ui-store</code> needed. The out-port emits
-            the <code>changed</code> notification.</li>
-        <li><strong>wire</strong> — the node does NOT mutate; it emits
-            <code>msg.ui.store = { id, op, path, value }</code> on the out-port, which you wire to the
-            <code>ui-store</code> node (or a dispatcher) that applies it.</li>
-    </ul>
-    <p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/state/ui-store-action.md"
-        target="_blank">Full documentation</a></p>
-</script>
+<!-- P267 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/state/locales/{en-US,de}/ui-store-action.html; form-row labels carry
+     data-i18n keys resolved from nodes/state/locales/{en-US,de}/ui-store-action.json.
+     No inline data-help-name block here. -->

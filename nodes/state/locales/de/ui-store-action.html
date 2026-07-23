@@ -1,0 +1,22 @@
+<script type="text/html" data-help-name="ui-store-action">
+<p>Typisierte, referenz-basierte Mutation eines <code>ui-store</code>: Store und
+Op picken, statt <code>msg.ui.store</code> von Hand zu bauen. <b>reference</b>
+wendet direkt an (kein Wire); <b>wire</b> emittiert das Envelope.</p>
+<h3>Wichtige Felder</h3>
+<ul>
+    <li><b>Store</b> — der zu mutierende Store (Picker).</li>
+    <li><b>Operation</b> — <code>set</code>/<code>patch</code>/<code>delete</code>/<code>replace</code>/<code>reset</code>; der Wert (falls nötig) kommt aus <code>msg.payload</code>.</li>
+    <li><b>Path</b> — Teil-Pfad im Slice; leer = ganzes Slice.</li>
+    <li><b>Mode</b> — <code>reference</code> (anwenden + Snapshot) oder <code>wire</code> (Envelope emittieren).</li>
+</ul>
+<h3>Eingang</h3>
+<p>Jede Message führt die Op aus. <code>set</code>/<code>patch</code>/<code>replace</code>
+brauchen <code>msg.payload</code>; <code>msg.ui.clientId</code> zielt auf einen
+Client. Fehler: <code>action-missing-store</code>, <code>scope-violation</code>,
+<code>invalid-operation</code>, <code>no-active-app</code>, <code>operation-failed</code>.</p>
+<h3>Ausgänge / Events</h3>
+<p>reference: <code>msg.ui.store = { id, event:"changed", op, path, fullPath,
+value, previousValue, origin, clientId }</code>. wire: <code>{ id, op, path, value }</code>.</p>
+<h3>Vollständige Doku</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/de/nodes/ui-store-action.md" target="_blank">docs/guide/de/nodes/ui-store-action.md</a></p>
+</script>
