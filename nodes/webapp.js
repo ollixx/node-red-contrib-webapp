@@ -7,6 +7,9 @@ const {
     collectMissingStandardLayouts,
     createAppRootRoute,
     normalizeSelectOptions,
+    // P262 (ADR 0041 §4): mount resolution for the event-dispatch authz guard
+    // (walking a component up to its owning route/dialog).
+    resolveMountReference,
     storeOperationSchema,
     uiEventMessageSchema,
     validateUiNodeDefinition,
@@ -2687,7 +2690,7 @@ function dispatchDynamicStateWrite(body) {
     return { success: true, result };
 }
 
-function dispatchClientEvent(RED, appId, body, definitions) {
+function dispatchClientEvent(RED, appId, body, definitions, user) {
     const sourceId = body && body.sourceId ? String(body.sourceId) : undefined;
     const event = body && body.event ? String(body.event) : undefined;
 
@@ -2728,6 +2731,26 @@ function dispatchClientEvent(RED, appId, body, definitions) {
 
     if (!node || typeof node.send !== "function") {
         return { success: false, status: 404, body: `Unknown source node '${sourceId}'.` };
+    }
+
+    // P262 (ADR 0041 §4): event-dispatch guard — an event addressed to a
+    // component of a guarded route/dialog (or to the route/dialog node itself)
+    // is rejected BEFORE any write-back, state change, or flow emission when the
+    // requesting identity lacks every required group. Structured error per
+    // logs-errors.md; the response body carries the structured form.
+    const guardModelResult = getAppModelResult(appId, definitions);
+    if (guardModelResult.success) {
+        const requiredGroups = findGuardForDefinition(guardModelResult.model, sourceId);
+        if (requiredGroups && !userHasGroupAccess(requiredGroups, user)) {
+            const structured = reportRuntimeError(node, {
+                severity: "warn",
+                code: "server.auth.event-denied",
+                message: `Event '${event}' on '${sourceId}' denied: the target belongs to a guarded route/dialog and the identity holds none of the required groups.`,
+                context: { appId, nodeId: sourceId },
+                clientId
+            });
+            return { success: false, status: 403, body: structured };
+        }
     }
 
     // P64: a ui-dialog dismissed natively (X / ESC / overlay → onClose) is the
@@ -2826,6 +2849,14 @@ function buildAppSnapshot(appId, location, dialogId, definitions, clientId, user
 
     if (!routeMatch) {
         return { success: false, status: 404, message: `No route matched '${location}'.` };
+    }
+
+    // P262 (ADR 0041 §4): route guard — enforced HERE, in the one central
+    // snapshot builder, so the page render, the SPA fallback, /snapshot, the SSE
+    // initial sync and every push re-render all deny a guarded route uniformly.
+    // The 403 message is deliberately generic: no route content, no group names.
+    if (!userHasGroupAccess(routeMatch.route.requiresGroup, user)) {
+        return { success: false, status: 403, message: "Access denied: this route requires a group membership your identity does not hold." };
     }
 
     const layout = getLayout(model, routeMatch.route.layoutId);
@@ -2950,7 +2981,10 @@ function renderAppPage(appId, location, dialogId, definitions, user) {
     const built = buildAppSnapshot(appId, location, dialogId, definitions, undefined, user);
 
     if (!built.success) {
-        const heading = built.status === 404 ? "Unknown route" : built.status === 500 ? "Missing layout" : "Incomplete app";
+        // P262: 403 → the defined access-denied page. Like the 404 page it
+        // carries ONLY the heading + generic message — no app markup, no route
+        // structure, no data (no content leak in the HTML).
+        const heading = built.status === 403 ? "Access denied" : built.status === 404 ? "Unknown route" : built.status === 500 ? "Missing layout" : "Incomplete app";
         return {
             status: built.status,
             body: `<!doctype html><html><body><h1>${heading}</h1><p>${escapeHtml(built.message)}</p></body></html>`
@@ -4209,8 +4243,34 @@ function pushActionCommandToClients(appId, clientId, command) {
         return;
     }
 
-    for (const [, entry] of targets) {
-        if (command && command.type === "navigate" && command.to) {
+    // P262 (ADR 0041 §4): navigation guard — enforced HERE, in the one central
+    // command push, so EVERY navigate (wire/route/url mode) to a guarded route is
+    // checked against the identity bound to each target SSE connection. A denied
+    // client is NOT moved (its entry.location stays put, no navigate command is
+    // pushed) and the denial is reported as a structured error — no silent
+    // success. External URLs match no route and pass through unguarded.
+    let navigateRequiresGroup;
+    const isNavigateCommand = command && command.type === "navigate" && command.to;
+    if (isNavigateCommand) {
+        const modelResult = getAppModelResult(appId, readDeployDefinitions(runtimeState.RED));
+        if (modelResult.success) {
+            const destinationMatch = getRouteMatch(String(command.to), modelResult.model.routes);
+            navigateRequiresGroup = destinationMatch ? destinationMatch.route.requiresGroup : undefined;
+        }
+    }
+
+    for (const [targetClientId, entry] of targets) {
+        if (isNavigateCommand) {
+            if (!userHasGroupAccess(navigateRequiresGroup, entry.user)) {
+                reportRuntimeError(undefined, {
+                    severity: "warn",
+                    code: "server.auth.navigation-denied",
+                    message: `Navigation to '${command.to}' denied: the route requires a group membership the client's identity does not hold.`,
+                    context: { appId },
+                    clientId: targetClientId
+                });
+                continue;
+            }
             entry.location = String(command.to);
         }
         writeStreamEvent(entry.res, "command", { command });
@@ -4633,6 +4693,73 @@ function parseRequiresGroup(raw) {
     return groups.length > 0 ? groups : undefined;
 }
 
+// P262 (ADR 0041 §4): ANY-of group guard. Absent/empty `requiresGroup` ⇒ open to
+// every authenticated request (P261 behaviour); set ⇒ the user must hold AT
+// LEAST ONE of the listed groups. A missing user (auth mode "none") never
+// satisfies a set guard — guarded routes/dialogs require an identity source.
+function userHasGroupAccess(requiresGroup, user) {
+    if (!Array.isArray(requiresGroup) || requiresGroup.length === 0) {
+        return true;
+    }
+    const groups = user && Array.isArray(user.groups) ? user.groups : [];
+    return requiresGroup.some((group) => groups.includes(group));
+}
+
+// P262 (ADR 0041 §4): resolve the guard that protects a definition id — the
+// `requiresGroup` of the route/dialog the id belongs to (the node itself, or a
+// component walked UP via its mount chain: container mounts recurse to the
+// container, layout mounts map to the route/dialog owning that layout, and a
+// route-scoped dialog inherits its route's guard). Returns the string[] guard,
+// or undefined when the id is not inside any guarded route/dialog.
+function findGuardForDefinition(model, definitionId, seen) {
+    const visited = seen || new Set();
+    // Expanded component-instance children carry `<instanceId>#<childId>` ids —
+    // ownership follows the INSTANCE (the mount that placed it into the tree).
+    const id = String(definitionId).split("#")[0];
+    if (visited.has(id)) {
+        return undefined;
+    }
+    visited.add(id);
+
+    const route = model.routes.find((entry) => entry.id === id);
+    if (route) {
+        return Array.isArray(route.requiresGroup) && route.requiresGroup.length > 0 ? route.requiresGroup : undefined;
+    }
+
+    const dialog = model.dialogs.find((entry) => entry.id === id);
+    if (dialog) {
+        if (Array.isArray(dialog.requiresGroup) && dialog.requiresGroup.length > 0) {
+            return dialog.requiresGroup;
+        }
+        // A route-scoped dialog is part of its route's surface.
+        return dialog.routeId ? findGuardForDefinition(model, dialog.routeId, visited) : undefined;
+    }
+
+    const component = model.components.find((entry) => entry.id === id);
+    if (!component || typeof component.mount !== "string") {
+        return undefined;
+    }
+    const resolved = resolveMountReference(component.mount, model);
+    if (!resolved.success) {
+        return undefined;
+    }
+    const { scope, targetId } = resolved.data;
+    if (scope === "route" || scope === "dialog") {
+        return findGuardForDefinition(model, targetId, visited);
+    }
+    // "layout" scope: either the layout of a route/dialog, or a container/
+    // component id (container children mount as `container:<id>/<region>`).
+    const owningRoute = model.routes.find((entry) => entry.layoutId === targetId);
+    if (owningRoute) {
+        return findGuardForDefinition(model, owningRoute.id, visited);
+    }
+    const owningDialog = model.dialogs.find((entry) => entry.layoutId === targetId);
+    if (owningDialog) {
+        return findGuardForDefinition(model, owningDialog.id, visited);
+    }
+    return findGuardForDefinition(model, targetId, visited);
+}
+
 // Build the ONE internal user object (userIdentitySchema, ADR 0041 §1) from the
 // configured proxy headers. Express lowercases header names. `name` mirrors the
 // user header value — trusted-header carries no separate display name, and the
@@ -4824,7 +4951,7 @@ function registerEndpoints(RED) {
         const definitions = readDeployDefinitions(RED);
         const appId = resolveCanonicalAppId(req.params.appId, definitions);
 
-        const dispatched = dispatchClientEvent(RED, appId, body, definitions);
+        const dispatched = dispatchClientEvent(RED, appId, body, definitions, req.webappUser);
 
         if (!dispatched.success) {
             res.status(dispatched.status).json({ error: dispatched.body });

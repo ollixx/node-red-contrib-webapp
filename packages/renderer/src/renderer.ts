@@ -924,6 +924,18 @@ function isDialogOpen(state: Record<string, unknown>, dialogId: string): boolean
     return getValueAtPath(state, `ui.dialogs.${dialogId}.open`) === true;
 }
 
+// P262 (ADR 0041 §4): ANY-of group guard. Absent/empty `requiresGroup` ⇒ open
+// to every authenticated request (and to mode "none"); set ⇒ the user must hold
+// AT LEAST ONE of the listed groups. A missing user (mode "none" / no identity)
+// never satisfies a set guard.
+function userHasGroupAccess(requiresGroup: string[] | undefined, user: UserIdentityLike | undefined): boolean {
+    if (!Array.isArray(requiresGroup) || requiresGroup.length === 0) {
+        return true;
+    }
+    const groups = user && Array.isArray(user.groups) ? user.groups : [];
+    return requiresGroup.some((group) => groups.includes(group));
+}
+
 function normalizeIntegration(integration: RuntimeIntegrationModel | undefined): RuntimeIntegrationModel {
     return {
         stores: integration?.stores ?? [],
@@ -2276,6 +2288,10 @@ export function createRendererApp(appModel: AppModel, options: RendererAppOption
         };
         const dialogs = appModel.dialogs
             .filter((dialog) => !dialog.routeId || dialog.routeId === routeMatch.route.id)
+            // P262 (ADR 0041 §4): a guarded dialog is excluded ENTIRELY from the
+            // snapshot for users lacking the group — neither structure nor data,
+            // even when its open-state is forced (e.g. via ?dialog=<id>).
+            .filter((dialog) => userHasGroupAccess(dialog.requiresGroup, options.user))
             .filter((dialog) => isDialogOpen(state, dialog.id))
             .map<RenderedDialog>((dialog) => ({
                 id: dialog.id,
