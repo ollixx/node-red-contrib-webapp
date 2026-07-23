@@ -2,7 +2,7 @@
 id: P267
 title: "Node-Referenz-Batch backbone: Struktur/State/Behavior/Components (11 Knoten): app, route, dialog, store, store-read, store-action, query, query-action, action, component-definition, component-instance — Guide-Doc (EN+DE) + 1–3 Import-Beispiele + locales-Hilfe (en-US+de) + Editor-Label-i18n (data-i18n + Kataloge) je Knoten"
 epic: aspects/docs
-status: pending
+status: in_progress
 dependencies: [P265, P272]
 verify: browser
 spec: docs/guide/README.md
