@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P262** — aspects/auth — **Route-/Dialog-Guards**: `requiresGroup[]`, server-erzwungen (Render/Snapshot/Navigation/Event); „visibleIf ist UX, Guard ist Sicherheit" — [P262](aspects/auth/P262-route-dialog-guards.md)
 
 ## Deferred (parked, not abandoned)
 
@@ -94,7 +93,7 @@ open the folder for the full history.
 | aspects/docs | 1 |
 | aspects/runtime | 9 |
 | aspects/state | 9 |
-| aspects/auth | 2 |
+| aspects/auth | 3 |
 | aspects/editor | 30 |
 | schema | 5 |
 | aspects/rendering | 14 |
@@ -102,4 +101,4 @@ open the folder for the full history.
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 260 done, 1 open, 11 deferred.**
+**Total: 261 done, 0 open, 11 deferred.**

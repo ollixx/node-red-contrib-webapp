@@ -3,7 +3,7 @@ id: P262
 node: ui-route
 title: "Deklarative Authz: `requiresGroup[]` an ui-route + ui-dialog — server-erzwungen bei Render, Snapshot, Navigation und Event-Dispatch; „visibleIf ist UX, Guard ist Sicherheit\""
 epic: aspects/auth
-status: in_progress
+status: done
 dependencies: [P261]
 verify: browser
 spec: docs/nodes/concepts/auth.md
@@ -11,7 +11,7 @@ tests: tests/e2e/nodes/structure/ui-route.tests.md
 ---
 # P262 — Route-/Dialog-Guards (Authz)
 
-> Rationale: **[ADR 0041](../../../adr/0041-auth-model-idp-agnostic-identity-trusted-header-first.md)** §4.
+> Rationale: **[ADR 0041](../../../../adr/0041-auth-model-idp-agnostic-identity-trusted-header-first.md)** §4.
 
 ## findings
 
@@ -69,3 +69,43 @@ aus P261); Snapshot-JSON inspiziert (kein Leak).
   Nicht-Ziel (kein Policy-DSL vor 1.0).
 - Der Dialog-Fall nutzt das P245-Route-Scoping-Wissen (`renderer.ts` Dialog-Filter)
   als Ansatzpunkt.
+
+## Result
+
+**Done 2026-07-23.** Deklarative Authz steht — `requiresGroup[]` (ANY-of) an
+ui-route + ui-dialog, server-erzwungen an allen vier zentralen Wirkstellen.
+**Damit ist das 1.0-kritische Auth-Epic (P260→P261→P262) vollständig.**
+
+### Die 5 Einheiten (je sofort committet)
+
+1. `9e13f3e` — **`requiresGroup`-Feld** (string[], ANY-of) an ui-route + ui-dialog:
+   Schema, Model-Durchreiche, Editor (kommasepariert, Haus-Konvention);
+   leer/absent ⇒ nur Authentifizierung (P261-Verhalten).
+2. `92f6344` — **Enforcement an den vier zentralen Punkten** (zentrale Pfade,
+   kein per-Knoten-Code): (a) Page-Render geschützter Route ⇒ **403-Seite ohne
+   Inhalts-Leak**; (b) `/snapshot` ⇒ Route-403 + **Dialog-Exklusion** (weder
+   Struktur noch Daten); (c) **per-Connection-Navigations-Abweisung** (ui-action
+   navigate auf geschützte Route, kein stiller Erfolg); (d) Event-Dispatch an
+   geschützte Komponenten ⇒ **403 strukturierter Fehler** (logs-errors.md).
+3. `d2dd98c` — **Reaktives Global `user`**: Identität in reactive-Expressions für
+   das dokumentierte visibleIf-Ausblende-Muster (Renderer + Editor-Completion).
+4. `132a464` — **10 E2E** (`guards.spec.ts`, Header-Fake-Muster inkl. Groups) +
+   Kataloge; dabei ein echter Fix: `requiresGroup` wurde ins kompilierte Modell
+   von webapp.js durchgereicht (Routes + Dialoge). Beweise: mit Gruppe Route+Inhalt;
+   ohne Gruppe 403 bei direkter URL, **kein geschützter Inhalt im Snapshot-JSON**
+   (inspiziert), Event abgelehnt, Dialog erscheint nicht via `?dialog=`, und die
+   **Menü-Konsistenz**: via visibleIf verstecktes Menü-Item (UX) + direkter
+   URL-Zugriff → 403 (Sicherheit).
+5. `bbc773e` — **Doku**: Feldtabellen Detail-Bar-vollständig (ANY-of, Default,
+   403-Verhalten), auth.md-Guard-Abschnitt + die Regel **„visibleIf ist UX, Guard
+   ist Sicherheit"**, reaktives user-Global, Fehler-Codes.
+
+### Verifikation
+
+**Voll-Suite (Worktree-Gate): 891 passed, 0 failed, `--retries=0`, 16,6 min** (+10
+Guards-E2E). **Orchestrator-Merge-Gate:** Build grün, Unit **2260** (schema 510 /
+editor 196 / renderer 169 / runtime 1385), Guards-Spec im Haupt-Checkout **10
+passed**, alle Tripwires grün — **diesmal keine Pin-Zwillinge** (die P261-Lektion
+war im Brief; der Agent hat Vokabular-Erweiterungen gegen Unit- UND E2E-Pins
+gegrept). Semantik bewusst einfach (ANY-of, kein Policy-DSL vor 1.0);
+Session-/Cookie-Code bleibt P264.
