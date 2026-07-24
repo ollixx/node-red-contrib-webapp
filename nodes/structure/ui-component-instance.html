@@ -28,13 +28,13 @@
                 // props is a JSON object { name: <binding> } persisted on a hidden
                 // input; the editableList below is its editor.
                 props: { value: "" },
-                order: { value: "", validate: function (v) { return v === "" || RED.validators.number()(v); } },
-                row: { value: "", validate: function (v) { return v === "" || RED.validators.number()(v); } },
-                col: { value: "", validate: function (v) { return v === "" || RED.validators.number()(v); } },
-                colSize: { value: "", validate: function (v) { return v === "" || RED.validators.number()(v); } },
-                rowSize: { value: "", validate: function (v) { return v === "" || RED.validators.number()(v); } },
-                layoutX: { value: "", validate: function (v) { return v === "" || RED.validators.number()(v); } },
-                layoutY: { value: "", validate: function (v) { return v === "" || RED.validators.number()(v); } }
+                order: { value: "", validate: function (v) { return v == null || v === "" || RED.validators.number()(v); } },
+                row: { value: "", validate: function (v) { return v == null || v === "" || RED.validators.number()(v); } },
+                col: { value: "", validate: function (v) { return v == null || v === "" || RED.validators.number()(v); } },
+                colSize: { value: "", validate: function (v) { return v == null || v === "" || RED.validators.number()(v); } },
+                rowSize: { value: "", validate: function (v) { return v == null || v === "" || RED.validators.number()(v); } },
+                layoutX: { value: "", validate: function (v) { return v == null || v === "" || RED.validators.number()(v); } },
+                layoutY: { value: "", validate: function (v) { return v == null || v === "" || RED.validators.number()(v); } }
             },
             // v1: props in / events out. Inner nodes emit on their own ports; the
             // instance node itself carries no input and no output.

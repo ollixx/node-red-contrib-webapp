@@ -56,13 +56,13 @@
                 // colorBinding carrier), so Node-RED auto-save cannot clobber it.
                 color: { value: null },
                 colorBinding: { value: "" },
-                order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
-                row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
-                col: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
-                colSize: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
-                rowSize: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
-                layoutX: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
-                layoutY: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } }
+                order: { value: "", validate: function (value) { return value == null || value === "" || RED.validators.number()(value); } },
+                row: { value: "", validate: function (value) { return value == null || value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
+                col: { value: "", validate: function (value) { return value == null || value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
+                colSize: { value: "", validate: function (value) { return value == null || value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
+                rowSize: { value: "", validate: function (value) { return value == null || value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
+                layoutX: { value: "", validate: function (value) { return value == null || value === "" || RED.validators.number()(value); } },
+                layoutY: { value: "", validate: function (value) { return value == null || value === "" || RED.validators.number()(value); } }
             },
             inputs: 1,
             outputs: 0,

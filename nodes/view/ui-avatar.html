@@ -94,13 +94,13 @@
                 // P94: semantic colour role. Shoelace sl-avatar has no native variant;
                 // the serializer emits data-variant instead.
                 variant: { value: "" },
-                order: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
-                row: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
-                col: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
-                colSize: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
-                rowSize: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
-                layoutX: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } },
-                layoutY: { value: "", validate: function (value) { return value === "" || RED.validators.number()(value); } }
+                order: { value: "", validate: function (value) { return value == null || value === "" || RED.validators.number()(value); } },
+                row: { value: "", validate: function (value) { return value == null || value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
+                col: { value: "", validate: function (value) { return value == null || value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
+                colSize: { value: "", validate: function (value) { return value == null || value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
+                rowSize: { value: "", validate: function (value) { return value == null || value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
+                layoutX: { value: "", validate: function (value) { return value == null || value === "" || RED.validators.number()(value); } },
+                layoutY: { value: "", validate: function (value) { return value == null || value === "" || RED.validators.number()(value); } }
             },
             inputs: 1,
             outputs: 0,

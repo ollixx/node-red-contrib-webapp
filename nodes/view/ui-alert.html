@@ -101,7 +101,7 @@
                 dismissible: { value: false },
                 // P91: duration (positive integer, ms) and countdown (boolean).
                 // duration "" means no auto-hide (absent). Must be >= 1 if set.
-                duration: { value: "", validate: function (value) { return value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
+                duration: { value: "", validate: function (value) { return value == null || value === "" || (RED.validators.number()(value) && Number(value) >= 1); } },
                 // P100: countdown requires duration to be set (cross-field validation).
                 // Use this.duration (stored node value) as primary source so the
                 // validator works both during deploy (no DOM panel open) and in the
