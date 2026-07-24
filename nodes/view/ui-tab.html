@@ -14,6 +14,7 @@
             size: false,
             variant: false,
             advanced: [],
+            i18nNode: "ui-tab",
             hints: {
                 visible: "Die Sichtbarkeit eines Tabs steuert die aktive-Tab-Auswahl (activeTab), nicht ein visible-Binding.",
                 disabled: "Ein Tab hat keinen interaktiven Zustand.",
@@ -93,11 +94,11 @@
     })();
 </script>
 <script type="text/html" data-template-name="ui-tab">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
-    <div class="form-row"><label for="node-input-labelBinding">Label</label><input type="text" id="node-input-labelBinding"></div>
-    <div class="form-row"><label for="node-input-icon">Icon</label><input type="text" id="node-input-icon" placeholder="optional, e.g. house"></div>
+    <div class="form-row"><label for="node-input-mount" data-i18n="ui-tab.label.mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-row"><label for="node-input-labelBinding" data-i18n="ui-tab.label.label">Label</label><input type="text" id="node-input-labelBinding"></div>
+    <div class="form-row"><label for="node-input-icon" data-i18n="ui-tab.label.icon">Icon</label><input type="text" id="node-input-icon" placeholder="optional, e.g. house" data-i18n="[placeholder]ui-tab.placeholder.icon"></div>
     <div class="form-tips" style="margin-top: 4px;">
         Mount this node into a <code>ui-tabs</code> to make it a tab. Its own id is
         the tab key (the <code>activeTab</code> value); the ids of all tabs under one
@@ -105,14 +106,7 @@
         <code>content</code> slot — that becomes the tab's panel.
     </div>
 </script>
-<script type="text/html" data-help-name="ui-tab">
-<p>Ein einzelner Tab innerhalb eines <code>ui-tabs</code> (ADR 0018, Modell 1a). Die Tabs eines <code>ui-tabs</code> werden aus seinen <code>ui-tab</code>-Kindern abgeleitet — es gibt kein Tabs-JSON-Feld mehr.</p>
-<h3>Felder</h3>
-<ul>
-  <li><b>Parent Slot</b> — in ein <code>ui-tabs</code> mounten heißt „werde ein Tab". Die Knoten-ID ist der Tab-Schlüssel (der <code>activeTab</code>-Wert) und muss innerhalb eines ui-tabs eindeutig sein.</li>
-  <li><b>Label</b> — der Tab-Titel. Voller kanonischer Bindungssatz (Store, Query, State, literal, …); Default-Typ <code>string</code>.</li>
-  <li><b>Icon</b> — optionaler Icon-Name (<code>sl-icon</code>) neben dem Label.</li>
-  <li><b>Inhalt</b> — mounte beliebige Kinder in den <code>content</code>-Slot dieses Tabs; sie bilden das Panel.</li>
-</ul>
-<p>Doku: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/navigation/ui-tab.md" target="_blank">ui-tab</a>.</p>
-</script>
+<!-- P271 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/view/locales/{en-US,de}/ui-tab.html; form-row labels carry data-i18n
+     keys resolved from nodes/view/locales/{en-US,de}/ui-tab.json. No inline
+     data-help-name block here. -->
