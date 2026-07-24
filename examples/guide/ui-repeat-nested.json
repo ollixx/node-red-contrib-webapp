@@ -1,0 +1,103 @@
+[
+    {
+        "id": "guide-ui-repeat-nested",
+        "type": "tab",
+        "label": "Guide: ui-repeat (nested)",
+        "disabled": false,
+        "info": "User-guide example for ui-repeat named scopes (docs/guide/nodes/ui-repeat.md, example 2). Import, deploy, open /webapp/guideRepeatNested/. An outer repeat (customer) with an inner repeat (order); a deep child reads the outer customer via Item (customer) and the inner order total via the innermost Item (Repeat)."
+    },
+    {
+        "id": "guideRepeatNested",
+        "type": "ui-app",
+        "name": "Nested repeat demo",
+        "uiId": "guideRepeatNested",
+        "root": "guideRepeatNested",
+        "layout": "app",
+        "z": "guide-ui-repeat-nested",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gRnOuter",
+        "type": "ui-repeat",
+        "name": "Customers",
+        "uiId": "gRnOuter",
+        "app": "guideRepeatNested",
+        "mount": "guideRepeatNested.content",
+        "itemName": "customer",
+        "items": {
+            "kind": "literal",
+            "value": [
+                { "name": "Ada", "orders": [{ "total": 10 }, { "total": 20 }] },
+                { "name": "Grace", "orders": [{ "total": 5 }] }
+            ]
+        },
+        "keyField": "name",
+        "order": "1",
+        "z": "guide-ui-repeat-nested",
+        "x": 340,
+        "y": 100,
+        "wires": [[]]
+    },
+    {
+        "id": "gRnCustomerName",
+        "type": "ui-text",
+        "name": "Customer name",
+        "uiId": "gRnCustomerName",
+        "app": "gRnOuter",
+        "mount": "container:gRnOuter/content",
+        "order": "1",
+        "style": "heading-3",
+        "value": { "kind": "item", "path": "name" },
+        "z": "guide-ui-repeat-nested",
+        "x": 560,
+        "y": 60,
+        "wires": [[]]
+    },
+    {
+        "id": "gRnInner",
+        "type": "ui-repeat",
+        "name": "Orders",
+        "uiId": "gRnInner",
+        "app": "gRnOuter",
+        "mount": "container:gRnOuter/content",
+        "itemName": "order",
+        "items": { "kind": "item", "path": "orders" },
+        "order": "2",
+        "z": "guide-ui-repeat-nested",
+        "x": 560,
+        "y": 120,
+        "wires": [[]]
+    },
+    {
+        "id": "gRnOrderCustomer",
+        "type": "ui-text",
+        "name": "Order's customer (named scope)",
+        "uiId": "gRnOrderCustomer",
+        "app": "gRnInner",
+        "mount": "container:gRnInner/content",
+        "order": "1",
+        "style": "label",
+        "value": { "kind": "item", "scope": "customer", "path": "name" },
+        "z": "guide-ui-repeat-nested",
+        "x": 780,
+        "y": 100,
+        "wires": [[]]
+    },
+    {
+        "id": "gRnOrderTotal",
+        "type": "ui-text",
+        "name": "Order total (innermost)",
+        "uiId": "gRnOrderTotal",
+        "app": "gRnInner",
+        "mount": "container:gRnInner/content",
+        "order": "2",
+        "variant": "muted",
+        "value": { "kind": "item", "path": "total" },
+        "z": "guide-ui-repeat-nested",
+        "x": 780,
+        "y": 140,
+        "wires": [[]]
+    }
+]

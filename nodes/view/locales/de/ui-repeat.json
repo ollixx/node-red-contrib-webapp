@@ -1,0 +1,19 @@
+{
+    "ui-repeat": {
+        "label": {
+            "mount": "Parent Slot",
+            "items": "Items",
+            "keyField": "Key Field",
+            "itemName": "Scope Name"
+        },
+        "placeholder": {
+            "keyField": "optional, z.B. id",
+            "itemName": "optionaler Alias, z.B. customer"
+        },
+        "hints": {
+            "disabled": "Ein Repeat-Template hat keinen interaktiven Zustand.",
+            "color": "Ein Repeat-Template rendert keine eigene Chrome.",
+            "size": "Ein Repeat-Template hat keine einstellbare Größe."
+        }
+    }
+}
