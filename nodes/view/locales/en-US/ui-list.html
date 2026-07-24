@@ -1,0 +1,26 @@
+<script type="text/html" data-help-name="ui-list">
+<p>Renders a structured list from a data array with a fixed item schema and an
+optional single-select. Items come from the <code>items</code> binding.</p>
+<h3>Key fields</h3>
+<ul>
+    <li><b>Items</b> — the structural array source (scalar literals hidden):
+        json literal, store, query, state, reactive, msg, flow/global/env. Each
+        element is a string (→ label) or <code>{ id?, label, value?, icon? }</code>.</li>
+    <li><b>Display Type</b> — <code>plain</code>/<code>divided</code>/<code>grouped</code>/<code>actionable</code> (semantic look). <b>Ordered list</b> — ul↔ol.</li>
+    <li><b>Value display</b> — <code>none</code>/<code>secondary</code>/<code>badge</code> (value is always in the event); <b>Badge Variant</b> for badge colour.</li>
+    <li><b>Label/Value/Id/Icon Field</b> — item-field mapping: which flat field of
+        a raw entity is which (defaults reproduce the schema names).</li>
+    <li><b>Selectable</b> + <b>Selected (id)</b> — single-select with a two-way id binding.</li>
+</ul>
+<h3>Inputs</h3>
+<p>Has an input port. <code>msg.payload</code> (non-null) sets <code>items</code>
+and pushes to all clients; <code>msg.ui.patch</code> overrides fields;
+<code>msg.ui.component.op</code> <code>show</code>/<code>hide</code> toggle
+visibility. Foreign messages pass through unchanged.</p>
+<h3>Outputs / Events</h3>
+<p><code>itemClick</code> fires on every row click; <code>itemSelect</code> only
+when selectable and the selection changes. Both carry
+<code>params: { rowId, row }</code>. Each enabled event adds an output port.</p>
+<h3>Full docs</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/nodes/ui-list.md" target="_blank">docs/guide/nodes/ui-list.md</a></p>
+</script>

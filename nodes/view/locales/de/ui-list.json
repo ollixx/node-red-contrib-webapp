@@ -1,0 +1,50 @@
+{
+    "ui-list": {
+        "label": {
+            "mount": "Parent Slot",
+            "items": "Items",
+            "displayType": "Display Type",
+            "ordered": "Ordered list (ol)",
+            "displayValue": "Value-Anzeige",
+            "badgeVariant": "Badge Variant",
+            "labelField": "Label Field",
+            "valueField": "Value Field",
+            "idField": "Id Field",
+            "iconField": "Icon Field",
+            "selectable": "Auswählbar (Single-Select)",
+            "selectedId": "Ausgewählt (id)",
+            "events": "Events"
+        },
+        "option": {
+            "displayType": {
+                "plain": "Plain (Default)",
+                "divided": "Divided (mit Trennlinien)",
+                "grouped": "Grouped (umrandet / list-group)",
+                "actionable": "Actionable (Hover / Klick-Affordanz)"
+            },
+            "displayValue": {
+                "none": "Nicht anzeigen (Default)",
+                "secondary": "Sekundär (Text)",
+                "badge": "Badge"
+            },
+            "badgeVariant": {
+                "neutral": "Neutral (Default)",
+                "primary": "Primary",
+                "info": "Info",
+                "success": "Success",
+                "warning": "Warning",
+                "danger": "Danger"
+            }
+        },
+        "placeholder": {
+            "labelField": "label",
+            "valueField": "value",
+            "idField": "id",
+            "iconField": "icon"
+        },
+        "hints": {
+            "disabled": "Ohne aktive Events (itemClick/itemSelect) hat disabled keinen sichtbaren Effekt.",
+            "size": "Die Dichte wird über Display-Typ (Plain/Divided/Grouped/Actionable) gesteuert, nicht über Size."
+        }
+    }
+}
