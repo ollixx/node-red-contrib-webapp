@@ -1,0 +1,22 @@
+<script type="text/html" data-help-name="ui-empty-state">
+<p>A structured placeholder (icon, title, message, optional CTA) for empty lists,
+failed loads or missing content. Shown while its <b>Visible Path</b> is truthy.</p>
+<h3>Key fields</h3>
+<ul>
+    <li><b>Visible Path</b> — the state path that gates visibility (truthy = shown).</li>
+    <li><b>Icon</b>, <b>Title</b>, <b>Message</b> — plain-text content (not
+        bindings today; a redesign is planned, P152 deferred).</li>
+    <li><b>Action</b> + <b>Action Label</b> — a ui-action node id renders a CTA
+        button with that caption.</li>
+</ul>
+<h3>Inputs</h3>
+<p>Has an input port. <code>msg.ui.patch</code> overrides
+<code>icon</code>/<code>title</code>/<code>message</code>/<code>actionLabel</code>;
+<code>msg.ui.component.op</code> <code>show</code>/<code>hide</code> toggle
+visibility. Foreign messages pass through unchanged.</p>
+<h3>Outputs / Events</h3>
+<p>None — no output port. A CTA click triggers the wired ui-action; its events
+originate there.</p>
+<h3>Full docs</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/nodes/ui-empty-state.md" target="_blank">docs/guide/nodes/ui-empty-state.md</a></p>
+</script>

@@ -1,0 +1,17 @@
+{
+    "ui-empty-state": {
+        "label": {
+            "mount": "Parent Slot",
+            "visiblePath": "Visible Path",
+            "icon": "Icon",
+            "title": "Title",
+            "message": "Message",
+            "action": "Action",
+            "actionLabel": "Action Label"
+        },
+        "hints": {
+            "disabled": "Ein Empty-State hat keinen interaktiven Zustand.",
+            "size": "Dieser Knoten hat keine Größen-Stufen."
+        }
+    }
+}
