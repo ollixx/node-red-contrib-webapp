@@ -1,0 +1,67 @@
+# Correctness CI (P274): build + lint + unit + tripwires (validate), the E2E
+# suite, and the install-smoke-test that proves the PACKED tarball loads and
+# renders as an installed package. Runs on every PR and on pushes to the main
+# branches.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+
+# Cancel superseded runs on the same ref.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-and-e2e:
+    name: validate + E2E + install-smoke-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Enable corepack (pnpm from packageManager)
+        run: corepack enable
+
+      - name: Install dependencies
+        run: corepack pnpm install --frozen-lockfile
+
+      # The E2E suite's Playwright webServer launches Node-RED via the `node-red`
+      # command (see playwright.config.ts). It is not a package dependency, so
+      # install it globally for CI (matches the owner's local global install).
+      - name: Install Node-RED (for E2E)
+        run: npm install -g node-red@^4
+
+      - name: Validate (build + lint + unit + tripwires)
+        run: corepack pnpm validate
+
+      - name: Install Playwright browsers
+        run: corepack pnpm exec playwright install --with-deps chromium
+
+      - name: E2E (Playwright, Node-RED on port 1882)
+        run: corepack pnpm test:e2e
+
+      - name: Install-smoke-test (packed tarball → fresh install → render)
+        run: corepack pnpm smoke:pack
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore

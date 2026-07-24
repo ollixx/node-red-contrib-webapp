@@ -1,16 +1,30 @@
 {
     "name": "node-red-contrib-webapp",
-    "version": "0.0.0",
+    "version": "1.0.0",
     "description": "Declarative web-app nodes for Node-RED.",
     "license": "MIT",
+    "author": "Oliver Charlet",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/ollixx/node-red-contrib-webapp.git"
+    },
+    "bugs": {
+        "url": "https://github.com/ollixx/node-red-contrib-webapp/issues"
+    },
+    "homepage": "https://github.com/ollixx/node-red-contrib-webapp#readme",
+    "engines": {
+        "node": ">=18.5.0"
+    },
     "packageManager": "pnpm@10.17.1",
     "main": "nodes/webapp.js",
     "files": [
         "nodes",
         "resources",
         "packages/schema/dist",
+        "packages/renderer/dist",
         "examples",
         "README.md",
+        "CHANGELOG.md",
         "LICENSE"
     ],
     "keywords": [
@@ -72,7 +86,9 @@
     "scripts": {
         "vendor:shoelace": "node scripts/vendor-shoelace.js",
         "build": "pnpm vendor:shoelace && pnpm -r build",
+        "build:publish": "pnpm build && node scripts/build-publish.mjs",
         "prepare": "node scripts/vendor-shoelace.js",
+        "prepack": "pnpm build:publish >&2",
         "dev:start": "lsof -ti tcp:1881 | xargs kill -9 2>/dev/null || true && node-red --userDir .node-red-dev --port 1881",
         "e2e:server:start": "rm -rf .node-red-e2e && mkdir -p .node-red-e2e/node_modules && cp .node-red-dev/settings.js .node-red-e2e/settings.js && cp examples/customers-crud/flow.json .node-red-e2e/flows.json && ln -sfn ../.. .node-red-e2e/node_modules/node-red-contrib-webapp && node-red --userDir .node-red-e2e --port 1882",
         "example:start": "lsof -ti tcp:1881 | xargs kill -9 2>/dev/null || true && rm -rf .node-red-example && mkdir -p .node-red-example/node_modules && cp .node-red-dev/settings.js .node-red-example/settings.js && cp examples/customers-crud/flow.json .node-red-example/flows.json && ln -sfn ../.. .node-red-example/node_modules/node-red-contrib-webapp && node-red --userDir .node-red-example --port 1881",
@@ -81,6 +97,7 @@
         "test:e2e": "playwright test",
         "test:e2e:integration": "E2E_INTEGRATION=1 playwright test",
         "test": "pnpm -r test",
+        "smoke:pack": "node scripts/smoke-pack.mjs",
         "gen:example": "node scripts/gen-example.js",
         "gen:node-examples": "node scripts/gen-node-examples.js",
         "gen:field-matrix": "node scripts/gen-field-matrix.js",
@@ -102,6 +119,7 @@
         "@eslint/js": "^9.36.0",
         "@playwright/test": "^1.58.2",
         "@shoelace-style/shoelace": "2.20.1",
+        "esbuild": "0.27.4",
         "eslint": "^9.36.0",
         "fast-check": "^4.8.0",
         "jsdom": "^29.1.1",

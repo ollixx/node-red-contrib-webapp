@@ -89,8 +89,11 @@ function vendor({
     fs.cpSync(sourceDir, destDir, { recursive: true });
 
     if (log) {
+        // P274: emit progress on STDERR, never stdout. As the `prepare` hook this
+        // runs during `npm pack`/`npm publish`; anything on stdout pollutes
+        // `npm pack --json` (breaks the install-smoke-test's tarball parse).
         // eslint-disable-next-line no-console
-        console.log(
+        console.error(
             `vendor-shoelace: copied Shoelace ${installedVersion} cdn build → ` +
                 `${path.relative(REPO_ROOT, destDir)}/`
         );
