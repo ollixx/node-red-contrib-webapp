@@ -1,0 +1,24 @@
+<script type="text/html" data-help-name="ui-container">
+<p>A nestable layout container. It mounts into a parent slot and lays out its own
+children via a preset; its variant gives the surface its chrome.</p>
+<h3>Key fields</h3>
+<ul>
+    <li><b>Child Layout</b> — the preset for the direct children
+        (<code>vertical</code>/<code>horizontal</code>/<code>app</code>/<code>grid</code>/<code>absolute</code>).</li>
+    <li><b>Variant</b> — <code>card</code> (border + elevation), <code>panel</code>,
+        <code>section</code> (spacing only), <code>transparent</code> (no chrome),
+        <code>span</code> (inline flow).</li>
+    <li><b>Events</b> — enable <code>onShow</code> / <code>onHide</code> output ports.</li>
+    <li><b>Visible / Color</b> — bindable base fields.</li>
+</ul>
+<h3>Inputs</h3>
+<p>Has an input port. <code>msg.ui.component.op</code> <code>show</code>/<code>hide</code>
+shows/hides the container and its children (firing onShow/onHide);
+<code>msg.ui.patch</code> overrides fields. No <code>msg.payload</code> primary
+value. Foreign messages pass through unchanged.</p>
+<h3>Outputs / Events</h3>
+<p><code>onShow</code> (visible) / <code>onHide</code> (hidden), when enabled —
+each carries <code>sourceId</code>, <code>appId</code>, <code>clientId</code>.</p>
+<h3>Full docs</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/nodes/ui-container.md" target="_blank">docs/guide/nodes/ui-container.md</a></p>
+</script>

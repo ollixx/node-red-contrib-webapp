@@ -1,0 +1,24 @@
+<script type="text/html" data-help-name="ui-container">
+<p>Ein verschachtelbarer Layout-Container. Er mountet in einen Parent-Slot und
+layoutet seine eigenen Kinder über ein Preset; sein Variant gibt der Fläche die Chrome.</p>
+<h3>Wichtige Felder</h3>
+<ul>
+    <li><b>Child Layout</b> — das Preset für die direkten Kinder
+        (<code>vertical</code>/<code>horizontal</code>/<code>app</code>/<code>grid</code>/<code>absolute</code>).</li>
+    <li><b>Variante</b> — <code>card</code> (Rand + Elevation), <code>panel</code>,
+        <code>section</code> (nur Abstand), <code>transparent</code> (keine Chrome),
+        <code>span</code> (Inline-Fluss).</li>
+    <li><b>Events</b> — <code>onShow</code> / <code>onHide</code> Output-Ports aktivieren.</li>
+    <li><b>Visible / Color</b> — bindbare Basis-Felder.</li>
+</ul>
+<h3>Eingang</h3>
+<p>Hat einen Eingangs-Port. <code>msg.ui.component.op</code> <code>show</code>/<code>hide</code>
+blendet den Container und seine Kinder ein/aus (feuert onShow/onHide);
+<code>msg.ui.patch</code> überschreibt Felder. Kein <code>msg.payload</code>-
+Primärwert. Fachfremde Messages werden unverändert durchgereicht.</p>
+<h3>Ausgänge / Events</h3>
+<p><code>onShow</code> (sichtbar) / <code>onHide</code> (ausgeblendet), falls
+aktiviert — je mit <code>sourceId</code>, <code>appId</code>, <code>clientId</code>.</p>
+<h3>Vollständige Doku</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/de/nodes/ui-container.md" target="_blank">docs/guide/de/nodes/ui-container.md</a></p>
+</script>

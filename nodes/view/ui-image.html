@@ -14,6 +14,7 @@
             variant: false,
             advanced: ["size"],
             omit: [],
+            i18nNode: "ui-image",
             hints: {
                 disabled: "Ein Bild hat keinen interaktiven Zustand.",
                 color: "Ein Bild hat keine Farbe.",
@@ -157,33 +158,25 @@
     })();
 </script>
 <script type="text/html" data-template-name="ui-image">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
-    <div class="form-row"><label for="node-input-srcBinding">Src</label><input type="text" id="node-input-srcBinding"></div>
-    <div class="form-row"><label for="node-input-alt">Alt Text</label><input type="text" id="node-input-alt"></div>
-    <div class="form-row"><label for="node-input-fallback">Fallback URL</label><input type="text" id="node-input-fallback"></div>
-    <div class="form-row"><label for="node-input-width">Width</label><input type="text" id="node-input-width" placeholder="e.g. 200 or 100%"></div>
-    <div class="form-row"><label for="node-input-height">Height</label><input type="text" id="node-input-height" placeholder="e.g. 150"></div>
-    <div class="form-row"><label for="node-input-fit">Fit</label>
+    <div class="form-row"><label for="node-input-mount" data-i18n="ui-image.label.mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-row"><label for="node-input-srcBinding" data-i18n="ui-image.label.src">Src</label><input type="text" id="node-input-srcBinding"></div>
+    <div class="form-row"><label for="node-input-alt" data-i18n="ui-image.label.alt">Alt Text</label><input type="text" id="node-input-alt"></div>
+    <div class="form-row"><label for="node-input-fallback" data-i18n="ui-image.label.fallback">Fallback URL</label><input type="text" id="node-input-fallback"></div>
+    <div class="form-row"><label for="node-input-width" data-i18n="ui-image.label.width">Width</label><input type="text" id="node-input-width" placeholder="e.g. 200 or 100%" data-i18n="[placeholder]ui-image.placeholder.width"></div>
+    <div class="form-row"><label for="node-input-height" data-i18n="ui-image.label.height">Height</label><input type="text" id="node-input-height" placeholder="e.g. 150" data-i18n="[placeholder]ui-image.placeholder.height"></div>
+    <div class="form-row"><label for="node-input-fit" data-i18n="ui-image.label.fit">Fit</label>
         <select id="node-input-fit">
-            <option value="">(Browser-Default)</option>
-            <option value="contain">Contain</option>
-            <option value="cover">Cover</option>
-            <option value="fill">Fill</option>
-            <option value="none">None</option>
+            <option value="" data-i18n="ui-image.option.fit.">(Browser-Default)</option>
+            <option value="contain" data-i18n="ui-image.option.fit.contain">Contain</option>
+            <option value="cover" data-i18n="ui-image.option.fit.cover">Cover</option>
+            <option value="fill" data-i18n="ui-image.option.fit.fill">Fill</option>
+            <option value="none" data-i18n="ui-image.option.fit.none">None</option>
         </select>
     </div>
 </script>
-<script type="text/html" data-help-name="ui-image">
-<p>Zeigt ein Bild an einem Mount-Ziel.</p>
-<h3>Src-Bindung</h3>
-<p>Die Bild-URL (<code>Src</code>) ist voll bindbar: <b>URL</b> (literal), state/query/routeParam/msg/flow/global/jsonata/env, <b>Store</b> sowie <b>Asset</b>.</p>
-<ul>
-  <li><b>URL</b> — statische oder dynamisch gebundene Bild-URL.</li>
-  <li><b>Asset</b> — verwaltetes Medium aus dem Media-Store der App (in <code>ui-app.mediaStoreUrl</code> konfiguriert). Auswahl/Upload über den Media-Picker; gespeichert als <code>asset:&lt;id&gt;</code> und zur Laufzeit über einen Backend-Proxy aufgelöst (die echte Store-URL bleibt verborgen).</li>
-  <li><b>msg</b> — wiring-first: <code>msg.payload</code> setzt die Quelle. Ein Buffer wird zu einer <code>data:</code>-URL konvertiert (Content-Type via <code>msg.contentType</code> oder Magic-Bytes). Hinweis: <code>data:</code>/Base64 landet im Snapshot und wird bei jedem Render mitgeschickt — fuer kleine/seltene Bilder geeignet, grosse/haeufige Bilder besser via URL/Asset.</li>
-</ul>
-<p><code>Alt Text</code> und <code>Fallback URL</code> sind bindbar (literal, state, store, …). <code>Fit</code> steuert object-fit.</p>
-<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/display/ui-image.md">Doku</a></p>
-</script>
+<!-- P269 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/view/locales/{en-US,de}/ui-image.html; form-row labels carry data-i18n
+     keys resolved from nodes/view/locales/{en-US,de}/ui-image.json. No inline
+     data-help-name block here. -->

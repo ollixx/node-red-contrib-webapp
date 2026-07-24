@@ -1,0 +1,19 @@
+{
+    "ui-repeat": {
+        "label": {
+            "mount": "Parent Slot",
+            "items": "Items",
+            "keyField": "Key Field",
+            "itemName": "Scope Name"
+        },
+        "placeholder": {
+            "keyField": "optional, e.g. id",
+            "itemName": "optional alias, e.g. customer"
+        },
+        "hints": {
+            "disabled": "A repeat template has no interactive state.",
+            "color": "A repeat template renders no chrome of its own.",
+            "size": "A repeat template has no adjustable size."
+        }
+    }
+}

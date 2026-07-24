@@ -21,6 +21,7 @@
             variant: false,
             advanced: [],
             omit: ["size"],
+            i18nNode: "ui-icon",
             hints: {
                 disabled: "Ein Icon hat keinen interaktiven Zustand."
             }
@@ -100,27 +101,17 @@
     })();
 </script>
 <script type="text/html" data-template-name="ui-icon">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-row"><label for="node-input-mount" data-i18n="ui-icon.label.mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <!-- P239: the Icon-Name row carries the iconBinding CARRIER (installIconField
          turns it into a typedInput). The persisted `icon` property deliberately has
          no #node-input-icon element — see the defaults block. -->
-    <div class="form-row"><label for="node-input-iconBinding">Icon Name</label><input type="text" id="node-input-iconBinding" placeholder="e.g. home, user, check"></div>
+    <div class="form-row"><label for="node-input-iconBinding" data-i18n="ui-icon.label.icon">Icon Name</label><input type="text" id="node-input-iconBinding" placeholder="e.g. home, user, check" data-i18n="[placeholder]ui-icon.placeholder.icon"></div>
     <!-- P238: the "Color" row is no longer hand-written here. installBaseFields
          injects the shared standard control on #node-input-colorBinding. -->
 </script>
-<script type="text/html" data-help-name="ui-icon"><p>Zeigt ein Icon anhand seines Namens (icon-set-agnostisch).</p>
-<p><b>Icon Name</b> — der Icon-Name. Zwei Wege in einem Control:</p>
-<ul>
-  <li><b>Icon</b> (literal) — ein nackter Name (<code>home</code>) nutzt die Default-Library, die Kurzform <code>library:name</code> (<code>lucide:user</code>) eine registrierte Zusatz-Library. Der Button „Icon wählen…" (bzw. der Expand-Button am Feld) öffnet den Icon-Picker; daneben steht eine Vorschau.</li>
-  <li><b>Binding</b> — jede kanonische Binding-Art (Store/Query/Route-Param/Reactive/msg/JSONata/Flow/Global/Env …). Ein gebundener Icon-Name tauscht das Icon live (SSE). Der aufgelöste Wert ist derselbe String wie im literalen Modus (<code>house</code> oder <code>lucide:user</code>).</li>
-</ul>
-<p><b>Color</b> — die Farbe des Icons. Drei Wege in einem Control:</p>
-<ul>
-  <li><b>Theme Token</b> — die semantischen Farb-Tokens der App (<code>primary</code>, <code>success</code>, <code>warning</code>, <code>danger</code>, <code>neutral</code>, <code>info</code>, <code>muted</code>). Folgt dem Theme: gespeichert als <code>token:&lt;name&gt;</code>, gerendert als <code>var(--wa-color-&lt;token&gt;)</code>.</li>
-  <li><b>Farbe</b> — beliebige Farbe über den Color-Selector (HSB/RGB/Web) oder als CSS-Wert getippt (<code>#ff0000</code>, <code>rgb(255,0,0)</code>, <code>red</code>).</li>
-  <li><b>Binding</b> — jede kanonische Binding-Art (State/Store/Query/Route-Param/msg/JSONata/Flow/Global/Env …). Eine gebundene Farbe ändert das Icon live (SSE).</li>
-</ul>
-<p>Leer = keine Farbe (das Icon erbt die umgebende Textfarbe). Ein unbekannter Wert wird ignoriert — es wird nie ungültiges CSS ausgegeben.</p>
-<p>Vollständige Doku: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/display/ui-icon.md" target="_blank">docs/nodes/display/ui-icon.md</a></p></script>
+<!-- P269 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/view/locales/{en-US,de}/ui-icon.html; form-row labels carry data-i18n
+     keys resolved from nodes/view/locales/{en-US,de}/ui-icon.json. No inline
+     data-help-name block here. -->

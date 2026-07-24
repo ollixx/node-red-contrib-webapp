@@ -1,0 +1,27 @@
+<script type="text/html" data-help-name="ui-repeat">
+<p>Wiederholt ein Kind-Template einmal pro Element einer gebundenen Collection
+(ADR 0017). Es ist <b>transparent</b> (ADR 0025): kein Wrapper — nur Iteration.</p>
+<h3>Wichtige Felder</h3>
+<ul>
+    <li><b>Items</b> — ein Value-Binding, das zu einem Array auflöst (store, query,
+        state, json-Literal, msg, …); ein Objekt wird als <code>{key, value}</code>
+        iteriert. Die Schablone in den <code>content</code>-Slot mounten.</li>
+    <li><b>Key Field</b> — optionaler stabiler Per-Instanz-Key (keyed Morph). Fällt
+        auf den Array-Index zurück.</li>
+    <li><b>Scope Name</b> — optionaler Alias für das Item dieses Repeats, sodass ein
+        Nachfahre es namentlich über innere Repeats hinweg adressiert
+        (<code>Item (customer)</code>).</li>
+    <li>In Kindern: <b>Item (Repeat)</b> (optionaler Feldpfad; leer = ganzes
+        Element) / <b>Index (Repeat)</b> lesen das aktuelle Element / die Position.
+        Layout &amp; Chrome sind Aufgabe eines expliziten ui-container.</li>
+</ul>
+<h3>Eingang</h3>
+<p>Hat einen Eingangs-Port (wie ui-list): ein <code>msg.payload</code>-Array setzt
+<code>items</code> und pusht einen frischen Snapshot. Kein Fan-out an die
+Kind-Knoten — die Zustellung ist die Render-Iteration. <code>msg.ui.patch</code>
+überschreibt Felder.</p>
+<h3>Ausgänge / Events</h3>
+<p>Keine — kein Output-Port; der Repeat emittiert keine Events.</p>
+<h3>Vollständige Doku</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/de/nodes/ui-repeat.md" target="_blank">docs/guide/de/nodes/ui-repeat.md</a></p>
+</script>

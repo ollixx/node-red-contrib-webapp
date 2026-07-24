@@ -1,0 +1,76 @@
+[
+    {
+        "id": "guide-ui-table",
+        "type": "tab",
+        "label": "Guide: ui-table",
+        "disabled": false,
+        "info": "User-guide example for ui-table (docs/guide/nodes/ui-table.md). Import, deploy, open /webapp/guideTable/. A static three-column table; rowSelect is enabled and wired to a debug node, so clicking a row logs { rowId, row }."
+    },
+    {
+        "id": "guideTable",
+        "type": "ui-app",
+        "name": "Table demo",
+        "uiId": "guideTable",
+        "root": "guideTable",
+        "layout": "app",
+        "z": "guide-ui-table",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gTblHeading",
+        "type": "ui-text",
+        "name": "Heading",
+        "uiId": "gTblHeading",
+        "app": "guideTable",
+        "mount": "guideTable.content",
+        "text": "Customers",
+        "value": { "kind": "literal", "value": "Customers" },
+        "style": "heading-2",
+        "variant": "default",
+        "display": "text",
+        "order": "1",
+        "z": "guide-ui-table",
+        "x": 340,
+        "y": 60,
+        "wires": [[]]
+    },
+    {
+        "id": "gTblTable",
+        "type": "ui-table",
+        "name": "Customers table",
+        "uiId": "gTblTable",
+        "app": "guideTable",
+        "mount": "guideTable.content",
+        "columns": "name,email,status",
+        "rows": {
+            "kind": "literal",
+            "value": [
+                { "id": "1", "name": "Ada Lovelace", "email": "ada@example.com", "status": "active" },
+                { "id": "2", "name": "Alan Turing", "email": "alan@example.com", "status": "active" },
+                { "id": "3", "name": "Grace Hopper", "email": "grace@example.com", "status": "inactive" }
+            ]
+        },
+        "events": "[\"rowSelect\"]",
+        "outputs": 1,
+        "order": "2",
+        "z": "guide-ui-table",
+        "x": 340,
+        "y": 120,
+        "wires": [["gTblDebug"]]
+    },
+    {
+        "id": "gTblDebug",
+        "type": "debug",
+        "name": "rowSelect",
+        "active": true,
+        "tosidebar": true,
+        "complete": "true",
+        "targetType": "full",
+        "z": "guide-ui-table",
+        "x": 560,
+        "y": 120,
+        "wires": []
+    }
+]

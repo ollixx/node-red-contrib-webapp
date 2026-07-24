@@ -1,0 +1,73 @@
+[
+    {
+        "id": "guide-ui-repeat",
+        "type": "tab",
+        "label": "Guide: ui-repeat",
+        "disabled": false,
+        "info": "User-guide example for ui-repeat (docs/guide/nodes/ui-repeat.md). Import, deploy, open /webapp/guideRepeat/. A static array of {name, qty}; two text nodes per item read item.name and item.qty."
+    },
+    {
+        "id": "guideRepeat",
+        "type": "ui-app",
+        "name": "Repeat demo",
+        "uiId": "guideRepeat",
+        "root": "guideRepeat",
+        "layout": "app",
+        "z": "guide-ui-repeat",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gRepRepeat",
+        "type": "ui-repeat",
+        "name": "Fruits repeat",
+        "uiId": "gRepRepeat",
+        "app": "guideRepeat",
+        "mount": "guideRepeat.content",
+        "items": {
+            "kind": "literal",
+            "value": [
+                { "name": "Apple", "qty": 12 },
+                { "name": "Banana", "qty": 7 },
+                { "name": "Cherry", "qty": 3 }
+            ]
+        },
+        "keyField": "name",
+        "order": "1",
+        "z": "guide-ui-repeat",
+        "x": 340,
+        "y": 100,
+        "wires": [[]]
+    },
+    {
+        "id": "gRepName",
+        "type": "ui-text",
+        "name": "Item name",
+        "uiId": "gRepName",
+        "app": "gRepRepeat",
+        "mount": "container:gRepRepeat/content",
+        "order": "1",
+        "style": "heading-3",
+        "value": { "kind": "item", "path": "name" },
+        "z": "guide-ui-repeat",
+        "x": 560,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gRepQty",
+        "type": "ui-text",
+        "name": "Item qty",
+        "uiId": "gRepQty",
+        "app": "gRepRepeat",
+        "mount": "container:gRepRepeat/content",
+        "order": "2",
+        "variant": "muted",
+        "value": { "kind": "item", "path": "qty" },
+        "z": "guide-ui-repeat",
+        "x": 560,
+        "y": 120,
+        "wires": [[]]
+    }
+]

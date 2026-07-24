@@ -15,6 +15,7 @@
             size: false,
             variant: false,
             advanced: [],
+            i18nNode: "ui-repeat",
             hints: {
                 disabled: "Ein Repeat-Template hat keinen interaktiven Zustand.",
                 color: "Ein Repeat-Template rendert keine eigene Chrome.",
@@ -128,15 +129,15 @@
     })();
 </script>
 <script type="text/html" data-template-name="ui-repeat">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-row"><label for="node-input-mount" data-i18n="ui-repeat.label.mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <!-- P190 fix: typedInput carrier is #node-input-itemsBinding; the `items` property
          has NO matching DOM field so Node-RED auto-save cannot clobber the binding object.
          Mirror of ui-list (P171). -->
-    <div class="form-row"><label for="node-input-itemsBinding">Items</label><input type="text" id="node-input-itemsBinding"></div>
-    <div class="form-row"><label for="node-input-keyField">Key Field</label><input type="text" id="node-input-keyField" placeholder="optional, e.g. id"></div>
-    <div class="form-row"><label for="node-input-itemName">Scope Name</label><input type="text" id="node-input-itemName" placeholder="optional alias, e.g. customer"></div>
+    <div class="form-row"><label for="node-input-itemsBinding" data-i18n="ui-repeat.label.items">Items</label><input type="text" id="node-input-itemsBinding"></div>
+    <div class="form-row"><label for="node-input-keyField" data-i18n="ui-repeat.label.keyField">Key Field</label><input type="text" id="node-input-keyField" placeholder="optional, e.g. id" data-i18n="[placeholder]ui-repeat.placeholder.keyField"></div>
+    <div class="form-row"><label for="node-input-itemName" data-i18n="ui-repeat.label.itemName">Scope Name</label><input type="text" id="node-input-itemName" placeholder="optional alias, e.g. customer" data-i18n="[placeholder]ui-repeat.placeholder.itemName"></div>
     <div class="form-tips" style="margin-top: 4px;">
         Children mounted into this node's <code>content</code> slot are the
         <b>template</b> — cloned once per item. In a child, bind a value to
@@ -147,25 +148,7 @@
         <b>Item (customer)</b> / <b>Index (customer)</b> binding types.
     </div>
 </script>
-<script type="text/html" data-help-name="ui-repeat">
-<p>Repeats a child template once per element of a bound collection (ADR 0017).</p>
-<h3>How it works</h3>
-<ul>
-  <li><b>Items</b> — a value binding (Store, Query, State, literal JSON array, msg, …) that resolves to an array. An object is iterated as <code>{key, value}</code> entries. The wire path mirrors <code>ui-list</code>: an inbound <code>msg.payload</code> array sets <code>items</code>.</li>
-  <li><b>Template</b> — mount any child subtree into this node's default <code>content</code> slot. The renderer clones it once per item.</li>
-  <li><b>Key Field</b> — optional field name used as the stable per-instance key (keyed morph; focus/scroll survive reorder). Falls back to the array index when absent.</li>
-</ul>
-<h3>Item scope (in children)</h3>
-<ul>
-  <li><b>Item (Repeat)</b> — the current element; an optional dotted path selects a field (e.g. <code>name</code>, <code>address.city</code>).</li>
-  <li><b>Index (Repeat)</b> — the zero-based position of the current element.</li>
-</ul>
-<p>These scope-local bindings only resolve inside a <code>ui-repeat</code>; outside one they resolve to <i>undefined</i> (the editor shows a hint).</p>
-<h3>Named scopes (nested repeats)</h3>
-<ul>
-  <li><b>Scope Name</b> — an optional alias for this repeat's item (the <code>v-for="customer in customers"</code> model). When set, a descendant addresses THIS repeat's item <i>by name</i> via the <b>Item (&lt;alias&gt;)</b> / <b>Index (&lt;alias&gt;)</b> binding types — even past inner repeats.</li>
-  <li>Unscoped <b>Item (Repeat)</b> / <b>Index (Repeat)</b> always mean the <i>innermost</i> repeat. With an outer <code>customer</code> and inner <code>order</code>, a deep child reads <code>Item (customer)</code> for the outer row and <code>Item (order)</code> (or bare <b>Item (Repeat)</b>) for the inner one.</li>
-</ul>
-<p><b>Stage 1 is read-only</b> — writing back from a row (e.g. an input targeting <code>item.name</code>) is a later stage.</p>
-<p>Full documentation: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/display/ui-repeat.md" target="_blank">docs/nodes/display/ui-repeat.md</a></p>
-</script>
+<!-- P269 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/view/locales/{en-US,de}/ui-repeat.html; form-row labels carry data-i18n
+     keys resolved from nodes/view/locales/{en-US,de}/ui-repeat.json. No inline
+     data-help-name block here. -->

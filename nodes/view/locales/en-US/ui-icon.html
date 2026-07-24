@@ -1,0 +1,25 @@
+<script type="text/html" data-help-name="ui-icon">
+<p>Renders an icon by symbolic name (icon-set agnostic). Both the name and the
+colour are bindable; it is purely presentational.</p>
+<h3>Key fields</h3>
+<ul>
+    <li><b>Icon Name</b> — two ways in one control: <b>Icon</b> (literal) — a bare
+        name (<code>home</code>) uses the default library, <code>library:name</code>
+        (<code>lucide:user</code>) picks a registered one (picker + preview); or a
+        <b>Binding</b> (store/query/state/msg/…) that swaps the icon live.</li>
+    <li><b>Color</b> — the shared control: <b>Theme Token</b>
+        (<code>primary</code>/<code>success</code>/… → <code>token:&lt;name&gt;</code>,
+        follows the app theme), a free <b>colour</b>, or a <b>binding</b>. Empty
+        inherits the surrounding text colour; an unknown value is ignored.</li>
+    <li><b>Size</b> — <code>xs</code>/<code>sm</code>/<code>md</code>/<code>lg</code>/<code>xl</code>.</li>
+</ul>
+<h3>Inputs</h3>
+<p>Has an input port. <code>msg.ui.component.op</code> <code>show</code>/<code>hide</code>
+toggle visibility; <code>msg.ui.patch</code> overrides fields
+(<code>icon</code>/<code>size</code>/<code>color</code>). No <code>msg.payload</code>
+primary value. Foreign messages pass through unchanged.</p>
+<h3>Outputs / Events</h3>
+<p>None — no output port; purely decorative.</p>
+<h3>Full docs</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/nodes/ui-icon.md" target="_blank">docs/guide/nodes/ui-icon.md</a></p>
+</script>

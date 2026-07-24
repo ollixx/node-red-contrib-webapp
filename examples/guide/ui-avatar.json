@@ -1,0 +1,56 @@
+[
+    {
+        "id": "guide-ui-avatar",
+        "type": "tab",
+        "label": "Guide: ui-avatar",
+        "disabled": false,
+        "info": "User-guide example for ui-avatar (docs/guide/nodes/ui-avatar.md). Import, deploy, open /webapp/guideAvatar/. An avatar with no image, showing initials AD as a circle at size lg with the primary variant; a fallback icon covers the no-initials case."
+    },
+    {
+        "id": "guideAvatar",
+        "type": "ui-app",
+        "name": "Avatar demo",
+        "uiId": "guideAvatar",
+        "root": "guideAvatar",
+        "layout": "app",
+        "z": "guide-ui-avatar",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gAvHeading",
+        "type": "ui-text",
+        "name": "Heading",
+        "uiId": "gAvHeading",
+        "app": "guideAvatar",
+        "mount": "guideAvatar.content",
+        "text": "User",
+        "value": { "kind": "literal", "value": "User" },
+        "style": "heading-2",
+        "order": "0",
+        "z": "guide-ui-avatar",
+        "x": 340,
+        "y": 60,
+        "wires": [[]]
+    },
+    {
+        "id": "gAvAvatar",
+        "type": "ui-avatar",
+        "name": "User avatar",
+        "uiId": "gAvAvatar",
+        "app": "guideAvatar",
+        "mount": "guideAvatar.content",
+        "src": { "kind": "literal", "value": "" },
+        "initials": { "kind": "literal", "value": "AD" },
+        "icon": "person",
+        "size": "lg",
+        "shape": "circle",
+        "variant": "primary",
+        "order": "1",
+        "z": "guide-ui-avatar",
+        "x": 340,
+        "y": 100,
+        "wires": [[]]
+    }
+]

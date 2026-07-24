@@ -1,0 +1,26 @@
+<script type="text/html" data-help-name="ui-list">
+<p>Rendert eine strukturierte Liste aus einem Daten-Array mit festem Item-Schema
+und optionalem Single-Select. Die Elemente kommen aus dem <code>items</code>-Binding.</p>
+<h3>Wichtige Felder</h3>
+<ul>
+    <li><b>Items</b> — die strukturelle Array-Quelle (Skalar-Literale ausgeblendet):
+        json-Literal, store, query, state, reactive, msg, flow/global/env. Jedes
+        Element ist ein String (→ label) oder <code>{ id?, label, value?, icon? }</code>.</li>
+    <li><b>Display Type</b> — <code>plain</code>/<code>divided</code>/<code>grouped</code>/<code>actionable</code> (semantischer Look). <b>Ordered list</b> — ul↔ol.</li>
+    <li><b>Value-Anzeige</b> — <code>none</code>/<code>secondary</code>/<code>badge</code> (value ist stets im Event); <b>Badge Variant</b> für die Badge-Farbe.</li>
+    <li><b>Label/Value/Id/Icon Field</b> — Item-Feld-Mapping: welches flache Feld
+        einer rohen Entity welche Rolle hat (Defaults = die Schema-Namen).</li>
+    <li><b>Auswählbar</b> + <b>Ausgewählt (id)</b> — Single-Select mit zweiseitigem id-Binding.</li>
+</ul>
+<h3>Eingang</h3>
+<p>Hat einen Eingangs-Port. <code>msg.payload</code> (nicht-null) setzt
+<code>items</code> und pusht an alle Clients; <code>msg.ui.patch</code>
+überschreibt Felder; <code>msg.ui.component.op</code> <code>show</code>/<code>hide</code>
+steuern die Sichtbarkeit. Fachfremde Messages werden unverändert durchgereicht.</p>
+<h3>Ausgänge / Events</h3>
+<p><code>itemClick</code> feuert bei jedem Zeilenklick; <code>itemSelect</code>
+nur bei auswählbar und Auswahlwechsel. Beide tragen
+<code>params: { rowId, row }</code>. Je aktives Event ein Output-Port.</p>
+<h3>Vollständige Doku</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/de/nodes/ui-list.md" target="_blank">docs/guide/de/nodes/ui-list.md</a></p>
+</script>

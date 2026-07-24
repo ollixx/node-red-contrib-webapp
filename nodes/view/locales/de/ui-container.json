@@ -1,0 +1,13 @@
+{
+    "ui-container": {
+        "label": {
+            "mount": "Parent Slot",
+            "layout": "Child Layout",
+            "events": "Events"
+        },
+        "hints": {
+            "disabled": "Ein Container ist kein Steuerelement.",
+            "size": "Dieser Knoten hat keine Größen-Stufen."
+        }
+    }
+}

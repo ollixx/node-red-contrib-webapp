@@ -1,0 +1,26 @@
+<script type="text/html" data-help-name="ui-repeat">
+<p>Repeats a child template once per element of a bound collection (ADR 0017).
+It is <b>transparent</b> (ADR 0025): it adds no wrapper — it only iterates.</p>
+<h3>Key fields</h3>
+<ul>
+    <li><b>Items</b> — a value binding resolving to an array (store, query, state,
+        json literal, msg, …); an object is iterated as <code>{key, value}</code>.
+        Mount the template into this node's <code>content</code> slot.</li>
+    <li><b>Key Field</b> — optional stable per-instance key (keyed morph). Falls
+        back to the array index.</li>
+    <li><b>Scope Name</b> — optional alias naming this repeat's item, so a
+        descendant can address it by name past inner repeats
+        (<code>Item (customer)</code>).</li>
+    <li>In children: <b>Item (Repeat)</b> (optional field path; empty = whole
+        element) / <b>Index (Repeat)</b> read the current element / position.
+        Layout &amp; chrome are an explicit ui-container's job, not the repeat's.</li>
+</ul>
+<h3>Inputs</h3>
+<p>Has an input port (like ui-list): a <code>msg.payload</code> array sets
+<code>items</code> and pushes a fresh snapshot. No fan-out to the child nodes —
+delivery is the render iteration. <code>msg.ui.patch</code> overrides fields.</p>
+<h3>Outputs / Events</h3>
+<p>None — no output port; the repeat emits no events.</p>
+<h3>Full docs</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/nodes/ui-repeat.md" target="_blank">docs/guide/nodes/ui-repeat.md</a></p>
+</script>

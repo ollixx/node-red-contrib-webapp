@@ -1,0 +1,103 @@
+[
+    {
+        "id": "guide-ui-repeat-container",
+        "type": "tab",
+        "label": "Guide: ui-repeat (container)",
+        "disabled": false,
+        "info": "User-guide example for ui-repeat with a container (docs/guide/nodes/ui-repeat.md, example 3). Import, deploy, open /webapp/guideRepeatCard/. The repeat's single child is a ui-container (card); each item's fields mount into the card, so every item renders as its own card."
+    },
+    {
+        "id": "guideRepeatCard",
+        "type": "ui-app",
+        "name": "Repeat + container demo",
+        "uiId": "guideRepeatCard",
+        "root": "guideRepeatCard",
+        "layout": "app",
+        "z": "guide-ui-repeat-container",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gRcHeading",
+        "type": "ui-text",
+        "name": "Heading",
+        "uiId": "gRcHeading",
+        "app": "guideRepeatCard",
+        "mount": "guideRepeatCard.content",
+        "text": "Cards",
+        "value": { "kind": "literal", "value": "Cards" },
+        "style": "heading-2",
+        "order": "0",
+        "z": "guide-ui-repeat-container",
+        "x": 340,
+        "y": 60,
+        "wires": [[]]
+    },
+    {
+        "id": "gRcRepeat",
+        "type": "ui-repeat",
+        "name": "Cards repeat",
+        "uiId": "gRcRepeat",
+        "app": "guideRepeatCard",
+        "mount": "guideRepeatCard.content",
+        "items": {
+            "kind": "literal",
+            "value": [
+                { "title": "Getting started", "body": "Import, deploy, open the app." },
+                { "title": "Bindings", "body": "Bind values to stores and queries." },
+                { "title": "Repeat", "body": "One card per item, transparently." }
+            ]
+        },
+        "keyField": "title",
+        "order": "1",
+        "z": "guide-ui-repeat-container",
+        "x": 340,
+        "y": 100,
+        "wires": [[]]
+    },
+    {
+        "id": "gRcCard",
+        "type": "ui-container",
+        "name": "Card",
+        "uiId": "gRcCard",
+        "app": "gRcRepeat",
+        "mount": "container:gRcRepeat/content",
+        "variant": "card",
+        "layout": "vertical",
+        "order": "1",
+        "z": "guide-ui-repeat-container",
+        "x": 560,
+        "y": 100,
+        "wires": [[]]
+    },
+    {
+        "id": "gRcTitle",
+        "type": "ui-text",
+        "name": "Card title",
+        "uiId": "gRcTitle",
+        "app": "gRcCard",
+        "mount": "gRcCard.content",
+        "order": "1",
+        "style": "heading-3",
+        "value": { "kind": "item", "path": "title" },
+        "z": "guide-ui-repeat-container",
+        "x": 780,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gRcBody",
+        "type": "ui-text",
+        "name": "Card body",
+        "uiId": "gRcBody",
+        "app": "gRcCard",
+        "mount": "gRcCard.content",
+        "order": "2",
+        "value": { "kind": "item", "path": "body" },
+        "z": "guide-ui-repeat-container",
+        "x": 780,
+        "y": 120,
+        "wires": [[]]
+    }
+]

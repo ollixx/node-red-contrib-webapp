@@ -1,0 +1,99 @@
+[
+    {
+        "id": "guide-ui-list",
+        "type": "tab",
+        "label": "Guide: ui-list",
+        "disabled": false,
+        "info": "User-guide example for ui-list (docs/guide/nodes/ui-list.md). Import, deploy, open /webapp/guideList/. Five items with a numeric value shown as a badge; the list is selectable and its selection is mirrored into a store; itemSelect is wired to a debug node."
+    },
+    {
+        "id": "guideList",
+        "type": "ui-app",
+        "name": "List demo",
+        "uiId": "guideList",
+        "root": "guideList",
+        "layout": "app",
+        "z": "guide-ui-list",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gLstStore",
+        "type": "ui-store",
+        "name": "Selected category",
+        "uiId": "gLstStore",
+        "app": "guideList",
+        "statePath": "selectedCat",
+        "initialValue": "\"c-1\"",
+        "persist": false,
+        "scope": "any",
+        "z": "guide-ui-list",
+        "x": 120,
+        "y": 160,
+        "wires": [[]]
+    },
+    {
+        "id": "gLstList",
+        "type": "ui-list",
+        "name": "Categories",
+        "uiId": "gLstList",
+        "app": "guideList",
+        "mount": "guideList.content",
+        "items": {
+            "kind": "literal",
+            "value": [
+                { "id": "c-1", "label": "Open invoices", "value": 3, "icon": "file" },
+                { "id": "c-2", "label": "Paid", "value": 12, "icon": "check" },
+                { "id": "c-3", "label": "Overdue", "value": 1, "icon": "clock" },
+                { "id": "c-4", "label": "Draft", "value": 5, "icon": "pencil" },
+                { "id": "c-5", "label": "Archived", "value": 40, "icon": "box" }
+            ]
+        },
+        "displayType": "divided",
+        "ordered": false,
+        "displayValue": "badge",
+        "badgeVariant": "primary",
+        "labelField": "label",
+        "valueField": "value",
+        "idField": "id",
+        "iconField": "icon",
+        "selectable": true,
+        "selectedId": { "kind": "state", "path": "selectedCat" },
+        "events": "[\"itemSelect\"]",
+        "outputs": 1,
+        "order": "1",
+        "z": "guide-ui-list",
+        "x": 340,
+        "y": 120,
+        "wires": [["gLstStoreWrite"]]
+    },
+    {
+        "id": "gLstStoreWrite",
+        "type": "ui-store-action",
+        "name": "persist selection",
+        "uiId": "gLstStoreWrite",
+        "app": "guideList",
+        "store": "gLstStore",
+        "op": "set",
+        "path": "",
+        "mode": "reference",
+        "z": "guide-ui-list",
+        "x": 560,
+        "y": 120,
+        "wires": [["gLstDebug"]]
+    },
+    {
+        "id": "gLstDebug",
+        "type": "debug",
+        "name": "itemSelect",
+        "active": true,
+        "tosidebar": true,
+        "complete": "true",
+        "targetType": "full",
+        "z": "guide-ui-list",
+        "x": 780,
+        "y": 120,
+        "wires": []
+    }
+]

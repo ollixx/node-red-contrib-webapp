@@ -1,0 +1,27 @@
+{
+    "ui-text": {
+        "label": {
+            "mount": "Parent Slot",
+            "text": "Text",
+            "onMissing": "On Missing",
+            "display": "Display",
+            "label": "Field Label"
+        },
+        "option": {
+            "onMissing": {
+                "marker": "Marker (show \"?\")",
+                "ignore": "Ignore (render empty)"
+            },
+            "display": {
+                "text": "Text (free display text)",
+                "formField": "Form field (read-only labelled row)"
+            }
+        },
+        "placeholder": {
+            "label": "Label shown left of the value (form-field mode)"
+        },
+        "hints": {
+            "disabled": "A text node has no interactive state."
+        }
+    }
+}

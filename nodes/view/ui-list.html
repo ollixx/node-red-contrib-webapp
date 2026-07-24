@@ -17,6 +17,7 @@
             size: false,
             variant: false,
             advanced: ["size"],
+            i18nNode: "ui-list",
             hints: {
                 disabled: "Ohne aktive Events (itemClick/itemSelect) hat disabled keinen sichtbaren Effekt.",
                 size: "Die Dichte wird über Display-Typ (Plain/Divided/Grouped/Actionable) gesteuert, nicht über Size."
@@ -228,134 +229,62 @@
     })();
 </script>
 <script type="text/html" data-template-name="ui-list">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-row"><label for="node-input-mount" data-i18n="ui-list.label.mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <!-- P171 (ADR 0012 / structural category): Items binding (structural array source) — typedInput managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-itemsBinding">Items</label><input type="text" id="node-input-itemsBinding"></div>
+    <div class="form-row"><label for="node-input-itemsBinding" data-i18n="ui-list.label.items">Items</label><input type="text" id="node-input-itemsBinding"></div>
     <!-- P180 (ADR 0021): displayType = semantic intent enum (plain/divided/grouped/actionable).
          Default "plain" (back-compat with old "default"). Migration shim in oneditprepare. -->
-    <div class="form-row"><label for="node-input-displayType">Display Type</label>
+    <div class="form-row"><label for="node-input-displayType" data-i18n="ui-list.label.displayType">Display Type</label>
         <select id="node-input-displayType">
-            <option value="plain">Plain (Default)</option>
-            <option value="divided">Divided (with separators)</option>
-            <option value="grouped">Grouped (bordered / list-group)</option>
-            <option value="actionable">Actionable (hover / click affordance)</option>
+            <option value="plain" data-i18n="ui-list.option.displayType.plain">Plain (Default)</option>
+            <option value="divided" data-i18n="ui-list.option.displayType.divided">Divided (with separators)</option>
+            <option value="grouped" data-i18n="ui-list.option.displayType.grouped">Grouped (bordered / list-group)</option>
+            <option value="actionable" data-i18n="ui-list.option.displayType.actionable">Actionable (hover / click affordance)</option>
         </select>
     </div>
     <!-- P180: ordered — switches ul↔ol. Backend-neutral. -->
     <div class="form-row">
-        <label for="node-input-ordered" style="width: auto;"><input type="checkbox" id="node-input-ordered" style="display:inline-block; width:auto; vertical-align:top;"> Ordered list (ol)</label>
+        <label for="node-input-ordered" style="width: auto;"><input type="checkbox" id="node-input-ordered" style="display:inline-block; width:auto; vertical-align:top;"> <span data-i18n="ui-list.label.ordered">Ordered list (ol)</span></label>
     </div>
-    <div class="form-row"><label for="node-input-displayValue">Value-Anzeige</label>
+    <div class="form-row"><label for="node-input-displayValue" data-i18n="ui-list.label.displayValue">Value-Anzeige</label>
         <select id="node-input-displayValue">
-            <option value="none">Nicht anzeigen (Default)</option>
-            <option value="secondary">Sekundär (Text)</option>
-            <option value="badge">Badge</option>
+            <option value="none" data-i18n="ui-list.option.displayValue.none">Nicht anzeigen (Default)</option>
+            <option value="secondary" data-i18n="ui-list.option.displayValue.secondary">Sekundär (Text)</option>
+            <option value="badge" data-i18n="ui-list.option.displayValue.badge">Badge</option>
         </select>
     </div>
-    <div class="form-row" id="node-list-badge-variant-row"><label for="node-input-badgeVariant">Badge Variant</label>
+    <div class="form-row" id="node-list-badge-variant-row"><label for="node-input-badgeVariant" data-i18n="ui-list.label.badgeVariant">Badge Variant</label>
         <select id="node-input-badgeVariant">
-            <option value="neutral">Neutral (Default)</option>
-            <option value="primary">Primary</option>
-            <option value="info">Info</option>
-            <option value="success">Success</option>
-            <option value="warning">Warning</option>
-            <option value="danger">Danger</option>
+            <option value="neutral" data-i18n="ui-list.option.badgeVariant.neutral">Neutral (Default)</option>
+            <option value="primary" data-i18n="ui-list.option.badgeVariant.primary">Primary</option>
+            <option value="info" data-i18n="ui-list.option.badgeVariant.info">Info</option>
+            <option value="success" data-i18n="ui-list.option.badgeVariant.success">Success</option>
+            <option value="warning" data-i18n="ui-list.option.badgeVariant.warning">Warning</option>
+            <option value="danger" data-i18n="ui-list.option.badgeVariant.danger">Danger</option>
         </select>
     </div>
     <!-- P208: item-field mapping — WHICH raw-entity field is the label/value/id/icon
          of a row. Defaults (label/value/id/icon) reproduce the historical hard-coded
          behaviour, so shaped-item lists are unaffected. Flat field names only. -->
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-labelField">Label Field</label><input type="text" id="node-input-labelField" placeholder="label"></div>
-    <div class="form-row"><label for="node-input-valueField">Value Field</label><input type="text" id="node-input-valueField" placeholder="value"></div>
-    <div class="form-row"><label for="node-input-idField">Id Field</label><input type="text" id="node-input-idField" placeholder="id"></div>
-    <div class="form-row"><label for="node-input-iconField">Icon Field</label><input type="text" id="node-input-iconField" placeholder="icon"></div>
+    <div class="form-row"><label for="node-input-labelField" data-i18n="ui-list.label.labelField">Label Field</label><input type="text" id="node-input-labelField" placeholder="label" data-i18n="[placeholder]ui-list.placeholder.labelField"></div>
+    <div class="form-row"><label for="node-input-valueField" data-i18n="ui-list.label.valueField">Value Field</label><input type="text" id="node-input-valueField" placeholder="value" data-i18n="[placeholder]ui-list.placeholder.valueField"></div>
+    <div class="form-row"><label for="node-input-idField" data-i18n="ui-list.label.idField">Id Field</label><input type="text" id="node-input-idField" placeholder="id" data-i18n="[placeholder]ui-list.placeholder.idField"></div>
+    <div class="form-row"><label for="node-input-iconField" data-i18n="ui-list.label.iconField">Icon Field</label><input type="text" id="node-input-iconField" placeholder="icon" data-i18n="[placeholder]ui-list.placeholder.iconField"></div>
     <!-- P173: single-select — selectable checkbox + two-way selectedId typedInput. -->
     <hr style="margin: 8px 0;">
     <div class="form-row">
-        <label for="node-input-selectable" style="width: auto;"><input type="checkbox" id="node-input-selectable" style="display:inline-block; width:auto; vertical-align:top;"> Auswählbar (Single-Select)</label>
+        <label for="node-input-selectable" style="width: auto;"><input type="checkbox" id="node-input-selectable" style="display:inline-block; width:auto; vertical-align:top;"> <span data-i18n="ui-list.label.selectable">Auswählbar (Single-Select)</span></label>
     </div>
-    <div class="form-row" id="node-list-selected-id-row"><label for="node-input-selectedIdBinding">Ausgewählt (id)</label><input type="text" id="node-input-selectedIdBinding"></div>
+    <div class="form-row" id="node-list-selected-id-row"><label for="node-input-selectedIdBinding" data-i18n="ui-list.label.selectedId">Ausgewählt (id)</label><input type="text" id="node-input-selectedIdBinding"></div>
     <input type="hidden" id="node-input-events">
     <input type="hidden" id="node-input-outputs">
-    <div class="form-row"><label>Events</label></div>
+    <div class="form-row"><label data-i18n="ui-list.label.events">Events</label></div>
     <div id="node-input-events-container"></div>
 </script>
-<script type="text/html" data-help-name="ui-list">
-<p>Rendert eine strukturierte Liste an einem Mount-Ziel. Die Elemente kommen aus dem
-<code>items</code>-Binding (statisches Array oder dynamisch aus State/Query/Store/Kontext).</p>
-<h4>Display Type (P180 / ADR 0021)</h4>
-<p>Semantisches Intent-Enum — backend-neutral, per Adapter gemappt (kein Backend-Zweig im Editor):</p>
-<ul>
-<li><b>Plain</b> (Default) — einfache ul/li, kein Extra-Chrome. Rückwärtskompatibel (alter Wert „default" → plain).</li>
-<li><b>Divided</b> — horizontale Trennlinien zwischen den Zeilen.</li>
-<li><b>Grouped</b> — umrandete, kartenartige Zeilen (Bootstrap list-group-Look). Jede Zeile eine Box, der Container hat Rahmen + Ecken.</li>
-<li><b>Actionable</b> — Hover/Fokus-Affordanz (visuelle Rückmeldung bei Klick). Sinnvoll mit <code>itemClick</code> oder <code>selectable</code>.</li>
-</ul>
-<p>Alter Wert <code>compact</code> wird beim Laden automatisch auf <code>plain</code> migriert (Dichte war kein Look; Dichte-Modifier kommt später).</p>
-<p><b>Ordered list</b> — schaltet <code>ul</code> auf <code>ol</code> (nummerierte Liste). Backend-neutral.</p>
-<h4>Abgrenzung: ui-list vs. ui-repeat vs. ui-table</h4>
-<p><b>ui-list</b> = gestylte Zeilen aus einem Daten-Array mit festem Item-Schema (<code>id/label/value/icon</code>); der Look (Boxen, Trennlinien, Hover) ist sein Wert.
-<b>ui-repeat</b> = beliebiger Subtree ×N — für reiche, variierende Zeileninhalte.
-<b>ui-table</b> = Spalten. <em>„tabellarisch"</em> ist <strong>keine</strong> ui-list-Option → ui-table verwenden.</p>
-<h4>Basis-Felder (Allgemein, P172)</h4>
-<p><b>Visible</b> (Boolean-Zustand-Binding, leer = sichtbar) — blendet die gesamte Liste ein/aus.
-<b>Disabled</b> (Boolean-Zustand-Binding) — sperrt die Zeilen-Interaktion (itemClick/itemSelect);
-ohne aktive Events hat disabled keinen sichtbaren Effekt.
-<b>Color</b> (bindbare Farbe, non-variant) — allgemeine Listenfarbe.
-<b>Size</b> ist N/A — Dichte über Display-Typ gesteuert (Dichte-Modifier für künftige Phase).</p>
-<h4>Items (P171)</h4>
-<p>Bindbare, <strong>strukturelle</strong> Quelle der Listenelemente (ein Array) — nur Typen,
-die ein valides Modell liefern: <code>json</code> (statisches Array-Literal) sowie
-Store, Query, Route-Param, Reactive, msg, JSONata, Flow, Global, Env. Skalar-Literale
-(string/number/boolean) sind <b>ausgeblendet</b>. Ein bestehender <code>itemsPath</code>
-wird automatisch als <code>state</code>-Binding übernommen.</p>
-<h4>Item-Schema — der Vertrag</h4>
-<p>Jedes Element ist ein <strong>String</strong> (Kurzform → <code>{label:&lt;string&gt;}</code>)
-<strong>oder</strong> ein Objekt <code>{ id?, label, value?, icon? }</code>:</p>
-<ul>
-<li><code>label</code> — <strong>Pflicht</strong> (Objektform); fehlt es, zeigt <em>diese</em>
-Zeile <code>"?"</code>. Die String-Kurzform setzt genau dieses Feld.</li>
-<li><code>id</code> — Identität: <code>rowId</code> im Event und Render-Key. Ohne <code>id</code>
-= Array-Index.</li>
-<li><code>value</code> (String|Number) — Anwendungswert: <strong>stets im Event</strong>
-(<code>row.value</code>). Die Anzeige steuert <code>displayValue</code>
-(<code>none</code>/<code>secondary</code>/<code>badge</code>) — bei <code>badge</code> als Badge
-in <code>badgeVariant</code>.</li>
-<li><code>icon</code> — führendes Icon (Icon-Name).</li>
-</ul>
-<p>Gemischte Arrays (Strings + Objekte) rendern. Nicht-Array-Wurzel → leere Liste (kein Crash).</p>
-<h4>Item-Feld-Mapping (P208)</h4>
-<p>Statt die Daten vorher zu reshapen, kannst du <strong>rohe Entities direkt binden</strong> und
-festlegen, <strong>welches Feld</strong> das Label/Value/Id/Icon ist:
-<code>Label Field</code>/<code>Value Field</code>/<code>Id Field</code>/<code>Icon Field</code>.
-Leer/Default = die historischen Namen <code>label</code>/<code>value</code>/<code>id</code>/<code>icon</code>
-(rückwärtskompatibel). Beispiel: eine Entity <code>{_id, name, city}</code> mit
-<code>Label Field = name</code> und <code>Id Field = _id</code> rendert <code>name</code> als Zeilentext,
-<code>_id</code> als <code>rowId</code>. <strong>Nur flache Feldnamen</strong> (kein <code>a.b</code>-Pfad).
-<code>itemClick.row</code> trägt weiterhin die <strong>volle</strong> Entity — nur die abgeleiteten
-Label/Id/Value/Icon nutzen das Mapping.</p>
-<h4>Single-Select (P173)</h4>
-<p><b>Auswählbar</b> (<code>selectable</code>, Checkbox, Default aus) schaltet Single-Select ein:
-ein Klick auf eine Zeile markiert sie sichtbar als ausgewählt. Bei aus ist die Liste rein
-anzeigend/klickbar, ohne Auswahl-Zustand.</p>
-<p><b>Ausgewählt (id)</b> (<code>selectedId</code>, nur relevant bei „Auswählbar") ist ein
-<strong>zweiseitiges</strong> Binding auf die <code>id</code> der ausgewählten Zeile — analog
-<code>activeTab</code> bei ui-tabs: liest die Auswahl aus dem gebundenen Store/State <strong>und</strong>
-das <code>itemSelect</code>-Event trägt die gewählte id für den Write-Back (verdrahte
-<code>itemSelect</code> → ui-store <code>set</code>; die Store-Änderung re-rendert via SSE und
-markiert die Zeile). Eine ungültige/leere id markiert <em>keine</em> Zeile. Eine stabile
-<code>id</code> je Item ist dringend empfohlen — ohne <code>id</code> dient der Array-Index als
-<code>rowId</code> (instabil beim Umsortieren). Mehrfachauswahl (Multi-Select) ist nicht abgedeckt.</p>
-<h4>Events</h4>
-<p><code>itemClick</code> erzeugt einen Output-Port; der Klick emittiert
-<code>params: { rowId, row }</code> (plus <code>clientId</code>/<code>sourceId</code>/<code>appId</code>) —
-<code>rowId</code> = <code>id</code> (sonst Index), <code>row</code> = das ganze Element inkl.
-<code>value</code>. <code>itemClick</code> feuert bei <em>jedem</em> Klick.</p>
-<p><code>itemSelect</code> feuert <strong>nur</strong> bei <code>selectable</code> <strong>und</strong>
-Auswahlwechsel (gleiche Payload <code>{ rowId, row }</code>). Ohne <code>selectable</code> ist es
-wirkungslos. So unterscheidet es sich von <code>itemClick</code>.</p>
-<p>Doku: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/display/ui-list.md" target="_blank">ui-list</a>.</p>
-</script>
+<!-- P269 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/view/locales/{en-US,de}/ui-list.html; form-row labels carry data-i18n
+     keys resolved from nodes/view/locales/{en-US,de}/ui-list.json. No inline
+     data-help-name block here. -->

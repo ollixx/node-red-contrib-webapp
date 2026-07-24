@@ -1,0 +1,27 @@
+{
+    "ui-text": {
+        "label": {
+            "mount": "Parent Slot",
+            "text": "Text",
+            "onMissing": "On Missing",
+            "display": "Display",
+            "label": "Field Label"
+        },
+        "option": {
+            "onMissing": {
+                "marker": "Marker (\"?\" zeigen)",
+                "ignore": "Ignore (leer rendern)"
+            },
+            "display": {
+                "text": "Text (freier Anzeigetext)",
+                "formField": "Form field (read-only gelabelte Zeile)"
+            }
+        },
+        "placeholder": {
+            "label": "Beschriftung links vom Wert (Form-Field-Modus)"
+        },
+        "hints": {
+            "disabled": "Ein Text-Knoten hat keinen interaktiven Zustand."
+        }
+    }
+}

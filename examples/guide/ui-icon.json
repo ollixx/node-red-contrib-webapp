@@ -1,0 +1,53 @@
+[
+    {
+        "id": "guide-ui-icon",
+        "type": "tab",
+        "label": "Guide: ui-icon",
+        "disabled": false,
+        "info": "User-guide example for ui-icon (docs/guide/nodes/ui-icon.md). Import, deploy, open /webapp/guideIcon/. An icon (house) tinted with the primary theme token at size lg."
+    },
+    {
+        "id": "guideIcon",
+        "type": "ui-app",
+        "name": "Icon demo",
+        "uiId": "guideIcon",
+        "root": "guideIcon",
+        "layout": "app",
+        "z": "guide-ui-icon",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gIcnHeading",
+        "type": "ui-text",
+        "name": "Heading",
+        "uiId": "gIcnHeading",
+        "app": "guideIcon",
+        "mount": "guideIcon.content",
+        "text": "Icon",
+        "value": { "kind": "literal", "value": "Icon" },
+        "style": "heading-2",
+        "order": "1",
+        "z": "guide-ui-icon",
+        "x": 340,
+        "y": 60,
+        "wires": [[]]
+    },
+    {
+        "id": "gIcnIcon",
+        "type": "ui-icon",
+        "name": "Home icon",
+        "uiId": "gIcnIcon",
+        "app": "guideIcon",
+        "mount": "guideIcon.content",
+        "icon": "house",
+        "size": "lg",
+        "color": { "kind": "literal", "value": "token:primary" },
+        "order": "2",
+        "z": "guide-ui-icon",
+        "x": 340,
+        "y": 100,
+        "wires": [[]]
+    }
+]

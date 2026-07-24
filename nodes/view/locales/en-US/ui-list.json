@@ -1,0 +1,50 @@
+{
+    "ui-list": {
+        "label": {
+            "mount": "Parent Slot",
+            "items": "Items",
+            "displayType": "Display Type",
+            "ordered": "Ordered list (ol)",
+            "displayValue": "Value display",
+            "badgeVariant": "Badge Variant",
+            "labelField": "Label Field",
+            "valueField": "Value Field",
+            "idField": "Id Field",
+            "iconField": "Icon Field",
+            "selectable": "Selectable (single-select)",
+            "selectedId": "Selected (id)",
+            "events": "Events"
+        },
+        "option": {
+            "displayType": {
+                "plain": "Plain (Default)",
+                "divided": "Divided (with separators)",
+                "grouped": "Grouped (bordered / list-group)",
+                "actionable": "Actionable (hover / click affordance)"
+            },
+            "displayValue": {
+                "none": "None (Default)",
+                "secondary": "Secondary (text)",
+                "badge": "Badge"
+            },
+            "badgeVariant": {
+                "neutral": "Neutral (Default)",
+                "primary": "Primary",
+                "info": "Info",
+                "success": "Success",
+                "warning": "Warning",
+                "danger": "Danger"
+            }
+        },
+        "placeholder": {
+            "labelField": "label",
+            "valueField": "value",
+            "idField": "id",
+            "iconField": "icon"
+        },
+        "hints": {
+            "disabled": "Without active events (itemClick/itemSelect) disabled has no visible effect.",
+            "size": "Density is controlled via Display Type (Plain/Divided/Grouped/Actionable), not Size."
+        }
+    }
+}

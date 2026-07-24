@@ -250,7 +250,9 @@ test.describe("editor panels — ui-list base fields (P172, ADR 0015)", () => {
         await expect(sizeRow).toBeVisible();
         await expect(sizeRow).toHaveAttribute("data-base-field-na", "true");
         await expect(sizeRow.locator("#node-input-size")).toBeDisabled();
-        await expect(sizeRow.locator("[data-base-field-hint]")).toContainText("Display-Typ");
+        // P269: ui-list's size hint is locale-migrated — the default (en-US) editor
+        // renders the en-US catalog text (ui-list.hints.size), not the German literal.
+        await expect(sizeRow.locator("[data-base-field-hint]")).toContainText("Display Type");
     });
 
     test("ui-list — color binding round-trips through save", async ({ page, request }) => {

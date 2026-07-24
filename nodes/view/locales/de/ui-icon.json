@@ -1,0 +1,14 @@
+{
+    "ui-icon": {
+        "label": {
+            "mount": "Parent Slot",
+            "icon": "Icon Name"
+        },
+        "placeholder": {
+            "icon": "z.B. home, user, check"
+        },
+        "hints": {
+            "disabled": "Ein Icon hat keinen interaktiven Zustand."
+        }
+    }
+}

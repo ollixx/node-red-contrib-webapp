@@ -16,6 +16,7 @@
             // `size` field was removed. OMIT it entirely rather than show a disabled
             // N/A control, so ui-text carries no #node-input-size element.
             omit: ["size"],
+            i18nNode: "ui-text",
             hints: {
                 disabled: "Ein Text-Knoten hat keinen interaktiven Zustand."
             }
@@ -137,60 +138,30 @@
     })();
 </script>
 <script type="text/html" data-template-name="ui-text">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
-    <div class="form-row"><label for="node-input-text">Text</label><input type="text" id="node-input-text"></div>
+    <div class="form-row"><label for="node-input-mount" data-i18n="ui-text.label.mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-row"><label for="node-input-text" data-i18n="ui-text.label.text">Text</label><input type="text" id="node-input-text"></div>
     <div class="form-row">
-        <label for="node-input-onMissing">On Missing</label>
+        <label for="node-input-onMissing" data-i18n="ui-text.label.onMissing">On Missing</label>
         <select id="node-input-onMissing">
-            <option value="marker">Marker (show "?")</option>
-            <option value="ignore">Ignore (render empty)</option>
+            <option value="marker" data-i18n="ui-text.option.onMissing.marker">Marker (show "?")</option>
+            <option value="ignore" data-i18n="ui-text.option.onMissing.ignore">Ignore (render empty)</option>
         </select>
     </div>
     <div class="form-row">
-        <label for="node-input-display">Display</label>
+        <label for="node-input-display" data-i18n="ui-text.label.display">Display</label>
         <select id="node-input-display">
-            <option value="text">Text (free display text)</option>
-            <option value="formField">Form field (read-only labelled row)</option>
+            <option value="text" data-i18n="ui-text.option.display.text">Text (free display text)</option>
+            <option value="formField" data-i18n="ui-text.option.display.formField">Form field (read-only labelled row)</option>
         </select>
     </div>
     <div class="form-row" id="ui-text-label-row">
-        <label for="node-input-label">Field Label</label>
-        <input type="text" id="node-input-label" placeholder="Label shown left of the value (form-field mode)">
+        <label for="node-input-label" data-i18n="ui-text.label.label">Field Label</label>
+        <input type="text" id="node-input-label" placeholder="Label shown left of the value (form-field mode)" data-i18n="[placeholder]ui-text.placeholder.label">
     </div>
 </script>
-<script type="text/html" data-help-name="ui-text">
-<p>Displays text at a mount point. The value comes from one of three kinds of source.</p>
-<h3>Reactive bindings (live, re-render on change)</h3>
-<ul>
-  <li><b>Store</b> — bind to a ui-store; the text updates whenever the store changes.</li>
-  <li><b>Query</b> — read from a query result using a dot-bracket path (see below).</li>
-  <li><b>Route Param</b> — read from the current URL route parameter by name.</li>
-  <li><b>Reactive</b> — a JavaScript expression over the client state (<code>routeParam</code>, <code>store(name)</code>, <code>query(path)</code>); the expand button opens the expression editor. See <a href="https://github.com/ollix/node-red-contrib-webapp/blob/master/docs/nodes/concepts/reactive-expressions.md" target="_blank">reactive-expressions</a>.</li>
-</ul>
-<h3>Static / server-resolved (read once per render)</h3>
-<ul>
-  <li><b>Text</b> — a static literal string.</li>
-  <li><b>flow</b> / <b>global</b> — read once from a flow/global context variable (resolved on the server; not reactive).</li>
-  <li><b>env</b> — read once from an environment variable by name.</li>
-</ul>
-<h3>Message (msg — standard Node-RED binding)</h3>
-<ul>
-  <li><b>msg</b> — the text is read from the configured message property (e.g. <code>payload</code>, <code>payload.label</code>, <code>topic</code>) of messages sent to this node. It renders empty until the first matching message arrives; the last value is held on the server and shared with all clients.</li>
-</ul>
-<h3>Display mode (P221)</h3>
-<ul>
-  <li><b>Text</b> (default) — free display text; <code>style</code>/<code>variant</code> pick the element and colour.</li>
-  <li><b>Form field</b> — a read-only, labelled row styled like the input controls (renders as a read-only field), so the value lines up next to <code>ui-input</code>/<code>ui-select</code> in a form. Set <b>Field Label</b> for the left-hand label. The value binds exactly as above (incl. a store sub-path); an empty value renders empty (no <code>?</code>).</li>
-</ul>
-<h3>Query path syntax</h3>
-<p>Query paths use dot-bracket notation to address nested data:</p>
-<ul>
-  <li>Dot access: <code>user.address.city</code></li>
-  <li>Array index: <code>items[2].name</code></li>
-  <li>Combined: <code>results[0].customer.firstName</code></li>
-</ul>
-<p>Paths must start with a letter, underscore, or <code>$</code>. Bracket indices must be non-negative integers. An invalid path will be highlighted in the editor.</p>
-<p>Full documentation: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/display/ui-text.md" target="_blank">docs/nodes/display/ui-text.md</a></p>
-</script>
+<!-- P269 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/view/locales/{en-US,de}/ui-text.html; form-row labels carry data-i18n
+     keys resolved from nodes/view/locales/{en-US,de}/ui-text.json. No inline
+     data-help-name block here. -->
