@@ -1,0 +1,11 @@
+{
+    "ui-tabs": {
+        "label": {
+            "mount": "Parent Slot",
+            "activeTab": "Active Tab"
+        },
+        "hints": {
+            "size": "Dieser Knoten hat keine Größen-Stufen."
+        }
+    }
+}

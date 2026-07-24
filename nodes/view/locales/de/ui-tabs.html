@@ -1,0 +1,26 @@
+<script type="text/html" data-help-name="ui-tabs">
+<p>Eine Tab-Leiste mit einem Inhalts-Slot pro Tab. Jeder Tab ist ein
+<code>ui-tab</code>-Kind, das in diesen Knoten gemountet wird — in ein ui-tabs
+mounten heißt: werde ein Tab.</p>
+<h3>Wichtige Felder</h3>
+<ul>
+    <li><b>Active Tab</b> — <b>zweiseitiges</b> Binding auf die aktive Tab-ID; der
+        Tab-Wechsel emittiert <code>tabChange</code> für den Write-back-Loop.
+        Ungültig → erstes Kind.</li>
+    <li><b>Variant</b> — <code>line</code>/<code>contained</code>/<code>pills</code>,
+        eine Nicht-Farb-Darstellung, als <code>data-variant</code> emittiert.</li>
+    <li><b>Events</b> — aktiviert den <code>tabChange</code>-Output-Port.</li>
+    <li>Die Tab-IDs (die <code>ui-tab</code>-Kind-IDs) müssen eindeutig sein.</li>
+</ul>
+<h3>Eingang</h3>
+<p>Hat einen Eingangs-Port. <code>msg.payload</code> setzt den aktiven Tab (eine
+Kind-ID); <code>msg.ui.patch</code> überschreibt Felder;
+<code>msg.ui.component.op</code> <code>show</code>/<code>hide</code> steuern die
+Sichtbarkeit. Fachfremde Messages werden unverändert durchgereicht.</p>
+<h3>Ausgänge / Events</h3>
+<p><code>tabChange</code> (wenn aktiviert) mit <code>params.tabId</code>. Verdrahte
+es an ein <code>ui-store-action</code>-Set, um den zweiseitigen Roundtrip zu
+schließen.</p>
+<h3>Vollständige Doku</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/de/nodes/ui-tabs.md" target="_blank">docs/guide/de/nodes/ui-tabs.md</a></p>
+</script>
