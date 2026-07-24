@@ -1,0 +1,24 @@
+<script type="text/html" data-help-name="ui-breadcrumb">
+<p>A hierarchical breadcrumb trail. Every item — including the active one — emits
+a <code>click</code> event (<code>msg.ui.params.action</code>).</p>
+<h3>Key fields</h3>
+<ul>
+    <li><b>Items</b> — a JSON array or a binding. String items use the string as
+        label and action; object items are
+        <code>{ "label", "action"?, "active"? }</code>.</li>
+    <li><b>Mode</b> — <i>Items / Binding</i>, or <i>Child Nodes (Slots)</i> where
+        mounted children become items.</li>
+    <li><b>Separator</b> — overrides the native <code>/</code> divider.</li>
+</ul>
+<h3>Inputs</h3>
+<p>Has an input port. <code>msg.payload</code> replaces the items list;
+<code>msg.ui.patch</code> overrides fields; <code>msg.ui.component.op</code>
+<code>show</code>/<code>hide</code> toggle visibility. Foreign messages pass
+through unchanged.</p>
+<h3>Outputs / Events</h3>
+<p><code>click</code> on every item click (no <code>navigate</code> event) —
+<code>params.action</code> carries the item's action or label. Wire it to a
+<code>ui-action</code> to navigate.</p>
+<h3>Full docs</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/nodes/ui-breadcrumb.md" target="_blank">docs/guide/nodes/ui-breadcrumb.md</a></p>
+</script>

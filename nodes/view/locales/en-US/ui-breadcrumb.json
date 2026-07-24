@@ -1,0 +1,23 @@
+{
+    "ui-breadcrumb": {
+        "label": {
+            "mount": "Parent Slot",
+            "layout": "Mode",
+            "items": "Items",
+            "separator": "Separator"
+        },
+        "option": {
+            "layout": {
+                "binding": "Items / Binding",
+                "slots": "Child Nodes (Slots)"
+            }
+        },
+        "placeholder": {
+            "separator": "e.g. /"
+        },
+        "hints": {
+            "disabled": "A breadcrumb reflects navigation and has no disabled state.",
+            "size": "This node has no size steps."
+        }
+    }
+}
