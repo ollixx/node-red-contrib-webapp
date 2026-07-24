@@ -27,7 +27,6 @@ their blocker clears.
 
 ## Open work (pending / in_progress)
 
-- **P271** — aspects/docs — Node-Referenz-Batch **navigation** (8) — [P271](aspects/docs/P271-node-reference-batch-navigation.md)
 - **P274** — aspects/misc — **Release-Engineering 1.0**: self-contained Publish-Artefakt (Packaging-BLOCKER) + Install-Smoke-Test + CHANGELOG/Migrations-Notiz + README + repository/engines + CI (validate+E2E) + Version-Bump — [P274](aspects/misc/P274-release-engineering-1.0.md)
 
 ## Deferred (parked, not abandoned)
@@ -92,7 +91,7 @@ open the folder for the full history.
 | aspects/test-infra | 28 |
 | aspects/node-conformance | 27 |
 | aspects/misc | 16 |
-| aspects/docs | 9 |
+| aspects/docs | 10 |
 | aspects/runtime | 9 |
 | aspects/state | 9 |
 | aspects/auth | 3 |
@@ -103,4 +102,4 @@ open the folder for the full history.
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 269 done, 1 open, 10 deferred.**
+**Total: 270 done, 0 open, 10 deferred.**

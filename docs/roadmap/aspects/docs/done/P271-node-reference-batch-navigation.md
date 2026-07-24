@@ -2,7 +2,7 @@
 id: P271
 title: "Node-Referenz-Batch navigation: Navigations-Knoten (8): menu, breadcrumb, tabs, tab, accordion, accordion-section, stepper, pagination — Guide-Doc (EN+DE) + 1–3 Import-Beispiele + locales-Hilfe (en-US+de) + Editor-Label-i18n (data-i18n + Kataloge) je Knoten"
 epic: aspects/docs
-status: in_progress
+status: done
 dependencies: [P265, P272]
 verify: browser
 spec: docs/guide/README.md
@@ -10,7 +10,7 @@ tests: tests/e2e/nodes/structure/ui-app.tests.md
 ---
 # P271 — Node-Referenz-Batch: navigation
 
-> Rationale: **[ADR 0042](../../../adr/0042-user-docs-architecture-guide-tree-i18n-help-en-first-de.md)**.
+> Rationale: **[ADR 0042](../../../../adr/0042-user-docs-architecture-guide-tree-i18n-help-en-first-de.md)**.
 > Mechanik, Templates, Smoke-Harness und Guardrails aus **P265** — dieses Paket
 > füllt sie für die folgenden Knoten. Parallel zu den anderen Batches lauffähig
 > (disjunkte Dateien).
@@ -67,3 +67,42 @@ durch das Konformitäts-Programm gedeckt).
 - Bei Widerspruch Contract-Doc ↔ beobachtetem Verhalten: Contract prüfen,
   Widerspruch melden — NICHT in der Nutzer-Doku „glätten".
 - Hilfe ist Zusammenfassung (Template-Deckel), kein Guide-Duplikat.
+
+## Result
+
+**Done 2026-07-24.** Der navigation-Batch ist durch — **8 Knoten migriert** — und
+damit ist das **User-Docs-Programm (ADR 0042, P265–P272) vollständig**: alle 44
+Knoten dokumentiert, **alle drei Doku-Allowlists LEER**.
+
+### Geliefert
+
+`f2dd1aa` ui-menu · `12dbf9d` ui-breadcrumb · `f7ea9cc` ui-tabs · `33801cf` ui-tab ·
+`5045810` ui-accordion · `95bbcc6` ui-accordion-section · `bc2c80a` ui-stepper ·
+`cdbc2be` ui-pagination; Support `049689d` (check-help-Restlisten leer), `4617b16`
+(Breadcrumb-Beispiel-Fix). Kind-Knoten (ui-tab, ui-accordion-section) nach dem
+P247/P250-Ausnahmemuster (kurzer Doc, Beispiele beim Eltern-Knoten).
+
+**Konformitäts-Wahrheiten dokumentiert:** ui-menu displayType als geplant (P244),
+`collapsed`/`dropdown` entfernt; ui-accordion single-open real (P247); ui-stepper
+orientation real, `linear`/`complete` entfernt (P251); ui-pagination `showInfo` real,
+`variant`/`totalItems` entfernt (P252). Zwei-Wege-Binding (activeTab/activeStep/
+currentPage) je mit Write-Back-Beispiel.
+
+### Contract-Inkonsistenz (gemeldet → Chip `task_b5f87bb0`)
+
+ui-stepper `stepChange` emittiert `params.value` = Step-**Index**, während
+`activeStep`/`msg.payload` per **id** adressieren → die „anticipated wiring" der
+Contract-Doku schreibt einen Index, wo eine id gelesen wird. Guide dokumentiert die
+ehrliche Event-Form; Reconciliation als Chip.
+
+### FINALE — Abschlusskriterium erfüllt
+
+`check:guide`: **44/44 abgedeckt, 0 Allowlist**. `check:help`: **44 locale-migriert
+(Hilfe) + 44 label-migriert (data-i18n), je 0 transitional/allowlist**. ADR 0042
+vollständig durchgesetzt. Smoke-Harness **53** Beispiele; `check:links` 242 md.
+
+### Verifikation
+
+Agent-Worktree-Voll-Lauf 959/0; **Orchestrator-autoritativer Voll-Lauf nach Merge:
+959 passed, 0 failed, `--retries=0`, 17,2 min.** Build + alle Tripwires grün. Eine
+gestrandete 1883-node-red vor dem Lauf gereapt; Ports leer.
