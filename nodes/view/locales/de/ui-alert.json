@@ -1,0 +1,38 @@
+{
+    "ui-alert": {
+        "label": {
+            "mount": "Parent Slot",
+            "title": "Title",
+            "message": "Message",
+            "severity": "Severity",
+            "icon": "Icon",
+            "dismissible": "Dismissible",
+            "duration": "Duration (ms)",
+            "countdown": "Countdown"
+        },
+        "option": {
+            "severity": {
+                "primary": "Primary",
+                "info": "Info",
+                "success": "Success",
+                "warning": "Warning",
+                "danger": "Danger",
+                "neutral": "Neutral"
+            },
+            "icon": {
+                "none": "Kein Icon",
+                "auto": "Automatisch (nach Severity)",
+                "custom": "Custom …"
+            }
+        },
+        "placeholder": {
+            "iconCustomName": "Icon-Name, z. B. bell",
+            "duration": "leer = kein Auto-Hide"
+        },
+        "hints": {
+            "disabled": "Eine Alert hat keinen interaktiven Deaktiviert-Zustand.",
+            "color": "Die Farbe der Alert kommt aus der Severity.",
+            "size": "Eine Alert hat keine Größen-Stufen."
+        }
+    }
+}

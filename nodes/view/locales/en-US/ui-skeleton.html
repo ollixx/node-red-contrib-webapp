@@ -1,0 +1,22 @@
+<script type="text/html" data-help-name="ui-skeleton">
+<p>An animated loading placeholder that mimics the shape of the real content.
+Shown while <b>Visible</b> is truthy; hidden once the data is ready.</p>
+<h3>Key fields</h3>
+<ul>
+    <li><b>Display Type</b> — text (lines), avatar (round), card (block) or table
+        (lines × 3 columns). A rendering form, not a variant.</li>
+    <li><b>Lines</b> — line count for text, row count for table (≥ 1); ignored for
+        avatar/card.</li>
+    <li><b>Visible</b> (base field) is the load-state gate; empty = always
+        visible. <b>Color</b> tints the placeholder fill.</li>
+</ul>
+<h3>Inputs</h3>
+<p>Has an input port, but narrow: <code>msg.ui.component.op</code>
+(<code>show</code>/<code>hide</code>/…) toggles visibility. <b>msg.ui.patch is
+not supported</b> — an incoming message does not change displayType or lines.
+Foreign messages pass through unchanged.</p>
+<h3>Outputs / Events</h3>
+<p>None — no output port; purely presentational.</p>
+<h3>Full docs</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/nodes/ui-skeleton.md" target="_blank">docs/guide/nodes/ui-skeleton.md</a></p>
+</script>

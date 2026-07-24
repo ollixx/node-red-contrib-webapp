@@ -1,0 +1,23 @@
+<script type="text/html" data-help-name="ui-empty-state">
+<p>Ein strukturierter Platzhalter (Icon, Titel, Nachricht, optionaler CTA) für
+leere Listen, fehlgeschlagene Ladevorgänge oder fehlende Inhalte. Sichtbar,
+solange <b>Visible Path</b> truthy ist.</p>
+<h3>Wichtige Felder</h3>
+<ul>
+    <li><b>Visible Path</b> — der State-Pfad, der die Sichtbarkeit gatet (truthy = sichtbar).</li>
+    <li><b>Icon</b>, <b>Title</b>, <b>Message</b> — reiner Text-Inhalt (heute keine
+        Bindings; ein Redesign ist geplant, P152 zurückgestellt).</li>
+    <li><b>Action</b> + <b>Action Label</b> — eine ui-action-Knoten-ID rendert
+        einen CTA-Button mit dieser Beschriftung.</li>
+</ul>
+<h3>Eingang</h3>
+<p>Hat einen Eingangs-Port. <code>msg.ui.patch</code> überschreibt
+<code>icon</code>/<code>title</code>/<code>message</code>/<code>actionLabel</code>;
+<code>msg.ui.component.op</code> <code>show</code>/<code>hide</code> steuern die
+Sichtbarkeit. Fachfremde Messages werden unverändert durchgereicht.</p>
+<h3>Ausgänge / Events</h3>
+<p>Keine — kein Output-Port. Ein CTA-Klick löst die verdrahtete ui-action aus;
+deren Events entstehen dort.</p>
+<h3>Vollständige Doku</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/de/nodes/ui-empty-state.md" target="_blank">docs/guide/de/nodes/ui-empty-state.md</a></p>
+</script>

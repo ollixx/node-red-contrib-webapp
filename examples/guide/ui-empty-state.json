@@ -1,0 +1,71 @@
+[
+    {
+        "id": "guide-ui-empty-state",
+        "type": "tab",
+        "label": "Guide: ui-empty-state",
+        "disabled": false,
+        "info": "User-guide example for ui-empty-state (docs/guide/nodes/ui-empty-state.md). Import, deploy, open /webapp/guideEmpty/. A store seeds isEmpty=true so the empty-state placeholder (icon, title, message) is shown."
+    },
+    {
+        "id": "guideEmpty",
+        "type": "ui-app",
+        "name": "Empty state demo",
+        "uiId": "guideEmpty",
+        "root": "guideEmpty",
+        "layout": "app",
+        "z": "guide-ui-empty-state",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gEmStore",
+        "type": "ui-store",
+        "name": "isEmpty store",
+        "uiId": "gEmStore",
+        "app": "guideEmpty",
+        "statePath": "isEmpty",
+        "initialValue": "true",
+        "persist": false,
+        "scope": "any",
+        "z": "guide-ui-empty-state",
+        "x": 120,
+        "y": 160,
+        "wires": [[]]
+    },
+    {
+        "id": "gEmHeading",
+        "type": "ui-text",
+        "name": "Heading",
+        "uiId": "gEmHeading",
+        "app": "guideEmpty",
+        "mount": "guideEmpty.content",
+        "text": "Customers",
+        "value": { "kind": "literal", "value": "Customers" },
+        "style": "heading-2",
+        "order": "0",
+        "z": "guide-ui-empty-state",
+        "x": 340,
+        "y": 60,
+        "wires": [[]]
+    },
+    {
+        "id": "gEmEmpty",
+        "type": "ui-empty-state",
+        "name": "No customers",
+        "uiId": "gEmEmpty",
+        "app": "guideEmpty",
+        "mount": "guideEmpty.content",
+        "visiblePath": "isEmpty",
+        "icon": "inbox",
+        "title": "No customers yet",
+        "message": "Add your first customer to get started.",
+        "action": "",
+        "actionLabel": "",
+        "order": "1",
+        "z": "guide-ui-empty-state",
+        "x": 340,
+        "y": 120,
+        "wires": [[]]
+    }
+]

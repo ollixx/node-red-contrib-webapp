@@ -1,0 +1,17 @@
+{
+    "ui-empty-state": {
+        "label": {
+            "mount": "Parent Slot",
+            "visiblePath": "Visible Path",
+            "icon": "Icon",
+            "title": "Title",
+            "message": "Message",
+            "action": "Action",
+            "actionLabel": "Action Label"
+        },
+        "hints": {
+            "disabled": "An empty-state has no interactive state.",
+            "size": "This node has no size steps."
+        }
+    }
+}

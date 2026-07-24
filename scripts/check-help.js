@@ -75,10 +75,8 @@ const TRANSITION_INLINE = {};
 for (const t of [
 
     
-    "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state",
     "ui-tabs", "ui-tab", "ui-accordion", "ui-accordion-section", "ui-breadcrumb", "ui-menu",
     "ui-pagination", "ui-stepper",
-    "ui-log",
     // ui-divider: MIGRATED (P265 pilot) — intentionally absent.
     // P267: backbone batch fully migrated — no entries remain here.
 ]) {
@@ -100,10 +98,8 @@ const LABEL_TRANSITION = {};
 for (const t of [
 
     
-    "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state",
     "ui-tabs", "ui-tab", "ui-accordion", "ui-accordion-section", "ui-breadcrumb", "ui-menu",
     "ui-pagination", "ui-stepper",
-    "ui-log",
     // ui-divider: MIGRATED (P272 pilot) — intentionally absent.
     // P267: backbone batch fully migrated — no entries remain here.
 ]) {

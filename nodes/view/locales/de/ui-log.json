@@ -1,0 +1,23 @@
+{
+    "ui-log": {
+        "label": {
+            "mount": "Parent Slot",
+            "minSeverity": "Min Severity",
+            "maxEntries": "Max Entries",
+            "collapsed": "Start collapsed"
+        },
+        "option": {
+            "minSeverity": {
+                "debug": "debug (alle)",
+                "info": "info",
+                "warn": "warn",
+                "error": "nur error"
+            }
+        },
+        "hints": {
+            "disabled": "Ein Log hat keinen interaktiven Zustand.",
+            "color": "Ein Log rendert keine eigene Farbe.",
+            "size": "Dieser Knoten hat keine Größen-Stufen."
+        }
+    }
+}

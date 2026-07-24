@@ -330,7 +330,9 @@ test.describe("editor panels — ui-alert base fields", () => {
 
         const row = page.locator('[data-base-field="color"]');
         await expect(row).toHaveAttribute("data-base-field-na", "true");
-        await expect(row.locator("[data-base-field-hint]")).toContainText("Severity");
+        // P270: the color N/A hint is locale-migrated — assert the en-US catalog
+        // text (ui-alert.json hints.color), the editor's default language.
+        await expect(row.locator("[data-base-field-hint]")).toContainText("comes from its severity");
     });
 
     test("ui-alert — visible binding round-trips through save", async ({ page, request }) => {

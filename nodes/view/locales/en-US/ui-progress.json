@@ -1,0 +1,23 @@
+{
+    "ui-progress": {
+        "label": {
+            "mount": "Parent Slot",
+            "displayType": "Display Type",
+            "value": "Value",
+            "label": "Label",
+            "max": "Max",
+            "showValue": "Show Value"
+        },
+        "option": {
+            "displayType": {
+                "bar": "Bar",
+                "spinner": "Spinner",
+                "circular": "Circular"
+            }
+        },
+        "hints": {
+            "disabled": "A progress bar has no interactive state.",
+            "size": "This node has no size steps."
+        }
+    }
+}

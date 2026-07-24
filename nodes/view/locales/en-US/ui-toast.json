@@ -1,0 +1,31 @@
+{
+    "ui-toast": {
+        "label": {
+            "app": "App",
+            "severity": "Severity",
+            "duration": "Duration (ms)",
+            "position": "Position"
+        },
+        "option": {
+            "severity": {
+                "primary": "Primary",
+                "info": "Info",
+                "success": "Success",
+                "warning": "Warning",
+                "danger": "Danger",
+                "neutral": "Neutral"
+            },
+            "position": {
+                "top-right": "Top Right",
+                "top-center": "Top Center",
+                "bottom-right": "Bottom Right",
+                "bottom-center": "Bottom Center"
+            }
+        },
+        "hints": {
+            "disabled": "A toast has no interactive state.",
+            "color": "The toast's colour comes from its severity.",
+            "size": "This node has no size steps."
+        }
+    }
+}

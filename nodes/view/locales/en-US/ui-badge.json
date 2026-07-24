@@ -1,0 +1,30 @@
+{
+    "ui-badge": {
+        "label": {
+            "mount": "Parent Slot",
+            "value": "Value",
+            "displayType": "Display Type",
+            "variant": "Variant",
+            "pulsating": "Pulsating"
+        },
+        "option": {
+            "displayType": {
+                "rounded": "Rounded (Default)",
+                "pill": "Pill",
+                "square": "Square"
+            },
+            "variant": {
+                "neutral": "Neutral (Default)",
+                "primary": "Primary",
+                "info": "Info",
+                "success": "Success",
+                "warning": "Warning",
+                "danger": "Danger"
+            }
+        },
+        "hints": {
+            "disabled": "A badge has no interactive state.",
+            "size": "This node has no size steps."
+        }
+    }
+}

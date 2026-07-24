@@ -1,0 +1,23 @@
+<script type="text/html" data-help-name="ui-badge">
+<p>A small status indicator or count, usually attached to another element. The
+shape and the colour role are set independently.</p>
+<h3>Key fields</h3>
+<ul>
+    <li><b>Value</b> — the displayed count/label, fully bindable (literal, state,
+        store, query, msg, …).</li>
+    <li><b>Display Type</b> — the <i>shape</i>: rounded, pill or square (a
+        rendering form, not a variant).</li>
+    <li><b>Variant</b> — the semantic <i>colour role</i>: neutral, primary, info,
+        success, warning, danger.</li>
+    <li><b>Pulsating</b> — pulses the badge (Shoelace <code>pulse</code>).</li>
+</ul>
+<h3>Inputs</h3>
+<p>Has an input port. <code>msg.payload</code> updates <code>value</code> and
+pushes a snapshot; <code>msg.ui.patch</code> overrides fields;
+<code>msg.ui.component.op</code> <code>show</code>/<code>hide</code> toggle
+visibility. Foreign messages pass through unchanged.</p>
+<h3>Outputs / Events</h3>
+<p>None — no output port; purely presentational.</p>
+<h3>Full docs</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/nodes/ui-badge.md" target="_blank">docs/guide/nodes/ui-badge.md</a></p>
+</script>
