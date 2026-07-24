@@ -13,6 +13,7 @@
             color: false,
             size: false,
             variant: false,
+            i18nNode: "ui-alert",
             hints: {
                 disabled: "Eine Alert hat keinen interaktiven Deaktiviert-Zustand.",
                 color: "Die Farbe der Alert kommt aus der Severity.",
@@ -214,61 +215,47 @@
     })();
 </script>
 <script type="text/html" data-template-name="ui-alert">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-row"><label for="node-input-mount" data-i18n="ui-alert.label.mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <!-- P100: Title above Message (acceptance #4) -->
-    <div class="form-row"><label for="node-input-titleBinding">Title</label><input type="text" id="node-input-titleBinding"></div>
-    <div class="form-row"><label for="node-input-messageBinding">Message</label><input type="text" id="node-input-messageBinding"></div>
+    <div class="form-row"><label for="node-input-titleBinding" data-i18n="ui-alert.label.title">Title</label><input type="text" id="node-input-titleBinding"></div>
+    <div class="form-row"><label for="node-input-messageBinding" data-i18n="ui-alert.label.message">Message</label><input type="text" id="node-input-messageBinding"></div>
     <!-- P100: separator after Message (acceptance #4) -->
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-severity">Severity</label>
+    <div class="form-row"><label for="node-input-severity" data-i18n="ui-alert.label.severity">Severity</label>
         <select id="node-input-severity">
-            <option value="primary">Primary</option>
-            <option value="info">Info</option>
-            <option value="success">Success</option>
-            <option value="warning">Warning</option>
-            <option value="danger">Danger</option>
-            <option value="neutral">Neutral</option>
+            <option value="primary" data-i18n="ui-alert.option.severity.primary">Primary</option>
+            <option value="info" data-i18n="ui-alert.option.severity.info">Info</option>
+            <option value="success" data-i18n="ui-alert.option.severity.success">Success</option>
+            <option value="warning" data-i18n="ui-alert.option.severity.warning">Warning</option>
+            <option value="danger" data-i18n="ui-alert.option.severity.danger">Danger</option>
+            <option value="neutral" data-i18n="ui-alert.option.severity.neutral">Neutral</option>
         </select>
     </div>
     <!-- P100: icon select — "custom" replaces the nonsensical double empty/"none" options (acceptance #5).
          selectOptionValues() filters empty-string options, so the visible sentinel for "no icon" uses "none".
          "custom" is the sentinel that reveals the icon-picker row. -->
-    <div class="form-row"><label for="node-input-icon">Icon</label>
+    <div class="form-row"><label for="node-input-icon" data-i18n="ui-alert.label.icon">Icon</label>
         <select id="node-input-icon">
-            <option value="none">Kein Icon</option>
-            <option value="auto">Automatisch (nach Severity)</option>
-            <option value="custom">Custom …</option>
+            <option value="none" data-i18n="ui-alert.option.icon.none">Kein Icon</option>
+            <option value="auto" data-i18n="ui-alert.option.icon.auto">Automatisch (nach Severity)</option>
+            <option value="custom" data-i18n="ui-alert.option.icon.custom">Custom …</option>
         </select>
     </div>
     <!-- P100: custom icon row — shown only when "Custom" is selected (acceptance #5) -->
     <div class="form-row" id="node-input-icon-custom-row" style="display:none; margin-left:105px;">
-        <input type="text" id="node-input-icon-custom-name" placeholder="Icon-Name, z. B. bell" style="width:140px;">
+        <input type="text" id="node-input-icon-custom-name" placeholder="Icon-Name, z. B. bell" data-i18n="[placeholder]ui-alert.placeholder.iconCustomName" style="width:140px;">
         <button type="button" id="node-input-icon-custom-btn" class="red-ui-button" style="margin-left:6px;">Icon auswählen</button>
     </div>
-    <div class="form-row"><label for="node-input-dismissible">Dismissible</label><input type="checkbox" id="node-input-dismissible" style="width:auto"></div>
+    <div class="form-row"><label for="node-input-dismissible" data-i18n="ui-alert.label.dismissible">Dismissible</label><input type="checkbox" id="node-input-dismissible" style="width:auto"></div>
     <div class="form-row">
-        <label for="node-input-duration">Duration (ms)</label>
-        <input type="number" id="node-input-duration" placeholder="leer = kein Auto-Hide" min="1" step="1" style="width:120px;">
-        <input type="checkbox" id="node-input-countdown" style="width:auto; margin-left:8px;"> <label for="node-input-countdown" style="width:auto; margin-left:2px; font-weight:normal;">Countdown</label>
+        <label for="node-input-duration" data-i18n="ui-alert.label.duration">Duration (ms)</label>
+        <input type="number" id="node-input-duration" placeholder="leer = kein Auto-Hide" data-i18n="[placeholder]ui-alert.placeholder.duration" min="1" step="1" style="width:120px;">
+        <input type="checkbox" id="node-input-countdown" style="width:auto; margin-left:8px;"> <label for="node-input-countdown" data-i18n="ui-alert.label.countdown" style="width:auto; margin-left:2px; font-weight:normal;">Countdown</label>
     </div>
 </script>
-<script type="text/html" data-help-name="ui-alert">
-<p>Farbige Hinweisleiste für Info-, Warn-, Fehler- oder Erfolgsmeldungen. Message und Title sind vollständig bindbar; der Knoten hat einen Input-Port für Push-Updates und einen Output-Port für das Dismiss-Ereignis.</p>
-<h3>Message- und Title-Bindung</h3>
-<p>Message und Title sind voll bindbar (wie ui-text): literal/state/query/routeParam/msg/flow/global/jsonata/env sowie <b>Store</b>.</p>
-<ul>
-  <li><b>Store</b> — referenziert einen ui-store-Knoten derselben App; der Wert wird zur Laufzeit über dessen statePath aufgelöst. Über die Liste filter-/durchsuchbar auswählen.</li>
-  <li><b>msg</b> — Text kommt aus der eingehenden Node-RED-Message (wiring-first).</li>
-</ul>
-<h3>Icon</h3>
-<p><b>Automatisch (nach Severity)</b> — wählt passend zur Severity ein Bootstrap-Icon: info-circle (primary/info), check-circle (success), exclamation-triangle (warning), x-circle (danger), circle (neutral).</p>
-<p><b>Kein Icon</b> — die Alert wird ohne Icon gerendert.</p>
-<p><b>Custom</b> — beliebiger Icon-Name aus dem registrierten Shoelace-Icon-Set. „Icon auswählen" öffnet den Auswahl-Dialog; die gewählte Icon-Auswahl wird übernommen.</p>
-<h3>Duration und Countdown</h3>
-<p><b>Duration</b> (positiver Integer, Millisekunden) — die Alert blendet sich nach der angegebenen Zeit automatisch aus. Leer lassen = kein Auto-Hide.</p>
-<p><b>Countdown</b> — zeigt einen Fortschrittsbalken, der die verbleibende Zeit anzeigt. Nur sinnvoll in Kombination mit einer Duration.</p>
-<p><em>Hinweis (backend-neutral):</em> Das Shoelace-Backend unterstützt Duration und Countdown nativ über die <code>duration</code>- und <code>countdown="ltr"</code>-Attribute. Andere Backends ohne native Unterstützung können einen JavaScript-Fallback einsetzen (Timeout-basiertes Auto-Hide; CSS-Animation für den Countdown — analog dem Bootstrap-Doku-Beispiel). Das Feld ist bewusst offen für weitere Backends definiert.</p>
-<p>Ausführliche Dokumentation: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/feedback/ui-alert.md" target="_blank">ui-alert.md</a></p>
-</script>
+<!-- P270 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/view/locales/{en-US,de}/ui-alert.html; form-row labels carry data-i18n
+     keys resolved from nodes/view/locales/{en-US,de}/ui-alert.json. No inline
+     data-help-name block here. -->

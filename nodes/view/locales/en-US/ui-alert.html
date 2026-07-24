@@ -1,0 +1,25 @@
+<script type="text/html" data-help-name="ui-alert">
+<p>A coloured notice bar for info, success, warning or error messages. Message
+and title are fully bindable.</p>
+<h3>Key fields</h3>
+<ul>
+    <li><b>Message</b> / <b>Title</b> — fully bindable (literal, state, query,
+        routeParam, msg, flow, global, jsonata, env, and <b>Store</b>).</li>
+    <li><b>Severity</b> — the semantic colour role (primary/info/success/
+        warning/danger/neutral); there is no separate variant.</li>
+    <li><b>Icon</b> — none, auto (severity-derived) or a custom icon name.</li>
+    <li><b>Dismissible</b> shows a close button; <b>Duration</b> auto-hides after
+        N ms; <b>Countdown</b> shows the remaining time.</li>
+</ul>
+<h3>Inputs</h3>
+<p>Has an input port. <code>msg.payload</code> (non-null) overrides
+<code>message</code> and pushes to all clients; <code>msg.ui.patch</code>
+overrides fields; <code>msg.ui.component.op</code> <code>show</code>/<code>hide</code>
+toggle visibility. Foreign messages pass through unchanged.</p>
+<h3>Outputs / Events</h3>
+<p>Has an output port. Emits a <code>dismiss</code> event when the user closes a
+dismissible alert (fields <code>event</code>, <code>appId</code>,
+<code>clientId</code>, <code>sourceId</code>).</p>
+<h3>Full docs</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/nodes/ui-alert.md" target="_blank">docs/guide/nodes/ui-alert.md</a></p>
+</script>

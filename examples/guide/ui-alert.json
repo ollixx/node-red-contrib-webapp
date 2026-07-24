@@ -1,0 +1,57 @@
+[
+    {
+        "id": "guide-ui-alert",
+        "type": "tab",
+        "label": "Guide: ui-alert",
+        "disabled": false,
+        "info": "User-guide example for ui-alert (docs/guide/nodes/ui-alert.md). Import, deploy, open /webapp/guideAlert/. A dismissible warning alert with a title, a message and an auto icon."
+    },
+    {
+        "id": "guideAlert",
+        "type": "ui-app",
+        "name": "Alert demo",
+        "uiId": "guideAlert",
+        "root": "guideAlert",
+        "layout": "app",
+        "z": "guide-ui-alert",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gAlHeading",
+        "type": "ui-text",
+        "name": "Heading",
+        "uiId": "gAlHeading",
+        "app": "guideAlert",
+        "mount": "guideAlert.content",
+        "text": "Notifications",
+        "value": { "kind": "literal", "value": "Notifications" },
+        "style": "heading-2",
+        "order": "0",
+        "z": "guide-ui-alert",
+        "x": 340,
+        "y": 60,
+        "wires": [[]]
+    },
+    {
+        "id": "gAlAlert",
+        "type": "ui-alert",
+        "name": "Low stock",
+        "uiId": "gAlAlert",
+        "app": "guideAlert",
+        "mount": "guideAlert.content",
+        "title": { "kind": "literal", "value": "Low stock" },
+        "message": { "kind": "literal", "value": "Only 3 items left in the warehouse." },
+        "severity": "warning",
+        "icon": "auto",
+        "dismissible": true,
+        "duration": "",
+        "countdown": false,
+        "order": "1",
+        "z": "guide-ui-alert",
+        "x": 340,
+        "y": 120,
+        "wires": [[]]
+    }
+]
