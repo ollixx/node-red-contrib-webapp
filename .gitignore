@@ -21,3 +21,4 @@ resources/shoelace/
 
 # agent phase worktrees
 .claude/worktrees/
+scratchpad/
