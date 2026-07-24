@@ -76,7 +76,7 @@ for (const t of [
 
     
 
-    "ui-pagination", "ui-stepper",
+    "ui-pagination",
     // ui-divider: MIGRATED (P265 pilot) — intentionally absent.
     // P267: backbone batch fully migrated — no entries remain here.
 ]) {
@@ -99,7 +99,7 @@ for (const t of [
 
     
 
-    "ui-pagination", "ui-stepper",
+    "ui-pagination",
     // ui-divider: MIGRATED (P272 pilot) — intentionally absent.
     // P267: backbone batch fully migrated — no entries remain here.
 ]) {

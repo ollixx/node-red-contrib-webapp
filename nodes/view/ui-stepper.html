@@ -14,6 +14,7 @@
             variant: false,
             advanced: ["size"],
             omit: [],
+            i18nNode: "ui-stepper",
             hints: {
                 disabled: "Ein Stepper zeigt den Fortschritt und hat keinen Deaktiviert-Zustand.",
                 size: "Dieser Knoten hat keine Größen-Stufen."
@@ -99,28 +100,20 @@
     })();
 </script>
 <script type="text/html" data-template-name="ui-stepper">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
-    <div class="form-row"><label for="node-input-steps">Steps (JSON array)</label><input type="text" id="node-input-steps" placeholder='[{"id":"s1","label":"Step 1"},{"id":"s2","label":"Step 2"}]'></div>
+    <div class="form-row"><label for="node-input-mount" data-i18n="ui-stepper.label.mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-row"><label for="node-input-steps" data-i18n="ui-stepper.label.steps">Steps (JSON array)</label><input type="text" id="node-input-steps" placeholder='[{"id":"s1","label":"Step 1"},{"id":"s2","label":"Step 2"}]' data-i18n="[placeholder]ui-stepper.placeholder.steps"></div>
     <!-- P156 (ADR 0012 / value category): Active Step binding (two-way) — typedInput managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-activeStepBinding">Active Step</label><input type="text" id="node-input-activeStepBinding"></div>
-    <div class="form-row"><label for="node-input-orientation">Orientation</label>
+    <div class="form-row"><label for="node-input-activeStepBinding" data-i18n="ui-stepper.label.activeStep">Active Step</label><input type="text" id="node-input-activeStepBinding"></div>
+    <div class="form-row"><label for="node-input-orientation" data-i18n="ui-stepper.label.orientation">Orientation</label>
         <select id="node-input-orientation">
-            <option value="horizontal">Horizontal</option>
-            <option value="vertical">Vertical</option>
+            <option value="horizontal" data-i18n="ui-stepper.option.orientation.horizontal">Horizontal</option>
+            <option value="vertical" data-i18n="ui-stepper.option.orientation.vertical">Vertical</option>
         </select>
     </div>
 </script>
-<script type="text/html" data-help-name="ui-stepper">
-<p>Mehrschritt-Prozessanzeige für geführte Workflows. Emittiert beim Schrittwechsel ein Change-Event mit der gewählten Step-ID.</p>
-<h4>Active Step (P156)</h4>
-<p>Bindbare, <strong>zweiseitige</strong> Quelle des aktiven Schritts (Step-ID) — voller
-kanonischer Satz (ADR 0012): Store, Query, Route-Param, Reactive, msg, JSONata, string,
-number, boolean, json, timestamp, Flow, Global, Env. Liest den aktiven Schritt aus dem
-gebundenen Store/State; der Schrittwechsel emittiert das Change-Event mit der neuen
-Step-ID, das im Flow zurück in den Store geschrieben wird (Roundtrip). Default-Typ:
-<code>string</code>. Ein bestehender <code>activeStepPath</code> wird automatisch als
-<code>state</code>-Binding übernommen.</p>
-<p>Doku: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/navigation/ui-stepper.md" target="_blank">ui-stepper</a>.</p>
-</script>
+<!-- P271 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/view/locales/{en-US,de}/ui-stepper.html; form-row labels carry data-i18n
+     keys resolved from nodes/view/locales/{en-US,de}/ui-stepper.json. No inline
+     data-help-name block here. -->
