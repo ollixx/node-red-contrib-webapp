@@ -27,14 +27,11 @@
         "mount": "guideBreadcrumb.content",
         "layout": "",
         "separator": "",
-        "items": {
-            "kind": "literal",
-            "value": [
-                { "label": "Home", "action": "/" },
-                { "label": "Customers", "action": "/customers" },
-                { "label": "Details", "active": true }
-            ]
-        },
+        "items": [
+            { "label": "Home", "action": "/" },
+            { "label": "Customers", "action": "/customers" },
+            { "label": "Details", "active": true }
+        ],
         "order": "1",
         "z": "guide-ui-breadcrumb",
         "x": 360,
