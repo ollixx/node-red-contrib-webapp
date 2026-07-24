@@ -2,7 +2,7 @@
 id: P270
 title: "Node-Referenz-Batch feedback: Feedback-Knoten (7): alert, toast, progress, skeleton, badge, empty-state, log — Guide-Doc (EN+DE) + 1–3 Import-Beispiele + locales-Hilfe (en-US+de) + Editor-Label-i18n (data-i18n + Kataloge) je Knoten"
 epic: aspects/docs
-status: pending
+status: in_progress
 dependencies: [P265, P272]
 verify: browser
 spec: docs/guide/README.md
