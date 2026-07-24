@@ -45,7 +45,7 @@ for (const t of [
     
     "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state",
     "ui-tabs", "ui-tab", "ui-accordion", "ui-accordion-section", "ui-breadcrumb", "ui-menu",
-    "ui-pagination", "ui-stepper", "ui-avatar",
+    "ui-pagination", "ui-stepper",
     "ui-log",
     // ui-divider: PILOT (P265) — has full guide coverage; intentionally absent.
     // P267: the backbone batch (app, route, dialog, component pair, store family,

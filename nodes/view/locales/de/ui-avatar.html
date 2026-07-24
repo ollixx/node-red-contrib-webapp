@@ -1,0 +1,25 @@
+<script type="text/html" data-help-name="ui-avatar">
+<p>Zeigt ein Benutzer-Bild oder — als Fallback — Initialen, dann ein generisches
+Icon. Rein präsentational.</p>
+<h3>Wichtige Felder</h3>
+<ul>
+    <li><b>Image</b> — die Avatar-Bildquelle, voll bindbar: eine <b>URL</b>
+        (literal/state/query/…), ein <b>Asset</b> (verwaltetes Medium, wenn
+        <code>ui-app.mediaStoreUrl</code> gesetzt ist), ein <b>Store</b>-Wert usw.</li>
+    <li><b>Fallback Initials</b> — bindbare Initialen (z. B. <code>JD</code>),
+        wenn kein Bild auflöst.</li>
+    <li><b>Fallback Icon</b> — ein backend-neutrales Icon, wenn keines auflöst.</li>
+    <li><b>Size</b> (xs…xl), <b>Shape</b> (circle/square), <b>Variant</b>
+        (Farbrolle; als <code>data-variant</code> ausgegeben — sl-avatar hat kein natives Variant).</li>
+</ul>
+<h3>Eingang</h3>
+<p>Hat einen Eingangs-Port. <code>msg.payload</code> (nicht-null) überschreibt
+<code>src</code> und pusht an alle Clients; <code>msg.ui.component.op</code>
+<code>show</code>/<code>hide</code> steuern die Sichtbarkeit;
+<code>msg.ui.patch</code> überschreibt Felder. Fachfremde Messages werden
+unverändert durchgereicht.</p>
+<h3>Ausgänge / Events</h3>
+<p>Keine — kein Output-Port; rein präsentational.</p>
+<h3>Vollständige Doku</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/de/nodes/ui-avatar.md" target="_blank">docs/guide/de/nodes/ui-avatar.md</a></p>
+</script>

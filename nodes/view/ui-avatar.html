@@ -14,6 +14,7 @@
             variant: false,
             advanced: [],
             omit: ["size"],
+            i18nNode: "ui-avatar",
             hints: {
                 disabled: "Ein Avatar hat keinen interaktiven Zustand."
             }
@@ -146,53 +147,42 @@
     })();
 </script>
 <script type="text/html" data-template-name="ui-avatar">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
-    <div class="form-row"><label for="node-input-imageBinding">Image</label><input type="text" id="node-input-imageBinding"></div>
-    <div class="form-row"><label for="node-input-initialsBinding">Fallback Initials</label><input type="text" id="node-input-initialsBinding"></div>
-    <div class="form-row"><label for="node-input-icon">Fallback Icon</label><input type="text" id="node-input-icon" placeholder="z. B. person oder lucide:user"></div>
-    <div class="form-row"><label for="node-input-size">Size</label>
+    <div class="form-row"><label for="node-input-mount" data-i18n="ui-avatar.label.mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-row"><label for="node-input-imageBinding" data-i18n="ui-avatar.label.image">Image</label><input type="text" id="node-input-imageBinding"></div>
+    <div class="form-row"><label for="node-input-initialsBinding" data-i18n="ui-avatar.label.initials">Fallback Initials</label><input type="text" id="node-input-initialsBinding"></div>
+    <div class="form-row"><label for="node-input-icon" data-i18n="ui-avatar.label.icon">Fallback Icon</label><input type="text" id="node-input-icon" placeholder="z. B. person oder lucide:user" data-i18n="[placeholder]ui-avatar.placeholder.icon"></div>
+    <div class="form-row"><label for="node-input-size" data-i18n="ui-avatar.label.size">Size</label>
         <select id="node-input-size">
-            <option value="xs">XSmall</option>
-            <option value="sm">Small</option>
-            <option value="md">Medium (Default)</option>
-            <option value="lg">Large</option>
-            <option value="xl">XLarge</option>
+            <option value="xs" data-i18n="ui-avatar.option.size.xs">XSmall</option>
+            <option value="sm" data-i18n="ui-avatar.option.size.sm">Small</option>
+            <option value="md" data-i18n="ui-avatar.option.size.md">Medium (Default)</option>
+            <option value="lg" data-i18n="ui-avatar.option.size.lg">Large</option>
+            <option value="xl" data-i18n="ui-avatar.option.size.xl">XLarge</option>
         </select>
     </div>
-    <div class="form-row"><label for="node-input-shape">Shape</label>
+    <div class="form-row"><label for="node-input-shape" data-i18n="ui-avatar.label.shape">Shape</label>
         <select id="node-input-shape">
-            <option value="circle">Circle (Default)</option>
-            <option value="square">Square</option>
+            <option value="circle" data-i18n="ui-avatar.option.shape.circle">Circle (Default)</option>
+            <option value="square" data-i18n="ui-avatar.option.shape.square">Square</option>
         </select>
     </div>
     <div class="form-row">
-        <label for="node-input-variant">Variant</label>
+        <label for="node-input-variant" data-i18n="ui-avatar.label.variant">Variant</label>
         <select id="node-input-variant">
-            <option value="">None (Default)</option>
-            <option value="primary">Primary</option>
-            <option value="neutral">Neutral</option>
-            <option value="success">Success</option>
-            <option value="info">Info</option>
-            <option value="warning">Warning</option>
-            <option value="danger">Danger</option>
+            <option value="" data-i18n="ui-avatar.option.variant.">None (Default)</option>
+            <option value="primary" data-i18n="ui-avatar.option.variant.primary">Primary</option>
+            <option value="neutral" data-i18n="ui-avatar.option.variant.neutral">Neutral</option>
+            <option value="success" data-i18n="ui-avatar.option.variant.success">Success</option>
+            <option value="info" data-i18n="ui-avatar.option.variant.info">Info</option>
+            <option value="warning" data-i18n="ui-avatar.option.variant.warning">Warning</option>
+            <option value="danger" data-i18n="ui-avatar.option.variant.danger">Danger</option>
         </select>
         <span style="margin-left:8px; color:#888; font-size:0.85em;" title="Das Shoelace-Backend unterstützt Variant bei sl-avatar nicht nativ; der Wert wird als data-variant-Attribut ausgegeben (Bootstrap-Adapter oder eigenes CSS).">ℹ</span>
     </div>
 </script>
-<script type="text/html" data-help-name="ui-avatar">
-<p>Zeigt ein Benutzer-Bild oder Initialen mit Fallback.</p>
-<h3>Image (Bild)</h3>
-<p>Das Avatar-Bild (<code>Image</code>) ist voll bindbar: <b>URL</b> (literal), state/query/routeParam/msg/flow/global/jsonata/env, <b>Store</b> sowie <b>Asset</b> (verwaltetes Medium aus dem Media-Store, wenn <code>ui-app.mediaStoreUrl</code> konfiguriert ist).</p>
-<h3>Fallback-Kette</h3>
-<ol>
-  <li><b>Image</b> gesetzt und lädt erfolgreich → Bild anzeigen.</li>
-  <li><b>Fallback Initials</b> gesetzt → Initialen anzeigen (z.B. <code>JD</code>).</li>
-  <li>Sonst: <b>Fallback Icon</b> (falls gesetzt), andernfalls Standard-Nutzer-Icon.</li>
-</ol>
-<h3>Variant</h3>
-<p>Semantische Farbrolle: <code>primary</code>, <code>neutral</code>, <code>success</code>, <code>info</code>, <code>warning</code>, <code>danger</code>.</p>
-<p><em>Hinweis:</em> Das Shoelace-Backend (<code>sl-avatar</code>) unterstützt Variant nicht nativ — der Wert wird als <code>data-variant</code>-Attribut ausgegeben. Bootstrap-Adapter oder eigenes CSS können dieses Attribut auswerten.</p>
-<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/display/ui-avatar.md">Ausführliche Dokumentation</a></p>
-</script>
+<!-- P269 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/view/locales/{en-US,de}/ui-avatar.html; form-row labels carry data-i18n
+     keys resolved from nodes/view/locales/{en-US,de}/ui-avatar.json. No inline
+     data-help-name block here. -->

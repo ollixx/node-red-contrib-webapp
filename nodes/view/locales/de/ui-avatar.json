@@ -1,0 +1,41 @@
+{
+    "ui-avatar": {
+        "label": {
+            "mount": "Parent Slot",
+            "image": "Image",
+            "initials": "Fallback Initials",
+            "icon": "Fallback Icon",
+            "size": "Size",
+            "shape": "Shape",
+            "variant": "Variant"
+        },
+        "option": {
+            "size": {
+                "xs": "XSmall",
+                "sm": "Small",
+                "md": "Medium (Default)",
+                "lg": "Large",
+                "xl": "XLarge"
+            },
+            "shape": {
+                "circle": "Circle (Default)",
+                "square": "Square"
+            },
+            "variant": {
+                "": "Keine (Default)",
+                "primary": "Primary",
+                "neutral": "Neutral",
+                "success": "Success",
+                "info": "Info",
+                "warning": "Warning",
+                "danger": "Danger"
+            }
+        },
+        "placeholder": {
+            "icon": "z.B. person oder lucide:user"
+        },
+        "hints": {
+            "disabled": "Ein Avatar hat keinen interaktiven Zustand."
+        }
+    }
+}
