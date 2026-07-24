@@ -1,0 +1,24 @@
+<script type="text/html" data-help-name="ui-toast">
+<p>Eine flüchtige Pop-up-Meldung, aus dem Flow ausgelöst, die sich nach einer
+konfigurierbaren Zeit selbst schließt. Lebt auf App-Ebene, nicht in einem Slot.</p>
+<h3>Wichtige Felder</h3>
+<ul>
+    <li><b>App</b> — die Parent-ui-app; Toasts erscheinen app-weit.</li>
+    <li><b>Severity</b>, <b>Duration (ms)</b> und <b>Position</b> sind die
+        <i>Defaults</i>, je pro Message überschreibbar.</li>
+    <li><b>Duration</b> <code>0</code> oder leer = kein Auto-Dismiss (bleibt, bis
+        der Nutzer schließt).</li>
+</ul>
+<h3>Eingang</h3>
+<p>Hat einen Eingangs-Port. Auslösen mit <code>msg.ui.toast</code>:
+<code>message</code> (Pflicht), optional <code>severity</code>,
+<code>position</code>, <code>duration</code>; <code>msg.ui.clientId</code>
+begrenzt auf einen Client. Eine Message ohne
+<code>msg.ui.toast.message</code> — und jede fachfremde Message — wird
+unverändert durchgereicht.</p>
+<h3>Ausgänge / Events</h3>
+<p>Hat einen Output-Port. Emittiert ein <code>dismiss</code>-Event nur, wenn der
+Nutzer den Toast manuell schließt (nicht beim Auto-Dismiss).</p>
+<h3>Vollständige Doku</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/de/nodes/ui-toast.md" target="_blank">docs/guide/de/nodes/ui-toast.md</a></p>
+</script>

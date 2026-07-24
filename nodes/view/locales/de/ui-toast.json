@@ -1,0 +1,31 @@
+{
+    "ui-toast": {
+        "label": {
+            "app": "App",
+            "severity": "Severity",
+            "duration": "Duration (ms)",
+            "position": "Position"
+        },
+        "option": {
+            "severity": {
+                "primary": "Primary",
+                "info": "Info",
+                "success": "Success",
+                "warning": "Warning",
+                "danger": "Danger",
+                "neutral": "Neutral"
+            },
+            "position": {
+                "top-right": "Oben rechts",
+                "top-center": "Oben zentriert",
+                "bottom-right": "Unten rechts",
+                "bottom-center": "Unten zentriert"
+            }
+        },
+        "hints": {
+            "disabled": "Ein Toast hat keinen interaktiven Zustand.",
+            "color": "Die Farbe des Toasts kommt aus der Severity.",
+            "size": "Dieser Knoten hat keine Größen-Stufen."
+        }
+    }
+}

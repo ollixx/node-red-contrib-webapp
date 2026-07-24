@@ -1,0 +1,23 @@
+<script type="text/html" data-help-name="ui-toast">
+<p>A transient pop-up notification, fired from the flow, that dismisses itself
+after a configurable time. Lives at app level, not in a slot.</p>
+<h3>Key fields</h3>
+<ul>
+    <li><b>App</b> — the owning ui-app; toasts appear app-wide.</li>
+    <li><b>Severity</b>, <b>Duration (ms)</b> and <b>Position</b> are the
+        <i>defaults</i>, each overridable per message.</li>
+    <li><b>Duration</b> <code>0</code> or empty = no auto-dismiss (stays until
+        the user closes it).</li>
+</ul>
+<h3>Inputs</h3>
+<p>Has an input port. Trigger it with <code>msg.ui.toast</code>:
+<code>message</code> (required), optional <code>severity</code>,
+<code>position</code>, <code>duration</code>; <code>msg.ui.clientId</code>
+scopes it to one client. A message without <code>msg.ui.toast.message</code> —
+and any foreign message — passes through unchanged.</p>
+<h3>Outputs / Events</h3>
+<p>Has an output port. Emits a <code>dismiss</code> event only when the user
+manually closes the toast (not on auto-dismiss).</p>
+<h3>Full docs</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/nodes/ui-toast.md" target="_blank">docs/guide/nodes/ui-toast.md</a></p>
+</script>

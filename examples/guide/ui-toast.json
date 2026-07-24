@@ -1,0 +1,68 @@
+[
+    {
+        "id": "guide-ui-toast",
+        "type": "tab",
+        "label": "Guide: ui-toast",
+        "disabled": false,
+        "info": "User-guide example for ui-toast (docs/guide/nodes/ui-toast.md). Import, deploy, open /webapp/guideToast/. Click the inject node to fire a success toast; a heading keeps the app root non-empty."
+    },
+    {
+        "id": "guideToast",
+        "type": "ui-app",
+        "name": "Toast demo",
+        "uiId": "guideToast",
+        "root": "guideToast",
+        "layout": "app",
+        "z": "guide-ui-toast",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gToHeading",
+        "type": "ui-text",
+        "name": "Heading",
+        "uiId": "gToHeading",
+        "app": "guideToast",
+        "mount": "guideToast.content",
+        "text": "Click the inject node to fire a toast",
+        "value": { "kind": "literal", "value": "Click the inject node to fire a toast" },
+        "style": "heading-2",
+        "order": "0",
+        "z": "guide-ui-toast",
+        "x": 340,
+        "y": 60,
+        "wires": [[]]
+    },
+    {
+        "id": "gToToast",
+        "type": "ui-toast",
+        "name": "Notifications",
+        "uiId": "gToToast",
+        "app": "guideToast",
+        "severity": "info",
+        "duration": 4000,
+        "position": "bottom-right",
+        "z": "guide-ui-toast",
+        "x": 540,
+        "y": 140,
+        "wires": [[]]
+    },
+    {
+        "id": "gToInject",
+        "type": "inject",
+        "z": "guide-ui-toast",
+        "name": "Send toast",
+        "props": [
+            { "p": "ui.toast", "v": "{\"message\":\"Saved successfully\",\"severity\":\"success\"}", "vt": "json" }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 320,
+        "y": 140,
+        "wires": [["gToToast"]]
+    }
+]

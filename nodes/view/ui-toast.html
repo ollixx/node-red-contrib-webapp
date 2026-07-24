@@ -14,6 +14,7 @@
             variant: false,
             advanced: ["size"],
             omit: [],
+            i18nNode: "ui-toast",
             hints: {
                 disabled: "Ein Toast hat keinen interaktiven Zustand.",
                 color: "Die Farbe des Toasts kommt aus der Severity.",
@@ -56,28 +57,30 @@
     })();
 </script>
 <script type="text/html" data-template-name="ui-toast">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-app">App</label><select id="node-input-app"></select></div>
-    <div class="form-row"><label for="node-input-severity">Severity</label>
+    <div class="form-row"><label for="node-input-app" data-i18n="ui-toast.label.app">App</label><select id="node-input-app"></select></div>
+    <div class="form-row"><label for="node-input-severity" data-i18n="ui-toast.label.severity">Severity</label>
         <select id="node-input-severity">
-            <option value="primary">Primary</option>
-            <option value="info">Info</option>
-            <option value="success">Success</option>
-            <option value="warning">Warning</option>
-            <option value="danger">Danger</option>
-            <option value="neutral">Neutral</option>
+            <option value="primary" data-i18n="ui-toast.option.severity.primary">Primary</option>
+            <option value="info" data-i18n="ui-toast.option.severity.info">Info</option>
+            <option value="success" data-i18n="ui-toast.option.severity.success">Success</option>
+            <option value="warning" data-i18n="ui-toast.option.severity.warning">Warning</option>
+            <option value="danger" data-i18n="ui-toast.option.severity.danger">Danger</option>
+            <option value="neutral" data-i18n="ui-toast.option.severity.neutral">Neutral</option>
         </select>
     </div>
-    <div class="form-row"><label for="node-input-duration">Duration (ms)</label><input type="number" id="node-input-duration" min="0"></div>
-    <div class="form-row"><label for="node-input-position">Position</label>
+    <div class="form-row"><label for="node-input-duration" data-i18n="ui-toast.label.duration">Duration (ms)</label><input type="number" id="node-input-duration" min="0"></div>
+    <div class="form-row"><label for="node-input-position" data-i18n="ui-toast.label.position">Position</label>
         <select id="node-input-position">
-            <option value="top-right">Top Right</option>
-            <option value="top-center">Top Center</option>
-            <option value="bottom-right">Bottom Right</option>
-            <option value="bottom-center">Bottom Center</option>
+            <option value="top-right" data-i18n="ui-toast.option.position.top-right">Top Right</option>
+            <option value="top-center" data-i18n="ui-toast.option.position.top-center">Top Center</option>
+            <option value="bottom-right" data-i18n="ui-toast.option.position.bottom-right">Bottom Right</option>
+            <option value="bottom-center" data-i18n="ui-toast.option.position.bottom-center">Bottom Center</option>
         </select>
     </div>
 </script>
-<script type="text/html" data-help-name="ui-toast"><p>Temporäre Benachrichtigung die sich nach einer konfigurierbaren Zeit automatisch schließt.</p>
-<p>Vollständige Doku: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/feedback/ui-toast.md" target="_blank">docs/nodes/feedback/ui-toast.md</a></p></script>
+<!-- P270 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/view/locales/{en-US,de}/ui-toast.html; form-row labels carry data-i18n
+     keys resolved from nodes/view/locales/{en-US,de}/ui-toast.json. No inline
+     data-help-name block here. -->
