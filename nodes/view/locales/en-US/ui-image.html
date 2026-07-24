@@ -1,0 +1,25 @@
+<script type="text/html" data-help-name="ui-image">
+<p>Renders an image at a mount point from a bindable source — a URL, a managed
+asset, or a pushed buffer.</p>
+<h3>Key fields</h3>
+<ul>
+    <li><b>Src</b> — the image source: a <b>URL</b> binding (literal/state/query/
+        routeParam/store/msg/flow/global/…), an <b>Asset</b> (managed medium from
+        the app media store, stored as <code>asset:&lt;id&gt;</code> and served via
+        the backend proxy), or <b>msg</b> (a Buffer becomes a <code>data:</code> URL).</li>
+    <li><b>Alt Text</b> / <b>Fallback URL</b> — bindable; alt for accessibility,
+        fallback shown when src fails.</li>
+    <li><b>Width / Height</b> — integer px or CSS string. <b>Fit</b> — object-fit
+        (<code>contain</code>/<code>cover</code>/<code>fill</code>/<code>none</code>).</li>
+</ul>
+<h3>Inputs</h3>
+<p>Has an input port. <code>msg.payload</code> (non-null) sets <code>src</code>
+(string as-is; Buffer → <code>data:</code> URL) and pushes to all clients;
+<code>msg.ui.patch</code> overrides fields; <code>msg.ui.component.op</code>
+<code>show</code>/<code>hide</code> toggle visibility. Foreign messages pass
+through unchanged.</p>
+<h3>Outputs / Events</h3>
+<p>None — no output port; purely presentational.</p>
+<h3>Full docs</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/nodes/ui-image.md" target="_blank">docs/guide/nodes/ui-image.md</a></p>
+</script>

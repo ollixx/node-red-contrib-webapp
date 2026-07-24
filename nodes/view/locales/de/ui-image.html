@@ -1,0 +1,26 @@
+<script type="text/html" data-help-name="ui-image">
+<p>Rendert ein Bild an einem Mount-Ziel aus einer bindbaren Quelle — eine URL,
+ein verwaltetes Asset oder ein gepushter Buffer.</p>
+<h3>Wichtige Felder</h3>
+<ul>
+    <li><b>Src</b> — die Bildquelle: ein <b>URL</b>-Binding (literal/state/query/
+        routeParam/store/msg/flow/global/…), ein <b>Asset</b> (verwaltetes Medium
+        aus dem App-Media-Store, gespeichert als <code>asset:&lt;id&gt;</code>, über
+        den Backend-Proxy ausgeliefert) oder <b>msg</b> (ein Buffer wird zu einer
+        <code>data:</code>-URL).</li>
+    <li><b>Alt Text</b> / <b>Fallback URL</b> — bindbar; alt für Barrierefreiheit,
+        Fallback bei Ladefehler.</li>
+    <li><b>Width / Height</b> — Ganzzahl px oder CSS-String. <b>Fit</b> — object-fit
+        (<code>contain</code>/<code>cover</code>/<code>fill</code>/<code>none</code>).</li>
+</ul>
+<h3>Eingang</h3>
+<p>Hat einen Eingangs-Port. <code>msg.payload</code> (nicht-null) setzt
+<code>src</code> (String unverändert; Buffer → <code>data:</code>-URL) und pusht
+an alle Clients; <code>msg.ui.patch</code> überschreibt Felder;
+<code>msg.ui.component.op</code> <code>show</code>/<code>hide</code> steuern die
+Sichtbarkeit. Fachfremde Messages werden unverändert durchgereicht.</p>
+<h3>Ausgänge / Events</h3>
+<p>Keine — kein Output-Port; rein präsentational.</p>
+<h3>Vollständige Doku</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/de/nodes/ui-image.md" target="_blank">docs/guide/de/nodes/ui-image.md</a></p>
+</script>

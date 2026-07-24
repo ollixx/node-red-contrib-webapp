@@ -1,0 +1,31 @@
+{
+    "ui-image": {
+        "label": {
+            "mount": "Parent Slot",
+            "src": "Src",
+            "alt": "Alt Text",
+            "fallback": "Fallback URL",
+            "width": "Width",
+            "height": "Height",
+            "fit": "Fit"
+        },
+        "option": {
+            "fit": {
+                "": "(Browser default)",
+                "contain": "Contain",
+                "cover": "Cover",
+                "fill": "Fill",
+                "none": "None"
+            }
+        },
+        "placeholder": {
+            "width": "e.g. 200 or 100%",
+            "height": "e.g. 150"
+        },
+        "hints": {
+            "disabled": "An image has no interactive state.",
+            "color": "An image has no colour.",
+            "size": "This node has no size steps."
+        }
+    }
+}

@@ -1,0 +1,43 @@
+[
+    {
+        "id": "guide-ui-image",
+        "type": "tab",
+        "label": "Guide: ui-image",
+        "disabled": false,
+        "info": "User-guide example for ui-image (docs/guide/nodes/ui-image.md). Import, deploy, open /webapp/guideImage/. An image with a bound src (a self-contained data: SVG), alt text, a fallback URL, and fit = contain."
+    },
+    {
+        "id": "guideImage",
+        "type": "ui-app",
+        "name": "Image demo",
+        "uiId": "guideImage",
+        "root": "guideImage",
+        "layout": "app",
+        "z": "guide-ui-image",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gImgImage",
+        "type": "ui-image",
+        "name": "Logo",
+        "uiId": "gImgImage",
+        "app": "guideImage",
+        "mount": "guideImage.content",
+        "src": {
+            "kind": "literal",
+            "value": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='120'><rect width='200' height='120' fill='%237b1fa2'/><text x='100' y='66' fill='white' font-size='20' text-anchor='middle' font-family='sans-serif'>webapp</text></svg>"
+        },
+        "alt": { "kind": "literal", "value": "Demo logo" },
+        "fallback": { "kind": "literal", "value": "" },
+        "width": "200",
+        "height": "120",
+        "fit": "contain",
+        "order": "1",
+        "z": "guide-ui-image",
+        "x": 340,
+        "y": 100,
+        "wires": [[]]
+    }
+]
