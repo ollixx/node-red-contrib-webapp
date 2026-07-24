@@ -14,6 +14,7 @@
             variant: true,
             advanced: ["size"],
             omit: [],
+            i18nNode: "ui-badge",
             hints: {
                 disabled: "Ein Badge hat keinen interaktiven Zustand.",
                 size: "Dieser Knoten hat keine Größen-Stufen."
@@ -99,46 +100,38 @@
     })();
 </script>
 <script type="text/html" data-template-name="ui-badge">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-row"><label for="node-input-mount" data-i18n="ui-badge.label.mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <!-- P153 (ADR 0012 / value/display category): Value binding — typedInput managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-valueBinding">Value</label><input type="text" id="node-input-valueBinding"></div>
+    <div class="form-row"><label for="node-input-valueBinding" data-i18n="ui-badge.label.value">Value</label><input type="text" id="node-input-valueBinding"></div>
     <div class="form-row">
-        <label for="node-input-displayType">Display Type</label>
+        <label for="node-input-displayType" data-i18n="ui-badge.label.displayType">Display Type</label>
         <select id="node-input-displayType">
-            <option value="rounded">Rounded (Default)</option>
-            <option value="pill">Pill</option>
-            <option value="square">Square</option>
+            <option value="rounded" data-i18n="ui-badge.option.displayType.rounded">Rounded (Default)</option>
+            <option value="pill" data-i18n="ui-badge.option.displayType.pill">Pill</option>
+            <option value="square" data-i18n="ui-badge.option.displayType.square">Square</option>
         </select>
     </div>
     <div class="form-row">
-        <label for="node-input-variant">Variant</label>
+        <label for="node-input-variant" data-i18n="ui-badge.label.variant">Variant</label>
         <select id="node-input-variant">
-            <option value="neutral">Neutral (Default)</option>
-            <option value="primary">Primary</option>
-            <option value="info">Info</option>
-            <option value="success">Success</option>
-            <option value="warning">Warning</option>
-            <option value="danger">Danger</option>
+            <option value="neutral" data-i18n="ui-badge.option.variant.neutral">Neutral (Default)</option>
+            <option value="primary" data-i18n="ui-badge.option.variant.primary">Primary</option>
+            <option value="info" data-i18n="ui-badge.option.variant.info">Info</option>
+            <option value="success" data-i18n="ui-badge.option.variant.success">Success</option>
+            <option value="warning" data-i18n="ui-badge.option.variant.warning">Warning</option>
+            <option value="danger" data-i18n="ui-badge.option.variant.danger">Danger</option>
         </select>
     </div>
     <div class="form-row">
         <label>&nbsp;</label>
         <input type="checkbox" id="node-input-pulsating" style="width:auto; margin-right:8px;">
-        <label for="node-input-pulsating" style="width:auto; font-weight:normal;">Pulsating</label>
+        <label for="node-input-pulsating" data-i18n="ui-badge.label.pulsating" style="width:auto; font-weight:normal;">Pulsating</label>
         <span style="margin-left:8px; color:#888; font-size:0.85em;" title="Das Shoelace-Backend unterstützt Pulsieren nativ (pulse-Attribut). Andere Backends können einen CSS-Animationsfallback einsetzen.">ℹ</span>
     </div>
 </script>
-<script type="text/html" data-help-name="ui-badge">
-<p>Kleiner Zähler oder Status-Indikator, typischerweise an einem anderen Element.</p>
-<h4>Value (P153)</h4>
-<p>Bindbare Quelle des Badge-Werts — voller kanonischer Satz (ADR 0012):
-Store, Query, Route-Param, Reactive, msg, JSONata, string, number, boolean, json, timestamp,
-Flow, Global, Env. Ein bestehender <code>valuePath</code> wird automatisch als
-<code>state</code>-Binding übernommen. Literaler Default-Typ: <code>string</code>.</p>
-<p><strong>Display Type</strong> bestimmt die <em>Form</em> des Badge: <code>rounded</code> (Standard), <code>pill</code> (abgerundete Enden) oder <code>square</code> (eckig).</p>
-<p><strong>Variant</strong> bestimmt die semantische <em>Farbrolle</em>: <code>neutral</code>, <code>primary</code>, <code>info</code>, <code>success</code>, <code>warning</code>, <code>danger</code>.</p>
-<p><em>Hinweis (backend-neutral):</em> Das Shoelace-Backend unterstützt <strong>Pulsating</strong> nativ über das <code>pulse</code>-Attribut von <code>sl-badge</code>. Andere Backends ohne native Unterstützung können einen CSS-Animations-Fallback einsetzen. Das Feld ist bewusst offen für weitere Backends definiert.</p>
-<a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/feedback/ui-badge.md" target="_blank">Ausführliche Dokumentation</a>
-</script>
+<!-- P270 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/view/locales/{en-US,de}/ui-badge.html; form-row labels carry data-i18n
+     keys resolved from nodes/view/locales/{en-US,de}/ui-badge.json. No inline
+     data-help-name block here. -->

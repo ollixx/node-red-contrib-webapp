@@ -43,7 +43,7 @@ const ALLOWLIST = {};
 for (const t of [
 
     
-    "ui-badge", "ui-empty-state",
+    "ui-empty-state",
     "ui-tabs", "ui-tab", "ui-accordion", "ui-accordion-section", "ui-breadcrumb", "ui-menu",
     "ui-pagination", "ui-stepper",
     "ui-log",

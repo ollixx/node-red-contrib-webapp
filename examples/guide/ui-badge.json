@@ -1,0 +1,54 @@
+[
+    {
+        "id": "guide-ui-badge",
+        "type": "tab",
+        "label": "Guide: ui-badge",
+        "disabled": false,
+        "info": "User-guide example for ui-badge (docs/guide/nodes/ui-badge.md). Import, deploy, open /webapp/guideBadge/. A pulsating danger pill badge showing an unread count next to a heading."
+    },
+    {
+        "id": "guideBadge",
+        "type": "ui-app",
+        "name": "Badge demo",
+        "uiId": "guideBadge",
+        "root": "guideBadge",
+        "layout": "app",
+        "z": "guide-ui-badge",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gBaHeading",
+        "type": "ui-text",
+        "name": "Heading",
+        "uiId": "gBaHeading",
+        "app": "guideBadge",
+        "mount": "guideBadge.content",
+        "text": "Inbox",
+        "value": { "kind": "literal", "value": "Inbox" },
+        "style": "heading-2",
+        "order": "0",
+        "z": "guide-ui-badge",
+        "x": 340,
+        "y": 60,
+        "wires": [[]]
+    },
+    {
+        "id": "gBaBadge",
+        "type": "ui-badge",
+        "name": "Unread count",
+        "uiId": "gBaBadge",
+        "app": "guideBadge",
+        "mount": "guideBadge.content",
+        "value": { "kind": "literal", "value": "3" },
+        "displayType": "pill",
+        "variant": "danger",
+        "pulsating": true,
+        "order": "1",
+        "z": "guide-ui-badge",
+        "x": 340,
+        "y": 120,
+        "wires": [[]]
+    }
+]
