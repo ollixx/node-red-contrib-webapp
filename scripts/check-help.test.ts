@@ -161,6 +161,9 @@ describe("check-help locale rules (P265 — migrated nodes)", () => {
             // P268 — the input batch (9 form nodes).
             "ui-input", "ui-select", "ui-checkbox", "ui-radio", "ui-switch",
             "ui-textarea", "ui-datepicker", "ui-slider", "ui-button",
+            // P269 — the display batch (8 nodes).
+            "ui-text", "ui-table", "ui-list", "ui-repeat", "ui-container",
+            "ui-image", "ui-icon", "ui-avatar",
         ];
         expect(transitional.length).toBe(types.length - migrated.length);
         for (const t of migrated) expect(check.TRANSITION_INLINE[t]).toBeUndefined();
@@ -283,6 +286,9 @@ describe("check-help label-catalog rules (P272 — editor-label i18n)", () => {
             // P268 — the input batch (9 form nodes).
             "ui-input", "ui-select", "ui-checkbox", "ui-radio", "ui-switch",
             "ui-textarea", "ui-datepicker", "ui-slider", "ui-button",
+            // P269 — the display batch (8 nodes).
+            "ui-text", "ui-table", "ui-list", "ui-repeat", "ui-container",
+            "ui-image", "ui-icon", "ui-avatar",
         ];
         expect(transitional.length).toBe(types.length - migrated.length);
         for (const t of migrated) expect(check.LABEL_TRANSITION[t]).toBeUndefined();
