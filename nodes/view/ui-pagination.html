@@ -14,6 +14,7 @@
             variant: false,
             advanced: ["size"],
             omit: [],
+            i18nNode: "ui-pagination",
             hints: {
                 size: "Dieser Knoten hat keine Größen-Stufen."
             }
@@ -129,33 +130,18 @@
     })();
 </script>
 <script type="text/html" data-template-name="ui-pagination">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-row"><label for="node-input-mount" data-i18n="ui-pagination.label.mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <!-- P154 (ADR 0012 / value category): Current Page binding (two-way) — typedInput managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-currentPageBinding">Current Page</label><input type="text" id="node-input-currentPageBinding"></div>
+    <div class="form-row"><label for="node-input-currentPageBinding" data-i18n="ui-pagination.label.currentPage">Current Page</label><input type="text" id="node-input-currentPageBinding"></div>
     <!-- P154 (ADR 0012 / value category): Total (page count) binding (read-only) — typedInput managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-totalBinding">Total</label><input type="text" id="node-input-totalBinding"></div>
-    <div class="form-row"><label for="node-input-pageSize">Page Size</label><input type="number" id="node-input-pageSize" placeholder="10"></div>
+    <div class="form-row"><label for="node-input-totalBinding" data-i18n="ui-pagination.label.total">Total</label><input type="text" id="node-input-totalBinding"></div>
+    <div class="form-row"><label for="node-input-pageSize" data-i18n="ui-pagination.label.pageSize">Page Size</label><input type="number" id="node-input-pageSize" placeholder="10" data-i18n="[placeholder]ui-pagination.placeholder.pageSize"></div>
     <!-- P252: showInfo — toggles the "Seite X von Y" info-text region below the controls. -->
-    <div class="form-row"><label for="node-input-showInfo">Info-Zeile</label><input type="checkbox" id="node-input-showInfo" style="width:auto"></div>
+    <div class="form-row"><label for="node-input-showInfo" data-i18n="ui-pagination.label.showInfo">Info-Zeile</label><input type="checkbox" id="node-input-showInfo" style="width:auto"></div>
 </script>
-<script type="text/html" data-help-name="ui-pagination">
-<p>Seitennavigations-Controls (Vor/Zurück, Seitenzahl) für paginierte Datensätze. Emittiert ein <code>pageChange</code>-Event beim Seitenwechsel.</p>
-<h4>Current Page (P154)</h4>
-<p>Bindbare, <strong>zweiseitige</strong> Quelle der aktuellen Seite (1-basiert) — voller
-kanonischer Satz (ADR 0012): Store, Query, Route-Param, Reactive, msg, JSONata, string,
-number, boolean, json, timestamp, Flow, Global, Env. Liest den Live-Wert aus dem
-gebundenen Store/State; der Seitenwechsel emittiert das Change-Event mit der neuen
-Seite, das im Flow zurück in den Store geschrieben wird (Roundtrip). Default-Typ:
-<code>number</code>. Ein bestehender <code>currentPagePath</code> wird automatisch als
-<code>state</code>-Binding übernommen.</p>
-<h4>Total (P154)</h4>
-<p>Bindbare, <strong>lesende</strong> Quelle der Gesamt-Seitenzahl — gleicher kanonischer
-Satz. Default-Typ: <code>number</code>. Ein bestehender <code>totalPath</code> wird
-automatisch als <code>state</code>-Binding übernommen.</p>
-<h4>Info-Zeile (P252)</h4>
-<p>Checkbox <code>showInfo</code>: zeigt bei Aktivierung eine Info-Zeile
-<code>„Seite X von Y"</code> unterhalb der Vor/Zurück-Controls. Default: aus.</p>
-<p>Doku: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/navigation/ui-pagination.md" target="_blank">ui-pagination</a>.</p>
-</script>
+<!-- P271 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/view/locales/{en-US,de}/ui-pagination.html; form-row labels carry
+     data-i18n keys resolved from nodes/view/locales/{en-US,de}/ui-pagination.json.
+     No inline data-help-name block here. -->

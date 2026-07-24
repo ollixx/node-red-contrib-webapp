@@ -44,7 +44,7 @@ for (const t of [
 
     
 
-    "ui-pagination",
+
     // ui-divider: PILOT (P265) — has full guide coverage; intentionally absent.
     // P267: the backbone batch (app, route, dialog, component pair, store family,
     // query family, action) is now fully migrated — no entries remain here.

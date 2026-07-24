@@ -1,0 +1,86 @@
+[
+    {
+        "id": "guide-ui-pagination",
+        "type": "tab",
+        "label": "Guide: ui-pagination",
+        "disabled": false,
+        "info": "User-guide example for ui-pagination (docs/guide/nodes/ui-pagination.md). Import, deploy, open /webapp/guidePagination/. Prev/next controls over 5 pages with the info line; currentPage reads a store and pageChange writes the new page back (two-way loop)."
+    },
+    {
+        "id": "guidePagination",
+        "type": "ui-app",
+        "name": "Pagination demo",
+        "uiId": "guidePagination",
+        "root": "guidePagination",
+        "layout": "app",
+        "z": "guide-ui-pagination",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gPagStore",
+        "type": "ui-store",
+        "name": "Current page store",
+        "uiId": "gPagStore",
+        "app": "guidePagination",
+        "statePath": "page",
+        "initialValue": "1",
+        "persist": false,
+        "scope": "any",
+        "z": "guide-ui-pagination",
+        "x": 120,
+        "y": 160,
+        "wires": [[]]
+    },
+    {
+        "id": "gPagNode",
+        "type": "ui-pagination",
+        "name": "Pager",
+        "uiId": "gPagNode",
+        "app": "guidePagination",
+        "mount": "guidePagination.content",
+        "currentPage": { "kind": "state", "path": "page" },
+        "total": { "kind": "literal", "value": 5 },
+        "pageSize": "10",
+        "showInfo": true,
+        "events": "[\"pageChange\"]",
+        "order": "1",
+        "z": "guide-ui-pagination",
+        "x": 360,
+        "y": 120,
+        "wires": [["gPagToPayload"]]
+    },
+    {
+        "id": "gPagToPayload",
+        "type": "change",
+        "name": "params.page → payload",
+        "z": "guide-ui-pagination",
+        "rules": [
+            { "t": "set", "p": "payload", "pt": "msg", "to": "ui.params.page", "tot": "msg" }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 620,
+        "y": 120,
+        "wires": [["gPagWriteBack"]]
+    },
+    {
+        "id": "gPagWriteBack",
+        "type": "ui-store-action",
+        "name": "Write current page",
+        "uiId": "gPagWriteBack",
+        "app": "guidePagination",
+        "store": "gPagStore",
+        "op": "set",
+        "path": "",
+        "mode": "reference",
+        "z": "guide-ui-pagination",
+        "x": 860,
+        "y": 120,
+        "wires": [[]]
+    }
+]

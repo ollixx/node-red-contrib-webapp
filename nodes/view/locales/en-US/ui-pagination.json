@@ -1,0 +1,17 @@
+{
+    "ui-pagination": {
+        "label": {
+            "mount": "Parent Slot",
+            "currentPage": "Current Page",
+            "total": "Total",
+            "pageSize": "Page Size",
+            "showInfo": "Info line"
+        },
+        "placeholder": {
+            "pageSize": "10"
+        },
+        "hints": {
+            "size": "This node has no size steps."
+        }
+    }
+}
