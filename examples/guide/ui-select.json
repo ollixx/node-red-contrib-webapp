@@ -1,0 +1,103 @@
+[
+    {
+        "id": "guide-ui-select",
+        "type": "tab",
+        "label": "Guide: ui-select",
+        "disabled": false,
+        "info": "User-guide example for ui-select (docs/guide/nodes/ui-select.md). Import, deploy, open /webapp/guideSelect/ — a status dropdown with static options, two-way bound to a store slice, plus a live echo text."
+    },
+    {
+        "id": "guideSelect",
+        "type": "ui-app",
+        "name": "Select demo",
+        "uiId": "guideSelect",
+        "root": "guideSelect",
+        "title": "Select demo",
+        "layout": "app",
+        "z": "guide-ui-select",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gSelFilter",
+        "type": "ui-store",
+        "name": "Filter store",
+        "uiId": "gSelFilter",
+        "app": "guideSelect",
+        "statePath": "filter",
+        "initialValue": "{\"status\":\"open\"}",
+        "z": "guide-ui-select",
+        "x": 120,
+        "y": 180,
+        "wires": [[]]
+    },
+    {
+        "id": "gSelHeading",
+        "type": "ui-text",
+        "name": "Heading",
+        "uiId": "gSelHeading",
+        "app": "guideSelect",
+        "mount": "guideSelect.content",
+        "text": "Pick a status — the selection is written straight into the store:",
+        "order": "0",
+        "z": "guide-ui-select",
+        "x": 340,
+        "y": 60,
+        "wires": [[]]
+    },
+    {
+        "id": "gSelField",
+        "type": "ui-select",
+        "name": "Status select",
+        "uiId": "gSelField",
+        "app": "guideSelect",
+        "mount": "guideSelect.content",
+        "label": { "kind": "literal", "value": "Status" },
+        "placeholder": { "kind": "literal", "value": "Choose a status…" },
+        "options": {
+            "kind": "literal",
+            "value": [
+                { "label": "Open", "value": "open" },
+                { "label": "In progress", "value": "doing" },
+                { "label": "Done", "value": "done" }
+            ]
+        },
+        "value": {
+            "kind": "store",
+            "path": "gSelFilter",
+            "subPath": { "kind": "literal", "value": "status" }
+        },
+        "writeTo": {
+            "kind": "store",
+            "path": "gSelFilter",
+            "subPath": { "kind": "literal", "value": "status" }
+        },
+        "writeTrigger": "change",
+        "multiple": false,
+        "order": "1",
+        "z": "guide-ui-select",
+        "x": 340,
+        "y": 140,
+        "wires": [[]]
+    },
+    {
+        "id": "gSelEcho",
+        "type": "ui-text",
+        "name": "Selection echo",
+        "uiId": "gSelEcho",
+        "app": "guideSelect",
+        "mount": "guideSelect.content",
+        "value": {
+            "kind": "store",
+            "path": "gSelFilter",
+            "subPath": { "kind": "literal", "value": "status" },
+            "fallback": "(nothing selected)"
+        },
+        "order": "2",
+        "z": "guide-ui-select",
+        "x": 340,
+        "y": 220,
+        "wires": [[]]
+    }
+]

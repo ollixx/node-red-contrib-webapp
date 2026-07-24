@@ -1,0 +1,25 @@
+{
+    "ui-select": {
+        "label": {
+            "mount": "Parent Slot",
+            "labelBinding": "Label",
+            "valueBinding": "Value",
+            "writeToBinding": "Write To",
+            "writeTrigger": "Write Trigger",
+            "disabledBinding": "Disabled",
+            "optionsField": "Options",
+            "placeholderBinding": "Placeholder",
+            "multiple": "Multiple"
+        },
+        "option": {
+            "writeTrigger": {
+                "submit": "submit",
+                "change": "change",
+                "none": "none"
+            }
+        },
+        "hints": {
+            "color": "A form field has no general colour (state colours come from validation / variant)."
+        }
+    }
+}

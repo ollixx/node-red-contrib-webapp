@@ -1,0 +1,23 @@
+<script type="text/html" data-help-name="ui-textarea">
+<p>Ein mehrzeiliges Textfeld, zweiseitig an den Client-State gebunden:
+<b>Value</b> liest, <b>Write To</b> schreibt.</p>
+<h3>Wichtige Felder</h3>
+<ul>
+    <li><b>Label</b> — Beschriftung des Feldes (bindbar, Pflicht).</li>
+    <li><b>Value</b> / <b>Write To</b> — die LESE- / SCHREIB-Hälfte (ADR 0027); Write To nimmt nur <code>store</code>/<code>flow</code>/<code>global</code>.</li>
+    <li><b>Write Trigger</b> — bei einer Textarea heißt <code>submit</code> BLUR (Enter fügt einen Zeilenumbruch ein); <code>change</code> schreibt bei jeder Eingabe; <code>none</code> schaltet den Write-Back ab.</li>
+    <li><b>Lines</b> — sichtbare Zeilen (P229: früher <code>rows</code>, wird beim Öffnen migriert).</li>
+    <li><b>Max Length</b> — begrenzt die Eingabe und zeigt einen Zeichenzähler.</li>
+</ul>
+<h3>Eingang</h3>
+<p>Hat einen Eingangs-Port. <code>msg.payload</code> (nicht null) setzt den Text;
+<code>msg.ui.patch</code> überschreibt Definitionsfelder (<code>placeholder</code>,
+<code>lines</code>, <code>maxLength</code>, …); <code>msg.ui.component.op</code>
+unterstützt <code>show</code>/<code>hide</code>, <code>enable</code>/<code>disable</code>,
+<code>focus</code>, <code>reset</code>. Alles andere wird unverändert durchgereicht.</p>
+<h3>Ausgänge / Events</h3>
+<p><code>change</code> bei jeder Änderung und <code>submit</code> bei der Submit-Geste,
+beide mit <code>msg.ui.params.value</code>.</p>
+<h3>Vollständige Doku</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/de/nodes/ui-textarea.md" target="_blank">docs/guide/de/nodes/ui-textarea.md</a></p>
+</script>

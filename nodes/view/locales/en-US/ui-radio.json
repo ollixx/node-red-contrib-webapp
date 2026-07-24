@@ -1,0 +1,29 @@
+{
+    "ui-radio": {
+        "label": {
+            "mount": "Parent Slot",
+            "labelBinding": "Label",
+            "valueBinding": "Value",
+            "writeToBinding": "Write To",
+            "writeTrigger": "Write Trigger",
+            "optionsField": "Options",
+            "orientation": "Orientation",
+            "disabledBinding": "Disabled"
+        },
+        "option": {
+            "writeTrigger": {
+                "submit": "submit",
+                "change": "change",
+                "none": "none"
+            },
+            "orientation": {
+                "vertical": "vertical",
+                "horizontal": "horizontal"
+            }
+        },
+        "hints": {
+            "color": "A form field has no general colour (state colours come from validation / variant).",
+            "size": "This node has no size steps."
+        }
+    }
+}

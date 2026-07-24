@@ -1,0 +1,26 @@
+<script type="text/html" data-help-name="ui-button">
+<p>Ein klickbarer Button. Im Default eine Ereignis-Quelle: ein Klick verlässt den
+Output-Port, und der Flow entscheidet, was passiert.</p>
+<h3>Wichtige Felder</h3>
+<ul>
+    <li><b>Label</b> — die Beschriftung; ein VOLLES Wert-Binding (ein store-gebundenes Label aktualisiert sich live).</li>
+    <li><b>Variant</b> — semantische Rolle UND Farbe (<code>primary</code>, <code>danger</code>, <code>link</code>, …); ein eigenes Farbfeld gibt es nicht.</li>
+    <li><b>Size</b> / <b>Outline</b> — dreistufige Größe; Kontur statt Füllung.</li>
+    <li><b>Icon</b> — <code>library:name</code> im Prefix-Slot (Picker vorhanden).</li>
+    <li><b>Link Mode</b> + <b>URL / Route</b> — <code>button</code> (Event), <code>url</code> (Hyperlink) oder <code>navigate</code> (In-App-Route; emittiert das Event zusätzlich).</li>
+    <li><b>Disabled</b> — bindbar; ein deaktivierter Button emittiert keinen Klick.</li>
+</ul>
+<h3>Eingang</h3>
+<p>Hat einen Eingangs-Port. <code>msg.ui.component.op</code> unterstützt
+<code>show</code>/<code>hide</code> und <code>enable</code>/<code>disable</code>;
+<code>msg.ui.patch</code> überschreibt Definitionsfelder. Alles andere wird
+unverändert durchgereicht. BEKANNTE LÜCKE (P236): <code>msg.payload</code>
+erreicht das gerenderte Label NICHT — stattdessen <b>Label</b> an einen Store
+binden. Auch das Feld <b>Visible</b> ist bei diesem Knoten nicht an das
+Render-Gate verdrahtet.</p>
+<h3>Ausgänge / Events</h3>
+<p><code>click</code> mit <code>event:"click"</code>, <code>sourceId</code>,
+<code>appId</code>, <code>clientId</code>; <code>msg.ui.params</code> ist leer.</p>
+<h3>Vollständige Doku</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/de/nodes/ui-button.md" target="_blank">docs/guide/de/nodes/ui-button.md</a></p>
+</script>

@@ -1,0 +1,24 @@
+<script type="text/html" data-help-name="ui-slider">
+<p>Ein numerischer Schieberegler, zweiseitig an den Client-State gebunden:
+<b>Value</b> liest, <b>Write To</b> schreibt.</p>
+<h3>Wichtige Felder</h3>
+<ul>
+    <li><b>Min</b> / <b>Max</b> / <b>Step</b> — Bereich und Schrittweite (Step muss positiv sein); leer = Backend-Defaults.</li>
+    <li><b>Show Value</b> — zeigt den aktuellen Zahlenwert neben dem Regler.</li>
+    <li><b>Label</b> — optionale Beschriftung (bindbar).</li>
+    <li><b>Value</b> / <b>Write To</b> — die LESE- / SCHREIB-Hälfte (ADR 0027); Write To nimmt nur <code>store</code>/<code>flow</code>/<code>global</code>.</li>
+    <li><b>Write Trigger</b> — keine Submit-Geste: schreibt immer bei <code>change</code> (während des Ziehens); nur <code>none</code> schaltet den Write-Back ab.</li>
+</ul>
+<h3>Eingang</h3>
+<p>Hat einen Eingangs-Port. <code>msg.payload</code> (nicht null) setzt den Wert,
+geclippt auf <code>min</code>/<code>max</code>; <code>msg.ui.patch</code> überschreibt
+Definitionsfelder (<code>min</code>, <code>max</code>, <code>step</code>, …);
+<code>msg.ui.component.op</code> unterstützt <code>show</code>/<code>hide</code>,
+<code>enable</code>/<code>disable</code>, <code>reset</code>. Alles andere wird
+unverändert durchgereicht.</p>
+<h3>Ausgänge / Events</h3>
+<p><code>change</code> mit <code>msg.ui.params.value</code> (der Zahl). Ein
+<code>submit</code>-Event gibt es nicht.</p>
+<h3>Vollständige Doku</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/de/nodes/ui-slider.md" target="_blank">docs/guide/de/nodes/ui-slider.md</a></p>
+</script>

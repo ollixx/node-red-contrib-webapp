@@ -14,10 +14,9 @@
             variant: false,
             advanced: ["size"],
             omit: ["disabled"],
-            hints: {
-                color: "Ein Formularfeld hat keine allgemeine Farbe (Zustandsfarben kommen aus Validierung/Variant).",
-                size: "Dieser Knoten hat keine Größen-Stufen."
-            }
+            // P268 (ADR 0042 §3): N/A hints live in the node's OWN locale catalog
+            // (nodes/view/locales/<lang>/ui-switch.json -> `ui-switch.hints.<field>`).
+            i18nNode: "ui-switch"
         };
         common.registerNodeType("ui-switch", {
             category: "webapp view",
@@ -220,43 +219,28 @@
         });
     })();
 </script>
+<!-- P268 (ADR 0042 §3): editor-label i18n. Form-row labels carry data-i18n keys
+     per the convention `<node>.label.<field>` (options `<node>.option.<field>.<value>`,
+     placeholders `[placeholder]<node>.placeholder.<field>`). Catalogs:
+     nodes/view/locales/{en-US,de}/ui-switch.json. The literal texts stay as the en-US
+     authoring reference; at edit time the catalog text replaces them. -->
 <script type="text/html" data-template-name="ui-switch">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-row"><label for="node-input-mount" data-i18n="ui-switch.label.mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <!-- P125 (ADR 0012 / value category): Value binding — typedInput managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-valueBinding">Value Path</label><input type="text" id="node-input-valueBinding"></div>
+    <div class="form-row"><label for="node-input-valueBinding" data-i18n="ui-switch.label.valueBinding">Value Path</label><input type="text" id="node-input-valueBinding"></div>
     <!-- P204 (ADR 0027 / writable category): writeTo target (WRITE) — Store/Flow/Global. -->
-    <div class="form-row"><label for="node-input-writeToBinding">Write To</label><input type="text" id="node-input-writeToBinding"></div>
-    <div class="form-row"><label for="node-input-writeTrigger">Write Trigger</label><select id="node-input-writeTrigger"><option value="submit">submit</option><option value="change">change</option><option value="none">none</option></select></div>
+    <div class="form-row"><label for="node-input-writeToBinding" data-i18n="ui-switch.label.writeToBinding">Write To</label><input type="text" id="node-input-writeToBinding"></div>
+    <div class="form-row"><label for="node-input-writeTrigger" data-i18n="ui-switch.label.writeTrigger">Write Trigger</label><select id="node-input-writeTrigger"><option value="submit" data-i18n="ui-switch.option.writeTrigger.submit">submit</option><option value="change" data-i18n="ui-switch.option.writeTrigger.change">change</option><option value="none" data-i18n="ui-switch.option.writeTrigger.none">none</option></select></div>
     <!-- P147 (ADR 0012 / value category): Label bindings — typedInputs managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-label">Label</label><input type="text" id="node-input-label"></div>
-    <div class="form-row"><label for="node-input-labelOn">Label On</label><input type="text" id="node-input-labelOn"></div>
-    <div class="form-row"><label for="node-input-labelOff">Label Off</label><input type="text" id="node-input-labelOff"></div>
+    <div class="form-row"><label for="node-input-label" data-i18n="ui-switch.label.label">Label</label><input type="text" id="node-input-label"></div>
+    <div class="form-row"><label for="node-input-labelOn" data-i18n="ui-switch.label.labelOn">Label On</label><input type="text" id="node-input-labelOn"></div>
+    <div class="form-row"><label for="node-input-labelOff" data-i18n="ui-switch.label.labelOff">Label Off</label><input type="text" id="node-input-labelOff"></div>
     <!-- P125 (ADR 0012 / boolean category): Disabled binding — typedInput managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-disabledBinding">Disabled</label><input type="text" id="node-input-disabledBinding"></div>
+    <div class="form-row"><label for="node-input-disabledBinding" data-i18n="ui-switch.label.disabledBinding">Disabled</label><input type="text" id="node-input-disabledBinding"></div>
 </script>
-<script type="text/html" data-help-name="ui-switch">
-<p>Toggle-Switch für Boolean-Zustände. Emittiert bei Nutzerinteraktion ein
-<code>change</code>-Event mit <code>{ params: { checked: boolean } }</code>
-auf dem Output-Port.</p>
-<h3>Value Path (P125)</h3>
-<p>Bindbare Boolean-Quelle des Toggle-Zustands — alle Binding-Arten: Store, Query,
-Route-Param, Reactive, msg, JSONata, boolean, string, number, json, timestamp,
-Flow, Global, Env (ADR 0012). Ein bestehender <code>valuePath</code> wird
-automatisch als <code>state</code>-Binding übernommen.</p>
-<h3>Write To (Schreiben, P204 / ADR 0027)</h3>
-<p>Ziel, in das die Runtime den Toggle-Zustand schreibt — nur <b>schreibbare</b> Kinds
-(<code>Store</code>/<code>Flow</code>/<code>Global</code>). Ein Switch hat keine Submit-Geste:
-er schreibt bei <code>change</code>, unabhängig vom <code>Write Trigger</code>.</p>
-<h3>Disabled (P125)</h3>
-<p>Bindbare Bedingung zum Deaktivieren des Switch (sperrt Nutzerinteraktion).
-Boolean-Zustand-Satz (ADR 0012): Store, Query, Route-Param, Reactive, msg,
-JSONata, boolean, Flow, Global, Env.</p>
-<h3>Label / Label On / Label Off (P147)</h3>
-<p>Bindbare Beschriftungen des Switch — voller kanonischer Wert-Satz (ADR 0012):
-Store, Query, Route-Param, Reactive, msg, JSONata, string, number, boolean, json,
-timestamp, Flow, Global, Env. Alle drei Felder sind optional. Ein bestehender
-Plain-String wird automatisch als <code>str</code>-Literal übernommen.</p>
-<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/input/ui-switch.md">Ausführliche Dokumentation</a></p>
-</script>
+<!-- P268 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/view/locales/{en-US,de}/ui-switch.html; form-row labels carry
+     data-i18n keys resolved from nodes/view/locales/{en-US,de}/ui-switch.json.
+     No inline data-help-name block here. -->

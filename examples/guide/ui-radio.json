@@ -1,0 +1,102 @@
+[
+    {
+        "id": "guide-ui-radio",
+        "type": "tab",
+        "label": "Guide: ui-radio",
+        "disabled": false,
+        "info": "User-guide example for ui-radio (docs/guide/nodes/ui-radio.md). Import, deploy, open /webapp/guideRadio/ — a horizontal role picker two-way bound to a store slice, plus a live echo text."
+    },
+    {
+        "id": "guideRadio",
+        "type": "ui-app",
+        "name": "Radio demo",
+        "uiId": "guideRadio",
+        "root": "guideRadio",
+        "title": "Radio demo",
+        "layout": "app",
+        "z": "guide-ui-radio",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gRadForm",
+        "type": "ui-store",
+        "name": "Form store",
+        "uiId": "gRadForm",
+        "app": "guideRadio",
+        "statePath": "form",
+        "initialValue": "{\"role\":\"viewer\"}",
+        "z": "guide-ui-radio",
+        "x": 120,
+        "y": 180,
+        "wires": [[]]
+    },
+    {
+        "id": "gRadHeading",
+        "type": "ui-text",
+        "name": "Heading",
+        "uiId": "gRadHeading",
+        "app": "guideRadio",
+        "mount": "guideRadio.content",
+        "text": "Choose a role — exactly one option is always selected:",
+        "order": "0",
+        "z": "guide-ui-radio",
+        "x": 340,
+        "y": 60,
+        "wires": [[]]
+    },
+    {
+        "id": "gRadGroup",
+        "type": "ui-radio",
+        "name": "Role radio",
+        "uiId": "gRadGroup",
+        "app": "guideRadio",
+        "mount": "guideRadio.content",
+        "label": { "kind": "literal", "value": "Role" },
+        "orientation": "horizontal",
+        "options": {
+            "kind": "literal",
+            "value": [
+                { "label": "Viewer", "value": "viewer" },
+                { "label": "Editor", "value": "editor" },
+                { "label": "Admin", "value": "admin" }
+            ]
+        },
+        "value": {
+            "kind": "store",
+            "path": "gRadForm",
+            "subPath": { "kind": "literal", "value": "role" }
+        },
+        "writeTo": {
+            "kind": "store",
+            "path": "gRadForm",
+            "subPath": { "kind": "literal", "value": "role" }
+        },
+        "writeTrigger": "change",
+        "order": "1",
+        "z": "guide-ui-radio",
+        "x": 340,
+        "y": 140,
+        "wires": [[]]
+    },
+    {
+        "id": "gRadEcho",
+        "type": "ui-text",
+        "name": "Selection echo",
+        "uiId": "gRadEcho",
+        "app": "guideRadio",
+        "mount": "guideRadio.content",
+        "value": {
+            "kind": "store",
+            "path": "gRadForm",
+            "subPath": { "kind": "literal", "value": "role" },
+            "fallback": "(nothing selected)"
+        },
+        "order": "2",
+        "z": "guide-ui-radio",
+        "x": 340,
+        "y": 220,
+        "wires": [[]]
+    }
+]

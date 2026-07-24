@@ -1,0 +1,27 @@
+{
+    "ui-slider": {
+        "label": {
+            "mount": "Parent Slot",
+            "label": "Label",
+            "valueBinding": "Value",
+            "writeToBinding": "Write To",
+            "writeTrigger": "Write Trigger",
+            "min": "Min",
+            "max": "Max",
+            "step": "Step",
+            "showValue": "Show Value",
+            "disabledBinding": "Disabled"
+        },
+        "option": {
+            "writeTrigger": {
+                "submit": "submit",
+                "change": "change",
+                "none": "none"
+            }
+        },
+        "hints": {
+            "color": "A form field has no general colour (state colours come from validation / variant).",
+            "size": "This node has no size steps."
+        }
+    }
+}

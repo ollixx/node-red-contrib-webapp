@@ -1,0 +1,28 @@
+{
+    "ui-input": {
+        "label": {
+            "mount": "Parent Slot",
+            "label": "Label",
+            "valueBinding": "Value",
+            "writeToBinding": "Write To",
+            "writeTrigger": "Write Trigger",
+            "inputType": "Input Type",
+            "disabledBinding": "Disabled"
+        },
+        "option": {
+            "writeTrigger": {
+                "submit": "submit",
+                "change": "change",
+                "none": "none"
+            },
+            "inputType": {
+                "text": "text",
+                "email": "email",
+                "number": "number"
+            }
+        },
+        "hints": {
+            "color": "A form field has no general colour (state colours come from validation / variant)."
+        }
+    }
+}

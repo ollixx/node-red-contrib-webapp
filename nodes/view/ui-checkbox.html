@@ -14,9 +14,9 @@
             variant: false,
             advanced: [],
             omit: ["disabled","size"],
-            hints: {
-                color: "Ein Formularfeld hat keine allgemeine Farbe (Zustandsfarben kommen aus Validierung/Variant)."
-            }
+            // P268 (ADR 0042 §3): N/A hints live in the node's OWN locale catalog
+            // (nodes/view/locales/<lang>/ui-checkbox.json -> `ui-checkbox.hints.<field>`).
+            i18nNode: "ui-checkbox"
         };
 
         common.registerNodeType("ui-checkbox", {
@@ -161,49 +161,36 @@
         });
     })();
 </script>
+<!-- P268 (ADR 0042 §3): editor-label i18n. Form-row labels carry data-i18n keys
+     per the convention `<node>.label.<field>` (options `<node>.option.<field>.<value>`,
+     placeholders `[placeholder]<node>.placeholder.<field>`). Catalogs:
+     nodes/view/locales/{en-US,de}/ui-checkbox.json. The literal texts stay as the en-US
+     authoring reference; at edit time the catalog text replaces them. -->
 <script type="text/html" data-template-name="ui-checkbox">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-row"><label for="node-input-mount" data-i18n="ui-checkbox.label.mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <!-- P97 / P129: Label binding — typedInput managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-labelBinding">Label</label><input type="text" id="node-input-labelBinding"></div>
+    <div class="form-row"><label for="node-input-labelBinding" data-i18n="ui-checkbox.label.labelBinding">Label</label><input type="text" id="node-input-labelBinding"></div>
     <!-- P97 / P129: Value binding — typedInput managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-valueBinding">Value Path</label><input type="text" id="node-input-valueBinding"></div>
+    <div class="form-row"><label for="node-input-valueBinding" data-i18n="ui-checkbox.label.valueBinding">Value Path</label><input type="text" id="node-input-valueBinding"></div>
     <!-- P204 (ADR 0027 / writable category): writeTo target (WRITE) — Store/Flow/Global. -->
-    <div class="form-row"><label for="node-input-writeToBinding">Write To</label><input type="text" id="node-input-writeToBinding"></div>
-    <div class="form-row"><label for="node-input-writeTrigger">Write Trigger</label><select id="node-input-writeTrigger"><option value="submit">submit</option><option value="change">change</option><option value="none">none</option></select></div>
+    <div class="form-row"><label for="node-input-writeToBinding" data-i18n="ui-checkbox.label.writeToBinding">Write To</label><input type="text" id="node-input-writeToBinding"></div>
+    <div class="form-row"><label for="node-input-writeTrigger" data-i18n="ui-checkbox.label.writeTrigger">Write Trigger</label><select id="node-input-writeTrigger"><option value="submit" data-i18n="ui-checkbox.option.writeTrigger.submit">submit</option><option value="change" data-i18n="ui-checkbox.option.writeTrigger.change">change</option><option value="none" data-i18n="ui-checkbox.option.writeTrigger.none">none</option></select></div>
     <!-- P129 (ADR 0012 / boolean category): Disabled binding — typedInput managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-disabledBinding">Disabled</label><input type="text" id="node-input-disabledBinding"></div>
-    <div class="form-row"><label for="node-input-size">Size</label>
+    <div class="form-row"><label for="node-input-disabledBinding" data-i18n="ui-checkbox.label.disabledBinding">Disabled</label><input type="text" id="node-input-disabledBinding"></div>
+    <div class="form-row"><label for="node-input-size" data-i18n="ui-checkbox.label.size">Size</label>
         <select id="node-input-size">
-            <option value="">Default</option>
-            <option value="xs">XSmall</option>
-            <option value="sm">Small</option>
-            <option value="md">Medium</option>
-            <option value="lg">Large</option>
-            <option value="xl">XLarge</option>
+            <option value="" data-i18n="ui-checkbox.option.size.default">Default</option>
+            <option value="xs" data-i18n="ui-checkbox.option.size.xs">XSmall</option>
+            <option value="sm" data-i18n="ui-checkbox.option.size.sm">Small</option>
+            <option value="md" data-i18n="ui-checkbox.option.size.md">Medium</option>
+            <option value="lg" data-i18n="ui-checkbox.option.size.lg">Large</option>
+            <option value="xl" data-i18n="ui-checkbox.option.size.xl">XLarge</option>
         </select>
     </div>
 </script>
-<script type="text/html" data-help-name="ui-checkbox">
-<p>Einzelne Checkbox mit Boolean-Binding. Rendert ein <code>sl-checkbox</code>-Element.</p>
-<h3>Label</h3>
-<p>Beschriftung der Checkbox — bindbar: alle Binding-Arten (ADR 0012): Store, Query,
-Route-Param, Reactive, msg, JSONata, string/boolean/number/json/timestamp,
-Flow, Global, Env.</p>
-<h3>Value Path</h3>
-<p>Bindbare Boolean-Quelle des Checked-Zustands — alle Binding-Arten werden unterstützt.</p>
-<h3>Write To (Schreiben, P204 / ADR 0027)</h3>
-<p>Ziel, in das die Runtime den Checked-Zustand schreibt — nur <b>schreibbare</b> Kinds
-(<code>Store</code>/<code>Flow</code>/<code>Global</code>). Eine Checkbox hat keine Submit-Geste:
-sie schreibt bei <code>change</code>, unabhängig vom <code>Write Trigger</code>.</p>
-<h3>Disabled (P129)</h3>
-<p>Bindbare Bedingung zum Deaktivieren der Checkbox (sperrt Nutzerinteraktion).
-Boolean-Zustand-Satz (ADR 0012): Store, Query, Route-Param, Reactive, msg,
-JSONata, boolean, Flow, Global, Env.</p>
-<h3>Size</h3>
-<p>Größe der Checkbox: XSmall, Small, Medium (Default), Large, XLarge.</p>
-<h3>Events</h3>
-<p>Bei Nutzerinteraktion sendet der Knoten <code>{ event: "change", params: { checked: boolean } }</code> auf dem Output-Port.</p>
-<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/input/ui-checkbox.md">Ausführliche Dokumentation</a></p>
-</script>
+<!-- P268 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/view/locales/{en-US,de}/ui-checkbox.html; form-row labels carry
+     data-i18n keys resolved from nodes/view/locales/{en-US,de}/ui-checkbox.json.
+     No inline data-help-name block here. -->

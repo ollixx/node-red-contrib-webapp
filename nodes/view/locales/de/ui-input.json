@@ -1,0 +1,28 @@
+{
+    "ui-input": {
+        "label": {
+            "mount": "Parent-Slot",
+            "label": "Beschriftung",
+            "valueBinding": "Wert (Lesen)",
+            "writeToBinding": "Schreibziel",
+            "writeTrigger": "Schreib-Auslöser",
+            "inputType": "Eingabe-Typ",
+            "disabledBinding": "Deaktiviert"
+        },
+        "option": {
+            "writeTrigger": {
+                "submit": "submit",
+                "change": "change",
+                "none": "none"
+            },
+            "inputType": {
+                "text": "Text",
+                "email": "E-Mail",
+                "number": "Zahl"
+            }
+        },
+        "hints": {
+            "color": "Ein Formularfeld hat keine allgemeine Farbe (Zustandsfarben kommen aus Validierung/Variant)."
+        }
+    }
+}

@@ -1,0 +1,25 @@
+{
+    "ui-select": {
+        "label": {
+            "mount": "Parent-Slot",
+            "labelBinding": "Beschriftung",
+            "valueBinding": "Wert (Lesen)",
+            "writeToBinding": "Schreibziel",
+            "writeTrigger": "Schreib-Auslöser",
+            "disabledBinding": "Deaktiviert",
+            "optionsField": "Optionen",
+            "placeholderBinding": "Platzhalter",
+            "multiple": "Mehrfachauswahl"
+        },
+        "option": {
+            "writeTrigger": {
+                "submit": "submit",
+                "change": "change",
+                "none": "none"
+            }
+        },
+        "hints": {
+            "color": "Ein Formularfeld hat keine allgemeine Farbe (Zustandsfarben kommen aus Validierung/Variant)."
+        }
+    }
+}

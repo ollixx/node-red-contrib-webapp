@@ -1,0 +1,17 @@
+{
+    "ui-button": {
+        "label": {
+            "mount": "Parent Slot",
+            "label": "Label",
+            "icon": "Icon",
+            "disabledBinding": "Disabled",
+            "hrefBinding": "URL / Route"
+        },
+        "placeholder": {
+            "icon": "e.g. plus or lucide:user"
+        },
+        "title": {
+            "iconPicker": "Choose button icon"
+        }
+    }
+}

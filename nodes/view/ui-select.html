@@ -14,9 +14,9 @@
             variant: false,
             advanced: [],
             omit: ["disabled","size"],
-            hints: {
-                color: "Ein Formularfeld hat keine allgemeine Farbe (Zustandsfarben kommen aus Validierung/Variant)."
-            }
+            // P268 (ADR 0042 §3): N/A hints live in the node's OWN locale catalog
+            // (nodes/view/locales/<lang>/ui-select.json -> `ui-select.hints.<field>`).
+            i18nNode: "ui-select"
         };
         common.registerNodeType("ui-select", {
             category: "webapp view",
@@ -232,53 +232,31 @@
         });
     })();
 </script>
+<!-- P268 (ADR 0042 §3): editor-label i18n. Form-row labels carry data-i18n keys
+     per the convention `<node>.label.<field>` (options `<node>.option.<field>.<value>`,
+     placeholders `[placeholder]<node>.placeholder.<field>`). Catalogs:
+     nodes/view/locales/{en-US,de}/ui-select.json. The literal texts stay as the en-US
+     authoring reference; at edit time the catalog text replaces them. -->
 <script type="text/html" data-template-name="ui-select">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-row"><label for="node-input-mount" data-i18n="ui-select.label.mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <!-- P133 (ADR 0012 / value category): Label binding — typedInput managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-labelBinding">Label</label><input type="text" id="node-input-labelBinding"></div>
+    <div class="form-row"><label for="node-input-labelBinding" data-i18n="ui-select.label.labelBinding">Label</label><input type="text" id="node-input-labelBinding"></div>
     <!-- P124 (ADR 0012 / value category): Value binding — typedInput managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-valueBinding">Value</label><input type="text" id="node-input-valueBinding"></div>
+    <div class="form-row"><label for="node-input-valueBinding" data-i18n="ui-select.label.valueBinding">Value</label><input type="text" id="node-input-valueBinding"></div>
     <!-- P204 (ADR 0027 / writable category): writeTo target (WRITE) — Store/Flow/Global; typedInput managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-writeToBinding">Write To</label><input type="text" id="node-input-writeToBinding"></div>
-    <div class="form-row"><label for="node-input-writeTrigger">Write Trigger</label><select id="node-input-writeTrigger"><option value="submit">submit</option><option value="change">change</option><option value="none">none</option></select></div>
+    <div class="form-row"><label for="node-input-writeToBinding" data-i18n="ui-select.label.writeToBinding">Write To</label><input type="text" id="node-input-writeToBinding"></div>
+    <div class="form-row"><label for="node-input-writeTrigger" data-i18n="ui-select.label.writeTrigger">Write Trigger</label><select id="node-input-writeTrigger"><option value="submit" data-i18n="ui-select.option.writeTrigger.submit">submit</option><option value="change" data-i18n="ui-select.option.writeTrigger.change">change</option><option value="none" data-i18n="ui-select.option.writeTrigger.none">none</option></select></div>
     <!-- P124 (ADR 0012 / boolean category): Disabled binding — typedInput managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-disabledBinding">Disabled</label><input type="text" id="node-input-disabledBinding"></div>
+    <div class="form-row"><label for="node-input-disabledBinding" data-i18n="ui-select.label.disabledBinding">Disabled</label><input type="text" id="node-input-disabledBinding"></div>
     <!-- P133 (ADR 0012): single Options field — json (NR JSON editor) | store. -->
-    <div class="form-row"><label for="node-input-optionsField">Options</label><input type="text" id="node-input-optionsField"></div>
+    <div class="form-row"><label for="node-input-optionsField" data-i18n="ui-select.label.optionsField">Options</label><input type="text" id="node-input-optionsField"></div>
     <!-- P133 (ADR 0012 / value category): Placeholder binding. -->
-    <div class="form-row"><label for="node-input-placeholderBinding">Placeholder</label><input type="text" id="node-input-placeholderBinding"></div>
-    <div class="form-row"><label for="node-input-multiple">Multiple</label><input type="checkbox" id="node-input-multiple" style="width:auto"></div>
+    <div class="form-row"><label for="node-input-placeholderBinding" data-i18n="ui-select.label.placeholderBinding">Placeholder</label><input type="text" id="node-input-placeholderBinding"></div>
+    <div class="form-row"><label for="node-input-multiple" data-i18n="ui-select.label.multiple">Multiple</label><input type="checkbox" id="node-input-multiple" style="width:auto"></div>
 </script>
-<script type="text/html" data-help-name="ui-select">
-<p>Dropdown- oder Combobox-Eingabefeld mit konfigurierbaren Optionen. Rendert ein <code>sl-select</code>-Element.</p>
-<h3>Value (P124)</h3>
-<p>Bindbare Quelle des aktuell gewählten Werts — voller Binding-Satz (ADR 0012): Store, Query,
-Route-Param, Reactive, msg, JSONata, string, number, boolean, json, timestamp, Flow, Global, Env.
-Ein bestehender <code>valuePath</code> wird automatisch als <code>state</code>-Binding übernommen.</p>
-<h3>Write To (Schreiben, P204 / ADR 0027)</h3>
-<p>Ziel, in das die Runtime die Auswahl schreibt — nur <b>schreibbare</b> Kinds:
-<code>Store</code> (ein <code>ui-store</code> + optionaler Sub-Pfad, per-client, live SSE-Re-Render),
-<code>Flow</code>- oder <code>Global</code>-Kontext (server-seitig). Ein Select hat keine
-Submit-Geste: es schreibt bei <code>change</code>, unabhängig vom <code>Write Trigger</code>.</p>
-<h3>Disabled (P124)</h3>
-<p>Bindbare Bedingung zum Deaktivieren des Auswahlfeldes (Boolean-Zustand-Satz, ADR 0012):
-Store, Query, Route-Param, Reactive, msg, JSONata, boolean, Flow, Global, Env.
-Ein Store-Binding deaktiviert das Select live, sobald der Wert truthy ist.</p>
-<h3>Label &amp; Placeholder (P133)</h3>
-<p>Beide nutzen den kanonischen Wert-Satz (ADR 0012): literaler Text oder ein Binding
-(Store, Query, Route-Param, Reactive, msg, JSONata, Flow, Global, Env).</p>
-<h3>Optionen (P133)</h3>
-<p>Ein einziges Feld mit zwei Typen: <code>Options</code> (NR-JSON-Editor) oder <code>Store</code>.
-Das JSON akzeptiert genau eine von drei Formen — Objekt <code>{"A":"a"}</code>,
-String-Array <code>["A","B"]</code> oder Objekt-Array <code>[{"label":"A","value":"a"}]</code>;
-andere Strukturen markieren den Knoten vor dem Deploy als ungültig. Der Typ <code>Store</code>
-liest die Optionen reaktiv aus einem Store(-Pfad).</p>
-<h3>Mehrfachauswahl</h3>
-<p>Bei <code>multiple: true</code> ist <code>value</code> ein Array der gewählten Werte;
-das <code>change</code>-Event liefert entsprechend ein Array.</p>
-<h3>Events</h3>
-<p>Bei Auswahländerung sendet der Knoten <code>{ event: "change", params: { value } }</code> auf dem Output-Port.</p>
-<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/input/ui-select.md">Ausführliche Dokumentation</a></p>
-</script>
+<!-- P268 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/view/locales/{en-US,de}/ui-select.html; form-row labels carry
+     data-i18n keys resolved from nodes/view/locales/{en-US,de}/ui-select.json.
+     No inline data-help-name block here. -->

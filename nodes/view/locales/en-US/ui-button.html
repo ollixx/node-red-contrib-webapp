@@ -1,0 +1,25 @@
+<script type="text/html" data-help-name="ui-button">
+<p>A clickable button. By default an event source: a click leaves the output port
+and the flow decides what happens.</p>
+<h3>Key fields</h3>
+<ul>
+    <li><b>Label</b> — the caption; a FULL value binding (a store-bound label updates live).</li>
+    <li><b>Variant</b> — semantic role AND colour (<code>primary</code>, <code>danger</code>, <code>link</code>, …); there is no separate colour field.</li>
+    <li><b>Size</b> / <b>Outline</b> — three-step size; outlined instead of filled.</li>
+    <li><b>Icon</b> — <code>library:name</code> in the prefix slot (picker available).</li>
+    <li><b>Link Mode</b> + <b>URL / Route</b> — <code>button</code> (event), <code>url</code> (hyperlink) or <code>navigate</code> (in-app route; also emits the event).</li>
+    <li><b>Disabled</b> — bindable; a disabled button emits no click.</li>
+</ul>
+<h3>Inputs</h3>
+<p>Has an input port. <code>msg.ui.component.op</code> supports
+<code>show</code>/<code>hide</code> and <code>enable</code>/<code>disable</code>;
+<code>msg.ui.patch</code> overwrites definition fields. Anything else passes
+through unchanged. KNOWN GAP (P236): <code>msg.payload</code> does NOT reach the
+rendered label — bind <b>Label</b> to a store instead. The <b>Visible</b> field is
+likewise not wired to the render gate for this node.</p>
+<h3>Outputs / Events</h3>
+<p><code>click</code> with <code>event:"click"</code>, <code>sourceId</code>,
+<code>appId</code>, <code>clientId</code>; <code>msg.ui.params</code> is empty.</p>
+<h3>Full docs</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/nodes/ui-button.md" target="_blank">docs/guide/nodes/ui-button.md</a></p>
+</script>

@@ -53,7 +53,7 @@ nicht besitzt, reicht es unverändert durch.
 | `select` | aktiviert genau eines aus einer Geschwister-Gruppe via `part` | `ui-action(select, part:tab2) → ui-tabs` |
 | `enable` | schreibt `disabled` des Ziels auf false | `ui-action(enable) → ui-button „Speichern"` |
 | `disable` | schreibt `disabled` des Ziels auf true (z. B. während eines Requests) | `ui-action(disable) → ui-button „Speichern"` |
-| `focus` | fokussiert ein Text-Control (`ui-input`/`ui-textarea`/`ui-datepicker`) | `ui-action(focus) → ui-input „Suche"` |
+| `focus` | fokussiert ein Text-Control ([`ui-input`](ui-input.md)/[`ui-textarea`](ui-textarea.md)/[`ui-datepicker`](ui-datepicker.md)) | `ui-action(focus) → ui-input „Suche"` |
 | `reset` | setzt ein Form-Control auf den Initialwert und feuert `change` | `ui-action(reset) → ui-input „Name"` |
 
 `show`/`hide` und `enable`/`disable` schreiben den einen dynamic-state-Wert des

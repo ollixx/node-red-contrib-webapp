@@ -1,0 +1,36 @@
+{
+    "ui-datepicker": {
+        "label": {
+            "mount": "Parent Slot",
+            "labelBinding": "Label",
+            "valueBinding": "Value Path",
+            "writeToBinding": "Write To",
+            "writeTrigger": "Write Trigger",
+            "disabledBinding": "Disabled",
+            "mode": "Mode",
+            "min": "Min",
+            "max": "Max",
+            "placeholderBinding": "Placeholder"
+        },
+        "option": {
+            "writeTrigger": {
+                "submit": "submit",
+                "change": "change",
+                "none": "none"
+            },
+            "mode": {
+                "date": "Date",
+                "datetime": "Date & Time",
+                "time": "Time"
+            }
+        },
+        "placeholder": {
+            "min": "YYYY-MM-DD",
+            "max": "YYYY-MM-DD"
+        },
+        "hints": {
+            "color": "A form field has no general colour (state colours come from validation / variant).",
+            "size": "This node has no size steps."
+        }
+    }
+}
