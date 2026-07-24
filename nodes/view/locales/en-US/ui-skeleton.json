@@ -1,0 +1,22 @@
+{
+    "ui-skeleton": {
+        "label": {
+            "mount": "Parent Slot",
+            "displayType": "Display Type",
+            "lines": "Lines"
+        },
+        "option": {
+            "displayType": {
+                "text": "Text",
+                "avatar": "Avatar",
+                "card": "Card",
+                "table": "Table"
+            }
+        },
+        "hints": {
+            "disabled": "A loading placeholder has no interactive state.",
+            "size": "This node has no size steps.",
+            "lines": "Lines applies to Text and Table only"
+        }
+    }
+}

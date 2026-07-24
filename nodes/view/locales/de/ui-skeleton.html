@@ -1,0 +1,23 @@
+<script type="text/html" data-help-name="ui-skeleton">
+<p>Ein animierter Lade-Platzhalter, der die Form des echten Inhalts nachahmt.
+Sichtbar, solange <b>Visible</b> truthy ist; verborgen, sobald die Daten bereit
+sind.</p>
+<h3>Wichtige Felder</h3>
+<ul>
+    <li><b>Display Type</b> — text (Zeilen), avatar (rund), card (Block) oder
+        table (Zeilen × 3 Spalten). Eine Darstellungsform, kein Variant.</li>
+    <li><b>Lines</b> — Zeilenanzahl für text, Zeilenanzahl für table (≥ 1); für
+        avatar/card ohne Wirkung.</li>
+    <li><b>Visible</b> (Basis-Feld) ist das Lade-Zustands-Gate; leer = immer
+        sichtbar. <b>Color</b> färbt die Platzhalter-Fläche.</li>
+</ul>
+<h3>Eingang</h3>
+<p>Hat einen Eingangs-Port, aber einen engen: <code>msg.ui.component.op</code>
+(<code>show</code>/<code>hide</code>/…) schaltet die Sichtbarkeit. <b>msg.ui.patch
+wird nicht unterstützt</b> — eine eingehende Message ändert displayType oder lines
+nicht. Fachfremde Messages werden unverändert durchgereicht.</p>
+<h3>Ausgänge / Events</h3>
+<p>Keine — kein Output-Port; rein präsentational.</p>
+<h3>Vollständige Doku</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/de/nodes/ui-skeleton.md" target="_blank">docs/guide/de/nodes/ui-skeleton.md</a></p>
+</script>

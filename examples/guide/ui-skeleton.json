@@ -1,0 +1,52 @@
+[
+    {
+        "id": "guide-ui-skeleton",
+        "type": "tab",
+        "label": "Guide: ui-skeleton",
+        "disabled": false,
+        "info": "User-guide example for ui-skeleton (docs/guide/nodes/ui-skeleton.md). Import, deploy, open /webapp/guideSkeleton/. A text skeleton of 4 placeholder lines standing in for loading content."
+    },
+    {
+        "id": "guideSkeleton",
+        "type": "ui-app",
+        "name": "Skeleton demo",
+        "uiId": "guideSkeleton",
+        "root": "guideSkeleton",
+        "layout": "app",
+        "z": "guide-ui-skeleton",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gSkHeading",
+        "type": "ui-text",
+        "name": "Heading",
+        "uiId": "gSkHeading",
+        "app": "guideSkeleton",
+        "mount": "guideSkeleton.content",
+        "text": "Loading…",
+        "value": { "kind": "literal", "value": "Loading…" },
+        "style": "heading-2",
+        "order": "0",
+        "z": "guide-ui-skeleton",
+        "x": 340,
+        "y": 60,
+        "wires": [[]]
+    },
+    {
+        "id": "gSkSkeleton",
+        "type": "ui-skeleton",
+        "name": "Loading placeholder",
+        "uiId": "gSkSkeleton",
+        "app": "guideSkeleton",
+        "mount": "guideSkeleton.content",
+        "displayType": "text",
+        "lines": 4,
+        "order": "1",
+        "z": "guide-ui-skeleton",
+        "x": 340,
+        "y": 120,
+        "wires": [[]]
+    }
+]

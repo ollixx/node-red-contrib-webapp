@@ -17,6 +17,7 @@
             variant: false,
             advanced: [],
             omit: [],
+            i18nNode: "ui-skeleton",
             hints: {
                 disabled: "Ein Lade-Platzhalter hat keinen interaktiven Zustand.",
                 size: "Dieser Knoten hat keine Größen-Stufen."
@@ -99,30 +100,23 @@
     })();
 </script>
 <script type="text/html" data-template-name="ui-skeleton">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-row"><label for="node-input-mount" data-i18n="ui-skeleton.label.mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-displayType">Display Type</label>
+    <div class="form-row"><label for="node-input-displayType" data-i18n="ui-skeleton.label.displayType">Display Type</label>
         <select id="node-input-displayType">
-            <option value="text">Text</option>
-            <option value="avatar">Avatar</option>
-            <option value="card">Card</option>
-            <option value="table">Table</option>
+            <option value="text" data-i18n="ui-skeleton.option.displayType.text">Text</option>
+            <option value="avatar" data-i18n="ui-skeleton.option.displayType.avatar">Avatar</option>
+            <option value="card" data-i18n="ui-skeleton.option.displayType.card">Card</option>
+            <option value="table" data-i18n="ui-skeleton.option.displayType.table">Table</option>
         </select>
     </div>
-    <div class="form-row"><label for="node-input-lines">Lines</label><input type="number" id="node-input-lines" min="1"></div>
+    <div class="form-row"><label for="node-input-lines" data-i18n="ui-skeleton.label.lines">Lines</label><input type="number" id="node-input-lines" min="1"></div>
     <!-- P138/P241: hint shown when displayType does not use lines (avatar/card). -->
-    <div id="ui-skeleton-lines-hint" style="display:none; margin-left:105px; color:#999; font-size:0.85em;">Lines gilt nur für Text und Table</div>
+    <div id="ui-skeleton-lines-hint" data-i18n="ui-skeleton.hints.lines" style="display:none; margin-left:105px; color:#999; font-size:0.85em;">Lines gilt nur für Text und Table</div>
 </script>
-<script type="text/html" data-help-name="ui-skeleton">
-<p>Animierter Lade-Platzhalter der die Form des eigentlichen Inhalts imitiert.</p>
-<p>Solange <b>Visible</b> truthy ist, wird der Skeleton angezeigt (Daten werden geladen). Wird <b>Visible</b> falsy, verschwindet der Skeleton und der echte Inhalt übernimmt.</p>
-<h4>Display Type</h4>
-<p><b>Text</b> (Standard) — simuliert Textzeilen; <b>Lines</b> bestimmt die Anzahl. <b>Table</b> — imitiert eine Tabelle mit <b>Lines</b> Zeilen à 3 Spalten. <b>Avatar</b> (rund) und <b>Card</b> (Block) imitieren die Form der entsprechenden Komponente; <b>Lines</b> ist für diese beiden Typen nicht relevant.</p>
-<h4>Visible</h4>
-<p>Bindbar über den Boolean-Zustand-Satz (ADR 0012): Store, Query, Route-Param, Reactive, msg, JSONata, boolean, Flow, Global, Env. Leer = immer sichtbar. Ein bestehender <code>visiblePath</code> wird automatisch als <code>state</code>-Binding übernommen.</p>
-<h4>Color</h4>
-<p>Färbt die Platzhalter-/Shimmer-Fläche (ADR 0039). Leer = neutrale Theme-Farbe. <b>Disabled</b> ist für diesen Knoten nicht anwendbar (ein Lade-Platzhalter ist nicht interaktiv).</p>
-<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/feedback/ui-skeleton.md">Ausführliche Doku</a></p>
-</script>
+<!-- P270 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/view/locales/{en-US,de}/ui-skeleton.html; form-row labels carry data-i18n
+     keys resolved from nodes/view/locales/{en-US,de}/ui-skeleton.json. No inline
+     data-help-name block here. -->
