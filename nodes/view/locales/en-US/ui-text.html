@@ -1,0 +1,25 @@
+<script type="text/html" data-help-name="ui-text">
+<p>Renders one bound text value at a mount point. The value can be a literal,
+a live store/query/route-param binding, a server-resolved context value, or a
+value pushed in on a message.</p>
+<h3>Key fields</h3>
+<ul>
+    <li><b>Text / value</b> — the displayed value; bindable via the canonical
+        value-binding types (store, query, routeParam, reactive, msg, literals,
+        flow/global/env). <code>item</code>/<code>index</code> appear only inside a ui-repeat.</li>
+    <li><b>Style</b> — typographic role → the HTML element (heading-1…3, body,
+        caption, label, code). <b>Variant</b> — the semantic colour.</li>
+    <li><b>Display</b> — <code>text</code> (free display) or <code>formField</code>
+        (read-only labelled row styled like the inputs; set <b>Field Label</b>).</li>
+    <li><b>On Missing</b> — show <code>?</code> (marker) or render empty on a null value.</li>
+</ul>
+<h3>Inputs</h3>
+<p>Has an input port. <code>msg.payload</code> (non-null) sets the displayed
+value and pushes it to all clients; <code>msg.ui.patch</code> overrides fields;
+<code>msg.ui.component.op</code> <code>show</code>/<code>hide</code> toggle
+visibility. Foreign messages pass through unchanged.</p>
+<h3>Outputs / Events</h3>
+<p>None — no output port; purely presentational.</p>
+<h3>Full docs</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/nodes/ui-text.md" target="_blank">docs/guide/nodes/ui-text.md</a></p>
+</script>
