@@ -1,0 +1,26 @@
+<script type="text/html" data-help-name="ui-table">
+<p>Rendert ein Array von Zeilen-Objekten als Tabelle mit konfigurierbaren
+Spalten und optionalem Row-Select-Event.</p>
+<h3>Wichtige Felder</h3>
+<ul>
+    <li><b>Columns</b> — Pflicht. Kurzform: kommagetrennte Keys
+        (<code>name,email,status</code>); Vollform: JSON-Array von
+        Spalten-Objekten (<code>key</code>, <code>label</code>, <code>type</code>,
+        <code>sortable</code>, <code>filterable</code>, <code>width</code>).</li>
+    <li><b>Rows</b> — die strukturelle Daten-Quelle (Array von Zeilen-Objekten);
+        bindbar über den kanonischen Value-Satz (json-Literal, store, query,
+        state, reactive, msg, flow/global/env). Die Tabelle rendert selbst.</li>
+    <li><b>Events</b> — <code>rowSelect</code> aktivieren fügt einen Output-Port hinzu.</li>
+    <li><b>Visible / Disabled / Color</b> — bindbare Basis-Felder.</li>
+</ul>
+<h3>Eingang</h3>
+<p>Hat einen Eingangs-Port. <code>msg.payload</code> (nicht-null) setzt
+<code>rows</code> und pusht an alle Clients; <code>msg.ui.patch</code>
+überschreibt Felder; <code>msg.ui.component.op</code> <code>show</code>/<code>hide</code>
+steuern die Sichtbarkeit. Fachfremde Messages werden unverändert durchgereicht.</p>
+<h3>Ausgänge / Events</h3>
+<p><code>rowSelect</code> (falls aktiviert) feuert bei Zeilenklick mit
+<code>params: { rowId, row }</code>. Kein Output-Port ohne aktives Event.</p>
+<h3>Vollständige Doku</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/de/nodes/ui-table.md" target="_blank">docs/guide/de/nodes/ui-table.md</a></p>
+</script>

@@ -1,0 +1,16 @@
+{
+    "ui-table": {
+        "label": {
+            "mount": "Parent Slot",
+            "columns": "Columns",
+            "rows": "Rows",
+            "events": "Events"
+        },
+        "placeholder": {
+            "columns": "name,email,status"
+        },
+        "hints": {
+            "size": "This node has no size steps."
+        }
+    }
+}

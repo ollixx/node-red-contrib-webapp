@@ -73,7 +73,7 @@ const ALLOWLIST = {};
  * ------------------------------------------------------------------ */
 const TRANSITION_INLINE = {};
 for (const t of [
-    "ui-table", "ui-container",
+    "ui-container",
     
     "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state",
     "ui-tabs", "ui-tab", "ui-accordion", "ui-accordion-section", "ui-breadcrumb", "ui-menu",
@@ -98,7 +98,7 @@ for (const t of [
  * ------------------------------------------------------------------ */
 const LABEL_TRANSITION = {};
 for (const t of [
-    "ui-table", "ui-container",
+    "ui-container",
     
     "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state",
     "ui-tabs", "ui-tab", "ui-accordion", "ui-accordion-section", "ui-breadcrumb", "ui-menu",

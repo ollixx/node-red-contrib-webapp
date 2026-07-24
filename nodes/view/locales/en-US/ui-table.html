@@ -1,0 +1,26 @@
+<script type="text/html" data-help-name="ui-table">
+<p>Renders an array of row objects as a table with configurable columns and an
+optional row-select event.</p>
+<h3>Key fields</h3>
+<ul>
+    <li><b>Columns</b> — required. Short form: comma-separated keys
+        (<code>name,email,status</code>); full form: a JSON array of column
+        objects (<code>key</code>, <code>label</code>, <code>type</code>,
+        <code>sortable</code>, <code>filterable</code>, <code>width</code>).</li>
+    <li><b>Rows</b> — the structural data source (array of row objects); bindable
+        via the canonical value set (json literal, store, query, state, reactive,
+        msg, flow/global/env). The table renders its rows itself.</li>
+    <li><b>Events</b> — enable <code>rowSelect</code> to add an output port.</li>
+    <li><b>Visible / Disabled / Color</b> — bindable base fields.</li>
+</ul>
+<h3>Inputs</h3>
+<p>Has an input port. <code>msg.payload</code> (non-null) sets <code>rows</code>
+and pushes to all clients; <code>msg.ui.patch</code> overrides fields;
+<code>msg.ui.component.op</code> <code>show</code>/<code>hide</code> toggle
+visibility. Foreign messages pass through unchanged.</p>
+<h3>Outputs / Events</h3>
+<p><code>rowSelect</code> (when enabled) fires on a row click with
+<code>params: { rowId, row }</code>. No output port when no event is enabled.</p>
+<h3>Full docs</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/nodes/ui-table.md" target="_blank">docs/guide/nodes/ui-table.md</a></p>
+</script>
