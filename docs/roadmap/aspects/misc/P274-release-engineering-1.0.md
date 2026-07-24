@@ -2,7 +2,7 @@
 id: P274
 title: "Release-Engineering 1.0: self-contained Publish-Artefakt (Packaging-Blocker!) + Install-Smoke-Test + CHANGELOG/Migrations-Notiz + README + repository/engines + CI (validate+E2E) + Version-Bump"
 epic: aspects/misc
-status: pending
+status: in_progress
 dependencies: []
 verify: browser
 spec: README.md
