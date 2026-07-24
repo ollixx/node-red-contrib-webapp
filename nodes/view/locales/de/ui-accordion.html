@@ -1,0 +1,27 @@
+<script type="text/html" data-help-name="ui-accordion">
+<p>Eine Liste aufklappbarer Abschnitte. Jede Sektion ist ein
+<code>ui-accordion-section</code>-Kind, das in diesen Knoten gemountet wird — in
+ein ui-accordion mounten heißt: werde eine Sektion.</p>
+<h3>Wichtige Felder</h3>
+<ul>
+    <li><b>Open Section</b> — <b>zweiseitiges</b> Binding auf die ID der offenen
+        Sektion; ein Sektions-Wechsel emittiert ein Event für den Write-back-Loop.
+        Ungültig → erste Sektion.</li>
+    <li><b>Allow Multiple Open</b> — aus (Default) = Einzel-Modus: Öffnen einer
+        Sektion schließt die anderen; an = mehrere gleichzeitig offen.</li>
+    <li><b>Events</b> — aktiviert die <code>sectionOpen</code>/<code>sectionClose</code>-
+        Output-Ports.</li>
+</ul>
+<h3>Eingang</h3>
+<p>Hat einen Eingangs-Port. <code>msg.payload</code> setzt die offene Sektion
+(eine Kind-ID); <code>msg.ui.patch</code> überschreibt Felder;
+<code>msg.ui.component.op</code> <code>show</code>/<code>hide</code> steuern die
+Sichtbarkeit und <code>open</code>/<code>close</code> wirken auf eine Sektion.
+Fachfremde Messages werden unverändert durchgereicht.</p>
+<h3>Ausgänge / Events</h3>
+<p><code>sectionOpen</code>/<code>sectionClose</code> (wenn aktiviert) mit
+<code>params.sectionId</code>. Verdrahte <code>sectionOpen</code> an ein
+<code>ui-store-action</code>-Set, um den zweiseitigen Roundtrip zu schließen.</p>
+<h3>Vollständige Doku</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/de/nodes/ui-accordion.md" target="_blank">docs/guide/de/nodes/ui-accordion.md</a></p>
+</script>
