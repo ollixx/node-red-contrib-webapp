@@ -21,6 +21,9 @@ importers:
       '@shoelace-style/shoelace':
         specifier: 2.20.1
         version: 2.20.1(@floating-ui/utils@0.2.11)(@types/react@19.2.17)
+      esbuild:
+        specifier: 0.27.4
+        version: 0.27.4
       eslint:
         specifier: ^9.36.0
         version: 9.39.4
