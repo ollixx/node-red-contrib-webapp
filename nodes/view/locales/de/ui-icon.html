@@ -1,0 +1,25 @@
+<script type="text/html" data-help-name="ui-icon">
+<p>Rendert ein Icon per symbolischem Namen (icon-set-agnostisch). Name und Farbe
+sind bindbar; rein präsentational.</p>
+<h3>Wichtige Felder</h3>
+<ul>
+    <li><b>Icon Name</b> — zwei Wege in einem Control: <b>Icon</b> (literal) — ein
+        nackter Name (<code>home</code>) nutzt die Default-Library, <code>library:name</code>
+        (<code>lucide:user</code>) eine registrierte (Picker + Vorschau); oder ein
+        <b>Binding</b> (store/query/state/msg/…), das das Icon live tauscht.</li>
+    <li><b>Color</b> — das gemeinsame Control: <b>Theme-Token</b>
+        (<code>primary</code>/<code>success</code>/… → <code>token:&lt;name&gt;</code>,
+        folgt dem App-Theme), eine freie <b>Farbe</b> oder ein <b>Binding</b>. Leer
+        erbt die umgebende Textfarbe; ein unbekannter Wert wird ignoriert.</li>
+    <li><b>Größe</b> — <code>xs</code>/<code>sm</code>/<code>md</code>/<code>lg</code>/<code>xl</code>.</li>
+</ul>
+<h3>Eingang</h3>
+<p>Hat einen Eingangs-Port. <code>msg.ui.component.op</code> <code>show</code>/<code>hide</code>
+steuern die Sichtbarkeit; <code>msg.ui.patch</code> überschreibt Felder
+(<code>icon</code>/<code>size</code>/<code>color</code>). Kein <code>msg.payload</code>-
+Primärwert. Fachfremde Messages werden unverändert durchgereicht.</p>
+<h3>Ausgänge / Events</h3>
+<p>Keine — kein Output-Port; rein dekorativ.</p>
+<h3>Vollständige Doku</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/de/nodes/ui-icon.md" target="_blank">docs/guide/de/nodes/ui-icon.md</a></p>
+</script>
