@@ -1,0 +1,72 @@
+[
+    {
+        "id": "guide-ui-menu",
+        "type": "tab",
+        "label": "Guide: ui-menu",
+        "disabled": false,
+        "info": "User-guide example for ui-menu (docs/guide/nodes/ui-menu.md). Import, deploy, open /webapp/guideMenu/. A three-entry navigation menu with the active route highlighted from a store value; clicks emit navigate events."
+    },
+    {
+        "id": "guideMenu",
+        "type": "ui-app",
+        "name": "Menu demo",
+        "uiId": "guideMenu",
+        "root": "guideMenu",
+        "layout": "app",
+        "z": "guide-ui-menu",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gMenuStore",
+        "type": "ui-store",
+        "name": "Active route store",
+        "uiId": "gMenuStore",
+        "app": "guideMenu",
+        "statePath": "activeRoute",
+        "initialValue": "\"/customers\"",
+        "persist": false,
+        "scope": "any",
+        "z": "guide-ui-menu",
+        "x": 120,
+        "y": 160,
+        "wires": [[]]
+    },
+    {
+        "id": "gMenuNode",
+        "type": "ui-menu",
+        "name": "Main navigation",
+        "uiId": "gMenuNode",
+        "app": "guideMenu",
+        "mount": "guideMenu.content",
+        "displayType": "sidebar",
+        "items": {
+            "kind": "literal",
+            "value": [
+                { "id": "home", "label": "Home", "icon": "house", "route": "/" },
+                { "id": "customers", "label": "Customers", "icon": "people", "route": "/customers" },
+                { "id": "settings", "label": "Settings", "icon": "gear", "route": "/settings" }
+            ]
+        },
+        "activeRoute": { "kind": "state", "path": "activeRoute" },
+        "order": "1",
+        "z": "guide-ui-menu",
+        "x": 360,
+        "y": 120,
+        "wires": [["gMenuDbg"]]
+    },
+    {
+        "id": "gMenuDbg",
+        "type": "debug",
+        "name": "navigate events",
+        "z": "guide-ui-menu",
+        "x": 600,
+        "y": 120,
+        "active": true,
+        "tosidebar": true,
+        "complete": "ui",
+        "targetType": "msg",
+        "wires": [[]]
+    }
+]

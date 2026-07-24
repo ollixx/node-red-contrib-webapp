@@ -14,6 +14,7 @@
             variant: false,
             advanced: ["size"],
             omit: [],
+            i18nNode: "ui-menu",
             hints: {
                 size: "Dieser Knoten hat keine Größen-Stufen."
             }
@@ -124,32 +125,21 @@
     })();
 </script>
 <script type="text/html" data-template-name="ui-menu">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
-    <div class="form-row"><label for="node-input-displayType">Display Type</label>
+    <div class="form-row"><label for="node-input-mount" data-i18n="ui-menu.label.mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-row"><label for="node-input-displayType" data-i18n="ui-menu.label.displayType">Display Type</label>
         <select id="node-input-displayType">
-            <option value="sidebar">Sidebar</option>
-            <option value="topbar">Topbar</option>
+            <option value="sidebar" data-i18n="ui-menu.option.displayType.sidebar">Sidebar</option>
+            <option value="topbar" data-i18n="ui-menu.option.displayType.topbar">Topbar</option>
         </select>
     </div>
     <!-- P157 (ADR 0012 / value category): Items binding (structural array source) — typedInput managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-itemsBinding">Items</label><input type="text" id="node-input-itemsBinding"></div>
+    <div class="form-row"><label for="node-input-itemsBinding" data-i18n="ui-menu.label.items">Items</label><input type="text" id="node-input-itemsBinding"></div>
     <!-- P157 (ADR 0012 / value category): Active Route binding (read-only) — typedInput managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-activeRouteBinding">Active Route</label><input type="text" id="node-input-activeRouteBinding"></div>
+    <div class="form-row"><label for="node-input-activeRouteBinding" data-i18n="ui-menu.label.activeRoute">Active Route</label><input type="text" id="node-input-activeRouteBinding"></div>
 </script>
-<script type="text/html" data-help-name="ui-menu">
-<p>Navigationsmenü (Sidebar oder Topbar). Klicks auf navigierbare Items (mit <code>route</code>/<code>path</code>) emittieren ein <code>navigate</code>-Event auf dem Output-Port.</p>
-<h4>Items (P157)</h4>
-<p>Bindbare, <strong>strukturelle</strong> Quelle der Menü-Einträge (ein Array) — voller
-kanonischer Satz (ADR 0012): Store, Query, Route-Param, Reactive, msg, JSONata, json (statisches
-Array-Literal), Flow, Global, Env. Das Menü rendert seine Einträge selbst (kein Slot-pro-Item).
-Jedes Item: <code>{ "label": …, "route"?: …, "href"?: …, "path"?: …, "icon"?: … }</code>.
-Default-Typ: <code>json</code>. Ein bestehender <code>itemsPath</code> wird automatisch als
-<code>state</code>-Binding übernommen.</p>
-<h4>Active Route (P157)</h4>
-<p>Bindbare, <strong>lesende</strong> Quelle der aktiven Route — gleicher kanonischer Satz;
-das passende Item wird hervorgehoben. Ein bestehender <code>activeRoutePath</code> wird
-automatisch als <code>state</code>-Binding übernommen.</p>
-<p>Doku: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/navigation/ui-menu.md" target="_blank">ui-menu</a>.</p>
-</script>
+<!-- P271 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/view/locales/{en-US,de}/ui-menu.html; form-row labels carry data-i18n
+     keys resolved from nodes/view/locales/{en-US,de}/ui-menu.json. No inline
+     data-help-name block here. -->

@@ -1,0 +1,25 @@
+<script type="text/html" data-help-name="ui-menu">
+<p>Ein Navigationsmenü, das die App-Routen zugänglich macht. Ein Klick auf ein
+navigierbares Item emittiert ein <code>navigate</code>-Event, das an eine
+<code>ui-action</code> verdrahtet wird.</p>
+<h3>Wichtige Felder</h3>
+<ul>
+    <li><b>Items</b> — die Einträge, ein statisches Array oder ein Binding; jedes
+        Item hat ein <code>label</code> und eines von <code>route</code>/<code>href</code>/<code>path</code>
+        (plus optional <code>icon</code>/<code>children</code>).</li>
+    <li><b>Active Route</b> — lesendes Binding auf den Pfad des aktiven Items; dieser
+        Eintrag wird hervorgehoben.</li>
+    <li><b>Display Type</b> — <code>sidebar</code>/<code>topbar</code>; heute rendern
+        beide identisch (räumliche Modi sind geplant).</li>
+</ul>
+<h3>Eingang</h3>
+<p>Hat einen Eingangs-Port, konsumiert aber <b>weder</b> <code>msg.payload</code>
+<b>noch</b> <code>msg.ui.patch</code> — beide werden unverändert durchgereicht.
+<code>msg.ui.component.op</code> <code>show</code>/<code>hide</code> steuern die
+Sichtbarkeit; fachfremde Messages werden durchgereicht.</p>
+<h3>Ausgänge / Events</h3>
+<p><code>navigate</code> beim Klick auf ein Route-/Pfad-Item (<code>msg.ui.params.path</code>);
+<code>href</code>-Items öffnen direkt ohne Event.</p>
+<h3>Vollständige Doku</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/de/nodes/ui-menu.md" target="_blank">docs/guide/de/nodes/ui-menu.md</a></p>
+</script>

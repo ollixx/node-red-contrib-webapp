@@ -1,0 +1,19 @@
+{
+    "ui-menu": {
+        "label": {
+            "mount": "Parent Slot",
+            "displayType": "Display Type",
+            "items": "Items",
+            "activeRoute": "Active Route"
+        },
+        "option": {
+            "displayType": {
+                "sidebar": "Sidebar",
+                "topbar": "Topbar"
+            }
+        },
+        "hints": {
+            "size": "This node has no size steps."
+        }
+    }
+}
