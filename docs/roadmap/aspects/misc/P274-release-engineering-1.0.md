@@ -1,5 +1,5 @@
 ---
-id: P273
+id: P274
 title: "Release-Engineering 1.0: self-contained Publish-Artefakt (Packaging-Blocker!) + Install-Smoke-Test + CHANGELOG/Migrations-Notiz + README + repository/engines + CI (validate+E2E) + Version-Bump"
 epic: aspects/misc
 status: pending
@@ -8,7 +8,7 @@ verify: browser
 spec: README.md
 tests: tests/e2e/nodes/structure/ui-app.tests.md
 ---
-# P273 — Release-Engineering 1.0
+# P274 — Release-Engineering 1.0
 
 > Der letzte 1.0-Zug: das Paket **publizierbar und vertrauenswürdig** machen.
 > Kern ist ein **belegter Packaging-Blocker** — das Paket wäre heute beim
