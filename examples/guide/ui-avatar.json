@@ -19,6 +19,22 @@
         "wires": [[]]
     },
     {
+        "id": "gAvHeading",
+        "type": "ui-text",
+        "name": "Heading",
+        "uiId": "gAvHeading",
+        "app": "guideAvatar",
+        "mount": "guideAvatar.content",
+        "text": "User",
+        "value": { "kind": "literal", "value": "User" },
+        "style": "heading-2",
+        "order": "0",
+        "z": "guide-ui-avatar",
+        "x": 340,
+        "y": 60,
+        "wires": [[]]
+    },
+    {
         "id": "gAvAvatar",
         "type": "ui-avatar",
         "name": "User avatar",

@@ -19,6 +19,22 @@
         "wires": [[]]
     },
     {
+        "id": "gCoHeading",
+        "type": "ui-text",
+        "name": "Heading",
+        "uiId": "gCoHeading",
+        "app": "guideContainer",
+        "mount": "guideContainer.content",
+        "text": "Cards",
+        "value": { "kind": "literal", "value": "Cards" },
+        "style": "heading-2",
+        "order": "0",
+        "z": "guide-ui-container",
+        "x": 340,
+        "y": 60,
+        "wires": [[]]
+    },
+    {
         "id": "gCoCard",
         "type": "ui-container",
         "name": "Card",

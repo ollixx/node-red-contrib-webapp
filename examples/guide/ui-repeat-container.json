@@ -19,6 +19,22 @@
         "wires": [[]]
     },
     {
+        "id": "gRcHeading",
+        "type": "ui-text",
+        "name": "Heading",
+        "uiId": "gRcHeading",
+        "app": "guideRepeatCard",
+        "mount": "guideRepeatCard.content",
+        "text": "Cards",
+        "value": { "kind": "literal", "value": "Cards" },
+        "style": "heading-2",
+        "order": "0",
+        "z": "guide-ui-repeat-container",
+        "x": 340,
+        "y": 60,
+        "wires": [[]]
+    },
+    {
         "id": "gRcRepeat",
         "type": "ui-repeat",
         "name": "Cards repeat",

@@ -19,6 +19,22 @@
         "wires": [[]]
     },
     {
+        "id": "gImgHeading",
+        "type": "ui-text",
+        "name": "Heading",
+        "uiId": "gImgHeading",
+        "app": "guideImage",
+        "mount": "guideImage.content",
+        "text": "Logo",
+        "value": { "kind": "literal", "value": "Logo" },
+        "style": "heading-2",
+        "order": "0",
+        "z": "guide-ui-image",
+        "x": 340,
+        "y": 60,
+        "wires": [[]]
+    },
+    {
         "id": "gImgImage",
         "type": "ui-image",
         "name": "Logo",
