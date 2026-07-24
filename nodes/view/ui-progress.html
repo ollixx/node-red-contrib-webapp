@@ -14,6 +14,7 @@
             variant: false,
             advanced: ["size"],
             omit: [],
+            i18nNode: "ui-progress",
             hints: {
                 disabled: "Ein Fortschrittsbalken hat keinen interaktiven Zustand.",
                 size: "Dieser Knoten hat keine Größen-Stufen."
@@ -126,30 +127,24 @@
     })();
 </script>
 <script type="text/html" data-template-name="ui-progress">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
-    <div class="form-row"><label for="node-input-displayType">Display Type</label>
+    <div class="form-row"><label for="node-input-mount" data-i18n="ui-progress.label.mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-row"><label for="node-input-displayType" data-i18n="ui-progress.label.displayType">Display Type</label>
         <select id="node-input-displayType">
-            <option value="bar">Bar</option>
-            <option value="spinner">Spinner</option>
-            <option value="circular">Circular</option>
+            <option value="bar" data-i18n="ui-progress.option.displayType.bar">Bar</option>
+            <option value="spinner" data-i18n="ui-progress.option.displayType.spinner">Spinner</option>
+            <option value="circular" data-i18n="ui-progress.option.displayType.circular">Circular</option>
         </select>
     </div>
     <!-- P137 (ADR 0012 / value/display category): Value binding — typedInput managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-valueBinding">Value</label><input type="text" id="node-input-valueBinding"></div>
+    <div class="form-row"><label for="node-input-valueBinding" data-i18n="ui-progress.label.value">Value</label><input type="text" id="node-input-valueBinding"></div>
     <!-- P137 (ADR 0012 / value category): Label binding — typedInput managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-labelBinding">Label</label><input type="text" id="node-input-labelBinding"></div>
-    <div class="form-row"><label for="node-input-max">Max</label><input type="number" id="node-input-max" style="width:120px"></div>
-    <div class="form-row"><label for="node-input-showValue">Show Value</label><input type="checkbox" id="node-input-showValue" style="width:auto"></div>
+    <div class="form-row"><label for="node-input-labelBinding" data-i18n="ui-progress.label.label">Label</label><input type="text" id="node-input-labelBinding"></div>
+    <div class="form-row"><label for="node-input-max" data-i18n="ui-progress.label.max">Max</label><input type="number" id="node-input-max" style="width:120px"></div>
+    <div class="form-row"><label for="node-input-showValue" data-i18n="ui-progress.label.showValue">Show Value</label><input type="checkbox" id="node-input-showValue" style="width:auto"></div>
 </script>
-<script type="text/html" data-help-name="ui-progress"><p>Fortschrittsbalken oder Spinner für Ladezustände.</p>
-<h4>Value (P137)</h4>
-<p>Bindbare numerische Quelle des Fortschrittswerts (0…max) — voller kanonischer Satz (ADR 0012):
-Store, Query, Route-Param, Reactive, msg, JSONata, string, number, boolean, json, timestamp,
-Flow, Global, Env. Ein bestehender <code>valuePath</code> wird automatisch als
-<code>state</code>-Binding übernommen. Literaler Default-Typ: <code>number</code>.</p>
-<h4>Label (P137)</h4>
-<p>Bindbare Beschriftung des Fortschrittsbalkens — voller kanonischer Satz (ADR 0012).</p>
-<p>Vollständige Doku: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/feedback/ui-progress.md" target="_blank">docs/nodes/feedback/ui-progress.md</a></p>
-</script>
+<!-- P270 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/view/locales/{en-US,de}/ui-progress.html; form-row labels carry data-i18n
+     keys resolved from nodes/view/locales/{en-US,de}/ui-progress.json. No inline
+     data-help-name block here. -->

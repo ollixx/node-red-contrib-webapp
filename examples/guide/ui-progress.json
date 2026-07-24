@@ -1,0 +1,55 @@
+[
+    {
+        "id": "guide-ui-progress",
+        "type": "tab",
+        "label": "Guide: ui-progress",
+        "disabled": false,
+        "info": "User-guide example for ui-progress (docs/guide/nodes/ui-progress.md). Import, deploy, open /webapp/guideProgress/. A determinate bar at 65% with a label and the percentage shown."
+    },
+    {
+        "id": "guideProgress",
+        "type": "ui-app",
+        "name": "Progress demo",
+        "uiId": "guideProgress",
+        "root": "guideProgress",
+        "layout": "app",
+        "z": "guide-ui-progress",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gPrHeading",
+        "type": "ui-text",
+        "name": "Heading",
+        "uiId": "gPrHeading",
+        "app": "guideProgress",
+        "mount": "guideProgress.content",
+        "text": "Upload",
+        "value": { "kind": "literal", "value": "Upload" },
+        "style": "heading-2",
+        "order": "0",
+        "z": "guide-ui-progress",
+        "x": 340,
+        "y": 60,
+        "wires": [[]]
+    },
+    {
+        "id": "gPrProgress",
+        "type": "ui-progress",
+        "name": "Upload progress",
+        "uiId": "gPrProgress",
+        "app": "guideProgress",
+        "mount": "guideProgress.content",
+        "displayType": "bar",
+        "value": { "kind": "literal", "value": 65 },
+        "label": { "kind": "literal", "value": "Uploading files" },
+        "max": 100,
+        "showValue": true,
+        "order": "1",
+        "z": "guide-ui-progress",
+        "x": 340,
+        "y": 120,
+        "wires": [[]]
+    }
+]

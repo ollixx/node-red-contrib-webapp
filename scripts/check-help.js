@@ -75,7 +75,7 @@ const TRANSITION_INLINE = {};
 for (const t of [
 
     
-    "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state",
+    "ui-skeleton", "ui-badge", "ui-empty-state",
     "ui-tabs", "ui-tab", "ui-accordion", "ui-accordion-section", "ui-breadcrumb", "ui-menu",
     "ui-pagination", "ui-stepper",
     "ui-log",
@@ -100,7 +100,7 @@ const LABEL_TRANSITION = {};
 for (const t of [
 
     
-    "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state",
+    "ui-skeleton", "ui-badge", "ui-empty-state",
     "ui-tabs", "ui-tab", "ui-accordion", "ui-accordion-section", "ui-breadcrumb", "ui-menu",
     "ui-pagination", "ui-stepper",
     "ui-log",

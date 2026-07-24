@@ -1,0 +1,22 @@
+<script type="text/html" data-help-name="ui-progress">
+<p>A progress bar, spinner or ring for loading and progress states. A missing
+value shows an indeterminate (animated) state, not zero.</p>
+<h3>Key fields</h3>
+<ul>
+    <li><b>Display Type</b> — bar, spinner or circular (a rendering form, not a
+        semantic variant).</li>
+    <li><b>Value</b> — the progress value 0…max, fully bindable; missing → indeterminate.</li>
+    <li><b>Label</b> — bindable caption / a11y label; <b>Max</b> sets the range;
+        <b>Show Value</b> overlays the percentage.</li>
+    <li><b>Color</b> (base field) overrides the indicator fill colour.</li>
+</ul>
+<h3>Inputs</h3>
+<p>Has an input port. <code>msg.payload</code> updates <code>value</code> and
+pushes a snapshot; <code>msg.ui.patch</code> overrides fields;
+<code>msg.ui.component.op</code> <code>show</code>/<code>hide</code> toggle
+visibility. Foreign messages pass through unchanged.</p>
+<h3>Outputs / Events</h3>
+<p>None — no output port; purely presentational.</p>
+<h3>Full docs</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/nodes/ui-progress.md" target="_blank">docs/guide/nodes/ui-progress.md</a></p>
+</script>
