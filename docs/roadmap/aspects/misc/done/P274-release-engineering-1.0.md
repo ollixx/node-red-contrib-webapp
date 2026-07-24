@@ -2,7 +2,7 @@
 id: P274
 title: "Release-Engineering 1.0: self-contained Publish-Artefakt (Packaging-Blocker!) + Install-Smoke-Test + CHANGELOG/Migrations-Notiz + README + repository/engines + CI (validate+E2E) + Version-Bump"
 epic: aspects/misc
-status: in_progress
+status: done
 dependencies: []
 verify: browser
 spec: README.md
@@ -126,3 +126,54 @@ Install-Smoke-Test (`scripts/smoke-pack.*` + CI-Schritt); bestehende Suite unver
 1. **Shoelace-Shipping:** 14 MB im Tarball (Empfehlung) oder install-time vendoren?
 2. **Bundle-Werkzeug:** esbuild (Empfehlung, schnell, im Node-RED-Ökosystem üblich)
    oder tsup — freie Implementer-Wahl, solange der Install-Smoke-Test grün ist.
+
+## Result
+
+**Done 2026-07-24.** Das Paket ist **publizierbar und bewiesen tragfähig** — der
+Packaging-Blocker ist behoben, mit einem Install-Smoke-Test als hartem Beweis.
+Version **1.0.0**. **Nichts publiziert** (der `npm publish`-Knopf bleibt beim Owner).
+
+### Der Blocker: bewiesen rot → grün
+
+`nodes/webapp.js` lud `packages/*/dist` per relativem Pfad, `renderer/dist`
+require'te intern `@node-red-contrib-webapp/schema` per Paket-NAME → im publizierten
+Einzelpaket `Cannot find module`. **Fix (`7c6f0a6`):** esbuild-Publish-Bundle
+(`scripts/build-publish.mjs`) inlined die internen Pakete zu je einem
+self-contained CJS-Modul (schema 182 KB, renderer 261 KB), `zod` als **einzige**
+externe Runtime-Dependency (in `dependencies`); Node-RED nie gebündelt.
+Via `prepack`-Hook (`build:publish >&2`, damit `npm pack --json` sauber bleibt).
+
+### Install-Smoke-Test (der harte Beweis — `ac76286` + Härtung `2495f85`)
+
+`scripts/smoke-pack.mjs` (`pnpm smoke:pack`): `npm pack` → Tarball in ein frisches,
+**workspace-fremdes** temp-Verzeichnis mit echtem `npm install` → Node-RED auf
+freiem Zufallsport → ui-app + ui-text **+ ui-button** deployen → gerendertes HTML
+messen. **Rot vorher** (`Cannot find module renderer/dist`, captured). **Grün
+nachher aus dem gepackten 1.0.0-Tarball, im Haupt-Checkout verifiziert:** Text-Marker
+(16 602 B) + `sl-button` gerendert + Shoelace-Asset `shoelace-autoloader.js` HTTP 200.
+Die Härtung (Orchestrator-Fund) schließt die Lücke „Beweis berührte Shoelace nicht":
+der Test würde jetzt einen künftigen Shoelace-Ausschluss fangen.
+
+### Shoelace shippt (Owner-Entscheid umgesetzt)
+
+`resources/shoelace` (2938 Dateien) ist im Tarball (`files: ["resources", …]`;
+gitignored, aber via `prepare`→vendor auf der Platte zur Pack-Zeit). Tarball:
+**1,4 MB gepackt / ~8 MB entpackt / 3342 Dateien**. Offline-fest, ADR-0008-Geist.
+
+### Metadaten + Doku + CI
+
+`8b43744` repository/bugs/homepage/engines.node · `7f14b24` README (npm-tauglich,
+Guide-Verweise) · `cc5b527` CHANGELOG (Keep-a-Changelog) + `docs/guide/migration-1.0.md`
+EN+DE (ui-navigation→ui-action, parent→app + Id-Renames + rows→lines, alle
+auto-migriert — nur erklärt) · `85f9717` `.github/workflows/ci.yml` (pnpm install →
+validate → E2E → smoke:pack, auf PR + main) · `899196d` Version → 1.0.0.
+
+### Verifikation
+
+Install-Smoke-Test grün aus dem Haupt-Checkout; `npm pack --json` sauber;
+**Voll-Suite 959 passed, 0 failed, `--retries=0`, 17,1 min**; `pnpm validate` + alle
+Tripwires grün. **Owner-Hinweise für den Publish:** (1) `npm publish` ist dein
+Knopfdruck — dieses Paket macht nur release-fertig. (2) Nach frischem Checkout vor
+Publish `pnpm install` (esbuild ist Build-Abhängigkeit; die CI macht das mit
+`--frozen-lockfile`). (3) Die E2E brauchen die `node-red`-CLI auf dem PATH (kein
+Paket-Dependency; CI installiert sie global).
