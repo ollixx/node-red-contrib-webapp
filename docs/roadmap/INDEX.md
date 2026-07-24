@@ -102,4 +102,4 @@ open the folder for the full history.
 | aspects/layout | 4 |
 | aspects/app-model | 1 |
 
-**Total: 270 done, 0 open, 10 deferred.**
+**Total: 270 done, 1 open, 10 deferred.**
