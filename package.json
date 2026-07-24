@@ -3,6 +3,18 @@
     "version": "0.0.0",
     "description": "Declarative web-app nodes for Node-RED.",
     "license": "MIT",
+    "author": "Oliver Charlet",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/ollixx/node-red-contrib-webapp.git"
+    },
+    "bugs": {
+        "url": "https://github.com/ollixx/node-red-contrib-webapp/issues"
+    },
+    "homepage": "https://github.com/ollixx/node-red-contrib-webapp#readme",
+    "engines": {
+        "node": ">=18.5.0"
+    },
     "packageManager": "pnpm@10.17.1",
     "main": "nodes/webapp.js",
     "files": [
