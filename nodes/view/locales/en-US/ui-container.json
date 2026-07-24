@@ -1,0 +1,13 @@
+{
+    "ui-container": {
+        "label": {
+            "mount": "Parent Slot",
+            "layout": "Child Layout",
+            "events": "Events"
+        },
+        "hints": {
+            "disabled": "A container is not a control.",
+            "size": "This node has no size steps."
+        }
+    }
+}
