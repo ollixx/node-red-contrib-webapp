@@ -2,7 +2,7 @@
 id: P269
 title: "Node-Referenz-Batch display: Display-Knoten (8): text, table, list, repeat, container, image, icon, avatar — (divider ist der P265-Pilot) — Guide-Doc (EN+DE) + 1–3 Import-Beispiele + locales-Hilfe (en-US+de) + Editor-Label-i18n (data-i18n + Kataloge) je Knoten"
 epic: aspects/docs
-status: pending
+status: in_progress
 dependencies: [P265, P272]
 verify: browser
 spec: docs/guide/README.md
