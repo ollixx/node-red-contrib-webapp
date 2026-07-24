@@ -1,0 +1,24 @@
+<script type="text/html" data-help-name="ui-accordion-section">
+<p>A single section inside a <code>ui-accordion</code> (ADR 0018). The sections of
+a <code>ui-accordion</code> are derived from its
+<code>ui-accordion-section</code> children — there is no sections-JSON field.</p>
+<h3>Key fields</h3>
+<ul>
+    <li><b>Parent Slot</b> — mount into a <code>ui-accordion</code> to become a
+        section. The node id is the section key (the <code>openSection</code>
+        value) and must be unique within one ui-accordion.</li>
+    <li><b>Label</b> — the section title/summary, fully bindable (default type
+        string).</li>
+    <li><b>Icon</b> — optional icon name shown beside the label.</li>
+    <li><b>Content</b> — mount children into this node's <code>content</code> slot;
+        they form the collapsible panel.</li>
+</ul>
+<h3>Inputs</h3>
+<p>None — <code>ui-accordion-section</code> has no input port. The section change
+and <code>sectionOpen</code>/<code>sectionClose</code> events live on the parent
+<code>ui-accordion</code>.</p>
+<h3>Outputs / Events</h3>
+<p>None — no output port; a pure structural/container node.</p>
+<h3>Full docs</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/nodes/ui-accordion-section.md" target="_blank">docs/guide/nodes/ui-accordion-section.md</a></p>
+</script>

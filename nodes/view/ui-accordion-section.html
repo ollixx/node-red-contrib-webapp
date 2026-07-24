@@ -13,6 +13,7 @@
             size: false,
             variant: false,
             advanced: [],
+            i18nNode: "ui-accordion-section",
             hints: {
                 visible: "Die Sichtbarkeit einer Sektion steuert die Open-Section-Auswahl (openSection), nicht ein visible-Binding.",
                 disabled: "Eine Sektion hat keinen interaktiven Zustand.",
@@ -92,11 +93,11 @@
     })();
 </script>
 <script type="text/html" data-template-name="ui-accordion-section">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
-    <div class="form-row"><label for="node-input-labelBinding">Label</label><input type="text" id="node-input-labelBinding"></div>
-    <div class="form-row"><label for="node-input-icon">Icon</label><input type="text" id="node-input-icon" placeholder="optional, e.g. house"></div>
+    <div class="form-row"><label for="node-input-mount" data-i18n="ui-accordion-section.label.mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-row"><label for="node-input-labelBinding" data-i18n="ui-accordion-section.label.label">Label</label><input type="text" id="node-input-labelBinding"></div>
+    <div class="form-row"><label for="node-input-icon" data-i18n="ui-accordion-section.label.icon">Icon</label><input type="text" id="node-input-icon" placeholder="optional, e.g. house" data-i18n="[placeholder]ui-accordion-section.placeholder.icon"></div>
     <div class="form-tips" style="margin-top: 4px;">
         Mount this node into a <code>ui-accordion</code> to make it a section. Its
         own id is the section key (the <code>openSection</code> value); the ids of
@@ -104,14 +105,8 @@
         this node's <code>content</code> slot — that becomes the section's panel.
     </div>
 </script>
-<script type="text/html" data-help-name="ui-accordion-section">
-<p>Eine einzelne Sektion innerhalb eines <code>ui-accordion</code> (ADR 0018, Modell 1a). Die Sektionen eines <code>ui-accordion</code> werden aus seinen <code>ui-accordion-section</code>-Kindern abgeleitet — es gibt kein Sections-JSON-Feld mehr.</p>
-<h3>Felder</h3>
-<ul>
-  <li><b>Parent Slot</b> — in ein <code>ui-accordion</code> mounten heißt „werde eine Sektion". Die Knoten-ID ist der Sektions-Schlüssel (der <code>openSection</code>-Wert) und muss innerhalb eines ui-accordion eindeutig sein.</li>
-  <li><b>Label</b> — der Sektions-Titel (Summary). Voller kanonischer Bindungssatz (Store, Query, State, literal, …); Default-Typ <code>string</code>.</li>
-  <li><b>Icon</b> — optionaler Icon-Name (<code>sl-icon</code>) neben dem Label.</li>
-  <li><b>Inhalt</b> — mounte beliebige Kinder in den <code>content</code>-Slot dieser Sektion; sie bilden das Panel.</li>
-</ul>
-<p>Doku: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/navigation/ui-accordion-section.md" target="_blank">ui-accordion-section</a>.</p>
-</script>
+<!-- P271 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/view/locales/{en-US,de}/ui-accordion-section.html; form-row labels
+     carry data-i18n keys resolved from
+     nodes/view/locales/{en-US,de}/ui-accordion-section.json. No inline
+     data-help-name block here. -->

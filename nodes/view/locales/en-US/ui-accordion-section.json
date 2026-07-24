@@ -1,0 +1,18 @@
+{
+    "ui-accordion-section": {
+        "label": {
+            "mount": "Parent Slot",
+            "label": "Label",
+            "icon": "Icon"
+        },
+        "placeholder": {
+            "icon": "optional, e.g. house"
+        },
+        "hints": {
+            "visible": "A section's visibility is governed by the open-section selection (openSection), not a visible binding.",
+            "disabled": "A section has no interactive state.",
+            "color": "A section renders no chrome of its own.",
+            "size": "A section has no adjustable size."
+        }
+    }
+}
