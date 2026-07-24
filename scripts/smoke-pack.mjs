@@ -75,8 +75,11 @@ async function waitFor(fn, { timeoutMs = 60000, intervalMs = 500 } = {}) {
     }
 }
 
-// Minimal, self-contained flow: an app + a root route + one static ui-text whose
-// content is the marker. Mirrors examples/guide/ui-text.json shape.
+// Minimal, self-contained flow: an app + a static ui-text carrying the marker
+// AND a ui-button. The button renders a Shoelace `<sl-button>` element, so the
+// assertion below exercises the vendored-Shoelace path (shipping the 14 MB
+// vendored tree is the owner's explicit decision, ADR 0008) — a Shoelace
+// exclusion regression must fail this release gate. Mirrors the guide examples.
 function flowFixture() {
     return [
         { id: "smokeTab", type: "tab", label: "Smoke", disabled: false, info: "" },
@@ -90,9 +93,22 @@ function flowFixture() {
             value: { kind: "literal", value: MARKER },
             style: "heading-1", variant: "primary", display: "text", order: "1",
             z: "smokeTab", x: 360, y: 80, wires: [[]]
+        },
+        {
+            id: "smokeButton", type: "ui-button", name: "Smoke button", uiId: "smokeButton",
+            app: APP_ID, mount: `${APP_ID}.content`,
+            label: { kind: "literal", value: "Smoke button" },
+            variant: "primary", size: "md", outline: false, linkMode: "button",
+            order: "2", z: "smokeTab", x: 360, y: 140, wires: [[]]
         }
     ];
 }
+
+// A vendored-Shoelace asset served statically by Node-RED from the installed
+// package's resources/shoelace/ tree (SHOELACE_LOCAL_BASE in nodes/webapp.js).
+// A 200 here proves the ~14 MB vendored tree actually shipped in the tarball.
+const SHOELACE_ASSET_PATH =
+    "/resources/node-red-contrib-webapp/shoelace/shoelace-autoloader.js";
 
 const SETTINGS_JS = `module.exports = {
     flowFile: "flows.json",
@@ -175,7 +191,8 @@ async function main() {
         nodeRed.stderr.on("data", (d) => { redLog += d; });
 
         // 4. Poll the app URL for the rendered marker.
-        const url = `http://127.0.0.1:${port}/webapp/${APP_ID}`;
+        const base = `http://127.0.0.1:${port}`;
+        const url = `${base}/webapp/${APP_ID}`;
         log(`polling ${url} …`);
         const html = await waitFor(async () => {
             if (nodeRed.exitCode !== null) {
@@ -191,7 +208,27 @@ async function main() {
             console.error("\n----- Node-RED output -----\n" + redLog + "\n---------------------------\n");
             throw new Error(`marker "${MARKER}" not found in rendered app at ${url}`);
         }
-        log(`PASS: marker rendered by the installed package (${html.length} bytes of HTML).`);
+        log(`text marker rendered by the installed package (${html.length} bytes of HTML).`);
+
+        // 4a. The ui-button must render a Shoelace `<sl-button>` element. This
+        //     guards against a future regression that drops the vendored Shoelace
+        //     or stops mapping components to it.
+        if (!html.includes("sl-button")) {
+            console.error("\n----- Node-RED output -----\n" + redLog + "\n---------------------------\n");
+            throw new Error(`Shoelace <sl-button> not found in rendered app — vendored Shoelace not rendering`);
+        }
+        log(`Shoelace <sl-button> rendered by the installed package.`);
+
+        // 4b. A vendored-Shoelace static asset must be served (HTTP 200) — proves
+        //     the ~14 MB resources/shoelace/ tree actually shipped in the tarball.
+        const assetResp = await fetch(base + SHOELACE_ASSET_PATH);
+        if (!assetResp.ok) {
+            throw new Error(`Shoelace asset ${SHOELACE_ASSET_PATH} not served (HTTP ${assetResp.status}) — vendored tree missing from tarball`);
+        }
+        const assetBytes = (await assetResp.arrayBuffer()).byteLength;
+        log(`Shoelace asset served: ${SHOELACE_ASSET_PATH} (HTTP 200, ${assetBytes} bytes).`);
+
+        log(`PASS: installed package renders text + Shoelace <sl-button> and serves vendored Shoelace assets.`);
     } finally {
         cleanup();
     }
