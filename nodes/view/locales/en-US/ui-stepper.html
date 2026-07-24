@@ -1,0 +1,25 @@
+<script type="text/html" data-help-name="ui-stepper">
+<p>A multi-step process indicator (wizard bar). Only the active step's slot is
+shown; children mount into <code>step:&lt;id&gt;</code> slots.</p>
+<h3>Key fields</h3>
+<ul>
+    <li><b>Steps (JSON array)</b> — ordered <code>{ "id", "label" }</code> entries
+        (≥ 2, unique ids); each id yields a <code>step:&lt;id&gt;</code> slot.</li>
+    <li><b>Active Step</b> — <b>two-way</b> binding on the active step id; the step
+        click writes back. Invalid → first step.</li>
+    <li><b>Orientation</b> — <code>horizontal</code>/<code>vertical</code> (real).</li>
+    <li><b>Events</b> — enables the <code>stepChange</code> output port.</li>
+</ul>
+<h3>Inputs</h3>
+<p>Has an input port. <code>msg.payload</code> sets the active step (a step id);
+<code>msg.ui.patch</code> overrides fields; <code>msg.ui.component.op</code>
+<code>show</code>/<code>hide</code> toggle visibility. Foreign messages pass
+through unchanged.</p>
+<h3>Outputs / Events</h3>
+<p><code>stepChange</code> (when enabled) with <code>params.value</code> = the step
+<b>index</b>. No <code>complete</code> event — wire completion from a button in the
+last step's slot. Wire <code>stepChange</code> to a <code>ui-store-action</code>
+set for the round-trip.</p>
+<h3>Full docs</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/nodes/ui-stepper.md" target="_blank">docs/guide/nodes/ui-stepper.md</a></p>
+</script>

@@ -1,0 +1,18 @@
+{
+    "ui-tab": {
+        "label": {
+            "mount": "Parent Slot",
+            "label": "Label",
+            "icon": "Icon"
+        },
+        "placeholder": {
+            "icon": "optional, z. B. house"
+        },
+        "hints": {
+            "visible": "Die Sichtbarkeit eines Tabs steuert die aktive-Tab-Auswahl (activeTab), nicht ein visible-Binding.",
+            "disabled": "Ein Tab hat keinen interaktiven Zustand.",
+            "color": "Ein Tab rendert keine eigene Chrome.",
+            "size": "Ein Tab hat keine einstellbare Größe."
+        }
+    }
+}

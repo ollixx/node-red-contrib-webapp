@@ -1,0 +1,24 @@
+<script type="text/html" data-help-name="ui-tabs">
+<p>A tab bar with one content slot per tab. Each tab is a <code>ui-tab</code>
+child mounted into this node — mounting into a ui-tabs declares a tab.</p>
+<h3>Key fields</h3>
+<ul>
+    <li><b>Active Tab</b> — <b>two-way</b> binding on the active tab id; the tab
+        switch emits <code>tabChange</code> for the write-back loop. Invalid →
+        first child.</li>
+    <li><b>Variant</b> — <code>line</code>/<code>contained</code>/<code>pills</code>,
+        a non-colour appearance emitted as <code>data-variant</code>.</li>
+    <li><b>Events</b> — enables the <code>tabChange</code> output port.</li>
+    <li>Tab ids (the <code>ui-tab</code> child ids) must be unique.</li>
+</ul>
+<h3>Inputs</h3>
+<p>Has an input port. <code>msg.payload</code> sets the active tab (a child id);
+<code>msg.ui.patch</code> overrides fields; <code>msg.ui.component.op</code>
+<code>show</code>/<code>hide</code> toggle visibility. Foreign messages pass
+through unchanged.</p>
+<h3>Outputs / Events</h3>
+<p><code>tabChange</code> (when enabled) with <code>params.tabId</code>. Wire it
+to a <code>ui-store-action</code> set to complete the two-way round-trip.</p>
+<h3>Full docs</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/nodes/ui-tabs.md" target="_blank">docs/guide/nodes/ui-tabs.md</a></p>
+</script>

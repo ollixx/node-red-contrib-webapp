@@ -1,0 +1,17 @@
+{
+    "ui-pagination": {
+        "label": {
+            "mount": "Parent Slot",
+            "currentPage": "Current Page",
+            "total": "Total",
+            "pageSize": "Page Size",
+            "showInfo": "Info-Zeile"
+        },
+        "placeholder": {
+            "pageSize": "10"
+        },
+        "hints": {
+            "size": "Dieser Knoten hat keine Größen-Stufen."
+        }
+    }
+}

@@ -1,0 +1,23 @@
+<script type="text/html" data-help-name="ui-menu">
+<p>A navigation menu that exposes the app's routes. Clicking a navigable item
+emits a <code>navigate</code> event you wire to a <code>ui-action</code>.</p>
+<h3>Key fields</h3>
+<ul>
+    <li><b>Items</b> — the entries, a static array or a binding; each item has a
+        <code>label</code> and one of <code>route</code>/<code>href</code>/<code>path</code>
+        (plus optional <code>icon</code>/<code>children</code>).</li>
+    <li><b>Active Route</b> — read-only binding on the active item's path; that
+        entry is highlighted.</li>
+    <li><b>Display Type</b> — <code>sidebar</code>/<code>topbar</code>; today both
+        render identically (spatial modes are planned).</li>
+</ul>
+<h3>Inputs</h3>
+<p>Has an input port but does <b>not</b> consume <code>msg.payload</code> or
+<code>msg.ui.patch</code> — both pass through unchanged. <code>msg.ui.component.op</code>
+<code>show</code>/<code>hide</code> toggle visibility; foreign messages pass through.</p>
+<h3>Outputs / Events</h3>
+<p><code>navigate</code> on click of a route/path item (<code>msg.ui.params.path</code>);
+<code>href</code> items open directly with no event.</p>
+<h3>Full docs</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/nodes/ui-menu.md" target="_blank">docs/guide/nodes/ui-menu.md</a></p>
+</script>

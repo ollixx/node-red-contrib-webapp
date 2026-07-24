@@ -1,0 +1,24 @@
+<script type="text/html" data-help-name="ui-pagination">
+<p>Page navigation controls (prev/next, page label) for paginated data. Emits
+<code>pageChange</code> when the user navigates.</p>
+<h3>Key fields</h3>
+<ul>
+    <li><b>Current Page</b> — <b>two-way</b> binding on the 1-based page; the page
+        change writes back (round-trip). Required.</li>
+    <li><b>Total</b> — <b>read-only</b> binding on the total page count, typically
+        from a <code>ui-query</code> result. Required.</li>
+    <li><b>Page Size</b> — items per page (config number).</li>
+    <li><b>Info line</b> — shows a "Page X of Y" line below the controls.</li>
+</ul>
+<h3>Inputs</h3>
+<p>Has an input port. <code>msg.payload</code> sets the page (integer ≥ 1);
+<code>msg.ui.patch</code> overrides fields; <code>msg.ui.component.op</code>
+<code>show</code>/<code>hide</code> toggle visibility. Foreign messages pass
+through unchanged.</p>
+<h3>Outputs / Events</h3>
+<p><code>pageChange</code> (when enabled) with <code>params.page</code>. The runtime
+does not write the store itself — wire it to a <code>ui-store-action</code> set;
+<code>ui-query</code> reads the same store to load the page.</p>
+<h3>Full docs</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/nodes/ui-pagination.md" target="_blank">docs/guide/nodes/ui-pagination.md</a></p>
+</script>

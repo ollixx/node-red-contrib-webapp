@@ -1,0 +1,25 @@
+<script type="text/html" data-help-name="ui-stepper">
+<p>Ein mehrstufiger Prozessindikator (Wizard-Leiste). Nur der Slot des aktiven
+Schritts wird gezeigt; Kinder mounten in <code>step:&lt;id&gt;</code>-Slots.</p>
+<h3>Wichtige Felder</h3>
+<ul>
+    <li><b>Steps (JSON array)</b> — geordnete <code>{ "id", "label" }</code>-Einträge
+        (≥ 2, eindeutige IDs); jede ID erzeugt einen <code>step:&lt;id&gt;</code>-Slot.</li>
+    <li><b>Active Step</b> — <b>zweiseitiges</b> Binding auf die aktive Schritt-ID;
+        der Step-Klick schreibt zurück. Ungültig → erster Schritt.</li>
+    <li><b>Orientation</b> — <code>horizontal</code>/<code>vertical</code> (real).</li>
+    <li><b>Events</b> — aktiviert den <code>stepChange</code>-Output-Port.</li>
+</ul>
+<h3>Eingang</h3>
+<p>Hat einen Eingangs-Port. <code>msg.payload</code> setzt den aktiven Schritt
+(eine Schritt-ID); <code>msg.ui.patch</code> überschreibt Felder;
+<code>msg.ui.component.op</code> <code>show</code>/<code>hide</code> steuern die
+Sichtbarkeit. Fachfremde Messages werden unverändert durchgereicht.</p>
+<h3>Ausgänge / Events</h3>
+<p><code>stepChange</code> (wenn aktiviert) mit <code>params.value</code> = dem
+Schritt-<b>Index</b>. Kein <code>complete</code>-Event — verdrahte den Abschluss
+aus einem Button im letzten Schritt. Verdrahte <code>stepChange</code> an ein
+<code>ui-store-action</code>-Set für den Roundtrip.</p>
+<h3>Vollständige Doku</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/de/nodes/ui-stepper.md" target="_blank">docs/guide/de/nodes/ui-stepper.md</a></p>
+</script>

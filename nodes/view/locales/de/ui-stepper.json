@@ -1,0 +1,23 @@
+{
+    "ui-stepper": {
+        "label": {
+            "mount": "Parent Slot",
+            "steps": "Steps (JSON array)",
+            "activeStep": "Active Step",
+            "orientation": "Orientation"
+        },
+        "option": {
+            "orientation": {
+                "horizontal": "Horizontal",
+                "vertical": "Vertical"
+            }
+        },
+        "placeholder": {
+            "steps": "[{\"id\":\"s1\",\"label\":\"Step 1\"},{\"id\":\"s2\",\"label\":\"Step 2\"}]"
+        },
+        "hints": {
+            "disabled": "Ein Stepper zeigt den Fortschritt und hat keinen Deaktiviert-Zustand.",
+            "size": "Dieser Knoten hat keine Größen-Stufen."
+        }
+    }
+}

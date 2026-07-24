@@ -1,0 +1,26 @@
+<script type="text/html" data-help-name="ui-accordion">
+<p>A list of collapsible sections. Each section is a
+<code>ui-accordion-section</code> child mounted into this node — mounting into a
+ui-accordion declares a section.</p>
+<h3>Key fields</h3>
+<ul>
+    <li><b>Open Section</b> — <b>two-way</b> binding on the open section id; a
+        section change emits an event for the write-back loop. Invalid → first
+        section.</li>
+    <li><b>Allow Multiple Open</b> — off (default) = single-open: opening one
+        section closes the others; on = several open at once.</li>
+    <li><b>Events</b> — enables <code>sectionOpen</code>/<code>sectionClose</code>
+        output ports.</li>
+</ul>
+<h3>Inputs</h3>
+<p>Has an input port. <code>msg.payload</code> sets the open section (a child id);
+<code>msg.ui.patch</code> overrides fields; <code>msg.ui.component.op</code>
+<code>show</code>/<code>hide</code> toggle visibility and <code>open</code>/<code>close</code>
+act on a section. Foreign messages pass through unchanged.</p>
+<h3>Outputs / Events</h3>
+<p><code>sectionOpen</code>/<code>sectionClose</code> (when enabled) with
+<code>params.sectionId</code>. Wire <code>sectionOpen</code> to a
+<code>ui-store-action</code> set to complete the two-way round-trip.</p>
+<h3>Full docs</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/nodes/ui-accordion.md" target="_blank">docs/guide/nodes/ui-accordion.md</a></p>
+</script>

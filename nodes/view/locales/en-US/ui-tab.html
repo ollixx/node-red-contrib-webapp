@@ -1,0 +1,22 @@
+<script type="text/html" data-help-name="ui-tab">
+<p>A single tab inside a <code>ui-tabs</code> (ADR 0018). The tabs of a
+<code>ui-tabs</code> are derived from its <code>ui-tab</code> children — there is
+no tabs-JSON field.</p>
+<h3>Key fields</h3>
+<ul>
+    <li><b>Parent Slot</b> — mount into a <code>ui-tabs</code> to become a tab. The
+        node id is the tab key (the <code>activeTab</code> value) and must be
+        unique within one ui-tabs.</li>
+    <li><b>Label</b> — the tab title, fully bindable (default type string).</li>
+    <li><b>Icon</b> — optional icon name shown beside the label.</li>
+    <li><b>Content</b> — mount children into this node's <code>content</code> slot;
+        they form the tab panel.</li>
+</ul>
+<h3>Inputs</h3>
+<p>None — <code>ui-tab</code> has no input port. The tab switch and
+<code>tabChange</code> event live on the parent <code>ui-tabs</code>.</p>
+<h3>Outputs / Events</h3>
+<p>None — no output port; a pure structural/container node.</p>
+<h3>Full docs</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/nodes/ui-tab.md" target="_blank">docs/guide/nodes/ui-tab.md</a></p>
+</script>

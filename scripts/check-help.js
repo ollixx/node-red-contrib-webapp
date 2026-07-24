@@ -75,8 +75,8 @@ const TRANSITION_INLINE = {};
 for (const t of [
 
     
-    "ui-tabs", "ui-tab", "ui-accordion", "ui-accordion-section", "ui-breadcrumb", "ui-menu",
-    "ui-pagination", "ui-stepper",
+
+
     // ui-divider: MIGRATED (P265 pilot) — intentionally absent.
     // P267: backbone batch fully migrated — no entries remain here.
 ]) {
@@ -98,8 +98,8 @@ const LABEL_TRANSITION = {};
 for (const t of [
 
     
-    "ui-tabs", "ui-tab", "ui-accordion", "ui-accordion-section", "ui-breadcrumb", "ui-menu",
-    "ui-pagination", "ui-stepper",
+
+
     // ui-divider: MIGRATED (P272 pilot) — intentionally absent.
     // P267: backbone batch fully migrated — no entries remain here.
 ]) {

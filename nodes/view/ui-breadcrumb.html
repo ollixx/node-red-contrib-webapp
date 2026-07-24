@@ -14,6 +14,7 @@
             variant: false,
             advanced: ["size"],
             omit: [],
+            i18nNode: "ui-breadcrumb",
             hints: {
                 disabled: "Ein Breadcrumb spiegelt die Navigation und hat keinen Deaktiviert-Zustand.",
                 size: "Dieser Knoten hat keine Größen-Stufen."
@@ -159,37 +160,23 @@
     })();
 </script>
 <script type="text/html" data-template-name="ui-breadcrumb">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-row"><label for="node-input-mount" data-i18n="ui-breadcrumb.label.mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <div class="form-row">
-        <label for="node-input-layout">Mode</label>
+        <label for="node-input-layout" data-i18n="ui-breadcrumb.label.layout">Mode</label>
         <select id="node-input-layout">
-            <option value="">Items / Binding</option>
-            <option value="breadcrumb">Child Nodes (Slots)</option>
+            <option value="" data-i18n="ui-breadcrumb.option.layout.binding">Items / Binding</option>
+            <option value="breadcrumb" data-i18n="ui-breadcrumb.option.layout.slots">Child Nodes (Slots)</option>
         </select>
     </div>
     <div class="form-row" id="breadcrumb-items-row">
-        <label for="node-input-itemsBinding">Items</label>
+        <label for="node-input-itemsBinding" data-i18n="ui-breadcrumb.label.items">Items</label>
         <input type="text" id="node-input-itemsBinding">
     </div>
-    <div class="form-row"><label for="node-input-separator">Separator</label><input type="text" id="node-input-separator" placeholder="e.g. /"></div>
+    <div class="form-row"><label for="node-input-separator" data-i18n="ui-breadcrumb.label.separator">Separator</label><input type="text" id="node-input-separator" placeholder="e.g. /" data-i18n="[placeholder]ui-breadcrumb.placeholder.separator"></div>
 </script>
-<script type="text/html" data-help-name="ui-breadcrumb">
-<p>Renders a horizontal navigation breadcrumb trail. All items emit a <code>click</code> event (output port) with <code>msg.ui.params.action</code>.</p>
-<h3>Items</h3>
-<p>Items can be configured as a JSON array or as a dynamic binding (State, Store, msg, …).</p>
-<p><b>String items:</b> <code>["Home", "Customers", "Details"]</code> — the string is both the label and the click parameter.</p>
-<p><b>Object items:</b> <code>[{"label": "Home", "action": "/"}, {"label": "Current", "active": true}]</code></p>
-<ul>
-  <li><code>label</code> — display text (required)</li>
-  <li><code>action</code> — click parameter sent via <code>params.action</code> (defaults to label)</li>
-  <li><code>active</code> — marks the current-page item (different rendering); item stays clickable</li>
-</ul>
-<h3>Child Node Mode</h3>
-<p>Set Mode to "Child Nodes (Slots)" to use child nodes as breadcrumb items (mount into slot <code>default</code>).
-Each child's node ID is sent as <code>params.action</code> when clicked. A custom separator can be provided in the <code>separator</code> slot.</p>
-<h3>Output Events</h3>
-<p>Every item click triggers an output message: <code>msg.ui.event = "click"</code>, <code>msg.ui.params.action</code> = item's action value.</p>
-<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/navigation/ui-breadcrumb.md" target="_blank">Full documentation</a></p>
-</script>
+<!-- P271 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/view/locales/{en-US,de}/ui-breadcrumb.html; form-row labels carry
+     data-i18n keys resolved from nodes/view/locales/{en-US,de}/ui-breadcrumb.json.
+     No inline data-help-name block here. -->

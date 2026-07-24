@@ -43,8 +43,8 @@ const ALLOWLIST = {};
 for (const t of [
 
     
-    "ui-tabs", "ui-tab", "ui-accordion", "ui-accordion-section", "ui-breadcrumb", "ui-menu",
-    "ui-pagination", "ui-stepper",
+
+
     // ui-divider: PILOT (P265) — has full guide coverage; intentionally absent.
     // P267: the backbone batch (app, route, dialog, component pair, store family,
     // query family, action) is now fully migrated — no entries remain here.

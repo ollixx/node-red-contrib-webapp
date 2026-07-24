@@ -1,0 +1,12 @@
+{
+    "ui-accordion": {
+        "label": {
+            "mount": "Parent Slot",
+            "openSection": "Open Section",
+            "multiple": "Allow Multiple Open"
+        },
+        "hints": {
+            "size": "Dieser Knoten hat keine Größen-Stufen."
+        }
+    }
+}

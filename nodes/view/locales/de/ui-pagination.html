@@ -1,0 +1,25 @@
+<script type="text/html" data-help-name="ui-pagination">
+<p>Seitennavigations-Controls (Vor/Zurück, Seiten-Label) für paginierte Daten.
+Emittiert <code>pageChange</code>, wenn der Nutzer navigiert.</p>
+<h3>Wichtige Felder</h3>
+<ul>
+    <li><b>Current Page</b> — <b>zweiseitiges</b> Binding auf die 1-basierte Seite;
+        der Seitenwechsel schreibt zurück (Roundtrip). Pflicht.</li>
+    <li><b>Total</b> — <b>rein lesendes</b> Binding auf die Gesamt-Seitenzahl,
+        typisch aus einem <code>ui-query</code>-Ergebnis. Pflicht.</li>
+    <li><b>Page Size</b> — Einträge pro Seite (Config-Number).</li>
+    <li><b>Info-Zeile</b> — zeigt eine „Seite X von Y"-Zeile unter den Controls.</li>
+</ul>
+<h3>Eingang</h3>
+<p>Hat einen Eingangs-Port. <code>msg.payload</code> setzt die Seite (Ganzzahl ≥ 1);
+<code>msg.ui.patch</code> überschreibt Felder; <code>msg.ui.component.op</code>
+<code>show</code>/<code>hide</code> steuern die Sichtbarkeit. Fachfremde Messages
+werden unverändert durchgereicht.</p>
+<h3>Ausgänge / Events</h3>
+<p><code>pageChange</code> (wenn aktiviert) mit <code>params.page</code>. Die
+Laufzeit schreibt den Store nicht selbst — verdrahte es an ein
+<code>ui-store-action</code>-Set; <code>ui-query</code> liest denselben Store, um
+die Seite zu laden.</p>
+<h3>Vollständige Doku</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/de/nodes/ui-pagination.md" target="_blank">docs/guide/de/nodes/ui-pagination.md</a></p>
+</script>

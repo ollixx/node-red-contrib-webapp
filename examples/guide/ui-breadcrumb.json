@@ -1,0 +1,54 @@
+[
+    {
+        "id": "guide-ui-breadcrumb",
+        "type": "tab",
+        "label": "Guide: ui-breadcrumb",
+        "disabled": false,
+        "info": "User-guide example for ui-breadcrumb (docs/guide/nodes/ui-breadcrumb.md). Import, deploy, open /webapp/guideBreadcrumb/. A three-level trail (Home / Customers / Details) with the current page active; every item click emits a click event."
+    },
+    {
+        "id": "guideBreadcrumb",
+        "type": "ui-app",
+        "name": "Breadcrumb demo",
+        "uiId": "guideBreadcrumb",
+        "root": "guideBreadcrumb",
+        "layout": "app",
+        "z": "guide-ui-breadcrumb",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gBcNode",
+        "type": "ui-breadcrumb",
+        "name": "Path trail",
+        "uiId": "gBcNode",
+        "app": "guideBreadcrumb",
+        "mount": "guideBreadcrumb.content",
+        "layout": "",
+        "separator": "",
+        "items": [
+            { "label": "Home", "action": "/" },
+            { "label": "Customers", "action": "/customers" },
+            { "label": "Details", "active": true }
+        ],
+        "order": "1",
+        "z": "guide-ui-breadcrumb",
+        "x": 360,
+        "y": 120,
+        "wires": [["gBcDbg"]]
+    },
+    {
+        "id": "gBcDbg",
+        "type": "debug",
+        "name": "click events",
+        "z": "guide-ui-breadcrumb",
+        "x": 600,
+        "y": 120,
+        "active": true,
+        "tosidebar": true,
+        "complete": "ui",
+        "targetType": "msg",
+        "wires": [[]]
+    }
+]

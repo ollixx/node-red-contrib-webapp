@@ -14,6 +14,7 @@
             variant: false,
             advanced: ["size"],
             omit: [],
+            i18nNode: "ui-accordion",
             hints: {
                 size: "Dieser Knoten hat keine Größen-Stufen."
             }
@@ -97,12 +98,12 @@
     })();
 </script>
 <script type="text/html" data-template-name="ui-accordion">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
     <hr style="margin: 8px 0;">
-    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-row"><label for="node-input-mount" data-i18n="ui-accordion.label.mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <!-- P169 (ADR 0012 / value category): Open Section binding (two-way) — typedInput managed in oneditprepare/oneditsave. -->
-    <div class="form-row"><label for="node-input-openSectionBinding">Open Section</label><input type="text" id="node-input-openSectionBinding"></div>
-    <div class="form-row"><label for="node-input-multiple">Allow Multiple Open</label><input type="checkbox" id="node-input-multiple" style="width:auto"></div>
+    <div class="form-row"><label for="node-input-openSectionBinding" data-i18n="ui-accordion.label.openSection">Open Section</label><input type="text" id="node-input-openSectionBinding"></div>
+    <div class="form-row"><label for="node-input-multiple" data-i18n="ui-accordion.label.multiple">Allow Multiple Open</label><input type="checkbox" id="node-input-multiple" style="width:auto"></div>
     <div class="form-tips" style="margin-top: 4px;">
         <b>P169 (ADR 0018):</b> Sektionen werden aus den gemounteten
         <code>ui-accordion-section</code>-Kindern abgeleitet — es gibt <b>kein</b>
@@ -112,11 +113,7 @@
         sein; <b>Open Section</b> trägt die ID der offenen Sektion.
     </div>
 </script>
-<script type="text/html" data-help-name="ui-accordion">
-<p>Aufklappbare Sektionen zum Gruppieren von Inhalten unter ausklappbaren Überschriften.</p>
-<h4>Kinder definieren die Sektionen (P169, ADR 0018)</h4>
-<p>Die Sektionen werden aus den gemounteten <code>ui-accordion-section</code>-Kindern abgeleitet — <b>kein</b> Sections-JSON-Feld mehr. Lege je Sektion einen <code>ui-accordion-section</code> an und mounte ihn in dieses <code>ui-accordion</code>; der Inhalt der Sektion mountet in den <code>content</code>-Slot des <code>ui-accordion-section</code>. Die Sektions-IDs müssen eindeutig sein (die ID ist der Slot-Schlüssel und der <code>openSection</code>-Wert).</p>
-<h4>Open Section</h4>
-<p>Bindbare, <strong>zweiseitige</strong> Quelle der offenen Sektion (Sektions-ID) — voller kanonischer Satz (ADR 0012). Default: die erste Sektion nach <code>order</code>. Ein bestehender <code>openSectionPath</code> wird automatisch als <code>state</code>-Binding übernommen.</p>
-<p>Doku: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/navigation/ui-accordion.md" target="_blank">ui-accordion</a>.</p>
-</script>
+<!-- P271 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/view/locales/{en-US,de}/ui-accordion.html; form-row labels carry
+     data-i18n keys resolved from nodes/view/locales/{en-US,de}/ui-accordion.json.
+     No inline data-help-name block here. -->
