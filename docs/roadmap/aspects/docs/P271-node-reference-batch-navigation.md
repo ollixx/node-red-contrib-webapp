@@ -2,7 +2,7 @@
 id: P271
 title: "Node-Referenz-Batch navigation: Navigations-Knoten (8): menu, breadcrumb, tabs, tab, accordion, accordion-section, stepper, pagination — Guide-Doc (EN+DE) + 1–3 Import-Beispiele + locales-Hilfe (en-US+de) + Editor-Label-i18n (data-i18n + Kataloge) je Knoten"
 epic: aspects/docs
-status: pending
+status: in_progress
 dependencies: [P265, P272]
 verify: browser
 spec: docs/guide/README.md
