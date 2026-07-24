@@ -1,0 +1,55 @@
+[
+    {
+        "id": "guide-ui-log",
+        "type": "tab",
+        "label": "Guide: ui-log",
+        "disabled": false,
+        "info": "User-guide example for ui-log (docs/guide/nodes/ui-log.md). Import, deploy, open /webapp/guideLog/. The app has forwardErrorsToClient enabled so the log panel receives the SSE error stream; a heading keeps the root non-empty while the log is empty."
+    },
+    {
+        "id": "guideLog",
+        "type": "ui-app",
+        "name": "Log demo",
+        "uiId": "guideLog",
+        "root": "guideLog",
+        "layout": "app",
+        "forwardErrorsToClient": true,
+        "forwardErrorMinSeverity": "debug",
+        "z": "guide-ui-log",
+        "x": 120,
+        "y": 80,
+        "wires": [[]]
+    },
+    {
+        "id": "gLoHeading",
+        "type": "ui-text",
+        "name": "Heading",
+        "uiId": "gLoHeading",
+        "app": "guideLog",
+        "mount": "guideLog.content",
+        "text": "Application log",
+        "value": { "kind": "literal", "value": "Application log" },
+        "style": "heading-2",
+        "order": "0",
+        "z": "guide-ui-log",
+        "x": 340,
+        "y": 60,
+        "wires": [[]]
+    },
+    {
+        "id": "gLoLog",
+        "type": "ui-log",
+        "name": "Error log",
+        "uiId": "gLoLog",
+        "app": "guideLog",
+        "mount": "guideLog.content",
+        "minSeverity": "debug",
+        "maxEntries": 50,
+        "collapsed": false,
+        "order": "1",
+        "z": "guide-ui-log",
+        "x": 340,
+        "y": 120,
+        "wires": [[]]
+    }
+]

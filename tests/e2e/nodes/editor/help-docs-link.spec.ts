@@ -43,6 +43,7 @@ const LOCALE_MIGRATED = new Set<string>([
     "ui-action",
     "ui-text", "ui-table", "ui-list", "ui-repeat", "ui-container", "ui-image", "ui-icon", "ui-avatar",
     "ui-alert", "ui-toast", "ui-progress", "ui-skeleton", "ui-badge", "ui-empty-state",
+    "ui-log",
 ]);
 
 // Every ui-* editor type (from package.json node-red.nodes). Kept explicit so a

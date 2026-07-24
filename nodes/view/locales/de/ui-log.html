@@ -1,0 +1,23 @@
+<script type="text/html" data-help-name="ui-log">
+<p>Ein persistentes, filterbares Panel, das den strukturierten Fehler-/Log-Stream
+der App zeigt. Es abonniert den SSE-Fehlerkanal der App und aktualisiert sich
+live. Anders als <code>ui-toast</code> bleiben Einträge dauerhaft und sind nach
+Schweregrad filterbar.</p>
+<p><strong>Voraussetzung:</strong> Die Parent-<code>ui-app</code> muss
+<code>forwardErrorsToClient: true</code> gesetzt haben (optional plus
+<code>forwardErrorMinSeverity</code>). Ohne das leitet der Server keine Fehler
+weiter und das Log-Panel bleibt dauerhaft leer.</p>
+<h3>Wichtige Felder</h3>
+<ul>
+    <li><b>Min Severity</b> — niedrigster angezeigter Schweregrad (debug/info/warn/error).</li>
+    <li><b>Max Entries</b> — Ringpuffer-Größe; ältester fällt jenseits der Grenze weg.</li>
+    <li><b>Start collapsed</b> — Panel startet eingeklappt (Nutzer kann aufklappen).</li>
+</ul>
+<h3>Eingang</h3>
+<p>Kein Eingangs-Port — Daten kommen nur über den SSE-Fehlerkanal der App, nicht
+über Flow-Wiring.</p>
+<h3>Ausgänge / Events</h3>
+<p>Keine — kein Output-Port.</p>
+<h3>Vollständige Doku</h3>
+<p><a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/guide/de/nodes/ui-log.md" target="_blank">docs/guide/de/nodes/ui-log.md</a></p>
+</script>

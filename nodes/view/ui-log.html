@@ -14,6 +14,7 @@
             variant: false,
             advanced: ["size"],
             omit: [],
+            i18nNode: "ui-log",
             hints: {
                 disabled: "Ein Log hat keinen interaktiven Zustand.",
                 color: "Ein Log rendert keine eigene Farbe.",
@@ -61,23 +62,23 @@
     })();
 </script>
 <script type="text/html" data-template-name="ui-log">
-    <div class="form-row"><label for="node-input-name">Name</label><input type="text" id="node-input-name"></div>
-    <div class="form-row"><label for="node-input-mount">Parent Slot</label><select id="node-input-mount"></select></div>
+    <div class="form-row"><label for="node-input-name" data-i18n="node-red:common.label.name">Name</label><input type="text" id="node-input-name"></div>
+    <div class="form-row"><label for="node-input-mount" data-i18n="ui-log.label.mount">Parent Slot</label><select id="node-input-mount"></select></div>
     <div class="form-row">
-        <label for="node-input-minSeverity">Min Severity</label>
+        <label for="node-input-minSeverity" data-i18n="ui-log.label.minSeverity">Min Severity</label>
         <select id="node-input-minSeverity">
-            <option value="debug">debug (all)</option>
-            <option value="info">info</option>
-            <option value="warn">warn</option>
-            <option value="error">error only</option>
+            <option value="debug" data-i18n="ui-log.option.minSeverity.debug">debug (all)</option>
+            <option value="info" data-i18n="ui-log.option.minSeverity.info">info</option>
+            <option value="warn" data-i18n="ui-log.option.minSeverity.warn">warn</option>
+            <option value="error" data-i18n="ui-log.option.minSeverity.error">error only</option>
         </select>
     </div>
     <div class="form-row">
-        <label for="node-input-maxEntries">Max Entries</label>
+        <label for="node-input-maxEntries" data-i18n="ui-log.label.maxEntries">Max Entries</label>
         <input type="number" id="node-input-maxEntries" min="1" step="1" style="width:80px;">
     </div>
     <div class="form-row">
-        <label for="node-input-collapsed" style="width:auto; margin-right:8px;">Start collapsed</label>
+        <label for="node-input-collapsed" data-i18n="ui-log.label.collapsed" style="width:auto; margin-right:8px;">Start collapsed</label>
         <input type="checkbox" id="node-input-collapsed" style="display:inline-block; width:auto; vertical-align:top; margin-top:4px;">
     </div>
     <div class="form-row" data-layout-child-prop-row="order"   style="display:none;"><label for="node-input-order">Order</label><input type="number" id="node-input-order"></div>
@@ -88,20 +89,7 @@
     <div class="form-row" data-layout-child-prop-row="layoutX" style="display:none;"><label for="node-input-layoutX">X</label><input type="number" id="node-input-layoutX"></div>
     <div class="form-row" data-layout-child-prop-row="layoutY" style="display:none;"><label for="node-input-layoutY">Y</label><input type="number" id="node-input-layoutY"></div>
 </script>
-<script type="text/html" data-help-name="ui-log">
-    <p>Zeigt strukturierte Fehler- und Log-Einträge als persistente, inspizierbare Liste im App-Interface an.</p>
-    <p>Der Knoten abonniert automatisch den SSE-Fehlerkanal der App und aktualisiert seine Anzeige live,
-       sobald neue Einträge eintreffen. Im Gegensatz zu <code>ui-toast</code> sind die Einträge dauerhaft
-       sichtbar und nach Schweregrad filterbar — gedacht für Entwickler und Betreiber, nicht für Endbenutzer.</p>
-    <p><strong>Voraussetzung:</strong> Die Parent-<code>ui-app</code> muss
-       <code>forwardErrorsToClient: true</code> gesetzt haben (ggf. plus
-       <code>forwardErrorMinSeverity</code>). Ohne diese App-Einstellung leitet der Server keine
-       Fehler über den SSE-Kanal weiter und das Log-Panel bleibt dauerhaft leer.</p>
-    <h3>Eigenschaften</h3>
-    <dl>
-        <dt>Min Severity</dt><dd>Minimaler Schweregrad, der angezeigt wird (debug · info · warn · error).</dd>
-        <dt>Max Entries</dt><dd>Maximale Anzahl gespeicherter Einträge; älteste werden verworfen.</dd>
-        <dt>Start collapsed</dt><dd>Panel startet eingeklappt (kann vom Benutzer aufgeklappt werden).</dd>
-    </dl>
-    <p>Vollständige Doku: <a href="https://github.com/ollixx/node-red-contrib-webapp/blob/develop/docs/nodes/feedback/ui-log.md" target="_blank">docs/nodes/feedback/ui-log.md</a></p>
-</script>
+<!-- P270 (ADR 0042): help + labels are locale-migrated. Help lives in
+     nodes/view/locales/{en-US,de}/ui-log.html; form-row labels carry data-i18n
+     keys resolved from nodes/view/locales/{en-US,de}/ui-log.json. No inline
+     data-help-name block here. -->
