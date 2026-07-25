@@ -322,4 +322,82 @@ test.describe("ui-tabs / ui-tab (P168, children model)", () => {
         await expect(page.locator("sl-tab[panel='details']")).toHaveAttribute("active", "");
         await expect(page.locator("sl-tab-panel[name='overview']")).toContainText("Legacy Overview body");
     });
+
+    test("L01 — a ui-tab label bound to a store resolves to the store value (content resolves too)", async ({ page, request }) => {
+        // Bug (package-bugs): a store-bound ui-tab LABEL did not resolve (showed
+        // empty/id), while the SAME store binding in the tab CONTENT resolved fine.
+        const storeBinding = { kind: "store", path: "tbL1Store", subPath: { kind: "literal", value: "title" } };
+        const flow = new FlowBuilder()
+            .app({ id: "tbL1App", root: "tbL1App" })
+            .node("ui-store", { id: "tbL1Store", statePath: "s", initialValue: JSON.stringify({ title: "FromStore" }) })
+            .node("ui-tabs", { id: "tbL1" })
+            .node("ui-tab", { id: "storeTab", mount: "ui-tabs:tbL1/content", label: storeBinding, order: 0 })
+            .node("ui-tab", { id: "staticTab", mount: "ui-tabs:tbL1/content", label: { kind: "literal", value: "Static" }, order: 1 })
+            .node("ui-text", { id: "storeTabBody", mount: "ui-tab:storeTab/content", value: storeBinding })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "tbL1App");
+        await webapp.navigate("/");
+
+        // Content resolves (the working half) — sanity so the test proves the LABEL gap specifically.
+        await expect(page.locator("sl-tab-panel[name='storeTab']")).toContainText("FromStore");
+        // The bug: the NAV tab label must show the resolved store value, not the id/empty.
+        await expect(page.locator("sl-tab[panel='storeTab']")).toContainText("FromStore");
+    });
+
+    test("L02 — a store-bound ui-tab label updates on SSE store change (like the content does)", async ({ page, request }) => {
+        // Dynamic half of the bug: the store is filled/updated at runtime; the tab
+        // CONTENT re-renders via SSE, the tab LABEL must too.
+        const storeBinding = { kind: "store", path: "tbL2Store", subPath: { kind: "literal", value: "title" } };
+        const builder = new FlowBuilder()
+            .app({ id: "tbL2App", root: "tbL2App" })
+            .node("ui-store", { id: "tbL2Store", statePath: "s", initialValue: JSON.stringify({ title: "First" }) })
+            .node("ui-tabs", { id: "tbL2" })
+            .node("ui-tab", { id: "dynTab", mount: "ui-tabs:tbL2/content", label: storeBinding, order: 0 })
+            .node("ui-tab", { id: "otherTab", mount: "ui-tabs:tbL2/content", label: { kind: "literal", value: "Other" }, order: 1 })
+            .node("ui-text", { id: "dynTabBody", mount: "ui-tab:dynTab/content", value: storeBinding });
+        const flow = builder.withStoreInject("tbL2Inj", "tbL2Store", { title: "Second" }).build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "tbL2App");
+        await webapp.navigate("/");
+        await expect(page.locator("sl-tab[panel='dynTab']")).toContainText("First");
+
+        await injectMessage(request, "tbL2Inj");
+        // Content re-renders (working half):
+        await expect(page.locator("sl-tab-panel[name='dynTab']")).toContainText("Second", { timeout: 5000 });
+        // Label must re-render too (the bug):
+        await expect(page.locator("sl-tab[panel='dynTab']")).toContainText("Second", { timeout: 5000 });
+    });
+
+    test("L03 — store-bound tab label resolves when the store is filled at runtime (no initialValue)", async ({ page, request }) => {
+        // Exact metaapp shape: the ui-store has NO initialValue (starts empty) and
+        // is populated at runtime; the tab CONTENT (store.text) updates, the tab
+        // LABEL (store.label) must too.
+        const labelBinding = { kind: "store", path: "tbL3Store", subPath: { kind: "literal", value: "label0" } };
+        const textBinding = { kind: "store", path: "tbL3Store", subPath: { kind: "literal", value: "text0" } };
+        const builder = new FlowBuilder()
+            .app({ id: "tbL3App", root: "tbL3App" })
+            .node("ui-store", { id: "tbL3Store", statePath: "example" }) // NO initialValue — starts empty
+            .node("ui-tabs", { id: "tbL3" })
+            .node("ui-tab", { id: "mTab0", mount: "ui-tabs:tbL3/content", label: labelBinding, order: 0 })
+            .node("ui-tab", { id: "mTab1", mount: "ui-tabs:tbL3/content", label: { kind: "literal", value: "Other" }, order: 1 })
+            .node("ui-text", { id: "mTab0Body", mount: "ui-tab:mTab0/content", value: textBinding });
+        const flow = builder.withStoreInject("tbL3Inj", "tbL3Store", { label0: "Model A", text0: "content of A" }).build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "tbL3App");
+        await webapp.navigate("/");
+        await injectMessage(request, "tbL3Inj");
+
+        // Content resolves after the store is filled (working half):
+        await expect(page.locator("sl-tab-panel[name='mTab0']")).toContainText("content of A", { timeout: 5000 });
+        // The bug: the label must resolve too, not stay the tab id "mTab0":
+        await expect(page.locator("sl-tab[panel='mTab0']")).toContainText("Model A", { timeout: 5000 });
+    });
+
 });

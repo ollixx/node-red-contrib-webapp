@@ -84,3 +84,11 @@ Editor-Regression: `tests/e2e/nodes/editor/navigation-nodes.spec.ts`,
   solange seine Zeile existiert, und fällt sonst auf das erste Kind zurück.
 - **Label/Inhalt im Item-Scope:** das Tab-`label` und der Panel-Inhalt lösen gegen
   den `{item,index}`-Frame der jeweiligen Zeile auf (`item.<feld>`).
+
+### Store-gebundenes Tab-Label (v1.0.1 Regressions-Coverage)
+
+- **L01** store-gebundenes `label` löst zum Store-Wert auf (Content ebenso).
+- **L02** store-gebundenes `label` aktualisiert bei SSE-Store-Änderung.
+- **L03** store-gebundenes `label` löst auf, wenn der Store erst zur Laufzeit gefüllt wird (kein `initialValue`).
+
+(Der gemeldete Bug „Label löst nicht auf" reproduzierte auf aktuellem Code NICHT — vermutlich stale `packages/*/dist` in der laufenden Instanz. Diese Tests sperren das korrekte Verhalten ein.)
