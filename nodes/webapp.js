@@ -3145,7 +3145,7 @@ ${tokenCss ? tokenCss.split("\n").map((line) => `    ${line}`).join("\n") : "   
     .webapp-text--body { font-size:1rem; }
     .webapp-text--caption { font-size:0.8125rem; color:var(--wa-color-text-muted); }
     .webapp-text--label { font-size:0.875rem; font-weight:600; }
-    .webapp-text--code { font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:0.875rem; background:var(--wa-color-surface); padding:0.1em 0.35em; border-radius:var(--wa-radius-sm, 4px); }
+    .webapp-text--code { font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:0.875rem; background:var(--wa-color-surface); padding:0.1em 0.35em; border-radius:var(--wa-radius-sm, 4px); white-space:pre-wrap; overflow-wrap:anywhere; }
     /* P111: semantic colour variants (default inherits --wa-color-text) */
     .webapp-text--color-muted { color:var(--wa-color-text-muted); }
     .webapp-text--color-primary { color:var(--wa-color-primary); }

@@ -177,3 +177,5 @@ flows are unchanged. ui-text is the lead node carrying the editor selector.
 | On Missing selector present, defaults to marker, round-trips ignore | plain-select persistence onto the binding (no hidden carrier → no ADR-0031 harness); marker not persisted |
 | browser proof: marker renders '?' for an unresolvable binding | running app shows `"?"` for a whole-object store binding |
 | browser proof: ignore renders EMPTY for the same binding | running app shows empty (`""`) for the identical binding under `ignore` |
+
+- **style code — Newlines erhalten** (v1.0.1 Bugfix): mehrzeiliger `code`-Text rendert mit erhaltenen Zeilenumbrüchen (gemessene Höhe ≥ 3 Zeilen); `.webapp-text--code` trägt `white-space: pre-wrap`.

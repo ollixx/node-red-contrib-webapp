@@ -107,6 +107,30 @@ test.describe("ui-text (P43)", () => {
         await expect(webapp.root().locator("code.webapp-text--code")).toContainText("const x = 1");
     });
 
+    test("style 'code' preserves newlines in a multi-line value (measured height ≥ 3 lines)", async ({ page, request }) => {
+        // Bug: a multi-line `code` ui-text (e.g. a bound YAML doc) collapsed its
+        // newlines because .webapp-text--code lacked `white-space: pre-wrap`.
+        const flow = new FlowBuilder()
+            .app({ id: "textAppNL", root: "textAppNL" })
+            .node("ui-text", { id: "textNodeNL", text: "line-one\nline-two\nline-three", style: "code" })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "textAppNL");
+        await webapp.navigate("/");
+        const code = webapp.root().locator("code.webapp-text--code");
+        await expect(code).toBeVisible();
+
+        // Measured, not tag-asserted: three lines must render TALLER than one line.
+        const { height, lineHeight } = await code.evaluate((el) => {
+            const cs = getComputedStyle(el);
+            return { height: el.getBoundingClientRect().height, lineHeight: parseFloat(cs.lineHeight) };
+        });
+        // Collapsed-to-one-line height ≈ 1 lineHeight; preserved 3 lines ≈ 3×.
+        expect(height).toBeGreaterThan(lineHeight * 2.5);
+    });
+
     // P111: `variant` (semantic colour) adds a webapp-text--color-<c> class.
     test("variant 'danger' adds the colour class", async ({ page, request }) => {
         const flow = new FlowBuilder()
