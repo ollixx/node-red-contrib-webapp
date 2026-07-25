@@ -257,4 +257,58 @@ test.describe("ui-app", () => {
         // Outcome: the header slot content is rendered.
         await expect(page.locator(".webapp-slot--header")).toContainText("Custom Header Content");
     });
+
+    // ── Issue #4: the app-bar name links to the app root ────────────────────
+
+    test("issue #4: app-bar name is a link whose href is the app root", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "appBarLink", root: "appBarLink", name: "Linked App", layout: "app" })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "appBarLink");
+        await webapp.navigate("/");
+
+        const title = page.locator(".webapp-app-bar-title");
+        await expect(title).toHaveText("Linked App");
+
+        // Outcome: it is an anchor, and the href RESOLVES to the app root — asserted
+        // on the resolved URL, not on the raw attribute string.
+        const resolved = await title.evaluate((el) => ({
+            tag: el.tagName.toLowerCase(),
+            href: (el as HTMLAnchorElement).href
+        }));
+        expect(resolved.tag).toBe("a");
+        expect(new URL(resolved.href).pathname.replace(/\/$/, "")).toBe("/webapp/appBarLink");
+
+        // Outcome: the click target is the TEXT, not the whole bar. The old span
+        // carried flex:1 and would have stretched the anchor across the app bar.
+        const titleBox = await title.boundingBox();
+        const barBox = await page.locator(".webapp-app-bar").boundingBox();
+        expect(titleBox).not.toBeNull();
+        expect(barBox).not.toBeNull();
+        expect(titleBox!.width).toBeLessThan(barBox!.width * 0.5);
+    });
+
+    test("issue #4: clicking the app-bar name from a sub-route lands on the app root", async ({ page, request }) => {
+        const flow = new FlowBuilder()
+            .app({ id: "appBarHome", root: "appBarHome", name: "Home Link", layout: "app" })
+            .node("ui-text", { id: "appBarHomeRoot", text: "Root page content" })
+            .route({ id: "appBarHomeSub", path: "/sub" })
+            .node("ui-text", { id: "appBarHomeSubText", text: "Sub page content" })
+            .build();
+
+        await deployFlow(request, flow);
+
+        const webapp = new WebappPage(page, "appBarHome");
+        await webapp.navigate("/sub");
+        await expect(webapp.root()).toContainText("Sub page content");
+
+        // Outcome: the click actually navigates — the root route's content renders
+        // and the browser URL is the app root.
+        await page.locator(".webapp-app-bar-title").click();
+        await expect(webapp.root()).toContainText("Root page content");
+        expect(new URL(page.url()).pathname.replace(/\/$/, "")).toBe("/webapp/appBarHome");
+    });
 });

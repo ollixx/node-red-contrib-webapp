@@ -137,10 +137,18 @@ gesetzt (Format: `<name> — <Routen-Titel>`).
 Bei Verwendung des `app`-Layouts zeigt die App-Bar oben im Fenster:
 
 - **Header-Slot leer** (kein Kind im `header`-Slot der App): Der `name` der App
-  erscheint als Titeltext in der App-Bar.
+  erscheint als Titeltext in der App-Bar — und zwar als **Link auf die
+  App-Wurzel** (`/webapp/<appId>/`, Issue #4). Damit hat jede App-Bar ohne
+  eigenes Zutun eine „zurück zum Start"-Möglichkeit. Der Link ist ein echtes
+  `<a>`-Element (voller Seitenaufruf, kein Flow-Event): die App-Bar ist
+  Shell-Chrome außerhalb von `#webapp-client-root` und gehört zu keinem Knoten,
+  von dem ein Event ausgehen könnte. Optisch bleibt es unauffälliger Text —
+  Unterstreichung nur bei Hover/Fokus.
 - **Header-Slot belegt** (≥1 Kind im `header`-Slot): Die Slot-Kinder werden
   gerendert; die App-Bar zeigt **keinen** eigenen `name`-Titel — der Slot
-  übernimmt vollständig die Kontrolle über den Header-Bereich.
+  übernimmt vollständig die Kontrolle über den Header-Bereich. Damit entfällt
+  auch der Wurzel-Link; ein Header-Slot ist selbst für seine Navigation
+  zuständig.
 
 **Hinweis:** Soll der HTML-`<title>` vom `name` abweichen (z. B. für SEO), wäre
 ein eigenes `title`-Feld nötig — das ist bewusst **nicht** in P109 enthalten und

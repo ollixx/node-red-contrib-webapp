@@ -3045,14 +3045,22 @@ function renderAppPage(appId, location, dialogId, definitions, user) {
     // the slot content (already in pageBody) takes precedence and no `name` title
     // is shown in the app-bar. If the header slot is empty, the app's `name` is
     // rendered as the title inside the app-bar.
+    // Issue #4: that title is a LINK back to the app root — the app-bar is the only
+    // built-in "get me home" affordance the shell offers. The href follows the
+    // repo-wide app-URL convention (webapp-client.js `base()` + route path), and the
+    // element keeps the `webapp-app-bar-title` class so the styling is unchanged
+    // (the global `a { color:inherit; text-decoration:none }` rule keeps it plain).
+    // The app-bar is shell chrome outside #webapp-client-root, so this is a real
+    // anchor — no client-side event dispatch and no node to emit from.
     const headerRegion = isAppLayout
         ? snapshot.regions.find((region) => region.name === "header")
         : undefined;
     const headerHasChildren = headerRegion && headerRegion.components.length > 0;
+    const appRootHref = `/webapp/${encodeURIComponent(model.id)}/`;
     const appBarHtml = isAppLayout
         ? headerHasChildren
             ? `<header class="webapp-app-bar"></header>`
-            : `<header class="webapp-app-bar"><span class="webapp-app-bar-title">${escapeHtml(model.name || model.id)}</span></header>`
+            : `<header class="webapp-app-bar"><a class="webapp-app-bar-title" href="${escapeAttribute(appRootHref)}">${escapeHtml(model.name || model.id)}</a></header>`
         : "";
 
     return {
@@ -3103,7 +3111,12 @@ ${tokenCss ? tokenCss.split("\n").map((line) => `    ${line}`).join("\n") : "   
     .webapp-layout--app { display:flex; flex-direction:column; gap:0; min-height:0; flex:1; }
     /* P36: app bar — themed via --wa-color-primary token, no hard-coded color */
     .webapp-app-bar { display:flex; align-items:center; gap:12px; padding:0 20px; height:56px; background:var(--wa-color-primary); color:var(--wa-color-primary-fg); flex-shrink:0; }
-    .webapp-app-bar-title { font-size:1.1rem; font-weight:600; letter-spacing:0.01em; flex:1; }
+    /* Issue #4: the title is an anchor to the app root. margin-right:auto keeps the
+       P36 push-right behaviour of the old flex:1 span WITHOUT stretching the link's
+       click target across the whole bar. Underline on hover makes it discoverable
+       (the global link rule strips decoration from all links). */
+    .webapp-app-bar-title { font-size:1.1rem; font-weight:600; letter-spacing:0.01em; margin-right:auto; }
+    a.webapp-app-bar-title:hover, a.webapp-app-bar-title:focus-visible { text-decoration:underline; }
     /* P36: slot regions — frameless; structure from whitespace and type hierarchy */
     .webapp-slot { padding:0; }
     .webapp-slot--header { padding:16px 20px; }

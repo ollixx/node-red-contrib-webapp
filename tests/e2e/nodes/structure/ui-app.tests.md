@@ -19,6 +19,8 @@ Written fresh for P87 per `.ai/agents/node-testing.md`. Reviewed for P88 — no 
 | P109: HTML `<title>` element shows the app's name | The browser-tab `<title>` contains the app's `name` field value. |
 | P109: header-slot empty → name shown as title in app-bar | When no children are in the header slot, `.webapp-app-bar-title` shows the app's `name`. |
 | P109: header-slot has children → no name title in app-bar | When ≥1 child is mounted in the header slot, `.webapp-app-bar-title` is absent and only the slot content is rendered. |
+| issue #4: app-bar name is a link whose href is the app root | `.webapp-app-bar-title` is an `<a>` element and its RESOLVED href (not the raw attribute) points at `/webapp/<appId>` — the app root. Also MEASURES that the link's box stays under half the app-bar width, so the click target is the text and not the whole bar (the old span carried `flex:1`). |
+| issue #4: clicking the app-bar name from a sub-route lands on the app root | From `/sub`, clicking the app-bar title navigates: the root route's content renders and the browser URL is the app root. Proves the link works, not merely that it exists. |
 
 ## Editor round-trip (P260)
 
